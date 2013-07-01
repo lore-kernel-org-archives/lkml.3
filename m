@@ -1,83 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab3GARhO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 13:37:14 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:43961 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab3GARhM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 13:37:12 -0400
+	id S1754702Ab3GARh7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 13:37:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46539 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751417Ab3GARh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 13:37:58 -0400
+Date: Mon, 1 Jul 2013 13:37:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v5 1/5] vmcore: Introduce ELF header in new memory feature
+Message-ID: <20130701173727.GD9840@redhat.com>
+References: <1370624161-2298-1-git-send-email-holzheu@linux.vnet.ibm.com>
+ <1370624161-2298-2-git-send-email-holzheu@linux.vnet.ibm.com>
+ <20130614185401.GL12023@redhat.com>
+ <20130621161703.751b5f23@holzheu>
+ <20130627193202.GK4899@redhat.com>
+ <20130627202334.GL4899@redhat.com>
+ <20130628101552.68aab404@holzheu>
 MIME-Version: 1.0
-In-Reply-To: <1372697398.5019.1@driftwood>
-References: <5f9a6b3ab75b12f2c5ba61ea1f6f3b08e9952b55.1372280661.git.luto@amacapital.net>
- <1372697398.5019.1@driftwood>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 1 Jul 2013 10:36:52 -0700
-Message-ID: <CALCETrXcqnJJ3RGVjdepyvm1njr5cUo+p8r3BKL9jmNhneA64g@mail.gmail.com>
-Subject: Re: [PATCH] proc: Document that /proc/<pid>/task/<tid>/children
- really is per-thread
-To: Rob Landley <rob@landley.net>
-Cc: linux-kernel@vger.kernel.org, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130628101552.68aab404@holzheu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 9:49 AM, Rob Landley <rob@landley.net> wrote:
-> On 06/26/2013 04:05:01 PM, Andy Lutomirski wrote:
->>
->> I was surprised to discover that a process can have a parent that isn't
->> a thread group leader.  (The usual ppid interfaces hide this, but the
->> children list exposes it.)
->>
->> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
->> Cc: Oleg Nesterov <oleg@redhat.com>
->> ---
->>  Documentation/filesystems/proc.txt | 6 ++++++
->>  1 file changed, 6 insertions(+)
->>
->> diff --git a/Documentation/filesystems/proc.txt
->> b/Documentation/filesystems/proc.txt
->> index fd8d0d5..205796a 100644
->> --- a/Documentation/filesystems/proc.txt
->> +++ b/Documentation/filesystems/proc.txt
->> @@ -1623,6 +1623,12 @@ This file provides a fast way to retrieve first
->> level children pids
->>  of a task pointed by <pid>/<tid> pair. The format is a space separated
->>  stream of pids.
->>
->> +This really is a per-thread list.  If a process's parent is a thread,
->> +then that process will appear in that thread's children list.  (This
->> +means that, for any pid, /proc/pid/task/*/children are disjoint lists.)
->> +This may be surprising, as /proc/pid/status's PPid field is parent's
->> +tgid as opposed to the parent's tid.
->
->
-> I've read this twice and still don't quite understand what it's saying.
-> (Possibly I need more than 3 hours of sleep.)
->
-> It sounds like you're saying a thread can fork() and exec() and this makes
-> proc look weird, because the ppid pooints to the thread group leader and not
-> the thread, but the proc info listing us as a child belongs to the thread?
+On Fri, Jun 28, 2013 at 10:15:52AM +0200, Michael Holzheu wrote:
+> On Thu, 27 Jun 2013 16:23:34 -0400
+> Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> > On Thu, Jun 27, 2013 at 03:32:02PM -0400, Vivek Goyal wrote:
+> > > On Fri, Jun 21, 2013 at 04:17:03PM +0200, Michael Holzheu wrote:
+> > > > On Fri, 14 Jun 2013 14:54:02 -0400
+> > > > Vivek Goyal <vgoyal@redhat.com> wrote:
+> 
+> [snip]
+> 
+> > Thinking more about it, I think let us cleanup with this little ugly
+> > bit too so that future changes become easy.
+> > 
+> > Current convention is that elfcorehdr_addr and elfcorehdr_size are
+> > already set by arch code by the time vmcore.c starts reading it. Can't
+> > s390 allocate elf headers in early boot code and elfcorehdr_addr? Then
+> > we don't have to call elfcorehdr_alloc().
+> > 
+> > And once we are done with reading headers, we can call elfcorehdr_free()
+> > and s390 could free memory and set elfcorehdr_addr to ELFCORE_ADDR_ERR
+> > and elfcorehdr_size=0. That would signify that one can not try to read
+> > elf headers now and it must have been freed.
+> > 
+> > is_kdump_kernel() will continue to work as elfcorehdr_addr is
+> > ELFCORE_ADDR_ERR. And that will mean that either elfcorehdr were not
+> > readable/usable to begin with or they have been freed now.
+> 
+> Hello Vivek,
+> 
+> We would like to keep the alloc/free symmetry as you have suggested in a
+> previous mail. This also has the advantage that we do not have to rely
+> on the ordering of init calls.
+> 
+> Wouldn't it be sufficient to just set elfcorehdr_addr to ELFCORE_ADDR_ERR
+> after elfcorehdr_free() and remove the comment?
+> 
 
-That is exactly right.  Is it unclear because I wrote it badly, or is
-it unclear because it's really weird?
+Hi Michael,
 
-Perhaps I'll add something like:
+This has only one problem and that is what's the initialization semantics
+of elfcorehdr_addr. 
 
-For example, if thread group 100 has threads 100 (the leader) and 101,
-and thread 101 forks and produces a child with tgid 102, then
-/proc/100/task/100/children will be empty, /proc/100/task/101/children
-will contain 102, and /proc/102/status will show 'Ppid: 100'.
+So far we expected it to be initialized very early in boot process and
+once this is set, any component in the system could figure out if it
+is kdump kernel (is_kdump_kernel()) and do kdump specific things.
 
->
-> Is this a bug that should be fixed rather than documented? (Showing the
-> right ppid for this corner case?)
->
+But if we move initialization of this variable little late, then it
+might be a problem for early users of is_kdump_kernel(). Though right
+now I don't see drivers making use of it and only arch specific early
+boot up code seems to have it.
 
-I'm not qualified to say whether it's a bug or even, if it is a bug,
-what the preferred behavior would be.
+So either we can stick to existing semantics of initializing headers
+early or we could create a separate variable for is_kdump_kernel() which
+is set in early boot and then one can delay initialization of
+elfcorehdr_addr() in vmcore_init().
 
---Andy
+Given the fact that I don't see any users of is_kdump_kernel() in arch
+independent directory, and I am assuming that you will tackle all early
+users of is_kdump_kernel() in s390, I will be fine even with your patch
+below.
+
+Thanks
+Vivek
+
+
+> So the code would look like the following:
+> 
+> static int __init vmcore_init(void)
+> {
+>         int rc = 0;
+> 
+>         /* Allow architectures to allocate ELF header in 2nd kernel */
+>         rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
+>         if (rc)
+>                 return rc;
+>         /*
+>          * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
+>          * then capture the dump.
+>          */
+>         if (!(is_vmcore_usable()))
+>                 return rc;
+
+>         rc = parse_crash_elf_headers();
+>         if (rc) {
+>                 pr_warn("Kdump: vmcore not initialized\n");
+>                 return rc;
+>         }
+>         elfcorehdr_free(elfcorehdr_addr);
+> 	elfcorehdr_addr = ELFCORE_ADDR_ERR;
+> 
+>         proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
+>         if (proc_vmcore)
+>                 proc_vmcore->size = vmcore_size;
+>         return 0;
+> }
+> 
+> This looks clean for me.  > 
+> What do you think?
+> 
+> Best Regards,
+> Michael
