@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab3GARwc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 13:52:32 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:34508 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752197Ab3GARwb (ORCPT
+	id S1754861Ab3GARzU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 13:55:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56478 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab3GARzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 13:52:31 -0400
-Message-ID: <51D1BA56.1000001@st.com>
-Date: Mon, 01 Jul 2013 19:20:22 +0200
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Mon, 1 Jul 2013 13:55:18 -0400
+Date: Mon, 1 Jul 2013 19:55:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, john.stultz@linaro.org, u.kleine-koenig@pengutronix.de,
+        tomasz.figa@gmail.com, linus.walleij@linaro.org,
+        thomas.petazzoni@free-electrons.com, arnd@arndb.de
+Subject: Re: [PATCH v4] ARM: clocksource: add support for MOXA ART SoCs
+In-Reply-To: <1372687359-18235-1-git-send-email-jonas.jensen@gmail.com>
+Message-ID: <alpine.DEB.2.02.1307011953390.4013@ionos.tec.linutronix.de>
+References: <1372332203-30228-1-git-send-email-jonas.jensen@gmail.com> <1372687359-18235-1-git-send-email-jonas.jensen@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Cc: netdev@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 1/3] dt:net:stmmac: Allocate platform data only if
- its NULL.
-References: <1372678962-12959-1-git-send-email-srinivas.kandagatla@st.com> <1372679024-13089-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1372679024-13089-1-git-send-email-srinivas.kandagatla@st.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/1/2013 1:43 PM, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->
-> In some DT use-cases platform data might be already allocated and passed
-> via AUXDATA. These are the cases where machine level code populates few
-> callbacks in the platform data.
->
-> This patch adds check and reuses platform_data if its valid, before
-> allocating a new one.
+On Mon, 1 Jul 2013, Jonas Jensen wrote:
+> +static int moxart_clkevt_next_event(unsigned long cycles,
+> +				    struct clock_event_device *unused)
+> +{
+> +	u32 u;
+> +
+> +	u = readl(base + TIMER_CR) & ~TIMEREG_CR_1_ENABLE;
 
-Ye, we had seen this long time ago and IIRC i prepared the patch
-so
+You should cache that value and avoid another readout below. You could
+even cache it in general so you avoid all readouts.
 
-Acked-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+> +	writel(u, base + TIMER_CR);
+> +	u = readl(base + TIMER1_BASE + REG_COUNT) - cycles;
+> +	writel(u, base + TIMER1_BASE + REG_MATCH1);
+> +	u = readl(base + TIMER_CR) | TIMEREG_CR_1_ENABLE;
+> +	writel(u, base + TIMER_CR);
+> +	return 0;
+> +}
 
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
-> ---
->   .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |    6 +++---
->   1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> index 1d3780f..5907920 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
-> @@ -92,8 +92,10 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
->   	if (IS_ERR(addr))
->   		return PTR_ERR(addr);
->
-> +	plat_dat = pdev->dev.platform_data;
->   	if (pdev->dev.of_node) {
-> -		plat_dat = devm_kzalloc(&pdev->dev,
-> +		if (!plat_dat)
-> +			plat_dat = devm_kzalloc(&pdev->dev,
->   					sizeof(struct plat_stmmacenet_data),
->   					GFP_KERNEL);
->   		if (!plat_dat) {
-> @@ -106,8 +108,6 @@ static int stmmac_pltfr_probe(struct platform_device *pdev)
->   			pr_err("%s: main dt probe failed", __func__);
->   			return ret;
->   		}
-> -	} else {
-> -		plat_dat = pdev->dev.platform_data;
->   	}
->
->   	/* Custom initialisation (if needed)*/
->
+Thanks,
 
+	tglx
