@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab3GAEj2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 00:39:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:32890 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab3GAEj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 00:39:27 -0400
-Date: Mon, 1 Jul 2013 14:39:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ian Kent <raven@themaw.net>
-Cc: linux-next@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 7/7] autofs - change CONFIG_AUTOFS4_FS to
- CONFIG_AUTOFS_FS
-Message-Id: <20130701143924.79f57e7206577a2e7777c0a2@canb.auug.org.au>
-In-Reply-To: <20130701031449.4423.58614.stgit@perseus.fritz.box>
-References: <20130701031335.4423.6154.stgit@perseus.fritz.box>
-	<20130701031449.4423.58614.stgit@perseus.fritz.box>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__1_Jul_2013_14_39_24_+1000_bMcIZ276g6lW1pxA"
+	id S1752581Ab3GAElT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 00:41:19 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:40643 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab3GAElS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 00:41:18 -0400
+Message-ID: <51D1087E.3010304@gentoo.org>
+Date: Mon, 01 Jul 2013 06:41:34 +0200
+From: Luca Barbato <lu_zero@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130411 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: prometheanfire@gentoo.org
+CC: linux-kernel@vger.kernel.org, linux-devel@vger.kernel.org,
+        mjg59@srcf.ucam.org, torvalds@linux-foundation.org, kernel@gentoo.org,
+        hardened-kernel@gentoo.org, corsac@debian.org
+Subject: Re: 3.9.7, 3.10-rc7 - UEFI stalls at boot (nothing displayed), when
+ booting with mem=300M
+References: <51CC6CAE.6070401@gentoo.org> <51CC81A2.8040305@gentoo.org> <51D10603.1080403@gentoo.org>
+In-Reply-To: <51D10603.1080403@gentoo.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__1_Jul_2013_14_39_24_+1000_bMcIZ276g6lW1pxA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/01/2013 06:30 AM, Matthew Thode wrote:
 
-Hi Ian,
+> You had the problem where it was blank on boot (right after grub, no
+> kernel messages at all)?  Sounds like this might not be limited to just
+> Lenovo then.
 
-On Mon, 01 Jul 2013 11:14:51 +0800 Ian Kent <raven@themaw.net> wrote:
->
-> Signed-off-by: Ian Kent <raven@themaw.net>
+no grub, efi-stub directly from the efi shell.
 
-Please don't do this.  Find a simple way to make sure that if
-CONFIG_AUTOFS4_FS is set, then "make oldconfig"  (or equivalent) will
-cause CONFIG_AUTOFS_FS to be set the same.
+> mjg59, is there anything I can do to help move this bug forward?  I've
+> done all I can think of (even tried a serial expresscard slot for logging).
 
-The maintainers will update the defconfigs over time.
+If you feel like bisecting seems the only option =_=
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+lu
 
---Signature=_Mon__1_Jul_2013_14_39_24_+1000_bMcIZ276g6lW1pxA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR0Qf8AAoJEECxmPOUX5FEQvoP/3u/A4/fXkfMCXm8dI/gTwYK
-NyF+lERmn6glCxmRKoU+UnSaXsUpy0lLYAtAgmHU3fY6rMfmIsV32gBpCbmO4PFo
-FwN3SaKi6dG7bhnt54mWxNmDT+4b7RsSdjcI2Olb+AVmxdVv3e1oPzUmLo5t7bu7
-1suLM4nXwvk2hjUWbhHAsWs8k46MXdTHVQCvsy+FP2cuA75s3JVoVhGoQ+Sq1GHt
-2IbvbBq6JcI510GHi445kgc2fzNDY7n8V5VYMaq424M3fgfcMQEVDmtrW4zYP7j3
-2KfOKGObo3zlsqeC6+zz0QUF5ZXcBCxjhul8LknnwI1YYu1M7mUFfnXEr4D8ALx+
-KCuIXpcoofuMX5wL0YI1qKx5ZzJwldqJSADQCPv5UvyX8BFa3i19RmJvpSTAFgKa
-07yqpwNSmfsTFTvW8zO8HLCTtLuW/shY/hF/XqVs2r1GV2XWegLVsIU/REzd1t6N
-xC+1xB3XZKCp75o42K510ncqEkvx+/xBRDJGgwujlEHkWFkzu3QhxEgMHf3eA44q
-wrnHMyOCBZwnbyNHB9SYg2ZA3un2gJ1bgU/evHGjV7mLq0H2bvECN/7xHOsK7HGK
-w4HqE1Ufo5udbb2w9VsTYXJf6YL8LqoGAutpC8dL/RM5NW2wX1VnYDZlDzX6tF+h
-YKUGqIDskDC4fceTALPg
-=z/m9
------END PGP SIGNATURE-----
-
---Signature=_Mon__1_Jul_2013_14_39_24_+1000_bMcIZ276g6lW1pxA--
