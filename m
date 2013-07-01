@@ -1,111 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab3GATsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 15:48:18 -0400
-Received: from webmail.solarflare.com ([12.187.104.25]:13556 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab3GATsR (ORCPT
+	id S1755151Ab3GATuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 15:50:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:58019 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab3GATuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 15:48:17 -0400
-Message-ID: <1372708091.2083.50.camel@bwh-desktop.uk.level5networks.com>
-Subject: Re: Using sched_clock() for polling time limit
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-CC: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>, Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        HPA <hpa@zytor.com>, Cody P Schafer <devel-lists@codyps.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Mon, 1 Jul 2013 20:48:11 +0100
-In-Reply-To: <51CF2C88.4030900@linux.intel.com>
-References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
-	  <20130628125926.14419.89905.stgit@ladj378.jer.intel.com>
-	 <1372438309.1937.9.camel@bwh-desktop.uk.level5networks.com>
-	 <51CF2C88.4030900@linux.intel.com>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	Mon, 1 Jul 2013 15:50:06 -0400
+Message-ID: <51D1DD6D.8050805@codeaurora.org>
+Date: Mon, 01 Jul 2013 12:50:05 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Stehle Vincent-B46079 <B46079@freescale.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: next-20130627 breaks i.MX6 sabre sd UART console
+References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de> <51CDB26A.9060500@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net> <51CDC2B3.1030907@codeaurora.org> <20130629020738.GG11625@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net> <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de> <F7C43F8B2814514CA05F3436BC68046EF2F708@039-SN2MPN1-011.039d.mgd.msft.net> <alpine.DEB.2.02.1307011531210.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307011531210.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19986.005
-X-TM-AS-Result: No--32.952500-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-29 at 21:50 +0300, Eliezer Tamir wrote:
-> On 28/06/2013 19:51, Ben Hutchings wrote:
-> > On Fri, 2013-06-28 at 15:59 +0300, Eliezer Tamir wrote:
-> >> Our use of sched_clock is OK because we don't mind the side effects
-> >> of calling it and occasionally waking up on a different CPU.
-> >
-> > Sure about that?  Jitter matters too.
-> >
-> Pretty sure, this is a limit on how long we poll, it's for fairness to
-> the rest of the system not for performance of this code.
-> 
-> What matters is that on average you are bounded by something close to
-> what the user specified. If once in a while you run less because of
-> clock jitter, or even twice the specified time, it's no big deal.
+On 07/01/13 10:49, Thomas Gleixner wrote:
+> On Mon, 1 Jul 2013, Stehle Vincent-B46079 wrote:
+>
+>> From: Thomas Gleixner [mailto:tglx@linutronix.de] 
+>>> (..) Can you please apply the patch below and provide the output?
+>> Sure; thanks for the patch. The kernel seems to be in a loop, as it prints many messages and never stops. I copy only the first ones:
+>>
+>> ...
+>> Switched to clocksource mxc_timer1
+>> next 800000000098967f nevt 7fffffffffffffff per 989680 nxtp 1c03a180 now 1c553a59
+> Yuck. nevt (dev->next_event) is KTIME_MAX. No surprise, that we end up
+> in an endless loop.
+>
+> Now the question is how we did end up with that and how is that
+> related to the dummy timer.
+>
+> From your debug output we see that the dummy timer is installed before
+> the local timer. The dummytimer is disfunctional, so it requires
+> broadcast in the first place.
+>
+> Now when we install the local timer the broadcast is not disabled,
+> because the local timer is affected by C3STOP. Now the CPU is not in a
+> power state which makes the broadcasting necessary, but the broadcast
+> code has no way to distinguish whether the broadcast bit is set due to
+> power state or due to a dummy timer.
+>
+> That's clearly wrong as we end up with two periodic events for that
+> cpu (broadcast and local timer) as long as nothing calls into the
+> broadcast control code. That's fixable with some surgery.
 
-So what is the maximum time difference in sched_clock() values between
-CPUs in the same system?
+Yes, that sounds like the problem. Before this change the dummy would
+never have been installed first and so the broadcast timer wouldn't be
+running during boot.
 
-> So I don't see how jitter would matter.
-> 
-> And if your workload is jitter sensitive, you should probably be
-> pinning tasks to CPUs anyway.
+>
+> Though that does not explain why dev->next_event is set to KTIME_MAX
+> after we installed the mxc_timer1 as the system clocksource. And we
+> really need to know why that happens. 
+>
+> Here is some more debugging which should shine some light on that.
 
-Yes, they should be pinned.  But I think a single task that isn't pinned
-could poll for significantly longer than intended and the effect
-wouldn't be limited to that one task.
+Each local_timer clockevent should have their next_event set for
+KTIME_MAX when they're registered because they get "shutdown" initially.
+twd timers support both periodic and oneshot, so we won't emulate
+periodic mode with oneshot mode. Looking at tick_setup_periodic() it
+looks like the next_event member is ignored and we just set the mode to
+periodic. KTIME_MAX should still be there. That should be fine though as
+long as we don't switch the tick device into oneshot mode.
 
-> >> When CONFIG_DEBUG_PREEMPT is on, disable preempt before calling
-> >> sched_clock() so we don't trigger a debug_smp_processor_id() warning.
-> > [...]
-> >
-> > I think this is papering over a problem.  The warning is there for a
-> > good reason.
-> 
-> I think we understand the warning, and that we are OK with the effects.
-> 
-> looking at how other users in the kernel solved this issue
-> It seems like this is what they do.
-> for example trace/ring_buffer.c:ring_buffer_time_Stamp()
-
-Well, this seems to be debug information, not actually used for timing.
-
-> Also kvm_clock_read() and xen_clokcsource_read() seem to disable preempt
-> just to silence this warning.
-
-I can't see what you're referring to.
-
-> If they really cared about reading the value on one CPU, then being
-> scheduled on another they should have disabled interrupts.
-> or am I missing something?
-> 
-> > Would functions like these make it possible to use sched_clock() safely
-> > for polling?  (I didn't spend much time thinking about the names.)
-[...]
-> I don't understand, preempt_disable() only makes prevents preempt
-> from taking the CPU away from you, you could still lose it for
-> other reasons.
-> You would really need to disable interrupts in this region to be
-> sure that it all executed on the same CPU.
-
-Hmm, yes you're right.  Anyway, what I was trying to suggest was that
-you would record the current CPU along with the initial timestamp, and
-then abort low-latency polling if either the task is moved onto a
-different CPU or the time limit was reached.  Checking the CPU first
-means that the sched_clock() comparison is valid.
-
-Ben.
+It seems that someone is switching the tick device into oneshot mode
+without changing the event handler away from tick_handle_periodic(). Is
+that supposed to happen? Most clockevents_set_mode(ONESHOT) calls are
+prefaced with a handler change or they're operating on the broadcast
+device. I suspect that tick_check_oneshot_broadcast() is the bad one.
+That one changes the mode and then tick_handle_periodic() probably runs
+past that if check and starts trying to emulate periodic mode when
+next_event is still KTIME_MAX.
 
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
