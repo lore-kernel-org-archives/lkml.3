@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab3GAU4H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:56:07 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48353 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755057Ab3GAU4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:56:05 -0400
-Message-ID: <1372712128.21065.71.camel@cumari.coelho.fi>
-Subject: Re: [RFC] wlcore: sdio: add wilink clock providers
-From: Luciano Coelho <coelho@ti.com>
-To: <balbi@ti.com>
-CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <--linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Mon, 1 Jul 2013 23:55:28 +0300
-In-Reply-To: <20130701204633.GB805@arwen.pp.htv.fi>
-References: <1372707250-11998-1-git-send-email-coelho@ti.com>
-	 <20130701204633.GB805@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1755413Ab3GAU4D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:56:03 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:63563 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab3GAU4B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:56:01 -0400
+Date: Mon, 1 Jul 2013 22:55:56 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full v2 6/7] nohz_full: Add full-system-idle
+ state machine
+Message-ID: <20130701205554.GQ7246@somewhere.redhat.com>
+References: <20130628200949.GA17458@linux.vnet.ibm.com>
+ <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1372450222-19420-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130701163529.GO7246@somewhere.redhat.com>
+ <20130701181040.GO3773@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701181040.GO3773@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-01 at 23:46 +0300, Felipe Balbi wrote:
-> Hi,
+On Mon, Jul 01, 2013 at 11:10:40AM -0700, Paul E. McKenney wrote:
+> On Mon, Jul 01, 2013 at 06:35:31PM +0200, Frederic Weisbecker wrote:
+> > What makes sure that we are not reading a stale value of rdtp->dynticks_idle
+> > in the following scenario:
+> > 
+> >     CPU 0                          CPU 1
+> >     
+> >                                    //CPU 1 idle
+> >                                    //rdtp(1)->dynticks_idle == 0
+> > 
+> > sysidle_check_cpu(CPU 1) {
+> >     rdtp(1)->dynticks_idle == 0
+> > }
+> > cmpxchg(full_sysidle_state, 
+> >         ...RCU_SYSIDLE_SHORT)
+> >                                    rcu_irq_exit() {
 > 
-> On Mon, Jul 01, 2013 at 10:34:10PM +0300, Luciano Coelho wrote:
-> > diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> > index 670c3ce..7f061b8 100644
-> > --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-> > +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-> > @@ -65,11 +65,19 @@
-> >  		enable-active-high;
-> >  	};
-> >  
-> > +
-> >  	wlan {
-> > -	     compatible = "ti,wilink6";
-> > -	     interrupt-parent = <&gpio2>;
-> > -	     interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
-> > -	     refclock = <2>;		/* 38.4 MHz */
-> > +		compatible = "ti,wilink6";
-> > +		interrupt-parent = <&gpio2>;
-> > +		interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
-> > +		clocks = <&refclock>;
-> > +		clock-names = "refclock";
-> 
-> hmmm, shouldn't you provide both clocks (refclock and tcx0clock)
-> explicitly here ?
+> rcu_irq_enter(), right?
+>
 
-No, not needed for Panda.  Panda uses WiLink6 and only the refclock
-needs to be provided.
+Woops, I meant rcu_idle_exit(). But yeah rcu_irq_enter() as well.
 
-
-> Also, you should probably make it clear that the WiLink module is fed by
-> the 32K sync clock just to make sure clock usecounts are correctly
-> incremented ?
-
-Hmmm, yes, that is probably a good idea.  At least to make sure
-everything is initialized properly before the WiLink module is up and
-running.  I'll look into it and eventually add in a separate patch.
-
-Thanks for your comments!
-
---
-Luca.
-
+Thanks.
