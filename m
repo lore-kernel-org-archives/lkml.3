@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab3GAUKh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:10:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49018 "EHLO
+	id S1755570Ab3GAUTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:19:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755411Ab3GAUKe (ORCPT
+	with ESMTP id S1755411Ab3GAUKi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:34 -0400
+	Mon, 1 Jul 2013 16:10:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ignacy Gawedzki <i@lri.fr>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 08/26] ath9k_htc: Handle IDLE state transition properly
-Date: Mon,  1 Jul 2013 13:10:03 -0700
-Message-Id: <20130701200730.837121135@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 21/26] UBIFS: fix a horrid bug
+Date: Mon,  1 Jul 2013 13:10:16 -0700
+Message-Id: <20130701200732.271911472@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -28,32 +27,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 075163bbb0f51174359947e1bce84f5edb23f21e upstream.
+commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
 
-Make sure that a chip reset is done when IDLE is turned
-off - this fixes authentication timeouts.
+Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
+mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
+in the middle of 'ubifs_readdir()'.
 
-Reported-by: Ignacy Gawedzki <i@lri.fr>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
+it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
+but this may corrupt memory and lead to all kinds of problems like crashes an
+security holes.
+
+This patch fixes the problem by using the 'file->f_version' field, which
+'->llseek()' always unconditionally sets to zero. We set it to 1 in
+'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
+seek and it is time to clear the state saved in 'file->private_data'.
+
+I tested this patch by writing a user-space program which runds readdir and
+seek in parallell. I could easily crash the kernel without these patches, but
+could not crash it with these patches.
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc_drv_main.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ubifs/dir.c |   30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_main.c
-@@ -1174,7 +1174,7 @@ static int ath9k_htc_config(struct ieee8
- 		mutex_lock(&priv->htc_pm_lock);
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -365,6 +365,24 @@ static int ubifs_readdir(struct file *fi
+ 		 */
+ 		return 0;
  
- 		priv->ps_idle = !!(conf->flags & IEEE80211_CONF_IDLE);
--		if (priv->ps_idle)
-+		if (!priv->ps_idle)
- 			chip_reset = true;
++	if (file->f_version == 0) {
++		/*
++		 * The file was seek'ed, which means that @file->private_data
++		 * is now invalid. This may also be just the first
++		 * 'ubifs_readdir()' invocation, in which case
++		 * @file->private_data is NULL, and the below code is
++		 * basically a no-op.
++		 */
++		kfree(file->private_data);
++		file->private_data = NULL;
++	}
++
++	/*
++	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
++	 * zero, and we use this for detecting whether the file was seek'ed.
++	 */
++	file->f_version = 1;
++
+ 	/* File positions 0 and 1 correspond to "." and ".." */
+ 	if (pos == 0) {
+ 		ubifs_assert(!file->private_data);
+@@ -438,6 +456,14 @@ static int ubifs_readdir(struct file *fi
+ 		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
++
++		if (file->f_version == 0)
++			/*
++			 * The file was seek'ed meanwhile, lets return and start
++			 * reading direntries from the new position on the next
++			 * invocation.
++			 */
++			return 0;
+ 	}
  
- 		mutex_unlock(&priv->htc_pm_lock);
+ out:
+@@ -448,15 +474,13 @@ out:
+ 
+ 	kfree(file->private_data);
+ 	file->private_data = NULL;
++	/* 2 is a special value indicating that there are no more direntries */
+ 	file->f_pos = 2;
+ 	return 0;
+ }
+ 
+-/* If a directory is seeked, we have to free saved readdir() state */
+ static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int whence)
+ {
+-	kfree(file->private_data);
+-	file->private_data = NULL;
+ 	return generic_file_llseek(file, offset, whence);
+ }
+ 
 
 
