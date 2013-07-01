@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861Ab3GAUWB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:22:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48995 "EHLO
+	id S1755356Ab3GAUK2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:10:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48967 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755373Ab3GAUKa (ORCPT
+	with ESMTP id S1754884Ab3GAUK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:30 -0400
+	Mon, 1 Jul 2013 16:10:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 10/26] s390/pci: Implement IRQ functions if !PCI
-Date: Mon,  1 Jul 2013 13:10:05 -0700
-Message-Id: <20130701200731.044116885@linuxfoundation.org>
+        Simon Baatz <gmbnomis@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 03/26] ARM: 7772/1: Fix missing flush_kernel_dcache_page() for noMMU
+Date: Mon,  1 Jul 2013 13:09:58 -0700
+Message-Id: <20130701200730.298055633@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -28,143 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Simon Baatz <gmbnomis@gmail.com>
 
-commit c46b54f7406780ec4cf9c9124d1cfb777674dc70 upstream.
+commit 63384fd0b1509acf522a8a8fcede09087eedb7df upstream.
 
-All architectures must implement IRQ functions.  Since various
-dependencies on !S390 were removed, there are various drivers that can
-be selected but will fail to link.  Provide a dummy implementation of
-these functions for the !PCI case.
+Commit 1bc3974 (ARM: 7755/1: handle user space mapped pages in
+flush_kernel_dcache_page) moved the implementation of
+flush_kernel_dcache_page() into mm/flush.c but did not implement it
+on noMMU ARM.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/irq.c |   64 +++++++++++++++++++++++++++++++++++++++++++++++++
- arch/s390/pci/pci.c    |   33 -------------------------
- 2 files changed, 64 insertions(+), 33 deletions(-)
+ arch/arm/mm/nommu.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/arch/s390/kernel/irq.c
-+++ b/arch/s390/kernel/irq.c
-@@ -313,3 +313,67 @@ void measurement_alert_subclass_unregist
- 	spin_unlock(&ma_subclass_lock);
+--- a/arch/arm/mm/nommu.c
++++ b/arch/arm/mm/nommu.c
+@@ -57,6 +57,12 @@ void flush_dcache_page(struct page *page
  }
- EXPORT_SYMBOL(measurement_alert_subclass_unregister);
-+
-+void synchronize_irq(unsigned int irq)
-+{
-+	/*
-+	 * Not needed, the handler is protected by a lock and IRQs that occur
-+	 * after the handler is deleted are just NOPs.
-+	 */
-+}
-+EXPORT_SYMBOL_GPL(synchronize_irq);
-+
-+#ifndef CONFIG_PCI
-+
-+/* Only PCI devices have dynamically-defined IRQ handlers */
-+
-+int request_irq(unsigned int irq, irq_handler_t handler,
-+		unsigned long irqflags, const char *devname, void *dev_id)
-+{
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL_GPL(request_irq);
-+
-+void free_irq(unsigned int irq, void *dev_id)
-+{
-+	WARN_ON(1);
-+}
-+EXPORT_SYMBOL_GPL(free_irq);
-+
-+void enable_irq(unsigned int irq)
-+{
-+	WARN_ON(1);
-+}
-+EXPORT_SYMBOL_GPL(enable_irq);
-+
-+void disable_irq(unsigned int irq)
-+{
-+	WARN_ON(1);
-+}
-+EXPORT_SYMBOL_GPL(disable_irq);
-+
-+#endif /* !CONFIG_PCI */
-+
-+void disable_irq_nosync(unsigned int irq)
-+{
-+	disable_irq(irq);
-+}
-+EXPORT_SYMBOL_GPL(disable_irq_nosync);
-+
-+unsigned long probe_irq_on(void)
-+{
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(probe_irq_on);
-+
-+int probe_irq_off(unsigned long val)
-+{
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(probe_irq_off);
-+
-+unsigned int probe_irq_mask(unsigned long val)
-+{
-+	return val;
-+}
-+EXPORT_SYMBOL_GPL(probe_irq_mask);
---- a/arch/s390/pci/pci.c
-+++ b/arch/s390/pci/pci.c
-@@ -306,15 +306,6 @@ static int zpci_cfg_store(struct zpci_de
- 	return rc;
- }
+ EXPORT_SYMBOL(flush_dcache_page);
  
--void synchronize_irq(unsigned int irq)
--{
--	/*
--	 * Not needed, the handler is protected by a lock and IRQs that occur
--	 * after the handler is deleted are just NOPs.
--	 */
--}
--EXPORT_SYMBOL_GPL(synchronize_irq);
--
- void enable_irq(unsigned int irq)
- {
- 	struct msi_desc *msi = irq_get_msi_desc(irq);
-@@ -331,30 +322,6 @@ void disable_irq(unsigned int irq)
- }
- EXPORT_SYMBOL_GPL(disable_irq);
- 
--void disable_irq_nosync(unsigned int irq)
--{
--	disable_irq(irq);
--}
--EXPORT_SYMBOL_GPL(disable_irq_nosync);
--
--unsigned long probe_irq_on(void)
--{
--	return 0;
--}
--EXPORT_SYMBOL_GPL(probe_irq_on);
--
--int probe_irq_off(unsigned long val)
--{
--	return 0;
--}
--EXPORT_SYMBOL_GPL(probe_irq_off);
--
--unsigned int probe_irq_mask(unsigned long val)
--{
--	return val;
--}
--EXPORT_SYMBOL_GPL(probe_irq_mask);
--
- void pcibios_fixup_bus(struct pci_bus *bus)
- {
- }
++void flush_kernel_dcache_page(struct page *page)
++{
++	__cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
++}
++EXPORT_SYMBOL(flush_kernel_dcache_page);
++
+ void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
+ 		       unsigned long uaddr, void *dst, const void *src,
+ 		       unsigned long len)
 
 
