@@ -1,260 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3GAKht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 06:37:49 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:60057 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab3GAKhr (ORCPT
+	id S1753610Ab3GAKiF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 06:38:05 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:19302 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab3GAKiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 06:37:47 -0400
-Date: Mon, 1 Jul 2013 12:37:42 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/mm changes for v3.11
-Message-ID: <20130701103741.GA18231@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 1 Jul 2013 06:38:01 -0400
+X-AuditID: cbfee68f-b7f436d000000f81-7e-51d15c065737
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Doug Anderson'" <dianders@chromium.org>
+Cc: "'Chris Ball'" <cjb@laptop.org>, "'Olof Johansson'" <olof@lixom.net>,
+        "'Andrew Bresticker'" <abrestic@chromium.org>,
+        "'Alim Akhtar'" <alim.akhtar@samsung.com>,
+        "'Abhilash Kesavan'" <a.kesavan@samsung.com>,
+        "'Tomasz Figa'" <tomasz.figa@gmail.com>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1371772064-7505-1-git-send-email-dianders@chromium.org>
+ <001401ce70b1$71c325e0$554971a0$%jun@samsung.com>
+ <CAD=FV=XNuphYrPSJqhuQrLvBJ7_EGvTSsCrVaOQLZGozDDDTBA@mail.gmail.com>
+In-reply-to: <CAD=FV=XNuphYrPSJqhuQrLvBJ7_EGvTSsCrVaOQLZGozDDDTBA@mail.gmail.com>
+Subject: RE: [PATCH] mmc: dw_mmc: don't queue up a card detect at slot startup
+Date: Mon, 01 Jul 2013 19:37:58 +0900
+Message-id: <002201ce7647$0de17cc0$29a47640$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=Windows-1252
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac50IJlMr/9yoejcSzyy7dJtYF6OeQCGpTHQ
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t8zI132mIuBBif38Vk8XrOYyWLl+7+M
+	Fg/mbWOz2P56I5vF2WUH2Sxu/Gpjtbi8aw6bxZH//YwWp65/ZrNYtesPowOXx+yGiyweO2fd
+	Zfc4dGUto8eVE02sHn1bVjF6fN4kF8AWxWWTkpqTWZZapG+XwJWxee5c5oKDmhWrf85jamCc
+	oNzFyMEhIWAi0T5BsIuRE8gUk7hwbz1bFyMXh5DAMkaJb1efMkEkTCSOLethBbGFBKYzSrxp
+	TYaw/zBKnOizALHZBLQk/r55wwxiiwhoS7x8sJIZZBCzwB0miVM999khpu5nlHj4cjJYFadA
+	sMTMLS/AbGEBP4kvO/rAbBYBVYlLk6ewg1zHK2Ar8XSJP0iYV0BQ4sfkeywgNrOAnsTHP7cZ
+	IWx5ic1r3jJDPKMu8eivLsQNRhK/WmczQZSISOx78Y4R5AQJgV4OiSWHp7FArBKQ+Db5EAtE
+	r6zEpgPMEP9KShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQnJReZKxXnJhbXJqX
+	rpecn7uJERLj/TsY7x6wPsSYDLR+IrOUaHI+MEXklcQbGpsZWZiamBobmVuakSasJM6r1mId
+	KCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFRsnBKsP+bBwvXbUjLSZ67V06qvlRjR+wad9FK
+	6zyOl+eOHqw68PblQTUJhc+hBc7Hv7+5Gi78w9Lrc8IJyatTFxuFLRNZWicrPXkPG9Plt/7n
+	VRxNMz7fCHyYGez2VL2jTHXWwqx+xl9iUxfeOWWitDnjy9fSDtXN32dujqpfN22likxhQpql
+	EktxRqKhFnNRcSIAiAK2bgcDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsVy+t9jQV22mIuBBlvWWVo8XrOYyWLl+7+M
+	Fg/mbWOz2P56I5vF2WUH2Sxu/Gpjtbi8aw6bxZH//YwWp65/ZrNYtesPowOXx+yGiyweO2fd
+	Zfc4dGUto8eVE02sHn1bVjF6fN4kF8AW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCo
+	a2hpYa6kkJeYm2qr5OIToOuWmQN0m5JCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4j
+	AzSQsI4xY/PcucwFBzUrVv+cx9TAOEG5i5GTQ0LAROLYsh5WCFtM4sK99WwgtpDAdEaJN63J
+	EPYfRokTfRYgNpuAlsTfN2+YQWwRAW2Jlw9WAtlcHMwCd5gkTvXcZwdxhAT2M0o8fDkZrIpT
+	IFhi5pYXYLawgJ/Elx19YDaLgKrEpclTgBo4OHgFbCWeLvEHCfMKCEr8mHyPBcRmFtCT+Pjn
+	NiOELS+xec1bZpByCQF1iUd/dSFuMJL41TqbCaJERGLfi3eMExiFZiGZNAvJpFlIJs1C0rKA
+	kWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnAKeSa9g3FVg8UhRgEORiUe3gXTLwQKsSaW
+	FVfmHmKU4GBWEuG96X0xUIg3JbGyKrUoP76oNCe1+BBjMtCfE5mlRJPzgektryTe0NjEzMjS
+	yMzCyMTcnDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYDXfcfK8WrBiR7HFQJvsao52a
+	wqRSLfezG3cKbU371OqxRv3gfGFhpvzHDTdWVAr6aU5RULL4vmux091a/4c7tES52CfpPZ75
+	5sy8stAkBhseyaoJDWYOXgf/VX2ValMSNlE19NrXtYOzRMhaI23nsQ/pMk+Zzy9ksnkW/Obg
+	vePRjLaLH7IpsRRnJBpqMRcVJwIATnyPXGUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Sat, June 29, 2013, Doug Anderson wrote:
+> Seungwon,
+> 
+> On Mon, Jun 24, 2013 at 1:04 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> > This patch looks good to me. I agree above.
+> > Card detection procedure of mmc subsystem will be started by mmc_start_host during probe time.
+> > There is no need to do same in host driver.
+> > Could you describe the race point of this problem and why the duplication makes the problem?
+> > What is described below is not clear.
+> > If a actual detection of card is triggered during probe, similar problem may be occurred in spite of
+> this patch.
+> 
+> OK, so I think the race is between the "mmc_rescan" thread and the
+> "dw_mci_work_routine_card" thread:
+> 
+> The "mmc_rescan" thread sets "host->state = STATE_SENDING_CMD" in
+> dw_mci_queue_request() with a stack crawl that looks like this (from
+> dump_stack):
+> 
+> [<803c5d10>] (dw_mci_request+0xb0/0x100) from [<803b1864>]
+> (__mmc_start_req+0x14c/0x164)
+> [<803b1864>] (__mmc_start_req+0x14c/0x164) from [<803b189c>]
+> (mmc_wait_for_req+0x20/0x30)
+> [<803b189c>] (mmc_wait_for_req+0x20/0x30) from [<803b1934>]
+> (mmc_wait_for_cmd+0x88/0xb4)
+> [<803b1934>] (mmc_wait_for_cmd+0x88/0xb4) from [<803bae34>]
+> (mmc_io_rw_direct_host+0xd0/0x160)
+> [<803bae34>] (mmc_io_rw_direct_host+0xd0/0x160) from [<803bb324>]
+> (sdio_reset+0x44/0x9c)
+> [<803bb324>] (sdio_reset+0x44/0x9c) from [<803b35d8>] (mmc_rescan+0x230/0x2c8)
+> [<803b35d8>] (mmc_rescan+0x230/0x2c8) from [<8004619c>]
+> (process_one_work+0x25c/0x418)
+> [<8004619c>] (process_one_work+0x25c/0x418) from [<8004680c>]
+> (worker_thread+0x280/0x3c4)
+> [<8004680c>] (worker_thread+0x280/0x3c4) from [<8004b4c0>] (kthread+0xc8/0xdc)
+> [<8004b4c0>] (kthread+0xc8/0xdc) from [<8000e758>] (ret_from_fork+0x14/0x20)
+> 
+> 
+> It's got the host->lock when it does that.  ...but then it releases
+> the lock at the end of dw_mci_request().  That allows
+> dw_mci_work_routine_card() to jump in.  You can see its stack crawl
+> (from kgdb):
+> 
+> #1  0x803c8008 in dw_mci_work_routine_card (work=0xee6f8ba0) at
+> /.../drivers/mmc/host/dw_mmc.c:1720
+> #2  0x8004619c in process_one_work (worker=worker@entry=0xeea74d00,
+> work=0xee6f8ba0) at /.../kernel/workqueue.c:2263
+> #3  0x8004680c in worker_thread (__worker=__worker@entry=0xeea74d00)
+> at /.../kernel/workqueue.c:2383
+> #4  0x8004b4c0 in kthread (_create=0xef209e38) at /.../kernel/kthread.c:168
+> 
+> 
+> I can reproduce the problem reliably by adding an "mdelay(100);" in
+> dw_mci_queue_request() right after "host->state = STATE_SENDING_CMD;".
+> 
+> When I do that and add a kgdb_breakpoint() in
+> dw_mci_work_routine_card() for the -ENOMEDIUM case, I can even see the
+> state of the "mmc_rescan" thread with kgdb:
+> 
+> #0  mmc_wait_for_req (host=host@entry=0xee702140,
+> mrq=mrq@entry=0xef1efdbc) at /.../drivers/mmc/core/core.c:474
+> #1  0x803b1934 in mmc_wait_for_cmd (host=host@entry=0xee702140,
+> cmd=cmd@entry=0xef1efe14, retries=0) at
+> /.../drivers/mmc/core/core.c:567
+> #2  0x803bae34 in mmc_io_rw_direct_host (host=host@entry=0xee702140,
+> write=write@entry=0, fn=fn@entry=0, addr=addr@entry=6, in=0 '\000',
+> out=out@entry=0xef1efe83 "\356\027\345\032'")
+>     at /.../drivers/mmc/core/sdio_ops.c:89
+> #3  0x803bb324 in sdio_reset (host=host@entry=0xee702140) at
+> /.../drivers/mmc/core/sdio_ops.c:214
+> #4  0x803b35d8 in mmc_rescan_try_freq (freq=<optimized out>,
+> host=0xee702140) at /.../drivers/mmc/core/core.c:2084
+> #5  mmc_rescan (work=0xee7023ac) at /.../drivers/mmc/core/core.c:2210
+> #6  0x8004619c in process_one_work (worker=worker@entry=0xef0af900,
+> work=0xee7023ac) at /.../kernel/workqueue.c:2263
+> #7  0x8004680c in worker_thread (__worker=__worker@entry=0xef0af900)
+> at /.../kernel/workqueue.c:2383
+> #8  0x8004b4c0 in kthread (_create=0xef18de40) at /.../kernel/kthread.c:168
+> #9  0x8000e758 in ret_from_fork () at /.../arch/arm/kernel/entry-common.S:92
+> #10 0x8000e758 in ret_from_fork () at /.../arch/arm/kernel/entry-common.S:92
+> Backtrace stopped: previous frame identical to this frame (corrupt stack?)
+> 
+> 
+> I'm not sure I have time to track down the whole race at the moment,
+> though I may be able to come back to it later.  However, we now have a
+> set of steps to reproduce (I think) and a full description of the
+> race.  Perhaps someone else who knows the code better would be able to
+> have a whack at it?
+> 
+> In any case, it seems reasonable to still merge my CL, since it makes
+> the race much less likely (and impossible in the case of non-removable
+> cards) removes some pointless code.  Would you be interested in acking
+> it?
 
-Please pull the latest x86-mm-for-linus git tree from:
+Thanks you for detail.
+Certainly, host own triggering for 'dw_mci_work_routine_card' makes problem during probing.
+While progressing the request from 'mmc_rescan', if 'dw_mci_work_routine_card' routine is activated,
+it will cancel the current request.
+The problem case is that 'mmc_rescan' is prior to 'dw_mci_work_routine_card' from host own.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-mm-for-linus
+Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
 
-   HEAD: 4f4319a02a6108be3e65b9d44d1b7f5e8f520535 x86/ioremap: Correct function name output
+Thanks,
+Seungwon Jeon
+> 
+> -Doug
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Misc improvements:
-
- - Fix /proc/mtrr reporting
- - Fix ioremap printout
- - Remove the unused pvclock fixmap entry on 32-bit
- - misc cleanups
-
- Thanks,
-
-	Ingo
-
------------------->
-Borislav Petkov (1):
-      x86/ioremap: Correct function name output
-
-Jan Beulich (1):
-      ix86: Don't waste fixmap entries
-
-Yinghai Lu (1):
-      x86: Fix /proc/mtrr with base/size more than 44bits
-
-Zhang Yanfei (2):
-      x86_64: Correct phys_addr in cleanup_highmap comment
-      x86/mm: Drop unneeded include <asm/*pgtable, page*_types.h>
-
-
- arch/x86/boot/compressed/head_64.S |  2 --
- arch/x86/include/asm/fixmap.h      |  2 +-
- arch/x86/kernel/cpu/mtrr/generic.c | 21 +++++++++++----------
- arch/x86/kernel/cpu/mtrr/main.c    | 16 +++++++++-------
- arch/x86/mm/init_64.c              |  2 +-
- arch/x86/mm/ioremap.c              |  8 ++++----
- 6 files changed, 26 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-index 16f24e6..06e71c2 100644
---- a/arch/x86/boot/compressed/head_64.S
-+++ b/arch/x86/boot/compressed/head_64.S
-@@ -27,8 +27,6 @@
- #include <linux/init.h>
- #include <linux/linkage.h>
- #include <asm/segment.h>
--#include <asm/pgtable_types.h>
--#include <asm/page_types.h>
- #include <asm/boot.h>
- #include <asm/msr.h>
- #include <asm/processor-flags.h>
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 0dc7d9e..e846225 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -81,11 +81,11 @@ enum fixed_addresses {
- 			    + ((VSYSCALL_END-VSYSCALL_START) >> PAGE_SHIFT) - 1,
- 	VVAR_PAGE,
- 	VSYSCALL_HPET,
--#endif
- #ifdef CONFIG_PARAVIRT_CLOCK
- 	PVCLOCK_FIXMAP_BEGIN,
- 	PVCLOCK_FIXMAP_END = PVCLOCK_FIXMAP_BEGIN+PVCLOCK_VSYSCALL_NR_PAGES-1,
- #endif
-+#endif
- 	FIX_DBGP_BASE,
- 	FIX_EARLYCON_MEM_BASE,
- #ifdef CONFIG_PROVIDE_OHCI1394_DMA_INIT
-diff --git a/arch/x86/kernel/cpu/mtrr/generic.c b/arch/x86/kernel/cpu/mtrr/generic.c
-index fa72a39..3982357 100644
---- a/arch/x86/kernel/cpu/mtrr/generic.c
-+++ b/arch/x86/kernel/cpu/mtrr/generic.c
-@@ -510,8 +510,9 @@ generic_get_free_region(unsigned long base, unsigned long size, int replace_reg)
- static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 			     unsigned long *size, mtrr_type *type)
- {
--	unsigned int mask_lo, mask_hi, base_lo, base_hi;
--	unsigned int tmp, hi;
-+	u32 mask_lo, mask_hi, base_lo, base_hi;
-+	unsigned int hi;
-+	u64 tmp, mask;
- 
- 	/*
- 	 * get_mtrr doesn't need to update mtrr_state, also it could be called
-@@ -532,18 +533,18 @@ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 	rdmsr(MTRRphysBase_MSR(reg), base_lo, base_hi);
- 
- 	/* Work out the shifted address mask: */
--	tmp = mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
--	mask_lo = size_or_mask | tmp;
-+	tmp = (u64)mask_hi << (32 - PAGE_SHIFT) | mask_lo >> PAGE_SHIFT;
-+	mask = size_or_mask | tmp;
- 
- 	/* Expand tmp with high bits to all 1s: */
--	hi = fls(tmp);
-+	hi = fls64(tmp);
- 	if (hi > 0) {
--		tmp |= ~((1<<(hi - 1)) - 1);
-+		tmp |= ~((1ULL<<(hi - 1)) - 1);
- 
--		if (tmp != mask_lo) {
-+		if (tmp != mask) {
- 			printk(KERN_WARNING "mtrr: your BIOS has configured an incorrect mask, fixing it.\n");
- 			add_taint(TAINT_FIRMWARE_WORKAROUND, LOCKDEP_STILL_OK);
--			mask_lo = tmp;
-+			mask = tmp;
- 		}
- 	}
- 
-@@ -551,8 +552,8 @@ static void generic_get_mtrr(unsigned int reg, unsigned long *base,
- 	 * This works correctly if size is a power of two, i.e. a
- 	 * contiguous range:
- 	 */
--	*size = -mask_lo;
--	*base = base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
-+	*size = -mask;
-+	*base = (u64)base_hi << (32 - PAGE_SHIFT) | base_lo >> PAGE_SHIFT;
- 	*type = base_lo & 0xff;
- 
- out_put_cpu:
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 726bf96..ca22b73 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -305,7 +305,8 @@ int mtrr_add_page(unsigned long base, unsigned long size,
- 		return -EINVAL;
- 	}
- 
--	if (base & size_or_mask || size & size_or_mask) {
-+	if ((base | (base + size - 1)) >>
-+	    (boot_cpu_data.x86_phys_bits - PAGE_SHIFT)) {
- 		pr_warning("mtrr: base or size exceeds the MTRR width\n");
- 		return -EINVAL;
- 	}
-@@ -583,6 +584,7 @@ static struct syscore_ops mtrr_syscore_ops = {
- 
- int __initdata changed_by_mtrr_cleanup;
- 
-+#define SIZE_OR_MASK_BITS(n)  (~((1ULL << ((n) - PAGE_SHIFT)) - 1))
- /**
-  * mtrr_bp_init - initialize mtrrs on the boot CPU
-  *
-@@ -600,7 +602,7 @@ void __init mtrr_bp_init(void)
- 
- 	if (cpu_has_mtrr) {
- 		mtrr_if = &generic_mtrr_ops;
--		size_or_mask = 0xff000000;			/* 36 bits */
-+		size_or_mask = SIZE_OR_MASK_BITS(36);
- 		size_and_mask = 0x00f00000;
- 		phys_addr = 36;
- 
-@@ -619,7 +621,7 @@ void __init mtrr_bp_init(void)
- 			     boot_cpu_data.x86_mask == 0x4))
- 				phys_addr = 36;
- 
--			size_or_mask = ~((1ULL << (phys_addr - PAGE_SHIFT)) - 1);
-+			size_or_mask = SIZE_OR_MASK_BITS(phys_addr);
- 			size_and_mask = ~size_or_mask & 0xfffff00000ULL;
- 		} else if (boot_cpu_data.x86_vendor == X86_VENDOR_CENTAUR &&
- 			   boot_cpu_data.x86 == 6) {
-@@ -627,7 +629,7 @@ void __init mtrr_bp_init(void)
- 			 * VIA C* family have Intel style MTRRs,
- 			 * but don't support PAE
- 			 */
--			size_or_mask = 0xfff00000;		/* 32 bits */
-+			size_or_mask = SIZE_OR_MASK_BITS(32);
- 			size_and_mask = 0;
- 			phys_addr = 32;
- 		}
-@@ -637,21 +639,21 @@ void __init mtrr_bp_init(void)
- 			if (cpu_has_k6_mtrr) {
- 				/* Pre-Athlon (K6) AMD CPU MTRRs */
- 				mtrr_if = mtrr_ops[X86_VENDOR_AMD];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CENTAUR:
- 			if (cpu_has_centaur_mcr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CENTAUR];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
- 		case X86_VENDOR_CYRIX:
- 			if (cpu_has_cyrix_arr) {
- 				mtrr_if = mtrr_ops[X86_VENDOR_CYRIX];
--				size_or_mask = 0xfff00000;	/* 32 bits */
-+				size_or_mask = SIZE_OR_MASK_BITS(32);
- 				size_and_mask = 0;
- 			}
- 			break;
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index bb00c46..b3940b6 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -368,7 +368,7 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
-  *
-  *   from __START_KERNEL_map to __START_KERNEL_map + size (== _end-_text)
-  *
-- * phys_addr holds the negative offset to the kernel, which is added
-+ * phys_base holds the negative offset to the kernel, which is added
-  * to the compile time generated pmds. This results in invalid pmds up
-  * to the point where we hit the physaddr 0 mapping.
-  *
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 9a1e658..0215e2c 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -501,15 +501,15 @@ __early_ioremap(resource_size_t phys_addr, unsigned long size, pgprot_t prot)
- 	}
- 
- 	if (slot < 0) {
--		printk(KERN_INFO "early_iomap(%08llx, %08lx) not found slot\n",
--			 (u64)phys_addr, size);
-+		printk(KERN_INFO "%s(%08llx, %08lx) not found slot\n",
-+		       __func__, (u64)phys_addr, size);
- 		WARN_ON(1);
- 		return NULL;
- 	}
- 
- 	if (early_ioremap_debug) {
--		printk(KERN_INFO "early_ioremap(%08llx, %08lx) [%d] => ",
--		       (u64)phys_addr, size, slot);
-+		printk(KERN_INFO "%s(%08llx, %08lx) [%d] => ",
-+		       __func__, (u64)phys_addr, size, slot);
- 		dump_stack();
- 	}
- 
