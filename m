@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab3GAHH1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:07:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7505 "EHLO mx1.redhat.com"
+	id S1752718Ab3GAHKf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:10:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43150 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab3GAHH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:07:26 -0400
-Message-ID: <1372662428.2974.21.camel@cr0>
-Subject: Re: [RFC Patch net-next 4/5] sunrpc: use generic union inet_addr
-From: Cong Wang <amwang@redhat.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 01 Jul 2013 15:07:08 +0800
-In-Reply-To: <1372347477.2436.7.camel@bwh-desktop.uk.level5networks.com>
-References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
-	 <1372315398-19683-5-git-send-email-amwang@redhat.com>
-	 <1372347477.2436.7.camel@bwh-desktop.uk.level5networks.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752457Ab3GAHKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:10:33 -0400
+Date: Mon, 1 Jul 2013 09:10:29 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] HID: apple: Add support for the 2013 Macbook Air
+In-Reply-To: <1372619086-3532-2-git-send-email-rydberg@euromail.se>
+Message-ID: <alpine.LNX.2.00.1307010909490.29977@pobox.suse.cz>
+References: <1372619086-3532-1-git-send-email-rydberg@euromail.se> <1372619086-3532-2-git-send-email-rydberg@euromail.se>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 16:37 +0100, Ben Hutchings wrote:
-> Most of the other functions work on IPv6 addresses without
-> CONFIG_IPV6;
-> why should this be different? 
+On Sun, 30 Jun 2013, rydberg@euromail.se wrote:
 
-Save few cycles for !CONFIG_IPV6? :-/
+> This patch adds keyboard support for MacbookAir6,2 as WELLSPRING8
+> (0x0291, 0x0292, 0x0293). The touchpad is handled in a separate
+> bcm5974 patch, as usual.
+> 
+> Cc: stable@vger.kernel.org
+> Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
+Dmitry, please feel free to take both patches through your tree, this one 
+being
 
+	Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+
+Thanks.
+
+-- 
+Jiri Kosina
+SUSE Labs
