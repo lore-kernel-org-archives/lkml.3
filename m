@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab3GAMBB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:01:01 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:49354 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753455Ab3GAMA7 (ORCPT
+	id S1753277Ab3GAMBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 08:01:49 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:43607 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab3GAMBr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 08:00:59 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: bintian.wang@linaro.org
-Cc: linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
-        dmitry pervushin <dpervushin@gmail.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
-References: <1372678828-11776-1-git-send-email-bintian.wang@linaro.org>
-Date: Mon, 01 Jul 2013 21:00:54 +0900
-In-Reply-To: <1372678828-11776-1-git-send-email-bintian.wang@linaro.org>
-	(bintian wang's message of "Mon, 1 Jul 2013 19:40:28 +0800")
-Message-ID: <87mwq6ij61.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Mon, 1 Jul 2013 08:01:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1372362463-4186-1-git-send-email-naresh.bhat@linaro.org>
+References: <1372362463-4186-1-git-send-email-naresh.bhat@linaro.org>
+Date: Mon, 1 Jul 2013 17:31:46 +0530
+Message-ID: <CAFoFrHa_XsKaWDag_k3o_Lgizsf+qZUYPjBn9pvWSe83BY8sOg@mail.gmail.com>
+Subject: Re: [PATCH] ACPI/fan: Initialize acpi_state variable
+From: Naresh Bhat <naresh.bhat@linaro.org>
+To: linux-acpi@vger.kernel.org
+Cc: len.brown@intel.com, Patch Tracking <patches@linaro.org>,
+        linaro-kernel@lists.linaro.org, Naresh Bhat <naresh.bhat@linaro.org>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bintian.wang@linaro.org writes:
+Hi Rafeal,
 
-> From: Mike Lockwood <lockwood@android.com>
->
-> Adds vfat ioctl command FAT_IOCTL_GET_VOLUME_ID, with this command 
-> we can get the vfat volume ID using following code:
->
-> 	ioctl(fd, FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
->
-> This patch is a modified version of the android kernel patch by Mike Lockwood, 
-> the original patch makes the return value of ioctl() as the volume ID, 
-> Dmitry Pervushin noticed some volume IDs abiguous with error returns:
-> for example, if volume id is set to "0xFFFFFDAD", that matches -ENOIOCTLCMD, 
-> we get a wrong volume ID "0xFFFFFFFF" from the user space.
->
-> This patch fixes above bug by adding a parameter to ioctl to get the correct
-> volume ID.
+I appreciate if you give any feedback on the provided patch.
 
-Personally, I have no objection to do this small one in kernel
-though. Please add use case of android to changelog, it would help to
-understand.
+Thanks
+-Naresh Bhat
 
-> +static unsigned int fat_ioctl_volume_id(struct inode *inode)
-> +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-> +	return sbi->vol_id;
-> +}
-> +
->  long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+On 28 June 2013 01:17,  <naresh.bhat@linaro.org> wrote:
+> From: Naresh Bhat <naresh.bhat@linaro.org>
+>
+>   CC      drivers/acpi/fan.o
+> drivers/acpi/fan.c: In function ‘fan_get_cur_state’:
+> drivers/acpi/fan.c:96:9: warning: ‘acpi_state’ may be used uninitialized in this function [-Wuninitialized]
+> ---
+>  drivers/acpi/fan.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+> index f815da8..f961435 100644
+> --- a/drivers/acpi/fan.c
+> +++ b/drivers/acpi/fan.c
+> @@ -84,7 +84,7 @@ static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long
 >  {
->  	struct inode *inode = file_inode(filp);
-> @@ -124,6 +130,8 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  		return fat_ioctl_get_attributes(inode, user_attr);
->  	case FAT_IOCTL_SET_ATTRIBUTES:
->  		return fat_ioctl_set_attributes(filp, user_attr);
-> +	case FAT_IOCTL_GET_VOLUME_ID:
-> +		return put_user(fat_ioctl_volume_id(inode), user_attr);
->  	default:
->  		return -ENOTTY;	/* Inappropriate ioctl for device */
->  	}
-
-Please push put_user() down into fat_ioctl_volume_id() like others. So,
-generic_ioctl() itself can forget about the detail of each ioctl.
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>         struct acpi_device *device = cdev->devdata;
+>         int result;
+> -       int acpi_state;
+> +       int acpi_state = ACPI_STATE_D0;
+>
+>         if (!device)
+>                 return -EINVAL;
+> --
+> 1.7.9.5
+>
