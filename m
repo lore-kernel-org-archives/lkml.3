@@ -1,74 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab3GAQfW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:35:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:27863 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752688Ab3GAQfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:35:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,975,1363158000"; 
-   d="scan'208";a="262694704"
-Message-ID: <51D1AFC8.80803@linux.intel.com>
-Date: Mon, 01 Jul 2013 09:35:20 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754403Ab3GAQfi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:35:38 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47828 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab3GAQfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 12:35:36 -0400
+Date: Mon, 1 Jul 2013 18:35:31 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full v2 6/7] nohz_full: Add full-system-idle
+ state machine
+Message-ID: <20130701163529.GO7246@somewhere.redhat.com>
+References: <20130628200949.GA17458@linux.vnet.ibm.com>
+ <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1372450222-19420-6-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH] x86, kernel: make dump_pagetables a tristate
-References: <20130630040514.GA20587@www.outflux.net> <51D18B16.1000402@linux.intel.com> <CAGXu5jJw==6ypJVa3YQu27xBidfbgg4tO6AkJia34CwHF=OOfg@mail.gmail.com>
-In-Reply-To: <CAGXu5jJw==6ypJVa3YQu27xBidfbgg4tO6AkJia34CwHF=OOfg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372450222-19420-6-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/1/2013 8:55 AM, Kees Cook wrote:
-> On Mon, Jul 1, 2013 at 6:58 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
->> On 6/29/2013 9:05 PM, Kees Cook wrote:
->>>
->>> Being able to examine page tables is handy, so make this a module that
->>> can be loaded as needed.
->>
->> I personally don't think this is a good idea due to the various
->> security/etc implications of this feature... should really just
->> be off for non-debug kernels, not "off unless you load the module"
->
-> I struggled with this too, but I couldn't come up with any reason that
-> made sense. If a system is running without modules_disabled, this code
-> is still loadable:
-> https://www.outflux.net/blog/archives/2011/04/27/non-executable-kernel-memory-progress/
->
-> The root user just needs to look at /proc/kallsyms before passing an
-> argument. So having it NOT a tristate doesn't actually change anything
-> except make it awkward to get it done.
->
-> If a system is running with verified modules, then just not
-> signing/including ptdump makes it unavailable. And running with
-> modules_disabled, obviously, blocks it.
->
->>> +#ifdef CONFIG_X86_64
->>> +EXPORT_SYMBOL_GPL(init_level4_pgt);
->>> +#else
->>> +EXPORT_SYMBOL_GPL(swapper_pg_dir);
->>> +#endif
->>
->> like these really have no business in any module
->
-> Well, that's why I took me 2 years to send this patch. Those symbols
-> shouldn't be used outside of page table debugging, so it didn't really
-> seem upstreamable. However, now that I need to do regular examination
-> of the page tables, I wanted to do it without the hacky thing above. I
-> want to do at will on our test images (we use the same kernel for
-> production and test, but production images leave out the test modules,
-> etc).
+On Fri, Jun 28, 2013 at 01:10:21PM -0700, Paul E. McKenney wrote:
+>  /*
+> + * Unconditionally force exit from full system-idle state.  This is
+> + * invoked when a normal CPU exits idle, but must be called separately
+> + * for the timekeeping CPU (tick_do_timer_cpu).  The reason for this
+> + * is that the timekeeping CPU is permitted to take scheduling-clock
+> + * interrupts while the system is in system-idle state, and of course
+> + * rcu_sysidle_exit() has no way of distinguishing a scheduling-clock
+> + * interrupt from any other type of interrupt.
+> + */
+> +void rcu_sysidle_force_exit(void)
+> +{
+> +	int oldstate = ACCESS_ONCE(full_sysidle_state);
+> +	int newoldstate;
+> +
+> +	/*
+> +	 * Each pass through the following loop attempts to exit full
+> +	 * system-idle state.  If contention proves to be a problem,
+> +	 * a trylock-based contention tree could be used here.
+> +	 */
+> +	while (oldstate > RCU_SYSIDLE_SHORT) {
+> +		newoldstate = cmpxchg(&full_sysidle_state,
+> +				      oldstate, RCU_SYSIDLE_NOT);
+> +		if (oldstate == newoldstate &&
+> +		    oldstate == RCU_SYSIDLE_FULL_NOTED) {
+> +			rcu_kick_nohz_cpu(tick_do_timer_cpu);
+> +			return; /* We cleared it, done! */
+> +		}
+> +		oldstate = newoldstate;
+> +	}
+> +	smp_mb(); /* Order initial oldstate fetch vs. later non-idle work. */
+> +}
+> +
+> +/*
+>   * Invoked to note entry to irq or task transition from idle.  Note that
+>   * usermode execution does -not- count as idle here!  The caller must
+>   * have disabled interrupts.
+> @@ -2474,6 +2506,214 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
+>  	atomic_inc(&rdtp->dynticks_idle);
+>  	smp_mb__after_atomic_inc();
+>  	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks_idle) & 0x1));
+> +
+> +	/*
+> +	 * If we are the timekeeping CPU, we are permitted to be non-idle
+> +	 * during a system-idle state.  This must be the case, because
+> +	 * the timekeeping CPU has to take scheduling-clock interrupts
+> +	 * during the time that the system is transitioning to full
+> +	 * system-idle state.  This means that the timekeeping CPU must
+> +	 * invoke rcu_sysidle_force_exit() directly if it does anything
+> +	 * more than take a scheduling-clock interrupt.
+> +	 */
+> +	if (smp_processor_id() == tick_do_timer_cpu)
+> +		return;
+> +
+> +	/* Update system-idle state: We are clearly no longer fully idle! */
+> +	rcu_sysidle_force_exit();
+> +}
+> +
+> +/*
+> + * Check to see if the current CPU is idle.  Note that usermode execution
+> + * does not count as idle.  The caller must have disabled interrupts.
+> + */
+> +static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+> +				  unsigned long *maxj)
+> +{
+> +	int cur;
+> +	int curnmi;
+> +	unsigned long j;
+> +	struct rcu_dynticks *rdtp = rdp->dynticks;
+> +
+> +	/*
+> +	 * If some other CPU has already reported non-idle, if this is
+> +	 * not the flavor of RCU that tracks sysidle state, or if this
+> +	 * is an offline or the timekeeping CPU, nothing to do.
+> +	 */
+> +	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+> +	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
+> +		return;
+> +	/* WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu); */
+> +
+> +	/*
+> +	 * Pick up current idle and NMI-nesting counters, check.  We check
+> +	 * for NMIs using RCU's main ->dynticks counter.  This works because
+> +	 * any time ->dynticks has its low bit set, ->dynticks_idle will
+> +	 * too -- unless the only reason that ->dynticks's low bit is set
+> +	 * is due to an NMI from idle.  Which is exactly the case we need
+> +	 * to account for.
+> +	 */
+> +	cur = atomic_read(&rdtp->dynticks_idle);
+> +	curnmi = atomic_read(&rdtp->dynticks);
+> +	if ((cur & 0x1) || (curnmi & 0x1)) {
 
-the code is small...
-how about making it a command line option to enable?
+I think you wanted to ignore NMIs this time because they don't read walltime?
 
-rather than making something like this a module
+By the way they can still read jiffies, but unlike irq_enter(), nmi_enter()
+don't catch up with missing jiffies update. So the behaviour doesn't change
+compared to !NO_HZ_FULL.
 
+> +		*isidle = 0; /* We are not idle! */
+> +		return;
+> +	}
+> +	smp_mb(); /* Read counters before timestamps. */
+> +
+> +	/* Pick up timestamps. */
+> +	j = ACCESS_ONCE(rdtp->dynticks_idle_jiffies);
+> +	/* If this CPU entered idle more recently, update maxj timestamp. */
+> +	if (ULONG_CMP_LT(*maxj, j))
+> +		*maxj = j;
+
+So I'm a bit confused with the ordering so I'm probably going to ask a silly question.
+
+What makes sure that we are not reading a stale value of rdtp->dynticks_idle
+in the following scenario:
+
+    CPU 0                          CPU 1
+    
+                                   //CPU 1 idle
+                                   //rdtp(1)->dynticks_idle == 0
+
+sysidle_check_cpu(CPU 1) {
+    rdtp(1)->dynticks_idle == 0
+}
+cmpxchg(full_sysidle_state, 
+        ...RCU_SYSIDLE_SHORT)
+                                   rcu_irq_exit() {
+                                         rdtp(1)->dynticks_idle = 1
+                                         smp_mb()
+                                         rcu_sysidle_force_exit() {
+                                            full_sysidle_state == RCU_SYSIDLE_SHORT
+                                            // no cmpxchg
+                                            smp_mb()
+                                   ...
+
+[1]
+sysidle_check_cpu(CPU 1) {
+    rdtp(1)->dynticks_idle == 0
+}
+
+cmpxchg(RCU_SYSIDLE_FULL, ...)
+
+[2]
+sysidle_check_cpu(CPU 1) {
+    rdtp(1)->dynticks_idle == 0
+}
+
+cmpxchg(RCU_SYSIDLE_FULL_NOTED, ...)
+
+
+I mean in [1] and [2] I can't see something in the ordering that guarantees that we see
+the new value rdtp(1)->dynticks_idle == 1.
