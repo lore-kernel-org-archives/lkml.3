@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3GAUTU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:19:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49050 "EHLO
+	id S1755811Ab3GAUTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:19:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49036 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755411Ab3GAUKi (ORCPT
+	with ESMTP id S1755419Ab3GAUKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:38 -0400
+	Mon, 1 Jul 2013 16:10:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 21/26] UBIFS: fix a horrid bug
-Date: Mon,  1 Jul 2013 13:10:16 -0700
-Message-Id: <20130701200732.271911472@linuxfoundation.org>
+        Daniel Borkmann <dborkman@redhat.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [ 18/26] crypto: algboss - Hold ref count on larval
+Date: Mon,  1 Jul 2013 13:10:13 -0700
+Message-Id: <20130701200731.946094148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -27,96 +27,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
+commit 939e17799619e31331d2433041196529515a86a6 upstream.
 
-Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
-mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
-in the middle of 'ubifs_readdir()'.
+On Thu, Jun 20, 2013 at 10:00:21AM +0200, Daniel Borkmann wrote:
+> After having fixed a NULL pointer dereference in SCTP 1abd165e ("net:
+> sctp: fix NULL pointer dereference in socket destruction"), I ran into
+> the following NULL pointer dereference in the crypto subsystem with
+> the same reproducer, easily hit each time:
+>
+> BUG: unable to handle kernel NULL pointer dereference at (null)
+> IP: [<ffffffff81070321>] __wake_up_common+0x31/0x90
+> PGD 0
+> Oops: 0000 [#1] SMP
+> Modules linked in: padlock_sha(F-) sha256_generic(F) sctp(F) libcrc32c(F) [..]
+> CPU: 6 PID: 3326 Comm: cryptomgr_probe Tainted: GF            3.10.0-rc5+ #1
+> Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
+> task: ffff88007b6cf4e0 ti: ffff88007b7cc000 task.ti: ffff88007b7cc000
+> RIP: 0010:[<ffffffff81070321>]  [<ffffffff81070321>] __wake_up_common+0x31/0x90
+> RSP: 0018:ffff88007b7cde08  EFLAGS: 00010082
+> RAX: ffffffffffffffe8 RBX: ffff88003756c130 RCX: 0000000000000000
+> RDX: 0000000000000000 RSI: 0000000000000003 RDI: ffff88003756c130
+> RBP: ffff88007b7cde48 R08: 0000000000000000 R09: ffff88012b173200
+> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000282
+> R13: ffff88003756c138 R14: 0000000000000000 R15: 0000000000000000
+> FS:  0000000000000000(0000) GS:ffff88012fc60000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000000 CR3: 0000000001a0b000 CR4: 00000000000007e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Stack:
+>  ffff88007b7cde28 0000000300000000 ffff88007b7cde28 ffff88003756c130
+>  0000000000000282 ffff88003756c128 ffffffff81227670 0000000000000000
+>  ffff88007b7cde78 ffffffff810722b7 ffff88007cdcf000 ffffffff81a90540
+> Call Trace:
+>  [<ffffffff81227670>] ? crypto_alloc_pcomp+0x20/0x20
+>  [<ffffffff810722b7>] complete_all+0x47/0x60
+>  [<ffffffff81227708>] cryptomgr_probe+0x98/0xc0
+>  [<ffffffff81227670>] ? crypto_alloc_pcomp+0x20/0x20
+>  [<ffffffff8106760e>] kthread+0xce/0xe0
+>  [<ffffffff81067540>] ? kthread_freezable_should_stop+0x70/0x70
+>  [<ffffffff815450dc>] ret_from_fork+0x7c/0xb0
+>  [<ffffffff81067540>] ? kthread_freezable_should_stop+0x70/0x70
+> Code: 41 56 41 55 41 54 53 48 83 ec 18 66 66 66 66 90 89 75 cc 89 55 c8
+>       4c 8d 6f 08 48 8b 57 08 41 89 cf 4d 89 c6 48 8d 42 e
+> RIP  [<ffffffff81070321>] __wake_up_common+0x31/0x90
+>  RSP <ffff88007b7cde08>
+> CR2: 0000000000000000
+> ---[ end trace b495b19270a4d37e ]---
+>
+> My assumption is that the following is happening: the minimal SCTP
+> tool runs under ``echo 1 > /proc/sys/net/sctp/auth_enable'', hence
+> it's making use of crypto_alloc_hash() via sctp_auth_init_hmacs().
+> It forks itself, heavily allocates, binds, listens and waits in
+> accept on sctp sockets, and then randomly kills some of them (no
+> need for an actual client in this case to hit this). Then, again,
+> allocating, binding, etc, and then killing child processes.
+>
+> The problem that might be happening here is that cryptomgr requests
+> the module to probe/load through cryptomgr_schedule_probe(), but
+> before the thread handler cryptomgr_probe() returns, we return from
+> the wait_for_completion_interruptible() function and probably already
+> have cleared up larval, thus we run into a NULL pointer dereference
+> when in cryptomgr_probe() complete_all() is being called.
+>
+> If we wait with wait_for_completion() instead, this panic will not
+> occur anymore. This is valid, because in case a signal is pending,
+> cryptomgr_probe() returns from probing anyway with properly calling
+> complete_all().
 
-This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
-it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
-but this may corrupt memory and lead to all kinds of problems like crashes an
-security holes.
+The use of wait_for_completion_interruptible is intentional so that
+we don't lock up the thread if a bug causes us to never wake up.
 
-This patch fixes the problem by using the 'file->f_version' field, which
-'->llseek()' always unconditionally sets to zero. We set it to 1 in
-'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
-seek and it is time to clear the state saved in 'file->private_data'.
+This bug is caused by the helper thread using the larval without
+holding a reference count on it.  If the helper thread completes
+after the original thread requesting for help has gone away and
+destroyed the larval, then we get the crash above.
 
-I tested this patch by writing a user-space program which runds readdir and
-seek in parallell. I could easily crash the kernel without these patches, but
-could not crash it with these patches.
+So the fix is to hold a reference count on the larval.
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Reported-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/dir.c |   30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+ crypto/algboss.c  |   15 ++++++++-------
+ crypto/api.c      |    6 ------
+ crypto/internal.h |    6 ++++++
+ 3 files changed, 14 insertions(+), 13 deletions(-)
 
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -365,6 +365,24 @@ static int ubifs_readdir(struct file *fi
- 		 */
- 		return 0;
+--- a/crypto/algboss.c
++++ b/crypto/algboss.c
+@@ -45,10 +45,9 @@ struct cryptomgr_param {
+ 		} nu32;
+ 	} attrs[CRYPTO_MAX_ATTRS];
  
-+	if (file->f_version == 0) {
-+		/*
-+		 * The file was seek'ed, which means that @file->private_data
-+		 * is now invalid. This may also be just the first
-+		 * 'ubifs_readdir()' invocation, in which case
-+		 * @file->private_data is NULL, and the below code is
-+		 * basically a no-op.
-+		 */
-+		kfree(file->private_data);
-+		file->private_data = NULL;
-+	}
-+
-+	/*
-+	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
-+	 * zero, and we use this for detecting whether the file was seek'ed.
-+	 */
-+	file->f_version = 1;
-+
- 	/* File positions 0 and 1 correspond to "." and ".." */
- 	if (pos == 0) {
- 		ubifs_assert(!file->private_data);
-@@ -438,6 +456,14 @@ static int ubifs_readdir(struct file *fi
- 		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
-+
-+		if (file->f_version == 0)
-+			/*
-+			 * The file was seek'ed meanwhile, lets return and start
-+			 * reading direntries from the new position on the next
-+			 * invocation.
-+			 */
-+			return 0;
- 	}
+-	char larval[CRYPTO_MAX_ALG_NAME];
+ 	char template[CRYPTO_MAX_ALG_NAME];
+ 
+-	struct completion *completion;
++	struct crypto_larval *larval;
+ 
+ 	u32 otype;
+ 	u32 omask;
+@@ -87,7 +86,8 @@ static int cryptomgr_probe(void *data)
+ 	crypto_tmpl_put(tmpl);
  
  out:
-@@ -448,15 +474,13 @@ out:
- 
- 	kfree(file->private_data);
- 	file->private_data = NULL;
-+	/* 2 is a special value indicating that there are no more direntries */
- 	file->f_pos = 2;
- 	return 0;
+-	complete_all(param->completion);
++	complete_all(&param->larval->completion);
++	crypto_alg_put(&param->larval->alg);
+ 	kfree(param);
+ 	module_put_and_exit(0);
  }
+@@ -187,18 +187,19 @@ static int cryptomgr_schedule_probe(stru
+ 	param->otype = larval->alg.cra_flags;
+ 	param->omask = larval->mask;
  
--/* If a directory is seeked, we have to free saved readdir() state */
- static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int whence)
+-	memcpy(param->larval, larval->alg.cra_name, CRYPTO_MAX_ALG_NAME);
+-
+-	param->completion = &larval->completion;
++	crypto_alg_get(&larval->alg);
++	param->larval = larval;
+ 
+ 	thread = kthread_run(cryptomgr_probe, param, "cryptomgr_probe");
+ 	if (IS_ERR(thread))
+-		goto err_free_param;
++		goto err_put_larval;
+ 
+ 	wait_for_completion_interruptible(&larval->completion);
+ 
+ 	return NOTIFY_STOP;
+ 
++err_put_larval:
++	crypto_alg_put(&larval->alg);
+ err_free_param:
+ 	kfree(param);
+ err_put_module:
+--- a/crypto/api.c
++++ b/crypto/api.c
+@@ -34,12 +34,6 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
+ BLOCKING_NOTIFIER_HEAD(crypto_chain);
+ EXPORT_SYMBOL_GPL(crypto_chain);
+ 
+-static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
+-{
+-	atomic_inc(&alg->cra_refcnt);
+-	return alg;
+-}
+-
+ struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
  {
--	kfree(file->private_data);
--	file->private_data = NULL;
- 	return generic_file_llseek(file, offset, whence);
- }
+ 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
+--- a/crypto/internal.h
++++ b/crypto/internal.h
+@@ -103,6 +103,12 @@ int crypto_register_notifier(struct noti
+ int crypto_unregister_notifier(struct notifier_block *nb);
+ int crypto_probing_notify(unsigned long val, void *v);
  
++static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
++{
++	atomic_inc(&alg->cra_refcnt);
++	return alg;
++}
++
+ static inline void crypto_alg_put(struct crypto_alg *alg)
+ {
+ 	if (atomic_dec_and_test(&alg->cra_refcnt) && alg->cra_destroy)
 
 
