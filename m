@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753478Ab3GAImB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:42:01 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:54591 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753333Ab3GAIkN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:40:13 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org
-Cc: linux-arm-kernel@lists.infradead.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [RFC PATCH 07/13] ARM: AT91: DTS: sam9x5ek: enable SSC
-Date: Mon,  1 Jul 2013 10:39:32 +0200
-Message-Id: <1372667978-4718-8-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
-References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
+	id S1753500Ab3GAImM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:42:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55534 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753366Ab3GAImA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 04:42:00 -0400
+Message-ID: <1372668049.2974.25.camel@cr0>
+Subject: Re: [RFC Patch net-next 3/5] inetpeer: use generic union inet_addr
+From: Cong Wang <amwang@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org
+Date: Mon, 01 Jul 2013 16:40:49 +0800
+In-Reply-To: <1372320082.3301.217.camel@edumazet-glaptop>
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
+	 <1372315398-19683-4-git-send-email-amwang@redhat.com>
+	 <1372320082.3301.217.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the SSC needed for the WM8731 codec
+On Thu, 2013-06-27 at 01:01 -0700, Eric Dumazet wrote:
+> On Thu, 2013-06-27 at 14:43 +0800, Cong Wang wrote:
+> >  struct inet_peer {
+> >  	/* group together avl_left,avl_right,v4daddr to speedup lookups */
+> >  	struct inet_peer __rcu	*avl_left, *avl_right;
+> > -	struct inetpeer_addr	daddr;
+> > +	union inet_addr		daddr;
+> 
+> Please compare sizeof(struct inetpeer_addr) and sizeof(union inet_addr)
+> 
+> If I am not mistaken, its 20 bytes instead of 28
+> 
+> Yes, sockaddr_in6 is a bit bloated...
+> 
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- arch/arm/boot/dts/at91sam9x5ek.dtsi |    4 ++++
- 1 file changed, 4 insertions(+)
+You are right.
 
-diff --git a/arch/arm/boot/dts/at91sam9x5ek.dtsi b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-index 77e4073..4f3584c 100644
---- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-@@ -95,6 +95,10 @@
- 			watchdog@fffffe40 {
- 				status = "okay";
- 			};
-+
-+			ssc0: ssc@f0010000 {
-+				status = "okay";
-+			};
- 		};
- 
- 		usb0: ohci@00600000 {
--- 
-1.7.10.4
+Are you saying that I should rearrange the fields of struct inet_peer in
+case of cacheline miss?
+
+Thanks!
 
