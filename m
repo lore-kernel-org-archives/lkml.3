@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3GAQQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:16:49 -0400
-Received: from www.sr71.net ([198.145.64.142]:56059 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752741Ab3GAQQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:16:48 -0400
-Message-ID: <51D1AB6E.9030905@sr71.net>
-Date: Mon, 01 Jul 2013 09:16:46 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754364Ab3GAQTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:19:13 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:56297 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3GAQTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 12:19:12 -0400
+Date: Mon, 1 Jul 2013 18:19:10 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 0/7] v2 Provide infrastructure for
+ full-system idle
+Message-ID: <20130701161910.GN6123@two.firstfloor.org>
+References: <20130628200949.GA17458@linux.vnet.ibm.com>
+ <87a9m65mv6.fsf@tassilo.jf.intel.com>
+ <20130701160314.GM3773@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Zheng Liu <gnehzuil.liu@gmail.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] mm: madvise: MADV_POPULATE for quick pre-faulting
-References: <20130627231605.8F9F12E6@viggo.jf.intel.com> <20130628054757.GA10429@gmail.com> <51CDB056.5090308@sr71.net> <51CE4451.4060708@gmail.com>
-In-Reply-To: <51CE4451.4060708@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701160314.GM3773@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 07:20 PM, Zheng Liu wrote:
->> > IOW, a process needing to do a bunch of MAP_POPULATEs isn't
->> > parallelizable, but one using this mechanism would be.
-> I look at the code, and it seems that we will handle MAP_POPULATE flag
-> after we release mmap_sem locking in vm_mmap_pgoff():
+> I am guessing that you want CONFIG_NO_HZ_FULL to implicitly enable
+> the sysidle code so that CONFIG_NO_HZ_FULL_SYSIDLE can be eliminated.
+> I will be happy to take that step, but only after I gain full confidence
+> in the correctness and performance of the sysidle code.
+
+FWIW if you want useful testing you need to enable it by default
+(as part of NO_IDLE_HZ) anyways. Users will most likely pick
+whatever is "default" in Kconfig.
+
+> > If you want a switch for testing I would advise a sysctl or sysfs knob
 > 
->                 down_write(&mm->mmap_sem);
->                 ret = do_mmap_pgoff(file, addr, len, prot, flag, pgoff,
->                                     &populate);
->                 up_write(&mm->mmap_sem);
->                 if (populate)
->                         mm_populate(ret, populate);
-> 
-> Am I missing something?
+> This would work well for the correctness part, but not for the performance
+> part.
 
-I went and did my same test using mmap(MAP_POPULATE)/munmap() pair
-versus using MADV_POPULATE in 160 threads in parallel.
+What performance part? 
 
-MADV_POPULATE was about 10x faster in the threaded configuration.
+Are you saying this adds so many checks to hot paths that normal runtime
+if() with a flag is too expensive?
 
-With MADV_POPULATE, the biggest cost is shipping the mmap_sem cacheline
-around so that we can write the reader count update in to it.  With
-mmap(), there is a lot of _contention_ on that lock which is much, much
-more expensive than simply bouncing a cacheline around.
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
