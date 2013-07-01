@@ -1,56 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609Ab3GARU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 13:20:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47120 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3GARUZ (ORCPT
+	id S1754814Ab3GARUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 13:20:41 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:42317 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754702Ab3GARUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 13:20:25 -0400
-Date: Mon, 1 Jul 2013 10:20:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Pavel Machek <pavel@ucw.cz>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH v3 2/2] uio: Remove uio_pdrv and use uio_pdrv_genirq
- instead
-Message-ID: <20130701172024.GA25891@kroah.com>
-References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com>
- <771234ccdcd59f6918deb4a8690b4b435a9da556.1372240320.git.michal.simek@xilinx.com>
- <20130626231706.GA13166@amd.pavel.ucw.cz>
- <51D12DEA.1010700@monstr.eu>
+	Mon, 1 Jul 2013 13:20:39 -0400
+Message-ID: <51D1BA52.3030201@st.com>
+Date: Mon, 01 Jul 2013 19:20:18 +0200
+From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51D12DEA.1010700@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Cc: netdev@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 2/3] dt:net:stmmac: Add support to dwmac version 3.610
+ and 3.710
+References: <1372678962-12959-1-git-send-email-srinivas.kandagatla@st.com> <1372679034-13139-1-git-send-email-srinivas.kandagatla@st.com>
+In-Reply-To: <1372679034-13139-1-git-send-email-srinivas.kandagatla@st.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 09:21:14AM +0200, Michal Simek wrote:
-> Hi Greg,
-> 
-> On 06/27/2013 01:17 AM, Pavel Machek wrote:
-> > On Wed 2013-06-26 11:52:12, Michal Simek wrote:
-> >> The patch "UIO: fix uio_pdrv_genirq with device tree but no interrupt"
-> >> (sha1: e3a3c3a205554e564751cd9c0276b2af813d7a92)
-> >> add support to use this driver with no interrupts.
-> >> uio_pdrv_genirq also supports device-tree binding
-> >> which is not available in uio_pdrv.
-> >>
-> >> That's why this uio_pdrv driver can be just removed.
-> >>
-> >> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> > 
-> > Reviewed-by: Pavel Machek <pavel@denx.de>
-> 
-> I see 3.10 was tagged.
-> Are you going to add this patch to your char-misc tree?
+On 7/1/2013 1:43 PM, Srinivas KANDAGATLA wrote:
+> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+>
+> This patch adds dt support to dwmac version 3.610 and 3.710 these
+> versions are integrated in STiH415 and STiH416 ARM A9 SOCs.
+> To support these IP version, some of the device tree properties are
+> extended.
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> ---
+>   Documentation/devicetree/bindings/net/stmmac.txt   |    4 +++
+>   .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   25 ++++++++++++++++++++
+>   2 files changed, 29 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
+> index 060bbf0..e1ddfcc 100644
+> --- a/Documentation/devicetree/bindings/net/stmmac.txt
+> +++ b/Documentation/devicetree/bindings/net/stmmac.txt
+> @@ -12,6 +12,10 @@ Required properties:
+>     property
+>   - phy-mode: String, operation mode of the PHY interface.
+>     Supported values are: "mii", "rmii", "gmii", "rgmii".
+> +- snps,phy-addr		phy address to connect to.
+> +- snps,pbl		Programmable Burst Length
+> +- snps,fixed-burst	Program the DMA to use the fixed burst mode
+> +- snps,mixed-burst	Program the DMA to use the mixed burst mode
+>
+>   Optional properties:
+>   - mac-address: 6 bytes, mac address
+> diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+> index 5907920..060758d 100644
+> --- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+> +++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+> @@ -29,17 +29,26 @@
+>   #include "stmmac.h"
+>
+>   #ifdef CONFIG_OF
+> +
+>   static int stmmac_probe_config_dt(struct platform_device *pdev,
+>   				  struct plat_stmmacenet_data *plat,
+>   				  const char **mac)
+>   {
+>   	struct device_node *np = pdev->dev.of_node;
+> +	struct stmmac_dma_cfg *dma_cfg;
+>
+>   	if (!np)
+>   		return -ENODEV;
+>
+>   	*mac = of_get_mac_address(np);
+>   	plat->interface = of_get_phy_mode(np);
+> +
+> +	plat->bus_id = of_alias_get_id(np, "ethernet");
+> +	if (plat->bus_id < 0)
+> +		plat->bus_id = 0;
+> +
+> +	of_property_read_u32(np, "snps,phy-addr", &plat->phy_addr);
+> +
+>   	plat->mdio_bus_data = devm_kzalloc(&pdev->dev,
+>   					   sizeof(struct stmmac_mdio_bus_data),
+>   					   GFP_KERNEL);
+> @@ -51,11 +60,25 @@ static int stmmac_probe_config_dt(struct platform_device *pdev,
+>   	 */
+>   	if (of_device_is_compatible(np, "st,spear600-gmac") ||
+>   		of_device_is_compatible(np, "snps,dwmac-3.70a") ||
+> +		of_device_is_compatible(np, "snps,dwmac-3.610") ||
+>   		of_device_is_compatible(np, "snps,dwmac")) {
+>   		plat->has_gmac = 1;
+>   		plat->pmt = 1;
+>   	}
+>
+> +	if (of_device_is_compatible(np, "snps,dwmac-3.610") ||
+> +		of_device_is_compatible(np, "snps,dwmac-3.710")) {
+> +		plat->enh_desc = 1;
+> +		plat->bugged_jumbo = 1;
+> +		plat->force_sf_dma_mode = 1;
+> +	}
 
-I will consider it after 3.11-rc1 is out, it came too late in the 3.11
-merge cycle for me to take it.
+I think some these shouldn't be forced here. Maybe plat->enh_desc could
+be set because for new syn mac cores.
 
-thanks,
+Also pmt could not be forced because it is an extra module so it could
+happen that a new chip has no PMT block.
 
-greg k-h
+> +
+> +	dma_cfg = devm_kzalloc(&pdev->dev, sizeof(*dma_cfg), GFP_KERNEL);
+> +	plat->dma_cfg = dma_cfg;
+> +	of_property_read_u32(np, "snps,pbl", &dma_cfg->pbl);
+> +	dma_cfg->fixed_burst = of_property_read_bool(np, "snps,fixed-burst");
+> +	dma_cfg->mixed_burst = of_property_read_bool(np, "snps,mixed-burst");
+> +
+>   	return 0;
+>   }
+>   #else
+> @@ -230,7 +253,9 @@ static const struct dev_pm_ops stmmac_pltfr_pm_ops;
+>
+>   static const struct of_device_id stmmac_dt_ids[] = {
+>   	{ .compatible = "st,spear600-gmac"},
+> +	{ .compatible = "snps,dwmac-3.610"},
+>   	{ .compatible = "snps,dwmac-3.70a"},
+> +	{ .compatible = "snps,dwmac-3.710"},
+>   	{ .compatible = "snps,dwmac"},
+>   	{ /* sentinel */ }
+>   };
+>
+
