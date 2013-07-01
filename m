@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab3GAVIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:08:38 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44045 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab3GAVIh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:08:37 -0400
-Date: Mon, 01 Jul 2013 14:08:33 -0700 (PDT)
-Message-Id: <20130701.140833.1705666564717621661.davem@davemloft.net>
-To: eliezer.tamir@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
-        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
-        devel-lists@codyps.com, eliezer@tamir.org.il
-Subject: Re: [PATCH net-next 0/2] net: lls cleanup patches
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
-References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755339Ab3GAVOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:14:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39241 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754998Ab3GAVOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 17:14:43 -0400
+Date: Mon, 1 Jul 2013 23:10:03 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] tracing/uprobes: Support ftrace_event_file base
+	multibuffer
+Message-ID: <20130701211003.GA2147@redhat.com>
+References: <51CE920C.5020001@huawei.com> <20130701202722.GA413@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701202722.GA413@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Date: Fri, 28 Jun 2013 15:59:18 +0300
+On 07/01, Oleg Nesterov wrote:
+>
+> On 06/29, zhangwei(Jovi) wrote:
+> >
+> > [v3->v4]:
+>
+> I am wondering how much you will hate me if I suggest to make v5 ;)
+>
+> But look, imho probe_event_enable() looks a bit more confusing than
+> it needs.
 
-> Here are two cleanup patches.
-> 
-> 1. fix warning from debug_smp_processor_id().
-> - reported by Cody P Schafer.
-> 
-> 2. avoid calling sched_clock() in select and poll when lls is disabled.
-> - reported by Andi Kleen.
-> 
-> Thanks to everyone for their comments.
+And I am a bit worried this patch removes the is_trace_uprobe_enabled()
+check from probe_event_enable()...
 
-Applied, but like Ben said perhaps you want to remember the last cpu you
-got the sched_clock() measurement from and abort the ll poll if it changes
-on you instead of using a comparison between two cpus.
+Yes I think it was never needed, afaics TRACE_REG_*_UNREGISTER can't
+come without successfull _REGISTER. And the bogus uprobe_unregister()
+is harmless in this particular case.
 
-But then again, since preemption is enabled, the cpu could change
-back and forth during the sched_clock() call, so you wouldn't be able
-to reliably detect this anyways.
+So I think this is fine, but perhaps the changelog should mention this
+"offtopic" change.
 
-In the grand scheme of things all of this probably doesn't matter at
-all.
+Oleg.
+
