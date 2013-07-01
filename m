@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab3GAM6O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:58:14 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41287 "EHLO
+	id S1754153Ab3GANBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 09:01:15 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42899 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab3GAM6N (ORCPT
+	with ESMTP id S1753440Ab3GANBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 08:58:13 -0400
-Date: Mon, 1 Jul 2013 08:58:01 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, sfr@canb.auug.org.au
-Subject: [GIT PULL] (xen) stable/for-linus-3.11-rc0-tag-two
-Message-ID: <20130701125801.GA7449@phenom.dumpdata.com>
+	Mon, 1 Jul 2013 09:01:13 -0400
+Message-ID: <51D17D7B.6000206@oracle.com>
+Date: Mon, 01 Jul 2013 21:00:43 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Alex Bligh <alex@alex.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, zheng.x.li@oracle.com,
+        Xen Devel <xen-devel@lists.xen.org>, Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: kernel panic in skb_copy_bits
+References: <51CBAA48.3080802@oracle.com> <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com> <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com> <1372666283.14691.8.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1372666283.14691.8.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
+On 07/01/13 16:11, Ian Campbell wrote:
+> On Mon, 2013-07-01 at 11:18 +0800, Joe Jin wrote:
+>>> A workaround is to turn off O_DIRECT use by Xen as that ensures
+>>> the pages are copied. Xen 4.3 does this by default.
+>>>
+>>> I believe fixes for this are in 4.3 and 4.2.2 if using the
+>>> qemu upstream DM. Note these aren't real fixes, just a workaround
+>>> of a kernel bug.
+>>
+>> The guest is pvm, and disk model is xvbd, guest config file as below:
+> 
+> Do you know which disk backend? The workaround Alex refers to went into
+> qdisk but I think blkback could still suffer from a variant of the
+> retransmit issue if you run it over iSCSI.
 
-Please git pull the following tag:
+The backend is xen-blkback on iSCSI storage.
+ 
+> 
+>>> To fix on a local build of xen you will need something like this:
+>>> https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
+>>> and something like this (NB: obviously insert your own git
+>>> repo and commit numbers)
+>>> https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
+>>>
+>>
+>> I think this only for pvhvm/hvm?
+> 
+> No, the underlying issue affects any PV device which is run over a
+> network protocol (NFS, iSCSI etc). In effect a delayed retransmit can
+> cross over the deayed ack and cause I/O to be completed while
+> retransmits are pending, such as is described in
+> http://www.spinics.net/lists/linux-nfs/msg34913.html (the original NFS
+> variant). The problem is that because Xen PV drivers often unmap the
+> page on I/O completion you get a crash (page fault) on the retransmit.
+> 
+To prevent iSCSI call sendpage() reuse the page we disabled the sg from NIC,
+per test result the panic went. This also confirmed the page be unmpped by
+grant system, the symptom as same as nfs panic.
 
- git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git  stable/for-linus-3.11-rc0-tag-two
 
-which has just bug-fixes. No new features - just fixes and fixes. The signed
-tag goes in more details, but the bulk is just the cleanups (use pr_*
-instead of printk, fix strings being split across 80 characters, etc).
+> The issue also affects native but in that case the symptom is "just" a
+> corrupt packet on the wire. I tried to address this with my "skb
+> destructor" series but unfortunately I got bogged down on the details,
+> then I had to take time out to look into some other stuff and never
+> managed to get back into it. I'd be very grateful if there was someone
+> who could pick up that work (Alex gave some useful references in another
+> reply to this thread)
+> 
+> Some PV disk backends (e.g. blktap2) have worked around this by using
+> grant copy instead of grant map, others (e.g. qdisk) have disabled
+> O_DIRECT so that the pages are copied into the dom0 page cache and
+> transmitted from there.
 
-Please pull!
+The work around as same as we disable sg from NIC(disable it sendpage will
+create own page copy rather than reuse the page).
 
-Sorry about the previous GIT PULL email. I ended up tagging the wrong branch
-(the test one). Fortunatly for me Stephen spotted it right away. Thanks!
-
-
- arch/x86/xen/smp.c                          | 91 +++++++++++++++++++----------
- arch/x86/xen/spinlock.c                     |  7 ++-
- arch/x86/xen/time.c                         | 58 +++++++++---------
- drivers/pci/xen-pcifront.c                  |  7 +--
- drivers/xen/balloon.c                       |  6 +-
- drivers/xen/cpu_hotplug.c                   |  6 +-
- drivers/xen/events.c                        | 23 ++++----
- drivers/xen/evtchn.c                        |  6 +-
- drivers/xen/gntalloc.c                      |  6 +-
- drivers/xen/gntdev.c                        |  8 ++-
- drivers/xen/grant-table.c                   | 17 +++---
- drivers/xen/manage.c                        | 25 ++++----
- drivers/xen/mcelog.c                        | 36 +++++-------
- drivers/xen/pcpu.c                          | 12 ++--
- drivers/xen/privcmd.c                       |  4 +-
- drivers/xen/swiotlb-xen.c                   | 12 ++--
- drivers/xen/tmem.c                          | 10 ++--
- drivers/xen/xen-acpi-cpuhotplug.c           |  2 +
- drivers/xen/xen-acpi-memhotplug.c           |  2 +
- drivers/xen/xen-acpi-pad.c                  |  2 +
- drivers/xen/xen-acpi-processor.c            | 25 ++++----
- drivers/xen/xen-balloon.c                   |  6 +-
- drivers/xen/xen-pciback/conf_space_header.c | 16 ++---
- drivers/xen/xen-pciback/pci_stub.c          | 35 +++++------
- drivers/xen/xen-pciback/pciback_ops.c       |  9 ++-
- drivers/xen/xen-pciback/vpci.c              | 10 ++--
- drivers/xen/xen-pciback/xenbus.c            |  8 ++-
- drivers/xen/xen-selfballoon.c               | 11 ++--
- drivers/xen/xenbus/xenbus_comms.c           | 13 +++--
- drivers/xen/xenbus/xenbus_dev_backend.c     |  4 +-
- drivers/xen/xenbus/xenbus_dev_frontend.c    |  4 +-
- drivers/xen/xenbus/xenbus_probe.c           | 30 +++++-----
- drivers/xen/xenbus/xenbus_probe_backend.c   |  8 ++-
- drivers/xen/xenbus/xenbus_probe_frontend.c  | 35 +++++------
- drivers/xen/xenbus/xenbus_xs.c              | 22 +++----
- drivers/xen/xencomm.c                       |  2 +
- drivers/xen/xenfs/super.c                   |  4 +-
- include/xen/hvm.h                           |  4 +-
- 38 files changed, 321 insertions(+), 265 deletions(-)
-
-Joe Perches (1):
-      xen: Convert printks to pr_<level>
-
-Konrad Rzeszutek Wilk (10):
-      xen/smp: Coalesce the free_irq calls in one function.
-      xen/smp: Introduce a common structure to contain the IRQ name and interrupt line.
-      xen/smp: Set the per-cpu IRQ number to a valid default.
-      xen/smp: Don't leak interrupt name when offlining.
-      xen/spinlock: Don't leak interrupt name when offlining.
-      xen/time: Encapsulate the struct clock_event_device in another structure.
-      xen/time: Don't leak interrupt name when offlining.
-      xen/time: Check that the per_cpu data structure has data before freeing.
-      xen/time: Free onlined per-cpu data structure if we want to online it again.
-      xen/pcifront: Deal with toolstack missing 'XenbusStateClosing' state.
-
-Laszlo Ersek (1):
-      xen/time: remove blocked time accounting from xen "clockchip"
-
-Stefano Stabellini (1):
-      xen: ifdef CONFIG_HIBERNATE_CALLBACKS xen_*_suspend
-
-Wei Yongjun (1):
-      xen-pciback: fix error return code in pcistub_irq_handler_switch()
-
+Thanks,
+Joe
+> 
+> We were discussing recently the possibility of mapping all ballooned out
+> pages to a single read-only scratch page instead of leaving them empty
+> in the page tables, this would cause the Xen case to revert to the
+> native case. I think Thanos was going to take a look into this.
+> 
+> Ian.
+> 
