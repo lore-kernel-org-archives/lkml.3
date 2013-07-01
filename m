@@ -1,125 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab3GAHgg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:36:36 -0400
-Received: from mout.gmx.net ([212.227.17.20]:57297 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752740Ab3GAHge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:36:34 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19INwsmqmpIy7erqOBdaCK3LVulGa2wkjSdGmrWW4
-	CPDJbKHkQSB9uY
-Message-ID: <1372664187.7678.45.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: fix cpu utilization account error
-From: Mike Galbraith <efault@gmx.de>
-To: Xie XiuQi <xiexiuqi@huawei.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        Zhang Hang <bob.zhanghang@huawei.com>,
-        Li Bin <huawei.libin@huawei.com>
-Date: Mon, 01 Jul 2013 09:36:27 +0200
-In-Reply-To: <51D12570.9070100@huawei.com>
-References: <51D12570.9070100@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S1752928Ab3GAHhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:37:42 -0400
+Received: from cynthia.allandria.com ([76.245.85.235]:60794 "EHLO
+	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab3GAHhk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:37:40 -0400
+X-Greylist: delayed 2674 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Jul 2013 03:37:39 EDT
+Date: Sun, 30 Jun 2013 23:52:58 -0700
+From: Brad Boyer <flar@allandria.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Finn Thain <fthain@telegraphics.com.au>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k/mac: Allocate IOP message pool and queues
+ dynamically
+Message-ID: <20130701065258.GA8425@cynthia.pants.nu>
+References: <1372586542-1318-1-git-send-email-geert@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372586542-1318-1-git-send-email-geert@linux-m68k.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-01 at 14:45 +0800, Xie XiuQi wrote: 
-> We setting clock_skip_update = 1 based on the assumption that the
-> next call to update_rq_clock() will come nearly immediately
-> after being set. However, it is not always true especially on
-> non-preempt mode. In this case we may miss some clock update, which
-> would cause an error curr->sum_exec_runtime account.
+On Sun, Jun 30, 2013 at 12:02:22PM +0200, Geert Uytterhoeven wrote:
+> Currently the IOP message pool and queues are allocated statically,
+> wasting ca. 5 KiB when running a Mac or multi-platform kernel on a machine
+> not having a Mac IOP. Convert them to conditional dynamic memory
+> allocations to fix this.
 > 
-> The test result show that test_kthread's exec_runtime has been
-> added to watchdog.
+> As kzalloc() returns zeroed memory, there's no need to initialize (parts of)
+> the allocated structures to zeroes.
 > 
->   PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+   P COMMAND
->    28 root      RT   0     0    0    0 S  100  0.0   0:05.39  5 watchdog/5
->     7 root      RT   0     0    0    0 S   95  0.0   0:05.83  0 watchdog/0
->    12 root      RT   0     0    0    0 S   94  0.0   0:05.79  1 watchdog/1
->    16 root      RT   0     0    0    0 S   92  0.0   0:05.74  2 watchdog/2
->    20 root      RT   0     0    0    0 S   91  0.0   0:05.71  3 watchdog/3
->    24 root      RT   0     0    0    0 S   82  0.0   0:05.42  4 watchdog/4
->    32 root      RT   0     0    0    0 S   79  0.0   0:05.35  6 watchdog/6
->  5200 root      20   0     0    0    0 R   21  0.0   0:08.88  6 test_kthread/6
->  5194 root      20   0     0    0    0 R   20  0.0   0:08.41  0 test_kthread/0
->  5195 root      20   0     0    0    0 R   20  0.0   0:08.44  1 test_kthread/1
->  5196 root      20   0     0    0    0 R   20  0.0   0:08.49  2 test_kthread/2
->  5197 root      20   0     0    0    0 R   20  0.0   0:08.53  3 test_kthread/3
->  5198 root      20   0     0    0    0 R   19  0.0   0:08.81  4 test_kthread/4
->  5199 root      20   0     0    0    0 R    2  0.0   0:08.66  5 test_kthread/5
-> 
-> "test_kthread/i" is a kernel thread which has a infinity loop and it calls
-> schedule() every 1s. It's main process as below:
+> This required moving the call to iop_init() from mac_identify() to
+> mac_platform_init() (slab nor bootmem are available at mac_identify() call
+> time), and allowed to integrate iop_register_interrupts() into iop_init().
 
-It'd be a shame to lose the cycle savings (we could use more) due to
-such horrible behavior.  Where are you seeing this in real life?
+Just a couple very minor comments. I haven't tested it, but I was involved
+with the original implementation and testing of this code.
 
-That said, accounting funnies induced by skipped update are possible,
-which could trump the cycle savings I suppose, so maybe savings (sniff)
-should just go away?
-
-> static int main_loop (void *unused)
-> {
-> 	unsigned long flags;
-> 	unsigned long last = jiffies;
-> 	int i;
-> 
-> 	while (!kthread_should_stop()) {
-> 		/* call schedule every 1 sec */
-> 		if (HZ <= jiffies - last) {
-> 			last = jiffies;
-> 			schedule();
-> 		}
-> 
-> 		/* do some thing */
-> 		for (i = 0; i < 1000; i++)
-> 		;
-> 
-> 		if (kthread_should_stop())
-> 			break;
-> 	}
-> }
-> 
-> In this patch, we do not skip clock update when current task is kernel
-> thread in non-preempt mode.
-> 
-> Reported-by: Zhang Hang <bob.zhanghang@huawei.com>
-> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 > ---
->  kernel/sched/core.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
+> Untested due to lack of hardware
 > 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index e8b3350..018dc43 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -970,8 +970,19 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
->  	 * A queue event has occurred, and we're going to schedule.  In
->  	 * this case, we can save a useless back to back clock update.
+>  arch/m68k/include/asm/mac_iop.h |    2 --
+>  arch/m68k/mac/config.c          |    3 ++-
+>  arch/m68k/mac/iop.c             |   57 ++++++++++++++++++---------------------
+>  arch/m68k/mac/macints.c         |    1 -
+>  4 files changed, 28 insertions(+), 35 deletions(-)
+> 
+> diff --git a/arch/m68k/include/asm/mac_iop.h b/arch/m68k/include/asm/mac_iop.h
+> index fde874a..a2c7e6f 100644
+> --- a/arch/m68k/include/asm/mac_iop.h
+> +++ b/arch/m68k/include/asm/mac_iop.h
+> @@ -159,6 +159,4 @@ extern void iop_upload_code(uint, __u8 *, uint, __u16);
+>  extern void iop_download_code(uint, __u8 *, uint, __u16);
+>  extern __u8 *iop_compare_code(uint, __u8 *, uint, __u16);
+>  
+> -extern void iop_register_interrupts(void);
+> -
+>  #endif /* __ASSEMBLY__ */
+> diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
+> index afb95d5..a8d62a8 100644
+> --- a/arch/m68k/mac/config.c
+> +++ b/arch/m68k/mac/config.c
+> @@ -925,7 +925,6 @@ static void __init mac_identify(void)
+>  	printk(KERN_DEBUG " Machine ID: %ld CPUid: 0x%lx memory size: 0x%lx\n",
+>  		mac_bi_data.id, mac_bi_data.cpuid, mac_bi_data.memsize);
+>  
+> -	iop_init();
+>  	via_init();
+>  	oss_init();
+>  	psc_init();
+> @@ -983,6 +982,8 @@ int __init mac_platform_init(void)
+>  	if (!MACH_IS_MAC)
+>  		return -ENODEV;
+>  
+> +	iop_init();
+> +
+>  	/*
+>  	 * Serial devices
 >  	 */
-> +#ifdef CONFIG_PREEMPT
->  	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr))
->  		rq->skip_clock_update = 1;
-> +#else
-> +	/*
-> +	 * In non-preempt mode, a kernel thread may run for a long time
-> +	 * until been scheduled out by itself. In this cace, we need update
-> +	 * rq clock when calling schedule function, otherwise, we might
-> +	 * miss rq clock update for a long time.
-> +	 */
-> +	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr) && rq->curr->mm)
-> +		rq->skip_clock_update = 1;
-> +#endif
+> diff --git a/arch/m68k/mac/iop.c b/arch/m68k/mac/iop.c
+> index 8a4c446..6cc3055 100644
+> --- a/arch/m68k/mac/iop.c
+> +++ b/arch/m68k/mac/iop.c
+> @@ -104,6 +104,7 @@
+>   * should execute quickly.)
+>   */
+>  
+> +#include <linux/slab.h>
+>  #include <linux/types.h>
+>  #include <linux/kernel.h>
+>  #include <linux/mm.h>
+> @@ -142,9 +143,9 @@ static volatile struct mac_iop *iop_base[NUM_IOPS];
+>   * IOP message queues
+>   */
+>  
+> -static struct iop_msg iop_msg_pool[NUM_IOP_MSGS];
+> -static struct iop_msg *iop_send_queue[NUM_IOPS][NUM_IOP_CHAN];
+> -static struct listener iop_listeners[NUM_IOPS][NUM_IOP_CHAN];
+> +static struct iop_msg *iop_msg_pool;
+> +static struct iop_msg **iop_send_queue[NUM_IOPS];
+> +static struct listener *iop_listeners[NUM_IOPS];
+>  
+>  irqreturn_t iop_ism_irq(int, void *);
+>  
+> @@ -260,47 +261,38 @@ void __init iop_preinit(void)
+>  	}
 >  }
+>  
+> +static void __init alloc_msg_queue(int iop_num)
+> +{
+> +	iop_send_queue[iop_num] =
+> +		kzalloc(NUM_IOP_CHAN * sizeof(**iop_send_queue), GFP_KERNEL);
+> +	iop_listeners[iop_num] =
+> +		kzalloc(NUM_IOP_CHAN * sizeof(**iop_listeners), GFP_KERNEL);
+> +}
+> +
+>  /*
+>   * Initialize the IOPs, if present.
+>   */
+>  
+>  void __init iop_init(void)
+>  {
+> -	int i;
+> +	if (!iop_scc_present && !iop_ism_present)
+> +		return;
+> +
+> +	iop_msg_pool = kzalloc(NUM_IOP_MSGS * sizeof(*iop_msg_pool),
+> +			       GFP_KERNEL);
+>  
+>  	if (iop_scc_present) {
+>  		printk("IOP: detected SCC IOP at %p\n", iop_base[IOP_NUM_SCC]);
+> +		alloc_msg_queue(IOP_NUM_SCC);
+
+Technically, this isn't actually useful. As long as we never start this
+IOP, it can't ever send or be sent any messages. We currently leave the
+SCC IOP in bypass mode and access the SCC chip directly.
+
+Perhaps it would be better to allocate it at the beginning of iop_start
+if it is not already allocated?
+
+>  	}
+>  	if (iop_ism_present) {
+>  		printk("IOP: detected ISM IOP at %p\n", iop_base[IOP_NUM_ISM]);
+> -		iop_start(iop_base[IOP_NUM_ISM]);
+> -		iop_alive(iop_base[IOP_NUM_ISM]); /* clears the alive flag */
+> -	}
+> -
+> -	/* Make the whole pool available and empty the queues */
+> -
+> -	for (i = 0 ; i < NUM_IOP_MSGS ; i++) {
+> -		iop_msg_pool[i].status = IOP_MSGSTATUS_UNUSED;
+> -	}
+> +		alloc_msg_queue(IOP_NUM_ISM);
+>  
+> -	for (i = 0 ; i < NUM_IOP_CHAN ; i++) {
+> -		iop_send_queue[IOP_NUM_SCC][i] = NULL;
+> -		iop_send_queue[IOP_NUM_ISM][i] = NULL;
+> -		iop_listeners[IOP_NUM_SCC][i].devname = NULL;
+> -		iop_listeners[IOP_NUM_SCC][i].handler = NULL;
+> -		iop_listeners[IOP_NUM_ISM][i].devname = NULL;
+> -		iop_listeners[IOP_NUM_ISM][i].handler = NULL;
+> -	}
+> -}
+> -
+> -/*
+> - * Register the interrupt handler for the IOPs.
+> - * TODO: might be wrong for non-OSS machines. Anyone?
+> - */
+> -
+> -void __init iop_register_interrupts(void)
+> -{
+> -	if (iop_ism_present) {
+> +		/*
+> +		 * Register the interrupt handler for the IOPs.
+> +		 * TODO: might be wrong for non-OSS machines. Anyone?
+> +		 */
+>  		if (macintosh_config->ident == MAC_MODEL_IIFX) {
+>  			if (request_irq(IRQ_MAC_ADB, iop_ism_irq, 0,
+>  					"ISM IOP", (void *)IOP_NUM_ISM))
+> @@ -315,6 +307,9 @@ void __init iop_register_interrupts(void)
+>  		} else {
+>  			printk("IOP: the ISM IOP seems to be alive.\n");
+>  		}
+
+The if/else above isn't useful if it is run before the call to iop_start.
+However, it's also useless if it is called immediately after the call to
+iop_alive which is now below. It was supposed to eventually be called in
+the background on a regular schedule, but that never happened.
+
+> +
+> +		iop_start(iop_base[IOP_NUM_ISM]);
+> +		iop_alive(iop_base[IOP_NUM_ISM]); /* clears the alive flag */
+>  	}
+>  }
+>  
+> diff --git a/arch/m68k/mac/macints.c b/arch/m68k/mac/macints.c
+> index 5c1a6b2..da42c18 100644
+> --- a/arch/m68k/mac/macints.c
+> +++ b/arch/m68k/mac/macints.c
+> @@ -178,7 +178,6 @@ void __init mac_init_IRQ(void)
+>  		psc_register_interrupts();
+>  	if (baboon_present)
+>  		baboon_register_interrupts();
+> -	iop_register_interrupts();
+>  	if (request_irq(IRQ_AUTO_7, mac_nmi_handler, 0, "NMI",
+>  			mac_nmi_handler))
+>  		pr_err("Couldn't register NMI\n");
+> -- 
+> 1.7.9.5
 > 
->  static ATOMIC_NOTIFIER_HEAD(task_migration_notifier);
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-m68k" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
