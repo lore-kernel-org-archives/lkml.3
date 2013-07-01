@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab3GAGIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 02:08:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:50047 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab3GAGH7 (ORCPT
+	id S1752667Ab3GAGM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 02:12:26 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:49241 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab3GAGMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 02:07:59 -0400
-Message-ID: <1372658875.7678.17.camel@marge.simpson.net>
-Subject: Re: sched: context tracking demolishes pipe-test
-From: Mike Galbraith <bitbucket@online.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Date: Mon, 01 Jul 2013 08:07:55 +0200
-In-Reply-To: <20130630212940.GK6626@twins.programming.kicks-ass.net>
-References: <1372579056.6607.16.camel@marge.simpson.net>
-	 <20130630212940.GK6626@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:TCK99t9c1bnuNYn/bFScxTF0TJWF5bP05eTMcluD/Uc
- M1qahSnkVboeeA5OaB9Ex5FlCJcMuZGj811L4xntTZyUs7EZuz
- o+qpPB40a5ZQstKWDklfMIKpLJklaaxfkP7DgHgynvh13dnvXG
- DuWy9ealDRd4PxFVbN5WsJxZg9KhzT0S6oYDM5SgLbxNJC/1yT
- 1TzVqeRtWzKzewZlwxCShqWD94glicdXMVJkXpPC6QfMO9w9+K
- MJkpBeTART+IUgf6Q4xnuwkhu3/JEyGj75FDAhSZIimso2WK80
- YgE7zEcn2zDZR3WYRO9r6d9m4RZz1pSYlbrkVwHwUr4Riykt0a
- HYjxuJ5TnRnU4FNk37M3J0PwqgFkNe7iSY8sFAFH5EBemmBq9W
- mOgfulY7yqNWA==
+	Mon, 1 Jul 2013 02:12:25 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: bintian.wang@linaro.org
+Cc: linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
+        dmitry pervushin <dpervushin@gmail.com>,
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
+References: <1372646398-4204-1-git-send-email-bintian.wang@linaro.org>
+Date: Mon, 01 Jul 2013 15:12:22 +0900
+In-Reply-To: <1372646398-4204-1-git-send-email-bintian.wang@linaro.org>
+	(bintian wang's message of "Mon, 1 Jul 2013 10:39:58 +0800")
+Message-ID: <87wqpakdvd.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-06-30 at 23:29 +0200, Peter Zijlstra wrote:
+bintian.wang@linaro.org writes:
 
-> Yeah, who'd have thought that putting stuff in the syscall path would've
-> made syscalls more expensive ;-)
+> This patch, originally from Android kernel, adds vfat directory ioctl command
+> FAT_IOCTL_GET_VOLUME_ID, with this command we can get the vfat volume ID using
+> following code:
+>
+> 	ioctl(dirfd(dir), FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
+>
+> This patch is a modified version of the patch by Mike Lockwood, with changes
+> from Dmitry Pervushin, who noticed the original patch makes some volume IDs
+> abiguous with error returns: for example, if volume id is 0xFFFFFDAD, that
+> matches -ENOIOCTLCMD, we get "FFFFFFFF" from the user space.
+>
+> So add a parameter to ioctl to get the correct volume ID.
 
-(careful, you'll injure my innocence, Santa and the Tooth Fairy exist!)
+Adding more specific usage example to changelog would help for
+understanding this.
 
-> But yeah, that's a _lot_ more expensive.. I'd not be surprised if more
-> people would find that objectionable.
+> +	case FAT_IOCTL_GET_VOLUME_ID:
+> +		id = fat_ioctl_volume_id(inode);
+> +		return copy_to_user((unsigned int *)arg, &id, sizeof(id));
 
-Distros may want some hot patching or _something_ before doing the usual
-new=turn-it-on thing.  Per trusty (spelled with 'c') old Q6600, the cost
-is pretty darn high.
+> +	case FAT_IOCTL_GET_VOLUME_ID:
+> +		id = fat_ioctl_volume_id(inode);
+> +		return copy_to_user((unsigned int *)arg, &id, sizeof(id));
 
--regress is my ~light regression testing config, carried forward from
-3.6.32...master across all intervening trees.
--regressx is plus CONFIG_RCU_USER_QS=y CONFIG_CONTEXT_TRACKING_FORCE=y
--regressxx is plus full dynticks 
+This pattern seems to from put_user().
 
-taskset -c 3 pipe-test 1
+Unnecessary cast of 1st arg. And copy_to_user() returns remaining bytes
+when fail (not error code).
 
-2.6.32-regress    654.5 Khz            1.000
-3.10.0-regress    652.1 Khz             .996     1.000
-3.10.0-regressx   476.8 Khz             .728      .731
-3.10.0-regressxx  275.6 Khz             .421      .422
+> +struct fat_boot_bsx {
+> +	__u8     drive;     /* drive number */
+> +	__u8     reserved1;
+> +	__u8     signature; /* extended boot signature */
+> +	__u8     vol_id[4]; /* volume ID */
+> +	__u8     vol_label[11]; /* volume label */
+> +	__u8     type[8];   /* file system type */
+> +};
+> +#define FAT16_BSX_OFFSET 36 /* offset of fat_boot_bsx in FAT12 and FAT16 */
+> +#define FAT32_BSX_OFFSET 64 /* offset of fat_boot_bsx in FAT32 */
 
-tbench
+There is any issue to merge those to "struct fat_boot_sector"? I guess,
+merging it is cleaner way.
 
-2.6.32-regress    327.502 MB/sec       1.000
-3.10.0-regress    319.621 MB/sec        .975     1.000
-3.10.0-regressx   292.894 MB/sec        .894      .916
-3.10.0-regressxx  243.738 MB/sec        .744      .762
-
-netperf TCP_RR
-
-2.6.32-regress   104041.84 Trans/sec   1.000
-3.10.0-regress    94961.34 Trans/sec    .912     1.000
-3.10.0-regressx   82383.33 Trans/sec    .791      .867
-3.10.0-regressxx  61527.59 Trans/sec    .591      .647
-
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
