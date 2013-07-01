@@ -1,167 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab3GAILE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:11:04 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:20242 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752680Ab3GAILB (ORCPT
+	id S1753087Ab3GAILP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:11:15 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:34844 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab3GAILL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:11:01 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgENAD830VF5LakP/2dsb2JhbABagwm6boUfBAF9F3SCIwEBBAEnExwjEAgDDgoJJQ8FJQMhE4gJBbsvFo4EJ4EdB4MEYwOXR4ofhyeDIyqBLA
-Date: Mon, 1 Jul 2013 18:10:56 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130701081056.GA4072@dastard>
-References: <20130618104443.GH13677@dhcp22.suse.cz>
- <20130618135025.GK13677@dhcp22.suse.cz>
- <20130625022754.GP29376@dastard>
- <20130626081509.GF28748@dhcp22.suse.cz>
- <20130626232426.GA29034@dastard>
- <20130627145411.GA24206@dhcp22.suse.cz>
- <20130629025509.GG9047@dastard>
- <20130630183349.GA23731@dhcp22.suse.cz>
- <20130701012558.GB27780@dastard>
- <20130701075005.GA28765@dhcp22.suse.cz>
+	Mon, 1 Jul 2013 04:11:11 -0400
+Date: Mon, 1 Jul 2013 10:11:07 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] core/locking changes for v3.11
+Message-ID: <20130701081107.GA13736@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130701075005.GA28765@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 09:50:05AM +0200, Michal Hocko wrote:
-> On Mon 01-07-13 11:25:58, Dave Chinner wrote:
-> > On Sun, Jun 30, 2013 at 08:33:49PM +0200, Michal Hocko wrote:
-> > > On Sat 29-06-13 12:55:09, Dave Chinner wrote:
-> > > > On Thu, Jun 27, 2013 at 04:54:11PM +0200, Michal Hocko wrote:
-> > > > > On Thu 27-06-13 09:24:26, Dave Chinner wrote:
-> > > > > > On Wed, Jun 26, 2013 at 10:15:09AM +0200, Michal Hocko wrote:
-> > > > > > > On Tue 25-06-13 12:27:54, Dave Chinner wrote:
-> > > > > > > > On Tue, Jun 18, 2013 at 03:50:25PM +0200, Michal Hocko wrote:
-> > > > > > > > > And again, another hang. It looks like the inode deletion never
-> > > > > > > > > finishes. The good thing is that I do not see any LRU related BUG_ONs
-> > > > > > > > > anymore. I am going to test with the other patch in the thread.
-> > > > > > > > > 
-> > > > > > > > > 2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
-> > > > > > > > > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > > > > > > > > [<ffffffff8118525f>] iget_locked+0x4f/0x180
-> > > > > > > > > [<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-> > > > > > > > > [<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-> > > > > > > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > > > > > > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > > > > > > > > [<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
-> > > > > > > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > > > > > > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > > > > > > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > > > > > > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > > > > > > > > [<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-> > > > > > > > > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 
-> > .....
-> > > Do you mean sysrq+t? It is attached. 
-> > > 
-> > > Btw. I was able to reproduce this again. The stuck processes were
-> > > sitting in the same traces for more than 28 hours without any change so
-> > > I do not think this is a temporal condition.
-> > > 
-> > > Traces of all processes in the D state:
-> > > 7561 [<ffffffffa029c03e>] xfs_iget+0xbe/0x190 [xfs]
-> > > [<ffffffffa02a8e98>] xfs_lookup+0xe8/0x110 [xfs]
-> > > [<ffffffffa029fad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-> > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > > [<ffffffff8117815e>] do_last+0x2de/0x780
-> > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > > [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-> > > [<ffffffffffffffff>] 0xffffffffffffffff
-> > 
-> > This looks like it may be equivalent to the ext4 trace above, though
-> > I'm not totally sure on that yet. Can you get me the line of code
-> > where the above code is sleeping - 'gdb> l *(xfs_iget+0xbe)' output
-> > is sufficient.
-> 
-> OK, this is a bit tricky because I have xfs built as a module so objdump
-> on xfs.ko shows nonsense
->    19039:       e8 00 00 00 00          callq  1903e <xfs_iget+0xbe>
->    1903e:       48 8b 75 c0             mov    -0x40(%rbp),%rsi
-> 
-> crash was more clever though and it says:
-> 0xffffffffa029c034 <xfs_iget+180>:      mov    $0x1,%edi
-> 0xffffffffa029c039 <xfs_iget+185>:      callq  0xffffffff815776d0
-> <schedule_timeout_uninterruptible>
-> /dev/shm/mhocko-build/BUILD/kernel-3.9.0mmotm+/fs/xfs/xfs_icache.c: 423
-> 0xffffffffa029c03e <xfs_iget+190>:      mov    -0x40(%rbp),%rsi
-> 
-> which maps to:
-> out_error_or_again:
->         if (error == EAGAIN) {
->                 delay(1);
->                 goto again;
->         }
-> 
-> So this looks like this path loops in goto again and out_error_or_again.
+Linus,
 
-Yup, that's what I suspected.
+Please pull the latest core-locking-for-linus git tree from:
 
-> > If it's where I suspect it is, we are hitting a VFS inode that
-> > igrab() is failing on because I_FREEING is set and that is returning
-> > EAGAIN. Hence xfs_iget() sleeps for a short period and retries the
-> > lookup. If you've still got a system in this state, can you dump the
-> > xfs stats a few times about 5s apart i.e.
-> > 
-> > $ for i in `seq 0 1 5`; do echo ; date; cat /proc/fs/xfs/stat ; sleep 5 ; done
-> > 
-> > Depending on what stat is changing (i'm looking for skip vs recycle
-> > in the inode cache stats), that will tell us why the lookup is
-> > failing...
-> 
-> $ for i in `seq 0 1 5`; do echo ; date; cat /proc/fs/xfs/stat ; sleep 5 ; done
-> 
-> Mon Jul  1 09:29:57 CEST 2013
-> extent_alloc 1484333 2038118 1678 13182
-> abt 0 0 0 0
-> blk_map 21004635 3433178 1450438 1461372 1450017 25888309 0
-> bmbt 0 0 0 0
-> dir 1482235 1466711 7281 2529
-> trans 7676 6231535 1444850
-> ig 0 8534 299 1463749 0 1256778 262381
-            ^^^
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-locking-for-linus
 
-That is the recycle stat, which indicates we've found an inode being
-reclaimed. When it's found an inode that have been evicted, but not
-yet reclaimed at the XFS level, that stat will increase. If the
-inode is still valid at the VFS level, and igrab() fails, then we'll
-get EAGAIN without that stat being increased. So, igrab() is
-failing, and that means I_FREEING|I_WILL_FREE are set.
+   HEAD: 88c8004fd3a5fdd2378069de86b90b21110d33a4 futex: Use freezable blocking call
 
-So, it looks to be the same case as the ext4 hang, and it's likely
-that we have some dangling inode dispose list somewhere. So, here's
-the fun part. Use tracing to grab the inode number that is stuck
-(tracepoint xfs::xfs_iget_skip), and then run crash on the live
-kernel on the process that is looping, and find the struct xfs_inode
-and print it.  Use the inode number from the trace point to check
-you've got the right inode.
+Four miscellanous standalone fixes for futexes, rtmutexes and 
+Kconfig.locks.
 
-Th struct inode of the VFS inode is embedded into the struct
-xfs_inode, and the dispose list that it is on should be the on the
-inode->i_lru_list. What that, and see how many other inodes are on
-that list. Once we know if it's a single inode, and whether the
-dispose list it is on is intact, empty or corrupt, we might have a
-better idea of how these inodes are getting lost....
+ Thanks,
 
-Cheers,
+	Ingo
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+------------------>
+Colin Cross (1):
+      futex: Use freezable blocking call
+
+Juri Lelli (1):
+      rtmutex: Document rt_mutex_adjust_prio_chain()
+
+Paul Bolle (1):
+      locking: Fix copy/paste errors of "ARCH_INLINE_*_UNLOCK_BH"
+
+Zhang Yi (1):
+      futex: Take hugepages into account when generating futex_key
+
+
+ include/linux/hugetlb.h | 16 ++++++++++++++++
+ kernel/Kconfig.locks    |  6 +++---
+ kernel/futex.c          |  6 ++++--
+ kernel/rtmutex.c        | 13 +++++++++++++
+ mm/hugetlb.c            | 17 +++++++++++++++++
+ 5 files changed, 53 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 6b4890f..feaf0c7 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -358,6 +358,17 @@ static inline int hstate_index(struct hstate *h)
+ 	return h - hstates;
+ }
+ 
++pgoff_t __basepage_index(struct page *page);
++
++/* Return page->index in PAGE_SIZE units */
++static inline pgoff_t basepage_index(struct page *page)
++{
++	if (!PageCompound(page))
++		return page->index;
++
++	return __basepage_index(page);
++}
++
+ #else	/* CONFIG_HUGETLB_PAGE */
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+@@ -378,6 +389,11 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ }
+ #define hstate_index_to_shift(index) 0
+ #define hstate_index(h) 0
++
++static inline pgoff_t basepage_index(struct page *page)
++{
++	return page->index;
++}
+ #endif	/* CONFIG_HUGETLB_PAGE */
+ 
+ #endif /* _LINUX_HUGETLB_H */
+diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
+index 44511d1..d2b32ac 100644
+--- a/kernel/Kconfig.locks
++++ b/kernel/Kconfig.locks
+@@ -138,7 +138,7 @@ config INLINE_SPIN_UNLOCK_BH
+ 
+ config INLINE_SPIN_UNLOCK_IRQ
+ 	def_bool y
+-	depends on !PREEMPT || ARCH_INLINE_SPIN_UNLOCK_BH
++	depends on !PREEMPT || ARCH_INLINE_SPIN_UNLOCK_IRQ
+ 
+ config INLINE_SPIN_UNLOCK_IRQRESTORE
+ 	def_bool y
+@@ -175,7 +175,7 @@ config INLINE_READ_UNLOCK_BH
+ 
+ config INLINE_READ_UNLOCK_IRQ
+ 	def_bool y
+-	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK_BH
++	depends on !PREEMPT || ARCH_INLINE_READ_UNLOCK_IRQ
+ 
+ config INLINE_READ_UNLOCK_IRQRESTORE
+ 	def_bool y
+@@ -212,7 +212,7 @@ config INLINE_WRITE_UNLOCK_BH
+ 
+ config INLINE_WRITE_UNLOCK_IRQ
+ 	def_bool y
+-	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK_BH
++	depends on !PREEMPT || ARCH_INLINE_WRITE_UNLOCK_IRQ
+ 
+ config INLINE_WRITE_UNLOCK_IRQRESTORE
+ 	def_bool y
+diff --git a/kernel/futex.c b/kernel/futex.c
+index b26dcfc..c3a1a55 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -61,6 +61,8 @@
+ #include <linux/nsproxy.h>
+ #include <linux/ptrace.h>
+ #include <linux/sched/rt.h>
++#include <linux/hugetlb.h>
++#include <linux/freezer.h>
+ 
+ #include <asm/futex.h>
+ 
+@@ -365,7 +367,7 @@ again:
+ 	} else {
+ 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+ 		key->shared.inode = page_head->mapping->host;
+-		key->shared.pgoff = page_head->index;
++		key->shared.pgoff = basepage_index(page);
+ 	}
+ 
+ 	get_futex_key_refs(key);
+@@ -1807,7 +1809,7 @@ static void futex_wait_queue_me(struct futex_hash_bucket *hb, struct futex_q *q,
+ 		 * is no timeout, or if it has yet to expire.
+ 		 */
+ 		if (!timeout || timeout->task)
+-			schedule();
++			freezable_schedule();
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ }
+diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+index 1e09308..0dd6aec 100644
+--- a/kernel/rtmutex.c
++++ b/kernel/rtmutex.c
+@@ -145,6 +145,19 @@ int max_lock_depth = 1024;
+ /*
+  * Adjust the priority chain. Also used for deadlock detection.
+  * Decreases task's usage by one - may thus free the task.
++ *
++ * @task: the task owning the mutex (owner) for which a chain walk is probably
++ *	  needed
++ * @deadlock_detect: do we have to carry out deadlock detection?
++ * @orig_lock: the mutex (can be NULL if we are walking the chain to recheck
++ * 	       things for a task that has just got its priority adjusted, and
++ *	       is waiting on a mutex)
++ * @orig_waiter: rt_mutex_waiter struct for the task that has just donated
++ *		 its priority to the mutex owner (can be NULL in the case
++ *		 depicted above or if the top waiter is gone away and we are
++ *		 actually deboosting the owner)
++ * @top_task: the current top waiter
++ *
+  * Returns 0 or -EDEADLK.
+  */
+ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index f8feeec..aea87ce 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -690,6 +690,23 @@ int PageHuge(struct page *page)
+ }
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
++pgoff_t __basepage_index(struct page *page)
++{
++	struct page *page_head = compound_head(page);
++	pgoff_t index = page_index(page_head);
++	unsigned long compound_idx;
++
++	if (!PageHuge(page_head))
++		return page_index(page);
++
++	if (compound_order(page_head) >= MAX_ORDER)
++		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
++	else
++		compound_idx = page - page_head;
++
++	return (index << compound_order(page_head)) + compound_idx;
++}
++
+ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
