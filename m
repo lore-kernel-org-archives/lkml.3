@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018Ab3GASTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 14:19:36 -0400
-Received: from relay.parallels.com ([195.214.232.42]:50931 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908Ab3GASTf (ORCPT
+	id S1755048Ab3GASTr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 14:19:47 -0400
+Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:58669 "EHLO
+	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755029Ab3GASTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 14:19:35 -0400
-Message-ID: <51D1C826.3030902@parallels.com>
-Date: Mon, 1 Jul 2013 22:19:18 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Mon, 1 Jul 2013 14:19:44 -0400
+Date: Mon, 1 Jul 2013 18:19:43 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+cc: penberg@kernel.org, mpm@selenic.com, Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Subject: Re: [PATCH] mm, slab: Drop unnecessary slabp->inuse < cachep->num
+ test
+In-Reply-To: <51D1AE84.8010404@gmail.com>
+Message-ID: <0000013f9b76364e-6d24303e-93bc-425d-9933-710b0587b56b-000000@email.amazonses.com>
+References: <51D1AE84.8010404@gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: CRIU <criu@openvz.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Containers <containers@lists.linux-foundation.org>
-Subject: [Announce] Checkpoint-restore tool v0.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.211.120.139]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.07.01-54.240.9.58
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, everyone!
+On Tue, 2 Jul 2013, Zhang Yanfei wrote:
 
-Yes, it's that time again! As the Linux-v3.10 is out, we're releasing
-the criu-v0.6 to catch up with the recent kernel changes. These includes
-posix cpu timers, pending signals and netlink sockets.
+> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+>
+> In function cache_alloc_refill, we have used BUG_ON to ensure
+> that slabp->inuse is less than cachep->num before the while
+> test. And in the while body, we do not change the value of
+> slabp->inuse and cachep->num, so it is not necessary to test
+> if slabp->inuse < cachep->num test for every loop.
 
-As for other new cool features and changes, please visit the
-http://criu.org/Download/criu/0.6
-
-Stay tuned!
-
-Thanks,
-Pavel
+The body calls slab_get_obj which changes slabp->inuse!
