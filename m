@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752741Ab3GAH2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:28:36 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.143]:52323 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752446Ab3GAH2f (ORCPT
+	id S1752900Ab3GAH3R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:29:17 -0400
+Received: from mailsit.unilogicnetworks.net ([62.133.206.125]:45071 "EHLO
+	mail.unilogicnetworks.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab3GAH3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:28:35 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-14.tower-179.messagelabs.com!1372663711!26407374!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.9; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Mon, 01 Jul 2013 09:28:31 +0200
-Date: Mon, 1 Jul 2013 09:32:48 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: "wim@iguana.be" <wim@iguana.be>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "guenter@roeck-us.net" <guenter@roeck-us.net>,
-        "Thumshirn, Johannes Tobias" <Johannes.Thumshirn@men.de>
-Subject: Re: [PATCH RESEND v10 2/2] watchdog: Sysfs interface for MEN A21
- watchdog
-Message-ID: <20130701073247.GA26252@jtlinux>
-References: <20130618151939.GA23296@jtlinux>
- <20130618152119.GA23399@jtlinux>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130618152119.GA23399@jtlinux>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
-X-OriginalArrivalTime: 01 Jul 2013 07:28:30.0942 (UTC) FILETIME=[961C9FE0:01CE762C]
+	Mon, 1 Jul 2013 03:29:13 -0400
+Message-ID: <1372662125.3810.8.camel@optiplex>
+Subject: [PATCH 2/3] x86: add Dell OptiPlex 780 reboot quirk
+From: Pascal de Bruijn <pascal@unilogicnetworks.net>
+To: linux-kernel@vger.kernel.org
+Date: Mon, 01 Jul 2013 09:02:05 +0200
+Organization: Unilogic Networks B.V.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu0.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wim,
+>From 34ee5e25f01c4791b26e400c509761264a70dd99 Mon Sep 17 00:00:00 2001
+From: Pascal de Bruijn <pascal@unilogicnetworks.net>
+Date: Wed, 27 Mar 2013 14:19:53 +0000
+Subject: [PATCH 2/3] x86: add Dell OptiPlex 780 reboot quirk
 
-I just wanted to know if you already had time to review the driver?  With
-Guenter's help I got rid of some of the quirks still in and he issued his
-Reviewed-by. I also imporoved devicetree support and wrote the dts binding
-document as Arnd Bergmann suggested. I know you're probably quite busy and 3.10
-just came out, but it would be cool to know the current status.
+Dell OptiPlex 780 hangs on reboot unless reboot=bios is used. Add quirk
+to reboot through the BIOS.
 
-Thanks,
-Johannes
+Signed-off-by: Pascal de Bruijn <pascal@unilogicnetworks.net>
+---
+ arch/x86/kernel/reboot.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 6961e77..0dfed0f 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -301,6 +301,14 @@ static struct dmi_system_id __initdata reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 760"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on Dell OptiPlex 780 */
++		.callback = set_bios_reboot,
++		.ident = "Dell OptiPlex 780",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "OptiPlex 780"),
++		},
++	},
+ 	{	/* Handle problems with rebooting on Dell 2400's */
+ 		.callback = set_bios_reboot,
+ 		.ident = "Dell PowerEdge 2400",
+-- 
+1.7.0.4
+
+
+
