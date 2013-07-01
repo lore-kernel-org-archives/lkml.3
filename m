@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3GAUx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:53:57 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33858 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab3GAUx4 (ORCPT
+	id S1755297Ab3GAUyk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:54:40 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60894 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab3GAUyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:53:56 -0400
-Date: Mon, 1 Jul 2013 22:53:53 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH] N900: fix operation on emulator
-Message-ID: <20130701205353.GB22174@amd.pavel.ucw.cz>
-References: <20130613142809.GA3775@amd.pavel.ucw.cz>
- <20130613145724.GH8164@atomide.com>
- <20130613155240.GB3775@amd.pavel.ucw.cz>
- <20130613161418.GJ8164@atomide.com>
- <20130613230808.GA14876@amd.pavel.ucw.cz>
- <20130614055629.GM8164@atomide.com>
- <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com>
- <20130701140315.GA15318@amd.pavel.ucw.cz>
- <51D1C8DD.6040409@cogentembedded.com>
+	Mon, 1 Jul 2013 16:54:38 -0400
+Message-ID: <51D1EC8C.4050101@codeaurora.org>
+Date: Mon, 01 Jul 2013 13:54:36 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51D1C8DD.6040409@cogentembedded.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Stehle Vincent-B46079 <B46079@freescale.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: next-20130627 breaks i.MX6 sabre sd UART console
+References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de> <51CDB26A.9060500@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net> <51CDC2B3.1030907@codeaurora.org> <20130629020738.GG11625@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net> <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de> <F7C43F8B2814514CA05F3436BC68046EF2F708@039-SN2MPN1-011.039d.mgd.msft.net> <alpine.DEB.2.02.1307011531210.4013@ionos.tec.linutronix.de> <51D1DD6D.8050805@codeaurora.org> <alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 07/01/13 13:14, Thomas Gleixner wrote:
+> The issue is very subtle. What happens is:
+>
+> CPU0						CPU1
+>
+> Switch to oneshot mode
+>
+>  Copy the bits from tick_broadcast_mask to
+>  tick_broadcast_oneshot_mask. We need to do
+>  that so the other cpus reach the timer irq
+>  and the softirq which switches them to
+>  oneshot.
+>
+>  Kick the broadcast device into oneshot.
+>
+> 						Timer interrupt fires
+> 						
+> 						irq_enter sees the cpu in
+> 						tick_broadcast_oneshot_mask and
+> 						sets the device to oneshot mode
+> 						
+> 						handle_periodic:
+> 						 Sees oneshot mode and adds
+> 						 period to
+> 						 dev->next_event(KTIME_MAX)
+> 			
 
-> >Errata workarounds for N900 hardware actually break operation on
-> >emulator. Fix it.
-> 
-> >This approach was suggested by Pali Rohár <pali.rohar@gmail.com>
-> >(thanks!).
-> 
-> >(Also explain what "sleep_ind" led actually does).
-> 
->    Looks like unrelated change and probably worth another patch?
+Yep. It is also racing with the timer interrupt so having more than two
+CPUs must help widen the window (which is why we see it on the higher
+numbered CPUs).
 
-Ok, more serious issue is that code this was modifying is not yet in
-mainline. Sorry.
-								Pavel
+> 			 
+> So we need two fixes:
+>
+> 1) The replacement of the dummy timer and the effect on the broadcast
+>    mask/device
+>
+> 2) tick_check_oneshot_broadcast needs a sanity check
+>
+> Patch below.
+
+Looks good.
+
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+
+One minor typo in the comment below.
+
+> +		switch (tick_broadcast_device.mode) {
+> +		case TICKDEV_MODE_ONESHOT:
+> +			/*
+> +			 * If the system is in oneshot mode we can
+> +			 * unconditionally clear the oneshot mask,
+> +			 * because the CPU is running and therefor not
+
+s/therefor/therefore/
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
