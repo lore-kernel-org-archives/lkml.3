@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752844Ab3GAHMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:12:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37286 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab3GAHM3 (ORCPT
+	id S1752827Ab3GAHOg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:14:36 -0400
+Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:51275 "EHLO
+	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751880Ab3GAHOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:12:29 -0400
-Message-ID: <1372662720.4971.16.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH v2 1/4] imx-drm: imx-drm-core: Export
- imx_drm_encoder_get_mux_id
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: gregkh@linuxfoundation.org, kernel@pengutronix.de, shawn.guo@linaro.org,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Date: Mon, 01 Jul 2013 09:12:00 +0200
-In-Reply-To: <1372438530-1819-1-git-send-email-festevam@gmail.com>
-References: <1372438530-1819-1-git-send-email-festevam@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 1 Jul 2013 03:14:35 -0400
+From: Lei Wen <leiwen@marvell.com>
+To: Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        <mingo@redhat.com>, <leiwen@marvell.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] sched: update cfs_rq weight earlier in enqueue_entity
+Date: Mon, 1 Jul 2013 15:10:33 +0800
+Message-ID: <1372662634-12833-3-git-send-email-leiwen@marvell.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
+References: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, den 28.06.2013, 13:55 -0300 schrieb Fabio Estevam:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> When building imx_v6_v7_defconfig with imx-drm drivers selected as modules, we
-> get the following build error:
-> 
-> ERROR: "imx_drm_encoder_get_mux_id" [drivers/staging/imx-drm/imx-ldb.ko] undefined!
-> 
-> Export the required function to avoid this problem.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
-> Changes since v1:
-> - None
-> 
->  drivers/staging/imx-drm/imx-drm-core.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/imx-drm/imx-drm-core.c b/drivers/staging/imx-drm/imx-drm-core.c
-> index 9854a1d..6bc205b 100644
-> --- a/drivers/staging/imx-drm/imx-drm-core.c
-> +++ b/drivers/staging/imx-drm/imx-drm-core.c
-> @@ -678,6 +678,7 @@ found:
->  
->  	return i;
->  }
-> +EXPORT_SYMBOL_GPL(imx_drm_encoder_get_mux_id);
->  
->  /*
->   * imx_drm_remove_encoder - remove an encoder
+Since we are going to calculate cfs_rq's average ratio by
+runnable_load_avg/load.weight, if not increase the load.weight prior to
+enqueue_entity_load_avg, it may lead to one cfs_rq's avg ratio higher
+than 100%.
 
-All four
-Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
+Adjust the sequence, so that all ratio is kept below 100%.
 
-regards
-Philipp
+Signed-off-by: Lei Wen <leiwen@marvell.com>
+---
+ kernel/sched/fair.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 07bd74c..d1eee84 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1788,8 +1788,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
+-	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
+ 	account_entity_enqueue(cfs_rq, se);
++	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
+ 	update_cfs_shares(cfs_rq);
+ 
+ 	if (flags & ENQUEUE_WAKEUP) {
+-- 
+1.7.10.4
 
