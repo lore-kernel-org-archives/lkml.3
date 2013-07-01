@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab3GALvk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:51:40 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:62168 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753995Ab3GALtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:49:08 -0400
-X-IronPort-AV: E=Sophos;i="4.87,974,1363132800"; 
-   d="scan'208";a="34406405"
-From: Ben Guthro <benjamin.guthro@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
-        <xen-devel@lists.xen.org>
-CC: Ben Guthro <benjamin.guthro@citrix.com>
-Subject: [PATCH v6 5/5] xen/acpi: notify xen when reduced hardware sleep is available
-Date: Mon, 1 Jul 2013 07:48:53 -0400
-Message-ID: <1372679333-8473-6-git-send-email-benjamin.guthro@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
-References: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
+	id S1752782Ab3GAL4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:56:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48217 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab3GAL4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 07:56:37 -0400
+Date: Mon, 1 Jul 2013 13:55:50 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [RFC PATCH 4/4] sched: Consolidate open coded preemptible()
+ checks
+Message-ID: <20130701115550.GA21726@dyad.programming.kicks-ass.net>
+References: <1371761141-25386-1-git-send-email-fweisbec@gmail.com>
+ <1371761141-25386-5-git-send-email-fweisbec@gmail.com>
+ <20130626130511.GL28407@twins.programming.kicks-ass.net>
+ <20130701112019.GB7246@somewhere.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.204.241.11]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701112019.GB7246@somewhere.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of acpi_os_prepare_sleep extended parameter to notify xen
-to make use of the reduced hardware sleep functionality
+On Mon, Jul 01, 2013 at 01:20:20PM +0200, Frederic Weisbecker wrote:
+> On Wed, Jun 26, 2013 at 03:05:11PM +0200, Peter Zijlstra wrote:
+> > On Thu, Jun 20, 2013 at 10:45:41PM +0200, Frederic Weisbecker wrote:
+> > > preempt_schedule() and preempt_schedule_context() open
+> > > code their preemptability checks.
+> > > 
+> > > Use the standard API instead for consolidation.
+> > > 
+> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > > Cc: Ingo Molnar <mingo@kernel.org>
+> > > Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > Cc: Peter Zijlstra <peterz@infradead.org>
+> > > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > > Cc: Borislav Petkov <bp@alien8.de>
+> > > Cc: Alex Shi <alex.shi@intel.com>
+> > > Cc: Paul Turner <pjt@google.com>
+> > > Cc: Mike Galbraith <efault@gmx.de>
+> > > Cc: Vincent Guittot <vincent.guittot@linaro.org>
+> > > ---
+> > >  kernel/context_tracking.c |    3 +--
+> > >  kernel/sched/core.c       |    4 +---
+> > >  2 files changed, 2 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> > > index 6667700..08db730 100644
+> > > --- a/kernel/context_tracking.c
+> > > +++ b/kernel/context_tracking.c
+> > > @@ -88,10 +88,9 @@ void user_enter(void)
+> > >   */
+> > >  void __sched notrace preempt_schedule_context(void)
+> > >  {
+> > > -	struct thread_info *ti = current_thread_info();
+> > >  	enum ctx_state prev_ctx;
+> > >  
+> > > -	if (likely(ti->preempt_count || irqs_disabled()))
+> > > +	if (likely(!preemptible()))
+> > >  		return;
+> > >  
+> > 
+> > #ifdef CONFIG_PREEMPT_COUNT
+> > # define preemptible()  (preempt_count() == 0 && !irqs_disabled())
+> > #else
+> > # define preemptible()  0
+> > #endif
+> > 
+> > 
+> > Wouldn't that give a problem for !PREEMPT_COUNT?
+> 
+> preempt_schedule_context() depends on CONFIG_PREEMPT which depends on
+> CONFIG_PREEMPT_COUNT, so that should work. Or I missed something?
 
-The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
-v5 (reduced HW) sleep interface") on the master branch of
-git://xenbits.xen.org/xen.git.
+Ah indeed. I just tripped over the fact that its weird to not test
+irqs_disabled() even though we don't have the preempt count.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-Acked-by: Konrad Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/acpi.c               |   25 ++++++++++++-------------
- include/xen/acpi.h               |    3 +--
- include/xen/interface/platform.h |    7 ++++---
- 3 files changed, 17 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/xen/acpi.c b/drivers/xen/acpi.c
-index 36d2be1..371dade 100644
---- a/drivers/xen/acpi.c
-+++ b/drivers/xen/acpi.c
-@@ -35,28 +35,27 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
- 
--int xen_acpi_notify_hypervisor_state(u8 sleep_state,
--				     u32 pm1a_cnt, u32 pm1b_cnt,
-+int xen_acpi_notify_hypervisor_state(u8 sleep_state, u32 val_a, u32 val_b,
- 				     bool extended)
- {
-+	unsigned int bits = extended ? 8 : 16;
-+
- 	struct xen_platform_op op = {
- 		.cmd = XENPF_enter_acpi_sleep,
- 		.interface_version = XENPF_INTERFACE_VERSION,
--		.u = {
--			.enter_acpi_sleep = {
--				.pm1a_cnt_val = (u16)pm1a_cnt,
--				.pm1b_cnt_val = (u16)pm1b_cnt,
--				.sleep_state = sleep_state,
--			},
-+		.u.enter_acpi_sleep = {
-+			.val_a = (u16)val_a,
-+			.val_b = (u16)val_b,
-+			.sleep_state = sleep_state,
-+			.flags = extended ? XENPF_ACPI_SLEEP_EXTENDED : 0,
- 		},
- 	};
- 
--	if ((pm1a_cnt & 0xffff0000) || (pm1b_cnt & 0xffff0000)) {
--		WARN(1, "Using more than 16bits of PM1A/B 0x%x/0x%x!"
--		     "Email xen-devel@lists.xensource.com  Thank you.\n", \
--		     pm1a_cnt, pm1b_cnt);
-+	if (WARN((val_a & (~0 << bits)) || (val_b & (~0 << bits)),
-+		 "Using more than %u bits of sleep control values %#x/%#x!"
-+		 "Email xen-devel@lists.xen.org - Thank you.\n", \
-+		 bits, val_a, val_b))
- 		return -1;
--	}
- 
- 	HYPERVISOR_dom0_op(&op);
- 	return 1;
-diff --git a/include/xen/acpi.h b/include/xen/acpi.h
-index 8656055..7770b66 100644
---- a/include/xen/acpi.h
-+++ b/include/xen/acpi.h
-@@ -75,8 +75,7 @@ static inline int xen_acpi_get_pxm(acpi_handle h)
- 	return -ENXIO;
- }
- 
--int xen_acpi_notify_hypervisor_state(u8 sleep_state,
--				     u32 pm1a_cnt, u32 pm1b_cnd,
-+int xen_acpi_notify_hypervisor_state(u8 sleep_state, u32 val_a, u32 val_b,
- 				     bool extended);
- 
- static inline int xen_acpi_suspend_lowlevel(void)
-diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
-index c57d5f6..f1331e3 100644
---- a/include/xen/interface/platform.h
-+++ b/include/xen/interface/platform.h
-@@ -152,10 +152,11 @@ DEFINE_GUEST_HANDLE_STRUCT(xenpf_firmware_info_t);
- #define XENPF_enter_acpi_sleep    51
- struct xenpf_enter_acpi_sleep {
- 	/* IN variables */
--	uint16_t pm1a_cnt_val;      /* PM1a control value. */
--	uint16_t pm1b_cnt_val;      /* PM1b control value. */
-+	uint16_t val_a;             /* PM1a control / sleep type A. */
-+	uint16_t val_b;             /* PM1b control / sleep type B. */
- 	uint32_t sleep_state;       /* Which state to enter (Sn). */
--	uint32_t flags;             /* Must be zero. */
-+#define XENPF_ACPI_SLEEP_EXTENDED 0x00000001
-+	uint32_t flags;             /* XENPF_ACPI_SLEEP_*. */
- };
- DEFINE_GUEST_HANDLE_STRUCT(xenpf_enter_acpi_sleep_t);
- 
--- 
-1.7.9.5
 
