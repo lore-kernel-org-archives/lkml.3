@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695Ab3GAURf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:17:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49076 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755427Ab3GAUKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755474Ab3GAUKm (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Jul 2013 16:10:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49042 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755427Ab3GAUKh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:10:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phil Oester <kernel@linuxace.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 26/26] netfilter: nf_conntrack_ipv6: Plug sk_buff leak in fragment handling
-Date: Mon,  1 Jul 2013 13:10:21 -0700
-Message-Id: <20130701200732.809264201@linuxfoundation.org>
+        Gavin Shan <shangw@linux.vnet.ibm.com>, Steve Best <sbest@us.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 19/26] powerpc/eeh: Fix fetching bus for single-dev-PE
+Date: Mon,  1 Jul 2013 13:10:14 -0700
+Message-Id: <20130701200732.058881668@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -27,40 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Phil Oester <kernel@linuxace.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 142dcdd3c25fc7a3866bb06980e8f93a2ed7e050 upstream.
+commit ea461abf61753b4b79e625a7c20650105b990f21 upstream.
 
-In commit 4cdd3408 ("netfilter: nf_conntrack_ipv6: improve fragmentation
-handling"), an sk_buff leak was introduced when dealing with reassembled
-packets by grabbing a reference to the original skb instead of the
-reassembled skb.  At this point, the leak only impacted conntracks with an
-associated helper.
+While running Linux as guest on top of phyp, we possiblly have
+PE that includes single PCI device. However, we didn't return
+its PCI bus correctly and it leads to failure on recovery from
+EEH errors for single-dev-PE. The patch fixes the issue.
 
-In commit 58a317f1 ("netfilter: ipv6: add IPv6 NAT support"), the bug was
-expanded to include all reassembled packets with unconfirmed conntracks.
-
-Fix this by grabbing a reference to the proper reassembled skb.  This
-closes netfilter bugzilla #823.
-
-Signed-off-by: Phil Oester <kernel@linuxace.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Cc: Steve Best <sbest@us.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/pseries/eeh_pe.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
-+++ b/net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c
-@@ -204,7 +204,7 @@ static unsigned int __ipv6_conntrack_in(
- 		if (ct != NULL && !nf_ct_is_untracked(ct)) {
- 			help = nfct_help(ct);
- 			if ((help && help->helper) || !nf_ct_is_confirmed(ct)) {
--				nf_conntrack_get_reasm(skb);
-+				nf_conntrack_get_reasm(reasm);
- 				NF_HOOK_THRESH(NFPROTO_IPV6, hooknum, reasm,
- 					       (struct net_device *)in,
- 					       (struct net_device *)out,
+--- a/arch/powerpc/platforms/pseries/eeh_pe.c
++++ b/arch/powerpc/platforms/pseries/eeh_pe.c
+@@ -639,7 +639,8 @@ struct pci_bus *eeh_pe_bus_get(struct ee
+ 
+ 	if (pe->type & EEH_PE_PHB) {
+ 		bus = pe->phb->bus;
+-	} else if (pe->type & EEH_PE_BUS) {
++	} else if (pe->type & EEH_PE_BUS ||
++		   pe->type & EEH_PE_DEVICE) {
+ 		edev = list_first_entry(&pe->edevs, struct eeh_dev, list);
+ 		pdev = eeh_dev_to_pci_dev(edev);
+ 		if (pdev)
 
 
