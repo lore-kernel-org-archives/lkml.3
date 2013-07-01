@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab3GANXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 09:23:40 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:40850 "EHLO
+	id S1754261Ab3GANYp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 09:24:45 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:40873 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab3GANXh (ORCPT
+	with ESMTP id S1754172Ab3GANXk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 09:23:37 -0400
+	Mon, 1 Jul 2013 09:23:40 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Shawn Guo <shawn.guo@linaro.org>
 Cc: Russell King <linux@arm.linux.org.uk>,
@@ -14,63 +14,69 @@ Cc: Russell King <linux@arm.linux.org.uk>,
         brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv4 0/8] ARM: mxs: Various Crystalfontz DT additions
-Date: Mon,  1 Jul 2013 15:23:21 +0200
-Message-Id: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv4 4/8] ARM: mxs: dt: cfa10037: make hogpins grabbed by respective drivers
+Date: Mon,  1 Jul 2013 15:23:25 +0200
+Message-Id: <1372685009-15564-5-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/imx28-cfa10037.dts | 19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
-This patch series add DT for the Crystalfontz CFA-10056 and Crystalfontz
-CFA-10058.
-
-The first patch simplifies board detection in mach-mxs.c as suggested by Thomas
-Petazzoni in his review of the precedent DT additions.
-
-The next two patches are adding the DTs.
-
-The last patches are cleaning up the remaining boards DTs.
-
-Changes in v4
- - corrected comment for cfa-10056 and made it cfa-10037 compatible
- - reordered patches
-
-Changes in v3
- - Cleaned up all the DTs for crystalfontz boards.
-
-Changes in v2:
- - took into account the review from Maxime Ripard
-
-Thanks,
-
-Alexandre Belloni (6):
-  ARM: mxs: Simplify detection of CrystalFontz boards
-  ARM: mxs: dt: cfa10037: make hogpins grabbed by respective drivers
-  ARM: mxs: dt: cfa10049: make hogpins grabbed by respective drivers
-  ARM: mxs: dt: cfa10055: make hogpins grabbed by respective drivers
-  ARM: mxs: dt: cfa10057: remove hogpins
-  ARM: mxs: dt: cfa10036: make hogpins grabbed by respective drivers
-
-Brian Lilly (2):
-  ARM: mxs: dt: Add Crystalfontz CFA-10056 device tree
-  ARM: mxs: dt: Add Crystalfontz CFA-10058 device tree
-
- arch/arm/boot/dts/Makefile           |   2 +
- arch/arm/boot/dts/imx28-cfa10036.dts |   7 +-
- arch/arm/boot/dts/imx28-cfa10037.dts |  19 +++--
- arch/arm/boot/dts/imx28-cfa10049.dts |  73 +++++++++++++++---
- arch/arm/boot/dts/imx28-cfa10055.dts |  38 ++++------
- arch/arm/boot/dts/imx28-cfa10056.dts | 119 +++++++++++++++++++++++++++++
- arch/arm/boot/dts/imx28-cfa10057.dts |  23 +-----
- arch/arm/boot/dts/imx28-cfa10058.dts | 141 +++++++++++++++++++++++++++++++++++
- arch/arm/mach-mxs/mach-mxs.c         |   5 +-
- 9 files changed, 359 insertions(+), 68 deletions(-)
- create mode 100644 arch/arm/boot/dts/imx28-cfa10056.dts
- create mode 100644 arch/arm/boot/dts/imx28-cfa10058.dts
-
+diff --git a/arch/arm/boot/dts/imx28-cfa10037.dts b/arch/arm/boot/dts/imx28-cfa10037.dts
+index c2ef3a3..182b99f 100644
+--- a/arch/arm/boot/dts/imx28-cfa10037.dts
++++ b/arch/arm/boot/dts/imx28-cfa10037.dts
+@@ -22,13 +22,19 @@
+ 	apb@80000000 {
+ 		apbh@80000000 {
+ 			pinctrl@80018000 {
+-				pinctrl-names = "default", "default";
+-				pinctrl-1 = <&hog_pins_cfa10037>;
+-
+-				hog_pins_cfa10037: hog-10037@0 {
++				usb_pins_cfa10037: usb-10037@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+ 						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
++				mac0_pins_cfa10037: mac0-10037@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x2153 /* MX28_PAD_SSP2_D5__GPIO_2_21 */
+ 					>;
+ 					fsl,drive-strength = <0>;
+@@ -56,7 +62,8 @@
+ 		mac0: ethernet@800f0000 {
+ 			phy-mode = "rmii";
+ 			pinctrl-names = "default";
+-			pinctrl-0 = <&mac0_pins_a>;
++			pinctrl-0 = <&mac0_pins_a
++				&mac0_pins_cfa10037>;
+ 			phy-reset-gpios = <&gpio2 21 0>;
+ 			phy-reset-duration = <100>;
+ 			status = "okay";
+@@ -68,6 +75,8 @@
+ 
+ 		reg_usb1_vbus: usb1_vbus {
+ 			compatible = "regulator-fixed";
++			pinctrl-names = "default";
++			pinctrl-0 = <&usb_pins_cfa10037>;
+ 			regulator-name = "usb1_vbus";
+ 			regulator-min-microvolt = <5000000>;
+ 			regulator-max-microvolt = <5000000>;
 -- 
 1.8.1.2
 
