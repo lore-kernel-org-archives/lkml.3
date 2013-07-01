@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab3GAVjJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:39:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60069 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754828Ab3GAVjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:39:07 -0400
-Date: Mon, 1 Jul 2013 23:38:59 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: Wrapping EXPORT_SYMBOL_GPL symbols and re-exporting the wrappers
- with EXPORT_SYMBOL
-Message-ID: <20130701213859.GC23539@pd.tnic>
-References: <87bo6m2yok.fsf@nemi.mork.no>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87bo6m2yok.fsf@nemi.mork.no>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755338Ab3GAVlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:41:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49808 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab3GAVlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 17:41:08 -0400
+Date: Mon, 1 Jul 2013 14:41:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] DMA: Fix Marvell Orion and mv_xor after MEMSET removal
+Message-Id: <20130701144106.cf0cff602dbff596bf364de0@linux-foundation.org>
+In-Reply-To: <20130701213706.GF19937@titan.lakedaemon.net>
+References: <1372690589-2218-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	<20130701150407.GB19937@titan.lakedaemon.net>
+	<20130701124205.9571b26975c1910ce5afa896@linux-foundation.org>
+	<20130701213706.GF19937@titan.lakedaemon.net>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 03:32:27PM +0200, Bjørn Mork wrote:
-> I just got a new wireless router and stumbled across an odd set of
-> out-of-tree modules, where two GPL licensed modules were used by a third
-> proprietary licensed one.
+On Mon, 1 Jul 2013 17:37:06 -0400 Jason Cooper <jason@lakedaemon.net> wrote:
+
+> > > Please take a look at the email from lkml I just forwarded to you.  I
+> > > believe this solves your problem, but I don't have time to look closely
+> > > atm.
+> > 
+> > Unhelpful.  Can the rest of us see this email as well please?
 > 
-> The nice router vendor sent me the GPL'd source code, and as expected
-> the GPL modules are little more than wrappers working around the
-> EXPORT_SYMBOL_GPL restrictions.  Here's a complete example of one of
-> them:
+> Sorry about that, the thread I was referring to on lkml was here:
+> 
+> http://comments.gmane.org/gmane.linux.kernel/1516018
+> 
+> And the specific email I was referring to is here (second version of
+> Bartlomiej's patch which addresses what Sebastian was attempting to fix):
+> 
+> http://permalink.gmane.org/gmane.linux.kernel/1517735
 
-I'm wondering if we could fail building modules which do EXPORT_SYMBOL.
+Ah, OK, I have that:
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+http://ozlabs.org/~akpm/mmots/broken-out/drivers-dma-remove-unused-support-for-memset-operations.patch
+http://ozlabs.org/~akpm/mmots/broken-out/drivers-dma-remove-unused-support-for-memset-operations-v3.patch
