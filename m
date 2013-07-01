@@ -1,24 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab3GAUTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:19:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49036 "EHLO
+	id S1755796Ab3GAUUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:20:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49031 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755419Ab3GAUKg (ORCPT
+	with ESMTP id S1755414Ab3GAUKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:36 -0400
+	Mon, 1 Jul 2013 16:10:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 18/26] crypto: algboss - Hold ref count on larval
-Date: Mon,  1 Jul 2013 13:10:13 -0700
-Message-Id: <20130701200731.946094148@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>,
+        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Asit Mallick <asit.k.mallick@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        =?UTF-8?q?Arkadiusz=20Mi=C5=9Bkiewicz?= <arekm@maven.pl>,
+        linux-pci@vger.kernel.org
+Subject: [ 16/26] iommu/vt-d: add quirk for broken interrupt remapping on 55XX chipsets
+Date: Mon,  1 Jul 2013 13:10:11 -0700
+Message-Id: <20130701200731.731148871@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,174 +36,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit 939e17799619e31331d2433041196529515a86a6 upstream.
+commit 03bbcb2e7e292838bb0244f5a7816d194c911d62 upstream.
 
-On Thu, Jun 20, 2013 at 10:00:21AM +0200, Daniel Borkmann wrote:
-> After having fixed a NULL pointer dereference in SCTP 1abd165e ("net:
-> sctp: fix NULL pointer dereference in socket destruction"), I ran into
-> the following NULL pointer dereference in the crypto subsystem with
-> the same reproducer, easily hit each time:
->
-> BUG: unable to handle kernel NULL pointer dereference at (null)
-> IP: [<ffffffff81070321>] __wake_up_common+0x31/0x90
-> PGD 0
-> Oops: 0000 [#1] SMP
-> Modules linked in: padlock_sha(F-) sha256_generic(F) sctp(F) libcrc32c(F) [..]
-> CPU: 6 PID: 3326 Comm: cryptomgr_probe Tainted: GF            3.10.0-rc5+ #1
-> Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
-> task: ffff88007b6cf4e0 ti: ffff88007b7cc000 task.ti: ffff88007b7cc000
-> RIP: 0010:[<ffffffff81070321>]  [<ffffffff81070321>] __wake_up_common+0x31/0x90
-> RSP: 0018:ffff88007b7cde08  EFLAGS: 00010082
-> RAX: ffffffffffffffe8 RBX: ffff88003756c130 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: 0000000000000003 RDI: ffff88003756c130
-> RBP: ffff88007b7cde48 R08: 0000000000000000 R09: ffff88012b173200
-> R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000282
-> R13: ffff88003756c138 R14: 0000000000000000 R15: 0000000000000000
-> FS:  0000000000000000(0000) GS:ffff88012fc60000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000000 CR3: 0000000001a0b000 CR4: 00000000000007e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Stack:
->  ffff88007b7cde28 0000000300000000 ffff88007b7cde28 ffff88003756c130
->  0000000000000282 ffff88003756c128 ffffffff81227670 0000000000000000
->  ffff88007b7cde78 ffffffff810722b7 ffff88007cdcf000 ffffffff81a90540
-> Call Trace:
->  [<ffffffff81227670>] ? crypto_alloc_pcomp+0x20/0x20
->  [<ffffffff810722b7>] complete_all+0x47/0x60
->  [<ffffffff81227708>] cryptomgr_probe+0x98/0xc0
->  [<ffffffff81227670>] ? crypto_alloc_pcomp+0x20/0x20
->  [<ffffffff8106760e>] kthread+0xce/0xe0
->  [<ffffffff81067540>] ? kthread_freezable_should_stop+0x70/0x70
->  [<ffffffff815450dc>] ret_from_fork+0x7c/0xb0
->  [<ffffffff81067540>] ? kthread_freezable_should_stop+0x70/0x70
-> Code: 41 56 41 55 41 54 53 48 83 ec 18 66 66 66 66 90 89 75 cc 89 55 c8
->       4c 8d 6f 08 48 8b 57 08 41 89 cf 4d 89 c6 48 8d 42 e
-> RIP  [<ffffffff81070321>] __wake_up_common+0x31/0x90
->  RSP <ffff88007b7cde08>
-> CR2: 0000000000000000
-> ---[ end trace b495b19270a4d37e ]---
->
-> My assumption is that the following is happening: the minimal SCTP
-> tool runs under ``echo 1 > /proc/sys/net/sctp/auth_enable'', hence
-> it's making use of crypto_alloc_hash() via sctp_auth_init_hmacs().
-> It forks itself, heavily allocates, binds, listens and waits in
-> accept on sctp sockets, and then randomly kills some of them (no
-> need for an actual client in this case to hit this). Then, again,
-> allocating, binding, etc, and then killing child processes.
->
-> The problem that might be happening here is that cryptomgr requests
-> the module to probe/load through cryptomgr_schedule_probe(), but
-> before the thread handler cryptomgr_probe() returns, we return from
-> the wait_for_completion_interruptible() function and probably already
-> have cleared up larval, thus we run into a NULL pointer dereference
-> when in cryptomgr_probe() complete_all() is being called.
->
-> If we wait with wait_for_completion() instead, this panic will not
-> occur anymore. This is valid, because in case a signal is pending,
-> cryptomgr_probe() returns from probing anyway with properly calling
-> complete_all().
+A few years back intel published a spec update:
+http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
 
-The use of wait_for_completion_interruptible is intentional so that
-we don't lock up the thread if a bug causes us to never wake up.
+For the 5520 and 5500 chipsets which contained an errata (specificially errata
+53), which noted that these chipsets can't properly do interrupt remapping, and
+as a result the recommend that interrupt remapping be disabled in bios.  While
+many vendors have a bios update to do exactly that, not all do, and of course
+not all users update their bios to a level that corrects the problem.  As a
+result, occasionally interrupts can arrive at a cpu even after affinity for that
+interrupt has be moved, leading to lost or spurrious interrupts (usually
+characterized by the message:
+kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
 
-This bug is caused by the helper thread using the larval without
-holding a reference count on it.  If the helper thread completes
-after the original thread requesting for help has gone away and
-destroyed the larval, then we get the crash above.
+There have been several incidents recently of people seeing this error, and
+investigation has shown that they have system for which their BIOS level is such
+that this feature was not properly turned off.  As such, it would be good to
+give them a reminder that their systems are vulnurable to this problem.  For
+details of those that reported the problem, please see:
+https://bugzilla.redhat.com/show_bug.cgi?id=887006
 
-So the fix is to hold a reference count on the larval.
+[ Joerg: Removed CONFIG_IRQ_REMAP ifdef from early-quirks.c ]
 
-Reported-by: Daniel Borkmann <dborkman@redhat.com>
-Tested-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Prarit Bhargava <prarit@redhat.com>
+CC: Don Zickus <dzickus@redhat.com>
+CC: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Asit Mallick <asit.k.mallick@intel.com>
+CC: David Woodhouse <dwmw2@infradead.org>
+CC: linux-pci@vger.kernel.org
+CC: Joerg Roedel <joro@8bytes.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- crypto/algboss.c  |   15 ++++++++-------
- crypto/api.c      |    6 ------
- crypto/internal.h |    6 ++++++
- 3 files changed, 14 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/irq_remapping.h |    3 +++
+ arch/x86/kernel/early-quirks.c       |   20 ++++++++++++++++++++
+ drivers/iommu/intel_irq_remapping.c  |   10 ++++++++++
+ drivers/iommu/irq_remapping.c        |    6 ++++++
+ drivers/iommu/irq_remapping.h        |    2 ++
+ 5 files changed, 41 insertions(+)
 
---- a/crypto/algboss.c
-+++ b/crypto/algboss.c
-@@ -45,10 +45,9 @@ struct cryptomgr_param {
- 		} nu32;
- 	} attrs[CRYPTO_MAX_ATTRS];
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -23,11 +23,13 @@
+ #define __X86_IRQ_REMAPPING_H
  
--	char larval[CRYPTO_MAX_ALG_NAME];
- 	char template[CRYPTO_MAX_ALG_NAME];
+ #include <asm/io_apic.h>
++#include <linux/irq.h>
  
--	struct completion *completion;
-+	struct crypto_larval *larval;
+ #ifdef CONFIG_IRQ_REMAP
  
- 	u32 otype;
- 	u32 omask;
-@@ -87,7 +86,8 @@ static int cryptomgr_probe(void *data)
- 	crypto_tmpl_put(tmpl);
+ extern void setup_irq_remapping_ops(void);
+ extern int irq_remapping_supported(void);
++extern void set_irq_remapping_broken(void);
+ extern int irq_remapping_prepare(void);
+ extern int irq_remapping_enable(void);
+ extern void irq_remapping_disable(void);
+@@ -54,6 +56,7 @@ void irq_remap_modify_chip_defaults(stru
  
- out:
--	complete_all(param->completion);
-+	complete_all(&param->larval->completion);
-+	crypto_alg_put(&param->larval->alg);
- 	kfree(param);
- 	module_put_and_exit(0);
- }
-@@ -187,18 +187,19 @@ static int cryptomgr_schedule_probe(stru
- 	param->otype = larval->alg.cra_flags;
- 	param->omask = larval->mask;
+ static inline void setup_irq_remapping_ops(void) { }
+ static inline int irq_remapping_supported(void) { return 0; }
++static inline void set_irq_remapping_broken(void) { }
+ static inline int irq_remapping_prepare(void) { return -ENODEV; }
+ static inline int irq_remapping_enable(void) { return -ENODEV; }
+ static inline void irq_remapping_disable(void) { }
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -18,6 +18,7 @@
+ #include <asm/apic.h>
+ #include <asm/iommu.h>
+ #include <asm/gart.h>
++#include <asm/irq_remapping.h>
  
--	memcpy(param->larval, larval->alg.cra_name, CRYPTO_MAX_ALG_NAME);
--
--	param->completion = &larval->completion;
-+	crypto_alg_get(&larval->alg);
-+	param->larval = larval;
- 
- 	thread = kthread_run(cryptomgr_probe, param, "cryptomgr_probe");
- 	if (IS_ERR(thread))
--		goto err_free_param;
-+		goto err_put_larval;
- 
- 	wait_for_completion_interruptible(&larval->completion);
- 
- 	return NOTIFY_STOP;
- 
-+err_put_larval:
-+	crypto_alg_put(&larval->alg);
- err_free_param:
- 	kfree(param);
- err_put_module:
---- a/crypto/api.c
-+++ b/crypto/api.c
-@@ -34,12 +34,6 @@ EXPORT_SYMBOL_GPL(crypto_alg_sem);
- BLOCKING_NOTIFIER_HEAD(crypto_chain);
- EXPORT_SYMBOL_GPL(crypto_chain);
- 
--static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
--{
--	atomic_inc(&alg->cra_refcnt);
--	return alg;
--}
--
- struct crypto_alg *crypto_mod_get(struct crypto_alg *alg)
+ static void __init fix_hypertransport_config(int num, int slot, int func)
  {
- 	return try_module_get(alg->cra_module) ? crypto_alg_get(alg) : NULL;
---- a/crypto/internal.h
-+++ b/crypto/internal.h
-@@ -103,6 +103,12 @@ int crypto_register_notifier(struct noti
- int crypto_unregister_notifier(struct notifier_block *nb);
- int crypto_probing_notify(unsigned long val, void *v);
+@@ -192,6 +193,21 @@ static void __init ati_bugs_contd(int nu
+ }
+ #endif
  
-+static inline struct crypto_alg *crypto_alg_get(struct crypto_alg *alg)
++static void __init intel_remapping_check(int num, int slot, int func)
 +{
-+	atomic_inc(&alg->cra_refcnt);
-+	return alg;
++	u8 revision;
++
++	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
++
++	/*
++	 * Revision 0x13 of this chipset supports irq remapping
++	 * but has an erratum that breaks its behavior, flag it as such
++	 */
++	if (revision == 0x13)
++		set_irq_remapping_broken();
++
 +}
 +
- static inline void crypto_alg_put(struct crypto_alg *alg)
+ #define QFLAG_APPLY_ONCE 	0x1
+ #define QFLAG_APPLIED		0x2
+ #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
+@@ -221,6 +237,10 @@ static struct chipset early_qrk[] __init
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
+ 	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+ 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
++	{ PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
++	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
++	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
++	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+ 	{}
+ };
+ 
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -524,6 +524,16 @@ static int __init intel_irq_remapping_su
+ 
+ 	if (disable_irq_remap)
+ 		return 0;
++	if (irq_remap_broken) {
++		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
++			   "This system BIOS has enabled interrupt remapping\n"
++			   "on a chipset that contains an erratum making that\n"
++			   "feature unstable.  To maintain system stability\n"
++			   "interrupt remapping is being disabled.  Please\n"
++			   "contact your BIOS vendor for an update\n");
++		disable_irq_remap = 1;
++		return 0;
++	}
+ 
+ 	if (!dmar_ir_support())
+ 		return 0;
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -18,6 +18,7 @@
+ int irq_remapping_enabled;
+ 
+ int disable_irq_remap;
++int irq_remap_broken;
+ int disable_sourceid_checking;
+ int no_x2apic_optout;
+ 
+@@ -210,6 +211,11 @@ void __init setup_irq_remapping_ops(void
+ #endif
+ }
+ 
++void set_irq_remapping_broken(void)
++{
++	irq_remap_broken = 1;
++}
++
+ int irq_remapping_supported(void)
  {
- 	if (atomic_dec_and_test(&alg->cra_refcnt) && alg->cra_destroy)
+ 	if (disable_irq_remap)
+--- a/drivers/iommu/irq_remapping.h
++++ b/drivers/iommu/irq_remapping.h
+@@ -32,6 +32,7 @@ struct pci_dev;
+ struct msi_msg;
+ 
+ extern int disable_irq_remap;
++extern int irq_remap_broken;
+ extern int disable_sourceid_checking;
+ extern int no_x2apic_optout;
+ extern int irq_remapping_enabled;
+@@ -89,6 +90,7 @@ extern struct irq_remap_ops amd_iommu_ir
+ 
+ #define irq_remapping_enabled 0
+ #define disable_irq_remap     1
++#define irq_remap_broken      0
+ 
+ #endif /* CONFIG_IRQ_REMAP */
+ 
 
 
