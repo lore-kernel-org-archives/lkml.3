@@ -1,241 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab3GAUFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:05:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:49020 "EHLO mga11.intel.com"
+	id S1755225Ab3GAUEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:04:49 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54329 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130Ab3GAUEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:04:50 -0400
+	id S1755130Ab3GAUEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:04:46 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,975,1363158000"; 
-   d="scan'208";a="363734589"
-Subject: [PATCH 6/7] kconfig: consolidate printk options
+   d="scan'208";a="325365193"
+Subject: [PATCH 3/7] consolidate runtime testing configs
 To: torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Mon, 01 Jul 2013 13:04:49 -0700
+Date: Mon, 01 Jul 2013 13:04:44 -0700
 References: <20130701200440.712D8B4E@viggo.jf.intel.com>
 In-Reply-To: <20130701200440.712D8B4E@viggo.jf.intel.com>
-Message-Id: <20130701200449.984D093C@viggo.jf.intel.com>
+Message-Id: <20130701200444.09573F69@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Original posting:
 
-Same deal, take the printk-related things and hide them in a menu.
-This takes another 4 items out of the top-level menu.
+	http://lkml.kernel.org/r/20121214184206.FC11422F@kernel.stglabs.ibm.com
 
+These runtime tests are great, except that there are a lot of them,
+and they are very rarely needed.  Give them their own menu so that
+only the folks who need them will have to go looking for them.
+
+Note that there are some other runtime tests that are not in here,
+like for RCU or locking.  This menu should only be used for tests
+that do not have a more appropriate home.
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
 Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 ---
 
- linux.git-davehans/lib/Kconfig.debug |  177 +++++++++++++++++------------------
- 1 file changed, 90 insertions(+), 87 deletions(-)
+ linux.git-davehans/lib/Kconfig.debug |  157 ++++++++++++++++++-----------------
+ 1 file changed, 81 insertions(+), 76 deletions(-)
 
-diff -puN lib/Kconfig.debug~printk-options lib/Kconfig.debug
---- linux.git/lib/Kconfig.debug~printk-options	2013-07-01 12:53:21.781543517 -0700
-+++ linux.git-davehans/lib/Kconfig.debug	2013-07-01 12:53:21.785543695 -0700
-@@ -1,3 +1,4 @@
-+menu "printk and dmesg options"
- 
- config PRINTK_TIME
- 	bool "Show timing information on printks"
-@@ -25,6 +26,95 @@ config DEFAULT_MESSAGE_LOGLEVEL
- 	  that are auditing their logs closely may want to set it to a lower
- 	  priority.
- 
-+config BOOT_PRINTK_DELAY
-+	bool "Delay each boot printk message by N milliseconds"
-+	depends on DEBUG_KERNEL && PRINTK && GENERIC_CALIBRATE_DELAY
-+	help
-+	  This build option allows you to read kernel boot messages
-+	  by inserting a short delay after each one.  The delay is
-+	  specified in milliseconds on the kernel command line,
-+	  using "boot_delay=N".
-+
-+	  It is likely that you would also need to use "lpj=M" to preset
-+	  the "loops per jiffie" value.
-+	  See a previous boot log for the "lpj" value to use for your
-+	  system, and then set "lpj=M" before setting "boot_delay=N".
-+	  NOTE:  Using this option may adversely affect SMP systems.
-+	  I.e., processors other than the first one may not boot up.
-+	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
-+	  what it believes to be lockup conditions.
-+
-+config DYNAMIC_DEBUG
-+	bool "Enable dynamic printk() support"
-+	default n
-+	depends on PRINTK
-+	depends on DEBUG_FS
-+	help
-+
-+	  Compiles debug level messages into the kernel, which would not
-+	  otherwise be available at runtime. These messages can then be
-+	  enabled/disabled based on various levels of scope - per source file,
-+	  function, module, format string, and line number. This mechanism
-+	  implicitly compiles in all pr_debug() and dev_dbg() calls, which
-+	  enlarges the kernel text size by about 2%.
-+
-+	  If a source file is compiled with DEBUG flag set, any
-+	  pr_debug() calls in it are enabled by default, but can be
-+	  disabled at runtime as below.  Note that DEBUG flag is
-+	  turned on by many CONFIG_*DEBUG* options.
-+
-+	  Usage:
-+
-+	  Dynamic debugging is controlled via the 'dynamic_debug/control' file,
-+	  which is contained in the 'debugfs' filesystem. Thus, the debugfs
-+	  filesystem must first be mounted before making use of this feature.
-+	  We refer the control file as: <debugfs>/dynamic_debug/control. This
-+	  file contains a list of the debug statements that can be enabled. The
-+	  format for each line of the file is:
-+
-+		filename:lineno [module]function flags format
-+
-+	  filename : source file of the debug statement
-+	  lineno : line number of the debug statement
-+	  module : module that contains the debug statement
-+	  function : function that contains the debug statement
-+          flags : '=p' means the line is turned 'on' for printing
-+          format : the format used for the debug statement
-+
-+	  From a live system:
-+
-+		nullarbor:~ # cat <debugfs>/dynamic_debug/control
-+		# filename:lineno [module]function flags format
-+		fs/aio.c:222 [aio]__put_ioctx =_ "__put_ioctx:\040freeing\040%p\012"
-+		fs/aio.c:248 [aio]ioctx_alloc =_ "ENOMEM:\040nr_events\040too\040high\012"
-+		fs/aio.c:1770 [aio]sys_io_cancel =_ "calling\040cancel\012"
-+
-+	  Example usage:
-+
-+		// enable the message at line 1603 of file svcsock.c
-+		nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// enable all the messages in file svcsock.c
-+		nullarbor:~ # echo -n 'file svcsock.c +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// enable all the messages in the NFS server module
-+		nullarbor:~ # echo -n 'module nfsd +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// enable all 12 messages in the function svc_process()
-+		nullarbor:~ # echo -n 'func svc_process +p' >
-+						<debugfs>/dynamic_debug/control
-+
-+		// disable all 12 messages in the function svc_process()
-+		nullarbor:~ # echo -n 'func svc_process -p' >
-+						<debugfs>/dynamic_debug/control
-+
-+	  See Documentation/dynamic-debug-howto.txt for additional information.
-+
-+endmenu # "printk and dmesg options"
-+
- menu "Compile-time checks and compiler options"
- 
- config DEBUG_INFO
-@@ -940,24 +1030,6 @@ config DEBUG_CREDENTIALS
+diff -puN lib/Kconfig.debug~consolidat-runtime-testing-configs lib/Kconfig.debug
+--- linux.git/lib/Kconfig.debug~consolidat-runtime-testing-configs	2013-07-01 12:53:21.002508983 -0700
++++ linux.git-davehans/lib/Kconfig.debug	2013-07-01 12:53:21.006509160 -0700
+@@ -861,15 +861,6 @@ config DEBUG_LIST
  
  	  If unsure, say N.
  
--config BOOT_PRINTK_DELAY
--	bool "Delay each boot printk message by N milliseconds"
--	depends on DEBUG_KERNEL && PRINTK && GENERIC_CALIBRATE_DELAY
+-config TEST_LIST_SORT
+-	bool "Linked list sorting test"
+-	depends on DEBUG_KERNEL
 -	help
--	  This build option allows you to read kernel boot messages
--	  by inserting a short delay after each one.  The delay is
--	  specified in milliseconds on the kernel command line,
--	  using "boot_delay=N".
+-	  Enable this to turn on 'list_sort()' function test. This test is
+-	  executed only once during system boot, so affects only boot time.
 -
--	  It is likely that you would also need to use "lpj=M" to preset
--	  the "loops per jiffie" value.
--	  See a previous boot log for the "lpj" value to use for your
--	  system, and then set "lpj=M" before setting "boot_delay=N".
--	  NOTE:  Using this option may adversely affect SMP systems.
--	  I.e., processors other than the first one may not boot up.
--	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
--	  what it believes to be lockup conditions.
+-	  If unsure, say N.
 -
- menu "RCU Debugging"
+ config DEBUG_SG
+ 	bool "Debug SG table operations"
+ 	depends on DEBUG_KERNEL
+@@ -1082,33 +1073,6 @@ config RCU_TRACE
  
- config PROVE_RCU
-@@ -1441,75 +1513,6 @@ config BUILD_DOCSRC
+ endmenu # "RCU Debugging"
  
- 	  Say N if you are unsure.
- 
--config DYNAMIC_DEBUG
--	bool "Enable dynamic printk() support"
+-config KPROBES_SANITY_TEST
+-	bool "Kprobes sanity tests"
+-	depends on DEBUG_KERNEL
+-	depends on KPROBES
 -	default n
--	depends on PRINTK
--	depends on DEBUG_FS
 -	help
+-	  This option provides for testing basic kprobes functionality on
+-	  boot. A sample kprobe, jprobe and kretprobe are inserted and
+-	  verified for functionality.
 -
--	  Compiles debug level messages into the kernel, which would not
--	  otherwise be available at runtime. These messages can then be
--	  enabled/disabled based on various levels of scope - per source file,
--	  function, module, format string, and line number. This mechanism
--	  implicitly compiles in all pr_debug() and dev_dbg() calls, which
--	  enlarges the kernel text size by about 2%.
+-	  Say N if you are unsure.
 -
--	  If a source file is compiled with DEBUG flag set, any
--	  pr_debug() calls in it are enabled by default, but can be
--	  disabled at runtime as below.  Note that DEBUG flag is
--	  turned on by many CONFIG_*DEBUG* options.
+-config BACKTRACE_SELF_TEST
+-	tristate "Self test for the backtrace code"
+-	depends on DEBUG_KERNEL
+-	default n
+-	help
+-	  This option provides a kernel module that can be used to test
+-	  the kernel stack backtrace code. This option is not useful
+-	  for distributions or general kernels, but only for kernel
+-	  developers working on architecture code.
 -
--	  Usage:
+-	  Note that if you want to also test saved backtraces, you will
+-	  have to enable STACKTRACE as well.
 -
--	  Dynamic debugging is controlled via the 'dynamic_debug/control' file,
--	  which is contained in the 'debugfs' filesystem. Thus, the debugfs
--	  filesystem must first be mounted before making use of this feature.
--	  We refer the control file as: <debugfs>/dynamic_debug/control. This
--	  file contains a list of the debug statements that can be enabled. The
--	  format for each line of the file is:
+-	  Say N if you are unsure.
 -
--		filename:lineno [module]function flags format
+ config DEBUG_BLOCK_EXT_DEVT
+         bool "Force extended block device numbers and spread them"
+ 	depends on DEBUG_KERNEL
+@@ -1151,21 +1115,6 @@ config DEBUG_FORCE_WEAK_PER_CPU
+ 	  To ensure that generic code follows the above rules, this
+ 	  option forces all percpu variables to be defined as weak.
+ 
+-config LKDTM
+-	tristate "Linux Kernel Dump Test Tool Module"
+-	depends on DEBUG_FS
+-	depends on BLOCK
+-	default n
+-	help
+-	This module enables testing of the different dumping mechanisms by
+-	inducing system failures at predefined crash points.
+-	If you don't need it: say N
+-	Choose M here to compile this code as a module. The module will be
+-	called lkdtm.
 -
--	  filename : source file of the debug statement
--	  lineno : line number of the debug statement
--	  module : module that contains the debug statement
--	  function : function that contains the debug statement
--          flags : '=p' means the line is turned 'on' for printing
--          format : the format used for the debug statement
+-	Documentation on how to use the module can be found in
+-	Documentation/fault-injection/provoke-crashes.txt
 -
--	  From a live system:
+ config NOTIFIER_ERROR_INJECTION
+ 	tristate "Notifier error injection"
+ 	depends on DEBUG_KERNEL
+@@ -1341,6 +1290,59 @@ config DEBUG_STRICT_USER_COPY_CHECKS
+ 
+ source kernel/trace/Kconfig
+ 
++menu "Runtime Testing"
++
++config LKDTM
++	tristate "Linux Kernel Dump Test Tool Module"
++	depends on DEBUG_FS
++	depends on BLOCK
++	default n
++	help
++	This module enables testing of the different dumping mechanisms by
++	inducing system failures at predefined crash points.
++	If you don't need it: say N
++	Choose M here to compile this code as a module. The module will be
++	called lkdtm.
++
++	Documentation on how to use the module can be found in
++	Documentation/fault-injection/provoke-crashes.txt
++
++config TEST_LIST_SORT
++	bool "Linked list sorting test"
++	depends on DEBUG_KERNEL
++	help
++	  Enable this to turn on 'list_sort()' function test. This test is
++	  executed only once during system boot, so affects only boot time.
++
++	  If unsure, say N.
++
++config KPROBES_SANITY_TEST
++	bool "Kprobes sanity tests"
++	depends on DEBUG_KERNEL
++	depends on KPROBES
++	default n
++	help
++	  This option provides for testing basic kprobes functionality on
++	  boot. A sample kprobe, jprobe and kretprobe are inserted and
++	  verified for functionality.
++
++	  Say N if you are unsure.
++
++config BACKTRACE_SELF_TEST
++	tristate "Self test for the backtrace code"
++	depends on DEBUG_KERNEL
++	default n
++	help
++	  This option provides a kernel module that can be used to test
++	  the kernel stack backtrace code. This option is not useful
++	  for distributions or general kernels, but only for kernel
++	  developers working on architecture code.
++
++	  Note that if you want to also test saved backtraces, you will
++	  have to enable STACKTRACE as well.
++
++	  Say N if you are unsure.
++
+ config RBTREE_TEST
+ 	tristate "Red-Black tree test"
+ 	depends on m && DEBUG_KERNEL
+@@ -1354,6 +1356,34 @@ config INTERVAL_TREE_TEST
+ 	help
+ 	  A benchmark measuring the performance of the interval tree library
+ 
++config ATOMIC64_SELFTEST
++	bool "Perform an atomic64_t self-test at boot"
++	help
++	  Enable this option to test the atomic64_t functions at boot.
++
++	  If unsure, say N.
++
++config ASYNC_RAID6_TEST
++	tristate "Self test for hardware accelerated raid6 recovery"
++	depends on ASYNC_RAID6_RECOV
++	select ASYNC_MEMCPY
++	---help---
++	  This is a one-shot self test that permutes through the
++	  recovery of all the possible two disk failure scenarios for a
++	  N-disk array.  Recovery is performed with the asynchronous
++	  raid6 recovery routines, and will optionally use an offload
++	  engine if one is available.
++
++	  If unsure, say N.
++
++config TEST_STRING_HELPERS
++	tristate "Test functions located in the string_helpers module at runtime"
++
++config TEST_KSTRTOX
++	tristate "Test kstrto*() family of functions at runtime"
++
++endmenu # runtime tests
++
+ config PROVIDE_OHCI1394_DMA_INIT
+ 	bool "Remote debugging over FireWire early on boot"
+ 	depends on PCI && X86
+@@ -1483,32 +1513,7 @@ config DMA_API_DEBUG
+ 	  This option causes a performance degredation.  Use only if you want
+ 	  to debug device drivers. If unsure, say N.
+ 
+-config ATOMIC64_SELFTEST
+-	bool "Perform an atomic64_t self-test at boot"
+-	help
+-	  Enable this option to test the atomic64_t functions at boot.
 -
--		nullarbor:~ # cat <debugfs>/dynamic_debug/control
--		# filename:lineno [module]function flags format
--		fs/aio.c:222 [aio]__put_ioctx =_ "__put_ioctx:\040freeing\040%p\012"
--		fs/aio.c:248 [aio]ioctx_alloc =_ "ENOMEM:\040nr_events\040too\040high\012"
--		fs/aio.c:1770 [aio]sys_io_cancel =_ "calling\040cancel\012"
+-	  If unsure, say N.
 -
--	  Example usage:
+-config ASYNC_RAID6_TEST
+-	tristate "Self test for hardware accelerated raid6 recovery"
+-	depends on ASYNC_RAID6_RECOV
+-	select ASYNC_MEMCPY
+-	---help---
+-	  This is a one-shot self test that permutes through the
+-	  recovery of all the possible two disk failure scenarios for a
+-	  N-disk array.  Recovery is performed with the asynchronous
+-	  raid6 recovery routines, and will optionally use an offload
+-	  engine if one is available.
 -
--		// enable the message at line 1603 of file svcsock.c
--		nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
--						<debugfs>/dynamic_debug/control
+-	  If unsure, say N.
 -
--		// enable all the messages in file svcsock.c
--		nullarbor:~ # echo -n 'file svcsock.c +p' >
--						<debugfs>/dynamic_debug/control
+ source "samples/Kconfig"
+ 
+ source "lib/Kconfig.kgdb"
+ 
+-config TEST_STRING_HELPERS
+-	tristate "Test functions located in the string_helpers module at runtime"
 -
--		// enable all the messages in the NFS server module
--		nullarbor:~ # echo -n 'module nfsd +p' >
--						<debugfs>/dynamic_debug/control
--
--		// enable all 12 messages in the function svc_process()
--		nullarbor:~ # echo -n 'func svc_process +p' >
--						<debugfs>/dynamic_debug/control
--
--		// disable all 12 messages in the function svc_process()
--		nullarbor:~ # echo -n 'func svc_process -p' >
--						<debugfs>/dynamic_debug/control
--
--	  See Documentation/dynamic-debug-howto.txt for additional information.
--
- config DMA_API_DEBUG
- 	bool "Enable debugging of DMA-API usage"
- 	depends on HAVE_DMA_API_DEBUG
+-config TEST_KSTRTOX
+-	tristate "Test kstrto*() family of functions at runtime"
 _
