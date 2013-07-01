@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3GAUoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:44:17 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:59373 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754818Ab3GAUoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:44:16 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Jouni Malinen <jouni@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: [PATCH] ath9k_htc: fix data race between request_firmware_nowait() callback and suspend()
-Date: Tue,  2 Jul 2013 00:43:42 +0400
-Message-Id: <1372711422-4604-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.1.2
+	id S1755398Ab3GAUpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:45:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49502 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818Ab3GAUpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:45:17 -0400
+Date: Mon, 1 Jul 2013 13:45:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Young <dyoung@redhat.com>
+Subject: Re: [PATCH 4/4] selftests: get {cpu,memory}-hotplug tests to run
+Message-Id: <20130701134516.6f043ea9b30ed4fd161704ad@linux-foundation.org>
+In-Reply-To: <1372596791-12968-5-git-send-email-artagnon@gmail.com>
+References: <1372596791-12968-1-git-send-email-artagnon@gmail.com>
+	<1372596791-12968-5-git-send-email-artagnon@gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ath9k_hif_usb_probe() requests firmware asynchronically and
-there is some initialization postponed till firmware is ready.
-In particular, ath9k_hif_usb_firmware_cb() callback initializes
-hif_dev->tx.tx_buf and hif_dev->tx.tx_pending lists.
+On Sun, 30 Jun 2013 18:23:11 +0530 Ramkumar Ramachandra <artagnon@gmail.com> wrote:
 
-At the same time, ath9k_hif_usb_suspend() iterates that lists through
-ath9k_hif_usb_dealloc_urbs(). If suspend happens before request_firmware_nowait()
-callback is called, it can lead to oops.
+> The cpu-hotplug and memory-hotplug tests don't run:
+> 
+>   $ sudo make -C tools/testing/selftests TARGETS=cpu-hotplug run_tests
+>   /bin/sh: ./on-off-test.sh: Permission denied
+> 
+>   $ sudo make -C tools/testing/selftests TARGETS=memory-hotplug run_tests
+>   /bin/sh: ./on-off-test.sh: Permission denied
+> 
+> Flip the executable bit fixing this.
+> 
+> ...
+>
+>  2 files changed, 0 insertions(+), 0 deletions(-)
+>  mode change 100644 => 100755 tools/testing/selftests/cpu-hotplug/on-off-test.sh
+>  mode change 100644 => 100755 tools/testing/selftests/memory-hotplug/on-off-test.sh
+> 
+> diff --git a/tools/testing/selftests/cpu-hotplug/on-off-test.sh b/tools/testing/selftests/cpu-hotplug/on-off-test.sh
+> old mode 100644
+> new mode 100755
+> diff --git a/tools/testing/selftests/memory-hotplug/on-off-test.sh b/tools/testing/selftests/memory-hotplug/on-off-test.sh
+> old mode 100644
+> new mode 100755
 
-Similar issue could be in ath9k_hif_usb_disconnect(), but it is prevented
-using hif_dev->fw_done completion and HIF_USB_READY flag. The patch extends
-this approach to suspend() as well.
+That won't work.  The x bit will too easily get lost again - for
+example, patch(1) will rub it out.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+This:
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/net/wireless/ath/ath9k/hif_usb.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
-index f5dda84..fcd9aa5 100644
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -1076,7 +1076,7 @@ static void ath9k_hif_usb_firmware_fail(struct hif_device_usb *hif_dev)
- 	struct device *dev = &hif_dev->udev->dev;
- 	struct device *parent = dev->parent;
+--- a/tools/testing/selftests/cpu-hotplug/Makefile~tools-testing-selftests-dont-assume-the-x-bit-is-set-on-scripts
++++ a/tools/testing/selftests/cpu-hotplug/Makefile
+@@ -1,6 +1,6 @@
+ all:
  
--	complete(&hif_dev->fw_done);
-+	complete_all(&hif_dev->fw_done);
+ run_tests:
+-	@./on-off-test.sh || echo "cpu-hotplug selftests: [FAIL]"
++	@/bin/sh ./on-off-test.sh || echo "cpu-hotplug selftests: [FAIL]"
  
- 	if (parent)
- 		device_lock(parent);
-@@ -1125,7 +1125,7 @@ static void ath9k_hif_usb_firmware_cb(const struct firmware *fw, void *context)
+ clean:
+--- a/tools/testing/selftests/memory-hotplug/Makefile~tools-testing-selftests-dont-assume-the-x-bit-is-set-on-scripts
++++ a/tools/testing/selftests/memory-hotplug/Makefile
+@@ -1,6 +1,6 @@
+ all:
  
- 	release_firmware(fw);
- 	hif_dev->flags |= HIF_USB_READY;
--	complete(&hif_dev->fw_done);
-+	complete_all(&hif_dev->fw_done);
+ run_tests:
+-	@./on-off-test.sh || echo "memory-hotplug selftests: [FAIL]"
++	@/bin/sh ./on-off-test.sh || echo "memory-hotplug selftests: [FAIL]"
  
- 	return;
- 
-@@ -1310,7 +1310,10 @@ static int ath9k_hif_usb_suspend(struct usb_interface *interface,
- 	if (!(hif_dev->flags & HIF_USB_START))
- 		ath9k_htc_suspend(hif_dev->htc_handle);
- 
--	ath9k_hif_usb_dealloc_urbs(hif_dev);
-+	wait_for_completion(&hif_dev->fw_done);
-+
-+	if (hif_dev->flags & HIF_USB_READY)
-+		ath9k_hif_usb_dealloc_urbs(hif_dev);
- 
- 	return 0;
- }
--- 
-1.8.1.2
+ clean:
+_
 
