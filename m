@@ -1,62 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258Ab3GAQgZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:36:25 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:51662 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab3GAQgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:36:24 -0400
-Message-ID: <51D1AFFB.4010307@gmail.com>
-Date: Tue, 02 Jul 2013 00:36:11 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
-MIME-Version: 1.0
-To: penberg@kernel.org, cl@linux-foundation.org, mpm@selenic.com
-CC: Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Subject: Re: [PATCH] mm, slab: Drop unnecessary slabp->inuse < cachep->num
- test
-References: <51D1AE84.8010404@gmail.com>
-In-Reply-To: <51D1AE84.8010404@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753455Ab3GAQj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:39:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44513 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752093Ab3GAQj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 12:39:26 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>
+Subject: [PATCH] Define WTERMSIG{,_MASK} and WCOREDUMP and use where appropriate
+Date: Mon,  1 Jul 2013 18:39:15 +0200
+Message-Id: <1372696755-17427-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for making noise. I've made a mistake and please ignore this patch.
+Grepping for numeric constants is inconvenient.
 
-On 07/02/2013 12:29 AM, Zhang Yanfei wrote:
-> From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> 
-> In function cache_alloc_refill, we have used BUG_ON to ensure
-> that slabp->inuse is less than cachep->num before the while
-> test. And in the while body, we do not change the value of
-> slabp->inuse and cachep->num, so it is not necessary to test
-> if slabp->inuse < cachep->num test for every loop.
-> 
-> Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-> ---
->  mm/slab.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 8ccd296..c2076c2 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -3004,7 +3004,7 @@ retry:
->  		 */
->  		BUG_ON(slabp->inuse >= cachep->num);
->  
-> -		while (slabp->inuse < cachep->num && batchcount--) {
-> +		while (batchcount--) {
->  			STATS_INC_ALLOCED(cachep);
->  			STATS_INC_ACTIVE(cachep);
->  			STATS_SET_HIGH(cachep);
+No code changes.
 
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+---
+ include/linux/wait.h |  4 ++++
+ kernel/exit.c        | 14 +++++++-------
+ kernel/signal.c      |  6 +++---
+ 3 files changed, 14 insertions(+), 10 deletions(-)
 
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index f487a47..0e04586 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -8,6 +8,10 @@
+ #include <asm/current.h>
+ #include <uapi/linux/wait.h>
+ 
++#define WTERMSIG_MASK     0x7f
++#define WTERMSIG(status)  ((status) & WTERMSIG_MASK)
++#define WCOREDUMP(status) ((status) & 0x80)
++
+ typedef struct __wait_queue wait_queue_t;
+ typedef int (*wait_queue_func_t)(wait_queue_t *wait, unsigned mode, int flags, void *key);
+ int default_wake_function(wait_queue_t *wait, unsigned mode, int flags, void *key);
+diff --git a/kernel/exit.c b/kernel/exit.c
+index a949819..41effa0 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -899,7 +899,7 @@ do_group_exit(int exit_code)
+ {
+ 	struct signal_struct *sig = current->signal;
+ 
+-	BUG_ON(exit_code & 0x80); /* core dumps don't get here */
++	BUG_ON(WCOREDUMP(exit_code)); /* core dumps don't get here */
+ 
+ 	if (signal_group_exit(sig))
+ 		exit_code = sig->group_exit_code;
+@@ -1027,12 +1027,12 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 
+ 		get_task_struct(p);
+ 		read_unlock(&tasklist_lock);
+-		if ((exit_code & 0x7f) == 0) {
++		if (!WTERMSIG(exit_code)) {
+ 			why = CLD_EXITED;
+ 			status = exit_code >> 8;
+ 		} else {
+-			why = (exit_code & 0x80) ? CLD_DUMPED : CLD_KILLED;
+-			status = exit_code & 0x7f;
++			why = WCOREDUMP(exit_code) ? CLD_DUMPED : CLD_KILLED;
++			status = WTERMSIG(exit_code);
+ 		}
+ 		return wait_noreap_copyout(wo, p, pid, uid, why, status);
+ 	}
+@@ -1127,12 +1127,12 @@ static int wait_task_zombie(struct wait_opts *wo, struct task_struct *p)
+ 	if (!retval && infop) {
+ 		int why;
+ 
+-		if ((status & 0x7f) == 0) {
++		if ((status & WTERMSIG_MASK) == 0) {
+ 			why = CLD_EXITED;
+ 			status >>= 8;
+ 		} else {
+-			why = (status & 0x80) ? CLD_DUMPED : CLD_KILLED;
+-			status &= 0x7f;
++			why = WCOREDUMP(status) ? CLD_DUMPED : CLD_KILLED;
++			status &= WTERMSIG_MASK;
+ 		}
+ 		retval = put_user((short)why, &infop->si_code);
+ 		if (!retval)
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 50e4107..2ad0e7d 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -1679,10 +1679,10 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
+ 	info.si_utime = cputime_to_clock_t(utime + tsk->signal->utime);
+ 	info.si_stime = cputime_to_clock_t(stime + tsk->signal->stime);
+ 
+-	info.si_status = tsk->exit_code & 0x7f;
+-	if (tsk->exit_code & 0x80)
++	info.si_status = WTERMSIG(tsk->exit_code);
++	if (WCOREDUMP(tsk->exit_code))
+ 		info.si_code = CLD_DUMPED;
+-	else if (tsk->exit_code & 0x7f)
++	else if (WTERMSIG(tsk->exit_code))
+ 		info.si_code = CLD_KILLED;
+ 	else {
+ 		info.si_code = CLD_EXITED;
 -- 
-Thanks.
-Zhang Yanfei
+1.8.1.4
+
