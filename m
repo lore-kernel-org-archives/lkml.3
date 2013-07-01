@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab3GASW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 14:22:28 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:40562 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab3GASW1 (ORCPT
+	id S1754681Ab3GASXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 14:23:34 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:52299 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab3GASXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 14:22:27 -0400
-Message-ID: <51D1C8DD.6040409@cogentembedded.com>
-Date: Mon, 01 Jul 2013 22:22:21 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 1 Jul 2013 14:23:33 -0400
+Date: Mon, 1 Jul 2013 11:23:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full v2 2/7] nohz_full: Add rcu_dyntick data for
+ scalable detection of all-idle state
+Message-ID: <20130701182326.GQ3773@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130628200949.GA17458@linux.vnet.ibm.com>
+ <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1372450222-19420-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130701153150.GB2923@leaf>
+ <20130701155220.GL3773@linux.vnet.ibm.com>
+ <20130701181601.GA7964@jtriplet-mobl1>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH] N900: fix operation on emulator
-References: <20130613132624.GA3464@amd.pavel.ucw.cz> <20130613141001.GF8164@atomide.com> <20130613142809.GA3775@amd.pavel.ucw.cz> <20130613145724.GH8164@atomide.com> <20130613155240.GB3775@amd.pavel.ucw.cz> <20130613161418.GJ8164@atomide.com> <20130613230808.GA14876@amd.pavel.ucw.cz> <20130614055629.GM8164@atomide.com> <20130614212816.GA31768@atrey.karlin.mff.cuni.cz> <20130617111031.GQ20992@atomide.com> <20130701140315.GA15318@amd.pavel.ucw.cz>
-In-Reply-To: <20130701140315.GA15318@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701181601.GA7964@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070118-7606-0000-0000-00000CF2621C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Jul 01, 2013 at 11:16:01AM -0700, Josh Triplett wrote:
+> On Mon, Jul 01, 2013 at 08:52:20AM -0700, Paul E. McKenney wrote:
+> > On Mon, Jul 01, 2013 at 08:31:50AM -0700, Josh Triplett wrote:
+> > > On Fri, Jun 28, 2013 at 01:10:17PM -0700, Paul E. McKenney wrote:
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > This commit adds fields to the rcu_dyntick structure that are used to
+> > > > detect idle CPUs.  These new fields differ from the existing ones in
+> > > > that the existing ones consider a CPU executing in user mode to be idle,
+> > > > where the new ones consider CPUs executing in user mode to be busy.
+> > > 
+> > > Can you explain, both in the commit messages and in the comments added
+> > > by the next commit, *why* this code doesn't consider userspace a
+> > > quiescent state?
+> > 
+> > Good point!  Does the following explain it?
+> > 
+> > 	Although one of RCU's quiescent states is usermode execution,
+> > 	it is not a full-system idle state.  This is because the purpose
+> > 	of the full-system idle state is not RCU, but rather determining
+> > 	when accurate timekeeping can safely be disabled.  Whenever
+> > 	accurate timekeeping is required in a CONFIG_NO_HZ_FULL kernel,
+> > 	at least one CPU must keep the scheduling-clock tick going.
+> > 	If even one CPU is executing in user mode, accurate timekeeping
+> > 	is requires, particularly for architectures where gettimeofday()
+> > 	and friends do not enter the kernel.  Only when all CPUs are
+> > 	really and truly idle can accurate timekeeping be disabled,
+> > 	allowing all CPUs to turn off the scheduling clock interrupt,
+> > 	thus greatly improving energy efficiency.
+> > 
+> > 	This naturally raises the question "Why is this code in RCU rather
+> > 	than in timekeeping?", and the answer is that RCU has the data
+> > 	and infrastructure to efficiently make this determination.
+> 
+> Good explanation, thanks.
+> 
+> This also naturally raises the question "How can we let userspace get
+> accurate time without forcing a timer tick?".
 
-On 07/01/2013 06:03 PM, Pavel Machek wrote:
+We don't.  ;-)
 
-> Errata workarounds for N900 hardware actually break operation on
-> emulator. Fix it.
+Without CONFIG_NO_HZ_FULL, if a CPU is running in user mode, that CPU
+takes scheduling-clock interrupts.  User-mode code will therefore always
+see accurate time.  For some definition of "accurate", anyway.
 
-> This approach was suggested by Pali Rohár <pali.rohar@gmail.com>
-> (thanks!).
+With CONFIG_NO_HZ_FULL and without CONFIG_NO_HZ_FULL_SYSIDLE, a single
+designated CPU will always be taking scheduling-clock interrupts, which
+again ensures that user-mode code will always see accurate time.
 
-> (Also explain what "sleep_ind" led actually does).
+With both CONFIG_NO_HZ_FULL and CONFIG_NO_HZ_FULL_SYSIDLE, if
+any CPU other than the timekeeping CPU is nonidle (where "nonidle"
+includes usermode execution), then the timekeeping CPU will be taking
+scheduling-clock interrupts, yet again ensuring that user-mode code will
+always see accurate time.  If all CPUs are idle (in other words, we are
+in RCU_SYSIDLE_FULL_NOTED state and the timekeeping CPU is also idle),
+scheduling-clock interrupts will be globally disabled.  Or will be,
+once I fix the bug noted by Frederic.
 
-    Looks like unrelated change and probably worth another patch?
+I am guessing that you would like this added to the explanation?  ;-)
 
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
-> diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
-> index 74f83a5..81f7b9f 100644
-> --- a/arch/arm/mach-omap2/board-rx51.c
-> +++ b/arch/arm/mach-omap2/board-rx51.c
-> @@ -33,9 +33,12 @@
->   #include "pm.h"
->   #include "sdram-nokia.h"
->   #include "board-rx51-secure.h"
-> +#include "soc.h"
->
->   #define RX51_GPIO_SLEEP_IND 162
->
-> +/* This lights up left part of keyboard */
-> +
->   static struct gpio_led gpio_leds[] = {
->   	{
->   		.name	= "sleep_ind",
-> @@ -107,9 +110,11 @@ static void __init rx51_init(void)
->   	rx51_camera_init();
->
->   #ifdef CONFIG_ARM_ERRATA_430973
-> -	printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
-> -	/* set IBE to 1 */
-> -	rx51_secure_update_aux_cr(1 << 6, 0);
-> +	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
-> +		printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
-
-    How about pr_info() instead?
-
-WBR, Sergei
+							Thanx, Paul
 
