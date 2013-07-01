@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3GAWeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:34:21 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:33395 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab3GAWeT (ORCPT
+	id S1755925Ab3GAWft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:35:49 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:46917 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754873Ab3GAWfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:34:19 -0400
+	Mon, 1 Jul 2013 18:35:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <CANiYik6PbwRkH1vK4B4cFhY0MEJAoF=MBggkvgBYGfyCw2ny-w@mail.gmail.com>
-References: <CANiYik6PbwRkH1vK4B4cFhY0MEJAoF=MBggkvgBYGfyCw2ny-w@mail.gmail.com>
-From: Alexander Lam <azl@google.com>
-Date: Mon, 1 Jul 2013 15:33:58 -0700
-Message-ID: <CANiYik6h0_xnUYqCRHZU75az9YS=ySUHaqgMayW-Ffj5Jey6_g@mail.gmail.com>
-Subject: Fwd: [draft] Tracing multibuffer support concurrency issues
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Cc: David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Alexander Lam <lambchop468@gmail.com>
+In-Reply-To: <20130701222802.GK23515@pd.tnic>
+References: <20130628111948.GA31065@gmail.com>
+	<20130628140938.GA24819@pd.tnic>
+	<CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
+	<20130630220004.GA23124@pd.tnic>
+	<20130701075046.GB1681@gmail.com>
+	<20130701102306.GC23515@pd.tnic>
+	<20130701111122.GA18772@gmail.com>
+	<20130701122954.GD23515@pd.tnic>
+	<20130701125045.GA24336@gmail.com>
+	<20130701144851.GH23515@pd.tnic>
+	<20130701222802.GK23515@pd.tnic>
+Date: Mon, 1 Jul 2013 15:35:47 -0700
+Message-ID: <CANeycqoq8LwLMoXEYdPE6m9eKVB7pRLw1hkSCjJ=jjDj9ej-Cw@mail.gmail.com>
+Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
+From: Wedson Almeida Filho <wedsonaf@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Jul 1, 2013 at 3:28 PM, Borislav Petkov <bp@alien8.de> wrote:
+>
+> perf stat --repeat 10 -a --sync --pre 'make -s clean; echo 1 > /proc/sys/vm/drop_caches' make -s -j64 bzImage
 
-I noticed that a695cb58 "tracing: Prevent deleting instances when they
-are being read" [1] still leaves open the possibility of the
-trace_array being deleted before the reference counter is incremented.
-
-Thread A creates a new instance "foo", then tries to open "foo/trace"
-for writing, which invokes tracing_open() and __tracing_open()
-Thread B removes the "foo" instance. Since Thread A has not
-incremented the reference counter for the trace_array representing
-"foo," its trace_array and associated structures are freed in
-instance_delete().
-Thread A now attempts to dereference the trace_cpu pointer it has to
-obtain the now deleted trace_array. By now, both the trace_cpu and
-trace_array are deleted.
-
-Here's a short bash script to run on a kernel to make it crash like this:
-   $ cd /sys/kernel/debug/tracing/instances/
-   $ ( while true; do mkdir foo; rmdir foo; done ) &
-   $ ( while true; do cat foo/trace &> /dev/null; done) &
-
-To fix this we could go through the ftrace_trace_arrays list and use
-addresses to check if a particular pointer to a trace_array is still
-valid, but this is vulnerable to the ABA problem if a trace_array is
-freed and another is reallocated at the same address. This method is
-used by subsystem_open() in trace_events.c
-
-An ugly way to get around the ABA issue is to use a monotonically
-increasing ID # for each trace_array instance. Those IDs could be used
-instead of pointers when creating debugfs files.
-
-Is there a better way to fix this problem?
-
-Also unaddressed are all of the other files which use a trace_array,
-trace_cpu, or ftrace_event_file in their operation - these would need
-the same fix.
-
-- Alex
-
-[1] https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/kernel/trace/trace.c?id=a695cb5816228f86576f5f5c6809fdf8ed382ece
+How many CPUs do you have in your system? Maybe -j64 vs -jNUM_CPUs
+affects your measurements as well.
