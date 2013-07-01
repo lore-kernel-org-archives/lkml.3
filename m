@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab3GAUAM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:00:12 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:36268 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755262Ab3GAUAI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:00:08 -0400
-Message-ID: <51D1DFC2.4080209@cogentembedded.com>
-Date: Tue, 02 Jul 2013 00:00:02 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH] N900: fix operation on emulator
-References: <20130613142809.GA3775@amd.pavel.ucw.cz> <20130613145724.GH8164@atomide.com> <20130613155240.GB3775@amd.pavel.ucw.cz> <20130613161418.GJ8164@atomide.com> <20130613230808.GA14876@amd.pavel.ucw.cz> <20130614055629.GM8164@atomide.com> <20130614212816.GA31768@atrey.karlin.mff.cuni.cz> <20130617111031.GQ20992@atomide.com> <20130701140315.GA15318@amd.pavel.ucw.cz> <51D1C8DD.6040409@cogentembedded.com> <20130701195147.GA22174@amd.pavel.ucw.cz>
-In-Reply-To: <20130701195147.GA22174@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755108Ab3GAUEm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:04:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54329 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753269Ab3GAUEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:04:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,975,1363158000"; 
+   d="scan'208";a="325365163"
+Subject: [PATCH 0/7] Put "Kernel hacking" Kconfig menu on a diet
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 01 Jul 2013 13:04:40 -0700
+Message-Id: <20130701200440.712D8B4E@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Linus, I've tried to send these along to a couple of different
+maintainers for a couple of merge windows, but so far nobody has
+bitten.
 
-On 07/01/2013 11:51 PM, Pavel Machek wrote:
+--
 
->>> Errata workarounds for N900 hardware actually break operation on
->>> emulator. Fix it.
+I think the "Kernel Hacking" menu has gotten a bit out of hand.  It
+is over 120 lines long on my system with everything enabled and
+options are scattered around it haphazardly.
 
->>> This approach was suggested by Pali Rohár <pali.rohar@gmail.com>
->>> (thanks!).
+        http://sr71.net/~dave/linux/kconfig-horror.png
 
->>> (Also explain what "sleep_ind" led actually does).
+Let's try to introduce some sanity.  This set takes that 120 lines
+down to 55 and makes it vastly easier to find some things.  It's a
+start.
 
->>     Looks like unrelated change and probably worth another patch?
+This set stands on its own, but there is plenty of room for follow-up
+patches.  The arch-specific debug options still end up getting stuck
+in the top-level "kernel hacking" menu.  OPTIMIZE_INLINING, for
+instance, could obviously go in to the "compiler options" menu, but
+the fact that it is defined in arch/ in a separate Kconfig file keeps
+it on its own for the moment.
 
-> Separate patch for adding single-line comment?
+--
 
-    If it's unrelated to the main patch purpose, yes. As the Russians 
-say: "cutlets separately and flies separately".
+There is a fair amount of churn in the areas around these patches
+so I've resolved conflicts a couple of times.  For the patches that
+are almost purely code move patches, I'm doing this:
 
->>> --- a/arch/arm/mach-omap2/board-rx51.c
->>> +++ b/arch/arm/mach-omap2/board-rx51.c
->>> @@ -33,9 +33,12 @@
->>>   #include "pm.h"
->>>   #include "sdram-nokia.h"
->>>   #include "board-rx51-secure.h"
->>> +#include "soc.h"
->>>
->>>   #define RX51_GPIO_SLEEP_IND 162
->>>
->>> +/* This lights up left part of keyboard */
->>> +
->>>   static struct gpio_led gpio_leds[] = {
-> ...
->>>   #ifdef CONFIG_ARM_ERRATA_430973
->>> -	printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
->>> -	/* set IBE to 1 */
->>> -	rx51_secure_update_aux_cr(1 << 6, 0);
->>> +	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
->>> +		printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
+	cat foo.patch | grep '^[-+]' | perl -pe 's/^.//' | sort | uniq -c | sort -n
 
->>     How about pr_info() instead?
+and watching for any non-even numbers coming out of uniq.  This
+helps me make sure I'm not adding/removing code that I should not
+be.
 
-> <sarcasm>Would not that be unrelated change and worth of separate
-> patch?</sarcasm>
+The Signed-off-by's in here look funky.  I changed employers
+while working on this set, so I have signoffs from both email
+addresses.  Here's the original posting:
 
-    No, this would be a related change. Sarcasm wasted.
-
-> :-).
-
-> 									Pavel
-
-WBR, Sergei
+	http://lkml.kernel.org/r/20121217182206.91AA150A@kernel.stglabs.ibm.com
 
