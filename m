@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab3GATmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 15:42:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48811 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab3GATmH (ORCPT
+	id S1755091Ab3GATnu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 15:43:50 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:1669 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754173Ab3GATns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 15:42:07 -0400
-Date: Mon, 1 Jul 2013 12:42:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] DMA: Fix Marvell Orion and mv_xor after MEMSET removal
-Message-Id: <20130701124205.9571b26975c1910ce5afa896@linux-foundation.org>
-In-Reply-To: <20130701150407.GB19937@titan.lakedaemon.net>
-References: <1372690589-2218-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<20130701150407.GB19937@titan.lakedaemon.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Jul 2013 15:43:48 -0400
+Date: Mon, 1 Jul 2013 19:43:47 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 0/7] v2 Provide infrastructure for full-system
+ idle
+In-Reply-To: <20130628200949.GA17458@linux.vnet.ibm.com>
+Message-ID: <0000013f9bc32a5e-258db1be-840b-4b2f-9b3f-e1e3d5253cfc-000000@email.amazonses.com>
+References: <20130628200949.GA17458@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013 11:04:07 -0400 Jason Cooper <jason@lakedaemon.net> wrote:
+On Fri, 28 Jun 2013, Paul E. McKenney wrote:
 
-> On Mon, Jul 01, 2013 at 04:56:29PM +0200, Sebastian Hesselbarth wrote:
-> > Commit 834cbfe966bece50afded79da8e975d255bf0772
-> >  ("drivers/dma: remove unused support for MEMSET operations")
-> > removes MEMSET from dmaengine but does not completely removes it from
-> > Marvell Orion (arch/arm/plat-orion) and XOR (drivers/dma/mv_xor).
-> > This also fixes some compiler warnings about now obsolete functions by
-> > removing those.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > ---
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  arch/arm/plat-orion/common.c |    6 ------
-> >  drivers/dma/mv_xor.c         |   25 +------------------------
-> >  2 files changed, 1 insertions(+), 30 deletions(-)
-> 
-> Please take a look at the email from lkml I just forwarded to you.  I
-> believe this solves your problem, but I don't have time to look closely
-> atm.
+> Unfortunately, timekeeping CPU continues taking scheduling-clock
+> interrupts even when all other CPUs are completely idle, which is
+> not so good for energy efficiency and battery lifetime.  Clearly, it
+> would be good to turn off the timekeeping CPU's scheduling-clock tick
+> when all CPUs are completely idle.  This is conceptually simple, but
+> we also need good performance and scalability on large systems, which
+> rules out implementations based on frequently updated global counts of
+> non-idle CPUs as well as implementations that frequently scan all CPUs.
+> Nevertheless, we need a single global indicator in order to keep the
+> overhead of checking acceptably low.
 
-Unhelpful.  Can the rest of us see this email as well please?
+Can we turn off timekeeping when no cpu needs time in adaptive mode?
+Setting breakpoints in the VDSO could force timekeeping on again whenever
+something needs time. Would this not be simpler?
