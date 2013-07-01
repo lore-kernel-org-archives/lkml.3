@@ -1,96 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3GASp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 14:45:27 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:48396 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755037Ab3GASpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 14:45:25 -0400
-Date: Mon, 1 Jul 2013 14:45:03 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Serge Hallyn <serge.hallyn@ubuntu.com>
-Cc: Aaron Staley <aaron@picloud.com>, containers@lists.linux-foundation.org,
-        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: PROBLEM: Processes writing large files in memory-limited LXC
- container are killed by OOM
-Message-ID: <20130701184503.GG17812@cmpxchg.org>
-References: <CAMcjixYa-mjo5TrxmtBkr0MOf+8r_iSeW5MF4c8nJKdp5m+RPA@mail.gmail.com>
- <20130701180101.GA5460@ac100>
+	id S1755119Ab3GASqs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 14:46:48 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:61993 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754762Ab3GASqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 14:46:47 -0400
+Message-ID: <51D1CE93.7070804@gmail.com>
+Date: Mon, 01 Jul 2013 12:46:43 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130701180101.GA5460@ac100>
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V3 06/15] perf tools: fix parse_events_terms() freeing
+ local variable on error path
+References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com> <1372409006-8431-7-git-send-email-adrian.hunter@intel.com> <51CDC589.8070306@gmail.com> <51D13754.4080602@intel.com>
+In-Reply-To: <51D13754.4080602@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 01:01:01PM -0500, Serge Hallyn wrote:
-> Quoting Aaron Staley (aaron@picloud.com):
-> > This is better explained here:
-> > http://serverfault.com/questions/516074/why-are-applications-in-a-memory-limited-lxc-container-writing-large-files-to-di
-> > (The
-> > highest-voted answer believes this to be a kernel bug.)
-> 
-> Hi,
-> 
-> in irc it has been suggested that indeed the kernel should be slowing
-> down new page creates while waiting for old page cache entries to be
-> written out to disk, rather than ooming.
-> 
-> With a 3.0.27-1-ac100 kernel, doing dd if=/dev/zero of=xxx bs=1M
-> count=100 is immediately killed.  In contrast, doing the same from a
-> 3.0.8 kernel did the right thing for me.  But I did reproduce your
-> experiment below on ec2 with the same result.
+On 7/1/13 2:01 AM, Adrian Hunter wrote:
+> On 28/06/13 20:19, David Ahern wrote:
+>> On 6/28/13 2:43 AM, Adrian Hunter wrote:
+>>> The list_head is on the stack, so just free the rest of the list.
+>>>
+>>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+>>> ---
+>>>    tools/perf/util/parse-events.c | 7 ++++++-
+>>>    tools/perf/util/parse-events.h | 1 +
+>>>    tools/perf/util/pmu.c          | 2 +-
+>>>    3 files changed, 8 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+>>> index 995fc25..d9cb055 100644
+>>> --- a/tools/perf/util/parse-events.c
+>>> +++ b/tools/perf/util/parse-events.c
+>>> @@ -1231,12 +1231,17 @@ int parse_events_term__clone(struct
+>>> parse_events_term **new,
+>>>                term->val.str, term->val.num);
+>>>    }
+>>>
+>>> -void parse_events__free_terms(struct list_head *terms)
+>>> +void parse_events__free_terms_only(struct list_head *terms)
+>>>    {
+>>>        struct parse_events_term *term, *h;
+>>>
+>>>        list_for_each_entry_safe(term, h, terms, list)
+>>>            free(term);
+>>> +}
+>>> +
+>>> +void parse_events__free_terms(struct list_head *terms)
+>>> +{
+>>> +    parse_events__free_terms_only(terms);
+>>>
+>>>        free(terms);
+>>>    }
+>>
+>> I still don't understand the reasoning for an _only function. There is only
+>> 1 place that mallocs the list_head and that 1 user should free its own
+>> memory. All of the other users pass a stack variable.
 >
-> So, cc:ing linux-mm in the hopes someone can tell us whether this
-> is expected behavior, known mis-behavior, or an unknown bug.
+> No.  See parse-events.y
 
-It's a known issue that was fixed/improved in e62e384 'memcg: prevent
-OOM with too many dirty pages', included in 3.6+.
+Fine. Fix both then. My point is that parse-events.c code should not be 
+freeing memory it does not allocate.
 
-> > Summary: I have set up a system where I am using LXC to create multiple
-> > virtualized containers on my system with limited resources. Unfortunately, I'm
-> > running into a troublesome scenario where the OOM killer is hard killing
-> > processes in my LXC container when I write a file with size exceeding the
-> > memory limitation (set to 300MB). There appears to be some issue with the
-> > file buffering respecting the containers memory limit.
-> > 
-> > 
-> > Reproducing:
-> > 
-> > /done on a c1.xlarge instance running on Amazon EC2
-> > 
-> > Create 6 empty lxc containers (in my case I did lxc-create -n testcon -t
-> > ubuntu -- -r precise)
-> > 
-> > Modify the configuration of each container to set lxc.cgroup.memory.
-> > limit_in_bytes = 300M
-> > 
-> > Within each container run:
-> > dd if=/dev/zero of=test2 bs=100k count=5010
-> > parallel
-> > 
-> > This will with high probability activate the OOM (as seen in demsg); often
-> > the dd processes themselves will be killed.
-> > 
-> > This has been verified to have problems on:
-> > Linux 3.8.0-25-generic #37-Ubuntu SMP and Linux ip-10-8-139-98
-> > 3.2.0-29-virtual #46-Ubuntu SMP Fri Jul 27 17:23:50 UTC 2012 x86_64 x86_64
-> > x86_64 GNU/Linux
-> > 
-> > Please let me know your thoughts.
-> > 
-> > Regards,
-> > Aaron Staley
-> > _______________________________________________
-> > Containers mailing list
-> > Containers@lists.linux-foundation.org
-> > https://lists.linuxfoundation.org/mailman/listinfo/containers
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+David
+
+
+>
+> The list head is defined as a pointer in the YYTYPE stack element:
+>
+> %union
+> {
+> 	char *str;
+> 	u64 num;
+> 	struct list_head *head;
+> 	struct parse_events_term *term;
+> }
+>
+> It is malloc'ed when terms are created:
+>
+> event_term
+> {
+> 	struct list_head *head = malloc(sizeof(*head));
+> 	struct parse_events_term *term = $1;
+>
+> 	ABORT_ON(!head);
+> 	INIT_LIST_HEAD(head);
+> 	list_add_tail(&term->list, head);
+> 	$$ = head;
+> }
+>
+
