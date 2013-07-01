@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab3GABNm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 21:13:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37881 "EHLO
+	id S1752624Ab3GABNu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 21:13:50 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:53425 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750868Ab3GABNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 21:13:41 -0400
+	id S1750868Ab3GABNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 21:13:49 -0400
 From: Joe Perches <joe@perches.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 11/12] cdrom: Remove unnecessary prototype for cdrom_mrw_exit
-Date: Sun, 30 Jun 2013 18:12:06 -0700
-Message-Id: <fbcb7076f1413ae916cf89a6cc5e471be0d5e737.1372640819.git.joe@perches.com>
+Subject: [PATCH 12/12] cdrom: Remove unnecessary prototype for cdrom_get_disc_info
+Date: Sun, 30 Jun 2013 18:12:07 -0700
+Message-Id: <6fac63b15232bf26a5e17afc8a7fba26abe8b5c1.1372640819.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1372640818.git.joe@perches.com>
 References: <cover.1372640818.git.joe@perches.com>
@@ -19,305 +19,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the function to appropriate locations instead.
+Move the function to the proper spot instead.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/cdrom/cdrom.c | 238 +++++++++++++++++++++++++-------------------------
- 1 file changed, 121 insertions(+), 117 deletions(-)
+ drivers/cdrom/cdrom.c | 71 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 36 insertions(+), 35 deletions(-)
 
 diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 87a74d4..a7dd384 100644
+index a7dd384..7e5b628 100644
 --- a/drivers/cdrom/cdrom.c
 +++ b/drivers/cdrom/cdrom.c
 @@ -338,8 +338,6 @@ do {							\
  
  /* Not-exported routines. */
  
--static int cdrom_mrw_exit(struct cdrom_device_info *cdi);
+-static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *di);
 -
- static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *di);
- 
  static void cdrom_sysctl_register(void);
-@@ -359,113 +357,29 @@ static int cdrom_dummy_generic_packet(struct cdrom_device_info *cdi,
- 	return -EIO;
- }
  
--/* This macro makes sure we don't have to check on cdrom_device_ops
-- * existence in the run-time routines below. Change_capability is a
-- * hack to have the capability flags defined const, while we can still
-- * change it here without gcc complaining at every line.
-- */
--#define ENSURE(call, bits) if (cdo->call == NULL) *change_capability &= ~(bits)
--
--int register_cdrom(struct cdrom_device_info *cdi)
--{
--	static char banner_printed;
--        struct cdrom_device_ops *cdo = cdi->ops;
--        int *change_capability = (int *)&cdo->capability; /* hack */
--
--	cd_dbg(CD_OPEN, "entering register_cdrom\n");
--
--	if (cdo->open == NULL || cdo->release == NULL)
--		return -EINVAL;
--	if (!banner_printed) {
--		pr_info("Uniform CD-ROM driver " REVISION "\n");
--		banner_printed = 1;
--		cdrom_sysctl_register();
--	}
--
--	ENSURE(drive_status, CDC_DRIVE_STATUS );
--	if (cdo->check_events == NULL && cdo->media_changed == NULL)
--		*change_capability = ~(CDC_MEDIA_CHANGED | CDC_SELECT_DISC);
--	ENSURE(tray_move, CDC_CLOSE_TRAY | CDC_OPEN_TRAY);
--	ENSURE(lock_door, CDC_LOCK);
--	ENSURE(select_speed, CDC_SELECT_SPEED);
--	ENSURE(get_last_session, CDC_MULTI_SESSION);
--	ENSURE(get_mcn, CDC_MCN);
--	ENSURE(reset, CDC_RESET);
--	ENSURE(generic_packet, CDC_GENERIC_PACKET);
--	cdi->mc_flags = 0;
--	cdo->n_minors = 0;
--        cdi->options = CDO_USE_FFLAGS;
--	
--	if (autoclose==1 && CDROM_CAN(CDC_CLOSE_TRAY))
--		cdi->options |= (int) CDO_AUTO_CLOSE;
--	if (autoeject==1 && CDROM_CAN(CDC_OPEN_TRAY))
--		cdi->options |= (int) CDO_AUTO_EJECT;
--	if (lockdoor==1)
--		cdi->options |= (int) CDO_LOCK;
--	if (check_media_type==1)
--		cdi->options |= (int) CDO_CHECK_TYPE;
--
--	if (CDROM_CAN(CDC_MRW_W))
--		cdi->exit = cdrom_mrw_exit;
--
--	if (cdi->disk)
--		cdi->cdda_method = CDDA_BPC_FULL;
--	else
--		cdi->cdda_method = CDDA_OLD;
--
--	if (!cdo->generic_packet)
--		cdo->generic_packet = cdrom_dummy_generic_packet;
--
--	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" registered\n", cdi->name);
--	mutex_lock(&cdrom_mutex);
--	list_add(&cdi->list, &cdrom_list);
--	mutex_unlock(&cdrom_mutex);
--	return 0;
--}
--#undef ENSURE
--
--void unregister_cdrom(struct cdrom_device_info *cdi)
--{
--	cd_dbg(CD_OPEN, "entering unregister_cdrom\n");
--
--	mutex_lock(&cdrom_mutex);
--	list_del(&cdi->list);
--	mutex_unlock(&cdrom_mutex);
--
--	if (cdi->exit)
--		cdi->exit(cdi);
--
--	cdi->ops->n_minors--;
--	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" unregistered\n", cdi->name);
--}
--
--int cdrom_get_media_event(struct cdrom_device_info *cdi,
--			  struct media_event_desc *med)
-+static int cdrom_flush_cache(struct cdrom_device_info *cdi)
- {
- 	struct packet_command cgc;
--	unsigned char buffer[8];
--	struct event_header *eh = (struct event_header *) buffer;
--
--	init_cdrom_command(&cgc, buffer, sizeof(buffer), CGC_DATA_READ);
--	cgc.cmd[0] = GPCMD_GET_EVENT_STATUS_NOTIFICATION;
--	cgc.cmd[1] = 1;		/* IMMED */
--	cgc.cmd[4] = 1 << 4;	/* media event */
--	cgc.cmd[8] = sizeof(buffer);
--	cgc.quiet = 1;
--
--	if (cdi->ops->generic_packet(cdi, &cgc))
--		return 1;
- 
--	if (be16_to_cpu(eh->data_len) < sizeof(*med))
--		return 1;
-+	init_cdrom_command(&cgc, NULL, 0, CGC_DATA_NONE);
-+	cgc.cmd[0] = GPCMD_FLUSH_CACHE;
- 
--	if (eh->nea || eh->notification_class != 0x4)
--		return 1;
-+	cgc.timeout = 5 * 60 * HZ;
- 
--	memcpy(med, &buffer[sizeof(*eh)], sizeof(*med));
--	return 0;
-+	return cdi->ops->generic_packet(cdi, &cgc);
- }
- 
-+/* This macro makes sure we don't have to check on cdrom_device_ops
-+ * existence in the run-time routines below. Change_capability is a
-+ * hack to have the capability flags defined const, while we can still
-+ * change it here without gcc complaining at every line.
-+ */
-+#define ENSURE(call, bits)			\
-+do {						\
-+	if (cdo->call == NULL)			\
-+		*change_capability &= ~(bits);	\
-+} while (0)
-+
- /*
-  * the first prototypes used 0x2c as the page code for the mrw mode page,
-  * subsequently this was changed to 0x03. probe the one used by this drive
-@@ -582,18 +496,6 @@ static int cdrom_mrw_bgformat_susp(struct cdrom_device_info *cdi, int immed)
+ static LIST_HEAD(cdrom_list);
+@@ -369,6 +367,42 @@ static int cdrom_flush_cache(struct cdrom_device_info *cdi)
  	return cdi->ops->generic_packet(cdi, &cgc);
  }
  
--static int cdrom_flush_cache(struct cdrom_device_info *cdi)
--{
--	struct packet_command cgc;
--
--	init_cdrom_command(&cgc, NULL, 0, CGC_DATA_NONE);
--	cgc.cmd[0] = GPCMD_FLUSH_CACHE;
--
--	cgc.timeout = 5 * 60 * HZ;
--
--	return cdi->ops->generic_packet(cdi, &cgc);
--}
--
- static int cdrom_mrw_exit(struct cdrom_device_info *cdi)
- {
- 	disc_information di;
-@@ -627,17 +529,19 @@ static int cdrom_mrw_set_lba_space(struct cdrom_device_info *cdi, int space)
- 	cgc.buffer = buffer;
- 	cgc.buflen = sizeof(buffer);
- 
--	if ((ret = cdrom_mode_sense(cdi, &cgc, cdi->mrw_mode_page, 0)))
-+	ret = cdrom_mode_sense(cdi, &cgc, cdi->mrw_mode_page, 0);
-+	if (ret)
- 		return ret;
- 
--	mph = (struct mode_page_header *) buffer;
-+	mph = (struct mode_page_header *)buffer;
- 	offset = be16_to_cpu(mph->desc_length);
- 	size = be16_to_cpu(mph->mode_data_length) + 2;
- 
- 	buffer[offset + 3] = space;
- 	cgc.buflen = size;
- 
--	if ((ret = cdrom_mode_select(cdi, &cgc)))
-+	ret = cdrom_mode_select(cdi, &cgc);
-+	if (ret)
- 		return ret;
- 
- 	pr_info("%s: mrw address space %s selected\n",
-@@ -645,6 +549,106 @@ static int cdrom_mrw_set_lba_space(struct cdrom_device_info *cdi, int space)
- 	return 0;
- }
- 
-+int register_cdrom(struct cdrom_device_info *cdi)
++/* requires CD R/RW */
++static int cdrom_get_disc_info(struct cdrom_device_info *cdi,
++			       disc_information *di)
 +{
-+	static char banner_printed;
 +	struct cdrom_device_ops *cdo = cdi->ops;
-+	int *change_capability = (int *)&cdo->capability; /* hack */
-+
-+	cd_dbg(CD_OPEN, "entering register_cdrom\n");
-+
-+	if (cdo->open == NULL || cdo->release == NULL)
-+		return -EINVAL;
-+	if (!banner_printed) {
-+		pr_info("Uniform CD-ROM driver " REVISION "\n");
-+		banner_printed = 1;
-+		cdrom_sysctl_register();
-+	}
-+
-+	ENSURE(drive_status, CDC_DRIVE_STATUS);
-+	if (cdo->check_events == NULL && cdo->media_changed == NULL)
-+		*change_capability = ~(CDC_MEDIA_CHANGED | CDC_SELECT_DISC);
-+	ENSURE(tray_move, CDC_CLOSE_TRAY | CDC_OPEN_TRAY);
-+	ENSURE(lock_door, CDC_LOCK);
-+	ENSURE(select_speed, CDC_SELECT_SPEED);
-+	ENSURE(get_last_session, CDC_MULTI_SESSION);
-+	ENSURE(get_mcn, CDC_MCN);
-+	ENSURE(reset, CDC_RESET);
-+	ENSURE(generic_packet, CDC_GENERIC_PACKET);
-+	cdi->mc_flags = 0;
-+	cdo->n_minors = 0;
-+	cdi->options = CDO_USE_FFLAGS;
-+
-+	if (autoclose == 1 && CDROM_CAN(CDC_CLOSE_TRAY))
-+		cdi->options |= (int) CDO_AUTO_CLOSE;
-+	if (autoeject == 1 && CDROM_CAN(CDC_OPEN_TRAY))
-+		cdi->options |= (int) CDO_AUTO_EJECT;
-+	if (lockdoor == 1)
-+		cdi->options |= (int) CDO_LOCK;
-+	if (check_media_type == 1)
-+		cdi->options |= (int) CDO_CHECK_TYPE;
-+
-+	if (CDROM_CAN(CDC_MRW_W))
-+		cdi->exit = cdrom_mrw_exit;
-+
-+	if (cdi->disk)
-+		cdi->cdda_method = CDDA_BPC_FULL;
-+	else
-+		cdi->cdda_method = CDDA_OLD;
-+
-+	if (!cdo->generic_packet)
-+		cdo->generic_packet = cdrom_dummy_generic_packet;
-+
-+	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" registered\n", cdi->name);
-+	mutex_lock(&cdrom_mutex);
-+	list_add(&cdi->list, &cdrom_list);
-+	mutex_unlock(&cdrom_mutex);
-+	return 0;
-+}
-+#undef ENSURE
-+
-+void unregister_cdrom(struct cdrom_device_info *cdi)
-+{
-+	cd_dbg(CD_OPEN, "entering unregister_cdrom\n");
-+
-+	mutex_lock(&cdrom_mutex);
-+	list_del(&cdi->list);
-+	mutex_unlock(&cdrom_mutex);
-+
-+	if (cdi->exit)
-+		cdi->exit(cdi);
-+
-+	cdi->ops->n_minors--;
-+	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" unregistered\n", cdi->name);
-+}
-+
-+int cdrom_get_media_event(struct cdrom_device_info *cdi,
-+			  struct media_event_desc *med)
-+{
 +	struct packet_command cgc;
-+	unsigned char buffer[8];
-+	struct event_header *eh = (struct event_header *)buffer;
++	int ret, buflen;
 +
-+	init_cdrom_command(&cgc, buffer, sizeof(buffer), CGC_DATA_READ);
-+	cgc.cmd[0] = GPCMD_GET_EVENT_STATUS_NOTIFICATION;
-+	cgc.cmd[1] = 1;		/* IMMED */
-+	cgc.cmd[4] = 1 << 4;	/* media event */
-+	cgc.cmd[8] = sizeof(buffer);
++	/* set up command and get the disc info */
++	init_cdrom_command(&cgc, di, sizeof(*di), CGC_DATA_READ);
++	cgc.cmd[0] = GPCMD_READ_DISC_INFO;
++	cgc.cmd[8] = cgc.buflen = 2;
 +	cgc.quiet = 1;
 +
-+	if (cdi->ops->generic_packet(cdi, &cgc))
-+		return 1;
++	ret = cdo->generic_packet(cdi, &cgc);
++	if (ret)
++		return ret;
 +
-+	if (be16_to_cpu(eh->data_len) < sizeof(*med))
-+		return 1;
++	/* not all drives have the same disc_info length, so requeue
++	 * packet with the length the drive tells us it can supply
++	 */
++	buflen = be16_to_cpu(di->disc_information_length) +
++		sizeof(di->disc_information_length);
 +
-+	if (eh->nea || eh->notification_class != 0x4)
-+		return 1;
++	if (buflen > sizeof(disc_information))
++		buflen = sizeof(disc_information);
 +
-+	memcpy(med, &buffer[sizeof(*eh)], sizeof(*med));
-+	return 0;
++	cgc.cmd[8] = cgc.buflen = buflen;
++	ret = cdo->generic_packet(cdi, &cgc);
++	if (ret)
++		return ret;
++
++	/* return actual fill size */
++	return buflen;
 +}
 +
- static int cdrom_get_random_writable(struct cdrom_device_info *cdi,
- 			      struct rwrt_feature_desc *rfd)
- {
+ /* This macro makes sure we don't have to check on cdrom_device_ops
+  * existence in the run-time routines below. Change_capability is a
+  * hack to have the capability flags defined const, while we can still
+@@ -3360,39 +3394,6 @@ int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
+ 	return -ENOSYS;
+ }
+ 
+-/* requires CD R/RW */
+-static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *di)
+-{
+-	struct cdrom_device_ops *cdo = cdi->ops;
+-	struct packet_command cgc;
+-	int ret, buflen;
+-
+-	/* set up command and get the disc info */
+-	init_cdrom_command(&cgc, di, sizeof(*di), CGC_DATA_READ);
+-	cgc.cmd[0] = GPCMD_READ_DISC_INFO;
+-	cgc.cmd[8] = cgc.buflen = 2;
+-	cgc.quiet = 1;
+-
+-	if ((ret = cdo->generic_packet(cdi, &cgc)))
+-		return ret;
+-
+-	/* not all drives have the same disc_info length, so requeue
+-	 * packet with the length the drive tells us it can supply
+-	 */
+-	buflen = be16_to_cpu(di->disc_information_length) +
+-		     sizeof(di->disc_information_length);
+-
+-	if (buflen > sizeof(disc_information))
+-		buflen = sizeof(disc_information);
+-
+-	cgc.cmd[8] = cgc.buflen = buflen;
+-	if ((ret = cdo->generic_packet(cdi, &cgc)))
+-		return ret;
+-
+-	/* return actual fill size */
+-	return buflen;
+-}
+-
+ EXPORT_SYMBOL(cdrom_get_last_written);
+ EXPORT_SYMBOL(register_cdrom);
+ EXPORT_SYMBOL(unregister_cdrom);
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
