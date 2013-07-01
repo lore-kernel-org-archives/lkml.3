@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753797Ab3GAMln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:41:43 -0400
-Received: from smtpbg299.qq.com ([184.105.67.99]:37942 "HELO smtpbg299.qq.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752718Ab3GAMll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 08:41:41 -0400
-X-QQ-mid: bizesmtp3t1372682495t602t156
-X-QQ-SSF: 01200000000000F0FxF2000A0000000
-Message-ID: <51D178FA.4020601@pipul.org>
-Date: Mon, 01 Jul 2013 08:41:30 -0400
-From: fangdong <fangdong@pipul.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754029Ab3GAMov (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 08:44:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49358 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752695Ab3GAMou (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 08:44:50 -0400
+Date: Mon, 1 Jul 2013 14:44:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Lei Wen <leiwen@marvell.com>
+Cc: Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V2 1/2] sched: add trace events for task and rq usage tracking
+Message-ID: <20130701124407.GB21726@dyad.programming.kicks-ass.net>
+References: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
+ <1372682002-15373-1-git-send-email-leiwen@marvell.com>
+ <1372682002-15373-2-git-send-email-leiwen@marvell.com>
 MIME-Version: 1.0
-To: Jiaxing Wang <hello.wjx@gmail.com>
-CC: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] seq_file:update file->f_pos when lseek() to m->read_pos
-References: <1372497096-15914-1-git-send-email-hello.wjx@gmail.com>
-In-Reply-To: <1372497096-15914-1-git-send-email-hello.wjx@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-QQ-FName: A808296CF9BB45259B76437E8E8C018B
-X-QQ-LocalIP: 163.177.66.155
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372682002-15373-2-git-send-email-leiwen@marvell.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2013 05:11 AM, Jiaxing Wang wrote:
-> After pread(), file->f_pos and m->read_pos get different,
-> and lseek() to m->read_pos did not update file->f_pos, then
-> a subsequent read may read from a wrong position, the following
-> program shows the problem:
->
->      char str1[32] = { 0 };
->      char str2[32] = { 0 };
->      int poffset = 10;
->      int count = 20;
->
->      /*open any seq file*/
->      int fd = open("/proc/modules", O_RDONLY);
->
->      pread(fd, str1, count, poffset);
->      printf("pread:%s\n", str1);
->
->      /*seek to where m->read_pos is*/
->      lseek(fd, poffset+count, SEEK_SET);
->
->      /*supposed to read from poffset+count, but this read from position 0*/
->      read(fd, str2, count);
->      printf("read:%s\n", str2);
->
-> Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
-> ---
->   fs/seq_file.c | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 774c1eb..4b22b26 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -328,7 +328,8 @@ loff_t seq_lseek(struct file *file, loff_t offset, int whence)
->   				m->read_pos = offset;
->   				retval = file->f_pos = offset;
->   			}
-> -		}
-> +		} else
-> +			file->f_pos = offset;
->   	}
->   	file->f_version = m->version;
->   	mutex_unlock(&m->lock);
->
-This does not appear to be a problem, in linux man page, the behaver 
-seems clearly defined:
+On Mon, Jul 01, 2013 at 08:33:21PM +0800, Lei Wen wrote:
+> Since we could track task in the entity level now, we may want to
+> investigate tasks' running status by recording the trace info, so that
+> could make some tuning if needed.
 
-DESCRIPTION
-        pread() reads up to count bytes from file descriptor fd at 
-offset  off-set  (from the start of the file) into the buffer starting 
-at buf.  The file offset is not changed.
+Why would I want to merge this?
 
-        pwrite() writes up to count bytes from the buffer starting at 
-buf  to the  file  descriptor  fd  at  offset  offset.   The file offset 
-is not changed.
 
+> +	trace_sched_task_weighted_load(task_of(se), se->avg.load_avg_contrib, se->load.weight);
+> +	trace_sched_task_weighted_load(task_of(se), se->avg.load_avg_contrib, se->load.weight);
+
+> +		trace_sched_cfs_rq_runnable_load(cpu_of(rq_of(cfs_rq)),
+> +				cfs_rq->runnable_load_avg, cfs_rq->load.weight);
+
+> +		trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
+> +				cfs_rq->blocked_load_avg,
+> +				cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
+
+> +	trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
+> +			cfs_rq->blocked_load_avg,
+> +			cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
+
+> +		trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
+> +				cfs_rq->blocked_load_avg,
+> +				cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
+
+> +	trace_sched_cfs_rq_runnable_load(cpu_of(rq_of(cfs_rq)),
+> +			cfs_rq->runnable_load_avg, cfs_rq->load.weight);
+
+> +		trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
+> +				cfs_rq->blocked_load_avg,
+> +				cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
+
+> +		trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
+> +				cfs_rq->blocked_load_avg,
+> +				cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
+
+> +		trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
+> +				cfs_rq->blocked_load_avg,
+> +				cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
+
+You're not lazy enough by far, you seem to delight in endless repetition :/
+
+How about you first convince me we actually want to merge this; big hint,
+there's a significant lack of tracepoints in the entire balancer.
+
+Secondly; WTH didn't you do:
+
+  trace_sched_task_weighted_load(se);
+  trace_sched_cfs_rq_runnable_load(cfs_rq);
+  trace_sched_cfs_rq_blocked_load(cfs_rq);
+
+The tracepoints themselves could very well extract whatever they want from
+that; no need to actually write it out.
