@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab3GAG22 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 02:28:28 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:58160 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab3GAG20 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 02:28:26 -0400
-Date: Mon, 1 Jul 2013 16:28:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the arm-soc tree with the net-next tree
-Message-Id: <20130701162812.def47813e7d94c27950f3e82@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw"
+	id S1752502Ab3GAGkc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 02:40:32 -0400
+Received: from sauhun.de ([89.238.76.85]:50939 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750987Ab3GAGka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 02:40:30 -0400
+Date: Mon, 1 Jul 2013 08:40:21 +0200
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Kevin Strasser <kevin.strasser@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Kevin Strasser <strassek@engr.orst.edu>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Michael Brunner <Michael.Brunner@kontron.com>,
+        Michael Brunner <mibru@gmx.de>, Chris Healy <chealy@imsco-us.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dirk Hohndel <Dirk.Hohndel@intel.com>, Ben Dooks <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v3 2/4] i2c: Kontron PLD i2c bus driver
+Message-ID: <20130701064021.GC2976@katana>
+References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
+ <1372046406-3127-1-git-send-email-kevin.strasser@linux.intel.com>
+ <1372046406-3127-3-git-send-email-kevin.strasser@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ctP54qlpMx3WjD+/"
+Content-Disposition: inline
+In-Reply-To: <1372046406-3127-3-git-send-email-kevin.strasser@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw
-Content-Type: text/plain; charset=US-ASCII
+
+--ctP54qlpMx3WjD+/
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On Sun, Jun 23, 2013 at 09:00:04PM -0700, Kevin Strasser wrote:
+> Add i2c support for the on-board PLD found on some Kontron embedded
+> modules.
+>=20
+> Originally-From: Michael Brunner <michael.brunner@kontron.com>
+> Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
+> Acked-by: Guenter Roeck <linux@roeck-us.net>
+> Acked-by: Darren Hart <dvhart@linux.intel.com>
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-mxs/mach-mxs.c between commit b7c4114b07bb ("can: flexcan:
-Use a regulator to control the CAN transceiver") from the net-next tree
-and commit 2046338dcbc6 ("ARM: mxs: Use soc bus infrastructure") from the
-arm-soc tree.
+Applied to for-next, thanks!
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-mxs/mach-mxs.c
-index 97b8a44,7fa611c..0000000
---- a/arch/arm/mach-mxs/mach-mxs.c
-+++ b/arch/arm/mach-mxs/mach-mxs.c
-@@@ -323,13 -477,14 +432,14 @@@ static void __init mxs_machine_init(voi
-  		imx28_evk_init();
-  	else if (of_machine_is_compatible("bluegiga,apx4devkit"))
-  		apx4devkit_init();
-- 	else if (of_machine_is_compatible("crystalfontz,cfa10037"))
-- 		cfa10037_init();
-- 	else if (of_machine_is_compatible("crystalfontz,cfa10049"))
-- 		cfa10049_init();
-+ 	else if (of_machine_is_compatible("crystalfontz,cfa10037") ||
-+ 		 of_machine_is_compatible("crystalfontz,cfa10049") ||
-+ 		 of_machine_is_compatible("crystalfontz,cfa10055") ||
-+ 		 of_machine_is_compatible("crystalfontz,cfa10057"))
-+ 		crystalfontz_init();
- =20
-  	of_platform_populate(NULL, of_default_bus_match_table,
-- 			     NULL, NULL);
- -			     mxs_auxdata_lookup, parent);
-++			     NULL, parent);
- =20
-  	if (of_machine_is_compatible("karo,tx28"))
-  		tx28_post_init();
-
---Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw
-Content-Type: application/pgp-signature
+--ctP54qlpMx3WjD+/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJR0SGAAAoJEECxmPOUX5FEicoQAJPhfyf4CDOKlF/5dKx4r4XG
-YeV9oMhwNrg8dngVXdvK9kvvz+XrW0//PvldT1CyqgAsGRRv8qLn4p3sOWxCCRPx
-s40NkhPKmo0Ya8nMKs7OIzCwKdbB9a4myUwdcB0+Plc4+jc69432gVapeSn2Ef8G
-EgQ0wqyZJ8H2AdOWGtFq8d8z6i0UwZzoARrRgruhB7vu7r9XkIwIt7fNruoWrkVj
-NhYRj4pbnP9Ju+/6xdHk7gJsXfg1JnrEk5AU0wZym6DBZdI9SY7ZLBUUq60WjY3/
-sihCf3q70nLizg2wepJrm39M4WAfHBfV3z7/VfYTZPEFMN8BwujItc36yp/vnjc4
-9j3PAV6u1N3/hEmSShi7nFTwo6fCwwSrFFEcwHpLZiNTLHR/oMydBm+ideeYo9AB
-4xDPDYD9LDBnODdBHkNJIbbTC1l2cYi4AGx0dM+37a6UnT5QcZl47Jiz0z+PJ1Vb
-N19TZM6/ioi8pik2+pZF0KeYubJW8TAU6Fh+4CWce3Xa4VUfnTGGrio+/WJVPCqS
-gqlao7nZaZVpjWNkwyr7EfQIBWwJsEw3/Zekz5R2kf8TDADKICrObEeQMAaA7AhA
-D+6DquaAxiu/eL0GCexbNRaESntwbMYpYNEkdU8kREdTcqvAIVSZRsEyGgRhVLDy
-h1SoSclMhAiPkbTatcEu
-=JBkZ
+iQIcBAEBAgAGBQJR0SRVAAoJEBQN5MwUoCm2/+UP/RPh/wU3W8bFioYWoOrGJK1B
+0t2PHKVAqhcEwZnSFNxCo5hh/XIM/oDXdjKMsdPBZEMAQ+QL1f3bVjS3cb5xflbm
+F3bLCaM48kIve+A5bprj913ikdTbWkuuagcQrry64i3aDcG4Tsb4WaCX4BjE0Fb1
+LNiwrqHrmpxWHwBsFYiucWiyBqXFwKrq0P0Gb0Gi+/RctWR4Aoi35V+5qbmDAf+s
+/sFMbTM7dfknKaeuiuUjmsQ2ZxkWhAmMbmQN6f5ry1SJgjf00h/UDb0yJBKC9BsI
+X5cvANdDZdMVhN/lLAj1nIPAjHYNgb0Q8b+lEnkhhndQPMziOlZPeUfkNKlyCTE6
+B0OcKW2yih0O/PwTNRV4AH7d+Rt/RpTLH3kk8mv+XlGk+9AbMks0C1pciumX9RWQ
+1wV57ADZupDildbWA8Sm6r2MG8Y+kszkt0+2bbTFmpnOodFX/2/7Lj5kSIYWhVlJ
+wbROLkszzBk2eLBuUSKdZadgAyz0Xyf0PMeLX/u6/s85qQ5oDyN9jfGle4Nlkugd
+2JF7EzOcrv2/l+XIQ/Ax29XtiRZouu2tVZ/9WuJii1wbxb8xp4LAktY1pQawCaay
+m0n3M4GkjGOfJToNtQ0WVB4e/ZWZQZmvw+pqWVeEFQZt6IbYFc6NiiyXZHX479XA
+HpRVxnPhccnXowK2OT/b
+=KOFD
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw--
+--ctP54qlpMx3WjD+/--
