@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab3GAVvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:51:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57388 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab3GAVvr (ORCPT
+	id S1755534Ab3GAVxU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:53:20 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39308 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901Ab3GAVxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:51:47 -0400
-Date: Mon, 1 Jul 2013 23:51:49 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Hogan <james.hogan@imgtec.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] metag: cpu hotplug: route_irq: preserve irq mask
-In-Reply-To: <1372694659-30176-6-git-send-email-james.hogan@imgtec.com>
-Message-ID: <alpine.DEB.2.02.1307012351370.4013@ionos.tec.linutronix.de>
-References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com> <1372694659-30176-6-git-send-email-james.hogan@imgtec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 1 Jul 2013 17:53:18 -0400
+Message-ID: <51D1FA4C.8000507@wwwdotorg.org>
+Date: Mon, 01 Jul 2013 15:53:16 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: balbi@ti.com, linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 5/9] usb: phy: tegra: Register as an USB PHY.
+References: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com> <1372455427-20898-6-git-send-email-ttynkkynen@nvidia.com>
+In-Reply-To: <1372455427-20898-6-git-send-email-ttynkkynen@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/28/2013 03:37 PM, Tuomas Tynkkynen wrote:
+> Register the Tegra PHY device instances with the PHY subsystem so that
+> the Tegra EHCI driver can locate a PHY via the standard APIs.
 
+> diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
 
-On Mon, 1 Jul 2013, James Hogan wrote:
+> +	err = usb_add_phy_dev(&tegra_phy->u_phy);
+> +	if (err < 0) {
+> +		tegra_usb_phy_close(&tegra_phy->u_phy);
+> +		return err;
+> +	}
 
-> The route_irq() function needs to preserve the irq mask by using the
-> _irqsave/irqrestore variants of raw spin lock functions instead of the
-> _irq variants. This is because it is called from __cpu_disable() (via
-> migrate_irqs()), which is called with IRQs disabled, so using the _irq
-> variants re-enables IRQs.
-> 
-> This appears to have been causing occasional hits of the
-> BUG_ON(!irqs_disabled()) in __irq_work_run() during CPU hotplug soak
-> testing:
->   BUG: failure at kernel/irq_work.c:122/__irq_work_run()!
-> 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Don't you want to do that a bit later? In particular ...
 
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
+>  	tegra_phy->u_phy.shutdown = tegra_usb_phy_close;
+>  	tegra_phy->u_phy.set_suspend = tegra_usb_phy_suspend;
+> 
+> 	dev_set_drvdata(&pdev->dev, tegra_phy);
 
-> ---
->  arch/metag/kernel/irq.c | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/metag/kernel/irq.c b/arch/metag/kernel/irq.c
-> index d91b1e9..2a2c9d5 100644
-> --- a/arch/metag/kernel/irq.c
-> +++ b/arch/metag/kernel/irq.c
-> @@ -279,11 +279,12 @@ static void route_irq(struct irq_data *data, unsigned int irq, unsigned int cpu)
->  {
->  	struct irq_desc *desc = irq_to_desc(irq);
->  	struct irq_chip *chip = irq_data_get_irq_chip(data);
-> +	unsigned long flags;
->  
-> -	raw_spin_lock_irq(&desc->lock);
-> +	raw_spin_lock_irqsave(&desc->lock, flags);
->  	if (chip->irq_set_affinity)
->  		chip->irq_set_affinity(data, cpumask_of(cpu), false);
-> -	raw_spin_unlock_irq(&desc->lock);
-> +	raw_spin_unlock_irqrestore(&desc->lock, flags);
->  }
->  
->  /*
-> -- 
-> 1.8.1.2
-> 
-> 
-> 
+... that all happens *after* the call to usb_add_phy_dev() call, yet I
+think the USB core could legally call any of the PHY methods after the
+call to usb_add_phy_dev(), and that probably requires all those methods
+pointers and drvdata to be set up? I suggest moving the call to
+usb_add_phy_dev() to the very end of the function.
+
+> +static int tegra_usb_phy_remove(struct platform_device *pdev)
+> +{
+> +	struct tegra_usb_phy *tegra_phy = platform_get_drvdata(pdev);
+> +
+> +	usb_remove_phy(&tegra_phy->u_phy);
+> +	return 0;
+> +}
+
+Nit: I'd typically expect to see a blank line before the return statement.
