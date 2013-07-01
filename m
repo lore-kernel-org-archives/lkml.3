@@ -1,115 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521Ab3GADSw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 23:18:52 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36376 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751890Ab3GADSv (ORCPT
+	id S1752597Ab3GADVE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 23:21:04 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:40966
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751768Ab3GADVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 23:18:51 -0400
-Message-ID: <51D0F514.3070309@oracle.com>
-Date: Mon, 01 Jul 2013 11:18:44 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Sun, 30 Jun 2013 23:21:03 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <linuxppc-dev@lists.ozlabs.org>
+CC: <scottwood@freescale.com>, <vakul@freescale.com>, <leoLi@freescale.com>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH 2/2] DMA: Freescale: update driver to support 8-channel DMA engine
+Date: Mon, 1 Jul 2013 11:20:09 +0800
+Message-ID: <1372648810-2807-2-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372648810-2807-1-git-send-email-hongbo.zhang@freescale.com>
+References: <1372648810-2807-1-git-send-email-hongbo.zhang@freescale.com>
 MIME-Version: 1.0
-To: Alex Bligh <alex@alex.org.uk>
-CC: Eric Dumazet <eric.dumazet@gmail.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, zheng.x.li@oracle.com,
-        Xen Devel <xen-devel@lists.xen.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: kernel panic in skb_copy_bits
-References: <51CBAA48.3080802@oracle.com> <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com> <6BFD5AF235F72F13CE646A0D@nimrod.local>
-In-Reply-To: <6BFD5AF235F72F13CE646A0D@nimrod.local>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/13 17:13, Alex Bligh wrote:
-> 
-> 
-> --On 28 June 2013 12:17:43 +0800 Joe Jin <joe.jin@oracle.com> wrote:
-> 
->> Find a similar issue
->> http://www.gossamer-threads.com/lists/xen/devel/265611 So copied to Xen
->> developer as well.
-> 
-> I thought this sounded familiar. I haven't got the start of this
-> thread, but what version of Xen are you running and what device
-> model? If before 4.3, there is a page lifetime bug in the kernel
-> (not the xen code) which can affect anything where the guest accesses
-> the host's block stack and that in turn accesses the networking
-> stack (it may in fact be wider than that). So, e.g. domU on
-> iCSSI will do it. It tends to get triggered by a TCP retransmit
-> or (on NFS) the RPC equivalent. Essentially block operation
-> is considered complete, returning through xen and freeing the
-> grant table entry, and yet something in the kernel (e.g. tcp
-> retransmit) can still access the data. The nature of the bug
-> is extensively discussed in that thread - you'll also find
-> a reference to a thread on linux-nfs which concludes it
-> isn't an nfs problem, and even some patches to fix it in the
-> kernel adding reference counting.
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-Do you know if have a fix for above? so far we also suspected the
-grant page be unmapped earlier, we using 4.1 stable during our test.
+This patch adds support to 8-channel DMA engine, thus the driver works for both
+the new 8-channel and the legacy 4-channel DMA engines.
 
-> 
-> A workaround is to turn off O_DIRECT use by Xen as that ensures
-> the pages are copied. Xen 4.3 does this by default.
-> 
-> I believe fixes for this are in 4.3 and 4.2.2 if using the
-> qemu upstream DM. Note these aren't real fixes, just a workaround
-> of a kernel bug.
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+---
+ drivers/dma/fsldma.c |   48 ++++++++++++++++++++++++++++++++++--------------
+ drivers/dma/fsldma.h |    4 ++--
+ 2 files changed, 36 insertions(+), 16 deletions(-)
 
-The guest is pvm, and disk model is xvbd, guest config file as below:
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 4fc2980..0f453ea 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1119,27 +1119,33 @@ static irqreturn_t fsldma_ctrl_irq(int irq, void *data)
+ 	struct fsldma_device *fdev = data;
+ 	struct fsldma_chan *chan;
+ 	unsigned int handled = 0;
+-	u32 gsr, mask;
++	u8 chan_sr[round_up(FSL_DMA_MAX_CHANS_PER_DEVICE, 4)];
++	u32 gsr;
+ 	int i;
+ 
+-	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ? in_be32(fdev->regs)
+-						   : in_le32(fdev->regs);
+-	mask = 0xff000000;
+-	dev_dbg(fdev->dev, "IRQ: gsr 0x%.8x\n", gsr);
++	memset(&chan_sr, 0, sizeof(chan_sr));
++	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ? in_be32(fdev->regs0)
++						   : in_le32(fdev->regs0);
++	memcpy(&chan_sr[0], &gsr, 4);
++	dev_dbg(fdev->dev, "IRQ: gsr0 0x%.8x\n", gsr);
++
++	if (of_device_is_compatible(fdev->dev->of_node, "fsl,eloplus-dma2")) {
++		gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ?
++			in_be32(fdev->regs1) : in_le32(fdev->regs1);
++		memcpy(&chan_sr[4], &gsr, 4);
++		dev_dbg(fdev->dev, "IRQ: gsr1 0x%.8x\n", gsr);
++	}
+ 
+ 	for (i = 0; i < FSL_DMA_MAX_CHANS_PER_DEVICE; i++) {
+ 		chan = fdev->chan[i];
+ 		if (!chan)
+ 			continue;
+ 
+-		if (gsr & mask) {
++		if (chan_sr[i]) {
+ 			dev_dbg(fdev->dev, "IRQ: chan %d\n", chan->id);
+ 			fsldma_chan_irq(irq, chan);
+ 			handled++;
+ 		}
+-
+-		gsr &= ~mask;
+-		mask >>= 8;
+ 	}
+ 
+ 	return IRQ_RETVAL(handled);
+@@ -1261,7 +1267,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
+ 	WARN_ON(fdev->feature != chan->feature);
+ 
+ 	chan->dev = fdev->dev;
+-	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
++	chan->id = (res.start & 0xfff) < 0x300 ?
++		   ((res.start - 0x100) & 0xfff) >> 7 :
++		   ((res.start - 0x200) & 0xfff) >> 7;
+ 	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
+ 		dev_err(fdev->dev, "too many channels for device\n");
+ 		err = -EINVAL;
+@@ -1341,13 +1349,22 @@ static int fsldma_of_probe(struct platform_device *op)
+ 	INIT_LIST_HEAD(&fdev->common.channels);
+ 
+ 	/* ioremap the registers for use */
+-	fdev->regs = of_iomap(op->dev.of_node, 0);
+-	if (!fdev->regs) {
+-		dev_err(&op->dev, "unable to ioremap registers\n");
++	fdev->regs0 = of_iomap(op->dev.of_node, 0);
++	if (!fdev->regs0) {
++		dev_err(&op->dev, "unable to ioremap register0\n");
+ 		err = -ENOMEM;
+ 		goto out_free_fdev;
+ 	}
+ 
++	if (of_device_is_compatible(op->dev.of_node, "fsl,eloplus-dma2")) {
++		fdev->regs1 = of_iomap(op->dev.of_node, 1);
++		if (!fdev->regs1) {
++			dev_err(&op->dev, "unable to ioremap register1\n");
++			err = -ENOMEM;
++			goto out_free_fdev;
++		}
++	}
++
+ 	/* map the channel IRQ if it exists, but don't hookup the handler yet */
+ 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
+ 
+@@ -1427,7 +1444,9 @@ static int fsldma_of_remove(struct platform_device *op)
+ 			fsl_dma_chan_remove(fdev->chan[i]);
+ 	}
+ 
+-	iounmap(fdev->regs);
++	iounmap(fdev->regs0);
++	if (of_device_is_compatible(op->dev.of_node, "fsl,eloplus-dma2"))
++		iounmap(fdev->regs1);
+ 	dev_set_drvdata(&op->dev, NULL);
+ 	kfree(fdev);
+ 
+@@ -1436,6 +1455,7 @@ static int fsldma_of_remove(struct platform_device *op)
+ 
+ static const struct of_device_id fsldma_of_ids[] = {
+ 	{ .compatible = "fsl,eloplus-dma", },
++	{ .compatible = "fsl,eloplus-dma2", },
+ 	{ .compatible = "fsl,elo-dma", },
+ 	{}
+ };
+diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
+index f5c3879..880664d 100644
+--- a/drivers/dma/fsldma.h
++++ b/drivers/dma/fsldma.h
+@@ -112,10 +112,10 @@ struct fsldma_chan_regs {
+ };
+ 
+ struct fsldma_chan;
+-#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
++#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
+ 
+ struct fsldma_device {
+-	void __iomem *regs;	/* DGSR register base */
++	void __iomem *regs0, *regs1;	/* DGSR registers */
+ 	struct device *dev;
+ 	struct dma_device common;
+ 	struct fsldma_chan *chan[FSL_DMA_MAX_CHANS_PER_DEVICE];
+-- 
+1.7.9.5
 
-vif = ['mac=00:21:f6:00:00:01,bridge=c0a80b00']
-OVM_simple_name = 'Guest#1'
-disk = ['file:/OVS/Repositories/0004fb000003000091e9eae94d1e907c/VirtualDisks/0004fb0000120000f78799dad800ef47.img,xvda,w', 'phy:/dev/mapper/360060e8010141870058b415700000002,xvdb,w', 'phy:/dev/mapper/360060e8010141870058b415700000003,xvdc,w']
-bootargs = ''
-uuid = '0004fb00-0006-0000-2b00-77a4766001ed'
-on_reboot = 'restart'
-cpu_weight = 27500
-OVM_os_type = 'Oracle Linux 5'
-cpu_cap = 0
-maxvcpus = 8
-OVM_high_availability = False
-memory = 4096
-OVM_description = ''
-on_poweroff = 'destroy'
-on_crash = 'restart'
-bootloader = '/usr/bin/pygrub'
-guest_os_type = 'linux'
-name = '0004fb00000600002b0077a4766001ed'
-vfb = ['type=vnc,vncunused=1,vnclisten=127.0.0.1,keymap=en-us']
-vcpus = 8
-OVM_cpu_compat_group = ''
-OVM_domain_type = 'xen_pvm'
-
-> 
-> To fix on a local build of xen you will need something like this:
-> https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
-> and something like this (NB: obviously insert your own git
-> repo and commit numbers)
-> https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
-> 
-
-I think this only for pvhvm/hvm?
-
-
-Thanks,
-Joe
-> Also note those fixes are (technically) unsafe for live migration
-> unless there is an ordering change made in qemu's block open
-> call.
-> 
-> Of course this might be something completely different.
-> 
 
 
