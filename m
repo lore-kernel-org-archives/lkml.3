@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab3GAHMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:12:00 -0400
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:54773 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752457Ab3GAHL7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:11:59 -0400
-From: Lei Wen <leiwen@marvell.com>
-To: Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        <mingo@redhat.com>, <leiwen@marvell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/2] sched: add trace event for per-entity tracking
-Date: Mon, 1 Jul 2013 15:10:31 +0800
-Message-ID: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752819Ab3GAHMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:12:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46072 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752457Ab3GAHMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:12:13 -0400
+Message-ID: <1372662717.2974.23.camel@cr0>
+Subject: Re: [RFC Patch net-next 4/5] sunrpc: use generic union inet_addr
+From: Cong Wang <amwang@redhat.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 01 Jul 2013 15:11:57 +0800
+In-Reply-To: <1372347413.2436.6.camel@bwh-desktop.uk.level5networks.com>
+References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
+	 <1372315398-19683-5-git-send-email-amwang@redhat.com>
+	 <1372347413.2436.6.camel@bwh-desktop.uk.level5networks.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the per-entity tracking feature, we could know the details of
-each task by its help.
-This patch add its trace support, so that we could quickly know the system
-status in a large time scale, like now we may get each runqueue's usage ratio by:
+On Thu, 2013-06-27 at 16:36 +0100, Ben Hutchings wrote:
+> On Thu, 2013-06-27 at 14:43 +0800, Cong Wang wrote:
+> [...]
+> > -/**
+> > - * rpc_cmp_addr - compare the address portion of two sockaddrs.
+> > - * @sap1: first sockaddr
+> > - * @sap2: second sockaddr
+> > - *
+> > - * Just compares the family and address portion. Ignores port, but
+> > - * compares the scope if it's a link-local address.
+> 
+> You're removing the scope comparison.
 
-cfs_rq's usage ratio = cfs_rq->runnable_load_avg/cfs_rq->load.weight
+Actually I added the following code in patch 5/5:
 
-Lei Wen (2):
-  sched: add trace events for task and rq usage tracking
-  sched: update cfs_rq weight earlier in enqueue_entity
++               if (!ipv6_addr_equal(&a->sin6.sin6_addr,
+&b->sin6.sin6_addr))
++                       return false;
++               else if
+(__ipv6_addr_needs_scope_id(__ipv6_addr_type(&a->sin6.sin6_addr)))
++                       return a->sin6.sin6_scope_id ==
+b->sin6.sin6_scope_id;
 
- include/trace/events/sched.h |   73 ++++++++++++++++++++++++++++++++++++++++++
- kernel/sched/fair.c          |   31 ++++++++++++++++--
- 2 files changed, 101 insertions(+), 3 deletions(-)
 
--- 
-1.7.10.4
+but I should move it to this patch, otherwise it is hard for review.
+
+Thanks!
 
