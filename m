@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752211Ab3GACSr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 22:18:47 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:52411 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751386Ab3GACSq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 22:18:46 -0400
-From: Chao Xie <cxie4@marvell.com>
-To: Mark Brown <broonie@kernel.org>, Axel Lin <axel.lin@ingics.com>
-CC: Yi Zhang <yizhang@marvell.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Sun, 30 Jun 2013 19:14:55 -0700
-Subject: RE: [PATCH 1/2] regulator: 88pm800: Add missing config.of_node
- setting for regulator register
-Thread-Topic: [PATCH 1/2] regulator: 88pm800: Add missing config.of_node
- setting for regulator register
-Thread-Index: Ac50BnMnXiTjVJdLQiqYPs/XcIREmgB+dUlw
-Message-ID: <AAD1C6EB06EE3649B35B7E026785068D2581736992@SC-VEXCH2.marvell.com>
-References: <1372426354.28529.1.camel@phoenix>
- <20130628135022.GJ27646@sirena.org.uk>
-In-Reply-To: <20130628135022.GJ27646@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752363Ab3GACWo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 22:22:44 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:62174 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab3GACWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 22:22:43 -0400
+X-Spam-Score: -100.8
+Message-ID: <51D0E7BF.9030206@asianux.com>
+Date: Mon, 01 Jul 2013 10:21:51 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [PATCH v2] arch: tile: include: asm: add cmpxchg64() definition
+References: <51CA6D21.3090901@asianux.com> <51CC492C.1040105@tilera.com> <51CCD891.8000806@asianux.com> <51CCEC27.8050508@asianux.com> <20130628150941.GA22767@linux-mips.org> <51D0E4B3.6080402@asianux.com>
+In-Reply-To: <51D0E4B3.6080402@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@kernel.org] 
-> Sent: Friday, June 28, 2013 9:50 PM
-> To: Axel Lin
-> Cc: Yi Zhang; Chao Xie; Liam Girdwood; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/2] regulator: 88pm800: Add missing config.of_node setting for regulator register
-> 
-> On Fri, Jun 28, 2013 at 09:32:34PM +0800, Axel Lin wrote:
->> Signed-off-by: Axel Lin <axel.lin@ingics.com>
->> ---
->> Hi,
->> Seems current code also needs this patch:
->> 	mfd: 88pm800: add regulator sub device [1]
->
-> Oh dear.  I've just reverted the patch (my build testing hadn't caught up yet).  Chao, please resubmit for v3.12 - when you submit patches you need to either ensure it applies and builds on the relevant branch or mention the dependencies so that the build doesn't break.  In this case sending the regulator driver and matching MFD changes as a single patch series would have been the normal thing.
-> 
-> Please incorporate Axel's feedback into any resubmission.
-It is my mistake. I should add "regulator_data" and "num_regulator" with regulator driver.
-I have seen that mfd: 88pm800: add regulator sub device is already merged into Linux-next. So you mean that I need wait for 3.11 to release, then resubmit the regulator patch?
+Need add cmpxchg64(), or will cause compiling issue.
+
+Need define it as cmpxchg() only for 64-bit operation, since cmpxchg()
+can support 8 bytes.
+
+The related error (with allmodconfig):
+
+  drivers/block/blockconsole.c: In function ‘bcon_advance_console_bytes’:
+  drivers/block/blockconsole.c:164:2: error: implicit declaration of function ‘cmpxchg64’ [-Werror=implicit-function-declaration]
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
+---
+ arch/tile/include/asm/cmpxchg.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/arch/tile/include/asm/cmpxchg.h b/arch/tile/include/asm/cmpxchg.h
+index 276f067..1da5bfb 100644
+--- a/arch/tile/include/asm/cmpxchg.h
++++ b/arch/tile/include/asm/cmpxchg.h
+@@ -68,6 +68,12 @@ extern unsigned long __cmpxchg_called_with_bad_pointer(void);
+ 
+ #define tas(ptr) (xchg((ptr), 1))
+ 
++#define cmpxchg64(ptr, o, n)						\
++({									\
++	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
++	cmpxchg((ptr), (o), (n));					\
++})
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif /* _ASM_TILE_CMPXCHG_H */
+-- 
+1.7.7.6
