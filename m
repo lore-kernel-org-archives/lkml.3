@@ -1,149 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab3GASRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 14:17:15 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:47408 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754821Ab3GASRM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 14:17:12 -0400
-Date: Mon, 1 Jul 2013 11:17:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full v2 6/7] nohz_full: Add full-system-idle
- state machine
-Message-ID: <20130701181700.GP3773@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130628200949.GA17458@linux.vnet.ibm.com>
- <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1372450222-19420-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130701165355.GP7246@somewhere.redhat.com>
+	id S1754984Ab3GASSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 14:18:47 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.106]:12930 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754856Ab3GASSq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 14:18:46 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-9.tower-160.messagelabs.com!1372702720!7046773!13
+X-Originating-IP: [216.166.12.180]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.9; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mark Brown <broonie@kernel.org>, Ryan Mallon <rmallon@gmail.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        "mika.westerberg@iki.fi" <mika.westerberg@iki.fi>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Date: Mon, 1 Jul 2013 13:17:22 -0500
+Subject: RE: [PATCH 1/8] spi: spi-ep93xx: use read,write instead of __raw_*
+ variants
+Thread-Topic: [PATCH 1/8] spi: spi-ep93xx: use read,write instead of __raw_*
+ variants
+Thread-Index: Ac52SdqNfF8cE6s4RuWw/PrsZQtZDQAPS7bQ
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DAC38FFBA@AUSP01VMBX24.collaborationhost.net>
+References: <201306281142.36525.hartleys@visionengravers.com>
+ <51CE18FD.8010806@gmail.com> <20130701105750.GI27646@sirena.org.uk>
+In-Reply-To: <20130701105750.GI27646@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130701165355.GP7246@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070118-5806-0000-0000-000021F06E56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 06:53:57PM +0200, Frederic Weisbecker wrote:
-> On Fri, Jun 28, 2013 at 01:10:21PM -0700, Paul E. McKenney wrote:
-> > +
-> > +/*
-> > + * Check to see if the system is fully idle, other than the timekeeping CPU.
-> > + * The caller must have disabled interrupts.
-> > + */
-> > +bool rcu_sys_is_idle(void)
-> > +{
-> > +	static struct rcu_sysidle_head rsh;
-> > +	int rss = ACCESS_ONCE(full_sysidle_state);
-> > +
-> > +	WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-> > +
-> > +	/* Handle small-system case by doing a full scan of CPUs. */
-> > +	if (nr_cpu_ids <= RCU_SYSIDLE_SMALL && rss < RCU_SYSIDLE_FULL) {
-> > +		int cpu;
-> > +		bool isidle = true;
-> > +		unsigned long maxj = jiffies - ULONG_MAX / 4;
-> > +		struct rcu_data *rdp;
-> > +
-> > +		/* Scan all the CPUs looking for nonidle CPUs. */
-> > +		for_each_possible_cpu(cpu) {
-> > +			rdp = per_cpu_ptr(rcu_sysidle_state->rda, cpu);
-> > +			rcu_sysidle_check_cpu(rdp, &isidle, &maxj);
-> > +			if (!isidle)
-> > +				break;
-> > +		}
-> > +		rcu_sysidle_report(rcu_sysidle_state, isidle, maxj);
-> 
-> To clarify my worries, I would expect the following ordering:
-> 
->     CPU 0                                           CPU 1
-> 
->     cmpxchg(global_state, RCU_SYSIDLE_..., ...)     write rdtp(1)->idle_dynticks
->     smp_mb() // implied by cmpxchg                  smp_mb()
->     read rdtp(1)-idle_dynticks                      cmpxchg(global_state, RCU_SYSIDLE_NONE)
-> 
-> This example doesn't really make sense because CPU 0 only wants to change global state after
-> checking rdtp(1)->idle_dynticks. So we obviously want the other way around as you did. But then
-> I can't find an ordering that makes sure that only either happens:
-> 
-> * CPU 0 sees CPU 1 update when it wakes up and so we reset to RCU_SYSIDLE_NONE from CPU 0
-> * CPU 1 wakes up and reset to RCU_SYSIDLE_NONE and sends an IPI to CPU 0
-> 
-> I mean that's what the code does, but I don't get the ordering that guarantees we can't
-> fall into some intermediate state when CPU 0 sees CPU 1 idle whereas it already woke up without
-> sending the IPI.
-> 
-> I'm sure you'll point me to my mistaken review :)
+On Monday, July 01, 2013 3:58 AM, Mark Brown wrote:
+> On Sat, Jun 29, 2013 at 09:15:09AM +1000, Ryan Mallon wrote:
+>> On 29/06/13 04:42, H Hartley Sweeten wrote:
+>
+>>> -static inline u8
+>>> -ep93xx_spi_read_u8(const struct ep93xx_spi *spi, u16 reg)
+>>> -{
+>>> -	return __raw_readb(spi->regs_base + reg);
+>>> -}
+>
+>> Is there a particular reason to drop these functions? It's basically just
+>> bike-shedding, but they can make the code more readable at very little
+>> cost. Even dropping the inline (which is preferred nowdays) the compiler
+>> will still inline these, and it would also make this patch much smaller
+>> to keep them.
+>
+> I tend to agree, it's much more normal to have the base + reg in a
+> function than not.
 
-Not at all -- as noted in previous email, you have helped me understand
-why my original design included an RCU_SYSIDLE_LONG state.
+OK. I will redo this one to just remove the __raw_.
 
-								Thanx, Paul
-
-> > +		rss = ACCESS_ONCE(full_sysidle_state);
-> > +	}
-> > +
-> > +	/* If this is the first observation of an idle period, record it. */
-> > +	if (rss == RCU_SYSIDLE_FULL) {
-> > +		rss = cmpxchg(&full_sysidle_state,
-> > +			      RCU_SYSIDLE_FULL, RCU_SYSIDLE_FULL_NOTED);
-> > +		return rss == RCU_SYSIDLE_FULL;
-> > +	}
-> > +
-> > +	smp_mb(); /* ensure rss load happens before later caller actions. */
-> > +
-> > +	/* If already fully idle, tell the caller (in case of races). */
-> > +	if (rss == RCU_SYSIDLE_FULL_NOTED)
-> > +		return true;
-> > +
-> > +	/*
-> > +	 * If we aren't there yet, and a grace period is not in flight,
-> > +	 * initiate a grace period.  Either way, tell the caller that
-> > +	 * we are not there yet.
-> > +	 */
-> > +	if (nr_cpu_ids > RCU_SYSIDLE_SMALL &&
-> > +	    !rcu_gp_in_progress(rcu_sysidle_state) &&
-> > +	    !rsh.inuse && xchg(&rsh.inuse, 1) == 0)
-> > +		call_rcu(&rsh.rh, rcu_sysidle_cb);
-> > +	return false;
-> >  }
-> >  
-> >  /*
-> > @@ -2494,6 +2734,21 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
-> >  {
-> >  }
-> >  
-> > +static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
-> > +				  unsigned long *maxj)
-> > +{
-> > +}
-> > +
-> > +static bool is_sysidle_rcu_state(struct rcu_state *rsp)
-> > +{
-> > +	return false;
-> > +}
-> > +
-> > +static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
-> > +			       unsigned long maxj)
-> > +{
-> > +}
-> > +
-> >  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
-> >  {
-> >  }
-> > -- 
-> > 1.8.1.5
-> > 
-> 
+Regards,
+Hartley
 
