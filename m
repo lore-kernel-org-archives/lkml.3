@@ -1,122 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab3GALL2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:11:28 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:36038 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753352Ab3GALL0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:11:26 -0400
-Date: Mon, 1 Jul 2013 13:11:22 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Wedson Almeida Filho <wedsonaf@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
-Message-ID: <20130701111122.GA18772@gmail.com>
-References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
- <20130628111948.GA31065@gmail.com>
- <20130628140938.GA24819@pd.tnic>
- <CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
- <20130630220004.GA23124@pd.tnic>
- <20130701075046.GB1681@gmail.com>
- <20130701102306.GC23515@pd.tnic>
+	id S1753890Ab3GALQg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:16:36 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44786 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753346Ab3GALQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 07:16:35 -0400
+Message-ID: <51D16501.3090303@ti.com>
+Date: Mon, 1 Jul 2013 16:46:17 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130701102306.GC23515@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: "J, KEERTHY" <j-keerthy@ti.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] regulator: palmas: model SMPS10 as two regulators
+References: <1372672182-14778-1-git-send-email-kishon@ti.com> <20130701100136.GA27646@sirena.org.uk> <51D1548E.4080008@ti.com> <DC88CAD03C0052499C1907B327FC63229F0F8A@DBDE04.ent.ti.com> <20130701110427.GJ27646@sirena.org.uk>
+In-Reply-To: <20130701110427.GJ27646@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday 01 July 2013 04:34 PM, Mark Brown wrote:
+> On Mon, Jul 01, 2013 at 10:19:55AM +0000, J, KEERTHY wrote:
+>
+>> I had submitted a patch on the same file which was pulled by Samuel.
+>> Kishon is based on a branch which has my patch. I think that is missing in your
+>> Branch. This is the reason why it is not applying.
+>
+> OK, resend after -rc1.  Please also roll in Axel's fix.
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Sure. Thanks.
 
-> On Mon, Jul 01, 2013 at 09:50:46AM +0200, Ingo Molnar wrote:
-> > Not sure - the main thing we want to know is whether it gets faster.
-> > The _amount_ will depend on things like precise usage patterns,
-> > caching, etc. - but rarely does a real workload turn a win like this
-> > into a loss.
-> 
-> Yep, and it does get faster by a whopping 6 seconds!
-> 
-> Almost all standard counters go down a bit.
-> 
-> Interestingly, branch misses get a slight increase and the asm goto
-> thing does actually jump to the fail_fn from within the asm so maybe
-> this could puzzle the branch predictor a bit. Although the instructions
-> look the same and jumps are both forward.
-> 
-> Oh well, we don't know where those additional misses happened so it
-> could be somewhere else entirely, or it is simply noise.
-> 
-> In any case, we're getting faster, so not worth investigating I guess.
-> 
-> 
-> plain 3.10
-> ==========
-> 
->  Performance counter stats for '../build-kernel.sh' (5 runs):
-> 
->     1312558.712266 task-clock                #    5.961 CPUs utilized            ( +-  0.02% )
->          1,036,629 context-switches          #    0.790 K/sec                    ( +-  0.24% )
->             55,118 cpu-migrations            #    0.042 K/sec                    ( +-  0.25% )
->         46,505,184 page-faults               #    0.035 M/sec                    ( +-  0.00% )
->  4,768,420,289,997 cycles                    #    3.633 GHz                      ( +-  0.02% ) [83.79%]
->  3,424,161,066,397 stalled-cycles-frontend   #   71.81% frontend cycles idle     ( +-  0.02% ) [83.78%]
->  2,483,143,574,419 stalled-cycles-backend    #   52.07% backend  cycles idle     ( +-  0.04% ) [67.40%]
->  3,091,612,061,933 instructions              #    0.65  insns per cycle
->                                              #    1.11  stalled cycles per insn  ( +-  0.01% ) [83.93%]
->    677,787,215,988 branches                  #  516.386 M/sec                    ( +-  0.01% ) [83.77%]
->     25,438,736,368 branch-misses             #    3.75% of all branches          ( +-  0.02% ) [83.78%]
-> 
->      220.191740778 seconds time elapsed                                          ( +-  0.32% )
-> 
->  + patch
-> ========
-> 
->  Performance counter stats for '../build-kernel.sh' (5 runs):
-> 
->     1309995.427337 task-clock                #    6.106 CPUs utilized            ( +-  0.09% )
->          1,033,446 context-switches          #    0.789 K/sec                    ( +-  0.23% )
->             55,228 cpu-migrations            #    0.042 K/sec                    ( +-  0.28% )
->         46,484,992 page-faults               #    0.035 M/sec                    ( +-  0.00% )
->  4,759,631,961,013 cycles                    #    3.633 GHz                      ( +-  0.09% ) [83.78%]
->  3,415,933,806,156 stalled-cycles-frontend   #   71.77% frontend cycles idle     ( +-  0.12% ) [83.78%]
->  2,476,066,765,933 stalled-cycles-backend    #   52.02% backend  cycles idle     ( +-  0.10% ) [67.38%]
->  3,089,317,073,397 instructions              #    0.65  insns per cycle
->                                              #    1.11  stalled cycles per insn  ( +-  0.02% ) [83.95%]
->    677,623,252,827 branches                  #  517.271 M/sec                    ( +-  0.01% ) [83.79%]
->     25,444,376,740 branch-misses             #    3.75% of all branches          ( +-  0.02% ) [83.79%]
-> 
->      214.533868029 seconds time elapsed                                          ( +-  0.36% )
-
-Hm, a 6 seconds win looks _way_ too much - we don't execute that much 
-mutex code, let alone a portion of it.
-
-This could perhaps be a bootup-to-bootup cache layout systematic jitter 
-artifact, which isn't captured by stddev observations?
-
-Doing something like this with a relatively fresh version of perf:
-
-  perf stat --repeat 10 -a --sync \
-   --pre 'make -s O=defconfig-build/ clean; echo 1 > /proc/sys/vm/drop_caches' \
-   make -s -j64 O=defconfig-build/ bzImage
-
-... might do the trick (untested!). (Also note the use of -a: this should 
-run on an otherwise quiescent system.)
-
-As a sidenote, we could add this as a convenience feature, triggered via:
-
-   perf stat --flush-vm-caches
-
-... or so, in addition to the already existing --sync option.
-
-Thanks,
-
-	Ingo
+-Kishon
