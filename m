@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab3GAWft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:35:49 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:46917 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754873Ab3GAWfr (ORCPT
+	id S1755937Ab3GAWjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:39:09 -0400
+Received: from mail-ve0-f202.google.com ([209.85.128.202]:63286 "EHLO
+	mail-ve0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656Ab3GAWjH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:35:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130701222802.GK23515@pd.tnic>
-References: <20130628111948.GA31065@gmail.com>
-	<20130628140938.GA24819@pd.tnic>
-	<CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
-	<20130630220004.GA23124@pd.tnic>
-	<20130701075046.GB1681@gmail.com>
-	<20130701102306.GC23515@pd.tnic>
-	<20130701111122.GA18772@gmail.com>
-	<20130701122954.GD23515@pd.tnic>
-	<20130701125045.GA24336@gmail.com>
-	<20130701144851.GH23515@pd.tnic>
-	<20130701222802.GK23515@pd.tnic>
-Date: Mon, 1 Jul 2013 15:35:47 -0700
-Message-ID: <CANeycqoq8LwLMoXEYdPE6m9eKVB7pRLw1hkSCjJ=jjDj9ej-Cw@mail.gmail.com>
-Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
-From: Wedson Almeida Filho <wedsonaf@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 1 Jul 2013 18:39:07 -0400
+X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Jul 2013 18:39:07 EDT
+From: Alexander Z Lam <azl@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>
+Subject: [PATCH 2/3] tracing: Make trace_marker use the correct per-instance buffer
+Date: Mon,  1 Jul 2013 15:31:24 -0700
+Message-Id: <1372717885-4543-2-git-send-email-azl@google.com>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1372717885-4543-1-git-send-email-azl@google.com>
+References: <1372717885-4543-1-git-send-email-azl@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 3:28 PM, Borislav Petkov <bp@alien8.de> wrote:
->
-> perf stat --repeat 10 -a --sync --pre 'make -s clean; echo 1 > /proc/sys/vm/drop_caches' make -s -j64 bzImage
+The trace_marker file was present for each new instance created, but it
+added the trace mark to the global trace buffer instead of to
+the instance's buffer.
 
-How many CPUs do you have in your system? Maybe -j64 vs -jNUM_CPUs
-affects your measurements as well.
+Cc: David Sharp <dhsharp@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Alexander Z Lam <lambchop468@gmail.com>
+Signed-off-by: Alexander Z Lam <azl@google.com>
+---
+ kernel/trace/trace.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e0b0d2a..2f7307e 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4351,6 +4351,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
+ 					size_t cnt, loff_t *fpos)
+ {
+ 	unsigned long addr = (unsigned long)ubuf;
++	struct trace_array *tr = filp->private_data;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+ 	struct print_entry *entry;
+@@ -4410,7 +4411,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
+ 
+ 	local_save_flags(irq_flags);
+ 	size = sizeof(*entry) + cnt + 2; /* possible \n added */
+-	buffer = global_trace.trace_buffer.buffer;
++	buffer = tr->trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, size,
+ 					  irq_flags, preempt_count());
+ 	if (!event) {
+-- 
+1.8.3
+
