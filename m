@@ -1,76 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab3GANXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 09:23:00 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:49326
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753440Ab3GANW6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 09:22:58 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz1447Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Stehle Vincent-B46079 <B46079@freescale.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: RE: next-20130627 breaks i.MX6 sabre sd UART console
-Thread-Topic: next-20130627 breaks i.MX6 sabre sd UART console
-Thread-Index: Ac5zZxBZeupdDlSIRDWI6ggVo3oJ5QAkUYcAAAf2xwAAAZFOUAAA2+yAABLhygAAdGeRAAAHHZgAAACKafA=
-Date: Mon, 1 Jul 2013 13:22:56 +0000
-Message-ID: <F7C43F8B2814514CA05F3436BC68046EF2F708@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net>
- <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de>
- <51CDB26A.9060500@codeaurora.org>
- <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net>
- <51CDC2B3.1030907@codeaurora.org> <20130629020738.GG11625@codeaurora.org>
- <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net>
- <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.137.192]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1754235Ab3GANXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 09:23:44 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:40881 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752945Ab3GANXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 09:23:41 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
+        brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv4 5/8] ARM: mxs: dt: cfa10049: make hogpins grabbed by respective drivers
+Date: Mon,  1 Jul 2013 15:23:26 +0200
+Message-Id: <1372685009-15564-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner [mailto:tglx@linutronix.de] 
-> (..) Can you please apply the patch below and provide the output?
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/boot/dts/imx28-cfa10049.dts | 73 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 63 insertions(+), 10 deletions(-)
 
-Sure; thanks for the patch. The kernel seems to be in a loop, as it prints many messages and never stops. I copy only the first ones:
-
-...
-Switched to clocksource mxc_timer1
-next 800000000098967f nevt 7fffffffffffffff per 989680 nxtp 1c03a180 now 1c553a59
-next 800000000098967f nevt 7fffffffffffffff per 989680 nxtp 1c9c3800 now 1c71e40f
-------------[ cut here ]------------
-WARNING: CPU: 2 PID: 0 at kernel/time/clockevents.c:212 clockevents_program_event+0x134/0x148()
-next 80000000e01d0bff nevt 7fffffffffffffff per 989680 nxtp 1d34ce80 now 1ca4a301
-next 80000002c250a67f nevt 7fffffffffffffff per 989680 nxtp 1d34ce80 now 1d05af1c
-next 80000004a64e047f nevt 7fffffffffffffff per 989680 nxtp 1dcd6500 now 1d729c96
-next 800000068cadbc7f nevt 7fffffffffffffff per 989680 nxtp 1e65fb80 now 1de16ecb
-next 80000008730d747f nevt 7fffffffffffffff per 989680 nxtp 1e65fb80 now 1e5173b3
-next 8000000a583bff7f nevt 7fffffffffffffff per 989680 nxtp 1efe9200 now 1ec10b4a
-next 8000000c3c395d7f nevt 7fffffffffffffff per 989680 nxtp 1f972880 now 1f306de8
-next 8000000e2167e87f nevt 7fffffffffffffff per 989680 nxtp 202fbf00 now 1f9fe9db
-next 800000100565467f nevt 7fffffffffffffff per 989680 nxtp 202fbf00 now 200f2ff3
-next 80000011e831777f nevt 7fffffffffffffff per 989680 nxtp 20c85580 now 207e6fc4
-next 80000013cc2ed57f nevt 7fffffffffffffff per 989680 nxtp 2160ec00 now 20edf2c2
-next 80000015aefb067f nevt 7fffffffffffffff per 989680 nxtp 2160ec00 now 215d58fd
-next 80000017925fcdff nevt 7fffffffffffffff per 989680 nxtp 21f98280 now 21ccfde5
-...
-
-Best regards,
-
-V.
-
+diff --git a/arch/arm/boot/dts/imx28-cfa10049.dts b/arch/arm/boot/dts/imx28-cfa10049.dts
+index 04b2f76..06e4cfa 100644
+--- a/arch/arm/boot/dts/imx28-cfa10049.dts
++++ b/arch/arm/boot/dts/imx28-cfa10049.dts
+@@ -22,32 +22,62 @@
+ 	apb@80000000 {
+ 		apbh@80000000 {
+ 			pinctrl@80018000 {
+-				pinctrl-names = "default", "default";
+-				pinctrl-1 = <&hog_pins_cfa10049
+-					&hog_pins_cfa10049_pullup>;
+-
+-				hog_pins_cfa10049: hog-10049@0 {
++				usb_pins_cfa10049: usb-10049@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+ 						0x0073 /* MX28_PAD_GPMI_D7__GPIO_0_7 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
++				i2cmux_pins_cfa10049: i2cmux-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x1163 /* MX28_PAD_LCD_D22__GPIO_1_22 */
+ 						0x1173 /* MX28_PAD_LCD_D22__GPIO_1_23 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
++				mac0_pins_cfa10049: mac0-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x2153 /* MX28_PAD_SSP2_D5__GPIO_2_21 */
+-						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
+ 					>;
+ 					fsl,drive-strength = <0>;
+ 					fsl,voltage = <1>;
+ 					fsl,pull-up = <0>;
+ 				};
+ 
+-				hog_pins_cfa10049_pullup: hog-10049-pullup@0 {
++				pca_pins_cfa10049: pca-10049@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+ 						0x2133 /* MX28_PAD_SSP2_D3__GPIO_2_19 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
++
++				rotary_pins_cfa10049: rotary-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x3183 /* MX28_PAD_I2C0_SCL__GPIO_3_24 */
+ 						0x3193 /* MX28_PAD_I2C0_SDA__GPIO_3_25 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
++
++				rotary_btn_pins_cfa10049: rotary-btn-10049@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
+ 						0x31a3 /* MX28_PAD_SAIF_SDATA0__GPIO_3_26 */
+-						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
+ 					>;
+ 					fsl,drive-strength = <0>;
+ 					fsl,voltage = <1>;
+@@ -60,6 +90,7 @@
+ 						0x2103 /* MX28_PAD_SSP2_SCK__GPIO_2_16 */
+ 						0x2113 /* MX28_PAD_SSP2_CMD__GPIO_2_17 */
+ 						0x2123 /* MX28_PAD_SSP2_D0__GPIO_2_18 */
++						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
+ 					>;
+ 					fsl,drive-strength = <1>;
+ 					fsl,voltage = <1>;
+@@ -120,6 +151,16 @@
+ 					fsl,pull-up = <0>;
+ 				};
+ 
++				lcdif_pins_cfa10049_pullup: lcdif-10049-pullup@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
++
+ 				w1_gpio_pins: w1-gpio@0 {
+ 					reg = <0>;
+ 					fsl,pinmux-ids = <
+@@ -134,7 +175,8 @@
+ 			lcdif@80030000 {
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&lcdif_18bit_pins_cfa10049
+-					     &lcdif_pins_cfa10049>;
++					     &lcdif_pins_cfa10049
++					     &lcdif_pins_cfa10049_pullup>;
+ 				display = <&display>;
+ 				status = "okay";
+ 
+@@ -181,6 +223,8 @@
+ 				compatible = "i2c-mux-gpio";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&i2cmux_pins_cfa10049>;
+ 				mux-gpios = <&gpio1 22 0 &gpio1 23 0>;
+ 				i2c-parent = <&i2c1>;
+ 
+@@ -203,6 +247,8 @@
+ 
+ 					pca9555: pca9555@20 {
+ 						compatible = "nxp,pca9555";
++						pinctrl-names = "default";
++						pinctrl-0 = <&pca_pins_cfa10049>;
+ 						interrupt-parent = <&gpio2>;
+ 						interrupts = <19 0x2>;
+ 						gpio-controller;
+@@ -239,6 +285,8 @@
+ 
+ 		reg_usb1_vbus: usb1_vbus {
+ 			compatible = "regulator-fixed";
++			pinctrl-names = "default";
++			pinctrl-0 = <&usb_pins_cfa10049>;
+ 			regulator-name = "usb1_vbus";
+ 			regulator-min-microvolt = <5000000>;
+ 			regulator-max-microvolt = <5000000>;
+@@ -250,7 +298,8 @@
+ 		mac0: ethernet@800f0000 {
+ 			phy-mode = "rmii";
+ 			pinctrl-names = "default";
+-			pinctrl-0 = <&mac0_pins_a>;
++			pinctrl-0 = <&mac0_pins_a
++				&mac0_pins_cfa10049>;
+ 			phy-reset-gpios = <&gpio2 21 0>;
+ 			phy-reset-duration = <100>;
+ 			status = "okay";
+@@ -320,6 +369,8 @@
+ 
+ 	gpio_keys {
+ 		compatible = "gpio-keys";
++		pinctrl-names = "default";
++		pinctrl-0 = <&rotary_btn_pins_cfa10049>;
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+@@ -333,6 +384,8 @@
+ 
+ 	rotary {
+ 		compatible = "rotary-encoder";
++		pinctrl-names = "default";
++		pinctrl-0 = <&rotary_pins_cfa10049>;
+ 		gpios = <&gpio3 24 1>, <&gpio3 25 1>;
+ 		linux,axis = <1>; /* REL_Y */
+ 		rotary-encoder,relative-axis;
+-- 
+1.8.1.2
 
