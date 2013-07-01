@@ -1,175 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457Ab3GAVQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:16:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49690 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755057Ab3GAVQO (ORCPT
+	id S1755492Ab3GAVR6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:17:58 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34368 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab3GAVR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:16:14 -0400
-Date: Mon, 1 Jul 2013 14:16:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: miklos@szeredi.hu, riel@redhat.com, dev@parallels.com, xemul@parallels.com,
-        fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
-        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
-        linux-mm@kvack.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, fengguang.wu@intel.com,
-        devel@openvz.org, mgorman@suse.de
-Subject: Re: [PATCH 16/16] mm: strictlimit feature
-Message-Id: <20130701141612.04d867863319bcc23d007a23@linux-foundation.org>
-In-Reply-To: <20130629174706.20175.78184.stgit@maximpc.sw.ru>
-References: <20130629172211.20175.70154.stgit@maximpc.sw.ru>
-	<20130629174706.20175.78184.stgit@maximpc.sw.ru>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Jul 2013 17:17:56 -0400
+Date: Mon, 1 Jul 2013 23:17:54 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: [PATCH] N900: add device tree
+Message-ID: <20130701211753.GC15318@amd.pavel.ucw.cz>
+References: <20130613132624.GA3464@amd.pavel.ucw.cz>
+ <20130613141001.GF8164@atomide.com>
+ <20130613142809.GA3775@amd.pavel.ucw.cz>
+ <20130613145724.GH8164@atomide.com>
+ <20130613155240.GB3775@amd.pavel.ucw.cz>
+ <20130613161418.GJ8164@atomide.com>
+ <20130613230808.GA14876@amd.pavel.ucw.cz>
+ <20130614055629.GM8164@atomide.com>
+ <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
+ <20130617111031.GQ20992@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130617111031.GQ20992@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Jun 2013 21:48:54 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
 
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> The feature prevents mistrusted filesystems to grow a large number of dirty
-> pages before throttling. For such filesystems balance_dirty_pages always
-> check bdi counters against bdi limits. I.e. even if global "nr_dirty" is under
-> "freerun", it's not allowed to skip bdi checks. The only use case for now is
-> fuse: it sets bdi max_ratio to 1% by default and system administrators are
-> supposed to expect that this limit won't be exceeded.
-> 
-> The feature is on if address space is marked by AS_STRICTLIMIT flag.
-> A filesystem may set the flag when it initializes a new inode.
-> 
+This adds device tree with neccessary support to boot with functional
+video (on both emulator and real N900 device).
 
-Fengguang, could you please review this patch?
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 
-I suggest you await the next version, which hopefully will be more
-reviewable...
+--- linux-delme-clean//arch/arm/boot/dts/Makefile	2013-07-01 21:51:00.000000000 +0200
++++ linux-delme/arch/arm/boot/dts/Makefile	2013-07-01 22:53:06.000000000 +0200
+@@ -141,6 +141,7 @@
+ 	omap3-devkit8000.dtb \
+ 	omap3-beagle-xm.dtb \
+ 	omap3-evm.dtb \
++	omap3-n900.dtb \
+ 	omap3-tobi.dtb \
+ 	omap3-igep0020.dtb \
+ 	omap3-igep0030.dtb \
+--- linux-delme-clean//arch/arm/boot/dts/omap3-n900.dts	1970-01-01 01:00:00.000000000 +0100
++++ linux-delme/arch/arm/boot/dts/omap3-n900.dts	2013-07-01 22:50:21.000000000 +0200
+@@ -0,0 +1,94 @@
++/*
++ * Copyright (C) 2013 Pavel Machek <pavel@ucw.cz>
++ * Copyright 2013 Aaro Koskinen <aaro.koskinen@iki.fi>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 (or later) as
++ * published by the Free Software Foundation.
++ */
++
++/dts-v1/;
++
++/include/ "omap34xx.dtsi"
++
++/ {
++	model = "Nokia N900";
++	compatible = "nokia,omap3-n900", "ti,omap3";
++
++	cpus {
++		cpu@0 {
++//			cpu0-supply = <&vcc>;
++		};
++	};
++
++	memory {
++		device_type = "memory";
++		reg = <0x80000000 0x10000000>; /* 256 MB */
++	};
++
++};
++
++&i2c1 {
++	clock-frequency = <2200000>;
++
++	twl: twl@48 {
++		reg = <0x48>;
++		interrupts = <7>; /* SYS_NIRQ cascaded to intc */
++		interrupt-parent = <&intc>;
++	};
++};
++
++/include/ "twl4030.dtsi"
++
++&twl_gpio {
++	ti,pullups	= <0x0>;
++	ti,pulldowns	= <0x03ff3f>; /* BIT(0..5) | BIT(8..17) */
++};
++
++&i2c2 {
++	clock-frequency = <400000>;
++};
++
++&i2c3 {
++	clock-frequency = <100000>;
++};
++
++&mmc1 {
++	status = "disabled";
++};
++
++&mmc2 {
++	status = "disabled";
++};
++
++&mmc3 {
++	status = "disabled";
++};
++
++&mcspi1 {
++	// For some reason, touchscreen is neccessary for screen to work at 
++	// all on real hw. It works well without it on emulator.
++	//
++	// Also... order in the device tree actually matters here.
++	tsc2005@0 {
++		compatible = "tsc2005";
++		spi-max-frequency = <6000000>;
++		reg = <0>;
++	};
++	mipid@2 {
++		compatible = "acx565akm";
++		spi-max-frequency = <6000000>;
++		reg = <2>;
++		// turbo_mode = 0,
++		// cs_per_word = 0
++	};
++};
++
++/*
++&usb_otg_hs {
++	interface-type = <0>;
++	usb-phy = <&usb2_phy>;
++	mode = <2>;
++	power = <50>;
++};
++*/
 
->
-> ...
->
-> --- a/include/linux/backing-dev.h
-> +++ b/include/linux/backing-dev.h
-> @@ -33,6 +33,8 @@ enum bdi_state {
->  	BDI_sync_congested,	/* The sync queue is getting full */
->  	BDI_registered,		/* bdi_register() was done */
->  	BDI_writeback_running,	/* Writeback is in progress */
-> +	BDI_idle,		/* No pages under writeback at the moment of
-> +				 * last update of write bw */
-
-Why does BDI_idle exist?
-
->  	BDI_unused,		/* Available bits start here */
->  };
->  
-> @@ -43,6 +45,7 @@ enum bdi_stat_item {
->  	BDI_WRITEBACK,
->  	BDI_DIRTIED,
->  	BDI_WRITTEN,
-> +	BDI_WRITTEN_BACK,
->  	NR_BDI_STAT_ITEMS
->  };
->  
-> @@ -76,6 +79,8 @@ struct backing_dev_info {
->  	unsigned long bw_time_stamp;	/* last time write bw is updated */
->  	unsigned long dirtied_stamp;
->  	unsigned long written_stamp;	/* pages written at bw_time_stamp */
-> +	unsigned long writeback_stamp;	/* pages sent to writeback at
-> +					 * bw_time_stamp */
-
-Well this sucks.  Some of the "foo_stamp" fields are in units of time
-(jiffies?  We aren't told) and some of the "foo_stamp" fields are in
-units of number-of-pages.  It would be good to fix the naming here.
-
->  	unsigned long write_bandwidth;	/* the estimated write bandwidth */
->  	unsigned long avg_write_bandwidth; /* further smoothed write bw */
->  
-> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-> index e3dea75..baac702 100644
-> --- a/include/linux/pagemap.h
-> +++ b/include/linux/pagemap.h
-> @@ -25,6 +25,7 @@ enum mapping_flags {
->  	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
->  	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
->  	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
-> +	AS_STRICTLIMIT	= __GFP_BITS_SHIFT + 5, /* strict dirty limit */
-
-Thing is, "strict dirty limit" isn't documented anywhere, so this
-reference is left dangling.
-
->
-> ...
->
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -94,6 +94,7 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
->  		   "BackgroundThresh:   %10lu kB\n"
->  		   "BdiDirtied:         %10lu kB\n"
->  		   "BdiWritten:         %10lu kB\n"
-> +		   "BdiWrittenBack:     %10lu kB\n"
->  		   "BdiWriteBandwidth:  %10lu kBps\n"
->  		   "b_dirty:            %10lu\n"
->  		   "b_io:               %10lu\n"
-
-I can't imagine what the difference is between BdiWritten and
-BdiWrittenBack.
-
-I suggest you document this at the BDI_WRITTEN_BACK definition site in
-enum bdi_stat_item.  BDI_WRITTEN (at least) will also need
-documentation so people can understand the difference.
-
->
-> ...
->
-> @@ -679,29 +711,31 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
->  	if (unlikely(dirty >= limit))
->  		return 0;
->  
-> +	if (unlikely(strictlimit)) {
-> +		if (bdi_dirty < 8)
-> +			return 2 << RATELIMIT_CALC_SHIFT;
-> +
-> +		if (bdi_dirty >= bdi_thresh)
-> +			return 0;
-> +
-> +		bdi_setpoint = bdi_thresh + bdi_dirty_limit(bdi, bg_thresh);
-> +		bdi_setpoint /= 2;
-> +
-> +		if (bdi_setpoint == 0 || bdi_setpoint == bdi_thresh)
-> +			return 0;
-> +
-> +		pos_ratio = pos_ratio_polynom(bdi_setpoint, bdi_dirty,
-> +					      bdi_thresh);
-> +		return min_t(long long, pos_ratio, 2 << RATELIMIT_CALC_SHIFT);
-> +	}
-
-This would be a suitable site at which to document the strictlimit
-feature.  What it is, how it works and most importantly, why it exists.
-
->
-> ...
->
-> @@ -994,6 +1029,16 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
->  	 * keep that period small to reduce time lags).
->  	 */
->  	step = 0;
-> +
-> +	if (unlikely(strictlimit)) {
-> +		dirty = bdi_dirty;
-> +		if (bdi_dirty < 8)
-> +			setpoint = bdi_dirty + 1;
-> +		else
-> +			setpoint = (bdi_thresh +
-> +				    bdi_dirty_limit(bdi, bg_thresh)) / 2;
-> +	}
-
-Explain this to the reader, please.
-
->
-> ...
->
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
