@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab3GAPxO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:53:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59609 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491Ab3GAPxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:53:13 -0400
-Message-ID: <51D1A49C.7000003@ti.com>
-Date: Mon, 1 Jul 2013 10:47:40 -0500
-From: Suman Anna <s-anna@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1754632Ab3GAPzG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:55:06 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:58688 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753291Ab3GAPzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 11:55:04 -0400
 MIME-Version: 1.0
-To: Ohad Ben-Cohen <ohad@wizery.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] remoteproc: fix checkpatch errors in remoteproc code
-References: <1370034965-29565-1-git-send-email-s-anna@ti.com> <CAK=WgbazsoK_aBZV+gfvqoya7PkRAkZ4gd-L_e-V5GhN1iAq6A@mail.gmail.com>
-In-Reply-To: <CAK=WgbazsoK_aBZV+gfvqoya7PkRAkZ4gd-L_e-V5GhN1iAq6A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51D18B16.1000402@linux.intel.com>
+References: <20130630040514.GA20587@www.outflux.net>
+	<51D18B16.1000402@linux.intel.com>
+Date: Mon, 1 Jul 2013 08:55:03 -0700
+X-Google-Sender-Auth: Ql0yUGaRtitGh0w8SaC856gA4H4
+Message-ID: <CAGXu5jJw==6ypJVa3YQu27xBidfbgg4tO6AkJia34CwHF=OOfg@mail.gmail.com>
+Subject: Re: [PATCH] x86, kernel: make dump_pagetables a tristate
+From: Kees Cook <keescook@chromium.org>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        "x86@kernel.org" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2013 03:29 AM, Ohad Ben-Cohen wrote:
-> Hi Suman,
-> 
-> On Sat, Jun 1, 2013 at 12:16 AM, Suman Anna <s-anna@ti.com> wrote:
->> This patch fixes all the existing checkpatch errors and warnings
->> in the remoteproc source files.
+On Mon, Jul 1, 2013 at 6:58 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
+> On 6/29/2013 9:05 PM, Kees Cook wrote:
 >>
->> Signed-off-by: Suman Anna <s-anna@ti.com>
-> 
-> I'm applying the last three fixes, but ignoring the first two (having
-> lines that slightly exceed 80 chars isn't too bad and makes the code a
-> bit more readable).
+>> Being able to examine page tables is handy, so make this a module that
+>> can be loaded as needed.
+>
+> I personally don't think this is a good idea due to the various
+> security/etc implications of this feature... should really just
+> be off for non-debug kernels, not "off unless you load the module"
 
-Yeah, no issues. Thanks.
+I struggled with this too, but I couldn't come up with any reason that
+made sense. If a system is running without modules_disabled, this code
+is still loadable:
+https://www.outflux.net/blog/archives/2011/04/27/non-executable-kernel-memory-progress/
 
-regards
-Suman
+The root user just needs to look at /proc/kallsyms before passing an
+argument. So having it NOT a tristate doesn't actually change anything
+except make it awkward to get it done.
+
+If a system is running with verified modules, then just not
+signing/including ptdump makes it unavailable. And running with
+modules_disabled, obviously, blocks it.
+
+>> +#ifdef CONFIG_X86_64
+>> +EXPORT_SYMBOL_GPL(init_level4_pgt);
+>> +#else
+>> +EXPORT_SYMBOL_GPL(swapper_pg_dir);
+>> +#endif
+>
+> like these really have no business in any module
+
+Well, that's why I took me 2 years to send this patch. Those symbols
+shouldn't be used outside of page table debugging, so it didn't really
+seem upstreamable. However, now that I need to do regular examination
+of the page tables, I wanted to do it without the hacky thing above. I
+want to do at will on our test images (we use the same kernel for
+production and test, but production images leave out the test modules,
+etc).
+
+-Kees
+
+--
+Kees Cook
+Chrome OS Security
