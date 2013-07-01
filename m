@@ -1,179 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab3GANZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 09:25:51 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:40861 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754079Ab3GANXi (ORCPT
+	id S1753440Ab3GAN2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 09:28:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49670 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752695Ab3GAN2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 09:23:38 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
-        brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv4 2/8] ARM: mxs: dt: Add Crystalfontz CFA-10056 device tree
-Date: Mon,  1 Jul 2013 15:23:23 +0200
-Message-Id: <1372685009-15564-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 1 Jul 2013 09:28:04 -0400
+X-Sasl-enc: ripcOubun5/hUj8ZszE0dAvytcQuAnoqYfrts9MJOdp4 1372685283
+Date: Mon, 1 Jul 2013 10:28:00 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Mark Lord <kernel@start.ca>, Ondrej Zary <linux@rainbow-software.org>,
+        Mark Lord <mlord@pobox.com>,
+        Marcus Overhagen <marcus.overhagen@gmail.com>,
+        kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
+        tj@kernel.org
+Subject: Re: SATA hdd refuses to reallocate a sector?
+Message-ID: <20130701132800.GA11841@khazad-dum.debian.net>
+References: <20130623101940.GA4448@amd.pavel.ucw.cz>
+ <51C76858.4060906@pobox.com>
+ <20130623215100.GA7414@amd.pavel.ucw.cz>
+ <201306240914.29502.linux@rainbow-software.org>
+ <20130629184716.GA9330@khazad-dum.debian.net>
+ <51CF6776.7090206@start.ca>
+ <20130630143427.GA10035@khazad-dum.debian.net>
+ <20130630164956.GA26305@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130630164956.GA26305@amd.pavel.ucw.cz>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Lilly <brian@crystalfontz.com>
+On Sun, 30 Jun 2013, Pavel Machek wrote:
+> > > > You know, either the "long" or the "offline" SMART test routines do exactly
+> > > > that on any spinning rust device with a firmware that is not utterly broken.
+> > > > 
+> > > > The HDD's firmware will rewrite, and even reallocate any "weak" sectors
+> > > > found by the surface scan.
+> > > > 
+> > > 
+> > > The drives I have tried this on (smartctl -t long),
+> > > abort at the first bad sector.  Not useful.
+> > 
+> > Which vendor?  The Seagates I have on hand are not that crappy, for example
+> > (their issues are subpar mechanics and the resulting high rate of failure,
+> > but the firmware at least is not a piece of crap)...
+> 
+> Are you sure? I seem to have firmware issues:
+> 
+> === START OF INFORMATION SECTION ===
+> Model Family:     Seagate Momentus 5400.6 series
 
-The CFA-10056 is a breakout board for the CFA-10036, and is
-basically a CFA-10037, with a 4.3" screen.
+Apparently there is too much of a difference between Seagate Momentus and
+Seagate Barracuda.  The barracuda are not crap [as far as the firmware
+goes], where apparently the Momentus have crap firmware.
 
-Signed-off-by: Brian Lilly <brian@crystalfontz.com>
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/boot/dts/Makefile           |   1 +
- arch/arm/boot/dts/imx28-cfa10056.dts | 119 +++++++++++++++++++++++++++++++++++
- 2 files changed, 120 insertions(+)
- create mode 100644 arch/arm/boot/dts/imx28-cfa10056.dts
+So we're both correct, and I was not precise enough when I spoke well of
+Seagate firware :-)
 
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 641b3c9..da75139 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -143,6 +143,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
- 	imx28-cfa10037.dtb \
- 	imx28-cfa10049.dtb \
- 	imx28-cfa10055.dtb \
-+	imx28-cfa10056.dtb \
- 	imx28-cfa10057.dtb \
- 	imx28-evk.dtb \
- 	imx28-m28evk.dtb \
-diff --git a/arch/arm/boot/dts/imx28-cfa10056.dts b/arch/arm/boot/dts/imx28-cfa10056.dts
-new file mode 100644
-index 0000000..b45dd0e
---- /dev/null
-+++ b/arch/arm/boot/dts/imx28-cfa10056.dts
-@@ -0,0 +1,119 @@
-+/*
-+ * Copyright 2013 Free Electrons
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+/*
-+ * The CFA-10055 is an expansion board for the CFA-10036 module and
-+ * CFA-10037, thus we need to include the CFA-10037 DTS.
-+ */
-+/include/ "imx28-cfa10037.dts"
-+
-+/ {
-+	model = "Crystalfontz CFA-10056 Board";
-+	compatible = "crystalfontz,cfa10056", "crystalfontz,cfa10037", "crystalfontz,cfa10036", "fsl,imx28";
-+
-+	apb@80000000 {
-+		apbh@80000000 {
-+			pinctrl@80018000 {
-+				spi2_pins_cfa10056: spi2-cfa10056@0 {
-+					reg = <0>;
-+					fsl,pinmux-ids = <
-+						0x2103 /* MX28_PAD_SSP2_SCK__GPIO_2_16 */
-+						0x2113 /* MX28_PAD_SSP2_CMD__GPIO_2_17 */
-+						0x2123 /* MX28_PAD_SSP2_D0__GPIO_2_18 */
-+						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
-+					>;
-+					fsl,drive-strength = <1>;
-+					fsl,voltage = <1>;
-+					fsl,pull-up = <1>;
-+				};
-+
-+				lcdif_pins_cfa10056: lcdif-10056@0 {
-+					reg = <0>;
-+					fsl,pinmux-ids = <
-+						0x1181 /* MX28_PAD_LCD_RD_E__LCD_VSYNC */
-+						0x1191 /* MX28_PAD_LCD_WR_RWN__LCD_HSYNC */
-+						0x11a1 /* MX28_PAD_LCD_RS__LCD_DOTCLK */
-+						0x11b1 /* MX28_PAD_LCD_CS__LCD_ENABLE */
-+					>;
-+					fsl,drive-strength = <0>;
-+					fsl,voltage = <1>;
-+					fsl,pull-up = <0>;
-+				};
-+
-+				lcdif_pins_cfa10056_pullup: lcdif-10056-pullup@0 {
-+					reg = <0>;
-+					fsl,pinmux-ids = <
-+						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
-+					>;
-+					fsl,drive-strength = <0>;
-+					fsl,voltage = <1>;
-+					fsl,pull-up = <1>;
-+				};
-+			};
-+
-+			lcdif@80030000 {
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&lcdif_24bit_pins_a
-+						&lcdif_pins_cfa10056
-+						&lcdif_pins_cfa10056_pullup >;
-+				display = <&display>;
-+				status = "okay";
-+
-+				display: display {
-+					bits-per-pixel = <32>;
-+					bus-width = <24>;
-+
-+					display-timings {
-+						native-mode = <&timing0>;
-+						timing0: timing0 {
-+							clock-frequency = <32000000>;
-+							hactive = <480>;
-+							vactive = <800>;
-+							hback-porch = <2>;
-+							hfront-porch = <2>;
-+							vback-porch = <2>;
-+							vfront-porch = <2>;
-+							hsync-len = <5>;
-+							vsync-len = <5>;
-+							hsync-active = <0>;
-+							vsync-active = <0>;
-+							de-active = <1>;
-+							pixelclk-active = <1>;
-+						};
-+					};
-+				};
-+			};
-+		};
-+	};
-+
-+	spi2 {
-+		compatible = "spi-gpio";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&spi2_pins_cfa10056>;
-+		status = "okay";
-+		gpio-sck = <&gpio2 16 0>;
-+		gpio-mosi = <&gpio2 17 0>;
-+		gpio-miso = <&gpio2 18 0>;
-+		cs-gpios = <&gpio3 5 0>;
-+		num-chipselects = <1>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		hx8369: hx8369@0 {
-+			compatible = "himax,hx8369a", "himax,hx8369";
-+			reg = <0>;
-+			spi-max-frequency = <100000>;
-+			spi-cpol;
-+			spi-cpha;
-+			gpios-reset = <&gpio3 30 0>;
-+		};
-+	};
-+};
 -- 
-1.8.1.2
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
