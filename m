@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844Ab3GAKBq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 06:01:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7799 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753755Ab3GAJ76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 05:59:58 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 05/12] GFS2: fix error propagation in init_threads()
-Date: Mon,  1 Jul 2013 10:33:08 +0100
-Message-Id: <1372671195-3472-6-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1372671195-3472-1-git-send-email-swhiteho@redhat.com>
-References: <1372671195-3472-1-git-send-email-swhiteho@redhat.com>
+	id S1753769Ab3GAKCI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 06:02:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58821 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555Ab3GAKCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 06:02:06 -0400
+Date: Mon, 1 Jul 2013 11:01:36 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: lgirdwood@gmail.com, ldewangan@nvidia.com, gg@slimlogic.co.uk,
+        sameo@linux.intel.com, j-keerthy@ti.com, linux-kernel@vger.kernel.org
+Message-ID: <20130701100136.GA27646@sirena.org.uk>
+References: <1372672182-14778-1-git-send-email-kishon@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qcz4xfO8nvR/PV7q"
+Content-Disposition: inline
+In-Reply-To: <1372672182-14778-1-git-send-email-kishon@ti.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] regulator: palmas: model SMPS10 as two regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-If kthread_run() fails, init_threads() returns
-IS_ERR(p) instead of PTR_ERR(p).
+--Qcz4xfO8nvR/PV7q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Found by Linux Driver Verification project (linuxtesting.org).
+On Mon, Jul 01, 2013 at 03:19:42PM +0530, Kishon Vijay Abraham I wrote:
+> SMPS10 has two outputs OUT1 and OUT2 and have one input IN1.
+> SMPS10-OUT2 is connected to SMPS10-IN1 and can be configured either
+> in BOOST mode or BYPASS mode. regulator_enable of SMPS10-OUT2 configures
+> it in BOOST mode. For BYPASS mode regulator_allow_bypass() API can be
+> used. SMPS10-OUT1 is connected to SMPS10-OUT2 and can be enabled using
+> regulator_enable().
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+This doesn't apply...
 
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index 60ede2a..0262c19 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -916,16 +916,16 @@ static int init_threads(struct gfs2_sbd *sdp, int undo)
- 		goto fail_quotad;
- 
- 	p = kthread_run(gfs2_logd, sdp, "gfs2_logd");
--	error = IS_ERR(p);
--	if (error) {
-+	if (IS_ERR(p)) {
-+		error = PTR_ERR(p);
- 		fs_err(sdp, "can't start logd thread: %d\n", error);
- 		return error;
- 	}
- 	sdp->sd_logd_process = p;
- 
- 	p = kthread_run(gfs2_quotad, sdp, "gfs2_quotad");
--	error = IS_ERR(p);
--	if (error) {
-+	if (IS_ERR(p)) {
-+		error = PTR_ERR(p);
- 		fs_err(sdp, "can't start quotad thread: %d\n", error);
- 		goto fail;
- 	}
--- 
-1.7.4
+--Qcz4xfO8nvR/PV7q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0VN9AAoJELSic+t+oim9HQkQAIXtf0/KycQfAEjh37ha8eAy
+/wPVtYX+sRpOnn+g8J2pfBqgaK8EvgxPnIDHHRN6zRRmdlj9FzpRuxGkIBQ1/8SW
+q64bEgY2zp4BDx+FlL6Jyalsqp6XXxVTeEmUMXuQWTZP0MjrtFomoCSsp5sAWoFe
+DFlbm9H+3eDlbFeGoRumAiw0qKobofVTqK0SKL7fpGFjrZahmFBmYAv3NoYVnc4P
+vOWUZk0ytZsaebFNCWJTCXEmiscbnjzpGi+UHRgzcDTR1eM5Qxk5r9/XXZMk/ydn
+NgJ2ZnuTqWmF9OqRfxSmGfZ0V42EgYe0RpYOrNLZELJAuJJ3ukhEtk+0JByFEzS5
+nTbI23SOrMZO7r2tdvmW23MSmH250/iCKB5uUFGTWM1yxd7G5SOL1nnI01GnlXcr
+ATNEJsYbPSZFmYFXGy89e/J7lD9xw/HU0idXA9NAQzynWUa9q2r4FgexoUbVyUsY
+jFvuDvhzMbqUfNgnzIuwGk+PWrsZxX0dSSeWXEFi8M2dFGEr29Ptsg0SDjqcXLa3
+YgVEJH3DbloRh+8uohemc6gsqWateiPHGXt+913hG+Xzxn2vm2KwozH9e7hpTSQs
+Fin6FquCsCCBmbI0paQU/Pq+wGUD7Oy8khkfPSJz+DxEJHYAsTrBcnQjOsrwNt25
+GdJLHrJYEjRyzluKuRv9
+=E13x
+-----END PGP SIGNATURE-----
+
+--Qcz4xfO8nvR/PV7q--
