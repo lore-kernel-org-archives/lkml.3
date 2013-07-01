@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab3GAWRQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:17:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49980 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740Ab3GAWRN (ORCPT
+	id S1755908Ab3GAWRh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:17:37 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:39896 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755756Ab3GAWRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:17:13 -0400
-Date: Mon, 1 Jul 2013 15:17:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Cc: Aaron Lu <aaron.lu@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        stable@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: Fix possible sleep in invalid context
-Message-Id: <20130701151712.f453745bc0c587f449cc3214@linux-foundation.org>
-In-Reply-To: <1372692515-31969-1-git-send-email-sthumma@codeaurora.org>
-References: <1372692515-31969-1-git-send-email-sthumma@codeaurora.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Jul 2013 18:17:36 -0400
+MIME-Version: 1.0
+X-Originating-IP: [212.159.75.221]
+In-Reply-To: <alpine.DEB.2.02.1307012346320.4013@ionos.tec.linutronix.de>
+References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com>
+	<1372694659-30176-5-git-send-email-james.hogan@imgtec.com>
+	<alpine.DEB.2.02.1307012346320.4013@ionos.tec.linutronix.de>
+Date: Mon, 1 Jul 2013 23:17:34 +0100
+X-Google-Sender-Auth: DoU8xYuRFUp2gBrPu2nTGk2XGhw
+Message-ID: <CAAG0J9_fTNrKe7idPi3=O2kGRWBJmYSwMQuzGPiT2G+rXy4QuA@mail.gmail.com>
+Subject: Re: [PATCH 4/5] metag: kick: prevent nested kick handlers
+From: James Hogan <james.hogan@imgtec.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  1 Jul 2013 20:58:35 +0530 Sujit Reddy Thumma <sthumma@codeaurora.org> wrote:
+On 1 July 2013 22:51, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 1 Jul 2013, James Hogan wrote:
+>
+>> The main kick trigger handler iterates a list of kick handlers and calls
+>> each one. This is done with the kick_handlers_lock spin lock held, but
+>> this causes a problem on SMP where IPIs are implemented with kicks. A
+>> reschedule IPI calls scheduler_ipi() which uses irq_enter() and
+>> irq_exit(). This results in the scheduler being invoked with
+>> kick_handlers_lock held which can result in a nested kick trigger
+>> attempting to acquire the lock, resulting in deadlock.
+>>
+>> irq_enter() and irq_exit() can nest, so call them from the main kick
+>> interrupt handler so that softirqs are only handled after
+>> kick_handlers_lock is released.
+>
+> This changelog is confusing. What I decode from the patch is, that you
+> are adding a missing irq_enter/exit pair to the kick_handler, right ?
 
-> When block runtime PM is enabled following warning is seen
-> while resuming the device.
-> 
-> BUG: sleeping function called from invalid context at
-> .../drivers/base/power/runtime.c:923
-> in_atomic(): 1, irqs_disabled(): 128, pid: 12, name: kworker/0:1
-> [<c0014448>] (unwind_backtrace+0x0/0x120) from
-> [<c03120e4>] (__pm_runtime_suspend+0x34/0xa0) from
-> [<c021c33c>] (blk_post_runtime_resume+0x4c/0x5c) from
-> [<c03297cc>] (scsi_runtime_resume+0x90/0xb4) from
-> [<c0310940>] (__rpm_callback+0x30/0x58) from
-> [<c0310980>] (rpm_callback+0x18/0x28) from
-> [<c0311ab0>] (rpm_resume+0x3dc/0x540) from
-> [<c03120a4>] (pm_runtime_work+0x8c/0x98) from
-> [<c007767c>] (process_one_work+0x238/0x3e4) from
-> [<c0077b90>] (worker_thread+0x1ac/0x2ac) from
-> [<c007cfdc>] (kthread+0x88/0x94) from
-> [<c000ece0>] (kernel_thread_exit+0x0/0x8)
-> 
-> Fix this by releasing spin_lock_irq() before calling
-> pm_runtime_autosuspend() in blk_post_runtime_resume().
-> 
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -3159,16 +3159,18 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
->   */
->  void blk_post_runtime_resume(struct request_queue *q, int err)
->  {
-> -	spin_lock_irq(q->queue_lock);
->  	if (!err) {
-> +		spin_lock_irq(q->queue_lock);
->  		q->rpm_status = RPM_ACTIVE;
->  		__blk_run_queue(q);
->  		pm_runtime_mark_last_busy(q->dev);
-> +		spin_unlock_irq(q->queue_lock);
->  		pm_runtime_autosuspend(q->dev);
->  	} else {
-> +		spin_lock_irq(q->queue_lock);
->  		q->rpm_status = RPM_SUSPENDED;
-> +		spin_unlock_irq(q->queue_lock);
->  	}
-> -	spin_unlock_irq(q->queue_lock);
->  }
->  EXPORT_SYMBOL(blk_post_runtime_resume);
->  #endif
+Yes. Previously the outermost pair of irq_enter/exit was inside the
+spin lock critical section (inside scheduler_ipi). so soft-irqs
+(apparently including the scheduler) would run from irq_exit with the
+spinlock still held. Now it waits until the new outermost irq_exit(),
+after the spin lock is released.
 
-I suppose we can do this cleanly enough:
+I should probably have increased the number of lines of diff context.
+http://lxr.linux.no/#linux+v3.10/arch/metag/kernel/kick.c#L66
 
---- a/block/blk-core.c~block-fix-possible-sleep-in-invalid-context-fix
-+++ a/block/blk-core.c
-@@ -3159,15 +3159,14 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
-  */
- void blk_post_runtime_resume(struct request_queue *q, int err)
- {
-+	spin_lock_irq(q->queue_lock);
- 	if (!err) {
--		spin_lock_irq(q->queue_lock);
- 		q->rpm_status = RPM_ACTIVE;
- 		__blk_run_queue(q);
- 		pm_runtime_mark_last_busy(q->dev);
- 		spin_unlock_irq(q->queue_lock);
- 		pm_request_autosuspend(q->dev);
- 	} else {
--		spin_lock_irq(q->queue_lock);
- 		q->rpm_status = RPM_SUSPENDED;
- 		spin_unlock_irq(q->queue_lock);
- 	}
-_
-
-
-I wonder if we actually need locking around that second write to
-q->rpm_status.
-
+Cheers
+James
