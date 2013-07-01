@@ -1,138 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab3GAOIz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 10:08:55 -0400
-Received: from dmz-mailsec-scanner-6.mit.edu ([18.7.68.35]:61503 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751535Ab3GAOIy (ORCPT
+	id S1754260Ab3GAOJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 10:09:27 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52500 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab3GAOJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 10:08:54 -0400
-X-AuditID: 12074423-b7f168e00000095a-1b-51d18d75d40d
-Date: Mon, 1 Jul 2013 10:08:48 -0400
-From: Greg Price <price@MIT.EDU>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] perf report: Fix bug in case "--no-call-graph -p foo"
-Message-ID: <20130701140848.GD22203@biohazard-cafe.mit.edu>
-References: <20121207072726.GY22203@biohazard-cafe.mit.edu>
- <20130111052736.GG3054@ghostprotocols.net>
- <20130623031720.GW22203@biohazard-cafe.mit.edu>
- <871u7p3bjb.fsf@sejong.aot.lge.com>
- <20130626222500.GZ22203@biohazard-cafe.mit.edu>
- <87obas176f.fsf@sejong.aot.lge.com>
+	Mon, 1 Jul 2013 10:09:25 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 1 Jul 2013 07:09:25 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon updates for 3.11
+Message-ID: <20130701140925.GA30297@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="y0ulUmNC+osPPQO6"
 Content-Disposition: inline
-In-Reply-To: <87obas176f.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHKsWRmVeSWpSXmKPExsUixG6nolvaezHQoK1N2OJi20U2iwOPD7BY
-	zHzdzWRxedccNotLBxYwWTQt28riwOZx5SmHx+kePY+ds+6ye2xa1cnm8X7fVTaPz5vkAtii
-	uGxSUnMyy1KL9O0SuDJeXv3BWnBPqmJZ2zTmBsbVol2MnBwSAiYSi+4cZIOwxSQu3FsPZHNx
-	CAnsY5TY0rqEBcLZwCjxe/kCdgjnE6PEvoWT2UFaWARUJJZ3bwCz2QQUJH7MX8cMYosIqEms
-	XH8LrJtZ4BGjxMKLi8ASwgJuEp9XHANr4BWwlvhxfCYrxNQZTBITOycyQSQEJU7OfMICYjML
-	aEnc+PcSKM4BZEtLLP/HARLmFDCQePXkDiOILQp0xLX97WwTGAVnIemehaR7FkL3AkbmVYyy
-	KblVurmJmTnFqcm6xcmJeXmpRbpmermZJXqpKaWbGMHR4KK8g/HPQaVDjAIcjEo8vAumXwgU
-	Yk0sK67MPcQoycGkJMqb1H0xUIgvKT+lMiOxOCO+qDQntfgQowQHs5II701voBxvSmJlVWpR
-	PkxKmoNFSZz32dOzgUIC6YklqdmpqQWpRTBZGQ4OJQle9R6gRsGi1PTUirTMnBKENBMHJ8hw
-	HqDhXiA1vMUFibnFmekQ+VOMilLivPwgCQGQREZpHlwvLFm9YhQHekWYVwqkigeY6OC6XwEN
-	ZgIazNt6DmRwSSJCSqqBsejNTIXOVw6tE4Qy/pc/8+tRMHvae26WbrKV1y39v11VVYKnk5P6
-	pzsrSzwPkDq1TqKvJo07ovFjl4Ysn+GMk3unHNF4r3Rv0YRL145NC1+21n59WBFfWUVowOlD
-	b2QWa2oaZcf3ePTp7I4NrsuLqW+yV+5YJ/wrJjWuJPRwlXrrhKqGablKLMUZiYZazEXFiQDy
-	ULxMMQMAAA==
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The loop in machine__resolve_callchain_sample, which examines each
-element of the callchain for several purposes, contains an optimization
-which is intended to bail out early in case we have found the "parent"
-and we aren't using the callchain for anything else.
 
-But since v2.6.31-rc4~3^2~45 we have displayed callchains by default
-when they are present, which makes that situation unusual.  And in
-fact in v2.6.31-rc4~3^2~63 we had already broken this optimization so
-that it completely messes up the output if it applies: if we're
-looking for the parent and not otherwise using the callchain, we bail
-out after the first entry which we can resolve to a symbol, even if it
-doesn't match the parent pattern (as it usually won't.)  So it must
-really be unusual to see this optimization apply, or someone would
-have fixed the bug by now.
+--y0ulUmNC+osPPQO6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Therefore just kill the optimization.
+Hi Linus,
 
-Example before this patch:
+Please pull hwmon updates for Linux 3.11 from signed tag:
 
-    $ perf report -p ^vm_ 2>- | grep Event
-    # Event count (approx.): 6392784226
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
-    $ perf report -p ^vm_ --no-call-graph 2>- | grep Event
-    # Event count (approx.): 54639399
+Thanks,
+Guenter
+------
 
-After this patch:
+The following changes since commit 7d132055814ef17a6c7b69f342244c410a5e000f:
 
-    $ perf report -p ^vm_ 2>- | grep Event
-    # Event count (approx.): 6392784226
+  Linux 3.10-rc6 (2013-06-15 11:51:07 -1000)
 
-    $ perf report -p ^vm_ --no-call-graph 2>- | grep Event
-    # Event count (approx.): 6392784226
+are available in the git repository at:
 
-Reported-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/871u7p3bjb.fsf@sejong.aot.lge.com
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Greg Price <price@mit.edu>
----
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
 
-The relevant previous thread:
+for you to fetch changes up to a50d9a4d9ad3c71341788099d733e4151b8a511b:
 
-On Thu, Jun 27, 2013 at 01:58:16PM +0900, Namhyung Kim wrote:
-> On Wed, 26 Jun 2013 18:25:01 -0400, Greg Price wrote:
-> > On Wed, Jun 26, 2013 at 10:28:56AM +0900, Namhyung Kim wrote:
-> >> On Sat, 22 Jun 2013 23:17:20 -0400, Greg Price wrote:
-> >> > +			}
-> >> >  			if (!symbol_conf.use_callchain)
-> >> >  				break;
-> >> pp
-> >> This is unrelated to this patch, but why is this line needed?  I guess
-> >> this check should be done before calling this function.
-> >
-> > Hmm.  We actually can get into this function when
-> > !symbol_conf.use_callchain, if we're using say --sort=parent.  But I'm
-> > still somewhat puzzled, because in that case it looks like we'll break
-> > the loop after the first address with a symbol, even if we didn't find
-> > the 'parent' there, which seems like it wouldn't serve the purpose.
-> 
-> Right, that's what I want to say.
-> 
-> We already have the check before calling this function so breaking the
-> loop after checking only first callchain node looks strange.  If we
-> don't want to see callchains but only parents, it should either check
-> every callchain nodes or fail out as an unsupported operation IMHO.
+  hwmon: (ds1621) Fix temperature rounding operations (2013-06-28 06:43:55 -0700)
 
-Cheers,
-Greg
+----------------------------------------------------------------
+New driver to support GMT G762/G763 pwm fan controllers
+Add support for DS1631, DS1721, and DS1731 to ds1621 driver
+Remove detect function from ds1621 driver as unreliable
+Bug fixes in nct6775, iio_hwmon, and adm1021 drivers
+Remove redundant platform_set_drvdata in various drivers
+Add device tree support to ina2xx driver
 
+----------------------------------------------------------------
+Arnaud Ebalard (1):
+      Add support for GMT G762/G763 PWM fan controllers
 
- tools/perf/util/machine.c | 2 --
- 1 file changed, 2 deletions(-)
+Guenter Roeck (4):
+      hwmon: (adm1021) Do not create min sysfs attributes for LM84
+      hwmon: (nct6775) Fix temperature alarm attributes
+      hwmon: (nct6775) Drop unsupported fan alarm attributes for NCT6775
+      hwmon: (ds1621) Fix temperature rounding operations
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index 4618e03..3bd8912 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1217,8 +1217,6 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 				*root_al = al;
- 				callchain_cursor_reset(&callchain_cursor);
- 			}
--			if (!symbol_conf.use_callchain)
--				break;
- 		}
- 
- 		err = callchain_cursor_append(&callchain_cursor,
--- 
-1.8.2
+Robert Coulson (6):
+      hwmon: (ds1621) Add ds1721 chip support
+      hwmon: (ds1621) Add ds1721 update interval sysfs attribute
+      hwmon: (ds1621) Add ds1631 chip support to ds1621 driver and documentation
+      hwmon: (ds1621) Remove detect function
+      hwmon: (ds1621) Add DS1731 chip support to ds1621 driver
+      hwmon: (ds1621) Update documentation
+
+Sachin Kamat (5):
+      hwmon: (abituguru3) Remove redundant platform_set_drvdata()
+      hwmon: (coretemp) Remove redundant platform_set_drvdata()
+      hwmon: (i5k_amb) Remove redundant platform_set_drvdata()
+      hwmon: (ntc_thermistor) Remove redundant platform_set_drvdata()
+      hwmon: (w83627ehf) Remove redundant platform_set_drvdata()
+
+Sebastian Andrzej Siewior (1):
+      hwmon: (iio_hwmon) add alias table
+
+Tang Yuantian (1):
+      hwmon: (ina2xx) Add device tree support to pass the shunt resistor
+
+ Documentation/devicetree/bindings/hwmon/g762.txt |   47 +
+ Documentation/devicetree/bindings/i2c/ina2xx.txt |   22 +
+ Documentation/hwmon/ds1621                       |  144 ++-
+ Documentation/hwmon/g762                         |   65 ++
+ Documentation/hwmon/ina2xx                       |    4 +-
+ drivers/hwmon/Kconfig                            |   21 +-
+ drivers/hwmon/Makefile                           |    1 +
+ drivers/hwmon/abituguru3.c                       |    1 -
+ drivers/hwmon/adm1021.c                          |   32 +-
+ drivers/hwmon/coretemp.c                         |    2 -
+ drivers/hwmon/ds1621.c                           |  226 ++++-
+ drivers/hwmon/g762.c                             | 1149 ++++++++++++++++++++++
+ drivers/hwmon/i5k_amb.c                          |    2 -
+ drivers/hwmon/iio_hwmon.c                        |    1 +
+ drivers/hwmon/ina2xx.c                           |    5 +
+ drivers/hwmon/nct6775.c                          |   92 +-
+ drivers/hwmon/ntc_thermistor.c                   |    1 -
+ drivers/hwmon/w83627ehf.c                        |    2 -
+ include/linux/platform_data/g762.h               |   37 +
+ 19 files changed, 1743 insertions(+), 111 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hwmon/g762.txt
+ create mode 100644 Documentation/devicetree/bindings/i2c/ina2xx.txt
+ create mode 100644 Documentation/hwmon/g762
+ create mode 100644 drivers/hwmon/g762.c
+ create mode 100644 include/linux/platform_data/g762.h
+
+--y0ulUmNC+osPPQO6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0Y2VAAoJEMsfJm/On5mBo48P/2NyHO5Bx4wFSB3O7m1/0rrr
+FWZOk+Z+PihPEE2KSq+xY05OsexUU6PVy24BVA1mlcrue4mcnRFNE26XCw41rjx9
+E8fVh3rwMGzis75dmFABtP3e3gytYA0jEL3Ygge8IEyfvYtGGxycah6pgTr2nBRN
+rZPmlerk/aZUuERGvQ+h/wYSPAijE5DBuHeKQQ9Mlo5aMGCFvEQZWc7bnSpkqWXV
+e8wUGFxYKU1gTUorRzaR6Nb+WQCz/aeiRvZZL3iQmb7VMPcjJK7x8yADgY3kUc5+
+LJVbj+yIhNPbFur+p4S3dD3Jdp9NgdN5bslMILM5F07oy3NvKQTPc7qnLaIT7/dQ
+y0gZ374ZIuUKMiFPSIaQJG8R4EdnDQAapiMSkmA4Qe9U4SjlcBqxCo7AYVrOI4vN
+2F7SO2ncy7nAQNnl3iCcFZXaTvGojUKFBYO3QLwWa2Ps2SLwIESXNXb2zNyvmfBt
+nU3c6167hpU8hB5GQhyOHCuOorp/+2lbBDr0MzLhPh5/u+ivHgMVgGbGFxnGqG5n
+o/1cK7UqZhYfWjTkSprwN78uEE6sQIk524PwYvHVmAIq22v2ZmzxiwF8VPb6R0iX
+VPTbObd+xY8MlIL792DVLhzd2WmvPU7qU09SvOVrxH8Jm/fxeUVd+OwQVGvGOjzT
+BxuMMET8EErSS16xDeBS
+=MJg0
+-----END PGP SIGNATURE-----
+
+--y0ulUmNC+osPPQO6--
