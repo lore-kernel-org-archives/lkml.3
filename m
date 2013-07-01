@@ -1,161 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755495Ab3GAUKn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:10:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49053 "EHLO
+	id S1755522Ab3GAUKp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:10:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49086 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab3GAUKj (ORCPT
+	with ESMTP id S1755439Ab3GAUKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:39 -0400
+	Mon, 1 Jul 2013 16:10:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Aaron Lu <aaron.lu@intel.com>, Tejun Heo <tj@kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 22/26] libata-acpi: add back ACPI based hotplug functionality
-Date: Mon,  1 Jul 2013 13:10:17 -0700
-Message-Id: <20130701200732.379911072@linuxfoundation.org>
+        Simon Baatz <gmbnomis@gmail.com>, Kevin Hilman <khilman@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 02/13] ARM: 7772/1: Fix missing flush_kernel_dcache_page() for noMMU
+Date: Mon,  1 Jul 2013 13:10:21 -0700
+Message-Id: <20130701200523.390724984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
-References: <20130701200729.872850414@linuxfoundation.org>
+In-Reply-To: <20130701200523.096669485@linuxfoundation.org>
+References: <20130701200523.096669485@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Simon Baatz <gmbnomis@gmail.com>
 
-commit 44521527be36172864e6e7a6fba4b66e9aa48e40 upstream.
+commit 63384fd0b1509acf522a8a8fcede09087eedb7df upstream.
 
-Commit 30dcf76acc69 "libata: migrate ACPI code over to new bindings"
-mistakenly dropped the code to register hotplug notificaion handler
-for ATA port/devices, causing regression for people using ATA bay,
-as kernel bug #59871 shows.
+Commit 1bc3974 (ARM: 7755/1: handle user space mapped pages in
+flush_kernel_dcache_page) moved the implementation of
+flush_kernel_dcache_page() into mm/flush.c but did not implement it
+on noMMU ARM.
 
-Fix this by adding back the hotplug notification handler registration
-code.  Since this code has to be run once and notification needs to
-be installed on every ATA port/devices handle no matter if there is
-actual device attached, we can't do this in binding time for ATA
-device ACPI handle, as the binding only occurs when a SCSI device is
-created, i.e. there is device attached.  So introduce the
-ata_acpi_hotplug_init() function to loop scan all ATA ACPI handles
-and if it is available, install the notificaion handler for it during
-ATA init time.
-
-With the ATA ACPI handle binding to SCSI device tree, it is possible
-now that when the SCSI hotplug work removes the SCSI device, the ACPI
-unbind function will find that the corresponding ACPI device has
-already been deleted by dock driver, causing a scaring message like:
-[  128.263966] scsi 4:0:0:0: Oops, 'acpi_handle' corrupt
-Fix this by waiting for SCSI hotplug task finish in our notificaion
-handler, so that the removal of ACPI device done in ACPI unbind
-function triggered by the removal of SCSI device is run earlier when
-ACPI device is still available.
-
-[The only change I've made is to remove the two NULL params in
-register_hotplug_dock_device, which doesn't accept those params
-in pre-v3.10 kernels. - aaron.lu]
-
-[rjw: Rebased]
-References: https://bugzilla.kernel.org/show_bug.cgi?id=59871
-Reported-bisected-and-tested-by: Dirk Griesbach <spamthis@freenet.de>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/ata/libata-acpi.c |   36 +++++++++++++++++++++++++++++++++++-
- drivers/ata/libata-core.c |    2 ++
- drivers/ata/libata.h      |    2 ++
- 3 files changed, 39 insertions(+), 1 deletion(-)
+ arch/arm/mm/nommu.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -157,8 +157,10 @@ static void ata_acpi_handle_hotplug(stru
- 
- 	spin_unlock_irqrestore(ap->lock, flags);
- 
--	if (wait)
-+	if (wait) {
- 		ata_port_wait_eh(ap);
-+		flush_work(&ap->hotplug_task.work);
-+	}
+--- a/arch/arm/mm/nommu.c
++++ b/arch/arm/mm/nommu.c
+@@ -57,6 +57,12 @@ void flush_dcache_page(struct page *page
  }
+ EXPORT_SYMBOL(flush_dcache_page);
  
- static void ata_acpi_dev_notify_dock(acpi_handle handle, u32 event, void *data)
-@@ -215,6 +217,38 @@ static const struct acpi_dock_ops ata_ac
- 	.uevent = ata_acpi_ap_uevent,
- };
- 
-+void ata_acpi_hotplug_init(struct ata_host *host)
++void flush_kernel_dcache_page(struct page *page)
 +{
-+	int i;
-+
-+	for (i = 0; i < host->n_ports; i++) {
-+		struct ata_port *ap = host->ports[i];
-+		acpi_handle handle;
-+		struct ata_device *dev;
-+
-+		if (!ap)
-+			continue;
-+
-+		handle = ata_ap_acpi_handle(ap);
-+		if (handle) {
-+			/* we might be on a docking station */
-+			register_hotplug_dock_device(handle,
-+						     &ata_acpi_ap_dock_ops, ap);
-+		}
-+
-+		ata_for_each_dev(dev, &ap->link, ALL) {
-+			handle = ata_dev_acpi_handle(dev);
-+			if (!handle)
-+				continue;
-+
-+			/* we might be on a docking station */
-+			register_hotplug_dock_device(handle,
-+						     &ata_acpi_dev_dock_ops,
-+						     dev);
-+		}
-+	}
++	__cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
 +}
++EXPORT_SYMBOL(flush_kernel_dcache_page);
 +
- /**
-  * ata_acpi_dissociate - dissociate ATA host from ACPI objects
-  * @host: target ATA host
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -6148,6 +6148,8 @@ int ata_host_register(struct ata_host *h
- 	if (rc)
- 		goto err_tadd;
- 
-+	ata_acpi_hotplug_init(host);
-+
- 	/* set cable, sata_spd_limit and report */
- 	for (i = 0; i < host->n_ports; i++) {
- 		struct ata_port *ap = host->ports[i];
---- a/drivers/ata/libata.h
-+++ b/drivers/ata/libata.h
-@@ -122,6 +122,7 @@ extern int ata_acpi_register(void);
- extern void ata_acpi_unregister(void);
- extern void ata_acpi_bind(struct ata_device *dev);
- extern void ata_acpi_unbind(struct ata_device *dev);
-+extern void ata_acpi_hotplug_init(struct ata_host *host);
- #else
- static inline void ata_acpi_dissociate(struct ata_host *host) { }
- static inline int ata_acpi_on_suspend(struct ata_port *ap) { return 0; }
-@@ -134,6 +135,7 @@ static inline int ata_acpi_register(void
- static inline void ata_acpi_unregister(void) { }
- static inline void ata_acpi_bind(struct ata_device *dev) { }
- static inline void ata_acpi_unbind(struct ata_device *dev) { }
-+static inline void ata_acpi_hotplug_init(struct ata_host *host) {}
- #endif
- 
- /* libata-scsi.c */
+ void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
+ 		       unsigned long uaddr, void *dst, const void *src,
+ 		       unsigned long len)
 
 
