@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab3GAIn3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:43:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46710 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753315Ab3GAIn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:43:27 -0400
-Date: Mon, 1 Jul 2013 09:43:21 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Basic scheduler support for automatic NUMA balancing
-Message-ID: <20130701084321.GD1875@suse.de>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <20130628135422.GA21895@linux.vnet.ibm.com>
- <20130701053947.GQ8362@linux.vnet.ibm.com>
+	id S1753211Ab3GAIkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:40:01 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:57974 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753102Ab3GAIj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 04:39:59 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: devicetree-discuss@lists.ozlabs.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        linux-kernel@vger.kernel.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [RFC PATCH 00/13] audio support for at91sam9x5ek board
+Date: Mon,  1 Jul 2013 10:39:25 +0200
+Message-Id: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130701053947.GQ8362@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 11:09:47AM +0530, Srikar Dronamraju wrote:
-> * Srikar Dronamraju <srikar@linux.vnet.ibm.com> [2013-06-28 19:24:22]:
-> 
-> > * Mel Gorman <mgorman@suse.de> [2013-06-26 15:37:59]:
-> > 
-> > > It's several months overdue and everything was quiet after 3.8 came out
-> > > but I recently had a chance to revisit automatic NUMA balancing for a few
-> > > days. I looked at basic scheduler integration resulting in the following
-> > > small series. Much of the following is heavily based on the numacore series
-> > > which in itself takes part of the autonuma series from back in November. In
-> > > particular it borrows heavily from Peter Ziljstra's work in "sched, numa,
-> > > mm: Add adaptive NUMA affinity support" but deviates too much to preserve
-> > > Signed-off-bys. As before, if the relevant authors are ok with it I'll
-> > > add Signed-off-bys (or add them yourselves if you pick the patches up).
-> > 
-> > 
-> > Here is a snapshot of the results of running autonuma-benchmark running on 8
-> > node 64 cpu system with hyper threading disabled. Ran 5 iterations for each
-> > setup
-> > 
-> > 	KernelVersion: 3.9.0-mainline_v39+()
-> > 				Testcase:      Min      Max      Avg
-> > 				  numa01:  1784.16  1864.15  1800.16
-> > 				  numa02:    32.07    32.72    32.59
-> > 
-> > 	KernelVersion: 3.9.0-mainline_v39+() + mel's patches
-> > 				Testcase:      Min      Max      Avg  %Change
-> > 				  numa01:  1752.48  1859.60  1785.60    0.82%
-> > 				  numa02:    47.21    60.58    53.43  -39.00%
-> > 
-> > So numa02 case; we see a degradation of around 39%.
-> > 
-> 
-> I reran the tests again 
-> 
-> KernelVersion: 3.9.0-mainline_v39+()
->                         Testcase:      Min      Max      Avg
->                           numa01:  1784.16  1864.15  1800.16
->              numa01_THREAD_ALLOC:   293.75   315.35   311.03
->                           numa02:    32.07    32.72    32.59
->                       numa02_SMT:    39.27    39.79    39.69
-> 
-> KernelVersion: 3.9.0-mainline_v39+() + your patches
->                         Testcase:      Min      Max      Avg  %Change
->                           numa01:  1720.40  1876.89  1767.75    1.83%
->              numa01_THREAD_ALLOC:   464.34   554.82   496.64  -37.37%
->                           numa02:    52.02    58.57    56.21  -42.02%
->                       numa02_SMT:    42.07    52.64    47.33  -16.14%
-> 
+Hi,
 
-Thanks. Each of the the two runs had 5 iterations and there is a
-difference in the reported average. Do you know what the standard
-deviation is of the results?
+Here is some work I've done to make the sound work on sam9x5ek.
+It's based on Nicolas Ferre's and Uwe Kleine-König's work.
+(Atmel patch on 2.6.39 if I recall)
 
-I'm less concerned about the numa01 results as it is an adverse
-workload on machins with more than two sockets but the numa02 results
-are certainly of concern. My own testing for numa02 showed little or no
-change. Would you mind testing with "Increase NUMA PTE scanning when a
-new preferred node is selected" reverted please?
+I'd like to have some advice, mainly on the 1st patch
+ "misc: atmel_ssc: add device tree DMA support".
+I do not clearly see what is the right way to add DMA DT support for
+this device, since it doesn't request a channel directly.
+
+
+patches applies on next-20130701
+
+[I let the original signed-off from Nicolas and Uwe in place, I don't
+know if I should replace them by something like "originaly-signed-off-by"
+since the code has been changed.]
+
+Best regards,
+Richard.
+
+
+Nicolas Ferre (3):
+  sound: sam9x5_wm8731: machine driver for at91sam9x5 wm8731 boards
+  sound: atmel_ssc_dai: PM: actually stopping clock on suspend/resume
+  sound: wm8731: rework power management
+
+Richard Genoud (10):
+  misc: atmel_ssc: add device tree DMA support
+  misc: atmel_ssc: keep the count of pdev->id
+  ARM: at91: DTS: sam9x5: add clock for SSC DT entry
+  ARM: at91: DTS: sam9x5: add SSC DMA parameters
+  ARM: AT91: DTS: sam9x5ek: add WM8731 codec
+  ARM: AT91: DTS: sam9x5ek: add sound configuration
+  ARM: AT91: DTS: sam9x5ek: enable SSC
+  sound: atmel-pcm: don't return ok if pcm-dma is not implemented
+  sound: atmel-pcm-dma: check pointer before dereference
+  sound: codec: wm8371: correct capture line/mic
+
+ arch/arm/boot/dts/at91sam9x5.dtsi       |    3 +
+ arch/arm/boot/dts/at91sam9x5ek.dtsi     |   27 ++++
+ arch/arm/mach-at91/at91sam9x5.c         |    1 +
+ drivers/misc/atmel-ssc.c                |   63 +++++++++
+ include/linux/atmel-ssc.h               |    2 +
+ include/linux/platform_data/dma-atmel.h |    2 +
+ sound/soc/atmel/Kconfig                 |   12 ++
+ sound/soc/atmel/Makefile                |    2 +
+ sound/soc/atmel/atmel-pcm-dma.c         |    3 +
+ sound/soc/atmel/atmel-pcm.h             |    2 +-
+ sound/soc/atmel/atmel_ssc_dai.c         |   20 ++-
+ sound/soc/atmel/sam9x5_wm8731.c         |  232 +++++++++++++++++++++++++++++++
+ sound/soc/codecs/wm8731.c               |   10 +-
+ 13 files changed, 368 insertions(+), 11 deletions(-)
+ create mode 100644 sound/soc/atmel/sam9x5_wm8731.c
 
 -- 
-Mel Gorman
-SUSE Labs
+1.7.10.4
+
