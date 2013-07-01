@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab3GAL4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:56:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48217 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab3GAL4h (ORCPT
+	id S1752862Ab3GAL5v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:57:51 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:46405 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab3GAL5u convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:56:37 -0400
-Date: Mon, 1 Jul 2013 13:55:50 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [RFC PATCH 4/4] sched: Consolidate open coded preemptible()
- checks
-Message-ID: <20130701115550.GA21726@dyad.programming.kicks-ass.net>
-References: <1371761141-25386-1-git-send-email-fweisbec@gmail.com>
- <1371761141-25386-5-git-send-email-fweisbec@gmail.com>
- <20130626130511.GL28407@twins.programming.kicks-ass.net>
- <20130701112019.GB7246@somewhere.redhat.com>
+	Mon, 1 Jul 2013 07:57:50 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130701115858.634b5041f65ca32effec0570@canb.auug.org.au>
+References: <20130701010321.GA6763@phenom.dumpdata.com> <20130701115858.634b5041f65ca32effec0570@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130701112019.GB7246@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [GIT PULL] (xen) stable/for-linus-3.11-rc0-tag
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 01 Jul 2013 07:57:36 -0400
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
+Message-ID: <575e3d4c-9ea9-45a5-ab8c-3dd30c833ad7@email.android.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 01:20:20PM +0200, Frederic Weisbecker wrote:
-> On Wed, Jun 26, 2013 at 03:05:11PM +0200, Peter Zijlstra wrote:
-> > On Thu, Jun 20, 2013 at 10:45:41PM +0200, Frederic Weisbecker wrote:
-> > > preempt_schedule() and preempt_schedule_context() open
-> > > code their preemptability checks.
-> > > 
-> > > Use the standard API instead for consolidation.
-> > > 
-> > > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Cc: Ingo Molnar <mingo@kernel.org>
-> > > Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-> > > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Cc: Peter Zijlstra <peterz@infradead.org>
-> > > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > > Cc: Borislav Petkov <bp@alien8.de>
-> > > Cc: Alex Shi <alex.shi@intel.com>
-> > > Cc: Paul Turner <pjt@google.com>
-> > > Cc: Mike Galbraith <efault@gmx.de>
-> > > Cc: Vincent Guittot <vincent.guittot@linaro.org>
-> > > ---
-> > >  kernel/context_tracking.c |    3 +--
-> > >  kernel/sched/core.c       |    4 +---
-> > >  2 files changed, 2 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-> > > index 6667700..08db730 100644
-> > > --- a/kernel/context_tracking.c
-> > > +++ b/kernel/context_tracking.c
-> > > @@ -88,10 +88,9 @@ void user_enter(void)
-> > >   */
-> > >  void __sched notrace preempt_schedule_context(void)
-> > >  {
-> > > -	struct thread_info *ti = current_thread_info();
-> > >  	enum ctx_state prev_ctx;
-> > >  
-> > > -	if (likely(ti->preempt_count || irqs_disabled()))
-> > > +	if (likely(!preemptible()))
-> > >  		return;
-> > >  
-> > 
-> > #ifdef CONFIG_PREEMPT_COUNT
-> > # define preemptible()  (preempt_count() == 0 && !irqs_disabled())
-> > #else
-> > # define preemptible()  0
-> > #endif
-> > 
-> > 
-> > Wouldn't that give a problem for !PREEMPT_COUNT?
-> 
-> preempt_schedule_context() depends on CONFIG_PREEMPT which depends on
-> CONFIG_PREEMPT_COUNT, so that should work. Or I missed something?
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Ah indeed. I just tripped over the fact that its weird to not test
-irqs_disabled() even though we don't have the preempt count.
+>Hi Konrad,
+>
+>On Sun, 30 Jun 2013 21:03:21 -0400 Konrad Rzeszutek Wilk
+><konrad.wilk@oracle.com> wrote:
+>>
+>> Since the merge window opened merely three hours ago and I am sure
+>> you are addictively refreshing your email for the next set of
+>> GIT PULLs and can't wait for them - I figured I would offer you a
+>> nice little evening GIT-PULL snack to sustain you until Monday
+>> GIT-PULL-email-avalanche :-)
+>> 
+>> With that in mind please git pull the following tag:
+>> 
+>>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git 
+>stable/for-linus-3.11-rc0-tag
+>
+>Not sure why you did a back merge of Linus' tree right at the end
+>there?
 
-
+No idea either.  It should have been a tag on top of stable/for-linus-3.11.' but it ended up on the test branch. I will recreate it on top of the_right_ branch and send a other Git pull.  Thanks for noticing! 
+-- 
+Sent from my Android phone. Please excuse my brevity.
