@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab3GAUNe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:13:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49138 "EHLO
+	id S1755762Ab3GAUNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:13:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49128 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526Ab3GAUKv (ORCPT
+	with ESMTP id S1755578Ab3GAUKw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:51 -0400
+	Mon, 1 Jul 2013 16:10:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, stable@kernel.org,
-        Ingo Molnar <mingo@kernel.org>, Zhouping Liu <zliu@redhat.com>
-Subject: [ 13/13] perf: Fix mmap() accounting hole
-Date: Mon,  1 Jul 2013 13:10:32 -0700
-Message-Id: <20130701200524.637663741@linuxfoundation.org>
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 08/13] perf: Disable monitoring on setuid processes for regular users
+Date: Mon,  1 Jul 2013 13:10:27 -0700
+Message-Id: <20130701200524.064657425@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200523.096669485@linuxfoundation.org>
 References: <20130701200523.096669485@linuxfoundation.org>
@@ -27,415 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Stephane Eranian <eranian@google.com>
 
-commit 9bb5d40cd93c9dd4be74834b1dcb1ba03629716b upstream.
+commit 2976b10f05bd7f6dab9f9e7524451ddfed656a89 upstream.
 
-Vince's fuzzer once again found holes. This time it spotted a leak in
-the locked page accounting.
+There was a a bug in setup_new_exec(), whereby
+the test to disabled perf monitoring was not
+correct because the new credentials for the
+process were not yet committed and therefore
+the get_dumpable() test was never firing.
 
-When an event had redirected output and its close() was the last
-reference to the buffer we didn't have a vm context to undo accounting.
+The patch fixes the problem by moving the
+perf_event test until after the credentials
+are committed.
 
-Change the code to destroy the buffer on the last munmap() and detach
-all redirected events at that time. This provides us the right context
-to undo the vm accounting.
-
-[Backporting for 3.4-stable.
-VM_RESERVED flag was replaced with pair 'VM_DONTEXPAND | VM_DONTDUMP' in
-314e51b9 since 3.7.0-rc1, and 314e51b9 comes from a big patchset, we didn't
-backport the patchset, so I restored 'VM_DNOTEXPAND | VM_DONTDUMP' as before:
--	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP;
-+	vma->vm_flags |= VM_DONTCOPY | VM_RESERVED;
- -- zliu]
-
-Reported-and-tested-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130604084421.GI8923@twins.programming.kicks-ass.net
-Cc: <stable@kernel.org>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c     |  228 ++++++++++++++++++++++++++++++++---------------
- kernel/events/internal.h |    3 
- 2 files changed, 159 insertions(+), 72 deletions(-)
+ fs/exec.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -193,9 +193,6 @@ static void cpu_ctx_sched_in(struct perf
- static void update_context_time(struct perf_event_context *ctx);
- static u64 perf_event_time(struct perf_event *event);
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1163,13 +1163,6 @@ void setup_new_exec(struct linux_binprm
+ 			set_dumpable(current->mm, suid_dumpable);
+ 	}
  
--static void ring_buffer_attach(struct perf_event *event,
--			       struct ring_buffer *rb);
+-	/*
+-	 * Flush performance counters when crossing a
+-	 * security domain:
+-	 */
+-	if (!get_dumpable(current->mm))
+-		perf_event_exit_task(current);
 -
- void __weak perf_event_print_debug(void)	{ }
+ 	/* An exec changes our domain. We are no longer part of the thread
+ 	   group */
  
- extern __weak const char *perf_pmu_name(void)
-@@ -2848,7 +2845,8 @@ static void free_event_rcu(struct rcu_he
- 	kfree(event);
- }
+@@ -1233,6 +1226,15 @@ void install_exec_creds(struct linux_bin
  
--static bool ring_buffer_put(struct ring_buffer *rb);
-+static void ring_buffer_put(struct ring_buffer *rb);
-+static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb);
- 
- static void free_event(struct perf_event *event)
- {
-@@ -2873,15 +2871,30 @@ static void free_event(struct perf_event
- 		if (has_branch_stack(event)) {
- 			static_key_slow_dec_deferred(&perf_sched_events);
- 			/* is system-wide event */
--			if (!(event->attach_state & PERF_ATTACH_TASK))
-+			if (!(event->attach_state & PERF_ATTACH_TASK)) {
- 				atomic_dec(&per_cpu(perf_branch_stack_events,
- 						    event->cpu));
-+			}
- 		}
- 	}
- 
- 	if (event->rb) {
--		ring_buffer_put(event->rb);
--		event->rb = NULL;
-+		struct ring_buffer *rb;
+ 	commit_creds(bprm->cred);
+ 	bprm->cred = NULL;
 +
-+		/*
-+		 * Can happen when we close an event with re-directed output.
-+		 *
-+		 * Since we have a 0 refcount, perf_mmap_close() will skip
-+		 * over us; possibly making our ring_buffer_put() the last.
-+		 */
-+		mutex_lock(&event->mmap_mutex);
-+		rb = event->rb;
-+		if (rb) {
-+			rcu_assign_pointer(event->rb, NULL);
-+			ring_buffer_detach(event, rb);
-+			ring_buffer_put(rb); /* could be last */
-+		}
-+		mutex_unlock(&event->mmap_mutex);
- 	}
- 
- 	if (is_cgroup_event(event))
-@@ -3119,30 +3132,13 @@ static unsigned int perf_poll(struct fil
- 	unsigned int events = POLL_HUP;
- 
++	/*
++	 * Disable monitoring for regular users
++	 * when executing setuid binaries. Must
++	 * wait until new credentials are committed
++	 * by commit_creds() above
++	 */
++	if (get_dumpable(current->mm) != SUID_DUMP_USER)
++		perf_event_exit_task(current);
  	/*
--	 * Race between perf_event_set_output() and perf_poll(): perf_poll()
--	 * grabs the rb reference but perf_event_set_output() overrides it.
--	 * Here is the timeline for two threads T1, T2:
--	 * t0: T1, rb = rcu_dereference(event->rb)
--	 * t1: T2, old_rb = event->rb
--	 * t2: T2, event->rb = new rb
--	 * t3: T2, ring_buffer_detach(old_rb)
--	 * t4: T1, ring_buffer_attach(rb1)
--	 * t5: T1, poll_wait(event->waitq)
--	 *
--	 * To avoid this problem, we grab mmap_mutex in perf_poll()
--	 * thereby ensuring that the assignment of the new ring buffer
--	 * and the detachment of the old buffer appear atomic to perf_poll()
-+	 * Pin the event->rb by taking event->mmap_mutex; otherwise
-+	 * perf_event_set_output() can swizzle our rb and make us miss wakeups.
- 	 */
- 	mutex_lock(&event->mmap_mutex);
--
--	rcu_read_lock();
--	rb = rcu_dereference(event->rb);
--	if (rb) {
--		ring_buffer_attach(event, rb);
-+	rb = event->rb;
-+	if (rb)
- 		events = atomic_xchg(&rb->poll, 0);
--	}
--	rcu_read_unlock();
--
- 	mutex_unlock(&event->mmap_mutex);
- 
- 	poll_wait(file, &event->waitq, wait);
-@@ -3459,16 +3455,12 @@ static void ring_buffer_attach(struct pe
- 		return;
- 
- 	spin_lock_irqsave(&rb->event_lock, flags);
--	if (!list_empty(&event->rb_entry))
--		goto unlock;
--
--	list_add(&event->rb_entry, &rb->event_list);
--unlock:
-+	if (list_empty(&event->rb_entry))
-+		list_add(&event->rb_entry, &rb->event_list);
- 	spin_unlock_irqrestore(&rb->event_lock, flags);
- }
- 
--static void ring_buffer_detach(struct perf_event *event,
--			       struct ring_buffer *rb)
-+static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb)
- {
- 	unsigned long flags;
- 
-@@ -3487,13 +3479,10 @@ static void ring_buffer_wakeup(struct pe
- 
- 	rcu_read_lock();
- 	rb = rcu_dereference(event->rb);
--	if (!rb)
--		goto unlock;
--
--	list_for_each_entry_rcu(event, &rb->event_list, rb_entry)
--		wake_up_all(&event->waitq);
--
--unlock:
-+	if (rb) {
-+		list_for_each_entry_rcu(event, &rb->event_list, rb_entry)
-+			wake_up_all(&event->waitq);
-+	}
- 	rcu_read_unlock();
- }
- 
-@@ -3520,23 +3509,14 @@ static struct ring_buffer *ring_buffer_g
- 	return rb;
- }
- 
--static bool ring_buffer_put(struct ring_buffer *rb)
-+static void ring_buffer_put(struct ring_buffer *rb)
- {
--	struct perf_event *event, *n;
--	unsigned long flags;
--
- 	if (!atomic_dec_and_test(&rb->refcount))
--		return false;
-+		return;
- 
--	spin_lock_irqsave(&rb->event_lock, flags);
--	list_for_each_entry_safe(event, n, &rb->event_list, rb_entry) {
--		list_del_init(&event->rb_entry);
--		wake_up_all(&event->waitq);
--	}
--	spin_unlock_irqrestore(&rb->event_lock, flags);
-+	WARN_ON_ONCE(!list_empty(&rb->event_list));
- 
- 	call_rcu(&rb->rcu_head, rb_free_rcu);
--	return true;
- }
- 
- static void perf_mmap_open(struct vm_area_struct *vma)
-@@ -3544,28 +3524,100 @@ static void perf_mmap_open(struct vm_are
- 	struct perf_event *event = vma->vm_file->private_data;
- 
- 	atomic_inc(&event->mmap_count);
-+	atomic_inc(&event->rb->mmap_count);
- }
- 
-+/*
-+ * A buffer can be mmap()ed multiple times; either directly through the same
-+ * event, or through other events by use of perf_event_set_output().
-+ *
-+ * In order to undo the VM accounting done by perf_mmap() we need to destroy
-+ * the buffer here, where we still have a VM context. This means we need
-+ * to detach all events redirecting to us.
-+ */
- static void perf_mmap_close(struct vm_area_struct *vma)
- {
- 	struct perf_event *event = vma->vm_file->private_data;
- 
--	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
--		struct ring_buffer *rb = event->rb;
--		struct user_struct *mmap_user = rb->mmap_user;
--		int mmap_locked = rb->mmap_locked;
--		unsigned long size = perf_data_size(rb);
-+	struct ring_buffer *rb = event->rb;
-+	struct user_struct *mmap_user = rb->mmap_user;
-+	int mmap_locked = rb->mmap_locked;
-+	unsigned long size = perf_data_size(rb);
- 
--		rcu_assign_pointer(event->rb, NULL);
--		ring_buffer_detach(event, rb);
--		mutex_unlock(&event->mmap_mutex);
-+	atomic_dec(&rb->mmap_count);
-+
-+	if (!atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex))
-+		return;
-+
-+	/* Detach current event from the buffer. */
-+	rcu_assign_pointer(event->rb, NULL);
-+	ring_buffer_detach(event, rb);
-+	mutex_unlock(&event->mmap_mutex);
-+
-+	/* If there's still other mmap()s of this buffer, we're done. */
-+	if (atomic_read(&rb->mmap_count)) {
-+		ring_buffer_put(rb); /* can't be last */
-+		return;
-+	}
- 
--		if (ring_buffer_put(rb)) {
--			atomic_long_sub((size >> PAGE_SHIFT) + 1, &mmap_user->locked_vm);
--			vma->vm_mm->pinned_vm -= mmap_locked;
--			free_uid(mmap_user);
-+	/*
-+	 * No other mmap()s, detach from all other events that might redirect
-+	 * into the now unreachable buffer. Somewhat complicated by the
-+	 * fact that rb::event_lock otherwise nests inside mmap_mutex.
-+	 */
-+again:
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &rb->event_list, rb_entry) {
-+		if (!atomic_long_inc_not_zero(&event->refcount)) {
-+			/*
-+			 * This event is en-route to free_event() which will
-+			 * detach it and remove it from the list.
-+			 */
-+			continue;
- 		}
-+		rcu_read_unlock();
-+
-+		mutex_lock(&event->mmap_mutex);
-+		/*
-+		 * Check we didn't race with perf_event_set_output() which can
-+		 * swizzle the rb from under us while we were waiting to
-+		 * acquire mmap_mutex.
-+		 *
-+		 * If we find a different rb; ignore this event, a next
-+		 * iteration will no longer find it on the list. We have to
-+		 * still restart the iteration to make sure we're not now
-+		 * iterating the wrong list.
-+		 */
-+		if (event->rb == rb) {
-+			rcu_assign_pointer(event->rb, NULL);
-+			ring_buffer_detach(event, rb);
-+			ring_buffer_put(rb); /* can't be last, we still have one */
-+		}
-+		mutex_unlock(&event->mmap_mutex);
-+		put_event(event);
-+
-+		/*
-+		 * Restart the iteration; either we're on the wrong list or
-+		 * destroyed its integrity by doing a deletion.
-+		 */
-+		goto again;
- 	}
-+	rcu_read_unlock();
-+
-+	/*
-+	 * It could be there's still a few 0-ref events on the list; they'll
-+	 * get cleaned up by free_event() -- they'll also still have their
-+	 * ref on the rb and will free it whenever they are done with it.
-+	 *
-+	 * Aside from that, this buffer is 'fully' detached and unmapped,
-+	 * undo the VM accounting.
-+	 */
-+
-+	atomic_long_sub((size >> PAGE_SHIFT) + 1, &mmap_user->locked_vm);
-+	vma->vm_mm->pinned_vm -= mmap_locked;
-+	free_uid(mmap_user);
-+
-+	ring_buffer_put(rb); /* could be last */
- }
- 
- static const struct vm_operations_struct perf_mmap_vmops = {
-@@ -3615,10 +3667,24 @@ static int perf_mmap(struct file *file,
- 		return -EINVAL;
- 
- 	WARN_ON_ONCE(event->ctx->parent_ctx);
-+again:
- 	mutex_lock(&event->mmap_mutex);
- 	if (event->rb) {
--		if (event->rb->nr_pages != nr_pages)
-+		if (event->rb->nr_pages != nr_pages) {
- 			ret = -EINVAL;
-+			goto unlock;
-+		}
-+
-+		if (!atomic_inc_not_zero(&event->rb->mmap_count)) {
-+			/*
-+			 * Raced against perf_mmap_close() through
-+			 * perf_event_set_output(). Try again, hope for better
-+			 * luck.
-+			 */
-+			mutex_unlock(&event->mmap_mutex);
-+			goto again;
-+		}
-+
- 		goto unlock;
- 	}
- 
-@@ -3660,12 +3726,14 @@ static int perf_mmap(struct file *file,
- 		goto unlock;
- 	}
- 
-+	atomic_set(&rb->mmap_count, 1);
- 	rb->mmap_locked = extra;
- 	rb->mmap_user = get_current_user();
- 
- 	atomic_long_add(user_extra, &user->locked_vm);
- 	vma->vm_mm->pinned_vm += extra;
- 
-+	ring_buffer_attach(event, rb);
- 	rcu_assign_pointer(event->rb, rb);
- 
- 	perf_event_update_userpage(event);
-@@ -3675,6 +3743,10 @@ unlock:
- 		atomic_inc(&event->mmap_count);
- 	mutex_unlock(&event->mmap_mutex);
- 
-+	/*
-+	 * Since pinned accounting is per vm we cannot allow fork() to copy our
-+	 * vma.
-+	 */
- 	vma->vm_flags |= VM_DONTCOPY | VM_RESERVED;
- 	vma->vm_ops = &perf_mmap_vmops;
- 
-@@ -6164,6 +6236,8 @@ set:
- 	if (atomic_read(&event->mmap_count))
- 		goto unlock;
- 
-+	old_rb = event->rb;
-+
- 	if (output_event) {
- 		/* get the rb we want to redirect to */
- 		rb = ring_buffer_get(output_event);
-@@ -6171,16 +6245,28 @@ set:
- 			goto unlock;
- 	}
- 
--	old_rb = event->rb;
--	rcu_assign_pointer(event->rb, rb);
- 	if (old_rb)
- 		ring_buffer_detach(event, old_rb);
-+
-+	if (rb)
-+		ring_buffer_attach(event, rb);
-+
-+	rcu_assign_pointer(event->rb, rb);
-+
-+	if (old_rb) {
-+		ring_buffer_put(old_rb);
-+		/*
-+		 * Since we detached before setting the new rb, so that we
-+		 * could attach the new rb, we could have missed a wakeup.
-+		 * Provide it now.
-+		 */
-+		wake_up_all(&event->waitq);
-+	}
-+
- 	ret = 0;
- unlock:
- 	mutex_unlock(&event->mmap_mutex);
- 
--	if (old_rb)
--		ring_buffer_put(old_rb);
- out:
- 	return ret;
- }
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -30,7 +30,8 @@ struct ring_buffer {
- 	spinlock_t			event_lock;
- 	struct list_head		event_list;
- 
--	int				mmap_locked;
-+	atomic_t			mmap_count;
-+	unsigned long			mmap_locked;
- 	struct user_struct		*mmap_user;
- 
- 	struct perf_event_mmap_page	*user_page;
+ 	 * cred_guard_mutex must be held at least to this point to prevent
+ 	 * ptrace_attach() from altering our determination of the task's
 
 
