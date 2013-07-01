@@ -1,81 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab3GAM4Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:56:24 -0400
-Received: from [207.46.163.26] ([207.46.163.26]:17191 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752695Ab3GAM4X convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 08:56:23 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
-X-WSS-ID: 0MP9D7V-01-3XX-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Brian Gitonga Marete <marete@toshnix.com>
-CC: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        Jerome Glisse <jglisse@redhat.com>
-Subject: RE: [REGRESSION] Radeon (Evergreen) Crash with "pin failed" in
- Kernel 3.10-rc7
-Thread-Topic: [REGRESSION] Radeon (Evergreen) Crash with "pin failed" in
- Kernel 3.10-rc7
-Thread-Index: AQHOc72pTyDwfFYZnkSCHDaBFdqGDZlLEXVwgACH0gCAAdRLgIACXx7A
-Date: Mon, 1 Jul 2013 12:55:06 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02E5005D8@sausexdag04.amd.com>
-References: <CAHVUoiQ5LpvCLUpx6SeMHAaHZZO0BmcYE3HfJa8OB_hp6aXHgQ@mail.gmail.com>
- <A3397C8B8B789E45844E7EC5DEAD89D02E5001EF@sausexdag04.amd.com>
- <CAHVUoiRk7a=wViqK=UAGqcgL=OJXEVO=6hC-xV+mHWANWvV91w@mail.gmail.com>
- <CAHVUoiREVfiL6asGLN-r7EMeR83d71bXfqhzbhWxNz7BFEUTNA@mail.gmail.com>
-In-Reply-To: <CAHVUoiREVfiL6asGLN-r7EMeR83d71bXfqhzbhWxNz7BFEUTNA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.224.14.97]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754135Ab3GAM6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 08:58:14 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41287 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab3GAM6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 08:58:13 -0400
+Date: Mon, 1 Jul 2013 08:58:01 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com, sfr@canb.auug.org.au
+Subject: [GIT PULL] (xen) stable/for-linus-3.11-rc0-tag-two
+Message-ID: <20130701125801.GA7449@phenom.dumpdata.com>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Brian Gitonga Marete [mailto:marete@toshnix.com]
-> Sent: Saturday, June 29, 2013 3:41 PM
-> To: Deucher, Alexander
-> Cc: LKML; David Airlie; Jerome Glisse
-> Subject: Re: [REGRESSION] Radeon (Evergreen) Crash with "pin failed" in
-> Kernel 3.10-rc7
-> 
-> On Fri, Jun 28, 2013 at 6:45 PM, Brian Gitonga Marete
-> <marete@toshnix.com> wrote:
-> > On Fri, Jun 28, 2013 at 3:55 PM, Deucher, Alexander
-> > <Alexander.Deucher@amd.com> wrote:
-> >>
-> >> Can you bisect?
-> >>
-> >
-> 
-> Hello Alexander,
-> 
-> So, it turns out that it is not so easy to reproduce this issue. I
-> have been trying to reproduce it with the exact revision of 3.10-rc7
-> where I first encountered the problem but with no luck. This of course
-> has hampered my bisection since I cannot be sure which revisions to
-> mark good/bad. Do you have any suggestions in this regard?
-> 
-> I however have a UVD-related lockup that I can always reproduce on
-> 3.10-rc7: Trying to use UVD with the command: "mplayer -vo vdpau -vc
-> ffh264vdpau test.mp4" _always_locks up the same system (same kernel,
-> same DRI stack) hard. I will report this in a separate email, though
-> nothing at all shows up in the logs for this latter problem due to the
-> hard lockup. Suggestions about how to help debug this are also
-> welcome.
+Hey Linus,
 
-Please open a bug (https://bugs.freedesktop.org) and attach your xorg log and dmesg output.
+Please git pull the following tag:
 
-Alex
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git  stable/for-linus-3.11-rc0-tag-two
 
+which has just bug-fixes. No new features - just fixes and fixes. The signed
+tag goes in more details, but the bulk is just the cleanups (use pr_*
+instead of printk, fix strings being split across 80 characters, etc).
+
+Please pull!
+
+Sorry about the previous GIT PULL email. I ended up tagging the wrong branch
+(the test one). Fortunatly for me Stephen spotted it right away. Thanks!
+
+
+ arch/x86/xen/smp.c                          | 91 +++++++++++++++++++----------
+ arch/x86/xen/spinlock.c                     |  7 ++-
+ arch/x86/xen/time.c                         | 58 +++++++++---------
+ drivers/pci/xen-pcifront.c                  |  7 +--
+ drivers/xen/balloon.c                       |  6 +-
+ drivers/xen/cpu_hotplug.c                   |  6 +-
+ drivers/xen/events.c                        | 23 ++++----
+ drivers/xen/evtchn.c                        |  6 +-
+ drivers/xen/gntalloc.c                      |  6 +-
+ drivers/xen/gntdev.c                        |  8 ++-
+ drivers/xen/grant-table.c                   | 17 +++---
+ drivers/xen/manage.c                        | 25 ++++----
+ drivers/xen/mcelog.c                        | 36 +++++-------
+ drivers/xen/pcpu.c                          | 12 ++--
+ drivers/xen/privcmd.c                       |  4 +-
+ drivers/xen/swiotlb-xen.c                   | 12 ++--
+ drivers/xen/tmem.c                          | 10 ++--
+ drivers/xen/xen-acpi-cpuhotplug.c           |  2 +
+ drivers/xen/xen-acpi-memhotplug.c           |  2 +
+ drivers/xen/xen-acpi-pad.c                  |  2 +
+ drivers/xen/xen-acpi-processor.c            | 25 ++++----
+ drivers/xen/xen-balloon.c                   |  6 +-
+ drivers/xen/xen-pciback/conf_space_header.c | 16 ++---
+ drivers/xen/xen-pciback/pci_stub.c          | 35 +++++------
+ drivers/xen/xen-pciback/pciback_ops.c       |  9 ++-
+ drivers/xen/xen-pciback/vpci.c              | 10 ++--
+ drivers/xen/xen-pciback/xenbus.c            |  8 ++-
+ drivers/xen/xen-selfballoon.c               | 11 ++--
+ drivers/xen/xenbus/xenbus_comms.c           | 13 +++--
+ drivers/xen/xenbus/xenbus_dev_backend.c     |  4 +-
+ drivers/xen/xenbus/xenbus_dev_frontend.c    |  4 +-
+ drivers/xen/xenbus/xenbus_probe.c           | 30 +++++-----
+ drivers/xen/xenbus/xenbus_probe_backend.c   |  8 ++-
+ drivers/xen/xenbus/xenbus_probe_frontend.c  | 35 +++++------
+ drivers/xen/xenbus/xenbus_xs.c              | 22 +++----
+ drivers/xen/xencomm.c                       |  2 +
+ drivers/xen/xenfs/super.c                   |  4 +-
+ include/xen/hvm.h                           |  4 +-
+ 38 files changed, 321 insertions(+), 265 deletions(-)
+
+Joe Perches (1):
+      xen: Convert printks to pr_<level>
+
+Konrad Rzeszutek Wilk (10):
+      xen/smp: Coalesce the free_irq calls in one function.
+      xen/smp: Introduce a common structure to contain the IRQ name and interrupt line.
+      xen/smp: Set the per-cpu IRQ number to a valid default.
+      xen/smp: Don't leak interrupt name when offlining.
+      xen/spinlock: Don't leak interrupt name when offlining.
+      xen/time: Encapsulate the struct clock_event_device in another structure.
+      xen/time: Don't leak interrupt name when offlining.
+      xen/time: Check that the per_cpu data structure has data before freeing.
+      xen/time: Free onlined per-cpu data structure if we want to online it again.
+      xen/pcifront: Deal with toolstack missing 'XenbusStateClosing' state.
+
+Laszlo Ersek (1):
+      xen/time: remove blocked time accounting from xen "clockchip"
+
+Stefano Stabellini (1):
+      xen: ifdef CONFIG_HIBERNATE_CALLBACKS xen_*_suspend
+
+Wei Yongjun (1):
+      xen-pciback: fix error return code in pcistub_irq_handler_switch()
 
