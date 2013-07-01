@@ -1,39 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3GAPvL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:51:11 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:54732 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752491Ab3GAPvK (ORCPT
+	id S1754588Ab3GAPwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:52:35 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57156 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab3GAPwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:51:10 -0400
-Date: Mon, 1 Jul 2013 15:51:07 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        lllllinux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] mm/slab: Fix /proc/slabinfo unwriteable for
- slab
-In-Reply-To: <1372293700-15916-3-git-send-email-liwanp@linux.vnet.ibm.com>
-Message-ID: <0000013f9aee2258-02568e26-df6e-4db6-abc5-1aa5f3998f73-000000@email.amazonses.com>
-References: <1372293700-15916-1-git-send-email-liwanp@linux.vnet.ibm.com> <1372293700-15916-3-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 1 Jul 2013 11:52:34 -0400
+Date: Mon, 1 Jul 2013 08:52:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full v2 2/7] nohz_full: Add rcu_dyntick data for
+ scalable detection of all-idle state
+Message-ID: <20130701155220.GL3773@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130628200949.GA17458@linux.vnet.ibm.com>
+ <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1372450222-19420-2-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130701153150.GB2923@leaf>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.07.01-54.240.9.58
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701153150.GB2923@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070115-4834-0000-0000-000008969C26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Jun 2013, Wanpeng Li wrote:
+On Mon, Jul 01, 2013 at 08:31:50AM -0700, Josh Triplett wrote:
+> On Fri, Jun 28, 2013 at 01:10:17PM -0700, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > This commit adds fields to the rcu_dyntick structure that are used to
+> > detect idle CPUs.  These new fields differ from the existing ones in
+> > that the existing ones consider a CPU executing in user mode to be idle,
+> > where the new ones consider CPUs executing in user mode to be busy.
+> 
+> Can you explain, both in the commit messages and in the comments added
+> by the next commit, *why* this code doesn't consider userspace a
+> quiescent state?
 
-> Slab have some tunables like limit, batchcount, and sharedfactor can be
-> tuned through function slabinfo_write. Commit (b7454ad3: mm/sl[au]b: Move
-> slabinfo processing to slab_common.c) uncorrectly change /proc/slabinfo
-> unwriteable for slab, this patch fix it by revert to original mode.
+Good point!  Does the following explain it?
 
-See comment on V1.
+	Although one of RCU's quiescent states is usermode execution,
+	it is not a full-system idle state.  This is because the purpose
+	of the full-system idle state is not RCU, but rather determining
+	when accurate timekeeping can safely be disabled.  Whenever
+	accurate timekeeping is required in a CONFIG_NO_HZ_FULL kernel,
+	at least one CPU must keep the scheduling-clock tick going.
+	If even one CPU is executing in user mode, accurate timekeeping
+	is requires, particularly for architectures where gettimeofday()
+	and friends do not enter the kernel.  Only when all CPUs are
+	really and truly idle can accurate timekeeping be disabled,
+	allowing all CPUs to turn off the scheduling clock interrupt,
+	thus greatly improving energy efficiency.
+
+	This naturally raises the question "Why is this code in RCU rather
+	than in timekeeping?", and the answer is that RCU has the data
+	and infrastructure to efficiently make this determination.
+
+							Thanx, Paul
+
