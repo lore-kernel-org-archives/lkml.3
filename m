@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab3GATKl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 15:10:41 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:43986 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3GATKj convert rfc822-to-8bit (ORCPT
+	id S1754778Ab3GATL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 15:11:29 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54577 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab3GATL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 15:10:39 -0400
+	Mon, 1 Jul 2013 15:11:28 -0400
+Date: Mon, 1 Jul 2013 20:11:22 +0100
+From: Mark Brown <broonie@kernel.org>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        Ryan Mallon <rmallon@gmail.com>,
+        "mika.westerberg@iki.fi" <mika.westerberg@iki.fi>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Message-ID: <20130701191122.GN27646@sirena.org.uk>
+References: <201306281143.35130.hartleys@visionengravers.com>
+ <20130701102757.GF27646@sirena.org.uk>
+ <ADE657CA350FB648AAC2C43247A983F0021DAC38FFB9@AUSP01VMBX24.collaborationhost.net>
 MIME-Version: 1.0
-In-Reply-To: <51D1D043.5030509@gmail.com>
-References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
-	<1372319707-13892-13-git-send-email-adrian.hunter@intel.com>
-	<51CC6AAF.4030404@gmail.com>
-	<51D14CB6.206@intel.com>
-	<51D1D043.5030509@gmail.com>
-Date: Mon, 1 Jul 2013 21:10:38 +0200
-Message-ID: <CABPqkBRJNcSi_qdmn9Bfw57MbX=RcaSC9RLt-u6FKfW+q5jM0A@mail.gmail.com>
-Subject: Re: [PATCH V2 12/15] perf tools: allow non-matching sample types
-From: Stephane Eranian <eranian@google.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="YqRRwTcmsyYCeoLs"
+Content-Disposition: inline
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0021DAC38FFB9@AUSP01VMBX24.collaborationhost.net>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/8] spi: spi-ep93xx: always handle transfer specific
+ settings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 8:53 PM, David Ahern <dsahern@gmail.com> wrote:
->
-> On 7/1/13 3:32 AM, Adrian Hunter wrote:
->>
->> Snip
->>
->>>
->>> While this works for a combined S/W and tracepoint events session, I do not
->>> like promoting sample types to the minimum compatible level for all events
->>> in the session. perf needs to allow each event to have its own sample_type
->>> and not force a minimal compatibility.
->>
->>
->> Why?  The impact is small. The kernel API is completely unchanged.
->
->
-> I'd like to see libperf become a stable, usable library - usable by more than the perf binary and its builtin commands. I have already done this once for a daemon, and it was a PITA to get the specific use functional without memory leaks/growth in the libperf part.
->
-> With respect to this specific patch it means appropriate flexibility in the data collected for events. ie., each event can have its own sample_type. For example if the tracepoint already contains task information TID is not needed - and IP may not be wanted either. The code processing the samples should not require all events to have some minimum data format - that just wastes buffer space.
->
-I agree. This kernel needs to allow for any bit combination on
-sample_type and yet provide enough info
-to parse the buffer in the case of multi-event sampling. This is
-kernel bug. Tools should not have to handle
-this. Because it'd have to be repeated for each tool.
 
-Later this week, I'll post a patch that address the kernel limitation.
+--YqRRwTcmsyYCeoLs
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Mon, Jul 01, 2013 at 01:15:40PM -0500, H Hartley Sweeten wrote:
+> On Monday, July 01, 2013 3:28 AM, Mark Brown wrote:
+
+> > Applied, thanks.
+
+> I was going to redo this series based on the comments I have received
+> so far. Did you already apply this one? Should I push it to the front of my
+> patchset?
+
+That's what I said.  You shouldn't resend it at all, you should base
+your updates off the relevant topic branch.
+
+--YqRRwTcmsyYCeoLs
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0dRXAAoJELSic+t+oim94WsP+QFmdF95A3xx3vo2zfKVD26W
+nyV3mmMakxxLe2NII/dlCPmnFuc+S1bwtqXqA6c3R54G/kr3t9dNEMsPn69Q9Woj
+4YUJzOfPT/rKWVCa0c3aAB7GG34A8WO4417nLsT3Z6rgAZxgSalRBWSAwOsrySAB
+AFOB4wzYgjih2qJ5LSpB+g7P7G5zk9UK2tRQ+X1WNrYsvIPh5YjjMArBlRxH6q9f
+6D2wmEdF8gmWrajj5vGhDxEq/MWnAplArOq1IUirtxZ4iePnH3hv7l+OQglwQlJi
+fJggsKzkJJp6r27VmvMRxhmEI+vaaFw3tm8zl09JUmydSD8T02vsgIk2pKl1iOFE
+vEmcC6YPEFUc8SrmVWF1TLgGInx9S6J8C6FN01HSPlYCH/lSgvLOIC/IqagiNWLX
+DFteDGSZFItVl51qJvL1KQwMw54n7RpN2+BzuG3OTveaHXVWYsPRdY6nx74XsrXY
+INyC9zGoZNn71E/04ET8VJaG7oybYoujySDa2+OEf5KQXcX6l8rHWNFMW2441ECE
+f3SwZip9EhAW1la3E9l7X/TpZNGBymi/Z/LV15I8LC+8lOpoJAcggmNfmvIBas+R
+hqd3GhLxDS///unCGO05ku2LyFWqBPVctyQLYhtnq0RPEONQIrWv2fLVs+zZfJ0y
+d+JvO8lBgaBG8TadYS4J
+=s85i
+-----END PGP SIGNATURE-----
+
+--YqRRwTcmsyYCeoLs--
