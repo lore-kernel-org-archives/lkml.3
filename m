@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3GAMAm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:00:42 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33892 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab3GAL55 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753084Ab3GAL55 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Jul 2013 07:57:57 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33884 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab3GAL5z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 07:57:55 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
         <xemul@parallels.com>, <khorenko@parallels.com>
-Subject: [PATCH RFC 02/13] mm: PRAM: implement node load and save functions
-Date: Mon, 1 Jul 2013 15:57:37 +0400
-Message-ID: <24ab8ab30254b32696c1df58b5c70ae4bd916dea.1372582755.git.vdavydov@parallels.com>
+Subject: [PATCH RFC 01/13] mm: add PRAM API stubs and Kconfig
+Date: Mon, 1 Jul 2013 15:57:36 +0400
+Message-ID: <fdf9aceddf42b7568efaec2e483374c3526e9776.1372582755.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1372582754.git.vdavydov@parallels.com>
 References: <cover.1372582754.git.vdavydov@parallels.com>
@@ -24,260 +24,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Persistent memory is divided into nodes, which can be saved and loaded
-independently of each other. PRAM nodes are kept on the list and
-identified by unique names. Whenever a save operation is initiated by
-calling pram_prepare_save(), a new node is created and linked to the
-list. When the save operation has been committed by calling
-pram_finish_save(), the node becomes loadable. A load operation can be
-then initiated by calling pram_prepare_load(), which deletes the node
-from the list and prepares the corresponding stream for loading data
-from it. After the load has been finished, the pram_finish_load()
-function must be called to free the node. Nodes are also deleted when a
-save operation is discarded, i.e. pram_discard_save() is called instead
-of pram_finish_save().
+Persistent memory subsys or PRAM is intended to be used for saving
+memory pages of the currently executing kernel and restoring them after
+a kexec in the newly booted one. This can be utilized for speeding up
+reboot by leaving process memory and/or FS caches in-place.
+
+The proposed API:
+
+ * Persistent memory is divided into nodes, which can be saved or loaded
+   independently of each other. The nodes are identified by unique name
+   strings. PRAM node is created (removed) when save (load) is initiated
+   by calling pram_prepare_save() (pram_prepare_load()), see below.
+
+ * For saving/loading data from a PRAM node an instance of the
+   pram_stream struct is used. The struct is initialized by calling
+   pram_prepare_save() for saving data or pram_prepare_load() for
+   loading data. After save (load) is complete, pram_finish_save()
+   (pram_finish_load()) must be called. If an error occurred during
+   save, the saved data and the PRAM node may be freed by calling
+   pram_discard_save() instead of pram_finish_save().
+
+ * Each pram_stream has a type, which  determines the set of operations
+   that may be used for saving/loading data. The type is defined by the
+   pram_stream_type enum. Currently there are two stream types
+   available: PRAM_PAGE_STREAM to save/load memory pages, and
+   PRAM_BYTE_STREAM to save/load byte strings. For page streams
+   pram_save_page() and pram_load_page() may be used, and for byte
+   streams pram_write() and pram_read() may be used for saving and
+   loading data respectively.
+
+Thus a sequence of operations for saving/loading data from PRAM should
+look like:
+
+  * For saving data to PRAM:
+
+    /* create PRAM node and initialize stream for saving data to it */
+    pram_prepare_save()
+
+    /* save data to the node */
+    pram_save_page()[,...]      /* for page stream, or
+    pram_write()[,...]           * ... for byte stream */
+
+    /* commit the save or discard and delete the node */
+    pram_finish_save()          /* on success, or
+    pram_discard_save()          * ... in case of error */
+
+  * For loading data from PRAM:
+
+    /* remove PRAM node from the list and initialize stream for
+     * loading data from it */
+    pram_prepare_load()
+
+    /* load data from the node */
+    pram_load_page()[,...]      /* for page stream, or
+    pram_read()[,...]            * ... for byte stream */
+
+    /* free the node */
+    pram_finish_load()
 ---
- include/linux/pram.h |    7 ++-
- mm/pram.c            |  158 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 159 insertions(+), 6 deletions(-)
+ include/linux/pram.h |   38 +++++++++++++++
+ mm/Kconfig           |    9 ++++
+ mm/Makefile          |    1 +
+ mm/pram.c            |  131 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 179 insertions(+)
+ create mode 100644 include/linux/pram.h
+ create mode 100644 mm/pram.c
 
 diff --git a/include/linux/pram.h b/include/linux/pram.h
-index cf04548..5b8c2c1 100644
---- a/include/linux/pram.h
+new file mode 100644
+index 0000000..cf04548
+--- /dev/null
 +++ b/include/linux/pram.h
-@@ -5,7 +5,12 @@
- #include <linux/types.h>
- #include <linux/mm_types.h>
- 
--struct pram_stream;
-+struct pram_node;
+@@ -0,0 +1,38 @@
++#ifndef _LINUX_PRAM_H
++#define _LINUX_PRAM_H
 +
-+struct pram_stream {
-+	gfp_t gfp_mask;
-+	struct pram_node *node;
++#include <linux/gfp.h>
++#include <linux/types.h>
++#include <linux/mm_types.h>
++
++struct pram_stream;
++
++#define PRAM_NAME_MAX		256	/* including nul */
++
++enum pram_stream_type {
++	PRAM_PAGE_STREAM,
++	PRAM_BYTE_STREAM,
 +};
++
++extern int pram_prepare_save(struct pram_stream *ps,
++		const char *name, enum pram_stream_type type, gfp_t gfp_mask);
++extern void pram_finish_save(struct pram_stream *ps);
++extern void pram_discard_save(struct pram_stream *ps);
++
++extern int pram_prepare_load(struct pram_stream *ps,
++		const char *name, enum pram_stream_type type);
++extern void pram_finish_load(struct pram_stream *ps);
++
++#define PRAM_PAGE_LRU		0x01	/* page is on the LRU */
++
++/* page-stream specific methods */
++extern int pram_save_page(struct pram_stream *ps,
++			  struct page *page, int flags);
++extern struct page *pram_load_page(struct pram_stream *ps, int *flags);
++
++/* byte-stream specific methods */
++extern ssize_t pram_write(struct pram_stream *ps,
++			  const void *buf, size_t count);
++extern size_t pram_read(struct pram_stream *ps, void *buf, size_t count);
++
++#endif /* _LINUX_PRAM_H */
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 3bea74f..46337e8 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -471,3 +471,12 @@ config FRONTSWAP
+ 	  and swap data is stored as normal on the matching swap device.
  
- #define PRAM_NAME_MAX		256	/* including nul */
- 
+ 	  If unsure, say Y to enable frontswap.
++
++config PRAM
++	bool "Persistent over-kexec memory storage"
++	default n
++	help
++	  This option adds the kernel API that enables saving memory pages of
++	  the currently executing kernel and restoring them after a kexec in
++	  the newly booted one. This can be utilized for speeding up reboot by
++	  leaving process memory and/or FS caches in-place.
+diff --git a/mm/Makefile b/mm/Makefile
+index 3a46287..33ad952 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -58,3 +58,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
+ obj-$(CONFIG_CLEANCACHE) += cleancache.o
+ obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
++obj-$(CONFIG_PRAM) += pram.o
 diff --git a/mm/pram.c b/mm/pram.c
-index cea0e87..3af2039 100644
---- a/mm/pram.c
+new file mode 100644
+index 0000000..cea0e87
+--- /dev/null
 +++ b/mm/pram.c
-@@ -1,10 +1,75 @@
- #include <linux/err.h>
- #include <linux/gfp.h>
- #include <linux/kernel.h>
-+#include <linux/list.h>
- #include <linux/mm.h>
-+#include <linux/mutex.h>
- #include <linux/pram.h>
-+#include <linux/string.h>
- #include <linux/types.h>
- 
-+/*
-+ * Persistent memory is divided into nodes that can be saved or loaded
-+ * independently of each other. The nodes are identified by unique name
-+ * strings.
+@@ -0,0 +1,131 @@
++#include <linux/err.h>
++#include <linux/gfp.h>
++#include <linux/kernel.h>
++#include <linux/mm.h>
++#include <linux/pram.h>
++#include <linux/types.h>
++
++/**
++ * Create a persistent memory node with name @name and initialize stream @ps
++ * for saving data to it.
 + *
-+ * The structure occupies a memory page.
++ * @type determines the content type of the newly created node and, as a
++ * result, the set of operations that may be used on the stream as follows:
++ *    %PRAM_PAGE_STREAM: page stream, use pram_save_page()
++ *    %PRAM_BYTE_STREAM: byte stream, use pram_write()
++ *
++ * @gfp_mask specifies the memory allocation mask to be used when saving data.
++ *
++ * Returns 0 on success, -errno on failure.
++ *
++ * After the save has finished, pram_finish_save() (or pram_discard_save() in
++ * case of failure) is to be called.
 + */
-+struct pram_node {
-+	__u32	flags;		/* see PRAM_* flags below */
-+	__u32	type;		/* data type, see enum pram_stream_type */
-+
-+	__u8	name[PRAM_NAME_MAX];
-+};
-+
-+#define PRAM_SAVE		1
-+#define PRAM_LOAD		2
-+#define PRAM_ACCMODE_MASK	3
-+
-+static LIST_HEAD(pram_nodes);			/* linked through page::lru */
-+static DEFINE_MUTEX(pram_mutex);		/* serializes open/close */
-+
-+static inline struct page *pram_alloc_page(gfp_t gfp_mask)
++int pram_prepare_save(struct pram_stream *ps,
++		const char *name, enum pram_stream_type type, gfp_t gfp_mask)
 +{
-+	return alloc_page(gfp_mask);
++	return -ENOSYS;
 +}
 +
-+static inline void pram_free_page(void *addr)
++/**
++ * Commit the save to persistent memory started with pram_prepare_save().
++ * After the call, the stream may not be used any more.
++ */
++void pram_finish_save(struct pram_stream *ps)
 +{
-+	free_page((unsigned long)addr);
++	BUG();
 +}
 +
-+static inline void pram_insert_node(struct pram_node *node)
++/**
++ * Cancel the save to persistent memory started with pram_prepare_save() and
++ * destroy the corresponding persistent memory node freeing all data that have
++ * been saved to it.
++ */
++void pram_discard_save(struct pram_stream *ps)
 +{
-+	list_add(&virt_to_page(node)->lru, &pram_nodes);
++	BUG();
 +}
 +
-+static inline void pram_delete_node(struct pram_node *node)
++/**
++ * Remove the peristent memory node with name @name and initialize stream @ps
++ * for loading data from it.
++ *
++ * @type determines the content type of the node to be loaded and, as a result,
++ * the set of operations that may be used on the stream as follows:
++ *    %PRAM_PAGE_STREAM: page stream, use pram_load_page()
++ *    %PRAM_BYTE_STREAM: byte stream, use pram_read()
++ *
++ * Returns 0 on success, -errno on failure.
++ *
++ * After the load has finished, pram_finish_load() is to be called.
++ */
++int pram_prepare_load(struct pram_stream *ps,
++		const char *name, enum pram_stream_type type)
 +{
-+	list_del(&virt_to_page(node)->lru);
++	return -ENOSYS;
 +}
 +
-+static struct pram_node *pram_find_node(const char *name)
++/**
++ * Finish the load from persistent memory started with pram_prepare_load()
++ * freeing the corresponding persistent memory node and all data that have not
++ * been loaded from it.
++ */
++void pram_finish_load(struct pram_stream *ps)
 +{
-+	struct page *page;
-+	struct pram_node *node;
++	BUG();
++}
 +
-+	list_for_each_entry(page, &pram_nodes, lru) {
-+		node = page_address(page);
-+		if (strcmp(node->name, name) == 0)
-+			return node;
-+	}
++/**
++ * Save page @page to the persistent memory node associated with stream @ps.
++ * The stream must be initialized with pram_prepare_save().
++ *
++ * @flags determines the page state. If the page is on the lru, @flags should
++ * have the PRAM_PAGE_LRU bit set.
++ *
++ * Returns 0 on success, -errno on failure.
++ */
++int pram_save_page(struct pram_stream *ps, struct page *page, int flags)
++{
++	return -ENOSYS;
++}
++
++/**
++ * Load the next page from the persistent memory node associated with stream
++ * @ps. The stream must be initialized with pram_prepare_load().
++ *
++ * If not NULL, @flags is initialized with the state of the page loaded. If the
++ * page is on the lru, it will have the PRAM_PAGE_LRU bit set.
++ *
++ * Returns the page loaded or NULL if the node is empty.
++ *
++ * Pages are loaded from persistent memory in the same order they were saved.
++ * The page loaded has its refcounter incremeneted.
++ */
++struct page *pram_load_page(struct pram_stream *ps, int *flags)
++{
 +	return NULL;
 +}
 +
-+static void pram_stream_init(struct pram_stream *ps,
-+			     struct pram_node *node, gfp_t gfp_mask)
++/**
++ * Copy @count bytes from @buf to the persistent memory node assiciated with
++ * stream @ps. The stream must be initialized with pram_prepare_save().
++ *
++ * On success, returns the number of bytes written, which is always equal to
++ * @count. On failure, -errno is returned.
++ */
++ssize_t pram_write(struct pram_stream *ps, const void *buf, size_t count)
 +{
-+	memset(ps, 0, sizeof(*ps));
-+	ps->gfp_mask = gfp_mask;
-+	ps->node = node;
++	return -ENOSYS;
 +}
 +
- /**
-  * Create a persistent memory node with name @name and initialize stream @ps
-  * for saving data to it.
-@@ -18,13 +83,49 @@
-  *
-  * Returns 0 on success, -errno on failure.
-  *
-+ * Error values:
-+ *    %ENAMETOOLONG: name len >= PRAM_NAME_MAX
-+ *    %ENOMEM: insufficient memory available
-+ *    %EEXIST: node with specified name already exists
++/**
++ * Copy up to @count bytes from the persistent memory node assiciated with
++ * stream @ps to @buf. The stream must be initialized with pram_prepare_load().
 + *
-  * After the save has finished, pram_finish_save() (or pram_discard_save() in
-  * case of failure) is to be called.
-  */
- int pram_prepare_save(struct pram_stream *ps,
- 		const char *name, enum pram_stream_type type, gfp_t gfp_mask)
- {
--	return -ENOSYS;
-+	struct page *page;
-+	struct pram_node *node;
-+	int err = 0;
-+
-+	BUG_ON(type != PRAM_PAGE_STREAM &&
-+	       type != PRAM_BYTE_STREAM);
-+
-+	if (strlen(name) >= PRAM_NAME_MAX)
-+		return -ENAMETOOLONG;
-+
-+	page = pram_alloc_page(GFP_KERNEL | __GFP_ZERO);
-+	if (!page)
-+		return -ENOMEM;
-+	node = page_address(page);
-+
-+	node->flags = PRAM_SAVE;
-+	node->type = type;
-+	strcpy(node->name, name);
-+
-+	mutex_lock(&pram_mutex);
-+	if (!pram_find_node(name))
-+		pram_insert_node(node);
-+	else
-+		err = -EEXIST;
-+	mutex_unlock(&pram_mutex);
-+	if (err) {
-+		__free_page(page);
-+		return err;
-+	}
-+
-+	pram_stream_init(ps, node, gfp_mask);
++ * Returns the number of bytes read, which may be less than @count if the node
++ * has fewer bytes available.
++ */
++size_t pram_read(struct pram_stream *ps, void *buf, size_t count)
++{
 +	return 0;
- }
- 
- /**
-@@ -33,7 +134,12 @@ int pram_prepare_save(struct pram_stream *ps,
-  */
- void pram_finish_save(struct pram_stream *ps)
- {
--	BUG();
-+	struct pram_node *node = ps->node;
-+
-+	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_SAVE);
-+
-+	smp_wmb();
-+	node->flags &= ~PRAM_ACCMODE_MASK;
- }
- 
- /**
-@@ -43,7 +149,15 @@ void pram_finish_save(struct pram_stream *ps)
-  */
- void pram_discard_save(struct pram_stream *ps)
- {
--	BUG();
-+	struct pram_node *node = ps->node;
-+
-+	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_SAVE);
-+
-+	mutex_lock(&pram_mutex);
-+	pram_delete_node(node);
-+	mutex_unlock(&pram_mutex);
-+
-+	pram_free_page(node);
- }
- 
- /**
-@@ -57,12 +171,42 @@ void pram_discard_save(struct pram_stream *ps)
-  *
-  * Returns 0 on success, -errno on failure.
-  *
-+ * Error values:
-+ *    %ENOENT: node with specified name does not exist
-+ *    %EBUSY: save to required node has not finished yet
-+ *    %EPERM: specified type conflicts with type of required node
-+ *
-  * After the load has finished, pram_finish_load() is to be called.
-  */
- int pram_prepare_load(struct pram_stream *ps,
- 		const char *name, enum pram_stream_type type)
- {
--	return -ENOSYS;
-+	struct pram_node *node;
-+	int err = 0;
-+
-+	mutex_lock(&pram_mutex);
-+	node = pram_find_node(name);
-+	if (!node) {
-+		err = -ENOENT;
-+		goto out_unlock;
-+	}
-+	if (node->flags & PRAM_ACCMODE_MASK) {
-+		err = -EBUSY;
-+		goto out_unlock;
-+	}
-+	if (node->type != type) {
-+		err = -EPERM;
-+		goto out_unlock;
-+	}
-+	pram_delete_node(node);
-+out_unlock:
-+	mutex_unlock(&pram_mutex);
-+	if (err)
-+		return err;
-+
-+	node->flags |= PRAM_LOAD;
-+	pram_stream_init(ps, node, 0);
-+	return 0;
- }
- 
- /**
-@@ -72,7 +216,11 @@ int pram_prepare_load(struct pram_stream *ps,
-  */
- void pram_finish_load(struct pram_stream *ps)
- {
--	BUG();
-+	struct pram_node *node = ps->node;
-+
-+	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_LOAD);
-+
-+	pram_free_page(node);
- }
- 
- /**
++}
 -- 
 1.7.10.4
 
