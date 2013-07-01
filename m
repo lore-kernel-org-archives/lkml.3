@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab3GAWzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:55:38 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:42096 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601Ab3GAWzh (ORCPT
+	id S932078Ab3GAW4G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:56:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57598 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755652Ab3GAW4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:55:37 -0400
-Date: Mon, 1 Jul 2013 15:55:36 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ceph: avoid accessing invalid memory
-In-Reply-To: <1372718019-16549-1-git-send-email-sasha.levin@oracle.com>
-Message-ID: <alpine.DEB.2.00.1307011554490.13163@cobra.newdream.net>
-References: <1372718019-16549-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 1 Jul 2013 18:56:04 -0400
+Date: Tue, 2 Jul 2013 00:56:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Hogan <james.hogan@imgtec.com>
+cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] metag: kick: prevent nested kick handlers
+In-Reply-To: <CAAG0J9_fTNrKe7idPi3=O2kGRWBJmYSwMQuzGPiT2G+rXy4QuA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1307020022570.4013@ionos.tec.linutronix.de>
+References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com> <1372694659-30176-5-git-send-email-james.hogan@imgtec.com> <alpine.DEB.2.02.1307012346320.4013@ionos.tec.linutronix.de>
+ <CAAG0J9_fTNrKe7idPi3=O2kGRWBJmYSwMQuzGPiT2G+rXy4QuA@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Sasha Levin wrote:
-> when mounting ceph with a dev name that starts with a slash, ceph
-> would attempt to access the character before that slash. Since we
-> don't actually own that byte of memory, we would trigger an
-> invalid access:
+On Mon, 1 Jul 2013, James Hogan wrote:
+> On 1 July 2013 22:51, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Mon, 1 Jul 2013, James Hogan wrote:
+> >
+> >> The main kick trigger handler iterates a list of kick handlers and calls
+> >> each one. This is done with the kick_handlers_lock spin lock held, but
+> >> this causes a problem on SMP where IPIs are implemented with kicks. A
+> >> reschedule IPI calls scheduler_ipi() which uses irq_enter() and
+> >> irq_exit(). This results in the scheduler being invoked with
+> >> kick_handlers_lock held which can result in a nested kick trigger
+> >> attempting to acquire the lock, resulting in deadlock.
+> >>
+> >> irq_enter() and irq_exit() can nest, so call them from the main kick
+> >> interrupt handler so that softirqs are only handled after
+> >> kick_handlers_lock is released.
+> >
+> > This changelog is confusing. What I decode from the patch is, that you
+> > are adding a missing irq_enter/exit pair to the kick_handler, right ?
 > 
-> [   43.499934] BUG: unable to handle kernel paging request at ffff880fa3a97fff
-> [   43.500984] IP: [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
-> [   43.501491] PGD 743b067 PUD 10283c4067 PMD 10282a6067 PTE 8000000fa3a97060
-> [   43.502301] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [   43.503006] Dumping ftrace buffer:
-> [   43.503596]    (ftrace buffer empty)
-> [   43.504046] CPU: 0 PID: 10879 Comm: mount Tainted: G        W    3.10.0-sasha #1129
-> [   43.504851] task: ffff880fa625b000 ti: ffff880fa3412000 task.ti: ffff880fa3412000
-> [   43.505608] RIP: 0010:[<ffffffff818f3884>]  [<ffffffff818f3884>] parse_mount_options$
-> [   43.506552] RSP: 0018:ffff880fa3413d08  EFLAGS: 00010286
-> [   43.507133] RAX: ffff880fa3a98000 RBX: ffff880fa3a98000 RCX: 0000000000000000
-> [   43.507893] RDX: ffff880fa3a98001 RSI: 000000000000002f RDI: ffff880fa3a98000
-> [   43.508610] RBP: ffff880fa3413d58 R08: 0000000000001f99 R09: ffff880fa3fe64c0
-> [   43.509426] R10: ffff880fa3413d98 R11: ffff880fa38710d8 R12: ffff880fa3413da0
-> [   43.509792] R13: ffff880fa3a97fff R14: 0000000000000000 R15: ffff880fa3413d90
-> [   43.509792] FS:  00007fa9c48757e0(0000) GS:ffff880fd2600000(0000) knlGS:000000000000$
-> [   43.509792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   43.509792] CR2: ffff880fa3a97fff CR3: 0000000fa3bb9000 CR4: 00000000000006b0
-> [   43.509792] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   43.509792] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   43.509792] Stack:
-> [   43.509792]  0000e5180000000e ffffffff85ca1900 ffff880fa38710d8 ffff880fa3413d98
-> [   43.509792]  0000000000000120 0000000000000000 ffff880fa3a98000 0000000000000000
-> [   43.509792]  ffffffff85cf32a0 0000000000000000 ffff880fa3413dc8 ffffffff818f3c72
-> [   43.509792] Call Trace:
-> [   43.509792]  [<ffffffff818f3c72>] ceph_mount+0xa2/0x390
-> [   43.509792]  [<ffffffff81226314>] ? pcpu_alloc+0x334/0x3c0
-> [   43.509792]  [<ffffffff81282f8d>] mount_fs+0x8d/0x1a0
-> [   43.509792]  [<ffffffff812263d0>] ? __alloc_percpu+0x10/0x20
-> [   43.509792]  [<ffffffff8129f799>] vfs_kern_mount+0x79/0x100
-> [   43.509792]  [<ffffffff812a224d>] do_new_mount+0xcd/0x1c0
-> [   43.509792]  [<ffffffff812a2e8d>] do_mount+0x15d/0x210
-> [   43.509792]  [<ffffffff81220e55>] ? strndup_user+0x45/0x60
-> [   43.509792]  [<ffffffff812a2fdd>] SyS_mount+0x9d/0xe0
-> [   43.509792]  [<ffffffff83fd816c>] tracesys+0xdd/0xe2
-> [   43.509792] Code: 4c 8b 5d c0 74 0a 48 8d 50 01 49 89 14 24 eb 17 31 c0 48 83 c9 ff $
-> [   43.509792] RIP  [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
-> [   43.509792]  RSP <ffff880fa3413d08>
-> [   43.509792] CR2: ffff880fa3a97fff
-> [   43.509792] ---[ end trace 22469cd81e93af51 ]---
+> Yes. Previously the outermost pair of irq_enter/exit was inside the
+> spin lock critical section (inside scheduler_ipi). so soft-irqs
+> (apparently including the scheduler) would run from irq_exit with the
+> spinlock still held. Now it waits until the new outermost irq_exit(),
+> after the spin lock is released.
 > 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> I should probably have increased the number of lines of diff context.
+> http://lxr.linux.no/#linux+v3.10/arch/metag/kernel/kick.c#L66
 
-Looks good!  Reviewed-by: and added to the tree.  Thanks!
-sage
+No, you should have written the changelog less confusing. I can see
+the context by just looking at the current and the patched code.
+
+The explanation you provided right now that the outermost pair of
+irq_enter/exit was inside the spin locked section matches the patch
+and makes sense.
+
+So the real issue is, that all of your various interrupts come from
+the same place, i.e. kick_handler. The kick_handler locks a global
+lock and calls the handlers which have registered. These handlers
+(partially calling generic code) might invoke irq_enter/exit pairs,
+which leads to the underlying problem.
+
+If irq_exit() results in a nest count of hard interrupts = 0, then it
+invokes eventually pending soft interrupts. The softirq callbacks can
+issue an IPI of some sorts and because this IPI will end up in the
+kick handler, the systems livelocks on the already held global lock
+which protects the kick_handler list. This can happen from any invoked
+handler, because the kick_handler is missing an irq_enter/pair
+preventing a kick_handler invocation recursion.
+
+The obvious fix for now is to add an irq_enter/exit() pair around the
+spin locked section in the kick handler, so irq_exit() invocations of
+subhandlers wont lead to softirq execution.
+
+The more elegant fix would be to replace that global lock which is not
+really scalable with an RCU protected list of subscribed handlers.
+
+The most elegant fix would be to have separate entry points for
+various exceptions, but that seems to be an architectural issue.
+
+Thanks,
+
+	tglx
 
 
-> ---
->  fs/ceph/super.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-> index 7d377c9..6627b26 100644
-> --- a/fs/ceph/super.c
-> +++ b/fs/ceph/super.c
-> @@ -357,7 +357,7 @@ static int parse_mount_options(struct ceph_mount_options **pfsopt,
->  	}
->  	err = -EINVAL;
->  	dev_name_end--;		/* back up to ':' separator */
-> -	if (*dev_name_end != ':') {
-> +	if (dev_name_end < dev_name || *dev_name_end != ':') {
->  		pr_err("device name is missing path (no : separator in %s)\n",
->  				dev_name);
->  		goto out;
-> -- 
-> 1.7.10.4
-> 
-> 
