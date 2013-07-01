@@ -1,110 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab3GANZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 09:25:31 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:56367 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab3GANZ2 (ORCPT
+	id S1754259Ab3GANZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 09:25:51 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:40861 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab3GANXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 09:25:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130701124407.GB21726@dyad.programming.kicks-ass.net>
-References: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
-	<1372682002-15373-1-git-send-email-leiwen@marvell.com>
-	<1372682002-15373-2-git-send-email-leiwen@marvell.com>
-	<20130701124407.GB21726@dyad.programming.kicks-ass.net>
-Date: Mon, 1 Jul 2013 21:25:26 +0800
-Message-ID: <CALZhoSR0S1M_9Fu1GjPxYw4LXe-Z0k7TjSUPZKZm6m_scTnnxw@mail.gmail.com>
-Subject: Re: [V2 1/2] sched: add trace events for task and rq usage tracking
-From: Lei Wen <adrian.wenl@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Lei Wen <leiwen@marvell.com>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        mingo@redhat.com, Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 1 Jul 2013 09:23:38 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>, jimwall@q.com,
+        brian@crystalfontz.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv4 2/8] ARM: mxs: dt: Add Crystalfontz CFA-10056 device tree
+Date: Mon,  1 Jul 2013 15:23:23 +0200
+Message-Id: <1372685009-15564-3-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1372685009-15564-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+From: Brian Lilly <brian@crystalfontz.com>
 
-On Mon, Jul 1, 2013 at 8:44 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, Jul 01, 2013 at 08:33:21PM +0800, Lei Wen wrote:
->> Since we could track task in the entity level now, we may want to
->> investigate tasks' running status by recording the trace info, so that
->> could make some tuning if needed.
->
-> Why would I want to merge this?
+The CFA-10056 is a breakout board for the CFA-10036, and is
+basically a CFA-10037, with a 4.3" screen.
 
-With the merged trace point like those, we could then draw the load
-distribution picture easily.
+Signed-off-by: Brian Lilly <brian@crystalfontz.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/Makefile           |   1 +
+ arch/arm/boot/dts/imx28-cfa10056.dts | 119 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 120 insertions(+)
+ create mode 100644 arch/arm/boot/dts/imx28-cfa10056.dts
 
->
->
->> +     trace_sched_task_weighted_load(task_of(se), se->avg.load_avg_contrib, se->load.weight);
->> +     trace_sched_task_weighted_load(task_of(se), se->avg.load_avg_contrib, se->load.weight);
->
->> +             trace_sched_cfs_rq_runnable_load(cpu_of(rq_of(cfs_rq)),
->> +                             cfs_rq->runnable_load_avg, cfs_rq->load.weight);
->
->> +             trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
->> +                             cfs_rq->blocked_load_avg,
->> +                             cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
->
->> +     trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
->> +                     cfs_rq->blocked_load_avg,
->> +                     cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
->
->> +             trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
->> +                             cfs_rq->blocked_load_avg,
->> +                             cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
->
->> +     trace_sched_cfs_rq_runnable_load(cpu_of(rq_of(cfs_rq)),
->> +                     cfs_rq->runnable_load_avg, cfs_rq->load.weight);
->
->> +             trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
->> +                             cfs_rq->blocked_load_avg,
->> +                             cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
->
->> +             trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
->> +                             cfs_rq->blocked_load_avg,
->> +                             cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
->
->> +             trace_sched_cfs_rq_blocked_load(cpu_of(rq_of(cfs_rq)),
->> +                             cfs_rq->blocked_load_avg,
->> +                             cfs_rq->blocked_load_avg + cfs_rq->runnable_load_avg);
->
-> You're not lazy enough by far, you seem to delight in endless repetition :/
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 641b3c9..da75139 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -143,6 +143,7 @@ dtb-$(CONFIG_ARCH_MXS) += imx23-evk.dtb \
+ 	imx28-cfa10037.dtb \
+ 	imx28-cfa10049.dtb \
+ 	imx28-cfa10055.dtb \
++	imx28-cfa10056.dtb \
+ 	imx28-cfa10057.dtb \
+ 	imx28-evk.dtb \
+ 	imx28-m28evk.dtb \
+diff --git a/arch/arm/boot/dts/imx28-cfa10056.dts b/arch/arm/boot/dts/imx28-cfa10056.dts
+new file mode 100644
+index 0000000..b45dd0e
+--- /dev/null
++++ b/arch/arm/boot/dts/imx28-cfa10056.dts
+@@ -0,0 +1,119 @@
++/*
++ * Copyright 2013 Free Electrons
++ *
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/*
++ * The CFA-10055 is an expansion board for the CFA-10036 module and
++ * CFA-10037, thus we need to include the CFA-10037 DTS.
++ */
++/include/ "imx28-cfa10037.dts"
++
++/ {
++	model = "Crystalfontz CFA-10056 Board";
++	compatible = "crystalfontz,cfa10056", "crystalfontz,cfa10037", "crystalfontz,cfa10036", "fsl,imx28";
++
++	apb@80000000 {
++		apbh@80000000 {
++			pinctrl@80018000 {
++				spi2_pins_cfa10056: spi2-cfa10056@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x2103 /* MX28_PAD_SSP2_SCK__GPIO_2_16 */
++						0x2113 /* MX28_PAD_SSP2_CMD__GPIO_2_17 */
++						0x2123 /* MX28_PAD_SSP2_D0__GPIO_2_18 */
++						0x3053 /* MX28_PAD_AUART1_TX__GPIO_3_5 */
++					>;
++					fsl,drive-strength = <1>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
++
++				lcdif_pins_cfa10056: lcdif-10056@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x1181 /* MX28_PAD_LCD_RD_E__LCD_VSYNC */
++						0x1191 /* MX28_PAD_LCD_WR_RWN__LCD_HSYNC */
++						0x11a1 /* MX28_PAD_LCD_RS__LCD_DOTCLK */
++						0x11b1 /* MX28_PAD_LCD_CS__LCD_ENABLE */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <0>;
++				};
++
++				lcdif_pins_cfa10056_pullup: lcdif-10056-pullup@0 {
++					reg = <0>;
++					fsl,pinmux-ids = <
++						0x31e3 /* MX28_PAD_LCD_RESET__GPIO_3_30 */
++					>;
++					fsl,drive-strength = <0>;
++					fsl,voltage = <1>;
++					fsl,pull-up = <1>;
++				};
++			};
++
++			lcdif@80030000 {
++				pinctrl-names = "default";
++				pinctrl-0 = <&lcdif_24bit_pins_a
++						&lcdif_pins_cfa10056
++						&lcdif_pins_cfa10056_pullup >;
++				display = <&display>;
++				status = "okay";
++
++				display: display {
++					bits-per-pixel = <32>;
++					bus-width = <24>;
++
++					display-timings {
++						native-mode = <&timing0>;
++						timing0: timing0 {
++							clock-frequency = <32000000>;
++							hactive = <480>;
++							vactive = <800>;
++							hback-porch = <2>;
++							hfront-porch = <2>;
++							vback-porch = <2>;
++							vfront-porch = <2>;
++							hsync-len = <5>;
++							vsync-len = <5>;
++							hsync-active = <0>;
++							vsync-active = <0>;
++							de-active = <1>;
++							pixelclk-active = <1>;
++						};
++					};
++				};
++			};
++		};
++	};
++
++	spi2 {
++		compatible = "spi-gpio";
++		pinctrl-names = "default";
++		pinctrl-0 = <&spi2_pins_cfa10056>;
++		status = "okay";
++		gpio-sck = <&gpio2 16 0>;
++		gpio-mosi = <&gpio2 17 0>;
++		gpio-miso = <&gpio2 18 0>;
++		cs-gpios = <&gpio3 5 0>;
++		num-chipselects = <1>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		hx8369: hx8369@0 {
++			compatible = "himax,hx8369a", "himax,hx8369";
++			reg = <0>;
++			spi-max-frequency = <100000>;
++			spi-cpol;
++			spi-cpha;
++			gpios-reset = <&gpio3 30 0>;
++		};
++	};
++};
+-- 
+1.8.1.2
 
-Yep, I already notice this duplicated...
-
-
->
-> How about you first convince me we actually want to merge this; big hint,
-> there's a significant lack of tracepoints in the entire balancer.
-
-You already said what I want to say. :)
-With the pre-embedded tracepoint, we could make our life easy over tracking
-the system load, especially since the per-entity load tracking is
-recently added,
-people may want to use those trace point to get better understanding for
-this new feature.
-
->
-> Secondly; WTH didn't you do:
->
->   trace_sched_task_weighted_load(se);
->   trace_sched_cfs_rq_runnable_load(cfs_rq);
->   trace_sched_cfs_rq_blocked_load(cfs_rq);
-
-So cleaner than my previous one!
-
->
-> The tracepoints themselves could very well extract whatever they want from
-> that; no need to actually write it out.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
