@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab3GAUnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:43:22 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57079 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754818Ab3GAUnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:43:21 -0400
-Date: Mon, 1 Jul 2013 22:43:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Christoph Lameter <cl@linux.com>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 0/7] v2 Provide infrastructure for full-system
- idle
-In-Reply-To: <0000013f9be88da8-acabdf49-cbac-482b-a4bb-b490f1b5a06a-000000@email.amazonses.com>
-Message-ID: <alpine.DEB.2.02.1307012234210.4013@ionos.tec.linutronix.de>
-References: <20130628200949.GA17458@linux.vnet.ibm.com> <0000013f9bc32a5e-258db1be-840b-4b2f-9b3f-e1e3d5253cfc-000000@email.amazonses.com> <20130701195603.GT3773@linux.vnet.ibm.com>
- <0000013f9be88da8-acabdf49-cbac-482b-a4bb-b490f1b5a06a-000000@email.amazonses.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1755394Ab3GAUoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:44:17 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:59373 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754818Ab3GAUoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:44:16 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
+        Jouni Malinen <jouni@qca.qualcomm.com>,
+        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
+        Senthil Balasubramanian <senthilb@qca.qualcomm.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: [PATCH] ath9k_htc: fix data race between request_firmware_nowait() callback and suspend()
+Date: Tue,  2 Jul 2013 00:43:42 +0400
+Message-Id: <1372711422-4604-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Christoph Lameter wrote:
+ath9k_hif_usb_probe() requests firmware asynchronically and
+there is some initialization postponed till firmware is ready.
+In particular, ath9k_hif_usb_firmware_cb() callback initializes
+hif_dev->tx.tx_buf and hif_dev->tx.tx_pending lists.
 
-> On Mon, 1 Jul 2013, Paul E. McKenney wrote:
-> 
-> > On Mon, Jul 01, 2013 at 07:43:47PM +0000, Christoph Lameter wrote:
-> > > On Fri, 28 Jun 2013, Paul E. McKenney wrote:
-> > >
-> > > > Unfortunately, timekeeping CPU continues taking scheduling-clock
-> > > > interrupts even when all other CPUs are completely idle, which is
-> > > > not so good for energy efficiency and battery lifetime.  Clearly, it
-> > > > would be good to turn off the timekeeping CPU's scheduling-clock tick
-> > > > when all CPUs are completely idle.  This is conceptually simple, but
-> > > > we also need good performance and scalability on large systems, which
-> > > > rules out implementations based on frequently updated global counts of
-> > > > non-idle CPUs as well as implementations that frequently scan all CPUs.
-> > > > Nevertheless, we need a single global indicator in order to keep the
-> > > > overhead of checking acceptably low.
-> > >
-> > > Can we turn off timekeeping when no cpu needs time in adaptive mode?
-> > > Setting breakpoints in the VDSO could force timekeeping on again whenever
-> > > something needs time. Would this not be simpler?
-> >
-> > Might be.  But what causes the breakpoints to be set on a system where
-> > there is one CPU-bound nohz_full user-mode task with all other CPUs idle?
-> > Or are you suggesting taking a breakpoint trap on each timekeeping access
-> > to VDSO?
-> 
-> Well when a tick notices that it is the last one still enabled on the
-> system and it could disable itself then it would set the breakpoint and
-> then turn the tick on the last processor off. The code invoked by the
-> breakpoint would reenable tick processing, update time and then use that
-> new info to return the correct time.
+At the same time, ath9k_hif_usb_suspend() iterates that lists through
+ath9k_hif_usb_dealloc_urbs(). If suspend happens before request_firmware_nowait()
+callback is called, it can lead to oops.
 
-Do we really care about that corner case? Not really. 
+Similar issue could be in ath9k_hif_usb_disconnect(), but it is prevented
+using hif_dev->fw_done completion and HIF_USB_READY flag. The patch extends
+this approach to suspend() as well.
 
-Also if there is one CPU which runs that tight loop in userspace and
-timekeeping gets shut down after X seconds wants to have a fast and
-bound look at the current time every X*N seconds. It's going to take a
-trap and spend unbound time in the kernel. That's quite contrary to
-the goal we wanted to achieve in the first place.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-Though if ALL cpus are idle, i.e. none of the tickless cpus is running
-any workload there is a point in switching off the time(house)keeping
-CPU as well in order to save power. But that's not a problem we solve
-with a breakpoint in the VDSO.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/net/wireless/ath/ath9k/hif_usb.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-Thanks,
+diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
+index f5dda84..fcd9aa5 100644
+--- a/drivers/net/wireless/ath/ath9k/hif_usb.c
++++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
+@@ -1076,7 +1076,7 @@ static void ath9k_hif_usb_firmware_fail(struct hif_device_usb *hif_dev)
+ 	struct device *dev = &hif_dev->udev->dev;
+ 	struct device *parent = dev->parent;
+ 
+-	complete(&hif_dev->fw_done);
++	complete_all(&hif_dev->fw_done);
+ 
+ 	if (parent)
+ 		device_lock(parent);
+@@ -1125,7 +1125,7 @@ static void ath9k_hif_usb_firmware_cb(const struct firmware *fw, void *context)
+ 
+ 	release_firmware(fw);
+ 	hif_dev->flags |= HIF_USB_READY;
+-	complete(&hif_dev->fw_done);
++	complete_all(&hif_dev->fw_done);
+ 
+ 	return;
+ 
+@@ -1310,7 +1310,10 @@ static int ath9k_hif_usb_suspend(struct usb_interface *interface,
+ 	if (!(hif_dev->flags & HIF_USB_START))
+ 		ath9k_htc_suspend(hif_dev->htc_handle);
+ 
+-	ath9k_hif_usb_dealloc_urbs(hif_dev);
++	wait_for_completion(&hif_dev->fw_done);
++
++	if (hif_dev->flags & HIF_USB_READY)
++		ath9k_hif_usb_dealloc_urbs(hif_dev);
+ 
+ 	return 0;
+ }
+-- 
+1.8.1.2
 
-	tglx
