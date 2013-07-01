@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab3GAQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:49:57 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35968 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab3GAQt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:49:56 -0400
-Date: Mon, 1 Jul 2013 19:49:20 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <tony@atomide.com>,
-        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-Message-ID: <20130701164920.GA31370@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <51D13AED.4010307@ti.com>
- <Pine.LNX.4.44L0.1307011209440.1547-100000@iolanthe.rowland.org>
+	id S1754764Ab3GAQuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:50:06 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:48620 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727Ab3GAQuE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 12:50:04 -0400
+Date: Mon, 01 Jul 2013 11:49:58 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] proc: Document that /proc/<pid>/task/<tid>/children
+ really is per-thread
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <5f9a6b3ab75b12f2c5ba61ea1f6f3b08e9952b55.1372280661.git.luto@amacapital.net>
+	(from luto@amacapital.net on Wed Jun 26 16:05:01 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1372697398.5019.1@driftwood>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1307011209440.1547-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3V7upXqbjpZ4EhLz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 06/26/2013 04:05:01 PM, Andy Lutomirski wrote:
+> I was surprised to discover that a process can have a parent that  
+> isn't
+> a thread group leader.  (The usual ppid interfaces hide this, but the
+> children list exposes it.)
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  Documentation/filesystems/proc.txt | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/Documentation/filesystems/proc.txt  
+> b/Documentation/filesystems/proc.txt
+> index fd8d0d5..205796a 100644
+> --- a/Documentation/filesystems/proc.txt
+> +++ b/Documentation/filesystems/proc.txt
+> @@ -1623,6 +1623,12 @@ This file provides a fast way to retrieve  
+> first level children pids
+>  of a task pointed by <pid>/<tid> pair. The format is a space  
+> separated
+>  stream of pids.
+> 
+> +This really is a per-thread list.  If a process's parent is a thread,
+> +then that process will appear in that thread's children list.  (This
+> +means that, for any pid, /proc/pid/task/*/children are disjoint  
+> lists.)
+> +This may be surprising, as /proc/pid/status's PPid field is parent's
+> +tgid as opposed to the parent's tid.
 
-On Mon, Jul 01, 2013 at 12:24:07PM -0400, Alan Stern wrote:
-> On Mon, 1 Jul 2013, Roger Quadros wrote:
->=20
-> > On 06/28/2013 10:06 PM, Alan Stern wrote:
-> > > On Fri, 28 Jun 2013, Roger Quadros wrote:
-> > >=20
-> > >>> That's not what I meant.  Never mind the pinctrl; I was asking about
-> > >>> the EHCI controller itself.  Under what circumstances does the
-> > >>> controller assert its wakeup signal?  And how do you tell it to stop
-> > >>> asserting that signal?
-> > >>
-> > >> I believe this would be through the EHCI Interrupt enable register (=
-USBINTR).
-> > >> I'm not aware of any other mechanism.
-> > >=20
-> > > That's strange, because ehci_suspend() sets the intr_enable register =
-to=20
-> > > 0.  So how do you ever get any wakeup interrupts at all?
-> >=20
-> > Because after ehci_suspend() for OMAP, we solely rely on the out of ban=
-d wake up
-> > mechanism. i.e. Pad wakeup.
->=20
-> I don't know what Pad wakeup is.  The wakeup signal has to originate=20
-> from the EHCI controller, doesn't it?  If not, how does the Pad know=20
-> when a wakeup is needed?
+I've read this twice and still don't quite understand what it's saying.  
+(Possibly I need more than 3 hours of sleep.)
 
-That's really an OMAP thing, I guess. Pad wakeup sits in the PRCM (IIRC)
-inside and always on power domain. EHCI sits in another power domain
-which be turned off. When it's turned off (power gated and clock gated)
-the EHCI block has no means to wakeup whatsoever. That's when pad wakeup
-comes into play. It is generated when PRCM sees a change in the actual
-pad of the die. To check who should 'own' the wakeup, it checks the
-muxing settings to verify whose pad is that.
+It sounds like you're saying a thread can fork() and exec() and this  
+makes proc look weird, because the ppid pooints to the thread group  
+leader and not the thread, but the proc info listing us as a child  
+belongs to the thread?
 
---=20
-balbi
+Is this a bug that should be fixed rather than documented? (Showing the  
+right ppid for this corner case?)
 
---3V7upXqbjpZ4EhLz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR0bMQAAoJEIaOsuA1yqRECD8P/jlQijLFRJxVxGMLdx0yB3qB
-X2EbdxRZfDi6NC9OuUYGxueFlz4lUFnoZbmThc/hqV8ctzqbxRM2cchYgs70iRTx
-vNUbV9AdF8ib7t14GNQQ76Dx8HOVsiFn+DcgmUq2K+mK/S0stJlyMh5tMt8RDfyd
-7N+OzzQwHLtLW3uWXPwoBwjHFqiQX3zQHkw0vcmh1H/EWgHC4EYIv387qf9QlmTy
-eFa/W0C9rNxVwQe4djD2eJUudOAskOfRj/z7zBwXYmhaI4ecJhQtE9raddOaDTaO
-VXau8Hse8IHH80KNcr9KWnjVphFFNZfZHbTruazMCaBGYbW3GK/dNxpNlzkVraJC
-ICWhL/HGVFkv6yGP2xfPYf1M1DtyepCxiNTlFaIURoZXPEiwJKSeDrAe2sZFnx+Y
-2Jy2hYHJMwMQPJ4ZZktk88l4Ag549IZJujAq/tb+G4xGmw9LIPknP+eFPuVF/cfx
-TnH1VKWo/y0cPMsoap0i2OM+34NZapp++NtsZXnQpaEKGvqhPIhNU82Jxzl+YujO
-DtEtDUZ9gG/Us4d66/HuIK+2huMC0jR2W5DEgYqLZjJ+ve9atne6++3MSyAcvTJC
-nqPXRZEb+d6GEx8XYWYxWQUUhdbtWNqmKIwstLXuph8zUGxDweffkrkTbDV+P22l
-OqnQ7czTR/W/KDazhc8w
-=z3VI
------END PGP SIGNATURE-----
-
---3V7upXqbjpZ4EhLz--
+Rob
