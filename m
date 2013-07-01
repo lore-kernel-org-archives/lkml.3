@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3GAIvI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:51:08 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42056 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab3GAIvG (ORCPT
+	id S1753150Ab3GAIwv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:52:51 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:54749 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974Ab3GAIwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:51:06 -0400
-Date: Mon, 1 Jul 2013 10:51:03 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        minchan@kernel.org, anton@enomsg.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] vmpressure: implement strict mode
-Message-ID: <20130701085103.GA19798@amd.pavel.ucw.cz>
-References: <20130625175129.7c0d79e1@redhat.com>
+	Mon, 1 Jul 2013 04:52:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130625175129.7c0d79e1@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <CA+icZUXyizuCR3YDfFXD5hCkgycFYGzMHaJxg=m9UackT7uzGQ@mail.gmail.com>
+References: <CA+icZUXyizuCR3YDfFXD5hCkgycFYGzMHaJxg=m9UackT7uzGQ@mail.gmail.com>
+Date: Mon, 1 Jul 2013 10:52:49 +0200
+Message-ID: <CAKMK7uFzwiztE8H1rvSDWQmw08JGoKdnTs5BYqxdrHwb=pK50A@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 1 [ drm-intel-next: Several call-traces ]
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Sedat Dilek <sedat.dilek@gmail.com>,
+        "Barnes, Jesse" <jbarnes@virtuousgeek.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        DRI <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Mon, Jul 1, 2013 at 10:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Mon, Jul 1, 2013 at 9:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> Changes since 20130628:
+>>
+>> The regulator tree gained a build failure so I used the version from
+>> next-20130628.
+>>
+>> The trivial tree gained a conflict against the fbdev tree.
+>>
+>> The arm-soc tree gained a conflict against the net-next tree.
+>>
+>> The akpm tree lost a few patches that turned up elsewhere and I removed 2
+>> that were causing run time problems.
+>>
+>
+> [ CC drm and drm-intel folks ]
+>
+> [ Did not check any relevant MLs ]
+>
+> Please, see attached dmesg output.
 
-> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> index ddf4f93..3c589cf 100644
-> --- a/Documentation/cgroups/memory.txt
-> +++ b/Documentation/cgroups/memory.txt
-> @@ -807,12 +807,14 @@ register a notification, an application must:
->  
->  - create an eventfd using eventfd(2);
->  - open memory.pressure_level;
-> -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
-> +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
->    to cgroup.event_control.
->  
-
-This is.. pretty strange interface. Would it be cleaner to do ioctl()?
-New syscall?
-
-> @@ -303,22 +307,33 @@ int vmpressure_register_event(struct cgroup *cg, struct cftype *cft,
->  {
->  	struct vmpressure *vmpr = cg_to_vmpressure(cg);
->  	struct vmpressure_event *ev;
-> +	bool smode = false;
-> +	const char *p;
->  	int level;
->  
->  	for (level = 0; level < VMPRESSURE_NUM_LEVELS; level++) {
-> -		if (!strcmp(vmpressure_str_levels[level], args))
-> +		p = vmpressure_str_levels[level];
-> +		if (!strncmp(p, args, strlen(p)))
->  			break;
->  	}
->  
->  	if (level >= VMPRESSURE_NUM_LEVELS)
->  		return -EINVAL;
->  
-> +	p = strchr(args, ' ');
-> +	if (p) {
-> +		if (strncmp(++p, "strict", 6))
-> +			return -EINVAL;
-> +		smode = true;
-> +	}
-> +
-
-This looks like something for bash, not for kernel :-(.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Clock mismatch, one for Jesse to figure out. Note that this patch is
+for 3.12, I simply haven't yet gotten around to properly split my
+patch queue so a few spilled into -next. I'll do that now.
+-Daniel
+--
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
