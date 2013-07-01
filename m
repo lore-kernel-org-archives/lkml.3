@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3GAHXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:23:22 -0400
+	id S1753044Ab3GAHXw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:23:52 -0400
 Received: from mga02.intel.com ([134.134.136.20]:6666 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab3GAHXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:23:20 -0400
+	id S1752884Ab3GAHXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:23:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,972,1363158000"; 
-   d="scan'208";a="362388544"
+   d="scan'208";a="362388539"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
         andi@firstfloor.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v2 6/7] perf, x86: Use LBR call stack to get user callchain
-Date: Mon,  1 Jul 2013 15:23:06 +0800
-Message-Id: <1372663387-11754-7-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v2 5/7] perf, core: Pass perf_sample_data to perf_callchain()
+Date: Mon,  1 Jul 2013 15:23:05 +0800
+Message-Id: <1372663387-11754-6-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
 References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
@@ -25,395 +25,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-Try enabling the LBR call stack feature if event request recording
-callchain. Try utilizing the LBR call stack to get user callchain
-in case of there is no frame pointer.
-
-This patch also adds a cpu pmu attribute to enable/disable this
-feature.
+New Intel CPU can record call chains by using existing last branch
+record facility. perf_callchain_user() can make use of the call
+chains recorded by hardware in case of there is no frame pointer.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/x86/kernel/cpu/perf_event.c           | 128 +++++++++++++++++++++--------
- arch/x86/kernel/cpu/perf_event.h           |   7 ++
- arch/x86/kernel/cpu/perf_event_intel.c     |  20 ++---
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   3 +
- include/linux/perf_event.h                 |   6 ++
- kernel/events/core.c                       |  11 ++-
- 6 files changed, 126 insertions(+), 49 deletions(-)
+ arch/arm/kernel/perf_event.c     | 4 ++--
+ arch/powerpc/perf/callchain.c    | 4 ++--
+ arch/sparc/kernel/perf_event.c   | 4 ++--
+ arch/x86/kernel/cpu/perf_event.c | 4 ++--
+ include/linux/perf_event.h       | 3 ++-
+ kernel/events/callchain.c        | 8 +++++---
+ kernel/events/core.c             | 2 +-
+ kernel/events/internal.h         | 3 ++-
+ 8 files changed, 18 insertions(+), 14 deletions(-)
 
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 8c3094d..3f84d3c 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -559,8 +559,8 @@ user_backtrace(struct frame_tail __user *tail,
+ 	return buftail.fp - 1;
+ }
+ 
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
+ {
+ 	struct frame_tail __user *tail;
+ 
+diff --git a/arch/powerpc/perf/callchain.c b/arch/powerpc/perf/callchain.c
+index 74d1e78..b379ebc 100644
+--- a/arch/powerpc/perf/callchain.c
++++ b/arch/powerpc/perf/callchain.c
+@@ -482,8 +482,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
+ 	}
+ }
+ 
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
+ {
+ 	if (current_is_64bit())
+ 		perf_callchain_user_64(entry, regs);
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index b5c38fa..cba0306 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1785,8 +1785,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
+ 	} while (entry->nr < PERF_MAX_STACK_DEPTH);
+ }
+ 
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
+ {
+ 	perf_callchain_store(entry, regs->tpc);
+ 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index be7253f..6061169 100644
+index 2a79382..be7253f 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -399,37 +399,49 @@ int x86_pmu_hw_config(struct perf_event *event)
- 
- 		if (event->attr.precise_ip > precise)
- 			return -EOPNOTSUPP;
-+	}
-+	/*
-+	 * check that PEBS LBR correction does not conflict with
-+	 * whatever the user is asking with attr->branch_sample_type
-+	 */
-+	if (event->attr.precise_ip > 1 && x86_pmu.intel_cap.pebs_format < 2) {
-+		u64 *br_type = &event->attr.branch_sample_type;
-+
-+		if (has_branch_stack(event)) {
-+			if (!precise_br_compat(event))
-+				return -EOPNOTSUPP;
-+
-+			/* branch_sample_type is compatible */
-+
-+		} else {
-+			/*
-+			 * user did not specify  branch_sample_type
-+			 *
-+			 * For PEBS fixups, we capture all
-+			 * the branches at the priv level of the
-+			 * event.
-+			 */
-+			*br_type = PERF_SAMPLE_BRANCH_ANY;
-+
-+			if (!event->attr.exclude_user)
-+				*br_type |= PERF_SAMPLE_BRANCH_USER;
-+
-+			if (!event->attr.exclude_kernel)
-+				*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
-+		}
-+	} else if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+		   !has_branch_stack(event) &&
-+		   x86_pmu.attr_lbr_callstack &&
-+		   !event->attr.exclude_user &&
-+		   (event->attach_state & PERF_ATTACH_TASK)) {
- 		/*
--		 * check that PEBS LBR correction does not conflict with
--		 * whatever the user is asking with attr->branch_sample_type
-+		 * user did not specify branch_sample_type,
-+		 * try using the LBR call stack facility to
-+		 * record call chains of user program.
- 		 */
--		if (event->attr.precise_ip > 1 &&
--		    x86_pmu.intel_cap.pebs_format < 2) {
--			u64 *br_type = &event->attr.branch_sample_type;
--
--			if (has_branch_stack(event)) {
--				if (!precise_br_compat(event))
--					return -EOPNOTSUPP;
--
--				/* branch_sample_type is compatible */
--
--			} else {
--				/*
--				 * user did not specify  branch_sample_type
--				 *
--				 * For PEBS fixups, we capture all
--				 * the branches at the priv level of the
--				 * event.
--				 */
--				*br_type = PERF_SAMPLE_BRANCH_ANY;
--
--				if (!event->attr.exclude_user)
--					*br_type |= PERF_SAMPLE_BRANCH_USER;
--
--				if (!event->attr.exclude_kernel)
--					*br_type |= PERF_SAMPLE_BRANCH_KERNEL;
--			}
--		}
-+		event->attr.branch_sample_type =
-+			PERF_SAMPLE_BRANCH_USER |
-+			PERF_SAMPLE_BRANCH_CALL_STACK;
- 	}
- 
- 	/*
-@@ -1849,10 +1861,34 @@ static ssize_t set_attr_rdpmc(struct device *cdev,
- 	return count;
+@@ -2023,8 +2023,8 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
  }
+ #endif
  
-+static ssize_t get_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr, char *buf)
-+{
-+	return snprintf(buf, 40, "%d\n", x86_pmu.attr_lbr_callstack);
-+}
-+
-+static ssize_t set_attr_lbr_callstack(struct device *cdev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count)
-+{
-+	unsigned long val = simple_strtoul(buf, NULL, 0);
-+
-+	if (x86_pmu.attr_lbr_callstack != !!val) {
-+		if (val && !x86_pmu_has_lbr_callstack())
-+			return -EOPNOTSUPP;
-+		x86_pmu.attr_lbr_callstack = !!val;
-+	}
-+	return count;
-+}
-+
- static DEVICE_ATTR(rdpmc, S_IRUSR | S_IWUSR, get_attr_rdpmc, set_attr_rdpmc);
-+static DEVICE_ATTR(lbr_callstack, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-+		   get_attr_lbr_callstack, set_attr_lbr_callstack);
-+
- 
- static struct attribute *x86_pmu_attrs[] = {
- 	&dev_attr_rdpmc.attr,
-+	&dev_attr_lbr_callstack.attr,
- 	NULL,
- };
- 
-@@ -1979,12 +2015,29 @@ static unsigned long get_segment_base(unsigned int segment)
- 	return get_desc_base(desc + idx);
- }
- 
-+static inline void
-+perf_callchain_lbr_callstack(struct perf_callchain_entry *entry,
-+			     struct perf_sample_data *data)
-+{
-+	struct perf_branch_stack *br_stack = data->br_stack;
-+
-+	if (br_stack && br_stack->user_callstack &&
-+	    x86_pmu.attr_lbr_callstack) {
-+		int i = 0;
-+		while (i < br_stack->nr && entry->nr < PERF_MAX_STACK_DEPTH) {
-+			perf_callchain_store(entry, br_stack->entries[i].from);
-+			i++;
-+		}
-+	}
-+}
-+
- #ifdef CONFIG_COMPAT
- 
- #include <asm/compat.h>
- 
- static inline int
--perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
-+perf_callchain_user32(struct perf_callchain_entry *entry,
-+		      struct pt_regs *regs, struct perf_sample_data *data)
+-void
+-perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
++void perf_callchain_user(struct perf_callchain_entry *entry,
++			 struct pt_regs *regs, struct perf_sample_data *data)
  {
- 	/* 32-bit process in 64-bit kernel. */
- 	unsigned long ss_base, cs_base;
-@@ -2013,11 +2066,16 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- 		perf_callchain_store(entry, cs_base + frame.return_address);
- 		fp = compat_ptr(ss_base + frame.next_frame);
- 	}
-+
-+	if (fp == compat_ptr(regs->bp))
-+		perf_callchain_lbr_callstack(entry, data);
-+
- 	return 1;
- }
- #else
- static inline int
--perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
-+perf_callchain_user32(struct perf_callchain_entry *entry,
-+		      struct pt_regs *regs, struct perf_sample_data *data)
- {
-     return 0;
- }
-@@ -2047,12 +2105,12 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 	if (!current->mm)
- 		return;
- 
--	if (perf_callchain_user32(regs, entry))
-+	if (perf_callchain_user32(entry, regs, data))
- 		return;
- 
- 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
- 		unsigned long bytes;
--		frame.next_frame	     = NULL;
-+		frame.next_frame = NULL;
- 		frame.return_address = 0;
- 
- 		bytes = copy_from_user_nmi(&frame, fp, sizeof(frame));
-@@ -2065,6 +2123,10 @@ void perf_callchain_user(struct perf_callchain_entry *entry,
- 		perf_callchain_store(entry, frame.return_address);
- 		fp = frame.next_frame;
- 	}
-+
-+	/* try LBR callstack if there is no frame pointer */
-+	if (fp == (void __user *)regs->bp)
-+		perf_callchain_lbr_callstack(entry, data);
- }
- 
- /*
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 9dff9fc..412bf34 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -396,6 +396,7 @@ struct x86_pmu {
- 	 * sysfs attrs
- 	 */
- 	int		attr_rdpmc;
-+	int		attr_lbr_callstack;
- 	struct attribute **format_attrs;
- 	struct attribute **event_attrs;
- 
-@@ -502,6 +503,12 @@ static struct perf_pmu_events_attr event_attr_##v = {			\
- 
- extern struct x86_pmu x86_pmu __read_mostly;
- 
-+static inline bool x86_pmu_has_lbr_callstack(void)
-+{
-+	return  x86_pmu.lbr_sel_map &&
-+		x86_pmu.lbr_sel_map[PERF_SAMPLE_BRANCH_CALL_STACK_SHIFT] > 0;
-+}
-+
- DECLARE_PER_CPU(struct cpu_hw_events, cpu_hw_events);
- 
- int x86_perf_event_set_period(struct perf_event *event);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 96c30bb..5470265 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -882,15 +882,10 @@ static __initconst const u64 atom_hw_cache_event_ids
-  },
- };
- 
--static inline bool intel_pmu_needs_lbr_smpl(struct perf_event *event)
-+static inline bool intel_pmu_needs_lbr_callstack(struct perf_event *event)
- {
--	/* user explicitly requested branch sampling */
--	if (has_branch_stack(event))
--		return true;
--
--	/* implicit branch sampling to correct PEBS skid */
--	if (x86_pmu.intel_cap.pebs_trap && event->attr.precise_ip > 1 &&
--	    x86_pmu.intel_cap.pebs_format < 2)
-+	if ((event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) &&
-+	    (event->attr.branch_sample_type & PERF_SAMPLE_BRANCH_CALL_STACK))
- 		return true;
- 
- 	return false;
-@@ -1054,7 +1049,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
- 	 * must disable before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_disable(event);
- 
- 	if (unlikely(hwc->config_base == MSR_ARCH_PERFMON_FIXED_CTR_CTRL)) {
-@@ -1115,7 +1110,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
- 	 * must enabled before any actual event
- 	 * because any event may be combined with LBR
- 	 */
--	if (intel_pmu_needs_lbr_smpl(event))
-+	if (needs_branch_stack(event))
- 		intel_pmu_lbr_enable(event);
- 
- 	if (event->attr.exclude_host)
-@@ -1237,7 +1232,8 @@ again:
- 
- 		perf_sample_data_init(&data, 0, event->hw.last_period);
- 
--		if (has_branch_stack(event))
-+		if (has_branch_stack(event) ||
-+		    (event->ctx->task && intel_pmu_needs_lbr_callstack(event)))
- 			data.br_stack = &cpuc->lbr_stack;
- 
- 		if (perf_event_overflow(event, &data, regs))
-@@ -1566,7 +1562,7 @@ static int intel_pmu_hw_config(struct perf_event *event)
- 	if (event->attr.precise_ip && x86_pmu.pebs_aliases)
- 		x86_pmu.pebs_aliases(event);
- 
--	if (intel_pmu_needs_lbr_smpl(event)) {
-+	if (needs_branch_stack(event)) {
- 		ret = intel_pmu_setup_lbr_filter(event);
- 		if (ret)
- 			return ret;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 013a9b9..3146fb5 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -716,6 +716,8 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
- 	int i, j, type;
- 	bool compress = false;
- 
-+	cpuc->lbr_stack.user_callstack = branch_user_callstack(br_sel);
-+
- 	/* if sampling all branches, then nothing to filter */
- 	if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
- 		return;
-@@ -868,6 +870,7 @@ void intel_pmu_lbr_init_hsw(void)
- 
- 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
- 	x86_pmu.lbr_sel_map  = hsw_lbr_sel_map;
-+	x86_pmu.attr_lbr_callstack = 1;
- 
- 	pr_cont("16-deep LBR, ");
- }
+ 	struct stack_frame frame;
+ 	const void __user *fp;
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 8bbe01f..5adaf10 100644
+index e9af629..8bbe01f 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -97,6 +97,7 @@ struct perf_branch_entry {
-  * recent branch.
-  */
- struct perf_branch_stack {
-+	unsigned			user_callstack:1;
- 	__u64				nr;
- 	struct perf_branch_entry	entries[0];
- };
-@@ -760,6 +761,11 @@ static inline bool has_branch_stack(struct perf_event *event)
- 	return event->attr.sample_type & PERF_SAMPLE_BRANCH_STACK;
+@@ -702,7 +702,8 @@ extern void perf_event_fork(struct task_struct *tsk);
+ /* Callchains */
+ DECLARE_PER_CPU(struct perf_callchain_entry, perf_callchain_entry);
+ 
+-extern void perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs);
++extern void perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs,
++				struct perf_sample_data *data);
+ extern void perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs);
+ 
+ static inline void perf_callchain_store(struct perf_callchain_entry *entry, u64 ip)
+diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
+index c772061..bd7138a 100644
+--- a/kernel/events/callchain.c
++++ b/kernel/events/callchain.c
+@@ -30,7 +30,8 @@ __weak void perf_callchain_kernel(struct perf_callchain_entry *entry,
  }
  
-+static inline bool needs_branch_stack(struct perf_event *event)
-+{
-+	return event->attr.branch_sample_type != 0;
-+}
-+
- extern int perf_output_begin(struct perf_output_handle *handle,
- 			     struct perf_event *event, unsigned int size);
- extern void perf_output_end(struct perf_output_handle *handle);
+ __weak void perf_callchain_user(struct perf_callchain_entry *entry,
+-				struct pt_regs *regs)
++				struct pt_regs *regs,
++				struct perf_sample_data *data)
+ {
+ }
+ 
+@@ -154,7 +155,8 @@ put_callchain_entry(int rctx)
+ }
+ 
+ struct perf_callchain_entry *
+-perf_callchain(struct perf_event *event, struct pt_regs *regs)
++perf_callchain(struct perf_event *event, struct pt_regs *regs,
++	       struct perf_sample_data *data)
+ {
+ 	int rctx;
+ 	struct perf_callchain_entry *entry;
+@@ -195,7 +197,7 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
+ 				goto exit_put;
+ 
+ 			perf_callchain_store(entry, PERF_CONTEXT_USER);
+-			perf_callchain_user(entry, regs);
++			perf_callchain_user(entry, regs, data);
+ 		}
+ 	}
+ 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index db3677d..60451f6 100644
+index 02ed472..db3677d 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -1117,7 +1117,7 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 	if (is_cgroup_event(event))
- 		ctx->nr_cgroups++;
+@@ -4550,7 +4550,7 @@ void perf_prepare_sample(struct perf_event_header *header,
+ 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		int size = 1;
  
--	if (has_branch_stack(event))
-+	if (needs_branch_stack(event))
- 		ctx->nr_branch_stack++;
+-		data->callchain = perf_callchain(event, regs);
++		data->callchain = perf_callchain(event, regs, data);
  
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
-@@ -1274,7 +1274,7 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 			cpuctx->cgrp = NULL;
- 	}
+ 		if (data->callchain)
+ 			size += data->callchain->nr;
+diff --git a/kernel/events/internal.h b/kernel/events/internal.h
+index ca65997..0e939e6 100644
+--- a/kernel/events/internal.h
++++ b/kernel/events/internal.h
+@@ -130,7 +130,8 @@ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
  
--	if (has_branch_stack(event)) {
-+	if (needs_branch_stack(event)) {
- 		if (ctx->is_active)
- 			__get_cpu_var(perf_branch_stack_events)--;
- 		ctx->nr_branch_stack--;
-@@ -3160,7 +3160,7 @@ static void free_event(struct perf_event *event)
- 			static_key_slow_dec_deferred(&perf_sched_events);
- 		}
- 
--		if (has_branch_stack(event))
-+		if (needs_branch_stack(event))
- 			static_key_slow_dec_deferred(&perf_sched_events);
- 	}
- 
-@@ -6550,6 +6550,9 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 	if (attr->inherit && (attr->read_format & PERF_FORMAT_GROUP))
- 		goto done;
- 
-+	if (!has_branch_stack(event))
-+		event->attr.branch_sample_type = 0;
-+
- 	pmu = perf_init_event(event);
- 
- done:
-@@ -6582,7 +6585,7 @@ done:
- 				return ERR_PTR(err);
- 			}
- 		}
--		if (has_branch_stack(event))
-+		if (needs_branch_stack(event))
- 			static_key_slow_inc(&perf_sched_events.key);
- 	}
+ /* Callchain handling */
+ extern struct perf_callchain_entry *
+-perf_callchain(struct perf_event *event, struct pt_regs *regs);
++perf_callchain(struct perf_event *event, struct pt_regs *regs,
++	       struct perf_sample_data *data);
+ extern int get_callchain_buffers(void);
+ extern void put_callchain_buffers(void);
  
 -- 
 1.8.1.4
