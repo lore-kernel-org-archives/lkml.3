@@ -1,60 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab3GALiV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:38:21 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52651 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab3GALiU (ORCPT
+	id S1753871Ab3GALkm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:40:42 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:40081 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab3GALkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:38:20 -0400
-Message-ID: <51D16A27.8080002@hitachi.com>
-Date: Mon, 01 Jul 2013 20:38:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Tom Zanussi <tom.zanussi@intel.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/11] tracing: fix disabling of soft disable
-References: <cover.1371751701.git.tom.zanussi@linux.intel.com>  <f369f565dc440f40f027de0387c99dda4d36154e.1371751701.git.tom.zanussi@linux.intel.com>  <51C43537.8070300@hitachi.com>  <1371847171.18733.128.camel@gandalf.local.home>  <1371849279.6453.44.camel@empanada> <1371878748.6453.82.camel@empanada>
-In-Reply-To: <1371878748.6453.82.camel@empanada>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Jul 2013 07:40:40 -0400
+From: bintian.wang@linaro.org
+To: linux-kernel@vger.kernel.org
+Cc: Mike Lockwood <lockwood@android.com>,
+        dmitry pervushin <dpervushin@gmail.com>,
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Bintian Wang <bintian.wang@linaro.org>
+Subject: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
+Date: Mon,  1 Jul 2013 19:40:28 +0800
+Message-Id: <1372678828-11776-1-git-send-email-bintian.wang@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/22 14:25), Tom Zanussi wrote:
-> 
-> Looking into this a bit more, I think the reason it hasn't bothered
-> anyone until now is that it's been hidden by the existing
-> event_enable_read() implementation, which doesn't show any soft disable
-> state when the event is actually disabled, only when it's enabled.  So
-> the case where SOFT_DISABLED is still set but the event is actually
-> disabled gets hidden by the catch-all "0" case.
-> 
-> My new version of event_enable_read() does show the soft disabled state
-> when the event is actually disabled, which is why I noticed it wasn't
-> getting turned off, and led to the current patch.
-> 
-> Ironically, the reason I refactored the function in the first place was
-> to add the '+' flag for triggers - redundant, yes, but useful for
-> debugging, not quite in the way I planned though.  ;-)  (It might be
-> that leaving the current function in place and remaining oblivious would
-> be ok, too, since it doesn't seem to really cause much of a problem in
-> any case...)
-> 
+From: Mike Lockwood <lockwood@android.com>
 
-Ah, I've just missed this. And indeed, if your event_enable_read() cleanup
-patch changes the output, that is not actual cleanup patch.
-I think you should merge this into [1/11] patch to avoid behavior change.
+Adds vfat ioctl command FAT_IOCTL_GET_VOLUME_ID, with this command 
+we can get the vfat volume ID using following code:
 
-Thank you!
+	ioctl(fd, FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
 
+This patch is a modified version of the android kernel patch by Mike Lockwood, 
+the original patch makes the return value of ioctl() as the volume ID, 
+Dmitry Pervushin noticed some volume IDs abiguous with error returns:
+for example, if volume id is set to "0xFFFFFDAD", that matches -ENOIOCTLCMD, 
+we get a wrong volume ID "0xFFFFFFFF" from the user space.
+
+This patch fixes above bug by adding a parameter to ioctl to get the correct
+volume ID.
+
+Cc: dmitry pervushin <dpervushin@gmail.com>
+Cc: Mike Lockwood <lockwood@android.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: John Stultz <john.stultz@linaro.org>
+
+Signed-off-by: Bintian Wang <bintian.wang@linaro.org>
+---
+ fs/fat/fat.h                  |    1 +
+ fs/fat/file.c                 |    8 ++++++++
+ fs/fat/inode.c                |   12 ++++++++++++
+ include/uapi/linux/msdos_fs.h |   10 ++++++++++
+ 4 files changed, 31 insertions(+)
+
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index 21664fc..4241e6f 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -86,6 +86,7 @@ struct msdos_sb_info {
+ 	const void *dir_ops;	      /* Opaque; default directory operations */
+ 	int dir_per_block;	      /* dir entries per block */
+ 	int dir_per_block_bits;	      /* log2(dir_per_block) */
++	unsigned int vol_id;		/*volume ID*/
+ 
+ 	int fatent_shift;
+ 	struct fatent_operations *fatent_ops;
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index b0b632e..ceef10e 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -114,6 +114,12 @@ out:
+ 	return err;
+ }
+ 
++static unsigned int fat_ioctl_volume_id(struct inode *inode)
++{
++	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
++	return sbi->vol_id;
++}
++
+ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ {
+ 	struct inode *inode = file_inode(filp);
+@@ -124,6 +130,8 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		return fat_ioctl_get_attributes(inode, user_attr);
+ 	case FAT_IOCTL_SET_ATTRIBUTES:
+ 		return fat_ioctl_set_attributes(filp, user_attr);
++	case FAT_IOCTL_GET_VOLUME_ID:
++		return put_user(fat_ioctl_volume_id(inode), user_attr);
+ 	default:
+ 		return -ENOTTY;	/* Inappropriate ioctl for device */
+ 	}
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 5d4513c..11b51bb 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1415,6 +1415,18 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+ 		brelse(fsinfo_bh);
+ 	}
+ 
++	/* interpret volume ID as a little endian 32 bit integer */
++	if (sbi->fat_bits == 32)
++		sbi->vol_id = (((u32)b->fat32.vol_id[0]) |
++					((u32)b->fat32.vol_id[1] << 8) |
++					((u32)b->fat32.vol_id[2] << 16) |
++					((u32)b->fat32.vol_id[3] << 24));
++	else /* fat 16 or 12 */
++		sbi->vol_id = (((u32)b->fat16.vol_id[0]) |
++					((u32)b->fat16.vol_id[1] << 8) |
++					((u32)b->fat16.vol_id[2] << 16) |
++					((u32)b->fat16.vol_id[3] << 24));
++
+ 	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
+ 	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
+ 
+diff --git a/include/uapi/linux/msdos_fs.h b/include/uapi/linux/msdos_fs.h
+index f055e58..e284ff9 100644
+--- a/include/uapi/linux/msdos_fs.h
++++ b/include/uapi/linux/msdos_fs.h
+@@ -104,6 +104,8 @@ struct __fat_dirent {
+ /* <linux/videotext.h> has used 0x72 ('r') in collision, so skip a few */
+ #define FAT_IOCTL_GET_ATTRIBUTES	_IOR('r', 0x10, __u32)
+ #define FAT_IOCTL_SET_ATTRIBUTES	_IOW('r', 0x11, __u32)
++/*Android kernel has used 0x12, so we use 0x13*/
++#define FAT_IOCTL_GET_VOLUME_ID		_IOR('r', 0x13, __u32)
+ 
+ struct fat_boot_sector {
+ 	__u8	ignored[3];	/* Boot strap short or near jump */
+@@ -128,6 +130,10 @@ struct fat_boot_sector {
+ 			__u8	drive_number;	/* Physical drive number */
+ 			__u8	state;		/* undocumented, but used
+ 						   for mount state. */
++			__u8	signature;  /* extended boot signature */
++			__u8	vol_id[4];	/* volume ID */
++			__u8	vol_label[11];	/* volume label */
++			__u8	fs_type[8];		/* file system type */
+ 			/* other fiealds are not added here */
+ 		} fat16;
+ 
+@@ -147,6 +153,10 @@ struct fat_boot_sector {
+ 			__u8	drive_number;   /* Physical drive number */
+ 			__u8    state;       	/* undocumented, but used
+ 						   for mount state. */
++			__u8	signature;  /* extended boot signature */
++			__u8	vol_id[4];	/* volume ID */
++			__u8	vol_label[11];	/* volume label */
++			__u8	fs_type[8];		/* file system type */
+ 			/* other fiealds are not added here */
+ 		} fat32;
+ 	};
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.9.5
 
