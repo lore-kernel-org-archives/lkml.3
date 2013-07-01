@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab3GALUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:20:25 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62514 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab3GALUY (ORCPT
+	id S1753920Ab3GAL0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:26:06 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51375 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab3GAL0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:20:24 -0400
-Date: Mon, 1 Jul 2013 13:20:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: [RFC PATCH 4/4] sched: Consolidate open coded preemptible()
- checks
-Message-ID: <20130701112019.GB7246@somewhere.redhat.com>
-References: <1371761141-25386-1-git-send-email-fweisbec@gmail.com>
- <1371761141-25386-5-git-send-email-fweisbec@gmail.com>
- <20130626130511.GL28407@twins.programming.kicks-ass.net>
+	Mon, 1 Jul 2013 07:26:05 -0400
+Message-ID: <51D16748.3020705@hitachi.com>
+Date: Mon, 01 Jul 2013 20:26:00 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130626130511.GL28407@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tom Zanussi <tom.zanussi@linux.intel.com>
+Cc: rostedt@goodmis.org, jovi.zhangwei@huawei.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/11] tracing: add soft disable for syscall events
+References: <cover.1372479499.git.tom.zanussi@linux.intel.com> <d7a32766817e9050997629b195676e357e410726.1372479499.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <d7a32766817e9050997629b195676e357e410726.1372479499.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 03:05:11PM +0200, Peter Zijlstra wrote:
-> On Thu, Jun 20, 2013 at 10:45:41PM +0200, Frederic Weisbecker wrote:
-> > preempt_schedule() and preempt_schedule_context() open
-> > code their preemptability checks.
-> > 
-> > Use the standard API instead for consolidation.
-> > 
-> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Ingo Molnar <mingo@kernel.org>
-> > Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-> > Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Cc: Borislav Petkov <bp@alien8.de>
-> > Cc: Alex Shi <alex.shi@intel.com>
-> > Cc: Paul Turner <pjt@google.com>
-> > Cc: Mike Galbraith <efault@gmx.de>
-> > Cc: Vincent Guittot <vincent.guittot@linaro.org>
-> > ---
-> >  kernel/context_tracking.c |    3 +--
-> >  kernel/sched/core.c       |    4 +---
-> >  2 files changed, 2 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-> > index 6667700..08db730 100644
-> > --- a/kernel/context_tracking.c
-> > +++ b/kernel/context_tracking.c
-> > @@ -88,10 +88,9 @@ void user_enter(void)
-> >   */
-> >  void __sched notrace preempt_schedule_context(void)
-> >  {
-> > -	struct thread_info *ti = current_thread_info();
-> >  	enum ctx_state prev_ctx;
-> >  
-> > -	if (likely(ti->preempt_count || irqs_disabled()))
-> > +	if (likely(!preemptible()))
-> >  		return;
-> >  
-> 
-> #ifdef CONFIG_PREEMPT_COUNT
-> # define preemptible()  (preempt_count() == 0 && !irqs_disabled())
-> #else
-> # define preemptible()  0
-> #endif
-> 
-> 
-> Wouldn't that give a problem for !PREEMPT_COUNT?
+Hi Tom,
 
-preempt_schedule_context() depends on CONFIG_PREEMPT which depends on
-CONFIG_PREEMPT_COUNT, so that should work. Or I missed something?
+(2013/06/29 14:08), Tom Zanussi wrote:
+> Add support for SOFT_DISABLE to syscall events.
+> 
+> The original SOFT_DISABLE patches didn't add support for soft disable
+> of syscall events; this adds it and paves the way for future patches
+> allowing triggers to be added to syscall events, since triggers are
+> built on top of SOFT_DISABLE.
+> 
+> The existing code grabs the trace_array from the ftrace_file passed to
+> the event registration functions and passes that to the probe
+> functions.  Passing the file instead allows the probe functions to
+> access not only the trace_array attached to the file but the flags as
+> well.
+
+Hmm, this is not so simple. Syscall trace events are special events which
+uses refcount and bitmap to identify syscall metadata, and only the first
+enable request is passed for registering event handler.
+Perhaps, we need to introduce a soft-disabled bitmap for tr or soft-disabled
+bitflag for each syscall metadata.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
