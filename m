@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab3GAUYl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:24:41 -0400
-Received: from a9-58.smtp-out.amazonses.com ([54.240.9.58]:59965 "EHLO
-	a9-58.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755263Ab3GAUYj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:24:39 -0400
-Date: Mon, 1 Jul 2013 20:24:38 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 0/7] v2 Provide infrastructure for full-system
- idle
-In-Reply-To: <20130701195603.GT3773@linux.vnet.ibm.com>
-Message-ID: <0000013f9be88da8-acabdf49-cbac-482b-a4bb-b490f1b5a06a-000000@email.amazonses.com>
-References: <20130628200949.GA17458@linux.vnet.ibm.com> <0000013f9bc32a5e-258db1be-840b-4b2f-9b3f-e1e3d5253cfc-000000@email.amazonses.com> <20130701195603.GT3773@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.07.01-54.240.9.58
+	id S1755262Ab3GAU2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:28:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27721 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755203Ab3GAU2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:28:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,975,1363158000"; 
+   d="scan'208";a="363046263"
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20130629071245.GA5084@gmail.com>
+References: <1371660831.27102.663.camel@schen9-DESK>
+	 <1372205996.22432.119.camel@schen9-DESK> <20130626095108.GB29181@gmail.com>
+	 <1372282560.22432.139.camel@schen9-DESK>
+	 <1372292701.22432.152.camel@schen9-DESK> <20130627083651.GA3730@gmail.com>
+	 <1372366385.22432.185.camel@schen9-DESK>
+	 <1372375873.22432.200.camel@schen9-DESK> <20130628093809.GB29205@gmail.com>
+	 <1372453461.22432.216.camel@schen9-DESK>  <20130629071245.GA5084@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 01 Jul 2013 13:28:17 -0700
+Message-ID: <1372710497.22432.224.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Paul E. McKenney wrote:
+On Sat, 2013-06-29 at 09:12 +0200, Ingo Molnar wrote:
+> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> 
+> > > If my analysis is correct so far then it might be useful to add two 
+> > > more stats: did rwsem_spin_on_owner() fail because lock->owner == NULL 
+> > > [owner released the rwsem], or because owner_running() failed [owner 
+> > > went to sleep]?
+> > 
+> > Ingo,
+> > 
+> > I tabulated the cases where rwsem_spin_on_owner returns false and causes 
+> > us to stop spinning.
+> > 
+> > 97.12%  was due to lock's owner switching to another writer
+> >  0.01% was due to the owner of the lock sleeping
+> >  2.87%  was due to need_resched() 
+> > 
+> > I made a change to allow us to continue to spin even when lock's owner 
+> > switch to another writer.  I did get the lock to be acquired now mostly 
+> > (98%) via optimistic spin and lock stealing, but my benchmark's 
+> > throughput actually got reduced by 30% (too many cycles spent on useless 
+> > spinning?).
+> 
+> Hm, I'm running out of quick ideas :-/ The writer-ends-spinning sequence 
+> is pretty similar in the rwsem and in the mutex case. I'd have a look at 
+> one more detail: is the wakeup of another writer in the rwsem case 
+> singular, is only a single writer woken? I suspect the answer is yes ...
 
-> On Mon, Jul 01, 2013 at 07:43:47PM +0000, Christoph Lameter wrote:
-> > On Fri, 28 Jun 2013, Paul E. McKenney wrote:
-> >
-> > > Unfortunately, timekeeping CPU continues taking scheduling-clock
-> > > interrupts even when all other CPUs are completely idle, which is
-> > > not so good for energy efficiency and battery lifetime.  Clearly, it
-> > > would be good to turn off the timekeeping CPU's scheduling-clock tick
-> > > when all CPUs are completely idle.  This is conceptually simple, but
-> > > we also need good performance and scalability on large systems, which
-> > > rules out implementations based on frequently updated global counts of
-> > > non-idle CPUs as well as implementations that frequently scan all CPUs.
-> > > Nevertheless, we need a single global indicator in order to keep the
-> > > overhead of checking acceptably low.
-> >
-> > Can we turn off timekeeping when no cpu needs time in adaptive mode?
-> > Setting breakpoints in the VDSO could force timekeeping on again whenever
-> > something needs time. Would this not be simpler?
->
-> Might be.  But what causes the breakpoints to be set on a system where
-> there is one CPU-bound nohz_full user-mode task with all other CPUs idle?
-> Or are you suggesting taking a breakpoint trap on each timekeeping access
-> to VDSO?
+Ingo, we can only wake one writer, right? In __rwsem_do_wake, that is
+indeed the case.  Or you are talking about something else?
 
-Well when a tick notices that it is the last one still enabled on the
-system and it could disable itself then it would set the breakpoint and
-then turn the tick on the last processor off. The code invoked by the
-breakpoint would reenable tick processing, update time and then use that
-new info to return the correct time.
+> 
+> A quick glance suggests that the ordering of wakeups of waiters is the 
+> same for mutexes and rwsems: FIFO, single waiter woken on slowpath-unlock. 
+> So that shouldn't make a big difference.
+
+> If all last-ditch efforts to analyze it via counters fail then the way I'd 
+> approach it next is brute-force instrumentation:
+> 
+>  - First I'd create a workload 'steady state' that can be traced and 
+>    examined without worrying that that it ends or switches to some other 
+>    workload.
+> 
+>  - Then I'd create a relatively lightweight trace (maybe trace_printk() is
+>    lightweight enough), and capture key mutex and rwsem events.
+> 
+>  - I'd capture a 1-10 seconds trace in steady state, both with rwsems and 
+>    mutexes. I'd have a good look at which tasks take locks and schedule
+>    how and why. I'd try to eliminate any assymetries in behavior, i.e. 
+>    make rwsems behave like mutexes.
+
+You mean adding trace points to record the events?  If you can be more
+specific on what data to capture, that will be helpful.  It will be
+holidays here in US so I may get around to this the following week.
+
+Thanks!
+
+Tim
+> 
+> The risk and difficulty is that tracing can easily skew locking patterns, 
+> so I'd first check whether with such new tracepoints enabled the assymetry 
+> in behavior and regression is still present.
+> 
+> Thanks,
+> 
+> 	Ingo
+
 
