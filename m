@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab3GAVHg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:07:36 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:55562 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755057Ab3GAVHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:07:34 -0400
-Message-ID: <1372712853.2481.24.camel@joe-AO722>
-Subject: Re: [PATCH] m68k/setup: Use pr_*() instead of plain printk()
-From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k <linux-m68k@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 01 Jul 2013 14:07:33 -0700
-In-Reply-To: <CAMuHMdUA3+gLi00Tvik2SjZaRYSC2sMMmP9TMH=Vb1dAubXx3Q@mail.gmail.com>
-References: <1372585689-29492-1-git-send-email-geert@linux-m68k.org>
-	 <1372630948.2083.3.camel@joe-AO722>
-	 <CAMuHMdUA3+gLi00Tvik2SjZaRYSC2sMMmP9TMH=Vb1dAubXx3Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1755462Ab3GAVIi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:08:38 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44045 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab3GAVIh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 17:08:37 -0400
+Date: Mon, 01 Jul 2013 14:08:33 -0700 (PDT)
+Message-Id: <20130701.140833.1705666564717621661.davem@davemloft.net>
+To: eliezer.tamir@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
+        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
+        devel-lists@codyps.com, eliezer@tamir.org.il
+Subject: Re: [PATCH net-next 0/2] net: lls cleanup patches
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
+References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-01 at 23:02 +0200, Geert Uytterhoeven wrote:
-> On Mon, Jul 1, 2013 at 12:22 AM, Joe Perches <joe@perches.com> wrote:
-> >> diff --git a/arch/m68k/kernel/setup_mm.c b/arch/m68k/kernel/setup_mm.c
-> >
-> >> @@ -161,7 +161,7 @@ static void __init m68k_parse_bootinfo(const struct bi_record *record)
-> > []
-> >> -                             printk("m68k_parse_bootinfo: too many memory chunks\n");
-> >> +                             pr_warn("m68k_parse_bootinfo: too many memory chunks\n");
-> >
-> > These are generally better written by
-> > removing the hand-written function name
-> > and using "%s: ", __func__
-> >
-> >                                 pr_warn("%s: too many memory chunks\n",
-> >                                         __func__);
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Date: Fri, 28 Jun 2013 15:59:18 +0300
+
+> Here are two cleanup patches.
 > 
-> I had tried that, too. But surprisingly (although the same function
-> name was in two
-> messages), it increased the size of the kernel image.
+> 1. fix warning from debug_smp_processor_id().
+> - reported by Cody P Schafer.
+> 
+> 2. avoid calling sched_clock() in select and poll when lls is disabled.
+> - reported by Andi Kleen.
+> 
+> Thanks to everyone for their comments.
 
-That's not surprising really.
-There is more call frame stack per use too.
+Applied, but like Ben said perhaps you want to remember the last cpu you
+got the sched_clock() measurement from and abort the ll poll if it changes
+on you instead of using a comparison between two cpus.
 
-It does eliminate any issue with function renaming
-though and is also less typo prone.
+But then again, since preemption is enabled, the cpu could change
+back and forth during the sched_clock() call, so you wouldn't be able
+to reliably detect this anyways.
 
-And, at some point, those __func__ uses could be
-identified and rolled into a mechanism to emit the
-function name via a standardized use of %pf and
-__builtin_return_address(0) in the printk subsystem.
-
-cheers, Joe
-
+In the grand scheme of things all of this probably doesn't matter at
+all.
