@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081Ab3GAHzW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:55:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:17453 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab3GAHzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:55:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,972,1363158000"; 
-   d="scan'208";a="338224193"
-Message-ID: <51D13754.4080602@intel.com>
-Date: Mon, 01 Jul 2013 11:01:24 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S1752900Ab3GAH55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:57:57 -0400
+Received: from kvm5.telegraphics.com.au ([98.124.60.144]:33580 "EHLO
+	kvm5.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab3GAH54 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:57:56 -0400
+Date: Mon, 1 Jul 2013 17:48:22 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: Brad Boyer <flar@allandria.com>
+cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] m68k/mac: Allocate IOP message pool and queues
+ dynamically
+In-Reply-To: <20130701065258.GA8425@cynthia.pants.nu>
+Message-ID: <alpine.LNX.2.00.1307011741500.9202@nippy.intranet>
+References: <1372586542-1318-1-git-send-email-geert@linux-m68k.org> <20130701065258.GA8425@cynthia.pants.nu>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 06/15] perf tools: fix parse_events_terms() freeing
- local variable on error path
-References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com> <1372409006-8431-7-git-send-email-adrian.hunter@intel.com> <51CDC589.8070306@gmail.com>
-In-Reply-To: <51CDC589.8070306@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/13 20:19, David Ahern wrote:
-> On 6/28/13 2:43 AM, Adrian Hunter wrote:
->> The list_head is on the stack, so just free the rest of the list.
->>
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->>   tools/perf/util/parse-events.c | 7 ++++++-
->>   tools/perf/util/parse-events.h | 1 +
->>   tools/perf/util/pmu.c          | 2 +-
->>   3 files changed, 8 insertions(+), 2 deletions(-)
->>
->> diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
->> index 995fc25..d9cb055 100644
->> --- a/tools/perf/util/parse-events.c
->> +++ b/tools/perf/util/parse-events.c
->> @@ -1231,12 +1231,17 @@ int parse_events_term__clone(struct
->> parse_events_term **new,
->>               term->val.str, term->val.num);
->>   }
->>
->> -void parse_events__free_terms(struct list_head *terms)
->> +void parse_events__free_terms_only(struct list_head *terms)
->>   {
->>       struct parse_events_term *term, *h;
->>
->>       list_for_each_entry_safe(term, h, terms, list)
->>           free(term);
->> +}
->> +
->> +void parse_events__free_terms(struct list_head *terms)
->> +{
->> +    parse_events__free_terms_only(terms);
->>
->>       free(terms);
->>   }
+
+On Sun, 30 Jun 2013, Brad Boyer wrote:
+
+> On Sun, Jun 30, 2013 at 12:02:22PM +0200, Geert Uytterhoeven wrote:
+> >  
+> >  	if (iop_scc_present) {
+> >  		printk("IOP: detected SCC IOP at %p\n", iop_base[IOP_NUM_SCC]);
+> > +		alloc_msg_queue(IOP_NUM_SCC);
 > 
-> I still don't understand the reasoning for an _only function. There is only
-> 1 place that mallocs the list_head and that 1 user should free its own
-> memory. All of the other users pass a stack variable.
+> Technically, this isn't actually useful. As long as we never start this
+> IOP, it can't ever send or be sent any messages.
 
-No.  See parse-events.y
+That assumes that the SCC IOP is in a stopped state after iop_preinit(). 
+But I don't think that's the case. If it is technically possible to 
+exchange messages with a device in bypass mode (?) then I think the code 
+above is correct.
 
-The list head is defined as a pointer in the YYTYPE stack element:
+> > @@ -315,6 +307,9 @@ void __init iop_register_interrupts(void)
+> >  		} else {
+> >  			printk("IOP: the ISM IOP seems to be alive.\n");
+> >  		}
+> 
+> The if/else above isn't useful if it is run before the call to 
+> iop_start. However, it's also useless if it is called immediately after 
+> the call to iop_alive which is now below. It was supposed to eventually 
+> be called in the background on a regular schedule, but that never 
+> happened.
+> 
 
-%union
-{
-	char *str;
-	u64 num;
-	struct list_head *head;
-	struct parse_events_term *term;
-}
+I agree. That if/else statement and the conditional printk's should be 
+omitted.
 
-It is malloc'ed when terms are created:
+I had thought that in the existing code the interrupt service routine was 
+registered before the call to iop_start() but in fact iop_start() happens 
+first. Looks like a bug to me. The interrupt handler needs to be able to 
+acknowledge unsolicited messages...
 
-event_term
-{
-	struct list_head *head = malloc(sizeof(*head));
-	struct parse_events_term *term = $1;
-
-	ABORT_ON(!head);
-	INIT_LIST_HEAD(head);
-	list_add_tail(&term->list, head);
-	$$ = head;
-}
-
+Finn
