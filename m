@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750869Ab3GAPH5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:07:57 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55776 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab3GAPHz (ORCPT
+	id S1752297Ab3GAPOb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:14:31 -0400
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:52474 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3GAPOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:07:55 -0400
-Message-ID: <51D19B3F.3060405@linux.vnet.ibm.com>
-Date: Mon, 01 Jul 2013 20:37:43 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 1 Jul 2013 11:14:30 -0400
+Message-ID: <51D19CD1.3030900@gmail.com>
+Date: Mon, 01 Jul 2013 17:14:25 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@gmail.com>
-CC: Borislav Petkov <bp@alien8.de>, ananth@in.ibm.com,
-        masbock@linux.vnet.ibm.com, lcm@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi <linux-acpi@vger.kernel.org>,
-        Huang Ying <ying.huang@intel.com>
-Subject: Re: [PATCH v2 2/2] mce: acpi/apei: Add a boot option to disable ff
- mode for corrected errors
-References: <20130621072725.GB22006@pd.tnic> <20130628120224.7781.45438.stgit@localhost.localdomain> <CA+8MBbJNY7G+q=kBgOA=+jVtugrfteoMvwLtfwvCno5xg+dm-Q@mail.gmail.com>
-In-Reply-To: <CA+8MBbJNY7G+q=kBgOA=+jVtugrfteoMvwLtfwvCno5xg+dm-Q@mail.gmail.com>
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] DMA: Fix Marvell Orion and mv_xor after MEMSET removal
+References: <1372690589-2218-1-git-send-email-sebastian.hesselbarth@gmail.com> <20130701150407.GB19937@titan.lakedaemon.net>
+In-Reply-To: <20130701150407.GB19937@titan.lakedaemon.net>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070115-7014-0000-0000-00000341BF8F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 11:01 PM, Tony Luck wrote:
->> +                       if (sec_sev == GHES_SEV_CORRECTED &&
->> +                           (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
->> +                           (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
->> +                               unsigned long pfn;
->> +                               pfn = mem_err->physical_addr >> PAGE_SHIFT;
+On 07/01/13 17:04, Jason Cooper wrote:
+> On Mon, Jul 01, 2013 at 04:56:29PM +0200, Sebastian Hesselbarth wrote:
+>> Commit 834cbfe966bece50afded79da8e975d255bf0772
+>>   ("drivers/dma: remove unused support for MEMSET operations")
+>> removes MEMSET from dmaengine but does not completely removes it from
+>> Marvell Orion (arch/arm/plat-orion) and XOR (drivers/dma/mv_xor).
+>> This also fixes some compiler warnings about now obsolete functions by
+>> removing those.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Cc: Jason Cooper <jason@lakedaemon.net>
+>> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+>> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   arch/arm/plat-orion/common.c |    6 ------
+>>   drivers/dma/mv_xor.c         |   25 +------------------------
+>>   2 files changed, 1 insertions(+), 30 deletions(-)
 >
-> As Reagan said "Trust ... but verify" ... we should make sure BIOS
-> gave us a good pfn
->                                      if (pfn_valid(pfn))
->                                           soft_memory_failure_queue(pfn, 0, 0);
->                                      else
->                                           printk( ...something about
-> BIOS giving us bad pfn = %lu\n", pfn);
+> Please take a look at the email from lkml I just forwarded to you.  I
+> believe this solves your problem, but I don't have time to look closely
+> atm.
 
-Ah, nice catch - I thought soft_offline_page() takes care of this, but 
-it sure is good to point a finger at the firmware.
+Jason,
 
-Thanks!
-- Naveen
+I have seen the forwarded patch before. I don't know what version this
+is based on. Some of the modifications are in next-20130701, some are
+not. I have stripped the Marvell modifications from the patch you
+forwarded and fixed all remaining issues.
 
->> +                       }
->
+Also, I will sent a follow-up patch to remove memset references from
+Marvell SoC dts/dtsi and the binding documentation soon.
+
+I guess, Bartolomiej should pick them up and resend his patch set, or
+leave Marvell alone and you pick them up.
+
+Sebastian
 
