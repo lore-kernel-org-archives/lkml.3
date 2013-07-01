@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab3GABN1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 21:13:27 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51486 "EHLO
+	id S1752608Ab3GABNm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 21:13:42 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37881 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752171Ab3GABNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 21:13:24 -0400
+	id S1750868Ab3GABNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 21:13:41 -0400
 From: Joe Perches <joe@perches.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 09/12] cdrom: Remove cdrom_get_next_writeable prototype
-Date: Sun, 30 Jun 2013 18:12:04 -0700
-Message-Id: <459d6ca61f1bddbe3630ebe94ae1a4f6092479a9.1372640818.git.joe@perches.com>
+Subject: [PATCH 11/12] cdrom: Remove unnecessary prototype for cdrom_mrw_exit
+Date: Sun, 30 Jun 2013 18:12:06 -0700
+Message-Id: <fbcb7076f1413ae916cf89a6cc5e471be0d5e737.1372640819.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1372640818.git.joe@perches.com>
 References: <cover.1372640818.git.joe@perches.com>
@@ -19,139 +19,305 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the function to the right spot instead.
+Move the function to appropriate locations instead.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/cdrom/cdrom.c | 101 +++++++++++++++++++++++++-------------------------
- 1 file changed, 51 insertions(+), 50 deletions(-)
+ drivers/cdrom/cdrom.c | 238 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 121 insertions(+), 117 deletions(-)
 
 diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 4fb9ad5..8af1307 100644
+index 87a74d4..a7dd384 100644
 --- a/drivers/cdrom/cdrom.c
 +++ b/drivers/cdrom/cdrom.c
-@@ -338,7 +338,6 @@ do {							\
+@@ -338,8 +338,6 @@ do {							\
  
  /* Not-exported routines. */
  
--static int cdrom_get_next_writable(struct cdrom_device_info *, long *);
- static void cdrom_count_tracks(struct cdrom_device_info *, tracktype*);
+-static int cdrom_mrw_exit(struct cdrom_device_info *cdi);
+-
+ static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *di);
  
- static int cdrom_mrw_exit(struct cdrom_device_info *cdi);
-@@ -2836,6 +2835,57 @@ use_toc:
+ static void cdrom_sysctl_register(void);
+@@ -359,113 +357,29 @@ static int cdrom_dummy_generic_packet(struct cdrom_device_info *cdi,
+ 	return -EIO;
+ }
+ 
+-/* This macro makes sure we don't have to check on cdrom_device_ops
+- * existence in the run-time routines below. Change_capability is a
+- * hack to have the capability flags defined const, while we can still
+- * change it here without gcc complaining at every line.
+- */
+-#define ENSURE(call, bits) if (cdo->call == NULL) *change_capability &= ~(bits)
+-
+-int register_cdrom(struct cdrom_device_info *cdi)
+-{
+-	static char banner_printed;
+-        struct cdrom_device_ops *cdo = cdi->ops;
+-        int *change_capability = (int *)&cdo->capability; /* hack */
+-
+-	cd_dbg(CD_OPEN, "entering register_cdrom\n");
+-
+-	if (cdo->open == NULL || cdo->release == NULL)
+-		return -EINVAL;
+-	if (!banner_printed) {
+-		pr_info("Uniform CD-ROM driver " REVISION "\n");
+-		banner_printed = 1;
+-		cdrom_sysctl_register();
+-	}
+-
+-	ENSURE(drive_status, CDC_DRIVE_STATUS );
+-	if (cdo->check_events == NULL && cdo->media_changed == NULL)
+-		*change_capability = ~(CDC_MEDIA_CHANGED | CDC_SELECT_DISC);
+-	ENSURE(tray_move, CDC_CLOSE_TRAY | CDC_OPEN_TRAY);
+-	ENSURE(lock_door, CDC_LOCK);
+-	ENSURE(select_speed, CDC_SELECT_SPEED);
+-	ENSURE(get_last_session, CDC_MULTI_SESSION);
+-	ENSURE(get_mcn, CDC_MCN);
+-	ENSURE(reset, CDC_RESET);
+-	ENSURE(generic_packet, CDC_GENERIC_PACKET);
+-	cdi->mc_flags = 0;
+-	cdo->n_minors = 0;
+-        cdi->options = CDO_USE_FFLAGS;
+-	
+-	if (autoclose==1 && CDROM_CAN(CDC_CLOSE_TRAY))
+-		cdi->options |= (int) CDO_AUTO_CLOSE;
+-	if (autoeject==1 && CDROM_CAN(CDC_OPEN_TRAY))
+-		cdi->options |= (int) CDO_AUTO_EJECT;
+-	if (lockdoor==1)
+-		cdi->options |= (int) CDO_LOCK;
+-	if (check_media_type==1)
+-		cdi->options |= (int) CDO_CHECK_TYPE;
+-
+-	if (CDROM_CAN(CDC_MRW_W))
+-		cdi->exit = cdrom_mrw_exit;
+-
+-	if (cdi->disk)
+-		cdi->cdda_method = CDDA_BPC_FULL;
+-	else
+-		cdi->cdda_method = CDDA_OLD;
+-
+-	if (!cdo->generic_packet)
+-		cdo->generic_packet = cdrom_dummy_generic_packet;
+-
+-	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" registered\n", cdi->name);
+-	mutex_lock(&cdrom_mutex);
+-	list_add(&cdi->list, &cdrom_list);
+-	mutex_unlock(&cdrom_mutex);
+-	return 0;
+-}
+-#undef ENSURE
+-
+-void unregister_cdrom(struct cdrom_device_info *cdi)
+-{
+-	cd_dbg(CD_OPEN, "entering unregister_cdrom\n");
+-
+-	mutex_lock(&cdrom_mutex);
+-	list_del(&cdi->list);
+-	mutex_unlock(&cdrom_mutex);
+-
+-	if (cdi->exit)
+-		cdi->exit(cdi);
+-
+-	cdi->ops->n_minors--;
+-	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" unregistered\n", cdi->name);
+-}
+-
+-int cdrom_get_media_event(struct cdrom_device_info *cdi,
+-			  struct media_event_desc *med)
++static int cdrom_flush_cache(struct cdrom_device_info *cdi)
+ {
+ 	struct packet_command cgc;
+-	unsigned char buffer[8];
+-	struct event_header *eh = (struct event_header *) buffer;
+-
+-	init_cdrom_command(&cgc, buffer, sizeof(buffer), CGC_DATA_READ);
+-	cgc.cmd[0] = GPCMD_GET_EVENT_STATUS_NOTIFICATION;
+-	cgc.cmd[1] = 1;		/* IMMED */
+-	cgc.cmd[4] = 1 << 4;	/* media event */
+-	cgc.cmd[8] = sizeof(buffer);
+-	cgc.quiet = 1;
+-
+-	if (cdi->ops->generic_packet(cdi, &cgc))
+-		return 1;
+ 
+-	if (be16_to_cpu(eh->data_len) < sizeof(*med))
+-		return 1;
++	init_cdrom_command(&cgc, NULL, 0, CGC_DATA_NONE);
++	cgc.cmd[0] = GPCMD_FLUSH_CACHE;
+ 
+-	if (eh->nea || eh->notification_class != 0x4)
+-		return 1;
++	cgc.timeout = 5 * 60 * HZ;
+ 
+-	memcpy(med, &buffer[sizeof(*eh)], sizeof(*med));
+-	return 0;
++	return cdi->ops->generic_packet(cdi, &cgc);
+ }
+ 
++/* This macro makes sure we don't have to check on cdrom_device_ops
++ * existence in the run-time routines below. Change_capability is a
++ * hack to have the capability flags defined const, while we can still
++ * change it here without gcc complaining at every line.
++ */
++#define ENSURE(call, bits)			\
++do {						\
++	if (cdo->call == NULL)			\
++		*change_capability &= ~(bits);	\
++} while (0)
++
+ /*
+  * the first prototypes used 0x2c as the page code for the mrw mode page,
+  * subsequently this was changed to 0x03. probe the one used by this drive
+@@ -582,18 +496,6 @@ static int cdrom_mrw_bgformat_susp(struct cdrom_device_info *cdi, int immed)
+ 	return cdi->ops->generic_packet(cdi, &cgc);
+ }
+ 
+-static int cdrom_flush_cache(struct cdrom_device_info *cdi)
+-{
+-	struct packet_command cgc;
+-
+-	init_cdrom_command(&cgc, NULL, 0, CGC_DATA_NONE);
+-	cgc.cmd[0] = GPCMD_FLUSH_CACHE;
+-
+-	cgc.timeout = 5 * 60 * HZ;
+-
+-	return cdi->ops->generic_packet(cdi, &cgc);
+-}
+-
+ static int cdrom_mrw_exit(struct cdrom_device_info *cdi)
+ {
+ 	disc_information di;
+@@ -627,17 +529,19 @@ static int cdrom_mrw_set_lba_space(struct cdrom_device_info *cdi, int space)
+ 	cgc.buffer = buffer;
+ 	cgc.buflen = sizeof(buffer);
+ 
+-	if ((ret = cdrom_mode_sense(cdi, &cgc, cdi->mrw_mode_page, 0)))
++	ret = cdrom_mode_sense(cdi, &cgc, cdi->mrw_mode_page, 0);
++	if (ret)
+ 		return ret;
+ 
+-	mph = (struct mode_page_header *) buffer;
++	mph = (struct mode_page_header *)buffer;
+ 	offset = be16_to_cpu(mph->desc_length);
+ 	size = be16_to_cpu(mph->mode_data_length) + 2;
+ 
+ 	buffer[offset + 3] = space;
+ 	cgc.buflen = size;
+ 
+-	if ((ret = cdrom_mode_select(cdi, &cgc)))
++	ret = cdrom_mode_select(cdi, &cgc);
++	if (ret)
+ 		return ret;
+ 
+ 	pr_info("%s: mrw address space %s selected\n",
+@@ -645,6 +549,106 @@ static int cdrom_mrw_set_lba_space(struct cdrom_device_info *cdi, int space)
  	return 0;
  }
  
-+/* return the next writable block. also for udf file system. */
-+static int cdrom_get_next_writable(struct cdrom_device_info *cdi,
-+				   long *next_writable)
++int register_cdrom(struct cdrom_device_info *cdi)
 +{
-+	disc_information di;
-+	track_information ti;
-+	__u16 last_track;
-+	int ret, ti_size;
++	static char banner_printed;
++	struct cdrom_device_ops *cdo = cdi->ops;
++	int *change_capability = (int *)&cdo->capability; /* hack */
 +
-+	if (!CDROM_CAN(CDC_GENERIC_PACKET))
-+		goto use_last_written;
++	cd_dbg(CD_OPEN, "entering register_cdrom\n");
 +
-+	ret = cdrom_get_disc_info(cdi, &di);
-+	if (ret < 0 || ret < offsetof(typeof(di), last_track_lsb)
-+				+ sizeof(di.last_track_lsb))
-+		goto use_last_written;
-+
-+	/* if unit didn't return msb, it's zeroed by cdrom_get_disc_info */
-+	last_track = (di.last_track_msb << 8) | di.last_track_lsb;
-+	ti_size = cdrom_get_track_info(cdi, last_track, 1, &ti);
-+	if (ti_size < 0 || ti_size < offsetof(typeof(ti), track_start))
-+		goto use_last_written;
-+
-+	/* if this track is blank, try the previous. */
-+	if (ti.blank) {
-+		if (last_track == 1)
-+			goto use_last_written;
-+		last_track--;
-+		ti_size = cdrom_get_track_info(cdi, last_track, 1, &ti);
-+		if (ti_size < 0)
-+			goto use_last_written;
++	if (cdo->open == NULL || cdo->release == NULL)
++		return -EINVAL;
++	if (!banner_printed) {
++		pr_info("Uniform CD-ROM driver " REVISION "\n");
++		banner_printed = 1;
++		cdrom_sysctl_register();
 +	}
 +
-+	/* if next recordable address field is valid, use it. */
-+	if (ti.nwa_v && ti_size >= offsetof(typeof(ti), next_writable)
-+				+ sizeof(ti.next_writable)) {
-+		*next_writable = be32_to_cpu(ti.next_writable);
-+		return 0;
-+	}
++	ENSURE(drive_status, CDC_DRIVE_STATUS);
++	if (cdo->check_events == NULL && cdo->media_changed == NULL)
++		*change_capability = ~(CDC_MEDIA_CHANGED | CDC_SELECT_DISC);
++	ENSURE(tray_move, CDC_CLOSE_TRAY | CDC_OPEN_TRAY);
++	ENSURE(lock_door, CDC_LOCK);
++	ENSURE(select_speed, CDC_SELECT_SPEED);
++	ENSURE(get_last_session, CDC_MULTI_SESSION);
++	ENSURE(get_mcn, CDC_MCN);
++	ENSURE(reset, CDC_RESET);
++	ENSURE(generic_packet, CDC_GENERIC_PACKET);
++	cdi->mc_flags = 0;
++	cdo->n_minors = 0;
++	cdi->options = CDO_USE_FFLAGS;
 +
-+use_last_written:
-+	ret = cdrom_get_last_written(cdi, next_writable);
-+	if (ret) {
-+		*next_writable = 0;
-+		return ret;
-+	} else {
-+		*next_writable += 7;
-+		return 0;
-+	}
++	if (autoclose == 1 && CDROM_CAN(CDC_CLOSE_TRAY))
++		cdi->options |= (int) CDO_AUTO_CLOSE;
++	if (autoeject == 1 && CDROM_CAN(CDC_OPEN_TRAY))
++		cdi->options |= (int) CDO_AUTO_EJECT;
++	if (lockdoor == 1)
++		cdi->options |= (int) CDO_LOCK;
++	if (check_media_type == 1)
++		cdi->options |= (int) CDO_CHECK_TYPE;
++
++	if (CDROM_CAN(CDC_MRW_W))
++		cdi->exit = cdrom_mrw_exit;
++
++	if (cdi->disk)
++		cdi->cdda_method = CDDA_BPC_FULL;
++	else
++		cdi->cdda_method = CDDA_OLD;
++
++	if (!cdo->generic_packet)
++		cdo->generic_packet = cdrom_dummy_generic_packet;
++
++	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" registered\n", cdi->name);
++	mutex_lock(&cdrom_mutex);
++	list_add(&cdi->list, &cdrom_list);
++	mutex_unlock(&cdrom_mutex);
++	return 0;
++}
++#undef ENSURE
++
++void unregister_cdrom(struct cdrom_device_info *cdi)
++{
++	cd_dbg(CD_OPEN, "entering unregister_cdrom\n");
++
++	mutex_lock(&cdrom_mutex);
++	list_del(&cdi->list);
++	mutex_unlock(&cdrom_mutex);
++
++	if (cdi->exit)
++		cdi->exit(cdi);
++
++	cdi->ops->n_minors--;
++	cd_dbg(CD_REG_UNREG, "drive \"/dev/%s\" unregistered\n", cdi->name);
 +}
 +
- static noinline int mmc_ioctl_cdrom_read_data(struct cdrom_device_info *cdi,
- 					      void __user *arg,
- 					      struct packet_command *cgc,
-@@ -3339,55 +3389,6 @@ static int cdrom_get_disc_info(struct cdrom_device_info *cdi, disc_information *
- 	return buflen;
- }
- 
--/* return the next writable block. also for udf file system. */
--static int cdrom_get_next_writable(struct cdrom_device_info *cdi, long *next_writable)
--{
--	disc_information di;
--	track_information ti;
--	__u16 last_track;
--	int ret, ti_size;
--
--	if (!CDROM_CAN(CDC_GENERIC_PACKET))
--		goto use_last_written;
--
--	ret = cdrom_get_disc_info(cdi, &di);
--	if (ret < 0 || ret < offsetof(typeof(di), last_track_lsb)
--				+ sizeof(di.last_track_lsb))
--		goto use_last_written;
--
--	/* if unit didn't return msb, it's zeroed by cdrom_get_disc_info */
--	last_track = (di.last_track_msb << 8) | di.last_track_lsb;
--	ti_size = cdrom_get_track_info(cdi, last_track, 1, &ti);
--	if (ti_size < 0 || ti_size < offsetof(typeof(ti), track_start))
--		goto use_last_written;
--
--        /* if this track is blank, try the previous. */
--	if (ti.blank) {
--		if (last_track == 1)
--			goto use_last_written;
--		last_track--;
--		ti_size = cdrom_get_track_info(cdi, last_track, 1, &ti);
--		if (ti_size < 0)
--			goto use_last_written;
--	}
--
--	/* if next recordable address field is valid, use it. */
--	if (ti.nwa_v && ti_size >= offsetof(typeof(ti), next_writable)
--				+ sizeof(ti.next_writable)) {
--		*next_writable = be32_to_cpu(ti.next_writable);
--		return 0;
--	}
--
--use_last_written:
--	if ((ret = cdrom_get_last_written(cdi, next_writable))) {
--		*next_writable = 0;
--		return ret;
--	} else {
--		*next_writable += 7;
--		return 0;
--	}
--}
--
- EXPORT_SYMBOL(cdrom_get_last_written);
- EXPORT_SYMBOL(register_cdrom);
- EXPORT_SYMBOL(unregister_cdrom);
++int cdrom_get_media_event(struct cdrom_device_info *cdi,
++			  struct media_event_desc *med)
++{
++	struct packet_command cgc;
++	unsigned char buffer[8];
++	struct event_header *eh = (struct event_header *)buffer;
++
++	init_cdrom_command(&cgc, buffer, sizeof(buffer), CGC_DATA_READ);
++	cgc.cmd[0] = GPCMD_GET_EVENT_STATUS_NOTIFICATION;
++	cgc.cmd[1] = 1;		/* IMMED */
++	cgc.cmd[4] = 1 << 4;	/* media event */
++	cgc.cmd[8] = sizeof(buffer);
++	cgc.quiet = 1;
++
++	if (cdi->ops->generic_packet(cdi, &cgc))
++		return 1;
++
++	if (be16_to_cpu(eh->data_len) < sizeof(*med))
++		return 1;
++
++	if (eh->nea || eh->notification_class != 0x4)
++		return 1;
++
++	memcpy(med, &buffer[sizeof(*eh)], sizeof(*med));
++	return 0;
++}
++
+ static int cdrom_get_random_writable(struct cdrom_device_info *cdi,
+ 			      struct rwrt_feature_desc *rfd)
+ {
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
