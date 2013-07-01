@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab3GANE1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 09:04:27 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54995 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752945Ab3GANE0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 09:04:26 -0400
-Date: Mon, 1 Jul 2013 15:04:24 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stehle Vincent-B46079 <B46079@freescale.com>
-cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: RE: next-20130627 breaks i.MX6 sabre sd UART console
-In-Reply-To: <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net>
-Message-ID: <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de>
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de> <51CDB26A.9060500@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net>
- <51CDC2B3.1030907@codeaurora.org> <20130629020738.GG11625@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754140Ab3GANFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 09:05:04 -0400
+Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:55232 "EHLO
+	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752741Ab3GANFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 09:05:03 -0400
+Message-ID: <51D17E8F.3020500@gentoo.org>
+Date: Mon, 01 Jul 2013 08:05:19 -0500
+From: Matthew Thode <prometheanfire@gentoo.org>
+Reply-To: prometheanfire@gentoo.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Luca Barbato <lu_zero@gentoo.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, kernel@gentoo.org,
+        hardened-kernel@gentoo.org, corsac@debian.org
+Subject: Re: 3.9.7, 3.10-rc7 - UEFI stalls at boot (nothing displayed), when
+ booting with mem=300M
+References: <51CC6CAE.6070401@gentoo.org> <51CC81A2.8040305@gentoo.org> <51D10603.1080403@gentoo.org> <20130701051320.GA6840@srcf.ucam.org> <51D11218.5040601@gentoo.org> <20130701062530.GA7423@srcf.ucam.org>
+In-Reply-To: <20130701062530.GA7423@srcf.ucam.org>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2WHDOVTVUEREWNSINLQQN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Stehle Vincent-B46079 wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2WHDOVTVUEREWNSINLQQN
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-So up to this point everything looks ok. mxc timer is the broadcast
-and the local timer is preferred over the dummy timer.
+On 07/01/2013 01:25 AM, Matthew Garrett wrote:
+> On Mon, Jul 01, 2013 at 07:22:32AM +0200, Luca Barbato wrote:
+>=20
+>> MacBookPro8,2 with efi-stub, loading directly from the efi shell w/out=
 
-But after switching the clocksource:
+>> any memory restriction.
+>=20
+> How do you know this is the same issue?
+>=20
+Same behavior?  Can't really know until it's solved I think.
+Unfortunately this bug seems to cause a lack of info.
 
-> Switched to clocksource mxc_timer1
-> ------------[ cut here ]------------
-> WARNING: CPU: 2 PID: 0 at kernel/time/clockevents.c:212 clockevents_program_event+0x134/0x148()
+--=20
+-- Matthew Thode (prometheanfire)
 
-That's when clockevents_program_event() is called with a negative
-expiry time.
 
-And its called from:
+------enig2WHDOVTVUEREWNSINLQQN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-[<800613f4>] (clockevents_program_event+0x134/0x148) from [<80061900>]
-(tick_handle_periodic+0x64/0x88)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Which calculates the expiry value via:
-      
-      next = ktime_add(dev->next_event, tick_period);
+iQIcBAEBAgAGBQJR0X6WAAoJECRx6z5ArFrDD1YQAMKV/XtpyeG5VkPDok8fqHiZ
+e3jk4dZ/1CeUxcnia46whEEyjX3zThKay/WKovuPxNg34LGqDBeBjx+VzF8Q2obS
+a2PGT3Zx4IWbTc1MgapCvI7uv0cEy1QNaSAV/O/DMFMcippmH8ObzE2krwiGMCkd
+AxDyPvp+8+yB/QFC4qt9192PYg1y7Bb/dTf+92xpEFsKoQlhvsKzdLVshyWAN08v
+lt95vYxlgEvvZmlZDojw9XoxvOW56P1QAANZ23b2co98xAWxCtLkfD0mgDXMwksN
+nz99pBjnc2T+gURLhyo3rt5fXXNixCg78p0q02td4jEgXB2rlpbODqRRAiFgSmt+
+NQ+30dt8NtbI8JciATaIJjSZqzxay2wXYEXmSyFXnCNB9u1/AwMkj6vEPRJwliLK
+N4ktEr/qV9vwsULnOt1AI4V6XGeKpebz3m6WS+bmUezGqDiOI5kN+Nlfh50JdNRv
+V7Vw2t1PnVK9emf/mli7gFIZdx97/3d8iNYuU7zbJSMqwyQPMN9s2z//v4BKgBz6
+XvBibcISjIyjKYMepA0fmopEpTTwy6986SFkiCXajlxOHRnJ0RKpz0fYX5wiZgzA
+i61LgInHcXYVrS77KS7Qk9Y6W1wpfrWy53hWobkkLoPqaB4SQkoo4QHW2RIRDmJu
+PnZ99F5XMo8j9NWaYVOW
+=dz9X
+-----END PGP SIGNATURE-----
 
-So something is hosed there.
-
-Can you please apply the patch below and provide the output?
-
-Thanks,
-
-	tglx
----
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index edd45f6..5617628 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -94,6 +94,13 @@ void tick_handle_periodic(struct clock_event_device *dev)
- 	 */
- 	next = ktime_add(dev->next_event, tick_period);
- 	for (;;) {
-+		if (next.tv64 < 0) {
-+			pr_err("next %llx nevt %llx per %llx nxtp %llx now %llx\n",
-+			       next.tv64, dev->next_event.tv64,
-+			       tick_period.tv64, tick_next_period.tv64,
-+			       ktime_get().tv64);
-+		}
-+
- 		if (!clockevents_program_event(dev, next, false))
- 			return;
- 		/*
+------enig2WHDOVTVUEREWNSINLQQN--
