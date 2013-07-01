@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab3GAUKv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:10:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49105 "EHLO
+	id S1755749Ab3GAUPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:15:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49123 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755526Ab3GAUKq (ORCPT
+	with ESMTP id S1755559Ab3GAUKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:46 -0400
+	Mon, 1 Jul 2013 16:10:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Jinyue <lijinyue@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 06/13] dlci: validate the net device in dlci_del()
-Date: Mon,  1 Jul 2013 13:10:25 -0700
-Message-Id: <20130701200523.866304526@linuxfoundation.org>
+        Liang Li <liang.li@windriver.com>, Yijing Wang <wangyijing@huawei.com>
+Subject: [ 11/13] pch_uart: fix a deadlock when pch_uart as console
+Date: Mon,  1 Jul 2013 13:10:30 -0700
+Message-Id: <20130701200524.408669953@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200523.096669485@linuxfoundation.org>
 References: <20130701200523.096669485@linuxfoundation.org>
@@ -27,67 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zefan Li <lizefan@huawei.com>
+From: Liang Li <liang.li@windriver.com>
 
-commit 578a1310f2592ba90c5674bca21c1dbd1adf3f0a upstream.
+commit 384e301e3519599b000c1a2ecd938b533fc15d85 upstream.
 
-We triggered an oops while running trinity with 3.4 kernel:
+When we use pch_uart as system console like 'console=ttyPCH0,115200',
+then 'send break' to it. We'll encounter the deadlock on a cpu/core,
+with interrupts disabled on the core. When we happen to have all irqs
+affinity to cpu0 then the deadlock on cpu0 actually deadlock whole
+system.
 
-BUG: unable to handle kernel paging request at 0000000100000d07
-IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-PGD 640c0d067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-CPU 3
-...
-Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
-RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-...
-Call Trace:
-  [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
-  [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
-  [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
-  [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
-  [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
-...
+In pch_uart_interrupt, we have spin_lock_irqsave(&priv->lock, flags)
+then call pch_uart_err_ir when break is received. Then the call to
+dev_err would actually call to pch_console_write then we'll run into
+another spin_lock(&priv->lock), with interrupts disabled.
 
-It's because the net device is not a dlci device.
+So in the call sequence lead by pch_uart_interrupt, we should be
+carefully to call functions that will 'print message to console' only
+in case the uart port is not being used as serial console.
 
-Reported-by: Li Jinyue <lijinyue@huawei.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Liang Li <liang.li@windriver.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wan/dlci.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/tty/serial/pch_uart.c |   33 ++++++++++++++++++++++++---------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wan/dlci.c
-+++ b/drivers/net/wan/dlci.c
-@@ -384,6 +384,7 @@ static int dlci_del(struct dlci_add *dlc
- 	struct frad_local	*flp;
- 	struct net_device	*master, *slave;
- 	int			err;
-+	bool			found = false;
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -1034,22 +1034,37 @@ static unsigned int dma_handle_tx(struct
+ static void pch_uart_err_ir(struct eg20t_port *priv, unsigned int lsr)
+ {
+ 	u8 fcr = ioread8(priv->membase + UART_FCR);
++	struct uart_port *port = &priv->port;
++	struct tty_struct *tty = tty_port_tty_get(&port->state->port);
++	char   *error_msg[5] = {};
++	int    i = 0;
  
- 	rtnl_lock();
+ 	/* Reset FIFO */
+ 	fcr |= UART_FCR_CLEAR_RCVR;
+ 	iowrite8(fcr, priv->membase + UART_FCR);
  
-@@ -393,6 +394,17 @@ static int dlci_del(struct dlci_add *dlc
- 		err = -ENODEV;
- 		goto out;
- 	}
+ 	if (lsr & PCH_UART_LSR_ERR)
+-		dev_err(&priv->pdev->dev, "Error data in FIFO\n");
++		error_msg[i++] = "Error data in FIFO\n";
+ 
+-	if (lsr & UART_LSR_FE)
+-		dev_err(&priv->pdev->dev, "Framing Error\n");
+-
+-	if (lsr & UART_LSR_PE)
+-		dev_err(&priv->pdev->dev, "Parity Error\n");
+-
+-	if (lsr & UART_LSR_OE)
+-		dev_err(&priv->pdev->dev, "Overrun Error\n");
++	if (lsr & UART_LSR_FE) {
++		port->icount.frame++;
++		error_msg[i++] = "  Framing Error\n";
++	}
 +
-+	list_for_each_entry(dlp, &dlci_devs, list) {
-+		if (dlp->master == master) {
-+			found = true;
-+			break;
-+		}
++	if (lsr & UART_LSR_PE) {
++		port->icount.parity++;
++		error_msg[i++] = "  Parity Error\n";
 +	}
-+	if (!found) {
-+		err = -ENODEV;
-+		goto out;
++
++	if (lsr & UART_LSR_OE) {
++		port->icount.overrun++;
++		error_msg[i++] = "  Overrun Error\n";
 +	}
++
++	if (tty == NULL) {
++		for (i = 0; error_msg[i] != NULL; i++)
++			dev_err(&priv->pdev->dev, error_msg[i]);
++	}
+ }
  
- 	if (netif_running(master)) {
- 		err = -EBUSY;
+ static irqreturn_t pch_uart_interrupt(int irq, void *dev_id)
 
 
