@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755675Ab3GAWbr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:31:47 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:40574 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab3GAWbq (ORCPT
+	id S1755882Ab3GAWdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:33:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:25210 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753736Ab3GAWdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:31:46 -0400
-From: Alexander Z Lam <azl@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>
-Subject: [PATCH 3/3] tracing: Protect ftrace_trace_arrays list in trace_events.c
-Date: Mon,  1 Jul 2013 15:31:25 -0700
-Message-Id: <1372717885-4543-3-git-send-email-azl@google.com>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1372717885-4543-1-git-send-email-azl@google.com>
-References: <1372717885-4543-1-git-send-email-azl@google.com>
+	Mon, 1 Jul 2013 18:33:49 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: sage@inktank.com
+Cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] ceph: avoid accessing invalid memory
+Date: Mon,  1 Jul 2013 18:33:39 -0400
+Message-Id: <1372718019-16549-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are multiple places where the ftrace_trace_arrays list is accessed in
-trace_events.c without the trace_types_lock held.
+when mounting ceph with a dev name that starts with a slash, ceph
+would attempt to access the character before that slash. Since we
+don't actually own that byte of memory, we would trigger an
+invalid access:
 
-Cc: David Sharp <dhsharp@google.com>
-Cc: Alexander Z Lam <lambchop468@gmail.com>
-Signed-off-by: Alexander Z Lam <azl@google.com>
+[   43.499934] BUG: unable to handle kernel paging request at ffff880fa3a97fff
+[   43.500984] IP: [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
+[   43.501491] PGD 743b067 PUD 10283c4067 PMD 10282a6067 PTE 8000000fa3a97060
+[   43.502301] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   43.503006] Dumping ftrace buffer:
+[   43.503596]    (ftrace buffer empty)
+[   43.504046] CPU: 0 PID: 10879 Comm: mount Tainted: G        W    3.10.0-sasha #1129
+[   43.504851] task: ffff880fa625b000 ti: ffff880fa3412000 task.ti: ffff880fa3412000
+[   43.505608] RIP: 0010:[<ffffffff818f3884>]  [<ffffffff818f3884>] parse_mount_options$
+[   43.506552] RSP: 0018:ffff880fa3413d08  EFLAGS: 00010286
+[   43.507133] RAX: ffff880fa3a98000 RBX: ffff880fa3a98000 RCX: 0000000000000000
+[   43.507893] RDX: ffff880fa3a98001 RSI: 000000000000002f RDI: ffff880fa3a98000
+[   43.508610] RBP: ffff880fa3413d58 R08: 0000000000001f99 R09: ffff880fa3fe64c0
+[   43.509426] R10: ffff880fa3413d98 R11: ffff880fa38710d8 R12: ffff880fa3413da0
+[   43.509792] R13: ffff880fa3a97fff R14: 0000000000000000 R15: ffff880fa3413d90
+[   43.509792] FS:  00007fa9c48757e0(0000) GS:ffff880fd2600000(0000) knlGS:000000000000$
+[   43.509792] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   43.509792] CR2: ffff880fa3a97fff CR3: 0000000fa3bb9000 CR4: 00000000000006b0
+[   43.509792] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   43.509792] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   43.509792] Stack:
+[   43.509792]  0000e5180000000e ffffffff85ca1900 ffff880fa38710d8 ffff880fa3413d98
+[   43.509792]  0000000000000120 0000000000000000 ffff880fa3a98000 0000000000000000
+[   43.509792]  ffffffff85cf32a0 0000000000000000 ffff880fa3413dc8 ffffffff818f3c72
+[   43.509792] Call Trace:
+[   43.509792]  [<ffffffff818f3c72>] ceph_mount+0xa2/0x390
+[   43.509792]  [<ffffffff81226314>] ? pcpu_alloc+0x334/0x3c0
+[   43.509792]  [<ffffffff81282f8d>] mount_fs+0x8d/0x1a0
+[   43.509792]  [<ffffffff812263d0>] ? __alloc_percpu+0x10/0x20
+[   43.509792]  [<ffffffff8129f799>] vfs_kern_mount+0x79/0x100
+[   43.509792]  [<ffffffff812a224d>] do_new_mount+0xcd/0x1c0
+[   43.509792]  [<ffffffff812a2e8d>] do_mount+0x15d/0x210
+[   43.509792]  [<ffffffff81220e55>] ? strndup_user+0x45/0x60
+[   43.509792]  [<ffffffff812a2fdd>] SyS_mount+0x9d/0xe0
+[   43.509792]  [<ffffffff83fd816c>] tracesys+0xdd/0xe2
+[   43.509792] Code: 4c 8b 5d c0 74 0a 48 8d 50 01 49 89 14 24 eb 17 31 c0 48 83 c9 ff $
+[   43.509792] RIP  [<ffffffff818f3884>] parse_mount_options+0x1a4/0x300
+[   43.509792]  RSP <ffff880fa3413d08>
+[   43.509792] CR2: ffff880fa3a97fff
+[   43.509792] ---[ end trace 22469cd81e93af51 ]---
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- kernel/trace/trace_events.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ fs/ceph/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 6db3290..26351cc 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1586,6 +1586,7 @@ static void __add_event_to_tracers(struct ftrace_event_call *call,
- int trace_add_event_call(struct ftrace_event_call *call)
- {
- 	int ret;
-+	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 
- 	ret = __register_event(call, NULL);
-@@ -1593,11 +1594,13 @@ int trace_add_event_call(struct ftrace_event_call *call)
- 		__add_event_to_tracers(call, NULL);
- 
- 	mutex_unlock(&event_mutex);
-+	mutex_unlock(&trace_types_lock);
- 	return ret;
- }
- 
- /*
-- * Must be called under locking both of event_mutex and trace_event_sem.
-+ * Must be called under locking of trace_types_lock, event_mutex and
-+ * trace_event_sem.
-  */
- static void __trace_remove_event_call(struct ftrace_event_call *call)
- {
-@@ -1609,11 +1612,13 @@ static void __trace_remove_event_call(struct ftrace_event_call *call)
- /* Remove an event_call */
- void trace_remove_event_call(struct ftrace_event_call *call)
- {
-+	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 	down_write(&trace_event_sem);
- 	__trace_remove_event_call(call);
- 	up_write(&trace_event_sem);
- 	mutex_unlock(&event_mutex);
-+	mutex_unlock(&trace_types_lock);
- }
- 
- #define for_each_event(event, start, end)			\
-@@ -1757,6 +1762,7 @@ static int trace_module_notify(struct notifier_block *self,
- {
- 	struct module *mod = data;
- 
-+	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 	switch (val) {
- 	case MODULE_STATE_COMING:
-@@ -1767,6 +1773,7 @@ static int trace_module_notify(struct notifier_block *self,
- 		break;
+diff --git a/fs/ceph/super.c b/fs/ceph/super.c
+index 7d377c9..6627b26 100644
+--- a/fs/ceph/super.c
++++ b/fs/ceph/super.c
+@@ -357,7 +357,7 @@ static int parse_mount_options(struct ceph_mount_options **pfsopt,
  	}
- 	mutex_unlock(&event_mutex);
-+	mutex_unlock(&trace_types_lock);
- 
- 	return 0;
- }
+ 	err = -EINVAL;
+ 	dev_name_end--;		/* back up to ':' separator */
+-	if (*dev_name_end != ':') {
++	if (dev_name_end < dev_name || *dev_name_end != ':') {
+ 		pr_err("device name is missing path (no : separator in %s)\n",
+ 				dev_name);
+ 		goto out;
 -- 
-1.8.3
+1.7.10.4
 
