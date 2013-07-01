@@ -1,43 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755461Ab3GAVqC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:46:02 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57351 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100Ab3GAVqA (ORCPT
+	id S1755439Ab3GAVvI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:51:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47338 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab3GAVvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:46:00 -0400
-Date: Mon, 1 Jul 2013 23:46:00 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Hogan <james.hogan@imgtec.com>
-cc: linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/5] metag: smp: don't spin waiting for CPU to start
-In-Reply-To: <1372694659-30176-4-git-send-email-james.hogan@imgtec.com>
-Message-ID: <alpine.DEB.2.02.1307012342500.4013@ionos.tec.linutronix.de>
-References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com> <1372694659-30176-4-git-send-email-james.hogan@imgtec.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 1 Jul 2013 17:51:07 -0400
+Message-ID: <51D1F9C7.8040500@wwwdotorg.org>
+Date: Mon, 01 Jul 2013 15:51:03 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: balbi@ti.com, linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 4/9] ARM: tegra: Remove USB platform data
+References: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com> <1372455427-20898-5-git-send-email-ttynkkynen@nvidia.com>
+In-Reply-To: <1372455427-20898-5-git-send-email-ttynkkynen@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, James Hogan wrote:
-> Use a completion to block until a secondary CPU has started up, like ARM
-> do, instead of a loop of udelays.
-> 
-> On Meta, SMP is really SMT, with each "CPU" being a different hardware
-> thread on the same Meta processor core, so as well as being more
-> efficient and latency friendly, using a completion prevents the bogomips
-> of the secondary CPU from being drastically skewed every time by the
-> execution of the tight in-cache udelay loop on the other CPU.
+On 06/28/2013 03:37 PM, Tuomas Tynkkynen wrote:
+> USB-related platform data is not used anymore in the Tegra USB drivers,
+> so remove all of it.
 
-The least of our worries is the correctness of bogomips. But if that
-patch makes bogomips less bogus while fixing a real issue, please add
-my
- 
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: Stephen Warren <swarren@nvidia.com>
