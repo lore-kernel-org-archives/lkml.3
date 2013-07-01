@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3GAHOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:14:36 -0400
-Received: from na3sys009aog134.obsmtp.com ([74.125.149.83]:51275 "EHLO
-	na3sys009aog134.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751880Ab3GAHOf (ORCPT
+	id S1752816Ab3GAHPW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:15:22 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:62869 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab3GAHPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:14:35 -0400
-From: Lei Wen <leiwen@marvell.com>
-To: Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        <mingo@redhat.com>, <leiwen@marvell.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] sched: update cfs_rq weight earlier in enqueue_entity
-Date: Mon, 1 Jul 2013 15:10:33 +0800
-Message-ID: <1372662634-12833-3-git-send-email-leiwen@marvell.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
-References: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
+	Mon, 1 Jul 2013 03:15:21 -0400
+From: stefan.seyfried@googlemail.com
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: 8250_pci: improve code comments and Kconfig help
+Date: Mon,  1 Jul 2013 09:14:20 +0200
+Message-Id: <1372662861-11231-1-git-send-email-stefan.seyfried@googlemail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <20130630160226.GA26644@kroah.com>
+References: <20130630160226.GA26644@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we are going to calculate cfs_rq's average ratio by
-runnable_load_avg/load.weight, if not increase the load.weight prior to
-enqueue_entity_load_avg, it may lead to one cfs_rq's avg ratio higher
-than 100%.
+Hi Greg,
 
-Adjust the sequence, so that all ratio is kept below 100%.
+in order to avoid such regressions in the future, a comment in
+the source and a note in the Kconfig help text might be useful
 
-Signed-off-by: Lei Wen <leiwen@marvell.com>
----
- kernel/sched/fair.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch is against
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git tty-next
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 07bd74c..d1eee84 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1788,8 +1788,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
- 	 * Update run-time statistics of the 'current'.
- 	 */
- 	update_curr(cfs_rq);
--	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
- 	account_entity_enqueue(cfs_rq, se);
-+	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
- 	update_cfs_shares(cfs_rq);
- 
- 	if (flags & ENQUEUE_WAKEUP) {
+Best regards,
+
+	Stefan
+
 -- 
-1.7.10.4
+Stefan Seyfried
+Linux Consultant & Developer -- GPG Key: 0x731B665B
 
+B1 Systems GmbH
+Osterfeldstraße 7 / 85088 Vohburg / http://www.b1-systems.de
+GF: Ralph Dehner / Unternehmenssitz: Vohburg / AG: Ingolstadt,HRB 3537
