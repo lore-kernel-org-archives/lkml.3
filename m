@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab3GAMAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:00:00 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33917 "EHLO
+	id S1753878Ab3GAMAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 08:00:42 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33892 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753418Ab3GAL6D (ORCPT
+	with ESMTP id S1753024Ab3GAL55 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:58:03 -0400
+	Mon, 1 Jul 2013 07:57:57 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
         <xemul@parallels.com>, <khorenko@parallels.com>
-Subject: [PATCH RFC 05/13] mm: PRAM: link nodes by pfn before reboot
-Date: Mon, 1 Jul 2013 15:57:40 +0400
-Message-ID: <f2817b1c438c8bd6e7a26185c214f73922f20628.1372582756.git.vdavydov@parallels.com>
+Subject: [PATCH RFC 02/13] mm: PRAM: implement node load and save functions
+Date: Mon, 1 Jul 2013 15:57:37 +0400
+Message-ID: <24ab8ab30254b32696c1df58b5c70ae4bd916dea.1372582755.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1372582754.git.vdavydov@parallels.com>
 References: <cover.1372582754.git.vdavydov@parallels.com>
@@ -24,104 +24,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since page structs, which are used for linking PRAM nodes, are cleared
-on boot, organize all PRAM nodes into a list singly-linked by pfn's
-before reboot to facilitate the node list restore in the new kernel.
+Persistent memory is divided into nodes, which can be saved and loaded
+independently of each other. PRAM nodes are kept on the list and
+identified by unique names. Whenever a save operation is initiated by
+calling pram_prepare_save(), a new node is created and linked to the
+list. When the save operation has been committed by calling
+pram_finish_save(), the node becomes loadable. A load operation can be
+then initiated by calling pram_prepare_load(), which deletes the node
+from the list and prepares the corresponding stream for loading data
+from it. After the load has been finished, the pram_finish_load()
+function must be called to free the node. Nodes are also deleted when a
+save operation is discarded, i.e. pram_discard_save() is called instead
+of pram_finish_save().
 ---
- mm/pram.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+ include/linux/pram.h |    7 ++-
+ mm/pram.c            |  158 ++++++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 159 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/pram.h b/include/linux/pram.h
+index cf04548..5b8c2c1 100644
+--- a/include/linux/pram.h
++++ b/include/linux/pram.h
+@@ -5,7 +5,12 @@
+ #include <linux/types.h>
+ #include <linux/mm_types.h>
+ 
+-struct pram_stream;
++struct pram_node;
++
++struct pram_stream {
++	gfp_t gfp_mask;
++	struct pram_node *node;
++};
+ 
+ #define PRAM_NAME_MAX		256	/* including nul */
+ 
 diff --git a/mm/pram.c b/mm/pram.c
-index f7eebe1..c7706dc 100644
+index cea0e87..3af2039 100644
 --- a/mm/pram.c
 +++ b/mm/pram.c
-@@ -1,11 +1,15 @@
+@@ -1,10 +1,75 @@
  #include <linux/err.h>
  #include <linux/gfp.h>
- #include <linux/highmem.h>
-+#include <linux/init.h>
  #include <linux/kernel.h>
- #include <linux/list.h>
++#include <linux/list.h>
  #include <linux/mm.h>
-+#include <linux/module.h>
- #include <linux/mutex.h>
-+#include <linux/notifier.h>
++#include <linux/mutex.h>
  #include <linux/pram.h>
-+#include <linux/reboot.h>
- #include <linux/sched.h>
- #include <linux/string.h>
++#include <linux/string.h>
  #include <linux/types.h>
-@@ -42,6 +46,9 @@ struct pram_link {
-  * singly-linked list of PRAM link structures (see above), the node has a
-  * pointer to the head of.
-  *
-+ * To facilitate data restore in the new kernel, before reboot all PRAM nodes
-+ * are organized into a list singly-linked by pfn's (see pram_reboot()).
+ 
++/*
++ * Persistent memory is divided into nodes that can be saved or loaded
++ * independently of each other. The nodes are identified by unique name
++ * strings.
 + *
-  * The structure occupies a memory page.
-  */
- struct pram_node {
-@@ -49,6 +56,7 @@ struct pram_node {
- 	__u32	type;		/* data type, see enum pram_stream_type */
- 	__u64	data_len;	/* data size, only for byte streams */
- 	__u64	link_pfn;	/* points to the first link of the node */
-+	__u64	node_pfn;	/* points to the next node in the node list */
- 
- 	__u8	name[PRAM_NAME_MAX];
- };
-@@ -57,6 +65,10 @@ struct pram_node {
- #define PRAM_LOAD		2
- #define PRAM_ACCMODE_MASK	3
- 
-+/*
-+ * For convenience sake PRAM nodes are kept in an auxiliary doubly-linked list
-+ * connected through the lru field of the page struct.
++ * The structure occupies a memory page.
 + */
- static LIST_HEAD(pram_nodes);			/* linked through page::lru */
- static DEFINE_MUTEX(pram_mutex);		/* serializes open/close */
- 
-@@ -521,3 +533,41 @@ size_t pram_read(struct pram_stream *ps, void *buf, size_t count)
- 	}
- 	return read_count;
- }
++struct pram_node {
++	__u32	flags;		/* see PRAM_* flags below */
++	__u32	type;		/* data type, see enum pram_stream_type */
 +
-+/*
-+ * Build the list of PRAM nodes.
-+ */
-+static void __pram_reboot(void)
++	__u8	name[PRAM_NAME_MAX];
++};
++
++#define PRAM_SAVE		1
++#define PRAM_LOAD		2
++#define PRAM_ACCMODE_MASK	3
++
++static LIST_HEAD(pram_nodes);			/* linked through page::lru */
++static DEFINE_MUTEX(pram_mutex);		/* serializes open/close */
++
++static inline struct page *pram_alloc_page(gfp_t gfp_mask)
++{
++	return alloc_page(gfp_mask);
++}
++
++static inline void pram_free_page(void *addr)
++{
++	free_page((unsigned long)addr);
++}
++
++static inline void pram_insert_node(struct pram_node *node)
++{
++	list_add(&virt_to_page(node)->lru, &pram_nodes);
++}
++
++static inline void pram_delete_node(struct pram_node *node)
++{
++	list_del(&virt_to_page(node)->lru);
++}
++
++static struct pram_node *pram_find_node(const char *name)
 +{
 +	struct page *page;
 +	struct pram_node *node;
-+	unsigned long node_pfn = 0;
 +
-+	list_for_each_entry_reverse(page, &pram_nodes, lru) {
++	list_for_each_entry(page, &pram_nodes, lru) {
 +		node = page_address(page);
-+		if (WARN_ON(node->flags & PRAM_ACCMODE_MASK))
-+			continue;
-+		node->node_pfn = node_pfn;
-+		node_pfn = page_to_pfn(page);
++		if (strcmp(node->name, name) == 0)
++			return node;
 +	}
++	return NULL;
 +}
 +
-+static int pram_reboot(struct notifier_block *notifier,
-+		       unsigned long val, void *v)
++static void pram_stream_init(struct pram_stream *ps,
++			     struct pram_node *node, gfp_t gfp_mask)
 +{
-+	if (val != SYS_RESTART)
-+		return NOTIFY_DONE;
-+	__pram_reboot();
-+	return NOTIFY_OK;
++	memset(ps, 0, sizeof(*ps));
++	ps->gfp_mask = gfp_mask;
++	ps->node = node;
 +}
 +
-+static struct notifier_block pram_reboot_notifier = {
-+	.notifier_call = pram_reboot,
-+};
+ /**
+  * Create a persistent memory node with name @name and initialize stream @ps
+  * for saving data to it.
+@@ -18,13 +83,49 @@
+  *
+  * Returns 0 on success, -errno on failure.
+  *
++ * Error values:
++ *    %ENAMETOOLONG: name len >= PRAM_NAME_MAX
++ *    %ENOMEM: insufficient memory available
++ *    %EEXIST: node with specified name already exists
++ *
+  * After the save has finished, pram_finish_save() (or pram_discard_save() in
+  * case of failure) is to be called.
+  */
+ int pram_prepare_save(struct pram_stream *ps,
+ 		const char *name, enum pram_stream_type type, gfp_t gfp_mask)
+ {
+-	return -ENOSYS;
++	struct page *page;
++	struct pram_node *node;
++	int err = 0;
 +
-+static int __init pram_init(void)
-+{
-+	register_reboot_notifier(&pram_reboot_notifier);
++	BUG_ON(type != PRAM_PAGE_STREAM &&
++	       type != PRAM_BYTE_STREAM);
++
++	if (strlen(name) >= PRAM_NAME_MAX)
++		return -ENAMETOOLONG;
++
++	page = pram_alloc_page(GFP_KERNEL | __GFP_ZERO);
++	if (!page)
++		return -ENOMEM;
++	node = page_address(page);
++
++	node->flags = PRAM_SAVE;
++	node->type = type;
++	strcpy(node->name, name);
++
++	mutex_lock(&pram_mutex);
++	if (!pram_find_node(name))
++		pram_insert_node(node);
++	else
++		err = -EEXIST;
++	mutex_unlock(&pram_mutex);
++	if (err) {
++		__free_page(page);
++		return err;
++	}
++
++	pram_stream_init(ps, node, gfp_mask);
 +	return 0;
-+}
-+module_init(pram_init);
+ }
+ 
+ /**
+@@ -33,7 +134,12 @@ int pram_prepare_save(struct pram_stream *ps,
+  */
+ void pram_finish_save(struct pram_stream *ps)
+ {
+-	BUG();
++	struct pram_node *node = ps->node;
++
++	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_SAVE);
++
++	smp_wmb();
++	node->flags &= ~PRAM_ACCMODE_MASK;
+ }
+ 
+ /**
+@@ -43,7 +149,15 @@ void pram_finish_save(struct pram_stream *ps)
+  */
+ void pram_discard_save(struct pram_stream *ps)
+ {
+-	BUG();
++	struct pram_node *node = ps->node;
++
++	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_SAVE);
++
++	mutex_lock(&pram_mutex);
++	pram_delete_node(node);
++	mutex_unlock(&pram_mutex);
++
++	pram_free_page(node);
+ }
+ 
+ /**
+@@ -57,12 +171,42 @@ void pram_discard_save(struct pram_stream *ps)
+  *
+  * Returns 0 on success, -errno on failure.
+  *
++ * Error values:
++ *    %ENOENT: node with specified name does not exist
++ *    %EBUSY: save to required node has not finished yet
++ *    %EPERM: specified type conflicts with type of required node
++ *
+  * After the load has finished, pram_finish_load() is to be called.
+  */
+ int pram_prepare_load(struct pram_stream *ps,
+ 		const char *name, enum pram_stream_type type)
+ {
+-	return -ENOSYS;
++	struct pram_node *node;
++	int err = 0;
++
++	mutex_lock(&pram_mutex);
++	node = pram_find_node(name);
++	if (!node) {
++		err = -ENOENT;
++		goto out_unlock;
++	}
++	if (node->flags & PRAM_ACCMODE_MASK) {
++		err = -EBUSY;
++		goto out_unlock;
++	}
++	if (node->type != type) {
++		err = -EPERM;
++		goto out_unlock;
++	}
++	pram_delete_node(node);
++out_unlock:
++	mutex_unlock(&pram_mutex);
++	if (err)
++		return err;
++
++	node->flags |= PRAM_LOAD;
++	pram_stream_init(ps, node, 0);
++	return 0;
+ }
+ 
+ /**
+@@ -72,7 +216,11 @@ int pram_prepare_load(struct pram_stream *ps,
+  */
+ void pram_finish_load(struct pram_stream *ps)
+ {
+-	BUG();
++	struct pram_node *node = ps->node;
++
++	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_LOAD);
++
++	pram_free_page(node);
+ }
+ 
+ /**
 -- 
 1.7.10.4
 
