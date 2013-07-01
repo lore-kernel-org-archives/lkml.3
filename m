@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab3GAUSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:18:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49057 "EHLO
+	id S1755850Ab3GAUTW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:19:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49045 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755201Ab3GAUKj (ORCPT
+	with ESMTP id S1755431Ab3GAUKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:39 -0400
+	Mon, 1 Jul 2013 16:10:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tang Yuantian <Yuantian.Tang@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 23/26] of/base: release the node correctly in of_parse_phandle_with_args()
-Date: Mon,  1 Jul 2013 13:10:18 -0700
-Message-Id: <20130701200732.480333896@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 20/26] UBIFS: prepare to fix a horrid bug
+Date: Mon,  1 Jul 2013 13:10:15 -0700
+Message-Id: <20130701200732.168244578@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -28,39 +27,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tang Yuantian <yuantian.tang@freescale.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit b855f16b05a697ac1863adabe99bfba56e6d3199 upstream.
+commit 33f1a63ae84dfd9ad298cf275b8f1887043ced36 upstream.
 
-Call of_node_put() only when the out_args is NULL on success,
-or the node's reference count will not be correct because the caller
-will call of_node_put() again.
+Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
+mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
+in the middle of 'ubifs_readdir()'.
 
-Signed-off-by: Tang Yuantian <Yuantian.Tang@freescale.com>
-[grant.likely: tightened up the patch]
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>
+First of all, this means that 'file->private_data' can be freed while
+'ubifs_readdir()' uses it.  But this particular patch does not fix the problem.
+This patch is only a preparation, and the fix will follow next.
+
+In this patch we make 'ubifs_readdir()' stop using 'file->f_pos' directly,
+because 'file->f_pos' can be changed by '->llseek()' at any point. This may
+lead 'ubifs_readdir()' to returning inconsistent data: directory entry names
+may correspond to incorrect file positions.
+
+So here we introduce a local variable 'pos', read 'file->f_pose' once at very
+the beginning, and then stick to 'pos'. The result of this is that when
+'ubifs_dir_llseek()' changes 'file->f_pos' while we are in the middle of
+'ubifs_readdir()', the latter "wins".
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/base.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ubifs/dir.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1166,11 +1166,11 @@ static int __of_parse_phandle_with_args(
- 				out_args->args_count = count;
- 				for (i = 0; i < count; i++)
- 					out_args->args[i] = be32_to_cpup(list++);
-+			} else {
-+				of_node_put(node);
- 			}
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -349,15 +349,16 @@ static unsigned int vfs_dent_type(uint8_
+ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ {
+ 	int err, over = 0;
++	loff_t pos = file->f_pos;
+ 	struct qstr nm;
+ 	union ubifs_key key;
+ 	struct ubifs_dent_node *dent;
+ 	struct inode *dir = file_inode(file);
+ 	struct ubifs_info *c = dir->i_sb->s_fs_info;
  
- 			/* Found it! return success */
--			if (node)
--				of_node_put(node);
+-	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, file->f_pos);
++	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, pos);
+ 
+-	if (file->f_pos > UBIFS_S_KEY_HASH_MASK || file->f_pos == 2)
++	if (pos > UBIFS_S_KEY_HASH_MASK || pos == 2)
+ 		/*
+ 		 * The directory was seek'ed to a senseless position or there
+ 		 * are no more entries.
+@@ -365,15 +366,15 @@ static int ubifs_readdir(struct file *fi
+ 		return 0;
+ 
+ 	/* File positions 0 and 1 correspond to "." and ".." */
+-	if (file->f_pos == 0) {
++	if (pos == 0) {
+ 		ubifs_assert(!file->private_data);
+ 		over = filldir(dirent, ".", 1, 0, dir->i_ino, DT_DIR);
+ 		if (over)
  			return 0;
+-		file->f_pos = 1;
++		file->f_pos = pos = 1;
+ 	}
+ 
+-	if (file->f_pos == 1) {
++	if (pos == 1) {
+ 		ubifs_assert(!file->private_data);
+ 		over = filldir(dirent, "..", 2, 1,
+ 			       parent_ino(file->f_path.dentry), DT_DIR);
+@@ -389,7 +390,7 @@ static int ubifs_readdir(struct file *fi
+ 			goto out;
  		}
  
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
+ 
+@@ -397,17 +398,16 @@ static int ubifs_readdir(struct file *fi
+ 	if (!dent) {
+ 		/*
+ 		 * The directory was seek'ed to and is now readdir'ed.
+-		 * Find the entry corresponding to @file->f_pos or the
+-		 * closest one.
++		 * Find the entry corresponding to @pos or the closest one.
+ 		 */
+-		dent_key_init_hash(c, &key, dir->i_ino, file->f_pos);
++		dent_key_init_hash(c, &key, dir->i_ino, pos);
+ 		nm.name = NULL;
+ 		dent = ubifs_tnc_next_ent(c, &key, &nm);
+ 		if (IS_ERR(dent)) {
+ 			err = PTR_ERR(dent);
+ 			goto out;
+ 		}
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
+ 
+@@ -419,7 +419,7 @@ static int ubifs_readdir(struct file *fi
+ 			     ubifs_inode(dir)->creat_sqnum);
+ 
+ 		nm.len = le16_to_cpu(dent->nlen);
+-		over = filldir(dirent, dent->name, nm.len, file->f_pos,
++		over = filldir(dirent, dent->name, nm.len, pos,
+ 			       le64_to_cpu(dent->inum),
+ 			       vfs_dent_type(dent->type));
+ 		if (over)
+@@ -435,7 +435,7 @@ static int ubifs_readdir(struct file *fi
+ 		}
+ 
+ 		kfree(file->private_data);
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
+ 	}
 
 
