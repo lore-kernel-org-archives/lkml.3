@@ -1,86 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab3GAFj5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 01:39:57 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49066 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab3GAFj4 (ORCPT
+	id S1752551Ab3GAFqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 01:46:22 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:49916 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab3GAFqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 01:39:56 -0400
-Date: Mon, 1 Jul 2013 11:09:47 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Basic scheduler support for automatic NUMA balancing
-Message-ID: <20130701053947.GQ8362@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <20130628135422.GA21895@linux.vnet.ibm.com>
+	Mon, 1 Jul 2013 01:46:21 -0400
+X-AuditID: 9c93016f-b7b0aae0000032af-14-51d117abaadc
+Date: Mon, 1 Jul 2013 14:46:19 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 1/3] perf record: support duration option to run during
+ specified time
+Message-ID: <20130701054619.GA730@lge.com>
+References: <1371603750-15053-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130629002724.GB5117@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130628135422.GA21895@linux.vnet.ibm.com>
+In-Reply-To: <20130629002724.GB5117@us.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070105-7282-0000-0000-000018D4E8BE
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srikar Dronamraju <srikar@linux.vnet.ibm.com> [2013-06-28 19:24:22]:
+On Fri, Jun 28, 2013 at 05:27:24PM -0700, Sukadev Bhattiprolu wrote:
+> Joonsoo Kim [iamjoonsoo.kim@lge.com] wrote:
+> | Currently, there is no method to quit at specified time later.
+> | We are used to using 'sleep N' as command argument if we need it,
+> | but explicitly supporting this feature maybe makes sense.
+> | 
+> | Cc: Namhyung Kim <namhyung@kernel.org>
+> | Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> | 
+> | diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> | index cdf58ec..19c65b5 100644
+> | --- a/tools/perf/builtin-record.c
+> | +++ b/tools/perf/builtin-record.c
+> | @@ -29,6 +29,7 @@
+> |  #include <sched.h>
+> |  #include <sys/mman.h>
+> | 
+> | +static unsigned int duration;
+> |  #ifndef HAVE_ON_EXIT
+> |  #ifndef ATEXIT_MAX
+> |  #define ATEXIT_MAX 32
+> | @@ -194,7 +195,7 @@ static void perf_record__sig_exit(int exit_status __maybe_unused, void *arg)
+> |  			psignal(WTERMSIG(status), rec->progname);
+> |  	}
+> | 
+> | -	if (signr == -1 || signr == SIGUSR1)
+> | +	if (signr == -1 || signr == SIGUSR1 || signr == SIGALRM)
+> |  		return;
+> | 
+> |  	signal(signr, SIG_DFL);
+> | @@ -404,6 +405,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+> |  	signal(SIGCHLD, sig_handler);
+> |  	signal(SIGINT, sig_handler);
+> |  	signal(SIGUSR1, sig_handler);
+> | +	signal(SIGALRM, sig_handler);
+> | 
+> |  	if (!output_name) {
+> |  		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+> | @@ -471,6 +473,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+> |  			goto out_delete_session;
+> |  	}
+> | 
+> | +	alarm(duration);
+> |  	if (forks) {
+> |  		err = perf_evlist__prepare_workload(evsel_list, &opts->target,
+> |  						    argv, opts->pipe_output,
+> | @@ -955,6 +958,7 @@ const struct option record_options[] = {
+> |  		     parse_branch_stack),
+> |  	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
+> |  		    "sample by weight (on special events only)"),
+> | +	OPT_UINTEGER(0, "duration", &duration, "run during specified seconds"),
+> 
+> nit: A slight ambiguity in the help text. Would you mind changing it to:
+> 
+> 	"run for specified duration (seconds)" ?
+> 
+> Sukadev
 
-> * Mel Gorman <mgorman@suse.de> [2013-06-26 15:37:59]:
-> 
-> > It's several months overdue and everything was quiet after 3.8 came out
-> > but I recently had a chance to revisit automatic NUMA balancing for a few
-> > days. I looked at basic scheduler integration resulting in the following
-> > small series. Much of the following is heavily based on the numacore series
-> > which in itself takes part of the autonuma series from back in November. In
-> > particular it borrows heavily from Peter Ziljstra's work in "sched, numa,
-> > mm: Add adaptive NUMA affinity support" but deviates too much to preserve
-> > Signed-off-bys. As before, if the relevant authors are ok with it I'll
-> > add Signed-off-bys (or add them yourselves if you pick the patches up).
-> 
-> 
-> Here is a snapshot of the results of running autonuma-benchmark running on 8
-> node 64 cpu system with hyper threading disabled. Ran 5 iterations for each
-> setup
-> 
-> 	KernelVersion: 3.9.0-mainline_v39+()
-> 				Testcase:      Min      Max      Avg
-> 				  numa01:  1784.16  1864.15  1800.16
-> 				  numa02:    32.07    32.72    32.59
-> 
-> 	KernelVersion: 3.9.0-mainline_v39+() + mel's patches
-> 				Testcase:      Min      Max      Avg  %Change
-> 				  numa01:  1752.48  1859.60  1785.60    0.82%
-> 				  numa02:    47.21    60.58    53.43  -39.00%
-> 
-> So numa02 case; we see a degradation of around 39%.
-> 
+Hello, Sukadev.
+Okay.
 
-I reran the tests again 
+Here goes v2 with your suggestion.
+---------------->8------------------------------
+>From b65e29b33cb250d4a4be103ce5afae29f6bdc11a Mon Sep 17 00:00:00 2001
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Date: Thu, 13 Jun 2013 18:06:21 +0900
+Subject: [PATCH v2] perf, tools: support duration option to run during specified
+ time
 
-KernelVersion: 3.9.0-mainline_v39+()
-                        Testcase:      Min      Max      Avg
-                          numa01:  1784.16  1864.15  1800.16
-             numa01_THREAD_ALLOC:   293.75   315.35   311.03
-                          numa02:    32.07    32.72    32.59
-                      numa02_SMT:    39.27    39.79    39.69
+Currently, there is no method to quit at specified time later.
+We are used to using 'sleep N' as command argument if we need it,
+but explicitly supporting this feature maybe makes sense.
 
-KernelVersion: 3.9.0-mainline_v39+() + your patches
-                        Testcase:      Min      Max      Avg  %Change
-                          numa01:  1720.40  1876.89  1767.75    1.83%
-             numa01_THREAD_ALLOC:   464.34   554.82   496.64  -37.37%
-                          numa02:    52.02    58.57    56.21  -42.02%
-                      numa02_SMT:    42.07    52.64    47.33  -16.14%
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index cdf58ec..1384118 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -29,6 +29,7 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
++static unsigned int duration;
+ #ifndef HAVE_ON_EXIT
+ #ifndef ATEXIT_MAX
+ #define ATEXIT_MAX 32
+@@ -194,7 +195,7 @@ static void perf_record__sig_exit(int exit_status __maybe_unused, void *arg)
+ 			psignal(WTERMSIG(status), rec->progname);
+ 	}
+ 
+-	if (signr == -1 || signr == SIGUSR1)
++	if (signr == -1 || signr == SIGUSR1 || signr == SIGALRM)
+ 		return;
+ 
+ 	signal(signr, SIG_DFL);
+@@ -404,6 +405,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	signal(SIGCHLD, sig_handler);
+ 	signal(SIGINT, sig_handler);
+ 	signal(SIGUSR1, sig_handler);
++	signal(SIGALRM, sig_handler);
+ 
+ 	if (!output_name) {
+ 		if (!fstat(STDOUT_FILENO, &st) && S_ISFIFO(st.st_mode))
+@@ -471,6 +473,7 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 			goto out_delete_session;
+ 	}
+ 
++	alarm(duration);
+ 	if (forks) {
+ 		err = perf_evlist__prepare_workload(evsel_list, &opts->target,
+ 						    argv, opts->pipe_output,
+@@ -955,6 +958,8 @@ const struct option record_options[] = {
+ 		     parse_branch_stack),
+ 	OPT_BOOLEAN('W', "weight", &record.opts.sample_weight,
+ 		    "sample by weight (on special events only)"),
++	OPT_UINTEGER(0, "duration", &duration,
++		    "run for specified duration (seconds)"),
+ 	OPT_END()
+ };
+ 
 -- 
-Thanks and Regards
-Srikar Dronamraju
+1.7.9.5
 
