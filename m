@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3GAEap (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 00:30:45 -0400
-Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:54004 "EHLO
-	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833Ab3GAEao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 00:30:44 -0400
-Message-ID: <51D10603.1080403@gentoo.org>
-Date: Sun, 30 Jun 2013 23:30:59 -0500
-From: Matthew Thode <prometheanfire@gentoo.org>
-Reply-To: prometheanfire@gentoo.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Luca Barbato <lu_zero@gentoo.org>
-CC: linux-kernel@vger.kernel.org, linux-devel@vger.kernel.org,
-        mjg59@srcf.ucam.org, torvalds@linux-foundation.org, kernel@gentoo.org,
-        hardened-kernel@gentoo.org, corsac@debian.org
-Subject: Re: 3.9.7, 3.10-rc7 - UEFI stalls at boot (nothing displayed), when
- booting with mem=300M
-References: <51CC6CAE.6070401@gentoo.org> <51CC81A2.8040305@gentoo.org>
-In-Reply-To: <51CC81A2.8040305@gentoo.org>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2WHAFXCSQBRGSWJGRQXNN"
+	id S1752545Ab3GAEii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 00:38:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35635 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab3GAEih (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 00:38:37 -0400
+Date: Mon, 1 Jul 2013 14:38:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        Masanari Iida <standby24x7@gmail.com>
+Subject: linux-next: manual merge of the trivial tree with the fbdev tree
+Message-Id: <20130701143824.dcff27129ecf4b29e836401e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__1_Jul_2013_14_38_24_+1000_IUZgo81xS8uuMOBL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2WHAFXCSQBRGSWJGRQXNN
-Content-Type: text/plain; charset=UTF-8
+--Signature=_Mon__1_Jul_2013_14_38_24_+1000_IUZgo81xS8uuMOBL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On 06/27/2013 01:17 PM, Luca Barbato wrote:
-> On 06/27/2013 06:47 PM, Matthew Thode wrote:
->> There is an early boot failure with linux-3.[9,10].??? when booting
->> using uefi on low memory systems.
->>
->> This seems like it might be hardware specific, I am running on a Lenov=
-o
->> T520, running bios version 1.42, firmware rev 1.36.
->>
->=20
-> Had the same problem with linux 3.10-rc1 and a stock mac book pro, I
-> hadn't investigated much further though.
->=20
-> lu
->=20
-You had the problem where it was blank on boot (right after grub, no
-kernel messages at all)?  Sounds like this might not be limited to just
-Lenovo then.
+Hi Jiri,
 
-mjg59, is there anything I can do to help move this bug forward?  I've
-done all I can think of (even tried a serial expresscard slot for logging=
-).
+Today's linux-next merge of the trivial tree got a conflict in
+drivers/video/omap2/displays/panel-n8x0.c between commit ecc8b3708986
+("OMAPDSS: Add panel dev pointer to dssdev") from the fbdev tree and
+commit 8b513d0cf603 ("treewide: Fix typo in printk") from the trivial
+tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
 --=20
--- Matthew Thode (prometheanfire)
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/video/omap2/displays/panel-n8x0.c
+index d3860c5,860b180..0000000
+--- a/drivers/video/omap2/displays/panel-n8x0.c
++++ b/drivers/video/omap2/displays/panel-n8x0.c
+@@@ -527,7 -527,7 +527,7 @@@ static int n8x0_panel_update(struct oma
+  	dh =3D dssdev->panel.timings.y_res;
+ =20
+  	if (x !=3D 0 || y !=3D 0 || w !=3D dw || h !=3D dh) {
+- 		dev_err(dssdev->dev, "invaid update region %d, %d, %d, %d\n",
+ -		dev_err(&dssdev->dev, "invalid update region %d, %d, %d, %d\n",
+++		dev_err(dssdev->dev, "invalid update region %d, %d, %d, %d\n",
+  			x, y, w, h);
+  		return -EINVAL;
+  	}
 
-------enig2WHAFXCSQBRGSWJGRQXNN
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--Signature=_Mon__1_Jul_2013_14_38_24_+1000_IUZgo81xS8uuMOBL
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR0QYKAAoJECRx6z5ArFrDgc4QAITXJNm3u+qfUVOQqXh2Yb9Q
-73l6jsRUwA5iG3hxeKOnHoC8anC+qEsr78gb//6MKPv/xknLR2dj2efj1YNXfXcp
-Z2uqt5HAgz0QdrTWb9t9AN35hoasE0CYLFnocGpQEp5PPPQl/QlMYxl3myHnjyPM
-aooYHB0qYSUZHub+MHhog3Nkvdqu+5BLQ5Ytw1uU1iZQOqJRdsmfd2eYn/frehNK
-KE77gJWjoIyYcoqYy+BmIZ60NHSEBfXdLdKvtk8tbRYnpujwtqcX2wqcpgIE+wNq
-5e07VkBFXrsyS65YPgiAs0exFAehZkm61v8iOufMqjapZp8DLRlZMcalk9tlZBkL
-iFmejL2ovx5K1aNcm1ylm2Ko4O+BfobVZSTAfkJmhsNWqY9GMsaE1hNPyOrMMelz
-boM72bXqpqyHi5+gfAusPcIuVPW3RvTb+LmCQ/Kv1G/Xu/fHiBINsklQVC9nEzS0
-yxursJz0oWJVDZRfycY0FIZZb1xG22u56dpoqcKRSVrnwlncncJ9jSTlcHjS5Kvr
-HyBZfICInQQ5V/ogGFOqTBVgkwmYEqqUc/Vnqze6sVJ/nenvhHJaDOr2KT4YyRm/
-NydwBQqAVci1k1yGOiU9pwFSCvdrNrWvHAz+TuHHqKVBTcI/iIISu6ZgclejlBGC
-q1b9Pk45CTz41KnM42yd
-=g1YJ
+iQIcBAEBCAAGBQJR0QfGAAoJEECxmPOUX5FEI28QAIr60hm9BliHiYyyOcrwvx4J
+mFJG27KVqUi19GycOySGzmy8o4V3db4owJZh9ZjlzHlo6zR5B0mqUXVVAqIuXRGO
+Qr8RpV7e44T0aY6oIpou0SVFlHDRtv9JbHXCAAFTH+leztVDDnikE1Mub/1nx9Fr
+2KhUtv2pTeH7/kuDiHo6a0uPwCdb2Seflqadx1s4HTUA7SCB9W9edbgGAAM6IOB0
+v06n13r8sFf2Ii9jBA0NskCFvUXp3u0KAXNbkjodfGacMjgR5WxYuH9puu9OA8NE
+HgrzJJtMyjYLpxnzBAKOQZI3NtQTeXfwjY/2trXLwNctHqaLzsYRPVPFJZRWqRyA
+RGaA2h1u5eYremSbnC53uHP6CEfJOZ8zWFDqsvwDivunZUhQXGQteIRyhhiBAluT
+9fPX7FoxGVgjXdG7nm80RaPatkxag+VXrYPhGZn5JBtLeKEUdCEEGyTzbzxxSQCS
+ZQV8wWHmwvbJ35np6NiOCBbY1xMoTN6EbFcLbGyLnBS+b7/d9gfup8kDJlCWqBcn
+Bm6YsLv42Fm6QKF4yVXmwIXCnnqGH9XIXMfMsBpX2OIHNBgmnShqkriuBfnRx2Cw
+ZJiOxLdqlVHSiFQRbUBlUo76bf7m+faa+ylD5IULQjyAIjyYEgTgyR3FAiIltJRV
+oDQ2ldSKViWE1VpFoGnz
+=nm7Z
 -----END PGP SIGNATURE-----
 
-------enig2WHAFXCSQBRGSWJGRQXNN--
+--Signature=_Mon__1_Jul_2013_14_38_24_+1000_IUZgo81xS8uuMOBL--
