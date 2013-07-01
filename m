@@ -1,254 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab3GADVC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 23:21:02 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:57798
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751768Ab3GADVA (ORCPT
+	id S1752440Ab3GADoy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 23:44:54 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:37396 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751864Ab3GADow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 23:21:00 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <linuxppc-dev@lists.ozlabs.org>
-CC: <scottwood@freescale.com>, <vakul@freescale.com>, <leoLi@freescale.com>,
-        <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH 1/2] DMA: Freescale: Add new 8-channel DMA engine device tree nodes
-Date: Mon, 1 Jul 2013 11:20:08 +0800
-Message-ID: <1372648810-2807-1-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 30 Jun 2013 23:44:52 -0400
+X-Spam-Score: -106.8
+Message-ID: <51D0FAFE.5010500@asianux.com>
+Date: Mon, 01 Jul 2013 11:43:58 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Chen Gang <gang.chen@asianux.com>
+CC: Richard Weinberger <richard@nod.at>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Jeff Dike <jdike@addtoit.com>, Arnd Bergmann <arnd@arndb.de>,
+        David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] include/asm-generic/io.h: add 'UML' case just like 'no-MMU'
+References: <51CA8AB8.7080504@asianux.com> <51CA900E.9020407@nod.at> <51CA9E92.4000107@asianux.com> <51CAA0C6.60007@nod.at> <51CAA78C.5040900@asianux.com> <51CAA8D6.9000505@nod.at> <51CAAD1D.8050801@asianux.com> <51CAAE7C.9090003@nod.at> <51CAB556.4070700@asianux.com> <51CAB689.70008@nod.at> <CAMuHMdXw6VYhnNWcVfWc9ssxKTqKFcDbN4WXL5i=eNGy+gXcRA@mail.gmail.com> <51CABBDD.403@asianux.com> <51CABFAC.1040505@nod.at> <51CAC0D0.60505@asianux.com> <51D0DE09.4090702@asianux.com>
+In-Reply-To: <51D0DE09.4090702@asianux.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On 07/01/2013 09:40 AM, Chen Gang wrote:
+> On 06/26/2013 06:22 PM, Chen Gang wrote:
+>> > On 06/26/2013 06:17 PM, Richard Weinberger wrote:
+>>> >> Am 26.06.2013 12:01, schrieb Chen Gang:
+>>>>> >>>> On 06/26/2013 05:48 PM, Geert Uytterhoeven wrote:
+>>>>>>> >>>>>> On Wed, Jun 26, 2013 at 11:38 AM, Richard Weinberger <richard@nod.at> wrote:
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>> Since the API itself already contents the meaning: "return NULL means
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>> the arch has no related io memory",
+>>>>>>> >>>>>> No, NULL means it could not map the I/O memory.
+>>>>>>> >>>>>>
+>>>>> >>>>
+>>>>> >>>> "it could not map the I/O memory" includes "has no related io memory".
+>>>>> >>>> So it is enough for our case.
+>>>>> >>>>
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>> Why not define a generic dummy one in "include/asm-generic/io.h" instead
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>> of "HAS_IOMEM" (which has already spread many various places, and also,
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>> most of new drivers have to know about it).
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>>
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>> e.g: in "include/asm-generic/io.h", if "CONFIG_HAS_IOMEM=n", define a
+>>>>>>>>>>>>>>> >>>>>>>>>>>>>> dummy ioremap() which return NULL ... (also need consider more details).
+>>>>>>>>>>> >>>>>>>>>>
+>>>>>>>>>>> >>>>>>>>>> Because we don't even want to build these drivers and not make them fail while
+>>>>>>>>>>> >>>>>>>>>> executing io memory related functions.
+>>>>>>> >>>>>> Indeed, it doesn't make sense to build drivers that cannot work.
+>>>>>>> >>>>>> And they may fail in a very bad way.
+>>>>> >>>>
+>>>>> >>>> That is our 'platform' guys feeling, not the 'module' guys, as
+>>>>> >>>> 'platform' guys, it is better to provide the choice to 'module' guys,
+>>>>> >>>> and let them decide by themselves, not forced by us.
+>>> >> FYI, this is my last reply to this thread.
+>>> >>
+>>> >> As Geert and I said, drivers which need io memory have to depend on HAS_IOMEM=y.
+>>> >> If an arch does not have io memory these drivers cannot work and therefore we don't
+>>> >> want them built.
+>> > 
+> Hmm, if the modules select 'COMPILE_TEST', it is better to let asm-generic
+> support this features (at least, not forbid it)
+> 
+> So how about the diff below ?  ;-)
+> 
+> ---------------------------diff begin-----------------------------------
+> 
+> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+> index d5afe96..ede3775 100644
+> --- a/include/asm-generic/io.h
+> +++ b/include/asm-generic/io.h
+> @@ -303,13 +303,17 @@ static inline void *phys_to_virt(unsigned long address)
+>  /*
+>   * Change "struct page" to physical address.
+>   *
+> - * This implementation is for the no-MMU case only... if you have an MMU
+> - * you'll need to provide your own definitions.
+> + * This for the no-MMU, or no-IOMEM but still try to COMPILE_TEST cases.
+> + * if you have an MMU and IOMEM, you'll need to provide your own definitions.
+>   */
+> -#ifndef CONFIG_MMU
+> +#if !defined(CONFIG_MMU) || \
+> +	(!defined(CONFIG_HAS_IOMEM) && defined(COMPILE_TEST))
 
-Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch add
-the device tree nodes for them.
+Need use 'CONFIG_COMPILE_TEST' instead of 'COMPILE_TEST'.
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
----
- arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi |   90 +++++++++++++++++++++++++++
- arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi |   90 +++++++++++++++++++++++++++
- arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
- 3 files changed, 182 insertions(+), 2 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
- create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
+>  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>  {
+> +#if !defined(CONFIG_MMU)
+>  	return (void __iomem*) (unsigned long)offset;
+> +#else
+> +	return NULL;
+>  }
+>  
+>  #define __ioremap(offset, size, flags)	ioremap(offset, size)
+> @@ -325,7 +329,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>  static inline void iounmap(void __iomem *addr)
+>  {
+>  }
+> -#endif /* CONFIG_MMU */
+> +#endif /* !MMU || (!HAS_IOMEM && COMPILE_TEST) */
+>  
+>  #ifdef CONFIG_HAS_IOPORT
+>  #ifndef CONFIG_GENERIC_IOMAP
+> 
+> ---------------------------diff end-------------------------------------
+> 
+>> > It is really the time for stopping discussion, and thank you all for
+>> > spending your time resources on this discussion.
+>> > 
+>> > Next, I will send related patch for it (also cc to you all).
+>> > 
+>> > 
+>> > Thanks.
+>> > 
+> 
+> -- Chen Gang
+> 
 
-diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
-new file mode 100644
-index 0000000..c626c49
---- /dev/null
-+++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
-@@ -0,0 +1,90 @@
-+/*
-+ * QorIQ DMA device tree stub [ controller @ offset 0x100000 ]
-+ *
-+ * Copyright 2011-2013 Freescale Semiconductor Inc.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Freescale Semiconductor nor the
-+ *       names of its contributors may be used to endorse or promote products
-+ *       derived from this software without specific prior written permission.
-+ *
-+ *
-+ * ALTERNATIVELY, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") as published by the Free Software
-+ * Foundation, either version 2 of that License or (at your option) any
-+ * later version.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
-+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-+ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
-+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+dma0: dma@100300 {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	compatible = "fsl,eloplus-dma2";
-+	reg = <0x100300 0x4 0x100600 0x4>;
-+	ranges = <0x0 0x100100 0x500>;
-+	cell-index = <0>;
-+	dma-channel@0 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x0 0x80>;
-+		cell-index = <0>;
-+		interrupts = <28 2 0 0>;
-+	};
-+	dma-channel@80 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x80 0x80>;
-+		cell-index = <1>;
-+		interrupts = <29 2 0 0>;
-+	};
-+	dma-channel@100 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x100 0x80>;
-+		cell-index = <2>;
-+		interrupts = <30 2 0 0>;
-+	};
-+	dma-channel@180 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x180 0x80>;
-+		cell-index = <3>;
-+		interrupts = <31 2 0 0>;
-+	};
-+	dma-channel@300 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x300 0x80>;
-+		cell-index = <4>;
-+		interrupts = <76 2 0 0>;
-+	};
-+	dma-channel@380 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x380 0x80>;
-+		cell-index = <5>;
-+		interrupts = <77 2 0 0>;
-+	};
-+	dma-channel@400 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x400 0x80>;
-+		cell-index = <6>;
-+		interrupts = <78 2 0 0>;
-+	};
-+	dma-channel@480 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x480 0x80>;
-+		cell-index = <7>;
-+		interrupts = <79 2 0 0>;
-+	};
-+};
-diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
-new file mode 100644
-index 0000000..980ea77
---- /dev/null
-+++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
-@@ -0,0 +1,90 @@
-+/*
-+ * QorIQ DMA device tree stub [ controller @ offset 0x101000 ]
-+ *
-+ * Copyright 2011-2013 Freescale Semiconductor Inc.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Freescale Semiconductor nor the
-+ *       names of its contributors may be used to endorse or promote products
-+ *       derived from this software without specific prior written permission.
-+ *
-+ *
-+ * ALTERNATIVELY, this software may be distributed under the terms of the
-+ * GNU General Public License ("GPL") as published by the Free Software
-+ * Foundation, either version 2 of that License or (at your option) any
-+ * later version.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
-+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-+ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
-+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ */
-+
-+dma1: dma@101300 {
-+	#address-cells = <1>;
-+	#size-cells = <1>;
-+	compatible = "fsl,eloplus-dma2";
-+	reg = <0x101300 0x4 0x101600 0x4>;
-+	ranges = <0x0 0x101100 0x500>;
-+	cell-index = <1>;
-+	dma-channel@0 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x0 0x80>;
-+		cell-index = <0>;
-+		interrupts = <32 2 0 0>;
-+	};
-+	dma-channel@80 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x80 0x80>;
-+		cell-index = <1>;
-+		interrupts = <33 2 0 0>;
-+	};
-+	dma-channel@100 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x100 0x80>;
-+		cell-index = <2>;
-+		interrupts = <34 2 0 0>;
-+	};
-+	dma-channel@180 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x180 0x80>;
-+		cell-index = <3>;
-+		interrupts = <35 2 0 0>;
-+	};
-+	dma-channel@300 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x300 0x80>;
-+		cell-index = <4>;
-+		interrupts = <80 2 0 0>;
-+	};
-+	dma-channel@380 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x380 0x80>;
-+		cell-index = <5>;
-+		interrupts = <81 2 0 0>;
-+	};
-+	dma-channel@400 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x400 0x80>;
-+		cell-index = <6>;
-+		interrupts = <82 2 0 0>;
-+	};
-+	dma-channel@480 {
-+		compatible = "fsl,eloplus-dma-channel";
-+		reg = <0x480 0x80>;
-+		cell-index = <7>;
-+		interrupts = <83 2 0 0>;
-+	};
-+};
-diff --git a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
-index bd611a9..7d8bac6 100644
---- a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
-+++ b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
-@@ -387,8 +387,8 @@
- 		reg	   = <0xea000 0x4000>;
- 	};
- 
--/include/ "qoriq-dma-0.dtsi"
--/include/ "qoriq-dma-1.dtsi"
-+/include/ "qoriq-dma2-0.dtsi"
-+/include/ "qoriq-dma2-1.dtsi"
- 
- /include/ "qoriq-espi-0.dtsi"
- 	spi@110000 {
+
 -- 
-1.7.9.5
-
-
-
+Chen Gang
