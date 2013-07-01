@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab3GAULP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:11:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49180 "EHLO
+	id S1755700Ab3GAULe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:11:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49175 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640Ab3GAUK6 (ORCPT
+	with ESMTP id S1755600Ab3GAUK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 1 Jul 2013 16:10:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 6/8] UBIFS: prepare to fix a horrid bug
-Date: Mon,  1 Jul 2013 13:10:38 -0700
-Message-Id: <20130701200234.552657073@linuxfoundation.org>
+        Liang Li <liang.li@windriver.com>, Yijing Wang <wangyijing@huawei.com>
+Subject: [ 8/8] pch_uart: fix a deadlock when pch_uart as console
+Date: Mon,  1 Jul 2013 13:10:40 -0700
+Message-Id: <20130701200235.066253757@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200232.909858308@linuxfoundation.org>
 References: <20130701200232.909858308@linuxfoundation.org>
@@ -27,125 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Liang Li <liang.li@windriver.com>
 
-commit 33f1a63ae84dfd9ad298cf275b8f1887043ced36 upstream.
+commit 384e301e3519599b000c1a2ecd938b533fc15d85 upstream.
 
-Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
-mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
-in the middle of 'ubifs_readdir()'.
+When we use pch_uart as system console like 'console=ttyPCH0,115200',
+then 'send break' to it. We'll encounter the deadlock on a cpu/core,
+with interrupts disabled on the core. When we happen to have all irqs
+affinity to cpu0 then the deadlock on cpu0 actually deadlock whole
+system.
 
-First of all, this means that 'file->private_data' can be freed while
-'ubifs_readdir()' uses it.  But this particular patch does not fix the problem.
-This patch is only a preparation, and the fix will follow next.
+In pch_uart_interrupt, we have spin_lock_irqsave(&priv->lock, flags)
+then call pch_uart_err_ir when break is received. Then the call to
+dev_err would actually call to pch_console_write then we'll run into
+another spin_lock(&priv->lock), with interrupts disabled.
 
-In this patch we make 'ubifs_readdir()' stop using 'file->f_pos' directly,
-because 'file->f_pos' can be changed by '->llseek()' at any point. This may
-lead 'ubifs_readdir()' to returning inconsistent data: directory entry names
-may correspond to incorrect file positions.
+So in the call sequence lead by pch_uart_interrupt, we should be
+carefully to call functions that will 'print message to console' only
+in case the uart port is not being used as serial console.
 
-So here we introduce a local variable 'pos', read 'file->f_pose' once at very
-the beginning, and then stick to 'pos'. The result of this is that when
-'ubifs_dir_llseek()' changes 'file->f_pos' while we are in the middle of
-'ubifs_readdir()', the latter "wins".
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Liang Li <liang.li@windriver.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/dir.c |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+ drivers/tty/serial/pch_uart.c |   33 ++++++++++++++++++++++++---------
+ 1 file changed, 24 insertions(+), 9 deletions(-)
 
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -355,15 +355,16 @@ static unsigned int vfs_dent_type(uint8_
- static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -935,22 +935,37 @@ static unsigned int dma_handle_tx(struct
+ static void pch_uart_err_ir(struct eg20t_port *priv, unsigned int lsr)
  {
- 	int err, over = 0;
-+	loff_t pos = file->f_pos;
- 	struct qstr nm;
- 	union ubifs_key key;
- 	struct ubifs_dent_node *dent;
- 	struct inode *dir = file->f_path.dentry->d_inode;
- 	struct ubifs_info *c = dir->i_sb->s_fs_info;
+ 	u8 fcr = ioread8(priv->membase + UART_FCR);
++	struct uart_port *port = &priv->port;
++	struct tty_struct *tty = tty_port_tty_get(&port->state->port);
++	char   *error_msg[5] = {};
++	int    i = 0;
  
--	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, file->f_pos);
-+	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, pos);
+ 	/* Reset FIFO */
+ 	fcr |= UART_FCR_CLEAR_RCVR;
+ 	iowrite8(fcr, priv->membase + UART_FCR);
  
--	if (file->f_pos > UBIFS_S_KEY_HASH_MASK || file->f_pos == 2)
-+	if (pos > UBIFS_S_KEY_HASH_MASK || pos == 2)
- 		/*
- 		 * The directory was seek'ed to a senseless position or there
- 		 * are no more entries.
-@@ -371,15 +372,15 @@ static int ubifs_readdir(struct file *fi
- 		return 0;
+ 	if (lsr & PCH_UART_LSR_ERR)
+-		dev_err(&priv->pdev->dev, "Error data in FIFO\n");
++		error_msg[i++] = "Error data in FIFO\n";
  
- 	/* File positions 0 and 1 correspond to "." and ".." */
--	if (file->f_pos == 0) {
-+	if (pos == 0) {
- 		ubifs_assert(!file->private_data);
- 		over = filldir(dirent, ".", 1, 0, dir->i_ino, DT_DIR);
- 		if (over)
- 			return 0;
--		file->f_pos = 1;
-+		file->f_pos = pos = 1;
- 	}
+-	if (lsr & UART_LSR_FE)
+-		dev_err(&priv->pdev->dev, "Framing Error\n");
+-
+-	if (lsr & UART_LSR_PE)
+-		dev_err(&priv->pdev->dev, "Parity Error\n");
+-
+-	if (lsr & UART_LSR_OE)
+-		dev_err(&priv->pdev->dev, "Overrun Error\n");
++	if (lsr & UART_LSR_FE) {
++		port->icount.frame++;
++		error_msg[i++] = "  Framing Error\n";
++	}
++
++	if (lsr & UART_LSR_PE) {
++		port->icount.parity++;
++		error_msg[i++] = "  Parity Error\n";
++	}
++
++	if (lsr & UART_LSR_OE) {
++		port->icount.overrun++;
++		error_msg[i++] = "  Overrun Error\n";
++	}
++
++	if (tty == NULL) {
++		for (i = 0; error_msg[i] != NULL; i++)
++			dev_err(&priv->pdev->dev, error_msg[i]);
++	}
+ }
  
--	if (file->f_pos == 1) {
-+	if (pos == 1) {
- 		ubifs_assert(!file->private_data);
- 		over = filldir(dirent, "..", 2, 1,
- 			       parent_ino(file->f_path.dentry), DT_DIR);
-@@ -395,7 +396,7 @@ static int ubifs_readdir(struct file *fi
- 			goto out;
- 		}
- 
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 	}
- 
-@@ -403,17 +404,16 @@ static int ubifs_readdir(struct file *fi
- 	if (!dent) {
- 		/*
- 		 * The directory was seek'ed to and is now readdir'ed.
--		 * Find the entry corresponding to @file->f_pos or the
--		 * closest one.
-+		 * Find the entry corresponding to @pos or the closest one.
- 		 */
--		dent_key_init_hash(c, &key, dir->i_ino, file->f_pos);
-+		dent_key_init_hash(c, &key, dir->i_ino, pos);
- 		nm.name = NULL;
- 		dent = ubifs_tnc_next_ent(c, &key, &nm);
- 		if (IS_ERR(dent)) {
- 			err = PTR_ERR(dent);
- 			goto out;
- 		}
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 	}
- 
-@@ -425,7 +425,7 @@ static int ubifs_readdir(struct file *fi
- 			     ubifs_inode(dir)->creat_sqnum);
- 
- 		nm.len = le16_to_cpu(dent->nlen);
--		over = filldir(dirent, dent->name, nm.len, file->f_pos,
-+		over = filldir(dirent, dent->name, nm.len, pos,
- 			       le64_to_cpu(dent->inum),
- 			       vfs_dent_type(dent->type));
- 		if (over)
-@@ -441,7 +441,7 @@ static int ubifs_readdir(struct file *fi
- 		}
- 
- 		kfree(file->private_data);
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
- 	}
+ static irqreturn_t pch_uart_interrupt(int irq, void *dev_id)
 
 
