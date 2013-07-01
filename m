@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab3GAUgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:36:18 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43773 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab3GAUgQ (ORCPT
+	id S1755352Ab3GAUlT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:41:19 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38596 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754776Ab3GAUlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:36:16 -0400
-Date: Mon, 01 Jul 2013 13:36:15 -0700 (PDT)
-Message-Id: <20130701.133615.366371022223254228.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: joe.jin@oracle.com, frank.blaschka@de.ibm.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        zheng.x.li@oracle.com, xen-devel@lists.xen.org,
-        Ian.Campbell@citrix.com, JBeulich@suse.com,
-        stefano.stabellini@eu.citrix.com
-Subject: Re: kernel panic in skb_copy_bits
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1372412262.3301.251.camel@edumazet-glaptop>
-References: <51CD0E67.4000008@oracle.com>
-	<1372402340.3301.229.camel@edumazet-glaptop>
-	<1372412262.3301.251.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Jul 2013 16:41:18 -0400
+Date: Mon, 1 Jul 2013 16:41:17 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: William Gulland <wgulland@google.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Lan Tianyu <tianyu.lan@intel.com>, Ming Lei <ming.lei@canonical.com>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: Clear both buffers when clearing a control transfer
+ TT buffer.
+In-Reply-To: <1372374620-11790-1-git-send-email-wgulland@google.com>
+Message-ID: <Pine.LNX.4.44L0.1307011636530.1547-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Fri, 28 Jun 2013 02:37:42 -0700
+On Thu, 27 Jun 2013, William Gulland wrote:
 
-> [PATCH] neighbour: fix a race in neigh_destroy()
+>     Control transfers have both IN and OUT (or SETUP) packets, so when
+>     clearing TT buffers for a control transfer it's necessary to send
+>     two HUB_CLEAR_TT_BUFFER requests to the hub.
 > 
-> There is a race in neighbour code, because neigh_destroy() uses
-> skb_queue_purge(&neigh->arp_queue) without holding neighbour lock,
-> while other parts of the code assume neighbour rwlock is what
-> protects arp_queue
+> Signed-off-by: William Gulland <wgulland@google.com>
+> ---
+>  drivers/usb/core/hub.c | 9 +++++++++
+>  1 file changed, 9 insertions(+)
 > 
-> Convert all skb_queue_purge() calls to the __skb_queue_purge() variant
-> 
-> Use __skb_queue_head_init() instead of skb_queue_head_init()
-> to make clear we do not use arp_queue.lock
-> 
-> And hold neigh->lock in neigh_destroy() to close the race.
-> 
-> Reported-by: Joe Jin <joe.jin@oracle.com>
-> Signed-off-by: Eric Dumazet <edumazet@google.com>
+> diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+> index feef935..868ad74 100644
+> --- a/drivers/usb/core/hub.c
+> +++ b/drivers/usb/core/hub.c
+> @@ -668,6 +668,15 @@ resubmit:
+>  static inline int
+>  hub_clear_tt_buffer (struct usb_device *hdev, u16 devinfo, u16 tt)
+>  {
+> +	/* Need to clear both directions for control ep */
+> +	if (((devinfo >> 11) & USB_ENDPOINT_XFERTYPE_MASK) ==
+> +			USB_ENDPOINT_XFER_CONTROL) {
+> +		int status = usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+> +				HUB_CLEAR_TT_BUFFER, USB_RT_PORT,
+> +				devinfo ^ 0x8000, tt, NULL, 0, 1000);
+> +		if (status)
+> +			return status;
+> +	}
+>  	return usb_control_msg(hdev, usb_sndctrlpipe(hdev, 0),
+>  			       HUB_CLEAR_TT_BUFFER, USB_RT_PORT, devinfo,
+>  			       tt, NULL, 0, 1000);
 
-Applied and queued up for -stable, thanks Eric.
+Well, this won't hurt much.  And since it does seem to fix a hardware
+problem,
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
