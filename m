@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502Ab3GAGkc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 02:40:32 -0400
-Received: from sauhun.de ([89.238.76.85]:50939 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987Ab3GAGka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 02:40:30 -0400
-Date: Mon, 1 Jul 2013 08:40:21 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Kevin Strasser <kevin.strasser@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Kevin Strasser <strassek@engr.orst.edu>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Michael Brunner <Michael.Brunner@kontron.com>,
-        Michael Brunner <mibru@gmx.de>, Chris Healy <chealy@imsco-us.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dirk Hohndel <Dirk.Hohndel@intel.com>, Ben Dooks <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Wim Van Sebroeck <wim@iguana.be>, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v3 2/4] i2c: Kontron PLD i2c bus driver
-Message-ID: <20130701064021.GC2976@katana>
-References: <1365441321-21952-1-git-send-email-kevin.strasser@linux.intel.com>
- <1372046406-3127-1-git-send-email-kevin.strasser@linux.intel.com>
- <1372046406-3127-3-git-send-email-kevin.strasser@linux.intel.com>
+	id S1752653Ab3GAGsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 02:48:12 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:30210 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3GAGsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 02:48:10 -0400
+Message-ID: <51D12570.9070100@huawei.com>
+Date: Mon, 1 Jul 2013 14:45:04 +0800
+From: Xie XiuQi <xiexiuqi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ctP54qlpMx3WjD+/"
-Content-Disposition: inline
-In-Reply-To: <1372046406-3127-3-git-send-email-kevin.strasser@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Zhang Hang <bob.zhanghang@huawei.com>,
+        Li Bin <huawei.libin@huawei.com>
+Subject: [PATCH] sched: fix cpu utilization account error
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.18]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We setting clock_skip_update = 1 based on the assumption that the
+next call to update_rq_clock() will come nearly immediately
+after being set. However, it is not always true especially on
+non-preempt mode. In this case we may miss some clock update, which
+would cause an error curr->sum_exec_runtime account.
 
---ctP54qlpMx3WjD+/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The test result show that test_kthread's exec_runtime has been
+added to watchdog.
 
-On Sun, Jun 23, 2013 at 09:00:04PM -0700, Kevin Strasser wrote:
-> Add i2c support for the on-board PLD found on some Kontron embedded
-> modules.
->=20
-> Originally-From: Michael Brunner <michael.brunner@kontron.com>
-> Signed-off-by: Kevin Strasser <kevin.strasser@linux.intel.com>
-> Acked-by: Guenter Roeck <linux@roeck-us.net>
-> Acked-by: Darren Hart <dvhart@linux.intel.com>
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+   P COMMAND
+   28 root      RT   0     0    0    0 S  100  0.0   0:05.39  5 watchdog/5
+    7 root      RT   0     0    0    0 S   95  0.0   0:05.83  0 watchdog/0
+   12 root      RT   0     0    0    0 S   94  0.0   0:05.79  1 watchdog/1
+   16 root      RT   0     0    0    0 S   92  0.0   0:05.74  2 watchdog/2
+   20 root      RT   0     0    0    0 S   91  0.0   0:05.71  3 watchdog/3
+   24 root      RT   0     0    0    0 S   82  0.0   0:05.42  4 watchdog/4
+   32 root      RT   0     0    0    0 S   79  0.0   0:05.35  6 watchdog/6
+ 5200 root      20   0     0    0    0 R   21  0.0   0:08.88  6 test_kthread/6
+ 5194 root      20   0     0    0    0 R   20  0.0   0:08.41  0 test_kthread/0
+ 5195 root      20   0     0    0    0 R   20  0.0   0:08.44  1 test_kthread/1
+ 5196 root      20   0     0    0    0 R   20  0.0   0:08.49  2 test_kthread/2
+ 5197 root      20   0     0    0    0 R   20  0.0   0:08.53  3 test_kthread/3
+ 5198 root      20   0     0    0    0 R   19  0.0   0:08.81  4 test_kthread/4
+ 5199 root      20   0     0    0    0 R    2  0.0   0:08.66  5 test_kthread/5
 
-Applied to for-next, thanks!
+"test_kthread/i" is a kernel thread which has a infinity loop and it calls
+schedule() every 1s. It's main process as below:
 
+static int main_loop (void *unused)
+{
+	unsigned long flags;
+	unsigned long last = jiffies;
+	int i;
 
---ctP54qlpMx3WjD+/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	while (!kthread_should_stop()) {
+		/* call schedule every 1 sec */
+		if (HZ <= jiffies - last) {
+			last = jiffies;
+			schedule();
+		}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+		/* do some thing */
+		for (i = 0; i < 1000; i++)
+		;
 
-iQIcBAEBAgAGBQJR0SRVAAoJEBQN5MwUoCm2/+UP/RPh/wU3W8bFioYWoOrGJK1B
-0t2PHKVAqhcEwZnSFNxCo5hh/XIM/oDXdjKMsdPBZEMAQ+QL1f3bVjS3cb5xflbm
-F3bLCaM48kIve+A5bprj913ikdTbWkuuagcQrry64i3aDcG4Tsb4WaCX4BjE0Fb1
-LNiwrqHrmpxWHwBsFYiucWiyBqXFwKrq0P0Gb0Gi+/RctWR4Aoi35V+5qbmDAf+s
-/sFMbTM7dfknKaeuiuUjmsQ2ZxkWhAmMbmQN6f5ry1SJgjf00h/UDb0yJBKC9BsI
-X5cvANdDZdMVhN/lLAj1nIPAjHYNgb0Q8b+lEnkhhndQPMziOlZPeUfkNKlyCTE6
-B0OcKW2yih0O/PwTNRV4AH7d+Rt/RpTLH3kk8mv+XlGk+9AbMks0C1pciumX9RWQ
-1wV57ADZupDildbWA8Sm6r2MG8Y+kszkt0+2bbTFmpnOodFX/2/7Lj5kSIYWhVlJ
-wbROLkszzBk2eLBuUSKdZadgAyz0Xyf0PMeLX/u6/s85qQ5oDyN9jfGle4Nlkugd
-2JF7EzOcrv2/l+XIQ/Ax29XtiRZouu2tVZ/9WuJii1wbxb8xp4LAktY1pQawCaay
-m0n3M4GkjGOfJToNtQ0WVB4e/ZWZQZmvw+pqWVeEFQZt6IbYFc6NiiyXZHX479XA
-HpRVxnPhccnXowK2OT/b
-=KOFD
------END PGP SIGNATURE-----
+		if (kthread_should_stop())
+			break;
+	}
+}
 
---ctP54qlpMx3WjD+/--
+In this patch, we do not skip clock update when current task is kernel
+thread in non-preempt mode.
+
+Reported-by: Zhang Hang <bob.zhanghang@huawei.com>
+Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+---
+ kernel/sched/core.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e8b3350..018dc43 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -970,8 +970,19 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
+ 	 * A queue event has occurred, and we're going to schedule.  In
+ 	 * this case, we can save a useless back to back clock update.
+ 	 */
++#ifdef CONFIG_PREEMPT
+ 	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr))
+ 		rq->skip_clock_update = 1;
++#else
++	/*
++	 * In non-preempt mode, a kernel thread may run for a long time
++	 * until been scheduled out by itself. In this cace, we need update
++	 * rq clock when calling schedule function, otherwise, we might
++	 * miss rq clock update for a long time.
++	 */
++	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr) && rq->curr->mm)
++		rq->skip_clock_update = 1;
++#endif
+ }
+
+ static ATOMIC_NOTIFIER_HEAD(task_migration_notifier);
+-- 
+1.7.6.1
+
