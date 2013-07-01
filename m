@@ -1,158 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab3GALkm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:40:42 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:40081 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab3GALkk (ORCPT
+	id S1753943Ab3GALl0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:41:26 -0400
+Received: from usindpps05.hds.com ([207.126.252.18]:42088 "EHLO
+	usindpps05.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753602Ab3GALlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:40:40 -0400
-From: bintian.wang@linaro.org
-To: linux-kernel@vger.kernel.org
-Cc: Mike Lockwood <lockwood@android.com>,
-        dmitry pervushin <dpervushin@gmail.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Bintian Wang <bintian.wang@linaro.org>
-Subject: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
-Date: Mon,  1 Jul 2013 19:40:28 +0800
-Message-Id: <1372678828-11776-1-git-send-email-bintian.wang@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 1 Jul 2013 07:41:24 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        "'mingo@elte.hu' (mingo@elte.hu)" <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+Subject: RE: [PATCH -tip] x86,trace: Add irq_enter/exit() in
+ smp_trace_reschedule_interrupt()
+Thread-Topic: [PATCH -tip] x86,trace: Add irq_enter/exit() in
+ smp_trace_reschedule_interrupt()
+Thread-Index: AQHOdCm79DFuVj80FUO+kjU7fkcBDplLsdOAgAQFKMA=
+Date: Mon, 1 Jul 2013 11:40:54 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D443E12CE6@USINDEM103.corp.hds.com>
+References: <51CDCFA3.9080101@hds.com>
+ <1372443363.18733.340.camel@gandalf.local.home>
+In-Reply-To: <1372443363.18733.340.camel@gandalf.local.home>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.73.11]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Proofpoint-SPF-Result: pass
+X-Proofpoint-SPF-Record: v=spf1 mx ip4:207.126.244.0/26 ip4:207.126.252.0/25 include:mktomail.com
+ include:cloud.hds.com ~all
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.10.8794,1.0.431,0.0.0000
+ definitions=2013-07-01_02:2013-06-28,2013-07-01,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=outbound_policy score=0
+ kscore.is_bulkscore=1.66533453693773e-16 kscore.compositescore=0
+ circleOfTrustscore=0 compositescore=0.997215366458519
+ urlsuspect_oldscore=0.997215366458519 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=0 rbsscore=0.997215366458519
+ spamscore=0 recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9
+ adultscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1305240000 definitions=main-1307010068
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r61BfVqa032297
 
-From: Mike Lockwood <lockwood@android.com>
+Ingo,
 
-Adds vfat ioctl command FAT_IOCTL_GET_VOLUME_ID, with this command 
-we can get the vfat volume ID using following code:
+Please merge this patch to your tree.
+It is a bug fix of irq_vector tracepoints patch.
 
-	ioctl(fd, FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
+Seiji
 
-This patch is a modified version of the android kernel patch by Mike Lockwood, 
-the original patch makes the return value of ioctl() as the volume ID, 
-Dmitry Pervushin noticed some volume IDs abiguous with error returns:
-for example, if volume id is set to "0xFFFFFDAD", that matches -ENOIOCTLCMD, 
-we get a wrong volume ID "0xFFFFFFFF" from the user space.
+> -----Original Message-----
+> From: Steven Rostedt [mailto:rostedt@goodmis.org]
+> Sent: Friday, June 28, 2013 2:16 PM
+> To: Seiji Aguchi
+> Cc: linux-kernel@vger.kernel.org; x86@kernel.org; hpa@zytor.com; mingo@elte.hu; tglx@linutronix.de
+> Subject: Re: [PATCH -tip] x86,trace: Add irq_enter/exit() in smp_trace_reschedule_interrupt()
+> 
+> On Fri, 2013-06-28 at 14:02 -0400, Seiji Aguchi wrote:
+> > Reschedule vector tracepoints may be called in cpu idle state.
+> > This causes lockdep check warning below.
+> >
+> > The tracepoint requires rcu but for accuracy it also
+> > requires irq_enter() (tracepoints record the irq context), thus, the
+> > tracepoint interrupt handler should be calling irq_enter() and not
+> > rcu_irq_enter() (irq_enter() calls rcu_irq_enter()).
+> >
+> > So, add irq_enter/exit() to smp_trace_reschedule_interrupt()
+> > with common pre/post processing functions, smp_entering_irq()
+> > and exiting_irq() (exiting_irq() calls just irq_exit()
+> >  in arch/x86/include/asm/apic.h),
+> > because these can be shared among reschedule, call_function,
+> > and call_function_single vectors.
+> >
+> > [   50.720557] Testing event reschedule_exit:
+> > [   50.721349]
+> > [   50.721502] ===============================
+> > [   50.721835] [ INFO: suspicious RCU usage. ]
+> > [   50.722169] 3.10.0-rc6-00004-gcf910e8 #190 Not tainted
+> > [   50.722582] -------------------------------
+> > [   50.722915] /c/kernel-tests/src/linux/arch/x86/include/asm/trace/irq_vectors.h:50 suspicious rcu_dereference_check() usage!
+> > [   50.723770]
+> > [   50.723770] other info that might help us debug this:
+> > [   50.723770]
+> > [   50.724385]
+> > [   50.724385] RCU used illegally from idle CPU!
+> > [   50.724385] rcu_scheduler_active = 1, debug_locks = 0
+> > [   50.725232] RCU used illegally from extended quiescent state!
+> > [   50.725690] no locks held by swapper/0/0.
+> > [   50.726010]
+> > [   50.726010] stack backtrace:
+> > [   50.726359] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.10.0-rc6-00004-gcf910e8 #190
+> > [   50.726965] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> >
+> > [   50.727417]  00000001 00000001 79c53f04 798bd9f9 79c53f2c 79077a70 79b412c6 79b41fd1
+> > [   50.728159]  00000001 00000000 79c5ef8c 87147c58 00000000 79c55800 79c53f38 79010b65
+> > [   50.728849]  79c52000 79c53f7c 798c720e 79c52000 79c5ef8c 00000004 00000000 79c55800
+> > [   50.729532] Call Trace:
+> > [   50.729730]  [<798bd9f9>] dump_stack+0x16/0x18
+> > [   50.730072]  [<79077a70>] lockdep_rcu_suspicious+0xf2/0xfa
+> > [   50.730498]  [<79010b65>] smp_trace_reschedule_interrupt+0x1c8/0x1d0
+> > [   50.730979]  [<798c720e>] trace_reschedule_interrupt+0x36/0x3c
+> > [   50.731214]  [<7901875f>] ? native_safe_halt+0x5/0x7
+> > [   50.731214]  [<790085cc>] default_idle+0xb1/0x1e2
+> > [   50.731214]  [<79008d05>] arch_cpu_idle+0xe/0x10
+> > [   50.731214]  [<79069ddf>] cpu_startup_entry+0x1e4/0x2c3
+> > [   50.731214]  [<798adb34>] rest_init+0x12c/0x132
+> > [   50.731214]  [<798ada08>] ? __read_lock_failed+0x14/0x14
+> > [   50.731214]  [<79d309e4>] start_kernel+0x38d/0x393
+> > [   50.731214]  [<79d30489>] ? repair_env_string+0x51/0x51
+> > [   50.731214]  [<79d302c3>] i386_start_kernel+0x79/0x7d
+> > [   50.771947] OK
+> > [   50.772099] Testing event reschedule_entry: OK
+> >
+> > Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+> 
+> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> -- Steve
+> 
 
-This patch fixes above bug by adding a parameter to ioctl to get the correct
-volume ID.
-
-Cc: dmitry pervushin <dpervushin@gmail.com>
-Cc: Mike Lockwood <lockwood@android.com>
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: John Stultz <john.stultz@linaro.org>
-
-Signed-off-by: Bintian Wang <bintian.wang@linaro.org>
----
- fs/fat/fat.h                  |    1 +
- fs/fat/file.c                 |    8 ++++++++
- fs/fat/inode.c                |   12 ++++++++++++
- include/uapi/linux/msdos_fs.h |   10 ++++++++++
- 4 files changed, 31 insertions(+)
-
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 21664fc..4241e6f 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -86,6 +86,7 @@ struct msdos_sb_info {
- 	const void *dir_ops;	      /* Opaque; default directory operations */
- 	int dir_per_block;	      /* dir entries per block */
- 	int dir_per_block_bits;	      /* log2(dir_per_block) */
-+	unsigned int vol_id;		/*volume ID*/
- 
- 	int fatent_shift;
- 	struct fatent_operations *fatent_ops;
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index b0b632e..ceef10e 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -114,6 +114,12 @@ out:
- 	return err;
- }
- 
-+static unsigned int fat_ioctl_volume_id(struct inode *inode)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-+	return sbi->vol_id;
-+}
-+
- long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- {
- 	struct inode *inode = file_inode(filp);
-@@ -124,6 +130,8 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return fat_ioctl_get_attributes(inode, user_attr);
- 	case FAT_IOCTL_SET_ATTRIBUTES:
- 		return fat_ioctl_set_attributes(filp, user_attr);
-+	case FAT_IOCTL_GET_VOLUME_ID:
-+		return put_user(fat_ioctl_volume_id(inode), user_attr);
- 	default:
- 		return -ENOTTY;	/* Inappropriate ioctl for device */
- 	}
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 5d4513c..11b51bb 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1415,6 +1415,18 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 		brelse(fsinfo_bh);
- 	}
- 
-+	/* interpret volume ID as a little endian 32 bit integer */
-+	if (sbi->fat_bits == 32)
-+		sbi->vol_id = (((u32)b->fat32.vol_id[0]) |
-+					((u32)b->fat32.vol_id[1] << 8) |
-+					((u32)b->fat32.vol_id[2] << 16) |
-+					((u32)b->fat32.vol_id[3] << 24));
-+	else /* fat 16 or 12 */
-+		sbi->vol_id = (((u32)b->fat16.vol_id[0]) |
-+					((u32)b->fat16.vol_id[1] << 8) |
-+					((u32)b->fat16.vol_id[2] << 16) |
-+					((u32)b->fat16.vol_id[3] << 24));
-+
- 	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
- 	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
- 
-diff --git a/include/uapi/linux/msdos_fs.h b/include/uapi/linux/msdos_fs.h
-index f055e58..e284ff9 100644
---- a/include/uapi/linux/msdos_fs.h
-+++ b/include/uapi/linux/msdos_fs.h
-@@ -104,6 +104,8 @@ struct __fat_dirent {
- /* <linux/videotext.h> has used 0x72 ('r') in collision, so skip a few */
- #define FAT_IOCTL_GET_ATTRIBUTES	_IOR('r', 0x10, __u32)
- #define FAT_IOCTL_SET_ATTRIBUTES	_IOW('r', 0x11, __u32)
-+/*Android kernel has used 0x12, so we use 0x13*/
-+#define FAT_IOCTL_GET_VOLUME_ID		_IOR('r', 0x13, __u32)
- 
- struct fat_boot_sector {
- 	__u8	ignored[3];	/* Boot strap short or near jump */
-@@ -128,6 +130,10 @@ struct fat_boot_sector {
- 			__u8	drive_number;	/* Physical drive number */
- 			__u8	state;		/* undocumented, but used
- 						   for mount state. */
-+			__u8	signature;  /* extended boot signature */
-+			__u8	vol_id[4];	/* volume ID */
-+			__u8	vol_label[11];	/* volume label */
-+			__u8	fs_type[8];		/* file system type */
- 			/* other fiealds are not added here */
- 		} fat16;
- 
-@@ -147,6 +153,10 @@ struct fat_boot_sector {
- 			__u8	drive_number;   /* Physical drive number */
- 			__u8    state;       	/* undocumented, but used
- 						   for mount state. */
-+			__u8	signature;  /* extended boot signature */
-+			__u8	vol_id[4];	/* volume ID */
-+			__u8	vol_label[11];	/* volume label */
-+			__u8	fs_type[8];		/* file system type */
- 			/* other fiealds are not added here */
- 		} fat32;
- 	};
--- 
-1.7.9.5
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
