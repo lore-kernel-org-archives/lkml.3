@@ -1,33 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3GAPpe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:45:34 -0400
-Received: from mailgw.tjmg.jus.br ([201.48.156.181]:54561 "EHLO tjmg.jus.br"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751250Ab3GAPpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:45:32 -0400
-X-Greylist: delayed 1105 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Jul 2013 11:45:31 EDT
-Date: Mon, 01 Jul 2013 12:21:19 -0300 (BRT)
-From: Admin Portal <crfjesp@tjmg.jus.br>
-Subject: Upgrade Your Account!!!
-Message-ID: <6668a624-384e-4f4c-9047-31d2aced9f48@zimmbox-1.tjmg.jus.br>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1753071Ab3GAPqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:46:55 -0400
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:33166 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751250Ab3GAPqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 11:46:54 -0400
+Date: Mon, 1 Jul 2013 15:46:52 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm/slab: Fix drain freelist excessively
+In-Reply-To: <1372069394-26167-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Message-ID: <0000013f9aea494f-7a5fe6c7-47d2-42a9-bbe6-5dbc85dab0a5-000000@email.amazonses.com>
+References: <1372069394-26167-1-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Originating-IP: [196.29.211.169]
-X-Mailer: Zimbra 7.1.3_GA_3346 (ZimbraWebClient - GC10 (Win)/7.1.3_GA_3346)
-To: undisclosed-recipients:;
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 24 Jun 2013, Wanpeng Li wrote:
 
+> The drain_freelist is called to drain slabs_free lists for cache reap,
+> cache shrink, memory hotplug callback etc. The tofree parameter is the
+> number of slab objects to free instead of the number of slabs to free.
 
-Attention,
+Well its intended to be the number of slabs to free. The patch does not
+fix the callers that pass the number of slabs.
 
-Important message from ADMIN- Please confirm your email address by clicking this link:
-
-http://upd.jimdo.com/
-
-Webmaster
+I think the best approach would be to fix the callers that pass # of
+objects. Make sure they pass # of slabs.
 
