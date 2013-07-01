@@ -1,38 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753020Ab3GAIUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:20:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53526 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab3GAIUp (ORCPT
+	id S1753130Ab3GAIV1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:21:27 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50500 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab3GAIV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:20:45 -0400
-Date: Mon, 1 Jul 2013 10:20:46 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ktime: add missing declaration of ktime_get() in
- ktime.h
-In-Reply-To: <1372657995-10903-1-git-send-email-iamjoonsoo.kim@lge.com>
-Message-ID: <alpine.DEB.2.02.1307011020260.4013@ionos.tec.linutronix.de>
-References: <1372657995-10903-1-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 1 Jul 2013 04:21:26 -0400
+Date: Mon, 1 Jul 2013 10:21:19 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: Re: [PATCH 0/9] dasd: implement block timeout
+Message-ID: <20130701102119.086396d5@mschwide>
+In-Reply-To: <20130617092215.6c0df7d1@mschwide>
+References: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
+	<20130617092215.6c0df7d1@mschwide>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070108-3548-0000-0000-000005D02232
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Joonsoo Kim wrote:
+On Mon, 17 Jun 2013 09:22:15 +0200
+Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
 
-> We cannot use ktime_get() API even if we include ktime.h, because there is
-> no declaration of this API in ktime.h. So add it.
+> On Mon,  3 Jun 2013 17:03:13 +0200
+> Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+> 
+> > This is a re-send of a patch series Hannes sent last january. Stefan
+> > looked at the patches and our tests went well, so I guess this is ready
+> > for upstream integration.
+> > 
+> > The changes to block/blk-core.c and block/blk-timeout.c look good
+> > to me, but I would like to request an acked-by from Jens for the
+> > block layer parts in patch #6 and #7 of the series (pretty please :-)
+> > 
+> > The original patch description from Hannes:
+> > 
+> > This patch series implements a block timeout handler for
+> > DASDs. The main impetus was to allow for a fixed upper
+> > timeout value after which a request is aborted.
+> > This is required eg when implementing a host-based
+> > mirroring system where otherwise the entire mirror
+> > would stall under certain circumstances.
+> > 
+> > Changes since v1:
+> > - Fixed lock inversion in dasd_times_out()
+> > - Checked for 'device->block' when writing to 'timeout' attribute
+> > - Check against 'UINT_MAX' when verifying the 'timeout' value
+> > 
+> > Once I got the required acked-by I can carry the patch set in the
+> > linux-s390 tree for the next merge window.
+> > 
+> > Hannes Reinecke (9):
+> >   dasd: Clarify comment
+> >   dasd: make number of retries configurable
+> >   dasd: process all requests in the device tasklet
+> >   dasd: Implement block timeout handling
+> >   dasd: Reduce amount of messages for specific errors
+> >   block,dasd: detailed I/O errors
+> >   block: check for timeout function in blk_rq_timed_out()
+> >   dasd: Add 'timeout' attribute
+> >   dasd: Fail all requests when DASD_FLAG_ABORTIO is set
+> > 
+> >  arch/s390/include/uapi/asm/dasd.h |    4 ++
+> >  block/blk-core.c                  |    3 +
+> >  block/blk-timeout.c               |    5 +-
+> >  drivers/s390/block/dasd.c         |  115 +++++++++++++++++++++++++++++++++----
+> >  drivers/s390/block/dasd_devmap.c  |   97 +++++++++++++++++++++++++++++++
+> >  drivers/s390/block/dasd_diag.c    |    8 ++-
+> >  drivers/s390/block/dasd_eckd.c    |   15 +++--
+> >  drivers/s390/block/dasd_erp.c     |    8 +++
+> >  drivers/s390/block/dasd_fba.c     |   10 +++-
+> >  drivers/s390/block/dasd_int.h     |   10 ++++
+> >  drivers/s390/block/dasd_ioctl.c   |   59 +++++++++++++++++++
+> >  11 files changed, 313 insertions(+), 21 deletions(-)
+> > 
+> 
+> Ping. Jens could you please look at patch #6 and #7? I don't want
+> to do a please pull with block layer parts without your consent.
 
-It's declared in hrtimer.h
+Ping -f. 
 
-Thanks,
+-- 
+blue skies,
+   Martin.
 
-	tglx
+"Reality continues to ruin my life." - Calvin.
+
