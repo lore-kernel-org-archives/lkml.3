@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754017Ab3GAL7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:59:37 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33949 "EHLO
+	id S1753686Ab3GAL6H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:58:07 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33924 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab3GAL6J (ORCPT
+	with ESMTP id S1752683Ab3GAL6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:58:09 -0400
+	Mon, 1 Jul 2013 07:58:05 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
         <xemul@parallels.com>, <khorenko@parallels.com>
-Subject: [PATCH RFC 08/13] mm: PRAM: checksum saved data
-Date: Mon, 1 Jul 2013 15:57:43 +0400
-Message-ID: <a7b485cb7b82f808846938e0670d73bb439b6846.1372582756.git.vdavydov@parallels.com>
+Subject: [PATCH RFC 06/13] mm: PRAM: introduce super block
+Date: Mon, 1 Jul 2013 15:57:41 +0400
+Message-ID: <d6e8e7216c33ec56c66493bf7377254c43698eb4.1372582756.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1372582754.git.vdavydov@parallels.com>
 References: <cover.1372582754.git.vdavydov@parallels.com>
@@ -24,255 +24,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checksum PRAM pages with crc32 to ensure persistent memory is not
-corrupted during reboot.
----
- mm/Kconfig |    4 ++
- mm/pram.c  |  128 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 130 insertions(+), 2 deletions(-)
+The PRAM super block is the starting point for restoring persistent
+memory. If the kernel locates the super block at boot time, it will
+preserve the persistent memory structure from the previous kernel. To
+point the kernel to the location of the super block, one should pass its
+pfn via the 'pram' boot param. For that purpose, the pram super block
+pfn is exported via /sys/kernel/pram. If none is passed, persistent
+memory will not be preserved, and a new super block will be allocated.
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index f1e11a0..0a4d4c6 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -475,6 +475,10 @@ config FRONTSWAP
- config PRAM
- 	bool "Persistent over-kexec memory storage"
- 	depends on X86
-+	select CRC32
-+	select LIBCRC32C
-+	select CRYPTO_CRC32C
-+	select CRYPTO_CRC32C_INTEL
- 	default n
- 	help
- 	  This option adds the kernel API that enables saving memory pages of
+The current patch introduces only super block handling. Memory
+preservation will be implemented later.
+---
+ mm/pram.c |   94 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 92 insertions(+), 2 deletions(-)
+
 diff --git a/mm/pram.c b/mm/pram.c
-index 380735f..8a66a86 100644
+index c7706dc..58ae9ed 100644
 --- a/mm/pram.c
 +++ b/mm/pram.c
-@@ -1,4 +1,6 @@
- #include <linux/bootmem.h>
-+#include <linux/crc32.h>
-+#include <linux/crc32c.h>
- #include <linux/err.h>
- #include <linux/gfp.h>
+@@ -3,15 +3,18 @@
  #include <linux/highmem.h>
-@@ -19,11 +21,14 @@
- #include <linux/sysfs.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
++#include <linux/kobject.h>
+ #include <linux/list.h>
+ #include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/notifier.h>
++#include <linux/pfn.h>
+ #include <linux/pram.h>
+ #include <linux/reboot.h>
+ #include <linux/sched.h>
+ #include <linux/string.h>
++#include <linux/sysfs.h>
  #include <linux/types.h>
  
-+#define PRAM_MAGIC		0x7072616D
-+
  /*
-  * Represents a reference to a data page saved to PRAM.
-  */
- struct pram_entry {
- 	__u32 flags;		/* see PRAM_PAGE_* flags */
-+	__u32 csum;		/* the page csum */
- 	__u64 pfn;		/* the page frame number */
- };
+@@ -66,12 +69,39 @@ struct pram_node {
+ #define PRAM_ACCMODE_MASK	3
  
-@@ -32,6 +37,9 @@ struct pram_entry {
-  * The structure occupies a memory page.
-  */
- struct pram_link {
-+	__u32	magic;
-+	__u32	csum;
+ /*
++ * The PRAM super block contains data needed to restore the persistent memory
++ * structure on boot. The pointer to it (pfn) should be passed via the 'pram'
++ * boot param if one wants to restore persistent data saved by the previously
++ * executing kernel. For that purpose the kernel exports the pfn via
++ * /sys/kernel/pram. If none is passed, persistent memory if any will not be
++ * preserved and a new clean page will be allocated for the super block.
++ *
++ * The structure occupies a memory page.
++ */
++struct pram_super_block {
++	__u64	node_pfn;		/* points to the first element of
++					 * the node list */
++};
 +
- 	__u64	link_pfn;	/* points to the next link of the node */
++static unsigned long __initdata pram_sb_pfn;
++static struct pram_super_block *pram_sb;
++
++/*
+  * For convenience sake PRAM nodes are kept in an auxiliary doubly-linked list
+  * connected through the lru field of the page struct.
+  */
+ static LIST_HEAD(pram_nodes);			/* linked through page::lru */
+ static DEFINE_MUTEX(pram_mutex);		/* serializes open/close */
  
- 	/* the array occupies the rest of the link page; if the link is not
-@@ -57,6 +65,9 @@ struct pram_link {
-  * The structure occupies a memory page.
-  */
- struct pram_node {
-+	__u32	magic;
-+	__u32	csum;
-+
- 	__u32	flags;		/* see PRAM_* flags below */
- 	__u32	type;		/* data type, see enum pram_stream_type */
- 	__u64	data_len;	/* data size, only for byte streams */
-@@ -81,6 +92,9 @@ struct pram_node {
-  * The structure occupies a memory page.
-  */
- struct pram_super_block {
-+	__u32	magic;
-+	__u32	csum;
-+
- 	__u64	node_pfn;		/* points to the first element of
- 					 * the node list */
- };
-@@ -106,11 +120,34 @@ static int __init parse_pram_sb_pfn(char *arg)
- }
- early_param("pram", parse_pram_sb_pfn);
- 
-+static u32 pram_data_csum(struct page *page)
++/*
++ * The PRAM super block pfn, see above.
++ */
++static int __init parse_pram_sb_pfn(char *arg)
 +{
-+	u32 ret;
-+	void *addr;
-+
-+	addr = kmap_atomic(page);
-+	ret = crc32c(0, addr, PAGE_SIZE);
-+	kunmap_atomic(addr);
-+	return ret;
++	return kstrtoul(arg, 16, &pram_sb_pfn);
 +}
++early_param("pram", parse_pram_sb_pfn);
 +
-+/* SSE-4.2 crc32c faster than crc32, but not available at early boot */
-+static inline u32 pram_meta_csum(void *addr)
-+{
-+	/* skip magic and csum fields */
-+	return crc32(0, addr + 8, PAGE_SIZE - 8);
-+}
-+
- static void * __init pram_map_meta(unsigned long pfn)
+ static inline struct page *pram_alloc_page(gfp_t gfp_mask)
  {
-+	__u32 *p;
-+
- 	if (pfn >= max_low_pfn)
- 		return ERR_PTR(-EINVAL);
--	return pfn_to_kaddr(pfn);
-+	p = pfn_to_kaddr(pfn);
-+	if (p[0] != PRAM_MAGIC || p[1] != pram_meta_csum(p))
-+		return ERR_PTR(-EINVAL);
-+	return p;
- }
+ 	return alloc_page(gfp_mask);
+@@ -161,6 +191,7 @@ static void pram_stream_init(struct pram_stream *ps,
+  * Returns 0 on success, -errno on failure.
+  *
+  * Error values:
++ *    %ENODEV: PRAM not available
+  *    %ENAMETOOLONG: name len >= PRAM_NAME_MAX
+  *    %ENOMEM: insufficient memory available
+  *    %EEXIST: node with specified name already exists
+@@ -175,6 +206,9 @@ int pram_prepare_save(struct pram_stream *ps,
+ 	struct pram_node *node;
+ 	int err = 0;
  
- static int __init pram_reserve_page(unsigned long pfn)
-@@ -332,6 +369,65 @@ static struct pram_node *pram_find_node(const char *name)
- 	return NULL;
- }
++	if (!pram_sb)
++		return -ENODEV;
++
+ 	BUG_ON(type != PRAM_PAGE_STREAM &&
+ 	       type != PRAM_BYTE_STREAM);
  
-+static void pram_csum_link(struct pram_link *link)
-+{
-+	int i;
-+	struct pram_entry *entry;
-+
-+	for (i = 0; i < PRAM_LINK_ENTRIES_MAX; i++) {
-+		entry = &link->entry[i];
-+		if (entry->pfn)
-+			entry->csum = pram_data_csum(pfn_to_page(entry->pfn));
-+	}
-+}
-+
-+static void pram_csum_node(struct pram_node *node)
-+{
-+	unsigned long link_pfn;
-+	struct pram_link *link;
-+
-+	link_pfn = node->link_pfn;
-+	while (link_pfn) {
-+		link = pfn_to_kaddr(link_pfn);
-+		pram_csum_link(link);
-+		link_pfn = link->link_pfn;
-+		cond_resched();
-+	}
-+}
-+
-+static int pram_check_link(struct pram_link *link)
-+{
-+	int i;
-+	struct pram_entry *entry;
-+
-+	for (i = 0; i < PRAM_LINK_ENTRIES_MAX; i++) {
-+		entry = &link->entry[i];
-+		if (!entry->pfn)
-+			break;
-+		if (entry->csum != pram_data_csum(pfn_to_page(entry->pfn)))
-+			return -EFAULT;
-+	}
-+	return 0;
-+}
-+
-+static int pram_check_node(struct pram_node *node)
-+{
-+	unsigned long link_pfn;
-+	struct pram_link *link;
-+	int ret = 0;
-+
-+	link_pfn = node->link_pfn;
-+	while (link_pfn) {
-+		link = pfn_to_kaddr(link_pfn);
-+		ret = pram_check_link(link);
-+		if (ret)
-+			break;
-+		link_pfn = link->link_pfn;
-+		cond_resched();
-+	}
-+	return ret;
-+}
-+
- static void pram_truncate_link(struct pram_link *link)
- {
- 	int i;
-@@ -449,6 +545,7 @@ void pram_finish_save(struct pram_stream *ps)
- 
- 	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_SAVE);
- 
-+	pram_csum_node(node);
- 	smp_wmb();
- 	node->flags &= ~PRAM_ACCMODE_MASK;
- }
-@@ -488,6 +585,7 @@ void pram_discard_save(struct pram_stream *ps)
+@@ -250,6 +284,7 @@ void pram_discard_save(struct pram_stream *ps)
+  * Returns 0 on success, -errno on failure.
+  *
+  * Error values:
++ *    %ENODEV: PRAM not available
   *    %ENOENT: node with specified name does not exist
   *    %EBUSY: save to required node has not finished yet
   *    %EPERM: specified type conflicts with type of required node
-+ *    %EFAULT: node corrupted
-  *
-  * After the load has finished, pram_finish_load() is to be called.
-  */
-@@ -520,6 +618,13 @@ out_unlock:
- 	if (err)
- 		return err;
+@@ -262,6 +297,9 @@ int pram_prepare_load(struct pram_stream *ps,
+ 	struct pram_node *node;
+ 	int err = 0;
  
-+	err = pram_check_node(node);
-+	if (err) {
-+		pram_truncate_node(node);
-+		pram_free_page(node);
-+		return err;
-+	}
++	if (!pram_sb)
++		return -ENODEV;
 +
- 	node->flags |= PRAM_LOAD;
- 	pram_stream_init(ps, node, 0);
- 	return 0;
-@@ -775,8 +880,24 @@ size_t pram_read(struct pram_stream *ps, void *buf, size_t count)
- 	return read_count;
- }
- 
-+static void pram_csum_node_meta(struct pram_node *node)
-+{
-+	unsigned long link_pfn;
-+	struct pram_link *link;
-+
-+	link_pfn = node->link_pfn;
-+	while (link_pfn) {
-+		link = pfn_to_kaddr(link_pfn);
-+		link->magic = PRAM_MAGIC;
-+		link->csum = pram_meta_csum(link);
-+		link_pfn = link->link_pfn;
-+	}
-+	node->magic = PRAM_MAGIC;
-+	node->csum = pram_meta_csum(node);
-+}
-+
- /*
-- * Build the list of PRAM nodes.
-+ * Build the list of PRAM nodes and update metadata csums.
-  */
- static void __pram_reboot(void)
- {
-@@ -789,9 +910,12 @@ static void __pram_reboot(void)
- 		if (WARN_ON(node->flags & PRAM_ACCMODE_MASK))
- 			continue;
+ 	mutex_lock(&pram_mutex);
+ 	node = pram_find_node(name);
+ 	if (!node) {
+@@ -550,6 +588,7 @@ static void __pram_reboot(void)
  		node->node_pfn = node_pfn;
-+		pram_csum_node_meta(node);
  		node_pfn = page_to_pfn(page);
  	}
- 	pram_sb->node_pfn = node_pfn;
-+	pram_sb->magic = PRAM_MAGIC;
-+	pram_sb->csum = pram_meta_csum(pram_sb);
++	pram_sb->node_pfn = node_pfn;
  }
  
  static int pram_reboot(struct notifier_block *notifier,
+@@ -557,7 +596,8 @@ static int pram_reboot(struct notifier_block *notifier,
+ {
+ 	if (val != SYS_RESTART)
+ 		return NOTIFY_DONE;
+-	__pram_reboot();
++	if (pram_sb)
++		__pram_reboot();
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -565,9 +605,59 @@ static struct notifier_block pram_reboot_notifier = {
+ 	.notifier_call = pram_reboot,
+ };
+ 
++static ssize_t show_pram_sb_pfn(struct kobject *kobj,
++		struct kobj_attribute *attr, char *buf)
++{
++	unsigned long pfn = pram_sb ? PFN_DOWN(__pa(pram_sb)) : 0;
++	return sprintf(buf, "%lx\n", pfn);
++}
++
++static struct kobj_attribute pram_sb_pfn_attr =
++	__ATTR(pram, 0444, show_pram_sb_pfn, NULL);
++
++static struct attribute *pram_attrs[] = {
++	&pram_sb_pfn_attr.attr,
++	NULL,
++};
++
++static struct attribute_group pram_attr_group = {
++	.attrs = pram_attrs,
++};
++
++/* returns non-zero on success */
++static int __init pram_init_sb(void)
++{
++	unsigned long pfn;
++	struct pram_node *node;
++
++	if (!pram_sb) {
++		struct page *page;
++
++		page = pram_alloc_page(GFP_KERNEL | __GFP_ZERO);
++		if (!page) {
++			pr_err("PRAM: Failed to allocate super block\n");
++			return 0;
++		}
++		pram_sb = page_address(page);
++	}
++
++	/* build auxiliary doubly-linked list of nodes connected through
++	 * page::lru for convenience sake */
++	pfn = pram_sb->node_pfn;
++	while (pfn) {
++		node = pfn_to_kaddr(pfn);
++		pram_insert_node(node);
++		pfn = node->node_pfn;
++	}
++	return 1;
++}
++
+ static int __init pram_init(void)
+ {
+-	register_reboot_notifier(&pram_reboot_notifier);
++	if (pram_init_sb()) {
++		register_reboot_notifier(&pram_reboot_notifier);
++		sysfs_update_group(kernel_kobj, &pram_attr_group);
++	}
+ 	return 0;
+ }
+ module_init(pram_init);
 -- 
 1.7.10.4
 
