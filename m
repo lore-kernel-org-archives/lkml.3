@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab3GAW4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:56:06 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57598 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755652Ab3GAW4E (ORCPT
+	id S1755990Ab3GAW6V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:58:21 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:32260 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755100Ab3GAW6U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:56:04 -0400
-Date: Tue, 2 Jul 2013 00:56:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Hogan <james.hogan@imgtec.com>
-cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] metag: kick: prevent nested kick handlers
-In-Reply-To: <CAAG0J9_fTNrKe7idPi3=O2kGRWBJmYSwMQuzGPiT2G+rXy4QuA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1307020022570.4013@ionos.tec.linutronix.de>
-References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com> <1372694659-30176-5-git-send-email-james.hogan@imgtec.com> <alpine.DEB.2.02.1307012346320.4013@ionos.tec.linutronix.de>
- <CAAG0J9_fTNrKe7idPi3=O2kGRWBJmYSwMQuzGPiT2G+rXy4QuA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 1 Jul 2013 18:58:20 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <201307020032.49963.PeterHuewe@gmx.de>
+References: <1372714468-28120-1-git-send-email-dgdegra@tycho.nsa.gov> <201307020032.49963.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [tpmdd-devel] [PATCH v4] drivers/tpm: add xen tpmfront interface
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 01 Jul 2013 18:57:39 -0400
+To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>,
+        tpmdd-devel@lists.sourceforge.net
+CC: Daniel De Graaf <dgdegra@tycho.nsa.gov>, leosilva@linux.vnet.ibm.com,
+        adlai@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xen.org, mail@srajiv.net, shpedoikal@gmail.com,
+        tpmdd@sirrix.com
+Message-ID: <38592a6a-62d1-48db-9219-641b610b4683@email.android.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, James Hogan wrote:
-> On 1 July 2013 22:51, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Mon, 1 Jul 2013, James Hogan wrote:
-> >
-> >> The main kick trigger handler iterates a list of kick handlers and calls
-> >> each one. This is done with the kick_handlers_lock spin lock held, but
-> >> this causes a problem on SMP where IPIs are implemented with kicks. A
-> >> reschedule IPI calls scheduler_ipi() which uses irq_enter() and
-> >> irq_exit(). This results in the scheduler being invoked with
-> >> kick_handlers_lock held which can result in a nested kick trigger
-> >> attempting to acquire the lock, resulting in deadlock.
-> >>
-> >> irq_enter() and irq_exit() can nest, so call them from the main kick
-> >> interrupt handler so that softirqs are only handled after
-> >> kick_handlers_lock is released.
-> >
-> > This changelog is confusing. What I decode from the patch is, that you
-> > are adding a missing irq_enter/exit pair to the kick_handler, right ?
-> 
-> Yes. Previously the outermost pair of irq_enter/exit was inside the
-> spin lock critical section (inside scheduler_ipi). so soft-irqs
-> (apparently including the scheduler) would run from irq_exit with the
-> spinlock still held. Now it waits until the new outermost irq_exit(),
-> after the spin lock is released.
-> 
-> I should probably have increased the number of lines of diff context.
-> http://lxr.linux.no/#linux+v3.10/arch/metag/kernel/kick.c#L66
+"Peter Hüwe" <PeterHuewe@gmx.de> wrote:
 
-No, you should have written the changelog less confusing. I can see
-the context by just looking at the current and the patched code.
+>Am Montag, 1. Juli 2013, 23:34:28 schrieb Daniel De Graaf:
+>> This is a complete rewrite of the Xen TPM frontend driver, taking
+>> advantage of a simplified frontend/backend interface and adding
+>support
+>> for cancellation and timeouts.  The backend for this driver is
+>provided
+>> by a vTPM stub domain using the interface in Xen 4.3.
+>> 
+>> Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+>> Acked-by: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+>> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> Acked-by: Peter Huewe <peterhuewe@gmx.de>
+>> Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+>> ---
+>
+>Reviewed, the remaining topics were addressed in this v4.
+>Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+>
+>
+>From the TPM point of view I'd say it is fine.
+>Acked-by: Peter Huewe <peterhuewe@gmx.de>
+>
+>Thanks!
+>
+>@Konrad: Can you take it through your tree?
+>
+>
+>Thanks,
+>Peter
 
-The explanation you provided right now that the outermost pair of
-irq_enter/exit was inside the spin locked section matches the patch
-and makes sense.
-
-So the real issue is, that all of your various interrupts come from
-the same place, i.e. kick_handler. The kick_handler locks a global
-lock and calls the handlers which have registered. These handlers
-(partially calling generic code) might invoke irq_enter/exit pairs,
-which leads to the underlying problem.
-
-If irq_exit() results in a nest count of hard interrupts = 0, then it
-invokes eventually pending soft interrupts. The softirq callbacks can
-issue an IPI of some sorts and because this IPI will end up in the
-kick handler, the systems livelocks on the already held global lock
-which protects the kick_handler list. This can happen from any invoked
-handler, because the kick_handler is missing an irq_enter/pair
-preventing a kick_handler invocation recursion.
-
-The obvious fix for now is to add an irq_enter/exit() pair around the
-spin locked section in the kick handler, so irq_exit() invocations of
-subhandlers wont lead to softirq execution.
-
-The more elegant fix would be to replace that global lock which is not
-really scalable with an RCU protected list of subscribed handlers.
-
-The most elegant fix would be to have separate entry points for
-various exceptions, but that seems to be an architectural issue.
-
-Thanks,
-
-	tglx
-
-
+Of course I will queue it up. I am not sure if it will be able to make it in 3.11 (merge window opened just now). 
+-- 
+Sent from my Android phone. Please excuse my brevity.
