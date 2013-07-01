@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3GAOU4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 10:20:56 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:41500 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751108Ab3GAOUx (ORCPT
+	id S1754257Ab3GAOVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 10:21:17 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:56651 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab3GAOVO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 10:20:53 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH] iio: Fix iio_channel_has_info
-Date: Mon,  1 Jul 2013 16:20:30 +0200
-Message-Id: <1372688430-13120-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 1 Jul 2013 10:21:14 -0400
+From: naresh.bhat@linaro.org
+To: linux-acpi@vger.kernel.org
+Cc: len.brown@intel.com, patches@linaro.org, linaro-kernel@lists.linaro.org,
+        naresh.bhat@linaro.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ACPI/fan: Initialize acpi_state variable
+Date: Mon,  1 Jul 2013 19:51:00 +0530
+Message-Id: <1372688460-11010-1-git-send-email-naresh.bhat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the info_mask split, iio_channel_has_info() is not working correctly.
-info_mask_separate and info_mask_shared_by_type, it is not possible to compare
-them directly with the iio_chan_info_enum enum. Correct that bit using the BIT()
-macro.
+From: Naresh Bhat <naresh.bhat@linaro.org>
 
-Cc: <stable@vger.kernel.org> # 3.10.x
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+ CC      drivers/acpi/fan.o
+drivers/acpi/fan.c: In function ‘fan_get_cur_state’:
+drivers/acpi/fan.c:96:9: warning: ‘acpi_state’ may be used uninitialized in this function [-Wuninitialized]
+
+Signed-off-by: Naresh Bhat <naresh.bhat@linaro.org>
 ---
- include/linux/iio/iio.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/fan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index 8d171f4..3d35b70 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -211,8 +211,8 @@ struct iio_chan_spec {
- static inline bool iio_channel_has_info(const struct iio_chan_spec *chan,
- 	enum iio_chan_info_enum type)
+diff --git a/drivers/acpi/fan.c b/drivers/acpi/fan.c
+index 8d1c010..5b02a0a 100644
+--- a/drivers/acpi/fan.c
++++ b/drivers/acpi/fan.c
+@@ -84,7 +84,7 @@ static int fan_get_cur_state(struct thermal_cooling_device *cdev, unsigned long
  {
--	return (chan->info_mask_separate & type) |
--	       (chan->info_mask_shared_by_type & type);
-+	return (chan->info_mask_separate & BIT(type)) |
-+	       (chan->info_mask_shared_by_type & BIT(type));
- }
+ 	struct acpi_device *device = cdev->devdata;
+ 	int result;
+-	int acpi_state;
++	int acpi_state = ACPI_STATE_D0;
  
- #define IIO_ST(si, rb, sb, sh)						\
+ 	if (!device)
+ 		return -EINVAL;
 -- 
-1.8.1.2
+1.7.9.5
 
