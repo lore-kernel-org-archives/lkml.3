@@ -1,111 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab3GAWYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:24:15 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:34435 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753553Ab3GAWYO (ORCPT
+	id S1755789Ab3GAWZf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:25:35 -0400
+Received: from mout.gmx.net ([212.227.17.21]:56391 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754218Ab3GAWZc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:24:14 -0400
-Message-ID: <1372717451.2385.58.camel@dabdike>
-Subject: Re: [PATCH] block: Fix possible sleep in invalid context
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sujit Reddy Thumma <sthumma@codeaurora.org>, Aaron Lu <aaron.lu@intel.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-pm@vger.kernel.org,
-        linux-scsi@vger.kernel.org, stable@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 01 Jul 2013 15:24:11 -0700
-In-Reply-To: <20130701151712.f453745bc0c587f449cc3214@linux-foundation.org>
-References: <1372692515-31969-1-git-send-email-sthumma@codeaurora.org>
-	 <20130701151712.f453745bc0c587f449cc3214@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Jul 2013 18:25:32 -0400
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: tpmdd-devel@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v4] drivers/tpm: add xen tpmfront interface
+Date: Tue, 2 Jul 2013 00:32:49 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.0; KDE/4.9.5; x86_64; ; )
+Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>, konrad.wilk@oracle.com,
+        leosilva@linux.vnet.ibm.com, adlai@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org, mail@srajiv.net,
+        shpedoikal@gmail.com, tpmdd@sirrix.com
+References: <1372714468-28120-1-git-send-email-dgdegra@tycho.nsa.gov>
+In-Reply-To: <1372714468-28120-1-git-send-email-dgdegra@tycho.nsa.gov>
+MIME-Version: 1.0
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201307020032.49963.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:n0uCo5gfyMILcEJc9oUOdXeYsHlmmInaTQb5ADMu64weQI9N/+W
+ ly0TTu5mpiwE4SC1WkKWpUOyNghrXnr3a6ZacguSKU6B2jI8xAfh9M9MCUzFPCJsfkMIgzs
+ 7CqdNKPsBLdDOZdCI8Hu8reClThSaH+HsAe7DojPwh0No2LrfyXzmFlyRnvLL2zWxYRpj4T
+ QHslpxOAvew4yv5J+KZZw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-01 at 15:17 -0700, Andrew Morton wrote:
-> On Mon,  1 Jul 2013 20:58:35 +0530 Sujit Reddy Thumma <sthumma@codeaurora.org> wrote:
+Am Montag, 1. Juli 2013, 23:34:28 schrieb Daniel De Graaf:
+> This is a complete rewrite of the Xen TPM frontend driver, taking
+> advantage of a simplified frontend/backend interface and adding support
+> for cancellation and timeouts.  The backend for this driver is provided
+> by a vTPM stub domain using the interface in Xen 4.3.
 > 
-> > When block runtime PM is enabled following warning is seen
-> > while resuming the device.
-> > 
-> > BUG: sleeping function called from invalid context at
-> > .../drivers/base/power/runtime.c:923
-> > in_atomic(): 1, irqs_disabled(): 128, pid: 12, name: kworker/0:1
-> > [<c0014448>] (unwind_backtrace+0x0/0x120) from
-> > [<c03120e4>] (__pm_runtime_suspend+0x34/0xa0) from
-> > [<c021c33c>] (blk_post_runtime_resume+0x4c/0x5c) from
-> > [<c03297cc>] (scsi_runtime_resume+0x90/0xb4) from
-> > [<c0310940>] (__rpm_callback+0x30/0x58) from
-> > [<c0310980>] (rpm_callback+0x18/0x28) from
-> > [<c0311ab0>] (rpm_resume+0x3dc/0x540) from
-> > [<c03120a4>] (pm_runtime_work+0x8c/0x98) from
-> > [<c007767c>] (process_one_work+0x238/0x3e4) from
-> > [<c0077b90>] (worker_thread+0x1ac/0x2ac) from
-> > [<c007cfdc>] (kthread+0x88/0x94) from
-> > [<c000ece0>] (kernel_thread_exit+0x0/0x8)
-> > 
-> > Fix this by releasing spin_lock_irq() before calling
-> > pm_runtime_autosuspend() in blk_post_runtime_resume().
-> > 
-> > --- a/block/blk-core.c
-> > +++ b/block/blk-core.c
-> > @@ -3159,16 +3159,18 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
-> >   */
-> >  void blk_post_runtime_resume(struct request_queue *q, int err)
-> >  {
-> > -	spin_lock_irq(q->queue_lock);
-> >  	if (!err) {
-> > +		spin_lock_irq(q->queue_lock);
-> >  		q->rpm_status = RPM_ACTIVE;
-> >  		__blk_run_queue(q);
-> >  		pm_runtime_mark_last_busy(q->dev);
-> > +		spin_unlock_irq(q->queue_lock);
-> >  		pm_runtime_autosuspend(q->dev);
-> >  	} else {
-> > +		spin_lock_irq(q->queue_lock);
-> >  		q->rpm_status = RPM_SUSPENDED;
-> > +		spin_unlock_irq(q->queue_lock);
-> >  	}
-> > -	spin_unlock_irq(q->queue_lock);
-> >  }
-> >  EXPORT_SYMBOL(blk_post_runtime_resume);
-> >  #endif
-> 
-> I suppose we can do this cleanly enough:
-> 
-> --- a/block/blk-core.c~block-fix-possible-sleep-in-invalid-context-fix
-> +++ a/block/blk-core.c
-> @@ -3159,15 +3159,14 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
->   */
->  void blk_post_runtime_resume(struct request_queue *q, int err)
->  {
-> +	spin_lock_irq(q->queue_lock);
->  	if (!err) {
-> -		spin_lock_irq(q->queue_lock);
->  		q->rpm_status = RPM_ACTIVE;
->  		__blk_run_queue(q);
->  		pm_runtime_mark_last_busy(q->dev);
->  		spin_unlock_irq(q->queue_lock);
->  		pm_request_autosuspend(q->dev);
->  	} else {
-> -		spin_lock_irq(q->queue_lock);
->  		q->rpm_status = RPM_SUSPENDED;
->  		spin_unlock_irq(q->queue_lock);
->  	}
-> _
-> 
-> 
-> I wonder if we actually need locking around that second write to
-> q->rpm_status.
+> Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+> Acked-by: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Acked-by: Peter Huewe <peterhuewe@gmx.de>
+> Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
+> ---
 
-Shouldn't: it's an int, which makes it a 32 bit quantity we believe to
-have atomic write properties on every platform.
-
-James
+Reviewed, the remaining topics were addressed in this v4.
+Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
 
 
+>From the TPM point of view I'd say it is fine.
+Acked-by: Peter Huewe <peterhuewe@gmx.de>
+
+Thanks!
+
+@Konrad: Can you take it through your tree?
+
+
+Thanks,
+Peter
