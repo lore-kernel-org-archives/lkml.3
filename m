@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab3GAWC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:02:57 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58464 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755582Ab3GAWCz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755580Ab3GAWCz (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 1 Jul 2013 18:02:55 -0400
-From: Mark Brown <broonie@kernel.org>
-To: Kukjin Kim <kgene.kim@samsung.com>, Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
-Date: Mon,  1 Jul 2013 23:02:19 +0100
-Message-Id: <1372716139-5586-1-git-send-email-broonie@kernel.org>
-X-Mailer: git-send-email 1.8.3.1
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: [PATCH] mfd: sec: Provide max_register to regmap
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57276 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab3GAWCy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 18:02:54 -0400
+Message-ID: <51D1FC8B.1030505@wwwdotorg.org>
+Date: Mon, 01 Jul 2013 16:02:51 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: balbi@ti.com, linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [PATCH 9/9] usb: phy: tegra: Use DT helpers for dr_mode
+References: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com> <1372455427-20898-10-git-send-email-ttynkkynen@nvidia.com>
+In-Reply-To: <1372455427-20898-10-git-send-email-ttynkkynen@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Brown <broonie@linaro.org>
+On 06/28/2013 03:37 PM, Tuomas Tynkkynen wrote:
+> Use the new of_usb_get_dr_mode helper function for parsing dr_mode
+> from the device tree. Also replace the usage of the custom
+> tegra_usb_phy_mode enum with the standard enum.
 
-Enable debugfs register dumps and greater error checking within the
-regmap API providing the maximum register to the regmap API.
+> diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+> +	tegra_phy->mode = of_usb_get_dr_mode(np);
+> +	if (tegra_phy->mode == USB_DR_MODE_UNKNOWN) {
+> +		dev_err(&pdev->dev, "dr_mode is invalid\n");
+> +		return -EINVAL;
+> +	}
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
----
- drivers/mfd/sec-core.c | 41 ++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 40 insertions(+), 1 deletion(-)
+Unfortunately, of_usb_get_dr_mode() returns USB_DR_MODE_UNKNOWN if the
+property is missing, rather than defaulting to host mode as the original
+code here did. I would suggest solving this by:
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index cc896d1..7976768 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -25,6 +25,9 @@
- #include <linux/mfd/samsung/core.h>
- #include <linux/mfd/samsung/irq.h>
- #include <linux/mfd/samsung/rtc.h>
-+#include <linux/mfd/samsung/s2mps11.h>
-+#include <linux/mfd/samsung/s5m8763.h>
-+#include <linux/mfd/samsung/s5m8767.h>
- #include <linux/regmap.h>
- 
- static struct mfd_cell s5m8751_devs[] = {
-@@ -105,6 +108,26 @@ static struct regmap_config sec_regmap_config = {
- 	.val_bits = 8,
- };
- 
-+static struct regmap_config s2mps11_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = S2MPS11_REG_L38CTRL,
-+};
-+
-+static struct regmap_config s5m8763_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = S5M8763_REG_LBCNFG2,
-+};
-+
-+static struct regmap_config s5m8767_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+
-+	.max_register = S5M8767_REG_LDO28CTRL,
-+};
- 
- #ifdef CONFIG_OF
- /*
-@@ -160,6 +183,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
- 	struct sec_platform_data *pdata = i2c->dev.platform_data;
-+	const struct regmap_config *regmap;
- 	struct sec_pmic_dev *sec_pmic;
- 	int ret;
- 
-@@ -190,7 +214,22 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 		sec_pmic->pdata = pdata;
- 	}
- 
--	sec_pmic->regmap = devm_regmap_init_i2c(i2c, &sec_regmap_config);
-+	switch (sec_pmic->device_type) {
-+	case S2MPS11X:
-+		regmap = &s2mps11_regmap_config;
-+		break;
-+	case S5M8763X:
-+		regmap = &s5m8763_regmap_config;
-+		break;
-+	case S5M8767X:
-+		regmap = &s5m8767_regmap_config;
-+		break;
-+	default:
-+		regmap = &sec_regmap_config;
-+		break;
-+	}
-+
-+	sec_pmic->regmap = devm_regmap_init_i2c(i2c, regmap);
- 	if (IS_ERR(sec_pmic->regmap)) {
- 		ret = PTR_ERR(sec_pmic->regmap);
- 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
--- 
-1.8.3.1
+> diff --git a/drivers/usb/usb-common.c b/drivers/usb/usb-common.c
+> index 675384d..6391de5 100644
+> --- a/drivers/usb/usb-common.c
+> +++ b/drivers/usb/usb-common.c
+> @@ -103,7 +103,7 @@ enum usb_dr_mode of_usb_get_dr_mode(struct device_node *np)
+>  
+>         err = of_property_read_string(np, "dr_mode", &dr_mode);
+>         if (err < 0)
+> -               return USB_DR_MODE_UNKNOWN;
+> +               return USB_DR_MODE_HOST;
+>  
+>         for (i = 0; i < ARRAY_SIZE(usb_dr_modes); i++)
+>                 if (!strcmp(dr_mode, usb_dr_modes[i]))
 
+This can't be done by the caller, since of_usb_get_dr_mode() returns
+UNKNOWN in two cases, which the caller can't distinguish without
+manually checking whether the property exists first:
+
+a) Property is not present (which should default to HOST mode at least
+for the Tegra binding, as in the patch I show above).
+
+b) Property is present, but contains an invalid value, which probably
+should cause the driver to error-out.
+
+This is only a problem for dr_mode in the Tegra binding: dr_mode is an
+optional property, whereas the phy_type property as parsed by patch 8/9
+is mandatory, so this issue doesn't come up.
