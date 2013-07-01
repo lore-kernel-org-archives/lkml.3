@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab3GAULw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:11:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49169 "EHLO
+	id S1755631Ab3GAUMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:12:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49165 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755627Ab3GAUK4 (ORCPT
+	with ESMTP id S1755596Ab3GAUKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:56 -0400
+	Mon, 1 Jul 2013 16:10:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 0/8] 3.0.85-stable review
-Date: Mon,  1 Jul 2013 13:10:32 -0700
-Message-Id: <20130701200232.909858308@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 5/8] perf: Disable monitoring on setuid processes for regular users
+Date: Mon,  1 Jul 2013 13:10:37 -0700
+Message-Id: <20130701200234.240989629@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130701200232.909858308@linuxfoundation.org>
+References: <20130701200232.909858308@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.85 release.
-There are 8 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Wed Jul  3 19:59:07 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.85-rc1.gz
-and the diffstat can be found below.
+From: Stephane Eranian <eranian@google.com>
 
-thanks,
+commit 2976b10f05bd7f6dab9f9e7524451ddfed656a89 upstream.
 
-greg k-h
+There was a a bug in setup_new_exec(), whereby
+the test to disabled perf monitoring was not
+correct because the new credentials for the
+process were not yet committed and therefore
+the get_dumpable() test was never firing.
 
--------------
-Pseudo-Shortlog of commits:
+The patch fixes the problem by moving the
+perf_event test until after the credentials
+are committed.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.85-rc1
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Tested-by: Jiri Olsa <jolsa@redhat.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Liang Li <liang.li@windriver.com>
-    pch_uart: fix a deadlock when pch_uart as console
+---
+ fs/exec.c |   16 +++++++++-------
+ 1 file changed, 9 insertions(+), 7 deletions(-)
 
-Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-    UBIFS: fix a horrid bug
-
-Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-    UBIFS: prepare to fix a horrid bug
-
-Stephane Eranian <eranian@google.com>
-    perf: Disable monitoring on setuid processes for regular users
-
-Zefan Li <lizefan@huawei.com>
-    dlci: validate the net device in dlci_del()
-
-Zefan Li <lizefan@huawei.com>
-    dlci: acquire rtnl_lock before calling __dev_get_by_name()
-
-Oleg Nesterov <oleg@redhat.com>
-    hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
-
-Anderson Lizardo <anderson.lizardo@openbossa.org>
-    Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
-
-
--------------
-
-Diffstat:
-
- Makefile                      |  4 ++--
- drivers/net/wan/dlci.c        | 26 +++++++++++++++++----
- drivers/tty/serial/pch_uart.c | 29 +++++++++++++++++------
- fs/exec.c                     | 16 +++++++------
- fs/ubifs/dir.c                | 54 +++++++++++++++++++++++++++++++------------
- kernel/events/hw_breakpoint.c |  4 ++--
- net/bluetooth/l2cap_core.c    |  3 +++
- 7 files changed, 98 insertions(+), 38 deletions(-)
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1149,13 +1149,6 @@ void setup_new_exec(struct linux_binprm
+ 		set_dumpable(current->mm, suid_dumpable);
+ 	}
+ 
+-	/*
+-	 * Flush performance counters when crossing a
+-	 * security domain:
+-	 */
+-	if (!get_dumpable(current->mm))
+-		perf_event_exit_task(current);
+-
+ 	/* An exec changes our domain. We are no longer part of the thread
+ 	   group */
+ 
+@@ -1219,6 +1212,15 @@ void install_exec_creds(struct linux_bin
+ 
+ 	commit_creds(bprm->cred);
+ 	bprm->cred = NULL;
++
++	/*
++	 * Disable monitoring for regular users
++	 * when executing setuid binaries. Must
++	 * wait until new credentials are committed
++	 * by commit_creds() above
++	 */
++	if (get_dumpable(current->mm) != SUID_DUMP_USER)
++		perf_event_exit_task(current);
+ 	/*
+ 	 * cred_guard_mutex must be held at least to this point to prevent
+ 	 * ptrace_attach() from altering our determination of the task's
 
 
