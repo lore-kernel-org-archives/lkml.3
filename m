@@ -1,80 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116Ab3GAMwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:52:24 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:55038 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab3GAMwX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 08:52:23 -0400
-Message-ID: <51D17B76.3060803@gmail.com>
-Date: Mon, 01 Jul 2013 08:52:06 -0400
-From: Dong Fang <yp.fangdong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754072Ab3GAM4Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 08:56:24 -0400
+Received: from [207.46.163.26] ([207.46.163.26]:17191 "EHLO
+	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1752695Ab3GAM4X convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 08:56:23 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz98dI9371I542I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
+X-WSS-ID: 0MP9D7V-01-3XX-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Brian Gitonga Marete <marete@toshnix.com>
+CC: LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        Jerome Glisse <jglisse@redhat.com>
+Subject: RE: [REGRESSION] Radeon (Evergreen) Crash with "pin failed" in
+ Kernel 3.10-rc7
+Thread-Topic: [REGRESSION] Radeon (Evergreen) Crash with "pin failed" in
+ Kernel 3.10-rc7
+Thread-Index: AQHOc72pTyDwfFYZnkSCHDaBFdqGDZlLEXVwgACH0gCAAdRLgIACXx7A
+Date: Mon, 1 Jul 2013 12:55:06 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02E5005D8@sausexdag04.amd.com>
+References: <CAHVUoiQ5LpvCLUpx6SeMHAaHZZO0BmcYE3HfJa8OB_hp6aXHgQ@mail.gmail.com>
+ <A3397C8B8B789E45844E7EC5DEAD89D02E5001EF@sausexdag04.amd.com>
+ <CAHVUoiRk7a=wViqK=UAGqcgL=OJXEVO=6hC-xV+mHWANWvV91w@mail.gmail.com>
+ <CAHVUoiREVfiL6asGLN-r7EMeR83d71bXfqhzbhWxNz7BFEUTNA@mail.gmail.com>
+In-Reply-To: <CAHVUoiREVfiL6asGLN-r7EMeR83d71bXfqhzbhWxNz7BFEUTNA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.224.14.97]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Jiaxing Wang <hello.wjx@gmail.com>
-CC: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] seq_file:update file->f_pos when lseek() to m->read_pos
-References: <1372497096-15914-1-git-send-email-hello.wjx@gmail.com>
-In-Reply-To: <1372497096-15914-1-git-send-email-hello.wjx@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2013 05:11 AM, Jiaxing Wang wrote:
-> After pread(), file->f_pos and m->read_pos get different,
-> and lseek() to m->read_pos did not update file->f_pos, then
-> a subsequent read may read from a wrong position, the following
-> program shows the problem:
->
->      char str1[32] = { 0 };
->      char str2[32] = { 0 };
->      int poffset = 10;
->      int count = 20;
->
->      /*open any seq file*/
->      int fd = open("/proc/modules", O_RDONLY);
->
->      pread(fd, str1, count, poffset);
->      printf("pread:%s\n", str1);
->
->      /*seek to where m->read_pos is*/
->      lseek(fd, poffset+count, SEEK_SET);
->
->      /*supposed to read from poffset+count, but this read from position 0*/
->      read(fd, str2, count);
->      printf("read:%s\n", str2);
->
-> Signed-off-by: Jiaxing Wang <hello.wjx@gmail.com>
-> ---
->   fs/seq_file.c | 3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/fs/seq_file.c b/fs/seq_file.c
-> index 774c1eb..4b22b26 100644
-> --- a/fs/seq_file.c
-> +++ b/fs/seq_file.c
-> @@ -328,7 +328,8 @@ loff_t seq_lseek(struct file *file, loff_t offset, int whence)
->   				m->read_pos = offset;
->   				retval = file->f_pos = offset;
->   			}
-> -		}
-> +		} else
-> +			file->f_pos = offset;
->   	}
->   	file->f_version = m->version;
->   	mutex_unlock(&m->lock);
->
-This does not appear to be a problem, in linux man page, the behaver 
-seems clearly defined:
+> -----Original Message-----
+> From: Brian Gitonga Marete [mailto:marete@toshnix.com]
+> Sent: Saturday, June 29, 2013 3:41 PM
+> To: Deucher, Alexander
+> Cc: LKML; David Airlie; Jerome Glisse
+> Subject: Re: [REGRESSION] Radeon (Evergreen) Crash with "pin failed" in
+> Kernel 3.10-rc7
+> 
+> On Fri, Jun 28, 2013 at 6:45 PM, Brian Gitonga Marete
+> <marete@toshnix.com> wrote:
+> > On Fri, Jun 28, 2013 at 3:55 PM, Deucher, Alexander
+> > <Alexander.Deucher@amd.com> wrote:
+> >>
+> >> Can you bisect?
+> >>
+> >
+> 
+> Hello Alexander,
+> 
+> So, it turns out that it is not so easy to reproduce this issue. I
+> have been trying to reproduce it with the exact revision of 3.10-rc7
+> where I first encountered the problem but with no luck. This of course
+> has hampered my bisection since I cannot be sure which revisions to
+> mark good/bad. Do you have any suggestions in this regard?
+> 
+> I however have a UVD-related lockup that I can always reproduce on
+> 3.10-rc7: Trying to use UVD with the command: "mplayer -vo vdpau -vc
+> ffh264vdpau test.mp4" _always_locks up the same system (same kernel,
+> same DRI stack) hard. I will report this in a separate email, though
+> nothing at all shows up in the logs for this latter problem due to the
+> hard lockup. Suggestions about how to help debug this are also
+> welcome.
 
-DESCRIPTION
-        pread() reads up to count bytes from file descriptor fd at
-offset  off-set  (from the start of the file) into the buffer starting
-at buf.  The file offset is not changed.
-        pwrite() writes up to count bytes from the buffer starting at
-buf  to the  file  descriptor  fd  at  offset  offset.   The file
-offset is not changed.
+Please open a bug (https://bugs.freedesktop.org) and attach your xorg log and dmesg output.
+
+Alex
+
+
