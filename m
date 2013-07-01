@@ -1,116 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab3GAPjH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:39:07 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:47161 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab3GAPjE (ORCPT
+	id S1754642Ab3GAPjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:39:20 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:37710 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754423Ab3GAPjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:39:04 -0400
-Subject: [PATCH v3 2/3] mce: acpi/apei: Add a boot option to disable ff mode
- for corrected errors
+	Mon, 1 Jul 2013 11:39:16 -0400
+Subject: [PATCH v3 3/3] mce,
+ acpi/apei: Soft-offline a page on firmware GHES notification
 To: tony.luck@intel.com, bp@alien8.de
 From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
 Cc: ananth@in.ibm.com, masbock@linux.vnet.ibm.com, lcm@linux.vnet.ibm.com,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         ying.huang@intel.com
-Date: Mon, 01 Jul 2013 21:08:54 +0530
-Message-ID: <20130701153854.6197.76602.stgit@localhost.localdomain>
+Date: Mon, 01 Jul 2013 21:08:59 +0530
+Message-ID: <20130701153859.6197.59186.stgit@localhost.localdomain>
 In-Reply-To: <20130701153728.6197.14022.stgit@localhost.localdomain>
 References: <20130701153728.6197.14022.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070115-2000-0000-0000-00000CB73858
+x-cbid: 13070115-9264-0000-0000-0000040AB341
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a boot option to disable firmware first mode for corrected errors.
+If the firmware indicates in GHES error data entry that the error threshold
+has exceeded for a corrected error event, then we try to soft-offline the
+page. This could be called in interrupt context, so we queue this up similar
+to how we handle memory failure scenarios.
 
 
 Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 ---
- Documentation/x86/x86_64/boot-options.txt |    5 +++++
- arch/x86/include/asm/acpi.h               |    2 ++
- arch/x86/kernel/acpi/boot.c               |    5 +++++
- drivers/acpi/apei/hest.c                  |    3 ++-
- 4 files changed, 14 insertions(+), 1 deletion(-)
+ drivers/acpi/apei/ghes.c |   12 ++++++++++
+ include/linux/mm.h       |    1 +
+ mm/memory-failure.c      |   53 ++++++++++++++++++++++++++++++----------------
+ 3 files changed, 48 insertions(+), 18 deletions(-)
 
-diff --git a/Documentation/x86/x86_64/boot-options.txt b/Documentation/x86/x86_64/boot-options.txt
-index e9e8ddb..1228b22 100644
---- a/Documentation/x86/x86_64/boot-options.txt
-+++ b/Documentation/x86/x86_64/boot-options.txt
-@@ -176,6 +176,11 @@ ACPI
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index fcd7d91..5a630ed 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -429,6 +429,18 @@ static void ghes_do_proc(struct ghes *ghes,
+ 						  mem_err);
+ #endif
+ #ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
++			if (sec_sev == GHES_SEV_CORRECTED &&
++			    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
++			    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
++				unsigned long pfn;
++				pfn = mem_err->physical_addr >> PAGE_SHIFT;
++				if (pfn_valid(pfn))
++					soft_memory_failure_queue(pfn, 0, 0);
++				else
++					pr_warning(FW_WARN GHES_PFX
++					"Invalid address in generic error data: %#lx\n",
++					mem_err->physical_addr);
++			}
+ 			if (sev == GHES_SEV_RECOVERABLE &&
+ 			    sec_sev == GHES_SEV_RECOVERABLE &&
+ 			    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index e0c8528..f9907d2 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1787,6 +1787,7 @@ enum mf_flags {
+ };
+ extern int memory_failure(unsigned long pfn, int trapno, int flags);
+ extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
++extern void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags);
+ extern int unpoison_memory(unsigned long pfn);
+ extern int sysctl_memory_failure_early_kill;
+ extern int sysctl_memory_failure_recovery;
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index ceb0c7f..50caefd 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1222,6 +1222,7 @@ struct memory_failure_entry {
+ 	unsigned long pfn;
+ 	int trapno;
+ 	int flags;
++	bool soft_offline;
+ };
  
-   acpi=noirq	Don't route interrupts
+ struct memory_failure_cpu {
+@@ -1233,6 +1234,28 @@ struct memory_failure_cpu {
  
-+  acpi=nocmcff	Disable firmware first mode for corrected errors. This
-+		disables parsing the HEST CMC error source to check if
-+		firmware has set the FF flag. This may result in
-+		duplicate corrected error reports.
+ static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
+ 
++void __memory_failure_queue(unsigned long pfn, int trapno, int flags, int soft_offline)
++{
++	struct memory_failure_cpu *mf_cpu;
++	unsigned long proc_flags;
++	struct memory_failure_entry entry = {
++		.pfn =		pfn,
++		.trapno =	trapno,
++		.flags =	flags,
++		.soft_offline = soft_offline
++	};
 +
- PCI
++	mf_cpu = &get_cpu_var(memory_failure_cpu);
++	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
++	if (kfifo_put(&mf_cpu->fifo, &entry))
++		schedule_work_on(smp_processor_id(), &mf_cpu->work);
++	else
++		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
++		       pfn);
++	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
++	put_cpu_var(memory_failure_cpu);
++}
++
+ /**
+  * memory_failure_queue - Schedule handling memory failure of a page.
+  * @pfn: Page Number of the corrupted page
+@@ -1250,28 +1273,19 @@ static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
+  *
+  * Can run in IRQ context.
+  */
++
+ void memory_failure_queue(unsigned long pfn, int trapno, int flags)
+ {
+-	struct memory_failure_cpu *mf_cpu;
+-	unsigned long proc_flags;
+-	struct memory_failure_entry entry = {
+-		.pfn =		pfn,
+-		.trapno =	trapno,
+-		.flags =	flags,
+-	};
+-
+-	mf_cpu = &get_cpu_var(memory_failure_cpu);
+-	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
+-	if (kfifo_put(&mf_cpu->fifo, &entry))
+-		schedule_work_on(smp_processor_id(), &mf_cpu->work);
+-	else
+-		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
+-		       pfn);
+-	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+-	put_cpu_var(memory_failure_cpu);
++	__memory_failure_queue(pfn, trapno, flags, false);
+ }
+ EXPORT_SYMBOL_GPL(memory_failure_queue);
  
-   pci=off		Don't use PCI
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index b31bf97..42db2b8 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -86,6 +86,7 @@ extern int acpi_pci_disabled;
- extern int acpi_skip_timer_override;
- extern int acpi_use_timer_override;
- extern int acpi_fix_pin2_polarity;
-+extern int acpi_disable_cmcff;
- 
- extern u8 acpi_sci_flags;
- extern int acpi_sci_override_gsi;
-@@ -168,6 +169,7 @@ static inline void arch_acpi_set_pdc_bits(u32 *buf)
- 
- #define acpi_lapic 0
- #define acpi_ioapic 0
-+#define acpi_disable_cmcff 0
- static inline void acpi_noirq_set(void) { }
- static inline void acpi_disable_pci(void) { }
- static inline void disable_acpi(void) { }
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 230c8ea..d1998d5 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -66,6 +66,7 @@ EXPORT_SYMBOL(acpi_pci_disabled);
- int acpi_lapic;
- int acpi_ioapic;
- int acpi_strict;
-+int acpi_disable_cmcff;
- 
- u8 acpi_sci_flags __initdata;
- int acpi_sci_override_gsi __initdata;
-@@ -1619,6 +1620,10 @@ static int __init parse_acpi(char *arg)
- 	/* "acpi=copy_dsdt" copys DSDT */
- 	else if (strcmp(arg, "copy_dsdt") == 0) {
- 		acpi_gbl_copy_dsdt_locally = 1;
-+	}
-+	/* "acpi=nocmcff" disables FF mode for corrected errors */
-+	else if (strcmp(arg, "nocmcff") == 0) {
-+		acpi_disable_cmcff = 1;
- 	} else {
- 		/* Core will printk when we return error. */
- 		return -EINVAL;
-diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
-index b108b11..5020245 100644
---- a/drivers/acpi/apei/hest.c
-+++ b/drivers/acpi/apei/hest.c
-@@ -262,7 +262,8 @@ void __init acpi_hest_init(void)
- 		goto err;
++void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags)
++{
++	__memory_failure_queue(pfn, trapno, flags, true);
++}
++EXPORT_SYMBOL_GPL(soft_memory_failure_queue);
++
+ static void memory_failure_work_func(struct work_struct *work)
+ {
+ 	struct memory_failure_cpu *mf_cpu;
+@@ -1286,7 +1300,10 @@ static void memory_failure_work_func(struct work_struct *work)
+ 		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+ 		if (!gotten)
+ 			break;
+-		memory_failure(entry.pfn, entry.trapno, entry.flags);
++		if (entry.soft_offline)
++			soft_offline_page(pfn_to_page(entry.pfn), entry.flags);
++		else
++			memory_failure(entry.pfn, entry.trapno, entry.flags);
  	}
+ }
  
--	apei_hest_parse(hest_parse_cmc, NULL);
-+	if (!acpi_disable_cmcff)
-+		apei_hest_parse(hest_parse_cmc, NULL);
- 
- 	if (!ghes_disable) {
- 		rc = apei_hest_parse(hest_parse_ghes_count, &ghes_count);
 
