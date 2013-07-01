@@ -1,108 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997Ab3GAB0U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 21:26:20 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:13320 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750868Ab3GAB0T (ORCPT
+	id S1752141Ab3GABgy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 21:36:54 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:45894 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab3GABgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 21:26:19 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgANABnZ0FF5LakP/2dsb2JhbABagwm6boUfBAGBABd0giMBAQU6HCMQCAMOCgklDwUlAyETiA66fBaOBCeBHQeDBGMDl0eKH4cngyMqgSw
-Date: Mon, 1 Jul 2013 11:25:58 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130701012558.GB27780@dastard>
-References: <20130618063104.GB20528@localhost.localdomain>
- <20130618082414.GC13677@dhcp22.suse.cz>
- <20130618104443.GH13677@dhcp22.suse.cz>
- <20130618135025.GK13677@dhcp22.suse.cz>
- <20130625022754.GP29376@dastard>
- <20130626081509.GF28748@dhcp22.suse.cz>
- <20130626232426.GA29034@dastard>
- <20130627145411.GA24206@dhcp22.suse.cz>
- <20130629025509.GG9047@dastard>
- <20130630183349.GA23731@dhcp22.suse.cz>
+	Sun, 30 Jun 2013 21:36:53 -0400
+Date: Sun, 30 Jun 2013 18:36:49 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: rydberg@euromail.se
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Support for 2013 Macbook Air
+Message-ID: <20130701013649.GC10755@core.coreip.homeip.net>
+References: <1372619086-3532-1-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130630183349.GA23731@dhcp22.suse.cz>
+In-Reply-To: <1372619086-3532-1-git-send-email-rydberg@euromail.se>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 30, 2013 at 08:33:49PM +0200, Michal Hocko wrote:
-> On Sat 29-06-13 12:55:09, Dave Chinner wrote:
-> > On Thu, Jun 27, 2013 at 04:54:11PM +0200, Michal Hocko wrote:
-> > > On Thu 27-06-13 09:24:26, Dave Chinner wrote:
-> > > > On Wed, Jun 26, 2013 at 10:15:09AM +0200, Michal Hocko wrote:
-> > > > > On Tue 25-06-13 12:27:54, Dave Chinner wrote:
-> > > > > > On Tue, Jun 18, 2013 at 03:50:25PM +0200, Michal Hocko wrote:
-> > > > > > > And again, another hang. It looks like the inode deletion never
-> > > > > > > finishes. The good thing is that I do not see any LRU related BUG_ONs
-> > > > > > > anymore. I am going to test with the other patch in the thread.
-> > > > > > > 
-> > > > > > > 2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
-> > > > > > > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > > > > > > [<ffffffff8118525f>] iget_locked+0x4f/0x180
-> > > > > > > [<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-> > > > > > > [<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-> > > > > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > > > > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > > > > > > [<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
-> > > > > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > > > > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > > > > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > > > > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > > > > > > [<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-> > > > > > > [<ffffffffffffffff>] 0xffffffffffffffff
-
-.....
-> Do you mean sysrq+t? It is attached. 
+On Sun, Jun 30, 2013 at 09:04:44PM +0200, rydberg@euromail.se wrote:
+> Hi Dmitry, Jiri,
 > 
-> Btw. I was able to reproduce this again. The stuck processes were
-> sitting in the same traces for more than 28 hours without any change so
-> I do not think this is a temporal condition.
-> 
-> Traces of all processes in the D state:
-> 7561 [<ffffffffa029c03e>] xfs_iget+0xbe/0x190 [xfs]
-> [<ffffffffa02a8e98>] xfs_lookup+0xe8/0x110 [xfs]
-> [<ffffffffa029fad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-> [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> [<ffffffff8117815e>] do_last+0x2de/0x780
-> [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
+> Please find enclosed two patches yielding support for the
+> MacbookAir6,2. As usual, there is one HID and one Input patch. Given
+> the closeness to the merge window, I suppose we could backport this to
+> 3.10, unless Linus decides to wait another week. Backports should be
+> fine back to v3.7, inclusive. Dmitry, would you care to take the
+> patches, if Jiri is ok with that?
 
-This looks like it may be equivalent to the ext4 trace above, though
-I'm not totally sure on that yet. Can you get me the line of code
-where the above code is sleeping - 'gdb> l *(xfs_iget+0xbe)' output
-is sufficient.
+Sure, I can take it in if Jiri is OK with it.
 
-If it's where I suspect it is, we are hitting a VFS inode that
-igrab() is failing on because I_FREEING is set and that is returning
-EAGAIN. Hence xfs_iget() sleeps for a short period and retries the
-lookup. If you've still got a system in this state, can you dump the
-xfs stats a few times about 5s apart i.e.
+Thanks.
 
-$ for i in `seq 0 1 5`; do echo ; date; cat /proc/fs/xfs/stat ; sleep 5 ; done
-
-Depending on what stat is changing (i'm looking for skip vs recycle
-in the inode cache stats), that will tell us why the lookup is
-failing...
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Dmitry
