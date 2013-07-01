@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab3GAHDY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:03:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62146 "EHLO mx1.redhat.com"
+	id S1752765Ab3GAHFo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:05:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28285 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008Ab3GAHDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:03:22 -0400
-Message-ID: <1372662173.2974.17.camel@cr0>
+	id S1751008Ab3GAHFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:05:43 -0400
+Message-ID: <1372662315.2974.20.camel@cr0>
 Subject: Re: [RFC Patch net-next 2/5] net: introduce generic inet_pton()
 From: Cong Wang <amwang@redhat.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
 Cc: netdev@vger.kernel.org, Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Neil Horman <nhorman@tuxdriver.com>, Jiri Pirko <jiri@resnulli.us>,
         Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org
-Date: Mon, 01 Jul 2013 15:02:53 +0800
-In-Reply-To: <1372347124.2436.3.camel@bwh-desktop.uk.level5networks.com>
+Date: Mon, 01 Jul 2013 15:05:15 +0800
+In-Reply-To: <20130627145116.03e2f892@nehalam.linuxnetplumber.net>
 References: <1372315398-19683-1-git-send-email-amwang@redhat.com>
 	 <1372315398-19683-3-git-send-email-amwang@redhat.com>
-	 <1372347124.2436.3.camel@bwh-desktop.uk.level5networks.com>
+	 <20130627145116.03e2f892@nehalam.linuxnetplumber.net>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
@@ -26,14 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-06-27 at 16:32 +0100, Ben Hutchings wrote:
-> The return values for this are awful.  I think the return value should
-> be 0 for success or -EINVAL on error.
+On Thu, 2013-06-27 at 14:51 -0700, Stephen Hemminger wrote:
+> >  
+> > +static inline int inet_pton(const char *str, union inet_addr *addr)
+> > +{
+> >
 > 
-> The caller can then check addr->sa.sa_family if they want to know the
-> address family immediately. 
+> A couple of comments:
+> 1. No reason for this to be inline
 
-Indeed, I will fix it.
+Okay, I will move them into net/core/utils.c.
+
+> 2. If function has same name as userspace it must have same arguments
+>    and return value. Either:
+>     a. rename it to kinet_pton or some other name
+>     b. make it work the same.
+> 
+
+Makes sense too me, I will try your option b) first, if it is over-kill
+I will fall back to option a).
 
 Thanks!
+
 
