@@ -1,212 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3GAPt0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:49:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31355 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752735Ab3GAPtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:49:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,974,1363158000"; 
-   d="scan'208";a="338751031"
-Message-ID: <1372693762.4072.96.camel@empanada>
-Subject: Re: [PATCH v2 00/11] tracing: trace event triggers
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: rostedt@goodmis.org, masami.hiramatsu.pt@hitachi.com,
-        linux-kernel@vger.kernel.org
-Date: Mon, 01 Jul 2013 10:49:22 -0500
-In-Reply-To: <51CEA92F.3040802@huawei.com>
-References: <cover.1372479499.git.tom.zanussi@linux.intel.com>
-	 <51CEA92F.3040802@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754579Ab3GAPuZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:50:25 -0400
+Received: from a9-74.smtp-out.amazonses.com ([54.240.9.74]:55282 "EHLO
+	a9-74.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752735Ab3GAPuY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 11:50:24 -0400
+Date: Mon, 1 Jul 2013 15:50:23 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        lllllinux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/3] mm/slab: Fix drain freelist excessively
+In-Reply-To: <1372293700-15916-1-git-send-email-liwanp@linux.vnet.ibm.com>
+Message-ID: <0000013f9aed7e5f-f95ae9c1-fb29-41c0-a5ff-9f9aa398c223-000000@email.amazonses.com>
+References: <1372293700-15916-1-git-send-email-liwanp@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.07.01-54.240.9.74
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi jovi,
+On Thu, 27 Jun 2013, Wanpeng Li wrote:
 
-On Sat, 2013-06-29 at 17:30 +0800, zhangwei(Jovi) wrote:
-> On 2013/6/29 13:08, Tom Zanussi wrote:
-> > Hi,
-> > 
-> > This is v2 of the trace event triggers patchset, addressing comments
-> > from Masami Hiramatsu, zhangwei(Jovi), and Steve Rostedt (thanks for
-> > reviewing v1).
-> > 
-> > v2:
-> >  - removed all changes to __ftrace_event_enable_disable() (except
-> >    for patch 04/11 which clears the soft_disabled bit as discussed)
-> >    and created a separate trace_event_trigger_enable_disable() that
-> >    calls it after setting/clearing the TRIGGER_MODE_BIT.
-> >  - added a trigger_mode enum for future patches that break up the
-> >    trigger calls for filtering, but that's also now used as a command
-> >    id for registering/unregistering commands.
-> >  - removed the enter_file/exit_file members that were added to
-> >    syscall_metadata after realizing that they were unnecessary if
-> >    ftrace_syscall_enter/exit() were modified to receive a pointer
-> >    to the ftrace_file instead of the pointer to the trace_array in
-> >    the ftrace_file.
-> >  - broke up the trigger invocation into two parts so that triggers
-> >    like 'stacktrace' that themselves log into the trace buffer can
-> >    defer the actual trigger invocation until after the current
-> >    record is closed, which is needed for the filter check that
-> >    in turn determines whether the trigger gets invoked.
-> >  - other minor cleanup
-> > 
-> > 
-> > This patchset implements 'trace event triggers', which are similar to
-> > the function triggers implemented for 'ftrace filter commands' (see
-> > 'Filter commands' in Documentation/trace/ftrace.txt), but instead of
-> > being invoked from function calls are invoked by trace events.
-> > Basically the patchset allows 'commands' to be triggered whenever a
-> > given trace event is hit.  The set of commands implemented by this
-> > patchset are:
-> > 
-> >  - enable/disable_event - enable or disable another event whenever
-> >    the trigger event is hit
-> > 
-> >  - stacktrace - dump a stacktrace to the trace buffer whenever the
-> >    trigger event is hit
-> > 
-> >  - snapshot - create a snapshot of the current trace buffer whenever
-> >    the trigger event is hit
-> > 
-> >  - traceon/traceoff - turn tracing on or off whenever the trigger
-> >    event is hit
-> > 
-> > Triggers can also be conditionally invoked by associating a standard
-> > trace event filter with them - if the given event passes the filter,
-> > the trigger is invoked, otherwise it's not. (see 'Event filtering' in
-> > Documentation/trace/events.txt for info on event filters).
-> > 
-> 
-> I just aware that we are implementing more and more scripting functionality into
-> tracing subsystem, like filter and trigger mode, of cause we don't call it
-> as scripting, but basically the pattern is same, all is "do something when event hit".
-> 
+> The drain_freelist is called to drain slabs_free lists for cache reap,
+> cache shrink, memory hotplug callback etc. The tofree parameter is the
+> number of slab objects to free instead of the number of slabs to free.
+> The parameter transfered from callers is n->free_objects or n->freelimit
+> + 5 * (searchp->num - 1) / (5 * searchp->num), and both of them mean
+> the number of slabs objects. I add printk to dump drain information:
 
-Not really - this patchset is just reusing the existing filter code
-that's been there for years, and yes, it does follow the pattern of
-'doing something when an event is hit', but the things it does are
-really dirt simple - toggling of other events or the global tracing
-on/off switch, snapshotting trace buffers, etc.  All things that don't
-require any kind of scripting - this is more on the level of wiring
-things together on a breadboard.  And it's all available by simply using
-'cat' and 'echo' - no separate command and scripts to keep track of.  
-
-> FYI, a pretty simple scripting module of tracing is there:
-> 	https://github.com/ktap/ktap.git
-> 
-
-It looks pretty nice, but I wonder if Linux is ready for a full-fledged
-language interpreter in the kernel.  It's been tried before - see
-DProbes (in fact that effort is where kprobes came from - after it was
-obvious DProbes wouldn't make it into the kernel, it was broken up into
-multiple pieces - kprobes and uprobes eventually got in, but the RPN
-interpreter, which also had an ANSI C compiler targeting the bytecode
-(dpcc) never did...).  Well, following that, DTrace came along and
-showed how useful it could be, so maybe there wouldn't be as much
-resistance these days...
-
-Also, assuming an in-kernel language interpreter would fly, did you
-consider starting with something already-baked rather than starting from
-scratch?  How about taking something like the parrot VM and carving out
-a minimal core subset of that suitable for embedding in the kernel?  It
-probably wouldn't be easy, but you'd be building on a relatively mature
-and tested VM that's been designed for targeting many languages
-(including lua).
-
-Another thing you could consider is taking a page from the DProbes and
-breaking up and submitting ktap piecemeal.  For instance, you could
-break out and submit the associative array piece and with a little
-thought tie it to a 'histogram' trigger e.g. something like:
-
-echo 'hist[key,val] if filter' > trigger
-
-For example, something like this could be used to accomplish a similar
-thing to your scripts/syscalls_histogram.kp script (keeping and dumping
-a per-syscall count):
-
-echo 'hist[e.name,count()]' > /syscalls/trigger
-
-Similarly, this would keep a per-executable syscall count like
-syscalls_histogram2.kp:
-
-echo 'hist[comm,count()]' > /syscalls/trigger
-
-Any field defined in an event's 'format' file could be used as a key or
-value (e.g. using 'comm' as a hash key as above).  For example, keeping
-a per-pid hash of total bytes written by 'sys_exit_write' (both
-common_pid and ret are sys_exit_write fields, and I assume a small set
-of utility functions that say what to do with numeric fields, perhaps
-'add' could be the default) would show which process is doing most of
-the writing:
-
-echo 'hist[common_pid,add(ret)]' > syscalls/sys_exit_write/trigger
-
-Making the trace_dump_stack() available as a utility function would
-allow things like this: 
-
-echo 'hist[stacktrace(),count()] if bytes_req > 16384' >
-kmem/kmalloc/trigger
-
-Basically the above would use the stacktrace itself as a hash key and
-the value stored for each key would be a per-execution-path count of >
-16k kernel memory requests.  Dumping out the hash would show the top
-execution paths leading to large kmalloc requests.
-
-This would give users the ability to accomplish what a lot of them seem
-to use these tools for, and without any scripting  (I'm not saying
-scripting wouldn't be useful, but I think you can still accomplish quite
-a bit without it).
-
-Tom
-
-
-> For the trigger mode, you can perform any command when event hit if using scripting,
-> in contrast with this patchset, ktap use perf callback handler to invoke command,
-> so it don't need extra code to support trigger mode in tracepoint/k(ret)probe/u(ret)probe.
-> 
-> 	---------------------
-> 	trace "syscalls:*" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
-> 	---------------------
-> 	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
-> 	---------------------
-> 	trace "probe:do_sys_open%return fd=$retval" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
-> 	---------------------
-> 	trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
-> 
-> 
-> what I'm thinking now is perhaps we can use a more generic mechanism in future
-> to let user do more magic things when event hit.
-> 
-> To be clear, I'm not against on this patchset, I'm on the same side with Tom,
-> the trigger mode of this patchset is useful(awesome work). I'm just sharing some extra info,
-> hopeful you don't mind it :)
-> 
-> Thanks.
-> jovi
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-
-
+See my reply to V1.
