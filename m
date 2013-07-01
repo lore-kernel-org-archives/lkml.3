@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab3GAP2v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:28:51 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48139 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab3GAP2s (ORCPT
+	id S1754484Ab3GAPcG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:32:06 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38675 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab3GAPcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:28:48 -0400
-From: Sujit Reddy Thumma <sthumma@codeaurora.org>
-To: Aaron Lu <aaron.lu@intel.com>, Jens Axboe <axboe@kernel.dk>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        stable@vger.kernel.org, Sujit Reddy Thumma <sthumma@codeaurora.org>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] block: Fix possible sleep in invalid context
-Date: Mon,  1 Jul 2013 20:58:35 +0530
-Message-Id: <1372692515-31969-1-git-send-email-sthumma@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	Mon, 1 Jul 2013 11:32:04 -0400
+X-Originating-IP: 50.43.39.152
+Date: Mon, 1 Jul 2013 08:31:50 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full v2 2/7] nohz_full: Add rcu_dyntick data for
+ scalable detection of all-idle state
+Message-ID: <20130701153150.GB2923@leaf>
+References: <20130628200949.GA17458@linux.vnet.ibm.com>
+ <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1372450222-19420-2-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372450222-19420-2-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When block runtime PM is enabled following warning is seen
-while resuming the device.
+On Fri, Jun 28, 2013 at 01:10:17PM -0700, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> 
+> This commit adds fields to the rcu_dyntick structure that are used to
+> detect idle CPUs.  These new fields differ from the existing ones in
+> that the existing ones consider a CPU executing in user mode to be idle,
+> where the new ones consider CPUs executing in user mode to be busy.
 
-BUG: sleeping function called from invalid context at
-.../drivers/base/power/runtime.c:923
-in_atomic(): 1, irqs_disabled(): 128, pid: 12, name: kworker/0:1
-[<c0014448>] (unwind_backtrace+0x0/0x120) from
-[<c03120e4>] (__pm_runtime_suspend+0x34/0xa0) from
-[<c021c33c>] (blk_post_runtime_resume+0x4c/0x5c) from
-[<c03297cc>] (scsi_runtime_resume+0x90/0xb4) from
-[<c0310940>] (__rpm_callback+0x30/0x58) from
-[<c0310980>] (rpm_callback+0x18/0x28) from
-[<c0311ab0>] (rpm_resume+0x3dc/0x540) from
-[<c03120a4>] (pm_runtime_work+0x8c/0x98) from
-[<c007767c>] (process_one_work+0x238/0x3e4) from
-[<c0077b90>] (worker_thread+0x1ac/0x2ac) from
-[<c007cfdc>] (kthread+0x88/0x94) from
-[<c000ece0>] (kernel_thread_exit+0x0/0x8)
+Can you explain, both in the commit messages and in the comments added
+by the next commit, *why* this code doesn't consider userspace a
+quiescent state?
 
-Fix this by releasing spin_lock_irq() before calling
-pm_runtime_autosuspend() in blk_post_runtime_resume().
-
-Signed-off-by: Sujit Reddy Thumma <sthumma@codeaurora.org>
-Cc: stable@vger.kernel.org
----
- block/blk-core.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 33c33bc..2456116 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -3159,16 +3159,18 @@ EXPORT_SYMBOL(blk_pre_runtime_resume);
-  */
- void blk_post_runtime_resume(struct request_queue *q, int err)
- {
--	spin_lock_irq(q->queue_lock);
- 	if (!err) {
-+		spin_lock_irq(q->queue_lock);
- 		q->rpm_status = RPM_ACTIVE;
- 		__blk_run_queue(q);
- 		pm_runtime_mark_last_busy(q->dev);
-+		spin_unlock_irq(q->queue_lock);
- 		pm_runtime_autosuspend(q->dev);
- 	} else {
-+		spin_lock_irq(q->queue_lock);
- 		q->rpm_status = RPM_SUSPENDED;
-+		spin_unlock_irq(q->queue_lock);
- 	}
--	spin_unlock_irq(q->queue_lock);
- }
- EXPORT_SYMBOL(blk_post_runtime_resume);
- #endif
--- 
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a member
-of Code Aurora Forum, hosted by The Linux Foundation.
-
+- Josh Triplett
