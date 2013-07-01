@@ -1,199 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab3GAXIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 19:08:14 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41821 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755100Ab3GAXIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 19:08:10 -0400
-Date: Tue, 2 Jul 2013 01:08:00 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
-        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, ying.huang@intel.com
-Subject: Re: [PATCH v3 3/3] mce, acpi/apei: Soft-offline a page on firmware
- GHES notification
-Message-ID: <20130701230800.GO23515@pd.tnic>
-References: <20130701153728.6197.14022.stgit@localhost.localdomain>
- <20130701153859.6197.59186.stgit@localhost.localdomain>
+	id S1755803Ab3GAXWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 19:22:19 -0400
+Received: from 100.204.216.81.static.g-hkn.siw.siwnet.net ([81.216.204.100]:58769
+	"EHLO iko.pp.se" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753736Ab3GAXWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 19:22:17 -0400
+Message-Id: <201307012322.r61NM1vv019204@eskarina.iko.pp.se>
+X-Face: ^"+mumOlNwo;yI>`\39\txuVze?eiR9uqpo2*mE!9MWXgXI0v(3ArwymNWe'.q:eLl!=guD
+ x{jGFEWN6,#HoN%2qRW;7.CL]9%Ap,067"u1%!NUqS.MhV'+,6$Fj-;W2Z}Y,JUZ'L+f<?~E{ID*=T
+ V\NxAOu>)|B@3k3n;gLl*#i[(J-os#fNnDJ8m["|JWNwpORh|_.MGkR#|a~QS!"4hEQ{O{[Ii14{xD
+ PU/:5wuv7m1=TK=.>G8wdfpY~]{H(Qa\1`%|Hz:!)c3f9UOW|WgE"4d\E7?oDu9.
+From: Anders Hammarquist <iko@iko.pp.se>
+To: Johan Hovold <jhovold@gmail.com>
+cc: Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
+In-Reply-To: Message from Johan Hovold <jhovold@gmail.com>
+   of "Fri, 28 Jun 2013 12:23:33 +0200." <20130628102333.GA13241@localhost>
+References: <201306190012.r5J0CNJZ031854@eskarina.iko.pp.se> <20130619225315.GB12282@kroah.com> <201306212308.r5LN8C7M020720@eskarina.iko.pp.se> <20130621235603.GA1603@kroah.com> <201306221854.r5MIshv5013882@eskarina.iko.pp.se> <20130625233911.GA1087@kroah.com> <201306260829.r5Q8Txm5003881@eskarina.iko.pp.se> <20130626103924.GA30828@localhost> <201306272150.r5RLoq2u006119@eskarina.iko.pp.se><20130628102333.GA13241@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130701153859.6197.59186.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <19202.1372720921.1@eskarina.iko.pp.se>
+Date: Tue, 02 Jul 2013 01:22:01 +0200
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.3.9 (iko.pp.se [127.0.0.1]); Tue, 02 Jul 2013 01:22:05 +0200 (MEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 09:08:59PM +0530, Naveen N. Rao wrote:
-> If the firmware indicates in GHES error data entry that the error threshold
-> has exceeded for a corrected error event, then we try to soft-offline the
-> page. This could be called in interrupt context, so we queue this up similar
-> to how we handle memory failure scenarios.
-> 
-> 
-> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-> ---
->  drivers/acpi/apei/ghes.c |   12 ++++++++++
->  include/linux/mm.h       |    1 +
->  mm/memory-failure.c      |   53 ++++++++++++++++++++++++++++++----------------
->  3 files changed, 48 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-> index fcd7d91..5a630ed 100644
-> --- a/drivers/acpi/apei/ghes.c
-> +++ b/drivers/acpi/apei/ghes.c
-> @@ -429,6 +429,18 @@ static void ghes_do_proc(struct ghes *ghes,
->  						  mem_err);
->  #endif
->  #ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
-> +			if (sec_sev == GHES_SEV_CORRECTED &&
-> +			    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
-> +			    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
-> +				unsigned long pfn;
-> +				pfn = mem_err->physical_addr >> PAGE_SHIFT;
-> +				if (pfn_valid(pfn))
-> +					soft_memory_failure_queue(pfn, 0, 0);
-> +				else
-> +					pr_warning(FW_WARN GHES_PFX
-> +					"Invalid address in generic error data: %#lx\n",
-> +					mem_err->physical_addr);
-> +			}
+In a message of Fri, 28 Jun 2013 12:23:33 +0200, Johan Hovold writes:
+>> I did a quick check of adding the device id though sysfs, and although
+>> it partly works, it doesn't find the correct firmware (it ends up trying
+>> to load 5052 firmware for a 3410 device. Looking at the code it seems
+>> (struct ti_device) td_is_3410 isn't set properly.)
+>
+>Turns out that the drivers device-type detection has never worked with
+>the dynamic id interface (all devices were detected as 2-port devices).
+>
+>I'm responding to this mail with a fix. Care to give it a try?
 
-Yuck, this looks like BIOS code.
+Yes, this works fine. 
 
-Can we carve out this into a function and do
-
-void function(.. )
-{
-#ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
-
-	<code at 1st indentation, much more readable>
-
-#endif
-}
-
-so that we can nicely call it from ghes_do_proc()?
-
->  			if (sev == GHES_SEV_RECOVERABLE &&
->  			    sec_sev == GHES_SEV_RECOVERABLE &&
->  			    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index e0c8528..f9907d2 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1787,6 +1787,7 @@ enum mf_flags {
->  };
->  extern int memory_failure(unsigned long pfn, int trapno, int flags);
->  extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
-> +extern void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags);
->  extern int unpoison_memory(unsigned long pfn);
->  extern int sysctl_memory_failure_early_kill;
->  extern int sysctl_memory_failure_recovery;
-> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-> index ceb0c7f..50caefd 100644
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1222,6 +1222,7 @@ struct memory_failure_entry {
->  	unsigned long pfn;
->  	int trapno;
->  	int flags;
-> +	bool soft_offline;
-
-Why a new bool? This flags int looks nice above. :)
-
->  };
->  
->  struct memory_failure_cpu {
-> @@ -1233,6 +1234,28 @@ struct memory_failure_cpu {
->  
->  static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
->  
-> +void __memory_failure_queue(unsigned long pfn, int trapno, int flags, int soft_offline)
-> +{
-> +	struct memory_failure_cpu *mf_cpu;
-> +	unsigned long proc_flags;
-> +	struct memory_failure_entry entry = {
-> +		.pfn =		pfn,
-> +		.trapno =	trapno,
-> +		.flags =	flags,
-> +		.soft_offline = soft_offline
-> +	};
-> +
-> +	mf_cpu = &get_cpu_var(memory_failure_cpu);
-> +	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
-> +	if (kfifo_put(&mf_cpu->fifo, &entry))
-> +		schedule_work_on(smp_processor_id(), &mf_cpu->work);
-> +	else
-> +		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
-> +		       pfn);
-> +	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
-> +	put_cpu_var(memory_failure_cpu);
-> +}
-> +
->  /**
->   * memory_failure_queue - Schedule handling memory failure of a page.
->   * @pfn: Page Number of the corrupted page
-> @@ -1250,28 +1273,19 @@ static DEFINE_PER_CPU(struct memory_failure_cpu, memory_failure_cpu);
->   *
->   * Can run in IRQ context.
->   */
-> +
->  void memory_failure_queue(unsigned long pfn, int trapno, int flags)
->  {
-> -	struct memory_failure_cpu *mf_cpu;
-> -	unsigned long proc_flags;
-> -	struct memory_failure_entry entry = {
-> -		.pfn =		pfn,
-> -		.trapno =	trapno,
-> -		.flags =	flags,
-> -	};
-> -
-> -	mf_cpu = &get_cpu_var(memory_failure_cpu);
-> -	spin_lock_irqsave(&mf_cpu->lock, proc_flags);
-> -	if (kfifo_put(&mf_cpu->fifo, &entry))
-> -		schedule_work_on(smp_processor_id(), &mf_cpu->work);
-> -	else
-> -		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
-> -		       pfn);
-> -	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
-> -	put_cpu_var(memory_failure_cpu);
-> +	__memory_failure_queue(pfn, trapno, flags, false);
->  }
->  EXPORT_SYMBOL_GPL(memory_failure_queue);
->  
-> +void soft_memory_failure_queue(unsigned long pfn, int trapno, int flags)
-> +{
-> +	__memory_failure_queue(pfn, trapno, flags, true);
-
-... which can save us this "true" thing there and maybe a bunch of code
-churn around here too.
-
-> +}
-> +EXPORT_SYMBOL_GPL(soft_memory_failure_queue);
-> +
->  static void memory_failure_work_func(struct work_struct *work)
->  {
->  	struct memory_failure_cpu *mf_cpu;
-> @@ -1286,7 +1300,10 @@ static void memory_failure_work_func(struct work_struct *work)
->  		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
->  		if (!gotten)
->  			break;
-> -		memory_failure(entry.pfn, entry.trapno, entry.flags);
-> +		if (entry.soft_offline)
-> +			soft_offline_page(pfn_to_page(entry.pfn), entry.flags);
-> +		else
-> +			memory_failure(entry.pfn, entry.trapno, entry.flags);
->  	}
->  }
->  
-> 
-> 
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+/Anders
