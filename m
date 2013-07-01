@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab3GABNL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 21:13:11 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:40322 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752443Ab3GABM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752457Ab3GABM7 (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 30 Jun 2013 21:12:59 -0400
-From: Joe Perches <joe@perches.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 06/12] cdrom: Remove unnecessary sanitize_format prototype
-Date: Sun, 30 Jun 2013 18:12:01 -0700
-Message-Id: <b8d7af222ac0ee7cb468cd463542b35e4b4685ab.1372640818.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1372640818.git.joe@perches.com>
-References: <cover.1372640818.git.joe@perches.com>
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:2549 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab3GABM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 21:12:57 -0400
+Message-ID: <51D0D73F.2060401@hp.com>
+Date: Mon, 01 Jul 2013 09:11:27 +0800
+From: ZhenHua <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb,uhci: add a new tag for virtual uhci devices
+References: <Pine.LNX.4.44L0.1306281018001.1047-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1306281018001.1047-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's defined below without being called.
+On 06/28/2013 10:22 PM, Alan Stern wrote:
+> On Fri, 28 Jun 2013, Li, Zhen-Hua (USL-China) wrote:
+>
+>> There was a problem, the warning "Controller not stopped yet".
+>> And your last patch for this problem does a wrong thing:
+>> It prevents all HP uhci devices from auto-stop, which make HP uhci
+>> devices waste more
+>> power.
+> Do they really waste more power?  Have you measured this?
+>
+> Is CONFIG_PM enabled in the kernel configuration?
+>
+>> This is another new problem.
+>>
+>> I think this should be corrected, so I want to apply it.
+> In the last email, you said that your patch did not make the machine
+> act different.  Now you say that your patch makes the machine use less
+> power.  Which statement is correct?
+>
+> Alan Stern
+>
+Let's make it clear:
+I said "I don't have a machine that this makes action different",
+it does not mean my patch "did not make the machine act different ".
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/cdrom/cdrom.c | 2 --
- 1 file changed, 2 deletions(-)
+There are many kinds of machines, I have never said "my patch does
+not make ALL of them act different".
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 546b97e..70ef0134 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -337,8 +337,6 @@ do {							\
- #define CDROM_DEF_TIMEOUT	(7 * HZ)
- 
- /* Not-exported routines. */
--static void sanitize_format(union cdrom_addr *addr, 
--		u_char * curr, u_char requested);
- static int mmc_ioctl(struct cdrom_device_info *cdi, unsigned int cmd,
- 		     unsigned long arg);
- 
--- 
-1.8.1.2.459.gbcd45b4.dirty
+
+
 
