@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab3GAUXj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:23:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48973 "EHLO
+	id S1755313Ab3GAUK0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:10:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48955 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329Ab3GAUK1 (ORCPT
+	with ESMTP id S1754968Ab3GAUKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:27 -0400
+	Mon, 1 Jul 2013 16:10:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anderson Lizardo <anderson.lizardo@openbossa.org>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 04/26] Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
-Date: Mon,  1 Jul 2013 13:09:59 -0700
-Message-Id: <20130701200730.400540904@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [ 01/26] s390/ipl: Fix FCP WWPN and LUN format strings for read
+Date: Mon,  1 Jul 2013 13:09:56 -0700
+Message-Id: <20130701200730.052755815@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -28,90 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anderson Lizardo <anderson.lizardo@openbossa.org>
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-commit 300b962e5244a1ea010df7e88595faa0085b461d upstream.
+commit eda4ddf7e3a2245888e8c45c566fd514cdd5abbb upstream.
 
-If a too small MTU value is set with ioctl(HCISETACLMTU) or by a bogus
-controller, memory corruption happens due to a memcpy() call with
-negative length.
+The following git commit changed the behavior of sscanf:
 
-Fix this crash on either incoming or outgoing connections with a MTU
-smaller than L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE:
+commit 53809751ac230a3611b5cdd375f3389f3207d471
+Author: Jan Beulich <JBeulich@suse.com>
+Date:   Mon Dec 17 16:01:31 2012 -0800
+    sscanf: don't ignore field widths for numeric conversions
 
-[   46.885433] BUG: unable to handle kernel paging request at f56ad000
-[   46.888037] IP: [<c03d94cd>] memcpy+0x1d/0x40
-[   46.888037] *pdpt = 0000000000ac3001 *pde = 00000000373f8067 *pte = 80000000356ad060
-[   46.888037] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
-[   46.888037] Modules linked in: hci_vhci bluetooth virtio_balloon i2c_piix4 uhci_hcd usbcore usb_common
-[   46.888037] CPU: 0 PID: 1044 Comm: kworker/u3:0 Not tainted 3.10.0-rc1+ #12
-[   46.888037] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[   46.888037] Workqueue: hci0 hci_rx_work [bluetooth]
-[   46.888037] task: f59b15b0 ti: f55c4000 task.ti: f55c4000
-[   46.888037] EIP: 0060:[<c03d94cd>] EFLAGS: 00010212 CPU: 0
-[   46.888037] EIP is at memcpy+0x1d/0x40
-[   46.888037] EAX: f56ac1c0 EBX: fffffff8 ECX: 3ffffc6e EDX: f55c5cf2
-[   46.888037] ESI: f55c6b32 EDI: f56ad000 EBP: f55c5c68 ESP: f55c5c5c
-[   46.888037]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[   46.888037] CR0: 8005003b CR2: f56ad000 CR3: 3557d000 CR4: 000006f0
-[   46.888037] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
-[   46.888037] DR6: ffff0ff0 DR7: 00000400
-[   46.888037] Stack:
-[   46.888037]  fffffff8 00000010 00000003 f55c5cac f8c6a54c ffffffff f8c69eb2 00000000
-[   46.888037]  f4783cdc f57f0070 f759c590 1001c580 00000003 0200000a 00000000 f5a88560
-[   46.888037]  f5ba2600 f5a88560 00000041 00000000 f55c5d90 f8c6f4c7 00000008 f55c5cf2
-[   46.888037] Call Trace:
-[   46.888037]  [<f8c6a54c>] l2cap_send_cmd+0x1cc/0x230 [bluetooth]
-[   46.888037]  [<f8c69eb2>] ? l2cap_global_chan_by_psm+0x152/0x1a0 [bluetooth]
-[   46.888037]  [<f8c6f4c7>] l2cap_connect+0x3f7/0x540 [bluetooth]
-[   46.888037]  [<c019b37b>] ? trace_hardirqs_off+0xb/0x10
-[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
-[   46.888037]  [<c064ad20>] ? mutex_lock_nested+0x280/0x360
-[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
-[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
-[   46.888037]  [<c064ad08>] ? mutex_lock_nested+0x268/0x360
-[   46.888037]  [<c01a125b>] ? trace_hardirqs_on+0xb/0x10
-[   46.888037]  [<f8c72f8d>] l2cap_recv_frame+0xb2d/0x1d30 [bluetooth]
-[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
-[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
-[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
-[   46.888037]  [<f8c754f1>] l2cap_recv_acldata+0x2a1/0x320 [bluetooth]
-[   46.888037]  [<f8c491d8>] hci_rx_work+0x518/0x810 [bluetooth]
-[   46.888037]  [<f8c48df2>] ? hci_rx_work+0x132/0x810 [bluetooth]
-[   46.888037]  [<c0158979>] process_one_work+0x1a9/0x600
-[   46.888037]  [<c01588fb>] ? process_one_work+0x12b/0x600
-[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
-[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
-[   46.888037]  [<c0159187>] worker_thread+0xf7/0x320
-[   46.888037]  [<c0159090>] ? rescuer_thread+0x290/0x290
-[   46.888037]  [<c01602f8>] kthread+0xa8/0xb0
-[   46.888037]  [<c0656777>] ret_from_kernel_thread+0x1b/0x28
-[   46.888037]  [<c0160250>] ? flush_kthread_worker+0x120/0x120
-[   46.888037] Code: c3 90 8d 74 26 00 e8 63 fc ff ff eb e8 90 55 89 e5 83 ec 0c 89 5d f4 89 75 f8 89 7d fc 3e 8d 74 26 00 89 cb 89 c7 c1 e9 02 89 d6 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 8b 5d f4 8b 75 f8 8b 7d fc 89
-[   46.888037] EIP: [<c03d94cd>] memcpy+0x1d/0x40 SS:ESP 0068:f55c5c5c
-[   46.888037] CR2: 00000000f56ad000
-[   46.888037] ---[ end trace 0217c1f4d78714a9 ]---
+This broke the WWPN and LUN sysfs attributes for s390 reipl and dump
+on panic.
 
-Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Example:
+
+$ echo 0x0123456701234567 > /sys/firmware/reipl/fcp/wwpn
+$ cat /sys/firmware/reipl/fcp/wwpn
+0x0001234567012345
+
+So fix this and use format strings that work also with the
+new sscanf implementation:
+
+$ echo 0x012345670123456789 > /sys/firmware/reipl/fcp/wwpn
+$ cat /sys/firmware/reipl/fcp/wwpn
+0x0123456701234567
+
+Reviewed-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/l2cap_core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/s390/kernel/ipl.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -2743,6 +2743,9 @@ static struct sk_buff *l2cap_build_cmd(s
- 	BT_DBG("conn %p, code 0x%2.2x, ident 0x%2.2x, len %u",
- 	       conn, code, ident, dlen);
+--- a/arch/s390/kernel/ipl.c
++++ b/arch/s390/kernel/ipl.c
+@@ -754,9 +754,9 @@ static struct bin_attribute sys_reipl_fc
+ 	.write = reipl_fcp_scpdata_write,
+ };
  
-+	if (conn->mtu < L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE)
-+		return NULL;
-+
- 	len = L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE + dlen;
- 	count = min_t(unsigned int, conn->mtu, len);
+-DEFINE_IPL_ATTR_RW(reipl_fcp, wwpn, "0x%016llx\n", "%016llx\n",
++DEFINE_IPL_ATTR_RW(reipl_fcp, wwpn, "0x%016llx\n", "%llx\n",
+ 		   reipl_block_fcp->ipl_info.fcp.wwpn);
+-DEFINE_IPL_ATTR_RW(reipl_fcp, lun, "0x%016llx\n", "%016llx\n",
++DEFINE_IPL_ATTR_RW(reipl_fcp, lun, "0x%016llx\n", "%llx\n",
+ 		   reipl_block_fcp->ipl_info.fcp.lun);
+ DEFINE_IPL_ATTR_RW(reipl_fcp, bootprog, "%lld\n", "%lld\n",
+ 		   reipl_block_fcp->ipl_info.fcp.bootprog);
+@@ -1323,9 +1323,9 @@ static struct shutdown_action __refdata
  
+ /* FCP dump device attributes */
+ 
+-DEFINE_IPL_ATTR_RW(dump_fcp, wwpn, "0x%016llx\n", "%016llx\n",
++DEFINE_IPL_ATTR_RW(dump_fcp, wwpn, "0x%016llx\n", "%llx\n",
+ 		   dump_block_fcp->ipl_info.fcp.wwpn);
+-DEFINE_IPL_ATTR_RW(dump_fcp, lun, "0x%016llx\n", "%016llx\n",
++DEFINE_IPL_ATTR_RW(dump_fcp, lun, "0x%016llx\n", "%llx\n",
+ 		   dump_block_fcp->ipl_info.fcp.lun);
+ DEFINE_IPL_ATTR_RW(dump_fcp, bootprog, "%lld\n", "%lld\n",
+ 		   dump_block_fcp->ipl_info.fcp.bootprog);
 
 
