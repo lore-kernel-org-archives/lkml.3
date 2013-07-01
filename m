@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab3GAPfN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:35:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37067 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab3GAPfK (ORCPT
+	id S1754564Ab3GAPf2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:35:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62008 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab3GAPfZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:35:10 -0400
-Message-ID: <51D1A17D.9070701@ti.com>
-Date: Mon, 1 Jul 2013 10:34:21 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>
-CC: Nishanth Menon <nm@ti.com>, Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@nvidia.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [-next PATCH 0/2] ARM: OMAP5: fix build breakage due to SCU usage
-References: <1372257587-21720-1-git-send-email-nm@ti.com>
-In-Reply-To: <1372257587-21720-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 1 Jul 2013 11:35:25 -0400
+Date: Mon, 1 Jul 2013 12:35:12 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Manu Abraham <abraham.manu@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zoran Turalija <zoran.turalija@gmail.com>,
+        Srinivas KANDAGATLA <srinivas.kandagatla@st.com>,
+        Nicolas THERY <nicolas.thery@st.com>,
+        Divneil Rai WADHAWAN <divneil.wadhawan@st.com>,
+        Vincent ABRIOU <vincent.abriou@st.com>,
+        Alain VOLMAT <alain.volmat@st.com>
+Subject: Re: [GIT PULL for v3.11] media patches for v3.11
+Message-ID: <20130701123512.04e0ab62.mchehab@redhat.com>
+In-Reply-To: <CAHFNz9J_FJP4YcCd3-_3x6d5iNDoqpYMMtX1Xd+OFJX4H7so0A@mail.gmail.com>
+References: <20130701075856.6e8daa98.mchehab@redhat.com>
+	<CAHFNz9J_FJP4YcCd3-_3x6d5iNDoqpYMMtX1Xd+OFJX4H7so0A@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tony,
+Em Mon, 1 Jul 2013 16:37:58 +0530
+Manu Abraham <abraham.manu@gmail.com> escreveu:
 
-Any chance of picking these up?
+> Mauro,
+> 
+> On Mon, Jul 1, 2013 at 4:28 PM, Mauro Carvalho Chehab
+> <mchehab@redhat.com> wrote:
+> > Hi Linus,
+> >
+> > Please pull from:
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+> >
+> > For the media patches for Kernel v3.11.
+> >
+> 
+> >
+> > Zoran Turalija (2):
+> >       [media] stb0899: allow minimum symbol rate of 1000000
+> >       [media] stb0899: allow minimum symbol rate of 2000000
+> 
+> 
+> Somehow, I missed these patches; These are incorrect. Please revert
+> these changes.
+> Simply changing the advertized minima values don't change the search algorithm
+> behaviour, it simply leads to broken behaviour.
+> 
+> NACK for these changes.
 
-I see that next-20130701 is broke as well in an OMAP5 only build. beyond 
-the fixes already merged in - the missing series seems to be the 
-$subject series to allow an OMAP5 only build.
+While this patch came from a sub-maintainer's tree, looking at its
+history, the patch was proposed here:
+	https://linuxtv.org/patch/18341/
 
-On 06/26/2013 09:39 AM, Nishanth Menon wrote:
-> Hi,
->
-> Cortex-A15 based OMAP5 does not use Snoop Control Unit(SCU)[1].
-> However, there is lot of code that is shared between Cortex-A9 based
-> OMAP4 and OMAP5, hence functionality code is shared with runtime usage
-> of SCU based on SoC worked on. However on building with OMAP5 only
-> generates the following errors:
-> arch/arm/mach-omap2/built-in.o: In function `scu_gp_set':
-> arch/arm/mach-omap2/sleep44xx.S:132: undefined reference to `scu_power_mode'
-> arch/arm/mach-omap2/built-in.o: In function `scu_gp_clear':
-> arch/arm/mach-omap2/sleep44xx.S:229: undefined reference to `scu_power_mode'
-> arch/arm/mach-omap2/built-in.o: In function `omap4_smp_init_cpus':
-> arch/arm/mach-omap2/omap-smp.c:185: undefined reference to `scu_get_core_count'
-> arch/arm/mach-omap2/built-in.o: In function `omap4_smp_prepare_cpus':
-> arch/arm/mach-omap2/omap-smp.c:211: undefined reference to `scu_enable'
->
-> This was attempted to be "fixed" in various attempts in the past [2] [3].
->
-> This series applies on top of the other fixes in discussion for linux-next [4] [5].
->
-> Based on:
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git  next-20130626
->
-> Nishanth Menon (2):
->    ARM: OMAP4: sleep: build OMAP4 specific functions only for OMAP4
->    ARM: scu: provide inline dummy functions when SCU is not present
->
->   arch/arm/include/asm/smp_scu.h  |   13 ++++++++++++-
->   arch/arm/mach-omap2/sleep44xx.S |    6 +++++-
->   2 files changed, 17 insertions(+), 2 deletions(-)
->
-> [1] http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0407e/CHDFJICC.html
-> [2] https://patchwork.kernel.org/patch/2568091/
-> [3] http://marc.info/?t=137120115400001&r=1&w=2
-> [4] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/178209.html
-> [5] https://patchwork.kernel.org/patch/2781471/
->
-> Regards,
-> Nishanth Menon
->
+>From what it is said there, with this patch, 6 additional channels
+were discovered when using with Eutelsat 16A, that uses a symbol
+rate between 2MS/s to 5 MS/s. Without this patch, those channels won't
+be discovered, as the core won't try to use a symbol rate outside
+the range.
 
+Of course, transponders with a symbol rate equal or upper than 5MS/s
+won't be affected by this patch.
 
--- 
+Even if this is not a perfect patch and some changes would be 
+needed to improve tuning for those low symbol rate transponders, 
+it seems better than before, as at least now some channels are tuned.
+
+The only reason I can see to reverse this patch is that if setting
+the frontend to low bit ranges could damage the frontend or could
+hit some bug on the hardware (or internal firmware).
+
+Yet, from the datasheet pointed by the patch author, it seems that
+this frontend allows such low symbol rates:
+	http://comtech.sg1002.myweb.hinet.net/pdf/dvbs2-6899.pdf
+
+Let me copy some people at ST. Maybe they could help to check internally
+there if there are any risks for the hardware to accept low symbol rate 
+transponders.
+
 Regards,
-Nishanth Menon
+Mauro
