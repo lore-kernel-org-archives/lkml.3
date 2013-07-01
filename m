@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab3GAUVn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:21:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49000 "EHLO
+	id S1755878Ab3GAUWD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:22:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48991 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755382Ab3GAUKb (ORCPT
+	with ESMTP id S1755369Ab3GAUKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:31 -0400
+	Mon, 1 Jul 2013 16:10:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        kbuild test robot <fengguang.wu@intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 11/26] s390/irq: Only define synchronize_irq() on SMP
-Date: Mon,  1 Jul 2013 13:10:06 -0700
-Message-Id: <20130701200731.156251711@linuxfoundation.org>
+        Nikolay Martynov <mar.kolya@gmail.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 09/26] iwlwifi: dvm: fix chain noise calibration
+Date: Mon,  1 Jul 2013 13:10:04 -0700
+Message-Id: <20130701200730.941548607@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -29,41 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Nikolay Martynov <mar.kolya@gmail.com>
 
-commit 690cec8e70c211d1f5f6e520b21a68d0306173b6 upstream.
+commit b28b6dfe580ab1ab8bf08b908fd69e299b877103 upstream.
 
-In uniprocessor configurations, synchronize_irq() is defined in
-<linux/hardirq.h> as a macro, and this function definition fails to
-compile.
+First step of chain noise calibration process had disable flag
+check inverted. Chain noise calibration never started because
+of this.
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Tested on intel 5300 with two antennas attached. The driver
+correctly disabled one chain.
+
+Signed-off-by: Nikolay Martynov <mar.kolya@gmail.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/irq.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/s390/kernel/irq.c
-+++ b/arch/s390/kernel/irq.c
-@@ -314,6 +314,7 @@ void measurement_alert_subclass_unregist
- }
- EXPORT_SYMBOL(measurement_alert_subclass_unregister);
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1377,7 +1377,7 @@ static void iwlagn_chain_noise_reset(str
+ 	struct iwl_chain_noise_data *data = &priv->chain_noise_data;
+ 	int ret;
  
-+#ifdef CONFIG_SMP
- void synchronize_irq(unsigned int irq)
- {
- 	/*
-@@ -322,6 +323,7 @@ void synchronize_irq(unsigned int irq)
- 	 */
- }
- EXPORT_SYMBOL_GPL(synchronize_irq);
-+#endif
+-	if (!(priv->calib_disabled & IWL_CHAIN_NOISE_CALIB_DISABLED))
++	if (priv->calib_disabled & IWL_CHAIN_NOISE_CALIB_DISABLED)
+ 		return;
  
- #ifndef CONFIG_PCI
- 
+ 	if ((data->state == IWL_CHAIN_NOISE_ALIVE) &&
 
 
