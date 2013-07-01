@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab3GAVxU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 17:53:20 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:39308 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901Ab3GAVxS (ORCPT
+	id S1755548Ab3GAVx7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 17:53:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49847 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755100Ab3GAVx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 17:53:18 -0400
-Message-ID: <51D1FA4C.8000507@wwwdotorg.org>
-Date: Mon, 01 Jul 2013 15:53:16 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-CC: balbi@ti.com, linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, gregkh@linuxfoundation.org
-Subject: Re: [PATCH 5/9] usb: phy: tegra: Register as an USB PHY.
-References: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com> <1372455427-20898-6-git-send-email-ttynkkynen@nvidia.com>
-In-Reply-To: <1372455427-20898-6-git-send-email-ttynkkynen@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 1 Jul 2013 17:53:58 -0400
+Date: Mon, 1 Jul 2013 14:53:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Cc: cl@linux.com, glommer@parallels.com, penberg@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-next-20130422] Bug in SLAB?
+Message-Id: <20130701145356.f9c43875890d1aec90fe1ad9@linux-foundation.org>
+In-Reply-To: <201307020645.JGI86434.FFHOLOSFOtJVMQ@I-love.SAKURA.ne.jp>
+References: <201305040915.AID02071.FHVQJtOFOMOLSF@I-love.SAKURA.ne.jp>
+	<0000013e7a18153d-4b59eaf6-0fcd-4eec-b357-31d3d40baa7d-000000@email.amazonses.com>
+	<201305071938.DAC81273.HOSJOFFOQLtMFV@I-love.SAKURA.ne.jp>
+	<0000013e7f651028-9a57bc30-4148-4aba-a0e6-737b83bf2458-000000@email.amazonses.com>
+	<20130701130903.61459f57f4ba31e282065001@linux-foundation.org>
+	<201307020645.JGI86434.FFHOLOSFOtJVMQ@I-love.SAKURA.ne.jp>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 03:37 PM, Tuomas Tynkkynen wrote:
-> Register the Tegra PHY device instances with the PHY subsystem so that
-> the Tegra EHCI driver can locate a PHY via the standard APIs.
+On Tue, 2 Jul 2013 06:45:27 +0900 Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp> wrote:
 
-> diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-
-> +	err = usb_add_phy_dev(&tegra_phy->u_phy);
-> +	if (err < 0) {
-> +		tegra_usb_phy_close(&tegra_phy->u_phy);
-> +		return err;
-> +	}
-
-Don't you want to do that a bit later? In particular ...
-
->  	tegra_phy->u_phy.shutdown = tegra_usb_phy_close;
->  	tegra_phy->u_phy.set_suspend = tegra_usb_phy_suspend;
 > 
-> 	dev_set_drvdata(&pdev->dev, tegra_phy);
+> > I've read through the thread trying to work out what the end-user
+> > impact of that fix is, but it's all clear as mud.  It's possible that
+> > the end-user effect is `kernel locks up after printing "Booting the
+> > kernel"'.  Or maybe not.
+> > 
+> > And if the above patch does indeed fix something significant, we might
+> > need a -stable backport.
+> > 
+> 
+> Somebody needs this patch when debugging with CONFIG_LOCKDEP=y on
+> architectures with PAGE_SHIFT + MAX_ORDER > 26 .
 
-... that all happens *after* the call to usb_add_phy_dev() call, yet I
-think the USB core could legally call any of the PHY methods after the
-call to usb_add_phy_dev(), and that probably requires all those methods
-pointers and drvdata to be set up? I suggest moving the call to
-usb_add_phy_dev() to the very end of the function.
+Well *why* do they need it?  What happens without the patch?  How would
+a person determine whether their kernel needs this patch?
 
-> +static int tegra_usb_phy_remove(struct platform_device *pdev)
-> +{
-> +	struct tegra_usb_phy *tegra_phy = platform_get_drvdata(pdev);
-> +
-> +	usb_remove_phy(&tegra_phy->u_phy);
-> +	return 0;
-> +}
+When this patch crosses Greg's desk for -stable inclusion he's going to
+wonder "why do users of -stable kernels need this", and you guys
+haven't told him!
 
-Nit: I'd typically expect to see a blank line before the return statement.
+Grumble.  Why is it so hard to get a simple and decent changelog for
+this patch?
+
+
+Look, I'll make this easier:
+
+: Subject: slab: fix init_lock_keys
+: 
+: In 3.10 kernels with CONFIG_LOCKDEP=y on architectures with
+: PAGE_SHIFT + MAX_ORDER > 26 such as [architecture goes here], the kernel does
+: [x] when the user does [y].
+:
+: init_lock_keys() goes too far in initializing values in kmalloc_caches
+: because it assumed that the size of the kmalloc array goes up to
+: MAX_ORDER.  However, the size of the kmalloc array for SLAB may be
+: restricted due to increased page sizes or CONFIG_FORCE_MAX_ZONEORDER.
+:
+: Fix this by [z].
+
+
+Please fill in the text within [].
