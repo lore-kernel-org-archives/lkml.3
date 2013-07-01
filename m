@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754888Ab3GASlI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 14:41:08 -0400
-Received: from a9-66.smtp-out.amazonses.com ([54.240.9.66]:39123 "EHLO
-	a9-66.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754617Ab3GASlG (ORCPT
+	id S1754982Ab3GASmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 14:42:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48134 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754617Ab3GASmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 14:41:06 -0400
-Date: Mon, 1 Jul 2013 18:41:04 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-cc: penberg@kernel.org, mpm@selenic.com, linux-mm@kvack.org,
+	Mon, 1 Jul 2013 14:42:14 -0400
+Date: Mon, 1 Jul 2013 11:42:13 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org, stable@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] slab: add kmalloc() to kernel API documentation
-In-Reply-To: <1372177015-30492-1-git-send-email-michael.opdenacker@free-electrons.com>
-Message-ID: <0000013f9b89c37f-5d9539bc-944c-4937-9b35-30cdd0fd18a3-000000@email.amazonses.com>
-References: <1372177015-30492-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Subject: Re: [PATCH 3.4-stable] mmc: block: fix a bug of error handling in
+ MMC driver
+Message-ID: <20130701184213.GD11648@kroah.com>
+References: <1368165727-32125-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
+ <1372665385-8993-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.07.01-54.240.9.66
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372665385-8993-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Jun 2013, Michael Opdenacker wrote:
+On Mon, Jul 01, 2013 at 04:56:25PM +0900, KOBAYASHI Yoshitake wrote:
+> Backport for 3.4-stable for the following patch:
+>      https://lkml.org/lkml/2013/5/10/20
 
-> This patch is a proposed fix for this. It also removes the documentation
-> for kmalloc() in include/linux/slob_def.h which isn't included to
-> generate the documentation anyway. This way, kmalloc() is described
-> in only one place.
+What is the git commit id of this patch in Linus's tree?
 
-Acked-by: Christoph Lameter <cl@linux.com>
+thanks,
 
-Note that this will conflict with one of my pending patches that also
-addresses one of these issues but this work is much more comprehensive.
+greg k-h
