@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab3GAUPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:15:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49121 "EHLO
+	id S1755829Ab3GAUPt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:15:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49117 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab3GAUKt (ORCPT
+	with ESMTP id S1755554Ab3GAUKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:49 -0400
+	Mon, 1 Jul 2013 16:10:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Al Viro <viro@zeniv.linux.org.uk>,
         Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 10/13] UBIFS: fix a horrid bug
-Date: Mon,  1 Jul 2013 13:10:29 -0700
-Message-Id: <20130701200524.298718013@linuxfoundation.org>
+Subject: [ 09/13] UBIFS: prepare to fix a horrid bug
+Date: Mon,  1 Jul 2013 13:10:28 -0700
+Message-Id: <20130701200524.176787631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200523.096669485@linuxfoundation.org>
 References: <20130701200523.096669485@linuxfoundation.org>
@@ -29,25 +29,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
+commit 33f1a63ae84dfd9ad298cf275b8f1887043ced36 upstream.
 
 Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
 mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
 in the middle of 'ubifs_readdir()'.
 
-This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
-it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
-but this may corrupt memory and lead to all kinds of problems like crashes an
-security holes.
+First of all, this means that 'file->private_data' can be freed while
+'ubifs_readdir()' uses it.  But this particular patch does not fix the problem.
+This patch is only a preparation, and the fix will follow next.
 
-This patch fixes the problem by using the 'file->f_version' field, which
-'->llseek()' always unconditionally sets to zero. We set it to 1 in
-'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
-seek and it is time to clear the state saved in 'file->private_data'.
+In this patch we make 'ubifs_readdir()' stop using 'file->f_pos' directly,
+because 'file->f_pos' can be changed by '->llseek()' at any point. This may
+lead 'ubifs_readdir()' to returning inconsistent data: directory entry names
+may correspond to incorrect file positions.
 
-I tested this patch by writing a user-space program which runds readdir and
-seek in parallell. I could easily crash the kernel without these patches, but
-could not crash it with these patches.
+So here we introduce a local variable 'pos', read 'file->f_pose' once at very
+the beginning, and then stick to 'pos'. The result of this is that when
+'ubifs_dir_llseek()' changes 'file->f_pos' while we are in the middle of
+'ubifs_readdir()', the latter "wins".
 
 Reported-by: Al Viro <viro@zeniv.linux.org.uk>
 Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
@@ -56,67 +56,96 @@ Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ubifs/dir.c |   30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+ fs/ubifs/dir.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
 --- a/fs/ubifs/dir.c
 +++ b/fs/ubifs/dir.c
-@@ -373,6 +373,24 @@ static int ubifs_readdir(struct file *fi
- 		 */
+@@ -357,15 +357,16 @@ static unsigned int vfs_dent_type(uint8_
+ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ {
+ 	int err, over = 0;
++	loff_t pos = file->f_pos;
+ 	struct qstr nm;
+ 	union ubifs_key key;
+ 	struct ubifs_dent_node *dent;
+ 	struct inode *dir = file->f_path.dentry->d_inode;
+ 	struct ubifs_info *c = dir->i_sb->s_fs_info;
+ 
+-	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, file->f_pos);
++	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, pos);
+ 
+-	if (file->f_pos > UBIFS_S_KEY_HASH_MASK || file->f_pos == 2)
++	if (pos > UBIFS_S_KEY_HASH_MASK || pos == 2)
+ 		/*
+ 		 * The directory was seek'ed to a senseless position or there
+ 		 * are no more entries.
+@@ -373,15 +374,15 @@ static int ubifs_readdir(struct file *fi
  		return 0;
  
-+	if (file->f_version == 0) {
-+		/*
-+		 * The file was seek'ed, which means that @file->private_data
-+		 * is now invalid. This may also be just the first
-+		 * 'ubifs_readdir()' invocation, in which case
-+		 * @file->private_data is NULL, and the below code is
-+		 * basically a no-op.
-+		 */
-+		kfree(file->private_data);
-+		file->private_data = NULL;
-+	}
-+
-+	/*
-+	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
-+	 * zero, and we use this for detecting whether the file was seek'ed.
-+	 */
-+	file->f_version = 1;
-+
  	/* File positions 0 and 1 correspond to "." and ".." */
- 	if (pos == 0) {
+-	if (file->f_pos == 0) {
++	if (pos == 0) {
  		ubifs_assert(!file->private_data);
-@@ -446,6 +464,14 @@ static int ubifs_readdir(struct file *fi
- 		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
-+
-+		if (file->f_version == 0)
-+			/*
-+			 * The file was seek'ed meanwhile, lets return and start
-+			 * reading direntries from the new position on the next
-+			 * invocation.
-+			 */
-+			return 0;
+ 		over = filldir(dirent, ".", 1, 0, dir->i_ino, DT_DIR);
+ 		if (over)
+ 			return 0;
+-		file->f_pos = 1;
++		file->f_pos = pos = 1;
  	}
  
- out:
-@@ -456,15 +482,13 @@ out:
+-	if (file->f_pos == 1) {
++	if (pos == 1) {
+ 		ubifs_assert(!file->private_data);
+ 		over = filldir(dirent, "..", 2, 1,
+ 			       parent_ino(file->f_path.dentry), DT_DIR);
+@@ -397,7 +398,7 @@ static int ubifs_readdir(struct file *fi
+ 			goto out;
+ 		}
  
- 	kfree(file->private_data);
- 	file->private_data = NULL;
-+	/* 2 is a special value indicating that there are no more direntries */
- 	file->f_pos = 2;
- 	return 0;
- }
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
  
--/* If a directory is seeked, we have to free saved readdir() state */
- static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int origin)
- {
--	kfree(file->private_data);
--	file->private_data = NULL;
- 	return generic_file_llseek(file, offset, origin);
- }
+@@ -405,17 +406,16 @@ static int ubifs_readdir(struct file *fi
+ 	if (!dent) {
+ 		/*
+ 		 * The directory was seek'ed to and is now readdir'ed.
+-		 * Find the entry corresponding to @file->f_pos or the
+-		 * closest one.
++		 * Find the entry corresponding to @pos or the closest one.
+ 		 */
+-		dent_key_init_hash(c, &key, dir->i_ino, file->f_pos);
++		dent_key_init_hash(c, &key, dir->i_ino, pos);
+ 		nm.name = NULL;
+ 		dent = ubifs_tnc_next_ent(c, &key, &nm);
+ 		if (IS_ERR(dent)) {
+ 			err = PTR_ERR(dent);
+ 			goto out;
+ 		}
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
  
+@@ -427,7 +427,7 @@ static int ubifs_readdir(struct file *fi
+ 			     ubifs_inode(dir)->creat_sqnum);
+ 
+ 		nm.len = le16_to_cpu(dent->nlen);
+-		over = filldir(dirent, dent->name, nm.len, file->f_pos,
++		over = filldir(dirent, dent->name, nm.len, pos,
+ 			       le64_to_cpu(dent->inum),
+ 			       vfs_dent_type(dent->type));
+ 		if (over)
+@@ -443,7 +443,7 @@ static int ubifs_readdir(struct file *fi
+ 		}
+ 
+ 		kfree(file->private_data);
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
+ 	}
 
 
