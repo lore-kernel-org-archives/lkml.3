@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3GAQsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:48:41 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34820 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab3GAQsj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:48:39 -0400
-Date: Mon, 1 Jul 2013 17:48:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: David Dajun Chen <david.chen@diasemi.com>,
-        Ashish Chavan <ashish.chavan@kpitcummins.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Message-ID: <20130701164833.GL27646@sirena.org.uk>
+	id S1754703Ab3GAQt5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:49:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35968 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752799Ab3GAQt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 12:49:56 -0400
+Date: Mon, 1 Jul 2013 19:49:20 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <tony@atomide.com>,
+        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
+ bus suspend
+Message-ID: <20130701164920.GA31370@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <51D13AED.4010307@ti.com>
+ <Pine.LNX.4.44L0.1307011209440.1547-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZaNUQUWeUBsaJYg9"
+	protocol="application/pgp-signature"; boundary="3V7upXqbjpZ4EhLz"
 Content-Disposition: inline
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <Pine.LNX.4.44L0.1307011209440.1547-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Multiple DA9055 chips
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ZaNUQUWeUBsaJYg9
+--3V7upXqbjpZ4EhLz
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It seems we have two drivers in mainline for da9055 on I2C.  We've got
-one in sound/soc/codecs/da9055.c and one in drivers/mfd/da9055-i2c.c,
-both registering themselves identically.  What's going on here?  Is this
-a combined CODEC and PMIC, has someone decided to release two chips with
-the same name or is one of the drivers misnamed?
+On Mon, Jul 01, 2013 at 12:24:07PM -0400, Alan Stern wrote:
+> On Mon, 1 Jul 2013, Roger Quadros wrote:
+>=20
+> > On 06/28/2013 10:06 PM, Alan Stern wrote:
+> > > On Fri, 28 Jun 2013, Roger Quadros wrote:
+> > >=20
+> > >>> That's not what I meant.  Never mind the pinctrl; I was asking about
+> > >>> the EHCI controller itself.  Under what circumstances does the
+> > >>> controller assert its wakeup signal?  And how do you tell it to stop
+> > >>> asserting that signal?
+> > >>
+> > >> I believe this would be through the EHCI Interrupt enable register (=
+USBINTR).
+> > >> I'm not aware of any other mechanism.
+> > >=20
+> > > That's strange, because ehci_suspend() sets the intr_enable register =
+to=20
+> > > 0.  So how do you ever get any wakeup interrupts at all?
+> >=20
+> > Because after ehci_suspend() for OMAP, we solely rely on the out of ban=
+d wake up
+> > mechanism. i.e. Pad wakeup.
+>=20
+> I don't know what Pad wakeup is.  The wakeup signal has to originate=20
+> from the EHCI controller, doesn't it?  If not, how does the Pad know=20
+> when a wakeup is needed?
 
---ZaNUQUWeUBsaJYg9
+That's really an OMAP thing, I guess. Pad wakeup sits in the PRCM (IIRC)
+inside and always on power domain. EHCI sits in another power domain
+which be turned off. When it's turned off (power gated and clock gated)
+the EHCI block has no means to wakeup whatsoever. That's when pad wakeup
+comes into play. It is generated when PRCM sees a change in the actual
+pad of the die. To check who should 'own' the wakeup, it checks the
+muxing settings to verify whose pad is that.
+
+--=20
+balbi
+
+--3V7upXqbjpZ4EhLz
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIbBAEBAgAGBQJR0bLeAAoJELSic+t+oim9qeAP9RXgq/jL9ooeltPA6ZysfnDM
-0XH3OomLPXWiy6i1dpy2xU43Ese9Ak7toSVA3u7rV2aOvGoUeoEmBErp2I5AkaML
-rz7qShxwV5iTC/fcgSsEY2KErG3HSQ//kORa0v7a6puo8yjlJWqLwW953lSu+WZN
-M6GxBlC0wCPGakNukvcn8xM1WyoiZkSKVOZq7vHPC6J6RWwdec8OaDQgxMs9QXSZ
-mNZiAH78aYrCEVcU4OPhMWg7G4JSxptv83Syxb+ctc+mZEHeP+MYXsLBHjxHFrMb
-VlWZooEATYVsC/iKFYXQgsmiCojIe44Plm9i99DJZrrI37IRskF087RO7y99G/Sn
-3NpWt2s6yCWs2VGQ08Z8dEaimYvipVt5lcFAIgTlrOe7v09cRE26ITJt5Xp1Vfng
-09DnWbaqJ3zsc6zVad6vcEDrdYg1E+XkYVXb4ACesOnDQNcuD/INKCX0IF1ArQ7v
-B01XXeUdAqOFm7ATn4XFNWBM1y+qmMLmUAH/lSyb4LSHDN2LLjFLAJkeYKoFMsAA
-eEuLV4VfN/eGUAO9FHFVQhmblviKsklGXUNr8oxdZcUVUquQ7Rs7QYUzy5WumnWd
-A96x9GK4Trr43IW+oQkzmlw0hF7wPzMjYE+xO0Ky/kFjZJYShLJRyNYixVr8OHlI
-xhwqX8NcsSNoW4y3HgA=
-=gzFp
+iQIcBAEBAgAGBQJR0bMQAAoJEIaOsuA1yqRECD8P/jlQijLFRJxVxGMLdx0yB3qB
+X2EbdxRZfDi6NC9OuUYGxueFlz4lUFnoZbmThc/hqV8ctzqbxRM2cchYgs70iRTx
+vNUbV9AdF8ib7t14GNQQ76Dx8HOVsiFn+DcgmUq2K+mK/S0stJlyMh5tMt8RDfyd
+7N+OzzQwHLtLW3uWXPwoBwjHFqiQX3zQHkw0vcmh1H/EWgHC4EYIv387qf9QlmTy
+eFa/W0C9rNxVwQe4djD2eJUudOAskOfRj/z7zBwXYmhaI4ecJhQtE9raddOaDTaO
+VXau8Hse8IHH80KNcr9KWnjVphFFNZfZHbTruazMCaBGYbW3GK/dNxpNlzkVraJC
+ICWhL/HGVFkv6yGP2xfPYf1M1DtyepCxiNTlFaIURoZXPEiwJKSeDrAe2sZFnx+Y
+2Jy2hYHJMwMQPJ4ZZktk88l4Ag549IZJujAq/tb+G4xGmw9LIPknP+eFPuVF/cfx
+TnH1VKWo/y0cPMsoap0i2OM+34NZapp++NtsZXnQpaEKGvqhPIhNU82Jxzl+YujO
+DtEtDUZ9gG/Us4d66/HuIK+2huMC0jR2W5DEgYqLZjJ+ve9atne6++3MSyAcvTJC
+nqPXRZEb+d6GEx8XYWYxWQUUhdbtWNqmKIwstLXuph8zUGxDweffkrkTbDV+P22l
+OqnQ7czTR/W/KDazhc8w
+=z3VI
 -----END PGP SIGNATURE-----
 
---ZaNUQUWeUBsaJYg9--
+--3V7upXqbjpZ4EhLz--
