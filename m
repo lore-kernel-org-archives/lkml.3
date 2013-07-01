@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3GAN2G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 09:28:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49670 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752695Ab3GAN2E (ORCPT
+	id S1753928Ab3GANav (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 09:30:51 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55124 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab3GANau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 09:28:04 -0400
-X-Sasl-enc: ripcOubun5/hUj8ZszE0dAvytcQuAnoqYfrts9MJOdp4 1372685283
-Date: Mon, 1 Jul 2013 10:28:00 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Mark Lord <kernel@start.ca>, Ondrej Zary <linux@rainbow-software.org>,
-        Mark Lord <mlord@pobox.com>,
-        Marcus Overhagen <marcus.overhagen@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>, linux-ide@vger.kernel.org,
-        tj@kernel.org
-Subject: Re: SATA hdd refuses to reallocate a sector?
-Message-ID: <20130701132800.GA11841@khazad-dum.debian.net>
-References: <20130623101940.GA4448@amd.pavel.ucw.cz>
- <51C76858.4060906@pobox.com>
- <20130623215100.GA7414@amd.pavel.ucw.cz>
- <201306240914.29502.linux@rainbow-software.org>
- <20130629184716.GA9330@khazad-dum.debian.net>
- <51CF6776.7090206@start.ca>
- <20130630143427.GA10035@khazad-dum.debian.net>
- <20130630164956.GA26305@amd.pavel.ucw.cz>
+	Mon, 1 Jul 2013 09:30:50 -0400
+Date: Mon, 1 Jul 2013 15:30:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Prarit Bhargava <prarit@redhat.com>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>, athorlton@sgi.com,
+        CAI Qian <caiqian@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: BUG: tick device NULL pointer during system initialization and
+ shutdown
+In-Reply-To: <51D17F2B.7000300@redhat.com>
+Message-ID: <alpine.DEB.2.02.1307011518350.4013@ionos.tec.linutronix.de>
+References: <51C0AB09.2090605@redhat.com> <alpine.DEB.2.02.1306241551020.4013@ionos.tec.linutronix.de> <51CA2CBF.70404@redhat.com> <alpine.DEB.2.02.1306261303260.4013@ionos.tec.linutronix.de> <51CC708B.7040605@redhat.com> <alpine.DEB.2.02.1306281250270.4013@ionos.tec.linutronix.de>
+ <51D17F2B.7000300@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130630164956.GA26305@amd.pavel.ucw.cz>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 Jun 2013, Pavel Machek wrote:
-> > > > You know, either the "long" or the "offline" SMART test routines do exactly
-> > > > that on any spinning rust device with a firmware that is not utterly broken.
-> > > > 
-> > > > The HDD's firmware will rewrite, and even reallocate any "weak" sectors
-> > > > found by the surface scan.
-> > > > 
-> > > 
-> > > The drives I have tried this on (smartctl -t long),
-> > > abort at the first bad sector.  Not useful.
-> > 
-> > Which vendor?  The Seagates I have on hand are not that crappy, for example
-> > (their issues are subpar mechanics and the resulting high rate of failure,
-> > but the firmware at least is not a piece of crap)...
+On Mon, 1 Jul 2013, Prarit Bhargava wrote:
+> On 06/28/2013 06:52 AM, Thomas Gleixner wrote:
+> > Huch. Did the warning in the broadcast code trigger before that?
 > 
-> Are you sure? I seem to have firmware issues:
+> tglx,
 > 
-> === START OF INFORMATION SECTION ===
-> Model Family:     Seagate Momentus 5400.6 series
+> AFAICT it does not.  Log below on the system I'm testing on.  The test on the
+> system is system boots, sleeps for 30 seconds and then reboots.
 
-Apparently there is too much of a difference between Seagate Momentus and
-Seagate Barracuda.  The barracuda are not crap [as far as the firmware
-goes], where apparently the Momentus have crap firmware.
+> [  270.563197] INFO: rcu_sched detected stalls on CPUs/tasks: { 51} (detected by
+> 63, t=217205 jiffies, g=3583, c=3582, q=578)
 
-So we're both correct, and I was not precise enough when I spoke well of
-Seagate firware :-)
+So the stall is on CPU51, but we do not get a backtrace for CPU51. 
 
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+The backtrace trigger is only sent to online cpus. So CPU51 is offline
+already. Which makes sense as we are in the process of bringing CPUs
+down and the CPUs with backtrace are 0 and 53-63.
+
+I'm pretty sure, that the patch which clears the stale flag is
+unrelated to this and it cures the NULL pointer dereference (the
+reason why this can happen is clear).
+
+So now you do not longer trip over the NULL pointer dereference, but
+you see a weird RCU stall on an already DEAD cpu. Note, it's dead
+because we already took CPU52 offline as well.
+
+Paul???
+
+Thanks,
+
+	tglx
+
