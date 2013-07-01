@@ -1,221 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab3GAHhm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:37:42 -0400
-Received: from cynthia.allandria.com ([76.245.85.235]:60794 "EHLO
-	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab3GAHhk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:37:40 -0400
-X-Greylist: delayed 2674 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Jul 2013 03:37:39 EDT
-Date: Sun, 30 Jun 2013 23:52:58 -0700
-From: Brad Boyer <flar@allandria.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Finn Thain <fthain@telegraphics.com.au>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k/mac: Allocate IOP message pool and queues
- dynamically
-Message-ID: <20130701065258.GA8425@cynthia.pants.nu>
-References: <1372586542-1318-1-git-send-email-geert@linux-m68k.org>
+	id S1752913Ab3GAHuK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:50:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44357 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752446Ab3GAHuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:50:08 -0400
+Date: Mon, 1 Jul 2013 09:50:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130701075005.GA28765@dhcp22.suse.cz>
+References: <20130618082414.GC13677@dhcp22.suse.cz>
+ <20130618104443.GH13677@dhcp22.suse.cz>
+ <20130618135025.GK13677@dhcp22.suse.cz>
+ <20130625022754.GP29376@dastard>
+ <20130626081509.GF28748@dhcp22.suse.cz>
+ <20130626232426.GA29034@dastard>
+ <20130627145411.GA24206@dhcp22.suse.cz>
+ <20130629025509.GG9047@dastard>
+ <20130630183349.GA23731@dhcp22.suse.cz>
+ <20130701012558.GB27780@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372586542-1318-1-git-send-email-geert@linux-m68k.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130701012558.GB27780@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 30, 2013 at 12:02:22PM +0200, Geert Uytterhoeven wrote:
-> Currently the IOP message pool and queues are allocated statically,
-> wasting ca. 5 KiB when running a Mac or multi-platform kernel on a machine
-> not having a Mac IOP. Convert them to conditional dynamic memory
-> allocations to fix this.
+On Mon 01-07-13 11:25:58, Dave Chinner wrote:
+> On Sun, Jun 30, 2013 at 08:33:49PM +0200, Michal Hocko wrote:
+> > On Sat 29-06-13 12:55:09, Dave Chinner wrote:
+> > > On Thu, Jun 27, 2013 at 04:54:11PM +0200, Michal Hocko wrote:
+> > > > On Thu 27-06-13 09:24:26, Dave Chinner wrote:
+> > > > > On Wed, Jun 26, 2013 at 10:15:09AM +0200, Michal Hocko wrote:
+> > > > > > On Tue 25-06-13 12:27:54, Dave Chinner wrote:
+> > > > > > > On Tue, Jun 18, 2013 at 03:50:25PM +0200, Michal Hocko wrote:
+> > > > > > > > And again, another hang. It looks like the inode deletion never
+> > > > > > > > finishes. The good thing is that I do not see any LRU related BUG_ONs
+> > > > > > > > anymore. I am going to test with the other patch in the thread.
+> > > > > > > > 
+> > > > > > > > 2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
+> > > > > > > > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
+> > > > > > > > [<ffffffff8118525f>] iget_locked+0x4f/0x180
+> > > > > > > > [<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
+> > > > > > > > [<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
+> > > > > > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
+> > > > > > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
+> > > > > > > > [<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
+> > > > > > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > > > > > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > > > > > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > > > > > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > > > > > > > [<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
+> > > > > > > > [<ffffffffffffffff>] 0xffffffffffffffff
 > 
-> As kzalloc() returns zeroed memory, there's no need to initialize (parts of)
-> the allocated structures to zeroes.
+> .....
+> > Do you mean sysrq+t? It is attached. 
+> > 
+> > Btw. I was able to reproduce this again. The stuck processes were
+> > sitting in the same traces for more than 28 hours without any change so
+> > I do not think this is a temporal condition.
+> > 
+> > Traces of all processes in the D state:
+> > 7561 [<ffffffffa029c03e>] xfs_iget+0xbe/0x190 [xfs]
+> > [<ffffffffa02a8e98>] xfs_lookup+0xe8/0x110 [xfs]
+> > [<ffffffffa029fad9>] xfs_vn_lookup+0x49/0x90 [xfs]
+> > [<ffffffff81174ad0>] lookup_real+0x20/0x60
+> > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
+> > [<ffffffff8117815e>] do_last+0x2de/0x780
+> > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
+> > [<ffffffffffffffff>] 0xffffffffffffffff
 > 
-> This required moving the call to iop_init() from mac_identify() to
-> mac_platform_init() (slab nor bootmem are available at mac_identify() call
-> time), and allowed to integrate iop_register_interrupts() into iop_init().
+> This looks like it may be equivalent to the ext4 trace above, though
+> I'm not totally sure on that yet. Can you get me the line of code
+> where the above code is sleeping - 'gdb> l *(xfs_iget+0xbe)' output
+> is sufficient.
 
-Just a couple very minor comments. I haven't tested it, but I was involved
-with the original implementation and testing of this code.
+OK, this is a bit tricky because I have xfs built as a module so objdump
+on xfs.ko shows nonsense
+   19039:       e8 00 00 00 00          callq  1903e <xfs_iget+0xbe>
+   1903e:       48 8b 75 c0             mov    -0x40(%rbp),%rsi
 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> Untested due to lack of hardware
+crash was more clever though and it says:
+0xffffffffa029c034 <xfs_iget+180>:      mov    $0x1,%edi
+0xffffffffa029c039 <xfs_iget+185>:      callq  0xffffffff815776d0
+<schedule_timeout_uninterruptible>
+/dev/shm/mhocko-build/BUILD/kernel-3.9.0mmotm+/fs/xfs/xfs_icache.c: 423
+0xffffffffa029c03e <xfs_iget+190>:      mov    -0x40(%rbp),%rsi
+
+which maps to:
+out_error_or_again:
+        if (error == EAGAIN) {
+                delay(1);
+                goto again;
+        }
+
+So this looks like this path loops in goto again and out_error_or_again.
+
+> If it's where I suspect it is, we are hitting a VFS inode that
+> igrab() is failing on because I_FREEING is set and that is returning
+> EAGAIN. Hence xfs_iget() sleeps for a short period and retries the
+> lookup. If you've still got a system in this state, can you dump the
+> xfs stats a few times about 5s apart i.e.
 > 
->  arch/m68k/include/asm/mac_iop.h |    2 --
->  arch/m68k/mac/config.c          |    3 ++-
->  arch/m68k/mac/iop.c             |   57 ++++++++++++++++++---------------------
->  arch/m68k/mac/macints.c         |    1 -
->  4 files changed, 28 insertions(+), 35 deletions(-)
+> $ for i in `seq 0 1 5`; do echo ; date; cat /proc/fs/xfs/stat ; sleep 5 ; done
 > 
-> diff --git a/arch/m68k/include/asm/mac_iop.h b/arch/m68k/include/asm/mac_iop.h
-> index fde874a..a2c7e6f 100644
-> --- a/arch/m68k/include/asm/mac_iop.h
-> +++ b/arch/m68k/include/asm/mac_iop.h
-> @@ -159,6 +159,4 @@ extern void iop_upload_code(uint, __u8 *, uint, __u16);
->  extern void iop_download_code(uint, __u8 *, uint, __u16);
->  extern __u8 *iop_compare_code(uint, __u8 *, uint, __u16);
->  
-> -extern void iop_register_interrupts(void);
-> -
->  #endif /* __ASSEMBLY__ */
-> diff --git a/arch/m68k/mac/config.c b/arch/m68k/mac/config.c
-> index afb95d5..a8d62a8 100644
-> --- a/arch/m68k/mac/config.c
-> +++ b/arch/m68k/mac/config.c
-> @@ -925,7 +925,6 @@ static void __init mac_identify(void)
->  	printk(KERN_DEBUG " Machine ID: %ld CPUid: 0x%lx memory size: 0x%lx\n",
->  		mac_bi_data.id, mac_bi_data.cpuid, mac_bi_data.memsize);
->  
-> -	iop_init();
->  	via_init();
->  	oss_init();
->  	psc_init();
-> @@ -983,6 +982,8 @@ int __init mac_platform_init(void)
->  	if (!MACH_IS_MAC)
->  		return -ENODEV;
->  
-> +	iop_init();
-> +
->  	/*
->  	 * Serial devices
->  	 */
-> diff --git a/arch/m68k/mac/iop.c b/arch/m68k/mac/iop.c
-> index 8a4c446..6cc3055 100644
-> --- a/arch/m68k/mac/iop.c
-> +++ b/arch/m68k/mac/iop.c
-> @@ -104,6 +104,7 @@
->   * should execute quickly.)
->   */
->  
-> +#include <linux/slab.h>
->  #include <linux/types.h>
->  #include <linux/kernel.h>
->  #include <linux/mm.h>
-> @@ -142,9 +143,9 @@ static volatile struct mac_iop *iop_base[NUM_IOPS];
->   * IOP message queues
->   */
->  
-> -static struct iop_msg iop_msg_pool[NUM_IOP_MSGS];
-> -static struct iop_msg *iop_send_queue[NUM_IOPS][NUM_IOP_CHAN];
-> -static struct listener iop_listeners[NUM_IOPS][NUM_IOP_CHAN];
-> +static struct iop_msg *iop_msg_pool;
-> +static struct iop_msg **iop_send_queue[NUM_IOPS];
-> +static struct listener *iop_listeners[NUM_IOPS];
->  
->  irqreturn_t iop_ism_irq(int, void *);
->  
-> @@ -260,47 +261,38 @@ void __init iop_preinit(void)
->  	}
->  }
->  
-> +static void __init alloc_msg_queue(int iop_num)
-> +{
-> +	iop_send_queue[iop_num] =
-> +		kzalloc(NUM_IOP_CHAN * sizeof(**iop_send_queue), GFP_KERNEL);
-> +	iop_listeners[iop_num] =
-> +		kzalloc(NUM_IOP_CHAN * sizeof(**iop_listeners), GFP_KERNEL);
-> +}
-> +
->  /*
->   * Initialize the IOPs, if present.
->   */
->  
->  void __init iop_init(void)
->  {
-> -	int i;
-> +	if (!iop_scc_present && !iop_ism_present)
-> +		return;
-> +
-> +	iop_msg_pool = kzalloc(NUM_IOP_MSGS * sizeof(*iop_msg_pool),
-> +			       GFP_KERNEL);
->  
->  	if (iop_scc_present) {
->  		printk("IOP: detected SCC IOP at %p\n", iop_base[IOP_NUM_SCC]);
-> +		alloc_msg_queue(IOP_NUM_SCC);
+> Depending on what stat is changing (i'm looking for skip vs recycle
+> in the inode cache stats), that will tell us why the lookup is
+> failing...
 
-Technically, this isn't actually useful. As long as we never start this
-IOP, it can't ever send or be sent any messages. We currently leave the
-SCC IOP in bypass mode and access the SCC chip directly.
+$ for i in `seq 0 1 5`; do echo ; date; cat /proc/fs/xfs/stat ; sleep 5 ; done
 
-Perhaps it would be better to allocate it at the beginning of iop_start
-if it is not already allocated?
+Mon Jul  1 09:29:57 CEST 2013
+extent_alloc 1484333 2038118 1678 13182
+abt 0 0 0 0
+blk_map 21004635 3433178 1450438 1461372 1450017 25888309 0
+bmbt 0 0 0 0
+dir 1482235 1466711 7281 2529
+trans 7676 6231535 1444850
+ig 0 8534 299 1463749 0 1256778 262381
+log 37039 2082072 414 8808 16395
+push_ail 7684106 0 519016 449446 0 12401 64613 2970751 0 1036
+xstrat 1441551 0
+rw 1744884 1351499
+attr 84933 0 0 0
+icluster 130532 102985 2389817
+vnodes 4293706604 0 0 0 1260692 1260692 1260692 0
+buf 24539551 79603 24464366 2126 8792 75185 0 129859 9654
+abtb2 1520647 1551239 12314 12331 0 0 0 0 0 0 0 0 0 0 15613
+abtc2 2972473 1641548 1486215 1486232 0 0 0 0 0 0 0 0 0 0 258694
+bmbt2 16968 199868 14855 0 3 0 89 0 6414 89 58 0 61 0 1800151
+ibt2 4289847 39122572 22887 1 4 0 644 59 10700 0 88 0 92 0 2732985
+qm 0 0 0 0 0 0 0 0
+xpc 7892422656 3364392442 7942370166
+debug 0
 
->  	}
->  	if (iop_ism_present) {
->  		printk("IOP: detected ISM IOP at %p\n", iop_base[IOP_NUM_ISM]);
-> -		iop_start(iop_base[IOP_NUM_ISM]);
-> -		iop_alive(iop_base[IOP_NUM_ISM]); /* clears the alive flag */
-> -	}
-> -
-> -	/* Make the whole pool available and empty the queues */
-> -
-> -	for (i = 0 ; i < NUM_IOP_MSGS ; i++) {
-> -		iop_msg_pool[i].status = IOP_MSGSTATUS_UNUSED;
-> -	}
-> +		alloc_msg_queue(IOP_NUM_ISM);
->  
-> -	for (i = 0 ; i < NUM_IOP_CHAN ; i++) {
-> -		iop_send_queue[IOP_NUM_SCC][i] = NULL;
-> -		iop_send_queue[IOP_NUM_ISM][i] = NULL;
-> -		iop_listeners[IOP_NUM_SCC][i].devname = NULL;
-> -		iop_listeners[IOP_NUM_SCC][i].handler = NULL;
-> -		iop_listeners[IOP_NUM_ISM][i].devname = NULL;
-> -		iop_listeners[IOP_NUM_ISM][i].handler = NULL;
-> -	}
-> -}
-> -
-> -/*
-> - * Register the interrupt handler for the IOPs.
-> - * TODO: might be wrong for non-OSS machines. Anyone?
-> - */
-> -
-> -void __init iop_register_interrupts(void)
-> -{
-> -	if (iop_ism_present) {
-> +		/*
-> +		 * Register the interrupt handler for the IOPs.
-> +		 * TODO: might be wrong for non-OSS machines. Anyone?
-> +		 */
->  		if (macintosh_config->ident == MAC_MODEL_IIFX) {
->  			if (request_irq(IRQ_MAC_ADB, iop_ism_irq, 0,
->  					"ISM IOP", (void *)IOP_NUM_ISM))
-> @@ -315,6 +307,9 @@ void __init iop_register_interrupts(void)
->  		} else {
->  			printk("IOP: the ISM IOP seems to be alive.\n");
->  		}
+Mon Jul  1 09:30:02 CEST 2013
+extent_alloc 1484362 2038147 1678 13182
+abt 0 0 0 0
+blk_map 21005075 3433237 1450468 1461401 1450047 25888838 0
+bmbt 0 0 0 0
+dir 1482265 1466741 7281 2529
+trans 7676 6231652 1444880
+ig 0 8534 299 1463779 0 1256778 262381
+log 37039 2082072 414 8808 16395
+push_ail 7684253 0 519016 449446 0 12401 64613 2970751 0 1036
+xstrat 1441579 0
+rw 1744914 1351499
+attr 84933 0 0 0
+icluster 130532 102985 2389817
+vnodes 4293706604 0 0 0 1260692 1260692 1260692 0
+buf 24540112 79607 24464923 2126 8792 75189 0 129863 9657
+abtb2 1520676 1551268 12314 12331 0 0 0 0 0 0 0 0 0 0 15613
+abtc2 2972531 1641578 1486244 1486261 0 0 0 0 0 0 0 0 0 0 258696
+bmbt2 16969 199882 14856 0 3 0 89 0 6415 89 58 0 61 0 1800406
+ibt2 4289937 39123472 22887 1 4 0 644 59 10700 0 88 0 92 0 2732985
+qm 0 0 0 0 0 0 0 0
+xpc 7892537344 3364415667 7942370166
+debug 0
 
-The if/else above isn't useful if it is run before the call to iop_start.
-However, it's also useless if it is called immediately after the call to
-iop_alive which is now below. It was supposed to eventually be called in
-the background on a regular schedule, but that never happened.
+Mon Jul  1 09:30:07 CEST 2013
+extent_alloc 1484393 2038181 1678 13182
+abt 0 0 0 0
+blk_map 21005515 3433297 1450498 1461431 1450077 25889368 0
+bmbt 0 0 0 0
+dir 1482295 1466771 7281 2529
+trans 7676 6231774 1444910
+ig 0 8534 299 1463809 0 1256778 262381
+log 37039 2082072 414 8808 16395
+push_ail 7684405 0 519016 449446 0 12401 64613 2970751 0 1036
+xstrat 1441609 0
+rw 1744944 1351499
+attr 84933 0 0 0
+icluster 130532 102985 2389817
+vnodes 4293706604 0 0 0 1260692 1260692 1260692 0
+buf 24540682 79609 24465491 2126 8792 75191 0 129867 9657
+abtb2 1520708 1551300 12314 12331 0 0 0 0 0 0 0 0 0 0 15613
+abtc2 2972593 1641609 1486275 1486292 0 0 0 0 0 0 0 0 0 0 258696
+bmbt2 16969 199882 14856 0 3 0 89 0 6415 89 58 0 61 0 1800406
+ibt2 4290028 39124384 22888 1 4 0 644 59 10700 0 88 0 92 0 2732985
+qm 0 0 0 0 0 0 0 0
+xpc 7892660224 3364438892 7942370166
+debug 0
 
-> +
-> +		iop_start(iop_base[IOP_NUM_ISM]);
-> +		iop_alive(iop_base[IOP_NUM_ISM]); /* clears the alive flag */
->  	}
->  }
->  
-> diff --git a/arch/m68k/mac/macints.c b/arch/m68k/mac/macints.c
-> index 5c1a6b2..da42c18 100644
-> --- a/arch/m68k/mac/macints.c
-> +++ b/arch/m68k/mac/macints.c
-> @@ -178,7 +178,6 @@ void __init mac_init_IRQ(void)
->  		psc_register_interrupts();
->  	if (baboon_present)
->  		baboon_register_interrupts();
-> -	iop_register_interrupts();
->  	if (request_irq(IRQ_AUTO_7, mac_nmi_handler, 0, "NMI",
->  			mac_nmi_handler))
->  		pr_err("Couldn't register NMI\n");
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-m68k" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Mon Jul  1 09:30:12 CEST 2013
+extent_alloc 1484424 2038215 1678 13182
+abt 0 0 0 0
+blk_map 21005901 3433353 1450524 1461461 1450103 25889836 0
+bmbt 0 0 0 0
+dir 1482321 1466797 7281 2529
+trans 7677 6231889 1444936
+ig 0 8534 299 1463835 0 1256778 262381
+log 37045 2082361 414 8810 16398
+push_ail 7684547 0 519079 449508 0 12408 64613 2971092 0 1037
+xstrat 1441639 0
+rw 1744970 1351499
+attr 84933 0 0 0
+icluster 130548 102999 2390155
+vnodes 4293706604 0 0 0 1260692 1260692 1260692 0
+buf 24541210 79611 24466017 2126 8792 75193 0 129871 9657
+abtb2 1520740 1551332 12314 12331 0 0 0 0 0 0 0 0 0 0 15613
+abtc2 2972655 1641640 1486306 1486323 0 0 0 0 0 0 0 0 0 0 258696
+bmbt2 16969 199882 14856 0 3 0 89 0 6415 89 58 0 61 0 1800406
+ibt2 4290107 39125176 22889 1 4 0 644 59 10700 0 88 0 92 0 2732985
+qm 0 0 0 0 0 0 0 0
+xpc 7892783104 3364458016 7942370166
+debug 0
+
+Mon Jul  1 09:30:17 CEST 2013
+extent_alloc 1484454 2038245 1678 13182
+abt 0 0 0 0
+blk_map 21006341 3433413 1450554 1461491 1450133 25890366 0
+bmbt 0 0 0 0
+dir 1482351 1466827 7281 2529
+trans 7677 6232011 1444966
+ig 0 8534 299 1463865 0 1256778 262381
+log 37045 2082361 414 8810 16398
+push_ail 7684699 0 519175 449508 0 12408 64613 2971092 0 1037
+xstrat 1441669 0
+rw 1745000 1351499
+attr 84933 0 0 0
+icluster 130548 102999 2390155
+vnodes 4293706604 0 0 0 1260692 1260692 1260692 0
+buf 24541770 79611 24466577 2126 8792 75193 0 129871 9657
+abtb2 1520770 1551362 12314 12331 0 0 0 0 0 0 0 0 0 0 15613
+abtc2 2972715 1641670 1486336 1486353 0 0 0 0 0 0 0 0 0 0 258696
+bmbt2 16969 199882 14856 0 3 0 89 0 6415 89 58 0 61 0 1800406
+ibt2 4290197 39126076 22889 1 4 0 644 59 10700 0 88 0 92 0 2732985
+qm 0 0 0 0 0 0 0 0
+xpc 7892905984 3364481241 7942370166
+debug 0
+
+Mon Jul  1 09:30:22 CEST 2013
+extent_alloc 1484486 2038280 1678 13182
+abt 0 0 0 0
+blk_map 21006782 3433474 1450584 1461522 1450163 25890898 0
+bmbt 0 0 0 0
+dir 1482381 1466857 7281 2529
+trans 7677 6232134 1444996
+ig 0 8534 299 1463895 0 1256778 262381
+log 37045 2082361 414 8810 16398
+push_ail 7684852 0 519272 449508 0 12408 64613 2971092 0 1037
+xstrat 1441699 0
+rw 1745030 1351499
+attr 84933 0 0 0
+icluster 130548 102999 2390155
+vnodes 4293706604 0 0 0 1260692 1260692 1260692 0
+buf 24542347 79614 24467151 2126 8792 75196 0 129876 9657
+abtb2 1520803 1551395 12314 12331 0 0 0 0 0 0 0 0 0 0 15613
+abtc2 2972779 1641702 1486368 1486385 0 0 0 0 0 0 0 0 0 0 258696
+bmbt2 16970 199896 14857 0 3 0 89 0 6415 89 58 0 61 0 1800407
+ibt2 4290288 39126988 22890 1 4 0 644 59 10700 0 88 0 92 0 2732985
+qm 0 0 0 0 0 0 0 0
+xpc 7893028864 3364504466 7942370166
+debug 0
+
+-- 
+Michal Hocko
+SUSE Labs
