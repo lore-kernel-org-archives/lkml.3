@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab3GAStH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 14:49:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60054 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab3GAStF (ORCPT
+	id S1755085Ab3GASyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 14:54:01 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:44487 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754744Ab3GASyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 14:49:05 -0400
-Message-ID: <51D1CF18.80201@canonical.com>
-Date: Mon, 01 Jul 2013 14:48:56 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 1 Jul 2013 14:54:00 -0400
+Message-ID: <51D1D043.5030509@gmail.com>
+Date: Mon, 01 Jul 2013 12:53:55 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: udknight@gmail.com, jslaby@suse.cz, alan@linux.intel.com,
-        matts@commtech-fastcom.com, wfp5p@virginia.edu, tklauser@distanz.ch,
-        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.9] [v3.10] [Regression]  serial: 8250_pci: add support for
- another kind of NetMos Technology PCI 9835 Multi-I/O Controller
-References: <51D1AAF5.5050004@canonical.com> <20130701162751.GA18834@kroah.com>
-In-Reply-To: <20130701162751.GA18834@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH V2 12/15] perf tools: allow non-matching sample types
+References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com> <1372319707-13892-13-git-send-email-adrian.hunter@intel.com> <51CC6AAF.4030404@gmail.com> <51D14CB6.206@intel.com>
+In-Reply-To: <51D14CB6.206@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2013 12:27 PM, Greg KH wrote:
-> On Mon, Jul 01, 2013 at 12:14:45PM -0400, Joseph Salisbury wrote:
->> Hi Wang,
->>
->> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
->> it was found that reverting the following commit resolved this bug:
->>
->> commit 8d2f8cd424ca0b99001f3ff4f5db87c4e525f366
->> Author: Wang YanQing <udknight@gmail.com>
->> Date:   Fri Mar 1 11:47:20 2013 +0800
->>
->>     serial: 8250_pci: add support for another kind of NetMos Technology
->> PCI 9835 Multi-I/O Controller
->>
->>
->> The regression was introduced as of v3.9-rc3 and still exists in the
->> current Mainline tree.  It was also propagated to the stable trees.
->>
->> The patch causes the device to use the serial module instead of
->> parport_serial.  Maybe the the quirk in ~drivers/pci/quirks.c
->> quirk_netmos() needs to be modified?
->>
->> I see that you are the author of this patch, so I wanted to run this by
->> you.  I was thinking of requesting a revert, but I wanted to get your
->> feedback first.
-> You missed the conversation we had about this already this weekend :)
+On 7/1/13 3:32 AM, Adrian Hunter wrote:
+> Snip
 >
-> The offending patch has already been reverted and will propagate to the
-> stable trees soon.
+>>
+>> While this works for a combined S/W and tracepoint events session, I do not
+>> like promoting sample types to the minimum compatible level for all events
+>> in the session. perf needs to allow each event to have its own sample_type
+>> and not force a minimal compatibility.
 >
-> thanks,
->
-> greg k-h
-Good news.  Thanks for the help, Greg!
+> Why?  The impact is small. The kernel API is completely unchanged.
+
+I'd like to see libperf become a stable, usable library - usable by more 
+than the perf binary and its builtin commands. I have already done this 
+once for a daemon, and it was a PITA to get the specific use functional 
+without memory leaks/growth in the libperf part.
+
+With respect to this specific patch it means appropriate flexibility in 
+the data collected for events. ie., each event can have its own 
+sample_type. For example if the tracepoint already contains task 
+information TID is not needed - and IP may not be wanted either. The 
+code processing the samples should not require all events to have some 
+minimum data format - that just wastes buffer space.
+
+David
+
