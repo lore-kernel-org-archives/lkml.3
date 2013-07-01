@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab3GAQYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:24:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38493 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752197Ab3GAQYI (ORCPT
+	id S1752945Ab3GAQ1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:27:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46652 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab3GAQ1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:24:08 -0400
-Date: Mon, 1 Jul 2013 12:24:07 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Roger Quadros <rogerq@ti.com>
-cc: balbi@ti.com, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-In-Reply-To: <51D13AED.4010307@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1307011209440.1547-100000@iolanthe.rowland.org>
+	Mon, 1 Jul 2013 12:27:52 -0400
+Date: Mon, 1 Jul 2013 09:27:51 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Joseph Salisbury <joseph.salisbury@canonical.com>
+Cc: udknight@gmail.com, jslaby@suse.cz, alan@linux.intel.com,
+        matts@commtech-fastcom.com, wfp5p@virginia.edu, tklauser@distanz.ch,
+        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [v3.9] [v3.10] [Regression]  serial: 8250_pci: add support for
+ another kind of NetMos Technology PCI 9835 Multi-I/O Controller
+Message-ID: <20130701162751.GA18834@kroah.com>
+References: <51D1AAF5.5050004@canonical.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D1AAF5.5050004@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Roger Quadros wrote:
-
-> On 06/28/2013 10:06 PM, Alan Stern wrote:
-> > On Fri, 28 Jun 2013, Roger Quadros wrote:
-> > 
-> >>> That's not what I meant.  Never mind the pinctrl; I was asking about
-> >>> the EHCI controller itself.  Under what circumstances does the
-> >>> controller assert its wakeup signal?  And how do you tell it to stop
-> >>> asserting that signal?
-> >>
-> >> I believe this would be through the EHCI Interrupt enable register (USBINTR).
-> >> I'm not aware of any other mechanism.
-> > 
-> > That's strange, because ehci_suspend() sets the intr_enable register to 
-> > 0.  So how do you ever get any wakeup interrupts at all?
+On Mon, Jul 01, 2013 at 12:14:45PM -0400, Joseph Salisbury wrote:
+> Hi Wang,
 > 
-> Because after ehci_suspend() for OMAP, we solely rely on the out of band wake up
-> mechanism. i.e. Pad wakeup.
+> A bug was opened against the Ubuntu kernel[0].  After a kernel bisect,
+> it was found that reverting the following commit resolved this bug:
+> 
+> commit 8d2f8cd424ca0b99001f3ff4f5db87c4e525f366
+> Author: Wang YanQing <udknight@gmail.com>
+> Date:   Fri Mar 1 11:47:20 2013 +0800
+> 
+>     serial: 8250_pci: add support for another kind of NetMos Technology
+> PCI 9835 Multi-I/O Controller
+> 
+> 
+> The regression was introduced as of v3.9-rc3 and still exists in the
+> current Mainline tree.  It was also propagated to the stable trees.
+> 
+> The patch causes the device to use the serial module instead of
+> parport_serial.  Maybe the the quirk in ~drivers/pci/quirks.c
+> quirk_netmos() needs to be modified?
+> 
+> I see that you are the author of this patch, so I wanted to run this by
+> you.  I was thinking of requesting a revert, but I wanted to get your
+> feedback first.
 
-I don't know what Pad wakeup is.  The wakeup signal has to originate 
-from the EHCI controller, doesn't it?  If not, how does the Pad know 
-when a wakeup is needed?
+You missed the conversation we had about this already this weekend :)
 
+The offending patch has already been reverted and will propagate to the
+stable trees soon.
 
-> We can't enable_irq at the start as the controller will only be resumed
-> after usb_remote_wakeup().
+thanks,
 
-Hmmm, yes, I had realized that at one point and then forgot it.  You
-don't want an IRQ to arrive before you're prepared to handle it.
-
-This suggests that you really want to call enable_irq() call at the end
-of ehci_resume() instead of the beginning.  (Convert the "return 0" to
-a jump to the end of the routine.)
-
-Alan Stern
-
+greg k-h
