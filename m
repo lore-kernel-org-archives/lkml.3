@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754578Ab3GAQKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:10:49 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48931 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975Ab3GAQKr (ORCPT
+	id S1754316Ab3GAQNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 12:13:22 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2043 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3GAQNU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:10:47 -0400
-Date: Mon, 1 Jul 2013 09:03:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 0/7] v2 Provide infrastructure for
- full-system idle
-Message-ID: <20130701160314.GM3773@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130628200949.GA17458@linux.vnet.ibm.com>
- <87a9m65mv6.fsf@tassilo.jf.intel.com>
+	Mon, 1 Jul 2013 12:13:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 01 Jul 2013 09:13:05 -0700
+Message-ID: <51D1AA9E.2000909@nvidia.com>
+Date: Mon, 1 Jul 2013 12:13:18 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9m65mv6.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070116-7606-0000-0000-00000CF13E34
+To: Anton Vorontsov <anton@enomsg.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] power_supply: Add of_node_put to fix refcount
+References: <1370899602-22123-1-git-send-email-rklein@nvidia.com> <1370899602-22123-2-git-send-email-rklein@nvidia.com> <20130629012255.GA20924@lizard>
+In-Reply-To: <20130629012255.GA20924@lizard>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 08:19:25AM -0700, Andi Kleen wrote:
-> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
-> >
-> > The individual patches are as follows:
-> >
-> > 1.	Add a CONFIG_NO_HZ_FULL_SYSIDLE Kconfig parameter to enable
-> > 	this feature.  Kernels built with CONFIG_NO_HZ_FULL_SYSIDLE=n
-> > 	act exactly as they do today.
+On 6/28/2013 9:22 PM, Anton Vorontsov wrote:
+> On Mon, Jun 10, 2013 at 05:26:39PM -0400, Rhyland Klein wrote:
+>> of_parse_phandle increments the refcount for a dt node before returning
+>> it. Add of_node_put where needed to properly decrement the refcount
+>> when we are done using a given node.
+>>
+>> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+>> ---
 > 
-> Is this extra CONFIG option really needed? RCU already has a bewildering
-> variety of CONFIG options, and no idle CONFIG is also pretty complicated. 
-> At some point noone will know how to configure kernels anymore if 
-> these non trivial, complicated trade off CONFIGs keep spreading.
+> With CONFIG_OF=n I got this:
 > 
-> The facility sounds like a good thing in general. Just enable
-> it implicitely with NO_HZ_SYSIDLE ? 
+>   CC      drivers/power/sbs-battery.o
+>   drivers/power/sbs-battery.c: In function ‘sbs_probe’:
+>   drivers/power/sbs-battery.c:707:20: error: ‘struct power_supply’ has no
+>   member named ‘of_node’
+>   make[1]: *** [drivers/power/sbs-battery.o] Error 1
+> 
+> I fixed this by the patch below and applied your 1-3 series.
+> 
+> Thanks!
+> 
+> Anton
+> 
+> commit b50df95c8f0703c95625181d2eaf53855c5ebee5
+> Author: Anton Vorontsov <anton@enomsg.org>
+> Date:   Fri Jun 28 18:17:22 2013 -0700
+> 
+>     power_supply: Move of_node out of the #ifdef CONFIG_OF
+>     
+>     Similar to linux/device.h, move of_node struct member out of the #ifdef
+>     CONFIG_OF so that the drivers won't have to mess with #ifdefs in .c files.
+>     
+>     Signed-off-by: Anton Vorontsov <anton@enomsg.org>
+> 
+> diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+> index 3828cef..804b906 100644
+> --- a/include/linux/power_supply.h
+> +++ b/include/linux/power_supply.h
+> @@ -162,6 +162,8 @@ union power_supply_propval {
+>  	const char *strval;
+>  };
+>  
+> +struct device_node;
+> +
+>  struct power_supply {
+>  	const char *name;
+>  	enum power_supply_type type;
+> @@ -173,9 +175,7 @@ struct power_supply {
+>  
+>  	char **supplied_from;
+>  	size_t num_supplies;
+> -#ifdef CONFIG_OF
+>  	struct device_node *of_node;
+> -#endif
+>  
+>  	int (*get_property)(struct power_supply *psy,
+>  			    enum power_supply_property psp,
+> 
 
-I am guessing that you want CONFIG_NO_HZ_FULL to implicitly enable
-the sysidle code so that CONFIG_NO_HZ_FULL_SYSIDLE can be eliminated.
-I will be happy to take that step, but only after I gain full confidence
-in the correctness and performance of the sysidle code.
+Thanks!
 
-> If you want a switch for testing I would advise a sysctl or sysfs knob
+-rhyland
 
-This would work well for the correctness part, but not for the performance
-part.
-
-							Thanx, Paul
-
+-- 
+nvpublic
