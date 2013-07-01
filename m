@@ -1,106 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab3GACJl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 22:09:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:54535 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751729Ab3GACJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Jun 2013 22:09:40 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Jason Wang <jasowang@redhat.com>, Andrey Vagin <avagin@openvz.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio-pci: fix leaks of msix_affinity_masks
-In-Reply-To: <51C3F1BD.9050703@redhat.com>
-References: <20130619182809.GC15017@redhat.com> <1371706610-12028-1-git-send-email-avagin@openvz.org> <51C3F1BD.9050703@redhat.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 01 Jul 2013 09:13:44 +0930
-Message-ID: <87sizztb9r.fsf@rustcorp.com.au>
+	id S1752379Ab3GACJq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Jun 2013 22:09:46 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:38621 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab3GACJn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 22:09:43 -0400
+X-Spam-Score: -100.8
+Message-ID: <51D0E4B3.6080402@asianux.com>
+Date: Mon, 01 Jul 2013 10:08:51 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH] arch: tile: include: asm: add cmpxchg64() definition
+References: <51CA6D21.3090901@asianux.com> <51CC492C.1040105@tilera.com> <51CCD891.8000806@asianux.com> <51CCEC27.8050508@asianux.com> <20130628150941.GA22767@linux-mips.org>
+In-Reply-To: <20130628150941.GA22767@linux-mips.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jason Wang <jasowang@redhat.com> writes:
-> On 06/20/2013 01:36 PM, Andrey Vagin wrote:
->> From: Andrew Vagin <avagin@openvz.org>
+
+Firstly thank you very much for replying quickly with details.
+
+On 06/28/2013 11:09 PM, Ralf Baechle wrote:
+> On Fri, Jun 28, 2013 at 09:51:35AM +0800, Chen Gang wrote:
+> 
+>> Need add cmpxchg64(), or will cause compiling issue.
 >>
->> vp_dev->msix_vectors should be initialized before allocating
->> msix_affinity_masks, otherwise vp_free_vectors will not free these
->> objects.
+>> Just define it as cmpxchg(), since cmpxchg() can support 8 bytes.
 >>
->> unreferenced object 0xffff88010f969d88 (size 512):
->>   comm "systemd-udevd", pid 158, jiffies 4294673645 (age 80.545s)
->>   hex dump (first 32 bytes):
->>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
->>   backtrace:
->>     [<ffffffff816e455e>] kmemleak_alloc+0x5e/0xc0
->>     [<ffffffff811aa7f1>] kmem_cache_alloc_node_trace+0x141/0x2c0
->>     [<ffffffff8133ba23>] alloc_cpumask_var_node+0x23/0x80
->>     [<ffffffff8133ba8e>] alloc_cpumask_var+0xe/0x10
->>     [<ffffffff813fdb3d>] vp_try_to_find_vqs+0x25d/0x810
->>     [<ffffffff813fe171>] vp_find_vqs+0x81/0xb0
->>     [<ffffffffa00d2a05>] init_vqs+0x85/0x120 [virtio_balloon]
->>     [<ffffffffa00d2c29>] virtballoon_probe+0xf9/0x1a0 [virtio_balloon]
->>     [<ffffffff813fb61e>] virtio_dev_probe+0xde/0x140
->>     [<ffffffff814452b8>] driver_probe_device+0x98/0x3a0
->>     [<ffffffff8144566b>] __driver_attach+0xab/0xb0
->>     [<ffffffff814432f4>] bus_for_each_dev+0x94/0xb0
->>     [<ffffffff81444f4e>] driver_attach+0x1e/0x20
->>     [<ffffffff81444910>] bus_add_driver+0x200/0x280
->>     [<ffffffff81445c14>] driver_register+0x74/0x160
->>     [<ffffffff813fb7d0>] register_virtio_driver+0x20/0x40
+>> The related error (with allmodconfig):
 >>
->> v2: change msix_vectors uncoditionaly in vp_free_vectors
+>>   drivers/block/blockconsole.c: In function ‘bcon_advance_console_bytes’:
+>>   drivers/block/blockconsole.c:164:2: error: implicit declaration of function ‘cmpxchg64’ [-Werror=implicit-function-declaration]
 >>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: "Michael S. Tsirkin" <mst@redhat.com>
->> Cc: Jason Wang <jasowang@redhat.com>
->> Signed-off-by: Andrew Vagin <avagin@openvz.org>
->> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 >> ---
->>  drivers/virtio/virtio_pci.c | 5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
-
-Thanks, applied.
-
-Cheers,
-Rusty.
-
+>>  arch/tile/include/asm/cmpxchg.h |    2 ++
+>>  1 files changed, 2 insertions(+), 0 deletions(-)
 >>
->> diff --git a/drivers/virtio/virtio_pci.c b/drivers/virtio/virtio_pci.c
->> index a7ce730..1aba255 100644
->> --- a/drivers/virtio/virtio_pci.c
->> +++ b/drivers/virtio/virtio_pci.c
->> @@ -289,9 +289,9 @@ static void vp_free_vectors(struct virtio_device *vdev)
+>> diff --git a/arch/tile/include/asm/cmpxchg.h b/arch/tile/include/asm/cmpxchg.h
+>> index 276f067..7688c28 100644
+>> --- a/arch/tile/include/asm/cmpxchg.h
+>> +++ b/arch/tile/include/asm/cmpxchg.h
+>> @@ -68,6 +68,8 @@ extern unsigned long __cmpxchg_called_with_bad_pointer(void);
 >>  
->>  		pci_disable_msix(vp_dev->pci_dev);
->>  		vp_dev->msix_enabled = 0;
->> -		vp_dev->msix_vectors = 0;
->>  	}
+>>  #define tas(ptr) (xchg((ptr), 1))
 >>  
->> +	vp_dev->msix_vectors = 0;
->>  	vp_dev->msix_used_vectors = 0;
->>  	kfree(vp_dev->msix_names);
->>  	vp_dev->msix_names = NULL;
->> @@ -309,6 +309,8 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->>  	unsigned i, v;
->>  	int err = -ENOMEM;
->>  
->> +	vp_dev->msix_vectors = nvectors;
->> +
->>  	vp_dev->msix_entries = kmalloc(nvectors * sizeof *vp_dev->msix_entries,
->>  				       GFP_KERNEL);
->>  	if (!vp_dev->msix_entries)
->> @@ -336,7 +338,6 @@ static int vp_request_msix_vectors(struct virtio_device *vdev, int nvectors,
->>  		err = -ENOSPC;
->>  	if (err)
->>  		goto error;
->> -	vp_dev->msix_vectors = nvectors;
->>  	vp_dev->msix_enabled = 1;
->>  
->>  	/* Set the vector used for configuration */
-> Acked-by: Jason Wang <jasowang@redhat.com>
+>> +#define cmpxchg64(ptr, o, n)		cmpxchg((ptr), (o), (n))
+> 
+> that's broken.  cmpxchg64 is suposed to work on 64 bit operands ONLY.  This
+> definition (used by MIPS and Alpha) will work properly:
+> 
+
+Oh, really it is. thanks.
+
+> #define cmpxchg64(ptr, o, n)                                            \
+> ({                                                                      \
+> 	BUILD_BUG_ON(sizeof(*(ptr)) != 8);                              \
+> 	cmpxchg((ptr), (o), (n));                                       \
+> })
+> 
+
+I should follow it to send patch v2, thanks.
+
+> This should cure blockconsole on Tile but not on MIPS.
+> 
+> struct blockconsole {
+> ..
+>            u64 console_bytes;
+> ..
+> };
+> 
+> static void bcon_advance_console_bytes(struct blockconsole *bc, int bytes)
+> {
+> 	u64 old, new;
+> 	...
+> 	} while (cmpxchg64(&bc->console_bytes, old, new) != old);
+> }
+> 
+> So it's using cmpxchg64() to operate on 64 bit objects - but that's not
+> going to work on every architecture.  Many 32 bit architectures only
+> provide atomic operations that operate on 32 bit quantities.
+> 
+
+I guess your meaning is:
+
+  cmpxchg64() should be an atomic operation.
+  but on some of 32-bit architectures, they don't implement it as atomic
+    (no lock protected, at least).
+  it may cause issue on these 32-bit architectures.
+
+Is it correct ?
+
+If it is correct, I should continue to try to fix it.
+
+
+Thanks.
+-- 
+Chen Gang
