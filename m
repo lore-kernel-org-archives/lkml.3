@@ -1,112 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755262Ab3GAU2R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:28:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:27721 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755203Ab3GAU2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:28:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,975,1363158000"; 
-   d="scan'208";a="363046263"
-Subject: Re: Performance regression from switching lock to rw-sem for
- anon-vma tree
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michel Lespinasse <walken@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20130629071245.GA5084@gmail.com>
-References: <1371660831.27102.663.camel@schen9-DESK>
-	 <1372205996.22432.119.camel@schen9-DESK> <20130626095108.GB29181@gmail.com>
-	 <1372282560.22432.139.camel@schen9-DESK>
-	 <1372292701.22432.152.camel@schen9-DESK> <20130627083651.GA3730@gmail.com>
-	 <1372366385.22432.185.camel@schen9-DESK>
-	 <1372375873.22432.200.camel@schen9-DESK> <20130628093809.GB29205@gmail.com>
-	 <1372453461.22432.216.camel@schen9-DESK>  <20130629071245.GA5084@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 01 Jul 2013 13:28:17 -0700
-Message-ID: <1372710497.22432.224.camel@schen9-DESK>
+	id S1755273Ab3GAU3z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:29:55 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43697 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753269Ab3GAU3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:29:54 -0400
+Date: Mon, 01 Jul 2013 13:29:53 -0700 (PDT)
+Message-Id: <20130701.132953.922899681299706282.davem@davemloft.net>
+To: christoph.muellner@theobroma-systems.com
+Cc: festevam@gmail.com, linux-kernel@vger.kernel.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, fabio.estevam@freescale.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2] net: fec: Fix multicast list setup in fec_restart().
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1372360703-20526-1-git-send-email-christoph.muellner@theobroma-systems.com>
+References: <61455.62.178.124.14.1371832855.squirrel@mail.theobroma-systems.com>
+	<1372360703-20526-1-git-send-email-christoph.muellner@theobroma-systems.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-06-29 at 09:12 +0200, Ingo Molnar wrote:
-> * Tim Chen <tim.c.chen@linux.intel.com> wrote:
-> 
-> > > If my analysis is correct so far then it might be useful to add two 
-> > > more stats: did rwsem_spin_on_owner() fail because lock->owner == NULL 
-> > > [owner released the rwsem], or because owner_running() failed [owner 
-> > > went to sleep]?
-> > 
-> > Ingo,
-> > 
-> > I tabulated the cases where rwsem_spin_on_owner returns false and causes 
-> > us to stop spinning.
-> > 
-> > 97.12%  was due to lock's owner switching to another writer
-> >  0.01% was due to the owner of the lock sleeping
-> >  2.87%  was due to need_resched() 
-> > 
-> > I made a change to allow us to continue to spin even when lock's owner 
-> > switch to another writer.  I did get the lock to be acquired now mostly 
-> > (98%) via optimistic spin and lock stealing, but my benchmark's 
-> > throughput actually got reduced by 30% (too many cycles spent on useless 
-> > spinning?).
-> 
-> Hm, I'm running out of quick ideas :-/ The writer-ends-spinning sequence 
-> is pretty similar in the rwsem and in the mutex case. I'd have a look at 
-> one more detail: is the wakeup of another writer in the rwsem case 
-> singular, is only a single writer woken? I suspect the answer is yes ...
+From: Christoph Muellner <christoph.muellner@theobroma-systems.com>
+Date: Thu, 27 Jun 2013 21:18:23 +0200
 
-Ingo, we can only wake one writer, right? In __rwsem_do_wake, that is
-indeed the case.  Or you are talking about something else?
-
+> Setup the multicast list of the net_device instead of
+> clearing it blindly. This restores the multicast groups
+> in case of a link down/up event or when resuming from
+> suspend.
 > 
-> A quick glance suggests that the ordering of wakeups of waiters is the 
-> same for mutexes and rwsems: FIFO, single waiter woken on slowpath-unlock. 
-> So that shouldn't make a big difference.
+> Signed-off-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
 
-> If all last-ditch efforts to analyze it via counters fail then the way I'd 
-> approach it next is brute-force instrumentation:
-> 
->  - First I'd create a workload 'steady state' that can be traced and 
->    examined without worrying that that it ends or switches to some other 
->    workload.
-> 
->  - Then I'd create a relatively lightweight trace (maybe trace_printk() is
->    lightweight enough), and capture key mutex and rwsem events.
-> 
->  - I'd capture a 1-10 seconds trace in steady state, both with rwsems and 
->    mutexes. I'd have a good look at which tasks take locks and schedule
->    how and why. I'd try to eliminate any assymetries in behavior, i.e. 
->    make rwsems behave like mutexes.
-
-You mean adding trace points to record the events?  If you can be more
-specific on what data to capture, that will be helpful.  It will be
-holidays here in US so I may get around to this the following week.
-
-Thanks!
-
-Tim
-> 
-> The risk and difficulty is that tracing can easily skew locking patterns, 
-> so I'd first check whether with such new tracepoints enabled the assymetry 
-> in behavior and regression is still present.
-> 
-> Thanks,
-> 
-> 	Ingo
-
-
+Applied.
