@@ -1,178 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3GAJWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 05:22:49 -0400
-Received: from mga02.intel.com ([134.134.136.20]:50774 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752738Ab3GAJWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 05:22:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,973,1363158000"; 
-   d="asc'?scan'208";a="338272444"
-Date: Mon, 1 Jul 2013 05:13:55 -0400
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/memory-failure.c: fix memory leak in successful soft
- offlining
-Message-ID: <20130701091355.GA14444@gchen.bj.intel.com>
-Mail-Followup-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-	linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-	Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-References: <1368807482-11153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1753429Ab3GAJ0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 05:26:38 -0400
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:49109 "EHLO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974Ab3GAJ0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 05:26:37 -0400
+X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Jul 2013 05:26:37 EDT
+Message-ID: <51D148FB.6070506@ge.com>
+Date: Mon, 01 Jul 2013 10:16:43 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
-Content-Disposition: inline
-In-Reply-To: <1368807482-11153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wei Yongjun <weiyj.lk@gmail.com>
+CC: manohar.vanga@gmail.com, gregkh@linuxfoundation.org,
+        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vme: vme_tsi148.c: fix error return code in tsi148_probe()
+References: <CAPgLHd_sYVPQQkx7y4L=i_-GMjSmFGAbgY0bP7M1sr_02WtPvA@mail.gmail.com>
+In-Reply-To: <CAPgLHd_sYVPQQkx7y4L=i_-GMjSmFGAbgY0bP7M1sr_02WtPvA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 19/06/13 03:42, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> 
+> Fix to return a negative error code in the tsi148_crcsr_init() error
+> handling case instead of 0, as done elsewhere in this function.
+> 
 
---6TrnltStXW4iwmi0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Wei,
 
-On Fri, May 17, 2013 at 12:18:02PM -0400, Naoya Horiguchi wrote:
-> Date: Fri, 17 May 2013 12:18:02 -0400
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> To: linux-mm@kvack.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen
->  <andi@firstfloor.org>, linux-kernel@vger.kernel.org, Naoya Horiguchi
->  <n-horiguchi@ah.jp.nec.com>
-> Subject: [PATCH] mm/memory-failure.c: fix memory leak in successful soft
->  offlining
->=20
-> After a successful page migration by soft offlining, the source page is
-> not properly freed and it's never reusable even if we unpoison it afterwa=
-rd.
->=20
-> This is caused by the race between freeing page and setting PG_hwpoison.
-> In successful soft offlining, the source page is put (and the refcount
-> becomes 0) by putback_lru_page() in unmap_and_move(), where it's linked to
-> pagevec and actual freeing back to buddy is delayed. So if PG_hwpoison is
-> set for the page before freeing, the freeing does not functions as expect=
-ed
-> (in such case freeing aborts in free_pages_prepare() check.)
->=20
-> This patch tries to make sure to free the source page before setting
-> PG_hwpoison on it. To avoid reallocating, the page keeps MIGRATE_ISOLATE
-> until after setting PG_hwpoison.
->=20
-> This patch also removes obsolete comments about "keeping elevated refcoun=
-t"
-> because what they say is not true. Unlike memory_failure(), soft_offline_=
-page()
-> uses no special page isolation code, and the soft-offlined pages have no
-> difference from buddy pages except PG_hwpoison. So no need to keep refcou=
-nt
-> elevated.
->=20
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Thanks for your patch looks good.
+
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 > ---
->  mm/memory-failure.c | 22 ++++++++++++++++++----
->  1 file changed, 18 insertions(+), 4 deletions(-)
->=20
-> diff --git linux-v3.9-rc3.orig/mm/memory-failure.c linux-v3.9-rc3/mm/memo=
-ry-failure.c
-> index 4e01082..894262d 100644
-> --- linux-v3.9-rc3.orig/mm/memory-failure.c
-> +++ linux-v3.9-rc3/mm/memory-failure.c
-> @@ -1410,7 +1410,8 @@ static int __get_any_page(struct page *p, unsigned =
-long pfn, int flags)
-> =20
->  	/*
->  	 * Isolate the page, so that it doesn't get reallocated if it
-> -	 * was free.
-> +	 * was free. This flag should be kept set until the source page
-> +	 * is freed and PG_hwpoison on it is set.
->  	 */
->  	set_migratetype_isolate(p, true);
->  	/*
-> @@ -1433,7 +1434,6 @@ static int __get_any_page(struct page *p, unsigned =
-long pfn, int flags)
->  		/* Not a free page */
->  		ret =3D 1;
+>  drivers/vme/bridges/vme_tsi148.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/vme/bridges/vme_tsi148.c b/drivers/vme/bridges/vme_tsi148.c
+> index 9c1aa4d..95c9b54 100644
+> --- a/drivers/vme/bridges/vme_tsi148.c
+> +++ b/drivers/vme/bridges/vme_tsi148.c
+> @@ -2582,7 +2582,8 @@ static int tsi148_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  	dev_info(&pdev->dev, "VME Write and flush and error check is %s\n",
+>  		err_chk ? "enabled" : "disabled");
+>  
+> -	if (tsi148_crcsr_init(tsi148_bridge, pdev)) {
+> +	retval = tsi148_crcsr_init(tsi148_bridge, pdev);
+> +	if (retval) {
+>  		dev_err(&pdev->dev, "CR/CSR configuration failed.\n");
+>  		goto err_crcsr;
 >  	}
-> -	unset_migratetype_isolate(p, MIGRATE_MOVABLE);
->  	unlock_memory_hotplug();
->  	return ret;
->  }
-> @@ -1503,7 +1503,6 @@ static int soft_offline_huge_page(struct page *page=
-, int flags)
->  		atomic_long_add(1 << compound_trans_order(hpage),
->  				&num_poisoned_pages);
->  	}
-> -	/* keep elevated page count for bad page */
->  	return ret;
->  }
-> =20
-> @@ -1568,7 +1567,7 @@ int soft_offline_page(struct page *page, int flags)
->  			atomic_long_inc(&num_poisoned_pages);
->  		}
->  	}
-> -	/* keep elevated page count for bad page */
-> +	unset_migratetype_isolate(page, MIGRATE_MOVABLE);
->  	return ret;
->  }
-> =20
-> @@ -1634,7 +1633,22 @@ static int __soft_offline_page(struct page *page, =
-int flags)
->  			if (ret > 0)
->  				ret =3D -EIO;
->  		} else {
-> +			/*
-> +			 * After page migration succeeds, the source page can
-> +			 * be trapped in pagevec and actual freeing is delayed.
-> +			 * Freeing code works differently based on PG_hwpoison,
-> +			 * so there's a race. We need to make sure that the
-> +			 * source page should be freed back to buddy before
-> +			 * setting PG_hwpoison.
-> +			 */
-> +			if (!is_free_buddy_page(page))
-> +				lru_add_drain_all();
-> +			if (!is_free_buddy_page(page))
-> +				drain_all_pages();
->  			SetPageHWPoison(page);
-> +			if (!is_free_buddy_page(page))
-> +				pr_info("soft offline: %#lx: page leaked\n",
-> +					pfn);
->  			atomic_long_inc(&num_poisoned_pages);
->  		}
->  	} else {
-> --=20
-> 1.7.11.7
->=20
-Hi, Naoya
+> 
 
-What happens about this patch? It looks find to me but not merged yet.
-If something I missed, would you please tell me again?
 
---6TrnltStXW4iwmi0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR0UhTAAoJEI01n1+kOSLHWegP/jPbIOa4VsMTfNfywCTFlOYw
-ry3XGPhOKxdiZtSKLrGN71p3OAQSyz/WXuOFMKrieXsj5Xbvxya/TzqlPsUFT1z1
-HnMPT9redMW7cdNjNpkq3EGDudZP3anyCvTxJK3RY4PEdMZzAq+vvlVHBLq3VPs7
-BJBBFYJ0u2TT6TfXCWnuQ1u/jvP3ICYWzyUCVqnKASe6hGRc4MUsHdPZX5E01rlO
-6dFZkcHkLKPaIVjBJ54E/gVGfNFOIB8k2ZdP6DhpRncH3TbAHhniecrGYz0cSOri
-X7OTCWqDT6bTrJpL/y6TeLx46QDF/zyv4fDXFL8gdlPtwdMAI7A6RfjoHSWzn33p
-NOaDqc1DvD+97+XGF8tS35WGsVJILanc8A2Xn+0ipJ5cPj4v/GaWMzcynjSbFN1k
-7W8PB7fHBBV8qx2MLNscft7W71HVf8K0GIgkrbghkkimKlMrbji70YeoQG2P0RwK
-Hxlw5+GiGSzesU5lc7bjw6N2EQoz3FUnI/q/o4OQ/EWV8DOhfUaVhUazMD9wqiLS
-YW2TErWDUMpnNibRqQlu7r/i4hsANc1kY7n4qyIe8/66IrU6tLNSbqHUAn1lrw2q
-3ni38bnBPVVOtnvwQrRv0M5v1V9y0gmvjOSm8nGEE0DgeJXFzDNQzqNDdHsyK3g3
-r4fKAQ30Y2E/a0OQEncd
-=fMY0
------END PGP SIGNATURE-----
-
---6TrnltStXW4iwmi0--
+-- 
+Martyn Welch (Lead Software Engineer)  | Registered in England and Wales
+GE Intelligent Platforms               | (3828642) at 100 Barbirolli Square
+T +44(0)1327322748                     | Manchester, M2 3AB
+E martyn.welch@ge.com                  | VAT:GB 927559189
