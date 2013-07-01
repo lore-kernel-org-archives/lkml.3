@@ -1,44 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab3GAGZf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 02:25:35 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:46037 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab3GAGZe (ORCPT
+	id S1752690Ab3GAG22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 02:28:28 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:58160 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab3GAG20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 02:25:34 -0400
-Date: Mon, 1 Jul 2013 07:25:30 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Luca Barbato <lu_zero@gentoo.org>
-Cc: Matthew Thode <prometheanfire@gentoo.org>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, kernel@gentoo.org,
-        hardened-kernel@gentoo.org, corsac@debian.org
-Subject: Re: 3.9.7, 3.10-rc7 - UEFI stalls at boot (nothing displayed),
- when booting with mem=300M
-Message-ID: <20130701062530.GA7423@srcf.ucam.org>
-References: <51CC6CAE.6070401@gentoo.org>
- <51CC81A2.8040305@gentoo.org>
- <51D10603.1080403@gentoo.org>
- <20130701051320.GA6840@srcf.ucam.org>
- <51D11218.5040601@gentoo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51D11218.5040601@gentoo.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Mon, 1 Jul 2013 02:28:26 -0400
+Date: Mon, 1 Jul 2013 16:28:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the arm-soc tree with the net-next tree
+Message-Id: <20130701162812.def47813e7d94c27950f3e82@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 07:22:32AM +0200, Luca Barbato wrote:
+--Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> MacBookPro8,2 with efi-stub, loading directly from the efi shell w/out
-> any memory restriction.
+Hi all,
 
-How do you know this is the same issue?
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-mxs/mach-mxs.c between commit b7c4114b07bb ("can: flexcan:
+Use a regulator to control the CAN transceiver") from the net-next tree
+and commit 2046338dcbc6 ("ARM: mxs: Use soc bus infrastructure") from the
+arm-soc tree.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-mxs/mach-mxs.c
+index 97b8a44,7fa611c..0000000
+--- a/arch/arm/mach-mxs/mach-mxs.c
++++ b/arch/arm/mach-mxs/mach-mxs.c
+@@@ -323,13 -477,14 +432,14 @@@ static void __init mxs_machine_init(voi
+  		imx28_evk_init();
+  	else if (of_machine_is_compatible("bluegiga,apx4devkit"))
+  		apx4devkit_init();
+- 	else if (of_machine_is_compatible("crystalfontz,cfa10037"))
+- 		cfa10037_init();
+- 	else if (of_machine_is_compatible("crystalfontz,cfa10049"))
+- 		cfa10049_init();
++ 	else if (of_machine_is_compatible("crystalfontz,cfa10037") ||
++ 		 of_machine_is_compatible("crystalfontz,cfa10049") ||
++ 		 of_machine_is_compatible("crystalfontz,cfa10055") ||
++ 		 of_machine_is_compatible("crystalfontz,cfa10057"))
++ 		crystalfontz_init();
+ =20
+  	of_platform_populate(NULL, of_default_bus_match_table,
+- 			     NULL, NULL);
+ -			     mxs_auxdata_lookup, parent);
+++			     NULL, parent);
+ =20
+  	if (of_machine_is_compatible("karo,tx28"))
+  		tx28_post_init();
+
+--Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR0SGAAAoJEECxmPOUX5FEicoQAJPhfyf4CDOKlF/5dKx4r4XG
+YeV9oMhwNrg8dngVXdvK9kvvz+XrW0//PvldT1CyqgAsGRRv8qLn4p3sOWxCCRPx
+s40NkhPKmo0Ya8nMKs7OIzCwKdbB9a4myUwdcB0+Plc4+jc69432gVapeSn2Ef8G
+EgQ0wqyZJ8H2AdOWGtFq8d8z6i0UwZzoARrRgruhB7vu7r9XkIwIt7fNruoWrkVj
+NhYRj4pbnP9Ju+/6xdHk7gJsXfg1JnrEk5AU0wZym6DBZdI9SY7ZLBUUq60WjY3/
+sihCf3q70nLizg2wepJrm39M4WAfHBfV3z7/VfYTZPEFMN8BwujItc36yp/vnjc4
+9j3PAV6u1N3/hEmSShi7nFTwo6fCwwSrFFEcwHpLZiNTLHR/oMydBm+ideeYo9AB
+4xDPDYD9LDBnODdBHkNJIbbTC1l2cYi4AGx0dM+37a6UnT5QcZl47Jiz0z+PJ1Vb
+N19TZM6/ioi8pik2+pZF0KeYubJW8TAU6Fh+4CWce3Xa4VUfnTGGrio+/WJVPCqS
+gqlao7nZaZVpjWNkwyr7EfQIBWwJsEw3/Zekz5R2kf8TDADKICrObEeQMAaA7AhA
+D+6DquaAxiu/eL0GCexbNRaESntwbMYpYNEkdU8kREdTcqvAIVSZRsEyGgRhVLDy
+h1SoSclMhAiPkbTatcEu
+=JBkZ
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__1_Jul_2013_16_28_12_+1000_10y7cHq3JZwQniMw--
