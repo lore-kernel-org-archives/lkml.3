@@ -1,84 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab3GAODY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 10:03:24 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52445 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab3GAODW (ORCPT
+	id S1753392Ab3GAOGc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 10:06:32 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:46355 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab3GAOGb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 10:03:22 -0400
-Date: Mon, 1 Jul 2013 16:03:20 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, pali.rohar@gmail.com,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org
-Subject: [PATCH] N900: fix operation on emulator
-Message-ID: <20130701140315.GA15318@amd.pavel.ucw.cz>
-References: <20130613132624.GA3464@amd.pavel.ucw.cz>
- <20130613141001.GF8164@atomide.com>
- <20130613142809.GA3775@amd.pavel.ucw.cz>
- <20130613145724.GH8164@atomide.com>
- <20130613155240.GB3775@amd.pavel.ucw.cz>
- <20130613161418.GJ8164@atomide.com>
- <20130613230808.GA14876@amd.pavel.ucw.cz>
- <20130614055629.GM8164@atomide.com>
- <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com>
+	Mon, 1 Jul 2013 10:06:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130617111031.GQ20992@atomide.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [93.173.177.224]
+In-Reply-To: <1370034984-29636-1-git-send-email-s-anna@ti.com>
+References: <1370034984-29636-1-git-send-email-s-anna@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Mon, 1 Jul 2013 17:06:09 +0300
+Message-ID: <CAK=Wgbb=PbeWZi08S-veP-ssxzZ86t0=EivCmFS1FDZRzHzHVw@mail.gmail.com>
+Subject: Re: [PATCH 3/3] remoteproc: free carveout memories only after
+ unmapping them
+To: Suman Anna <s-anna@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Errata workarounds for N900 hardware actually break operation on
-emulator. Fix it.
+On Sat, Jun 1, 2013 at 12:16 AM, Suman Anna <s-anna@ti.com> wrote:
+> It is not preferable to have the allocated pages for carveout
+> memories freed before they are unmapped. The code that deals
+> with the cleanup of carveout memories is therefore moved after
+> the corresponding mapping entries were cleaned up.
+>
+> This is mostly a no-op since the remote processors are already
+> stopped when the cleanup function is called, but this will make
+> the cleanup code follow the exact reverse path of allocation.
+>
+> Signed-off-by: Suman Anna <s-anna@ti.com>
 
-This approach was suggested by Pali Rohár <pali.rohar@gmail.com>
-(thanks!).
-
-(Also explain what "sleep_ind" led actually does).
-
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-
-diff --git a/arch/arm/mach-omap2/board-rx51.c b/arch/arm/mach-omap2/board-rx51.c
-index 74f83a5..81f7b9f 100644
---- a/arch/arm/mach-omap2/board-rx51.c
-+++ b/arch/arm/mach-omap2/board-rx51.c
-@@ -33,9 +33,12 @@
- #include "pm.h"
- #include "sdram-nokia.h"
- #include "board-rx51-secure.h"
-+#include "soc.h"
- 
- #define RX51_GPIO_SLEEP_IND 162
- 
-+/* This lights up left part of keyboard */
-+
- static struct gpio_led gpio_leds[] = {
- 	{
- 		.name	= "sleep_ind",
-@@ -107,9 +110,11 @@ static void __init rx51_init(void)
- 	rx51_camera_init();
- 
- #ifdef CONFIG_ARM_ERRATA_430973
--	printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
--	/* set IBE to 1 */
--	rx51_secure_update_aux_cr(1 << 6, 0);
-+	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
-+		printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
-+		/* set IBE to 1 */
-+		rx51_secure_update_aux_cr(1 << 6, 0);
-+	}
- #endif
- 
- 	/* Ensure SDRC pins are mux'd for self-refresh */
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Applied, thanks.
