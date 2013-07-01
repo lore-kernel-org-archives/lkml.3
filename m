@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab3GAUUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:20:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49014 "EHLO
+	id S1755869Ab3GAUVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:21:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49006 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404Ab3GAUKd (ORCPT
+	with ESMTP id S1755389Ab3GAUKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:33 -0400
+	Mon, 1 Jul 2013 16:10:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 14/26] net/tg3: Avoid delay during MMIO access
-Date: Mon,  1 Jul 2013 13:10:09 -0700
-Message-Id: <20130701200731.507304695@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 12/26] dlci: acquire rtnl_lock before calling __dev_get_by_name()
+Date: Mon,  1 Jul 2013 13:10:07 -0700
+Message-Id: <20130701200731.280665414@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -27,121 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Zefan Li <lizefan@huawei.com>
 
-commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
+commit 11eb2645cbf38a08ae491bf6c602eea900ec0bb5 upstream.
 
-When the EEH error is the result of a fenced host bridge, MMIO accesses
-can be very slow (milliseconds) to timeout and return all 1's,
-thus causing the driver various timeout loops to take way too long and
-trigger soft-lockup warnings (in addition to taking minutes to recover).
+Otherwise the net device returned can be freed at anytime.
 
-It might be worthwhile to check if for any of these cases, ffffffff is
-a valid possible value, and if not, bail early since that means the HW
-is either gone or isolated. In the meantime, checking that the PCI channel
-is offline would be workaround of the problem.
-
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ drivers/net/wan/dlci.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -743,6 +743,9 @@ static int tg3_ape_lock(struct tg3 *tp,
- 		status = tg3_ape_read32(tp, gnt + off);
- 		if (status == bit)
- 			break;
-+		if (pci_channel_offline(tp->pdev))
-+			break;
-+
- 		udelay(10);
- 	}
+--- a/drivers/net/wan/dlci.c
++++ b/drivers/net/wan/dlci.c
+@@ -385,20 +385,24 @@ static int dlci_del(struct dlci_add *dlc
+ 	struct net_device	*master, *slave;
+ 	int			err;
  
-@@ -1634,6 +1637,9 @@ static void tg3_wait_for_event_ack(struc
- 	for (i = 0; i < delay_cnt; i++) {
- 		if (!(tr32(GRC_RX_CPU_EVENT) & GRC_RX_CPU_DRIVER_EVENT))
- 			break;
-+		if (pci_channel_offline(tp->pdev))
-+			break;
++	rtnl_lock();
 +
- 		udelay(8);
- 	}
- }
-@@ -1812,6 +1818,9 @@ static int tg3_poll_fw(struct tg3 *tp)
- 		for (i = 0; i < 200; i++) {
- 			if (tr32(VCPU_STATUS) & VCPU_STATUS_INIT_DONE)
- 				return 0;
-+			if (pci_channel_offline(tp->pdev))
-+				return -ENODEV;
-+
- 			udelay(100);
- 		}
- 		return -ENODEV;
-@@ -1822,6 +1831,15 @@ static int tg3_poll_fw(struct tg3 *tp)
- 		tg3_read_mem(tp, NIC_SRAM_FIRMWARE_MBOX, &val);
- 		if (val == ~NIC_SRAM_FIRMWARE_MBOX_MAGIC1)
- 			break;
-+		if (pci_channel_offline(tp->pdev)) {
-+			if (!tg3_flag(tp, NO_FWARE_REPORTED)) {
-+				tg3_flag_set(tp, NO_FWARE_REPORTED);
-+				netdev_info(tp->dev, "No firmware running\n");
-+			}
-+
-+			break;
-+		}
-+
- 		udelay(10);
- 	}
- 
-@@ -3411,6 +3429,8 @@ static int tg3_nvram_write_block_buffere
- 		ret = tg3_nvram_exec_cmd(tp, nvram_cmd);
- 		if (ret)
- 			break;
-+		if (pci_channel_offline(tp->pdev))
-+			return -EBUSY;
- 	}
- 	return ret;
- }
-@@ -8224,6 +8244,14 @@ static int tg3_stop_block(struct tg3 *tp
- 	tw32_f(ofs, val);
- 
- 	for (i = 0; i < MAX_WAIT_CNT; i++) {
-+		if (pci_channel_offline(tp->pdev)) {
-+			dev_err(&tp->pdev->dev,
-+				"tg3_stop_block device offline, "
-+				"ofs=%lx enable_bit=%x\n",
-+				ofs, enable_bit);
-+			return -ENODEV;
-+		}
-+
- 		udelay(100);
- 		val = tr32(ofs);
- 		if ((val & enable_bit) == 0)
-@@ -8247,6 +8275,13 @@ static int tg3_abort_hw(struct tg3 *tp,
- 
- 	tg3_disable_ints(tp);
- 
-+	if (pci_channel_offline(tp->pdev)) {
-+		tp->rx_mode &= ~(RX_MODE_ENABLE | TX_MODE_ENABLE);
-+		tp->mac_mode &= ~MAC_MODE_TDE_ENABLE;
+ 	/* validate slave device */
+ 	master = __dev_get_by_name(&init_net, dlci->devname);
+-	if (!master)
+-		return -ENODEV;
++	if (!master) {
 +		err = -ENODEV;
-+		goto err_no_dev;
++		goto out;
 +	}
-+
- 	tp->rx_mode &= ~RX_MODE_ENABLE;
- 	tw32_f(MAC_RX_MODE, tp->rx_mode);
- 	udelay(10);
-@@ -8295,6 +8330,7 @@ static int tg3_abort_hw(struct tg3 *tp,
- 	err |= tg3_stop_block(tp, BUFMGR_MODE, BUFMGR_MODE_ENABLE, silent);
- 	err |= tg3_stop_block(tp, MEMARB_MODE, MEMARB_MODE_ENABLE, silent);
  
-+err_no_dev:
- 	for (i = 0; i < tp->irq_cnt; i++) {
- 		struct tg3_napi *tnapi = &tp->napi[i];
- 		if (tnapi->hw_status)
+ 	if (netif_running(master)) {
+-		return -EBUSY;
++		err = -EBUSY;
++		goto out;
+ 	}
+ 
+ 	dlp = netdev_priv(master);
+ 	slave = dlp->slave;
+ 	flp = netdev_priv(slave);
+ 
+-	rtnl_lock();
+ 	err = (*flp->deassoc)(slave, master);
+ 	if (!err) {
+ 		list_del(&dlp->list);
+@@ -407,8 +411,8 @@ static int dlci_del(struct dlci_add *dlc
+ 
+ 		dev_put(slave);
+ 	}
++out:
+ 	rtnl_unlock();
+-
+ 	return err;
+ }
+ 
 
 
