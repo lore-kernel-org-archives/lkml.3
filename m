@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752653Ab3GAGsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 02:48:12 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:30210 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab3GAGsK (ORCPT
+	id S1752611Ab3GAG6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 02:58:34 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57673 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751163Ab3GAG6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 02:48:10 -0400
-Message-ID: <51D12570.9070100@huawei.com>
-Date: Mon, 1 Jul 2013 14:45:04 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Zhang Hang <bob.zhanghang@huawei.com>,
-        Li Bin <huawei.libin@huawei.com>
-Subject: [PATCH] sched: fix cpu utilization account error
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+	Mon, 1 Jul 2013 02:58:33 -0400
+Date: Mon, 1 Jul 2013 16:58:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Sedat Dilek <sedat.dilek@gmail.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Imre Deak <imre.deak@intel.com>, Lukas Czerner <lczerner@redhat.com>,
+        Samuel Ortiz <samuel@sortiz.org>, Wensong Zhang <wensong@linux-vs.org>,
+        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
+        Ralf Baechle <ralf@linux-mips.org>, Valdis.Kletnieks@vt.edu
+Subject: Re: linux-next: Tree for Jun 28 [ BISECTED: rsyslog/imklog: High
+ CPU usage ]
+Message-Id: <20130701165818.8affb576b2a780f8ca497558@canb.auug.org.au>
+In-Reply-To: <20130630181945.GA5171@redhat.com>
+References: <CA+icZUXo=Z4gDfCMvLqRQDq_fpNAq+UqtUw=jrU=3=kVZP-2+A@mail.gmail.com>
+	<20130630181945.GA5171@redhat.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.18; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__1_Jul_2013_16_58_18_+1000_nSTkD7fV3EGZ600r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We setting clock_skip_update = 1 based on the assumption that the
-next call to update_rq_clock() will come nearly immediately
-after being set. However, it is not always true especially on
-non-preempt mode. In this case we may miss some clock update, which
-would cause an error curr->sum_exec_runtime account.
+--Signature=_Mon__1_Jul_2013_16_58_18_+1000_nSTkD7fV3EGZ600r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The test result show that test_kthread's exec_runtime has been
-added to watchdog.
+Hi Oleg, Andrew,
 
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+   P COMMAND
-   28 root      RT   0     0    0    0 S  100  0.0   0:05.39  5 watchdog/5
-    7 root      RT   0     0    0    0 S   95  0.0   0:05.83  0 watchdog/0
-   12 root      RT   0     0    0    0 S   94  0.0   0:05.79  1 watchdog/1
-   16 root      RT   0     0    0    0 S   92  0.0   0:05.74  2 watchdog/2
-   20 root      RT   0     0    0    0 S   91  0.0   0:05.71  3 watchdog/3
-   24 root      RT   0     0    0    0 S   82  0.0   0:05.42  4 watchdog/4
-   32 root      RT   0     0    0    0 S   79  0.0   0:05.35  6 watchdog/6
- 5200 root      20   0     0    0    0 R   21  0.0   0:08.88  6 test_kthread/6
- 5194 root      20   0     0    0    0 R   20  0.0   0:08.41  0 test_kthread/0
- 5195 root      20   0     0    0    0 R   20  0.0   0:08.44  1 test_kthread/1
- 5196 root      20   0     0    0    0 R   20  0.0   0:08.49  2 test_kthread/2
- 5197 root      20   0     0    0    0 R   20  0.0   0:08.53  3 test_kthread/3
- 5198 root      20   0     0    0    0 R   19  0.0   0:08.81  4 test_kthread/4
- 5199 root      20   0     0    0    0 R    2  0.0   0:08.66  5 test_kthread/5
+On Sun, 30 Jun 2013 20:19:45 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Andrew, please drop these
+>=20
+> 	wait-introduce-wait_event_commonwq-condition-state-timeout.patch
+> 	wait-introduce-prepare_to_wait_event.patch
+>=20
+> patches again. I'll send v3 although it really looks like I should
+> never try to touch wait.h.
 
-"test_kthread/i" is a kernel thread which has a infinity loop and it calls
-schedule() every 1s. It's main process as below:
+I have dropped those two patches (and my fixup patch) from linux-next
+today.
 
-static int main_loop (void *unused)
-{
-	unsigned long flags;
-	unsigned long last = jiffies;
-	int i;
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-	while (!kthread_should_stop()) {
-		/* call schedule every 1 sec */
-		if (HZ <= jiffies - last) {
-			last = jiffies;
-			schedule();
-		}
+--Signature=_Mon__1_Jul_2013_16_58_18_+1000_nSTkD7fV3EGZ600r
+Content-Type: application/pgp-signature
 
-		/* do some thing */
-		for (i = 0; i < 1000; i++)
-		;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-		if (kthread_should_stop())
-			break;
-	}
-}
+iQIcBAEBCAAGBQJR0SiOAAoJEECxmPOUX5FELkMP/RokGMf5P0Rc0TUsG7WopGPZ
+y3mTFRYsuZuXMuHdAJ/IqZMjOisulQu73pFT+cntpbPkqExnhSGZURGLY6d3M56k
+FIaOw/AHq3ajB2lzGZVLJUJLnmPExZAmWPbJBG+q3lGx5Lnlnrc9CMJKpgLZ0aNC
+NR21paeMAZQrTd7YLf6j6/mT5Kj4DXjX/GQtUCtzTT55WK2UMmLdHR3GGBXRy/TR
+oNaFtE3v52aRd9OXB7tQMuvOH+7I+xkI53MmFkS4E9XSieC5sis3XMlTLI/qj1et
+JcOLXcXSSGjmud4LDbYU8o6PkfjGlxAG8bnmCb4d4f7Zfing4j2gN47HBKxlWYsx
+e03ngrL4RbNZkbWvQ4bwgWeal64sffom+jY41Bp9RKwEfe6/ohtdWq8VJhBiJZdQ
+uwLE9nXaoQ5R/5IOkGV3kQWSbrevfiPa0+i4Fh3u0lMJXWq2npr/jopCUv2VOsHb
+tS8X3/KETDUM1ceGBUzUsDD4X9AMDvj/KZRqfQMYdCtdbsJq/MOYYHH6kG3F+3tg
+RP3FNwPQJ9IqrWMD+e79pXvn+N2Cl9hBU33VOUuktchyAsiVf+2wSqCzqhFs03kQ
+25o+mKYmU9MZPuNhrFw/P6frfRyciqNaiuh/bdp2ocJZhJMcAhYAErbGXAITbvY8
+LUaE1oWUVj6HPNQinPMU
+=RPZQ
+-----END PGP SIGNATURE-----
 
-In this patch, we do not skip clock update when current task is kernel
-thread in non-preempt mode.
-
-Reported-by: Zhang Hang <bob.zhanghang@huawei.com>
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
----
- kernel/sched/core.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index e8b3350..018dc43 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -970,8 +970,19 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
- 	 * A queue event has occurred, and we're going to schedule.  In
- 	 * this case, we can save a useless back to back clock update.
- 	 */
-+#ifdef CONFIG_PREEMPT
- 	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr))
- 		rq->skip_clock_update = 1;
-+#else
-+	/*
-+	 * In non-preempt mode, a kernel thread may run for a long time
-+	 * until been scheduled out by itself. In this cace, we need update
-+	 * rq clock when calling schedule function, otherwise, we might
-+	 * miss rq clock update for a long time.
-+	 */
-+	if (rq->curr->on_rq && test_tsk_need_resched(rq->curr) && rq->curr->mm)
-+		rq->skip_clock_update = 1;
-+#endif
- }
-
- static ATOMIC_NOTIFIER_HEAD(task_migration_notifier);
--- 
-1.7.6.1
-
+--Signature=_Mon__1_Jul_2013_16_58_18_+1000_nSTkD7fV3EGZ600r--
