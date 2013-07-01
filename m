@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3GAPwf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:52:35 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57156 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab3GAPwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:52:34 -0400
-Date: Mon, 1 Jul 2013 08:52:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full v2 2/7] nohz_full: Add rcu_dyntick data for
- scalable detection of all-idle state
-Message-ID: <20130701155220.GL3773@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130628200949.GA17458@linux.vnet.ibm.com>
- <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1372450222-19420-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130701153150.GB2923@leaf>
+	id S1754605Ab3GAPxO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:53:14 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59609 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752491Ab3GAPxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 11:53:13 -0400
+Message-ID: <51D1A49C.7000003@ti.com>
+Date: Mon, 1 Jul 2013 10:47:40 -0500
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130701153150.GB2923@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070115-4834-0000-0000-000008969C26
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] remoteproc: fix checkpatch errors in remoteproc code
+References: <1370034965-29565-1-git-send-email-s-anna@ti.com> <CAK=WgbazsoK_aBZV+gfvqoya7PkRAkZ4gd-L_e-V5GhN1iAq6A@mail.gmail.com>
+In-Reply-To: <CAK=WgbazsoK_aBZV+gfvqoya7PkRAkZ4gd-L_e-V5GhN1iAq6A@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 08:31:50AM -0700, Josh Triplett wrote:
-> On Fri, Jun 28, 2013 at 01:10:17PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > This commit adds fields to the rcu_dyntick structure that are used to
-> > detect idle CPUs.  These new fields differ from the existing ones in
-> > that the existing ones consider a CPU executing in user mode to be idle,
-> > where the new ones consider CPUs executing in user mode to be busy.
+On 06/30/2013 03:29 AM, Ohad Ben-Cohen wrote:
+> Hi Suman,
 > 
-> Can you explain, both in the commit messages and in the comments added
-> by the next commit, *why* this code doesn't consider userspace a
-> quiescent state?
+> On Sat, Jun 1, 2013 at 12:16 AM, Suman Anna <s-anna@ti.com> wrote:
+>> This patch fixes all the existing checkpatch errors and warnings
+>> in the remoteproc source files.
+>>
+>> Signed-off-by: Suman Anna <s-anna@ti.com>
+> 
+> I'm applying the last three fixes, but ignoring the first two (having
+> lines that slightly exceed 80 chars isn't too bad and makes the code a
+> bit more readable).
 
-Good point!  Does the following explain it?
+Yeah, no issues. Thanks.
 
-	Although one of RCU's quiescent states is usermode execution,
-	it is not a full-system idle state.  This is because the purpose
-	of the full-system idle state is not RCU, but rather determining
-	when accurate timekeeping can safely be disabled.  Whenever
-	accurate timekeeping is required in a CONFIG_NO_HZ_FULL kernel,
-	at least one CPU must keep the scheduling-clock tick going.
-	If even one CPU is executing in user mode, accurate timekeeping
-	is requires, particularly for architectures where gettimeofday()
-	and friends do not enter the kernel.  Only when all CPUs are
-	really and truly idle can accurate timekeeping be disabled,
-	allowing all CPUs to turn off the scheduling clock interrupt,
-	thus greatly improving energy efficiency.
-
-	This naturally raises the question "Why is this code in RCU rather
-	than in timekeeping?", and the answer is that RCU has the data
-	and infrastructure to efficiently make this determination.
-
-							Thanx, Paul
-
+regards
+Suman
