@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab3GAUK0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:10:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48955 "EHLO
+	id S1755864Ab3GAUXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:23:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48963 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968Ab3GAUKY (ORCPT
+	with ESMTP id S1755264Ab3GAUKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:24 -0400
+	Mon, 1 Jul 2013 16:10:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [ 01/26] s390/ipl: Fix FCP WWPN and LUN format strings for read
-Date: Mon,  1 Jul 2013 13:09:56 -0700
-Message-Id: <20130701200730.052755815@linuxfoundation.org>
+        Simon Baatz <gmbnomis@gmail.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 02/26] ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
+Date: Mon,  1 Jul 2013 13:09:57 -0700
+Message-Id: <20130701200730.186193645@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -28,67 +28,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+From: Simon Baatz <gmbnomis@gmail.com>
 
-commit eda4ddf7e3a2245888e8c45c566fd514cdd5abbb upstream.
+commit 1bc39742aab09248169ef9d3727c9def3528b3f3 upstream.
 
-The following git commit changed the behavior of sscanf:
+Commit f8b63c1 made flush_kernel_dcache_page a no-op assuming that
+the pages it needs to handle are kernel mapped only.  However, for
+example when doing direct I/O, pages with user space mappings may
+occur.
 
-commit 53809751ac230a3611b5cdd375f3389f3207d471
-Author: Jan Beulich <JBeulich@suse.com>
-Date:   Mon Dec 17 16:01:31 2012 -0800
-    sscanf: don't ignore field widths for numeric conversions
+Thus, continue to do lazy flushing if there are no user space
+mappings.  Otherwise, flush the kernel cache lines directly.
 
-This broke the WWPN and LUN sysfs attributes for s390 reipl and dump
-on panic.
-
-Example:
-
-$ echo 0x0123456701234567 > /sys/firmware/reipl/fcp/wwpn
-$ cat /sys/firmware/reipl/fcp/wwpn
-0x0001234567012345
-
-So fix this and use format strings that work also with the
-new sscanf implementation:
-
-$ echo 0x012345670123456789 > /sys/firmware/reipl/fcp/wwpn
-$ cat /sys/firmware/reipl/fcp/wwpn
-0x0123456701234567
-
-Reviewed-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/kernel/ipl.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/include/asm/cacheflush.h |    4 +---
+ arch/arm/mm/flush.c               |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
---- a/arch/s390/kernel/ipl.c
-+++ b/arch/s390/kernel/ipl.c
-@@ -754,9 +754,9 @@ static struct bin_attribute sys_reipl_fc
- 	.write = reipl_fcp_scpdata_write,
- };
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -320,9 +320,7 @@ static inline void flush_anon_page(struc
+ }
  
--DEFINE_IPL_ATTR_RW(reipl_fcp, wwpn, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(reipl_fcp, wwpn, "0x%016llx\n", "%llx\n",
- 		   reipl_block_fcp->ipl_info.fcp.wwpn);
--DEFINE_IPL_ATTR_RW(reipl_fcp, lun, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(reipl_fcp, lun, "0x%016llx\n", "%llx\n",
- 		   reipl_block_fcp->ipl_info.fcp.lun);
- DEFINE_IPL_ATTR_RW(reipl_fcp, bootprog, "%lld\n", "%lld\n",
- 		   reipl_block_fcp->ipl_info.fcp.bootprog);
-@@ -1323,9 +1323,9 @@ static struct shutdown_action __refdata
+ #define ARCH_HAS_FLUSH_KERNEL_DCACHE_PAGE
+-static inline void flush_kernel_dcache_page(struct page *page)
+-{
+-}
++extern void flush_kernel_dcache_page(struct page *);
  
- /* FCP dump device attributes */
+ #define flush_dcache_mmap_lock(mapping) \
+ 	spin_lock_irq(&(mapping)->tree_lock)
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -298,6 +298,39 @@ void flush_dcache_page(struct page *page
+ EXPORT_SYMBOL(flush_dcache_page);
  
--DEFINE_IPL_ATTR_RW(dump_fcp, wwpn, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(dump_fcp, wwpn, "0x%016llx\n", "%llx\n",
- 		   dump_block_fcp->ipl_info.fcp.wwpn);
--DEFINE_IPL_ATTR_RW(dump_fcp, lun, "0x%016llx\n", "%016llx\n",
-+DEFINE_IPL_ATTR_RW(dump_fcp, lun, "0x%016llx\n", "%llx\n",
- 		   dump_block_fcp->ipl_info.fcp.lun);
- DEFINE_IPL_ATTR_RW(dump_fcp, bootprog, "%lld\n", "%lld\n",
- 		   dump_block_fcp->ipl_info.fcp.bootprog);
+ /*
++ * Ensure cache coherency for the kernel mapping of this page. We can
++ * assume that the page is pinned via kmap.
++ *
++ * If the page only exists in the page cache and there are no user
++ * space mappings, this is a no-op since the page was already marked
++ * dirty at creation.  Otherwise, we need to flush the dirty kernel
++ * cache lines directly.
++ */
++void flush_kernel_dcache_page(struct page *page)
++{
++	if (cache_is_vivt() || cache_is_vipt_aliasing()) {
++		struct address_space *mapping;
++
++		mapping = page_mapping(page);
++
++		if (!mapping || mapping_mapped(mapping)) {
++			void *addr;
++
++			addr = page_address(page);
++			/*
++			 * kmap_atomic() doesn't set the page virtual
++			 * address for highmem pages, and
++			 * kunmap_atomic() takes care of cache
++			 * flushing already.
++			 */
++			if (!IS_ENABLED(CONFIG_HIGHMEM) || addr)
++				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
++		}
++	}
++}
++EXPORT_SYMBOL(flush_kernel_dcache_page);
++
++/*
+  * Flush an anonymous page so that users of get_user_pages()
+  * can safely access the data.  The expected sequence is:
+  *
 
 
