@@ -1,106 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753816Ab3GALKa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:10:30 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50366 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab3GALK3 (ORCPT
+	id S1753843Ab3GALL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:11:28 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:36038 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab3GALL0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:10:29 -0400
-Date: Mon, 1 Jul 2013 13:10:19 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>
-Subject: Re: [PATCH 0/9] dasd: implement block timeout
-Message-ID: <20130701131019.693cdb4f@mschwide>
-In-Reply-To: <20130701094752.GI15088@kernel.dk>
-References: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
-	<20130617092215.6c0df7d1@mschwide>
-	<20130701102119.086396d5@mschwide>
-	<20130701094752.GI15088@kernel.dk>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070111-3548-0000-0000-000005D0BCBD
+	Mon, 1 Jul 2013 07:11:26 -0400
+Date: Mon, 1 Jul 2013 13:11:22 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Wedson Almeida Filho <wedsonaf@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: Use asm-goto to implement mutex fast path on x86-64
+Message-ID: <20130701111122.GA18772@gmail.com>
+References: <1372416851-56830-1-git-send-email-wedsonaf@gmail.com>
+ <20130628111948.GA31065@gmail.com>
+ <20130628140938.GA24819@pd.tnic>
+ <CANeycqpiXO-B1+f-OXZfHaxxPd2aVEL0kutFp6-sALHqXNrazQ@mail.gmail.com>
+ <20130630220004.GA23124@pd.tnic>
+ <20130701075046.GB1681@gmail.com>
+ <20130701102306.GC23515@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701102306.GC23515@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013 11:47:52 +0200
-Jens Axboe <axboe@kernel.dk> wrote:
 
-> On Mon, Jul 01 2013, Martin Schwidefsky wrote:
-> > On Mon, 17 Jun 2013 09:22:15 +0200
-> > Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
-> > 
-> > > On Mon,  3 Jun 2013 17:03:13 +0200
-> > > Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
-> > > 
-> > > > This is a re-send of a patch series Hannes sent last january. Stefan
-> > > > looked at the patches and our tests went well, so I guess this is ready
-> > > > for upstream integration.
-> > > > 
-> > > > The changes to block/blk-core.c and block/blk-timeout.c look good
-> > > > to me, but I would like to request an acked-by from Jens for the
-> > > > block layer parts in patch #6 and #7 of the series (pretty please :-)
-> > > > 
-> > > > The original patch description from Hannes:
-> > > > 
-> > > > This patch series implements a block timeout handler for
-> > > > DASDs. The main impetus was to allow for a fixed upper
-> > > > timeout value after which a request is aborted.
-> > > > This is required eg when implementing a host-based
-> > > > mirroring system where otherwise the entire mirror
-> > > > would stall under certain circumstances.
-> > > > 
-> > > > Changes since v1:
-> > > > - Fixed lock inversion in dasd_times_out()
-> > > > - Checked for 'device->block' when writing to 'timeout' attribute
-> > > > - Check against 'UINT_MAX' when verifying the 'timeout' value
-> > > > 
-> > > > Once I got the required acked-by I can carry the patch set in the
-> > > > linux-s390 tree for the next merge window.
-> > > > 
-> > > > Hannes Reinecke (9):
-> > > >   dasd: Clarify comment
-> > > >   dasd: make number of retries configurable
-> > > >   dasd: process all requests in the device tasklet
-> > > >   dasd: Implement block timeout handling
-> > > >   dasd: Reduce amount of messages for specific errors
-> > > >   block,dasd: detailed I/O errors
-> > > >   block: check for timeout function in blk_rq_timed_out()
-> > > >   dasd: Add 'timeout' attribute
-> > > >   dasd: Fail all requests when DASD_FLAG_ABORTIO is set
-> > > > 
-> > > >  arch/s390/include/uapi/asm/dasd.h |    4 ++
-> > > >  block/blk-core.c                  |    3 +
-> > > >  block/blk-timeout.c               |    5 +-
-> > > >  drivers/s390/block/dasd.c         |  115 +++++++++++++++++++++++++++++++++----
-> > > >  drivers/s390/block/dasd_devmap.c  |   97 +++++++++++++++++++++++++++++++
-> > > >  drivers/s390/block/dasd_diag.c    |    8 ++-
-> > > >  drivers/s390/block/dasd_eckd.c    |   15 +++--
-> > > >  drivers/s390/block/dasd_erp.c     |    8 +++
-> > > >  drivers/s390/block/dasd_fba.c     |   10 +++-
-> > > >  drivers/s390/block/dasd_int.h     |   10 ++++
-> > > >  drivers/s390/block/dasd_ioctl.c   |   59 +++++++++++++++++++
-> > > >  11 files changed, 313 insertions(+), 21 deletions(-)
-> > > > 
-> > > 
-> > > Ping. Jens could you please look at patch #6 and #7? I don't want
-> > > to do a please pull with block layer parts without your consent.
+* Borislav Petkov <bp@alien8.de> wrote:
+
+> On Mon, Jul 01, 2013 at 09:50:46AM +0200, Ingo Molnar wrote:
+> > Not sure - the main thing we want to know is whether it gets faster.
+> > The _amount_ will depend on things like precise usage patterns,
+> > caching, etc. - but rarely does a real workload turn a win like this
+> > into a loss.
 > 
-> Both look fine, you can add my acked-by.
- 
-Thank you!
+> Yep, and it does get faster by a whopping 6 seconds!
+> 
+> Almost all standard counters go down a bit.
+> 
+> Interestingly, branch misses get a slight increase and the asm goto
+> thing does actually jump to the fail_fn from within the asm so maybe
+> this could puzzle the branch predictor a bit. Although the instructions
+> look the same and jumps are both forward.
+> 
+> Oh well, we don't know where those additional misses happened so it
+> could be somewhere else entirely, or it is simply noise.
+> 
+> In any case, we're getting faster, so not worth investigating I guess.
+> 
+> 
+> plain 3.10
+> ==========
+> 
+>  Performance counter stats for '../build-kernel.sh' (5 runs):
+> 
+>     1312558.712266 task-clock                #    5.961 CPUs utilized            ( +-  0.02% )
+>          1,036,629 context-switches          #    0.790 K/sec                    ( +-  0.24% )
+>             55,118 cpu-migrations            #    0.042 K/sec                    ( +-  0.25% )
+>         46,505,184 page-faults               #    0.035 M/sec                    ( +-  0.00% )
+>  4,768,420,289,997 cycles                    #    3.633 GHz                      ( +-  0.02% ) [83.79%]
+>  3,424,161,066,397 stalled-cycles-frontend   #   71.81% frontend cycles idle     ( +-  0.02% ) [83.78%]
+>  2,483,143,574,419 stalled-cycles-backend    #   52.07% backend  cycles idle     ( +-  0.04% ) [67.40%]
+>  3,091,612,061,933 instructions              #    0.65  insns per cycle
+>                                              #    1.11  stalled cycles per insn  ( +-  0.01% ) [83.93%]
+>    677,787,215,988 branches                  #  516.386 M/sec                    ( +-  0.01% ) [83.77%]
+>     25,438,736,368 branch-misses             #    3.75% of all branches          ( +-  0.02% ) [83.78%]
+> 
+>      220.191740778 seconds time elapsed                                          ( +-  0.32% )
+> 
+>  + patch
+> ========
+> 
+>  Performance counter stats for '../build-kernel.sh' (5 runs):
+> 
+>     1309995.427337 task-clock                #    6.106 CPUs utilized            ( +-  0.09% )
+>          1,033,446 context-switches          #    0.789 K/sec                    ( +-  0.23% )
+>             55,228 cpu-migrations            #    0.042 K/sec                    ( +-  0.28% )
+>         46,484,992 page-faults               #    0.035 M/sec                    ( +-  0.00% )
+>  4,759,631,961,013 cycles                    #    3.633 GHz                      ( +-  0.09% ) [83.78%]
+>  3,415,933,806,156 stalled-cycles-frontend   #   71.77% frontend cycles idle     ( +-  0.12% ) [83.78%]
+>  2,476,066,765,933 stalled-cycles-backend    #   52.02% backend  cycles idle     ( +-  0.10% ) [67.38%]
+>  3,089,317,073,397 instructions              #    0.65  insns per cycle
+>                                              #    1.11  stalled cycles per insn  ( +-  0.02% ) [83.95%]
+>    677,623,252,827 branches                  #  517.271 M/sec                    ( +-  0.01% ) [83.79%]
+>     25,444,376,740 branch-misses             #    3.75% of all branches          ( +-  0.02% ) [83.79%]
+> 
+>      214.533868029 seconds time elapsed                                          ( +-  0.36% )
 
--- 
-blue skies,
-   Martin.
+Hm, a 6 seconds win looks _way_ too much - we don't execute that much 
+mutex code, let alone a portion of it.
 
-"Reality continues to ruin my life." - Calvin.
+This could perhaps be a bootup-to-bootup cache layout systematic jitter 
+artifact, which isn't captured by stddev observations?
 
+Doing something like this with a relatively fresh version of perf:
+
+  perf stat --repeat 10 -a --sync \
+   --pre 'make -s O=defconfig-build/ clean; echo 1 > /proc/sys/vm/drop_caches' \
+   make -s -j64 O=defconfig-build/ bzImage
+
+... might do the trick (untested!). (Also note the use of -a: this should 
+run on an otherwise quiescent system.)
+
+As a sidenote, we could add this as a convenience feature, triggered via:
+
+   perf stat --flush-vm-caches
+
+... or so, in addition to the already existing --sync option.
+
+Thanks,
+
+	Ingo
