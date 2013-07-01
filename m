@@ -1,83 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab3GAUKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:10:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49096 "EHLO
+	id S1755653Ab3GAUK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:10:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49173 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab3GAUKp (ORCPT
+	with ESMTP id S1755598Ab3GAUK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:45 -0400
+	Mon, 1 Jul 2013 16:10:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 04/13] hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
-Date: Mon,  1 Jul 2013 13:10:23 -0700
-Message-Id: <20130701200523.613925919@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 7/8] UBIFS: fix a horrid bug
+Date: Mon,  1 Jul 2013 13:10:39 -0700
+Message-Id: <20130701200234.852210431@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130701200523.096669485@linuxfoundation.org>
-References: <20130701200523.096669485@linuxfoundation.org>
+In-Reply-To: <20130701200232.909858308@linuxfoundation.org>
+References: <20130701200232.909858308@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit c790b0ad23f427c7522ffed264706238c57c007e upstream.
+commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
 
-fetch_bp_busy_slots() and toggle_bp_slot() use
-for_each_online_cpu(), this is obviously wrong wrt cpu_up() or
-cpu_down(), we can over/under account the per-cpu numbers.
+Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
+mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
+in the middle of 'ubifs_readdir()'.
 
-For example:
+This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
+it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
+but this may corrupt memory and lead to all kinds of problems like crashes an
+security holes.
 
-	# echo 0 >> /sys/devices/system/cpu/cpu1/online
-	# perf record -e mem:0x10 -p 1 &
-	# echo 1 >> /sys/devices/system/cpu/cpu1/online
-	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10 -C1 -a &
-	# taskset -p 0x2 1
+This patch fixes the problem by using the 'file->f_version' field, which
+'->llseek()' always unconditionally sets to zero. We set it to 1 in
+'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
+seek and it is time to clear the state saved in 'file->private_data'.
 
-triggers the same WARN_ONCE("Can't find any breakpoint slot") in
-arch_install_hw_breakpoint().
+I tested this patch by writing a user-space program which runds readdir and
+seek in parallell. I could easily crash the kernel without these patches, but
+could not crash it with these patches.
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/20130620155009.GA6327@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/hw_breakpoint.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ubifs/dir.c |   30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
 
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -147,7 +147,7 @@ fetch_bp_busy_slots(struct bp_busy_slots
- 		return;
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -371,6 +371,24 @@ static int ubifs_readdir(struct file *fi
+ 		 */
+ 		return 0;
+ 
++	if (file->f_version == 0) {
++		/*
++		 * The file was seek'ed, which means that @file->private_data
++		 * is now invalid. This may also be just the first
++		 * 'ubifs_readdir()' invocation, in which case
++		 * @file->private_data is NULL, and the below code is
++		 * basically a no-op.
++		 */
++		kfree(file->private_data);
++		file->private_data = NULL;
++	}
++
++	/*
++	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
++	 * zero, and we use this for detecting whether the file was seek'ed.
++	 */
++	file->f_version = 1;
++
+ 	/* File positions 0 and 1 correspond to "." and ".." */
+ 	if (pos == 0) {
+ 		ubifs_assert(!file->private_data);
+@@ -444,6 +462,14 @@ static int ubifs_readdir(struct file *fi
+ 		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
++
++		if (file->f_version == 0)
++			/*
++			 * The file was seek'ed meanwhile, lets return and start
++			 * reading direntries from the new position on the next
++			 * invocation.
++			 */
++			return 0;
  	}
  
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		unsigned int nr;
+ out:
+@@ -454,15 +480,13 @@ out:
  
- 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
-@@ -233,7 +233,7 @@ toggle_bp_slot(struct perf_event *bp, bo
- 	if (cpu >= 0) {
- 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	} else {
--		for_each_online_cpu(cpu)
-+		for_each_possible_cpu(cpu)
- 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	}
+ 	kfree(file->private_data);
+ 	file->private_data = NULL;
++	/* 2 is a special value indicating that there are no more direntries */
+ 	file->f_pos = 2;
+ 	return 0;
+ }
+ 
+-/* If a directory is seeked, we have to free saved readdir() state */
+ static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int origin)
+ {
+-	kfree(file->private_data);
+-	file->private_data = NULL;
+ 	return generic_file_llseek(file, offset, origin);
+ }
  
 
 
