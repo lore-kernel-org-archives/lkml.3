@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3GAJPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 05:15:11 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33438 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752969Ab3GAJPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 05:15:09 -0400
-Date: Mon, 1 Jul 2013 11:15:02 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] AMD64_EDAC queue for 3.11
-Message-ID: <20130701091502.GB23515@pd.tnic>
+	id S1753353Ab3GAJP3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 05:15:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44438 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752966Ab3GAJPZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 05:15:25 -0400
+Date: Mon, 1 Jul 2013 11:07:13 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: [testcase] perf: yet another fuzzer triggered crash
+Message-ID: <20130701090713.GO6626@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Jun 28, 2013 at 05:07:38PM -0400, Vince Weaver wrote:
+> On Fri, 28 Jun 2013, Vince Weaver wrote:
+> 
+> > On Fri, 14 Jun 2013, Vince Weaver wrote:
+> >  
+> > > OK, I haven't managed to get a small reproducible test case for the system 
+> > > crash yet
+> > 
+> > I wasted the last 2 days bisecting a 10000 syscall trace, but below is a 
+> > 20-syscall testcase that rapidly makes a core2 machine running 3.10-rc7 
+> > unusable.
+> 
+> and it turns out I might have bisected down too much, as though that 
+> crashes my core2 system it doesn't crash newer machines.
+> 
+> I'm too lazy to re-bisect today, but the much longer program here:
+>    http://web.eece.maine.edu/~vweaver/files/nmi_bug_snb.c
+> reliably causes the same crash on a Sandybridge machine I have running 3.9
 
-just an addition of MCE signatures for new F15h models and a small
-cleanup.
+OK, so on my westmere it triggers that WARN in task_ctx_sched_out() a
+_lot_ (I removed the ONCE for easier debugging earlier -- still kinda
+stumped there).
 
-Please pull,
-thanks.
+Then this thing causes an RCU stall and starts triggering NMI watchdog
+msgs.. so YAY! :-)
 
-The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
+I'll see what I can find.
 
-  Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_for_3.11
-
-for you to fetch changes up to aad19e51769d761ffc0608b381313e18f0bd82b3:
-
-  EDAC, MCE, AMD: Add an MCE signature for new Fam15h models (2013-06-08 10:17:03 +0200)
-
-----------------------------------------------------------------
-Add MCE signatures for family 0x15, models 30-3f.
-
-----------------------------------------------------------------
-Aravind Gopalakrishnan (1):
-      EDAC, MCE, AMD: Add an MCE signature for new Fam15h models
-
-Jingoo Han (1):
-      EDAC: Replace strict_strtoul() with kstrtoul()
-
- drivers/edac/amd64_edac_inj.c | 10 +++++-----
- drivers/edac/edac_mc_sysfs.c  |  2 +-
- drivers/edac/i7core_edac.c    | 10 +++++-----
- drivers/edac/mce_amd.c        |  5 +++--
- drivers/edac/mce_amd_inj.c    |  4 ++--
- 5 files changed, 16 insertions(+), 15 deletions(-)
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
