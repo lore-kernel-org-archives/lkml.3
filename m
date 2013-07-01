@@ -1,111 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab3GAMdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 08:33:01 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:36396 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752690Ab3GAMc7 (ORCPT
+	id S1753788Ab3GAMds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 08:33:48 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:45871 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752800Ab3GAMdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 08:32:59 -0400
-Message-ID: <51D176F6.9050409@hitachi.com>
-Date: Mon, 01 Jul 2013 21:32:54 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 1 Jul 2013 08:33:47 -0400
+Message-ID: <51D177F5.2040805@metafoo.de>
+Date: Mon, 01 Jul 2013 14:37:09 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Tom Zanussi <tom.zanussi@linux.intel.com>, rostedt@goodmis.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: Re: [PATCH v2 00/11] tracing: trace event triggers
-References: <cover.1372479499.git.tom.zanussi@linux.intel.com> <51CEA92F.3040802@huawei.com>
-In-Reply-To: <51CEA92F.3040802@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+To: Marek Belisko <marek.belisko@gmail.com>
+CC: perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-doc@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        lgirdwood@gmail.com, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@streamunlimited.com>, broonie@kernel.org,
+        rob@landley.net, grant.likely@linaro.org, zonque@gmail.com
+Subject: Re: [alsa-devel] [PATCH] ASoC: Add PCM1681 codec driver.
+References: <1372251928-15706-1-git-send-email-marek.belisko@streamunlimited.com>
+In-Reply-To: <1372251928-15706-1-git-send-email-marek.belisko@streamunlimited.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/06/29 18:30), zhangwei(Jovi) wrote:
->> This patchset implements 'trace event triggers', which are similar to
->> the function triggers implemented for 'ftrace filter commands' (see
->> 'Filter commands' in Documentation/trace/ftrace.txt), but instead of
->> being invoked from function calls are invoked by trace events.
->> Basically the patchset allows 'commands' to be triggered whenever a
->> given trace event is hit.  The set of commands implemented by this
->> patchset are:
->>
->>  - enable/disable_event - enable or disable another event whenever
->>    the trigger event is hit
->>
->>  - stacktrace - dump a stacktrace to the trace buffer whenever the
->>    trigger event is hit
->>
->>  - snapshot - create a snapshot of the current trace buffer whenever
->>    the trigger event is hit
->>
->>  - traceon/traceoff - turn tracing on or off whenever the trigger
->>    event is hit
->>
->> Triggers can also be conditionally invoked by associating a standard
->> trace event filter with them - if the given event passes the filter,
->> the trigger is invoked, otherwise it's not. (see 'Event filtering' in
->> Documentation/trace/events.txt for info on event filters).
->>
-> 
-> I just aware that we are implementing more and more scripting functionality into
-> tracing subsystem, like filter and trigger mode, of cause we don't call it
-> as scripting, but basically the pattern is same, all is "do something when event hit".
+On 06/26/2013 03:05 PM, Marek Belisko wrote:
+[...]
+> +static int pcm1681_deemph[] = { 44100, 48000, 32000 };
 
-Agreed, that's a good direction to handle event by script in kernel :)
-That may be simply done with an extension of "event trigger". Of course
-your ktap work will be the next step for ftrace. But I think, the basic
-implementation can be done by just passing recorded event entry to
-each action. (other works are for debugfs management)
-And that could be a generic trace-event interface for other users too.
+const
 
-> 
-> FYI, a pretty simple scripting module of tracing is there:
-> 	https://github.com/ktap/ktap.git
-> 
-> For the trigger mode, you can perform any command when event hit if using scripting,
-> in contrast with this patchset, ktap use perf callback handler to invoke command,
-> so it don't need extra code to support trigger mode in tracepoint/k(ret)probe/u(ret)probe.
-> 
-> 	---------------------
-> 	trace "syscalls:*" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
-> 	---------------------
-> 	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
-> 	---------------------
-> 	trace "probe:do_sys_open%return fd=$retval" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
-> 	---------------------
-> 	trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
->                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
->         }
+> +
+> +static int pcm1681_set_deemph(struct snd_soc_codec *codec)
+> +{
+> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
+> +	int i = 0, val = -1, ret;
+> +
+> +	if (priv->deemph)
+> +		for (i = 0; i < ARRAY_SIZE(pcm1681_deemph); i++)
+> +			if (pcm1681_deemph[i] == priv->rate)
+> +				val = i;
+> +
+> +	/* enable choosen frequency */
+> +	if (val != -1)
+> +		regmap_update_bits(priv->regmap, PCM1681_DEEMPH_CONTROL,
+> +					PCM1681_DEEMPH_RATE_MASK, val);
 
-Nice! so the ktap can use perf probe to define new events - without involving
-any dwarf hacks :)
+So if the current sample rate doesn't match any of the available deempth rates
+the current setting is kept. This doesn't seem right.
 
+> +
+> +	/* enable/disable deemphasis functionality */
+> +	ret = regmap_update_bits(priv->regmap, PCM1681_DEEMPH_CONTROL,
+> +				PCM1681_DEEMPH_MASK, priv->deemph);
+> +
+> +	return ret;
+> +}
+> +
+[...]
+> +
+> +static int pcm1681_digital_mute(struct snd_soc_dai *dai, int mute)
+> +{
+> +	struct snd_soc_codec *codec = dai->codec;
+> +	struct pcm1681_private *priv = snd_soc_codec_get_drvdata(codec);
+> +	int ret, val = 0;
+> +
+> +	if (mute)
+> +		val = PCM1681_SOFT_MUTE_ALL;
+> +
+> +	ret = regmap_write(priv->regmap, PCM1681_SOFT_MUTE, val);
 
-> what I'm thinking now is perhaps we can use a more generic mechanism in future
-> to let user do more magic things when event hit.
-> 
-> To be clear, I'm not against on this patchset, I'm on the same side with Tom,
-> the trigger mode of this patchset is useful(awesome work). I'm just sharing some extra info,
-> hopeful you don't mind it :)
+How about just
 
-Thank you!
+return regmap_write(...)
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return 0;
+> +}
+> +
+[...]
+> +static const DECLARE_TLV_DB_SCALE(pcm1681_dac_tlv, -6350, 50, 1);
+> +
+> +static const struct snd_kcontrol_new pcm1681_controls[] = {
+> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 1/2 Playback Volume",
+> +			PCM1681_ATT_CONTROL(1), PCM1681_ATT_CONTROL(2), 0,
+> +			0x7f, 0, pcm1681_dac_tlv),
+> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 3/4 Playback Volume",
+> +			PCM1681_ATT_CONTROL(3), PCM1681_ATT_CONTROL(4), 0,
+> +			0x7f, 0, pcm1681_dac_tlv),
+> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 5/6 Playback Volume",
+> +			PCM1681_ATT_CONTROL(5), PCM1681_ATT_CONTROL(6), 0,
+> +			0x7f, 0, pcm1681_dac_tlv),
+> +	SOC_DOUBLE_R_TLV("PCM1681 Channel 7/8 Playback Volume",
+> +			PCM1681_ATT_CONTROL(7), PCM1681_ATT_CONTROL(8), 0,
+> +			0x7f, 0, pcm1681_dac_tlv),
+> +	SOC_SINGLE_BOOL_EXT("PCM1681 De-emphasis Switch", 0,
+> +			    pcm1681_get_deemph, pcm1681_put_deemph),
+> +};
 
+The name of the codec should probably not be in the control names.
+
+[...]
+> +#ifdef CONFIG_OF
+> +static const struct of_device_id pcm1681_dt_ids[] = {
+> +	{ .compatible = "ti,pcm1681", },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, pcm1681_dt_ids);
+> +#endif
+> +
+> +static const struct regmap_config pcm1681_regmap = {
+> +	.reg_bits		= 8,
+> +	.val_bits		= 8,
+> +	.max_register		= ARRAY_SIZE(pcm1681_reg_defaults),
+
+max_register is the last register in the register map, so usually this would be
+ARRAY_SIZE(...) + 1
+
+> +	.reg_defaults		= pcm1681_reg_defaults,
+> +	.num_reg_defaults	= ARRAY_SIZE(pcm1681_reg_defaults),
+> +	.writeable_reg		= pcm1681_writeable_reg,
+> +	.readable_reg		= pcm1681_accessible_reg,
+> +};
+[...]
+> +
+> +static struct snd_soc_codec_driver soc_codec_dev_pcm1681 = {
+> +	.probe			= pcm1681_probe,
+> +	.remove			= pcm1681_remove,
+> +	.controls		= pcm1681_controls,
+> +	.num_controls		= ARRAY_SIZE(pcm1681_controls),
+> +};
+> +
+> +#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+
+Since the driver only supports I2C there is no need for this ifdef
+[...]
 
