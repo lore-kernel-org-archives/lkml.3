@@ -1,262 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab3GARXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 13:23:54 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:51774 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752688Ab3GARXw (ORCPT
+	id S1754831Ab3GARY3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 13:24:29 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:13854 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702Ab3GARY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 13:23:52 -0400
-Date: Mon, 1 Jul 2013 18:23:15 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] arm64 patches for 3.11
-Message-ID: <20130701172309.GA12256@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 1 Jul 2013 13:24:28 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-a3-51d1bb4aea45
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] DMA: Fix Marvell Orion and mv_xor after MEMSET removal
+Date: Mon, 01 Jul 2013 19:24:16 +0200
+Message-id: <6583540.4QCOENPlIG@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.5.0-rc2+; KDE/4.8.5; i686; ; )
+In-reply-to: <20130701151720.GC19937@titan.lakedaemon.net>
+References: <1372690589-2218-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <51D19CD1.3030900@gmail.com> <20130701151720.GC19937@titan.lakedaemon.net>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFLMWRmVeSWpSXmKPExsVy+t9jQV2v3RcDDR7MF7OYs34Nm0Xjksss
+	Fmeb3rBbbHp8jdXi8q45bBbvfzo6sHnsnHWX3aPhwHkWjxMzfrN4bF5S79G3ZRWjx+dNcgFs
+	UVw2Kak5mWWpRfp2CVwZd6d2sRQ0aVR0tfWzNTCuVOxi5OCQEDCRuLVSuouRE8gUk7hwbz1b
+	FyMXh5DAdEaJ/g/d7BBOC5PEgvZ9rCBVbAJWEhPbVzGC2CIC6hLnNreCdTAL3GaU+PP+HjNI
+	QljAW+Lr+50sIDaLgKpE745NYA28ApoSpxpPgA0SFbCX2PbuLRuIzQk0dPfjJrBeIYHZjBIz
+	b8pD1AtK/Jh8D2wOs4C8xL79U1khbC2J9TuPM01gFJiFpGwWkrJZSMoWMDKvYhRNLUguKE5K
+	zzXSK07MLS7NS9dLzs/dxAgO8WfSOxhXNVgcYhTgYFTi4VWYdzFQiDWxrLgy9xCjBAezkgjv
+	TW+gEG9KYmVValF+fFFpTmrxIUZpDhYlcd6DrdaBQgLpiSWp2ampBalFMFkmDk6pBkaN1ouN
+	L4Mj7u6xSrzLNYkt/tHWaCGPv9dn6TotT0lpjtcUdpkt2PzJyteeMSLoXOaF9YlPApUy3Le8
+	nMpa9c3+r9LdZCaRO4xzdy/43aF7avX6TsddS6Nc/gSp/J27bumzGYnp3teUlH/NX3nF9Y3K
+	B/W/bSG2vz+9ltEvWOA11c/RwYG7MUmJpTgj0VCLuag4EQBaeYZObQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull the arm64-upstream tag as below.
+Hi,
 
-For arm64 huge pages support, there are x86 changes moving part of
-arch/x86/mm/hugetlbpage.c into mm/hugetlb.c to be re-used by arm64. They
-have been acked by akpm
-(http://marc.info/?l=linux-mm&m=137115843813005&w=2) and I'm merging
-them through the arm64 tree to avoid dependency issues.
+On Monday, July 01, 2013 11:17:20 AM Jason Cooper wrote:
+> On Mon, Jul 01, 2013 at 05:14:25PM +0200, Sebastian Hesselbarth wrote:
+> > On 07/01/13 17:04, Jason Cooper wrote:
+> > >On Mon, Jul 01, 2013 at 04:56:29PM +0200, Sebastian Hesselbarth wrote:
+> > >>Commit 834cbfe966bece50afded79da8e975d255bf0772
+> > >>  ("drivers/dma: remove unused support for MEMSET operations")
+> > >>removes MEMSET from dmaengine but does not completely removes it from
+> > >>Marvell Orion (arch/arm/plat-orion) and XOR (drivers/dma/mv_xor).
+> > >>This also fixes some compiler warnings about now obsolete functions by
+> > >>removing those.
+> > >>
+> > >>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> > >>---
+> > >>Cc: Jason Cooper <jason@lakedaemon.net>
+> > >>Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > >>Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> > >>Cc: Andrew Morton <akpm@linux-foundation.org>
+> > >>Cc: linux-arm-kernel@lists.infradead.org
+> > >>Cc: linux-kernel@vger.kernel.org
+> > >>---
+> > >>  arch/arm/plat-orion/common.c |    6 ------
+> > >>  drivers/dma/mv_xor.c         |   25 +------------------------
+> > >>  2 files changed, 1 insertions(+), 30 deletions(-)
+> > >
+> > >Please take a look at the email from lkml I just forwarded to you.  I
+> > >believe this solves your problem, but I don't have time to look closely
+> > >atm.
+> > 
+> > Jason,
+> > 
+> > I have seen the forwarded patch before. I don't know what version this
+> > is based on. Some of the modifications are in next-20130701, some are
+> > not. I have stripped the Marvell modifications from the patch you
+> > forwarded and fixed all remaining issues.
+> > 
+> > Also, I will sent a follow-up patch to remove memset references from
+> > Marvell SoC dts/dtsi and the binding documentation soon.
+> > 
+> > I guess, Bartolomiej should pick them up and resend his patch set, or
+> > leave Marvell alone and you pick them up.
+> 
+> If Bartolomiej doesn't take it, please split your changes into two
+> patches, one for plat-orion, and one for drivers.
 
-There is also a trivial merge conflict with 3.10 in
-include/uapi/linux/kvm.h (with the KVM_REG_MIPS define).
+Andrew has already applied incremental patch fixing build problems to his
+tree (though it is not yet in linux-next):
 
-Thanks.
+	http://www.ozlabs.org/~akpm/mmots/broken-out/drivers-dma-remove-unused-support-for-memset-operations-v3.patch
+
+The rest of changes from Sebastian are contained in another incremental
+patch which I've attached to this mail. They can be also folded into
+the first patch (which is what Andrew will probably do before sending them
+to Linus).
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
 
-The following changes since commit d683b96b072dc4680fc74964eca77e6a23d1fa6e:
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: [PATCH] DMA: Fix mv_xor after MEMSET removal
 
-  Linux 3.10-rc4 (2013-06-02 17:11:17 +0900)
+Commit 834cbfe ("drivers/dma: remove unused support for MEMSET operations")
+removes MEMSET from dmaengine but does not completely removes it from
+drivers/dma/mv_xor.
 
-are available in the git repository at:
+This also fixes some compiler warnings about now obsolete functions by
+removing those.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-upstream
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+[bzolnier: splitted off changes from bigger patch]
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/dma/mv_xor.c |   23 +----------------------
+ 1 file changed, 1 insertion(+), 22 deletions(-)
 
-for you to fetch changes up to aa729dccb5e8dfbc78e2e235b8754d6acccee731:
+Index: b/drivers/dma/mv_xor.c
+===================================================================
+--- a/drivers/dma/mv_xor.c	2013-07-01 18:53:12.113317468 +0200
++++ b/drivers/dma/mv_xor.c	2013-07-01 18:56:07.273317119 +0200
+@@ -89,11 +89,6 @@ static void mv_desc_clear_next_desc(stru
+ 	hw_desc->phy_next_desc = 0;
+ }
+ 
+-static void mv_desc_set_block_fill_val(struct mv_xor_desc_slot *desc, u32 val)
+-{
+-	desc->value = val;
+-}
+-
+ static void mv_desc_set_dest_addr(struct mv_xor_desc_slot *desc,
+ 				  dma_addr_t addr)
+ {
+@@ -128,22 +123,6 @@ static void mv_chan_set_next_descriptor(
+ 	__raw_writel(next_desc_addr, XOR_NEXT_DESC(chan));
+ }
+ 
+-static void mv_chan_set_dest_pointer(struct mv_xor_chan *chan, u32 desc_addr)
+-{
+-	__raw_writel(desc_addr, XOR_DEST_POINTER(chan));
+-}
+-
+-static void mv_chan_set_block_size(struct mv_xor_chan *chan, u32 block_size)
+-{
+-	__raw_writel(block_size, XOR_BLOCK_SIZE(chan));
+-}
+-
+-static void mv_chan_set_value(struct mv_xor_chan *chan, u32 value)
+-{
+-	__raw_writel(value, XOR_INIT_VALUE_LOW(chan));
+-	__raw_writel(value, XOR_INIT_VALUE_HIGH(chan));
+-}
+-
+ static void mv_chan_unmask_interrupts(struct mv_xor_chan *chan)
+ {
+ 	u32 val = __raw_readl(XOR_INTR_MASK(chan));
+@@ -1134,7 +1113,7 @@ mv_xor_channel_add(struct mv_xor_device
+ 			goto err_free_irq;
+ 	}
+ 
+-	dev_info(&pdev->dev, "Marvell XOR: ( %s%s%s%s)\n",
++	dev_info(&pdev->dev, "Marvell XOR: ( %s%s%s)\n",
+ 		 dma_has_cap(DMA_XOR, dma_dev->cap_mask) ? "xor " : "",
+ 		 dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask) ? "cpy " : "",
+ 		 dma_has_cap(DMA_INTERRUPT, dma_dev->cap_mask) ? "intr " : "");
 
-  Merge branch 'for-next/hugepages' of git://git.linaro.org/people/stevecapper/linux into upstream-hugepages (2013-07-01 11:20:58 +0100)
-
-----------------------------------------------------------------
-
-Main features:
-- KVM and Xen ports to AArch64
-- Hugetlbfs and transparent huge pages support for arm64
-- Applied Micro X-Gene Kconfig entry and dts file
-- Cache flushing improvements
-
-----------------------------------------------------------------
-Catalin Marinas (7):
-      arm64: Avoid cache flushing in flush_dcache_page()
-      arm64: Do not flush the D-cache for anonymous pages
-      arm64: Remove __flush_dcache_page()
-      arm64: spinlock: retry trylock operation if strex fails on free lock
-      Merge tag 'xen-arm64-3.1-tag' of git://git.kernel.org/.../sstabellini/xen into upstream
-      Merge branch 'kvm-arm64/kvm-for-3.11' of git://git.kernel.org/.../maz/arm-platforms into upstream
-      Merge branch 'for-next/hugepages' of git://git.linaro.org/people/stevecapper/linux into upstream-hugepages
-
-Chen Gang (1):
-      arm64: kernel: compiling issue, need delete read_current_timer()
-
-Damian Hobson-Garcia (1):
-      arm64: Provide default implementation for dma_{alloc,free}_attrs
-
-Kyle McMartin (1):
-      arm64/Makefile: provide vdso_install target
-
-Marc Zyngier (33):
-      arm64: KVM: define HYP and Stage-2 translation page flags
-      arm64: KVM: HYP mode idmap support
-      arm64: KVM: EL2 register definitions
-      arm64: KVM: system register definitions for 64bit guests
-      arm64: KVM: Basic ESR_EL2 helpers and vcpu register access
-      arm64: KVM: fault injection into a guest
-      arm64: KVM: architecture specific MMU backend
-      arm64: KVM: user space interface
-      arm64: KVM: system register handling
-      arm64: KVM: CPU specific system registers handling
-      arm64: KVM: virtual CPU reset
-      arm64: KVM: kvm_arch and kvm_vcpu_arch definitions
-      arm64: KVM: MMIO access backend
-      arm64: KVM: guest one-reg interface
-      arm64: KVM: hypervisor initialization code
-      arm64: KVM: HYP mode world switch implementation
-      arm64: KVM: Exit handling
-      arm64: KVM: Plug the VGIC
-      ARM: KVM: timer: allow DT matching for ARMv8 cores
-      arm64: KVM: Plug the arch timer
-      arm64: KVM: PSCI implementation
-      arm64: KVM: Build system integration
-      arm64: KVM: define 32bit specific registers
-      arm64: KVM: 32bit GP register access
-      arm64: KVM: 32bit conditional execution emulation
-      arm64: KVM: 32bit handling of coprocessor traps
-      arm64: KVM: CPU specific 32bit coprocessor access
-      arm64: KVM: 32bit specific register world switch
-      arm64: KVM: 32bit guest fault injection
-      arm64: KVM: enable initialization of a 32bit vcpu
-      arm64: KVM: userspace API documentation
-      arm64: KVM: MAINTAINERS update
-      arm64: KVM: document kernel object mappings in HYP
-
-Stefano Stabellini (6):
-      arm/xen: define xen_remap as ioremap_cached
-      arm64/xen: introduce asm/xen header files on arm64
-      arm64/xen: implement ioremap_cached on arm64
-      arm64/xen: use XEN_IO_PROTO_ABI_ARM on ARM64
-      arm64/xen: introduce CONFIG_XEN and hypercall.S on ARM64
-      MAINTAINERS: add myself as arm64/xen maintainer
-
-Steve Capper (11):
-      mm: hugetlb: Copy huge_pmd_share from x86 to mm.
-      x86: mm: Remove x86 version of huge_pmd_share.
-      mm: hugetlb: Copy general hugetlb code from x86 to mm.
-      x86: mm: Remove general hugetlb code from x86.
-      mm: thp: Correct the HPAGE_PMD_ORDER check.
-      ARM64: mm: Restore memblock limit when map_mem finished.
-      ARM64: mm: Make PAGE_NONE pages read only and no-execute.
-      ARM64: mm: Move PTE_PROT_NONE bit.
-      ARM64: mm: HugeTLB support.
-      ARM64: mm: Raise MAX_ORDER for 64KB pages and THP.
-      ARM64: mm: THP support.
-
-Vinayak Kale (4):
-      arm64: Add Kconfig option for APM X-Gene SOC family
-      arm64: Enable APM X-Gene SOC family in the defconfig
-      arm64: Add defines for APM ARMv8 implementation
-      arm64: Add initial DTS for APM X-Gene Storm SOC and APM Mustang board
-
-Will Deacon (5):
-      arm64: mm: don't bother invalidating the icache in switch_mm
-      arm64: pgtable: use pte_index instead of __pte_index
-      arm64: device: add iommu pointer to device archdata
-      arm64: extable: sort the exception table at build time
-      arm64: debug: consolidate software breakpoint handlers
-
- Documentation/arm64/memory.txt          |    7 +
- Documentation/virtual/kvm/api.txt       |   58 +-
- MAINTAINERS                             |   16 +
- arch/arm/include/asm/xen/page.h         |    3 +-
- arch/arm/kvm/arch_timer.c               |    1 +
- arch/arm64/Kconfig                      |   35 ++
- arch/arm64/Makefile                     |    6 +
- arch/arm64/boot/dts/Makefile            |    1 +
- arch/arm64/boot/dts/apm-mustang.dts     |   26 +
- arch/arm64/boot/dts/apm-storm.dtsi      |  116 ++++
- arch/arm64/configs/defconfig            |    4 +
- arch/arm64/include/asm/cacheflush.h     |    3 -
- arch/arm64/include/asm/cputype.h        |    3 +
- arch/arm64/include/asm/debug-monitors.h |    9 +
- arch/arm64/include/asm/device.h         |    3 +
- arch/arm64/include/asm/dma-mapping.h    |   17 +-
- arch/arm64/include/asm/hugetlb.h        |  117 ++++
- arch/arm64/include/asm/hypervisor.h     |    6 +
- arch/arm64/include/asm/io.h             |    2 +
- arch/arm64/include/asm/kvm_arm.h        |  245 ++++++++
- arch/arm64/include/asm/kvm_asm.h        |  104 +++
- arch/arm64/include/asm/kvm_coproc.h     |   56 ++
- arch/arm64/include/asm/kvm_emulate.h    |  180 ++++++
- arch/arm64/include/asm/kvm_host.h       |  202 ++++++
- arch/arm64/include/asm/kvm_mmio.h       |   59 ++
- arch/arm64/include/asm/kvm_mmu.h        |  135 ++++
- arch/arm64/include/asm/kvm_psci.h       |   23 +
- arch/arm64/include/asm/memory.h         |    6 +
- arch/arm64/include/asm/mmu_context.h    |    6 -
- arch/arm64/include/asm/pgtable-hwdef.h  |   30 +
- arch/arm64/include/asm/pgtable.h        |  112 +++-
- arch/arm64/include/asm/ptrace.h         |    2 -
- arch/arm64/include/asm/spinlock.h       |    3 +-
- arch/arm64/include/asm/sync_bitops.h    |   26 +
- arch/arm64/include/asm/timex.h          |    6 +-
- arch/arm64/include/asm/tlb.h            |    6 +
- arch/arm64/include/asm/tlbflush.h       |    2 +
- arch/arm64/include/asm/xen/events.h     |   21 +
- arch/arm64/include/asm/xen/hypercall.h  |    1 +
- arch/arm64/include/asm/xen/hypervisor.h |    1 +
- arch/arm64/include/asm/xen/interface.h  |    1 +
- arch/arm64/include/asm/xen/page.h       |    1 +
- arch/arm64/include/uapi/asm/kvm.h       |  168 +++++
- arch/arm64/kernel/asm-offsets.c         |   33 +
- arch/arm64/kernel/debug-monitors.c      |   66 +-
- arch/arm64/kernel/ptrace.c              |   59 --
- arch/arm64/kernel/time.c                |    6 -
- arch/arm64/kernel/traps.c               |    5 +-
- arch/arm64/kernel/vmlinux.lds.S         |   30 +-
- arch/arm64/kvm/Makefile                 |   23 +
- arch/arm64/kvm/emulate.c                |  158 +++++
- arch/arm64/kvm/guest.c                  |  265 ++++++++
- arch/arm64/kvm/handle_exit.c            |  124 ++++
- arch/arm64/kvm/hyp-init.S               |  107 ++++
- arch/arm64/kvm/hyp.S                    |  831 ++++++++++++++++++++++++
- arch/arm64/kvm/inject_fault.c           |  203 ++++++
- arch/arm64/kvm/regmap.c                 |  168 +++++
- arch/arm64/kvm/reset.c                  |  112 ++++
- arch/arm64/kvm/sys_regs.c               | 1050 +++++++++++++++++++++++++++++++
- arch/arm64/kvm/sys_regs.h               |  138 ++++
- arch/arm64/kvm/sys_regs_generic_v8.c    |   95 +++
- arch/arm64/mm/Makefile                  |    1 +
- arch/arm64/mm/fault.c                   |   19 +-
- arch/arm64/mm/flush.c                   |   37 +-
- arch/arm64/mm/hugetlbpage.c             |   70 +++
- arch/arm64/mm/mm.h                      |    1 -
- arch/arm64/mm/mmu.c                     |   20 +-
- arch/arm64/xen/Makefile                 |    2 +
- arch/arm64/xen/hypercall.S              |   92 +++
- arch/x86/Kconfig                        |    6 +
- arch/x86/mm/hugetlbpage.c               |  187 ------
- include/linux/huge_mm.h                 |    2 +-
- include/linux/hugetlb.h                 |    4 +
- include/uapi/linux/kvm.h                |    2 +
- include/xen/interface/io/protocols.h    |    2 +-
- mm/hugetlb.c                            |  219 ++++++-
- scripts/sortextable.c                   |    5 +
- 77 files changed, 5582 insertions(+), 389 deletions(-)
- create mode 100644 arch/arm64/boot/dts/apm-mustang.dts
- create mode 100644 arch/arm64/boot/dts/apm-storm.dtsi
- create mode 100644 arch/arm64/include/asm/hugetlb.h
- create mode 100644 arch/arm64/include/asm/hypervisor.h
- create mode 100644 arch/arm64/include/asm/kvm_arm.h
- create mode 100644 arch/arm64/include/asm/kvm_asm.h
- create mode 100644 arch/arm64/include/asm/kvm_coproc.h
- create mode 100644 arch/arm64/include/asm/kvm_emulate.h
- create mode 100644 arch/arm64/include/asm/kvm_host.h
- create mode 100644 arch/arm64/include/asm/kvm_mmio.h
- create mode 100644 arch/arm64/include/asm/kvm_mmu.h
- create mode 100644 arch/arm64/include/asm/kvm_psci.h
- create mode 100644 arch/arm64/include/asm/sync_bitops.h
- create mode 100644 arch/arm64/include/asm/xen/events.h
- create mode 100644 arch/arm64/include/asm/xen/hypercall.h
- create mode 100644 arch/arm64/include/asm/xen/hypervisor.h
- create mode 100644 arch/arm64/include/asm/xen/interface.h
- create mode 100644 arch/arm64/include/asm/xen/page.h
- create mode 100644 arch/arm64/include/uapi/asm/kvm.h
- create mode 100644 arch/arm64/kvm/Makefile
- create mode 100644 arch/arm64/kvm/emulate.c
- create mode 100644 arch/arm64/kvm/guest.c
- create mode 100644 arch/arm64/kvm/handle_exit.c
- create mode 100644 arch/arm64/kvm/hyp-init.S
- create mode 100644 arch/arm64/kvm/hyp.S
- create mode 100644 arch/arm64/kvm/inject_fault.c
- create mode 100644 arch/arm64/kvm/regmap.c
- create mode 100644 arch/arm64/kvm/reset.c
- create mode 100644 arch/arm64/kvm/sys_regs.c
- create mode 100644 arch/arm64/kvm/sys_regs.h
- create mode 100644 arch/arm64/kvm/sys_regs_generic_v8.c
- create mode 100644 arch/arm64/mm/hugetlbpage.c
- create mode 100644 arch/arm64/xen/Makefile
- create mode 100644 arch/arm64/xen/hypercall.S
-
--- 
-Catalin
