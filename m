@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab3GAWRh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:17:37 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:39896 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755756Ab3GAWRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:17:36 -0400
+	id S1755912Ab3GAWRz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 18:17:55 -0400
+Received: from mout.gmx.net ([212.227.17.20]:49691 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755748Ab3GAWRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 18:17:54 -0400
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: tpmdd-devel@lists.sourceforge.net
+Subject: Re: [tpmdd-devel] [PATCH v3] drivers/tpm: add xen tpmfront interface
+Date: Tue, 2 Jul 2013 00:24:38 +0200
+User-Agent: KMail/1.13.7 (Linux/3.10.0; KDE/4.9.5; x86_64; ; )
+Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        leosilva@linux.vnet.ibm.com, adlai@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xen.org, mail@srajiv.net,
+        shpedoikal@gmail.com, tpmdd@sirrix.com
+References: <1369755632-2753-1-git-send-email-dgdegra@tycho.nsa.gov> <201306050014.29162.PeterHuewe@gmx.de> <51D1F531.9000308@tycho.nsa.gov>
+In-Reply-To: <51D1F531.9000308@tycho.nsa.gov>
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-In-Reply-To: <alpine.DEB.2.02.1307012346320.4013@ionos.tec.linutronix.de>
-References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com>
-	<1372694659-30176-5-git-send-email-james.hogan@imgtec.com>
-	<alpine.DEB.2.02.1307012346320.4013@ionos.tec.linutronix.de>
-Date: Mon, 1 Jul 2013 23:17:34 +0100
-X-Google-Sender-Auth: DoU8xYuRFUp2gBrPu2nTGk2XGhw
-Message-ID: <CAAG0J9_fTNrKe7idPi3=O2kGRWBJmYSwMQuzGPiT2G+rXy4QuA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] metag: kick: prevent nested kick handlers
-From: James Hogan <james.hogan@imgtec.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307020024.38337.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:vKZayV8yUXpaqkh3f/KtqT8WcgSrxc03FEbv1Mv3c+Jnnsxi0PS
+ egdWKuHV3vsHUyy13jpQgisP9ZqDxn4QsV9P0DXd8O83nxpYKujlOp2gZgfMVGKiPZaBvVN
+ NWiG3itb3x0xOQ8widt/VIK6Yl31kK10gj86QbGm/xDPjgVxBB6yERJ7uLLzzxdXSQJd2cT
+ gD/ciw8qpe8iPTWuCsMnw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 July 2013 22:51, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 1 Jul 2013, James Hogan wrote:
->
->> The main kick trigger handler iterates a list of kick handlers and calls
->> each one. This is done with the kick_handlers_lock spin lock held, but
->> this causes a problem on SMP where IPIs are implemented with kicks. A
->> reschedule IPI calls scheduler_ipi() which uses irq_enter() and
->> irq_exit(). This results in the scheduler being invoked with
->> kick_handlers_lock held which can result in a nested kick trigger
->> attempting to acquire the lock, resulting in deadlock.
->>
->> irq_enter() and irq_exit() can nest, so call them from the main kick
->> interrupt handler so that softirqs are only handled after
->> kick_handlers_lock is released.
->
-> This changelog is confusing. What I decode from the patch is, that you
-> are adding a missing irq_enter/exit pair to the kick_handler, right ?
+Hi Daniel,
 
-Yes. Previously the outermost pair of irq_enter/exit was inside the
-spin lock critical section (inside scheduler_ipi). so soft-irqs
-(apparently including the scheduler) would run from irq_exit with the
-spinlock still held. Now it waits until the new outermost irq_exit(),
-after the spin lock is released.
+thanks for the rework.
+I'll try to review it this week, so Konrad might take it through his tree.
 
-I should probably have increased the number of lines of diff context.
-http://lxr.linux.no/#linux+v3.10/arch/metag/kernel/kick.c#L66
-
-Cheers
-James
+Thanks,
+Peter
