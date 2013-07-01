@@ -1,137 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab3GAEUh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 00:20:37 -0400
-Received: from prod-mail-xrelay01.akamai.com ([72.246.2.12]:22301 "EHLO
-	prod-mail-xrelay01.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750833Ab3GAEUg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 00:20:36 -0400
-Message-ID: <51D10390.4060905@akamai.com>
-Date: Mon, 01 Jul 2013 00:20:32 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752508Ab3GAEap (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 00:30:45 -0400
+Received: from rrcs-24-173-105-85.sw.biz.rr.com ([24.173.105.85]:54004 "EHLO
+	mx1.mthode.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750833Ab3GAEao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 00:30:44 -0400
+Message-ID: <51D10603.1080403@gentoo.org>
+Date: Sun, 30 Jun 2013 23:30:59 -0500
+From: Matthew Thode <prometheanfire@gentoo.org>
+Reply-To: prometheanfire@gentoo.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH 3/3] udp: make use of static_key_slow_set_true() interface
-References: <cover.1372457176.git.jbaron@akamai.com>  <7fe0eaba62a8529b387ddb3205713d8bb6156ec1.1372457176.git.jbaron@akamai.com> <1372475620.18733.353.camel@gandalf.local.home>
-In-Reply-To: <1372475620.18733.353.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Luca Barbato <lu_zero@gentoo.org>
+CC: linux-kernel@vger.kernel.org, linux-devel@vger.kernel.org,
+        mjg59@srcf.ucam.org, torvalds@linux-foundation.org, kernel@gentoo.org,
+        hardened-kernel@gentoo.org, corsac@debian.org
+Subject: Re: 3.9.7, 3.10-rc7 - UEFI stalls at boot (nothing displayed), when
+ booting with mem=300M
+References: <51CC6CAE.6070401@gentoo.org> <51CC81A2.8040305@gentoo.org>
+In-Reply-To: <51CC81A2.8040305@gentoo.org>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2WHAFXCSQBRGSWJGRQXNN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2013 11:13 PM, Steven Rostedt wrote:
-> On Fri, 2013-06-28 at 22:30 +0000, jbaron@akamai.com wrote:
->> Make use of the simpler API.
-> Need to make the change log much more descriptive. Never assume someone
-> in the future that looks up a change to this file will know about other
-> commits that led to this. Each change log should be sufficient to stand
-> on its own.
->
-> Explain why this patch is needed. And it's not about the use of a
-> simpler API.
->
-> It actually fixes a real bug.
->
->
->> Signed-off-by: Jason Baron <jbaron@akamai.com>
->> ---
->>   net/ipv4/udp.c |    9 ++++-----
->>   net/ipv6/udp.c |    9 ++++-----
->>   2 files changed, 8 insertions(+), 10 deletions(-)
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2WHAFXCSQBRGSWJGRQXNN
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 06/27/2013 01:17 PM, Luca Barbato wrote:
+> On 06/27/2013 06:47 PM, Matthew Thode wrote:
+>> There is an early boot failure with linux-3.[9,10].??? when booting
+>> using uefi on low memory systems.
 >>
->> diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
->> index 0bf5d39..b8d0029 100644
->> --- a/net/ipv4/udp.c
->> +++ b/net/ipv4/udp.c
->> @@ -1421,11 +1421,10 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
->>   
->>   }
->>   
->> -static struct static_key udp_encap_needed __read_mostly;
->> +static struct static_key_boolean udp_encap_needed __read_mostly;
->>   void udp_encap_enable(void)
->>   {
->> -	if (!static_key_enabled(&udp_encap_needed))
->> -		static_key_slow_inc(&udp_encap_needed);
->> +	static_key_slow_set_true(&udp_encap_needed);
->>   }
->>   EXPORT_SYMBOL(udp_encap_enable);
->>   
->> @@ -1450,7 +1449,7 @@ int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
->>   		goto drop;
->>   	nf_reset(skb);
->>   
->> -	if (static_key_false(&udp_encap_needed) && up->encap_type) {
->> +	if (static_key_false(&udp_encap_needed.key) && up->encap_type) {
-> I wonder if we should add a static_bool_key_false(), because that added
-> ".key" is a bit confusing.
->
-> -- Steve
->
+>> This seems like it might be hardware specific, I am running on a Lenov=
+o
+>> T520, running bios version 1.42, firmware rev 1.36.
+>>
+>=20
+> Had the same problem with linux 3.10-rc1 and a stock mac book pro, I
+> hadn't investigated much further though.
+>=20
+> lu
+>=20
+You had the problem where it was blank on boot (right after grub, no
+kernel messages at all)?  Sounds like this might not be limited to just
+Lenovo then.
 
-Yeah - that is sort of ugly, but it avoids introducing a new branch API 
-call. That said, a 'static_bool_key_false()' would probably be a simple 
-wrapper function.
+mjg59, is there anything I can do to help move this bug forward?  I've
+done all I can think of (even tried a serial expresscard slot for logging=
+).
 
--Jason
+--=20
+-- Matthew Thode (prometheanfire)
 
 
->>   		int (*encap_rcv)(struct sock *sk, struct sk_buff *skb);
->>   
->>   		/*
->> @@ -1773,7 +1772,7 @@ void udp_destroy_sock(struct sock *sk)
->>   	bool slow = lock_sock_fast(sk);
->>   	udp_flush_pending_frames(sk);
->>   	unlock_sock_fast(sk, slow);
->> -	if (static_key_false(&udp_encap_needed) && up->encap_type) {
->> +	if (static_key_false(&udp_encap_needed.key) && up->encap_type) {
->>   		void (*encap_destroy)(struct sock *sk);
->>   		encap_destroy = ACCESS_ONCE(up->encap_destroy);
->>   		if (encap_destroy)
->> diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
->> index 42923b1..94a4091 100644
->> --- a/net/ipv6/udp.c
->> +++ b/net/ipv6/udp.c
->> @@ -573,11 +573,10 @@ static __inline__ void udpv6_err(struct sk_buff *skb,
->>   	__udp6_lib_err(skb, opt, type, code, offset, info, &udp_table);
->>   }
->>   
->> -static struct static_key udpv6_encap_needed __read_mostly;
->> +static struct static_key_boolean udpv6_encap_needed __read_mostly;
->>   void udpv6_encap_enable(void)
->>   {
->> -	if (!static_key_enabled(&udpv6_encap_needed))
->> -		static_key_slow_inc(&udpv6_encap_needed);
->> +	static_key_slow_set_true(&udpv6_encap_needed);
->>   }
->>   EXPORT_SYMBOL(udpv6_encap_enable);
->>   
->> @@ -590,7 +589,7 @@ int udpv6_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
->>   	if (!xfrm6_policy_check(sk, XFRM_POLICY_IN, skb))
->>   		goto drop;
->>   
->> -	if (static_key_false(&udpv6_encap_needed) && up->encap_type) {
->> +	if (static_key_false(&udpv6_encap_needed.key) && up->encap_type) {
->>   		int (*encap_rcv)(struct sock *sk, struct sk_buff *skb);
->>   
->>   		/*
->> @@ -1300,7 +1299,7 @@ void udpv6_destroy_sock(struct sock *sk)
->>   	udp_v6_flush_pending_frames(sk);
->>   	release_sock(sk);
->>   
->> -	if (static_key_false(&udpv6_encap_needed) && up->encap_type) {
->> +	if (static_key_false(&udpv6_encap_needed.key) && up->encap_type) {
->>   		void (*encap_destroy)(struct sock *sk);
->>   		encap_destroy = ACCESS_ONCE(up->encap_destroy);
->>   		if (encap_destroy)
->
+------enig2WHAFXCSQBRGSWJGRQXNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0QYKAAoJECRx6z5ArFrDgc4QAITXJNm3u+qfUVOQqXh2Yb9Q
+73l6jsRUwA5iG3hxeKOnHoC8anC+qEsr78gb//6MKPv/xknLR2dj2efj1YNXfXcp
+Z2uqt5HAgz0QdrTWb9t9AN35hoasE0CYLFnocGpQEp5PPPQl/QlMYxl3myHnjyPM
+aooYHB0qYSUZHub+MHhog3Nkvdqu+5BLQ5Ytw1uU1iZQOqJRdsmfd2eYn/frehNK
+KE77gJWjoIyYcoqYy+BmIZ60NHSEBfXdLdKvtk8tbRYnpujwtqcX2wqcpgIE+wNq
+5e07VkBFXrsyS65YPgiAs0exFAehZkm61v8iOufMqjapZp8DLRlZMcalk9tlZBkL
+iFmejL2ovx5K1aNcm1ylm2Ko4O+BfobVZSTAfkJmhsNWqY9GMsaE1hNPyOrMMelz
+boM72bXqpqyHi5+gfAusPcIuVPW3RvTb+LmCQ/Kv1G/Xu/fHiBINsklQVC9nEzS0
+yxursJz0oWJVDZRfycY0FIZZb1xG22u56dpoqcKRSVrnwlncncJ9jSTlcHjS5Kvr
+HyBZfICInQQ5V/ogGFOqTBVgkwmYEqqUc/Vnqze6sVJ/nenvhHJaDOr2KT4YyRm/
+NydwBQqAVci1k1yGOiU9pwFSCvdrNrWvHAz+TuHHqKVBTcI/iIISu6ZgclejlBGC
+q1b9Pk45CTz41KnM42yd
+=g1YJ
+-----END PGP SIGNATURE-----
+
+------enig2WHAFXCSQBRGSWJGRQXNN--
