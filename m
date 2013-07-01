@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab3GAPUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 11:20:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48041 "EHLO mga09.intel.com"
+	id S1754373Ab3GAPZX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 11:25:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61255 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751171Ab3GAPUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 11:20:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,974,1363158000"; 
-   d="scan'208";a="338733369"
-From: Andi Kleen <andi@firstfloor.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 0/7] v2 Provide infrastructure for full-system idle
-References: <20130628200949.GA17458@linux.vnet.ibm.com>
-Date: Mon, 01 Jul 2013 08:19:25 -0700
-In-Reply-To: <20130628200949.GA17458@linux.vnet.ibm.com> (Paul E. McKenney's
-	message of "Fri, 28 Jun 2013 13:09:50 -0700")
-Message-ID: <87a9m65mv6.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752222Ab3GAPZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 11:25:22 -0400
+Date: Mon, 01 Jul 2013 11:25:03 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: gong.chen@linux.intel.com
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Message-ID: <1372692303-56f0gltk-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20130701091355.GA14444@gchen.bj.intel.com>
+References: <1368807482-11153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20130701091355.GA14444@gchen.bj.intel.com>
+Subject: Re: [PATCH] mm/memory-failure.c: fix memory leak in successful soft
+ offlining
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <20130701091355.GA14444@gchen.bj.intel.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> writes:
->
-> The individual patches are as follows:
->
-> 1.	Add a CONFIG_NO_HZ_FULL_SYSIDLE Kconfig parameter to enable
-> 	this feature.  Kernels built with CONFIG_NO_HZ_FULL_SYSIDLE=n
-> 	act exactly as they do today.
+On Mon, Jul 01, 2013 at 05:13:55AM -0400, Chen Gong wrote:
+> On Fri, May 17, 2013 at 12:18:02PM -0400, Naoya Horiguchi wrote:
+> > Date: Fri, 17 May 2013 12:18:02 -0400
+> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > To: linux-mm@kvack.org
+> > Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen
+> >  <andi@firstfloor.org>, linux-kernel@vger.kernel.org, Naoya Horiguchi
+> >  <n-horiguchi@ah.jp.nec.com>
+> > Subject: [PATCH] mm/memory-failure.c: fix memory leak in successful soft
+> >  offlining
+> > 
+> > After a successful page migration by soft offlining, the source page is
+> > not properly freed and it's never reusable even if we unpoison it afterward.
+> > 
+> > This is caused by the race between freeing page and setting PG_hwpoison.
+> > In successful soft offlining, the source page is put (and the refcount
+> > becomes 0) by putback_lru_page() in unmap_and_move(), where it's linked to
+> > pagevec and actual freeing back to buddy is delayed. So if PG_hwpoison is
+> > set for the page before freeing, the freeing does not functions as expected
+> > (in such case freeing aborts in free_pages_prepare() check.)
+> > 
+> > This patch tries to make sure to free the source page before setting
+> > PG_hwpoison on it. To avoid reallocating, the page keeps MIGRATE_ISOLATE
+> > until after setting PG_hwpoison.
+> > 
+> > This patch also removes obsolete comments about "keeping elevated refcount"
+> > because what they say is not true. Unlike memory_failure(), soft_offline_page()
+> > uses no special page isolation code, and the soft-offlined pages have no
+> > difference from buddy pages except PG_hwpoison. So no need to keep refcount
+> > elevated.
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+...
+> Hi, Naoya
+> 
+> What happens about this patch? It looks find to me but not merged yet.
+> If something I missed, would you please tell me again?
 
-Is this extra CONFIG option really needed? RCU already has a bewildering
-variety of CONFIG options, and no idle CONFIG is also pretty complicated. 
-At some point noone will know how to configure kernels anymore if 
-these non trivial, complicated trade off CONFIGs keep spreading.
+Hello Gong,
 
-The facility sounds like a good thing in general. Just enable
-it implicitely with NO_HZ_SYSIDLE ? 
+It's already on mmotm, so I hope Andrew will push it in this merge window
+(just opened yesterday.)
 
-If you want a switch for testing I would advise a sysctl or sysfs knob
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+Thanks,
+Naoya Horiguchi
