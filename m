@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab3GAUyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:54:40 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:60894 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab3GAUyi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:54:38 -0400
-Message-ID: <51D1EC8C.4050101@codeaurora.org>
-Date: Mon, 01 Jul 2013 13:54:36 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1755442Ab3GAU4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:56:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48353 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755057Ab3GAU4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 16:56:05 -0400
+Message-ID: <1372712128.21065.71.camel@cumari.coelho.fi>
+Subject: Re: [RFC] wlcore: sdio: add wilink clock providers
+From: Luciano Coelho <coelho@ti.com>
+To: <balbi@ti.com>
+CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <--linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Date: Mon, 1 Jul 2013 23:55:28 +0300
+In-Reply-To: <20130701204633.GB805@arwen.pp.htv.fi>
+References: <1372707250-11998-1-git-send-email-coelho@ti.com>
+	 <20130701204633.GB805@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Stehle Vincent-B46079 <B46079@freescale.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: Re: next-20130627 breaks i.MX6 sabre sd UART console
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net> <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de> <51CDB26A.9060500@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net> <51CDC2B3.1030907@codeaurora.org> <20130629020738.GG11625@codeaurora.org> <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net> <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de> <F7C43F8B2814514CA05F3436BC68046EF2F708@039-SN2MPN1-011.039d.mgd.msft.net> <alpine.DEB.2.02.1307011531210.4013@ionos.tec.linutronix.de> <51D1DD6D.8050805@codeaurora.org> <alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/13 13:14, Thomas Gleixner wrote:
-> The issue is very subtle. What happens is:
->
-> CPU0						CPU1
->
-> Switch to oneshot mode
->
->  Copy the bits from tick_broadcast_mask to
->  tick_broadcast_oneshot_mask. We need to do
->  that so the other cpus reach the timer irq
->  and the softirq which switches them to
->  oneshot.
->
->  Kick the broadcast device into oneshot.
->
-> 						Timer interrupt fires
-> 						
-> 						irq_enter sees the cpu in
-> 						tick_broadcast_oneshot_mask and
-> 						sets the device to oneshot mode
-> 						
-> 						handle_periodic:
-> 						 Sees oneshot mode and adds
-> 						 period to
-> 						 dev->next_event(KTIME_MAX)
-> 			
+On Mon, 2013-07-01 at 23:46 +0300, Felipe Balbi wrote:
+> Hi,
+> 
+> On Mon, Jul 01, 2013 at 10:34:10PM +0300, Luciano Coelho wrote:
+> > diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+> > index 670c3ce..7f061b8 100644
+> > --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
+> > +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+> > @@ -65,11 +65,19 @@
+> >  		enable-active-high;
+> >  	};
+> >  
+> > +
+> >  	wlan {
+> > -	     compatible = "ti,wilink6";
+> > -	     interrupt-parent = <&gpio2>;
+> > -	     interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
+> > -	     refclock = <2>;		/* 38.4 MHz */
+> > +		compatible = "ti,wilink6";
+> > +		interrupt-parent = <&gpio2>;
+> > +		interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
+> > +		clocks = <&refclock>;
+> > +		clock-names = "refclock";
+> 
+> hmmm, shouldn't you provide both clocks (refclock and tcx0clock)
+> explicitly here ?
 
-Yep. It is also racing with the timer interrupt so having more than two
-CPUs must help widen the window (which is why we see it on the higher
-numbered CPUs).
+No, not needed for Panda.  Panda uses WiLink6 and only the refclock
+needs to be provided.
 
-> 			 
-> So we need two fixes:
->
-> 1) The replacement of the dummy timer and the effect on the broadcast
->    mask/device
->
-> 2) tick_check_oneshot_broadcast needs a sanity check
->
-> Patch below.
 
-Looks good.
+> Also, you should probably make it clear that the WiLink module is fed by
+> the 32K sync clock just to make sure clock usecounts are correctly
+> incremented ?
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Hmmm, yes, that is probably a good idea.  At least to make sure
+everything is initialized properly before the WiLink module is up and
+running.  I'll look into it and eventually add in a separate patch.
 
-One minor typo in the comment below.
+Thanks for your comments!
 
-> +		switch (tick_broadcast_device.mode) {
-> +		case TICKDEV_MODE_ONESHOT:
-> +			/*
-> +			 * If the system is in oneshot mode we can
-> +			 * unconditionally clear the oneshot mask,
-> +			 * because the CPU is running and therefor not
-
-s/therefor/therefore/
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+--
+Luca.
 
