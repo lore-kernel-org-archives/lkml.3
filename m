@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab3GAL6D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:58:03 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33904 "EHLO
+	id S1753823Ab3GAL6L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:58:11 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33935 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab3GAL57 (ORCPT
+	with ESMTP id S1753609Ab3GAL6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:57:59 -0400
+	Mon, 1 Jul 2013 07:58:07 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
         <xemul@parallels.com>, <khorenko@parallels.com>
-Subject: [PATCH RFC 03/13] mm: PRAM: implement page stream operations
-Date: Mon, 1 Jul 2013 15:57:38 +0400
-Message-ID: <058d7295434214c8a6b4f3f6a812351dfd025da1.1372582755.git.vdavydov@parallels.com>
+Subject: [PATCH RFC 07/13] mm: PRAM: preserve persistent memory at boot
+Date: Mon, 1 Jul 2013 15:57:42 +0400
+Message-ID: <c001a99771c7606ce9002e92d3fe7db8a80fa620.1372582756.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1372582754.git.vdavydov@parallels.com>
 References: <cover.1372582754.git.vdavydov@parallels.com>
@@ -24,107 +24,253 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the pram_save_page() function, one can populate PRAM nodes with
-memory pages, which can be then loaded using the pram_load_page()
-function. Saving a memory page to PRAM is implemented as storing the pfn
-in the PRAM node and incrementing its ref count so that it will not get
-freed after the last user puts it.
----
- include/linux/pram.h |    3 +
- mm/pram.c            |  166 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 167 insertions(+), 2 deletions(-)
+Persistent memory preservation is done by reserving memory pages
+belonging to PRAM at early boot so that they will not be recycled. If
+memory reservation fails for some reason (e.g. memory region is busy),
+persistent memory will be lost.
 
+Currently, PRAM preservation is only implemented for x86.
+---
+ arch/x86/kernel/setup.c |    2 +
+ arch/x86/mm/init_32.c   |    4 +
+ arch/x86/mm/init_64.c   |    4 +
+ include/linux/pram.h    |    8 ++
+ mm/Kconfig              |    1 +
+ mm/pram.c               |  203 +++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 222 insertions(+)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index fae9134..caf1b29 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -69,6 +69,7 @@
+ #include <linux/crash_dump.h>
+ #include <linux/tboot.h>
+ #include <linux/jiffies.h>
++#include <linux/pram.h>
+ 
+ #include <video/edid.h>
+ 
+@@ -1127,6 +1128,7 @@ void __init setup_arch(char **cmdline_p)
+ 	acpi_initrd_override((void *)initrd_start, initrd_end - initrd_start);
+ #endif
+ 
++	pram_reserve();
+ 	reserve_crashkernel();
+ 
+ 	vsmp_init();
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 2d19001..da38426 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -31,6 +31,7 @@
+ #include <linux/initrd.h>
+ #include <linux/cpumask.h>
+ #include <linux/gfp.h>
++#include <linux/pram.h>
+ 
+ #include <asm/asm.h>
+ #include <asm/bios_ebda.h>
+@@ -779,6 +780,9 @@ void __init mem_init(void)
+ 
+ 	after_bootmem = 1;
+ 
++	totalram_pages += pram_reserved_pages;
++	reservedpages -= pram_reserved_pages;
++
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+ 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 474e28f..8aa4bc4 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -32,6 +32,7 @@
+ #include <linux/memory_hotplug.h>
+ #include <linux/nmi.h>
+ #include <linux/gfp.h>
++#include <linux/pram.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/bios_ebda.h>
+@@ -1077,6 +1078,9 @@ void __init mem_init(void)
+ 	reservedpages = max_pfn - totalram_pages - absent_pages;
+ 	after_bootmem = 1;
+ 
++	totalram_pages += pram_reserved_pages;
++	reservedpages -= pram_reserved_pages;
++
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+ 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
 diff --git a/include/linux/pram.h b/include/linux/pram.h
-index 5b8c2c1..dd17316 100644
+index 61c536c..b7f2799 100644
 --- a/include/linux/pram.h
 +++ b/include/linux/pram.h
-@@ -6,10 +6,13 @@
- #include <linux/mm_types.h>
+@@ -47,4 +47,12 @@ extern ssize_t pram_write(struct pram_stream *ps,
+ 			  const void *buf, size_t count);
+ extern size_t pram_read(struct pram_stream *ps, void *buf, size_t count);
  
- struct pram_node;
-+struct pram_link;
++#ifdef CONFIG_PRAM
++extern unsigned long pram_reserved_pages;
++extern void pram_reserve(void);
++#else
++#define pram_reserved_pages 0UL
++static inline void pram_reserve(void) { }
++#endif
++
+ #endif /* _LINUX_PRAM_H */
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 46337e8..f1e11a0 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -474,6 +474,7 @@ config FRONTSWAP
  
- struct pram_stream {
- 	gfp_t gfp_mask;
- 	struct pram_node *node;
-+	struct pram_link *link;		/* current link */
-+	unsigned int page_index;	/* next page index in link */
- };
- 
- #define PRAM_NAME_MAX		256	/* including nul */
+ config PRAM
+ 	bool "Persistent over-kexec memory storage"
++	depends on X86
+ 	default n
+ 	help
+ 	  This option adds the kernel API that enables saving memory pages of
 diff --git a/mm/pram.c b/mm/pram.c
-index 3af2039..a443eb0 100644
+index 58ae9ed..380735f 100644
 --- a/mm/pram.c
 +++ b/mm/pram.c
-@@ -5,19 +5,48 @@
+@@ -1,3 +1,4 @@
++#include <linux/bootmem.h>
+ #include <linux/err.h>
+ #include <linux/gfp.h>
+ #include <linux/highmem.h>
+@@ -5,6 +6,7 @@
+ #include <linux/kernel.h>
+ #include <linux/kobject.h>
+ #include <linux/list.h>
++#include <linux/memblock.h>
  #include <linux/mm.h>
+ #include <linux/module.h>
  #include <linux/mutex.h>
- #include <linux/pram.h>
-+#include <linux/sched.h>
- #include <linux/string.h>
- #include <linux/types.h>
+@@ -93,6 +95,8 @@ static struct pram_super_block *pram_sb;
+ static LIST_HEAD(pram_nodes);			/* linked through page::lru */
+ static DEFINE_MUTEX(pram_mutex);		/* serializes open/close */
  
++unsigned long __initdata pram_reserved_pages;
++
  /*
-+ * Represents a reference to a data page saved to PRAM.
-+ */
-+struct pram_entry {
-+	__u32 flags;		/* see PRAM_PAGE_* flags */
-+	__u64 pfn;		/* the page frame number */
-+};
-+
-+/*
-+ * Keeps references to data pages saved to PRAM.
-+ * The structure occupies a memory page.
-+ */
-+struct pram_link {
-+	__u64	link_pfn;	/* points to the next link of the node */
-+
-+	/* the array occupies the rest of the link page; if the link is not
-+	 * full, the rest of the array must be filled with zeros */
-+	struct pram_entry entry[0];
-+};
-+
-+#define PRAM_LINK_ENTRIES_MAX \
-+	((PAGE_SIZE-sizeof(struct pram_link))/sizeof(struct pram_entry))
-+
-+/*
-  * Persistent memory is divided into nodes that can be saved or loaded
-  * independently of each other. The nodes are identified by unique name
-  * strings.
-  *
-+ * References to data pages saved to a persistent memory node are kept in a
-+ * singly-linked list of PRAM link structures (see above), the node has a
-+ * pointer to the head of.
-+ *
-  * The structure occupies a memory page.
+  * The PRAM super block pfn, see above.
   */
- struct pram_node {
- 	__u32	flags;		/* see PRAM_* flags below */
- 	__u32	type;		/* data type, see enum pram_stream_type */
-+	__u64	link_pfn;	/* points to the first link of the node */
- 
- 	__u8	name[PRAM_NAME_MAX];
- };
-@@ -62,12 +91,46 @@ static struct pram_node *pram_find_node(const char *name)
- 	return NULL;
+@@ -102,6 +106,196 @@ static int __init parse_pram_sb_pfn(char *arg)
  }
+ early_param("pram", parse_pram_sb_pfn);
  
-+static void pram_truncate_link(struct pram_link *link)
++static void * __init pram_map_meta(unsigned long pfn)
++{
++	if (pfn >= max_low_pfn)
++		return ERR_PTR(-EINVAL);
++	return pfn_to_kaddr(pfn);
++}
++
++static int __init pram_reserve_page(unsigned long pfn)
++{
++	int err = 0;
++	phys_addr_t base, size;
++
++	if (pfn >= max_pfn)
++		return -EINVAL;
++
++	base = PFN_PHYS(pfn);
++	size = PAGE_SIZE;
++
++#ifdef CONFIG_NO_BOOTMEM
++	if (memblock_is_region_reserved(base, size) ||
++	    memblock_reserve(base, size) < 0)
++		err = -EBUSY;
++#else
++	err = reserve_bootmem(base, size, BOOTMEM_EXCLUSIVE);
++#endif
++	if (!err)
++		pram_reserved_pages++;
++	return err;
++}
++
++static void __init pram_unreserve_page(unsigned long pfn)
++{
++	free_bootmem(PFN_PHYS(pfn), PAGE_SIZE);
++	pram_reserved_pages--;
++}
++
++static int __init pram_reserve_link(struct pram_link *link)
 +{
 +	int i;
-+	unsigned long pfn;
-+	struct page *page;
++	int err = 0;
 +
 +	for (i = 0; i < PRAM_LINK_ENTRIES_MAX; i++) {
-+		pfn = link->entry[i].pfn;
++		struct pram_entry *p = &link->entry[i];
++		if (!p->pfn)
++			break;
++		err = pram_reserve_page(p->pfn);
++		if (err)
++			break;
++		p->flags &= ~PRAM_PAGE_LRU;
++	}
++	if (err) {
++		/* undo */
++		while (--i >= 0)
++			pram_unreserve_page(link->entry[i].pfn);
++	}
++	return err;
++}
++
++static void __init pram_unreserve_link(struct pram_link *link)
++{
++	int i;
++
++	for (i = 0; i < PRAM_LINK_ENTRIES_MAX; i++) {
++		unsigned long pfn = link->entry[i].pfn;
 +		if (!pfn)
-+			continue;
-+		page = pfn_to_page(pfn);
-+		put_page(page);
++			break;
++		pram_unreserve_page(pfn);
 +	}
 +}
 +
-+static void pram_truncate_node(struct pram_node *node)
++static int __init pram_reserve_node(struct pram_node *node)
++{
++	unsigned long link_pfn;
++	struct pram_link *link;
++	int err = 0;
++
++	link_pfn = node->link_pfn;
++	while (link_pfn) {
++		err = pram_reserve_page(link_pfn);
++		if (err)
++			break;
++		link = pram_map_meta(link_pfn);
++		if (IS_ERR(link)) {
++			pram_unreserve_page(link_pfn);
++			err = PTR_ERR(link);
++			break;
++		}
++		err = pram_reserve_link(link);
++		if (err) {
++			pram_unreserve_page(link_pfn);
++			break;
++		}
++		link_pfn = link->link_pfn;
++	}
++	if (err) {
++		/* undo */
++		unsigned long bad_pfn = link_pfn;
++		link_pfn = node->link_pfn;
++		while (link_pfn != bad_pfn) {
++			link = pfn_to_kaddr(link_pfn);
++			pram_unreserve_link(link);
++			link_pfn = link->link_pfn;
++			pram_unreserve_page(link_pfn);
++		}
++	}
++	return err;
++}
++
++static void __init pram_unreserve_node(struct pram_node *node)
 +{
 +	unsigned long link_pfn;
 +	struct pram_link *link;
@@ -132,163 +278,113 @@ index 3af2039..a443eb0 100644
 +	link_pfn = node->link_pfn;
 +	while (link_pfn) {
 +		link = pfn_to_kaddr(link_pfn);
-+		pram_truncate_link(link);
++		pram_unreserve_link(link);
 +		link_pfn = link->link_pfn;
-+		pram_free_page(link);
-+		cond_resched();
++		pram_unreserve_page(link_pfn);
 +	}
-+	node->link_pfn = 0;
-+
-+}
-+
- static void pram_stream_init(struct pram_stream *ps,
- 			     struct pram_node *node, gfp_t gfp_mask)
- {
- 	memset(ps, 0, sizeof(*ps));
- 	ps->gfp_mask = gfp_mask;
- 	ps->node = node;
-+	if (node->link_pfn)
-+		ps->link = pfn_to_kaddr(node->link_pfn);
- }
- 
- /**
-@@ -157,6 +220,7 @@ void pram_discard_save(struct pram_stream *ps)
- 	pram_delete_node(node);
- 	mutex_unlock(&pram_mutex);
- 
-+	pram_truncate_node(node);
- 	pram_free_page(node);
- }
- 
-@@ -220,9 +284,46 @@ void pram_finish_load(struct pram_stream *ps)
- 
- 	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_LOAD);
- 
-+	pram_truncate_node(node);
- 	pram_free_page(node);
- }
- 
-+/*
-+ * Insert page to PRAM node allocating a new PRAM link if necessary.
-+ */
-+static int __pram_save_page(struct pram_stream *ps,
-+			    struct page *page, int flags)
-+{
-+	struct pram_node *node = ps->node;
-+	struct pram_link *link = ps->link;
-+	struct pram_entry *entry;
-+
-+	if (!link || ps->page_index >= PRAM_LINK_ENTRIES_MAX) {
-+		struct page *link_page;
-+		unsigned long link_pfn;
-+
-+		link_page = pram_alloc_page((ps->gfp_mask & GFP_RECLAIM_MASK) |
-+					    __GFP_ZERO);
-+		if (!link_page)
-+			return -ENOMEM;
-+
-+		link_pfn = page_to_pfn(link_page);
-+		if (link)
-+			link->link_pfn = link_pfn;
-+		else
-+			node->link_pfn = link_pfn;
-+
-+		ps->link = link = page_address(link_page);
-+		ps->page_index = 0;
-+	}
-+
-+	get_page(page);
-+	entry = &link->entry[ps->page_index++];
-+	entry->flags = flags;
-+	entry->pfn = page_to_pfn(page);
-+	return 0;
-+}
-+
- /**
-  * Save page @page to the persistent memory node associated with stream @ps.
-  * The stream must be initialized with pram_prepare_save().
-@@ -231,10 +332,66 @@ void pram_finish_load(struct pram_stream *ps)
-  * have the PRAM_PAGE_LRU bit set.
-  *
-  * Returns 0 on success, -errno on failure.
-+ *
-+ * Error values:
-+ *    %ENOMEM: insufficient amount of memory available
-+ *
-+ * Saving a page to persistent memory is simply incrementing its refcount so
-+ * that it will not get freed after the last user puts it. That means it is
-+ * safe to use the page as usual after it has been saved.
-  */
- int pram_save_page(struct pram_stream *ps, struct page *page, int flags)
- {
--	return -ENOSYS;
-+	struct pram_node *node = ps->node;
-+
-+	BUG_ON(node->type != PRAM_PAGE_STREAM);
-+	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_SAVE);
-+
-+	BUG_ON(PageCompound(page));
-+
-+	return __pram_save_page(ps, page, flags);
 +}
 +
 +/*
-+ * Extract the next page from persistent memory freeing a PRAM link if it
-+ * becomes empty.
++ * Mark pages that belong to persistent memory reserved.
++ *
++ * This function should be called at boot time as early as possible to prevent
++ * persistent memory from being recycled.
 + */
-+static struct page *__pram_load_page(struct pram_stream *ps, int *flags)
++void __init pram_reserve(void)
 +{
-+	struct pram_node *node = ps->node;
-+	struct pram_link *link = ps->link;
-+	struct pram_entry *entry;
-+	struct page *page = NULL;
-+	bool eof = false;
++	unsigned long node_pfn;
++	struct pram_node *node;
++	int err = 0;
 +
-+	if (!link)
-+		return NULL;
++	if (!pram_sb_pfn)
++		return;
 +
-+	BUG_ON(ps->page_index >= PRAM_LINK_ENTRIES_MAX);
-+	entry = &link->entry[ps->page_index];
-+	if (entry->pfn) {
-+		page = pfn_to_page(entry->pfn);
-+		if (flags)
-+			*flags = entry->flags;
++	pr_info("PRAM: Examining persistent memory...\n");
++
++	err = pram_reserve_page(pram_sb_pfn);
++	if (err)
++		goto out;
++	pram_sb = pram_map_meta(pram_sb_pfn);
++	if (IS_ERR(pram_sb)) {
++		pram_unreserve_page(pram_sb_pfn);
++		err = PTR_ERR(pram_sb);
++		goto out;
++	}
++
++	node_pfn = pram_sb->node_pfn;
++	while (node_pfn) {
++		err = pram_reserve_page(node_pfn);
++		if (err)
++			break;
++		node = pram_map_meta(node_pfn);
++		if (IS_ERR(node)) {
++			pram_unreserve_page(node_pfn);
++			err = PTR_ERR(node);
++			break;
++		}
++		err = pram_reserve_node(node);
++		if (err) {
++			pram_unreserve_page(node_pfn);
++			break;
++		}
++		node_pfn = node->node_pfn;
++	}
++
++	if (err) {
++		/* undo */
++		unsigned long bad_pfn = node_pfn;
++		node_pfn = pram_sb->node_pfn;
++		while (node_pfn != bad_pfn) {
++			node = pfn_to_kaddr(node_pfn);
++			pram_unreserve_node(node);
++			node_pfn = node->node_pfn;
++			pram_unreserve_page(node_pfn);
++		}
++		pram_unreserve_page(pram_sb_pfn);
++	}
++
++out:
++	if (err) {
++		BUG_ON(pram_reserved_pages > 0);
++		pr_err("PRAM: Reservation failed: %d\n", err);
++		pram_sb = NULL;
 +	} else
-+		eof = true;
++		pr_info("PRAM: %lu pages reserved\n", pram_reserved_pages);
++}
 +
-+	/* clear to avoid double free (see pram_truncate_link()) */
-+	memset(entry, 0, sizeof(*entry));
-+
-+	if (eof || ++ps->page_index >= PRAM_LINK_ENTRIES_MAX) {
-+		if (link->link_pfn) {
-+			WARN_ON(eof);
-+			ps->link = pfn_to_kaddr(link->link_pfn);
-+			ps->page_index = 0;
-+		} else
-+			ps->link = NULL;
-+
-+		node->link_pfn = link->link_pfn;
-+		pram_free_page(link);
-+	}
-+
-+	return page;
- }
- 
- /**
-@@ -251,7 +408,12 @@ int pram_save_page(struct pram_stream *ps, struct page *page, int flags)
-  */
- struct page *pram_load_page(struct pram_stream *ps, int *flags)
+ static inline struct page *pram_alloc_page(gfp_t gfp_mask)
  {
--	return NULL;
-+	struct pram_node *node = ps->node;
-+
-+	BUG_ON(node->type != PRAM_PAGE_STREAM);
-+	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_LOAD);
-+
-+	return __pram_load_page(ps, flags);
+ 	return alloc_page(gfp_mask);
+@@ -109,6 +303,9 @@ static inline struct page *pram_alloc_page(gfp_t gfp_mask)
+ 
+ static inline void pram_free_page(void *addr)
+ {
++	/* since early reservations are used for preserving persistent
++	 * memory, the page may have the reserved bit set */
++	ClearPageReserved(virt_to_page(addr));
+ 	free_page((unsigned long)addr);
  }
  
- /**
+@@ -146,6 +343,9 @@ static void pram_truncate_link(struct pram_link *link)
+ 		if (!pfn)
+ 			continue;
+ 		page = pfn_to_page(pfn);
++		/* since early reservations are used for preserving persistent
++		 * memory, the page may have the reserved bit set */
++		ClearPageReserved(page);
+ 		put_page(page);
+ 	}
+ }
+@@ -426,6 +626,9 @@ static struct page *__pram_load_page(struct pram_stream *ps, int *flags)
+ 	entry = &link->entry[ps->page_index];
+ 	if (entry->pfn) {
+ 		page = pfn_to_page(entry->pfn);
++		/* since early reservations are used for preserving persistent
++		 * memory, the page may have the reserved bit set */
++		ClearPageReserved(page);
+ 		if (flags)
+ 			*flags = entry->flags;
+ 	} else
 -- 
 1.7.10.4
 
