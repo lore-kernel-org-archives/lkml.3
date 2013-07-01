@@ -1,196 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3GATeu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 15:34:50 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44578 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754901Ab3GATes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 15:34:48 -0400
-From: Luciano Coelho <coelho@ti.com>
-To: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <--linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-wireless@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [RFC] wlcore: sdio: add wilink clock providers
-Date: Mon, 1 Jul 2013 22:34:10 +0300
-Message-ID: <1372707250-11998-1-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755114Ab3GATlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 15:41:06 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:55015 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab3GATlE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 15:41:04 -0400
+Date: Mon, 1 Jul 2013 13:40:58 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [GIT PULL] PCI changes for v3.11
+Message-ID: <20130701194058.GA10966@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add refclock and tcxoclock as clock providers in WiLink.  These clocks
-are not accesible outside the WiLink module, but they are registered
-in the clock framework anyway.  Only the WiLink chip consumes these
-clocks.
+The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
-In theory, the WiLink chip could be connected to external clocks
-instead of using these internal clocks, so make the clock consumer
-code generic enough.  If external clocks are used, then the internal
-clock device tree nodes are not necessary, but the external ones must
-be specified.
+  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
----
+are available in the git repository at:
 
-Hi,
+  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/pci-v3.11-changes
 
-I came up with this code, trying to make the WiLink clocks definitions
-as generic as possible and use existing fixed-clock bindings.  This
-looks relatively clean to me, even though it adds some complexity.
-But I think it's better than the original bindings I had defined.
+for you to fetch changes up to a0f75f9d495b3905b4c658c1d813a127f558a350:
 
-I still need to take care of the XTAL/not-XTAl boolean, but I will do
-that separately.
+  Merge branch 'pci/misc' into next (2013-06-26 15:55:52 -0600)
 
-This patch will be split (to take away the Panda DTS part) and
-squashed in other patches in my series.
+----------------------------------------------------------------
 
-Please let me know what you think.
+PCI changes for the v3.11 merge window:
 
---
-Cheers,
-Luca.
+  PCI device hotplug
+    - Add pci_alloc_dev() interface (Gu Zheng)
+    - Add pci_bus_get()/put() for reference counting (Jiang Liu)
+    - Fix SR-IOV reference count issues (Jiang Liu)
+    - Remove unused acpi_pci_roots list (Jiang Liu)
 
- arch/arm/boot/dts/omap4-panda-common.dtsi |   16 ++++++++---
- drivers/net/wireless/ti/wlcore/sdio.c     |   43 ++++++++++++++++++++++++++---
- 2 files changed, 51 insertions(+), 8 deletions(-)
+  MSI
+    - Conserve interrupt resources on x86 (Alexander Gordeev)
 
-diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 670c3ce..7f061b8 100644
---- a/arch/arm/boot/dts/omap4-panda-common.dtsi
-+++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
-@@ -65,11 +65,19 @@
- 		enable-active-high;
- 	};
- 
-+
- 	wlan {
--	     compatible = "ti,wilink6";
--	     interrupt-parent = <&gpio2>;
--	     interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
--	     refclock = <2>;		/* 38.4 MHz */
-+		compatible = "ti,wilink6";
-+		interrupt-parent = <&gpio2>;
-+		interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
-+		clocks = <&refclock>;
-+		clock-names = "refclock";
-+
-+		refclock: refclock {
-+			compatible = "ti,wilink-clock";
-+			#clock-cells = <0>;
-+			clock-frequency = <38400000>;
-+		};
- 	 };
- };
- 
-diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/ti/wlcore/sdio.c
-index 5b08620..60fce49 100644
---- a/drivers/net/wireless/ti/wlcore/sdio.c
-+++ b/drivers/net/wireless/ti/wlcore/sdio.c
-@@ -34,6 +34,7 @@
- #include <linux/wl12xx.h>
- #include <linux/pm_runtime.h>
- #include <linux/printk.h>
-+#include <linux/clk-provider.h>
- 
- #include "wlcore.h"
- #include "wl12xx_80211.h"
-@@ -52,6 +53,7 @@ static bool dump = false;
- struct wl12xx_sdio_glue {
- 	struct device *dev;
- 	struct platform_device *core;
-+	struct clk *refclock, *tcxoclock;
- };
- 
- static const struct sdio_device_id wl1271_devices[] = {
-@@ -214,10 +216,16 @@ static struct wl1271_if_operations sdio_ops = {
- 	.set_block_size = wl1271_sdio_set_block_size,
- };
- 
-+static const struct of_device_id wlcore_sdio_of_clk_match_table[] = {
-+	{ .compatible = "ti,wilink-clock" },
-+};
-+
- static struct wl12xx_platform_data *wlcore_get_pdata_from_of(struct device *dev)
- {
- 	struct wl12xx_platform_data *pdata;
- 	struct device_node *np = dev->of_node;
-+	struct device_node *clock_node;
-+	struct wl12xx_sdio_glue *glue = sdio_get_drvdata(dev_to_sdio_func(dev));
- 
- 	if (!np) {
- 		np = of_find_matching_node(NULL, dev->driver->of_match_table);
-@@ -241,11 +249,28 @@ static struct wl12xx_platform_data *wlcore_get_pdata_from_of(struct device *dev)
- 		goto out_free;
- 	}
- 
-+	for_each_matching_node(clock_node, wlcore_sdio_of_clk_match_table)
-+		of_fixed_clk_setup(clock_node);
-+
- 	/* TODO: make sure we have this when needed (ie. for WL6 and WL7) */
--	of_property_read_u32(np, "refclock", &pdata->ref_clock_freq);
-+	glue->refclock = of_clk_get_by_name(np, "refclock");
-+	if (IS_ERR(glue->refclock)) {
-+		dev_err(dev, "couldn't find refclock on the device tree\n");
-+		glue->refclock = NULL;
-+	} else {
-+		clk_prepare_enable(glue->refclock);
-+		pdata->ref_clock_freq = clk_get_rate(glue->refclock);
-+	}
- 
- 	/* TODO: make sure we have this when needed (ie. for WL7) */
--	of_property_read_u32(np, "tcxoclock", &pdata->tcxo_clock_freq);
-+	glue->tcxoclock = of_clk_get_by_name(np, "tcxoclock");
-+	if (IS_ERR(glue->tcxoclock)) {
-+		dev_err(dev, "couldn't find tcxoclock on the device tree\n");
-+		glue->tcxoclock = NULL;
-+	} else {
-+		clk_prepare_enable(glue->tcxoclock);
-+		pdata->ref_clock_freq = clk_get_rate(glue->tcxoclock);
-+	}
- 
- 	goto out;
- 
-@@ -291,6 +316,8 @@ static int wl1271_probe(struct sdio_func *func,
- 	/* Use block mode for transferring over one block size of data */
- 	func->card->quirks |= MMC_QUIRK_BLKSZ_FOR_BYTE_MODE;
- 
-+	sdio_set_drvdata(func, glue);
-+
- 	/* The pdata allocated here is freed when the device is freed,
- 	 * so we don't need an additional out label to free it in case
- 	 * of error further on.
-@@ -316,8 +343,6 @@ static int wl1271_probe(struct sdio_func *func,
- 	if (mmcflags & MMC_PM_KEEP_POWER)
- 		pdev_data->pwr_in_suspend = true;
- 
--	sdio_set_drvdata(func, glue);
--
- 	/* Tell PM core that we don't need the card to be powered now */
- 	pm_runtime_put_noidle(&func->dev);
- 
-@@ -384,6 +409,16 @@ static void wl1271_remove(struct sdio_func *func)
- {
- 	struct wl12xx_sdio_glue *glue = sdio_get_drvdata(func);
- 
-+	if (glue->refclock) {
-+		clk_disable_unprepare(glue->refclock);
-+		clk_put(glue->refclock);
-+	}
-+
-+	if (glue->tcxoclock) {
-+		clk_disable_unprepare(glue->tcxoclock);
-+		clk_put(glue->tcxoclock);
-+	}
-+
- 	/* Undo decrement done above in wl1271_probe */
- 	pm_runtime_get_noresume(&func->dev);
- 
--- 
-1.7.10.4
+  AER
+    - Force fatal severity when component has been reset (Betty Dall)
+    - Reset link below Root Port as well as Downstream Port (Betty Dall)
+    - Fix "Firmware first" flag setting (Bjorn Helgaas)
+    - Don't parse HEST for non-PCIe devices (Bjorn Helgaas)
 
+  ASPM
+    - Warn when we can't disable ASPM as driver requests (Bjorn Helgaas)
+
+  Miscellaneous
+    - Add CircuitCo PCI IDs (Darren Hart)
+    - Add AMD CZ SATA and SMBus PCI IDs (Shane Huang)
+    - Work around Ivytown NTB BAR size issue (Jon Mason)
+    - Detect invalid initial BAR values (Kevin Hao)
+    - Add pcibios_release_device() (Sebastian Ott)
+    - Fix powerpc & sparc PCI_UNKNOWN power state usage (Bjorn Helgaas)
+
+----------------------------------------------------------------
+Alexander Gordeev (3):
+      PCI: Allocate only as many MSI vectors as requested by driver
+      x86/MSI: Conserve interrupt resources when using multiple-MSIs
+      x86/MSI: Conserve interrupt resources when using multiple-MSIs
+
+Betty Dall (4):
+      PCI/AER: Move AER severity defines to aer.h
+      PCI/AER: Remove "extern" from function declarations
+      ACPI / APEI: Force fatal AER severity when component has been reset
+      PCI/AER: Reset link for devices below Root Port or Downstream Port
+
+Bjorn Helgaas (21):
+      PCI/ACPI: Check acpi_resource_to_address64() return value
+      powerpc/PCI: Use PCI_UNKNOWN for unknown power state
+      sparc/PCI: Use PCI_UNKNOWN for unknown power state
+      PCI/ASPM: Warn when driver asks to disable ASPM, but we can't do it
+      Merge branch 'pci/misc' into next
+      Merge branch 'pci/kevin-bus-to-resource' into next
+      Merge branch 'pci/misc' into next
+      Merge branch 'pci/jiang-remove-global-list' into next
+      Merge branch 'pci/shane-amd-ahci-i2c' into next
+      Merge branch 'pci/alexander-msi' into next
+      Merge branch 'pci/jiang-iov-fixes' into next
+      PCI/AER: Don't parse HEST table for non-PCIe devices
+      PCI/AER: Factor out HEST device type matching
+      PCI/AER: Set dev->__aer_firmware_first only for matching devices
+      Merge branch 'pci/betty-aer-v3' into next
+      Merge branch 'pci/misc' into next
+      PCI: Return early on allocation failures to unindent mainline code
+      Merge branch 'pci/jiang-bus-lock-v3' into next
+      Merge branch 'pci/alexander-msi' into next
+      MAINTAINERS: Add ACPI folks for ACPI-related things under drivers/pci
+      Merge branch 'pci/misc' into next
+
+Darren Hart (1):
+      PCI: Add CircuitCo vendor ID and subsystem ID
+
+Gu Zheng (2):
+      PCI: Introduce pci_alloc_dev(struct pci_bus*) to replace alloc_pci_dev()
+      PCI: Convert alloc_pci_dev(void) to pci_alloc_dev(bus)
+
+Jiang Liu (13):
+      PCI: Introduce pci_bus_{get|put}() to manage PCI bus reference count
+      PCI/ACPI: Combine duplicate adjacent "if" tests
+      PCI/ACPI: Introduce "handle" local for economy of expression
+      PCI/ACPI: Remove unused global list acpi_pci_roots
+      PCI/ACPI: Use dev_printk(), acpi_handle_print(), pr_xxx() when possible
+      PCI: Hide remove and rescan sysfs interfaces for SR-IOV virtual functions
+      ia64/PCI: Clean up pci_scan_root_bus() usage
+      PCI: Fix refcount issue in pci_create_root_bus() error recovery path
+      PCI: Rename pci_release_bus_bridge_dev() to pci_release_host_bridge_dev()
+      m68k/PCI: Remove redundant call of pci_bus_add_devices()
+      unicore32/PCI: Remove redundant call of pci_bus_add_devices()
+      PCI: Drop redundant setting of bus->is_added in virtfn_add_bus()
+      PCI: Simplify IOV implementation and fix reference count races
+
+Jingoo Han (1):
+      PCI: Replace strict_strtoul() with kstrtoul()
+
+Jon Mason (1):
+      PCI: Work around Ivytown NTB BAR size issue
+
+Kevin Hao (3):
+      PCI: Add 0x prefix to BAR register position in __pci_read_base()
+      PCI: Consolidate calls to pcibios_bus_to_resource() in __pci_read_base()
+      PCI: Unset resource if initial BAR value is invalid
+
+Libo Chen (1):
+      PCI: Convert ioapic.c to module_pci_driver
+
+Rafael J. Wysocki (1):
+      PCI / ACPI / PM: Use correct power state strings in messages
+
+Sebastian Ott (1):
+      PCI: Add pcibios_release_device()
+
+Shane Huang (3):
+      PCI: Put Hudson-2 device IDs together
+      ahci: Add AMD CZ SATA device ID
+      i2c-piix4: Add AMD CZ SMBus device ID
+
+Wang Sheng-Hui (1):
+      PCI: Fix INTC comment typo for pci_swizzle_interrupt_pin()
+
+Xudong Hao (1):
+      PCI: Finish SR-IOV VF setup before adding the device
+
+Yijing Wang (6):
+      x86/PCI: Increase info->res_num before checking pci_use_crs
+      PCI: Fix kerneldoc for pci_disable_link_state()
+      PCI: Replace printks with appropriate pr_*()
+      PCI: Fix comment typo for PCI_EXP_LNKCAP_CLKPM
+      PCI: Fix comment typo for pcie_pme_remove()
+      PCI: Use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
+
+ Documentation/i2c/busses/i2c-piix4 |   2 +-
+ MAINTAINERS                        |   3 +
+ arch/ia64/sn/kernel/io_init.c      |  11 +---
+ arch/m68k/platform/coldfire/pci.c  |   1 -
+ arch/powerpc/kernel/pci_of_scan.c  |   5 +-
+ arch/sparc/kernel/pci.c            |   5 +-
+ arch/unicore32/kernel/pci.c        |   5 --
+ arch/x86/pci/acpi.c                |   7 +--
+ drivers/acpi/apei/ghes.c           |  10 ++++
+ drivers/acpi/pci_root.c            | 101 +++++++++++++-------------------
+ drivers/ata/ahci.c                 |   1 +
+ drivers/char/agp/alpha-agp.c       |   2 +-
+ drivers/char/agp/parisc-agp.c      |   2 +-
+ drivers/i2c/busses/Kconfig         |   1 +
+ drivers/i2c/busses/i2c-piix4.c     |   3 +-
+ drivers/iommu/irq_remapping.c      |  12 ++--
+ drivers/pci/bus.c                  |  15 +++++
+ drivers/pci/ioapic.c               |  13 +----
+ drivers/pci/iov.c                  |  65 +++++++++------------
+ drivers/pci/msi.c                  |  10 +++-
+ drivers/pci/pci-acpi.c             |  10 ++--
+ drivers/pci/pci-sysfs.c            |  48 ++++++++++++----
+ drivers/pci/pci.c                  |  14 ++++-
+ drivers/pci/pcie/aer/aerdrv.h      |   4 --
+ drivers/pci/pcie/aer/aerdrv_acpi.c |  47 +++++++--------
+ drivers/pci/pcie/aer/aerdrv_core.c |  17 +++---
+ drivers/pci/pcie/aspm.c            |  29 +++++++---
+ drivers/pci/pcie/pme.c             |   2 +-
+ drivers/pci/probe.c                | 115 +++++++++++++++++++++++--------------
+ drivers/pci/quirks.c               |  33 +++++++++--
+ drivers/scsi/megaraid.c            |   2 +-
+ include/acpi/acpi_bus.h            |   1 -
+ include/linux/aer.h                |  20 ++++---
+ include/linux/msi.h                |   1 +
+ include/linux/pci.h                |   6 +-
+ include/linux/pci_ids.h            |   7 ++-
+ include/uapi/linux/pci_regs.h      |   2 +-
+ 37 files changed, 361 insertions(+), 271 deletions(-)
