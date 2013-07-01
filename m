@@ -1,33 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab3GAUUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:20:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49031 "EHLO
+	id S1755856Ab3GAUUo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:20:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49014 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414Ab3GAUKf (ORCPT
+	with ESMTP id S1755404Ab3GAUKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:35 -0400
+	Mon, 1 Jul 2013 16:10:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Prarit Bhargava <prarit@redhat.com>, Don Zickus <dzickus@redhat.com>,
-        Don Dutile <ddutile@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Asit Mallick <asit.k.mallick@intel.com>,
-        David Woodhouse <dwmw2@infradead.org>, Joerg Roedel <joro@8bytes.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        =?UTF-8?q?Arkadiusz=20Mi=C5=9Bkiewicz?= <arekm@maven.pl>,
-        linux-pci@vger.kernel.org
-Subject: [ 16/26] iommu/vt-d: add quirk for broken interrupt remapping on 55XX chipsets
-Date: Mon,  1 Jul 2013 13:10:11 -0700
-Message-Id: <20130701200731.731148871@linuxfoundation.org>
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 14/26] net/tg3: Avoid delay during MMIO access
+Date: Mon,  1 Jul 2013 13:10:09 -0700
+Message-Id: <20130701200731.507304695@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,179 +27,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 03bbcb2e7e292838bb0244f5a7816d194c911d62 upstream.
+commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
 
-A few years back intel published a spec update:
-http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+When the EEH error is the result of a fenced host bridge, MMIO accesses
+can be very slow (milliseconds) to timeout and return all 1's,
+thus causing the driver various timeout loops to take way too long and
+trigger soft-lockup warnings (in addition to taking minutes to recover).
 
-For the 5520 and 5500 chipsets which contained an errata (specificially errata
-53), which noted that these chipsets can't properly do interrupt remapping, and
-as a result the recommend that interrupt remapping be disabled in bios.  While
-many vendors have a bios update to do exactly that, not all do, and of course
-not all users update their bios to a level that corrects the problem.  As a
-result, occasionally interrupts can arrive at a cpu even after affinity for that
-interrupt has be moved, leading to lost or spurrious interrupts (usually
-characterized by the message:
-kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+It might be worthwhile to check if for any of these cases, ffffffff is
+a valid possible value, and if not, bail early since that means the HW
+is either gone or isolated. In the meantime, checking that the PCI channel
+is offline would be workaround of the problem.
 
-There have been several incidents recently of people seeing this error, and
-investigation has shown that they have system for which their BIOS level is such
-that this feature was not properly turned off.  As such, it would be good to
-give them a reminder that their systems are vulnurable to this problem.  For
-details of those that reported the problem, please see:
-https://bugzilla.redhat.com/show_bug.cgi?id=887006
-
-[ Joerg: Removed CONFIG_IRQ_REMAP ifdef from early-quirks.c ]
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Prarit Bhargava <prarit@redhat.com>
-CC: Don Zickus <dzickus@redhat.com>
-CC: Don Dutile <ddutile@redhat.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Asit Mallick <asit.k.mallick@intel.com>
-CC: David Woodhouse <dwmw2@infradead.org>
-CC: linux-pci@vger.kernel.org
-CC: Joerg Roedel <joro@8bytes.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Arkadiusz Miśkiewicz <arekm@maven.pl>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/irq_remapping.h |    3 +++
- arch/x86/kernel/early-quirks.c       |   20 ++++++++++++++++++++
- drivers/iommu/intel_irq_remapping.c  |   10 ++++++++++
- drivers/iommu/irq_remapping.c        |    6 ++++++
- drivers/iommu/irq_remapping.h        |    2 ++
- 5 files changed, 41 insertions(+)
+ drivers/net/ethernet/broadcom/tg3.c |   36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/arch/x86/include/asm/irq_remapping.h
-+++ b/arch/x86/include/asm/irq_remapping.h
-@@ -23,11 +23,13 @@
- #define __X86_IRQ_REMAPPING_H
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -743,6 +743,9 @@ static int tg3_ape_lock(struct tg3 *tp,
+ 		status = tg3_ape_read32(tp, gnt + off);
+ 		if (status == bit)
+ 			break;
++		if (pci_channel_offline(tp->pdev))
++			break;
++
+ 		udelay(10);
+ 	}
  
- #include <asm/io_apic.h>
-+#include <linux/irq.h>
- 
- #ifdef CONFIG_IRQ_REMAP
- 
- extern void setup_irq_remapping_ops(void);
- extern int irq_remapping_supported(void);
-+extern void set_irq_remapping_broken(void);
- extern int irq_remapping_prepare(void);
- extern int irq_remapping_enable(void);
- extern void irq_remapping_disable(void);
-@@ -54,6 +56,7 @@ void irq_remap_modify_chip_defaults(stru
- 
- static inline void setup_irq_remapping_ops(void) { }
- static inline int irq_remapping_supported(void) { return 0; }
-+static inline void set_irq_remapping_broken(void) { }
- static inline int irq_remapping_prepare(void) { return -ENODEV; }
- static inline int irq_remapping_enable(void) { return -ENODEV; }
- static inline void irq_remapping_disable(void) { }
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -18,6 +18,7 @@
- #include <asm/apic.h>
- #include <asm/iommu.h>
- #include <asm/gart.h>
-+#include <asm/irq_remapping.h>
- 
- static void __init fix_hypertransport_config(int num, int slot, int func)
- {
-@@ -192,6 +193,21 @@ static void __init ati_bugs_contd(int nu
+@@ -1634,6 +1637,9 @@ static void tg3_wait_for_event_ack(struc
+ 	for (i = 0; i < delay_cnt; i++) {
+ 		if (!(tr32(GRC_RX_CPU_EVENT) & GRC_RX_CPU_DRIVER_EVENT))
+ 			break;
++		if (pci_channel_offline(tp->pdev))
++			break;
++
+ 		udelay(8);
+ 	}
  }
- #endif
+@@ -1812,6 +1818,9 @@ static int tg3_poll_fw(struct tg3 *tp)
+ 		for (i = 0; i < 200; i++) {
+ 			if (tr32(VCPU_STATUS) & VCPU_STATUS_INIT_DONE)
+ 				return 0;
++			if (pci_channel_offline(tp->pdev))
++				return -ENODEV;
++
+ 			udelay(100);
+ 		}
+ 		return -ENODEV;
+@@ -1822,6 +1831,15 @@ static int tg3_poll_fw(struct tg3 *tp)
+ 		tg3_read_mem(tp, NIC_SRAM_FIRMWARE_MBOX, &val);
+ 		if (val == ~NIC_SRAM_FIRMWARE_MBOX_MAGIC1)
+ 			break;
++		if (pci_channel_offline(tp->pdev)) {
++			if (!tg3_flag(tp, NO_FWARE_REPORTED)) {
++				tg3_flag_set(tp, NO_FWARE_REPORTED);
++				netdev_info(tp->dev, "No firmware running\n");
++			}
++
++			break;
++		}
++
+ 		udelay(10);
+ 	}
  
-+static void __init intel_remapping_check(int num, int slot, int func)
-+{
-+	u8 revision;
-+
-+	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
-+
-+	/*
-+	 * Revision 0x13 of this chipset supports irq remapping
-+	 * but has an erratum that breaks its behavior, flag it as such
-+	 */
-+	if (revision == 0x13)
-+		set_irq_remapping_broken();
-+
-+}
-+
- #define QFLAG_APPLY_ONCE 	0x1
- #define QFLAG_APPLIED		0x2
- #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
-@@ -221,6 +237,10 @@ static struct chipset early_qrk[] __init
- 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
- 	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
- 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
-+	{ PCI_VENDOR_ID_INTEL, 0x3403, PCI_CLASS_BRIDGE_HOST,
-+	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
-+	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
-+	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
- 	{}
- };
+@@ -3411,6 +3429,8 @@ static int tg3_nvram_write_block_buffere
+ 		ret = tg3_nvram_exec_cmd(tp, nvram_cmd);
+ 		if (ret)
+ 			break;
++		if (pci_channel_offline(tp->pdev))
++			return -EBUSY;
+ 	}
+ 	return ret;
+ }
+@@ -8224,6 +8244,14 @@ static int tg3_stop_block(struct tg3 *tp
+ 	tw32_f(ofs, val);
  
---- a/drivers/iommu/intel_irq_remapping.c
-+++ b/drivers/iommu/intel_irq_remapping.c
-@@ -524,6 +524,16 @@ static int __init intel_irq_remapping_su
+ 	for (i = 0; i < MAX_WAIT_CNT; i++) {
++		if (pci_channel_offline(tp->pdev)) {
++			dev_err(&tp->pdev->dev,
++				"tg3_stop_block device offline, "
++				"ofs=%lx enable_bit=%x\n",
++				ofs, enable_bit);
++			return -ENODEV;
++		}
++
+ 		udelay(100);
+ 		val = tr32(ofs);
+ 		if ((val & enable_bit) == 0)
+@@ -8247,6 +8275,13 @@ static int tg3_abort_hw(struct tg3 *tp,
  
- 	if (disable_irq_remap)
- 		return 0;
-+	if (irq_remap_broken) {
-+		WARN_TAINT(1, TAINT_FIRMWARE_WORKAROUND,
-+			   "This system BIOS has enabled interrupt remapping\n"
-+			   "on a chipset that contains an erratum making that\n"
-+			   "feature unstable.  To maintain system stability\n"
-+			   "interrupt remapping is being disabled.  Please\n"
-+			   "contact your BIOS vendor for an update\n");
-+		disable_irq_remap = 1;
-+		return 0;
+ 	tg3_disable_ints(tp);
+ 
++	if (pci_channel_offline(tp->pdev)) {
++		tp->rx_mode &= ~(RX_MODE_ENABLE | TX_MODE_ENABLE);
++		tp->mac_mode &= ~MAC_MODE_TDE_ENABLE;
++		err = -ENODEV;
++		goto err_no_dev;
 +	}
- 
- 	if (!dmar_ir_support())
- 		return 0;
---- a/drivers/iommu/irq_remapping.c
-+++ b/drivers/iommu/irq_remapping.c
-@@ -18,6 +18,7 @@
- int irq_remapping_enabled;
- 
- int disable_irq_remap;
-+int irq_remap_broken;
- int disable_sourceid_checking;
- int no_x2apic_optout;
- 
-@@ -210,6 +211,11 @@ void __init setup_irq_remapping_ops(void
- #endif
- }
- 
-+void set_irq_remapping_broken(void)
-+{
-+	irq_remap_broken = 1;
-+}
 +
- int irq_remapping_supported(void)
- {
- 	if (disable_irq_remap)
---- a/drivers/iommu/irq_remapping.h
-+++ b/drivers/iommu/irq_remapping.h
-@@ -32,6 +32,7 @@ struct pci_dev;
- struct msi_msg;
+ 	tp->rx_mode &= ~RX_MODE_ENABLE;
+ 	tw32_f(MAC_RX_MODE, tp->rx_mode);
+ 	udelay(10);
+@@ -8295,6 +8330,7 @@ static int tg3_abort_hw(struct tg3 *tp,
+ 	err |= tg3_stop_block(tp, BUFMGR_MODE, BUFMGR_MODE_ENABLE, silent);
+ 	err |= tg3_stop_block(tp, MEMARB_MODE, MEMARB_MODE_ENABLE, silent);
  
- extern int disable_irq_remap;
-+extern int irq_remap_broken;
- extern int disable_sourceid_checking;
- extern int no_x2apic_optout;
- extern int irq_remapping_enabled;
-@@ -89,6 +90,7 @@ extern struct irq_remap_ops amd_iommu_ir
- 
- #define irq_remapping_enabled 0
- #define disable_irq_remap     1
-+#define irq_remap_broken      0
- 
- #endif /* CONFIG_IRQ_REMAP */
- 
++err_no_dev:
+ 	for (i = 0; i < tp->irq_cnt; i++) {
+ 		struct tg3_napi *tnapi = &tp->napi[i];
+ 		if (tnapi->hw_status)
 
 
