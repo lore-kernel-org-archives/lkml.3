@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab3GAUSI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 16:18:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49067 "EHLO
+	id S1755620Ab3GAUSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 16:18:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49063 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755459Ab3GAUKl (ORCPT
+	with ESMTP id S1754884Ab3GAUKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 16:10:41 -0400
+	Mon, 1 Jul 2013 16:10:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 25/26] mac80211: work around broken APs not including HT info
-Date: Mon,  1 Jul 2013 13:10:20 -0700
-Message-Id: <20130701200732.696396905@linuxfoundation.org>
+        Michael Olbrich <m.olbrich@pengutronix.de>,
+        Bernd Krumboeck <krumboeck@universalnet.at>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Oliver Hartkopp <socketcan@hartkopp.net>
+Subject: [ 24/26] can: usb_8dev: unregister netdev before free()ing
+Date: Mon,  1 Jul 2013 13:10:19 -0700
+Message-Id: <20130701200732.588148188@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130701200729.872850414@linuxfoundation.org>
 References: <20130701200729.872850414@linuxfoundation.org>
@@ -26,211 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 35d865afbbdf79e492f7d61df92b1a9e1d93d26f upstream.
+commit 4afe2156eb639e563d6ef0c2706b66ea400348b2 upstream.
 
-There are some APs, notably 2G/3G/4G Wifi routers, specifically the
-"Onda PN51T", "Vodafone PocketWiFi 2", "ZTE MF60" and a similar
-T-Mobile branded device [1] that erroneously don't include all the
-needed information in (re)association response frames. Work around
-this by assuming the information is the same as it was in the
-beacon or probe response and using the data from there instead.
+The usb_8dev hardware has problems on some xhci USB hosts. The driver fails to
+read the firmware revision in the probe function. This leads to the following
+Oops:
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=58881.
+    [ 3356.635912] kernel BUG at net/core/dev.c:5701!
 
-[1] https://bbs.archlinux.org/viewtopic.php?pid=1277305
+The driver tries to free the netdev, which has already been registered, without
+unregistering it.
 
-Note that this requires marking the first ieee802_11_parse_elems()
-argument const, otherwise we'd get a compiler warning.
+This patch fixes the problem by unregistering the netdev in the error path.
 
-Reported-and-tested-by: Michal Zajac <manwe@manwe.pl>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reported-by: Michael Olbrich <m.olbrich@pengutronix.de>
+Reviewed-by: Bernd Krumboeck <krumboeck@universalnet.at>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- net/mac80211/ieee80211_i.h |    4 +-
- net/mac80211/mlme.c        |   87 +++++++++++++++++++++++++++++++++++++++++----
- net/mac80211/util.c        |    6 +--
- 3 files changed, 85 insertions(+), 12 deletions(-)
+ drivers/net/can/usb/usb_8dev.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1520,9 +1520,9 @@ static inline void ieee80211_tx_skb(stru
- 	ieee80211_tx_skb_tid(sdata, skb, 7);
- }
+--- a/drivers/net/can/usb/usb_8dev.c
++++ b/drivers/net/can/usb/usb_8dev.c
+@@ -977,7 +977,7 @@ static int usb_8dev_probe(struct usb_int
+ 	err = usb_8dev_cmd_version(priv, &version);
+ 	if (err) {
+ 		netdev_err(netdev, "can't get firmware version\n");
+-		goto cleanup_cmd_msg_buffer;
++		goto cleanup_unregister_candev;
+ 	} else {
+ 		netdev_info(netdev,
+ 			 "firmware: %d.%d, hardware: %d.%d\n",
+@@ -989,6 +989,9 @@ static int usb_8dev_probe(struct usb_int
  
--void ieee802_11_parse_elems(u8 *start, size_t len,
-+void ieee802_11_parse_elems(const u8 *start, size_t len,
- 			    struct ieee802_11_elems *elems);
--u32 ieee802_11_parse_elems_crc(u8 *start, size_t len,
-+u32 ieee802_11_parse_elems_crc(const u8 *start, size_t len,
- 			       struct ieee802_11_elems *elems,
- 			       u64 filter, u32 crc);
- u32 ieee80211_mandatory_rates(struct ieee80211_local *local,
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -2422,8 +2422,11 @@ static bool ieee80211_assoc_success(stru
- 	u16 capab_info, aid;
- 	struct ieee802_11_elems elems;
- 	struct ieee80211_bss_conf *bss_conf = &sdata->vif.bss_conf;
-+	const struct cfg80211_bss_ies *bss_ies = NULL;
-+	struct ieee80211_mgd_assoc_data *assoc_data = ifmgd->assoc_data;
- 	u32 changed = 0;
- 	int err;
-+	bool ret;
+ 	return 0;
  
- 	/* AssocResp and ReassocResp have identical structure */
- 
-@@ -2455,21 +2458,86 @@ static bool ieee80211_assoc_success(stru
- 	ifmgd->aid = aid;
- 
- 	/*
-+	 * Some APs are erroneously not including some information in their
-+	 * (re)association response frames. Try to recover by using the data
-+	 * from the beacon or probe response. This seems to afflict mobile
-+	 * 2G/3G/4G wifi routers, reported models include the "Onda PN51T",
-+	 * "Vodafone PocketWiFi 2", "ZTE MF60" and a similar T-Mobile device.
-+	 */
-+	if ((assoc_data->wmm && !elems.wmm_param) ||
-+	    (!(ifmgd->flags & IEEE80211_STA_DISABLE_HT) &&
-+	     (!elems.ht_cap_elem || !elems.ht_operation)) ||
-+	    (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT) &&
-+	     (!elems.vht_cap_elem || !elems.vht_operation))) {
-+		const struct cfg80211_bss_ies *ies;
-+		struct ieee802_11_elems bss_elems;
++cleanup_unregister_candev:
++	unregister_netdev(priv->netdev);
 +
-+		rcu_read_lock();
-+		ies = rcu_dereference(cbss->ies);
-+		if (ies)
-+			bss_ies = kmemdup(ies, sizeof(*ies) + ies->len,
-+					  GFP_ATOMIC);
-+		rcu_read_unlock();
-+		if (!bss_ies)
-+			return false;
-+
-+		ieee802_11_parse_elems(bss_ies->data, bss_ies->len,
-+				       &bss_elems);
-+		if (assoc_data->wmm &&
-+		    !elems.wmm_param && bss_elems.wmm_param) {
-+			elems.wmm_param = bss_elems.wmm_param;
-+			sdata_info(sdata,
-+				   "AP bug: WMM param missing from AssocResp\n");
-+		}
-+
-+		/*
-+		 * Also check if we requested HT/VHT, otherwise the AP doesn't
-+		 * have to include the IEs in the (re)association response.
-+		 */
-+		if (!elems.ht_cap_elem && bss_elems.ht_cap_elem &&
-+		    !(ifmgd->flags & IEEE80211_STA_DISABLE_HT)) {
-+			elems.ht_cap_elem = bss_elems.ht_cap_elem;
-+			sdata_info(sdata,
-+				   "AP bug: HT capability missing from AssocResp\n");
-+		}
-+		if (!elems.ht_operation && bss_elems.ht_operation &&
-+		    !(ifmgd->flags & IEEE80211_STA_DISABLE_HT)) {
-+			elems.ht_operation = bss_elems.ht_operation;
-+			sdata_info(sdata,
-+				   "AP bug: HT operation missing from AssocResp\n");
-+		}
-+		if (!elems.vht_cap_elem && bss_elems.vht_cap_elem &&
-+		    !(ifmgd->flags & IEEE80211_STA_DISABLE_VHT)) {
-+			elems.vht_cap_elem = bss_elems.vht_cap_elem;
-+			sdata_info(sdata,
-+				   "AP bug: VHT capa missing from AssocResp\n");
-+		}
-+		if (!elems.vht_operation && bss_elems.vht_operation &&
-+		    !(ifmgd->flags & IEEE80211_STA_DISABLE_VHT)) {
-+			elems.vht_operation = bss_elems.vht_operation;
-+			sdata_info(sdata,
-+				   "AP bug: VHT operation missing from AssocResp\n");
-+		}
-+	}
-+
-+	/*
- 	 * We previously checked these in the beacon/probe response, so
- 	 * they should be present here. This is just a safety net.
- 	 */
- 	if (!(ifmgd->flags & IEEE80211_STA_DISABLE_HT) &&
- 	    (!elems.wmm_param || !elems.ht_cap_elem || !elems.ht_operation)) {
- 		sdata_info(sdata,
--			   "HT AP is missing WMM params or HT capability/operation in AssocResp\n");
--		return false;
-+			   "HT AP is missing WMM params or HT capability/operation\n");
-+		ret = false;
-+		goto out;
- 	}
+ cleanup_cmd_msg_buffer:
+ 	kfree(priv->cmd_msg_buffer);
  
- 	if (!(ifmgd->flags & IEEE80211_STA_DISABLE_VHT) &&
- 	    (!elems.vht_cap_elem || !elems.vht_operation)) {
- 		sdata_info(sdata,
--			   "VHT AP is missing VHT capability/operation in AssocResp\n");
--		return false;
-+			   "VHT AP is missing VHT capability/operation\n");
-+		ret = false;
-+		goto out;
- 	}
- 
- 	mutex_lock(&sdata->local->sta_mtx);
-@@ -2480,7 +2548,8 @@ static bool ieee80211_assoc_success(stru
- 	sta = sta_info_get(sdata, cbss->bssid);
- 	if (WARN_ON(!sta)) {
- 		mutex_unlock(&sdata->local->sta_mtx);
--		return false;
-+		ret = false;
-+		goto out;
- 	}
- 
- 	sband = local->hw.wiphy->bands[ieee80211_get_sdata_band(sdata)];
-@@ -2533,7 +2602,8 @@ static bool ieee80211_assoc_success(stru
- 			   sta->sta.addr);
- 		WARN_ON(__sta_info_destroy(sta));
- 		mutex_unlock(&sdata->local->sta_mtx);
--		return false;
-+		ret = false;
-+		goto out;
- 	}
- 
- 	mutex_unlock(&sdata->local->sta_mtx);
-@@ -2573,7 +2643,10 @@ static bool ieee80211_assoc_success(stru
- 	ieee80211_sta_rx_notify(sdata, (struct ieee80211_hdr *)mgmt);
- 	ieee80211_sta_reset_beacon_monitor(sdata);
- 
--	return true;
-+	ret = true;
-+ out:
-+	kfree(bss_ies);
-+	return ret;
- }
- 
- static enum rx_mgmt_action __must_check
---- a/net/mac80211/util.c
-+++ b/net/mac80211/util.c
-@@ -626,12 +626,12 @@ void ieee80211_queue_delayed_work(struct
- }
- EXPORT_SYMBOL(ieee80211_queue_delayed_work);
- 
--u32 ieee802_11_parse_elems_crc(u8 *start, size_t len,
-+u32 ieee802_11_parse_elems_crc(const u8 *start, size_t len,
- 			       struct ieee802_11_elems *elems,
- 			       u64 filter, u32 crc)
- {
- 	size_t left = len;
--	u8 *pos = start;
-+	const u8 *pos = start;
- 	bool calc_crc = filter != 0;
- 	DECLARE_BITMAP(seen_elems, 256);
- 
-@@ -877,7 +877,7 @@ u32 ieee802_11_parse_elems_crc(u8 *start
- 	return crc;
- }
- 
--void ieee802_11_parse_elems(u8 *start, size_t len,
-+void ieee802_11_parse_elems(const u8 *start, size_t len,
- 			    struct ieee802_11_elems *elems)
- {
- 	ieee802_11_parse_elems_crc(start, len, elems, 0, 0);
 
 
