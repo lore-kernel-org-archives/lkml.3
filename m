@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3GADqi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Jun 2013 23:46:38 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:54916
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751864Ab3GADqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752472Ab3GADqg (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 30 Jun 2013 23:46:36 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:21483
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751864Ab3GADqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Jun 2013 23:46:35 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
 From: <hongbo.zhang@freescale.com>
 To: <vinod.koul@intel.com>, <djbw@fb.com>
 CC: <scottwood@freescale.com>, <vakul@freescale.com>, <leoLi@freescale.com>,
         <linux-kernel@vger.kernel.org>,
         Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH 2/2] DMA: Freescale: update driver to support 8-channel DMA engine
-Date: Mon, 1 Jul 2013 11:46:18 +0800
-Message-ID: <1372650378-2936-2-git-send-email-hongbo.zhang@freescale.com>
+Subject: [PATCH 1/2] DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+Date: Mon, 1 Jul 2013 11:46:17 +0800
+Message-ID: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -30,135 +28,225 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-This patch adds support to 8-channel DMA engine, thus the driver works for both
-the new 8-channel and the legacy 4-channel DMA engines.
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch add
+the device tree nodes for them.
 
 Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
 ---
- drivers/dma/fsldma.c |   48 ++++++++++++++++++++++++++++++++++--------------
- drivers/dma/fsldma.h |    4 ++--
- 2 files changed, 36 insertions(+), 16 deletions(-)
+ arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi |   90 +++++++++++++++++++++++++++
+ arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi |   90 +++++++++++++++++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
+ 3 files changed, 182 insertions(+), 2 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 4fc2980..0f453ea 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -1119,27 +1119,33 @@ static irqreturn_t fsldma_ctrl_irq(int irq, void *data)
- 	struct fsldma_device *fdev = data;
- 	struct fsldma_chan *chan;
- 	unsigned int handled = 0;
--	u32 gsr, mask;
-+	u8 chan_sr[round_up(FSL_DMA_MAX_CHANS_PER_DEVICE, 4)];
-+	u32 gsr;
- 	int i;
- 
--	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ? in_be32(fdev->regs)
--						   : in_le32(fdev->regs);
--	mask = 0xff000000;
--	dev_dbg(fdev->dev, "IRQ: gsr 0x%.8x\n", gsr);
-+	memset(&chan_sr, 0, sizeof(chan_sr));
-+	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ? in_be32(fdev->regs0)
-+						   : in_le32(fdev->regs0);
-+	memcpy(&chan_sr[0], &gsr, 4);
-+	dev_dbg(fdev->dev, "IRQ: gsr0 0x%.8x\n", gsr);
+diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
+new file mode 100644
+index 0000000..c626c49
+--- /dev/null
++++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
+@@ -0,0 +1,90 @@
++/*
++ * QorIQ DMA device tree stub [ controller @ offset 0x100000 ]
++ *
++ * Copyright 2011-2013 Freescale Semiconductor Inc.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of Freescale Semiconductor nor the
++ *       names of its contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
++ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
++ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
++ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
++ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
 +
-+	if (of_device_is_compatible(fdev->dev->of_node, "fsl,eloplus-dma2")) {
-+		gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ?
-+			in_be32(fdev->regs1) : in_le32(fdev->regs1);
-+		memcpy(&chan_sr[4], &gsr, 4);
-+		dev_dbg(fdev->dev, "IRQ: gsr1 0x%.8x\n", gsr);
-+	}
- 
- 	for (i = 0; i < FSL_DMA_MAX_CHANS_PER_DEVICE; i++) {
- 		chan = fdev->chan[i];
- 		if (!chan)
- 			continue;
- 
--		if (gsr & mask) {
-+		if (chan_sr[i]) {
- 			dev_dbg(fdev->dev, "IRQ: chan %d\n", chan->id);
- 			fsldma_chan_irq(irq, chan);
- 			handled++;
- 		}
--
--		gsr &= ~mask;
--		mask >>= 8;
- 	}
- 
- 	return IRQ_RETVAL(handled);
-@@ -1261,7 +1267,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
- 	WARN_ON(fdev->feature != chan->feature);
- 
- 	chan->dev = fdev->dev;
--	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
-+	chan->id = (res.start & 0xfff) < 0x300 ?
-+		   ((res.start - 0x100) & 0xfff) >> 7 :
-+		   ((res.start - 0x200) & 0xfff) >> 7;
- 	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
- 		dev_err(fdev->dev, "too many channels for device\n");
- 		err = -EINVAL;
-@@ -1341,13 +1349,22 @@ static int fsldma_of_probe(struct platform_device *op)
- 	INIT_LIST_HEAD(&fdev->common.channels);
- 
- 	/* ioremap the registers for use */
--	fdev->regs = of_iomap(op->dev.of_node, 0);
--	if (!fdev->regs) {
--		dev_err(&op->dev, "unable to ioremap registers\n");
-+	fdev->regs0 = of_iomap(op->dev.of_node, 0);
-+	if (!fdev->regs0) {
-+		dev_err(&op->dev, "unable to ioremap register0\n");
- 		err = -ENOMEM;
- 		goto out_free_fdev;
- 	}
- 
-+	if (of_device_is_compatible(op->dev.of_node, "fsl,eloplus-dma2")) {
-+		fdev->regs1 = of_iomap(op->dev.of_node, 1);
-+		if (!fdev->regs1) {
-+			dev_err(&op->dev, "unable to ioremap register1\n");
-+			err = -ENOMEM;
-+			goto out_free_fdev;
-+		}
-+	}
++dma0: dma@100300 {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "fsl,eloplus-dma2";
++	reg = <0x100300 0x4 0x100600 0x4>;
++	ranges = <0x0 0x100100 0x500>;
++	cell-index = <0>;
++	dma-channel@0 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x0 0x80>;
++		cell-index = <0>;
++		interrupts = <28 2 0 0>;
++	};
++	dma-channel@80 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x80 0x80>;
++		cell-index = <1>;
++		interrupts = <29 2 0 0>;
++	};
++	dma-channel@100 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x100 0x80>;
++		cell-index = <2>;
++		interrupts = <30 2 0 0>;
++	};
++	dma-channel@180 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x180 0x80>;
++		cell-index = <3>;
++		interrupts = <31 2 0 0>;
++	};
++	dma-channel@300 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x300 0x80>;
++		cell-index = <4>;
++		interrupts = <76 2 0 0>;
++	};
++	dma-channel@380 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x380 0x80>;
++		cell-index = <5>;
++		interrupts = <77 2 0 0>;
++	};
++	dma-channel@400 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x400 0x80>;
++		cell-index = <6>;
++		interrupts = <78 2 0 0>;
++	};
++	dma-channel@480 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x480 0x80>;
++		cell-index = <7>;
++		interrupts = <79 2 0 0>;
++	};
++};
+diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
+new file mode 100644
+index 0000000..980ea77
+--- /dev/null
++++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
+@@ -0,0 +1,90 @@
++/*
++ * QorIQ DMA device tree stub [ controller @ offset 0x101000 ]
++ *
++ * Copyright 2011-2013 Freescale Semiconductor Inc.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of Freescale Semiconductor nor the
++ *       names of its contributors may be used to endorse or promote products
++ *       derived from this software without specific prior written permission.
++ *
++ *
++ * ALTERNATIVELY, this software may be distributed under the terms of the
++ * GNU General Public License ("GPL") as published by the Free Software
++ * Foundation, either version 2 of that License or (at your option) any
++ * later version.
++ *
++ * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' AND ANY
++ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
++ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++ * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE FOR ANY
++ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
++ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
++ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
++ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
++ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
 +
- 	/* map the channel IRQ if it exists, but don't hookup the handler yet */
- 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
++dma1: dma@101300 {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "fsl,eloplus-dma2";
++	reg = <0x101300 0x4 0x101600 0x4>;
++	ranges = <0x0 0x101100 0x500>;
++	cell-index = <1>;
++	dma-channel@0 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x0 0x80>;
++		cell-index = <0>;
++		interrupts = <32 2 0 0>;
++	};
++	dma-channel@80 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x80 0x80>;
++		cell-index = <1>;
++		interrupts = <33 2 0 0>;
++	};
++	dma-channel@100 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x100 0x80>;
++		cell-index = <2>;
++		interrupts = <34 2 0 0>;
++	};
++	dma-channel@180 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x180 0x80>;
++		cell-index = <3>;
++		interrupts = <35 2 0 0>;
++	};
++	dma-channel@300 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x300 0x80>;
++		cell-index = <4>;
++		interrupts = <80 2 0 0>;
++	};
++	dma-channel@380 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x380 0x80>;
++		cell-index = <5>;
++		interrupts = <81 2 0 0>;
++	};
++	dma-channel@400 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x400 0x80>;
++		cell-index = <6>;
++		interrupts = <82 2 0 0>;
++	};
++	dma-channel@480 {
++		compatible = "fsl,eloplus-dma-channel";
++		reg = <0x480 0x80>;
++		cell-index = <7>;
++		interrupts = <83 2 0 0>;
++	};
++};
+diff --git a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+index bd611a9..7d8bac6 100644
+--- a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+@@ -387,8 +387,8 @@
+ 		reg	   = <0xea000 0x4000>;
+ 	};
  
-@@ -1427,7 +1444,9 @@ static int fsldma_of_remove(struct platform_device *op)
- 			fsl_dma_chan_remove(fdev->chan[i]);
- 	}
+-/include/ "qoriq-dma-0.dtsi"
+-/include/ "qoriq-dma-1.dtsi"
++/include/ "qoriq-dma2-0.dtsi"
++/include/ "qoriq-dma2-1.dtsi"
  
--	iounmap(fdev->regs);
-+	iounmap(fdev->regs0);
-+	if (of_device_is_compatible(op->dev.of_node, "fsl,eloplus-dma2"))
-+		iounmap(fdev->regs1);
- 	dev_set_drvdata(&op->dev, NULL);
- 	kfree(fdev);
- 
-@@ -1436,6 +1455,7 @@ static int fsldma_of_remove(struct platform_device *op)
- 
- static const struct of_device_id fsldma_of_ids[] = {
- 	{ .compatible = "fsl,eloplus-dma", },
-+	{ .compatible = "fsl,eloplus-dma2", },
- 	{ .compatible = "fsl,elo-dma", },
- 	{}
- };
-diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
-index f5c3879..880664d 100644
---- a/drivers/dma/fsldma.h
-+++ b/drivers/dma/fsldma.h
-@@ -112,10 +112,10 @@ struct fsldma_chan_regs {
- };
- 
- struct fsldma_chan;
--#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
-+#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
- 
- struct fsldma_device {
--	void __iomem *regs;	/* DGSR register base */
-+	void __iomem *regs0, *regs1;	/* DGSR registers */
- 	struct device *dev;
- 	struct dma_device common;
- 	struct fsldma_chan *chan[FSL_DMA_MAX_CHANS_PER_DEVICE];
+ /include/ "qoriq-espi-0.dtsi"
+ 	spi@110000 {
 -- 
 1.7.9.5
 
