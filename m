@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571Ab3GAFT4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 01:19:56 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55452 "EHLO bear.ext.ti.com"
+	id S1752644Ab3GAFUJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 01:20:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60374 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab3GAFTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 01:19:54 -0400
-Message-ID: <51D11124.1070300@ti.com>
-Date: Mon, 1 Jul 2013 10:48:28 +0530
+	id S1750833Ab3GAFUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 01:20:03 -0400
+Message-ID: <51D11147.30809@ti.com>
+Date: Mon, 1 Jul 2013 10:49:03 +0530
 From: Sourav Poddar <sourav.poddar@ti.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
@@ -17,9 +17,9 @@ CC: <linux-mtd@lists.infradead.org>, <spi-devel-general@lists.sourceforge.net>,
         <tqnguyen@micron.com>, <grant.likely@linaro.org>, <balbi@ti.com>,
         <rnayak@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 3/3] drivers: mtd: spinand: Add qspi spansion flash controller
-References: <1372232472-2641-1-git-send-email-sourav.poddar@ti.com> <1372232472-2641-4-git-send-email-sourav.poddar@ti.com>
-In-Reply-To: <1372232472-2641-4-git-send-email-sourav.poddar@ti.com>
+Subject: Re: [PATCH 2/3] drivers: spi: Add qspi flash controller
+References: <1372232472-2641-1-git-send-email-sourav.poddar@ti.com> <1372232472-2641-3-git-send-email-sourav.poddar@ti.com>
+In-Reply-To: <1372232472-2641-3-git-send-email-sourav.poddar@ti.com>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,430 +28,411 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 + Artem
 On Wednesday 26 June 2013 01:11 PM, Sourav Poddar wrote:
-> The patch adds support for spansion s25fl256s spi flash controller.
-> Currently, the patch supports only SPI based transaction.
+> The patch add basic support for the quad spi controller.
 >
-> As, the qspi to which flash is attached supports memory mapped interface,
-> support will be added in future for memory mapped transactions also.
+> QSPI is a kind of spi module that allows single,
+> dual and quad read access to external spi devices. The module
+> has a memory mapped interface which provide direct interface
+> for accessing data form external spi devices.
 >
-> This driver gets attached to the generic spinand mtd framework proposed in the
-> first patch of the series.
+> The patch will configure controller clocks, device control
+> register and for defining low level transfer apis which
+> will be used by the spi framework to transfer data to
+> the slave spi device(flash in this case).
 >
 > Signed-off-by: Sourav Poddar<sourav.poddar@ti.com>
 > ---
->   drivers/mtd/spinand/Kconfig         |    7 +
->   drivers/mtd/spinand/Makefile        |    2 +-
->   drivers/mtd/spinand/ti-qspi-flash.c |  373 +++++++++++++++++++++++++++++++++++
->   3 files changed, 381 insertions(+), 1 deletions(-)
->   create mode 100644 drivers/mtd/spinand/ti-qspi-flash.c
+>   drivers/spi/Kconfig   |    6 +
+>   drivers/spi/Makefile  |    1 +
+>   drivers/spi/ti-qspi.c |  352 +++++++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 359 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/spi/ti-qspi.c
 >
-> diff --git a/drivers/mtd/spinand/Kconfig b/drivers/mtd/spinand/Kconfig
-> index 38c739f..1342de3 100644
-> --- a/drivers/mtd/spinand/Kconfig
-> +++ b/drivers/mtd/spinand/Kconfig
-> @@ -16,6 +16,13 @@ config MTD_SPINAND_ONDIEECC
->   	help
->   	 Internel ECC
+> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+> index 92a9345..29a363b 100644
+> --- a/drivers/spi/Kconfig
+> +++ b/drivers/spi/Kconfig
+> @@ -285,6 +285,12 @@ config SPI_OMAP24XX
+>   	  SPI master controller for OMAP24XX and later Multichannel SPI
+>   	  (McSPI) modules.
 >
-> +config MTD_S25FL256S
-> +	tristate "Support spansion memory mapped SPI Flash chips"
-> +	depends on SPI_MASTER
+> +config QSPI_DRA7xxx
+> +	tristate "DRA7xxx QSPI controller support"
+> +	depends on ARCH_OMAP2PLUS
 > +	help
-> +	  This enables access to spansion QSPI flash chips, which used
-> +	  memory mapped interface used for program and data storage.
+> +	  QSPI master controller for DRA7xxx used for flash devices.
 > +
->   config MTD_SPINAND_SWECC
->   	bool "Use software ECC"
->   	depends on MTD_NAND
-> diff --git a/drivers/mtd/spinand/Makefile b/drivers/mtd/spinand/Makefile
-> index 355e726..8ad0dd5 100644
-> --- a/drivers/mtd/spinand/Makefile
-> +++ b/drivers/mtd/spinand/Makefile
-> @@ -5,6 +5,6 @@
->   # Core functionality.
->   obj-$(CONFIG_MTD_SPINAND)		+= spinand.o
->
-> -spinand-objs := spinand_mtd.o spinand_lld.o
-> +spinand-objs := spinand_mtd.o spinand_lld.o ti-qspi-flash.o
->
->
-> diff --git a/drivers/mtd/spinand/ti-qspi-flash.c b/drivers/mtd/spinand/ti-qspi-flash.c
+>   config SPI_OMAP_100K
+>   	tristate "OMAP SPI 100K"
+>   	depends on ARCH_OMAP850 || ARCH_OMAP730
+> diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+> index 33f9c09..ea14eff 100644
+> --- a/drivers/spi/Makefile
+> +++ b/drivers/spi/Makefile
+> @@ -46,6 +46,7 @@ obj-$(CONFIG_SPI_OCTEON)		+= spi-octeon.o
+>   obj-$(CONFIG_SPI_OMAP_UWIRE)		+= spi-omap-uwire.o
+>   obj-$(CONFIG_SPI_OMAP_100K)		+= spi-omap-100k.o
+>   obj-$(CONFIG_SPI_OMAP24XX)		+= spi-omap2-mcspi.o
+> +obj-$(CONFIG_QSPI_DRA7xxx)              += ti-qspi.o
+>   obj-$(CONFIG_SPI_ORION)			+= spi-orion.o
+>   obj-$(CONFIG_SPI_PL022)			+= spi-pl022.o
+>   obj-$(CONFIG_SPI_PPC4xx)		+= spi-ppc4xx.o
+> diff --git a/drivers/spi/ti-qspi.c b/drivers/spi/ti-qspi.c
 > new file mode 100644
-> index 0000000..dfa6235
+> index 0000000..b33646a
 > --- /dev/null
-> +++ b/drivers/mtd/spinand/ti-qspi-flash.c
-> @@ -0,0 +1,373 @@
+> +++ b/drivers/spi/ti-qspi.c
+> @@ -0,0 +1,352 @@
 > +/*
-> + * MTD SPI driver for spansion s25fl256s (and similar) serial flash chips
+> + * TI QSPI driver
 > + *
-> + * Author: Sourav Poddar, sourav.poddar@ti.com
+> + * Copyright (C) 2013, Texas Instruments, Incorporated
 > + *
-> + * Copyright (c) 2013, Texas Instruments.
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
 > + *
-> + * This code is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> +*/
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR /PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
 > +
+> +#include<linux/kernel.h>
 > +#include<linux/init.h>
-> +#include<linux/err.h>
-> +#include<linux/errno.h>
+> +#include<linux/interrupt.h>
 > +#include<linux/module.h>
 > +#include<linux/device.h>
-> +#include<linux/interrupt.h>
-> +#include<linux/mutex.h>
-> +#include<linux/math64.h>
+> +#include<linux/delay.h>
+> +#include<linux/dma-mapping.h>
+> +#include<linux/dmaengine.h>
+> +#include<linux/omap-dma.h>
+> +#include<linux/platform_device.h>
+> +#include<linux/err.h>
+> +#include<linux/clk.h>
+> +#include<linux/io.h>
 > +#include<linux/slab.h>
-> +#include<linux/sched.h>
-> +#include<linux/mod_devicetable.h>
-> +
-> +#include<linux/mtd/mtd.h>
-> +#include<linux/mtd/partitions.h>
-> +#include<linux/of_platform.h>
+> +#include<linux/pm_runtime.h>
+> +#include<linux/of.h>
+> +#include<linux/of_device.h>
+> +#include<linux/pinctrl/consumer.h>
 > +
 > +#include<linux/spi/spi.h>
-> +#include<linux/mtd/spinand.h>
 > +
-> +#define	CMD_OPCODE_RDSR		0x05    /* Read status register */
-> +#define CMD_OPCODE_FAST_READ	0x0b	/* Fast Read */
-> +#define	MAX_READY_WAIT_JIFFIES	(40 * HZ) /* M25P16 specs 40s max chip erase */
-> +
-> +#define	SR_WIP		1       /* Write in progress */
-> +#define	SR_WEL		2       /* Write enable latch */
-> +
-> +static u16	addr_width;
-> +bool	fast_read;
-> +
-> +static struct nand_ecclayout spinand_oob_0 = {
-> +	.eccbytes = 0,
-> +	.eccpos = {},
-> +	.oobavail = 0,
-> +	.oobfree = {
-> +		{.offset = 0,
-> +		.length = 0}, }
+> +struct dra7xxx_qspi {
+> +	struct spi_master	*master;
+> +	void __iomem            *base;
+> +	int device_type;
+> +	struct device           *dev;
+> +	u32 spi_max_frequency;
+> +	u32 cmd;
+> +	u32 dc;
 > +};
 > +
-> +/*
-> + * Read the status register, returning its value in the location
-> + * Return the status register value.
-> + * Returns negative if error occurred.
-> +*/
-> +static int read_sr(struct spi_device *spi_nand)
+> +#define QSPI_PID			(0x0)
+> +#define QSPI_SYSCONFIG			(0x10)
+> +#define QSPI_INTR_STATUS_RAW_SET	(0x20)
+> +#define QSPI_INTR_STATUS_ENABLED_CLEAR	(0x24)
+> +#define QSPI_INTR_ENABLE_SET_REG	(0x28)
+> +#define QSPI_INTR_ENABLE_CLEAR_REG	(0x2c)
+> +#define QSPI_SPI_CLOCK_CNTRL_REG	(0x40)
+> +#define QSPI_SPI_DC_REG			(0x44)
+> +#define QSPI_SPI_CMD_REG		(0x48)
+> +#define QSPI_SPI_STATUS_REG		(0x4c)
+> +#define QSPI_SPI_DATA_REG		(0x50)
+> +#define QSPI_SPI_SETUP0_REG		(0x54)
+> +#define QSPI_SPI_SWITCH_REG		(0x64)
+> +#define QSPI_SPI_SETUP1_REG		(0x58)
+> +#define QSPI_SPI_SETUP2_REG		(0x5c)
+> +#define QSPI_SPI_SETUP3_REG		(0x60)
+> +#define QSPI_SPI_DATA_REG_1		(0x68)
+> +#define QSPI_SPI_DATA_REG_2		(0x6c)
+> +#define QSPI_SPI_DATA_REG_3		(0x70)
+> +
+> +#define QSPI_TIMEOUT			2000000
+> +
+> +#define QSPI_FCLK			192000000
+> +
+> +/* Clock Control */
+> +#define QSPI_CLK_EN			(1<<  31)
+> +#define QSPI_CLK_DIV_MAX		0xffff
+> +
+> +/* Command */
+> +#define QSPI_EN_CS(n)			(n<<  28)
+> +#define QSPI_WLEN(n)			((n-1)<<  19)
+> +#define QSPI_3_PIN			(1<<  18)
+> +#define QSPI_RD_SNGL			(1<<  16)
+> +#define QSPI_WR_SNGL			(2<<  16)
+> +#define QSPI_RD_QUAD			(7<<  16)
+> +#define QSPI_INVAL			(4<<  16)
+> +
+> +/* Device Control */
+> +#define QSPI_DD(m, n)			(m<<  (3 + n*8))
+> +#define QSPI_CKPHA(n)			(1<<  (2 + n*8))
+> +#define QSPI_CSPOL(n)			(1<<  (1 + n*8))
+> +#define QSPI_CKPOL(n)			(1<<  (n*8))
+> +
+> +/* Status */
+> +#define QSPI_WC				(1<<  1)
+> +#define QSPI_BUSY			(1<<  0)
+> +#define QSPI_WC_BUSY			(QSPI_WC | QSPI_BUSY)
+> +#define QSPI_XFER_DONE			QSPI_WC
+> +
+> +#define XFER_END			0x01
+> +
+> +#define SPI_AUTOSUSPEND_TIMEOUT         2000
+> +
+> +static inline unsigned long dra7xxx_readl(struct dra7xxx_qspi *qspi,
+> +		unsigned long reg)
 > +{
-> +	ssize_t retval;
-> +	u8 val;
-> +	u8 code	=	CMD_OPCODE_RDSR;
-> +
-> +	retval = spi_write_then_read(spi_nand,&code, 1,&val, 1);
-> +
-> +	if (retval<  0) {
-> +		dev_info(&spi_nand->dev, "error %d reading SR\n",
-> +			(int) retval);
-> +		return retval;
-> +	}
-> +
-> +	return val;
+> +	return readl(qspi->base + reg);
 > +}
 > +
-> +/*
-> + * Set write enable latch with Write Enable command.
-> + * Returns negative if error occurred.
-> +*/
-> +static inline int write_enable(struct spi_device *spi_nand)
+> +static inline void dra7xxx_writel(struct dra7xxx_qspi *qspi,
+> +		unsigned long val, unsigned long reg)
 > +{
-> +	u8	code = CMD_WR_ENABLE;
-> +
-> +	return spi_write_then_read(spi_nand,&code, 1, NULL, 0);
+> +	writel(val, qspi->base + reg);
 > +}
 > +
-> +/*
-> + * Send write disble instruction to the chip.
-> +*/
-> +static inline int write_disable(struct spi_device *spi_nand)
+> +static int dra7xxx_qspi_setup(struct spi_device *spi)
 > +{
-> +	u8	code = CMD_WR_DISABLE;
+> +	struct dra7xxx_qspi	*qspi =
+> +			spi_master_get_devdata(spi->master);
 > +
-> +	return spi_write_then_read(spi_nand,&code, 1, NULL, 0);
-> +}
+> +	int clk_div;
 > +
-> +/*
-> + * Service routine to read status register until ready, or timeout occurs.
-> + * Returns non-zero if error.
-> +*/
-> +static int wait_till_ready(struct spi_device *spi_nand)
-> +{
-> +	unsigned long deadline;
-> +	int sr;
-> +
-> +	deadline = jiffies + MAX_READY_WAIT_JIFFIES;
-> +
-> +	do {
-> +		sr = read_sr(spi_nand);
-> +		if (sr<  0)
-> +			return -1;
-> +		else if (!(sr&  SR_WIP))
-> +			break;
-> +
-> +		cond_resched();
-> +	} while (!time_after_eq(jiffies, deadline));
-> +
-> +	if ((sr&  SR_WIP) == 0)
-> +		return 0;
-> +
-> +	return -1;
-> +}
-> +
-> +static inline int spinand_read_id(struct spi_device *spi_nand, u8 *id)
-> +{
-> +	u8      code = CMD_READ_ID;
-> +
-> +	return  spi_write_then_read(spi_nand,&code, 1, id, sizeof(id));
-> +}
-> +
-> +static void s25fl_addr2cmd(struct spi_device *spi_nand,
-> +		unsigned int addr, u8 *cmd)
-> +{
-> +	/* opcode is in cmd[0] */
-> +	cmd[1] = addr>>  (addr_width * 8 -  8);
-> +	cmd[2] = addr>>  (addr_width * 8 - 16);
-> +	cmd[3] = addr>>  (addr_width * 8 - 24);
-> +}
-> +
-> +static int s25fl_cmdsz(struct  spi_device *spi_nand)
-> +{
-> +	return 1 + addr_width;
-> +}
-> +
-> +static int spinand_erase_block(struct spi_device *spi_nand,
-> +		struct spinand_info *info, u16 block_id)
-> +{
-> +	unsigned int offset;
-> +	u8 cmd[4];
-> +	uint8_t opcode;
-> +
-> +	offset = block_id * info->block_size;
-> +
-> +	/* Wait until finished previous write command. */
-> +	if (wait_till_ready(spi_nand))
-> +		return 1;
-> +
-> +	/* Send write enable, then erase commands. */
-> +	write_enable(spi_nand);
-> +
-> +	/* Set up command buffer. */
-> +	opcode = CMD_ERASE_BLK;
-> +	cmd[0] = opcode;
-> +	s25fl_addr2cmd(spi_nand, offset, cmd);
-> +
-> +	spi_write(spi_nand, cmd, s25fl_cmdsz(spi_nand));
-> +
-> +	return 0;
-> +}
-> +
-> +static int spinand_read_page(struct spi_device *spi_nand,
-> +	struct spinand_info *info, u16 page_id, u16 offset, u16 len, u8 *rbuf)
-> +{
-> +	struct spi_transfer t[2];
-> +	struct spi_message m;
-> +	uint8_t opcode;
-> +	u8 cmd[4];
-> +
-> +	spi_message_init(&m);
-> +	memset(t, 0, sizeof(t));
-> +
-> +	t[0].tx_buf = cmd;
-> +	t[0].len = s25fl_cmdsz(spi_nand);
-> +	spi_message_add_tail(&t[0],&m);
-> +
-> +	t[1].rx_buf = rbuf;
-> +	t[1].len = len;
-> +	spi_message_add_tail(&t[1],&m);
-> +
-> +	/* Wait till previous write/erase is done. */
-> +	if (wait_till_ready(spi_nand))
-> +		return 1;
-> +
-> +	/* Set up the write data buffer. */
-> +	opcode = fast_read ? CMD_OPCODE_FAST_READ : CMD_READ_RDM;
-> +	cmd[0] = opcode;
-> +
-> +	s25fl_addr2cmd(spi_nand, offset, cmd);
-> +
-> +	spi_sync(spi_nand,&m);
-> +
-> +	return 0;
-> +}
-> +
-> +static int spinand_program_page(struct spi_device *spi_nand,
-> +	struct spinand_info *info, u16 page_id, u16 offset, u16 len, u8 *wbuf)
-> +{
-> +	struct spi_transfer t[2];
-> +	struct spi_message m;
-> +	u8 cmd[4];
-> +
-> +	pr_debug("%s: %s to 0x%08x, len %zd\n", dev_name(&spi_nand->dev),
-> +			__func__, (u32)offset, len);
-> +
-> +	spi_message_init(&m);
-> +	memset(t, 0, sizeof(t));
-> +
-> +	t[0].tx_buf = cmd;
-> +	t[0].len = 4;
-> +	spi_message_add_tail(&t[0],&m);
-> +
-> +	t[1].tx_buf = wbuf;
-> +        t[0].len = len;
-> +	spi_message_add_tail(&t[1],&m);
-> +
-> +	write_enable(spi_nand);
-> +
-> +	/* Wait until finished previous write command. */
-> +	if (wait_till_ready(spi_nand))
-> +		return 1;
-> +
-> +	/* Set up the opcode in the write buffer. */
-> +	cmd[0] = CMD_PROG_PAGE_CLRCACHE;
-> +	s25fl_addr2cmd(spi_nand, offset, cmd);
-> +
-> +	spi_sync(spi_nand,&m);
-> +
-> +	return 0;
-> +}
-> +
-> +static int spinand_get_info(struct spi_device *spi_nand,
-> +		struct spinand_info *info, u8 *id)
-> +{
-> +	if (id[0] == 0x01&&  id[1] == 0x02) {
-> +		info->mid = id[0];
-> +		info->did = id[1];
-> +		info->name = "S25FL256S";
-> +		info->nand_size = (1024 * 32 * 1024);
-> +		info->page_size = 256;
-> +		info->page_main_size = 256;
-> +		info->page_spare_size = info->page_size - info->page_main_size;
-> +		info->block_size = (1024 * 64);
-> +		info->page_num_per_block = info->block_size / info->page_size;
-> +		info->block_main_size = info->page_main_size *
-> +						info->page_num_per_block;
-> +		info->usable_size = (1024 * 30 * 1024);
-> +		info->block_num_per_chip = info->nand_size / info->block_size;
-> +		info->block_shift = 16;
-> +		info->block_mask = info->block_size - 1;
-> +		info->page_shift = 8;
-> +		info->page_mask = info->page_size - 1;
-> +		info->ecclayout =&spinand_oob_0;
-> +	}
-> +	return 0;
-> +}
-> +
-> +static int spinand_probe(struct spi_device *spi)
-> +{
-> +	ssize_t retval;
-> +	struct mtd_info *mtd;
-> +	struct spinand_chip *chip;
-> +	struct spinand_info *info;
-> +	struct mtd_part_parser_data     ppdata;
-> +	struct device_node __maybe_unused *np = spi->dev.of_node;
-> +
-> +	u8 id[2] = {0};
-> +
-> +	retval = spinand_read_id(spi, (u8 *)&id);
-> +	if (id[0] == 0&&  id[1] == 0) {
-> +		pr_err(KERN_ERR "SPINAND: read id error! 0x%02x, 0x%02x!\n",
-> +			id[0], id[1]);
-> +		return 0;
-> +	}
-> +
-> +	info  = kzalloc(sizeof(struct spinand_info), GFP_KERNEL);
-> +	if (!info)
-> +		return -ENOMEM;
-> +
-> +	if (np&&  of_property_read_bool(np, "s25fl,fast-read"))
-> +		fast_read = true;
-> +	if (np&&  of_property_read_bool(np, "s25fl,three-byte"))
-> +		addr_width = 3;
+> +	if (!qspi->spi_max_frequency)
+> +		clk_div = 0;
 > +	else
-> +		addr_width = 4;
+> +		clk_div = (QSPI_FCLK / qspi->spi_max_frequency) - 1;
 > +
-> +	ppdata.of_node = spi->dev.of_node;
+> +	pr_debug("%s: hz: %d, clock divider %d\n", __func__,
+> +			qspi->spi_max_frequency, clk_div);
 > +
-> +	retval = spinand_get_info(spi, info, (u8 *)&id);
+> +	pm_runtime_get_sync(qspi->dev);
 > +
-> +	chip  = kzalloc(sizeof(struct spinand_chip), GFP_KERNEL);
-> +	if (!chip)
-> +		return -ENOMEM;
+> +	/* disable SCLK */
+> +	dra7xxx_writel(qspi, dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG)
+> +			&  ~QSPI_CLK_EN, QSPI_SPI_CLOCK_CNTRL_REG);
 > +
-> +	chip->spi_nand = spi;
-> +	chip->info = info;
-> +	chip->read_id = spinand_read_id;
-> +	chip->read_page = spinand_read_page;
-> +	chip->program_page = spinand_program_page;
-> +	chip->erase_block = spinand_erase_block;
-> +	chip->buf = kzalloc(info->page_size, GFP_KERNEL);
-> +	if (!chip->buf)
-> +		return -ENOMEM;
+> +	if (clk_div<  0) {
+> +		pr_debug("%s: clock divider<  0, using /1 divider\n", __func__);
+> +		clk_div = 0;
+> +	}
 > +
-> +	chip->oobbuf = kzalloc(info->ecclayout->oobavail, GFP_KERNEL);
-> +	if (!chip->oobbuf)
-> +		return -ENOMEM;
+> +	if (clk_div>  QSPI_CLK_DIV_MAX) {
+> +		pr_debug("%s: clock divider>%d , using /%d divider\n",
+> +			__func__, QSPI_CLK_DIV_MAX, QSPI_CLK_DIV_MAX + 1);
+> +		clk_div = QSPI_CLK_DIV_MAX;
+> +	}
 > +
-> +	mtd = kzalloc(sizeof(struct mtd_info), GFP_KERNEL);
-> +	if (!mtd)
-> +		return -ENOMEM;
+> +	/* enable SCLK */
+> +	dra7xxx_writel(qspi, QSPI_CLK_EN | clk_div, QSPI_SPI_CLOCK_CNTRL_REG);
 > +
-> +	dev_set_drvdata(&spi->dev, mtd);
+> +	pm_runtime_mark_last_busy(qspi->dev);
+> +	pm_runtime_put_autosuspend(qspi->dev);
 > +
-> +	mtd->priv = chip;
-> +
-> +	retval = spinand_mtd(mtd);
-> +
-> +	return mtd_device_parse_register(mtd, NULL,&ppdata,
-> +			NULL, 1);
-> +}
-> +
-> +/*
-> + *spinand_remove--Remove the device driver
-> + * @spi: the spi device.
-> +*/
-> +static int spinand_remove(struct spi_device *spi)
-> +{
-> +	struct mtd_info *mtd;
-> +	struct spinand_chip *chip;
-> +
-> +	mtd = dev_get_drvdata(&spi->dev);
-> +
-> +	mtd_device_unregister(mtd);
-> +
-> +	chip = mtd->priv;
-> +
-> +	kfree(chip->info);
-> +	kfree(chip->buf);
-> +	kfree(chip->oobbuf);
-> +	kfree(chip);
-> +	kfree(mtd);
+> +	pr_debug("%s: spi_clock_cntrl %ld\n", __func__,
+> +		dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG));
 > +
 > +	return 0;
 > +}
 > +
-> +static const struct of_device_id s25fl256s_dt_ids[] = {
-> +	{ .compatible = "ti, s25fl256s"},
-> +	{ /* sentinel */ },
+> +static int dra7xxx_qspi_prepare_xfer(struct spi_master *master)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int dra7xxx_qspi_unprepare_xfer(struct spi_master *master)
+> +{
+> +	return 0;
+> +}
+> +
+> +static int qspi_transfer_msg(struct dra7xxx_qspi *qspi, unsigned count,
+> +			const u8 *txbuf, u8 *rxbuf, bool flags)
+> +{
+> +	uint status;
+> +	int timeout;
+> +
+> +	pm_runtime_get_sync(qspi->dev);
+> +
+> +	while (count--) {
+> +		if (txbuf) {
+> +			pr_debug("tx cmd %08x dc %08x data %02x\n",
+> +				qspi->cmd | QSPI_WR_SNGL, qspi->dc, *txbuf);
+> +			dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
+> +			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+> +			dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
+> +					QSPI_SPI_CMD_REG);
+> +			status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			timeout = QSPI_TIMEOUT;
+> +			while ((status&  QSPI_WC_BUSY) != QSPI_XFER_DONE) {
+> +				if (--timeout<  0) {
+> +					pr_debug("QSPI tx timed out\n");
+> +					return -1;
+> +				}
+> +				status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			}
+> +			pr_debug("tx done, status %08x\n", status);
+> +		}
+> +		if (rxbuf) {
+> +			pr_debug("rx cmd %08x dc %08x\n",
+> +				qspi->cmd | QSPI_RD_SNGL, qspi->dc);
+> +			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+> +			dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
+> +					QSPI_SPI_CMD_REG);
+> +			status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			timeout = QSPI_TIMEOUT;
+> +			while ((status&  QSPI_WC_BUSY) != QSPI_XFER_DONE) {
+> +				if (--timeout<  0) {
+> +					pr_debug("QSPI rx timed out\n");
+> +					return -1;
+> +				}
+> +				status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			}
+> +			*rxbuf++ = dra7xxx_readl(qspi, QSPI_SPI_DATA_REG);
+> +			pr_debug("rx done, status %08x, read %02x\n",
+> +				status, *(rxbuf-1));
+> +		}
+> +	}
+> +
+> +	if (flags&  XFER_END)
+> +		dra7xxx_writel(qspi, qspi->cmd | QSPI_INVAL, QSPI_SPI_CMD_REG);
+> +
+> +	pm_runtime_mark_last_busy(qspi->dev);
+> +	pm_runtime_put_autosuspend(qspi->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dra7xxx_qspi_start_transfer_one(struct spi_master *master,
+> +		struct spi_message *m)
+> +{
+> +	struct dra7xxx_qspi *qspi = spi_master_get_devdata(master);
+> +	struct spi_device *spi = m->spi;
+> +	struct spi_transfer *t;
+> +	int status = 0;
+> +	int flags = 0;
+> +
+> +	/* setup command reg */
+> +	qspi->cmd = 0;
+> +	qspi->cmd |= QSPI_WLEN(8);
+> +	qspi->cmd |= QSPI_EN_CS(0);
+> +	qspi->cmd |= 0xfff;
+> +
+> +	/* setup device control reg */
+> +	qspi->dc = 0;
+> +
+> +	if (spi->mode&  SPI_CPHA)
+> +		qspi->dc |= QSPI_CKPHA(0);
+> +	if (spi->mode&  SPI_CPOL)
+> +		qspi->dc |= QSPI_CKPOL(0);
+> +	if (spi->mode&  SPI_CS_HIGH)
+> +		qspi->dc |= QSPI_CSPOL(0);
+> +
+> +	list_for_each_entry(t,&m->transfers, transfer_list) {
+> +		if (list_is_last(&t->transfer_list,&m->transfers))
+> +			flags = XFER_END;
+> +
+> +		qspi_transfer_msg(qspi, t->len, t->tx_buf,
+> +			t->rx_buf, flags);
+> +
+> +		m->actual_length += t->len;
+> +	}
+> +	m->status = status;
+> +	spi_finalize_current_message(master);
+> +
+> +	return status;
+> +}
+> +
+> +static int dra7xxx_qspi_probe(struct platform_device *pdev)
+> +{
+> +	struct  dra7xxx_qspi *qspi;
+> +	struct spi_master *master;
+> +	struct resource         *r;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	u32 max_freq;
+> +	int ret;
+> +
+> +	master = spi_alloc_master(&pdev->dev, sizeof(*qspi));
+> +	if (!master)
+> +		return -ENOMEM;
+> +
+> +	master->mode_bits = SPI_CPOL | SPI_CPHA;
+> +
+> +	master->num_chipselect = 1;
+> +	master->bus_num = -1;
+> +	master->setup = dra7xxx_qspi_setup;
+> +	master->prepare_transfer_hardware = dra7xxx_qspi_prepare_xfer;
+> +	master->transfer_one_message = dra7xxx_qspi_start_transfer_one;
+> +	master->unprepare_transfer_hardware = dra7xxx_qspi_unprepare_xfer;
+> +	master->dev.of_node = pdev->dev.of_node;
+> +
+> +	dev_set_drvdata(&pdev->dev, master);
+> +
+> +	qspi = spi_master_get_devdata(master);
+> +	qspi->master = master;
+> +	qspi->dev =&pdev->dev;
+> +
+> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (r == NULL) {
+> +		ret = -ENODEV;
+> +		goto free_master;
+> +	}
+> +
+> +	qspi->base = devm_request_and_ioremap(&pdev->dev, r);
+> +	if (!qspi->base) {
+> +		dev_dbg(&pdev->dev, "can't ioremap MCSPI\n");
+> +		ret = -ENOMEM;
+> +		goto free_master;
+> +	}
+> +
+> +	pm_runtime_use_autosuspend(&pdev->dev);
+> +	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+> +	pm_runtime_enable(&pdev->dev);
+> +
+> +	if (!of_property_read_u32(np, "spi-max-frequency",&max_freq))
+> +		qspi->spi_max_frequency = max_freq;
+> +
+> +	ret = spi_register_master(master);
+> +	if (ret)
+> +		goto free_master;
+> +
+> +	return ret;
+> +
+> +free_master:
+> +	spi_master_put(master);
+> +	return ret;
+> +}
+> +
+> +static int dra7xxx_qspi_remove(struct platform_device *pdev)
+> +{
+> +	struct  dra7xxx_qspi *qspi = platform_get_drvdata(pdev);
+> +
+> +	spi_unregister_master(qspi->master);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id dra7xxx_qspi_match[] = {
+> +	{.compatible = "ti,dra7xxx-qspi" },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, dra7xxx_qspi_match);
+> +
+> +static struct platform_driver dra7xxx_qspi_driver = {
+> +	.probe	= dra7xxx_qspi_probe,
+> +	.remove	= dra7xxx_qspi_remove,
+> +	.driver = {
+> +		.name	= "ti,dra7xxx-qspi",
+> +		.owner	= THIS_MODULE,
+> +		.of_match_table = dra7xxx_qspi_match,
+> +	}
 > +};
 > +
-> +static struct spi_driver spinand_driver = {
-> +	.driver = {
-> +		.name	= "s25fl256s",
-> +		.bus            =&spi_bus_type,
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = s25fl256s_dt_ids,
-> +	},
-> +	.probe	= spinand_probe,
-> +	.remove	= spinand_remove,
-> +};
-> +module_spi_driver(spinand_driver);
+> +module_platform_driver(dra7xxx_qspi_driver);
 > +
 > +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Sourav Poddar");
-> +MODULE_DESCRIPTION("MTD SPI driver for spansion flash chips");
+> +MODULE_DESCRIPTION("TI QSPI controller driver");
 
