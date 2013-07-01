@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab3GAL6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:58:22 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33994 "EHLO
+	id S1753910Ab3GAL6N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:58:13 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33957 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab3GAL6S (ORCPT
+	with ESMTP id S1753755Ab3GAL6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:58:18 -0400
+	Mon, 1 Jul 2013 07:58:11 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
         <xemul@parallels.com>, <khorenko@parallels.com>
-Subject: [PATCH RFC 13/13] mm: shmem: enable saving to PRAM
-Date: Mon, 1 Jul 2013 15:57:48 +0400
-Message-ID: <b01def5f38aa0eb44a7291230e035755aa035613.1372582756.git.vdavydov@parallels.com>
+Subject: [PATCH RFC 09/13] mm: PRAM: ban pages that have been reserved at boot time
+Date: Mon, 1 Jul 2013 15:57:44 +0400
+Message-ID: <d618f7f63ca9256464399ab93074336c1af7f000.1372582756.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1372582754.git.vdavydov@parallels.com>
 References: <cover.1372582754.git.vdavydov@parallels.com>
@@ -24,581 +24,416 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch illustrates how PRAM API can be used for making tmpfs
-'persistent'. It adds 'pram=' option to tmpfs, which specifies the PRAM
-node to load/save FS tree from/to.
+Obviously, not all memory ranges can be used for saving persistent
+over-kexec data, because some of them are reserved by the system core
+and various device drivers at boot time. If a memory range used for
+initialization of a particular device turns out to be busy because PRAM
+uses it for storing its data, the device driver initialization stage or
+even the whole system boot sequence may fail.
 
-If the option is passed on mount, shmem will look for the corresponding
-PRAM node and load the FS tree from it. On the subsequent unmount, it
-will save FS tree to that PRAM node.
-
-A typical usage scenario looks like:
-
- # mount -t tmpfs -o pram=mytmpfs none /mnt
- # echo something > /mnt/smth
- # umount /mnt
- <possibly kexec>
- # mount -t tmpfs -o pram=mytmpfs none /mnt
- # cat /mnt/smth
-
-Each FS tree is saved into two PRAM nodes, one acting as a byte stream
-and the other acting as a page stream. The byte stream is used for
-saving files metadata (name, permissions, etc) and data page offsets
-while the page stream accommodates file content pages.
-
-Current implementation serves for demonstration purposes and so is quite
-simplified: it supports only regular files in the root directory without
-multiple hard links, and it does not save swapped out files aborting if
-any. However, it can be elaborated to fully support tmpfs.
+As a workaround the current implementation uses a rather dirty hack. It
+tracks all memory regions that have ever been reserved during the boot
+sequence and avoids using pages belonging to those regions for storing
+persistent data. Since the device configuration cannot change during
+kexec and the newly booted kernel is likely to have a similar boot-time
+device driver set, this hack should work in most cases.
 ---
- include/linux/shmem_fs.h |   26 ++++
- mm/Makefile              |    2 +-
- mm/shmem.c               |   29 +++-
- mm/shmem_pram.c          |  378 ++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 430 insertions(+), 5 deletions(-)
- create mode 100644 mm/shmem_pram.c
+ arch/x86/mm/init_32.c |    1 +
+ arch/x86/mm/init_64.c |    1 +
+ include/linux/pram.h  |    4 +
+ mm/bootmem.c          |    4 +
+ mm/memblock.c         |    7 +-
+ mm/pram.c             |  211 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 6 files changed, 225 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
-index da63308..0408421 100644
---- a/include/linux/shmem_fs.h
-+++ b/include/linux/shmem_fs.h
-@@ -23,6 +23,11 @@ struct shmem_inode_info {
- 	struct inode		vfs_inode;
- };
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index da38426..67b963a 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -782,6 +782,7 @@ void __init mem_init(void)
  
-+#define SHMEM_PRAM_NAME_MAX	128
-+struct shmem_pram_info {
-+	char name[SHMEM_PRAM_NAME_MAX];
-+};
-+
- struct shmem_sb_info {
- 	unsigned long max_blocks;   /* How many blocks are allowed */
- 	struct percpu_counter used_blocks;  /* How many are allocated */
-@@ -33,6 +38,7 @@ struct shmem_sb_info {
- 	kgid_t gid;		    /* Mount gid for root directory */
- 	umode_t mode;		    /* Mount mode for root directory */
- 	struct mempolicy *mpol;     /* default memory policy for mappings */
-+	struct shmem_pram_info *pram;
- };
+ 	totalram_pages += pram_reserved_pages;
+ 	reservedpages -= pram_reserved_pages;
++	pram_show_banned();
  
- static inline struct shmem_inode_info *SHMEM_I(struct inode *inode)
-@@ -62,7 +68,27 @@ static inline struct page *shmem_read_mapping_page(
- 					mapping_gfp_mask(mapping));
- }
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 8aa4bc4..fbe3e17 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -1080,6 +1080,7 @@ void __init mem_init(void)
  
-+struct pagevec;
-+
- extern int shmem_insert_page(struct inode *inode,
- 		pgoff_t index, struct page *page, bool on_lru);
-+extern unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
-+					pgoff_t start, unsigned int nr_pages,
-+					struct page **pages, pgoff_t *indices);
-+extern void shmem_deswap_pagevec(struct pagevec *pvec);
-+
-+#ifdef CONFIG_PRAM
-+extern int shmem_parse_pram(const char *str, struct shmem_pram_info **pram);
-+extern void shmem_show_pram(struct seq_file *seq, struct shmem_pram_info *pram);
-+extern void shmem_save_pram(struct super_block *sb);
-+extern void shmem_load_pram(struct super_block *sb);
-+#else
-+static inline int shmem_parse_pram(const char *str,
-+			struct shmem_pram_info **pram) { return 1; }
-+static inline void shmem_show_pram(struct seq_file *seq,
-+			struct shmem_pram_info *pram) { }
-+static inline void shmem_save_pram(struct super_block *sb) { }
-+static inline void shmem_load_pram(struct super_block *sb) { }
-+#endif
+ 	totalram_pages += pram_reserved_pages;
+ 	reservedpages -= pram_reserved_pages;
++	pram_show_banned();
  
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+diff --git a/include/linux/pram.h b/include/linux/pram.h
+index b7f2799..d4f23e3 100644
+--- a/include/linux/pram.h
++++ b/include/linux/pram.h
+@@ -50,9 +50,13 @@ extern size_t pram_read(struct pram_stream *ps, void *buf, size_t count);
+ #ifdef CONFIG_PRAM
+ extern unsigned long pram_reserved_pages;
+ extern void pram_reserve(void);
++extern void pram_ban_region(unsigned long start, unsigned long end);
++extern void pram_show_banned(void);
+ #else
+ #define pram_reserved_pages 0UL
+ static inline void pram_reserve(void) { }
++static inline void pram_ban_region(unsigned long start, unsigned long end) { }
++static inline void pram_show_banned(void) { }
  #endif
-diff --git a/mm/Makefile b/mm/Makefile
-index 33ad952..6a8c61d 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -58,4 +58,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
- obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
- obj-$(CONFIG_CLEANCACHE) += cleancache.o
- obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
--obj-$(CONFIG_PRAM) += pram.o
-+obj-$(CONFIG_PRAM) += pram.o shmem_pram.o
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 71fac31..2d6b618 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -399,7 +399,7 @@ out:
- /*
-  * Like find_get_pages, but collecting swap entries as well as pages.
-  */
--static unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
-+unsigned shmem_find_get_pages_and_swap(struct address_space *mapping,
- 					pgoff_t start, unsigned int nr_pages,
- 					struct page **pages, pgoff_t *indices)
- {
-@@ -465,7 +465,7 @@ static int shmem_free_swap(struct address_space *mapping,
- /*
-  * Pagevec may contain swap entries, so shuffle up pages before releasing.
-  */
--static void shmem_deswap_pagevec(struct pagevec *pvec)
-+void shmem_deswap_pagevec(struct pagevec *pvec)
- {
- 	int i, j;
  
-@@ -2535,6 +2535,10 @@ static int shmem_parse_options(char *options, struct shmem_sb_info *sbinfo,
- 			mpol = NULL;
- 			if (mpol_parse_str(value, &mpol))
- 				goto bad_val;
-+		} else if (!strcmp(this_char,"pram")) {
-+			kfree(sbinfo->pram);
-+			if (shmem_parse_pram(value, &sbinfo->pram))
-+				goto bad_val;
- 		} else {
- 			printk(KERN_ERR "tmpfs: Bad mount option %s\n",
- 			       this_char);
-@@ -2561,6 +2565,7 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
- 	int error = -EINVAL;
+ #endif /* _LINUX_PRAM_H */
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 2b0bcb0..34d0b42 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -16,6 +16,7 @@
+ #include <linux/kmemleak.h>
+ #include <linux/range.h>
+ #include <linux/memblock.h>
++#include <linux/pram.h>
  
- 	config.mpol = NULL;
-+	config.pram = NULL;
- 	if (shmem_parse_options(data, &config, true))
- 		return error;
- 
-@@ -2592,6 +2597,9 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
- 		mpol_put(sbinfo->mpol);
- 		sbinfo->mpol = config.mpol;	/* transfers initial ref */
- 	}
+ #include <asm/bug.h>
+ #include <asm/io.h>
+@@ -328,6 +329,9 @@ static int __init __reserve(bootmem_data_t *bdata, unsigned long sidx,
+ 			bdebug("silent double reserve of PFN %lx\n",
+ 				idx + bdata->node_min_pfn);
+ 		}
 +
-+	kfree(sbinfo->pram);
-+	sbinfo->pram = config.pram;
- out:
- 	spin_unlock(&sbinfo->stat_lock);
- 	return error;
-@@ -2615,6 +2623,7 @@ static int shmem_show_options(struct seq_file *seq, struct dentry *root)
- 		seq_printf(seq, ",gid=%u",
- 				from_kgid_munged(&init_user_ns, sbinfo->gid));
- 	shmem_show_mpol(seq, sbinfo->mpol);
-+	shmem_show_pram(seq, sbinfo->pram);
++	pram_ban_region(sidx + bdata->node_min_pfn,
++			eidx + bdata->node_min_pfn - 1);
  	return 0;
  }
- #endif /* CONFIG_TMPFS */
-@@ -2625,6 +2634,7 @@ static void shmem_put_super(struct super_block *sb)
  
- 	percpu_counter_destroy(&sbinfo->used_blocks);
- 	mpol_put(sbinfo->mpol);
-+	kfree(sbinfo->pram);
- 	kfree(sbinfo);
- 	sb->s_fs_info = NULL;
- }
-@@ -2838,14 +2848,25 @@ static const struct vm_operations_struct shmem_vm_ops = {
- static struct dentry *shmem_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
--	return mount_nodev(fs_type, flags, data, shmem_fill_super);
-+	struct dentry *root;
-+	
-+	root = mount_nodev(fs_type, flags, data, shmem_fill_super);
-+	if (!IS_ERR(root))
-+		shmem_load_pram(root->d_sb);
-+	return root;
-+}
-+
-+static void shmem_kill_sb(struct super_block *sb)
-+{
-+	shmem_save_pram(sb);
-+	kill_litter_super(sb);
- }
- 
- static struct file_system_type shmem_fs_type = {
- 	.owner		= THIS_MODULE,
- 	.name		= "tmpfs",
- 	.mount		= shmem_mount,
--	.kill_sb	= kill_litter_super,
-+	.kill_sb	= shmem_kill_sb,
- 	.fs_flags	= FS_USERNS_MOUNT,
- };
- 
-diff --git a/mm/shmem_pram.c b/mm/shmem_pram.c
-new file mode 100644
-index 0000000..9a01040
---- /dev/null
-+++ b/mm/shmem_pram.c
-@@ -0,0 +1,378 @@
-+#include <linux/dcache.h>
-+#include <linux/err.h>
-+#include <linux/fs.h>
-+#include <linux/gfp.h>
-+#include <linux/kernel.h>
-+#include <linux/list.h>
-+#include <linux/mm.h>
-+#include <linux/mount.h>
-+#include <linux/mutex.h>
-+#include <linux/namei.h>
-+#include <linux/pagemap.h>
-+#include <linux/pagevec.h>
+diff --git a/mm/memblock.c b/mm/memblock.c
+index b8d9147..d2c248e 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -19,6 +19,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ #include <linux/memblock.h>
 +#include <linux/pram.h>
-+#include <linux/seq_file.h>
-+#include <linux/shmem_fs.h>
+ 
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+@@ -553,13 +554,17 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
++	int err;
+ 
+ 	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
+ 		     (unsigned long long)base,
+ 		     (unsigned long long)base + size,
+ 		     (void *)_RET_IP_);
+ 
+-	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
++	err = memblock_add_region(_rgn, base, size, MAX_NUMNODES);
++	if (!err)
++		pram_ban_region(PFN_DOWN(base), PFN_UP(base + size) - 1);
++	return err;
+ }
+ 
+ /**
+diff --git a/mm/pram.c b/mm/pram.c
+index 8a66a86..969ff3f 100644
+--- a/mm/pram.c
++++ b/mm/pram.c
+@@ -17,6 +17,7 @@
+ #include <linux/pram.h>
+ #include <linux/reboot.h>
+ #include <linux/sched.h>
 +#include <linux/spinlock.h>
-+#include <linux/string.h>
-+#include <linux/time.h>
-+#include <linux/types.h>
-+#include <linux/uaccess.h>
+ #include <linux/string.h>
+ #include <linux/sysfs.h>
+ #include <linux/types.h>
+@@ -110,6 +111,47 @@ static LIST_HEAD(pram_nodes);			/* linked through page::lru */
+ static DEFINE_MUTEX(pram_mutex);		/* serializes open/close */
+ 
+ unsigned long __initdata pram_reserved_pages;
++static bool __meminitdata pram_reservation_in_progress;
 +
-+#define META_ID		1
-+#define DATA_ID		2
++/*
++ * Obviously, not all memory ranges can be used for saving persistent
++ * over-kexec data, because some of them are reserved by the system core and
++ * various device drivers at boot time. If a memory range used for
++ * initialization of a particular device turns out to be busy because PRAM uses
++ * it for storing its data, the device driver initialization stage or even the
++ * whole system boot sequence may fail.
++ *
++ * As a workaround the current implementation uses a rather dirty hack. It
++ * tracks all memory regions that have ever been reserved during the boot
++ * sequence and avoids using pages belonging to those regions for storing
++ * persistent data. Since the device configuration cannot change during kexec
++ * and the newly booted kernel is likely to have a similar boot-time device
++ * driver set, this hack should work in most cases.
++ */
 +
-+#define EOF_MARK	((__u64)~0ULL)
-+
-+struct file_header {
-+	__u32	mode;
-+	__u32	uid;
-+	__u32	gid;
-+	__u32	namelen;
-+	__u64	size;
-+	__u64	atime;
-+	__u64	mtime;
-+	__u64	ctime;
++/*
++ * Represents a region of memory that PRAM is not allowed to use.
++ */
++struct banned_region {
++	unsigned long start, end;		/* pfn, inclusive */
 +};
 +
-+int shmem_parse_pram(const char *str, struct shmem_pram_info **pram)
++#define MAX_NR_BANNED		(32 + MAX_NUMNODES * 2)
++
++static unsigned int nr_banned;			/* number of banned regions */
++
++/* banned regions; arranged in ascending order, do not overlap */
++static struct banned_region banned[MAX_NR_BANNED];
++
++/*
++ * If a page allocated for PRAM needs turns out to belong to a banned region,
++ * it is placed to the banned_pages list for next allocation attempts not to
++ * encounter it all over again. The list is shrunk when the system memory is
++ * low.
++ */
++static LIST_HEAD(banned_pages);			/* linked through page::lru */
++static DEFINE_SPINLOCK(banned_pages_lock);
++static unsigned long nr_banned_pages;
+ 
+ /*
+  * The PRAM super block pfn, see above.
+@@ -281,6 +323,7 @@ void __init pram_reserve(void)
+ 		return;
+ 
+ 	pr_info("PRAM: Examining persistent memory...\n");
++	pram_reservation_in_progress = true;
+ 
+ 	err = pram_reserve_page(pram_sb_pfn);
+ 	if (err)
+@@ -325,6 +368,7 @@ void __init pram_reserve(void)
+ 	}
+ 
+ out:
++	pram_reservation_in_progress = false;
+ 	if (err) {
+ 		BUG_ON(pram_reserved_pages > 0);
+ 		pr_err("PRAM: Reservation failed: %d\n", err);
+@@ -333,9 +377,114 @@ out:
+ 		pr_info("PRAM: %lu pages reserved\n", pram_reserved_pages);
+ }
+ 
++/*
++ * Bans pfn range [start..end] (inclusive) for PRAM.
++ */
++void __meminit pram_ban_region(unsigned long start, unsigned long end)
 +{
-+	struct shmem_pram_info *new;
-+	size_t len;
++	int i, merged = -1;
 +
-+	len = strlen(str);
-+	if (!len || len >= SHMEM_PRAM_NAME_MAX)
-+		return 1;
-+	new = kzalloc(sizeof(*new), GFP_KERNEL);
-+	if (!new)
-+		return 1;
-+	strcpy(new->name, str);
-+	*pram = new;
-+	return 0;
-+}
-+
-+void shmem_show_pram(struct seq_file *seq, struct shmem_pram_info *pram)
-+{
-+	if (pram)
-+		seq_printf(seq, ",pram=%s", pram->name);
-+}
-+
-+static int shmem_pram_name(char *buf, size_t bufsize,
-+			   struct shmem_sb_info *sbinfo, int id)
-+{
-+	if (snprintf(buf, bufsize, "shmem-%d-%s", id,
-+		     sbinfo->pram->name) >= bufsize)
-+		return -ENAMETOOLONG;
-+	return 0;
-+}
-+
-+static int save_page(struct page *page,
-+		struct pram_stream *psmeta, struct pram_stream *psdata)
-+{
-+	__u64 val;
-+	ssize_t ret;
-+	int err = 0;
-+
-+	if (page) {
-+		val = page->index;
-+		err = pram_save_page(psdata, page, PRAM_PAGE_LRU);
-+	} else
-+		val = EOF_MARK;
-+	if (!err) {
-+		ret = pram_write(psmeta, &val, sizeof(val));
-+		if (ret < 0)
-+			err = ret;
-+	}
-+	return err;
-+}
-+
-+static int save_file_content(struct address_space *mapping,
-+		struct pram_stream *psmeta, struct pram_stream *psdata)
-+{
-+	struct pagevec pvec;
-+	pgoff_t indices[PAGEVEC_SIZE];
-+	pgoff_t index = 0;
-+	struct page *page;
-+	int i, err = 0;
-+
-+	pagevec_init(&pvec, 0);
-+	for ( ; ; ) {
-+		pvec.nr = shmem_find_get_pages_and_swap(mapping,
-+				index, PAGEVEC_SIZE, pvec.pages, indices);
-+		if (!pvec.nr)
-+			break;
-+		for (i = 0; i < pagevec_count(&pvec); i++) {
-+			page = pvec.pages[i];
-+			index = indices[i];
-+
-+			if (radix_tree_exceptional_entry(page)) {
-+				err = -ENOSYS;
-+				break;
-+			}
-+
-+			lock_page(page);
-+			if (likely(page->mapping == mapping))
-+				save_page(page, psmeta, psdata);
-+			unlock_page(page);
-+			if (err)
-+				break;
-+		}
-+		shmem_deswap_pagevec(&pvec);
-+		pagevec_release(&pvec);
-+		if (err)
-+			break;
-+		cond_resched();
-+		index++;
-+	}
-+	if (!err)
-+		err = save_page(NULL, psmeta, psdata); /* eof */
-+	return err;
-+}
-+
-+static int save_file(struct dentry *dentry,
-+		struct pram_stream *psmeta, struct pram_stream *psdata)
-+{
-+	struct inode *inode = dentry->d_inode;
-+	umode_t mode = inode->i_mode;
-+	struct file_header hdr;
-+	ssize_t ret;
-+
-+	if (!S_ISREG(mode))
-+		return -ENOSYS;
-+	if (inode->i_nlink > 1)
-+		return -ENOSYS;
-+
-+	hdr.mode = mode;
-+	hdr.uid = inode->i_uid;
-+	hdr.gid = inode->i_gid;
-+	hdr.namelen = dentry->d_name.len;
-+	hdr.size = i_size_read(inode);
-+	hdr.atime = timespec_to_ns(&inode->i_atime);
-+	hdr.mtime = timespec_to_ns(&inode->i_mtime);
-+	hdr.ctime = timespec_to_ns(&inode->i_ctime);
-+
-+	ret = pram_write(psmeta, &hdr, sizeof(hdr));
-+	if (ret < 0)
-+		return ret;
-+	ret = pram_write(psmeta, dentry->d_name.name, dentry->d_name.len);
-+	if (ret < 0)
-+		return ret;
-+	return save_file_content(inode->i_mapping, psmeta, psdata);
-+}
-+
-+static int save_tree(struct super_block *sb,
-+		struct pram_stream *psmeta, struct pram_stream *psdata)
-+{
-+	struct dentry *dentry, *root = sb->s_root;
-+	int err = 0;
-+
-+	mutex_lock(&root->d_inode->i_mutex);
-+	spin_lock(&root->d_lock);
-+	list_for_each_entry(dentry, &root->d_subdirs, d_u.d_child) {
-+		if (d_unhashed(dentry) || !dentry->d_inode)
-+			continue;
-+		dget(dentry);
-+		spin_unlock(&root->d_lock);
-+
-+		err = save_file(dentry, psmeta, psdata);
-+
-+		spin_lock(&root->d_lock);
-+		dput(dentry);
-+		if (err)
-+			break;
-+	}
-+	spin_unlock(&root->d_lock);
-+	mutex_unlock(&root->d_inode->i_mutex);
-+
-+	return err;
-+}
-+
-+void shmem_save_pram(struct super_block *sb)
-+{
-+	struct shmem_sb_info *sbinfo = sb->s_fs_info;
-+	struct pram_stream psmeta, psdata;
-+	char *buf;
-+	int err = -ENOMEM;
-+
-+	if (!sbinfo || !sbinfo->pram)
++	if (pram_reservation_in_progress)
 +		return;
 +
-+	buf = (void *)__get_free_page(GFP_TEMPORARY);
-+	if (!buf)
-+		goto out;
++	/* first try to merge the region with an existing one */
++	for (i = nr_banned - 1; i >= 0 && start <= banned[i].end + 1; i--) {
++		if (end + 1 >= banned[i].start) {
++			start = min(banned[i].start, start);
++			end = max(banned[i].end, end);
++			if (merged < 0)
++				merged = i;
++		} else
++			/* regions are arranged in ascending order and do not
++			 * intersect so the merged region cannot jump over its
++			 * predecessors */
++			BUG_ON(merged >= 0);
++	}
 +
-+	err = shmem_pram_name(buf, PAGE_SIZE, sbinfo, META_ID);
-+	if (!err)
-+		err = pram_prepare_save(&psmeta, buf,
-+					PRAM_BYTE_STREAM, GFP_KERNEL);
-+	if (err)
-+		goto out_free_buf;
++	i++;
 +
-+	err = shmem_pram_name(buf, PAGE_SIZE, sbinfo, DATA_ID);
-+	if (!err)
-+		err = pram_prepare_save(&psdata, buf,
-+					PRAM_PAGE_STREAM, GFP_HIGHUSER);
-+	if (err)
-+		goto out_discard_meta_save;
++	if (merged >= 0) {
++		banned[i].start = start;
++		banned[i].end = end;
++		/* shift if merged with more than one region */
++		memmove(banned + i + 1, banned + merged + 1,
++			sizeof(*banned) * (nr_banned - merged - 1));
++		nr_banned -= merged - i;
++		return;
++	}
 +
-+	err = save_tree(sb, &psmeta, &psdata);
-+	if (err)
-+		goto out_discard_data_save;
++	/* the region does not intersect with anyone existing,
++	 * try to create a new one */
++	if (nr_banned == MAX_NR_BANNED) {
++		pr_err("PRAM: Failed to ban %lu-%lu: "
++		       "Too many banned regions\n", start, end);
++		return;
++	}
 +
-+	pram_finish_save(&psmeta);
-+	pram_finish_save(&psdata);
-+	goto out_free_buf;
-+
-+out_discard_data_save:
-+	pram_discard_save(&psdata);
-+out_discard_meta_save:
-+	pram_discard_save(&psmeta);
-+out_free_buf:
-+	free_page((unsigned long)buf);
-+out:
-+	if (err)
-+		pr_err("SHMEM: PRAM save failed: %d\n", err);
++	memmove(banned + i + 1, banned + i,
++		sizeof(*banned) * (nr_banned - i));
++	banned[i].start = start;
++	banned[i].end = end;
++	nr_banned++;
 +}
 +
-+static struct page *load_page(unsigned long *index, int *flags,
-+		struct pram_stream *psmeta, struct pram_stream *psdata)
++void __init pram_show_banned(void)
 +{
-+	__u64 val;
++	int i;
++	unsigned long n, total = 0;
++
++	pr_info("PRAM: banned regions:\n");
++	for (i = 0; i < nr_banned; i++) {
++		n = banned[i].end - banned[i].start + 1;
++		pr_info("%4d: [%08lx - %08lx] %ld pages\n",
++			i, banned[i].start, banned[i].end, n);
++		total += n;
++	}
++	pr_info("Total banned: %ld pages in %d regions\n",
++		total, nr_banned);
++}
++
++/*
++ * Returns true if the page may not be used for storing persistent data.
++ */
++static bool pram_page_banned(struct page *page)
++{
++	unsigned long pfn = page_to_pfn(page);
++	int l = 0, r = nr_banned - 1, m;
++
++	/* do binary search */
++	while (l <= r) {
++		m = (l + r) / 2;
++		if (pfn < banned[m].start)
++			r = m - 1;
++		else if (pfn > banned[m].end)
++			l = m + 1;
++		else
++			return true;
++	}
++	return false;
++}
++
+ static inline struct page *pram_alloc_page(gfp_t gfp_mask)
+ {
+-	return alloc_page(gfp_mask);
++	struct page *page;
++	LIST_HEAD(list);
++	unsigned long len = 0;
++
++	page = alloc_page(gfp_mask);
++	gfp_mask |= __GFP_COLD;
++	while (page && pram_page_banned(page)) {
++		len++;
++		list_add(&page->lru, &list);
++		page = alloc_page(gfp_mask);
++	}
++	if (len > 0) {
++		spin_lock(&banned_pages_lock);
++		nr_banned_pages += len;
++		list_splice(&list, &banned_pages);
++		spin_unlock(&banned_pages_lock);
++	}
++	return page;
+ }
+ 
+ static inline void pram_free_page(void *addr)
+@@ -346,6 +495,46 @@ static inline void pram_free_page(void *addr)
+ 	free_page((unsigned long)addr);
+ }
+ 
++static void __banned_pages_shrink(unsigned long nr_to_scan)
++{
 +	struct page *page;
 +
-+	if (pram_read(psmeta, &val, sizeof(val)) != sizeof(val))
-+		return ERR_PTR(-EINVAL);
-+	if (val == EOF_MARK)
-+		return NULL;
-+	*index = val;
-+	page = pram_load_page(psdata, flags);
-+	return page ?: ERR_PTR(-EINVAL);
++	if (nr_to_scan <= 0)
++		return;
++
++	while (nr_banned_pages > 0) {
++		BUG_ON(list_empty(&banned_pages));
++		page = list_first_entry(&banned_pages, struct page, lru);
++		list_del(&page->lru);
++		__free_page(page);
++		nr_banned_pages--;
++		nr_to_scan--;
++		if (!nr_to_scan)
++			break;
++	}
 +}
 +
-+static int load_file_content(struct address_space *mapping,
-+		struct pram_stream *psmeta, struct pram_stream *psdata)
++static int banned_pages_shrink(struct shrinker *shrink,
++			       struct shrink_control *sc)
 +{
-+	struct page *page;
-+	unsigned long index;
-+	int flags, err;
++	int nr_left = nr_banned_pages;
 +
-+next:
-+	page = load_page(&index, &flags, psmeta, psdata);
-+	if (IS_ERR_OR_NULL(page))
-+		return PTR_ERR(page);
-+	err = shmem_insert_page(mapping->host, index, page,
-+				flags & PRAM_PAGE_LRU);
-+	put_page(page);
-+	if (err)
-+		return err;
-+	goto next;
++	if (!sc->nr_to_scan || !nr_left)
++		return nr_left;
++
++	spin_lock(&banned_pages_lock);
++	__banned_pages_shrink(sc->nr_to_scan);
++	nr_left = nr_banned_pages;
++	spin_unlock(&banned_pages_lock);
++
++	return nr_left;
 +}
 +
-+static int load_file(struct dentry *parent,
-+		struct pram_stream *psmeta, struct pram_stream *psdata,
-+		char *buf, size_t bufsize)
-+{
-+	struct dentry *dentry;
-+	struct inode *inode;
-+	struct file_header hdr;
-+	size_t ret;
-+	umode_t mode;
-+	int namelen;
++static struct shrinker banned_pages_shrinker = {
++	.shrink = banned_pages_shrink,
++	.seeks = DEFAULT_SEEKS,
++};
++
+ static inline void pram_insert_node(struct pram_node *node)
+ {
+ 	list_add(&virt_to_page(node)->lru, &pram_nodes);
+@@ -650,6 +839,7 @@ void pram_finish_load(struct pram_stream *ps)
+ 
+ /*
+  * Insert page to PRAM node allocating a new PRAM link if necessary.
++ * It is up to the caller to assert that the page is not banned.
+  */
+ static int __pram_save_page(struct pram_stream *ps,
+ 			    struct page *page, int flags)
+@@ -703,13 +893,28 @@ static int __pram_save_page(struct pram_stream *ps,
+ int pram_save_page(struct pram_stream *ps, struct page *page, int flags)
+ {
+ 	struct pram_node *node = ps->node;
++	struct page *new = NULL;
 +	int err;
-+
-+	ret = pram_read(psmeta, &hdr, sizeof(hdr));
-+	if (!ret)
-+		return 0;
-+	if (ret != sizeof(hdr))
-+		return -EINVAL;
-+
-+	mode = hdr.mode;
-+	namelen = hdr.namelen;
-+	if (!S_ISREG(mode) || namelen > bufsize)
-+		return -EINVAL;
-+	if (pram_read(psmeta, buf, namelen) != namelen)
-+		return -EINVAL;
-+
-+	mutex_lock_nested(&parent->d_inode->i_mutex, I_MUTEX_PARENT);
-+
-+	dentry = lookup_one_len(buf, parent, namelen);
-+	if (IS_ERR(dentry)) {
-+		err = PTR_ERR(dentry);
-+		goto out_unlock;
+ 
+ 	BUG_ON(node->type != PRAM_PAGE_STREAM);
+ 	BUG_ON((node->flags & PRAM_ACCMODE_MASK) != PRAM_SAVE);
+ 
+ 	BUG_ON(PageCompound(page));
+ 
+-	return __pram_save_page(ps, page, flags);
++	/* if page is banned, relocate it */
++	if (pram_page_banned(page)) {
++		new = pram_alloc_page(ps->gfp_mask);
++		if (!new)
++			return -ENOMEM;
++		copy_highpage(new, page);
++		page = new;
++		flags &= ~PRAM_PAGE_LRU;
 +	}
 +
-+	err = vfs_create(parent->d_inode, dentry, mode, NULL);
-+	dput(dentry); /* on success shmem pinned it */
-+	if (err)
-+		goto out_unlock;
-+
-+	inode = dentry->d_inode;
-+	inode->i_mode = mode;
-+	inode->i_uid = hdr.uid;
-+	inode->i_gid = hdr.gid;
-+	inode->i_atime = ns_to_timespec(hdr.atime);
-+	inode->i_mtime = ns_to_timespec(hdr.mtime);
-+	inode->i_ctime = ns_to_timespec(hdr.ctime);
-+	i_size_write(inode, hdr.size);
-+
-+	err = load_file_content(inode->i_mapping, psmeta, psdata);
-+out_unlock:
-+	mutex_unlock(&parent->d_inode->i_mutex);
-+	if (err)
-+		return err;
-+	return 1;
-+}
-+
-+static int load_tree(struct super_block *sb,
-+		struct pram_stream *psmeta, struct pram_stream *psdata,
-+		char *buf, size_t bufsize)
-+{
-+	int ret;
-+
-+next:
-+	ret = load_file(sb->s_root, psmeta, psdata, buf, PAGE_SIZE);
-+	if (ret <= 0)
-+		return ret;
-+	goto next;
-+}
-+
-+void shmem_load_pram(struct super_block *sb)
-+{
-+	struct shmem_sb_info *sbinfo = sb->s_fs_info;
-+	struct pram_stream psmeta, psdata;
-+	char *buf;
-+	int err = -ENOMEM;
-+
-+	if (!sbinfo->pram)
-+		return;
-+
-+	buf = (void *)__get_free_page(GFP_TEMPORARY);
-+	if (!buf)
-+		goto out;
-+
-+	err = shmem_pram_name(buf, PAGE_SIZE, sbinfo, META_ID);
-+	if (!err)
-+		err = pram_prepare_load(&psmeta, buf, PRAM_BYTE_STREAM);
-+	if (err) {
-+		if (err == -ENOENT)
-+			err = 0;
-+		goto out_free_buf;
-+	}
-+
-+	err = shmem_pram_name(buf, PAGE_SIZE, sbinfo, DATA_ID);
-+	if (!err)
-+		err = pram_prepare_load(&psdata, buf, PRAM_PAGE_STREAM);
-+	if (err)
-+		goto out_finish_meta_load;
-+
-+	err = load_tree(sb, &psmeta, &psdata, buf, PAGE_SIZE);
-+
-+	pram_finish_load(&psmeta);
-+out_finish_meta_load:
-+	pram_finish_load(&psdata);
-+out_free_buf:
-+	free_page((unsigned long)buf);
-+out:
-+	if (err)
-+		pr_err("SHMEM: PRAM load failed: %d\n", err);
-+}
++	err = __pram_save_page(ps, page, flags);
++	if (new)
++		put_page(new);
++	return err;
+ }
+ 
+ /*
+@@ -963,6 +1168,7 @@ static int __init pram_init_sb(void)
+ 		page = pram_alloc_page(GFP_KERNEL | __GFP_ZERO);
+ 		if (!page) {
+ 			pr_err("PRAM: Failed to allocate super block\n");
++			__banned_pages_shrink(ULONG_MAX);
+ 			return 0;
+ 		}
+ 		pram_sb = page_address(page);
+@@ -983,6 +1189,7 @@ static int __init pram_init(void)
+ {
+ 	if (pram_init_sb()) {
+ 		register_reboot_notifier(&pram_reboot_notifier);
++		register_shrinker(&banned_pages_shrinker);
+ 		sysfs_update_group(kernel_kobj, &pram_attr_group);
+ 	}
+ 	return 0;
 -- 
 1.7.10.4
 
