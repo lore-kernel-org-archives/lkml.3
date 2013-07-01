@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3GAW6V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 18:58:21 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:32260 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755100Ab3GAW6U convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 18:58:20 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <201307020032.49963.PeterHuewe@gmx.de>
-References: <1372714468-28120-1-git-send-email-dgdegra@tycho.nsa.gov> <201307020032.49963.PeterHuewe@gmx.de>
+	id S932081Ab3GAXA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 19:00:26 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32485 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755100Ab3GAXAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 19:00:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,976,1363158000"; 
+   d="scan'208";a="358989094"
+Date: Tue, 2 Jul 2013 00:55:17 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
+Subject: Re: [PATCH] mfd: wm8994: Remove duplicate check for active JACKDET
+Message-ID: <20130701225517.GC4572@zurbaran>
+References: <1372708578-9377-1-git-send-email-broonie@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [tpmdd-devel] [PATCH v4] drivers/tpm: add xen tpmfront interface
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Mon, 01 Jul 2013 18:57:39 -0400
-To: =?ISO-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>,
-        tpmdd-devel@lists.sourceforge.net
-CC: Daniel De Graaf <dgdegra@tycho.nsa.gov>, leosilva@linux.vnet.ibm.com,
-        adlai@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org, mail@srajiv.net, shpedoikal@gmail.com,
-        tpmdd@sirrix.com
-Message-ID: <38592a6a-62d1-48db-9219-641b610b4683@email.android.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372708578-9377-1-git-send-email-broonie@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Peter Hüwe" <PeterHuewe@gmx.de> wrote:
+Hi Mark,
 
->Am Montag, 1. Juli 2013, 23:34:28 schrieb Daniel De Graaf:
->> This is a complete rewrite of the Xen TPM frontend driver, taking
->> advantage of a simplified frontend/backend interface and adding
->support
->> for cancellation and timeouts.  The backend for this driver is
->provided
->> by a vTPM stub domain using the interface in Xen 4.3.
->> 
->> Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
->> Acked-by: Matthew Fioravante <matthew.fioravante@jhuapl.edu>
->> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->> Acked-by: Peter Huewe <peterhuewe@gmx.de>
->> Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
->> ---
->
->Reviewed, the remaining topics were addressed in this v4.
->Reviewed-by: Peter Huewe <peterhuewe@gmx.de>
->
->
->From the TPM point of view I'd say it is fine.
->Acked-by: Peter Huewe <peterhuewe@gmx.de>
->
->Thanks!
->
->@Konrad: Can you take it through your tree?
->
->
->Thanks,
->Peter
+On Mon, Jul 01, 2013 at 08:56:18PM +0100, Mark Brown wrote:
+> From: Mark Brown <broonie@linaro.org>
+> 
+> Probably the result of a mismerge or rebase failing to notice that the
+> hunk had already been applied.
+> 
+> Signed-off-by: Mark Brown <broonie@linaro.org>
+> ---
+>  drivers/mfd/wm8994-core.c | 14 --------------
+>  1 file changed, 14 deletions(-)
+Applied to mfd-next, thanks.
 
-Of course I will queue it up. I am not sure if it will be able to make it in 3.11 (merge window opened just now). 
+Cheers,
+Samuel.
+
 -- 
-Sent from my Android phone. Please excuse my brevity.
+Intel Open Source Technology Centre
+http://oss.intel.com/
