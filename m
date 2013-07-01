@@ -1,51 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab3GAIOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:14:51 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:37640 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752902Ab3GAIOt (ORCPT
+	id S1753094Ab3GAIPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:15:30 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:63300 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752887Ab3GAIP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:14:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <874ncluatb.fsf@linaro.org>
-References: <CA+G9fYv_9EQUmpRNPUwioSwJVXnXJC5odEKiMd=vKHNWYRT8xw@mail.gmail.com>
-	<CA+G9fYupw8Gi=5p2nKVJ9GqfhwBcTw7hyzGA8+K+gHmdL96mJg@mail.gmail.com>
-	<874ncluatb.fsf@linaro.org>
-Date: Mon, 1 Jul 2013 13:44:49 +0530
-Message-ID: <CA+G9fYtYV6htwVP9aTM+Pc0jFyowDoTdiykxF0cY8RAwcpmKVQ@mail.gmail.com>
-Subject: Re: linux-next: panda build failed at arch/arm/mach-omap2/omap4-restart.c
-From: Naresh Kamboju <naresh.kamboju@linaro.org>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: Robin Holt <holt@sgi.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Andrey Konovalov <andrey.konovalov@linaro.org>,
-        Russ Anderson <rja@sgi.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org,
-        Milosz Wasilewski <milosz.wasilewski@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 1 Jul 2013 04:15:28 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-66-51d13a9ed228
+Date: Mon, 01 Jul 2013 10:15:16 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocky" <rjw@sisk.pl>
+Cc: Lukasz Majewski <l.majewski@samsung.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [PATCH v4 5/7] cpufreq: Calculate number of busy CPUs
+Message-id: <20130701101516.7945e387@amdc308.digital.local>
+In-reply-to: <20130628085457.05d64878@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
+ <1371661969-7660-6-git-send-email-l.majewski@samsung.com>
+ <CAKohpo=EwapTp8epok30=_ZYLPeCR8_LhpBF5H724dE=+SwMLg@mail.gmail.com>
+ <20130627125819.5c90da30@amdc308.digital.local>
+ <CAKohpo=JKg17YWjTrOh25hHW=sXn8-TW=D8rhrovonwZBDarBg@mail.gmail.com>
+ <20130627164204.370dc4a6@amdc308.digital.local>
+ <CAKohpomrPP9Lzk+fMn+Ba+J+2N740LR5NurVMomx8zww3AWLww@mail.gmail.com>
+ <20130628085457.05d64878@amdc308.digital.local>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBIsWRmVeSWpSXmKPExsVy+t9jAd15VhcDDSZ9F7b483Y5q8XTph/s
+	FvM+y1qs2f+TyaLz7BNmi94FV9ks3jzitnjzcDOjxeVdc9gsPvceYbS43biCzaJ/YS+TxZOH
+	fWwWHUe+MVts/OrhwO+xeM9LJo871/aweayb9pbZo2/LKkaPR4tbGD2O39jO5PF5k1wAexSX
+	TUpqTmZZapG+XQJXRv+zo6wFJ/kqrh9bxNbAOI27i5GTQ0LAROLUvHMsELaYxIV769m6GLk4
+	hAQWMUqc+3ieBcJpZ5KYtbiHsYuRg4NFQFViyZoAkAY2AT2Jz3efMoHYIgK+Ej3LDjGB1DML
+	7GOR2NT1DywhLOAk8fXOL3YQm1fAWmLfzylgNqeAjcSuE11MEAtWsEh0b9vMDJLgF5CUaP/3
+	gxniJDuJc582QDULSvyYfA/sVGYBLYnN25pYIWx5ic1r3jJPYBSchaRsFpKyWUjKFjAyr2IU
+	TS1ILihOSs810itOzC0uzUvXS87P3cQIjq9n0jsYVzVYHGIU4GBU4uFdMP1CoBBrYllxZe4h
+	RgkOZiUR3v8WFwOFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5stQ4UEkhPLEnNTk0tSC2CyTJx
+	cEo1MPZ6v1qksX0/n/D6iemSDK1xVrpuiRp/N/a/7tout8P457GErYd3FPYvPrPWaL7yqbij
+	84RS9qRd+BV4MGhNhOjG6VFHPy5sKT/8gCHChnv9ya65IjMeLWIp2PjNyuH3vgj3N116hSfE
+	vq0RiPFsNT0tGhBlbSg9Se/Il3aOTJbNj04sFKz4dVOJpTgj0VCLuag4EQBZXgs0qwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+On Fri, 28 Jun 2013 08:54:57 +0200, Lukasz Majewski wrote:
+> > > So thermal or "other solution" [*] shall disable boost when
+> > > overheated and enable it back when things cool down.  
+> > 
+> > yeah..  
+> 
+> For me thermal is a good candidate to enable boost again. I only need
+> to find a proper place for it.
 
-On 26 June 2013 03:12, Kevin Hilman <khilman@linaro.org> wrote:
-> Naresh Kamboju <naresh.kamboju@linaro.org> writes:
->
->> ping
->
-> This is a known issue[1] and already has some proposed fixes, they are just
-> not merged yet.
->
-> Kevin
->
-> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2013-June/178209.html
->
+Unfortunately, after careful investigation it turned out, that thermal
+is suited to disable boost when overheating is detected. (since it uses
+thermal subsystem interrupt to take action).
 
-Now the panda builds are back to work on linux-next.
-https://ci.linaro.org/jenkins/job/linux-next/
--Naresh Kamboju
+The problem is with enabling boost again, since thermal (at least at my
+board) only reacts on TMU (thermal) interrupt. Thermal thread may be
+started, but I don't regard this as a good solution (to extra bloat
+thermal).
+
+> 
+> >   
+> > > [*] @ Viresh & Rafael do you have any idea about the "other
+> > > solution" here?  
+> > 
+> > Not really sure :)  
+> 
+> Not any single one? Then I would like to propose thermal.
+> 
+
+Does anybody have any idea here? As written above, thermal is suitable
+to disable boost.
+
+I'd like to bring those three options under discussion:
+
+1. boost attr is always exported -> do not enable boost automatically
+   when disabled by thermal (as it was proposed at v4).
+
+2. boost attr is always exported -> find a way to enable boost after
+   emergency disablement when thermal detects overheating (newest
+   proposition). 
+
+3. boost attr only exported at x86 (when supported)
+   boost attr NOT exported via sysfs for SW controlled boost (e.g.
+   Exynos ARM).
+
+   Then we only enable/disable boost at kernel and don't need to take
+   care of the user space interaction. This scenario is my use case. I
+   hadn't planned to expose boost to userspace and use it with LAB as a
+   kernel API.
+
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
