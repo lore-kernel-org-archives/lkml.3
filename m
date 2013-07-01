@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab3GALt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:49:59 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:39585 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753242Ab3GALt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:49:57 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: netdev@vger.kernel.org
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [PATCH RFC 3/3] dt:net:stmmac: Add dt specific phy reset callback support.
-Date: Mon,  1 Jul 2013 12:44:05 +0100
-Message-Id: <1372679045-13183-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1372678962-12959-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1372678962-12959-1-git-send-email-srinivas.kandagatla@st.com>
+	id S1754035Ab3GALtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:49:14 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:62168 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752350Ab3GALtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 07:49:06 -0400
+X-IronPort-AV: E=Sophos;i="4.87,974,1363132800"; 
+   d="scan'208";a="34406396"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <xen-devel@lists.xen.org>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        Bob Moore <robert.moore@intel.com>
+Subject: [PATCH v6 2/5] acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
+Date: Mon, 1 Jul 2013 07:48:50 -0400
+Message-ID: <1372679333-8473-3-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
+References: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+reduced hardware sleep support, and the two changes didn't get
+synchronized: The new code doesn't call the hook function (if so
+requested). Fix this, requiring a parameter to be added to the
+hook function to distinguish "extended" from "legacy" sleep.
 
-This patch adds phy reset callback support for stmmac driver via device
-trees. It adds three new properties to gmac device tree bindings to
-define the reset signal via gpio.
-
-With this patch users can conveniently pass reset gpio number with pre,
-pulse and post delay in micro secs via DTs.
-
- active low:
-		_________		 ____________
-	<pre-delay>	|<pulse-delay>	|<post-delay>
-		 	|		|
-		 	|_______________|
-
- active high:
- 			 ________________
-	<pre-delay>	|<pulse-delay>	|<post-delay>
-			|		|
-		________|		|___________
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: Bob Moore <robert.moore@intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- Documentation/devicetree/bindings/net/stmmac.txt  |    6 ++++
- drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c |   31 +++++++++++++++++++++
- 2 files changed, 37 insertions(+), 0 deletions(-)
+ drivers/acpi/acpica/hwesleep.c |    7 +++++++
+ drivers/acpi/acpica/hwsleep.c  |    2 +-
+ include/acpi/acpiosxf.h        |    4 ++--
+ 3 files changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
-index e1ddfcc..261c563 100644
---- a/Documentation/devicetree/bindings/net/stmmac.txt
-+++ b/Documentation/devicetree/bindings/net/stmmac.txt
-@@ -13,6 +13,12 @@ Required properties:
- - phy-mode: String, operation mode of the PHY interface.
-   Supported values are: "mii", "rmii", "gmii", "rgmii".
- - snps,phy-addr		phy address to connect to.
-+- snps,reset-gpio 	gpio number for phy reset.
-+- snps,reset-active-low boolean flag to indicate if phy reset is active low.
-+- snps,reset-delays-us  is triplet of delays
-+	The 1st cell is reset pre-delay in micro seconds.
-+	The 2nd cell is reset pulse in micro seconds.
-+	The 3rd cell is reset post-delay in micro seconds.
- - snps,pbl		Programmable Burst Length
- - snps,fixed-burst	Program the DMA to use the fixed burst mode
- - snps,mixed-burst	Program the DMA to use the mixed burst mode
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-index cc15039..677ed16 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-@@ -27,6 +27,9 @@
- #include <linux/mii.h>
- #include <linux/phy.h>
- #include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
-+
- #include <asm/io.h>
+diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
+index 5e5f762..69b3e15 100644
+--- a/drivers/acpi/acpica/hwesleep.c
++++ b/drivers/acpi/acpica/hwesleep.c
+@@ -128,6 +128,13 @@ acpi_status acpi_hw_extended_sleep(u8 sleep_state)
  
- #include "stmmac.h"
-@@ -131,6 +134,34 @@ static int stmmac_mdio_reset(struct mii_bus *bus)
- 	struct net_device *ndev = bus->priv;
- 	struct stmmac_priv *priv = netdev_priv(ndev);
- 	unsigned int mii_address = priv->hw->mii.addr;
-+	struct device *dev = priv->device;
-+
-+	if (dev->of_node) {
-+		int reset_gpio, active_low;
-+		struct device_node *np = dev->of_node;
-+		u32 delays[3] = {0,};
-+
-+		if (!np)
-+			return 0;
-+
-+		reset_gpio = of_get_named_gpio(np, "snps,reset-gpio", 0);
-+		if (reset_gpio < 0)
-+			return 0;
-+
-+		active_low = of_property_read_bool(np,
-+					"snps,reset-active-low");
-+		of_property_read_u32_array(np,
-+					"snps,reset-delays-us", delays, 3);
-+
-+		gpio_request(reset_gpio, "mdio-reset");
-+		gpio_direction_output(reset_gpio, active_low ? 1 : 0);
-+		udelay(delays[0]);
-+		gpio_set_value(reset_gpio, active_low ? 0 : 1);
-+		udelay(delays[1]);
-+		gpio_set_value(reset_gpio, active_low ? 1 : 0);
-+		udelay(delays[2]);
-+		gpio_free(reset_gpio);
-+	}
+ 	ACPI_FLUSH_CPU_CACHE();
  
- 	if (priv->plat->mdio_bus_data->phy_reset) {
- 		pr_debug("stmmac_mdio_reset: calling phy_reset\n");
++	status = acpi_os_prepare_sleep(sleep_state, acpi_gbl_sleep_type_a,
++				       acpi_gbl_sleep_type_b, TRUE);
++	if (ACPI_SKIP(status))
++		return_ACPI_STATUS(AE_OK);
++	if (ACPI_FAILURE(status))
++		return_ACPI_STATUS(status);
++
+ 	/*
+ 	 * Set the SLP_TYP and SLP_EN bits.
+ 	 *
+diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+index 867b947..cf78157 100644
+--- a/drivers/acpi/acpica/hwsleep.c
++++ b/drivers/acpi/acpica/hwsleep.c
+@@ -152,7 +152,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+ 	ACPI_FLUSH_CPU_CACHE();
+ 
+ 	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+-				       pm1b_control);
++				       pm1b_control, FALSE);
+ 	if (ACPI_SKIP(status))
+ 		return_ACPI_STATUS(AE_OK);
+ 	if (ACPI_FAILURE(status))
+diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
+index 7b402f2..3dc5ffa6 100644
+--- a/include/acpi/acpiosxf.h
++++ b/include/acpi/acpiosxf.h
+@@ -279,7 +279,7 @@ void acpi_os_close_directory(void *dir_handle);
+ /*
+  * ACPI sleep preparation
+  */
+-acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+-				  u32 pm1a_control, u32 pm1b_control);
++acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
++				  u8 extended);
+ 
+ #endif				/* __ACPIOSXF_H__ */
 -- 
-1.7.6.5
+1.7.9.5
 
