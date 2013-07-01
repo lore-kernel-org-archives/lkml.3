@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3GAHXw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 03:23:52 -0400
+	id S1752857Ab3GAHXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 03:23:14 -0400
 Received: from mga02.intel.com ([134.134.136.20]:6666 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752884Ab3GAHXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 03:23:18 -0400
+	id S1752797Ab3GAHXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 03:23:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,972,1363158000"; 
-   d="scan'208";a="362388539"
+   d="scan'208";a="362388506"
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, a.p.zijlstra@chello.nl, eranian@google.com,
         andi@firstfloor.org, "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: [PATCH v2 5/7] perf, core: Pass perf_sample_data to perf_callchain()
-Date: Mon,  1 Jul 2013 15:23:05 +0800
-Message-Id: <1372663387-11754-6-git-send-email-zheng.z.yan@intel.com>
+Subject: [PATCH v2 1/7] perf, x86: Reduce lbr_sel_map size
+Date: Mon,  1 Jul 2013 15:23:01 +0800
+Message-Id: <1372663387-11754-2-git-send-email-zheng.z.yan@intel.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
 References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
@@ -25,156 +25,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-New Intel CPU can record call chains by using existing last branch
-record facility. perf_callchain_user() can make use of the call
-chains recorded by hardware in case of there is no frame pointer.
+The index of lbr_sel_map is bit value of perf branch_sample_type.
+We can reduce lbr_sel_map size by using bit shift as index.
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- arch/arm/kernel/perf_event.c     | 4 ++--
- arch/powerpc/perf/callchain.c    | 4 ++--
- arch/sparc/kernel/perf_event.c   | 4 ++--
- arch/x86/kernel/cpu/perf_event.c | 4 ++--
- include/linux/perf_event.h       | 3 ++-
- kernel/events/callchain.c        | 8 +++++---
- kernel/events/core.c             | 2 +-
- kernel/events/internal.h         | 3 ++-
- 8 files changed, 18 insertions(+), 14 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h           |  4 +++
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 50 ++++++++++++++----------------
+ include/uapi/linux/perf_event.h            | 42 +++++++++++++++++--------
+ 3 files changed, 56 insertions(+), 40 deletions(-)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 8c3094d..3f84d3c 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -559,8 +559,8 @@ user_backtrace(struct frame_tail __user *tail,
- 	return buftail.fp - 1;
- }
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 97e557b..e33d3b7 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -453,6 +453,10 @@ struct x86_pmu {
+ 	struct perf_guest_switch_msr *(*guest_get_msrs)(int *nr);
+ };
  
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
++enum {
++	PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE = PERF_SAMPLE_BRANCH_MAX_SHIFT,
++};
++
+ #define x86_add_quirk(func_)						\
+ do {									\
+ 	static struct x86_pmu_quirk __quirk __initdata = {		\
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index d5be06a..1e74cc4 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -69,10 +69,6 @@ static enum {
+ #define LBR_FROM_FLAG_IN_TX    (1ULL << 62)
+ #define LBR_FROM_FLAG_ABORT    (1ULL << 61)
+ 
+-#define for_each_branch_sample_type(x) \
+-	for ((x) = PERF_SAMPLE_BRANCH_USER; \
+-	     (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
+-
+ /*
+  * x86control flow change classification
+  * x86control flow changes include branches, interrupts, traps, faults
+@@ -387,14 +383,14 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
  {
- 	struct frame_tail __user *tail;
+ 	struct hw_perf_event_extra *reg;
+ 	u64 br_type = event->attr.branch_sample_type;
+-	u64 mask = 0, m;
+-	u64 v;
++	u64 mask = 0, v;
++	int i;
  
-diff --git a/arch/powerpc/perf/callchain.c b/arch/powerpc/perf/callchain.c
-index 74d1e78..b379ebc 100644
---- a/arch/powerpc/perf/callchain.c
-+++ b/arch/powerpc/perf/callchain.c
-@@ -482,8 +482,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
- 	}
- }
+-	for_each_branch_sample_type(m) {
+-		if (!(br_type & m))
++	for (i = 0; i < PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE; i++) {
++		if (!(br_type & (1ULL << i)))
+ 			continue;
  
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	if (current_is_64bit())
- 		perf_callchain_user_64(entry, regs);
-diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
-index b5c38fa..cba0306 100644
---- a/arch/sparc/kernel/perf_event.c
-+++ b/arch/sparc/kernel/perf_event.c
-@@ -1785,8 +1785,8 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
- 	} while (entry->nr < PERF_MAX_STACK_DEPTH);
- }
+-		v = x86_pmu.lbr_sel_map[m];
++		v = x86_pmu.lbr_sel_map[i];
+ 		if (v == LBR_NOT_SUPP)
+ 			return -EOPNOTSUPP;
  
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	perf_callchain_store(entry, regs->tpc);
+@@ -649,33 +645,33 @@ intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
+ /*
+  * Map interface branch filters onto LBR filters
+  */
+-static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+-	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
+-	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
+-	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
+-	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
+-	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_REL_JMP
+-					| LBR_IND_JMP | LBR_FAR,
++static const int nhm_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
++	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
++	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
++	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
++	[PERF_SAMPLE_BRANCH_HV_SHIFT]		= LBR_IGN,
++	[PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]	= LBR_RETURN | LBR_REL_JMP
++						| LBR_IND_JMP | LBR_FAR,
+ 	/*
+ 	 * NHM/WSM erratum: must include REL_JMP+IND_JMP to get CALL branches
+ 	 */
+-	[PERF_SAMPLE_BRANCH_ANY_CALL] =
++	[PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT] =
+ 	 LBR_REL_CALL | LBR_IND_CALL | LBR_REL_JMP | LBR_IND_JMP | LBR_FAR,
+ 	/*
+ 	 * NHM/WSM erratum: must include IND_JMP to capture IND_CALL
+ 	 */
+-	[PERF_SAMPLE_BRANCH_IND_CALL] = LBR_IND_CALL | LBR_IND_JMP,
++	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT] = LBR_IND_CALL | LBR_IND_JMP,
+ };
  
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2a79382..be7253f 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -2023,8 +2023,8 @@ perf_callchain_user32(struct pt_regs *regs, struct perf_callchain_entry *entry)
- }
- #endif
+-static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_MAX] = {
+-	[PERF_SAMPLE_BRANCH_ANY]	= LBR_ANY,
+-	[PERF_SAMPLE_BRANCH_USER]	= LBR_USER,
+-	[PERF_SAMPLE_BRANCH_KERNEL]	= LBR_KERNEL,
+-	[PERF_SAMPLE_BRANCH_HV]		= LBR_IGN,
+-	[PERF_SAMPLE_BRANCH_ANY_RETURN]	= LBR_RETURN | LBR_FAR,
+-	[PERF_SAMPLE_BRANCH_ANY_CALL]	= LBR_REL_CALL | LBR_IND_CALL
+-					| LBR_FAR,
+-	[PERF_SAMPLE_BRANCH_IND_CALL]	= LBR_IND_CALL,
++static const int snb_lbr_sel_map[PERF_SAMPLE_BRANCH_SELECT_MAP_SIZE] = {
++	[PERF_SAMPLE_BRANCH_ANY_SHIFT]		= LBR_ANY,
++	[PERF_SAMPLE_BRANCH_USER_SHIFT]		= LBR_USER,
++	[PERF_SAMPLE_BRANCH_KERNEL_SHIFT]	= LBR_KERNEL,
++	[PERF_SAMPLE_BRANCH_HV_SHIFT]		= LBR_IGN,
++	[PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT]	= LBR_RETURN | LBR_FAR,
++	[PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT]	= LBR_REL_CALL | LBR_IND_CALL
++						| LBR_FAR,
++	[PERF_SAMPLE_BRANCH_IND_CALL_SHIFT]	= LBR_IND_CALL,
+ };
  
--void
--perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
-+void perf_callchain_user(struct perf_callchain_entry *entry,
-+			 struct pt_regs *regs, struct perf_sample_data *data)
- {
- 	struct stack_frame frame;
- 	const void __user *fp;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index e9af629..8bbe01f 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -702,7 +702,8 @@ extern void perf_event_fork(struct task_struct *tsk);
- /* Callchains */
- DECLARE_PER_CPU(struct perf_callchain_entry, perf_callchain_entry);
+ /* core */
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 0b1df41..2ec219e 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -148,20 +148,36 @@ enum perf_event_sample_format {
+  * The branch types can be combined, however BRANCH_ANY covers all types
+  * of branches and therefore it supersedes all the other types.
+  */
++enum perf_branch_sample_type_shift {
++	PERF_SAMPLE_BRANCH_USER_SHIFT		= 0, /* user branches */
++	PERF_SAMPLE_BRANCH_KERNEL_SHIFT		= 1, /* kernel branches */
++	PERF_SAMPLE_BRANCH_HV_SHIFT		= 2, /* hypervisor branches */
++
++	PERF_SAMPLE_BRANCH_ANY_SHIFT		= 3, /* any branch types */
++	PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT	= 4, /* any call branch */
++	PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT	= 5, /* any return branch */
++	PERF_SAMPLE_BRANCH_IND_CALL_SHIFT	= 6, /* indirect calls */
++	PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT	= 7, /* transaction aborts */
++	PERF_SAMPLE_BRANCH_IN_TX_SHIFT		= 8, /* in transaction */
++	PERF_SAMPLE_BRANCH_NO_TX_SHIFT		= 9, /* not in transaction */
++
++	PERF_SAMPLE_BRANCH_MAX_SHIFT		/* non-ABI */
++};
++
+ enum perf_branch_sample_type {
+-	PERF_SAMPLE_BRANCH_USER		= 1U << 0, /* user branches */
+-	PERF_SAMPLE_BRANCH_KERNEL	= 1U << 1, /* kernel branches */
+-	PERF_SAMPLE_BRANCH_HV		= 1U << 2, /* hypervisor branches */
+-
+-	PERF_SAMPLE_BRANCH_ANY		= 1U << 3, /* any branch types */
+-	PERF_SAMPLE_BRANCH_ANY_CALL	= 1U << 4, /* any call branch */
+-	PERF_SAMPLE_BRANCH_ANY_RETURN	= 1U << 5, /* any return branch */
+-	PERF_SAMPLE_BRANCH_IND_CALL	= 1U << 6, /* indirect calls */
+-	PERF_SAMPLE_BRANCH_ABORT_TX	= 1U << 7, /* transaction aborts */
+-	PERF_SAMPLE_BRANCH_IN_TX	= 1U << 8, /* in transaction */
+-	PERF_SAMPLE_BRANCH_NO_TX	= 1U << 9, /* not in transaction */
+-
+-	PERF_SAMPLE_BRANCH_MAX		= 1U << 10, /* non-ABI */
++	PERF_SAMPLE_BRANCH_USER         = 1U << PERF_SAMPLE_BRANCH_USER_SHIFT,
++	PERF_SAMPLE_BRANCH_KERNEL       = 1U << PERF_SAMPLE_BRANCH_KERNEL_SHIFT,
++	PERF_SAMPLE_BRANCH_HV           = 1U << PERF_SAMPLE_BRANCH_HV_SHIFT,
++
++	PERF_SAMPLE_BRANCH_ANY          = 1U << PERF_SAMPLE_BRANCH_ANY_SHIFT,
++	PERF_SAMPLE_BRANCH_ANY_CALL     = 1U << PERF_SAMPLE_BRANCH_ANY_CALL_SHIFT,
++	PERF_SAMPLE_BRANCH_ANY_RETURN   = 1U << PERF_SAMPLE_BRANCH_ANY_RETURN_SHIFT,
++	PERF_SAMPLE_BRANCH_IND_CALL     = 1U << PERF_SAMPLE_BRANCH_IND_CALL_SHIFT,
++	PERF_SAMPLE_BRANCH_ABORT_TX     = 1U << PERF_SAMPLE_BRANCH_ABORT_TX_SHIFT,
++	PERF_SAMPLE_BRANCH_IN_TX        = 1U << PERF_SAMPLE_BRANCH_IN_TX_SHIFT,
++	PERF_SAMPLE_BRANCH_NO_TX        = 1U << PERF_SAMPLE_BRANCH_NO_TX_SHIFT,
++
++	PERF_SAMPLE_BRANCH_MAX          = 1U << PERF_SAMPLE_BRANCH_MAX_SHIFT,
+ };
  
--extern void perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs);
-+extern void perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs,
-+				struct perf_sample_data *data);
- extern void perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs);
- 
- static inline void perf_callchain_store(struct perf_callchain_entry *entry, u64 ip)
-diff --git a/kernel/events/callchain.c b/kernel/events/callchain.c
-index c772061..bd7138a 100644
---- a/kernel/events/callchain.c
-+++ b/kernel/events/callchain.c
-@@ -30,7 +30,8 @@ __weak void perf_callchain_kernel(struct perf_callchain_entry *entry,
- }
- 
- __weak void perf_callchain_user(struct perf_callchain_entry *entry,
--				struct pt_regs *regs)
-+				struct pt_regs *regs,
-+				struct perf_sample_data *data)
- {
- }
- 
-@@ -154,7 +155,8 @@ put_callchain_entry(int rctx)
- }
- 
- struct perf_callchain_entry *
--perf_callchain(struct perf_event *event, struct pt_regs *regs)
-+perf_callchain(struct perf_event *event, struct pt_regs *regs,
-+	       struct perf_sample_data *data)
- {
- 	int rctx;
- 	struct perf_callchain_entry *entry;
-@@ -195,7 +197,7 @@ perf_callchain(struct perf_event *event, struct pt_regs *regs)
- 				goto exit_put;
- 
- 			perf_callchain_store(entry, PERF_CONTEXT_USER);
--			perf_callchain_user(entry, regs);
-+			perf_callchain_user(entry, regs, data);
- 		}
- 	}
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 02ed472..db3677d 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4550,7 +4550,7 @@ void perf_prepare_sample(struct perf_event_header *header,
- 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		int size = 1;
- 
--		data->callchain = perf_callchain(event, regs);
-+		data->callchain = perf_callchain(event, regs, data);
- 
- 		if (data->callchain)
- 			size += data->callchain->nr;
-diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-index ca65997..0e939e6 100644
---- a/kernel/events/internal.h
-+++ b/kernel/events/internal.h
-@@ -130,7 +130,8 @@ DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
- 
- /* Callchain handling */
- extern struct perf_callchain_entry *
--perf_callchain(struct perf_event *event, struct pt_regs *regs);
-+perf_callchain(struct perf_event *event, struct pt_regs *regs,
-+	       struct perf_sample_data *data);
- extern int get_callchain_buffers(void);
- extern void put_callchain_buffers(void);
- 
+ #define PERF_SAMPLE_BRANCH_PLM_ALL \
 -- 
 1.8.1.4
 
