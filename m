@@ -1,114 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab3GAIY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:24:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38662 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752969Ab3GAIYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:24:25 -0400
-Date: Mon, 1 Jul 2013 10:24:18 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Robert Richter <rric@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org,
-        Robert Richter <robert.richter@calxeda.com>
-Subject: Re: [PATCH] perf tools: Fix perf version generation
-Message-ID: <20130701082417.GA23539@pd.tnic>
-References: <1368006214-12912-1-git-send-email-rric@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1368006214-12912-1-git-send-email-rric@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753211Ab3GAI0G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:26:06 -0400
+Received: from imx9.toshiba.co.jp ([202.33.96.51]:39059 "EHLO
+	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752798Ab3GAI0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 04:26:04 -0400
+X-Greylist: delayed 1381 seconds by postgrey-1.27 at vger.kernel.org; Mon, 01 Jul 2013 04:26:04 EDT
+Content-Transfer-Encoding: 7bit
+From: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+To: cjb@laptop.org, gregkh@linuxfoundation.org, linux-mmc@vger.kernel.org,
+        stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+Subject: [PATCH 3.4-stable] mmc: block: fix a bug of error handling in MMC driver
+Date: Mon,  1 Jul 2013 16:56:25 +0900
+Message-Id: <1372665385-8993-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1368165727-32125-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
+References: <1368165727-32125-1-git-send-email-yoshitake.kobayashi@toshiba.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey acme,
+Backport for 3.4-stable for the following patch:
+     https://lkml.org/lkml/2013/5/10/20
 
-is this one in some queue already?
+This patch fixes a bug of error handling in Linux MMC driver.
 
-I just saw the same problem on 3.10 because git-tag sorts the output
-alphanumerically so that all tags starting with "v3.10" do not appear
-last and thus the "tail -1" doesn't work anymore.
+Current MMC driver doesn't handle generic error (bit19 of device
+status) in write sequence. As a result, write data gets lost when
+generic error occurs. For example, a generic error when updating a
+filesystem management information causes a loss of write data and
+corrupts the filesystem. In the worst case, the system will never
+boot.
 
-So on 3.10 you end up with perf version 3.9.rc8.g8bb495.
+This patch includes the following functionality:
+  1. To enable error checking for the response of CMD12 and CMD13
+     in write command sequence
+  2. To retry write sequence when a generic error occures
 
-On Wed, May 08, 2013 at 11:43:34AM +0200, Robert Richter wrote:
-> From: Robert Richter <robert.richter@calxeda.com>
-> 
-> The tag of the perf version is wrongly determined, always the latest
-> tag is taken regardless of the HEAD commit:
-> 
->  $ perf --version
->  perf version 3.9.rc8.gd7f5d3
->  $ git describe d7f5d3
->  v3.9-rc7-154-gd7f5d33
->  $ head -n 4 Makefile
->  VERSION = 3
->  PATCHLEVEL = 9
->  SUBLEVEL = 0
->  EXTRAVERSION = -rc7
-> 
-> In other cases no tag might be found.
-> 
-> This patch fixes this.
-> 
-> This new implementation handles also the case if there are no tags at
-> all found in the git repo but there is a commit id.
-> 
-> Signed-off-by: Robert Richter <robert.richter@calxeda.com>
-> ---
->  tools/perf/util/PERF-VERSION-GEN | 21 +++++++++++++++------
->  1 file changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
-> index 055fef3..15a77b7 100755
-> --- a/tools/perf/util/PERF-VERSION-GEN
-> +++ b/tools/perf/util/PERF-VERSION-GEN
-> @@ -13,13 +13,22 @@ LF='
->  # First check if there is a .git to get the version from git describe
->  # otherwise try to get the version from the kernel Makefile
->  #
-> -if test -d ../../.git -o -f ../../.git &&
-> -	VN=$(git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*")
-> +CID=
-> +TAG=
-> +if test -d ../../.git -o -f ../../.git
->  then
-> -	VN=$(echo $VN"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD))
-> -	VN=$(echo "$VN" | sed -e 's/-/./g');
-> -else
-> -	VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
-> +	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
-> +	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
-> +fi
-> +if test -z "$TAG"
-> +then
-> +	TAG=$(MAKEFLAGS= make -sC ../.. kernelversion)
-> +fi
-> +VN="$TAG$CID"
-> +if test -n "$CID"
-> +then
-> +	# format version string, strip trailing zero of sublevel:
-> +	VN=$(echo "$VN" | sed -e 's/-/./g;s/\([0-9]*[.][0-9]*\)[.]0/\1/')
->  fi
->  
->  VN=$(expr "$VN" : v*'\(.*\)')
-> -- 
-> 1.8.1.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+This patch was also posted to 3.4.46-LTSI.
+  https://patchwork.kernel.org/patch/2726801/
 
+Signed-off-by: KOBAYASHI Yoshitake <yoshitake.kobayashi@toshiba.co.jp>
+---
+ drivers/mmc/card/block.c |   46 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 43 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 833ff16..e77053f 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -701,7 +701,7 @@ static int mmc_blk_cmd_error(struct request *req, const char *name, int error,
+  * Otherwise we don't understand what happened, so abort.
+  */
+ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+-	struct mmc_blk_request *brq, int *ecc_err)
++	struct mmc_blk_request *brq, int *ecc_err, int *gen_err)
+ {
+ 	bool prev_cmd_status_valid = true;
+ 	u32 status, stop_status = 0;
+@@ -739,6 +739,16 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+ 	    (brq->cmd.resp[0] & R1_CARD_ECC_FAILED))
+ 		*ecc_err = 1;
+ 
++	/* Flag General errors */
++	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
++		if ((status & R1_ERROR) ||
++			(brq->stop.resp[0] & R1_ERROR)) {
++			pr_err("%s: %s: general error sending stop or status command, stop cmd response %#x, card status %#x\n",
++			       req->rq_disk->disk_name, __func__,
++			       brq->stop.resp[0], status);
++			*gen_err = 1;
++		}
++
+ 	/*
+ 	 * Check the current card state.  If it is in some data transfer
+ 	 * mode, tell it to stop (and hopefully transition back to TRAN.)
+@@ -758,6 +768,13 @@ static int mmc_blk_cmd_recovery(struct mmc_card *card, struct request *req,
+ 			return ERR_ABORT;
+ 		if (stop_status & R1_CARD_ECC_FAILED)
+ 			*ecc_err = 1;
++		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ)
++			if (stop_status & R1_ERROR) {
++				pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
++				       req->rq_disk->disk_name, __func__,
++				       stop_status);
++				*gen_err = 1;
++			}
+ 	}
+ 
+ 	/* Check for set block count errors */
+@@ -1007,7 +1024,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 						    mmc_active);
+ 	struct mmc_blk_request *brq = &mq_mrq->brq;
+ 	struct request *req = mq_mrq->req;
+-	int ecc_err = 0;
++	int ecc_err = 0, gen_err = 0;
+ 
+ 	/*
+ 	 * sbc.error indicates a problem with the set block count
+@@ -1021,7 +1038,7 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 	 */
+ 	if (brq->sbc.error || brq->cmd.error || brq->stop.error ||
+ 	    brq->data.error) {
+-		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err)) {
++		switch (mmc_blk_cmd_recovery(card, req, brq, &ecc_err, &gen_err)) {
+ 		case ERR_RETRY:
+ 			return MMC_BLK_RETRY;
+ 		case ERR_ABORT:
+@@ -1051,6 +1068,15 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 	 */
+ 	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
+ 		u32 status;
++
++		/* Check stop command response */
++		if (brq->stop.resp[0] & R1_ERROR) {
++			pr_err("%s: %s: general error sending stop command, stop cmd response %#x\n",
++			       req->rq_disk->disk_name, __func__,
++			       brq->stop.resp[0]);
++			gen_err = 1;
++		}
++
+ 		do {
+ 			int err = get_card_status(card, &status, 5);
+ 			if (err) {
+@@ -1058,6 +1084,13 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 				       req->rq_disk->disk_name, err);
+ 				return MMC_BLK_CMD_ERR;
+ 			}
++
++			if (status & R1_ERROR) {
++				pr_err("%s: %s: general error sending status command, card status %#x\n",
++				       req->rq_disk->disk_name, __func__,
++				       status);
++				gen_err = 1;
++			}
+ 			/*
+ 			 * Some cards mishandle the status bits,
+ 			 * so make sure to check both the busy
+@@ -1067,6 +1100,13 @@ static int mmc_blk_err_check(struct mmc_card *card,
+ 			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
+ 	}
+ 
++	/* if general error occurs, retry the write operation. */
++	if (gen_err) {
++		pr_warning("%s: retrying write for general error\n",
++				req->rq_disk->disk_name);
++		return MMC_BLK_RETRY;
++	}
++
+ 	if (brq->data.error) {
+ 		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
+ 		       req->rq_disk->disk_name, brq->data.error,
 -- 
-Regards/Gruss,
-    Boris.
+1.7.0.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
