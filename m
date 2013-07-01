@@ -1,87 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755231Ab3GATwA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 15:52:00 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60844 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754776Ab3GATv6 (ORCPT
+	id S1755243Ab3GATxt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 15:53:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48835 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006Ab3GATxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 15:51:58 -0400
-Date: Mon, 1 Jul 2013 21:51:56 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org,
-        pali.rohar@gmail.com, kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCH] N900: fix operation on emulator
-Message-ID: <20130701195147.GA22174@amd.pavel.ucw.cz>
-References: <20130613142809.GA3775@amd.pavel.ucw.cz>
- <20130613145724.GH8164@atomide.com>
- <20130613155240.GB3775@amd.pavel.ucw.cz>
- <20130613161418.GJ8164@atomide.com>
- <20130613230808.GA14876@amd.pavel.ucw.cz>
- <20130614055629.GM8164@atomide.com>
- <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
- <20130617111031.GQ20992@atomide.com>
- <20130701140315.GA15318@amd.pavel.ucw.cz>
- <51D1C8DD.6040409@cogentembedded.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51D1C8DD.6040409@cogentembedded.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 1 Jul 2013 15:53:47 -0400
+Date: Mon, 1 Jul 2013 12:53:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Maxim Uvarov <muvarov@gmail.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>, riel@redhat.com,
+        kexec@lists.infradead.org, hughd@google.com,
+        linux-kernel@vger.kernel.org, lisa.mitchell@hp.com, vgoyal@redhat.com,
+        linux-mm@kvack.org, zhangyanfei@cn.fujitsu.com, ebiederm@xmission.com,
+        kosaki.motohiro@jp.fujitsu.com, walken@google.com, cpw@sgi.com,
+        jingbai.ma@hp.com
+Subject: Re: [PATCH v8 9/9] vmcore: support mmap() on /proc/vmcore
+Message-Id: <20130701125345.c4a383c7b8345f9c5ae54023@linux-foundation.org>
+In-Reply-To: <CAJGZr0Jwy6OLADBO9GExWVbwG_LMk41ZsSMZKvWmwcA9StVZQA@mail.gmail.com>
+References: <20130523052421.13864.83978.stgit@localhost6.localdomain6>
+	<20130523052547.13864.83306.stgit@localhost6.localdomain6>
+	<20130523152445.17549682ae45b5aab3f3cde0@linux-foundation.org>
+	<CAJGZr0LwivLTH+E7WAR1B9_6B4e=jv04KgCUL_PdVpi9JjDpBw@mail.gmail.com>
+	<51A2BBA7.50607@jp.fujitsu.com>
+	<CAJGZr0LmsFXEgb3UXVb+rqo1aq5KJyNxyNAD+DG+3KnJm_ZncQ@mail.gmail.com>
+	<51A71B49.3070003@cn.fujitsu.com>
+	<CAJGZr0Ld6Q4a4f-VObAbvqCp=+fTFNEc6M-Fdnhh28GTcSm1=w@mail.gmail.com>
+	<20130603174351.d04b2ac71d1bab0df242e0ba@mxc.nes.nec.co.jp>
+	<CAJGZr0+9VUweN1Ssdq6P9Lug1GnTB3+RPv77JLRmnw=rpd9+Dw@mail.gmail.com>
+	<51D0C500.4060108@jp.fujitsu.com>
+	<CAJGZr0Jwy6OLADBO9GExWVbwG_LMk41ZsSMZKvWmwcA9StVZQA@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2013-07-01 22:22:21, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 07/01/2013 06:03 PM, Pavel Machek wrote:
-> 
-> >Errata workarounds for N900 hardware actually break operation on
-> >emulator. Fix it.
-> 
-> >This approach was suggested by Pali Rohár <pali.rohar@gmail.com>
-> >(thanks!).
-> 
-> >(Also explain what "sleep_ind" led actually does).
-> 
->    Looks like unrelated change and probably worth another patch?
+On Mon, 1 Jul 2013 18:34:43 +0400 Maxim Uvarov <muvarov@gmail.com> wrote:
 
-Separate patch for adding single-line comment?
-
-> >--- a/arch/arm/mach-omap2/board-rx51.c
-> >+++ b/arch/arm/mach-omap2/board-rx51.c
-> >@@ -33,9 +33,12 @@
-> >  #include "pm.h"
-> >  #include "sdram-nokia.h"
-> >  #include "board-rx51-secure.h"
-> >+#include "soc.h"
+> 2013/7/1 HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+> 
+> > (2013/06/29 1:40), Maxim Uvarov wrote:
 > >
-> >  #define RX51_GPIO_SLEEP_IND 162
+> >> Did test on 1TB machine. Total vmcore capture and save took 143 minutes
+> >> while vmcore size increased from 9Gb to 59Gb.
+> >>
+> >> Will do some debug for that.
+> >>
+> >> Maxim.
+> >>
 > >
-> >+/* This lights up left part of keyboard */
-> >+
-> >  static struct gpio_led gpio_leds[] = {
-...
-> >  #ifdef CONFIG_ARM_ERRATA_430973
-> >-	printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
-> >-	/* set IBE to 1 */
-> >-	rx51_secure_update_aux_cr(1 << 6, 0);
-> >+	if (omap_type() == OMAP2_DEVICE_TYPE_SEC) {
-> >+		printk(KERN_INFO "RX-51: Enabling ARM errata 430973 workaround.\n");
+> > Please show me your kdump configuration file and tell me what you did in
+> > the test and how you confirmed the result.
+> >
+> >
+> Hello Hatayama,
 > 
->    How about pr_info() instead?
+> I re-run tests in dev env. I took your latest kernel patchset from
+> patchwork for vmcore + devel branch of makedumpfile + fix to open and write
+> to /dev/null. Run this test on 1Tb memory machine with memory used by some
+> user space processes. crashkernel=384M.
+> 
+> Please see my results for makedumpfile process work:
+> [gzip compression]
+> -c -d31 /dev/null
+> real 37.8 m
+> user 29.51 m
+> sys 7.12 m
+> 
+> [no compression]
+> -d31 /dev/null
+> real 27 m
+> user 23 m
+> sys   4 m
+> 
+> [no compression, disable cyclic mode]
+> -d31 --non-cyclic /dev/null
+> real 26.25 m
+> user 23 m
+> sys 3.13 m
+> 
+> [gzip compression]
+> -c -d31 /dev/null
+> % time     seconds  usecs/call     calls    errors syscall
+> ------ ----------- ----------- --------- --------- ----------------
+>  54.75   38.840351         110    352717           mmap
+>  44.55   31.607620          90    352716         1 munmap
+>   0.70    0.497668           0  25497667           brk
+>   0.00    0.000356           0    111920           write
+>   0.00    0.000280           0    111904           lseek
+>   0.00    0.000025           4         7           open
+>   0.00    0.000000           0       473           read
+>   0.00    0.000000           0         7           close
+>   0.00    0.000000           0         3           fstat
+>   0.00    0.000000           0         1           getpid
+>   0.00    0.000000           0         1           execve
+>   0.00    0.000000           0         1           uname
+>   0.00    0.000000           0         2           unlink
+>   0.00    0.000000           0         1           arch_prctl
+> ------ ----------- ----------- --------- --------- ----------------
+> 100.00   70.946300              26427420         1 total
+> 
 
-<sarcasm>Would not that be unrelated change and worth of separate
-patch?</sarcasm>
+I have no point of comparison here.  Is this performance good, or is
+the mmap-based approach still a lot more expensive?
 
-:-).
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
