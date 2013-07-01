@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab3GALIA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 07:08:00 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:61034 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab3GALH7 (ORCPT
+	id S1753816Ab3GALKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 07:10:30 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50366 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab3GALK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 07:07:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130701075856.6e8daa98.mchehab@redhat.com>
-References: <20130701075856.6e8daa98.mchehab@redhat.com>
-Date: Mon, 1 Jul 2013 16:37:58 +0530
-Message-ID: <CAHFNz9J_FJP4YcCd3-_3x6d5iNDoqpYMMtX1Xd+OFJX4H7so0A@mail.gmail.com>
-Subject: Re: [GIT PULL for v3.11] media patches for v3.11
-From: Manu Abraham <abraham.manu@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 1 Jul 2013 07:10:29 -0400
+Date: Mon, 1 Jul 2013 13:10:19 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>
+Subject: Re: [PATCH 0/9] dasd: implement block timeout
+Message-ID: <20130701131019.693cdb4f@mschwide>
+In-Reply-To: <20130701094752.GI15088@kernel.dk>
+References: <1370271802-30019-1-git-send-email-schwidefsky@de.ibm.com>
+	<20130617092215.6c0df7d1@mschwide>
+	<20130701102119.086396d5@mschwide>
+	<20130701094752.GI15088@kernel.dk>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070111-3548-0000-0000-000005D0BCBD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro,
+On Mon, 1 Jul 2013 11:47:52 +0200
+Jens Axboe <axboe@kernel.dk> wrote:
 
-On Mon, Jul 1, 2013 at 4:28 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> Hi Linus,
->
-> Please pull from:
->   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
->
-> For the media patches for Kernel v3.11.
->
+> On Mon, Jul 01 2013, Martin Schwidefsky wrote:
+> > On Mon, 17 Jun 2013 09:22:15 +0200
+> > Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+> > 
+> > > On Mon,  3 Jun 2013 17:03:13 +0200
+> > > Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
+> > > 
+> > > > This is a re-send of a patch series Hannes sent last january. Stefan
+> > > > looked at the patches and our tests went well, so I guess this is ready
+> > > > for upstream integration.
+> > > > 
+> > > > The changes to block/blk-core.c and block/blk-timeout.c look good
+> > > > to me, but I would like to request an acked-by from Jens for the
+> > > > block layer parts in patch #6 and #7 of the series (pretty please :-)
+> > > > 
+> > > > The original patch description from Hannes:
+> > > > 
+> > > > This patch series implements a block timeout handler for
+> > > > DASDs. The main impetus was to allow for a fixed upper
+> > > > timeout value after which a request is aborted.
+> > > > This is required eg when implementing a host-based
+> > > > mirroring system where otherwise the entire mirror
+> > > > would stall under certain circumstances.
+> > > > 
+> > > > Changes since v1:
+> > > > - Fixed lock inversion in dasd_times_out()
+> > > > - Checked for 'device->block' when writing to 'timeout' attribute
+> > > > - Check against 'UINT_MAX' when verifying the 'timeout' value
+> > > > 
+> > > > Once I got the required acked-by I can carry the patch set in the
+> > > > linux-s390 tree for the next merge window.
+> > > > 
+> > > > Hannes Reinecke (9):
+> > > >   dasd: Clarify comment
+> > > >   dasd: make number of retries configurable
+> > > >   dasd: process all requests in the device tasklet
+> > > >   dasd: Implement block timeout handling
+> > > >   dasd: Reduce amount of messages for specific errors
+> > > >   block,dasd: detailed I/O errors
+> > > >   block: check for timeout function in blk_rq_timed_out()
+> > > >   dasd: Add 'timeout' attribute
+> > > >   dasd: Fail all requests when DASD_FLAG_ABORTIO is set
+> > > > 
+> > > >  arch/s390/include/uapi/asm/dasd.h |    4 ++
+> > > >  block/blk-core.c                  |    3 +
+> > > >  block/blk-timeout.c               |    5 +-
+> > > >  drivers/s390/block/dasd.c         |  115 +++++++++++++++++++++++++++++++++----
+> > > >  drivers/s390/block/dasd_devmap.c  |   97 +++++++++++++++++++++++++++++++
+> > > >  drivers/s390/block/dasd_diag.c    |    8 ++-
+> > > >  drivers/s390/block/dasd_eckd.c    |   15 +++--
+> > > >  drivers/s390/block/dasd_erp.c     |    8 +++
+> > > >  drivers/s390/block/dasd_fba.c     |   10 +++-
+> > > >  drivers/s390/block/dasd_int.h     |   10 ++++
+> > > >  drivers/s390/block/dasd_ioctl.c   |   59 +++++++++++++++++++
+> > > >  11 files changed, 313 insertions(+), 21 deletions(-)
+> > > > 
+> > > 
+> > > Ping. Jens could you please look at patch #6 and #7? I don't want
+> > > to do a please pull with block layer parts without your consent.
+> 
+> Both look fine, you can add my acked-by.
+ 
+Thank you!
 
->
-> Zoran Turalija (2):
->       [media] stb0899: allow minimum symbol rate of 1000000
->       [media] stb0899: allow minimum symbol rate of 2000000
+-- 
+blue skies,
+   Martin.
 
+"Reality continues to ruin my life." - Calvin.
 
-Somehow, I missed these patches; These are incorrect. Please revert
-these changes.
-Simply changing the advertized minima values don't change the search algorithm
-behaviour, it simply leads to broken behaviour.
-
-NACK for these changes.
-
-
-Regards,
-
-Manu
