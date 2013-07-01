@@ -1,156 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753203Ab3GAIWm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:22:42 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:36165 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab3GAIWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:22:40 -0400
+	id S1753148Ab3GAIY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:24:27 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:38662 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752969Ab3GAIYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 04:24:25 -0400
+Date: Mon, 1 Jul 2013 10:24:18 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Robert Richter <rric@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@calxeda.com>
+Subject: Re: [PATCH] perf tools: Fix perf version generation
+Message-ID: <20130701082417.GA23539@pd.tnic>
+References: <1368006214-12912-1-git-send-email-rric@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130629005637.GA16068@teo>
-References: <20130628005852.GA8093@teo>
-	<20130627181353.3d552e64.akpm@linux-foundation.org>
-	<20130628043411.GA9100@teo>
-	<20130628050712.GA10097@teo>
-	<20130628100027.31504abe@redhat.com>
-	<20130628165722.GA12271@teo>
-	<20130628170917.GA12610@teo>
-	<20130628144507.37d28ed9@redhat.com>
-	<20130628185547.GA14520@teo>
-	<20130628154402.4035f2fa@redhat.com>
-	<20130629005637.GA16068@teo>
-Date: Mon, 1 Jul 2013 17:22:36 +0900
-X-Google-Sender-Auth: bgPyDuvVUlPgCtEgvqaqDrEqi88
-Message-ID: <CAOK=xROD2AKbgw4V65ddqWFODtn4B1-uYG-NF==oANqVFmZZtg@mail.gmail.com>
-Subject: Re: [PATCH v2] vmpressure: implement strict mode
-From: Hyunhee Kim <hyunhee.kim@samsung.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1368006214-12912-1-git-send-email-rric@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/29 Anton Vorontsov <anton@enomsg.org>:
-> On Fri, Jun 28, 2013 at 03:44:02PM -0400, Luiz Capitulino wrote:
->> > Why can't you use poll() and demultiplex the events? Check if there is an
->> > event in the crit fd, and if there is, then just ignore all the rest.
->>
->> This may be a valid workaround for current kernels, but application
->> behavior will be different among kernels with a different number of
->> events.
->
-> This is not a workaround, this is how poll works, and this is kinda
-> expected... But not that I had this plan in mind when I was designing the
-> current scheme... :)
->
->> Say, we events on top of critical. Then crit fd will now be
->> notified for cases where it didn't use to on older kernels.
->
-> I'm not sure I am following here... but thinking about it more, I guess
-> the extra read() will be needed anyway (to reset the counter).
->
->> > > However, it *is* possible to make non-strict work on strict if we make
->> > > strict default _and_ make reads on memory.pressure_level return
->> > > available events. Just do this on app initialization:
->> > >
->> > > for each event in memory.pressure_level; do
->> > >   /* register eventfd to be notified on "event" */
->> > > done
->> >
->> > This scheme registers "all" events.
->>
->> Yes, because I thought that's the user-case that matters for activity
->> manager :)
->
-> Some activity managers use only low levels (Android), some might use only
-> medium levels (simple load-balancing).
+Hey acme,
 
-When the platform like Android uses only "low" level, is it the
-process you intended when designing vmpressure?
+is this one in some queue already?
 
-1. activity manager receives "low" level events
-2. it reads and checks the current memory (e.g. available memory) using vmstat
-3. if the available memory is not under the threshold (defined e.g. by
-activity manager), activity manager does nothing
-4. if the available memory is under the threshold, activity manager
-handles it by e.g. reclaiming or killing processes?
+I just saw the same problem on 3.10 because git-tag sorts the output
+alphanumerically so that all tags starting with "v3.10" do not appear
+last and thus the "tail -1" doesn't work anymore.
 
-At first time when I saw this vmpressure, I thought that I should
-register all events ("low", "medium", and "critical
-") and use different handler for each event. However, without the mode
-like strict mode, I should see too many events. So, now, I think that
-it is better to use only one level and run each handler after checking
-available memory as you mentioned.
+So on 3.10 you end up with perf version 3.9.rc8.g8bb495.
 
-But,
-
-1. Isn't it overhead to read event and check memory state every time
-we receive events?
-    - sometimes, even when there are lots of available memory, low
-level event could occur if most of them is reclaimable memory not free
-pages.
-    - Don't most of platforms use available memory to judge their
-current memory state? Is there any reason vmpressure use reclaim rate?
-IMO, activity manager doesn't have to check available memory if it
-could receive signal based on the available memory.
-
-2. If we use only "medium" to avoid the overheads occurred when using
-"low" level, isn't it possible to miss sending events when there is a
-little available memory but reclaim ratio is high?
-
-IMHO, we cannot consider and cover all the use cases, but considering
-some use cases and giving some guides and directions to use this
-vmpressure will be helpful to make many platform accept this for their
-low memory manager.
-
-Thanks,
-Hyunhee Kim.
-
->
-> Being able to register only "all" does not make sense to me.
->
->> > Here is more complicated case:
->> >
->> > Old kernels, pressure_level reads:
->> >
->> >   low, med, crit
->> >
->> > The app just wants to listen for med level.
->> >
->> > New kernels, pressure_level reads:
->> >
->> >   low, FOO, med, BAR, crit
->> >
->> > How would application decide which of FOO and BAR are ex-med levels?
->>
->> What you meant by ex-med?
->
-> The scale is continuous and non-overlapping. If you add some other level,
-> you effectively "shrinking" other levels, so the ex-med in the list above
-> might correspond to "FOO, med" or "med, BAR" or "FOO, med, BAR", and that
-> is exactly the problem.
->
->> Let's not over-design. I agree that allowing the API to be extended
->> is a good thing, but we shouldn't give complex meaning to events,
->> otherwise we're better with a numeric scale instead.
->
-> I am not over-desiging at all. Again, you did not provide any solution for
-> the case if we are going to add a new level. Thing is, I don't know if we
-> are going to add more levels, but the three-levels scheme is not something
-> scientifically proven, it is just an arbitrary thing we made up. We may
-> end up with four, or five... or not.
->
-> Thanks,
->
-> Anton
->
+On Wed, May 08, 2013 at 11:43:34AM +0200, Robert Richter wrote:
+> From: Robert Richter <robert.richter@calxeda.com>
+> 
+> The tag of the perf version is wrongly determined, always the latest
+> tag is taken regardless of the HEAD commit:
+> 
+>  $ perf --version
+>  perf version 3.9.rc8.gd7f5d3
+>  $ git describe d7f5d3
+>  v3.9-rc7-154-gd7f5d33
+>  $ head -n 4 Makefile
+>  VERSION = 3
+>  PATCHLEVEL = 9
+>  SUBLEVEL = 0
+>  EXTRAVERSION = -rc7
+> 
+> In other cases no tag might be found.
+> 
+> This patch fixes this.
+> 
+> This new implementation handles also the case if there are no tags at
+> all found in the git repo but there is a commit id.
+> 
+> Signed-off-by: Robert Richter <robert.richter@calxeda.com>
+> ---
+>  tools/perf/util/PERF-VERSION-GEN | 21 +++++++++++++++------
+>  1 file changed, 15 insertions(+), 6 deletions(-)
+> 
+> diff --git a/tools/perf/util/PERF-VERSION-GEN b/tools/perf/util/PERF-VERSION-GEN
+> index 055fef3..15a77b7 100755
+> --- a/tools/perf/util/PERF-VERSION-GEN
+> +++ b/tools/perf/util/PERF-VERSION-GEN
+> @@ -13,13 +13,22 @@ LF='
+>  # First check if there is a .git to get the version from git describe
+>  # otherwise try to get the version from the kernel Makefile
+>  #
+> -if test -d ../../.git -o -f ../../.git &&
+> -	VN=$(git tag 2>/dev/null | tail -1 | grep -E "v[0-9].[0-9]*")
+> +CID=
+> +TAG=
+> +if test -d ../../.git -o -f ../../.git
+>  then
+> -	VN=$(echo $VN"-g"$(git log -1 --abbrev=4 --pretty=format:"%h" HEAD))
+> -	VN=$(echo "$VN" | sed -e 's/-/./g');
+> -else
+> -	VN=$(MAKEFLAGS= make -sC ../.. kernelversion)
+> +	TAG=$(git describe --abbrev=0 --match "v[0-9].[0-9]*" 2>/dev/null )
+> +	CID=$(git log -1 --abbrev=4 --pretty=format:"%h" 2>/dev/null) && CID="-g$CID"
+> +fi
+> +if test -z "$TAG"
+> +then
+> +	TAG=$(MAKEFLAGS= make -sC ../.. kernelversion)
+> +fi
+> +VN="$TAG$CID"
+> +if test -n "$CID"
+> +then
+> +	# format version string, strip trailing zero of sublevel:
+> +	VN=$(echo "$VN" | sed -e 's/-/./g;s/\([0-9]*[.][0-9]*\)[.]0/\1/')
+>  fi
+>  
+>  VN=$(expr "$VN" : v*'\(.*\)')
+> -- 
+> 1.8.1.1
+> 
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
