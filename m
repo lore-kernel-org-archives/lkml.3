@@ -1,42 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752569Ab3GAFxT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 01:53:19 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:65402 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab3GAFxS (ORCPT
+	id S1752491Ab3GAGGm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 02:06:42 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:58979 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab3GAGGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 01:53:18 -0400
-X-AuditID: 9c930197-b7bf9ae000003cc9-77-51d1194c785d
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH] ktime: add missing declaration of ktime_get() in ktime.h
-Date: Mon,  1 Jul 2013 14:53:15 +0900
-Message-Id: <1372657995-10903-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 1 Jul 2013 02:06:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <51D08976.6040005@redhat.com>
+References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com>
+ <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com>
+ <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net>
+ <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net>
+ <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz>
+ <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com>
+ <51CE3CE0.9010506@redhat.com> <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
+ <51D08976.6040005@redhat.com>
+From: Tim Hockin <thockin@hockin.org>
+Date: Sun, 30 Jun 2013 23:06:18 -0700
+X-Google-Sender-Auth: U80BBtgKUTvI97qLgY8F08kwJYg
+Message-ID: <CAAAKZws0xqQ_RAWQX4876fybO3CNHhbiDmkOR5YV7nq5NF8X_Q@mail.gmail.com>
+Subject: Re: cgroup: status-quo and userland efforts
+To: Lennart Poettering <lpoetter@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
+        Mike Galbraith <bitbucket@online.de>, Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We cannot use ktime_get() API even if we include ktime.h, because there is
-no declaration of this API in ktime.h. So add it.
+On Sun, Jun 30, 2013 at 12:39 PM, Lennart Poettering
+<lpoetter@redhat.com> wrote:
+> Heya,
+>
+>
+> On 29.06.2013 05:05, Tim Hockin wrote:
+>>
+>> Come on, now, Lennart.  You put a lot of words in my mouth.
+>
+>
+>>> I for sure am not going to make the PID 1 a client of another daemon.
+>>> That's
+>>> just wrong. If you have a daemon that is both conceptually the manager of
+>>> another service and the client of that other service, then that's bad
+>>> design
+>>> and you will easily run into deadlocks and such. Just think about it: if
+>>> you
+>>> have some external daemon for managing cgroups, and you need cgroups for
+>>> running external daemons, how are you going to start the external daemon
+>>> for
+>>> managing cgroups? Sure, you can hack around this, make that daemon
+>>> special,
+>>> and magic, and stuff -- or you can just not do such nonsense. There's no
+>>> reason to repeat the fuckup that cgroup became in kernelspace a second
+>>> time,
+>>> but this time in userspace, with multiple manager daemons all with
+>>> different
+>>> and slightly incompatible definitions what a unit to manage actualy is...
+>>
+>>
+>> I forgot about the tautology of systemd.  systemd is monolithic.
+>
+>
+> systemd is certainly not monolithic for almost any definition of that term.
+> I am not sure where you are taking that from, and I am not sure I want to
+> discuss on that level. This just sounds like FUD you picked up somewhere and
+> are repeating carelessly...
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+It does a number of sort-of-related things.  Maybe it does them better
+by doing them together.  I can't say, really.  We don't use it at
+work, and I am on Ubuntu elsewhere, for now.
 
-diff --git a/include/linux/ktime.h b/include/linux/ktime.h
-index bbca128..29954cd 100644
---- a/include/linux/ktime.h
-+++ b/include/linux/ktime.h
-@@ -357,6 +357,7 @@ static inline bool ktime_to_timespec_cond(const ktime_t kt, struct timespec *ts)
- #define LOW_RES_NSEC		TICK_NSEC
- #define KTIME_LOW_RES		(ktime_t){ .tv64 = LOW_RES_NSEC }
- 
-+extern ktime_t ktime_get(void);
- /* Get the monotonic time in timespec format: */
- extern void ktime_get_ts(struct timespec *ts);
- 
--- 
-1.7.9.5
+>> But that's not my point.  It seems pretty easy to make this cgroup
+>> management (in "native mode") a library that can have either a thin
+>> veneer of a main() function, while also being usable by systemd.  The
+>> point is to solve all of the problems ONCE.  I'm trying to make the
+>> case that systemd itself should be focusing on features and policies
+>> and awesome APIs.
+>
+> You know, getting this all right isn't easy. If you want to do things
+> properly, then you need to propagate attribute changes between the units you
+> manage. You also need something like a scheduler, since a number of
+> controllers can only be configured under certain external conditions (for
+> example: the blkio or devices controller use major/minor parameters for
+> configuring per-device limits. Since major/minor assignments are pretty much
+> unpredictable these days -- and users probably want to configure things with
+> friendly and stable /dev/disk/by-id/* symlinks anyway -- this requires us to
+> wait for devices to show up before we can configure the parameters.) Soo...
+> you need a graph of units, where you can propagate things, and schedule
+> things based on some execution/event queue. And the propagation and
+> scheduling are closely intermingled.
 
+I'm really just talking about the most basic low-level substrate of
+writing to cgroupfs.  Again, we don't use udev (yet?) so we don't have
+these problems.  It seems to me that it's possible to formulate a
+bottom layer that is usable by both systemd and non-systemd systems.
+But, you know, maybe I am wrong and our internal universe is so much
+simpler (and behind the times) than the rest of the world that
+layering can work for us and not you.
+
+> Now, that's pretty much exactly what systemd actually *is*. It implements a
+> graph of units with a scheduler. And if you rip that part out of systemd to
+> make this an "easy cgroup management library", then you simply turn what
+> systemd is into a library without leaving anything. Which is just bogus.
+>
+> So no, if you say "seems pretty easy to make this cgroup management a
+> library" then well, I have to disagree with you.
+>
+>
+>>> We want to run fewer, simpler things on our systems, we want to reuse as
+>>
+>>
+>> Fewer and simpler are not compatible, unless you are losing
+>> functionality.  Systemd is fewer, but NOT simpler.
+>
+>
+> Oh, certainly it is. If we'd split up the cgroup fs access into separate
+> daemon of some kind, then we'd need some kind of IPC for that, and so you
+> have more daemons and you have some complex IPC between the processes. So
+> yeah, the systemd approach is certainly both simpler and uses fewer daemons
+> then your hypothetical one.
+
+Well, it SOUNDS like Serge is trying to develop this to demonstrate
+that a standalone daemon works.  That's what I am keen to help with
+(or else we have to invent ourselves).  I am not really afraid of IPC
+or of "more daemons".  I much prefer simple agents doing one thing and
+interacting with each other in simple ways.  But that's me.
+
+>>> much of the code as we can. You don't achieve that by running yet another
+>>> daemon that does worse what systemd can anyway do simpler, easier and
+>>> better.
+>>
+>>
+>> Considering this is all hypothetical, I find this to be a funny
+>> debate.  My hypothetical idea is better than your hypothetical idea.
+>
+>
+> Well, systemd is pretty real, and the code to do the unified cgroup
+> management within systemd is pretty complete. systemd is certainly not
+> hypothetical.
+
+Fair enough - I did not realize you had already done all the work that
+Serge is just starting out on.
+
+>>> The least you could grant us is to have a look at the final APIs we will
+>>> have to offer before you already imply that systemd cannot be a valid
+>>> implementation of any API people could ever agree on.
+>>
+>>
+>> Whoah, don't get defensive.  I said nothing of the sort.  The fact of
+>> the matter is that we do not run systemd, at least in part because of
+>> the monolithic nature.  That's unlikely to change in this timescale.
+>
+>
+> Oh, my. I am not sure what makes you think it is monolithic.
+
+It is not a replacement for any one thing.  It is a replacement for a
+handful of things that we are not keen to change all at once.  That's
+all.  I have not personally looked at what subsystems are able to be
+compiled-out so we could do an incremental changeover, though, so
+maybe it can work in different modes?  I don't know.  I am not
+pursuing this anyway, so I am not the person to convince, regardless.
+
+>> What I said was that it would be a shame if we had to invent our own
+>> low-level cgroup daemon just because the "upstream" daemons was too
+>> tightly coupled with systemd.
+>
+>
+> I have no interest to reimplement systemd as a library, just to make you
+> happy... I am quite happy with what we already have....
+>
+>
+>> This is supposed to be collaborative, not combative.
+>
+>
+> It certainly sounds *very* differently in what you are writing.
+
+Sorry, then.  No offense intended.  I'm just looking for opportunities
+to not-replicate work, if this whole model is going to be thrust upon
+me.
+
+Tim
