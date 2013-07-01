@@ -1,102 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab3GAQ4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 12:56:33 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:53437 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab3GAQ4c (ORCPT
+	id S1754730Ab3GARKD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 13:10:03 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35239 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab3GARKB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 12:56:32 -0400
+	Mon, 1 Jul 2013 13:10:01 -0400
+Date: Mon, 1 Jul 2013 18:09:41 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [RFC PATCH 5/6] ARM, mm: change meaning of max_low_pfn to
+	maximum pfn for nobootmem
+Message-ID: <20130701170941.GC24642@n2100.arm.linux.org.uk>
+References: <1364184674-13798-1-git-send-email-iamjoonsoo.kim@lge.com> <1364184674-13798-6-git-send-email-iamjoonsoo.kim@lge.com> <51D18ED5.50103@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <51D1AFC8.80803@linux.intel.com>
-References: <20130630040514.GA20587@www.outflux.net>
-	<51D18B16.1000402@linux.intel.com>
-	<CAGXu5jJw==6ypJVa3YQu27xBidfbgg4tO6AkJia34CwHF=OOfg@mail.gmail.com>
-	<51D1AFC8.80803@linux.intel.com>
-Date: Mon, 1 Jul 2013 09:56:21 -0700
-X-Google-Sender-Auth: _s6qDkewXZVOk0RgfhehOHDQkUQ
-Message-ID: <CAGXu5j+JSehao2LnoWxzL8QHxZ2QcsoPtiF=+Cwe6KBnSrkKwA@mail.gmail.com>
-Subject: Re: [PATCH] x86, kernel: make dump_pagetables a tristate
-From: Kees Cook <keescook@chromium.org>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D18ED5.50103@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 9:35 AM, Arjan van de Ven <arjan@linux.intel.com> wrote:
-> On 7/1/2013 8:55 AM, Kees Cook wrote:
->>
->> On Mon, Jul 1, 2013 at 6:58 AM, Arjan van de Ven <arjan@linux.intel.com>
->> wrote:
->>>
->>> On 6/29/2013 9:05 PM, Kees Cook wrote:
->>>>
->>>>
->>>> Being able to examine page tables is handy, so make this a module that
->>>> can be loaded as needed.
->>>
->>>
->>> I personally don't think this is a good idea due to the various
->>> security/etc implications of this feature... should really just
->>> be off for non-debug kernels, not "off unless you load the module"
->>
->>
->> I struggled with this too, but I couldn't come up with any reason that
->> made sense. If a system is running without modules_disabled, this code
->> is still loadable:
->>
->> https://www.outflux.net/blog/archives/2011/04/27/non-executable-kernel-memory-progress/
->>
->> The root user just needs to look at /proc/kallsyms before passing an
->> argument. So having it NOT a tristate doesn't actually change anything
->> except make it awkward to get it done.
->>
->> If a system is running with verified modules, then just not
->> signing/including ptdump makes it unavailable. And running with
->> modules_disabled, obviously, blocks it.
->>
->>>> +#ifdef CONFIG_X86_64
->>>> +EXPORT_SYMBOL_GPL(init_level4_pgt);
->>>> +#else
->>>> +EXPORT_SYMBOL_GPL(swapper_pg_dir);
->>>> +#endif
->>>
->>>
->>> like these really have no business in any module
->>
->>
->> Well, that's why I took me 2 years to send this patch. Those symbols
->> shouldn't be used outside of page table debugging, so it didn't really
->> seem upstreamable. However, now that I need to do regular examination
->> of the page tables, I wanted to do it without the hacky thing above. I
->> want to do at will on our test images (we use the same kernel for
->> production and test, but production images leave out the test modules,
->> etc).
->
->
-> the code is small...
-> how about making it a command line option to enable?
->
-> rather than making something like this a module
+On Mon, Jul 01, 2013 at 10:14:45AM -0400, Santosh Shilimkar wrote:
+> I have been also carrying similar patch as yours in an attempt
+> to make LPAE kernel work on ARM. Your patch carries better
+> description, so will your version and include in my series
+> which I plan to post on the list after some more testing.
+> Will copy you. The changes are very similar to your series.
 
-Hmm. The Chrome OS build infrastructure frowns on making cmdline
-changes between production and testing images. I could probably do it
-this way, but it'd be more of a pain to maintain than just carrying
-the hack patch.
+And will you try to investigate and/or address my concerns with this
+change?
 
-Since there's no actual loss to system security by making this a
-module, how about we allow it to be a tristate and continue to
-recommend it being "n" by default?
+Consider this code in the block layer:
 
-As far as the export goes, could ptdump read cr3 instead of needing a
-symbol export?
+static int __init blk_settings_init(void)
+{
+        blk_max_low_pfn = max_low_pfn - 1;
+        blk_max_pfn = max_pfn - 1;
+        return 0;
+}
 
--Kees
+void blk_queue_bounce_limit(struct request_queue *q, u64 dma_mask)
+{
+        unsigned long b_pfn = dma_mask >> PAGE_SHIFT;
+...
+        if (b_pfn < blk_max_low_pfn)
+                dma = 1;
+        q->limits.bounce_pfn = b_pfn;
+        if (dma) {
+                init_emergency_isa_pool();
+                q->bounce_gfp = GFP_NOIO | GFP_DMA;
+                q->limits.bounce_pfn = b_pfn;
+        }
+}
 
---
-Kees Cook
-Chrome OS Security
+and this in SCSI:
+
+u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
+{
+        struct device *host_dev;
+        u64 bounce_limit = 0xffffffff;
+...
+        host_dev = scsi_get_device(shost);
+        if (host_dev && host_dev->dma_mask)
+                bounce_limit = *host_dev->dma_mask;
+
+        return bounce_limit;
+}
+
+struct request_queue *__scsi_alloc_queue(struct Scsi_Host *shost,
+                                         request_fn_proc *request_fn)
+{
+...
+        blk_queue_bounce_limit(q, scsi_calculate_bounce_limit(shost));
+
+Now, what happens when you have a device which can only address the first
+64MB of system memory, which is at 3GB(physical), but you have 1GB of
+system memory available both before changing max_low_pfn, and after
+changing max_low_pfn.
+
+Bear in mind that you will find that virtually all places in the kernel
+set the device DMA mask to be "DMA_BIT_MASK(number_of_bits_driven)" and
+not offset by the base of physical memory.  In the above case, consider
+what happens with a 24 bit DMA mask.
+
+So... if we make this change, I would much prefer to also see a number
+of other patches preceding this one:
+
+(a) blk_queue_bounce_limit()'s parameter renamed from "dma_mask" to
+   "max_addr" or indeed just taking b_pfn directly.
+(b) a helper: dma_max_pfn(dev) which converts a DMA bitmask of bits
+   to a b_pfn number which is just "dev->dma_mask >> PAGE_SHIFT" in the
+   generic case, but ARM can override this later.
+(c) a patch changing max_low_pfn/max_pfn to include the physical offset
+   of memory, and providing an ARM version of this which adds in the
+   appropriate offset.
+
+Here's an example dma_max_pfn() helper for the generic case:
+
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index 48ef6f5..a083724 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -153,6 +153,13 @@ static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
+ 		return -EIO;
+ }
+ 
++#ifndef dma_max_pfn
++static inline unsigned long dma_max_pfn(struct device *dev)
++{
++	return dev->dma_mask ? (*dev->dma_mask >> PAGE_SHIFT) : 0;
++}
++#endif
++
+ static inline void *dma_zalloc_coherent(struct device *dev, size_t size,
+ 					dma_addr_t *dma_handle, gfp_t flag)
+ {
+
+Arches can then override this with:
+
+static inline unsigned long dma_max_pfn(struct device *dev)
+{
+	...
+}
+#define dma_max_pfn dma_max_pfn
