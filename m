@@ -1,71 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab3GAIGt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 04:06:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:33329 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab3GAIGs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 04:06:48 -0400
-Date: Mon, 1 Jul 2013 10:06:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: sched: context tracking demolishes pipe-test
-Message-ID: <20130701080638.GM6626@twins.programming.kicks-ass.net>
-References: <1372579056.6607.16.camel@marge.simpson.net>
- <20130630212940.GK6626@twins.programming.kicks-ass.net>
- <1372658875.7678.17.camel@marge.simpson.net>
+	id S1752897Ab3GAIHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 04:07:38 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63731 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab3GAIHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 1 Jul 2013 04:07:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,972,1363158000"; 
+   d="scan'208";a="262262517"
+Message-ID: <51D13887.7000606@intel.com>
+Date: Mon, 01 Jul 2013 16:06:31 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372658875.7678.17.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Lei Wen <leiwen@marvell.com>
+CC: Paul Turner <pjt@google.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] sched: add trace event for per-entity tracking
+References: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
+In-Reply-To: <1372662634-12833-1-git-send-email-leiwen@marvell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 08:07:55AM +0200, Mike Galbraith wrote:
-> On Sun, 2013-06-30 at 23:29 +0200, Peter Zijlstra wrote:
+On 07/01/2013 03:10 PM, Lei Wen wrote:
+> Thanks for the per-entity tracking feature, we could know the details of
+> each task by its help.
+> This patch add its trace support, so that we could quickly know the system
+> status in a large time scale, like now we may get each runqueue's usage ratio by:
 > 
-> > Yeah, who'd have thought that putting stuff in the syscall path would've
-> > made syscalls more expensive ;-)
+> cfs_rq's usage ratio = cfs_rq->runnable_load_avg/cfs_rq->load.weight
 > 
-> (careful, you'll injure my innocence, Santa and the Tooth Fairy exist!)
-> 
-> > But yeah, that's a _lot_ more expensive.. I'd not be surprised if more
-> > people would find that objectionable.
-> 
-> Distros may want some hot patching or _something_ before doing the usual
-> new=turn-it-on thing.  Per trusty (spelled with 'c') old Q6600, the cost
-> is pretty darn high.
-> 
-> -regress is my ~light regression testing config, carried forward from
-> 3.6.32...master across all intervening trees.
-> -regressx is plus CONFIG_RCU_USER_QS=y CONFIG_CONTEXT_TRACKING_FORCE=y
-> -regressxx is plus full dynticks 
-> 
-> taskset -c 3 pipe-test 1
-> 
-> 2.6.32-regress    654.5 Khz            1.000
-> 3.10.0-regress    652.1 Khz             .996     1.000
-> 3.10.0-regressx   476.8 Khz             .728      .731
-> 3.10.0-regressxx  275.6 Khz             .421      .422
-> 
-> tbench
-> 
-> 2.6.32-regress    327.502 MB/sec       1.000
-> 3.10.0-regress    319.621 MB/sec        .975     1.000
-> 3.10.0-regressx   292.894 MB/sec        .894      .916
-> 3.10.0-regressxx  243.738 MB/sec        .744      .762
-> 
-> netperf TCP_RR
-> 
-> 2.6.32-regress   104041.84 Trans/sec   1.000
-> 3.10.0-regress    94961.34 Trans/sec    .912     1.000
-> 3.10.0-regressx   82383.33 Trans/sec    .791      .867
-> 3.10.0-regressxx  61527.59 Trans/sec    .591      .647
 
-So aside from the context tracking stuff, there's still a regression
-we might want to look at. That's still a ~10% drop against 2.6.32 for
-TCP_RR and few percents for tbench.
+the direct usage ratio is rq.avg.runnable_avg_sum / rq.avg.runnable_avg_period.
+
+one patch from obsolete power-scheduling could be reference for this:
+git@github.com:alexshi/power-scheduling.git power-scheduling
+
+>From 081cd4bcbccfaa1930b031e4dfbf9d23b8c0d5ab Mon Sep 17 00:00:00 2001
+From: Alex Shi <alex.shi@intel.com>
+Date: Fri, 7 Dec 2012 21:37:58 +0800
+Subject: [PATCH 02/23] sched: log the cpu utilization at rq
+
+The cpu's utilization is to measure how busy is the cpu.
+        util = cpu_rq(cpu)->avg.runnable_avg_sum * SCHED_POEWR_SCALE
+                / cpu_rq(cpu)->avg.runnable_avg_period;
+
+Since the util is no more than 1, we scale its value with 1024, same as
+SCHED_POWER_SCALE and set the FULL_UTIL as 1024.
+
+In later power aware scheduling, we are sensitive for how busy of the
+cpu. Since as to power consuming, it is tight related with cpu busy
+time.
+
+BTW, rq->util can be used for any purposes if needed, not only power
+scheduling.
+
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+---
+ include/linux/sched.h | 2 +-
+ kernel/sched/debug.c  | 1 +
+ kernel/sched/fair.c   | 5 +++++
+ kernel/sched/sched.h  | 4 ++++
+ 4 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 9539597..4e4d9ee 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -794,7 +794,7 @@ enum cpu_idle_type {
+ #define SCHED_LOAD_SCALE	(1L << SCHED_LOAD_SHIFT)
+ 
+ /*
+- * Increase resolution of cpu_power calculations
++ * Increase resolution of cpu_power and rq->util calculations
+  */
+ #define SCHED_POWER_SHIFT	10
+ #define SCHED_POWER_SCALE	(1L << SCHED_POWER_SHIFT)
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 75024a6..f5db759 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -311,6 +311,7 @@ do {									\
+ 
+ 	P(ttwu_count);
+ 	P(ttwu_local);
++	P(util);
+ 
+ #undef P
+ #undef P64
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 2e49c3f..7124244 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1495,8 +1495,13 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
+ 
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
++	u32 period;
+ 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++
++	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
++	rq->util = (u64)(rq->avg.runnable_avg_sum << SCHED_POWER_SHIFT)
++				/ period;
+ }
+ 
+ /* Add the load generated by se into cfs_rq's child load-average */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 804ee41..8682110 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -351,6 +351,9 @@ extern struct root_domain def_root_domain;
+ 
+ #endif /* CONFIG_SMP */
+ 
++/* full cpu utilization */
++#define FULL_UTIL	SCHED_POWER_SCALE
++
+ /*
+  * This is the main, per-CPU runqueue data structure.
+  *
+@@ -482,6 +485,7 @@ struct rq {
+ #endif
+ 
+ 	struct sched_avg avg;
++	unsigned int util;
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
+-- 
+1.7.12
+
+-- 
+Thanks
+    Alex
