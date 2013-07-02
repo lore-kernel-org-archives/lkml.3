@@ -1,96 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752716Ab3GBOGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 10:06:25 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46615 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869Ab3GBOGW (ORCPT
+	id S1752776Ab3GBOPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 10:15:45 -0400
+Received: from a9-42.smtp-out.amazonses.com ([54.240.9.42]:50696 "EHLO
+	a9-42.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752335Ab3GBOPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 10:06:22 -0400
-Message-ID: <51D2DE5B.9060309@free-electrons.com>
-Date: Tue, 02 Jul 2013 16:06:19 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 2 Jul 2013 10:15:44 -0400
+Date: Tue, 2 Jul 2013 14:15:42 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] mm/slub: Fix slub calculate active slabs
+ uncorrectly
+In-Reply-To: <51d218df.a77d440a.3cfe.ffffe64aSMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <0000013f9fbd247d-8de715f1-e0dc-47fb-8f06-af6c061044be-000000@email.amazonses.com>
+References: <1372291059-9880-1-git-send-email-liwanp@linux.vnet.ibm.com> <0000013f9b8d6897-d2399224-d203-4dc5-a700-90dea9be7536-000000@email.amazonses.com> <51d218df.a77d440a.3cfe.ffffe64aSMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: Shawn Guo <shawn.guo@linaro.org>, Jonathan Cameron <jic23@cam.ac.uk>,
-        brian@crystalfontz.com, linux-doc@vger.kernel.org,
-        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        jimwall@q.com, Rob Herring <rob.herring@calxeda.com>,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Lucas Stach <l.stach@pengutronix.de>, Marek Vasut <marex@denx.de>
-Subject: Re: [PATCHv3 2/3] ARM: mxs: cfa10049: Switch bus i2c1 to bitbanging
-References: <1372094699-3832-1-git-send-email-alexandre.belloni@free-electrons.com> <1372094699-3832-3-git-send-email-alexandre.belloni@free-electrons.com> <CAOMZO5CLcT=OXYd=ggxpDzUqFxoXSaanqUPGugYLT2Og-VgzCA@mail.gmail.com> <51D2BB05.9040201@free-electrons.com> <CAOMZO5DZufiOjguOCEbe5n0j=w9B5ezBYh0Rejv3zF5Xht5_qQ@mail.gmail.com> <51D2BEA1.6010206@free-electrons.com>
-In-Reply-To: <51D2BEA1.6010206@free-electrons.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 2013.07.02-54.240.9.42
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 13:50, Alexandre Belloni wrote:
-> On 02/07/2013 13:45, Fabio Estevam wrote:
-> 
->> Shouldn't this be
->>
->>          i2c@1 {
->>                  reg = <1>; ?
->>
-> 
-> No, we have 4 devices on that mux and 2 pins to select the muxing.
-> 
+On Tue, 2 Jul 2013, Wanpeng Li wrote:
 
-OK, got it working.
+> Before patch:
+> Active / Total Slabs (% used) : 59018 / 59018 (100.0%)
+>
+> After patch:
+> Active / Total Slabs (% used) : 11086 / 11153 (99.4%)
 
-So, the results:
+Yes I saw that.
 
-bitbanging:
+> These numbers are dump from slabtop for monitor slub, before patch Active / Total
+> Slabs are always 100%, this is not truth since empty slabs present. However, the
+> slab allocator can caculate its Active / Total Slabs correctly and its value is
+> less than 100.0%. By comparison, slub is more efficient than slab through slabtop
+> observation, however, it is not truth since slub uncorrectly calculate its
+> Active / Total Slabs.
 
-# time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
-2637
-real	0m 0.09s
-user	0m 0.01s
-sys	0m 0.01s
+I always thought about the "empty" slabs to be active since they are used
+for allocation and frees like the other partial slabs.
 
-
-i2c-mxs PIO mode:
-
-# time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
-[   35.007650] [sched_delayed] sched: RT throttling activated
-2627
-real	0m 7.14s
-user	0m 0.02s
-sys	0m 0.01s
-
-
-i2c-mxs PIO mode without LRADC:
-
-# time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
-[   18.007432] [sched_delayed] sched: RT throttling activated
-2629
-real	0m 7.09s
-user	0m 0.00s
-sys	0m 0.03s
-
-
-i2c-mxs DMA mode:
-
-# time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
-2631
-real	0m 0.12s
-user	0m 0.01s
-sys	0m 0.01s
-
-
-It seems fine for me.
-
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
