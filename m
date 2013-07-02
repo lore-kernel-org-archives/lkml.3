@@ -1,174 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab3GBNK6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 09:10:58 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:54849 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751982Ab3GBNK4 (ORCPT
+	id S1752152Ab3GBNPS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 09:15:18 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:63601 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab3GBNPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 09:10:56 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: netdev@vger.kernel.org
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>
-Subject: [PATCH v1 3/3] dt:net:stmmac: Add dt specific phy reset callback support.
-Date: Tue,  2 Jul 2013 14:04:53 +0100
-Message-Id: <1372770293-1821-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1372770219-1643-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1372770219-1643-1-git-send-email-srinivas.kandagatla@st.com>
+	Tue, 2 Jul 2013 09:15:17 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v5 5/7] ARM: kirkwood: convert to DT irqchip and clocksource
+Date: Tue,  2 Jul 2013 15:15:07 +0200
+Message-Id: <1372770907-32738-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+With recent support for true irqchip and clocksource drivers for Orion
+SoCs, now make use of it on DT enabled Kirkwood boards.
 
-This patch adds phy reset callback support for stmmac driver via device
-trees. It adds three new properties to gmac device tree bindings to
-define the reset signal via gpio.
+This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
+where old code is moved out to and polishes DT board file a little bit.
 
-With this patch users can conveniently pass reset gpio number with pre,
-pulse and post delay in micro secs via DTs.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+--- 
+Changelog:
+v4->v5:
+- do not re-introduce already removed init_dma_coherent_pool_size
+  (Reported by Jason Cooper)
 
- active low:
-		_________		 ____________
-	<pre-delay>	|<pulse-delay>	|<post-delay>
-		 	|		|
-		 	|_______________|
+@Jason: I did a 'git grep init_dma_coherent_pool_size' and now there
+are no users of that function - as it was before. Patch 6/7 only differs
+in the 'index' diff line because of the rebase here. I will not resend that,
+it should still apply.
 
- active high:
- 			 ________________
-	<pre-delay>	|<pulse-delay>	|<post-delay>
-			|		|
-		________|		|___________
-
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
 ---
- Documentation/devicetree/bindings/net/stmmac.txt  |    6 +++
- drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c |   50 ++++++++++++++++++++-
- include/linux/stmmac.h                            |    4 ++
- 3 files changed, 58 insertions(+), 2 deletions(-)
+ arch/arm/mach-kirkwood/Kconfig    |   22 ++++++++++++++++++++++
+ arch/arm/mach-kirkwood/Makefile   |    4 ++--
+ arch/arm/mach-kirkwood/board-dt.c |   23 ++++++++++++++++-------
+ 3 files changed, 40 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
-index e1ddfcc..261c563 100644
---- a/Documentation/devicetree/bindings/net/stmmac.txt
-+++ b/Documentation/devicetree/bindings/net/stmmac.txt
-@@ -13,6 +13,12 @@ Required properties:
- - phy-mode: String, operation mode of the PHY interface.
-   Supported values are: "mii", "rmii", "gmii", "rgmii".
- - snps,phy-addr		phy address to connect to.
-+- snps,reset-gpio 	gpio number for phy reset.
-+- snps,reset-active-low boolean flag to indicate if phy reset is active low.
-+- snps,reset-delays-us  is triplet of delays
-+	The 1st cell is reset pre-delay in micro seconds.
-+	The 2nd cell is reset pulse in micro seconds.
-+	The 3rd cell is reset post-delay in micro seconds.
- - snps,pbl		Programmable Burst Length
- - snps,fixed-burst	Program the DMA to use the fixed burst mode
- - snps,mixed-burst	Program the DMA to use the mixed burst mode
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-index cc15039..deb384e 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c
-@@ -27,6 +27,9 @@
- #include <linux/mii.h>
- #include <linux/phy.h>
- #include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
-+
- #include <asm/io.h>
+diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
+index 493c71a..ede131e 100644
+--- a/arch/arm/mach-kirkwood/Kconfig
++++ b/arch/arm/mach-kirkwood/Kconfig
+@@ -2,67 +2,81 @@ if ARCH_KIRKWOOD
  
- #include "stmmac.h"
-@@ -131,10 +134,47 @@ static int stmmac_mdio_reset(struct mii_bus *bus)
- 	struct net_device *ndev = bus->priv;
- 	struct stmmac_priv *priv = netdev_priv(ndev);
- 	unsigned int mii_address = priv->hw->mii.addr;
-+	struct device *dev = priv->device;
-+	struct stmmac_mdio_bus_data *data = priv->plat->mdio_bus_data;
-+
-+#ifdef CONFIG_OF
-+	if (dev->of_node) {
-+		int reset_gpio, active_low;
-+
-+		if (data->reset_gpio < 0) {
-+			struct device_node *np = dev->of_node;
-+			if (!np)
-+				return 0;
-+
-+			data->reset_gpio = of_get_named_gpio(np,
-+						"snps,reset-gpio", 0);
-+			if (data->reset_gpio < 0)
-+				return 0;
-+
-+			data->active_low = of_property_read_bool(np,
-+						"snps,reset-active-low");
-+			of_property_read_u32_array(np,
-+				"snps,reset-delays-us", data->delays, 3);
-+		}
-+
-+		reset_gpio = data->reset_gpio;
-+		active_low = data->active_low;
-+
-+		if (!gpio_request(reset_gpio, "mdio-reset")) {
-+			gpio_direction_output(reset_gpio, active_low ? 1 : 0);
-+			udelay(data->delays[0]);
-+			gpio_set_value(reset_gpio, active_low ? 0 : 1);
-+			udelay(data->delays[1]);
-+			gpio_set_value(reset_gpio, active_low ? 1 : 0);
-+			udelay(data->delays[2]);
-+			gpio_free(reset_gpio);
-+		}
-+	}
-+#endif
+ menu "Marvell Kirkwood Implementations"
  
--	if (priv->plat->mdio_bus_data->phy_reset) {
-+	if (data->phy_reset) {
- 		pr_debug("stmmac_mdio_reset: calling phy_reset\n");
--		priv->plat->mdio_bus_data->phy_reset(priv->plat->bsp_priv);
-+		data->phy_reset(priv->plat->bsp_priv);
- 	}
- 
- 	/* This is a workaround for problems with the STE101P PHY.
-@@ -157,6 +197,7 @@ int stmmac_mdio_register(struct net_device *ndev)
- 	struct mii_bus *new_bus;
- 	int *irqlist;
- 	struct stmmac_priv *priv = netdev_priv(ndev);
-+	struct device *dev = priv->device;
- 	struct stmmac_mdio_bus_data *mdio_bus_data = priv->plat->mdio_bus_data;
- 	int addr, found;
- 
-@@ -172,6 +213,11 @@ int stmmac_mdio_register(struct net_device *ndev)
- 	else
- 		irqlist = priv->mii_irq;
- 
-+#ifdef CONFIG_OF
-+	if (dev->of_node)
-+		mdio_bus_data->reset_gpio = -1;
-+#endif
++config KIRKWOOD_LEGACY
++	bool
 +
- 	new_bus->name = "stmmac";
- 	new_bus->read = &stmmac_mdio_read;
- 	new_bus->write = &stmmac_mdio_write;
-diff --git a/include/linux/stmmac.h b/include/linux/stmmac.h
-index c1b3ed3..9e495d31 100644
---- a/include/linux/stmmac.h
-+++ b/include/linux/stmmac.h
-@@ -80,6 +80,10 @@ struct stmmac_mdio_bus_data {
- 	unsigned int phy_mask;
- 	int *irqs;
- 	int probed_phy_irq;
-+#ifdef CONFIG_OF
-+	int reset_gpio, active_low;
-+	u32 delays[3];
-+#endif
- };
+ config MACH_D2NET_V2
+ 	bool "LaCie d2 Network v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie d2 Network v2 NAS.
  
- struct stmmac_dma_cfg {
+ config MACH_DOCKSTAR
+ 	bool "Seagate FreeAgent DockStar"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Seagate FreeAgent DockStar.
+ 
+ config MACH_ESATA_SHEEVAPLUG
+ 	bool "Marvell eSATA SheevaPlug Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell eSATA SheevaPlug Reference Board.
+ 
+ config MACH_GURUPLUG
+ 	bool "Marvell GuruPlug Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell GuruPlug Reference Board.
+ 
+ config MACH_INETSPACE_V2
+ 	bool "LaCie Internet Space v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie Internet Space v2 NAS.
+ 
+ config MACH_MV88F6281GTW_GE
+ 	bool "Marvell 88F6281 GTW GE Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell 88F6281 GTW GE Board.
+ 
+ config MACH_NET2BIG_V2
+ 	bool "LaCie 2Big Network v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie 2Big Network v2 NAS.
+ 
+ config MACH_NET5BIG_V2
+ 	bool "LaCie 5Big Network v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie 5Big Network v2 NAS.
+ 
+ config MACH_NETSPACE_MAX_V2
+ 	bool "LaCie Network Space Max v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie Network Space Max v2 NAS.
+ 
+ config MACH_NETSPACE_V2
+ 	bool "LaCie Network Space v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie Network Space v2 NAS.
+ 
+ config MACH_OPENRD
++	select KIRKWOOD_LEGACY
+         bool
+ 
+ config MACH_OPENRD_BASE
+@@ -88,30 +102,35 @@ config MACH_OPENRD_ULTIMATE
+ 
+ config MACH_RD88F6192_NAS
+ 	bool "Marvell RD-88F6192-NAS Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell RD-88F6192-NAS Reference Board.
+ 
+ config MACH_RD88F6281
+ 	bool "Marvell RD-88F6281 Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell RD-88F6281 Reference Board.
+ 
+ config MACH_SHEEVAPLUG
+ 	bool "Marvell SheevaPlug Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell SheevaPlug Reference Board.
+ 
+ config MACH_T5325
+ 	bool "HP t5325 Thin Client"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  HP t5325 Thin Client.
+ 
+ config MACH_TS219
+ 	bool "QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and TS-219P+ Turbo NAS"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and
+@@ -119,6 +138,7 @@ config MACH_TS219
+ 
+ config MACH_TS41X
+ 	bool "QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo NAS"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo
+@@ -129,6 +149,8 @@ comment "Device tree entries"
+ config ARCH_KIRKWOOD_DT
+ 	bool "Marvell Kirkwood Flattened Device Tree"
+ 	select KIRKWOOD_CLK
++	select ORION_IRQCHIP
++	select ORION_TIMER
+ 	select POWER_SUPPLY
+ 	select POWER_RESET
+ 	select POWER_RESET_GPIO
+diff --git a/arch/arm/mach-kirkwood/Makefile b/arch/arm/mach-kirkwood/Makefile
+index 062f8c7..f78f333 100644
+--- a/arch/arm/mach-kirkwood/Makefile
++++ b/arch/arm/mach-kirkwood/Makefile
+@@ -1,5 +1,5 @@
+-obj-y				+= common.o irq.o pcie.o mpp.o
+-
++obj-y				+= common.o pcie.o
++obj-$(CONFIG_KIRKWOOD_LEGACY)	+= irq.o mpp.o
+ obj-$(CONFIG_MACH_D2NET_V2)		+= d2net_v2-setup.o lacie_v2-common.o
+ obj-$(CONFIG_MACH_DOCKSTAR)		+= dockstar-setup.o
+ obj-$(CONFIG_MACH_ESATA_SHEEVAPLUG)	+= sheevaplug-setup.o
+diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
+index 881f37e..56d4a5e 100644
+--- a/arch/arm/mach-kirkwood/board-dt.c
++++ b/arch/arm/mach-kirkwood/board-dt.c
+@@ -15,6 +15,9 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/clk-provider.h>
++#include <linux/clocksource.h>
++#include <linux/dma-mapping.h>
++#include <linux/irqchip.h>
+ #include <linux/kexec.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -67,10 +70,17 @@ static void __init kirkwood_legacy_clk_init(void)
+ 	clk_prepare_enable(clk);
+ }
+ 
+-static void __init kirkwood_of_clk_init(void)
++static void __init kirkwood_dt_time_init(void)
+ {
+ 	of_clk_init(NULL);
+-	kirkwood_legacy_clk_init();
++	clocksource_of_init();
++}
++
++static void __init kirkwood_dt_init_early(void)
++{
++	mvebu_mbus_init("marvell,kirkwood-mbus",
++			BRIDGE_WINS_BASE, BRIDGE_WINS_SZ,
++			DDR_WINDOW_CPU_BASE, DDR_WINDOW_CPU_SZ);
+ }
+ 
+ static void __init kirkwood_dt_init(void)
+@@ -91,8 +101,8 @@ static void __init kirkwood_dt_init(void)
+ 
+ 	kirkwood_cpufreq_init();
+ 
+-	/* Setup root of clk tree */
+-	kirkwood_of_clk_init();
++	/* Setup clocks for legacy devices */
++	kirkwood_legacy_clk_init();
+ 
+ 	kirkwood_cpuidle_init();
+ 
+@@ -114,9 +124,8 @@ static const char * const kirkwood_dt_board_compat[] = {
+ DT_MACHINE_START(KIRKWOOD_DT, "Marvell Kirkwood (Flattened Device Tree)")
+ 	/* Maintainer: Jason Cooper <jason@lakedaemon.net> */
+ 	.map_io		= kirkwood_map_io,
+-	.init_early	= kirkwood_init_early,
+-	.init_irq	= orion_dt_init_irq,
+-	.init_time	= kirkwood_timer_init,
++	.init_early	= kirkwood_dt_init_early,
++	.init_time	= kirkwood_dt_time_init,
+ 	.init_machine	= kirkwood_dt_init,
+ 	.restart	= kirkwood_restart,
+ 	.dt_compat	= kirkwood_dt_board_compat,
 -- 
-1.7.6.5
+1.7.2.5
 
