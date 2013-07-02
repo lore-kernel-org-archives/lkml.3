@@ -1,53 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab3GBG3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 02:29:25 -0400
-Received: from mout.gmx.net ([212.227.15.18]:56727 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab3GBG3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 02:29:24 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+uHFFMiR2uVBs9wrgw0oAy4GNkZwBYvjCmt0PWu9
-	ALD+iJMP5JDEnJ
-Message-ID: <1372746555.7363.147.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: smart wake-affine
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Tue, 02 Jul 2013 08:29:15 +0200
-In-Reply-To: <51D2708C.1050901@linux.vnet.ibm.com>
-References: <51A43B16.9080801@linux.vnet.ibm.com>
-	 <51D25A80.8090406@linux.vnet.ibm.com>
-	 <1372744486.7363.133.camel@marge.simpson.net>
-	 <51D2708C.1050901@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
+	id S932208Ab3GBGaK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 02:30:10 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:15452 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753204Ab3GBGaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 02:30:07 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At4LAK1x0lF5LCeA/2dsb2JhbABagwmDGbgChSgEAXwXdIIjAQEEAScTHA8UEAgDDgcDCSUPBSUDIRMeh2sFu0YWjiuBHQeDBGMDl0eRRoMjKg
+Date: Tue, 2 Jul 2013 16:29:54 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Dave Jones <davej@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130702062954.GA14996@dastard>
+References: <20130627002255.GA16553@redhat.com>
+ <20130627075543.GA32195@dastard>
+ <20130627100612.GA29338@dastard>
+ <20130627125218.GB32195@dastard>
+ <20130627152151.GA11551@redhat.com>
+ <20130628011301.GC32195@dastard>
+ <20130628035825.GC29338@dastard>
+ <20130628102819.GA4725@quack.suse.cz>
+ <20130629033924.GK32195@dastard>
+ <20130701120037.GA6196@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701120037.GA6196@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-02 at 14:17 +0800, Michael Wang wrote:
+On Mon, Jul 01, 2013 at 02:00:37PM +0200, Jan Kara wrote:
+> On Sat 29-06-13 13:39:24, Dave Chinner wrote:
+> > On Fri, Jun 28, 2013 at 12:28:19PM +0200, Jan Kara wrote:
+> > > On Fri 28-06-13 13:58:25, Dave Chinner wrote:
+> > > > writeback: store inodes under writeback on a separate list
+> > > > 
+> > > > From: Dave Chinner <dchinner@redhat.com>
+> > > > 
+> > > > When there are lots of cached inodes, a sync(2) operation walks all
+> > > > of them to try to find which ones are under writeback and wait for
+> > > > IO completion on them. Run enough load, and this caused catastrophic
+> > > > lock contention on the inode_sb_list_lock.
+.....
+> > >   Ugh, the locking looks ugly.
+> > 
+> > Yes, it is, and I don't really like it.
+> > 
+> > >   Plus the list handling is buggy because the
+> > > first wait_sb_inodes() invocation will move all inodes to its private
+> > > sync_list so if there's another wait_sb_inodes() invocation racing with it,
+> > > it won't wait properly for all the inodes it should.
+> > 
+> > Hmmmm - yeah, we only have implicit ordering of concurrent sync()
+> > calls based on the serialisation of bdi-flusher work queuing and
+> > dispatch. The waiting for IO completion is not serialised at all.
+> > Seems like it's easy to fix with a per-sb sync mutex around the
+> > dispatch and wait in sync_inodes_sb()....
 
-> As Peter mentioned before, we currently need some solution like the
-> buddy-idea, and when folks report regression (I suppose they won't...),
-> we will have more data then.
+SO I have a patchset that does this, then moves to per-sb inode list
+locks, then does....
+
+> > > Won't it be easier to remove inodes from b_wb list (btw, I'd slightly
+> > > prefer name b_writeback)
+> > 
+> > Yeah, b_writeback would be nicer. It's messy, though - the writeback
+> > structure uses b_io/b_more_io for stuff that is queued for writeback
+> > (not actually under IO), while the inode calls that the i_wb_list.
+> > Now we add a writeback list to the writeback structure for inodes
+> > under IO, and call the inode list i_io_list. I think this needs to
+> > be cleaned up as well...
+>   Good point. The naming is somewhat inconsistent and would use a cleanup.
+
+... this, and then does....
 > 
-> So we could firstly try to regain the lost performance of pgbench, if it
-> strip the benefit of other benchmarks, let's fix it, and at last we will
-> have a real smart wake-affine and no one will complain ;-)
+> > > lazily instead of from
+> > > test_clear_page_writeback()? I mean we would remove inodes from b_wb list
+> > > only in wait_sb_inodes() or when inodes get reclaimed from memory. That way
+> > > we save some work in test_clear_page_writeback() which is a fast path and
+> > > defer it to sync which isn't that performance critical.
 
-The idea is plenty simple (and the fastpath has a deep and abiding love
-of simple) so the idea itself flies in my book.  It doesn't add as much
-knowledge as may be nice to have, but if it adds enough to help pgbench
-and ilk without harming others, cool.
+... this.
 
--Mike
+> > 
+> > We could, but we just end up in the same place with sync as we are
+> > now - with a long list of clean inodes with a few inodes hidden in
+> > it that are under IO. i.e. we still have to walk lots of clean
+> > inodes to find the dirty ones that we need to wait on....
+>   If the syncs are rare then yes. If they are relatively frequent, you
+> would win because the first sync will cleanup the list and subsequent ones
+> will be fast.
 
+I haven't done this yet, because I've found an interesting
+performance problem with our sync implementation. Basically, sync(2)
+on a filesystem that is being constantly dirtied blocks the flusher
+thread waiting for IO completion like so:
+
+# echo w > /proc/sysrq-trigger 
+[ 1968.031001] SysRq : Show Blocked State
+[ 1968.032748]   task                        PC stack   pid father
+[ 1968.034534] kworker/u19:2   D ffff8800bed13140  3448  4830      2 0x00000000
+[ 1968.034534] Workqueue: writeback bdi_writeback_workfn (flush-253:32)
+[ 1968.034534]  ffff8800bdca3998 0000000000000046 ffff8800bd1cae20 ffff8800bdca3fd8
+[ 1968.034534]  ffff8800bdca3fd8 ffff8800bdca3fd8 ffff88003ea10000 ffff8800bd1cae20
+[ 1968.034534]  ffff8800bdca3968 ffff8800bd1cae20 ffff8800bed139a0 0000000000000002
+[ 1968.034534] Call Trace:
+[ 1968.034534]  [<ffffffff81bff7c9>] schedule+0x29/0x70
+[ 1968.034534]  [<ffffffff81bff89f>] io_schedule+0x8f/0xd0
+[ 1968.034534]  [<ffffffff8113263e>] sleep_on_page+0xe/0x20
+[ 1968.034534]  [<ffffffff81bfd030>] __wait_on_bit+0x60/0x90
+[ 1968.034534]  [<ffffffff81132770>] wait_on_page_bit+0x80/0x90
+[ 1968.034534]  [<ffffffff81132881>] filemap_fdatawait_range+0x101/0x190
+[ 1968.034534]  [<ffffffff81132937>] filemap_fdatawait+0x27/0x30
+[ 1968.034534]  [<ffffffff811a7f18>] __writeback_single_inode+0x1b8/0x220
+[ 1968.034534]  [<ffffffff811a88ab>] writeback_sb_inodes+0x27b/0x410
+[ 1968.034534]  [<ffffffff811a8c00>] wb_writeback+0xf0/0x2c0
+[ 1968.034534]  [<ffffffff811aa668>] wb_do_writeback+0xb8/0x210
+[ 1968.034534]  [<ffffffff811aa832>] bdi_writeback_workfn+0x72/0x160
+[ 1968.034534]  [<ffffffff8109e487>] process_one_work+0x177/0x400
+[ 1968.034534]  [<ffffffff8109eb82>] worker_thread+0x122/0x380
+[ 1968.034534]  [<ffffffff810a5508>] kthread+0xd8/0xe0
+[ 1968.034534]  [<ffffffff81c091ec>] ret_from_fork+0x7c/0xb0
+
+i.e. this code:
+
+static int
+__writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
+{
+        struct address_space *mapping = inode->i_mapping;
+        long nr_to_write = wbc->nr_to_write;
+        unsigned dirty;
+        int ret;
+
+        WARN_ON(!(inode->i_state & I_SYNC));
+
+        trace_writeback_single_inode_start(inode, wbc, nr_to_write);
+
+        ret = do_writepages(mapping, wbc);
+
+        /*
+         * Make sure to wait on the data before writing out the metadata.
+         * This is important for filesystems that modify metadata on data
+         * I/O completion.
+         */
+        if (wbc->sync_mode == WB_SYNC_ALL) {
+                int err = filemap_fdatawait(mapping);
+                if (ret == 0)
+                        ret = err;
+        }
+....
+
+If completely serialising IO dispatch during sync. We are not
+batching IO submission at all - we are dispatching it one inode at a
+time an then waiting for it to complete.  Guess where in the
+benchmark run I ran sync:
+
+FSUse%        Count         Size    Files/sec     App Overhead
+.....
+     0       640000         4096      35154.6          1026984
+     0       720000         4096      36740.3          1023844
+     0       800000         4096      36184.6           916599
+     0       880000         4096       1282.7          1054367
+     0       960000         4096       3951.3           918773
+     0      1040000         4096      40646.2           996448
+     0      1120000         4096      43610.1           895647
+     0      1200000         4096      40333.1           921048
+
+sync absolutely *murders* asynchronous IO performance right now
+because it stops background writeback completely and stalls all new
+writes in balance_dirty_pages like:
+
+[ 1968.034534] fs_mark         D ffff88007ed13140  3680  9219   7127 0x00000000
+[ 1968.034534]  ffff88005a279a38 0000000000000046 ffff880040318000 ffff88005a279fd8
+[ 1968.034534]  ffff88005a279fd8 ffff88005a279fd8 ffff88003e9fdc40 ffff880040318000
+[ 1968.034534]  ffff88005a279a28 ffff88005a279a70 ffff88007e9e0000 0000000100065d20
+[ 1968.034534] Call Trace:
+[ 1968.034534]  [<ffffffff81bff7c9>] schedule+0x29/0x70
+[ 1968.034534]  [<ffffffff81bfcd3b>] schedule_timeout+0x10b/0x1f0
+[ 1968.034534]  [<ffffffff81bfe492>] io_schedule_timeout+0xa2/0x100
+[ 1968.034534]  [<ffffffff8113d6fb>] balance_dirty_pages_ratelimited+0x37b/0x7a0
+[ 1968.034534]  [<ffffffff811322e8>] generic_file_buffered_write+0x1b8/0x280
+[ 1968.034534]  [<ffffffff8144e649>] xfs_file_buffered_aio_write+0x109/0x1a0
+[ 1968.034534]  [<ffffffff8144e7ae>] xfs_file_aio_write+0xce/0x140
+[ 1968.034534]  [<ffffffff8117f4b0>] do_sync_write+0x80/0xb0
+[ 1968.034534]  [<ffffffff811801c1>] vfs_write+0xc1/0x1c0
+[ 1968.034534]  [<ffffffff81180642>] SyS_write+0x52/0xa0
+[ 1968.034534]  [<ffffffff81c09299>] system_call_fastpath+0x16/0x1b
+
+IOWs, blocking the flusher thread for IO completion on WB_SYNC_ALL
+writeback is very harmful. Given that we rely on ->sync_fs to
+guarantee all inode metadata is written back - the async pass up
+front doesn't do any waiting so any inode metadata updates done
+after IO completion have to be caught by ->sync_fs - why are we
+doing IO completion waiting here for sync(2) writeback?
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
