@@ -1,47 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761Ab3GBEzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 00:55:05 -0400
-Received: from mailhost-t4-p3.netultra.net ([195.5.209.79]:60538 "EHLO
-	smtp-delay1.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751120Ab3GBEzE (ORCPT
+	id S1751602Ab3GBEzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 00:55:43 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:31476 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab3GBEzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 00:55:04 -0400
-X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Jul 2013 00:55:03 EDT
-From: Damien Wyart <damien.wyart@gmail.com>
-To: Marc Haber <mh+linux-kernel@zugschlus.de>
-Cc: Riccardo Magliocchetti <riccardo.magliocchetti@gmail.com>,
-        Stefan Lippers-Hollmann <s.L-H@gmx.de>, Takashi Iwai <tiwai@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Kay Sievers <kay@redhat.com>
-Subject: Re: udevd cannot modprobe snd-hda-intel with 3.9.8
-References: <51CDD1B0.70607@gmail.com> <201306282208.23429.s.L-H@gmx.de>
-	<51CED59E.2030307@gmail.com> <20130701155016.GA23358@torres.zugschlus.de>
-Date: Tue, 02 Jul 2013 06:47:31 +0200
-In-Reply-To: <20130701155016.GA23358@torres.zugschlus.de> (Marc Haber's
-	message of "Mon, 1 Jul 2013 17:50:16 +0200")
-Message-ID: <87ppv136vw.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50
+	Tue, 2 Jul 2013 00:55:41 -0400
+Message-ID: <51D25CB5.8080604@huawei.com>
+Date: Tue, 2 Jul 2013 12:53:09 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Tom Zanussi <tom.zanussi@linux.intel.com>, <rostedt@goodmis.org>,
+        <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH v2 00/11] tracing: trace event triggers
+References: <cover.1372479499.git.tom.zanussi@linux.intel.com> <51CEA92F.3040802@huawei.com> <51D176F6.9050409@hitachi.com>
+In-Reply-To: <51D176F6.9050409@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Marc Haber <mh+linux-kernel@zugschlus.de> [130701 17:50]:
-> The issue does not appear when one uses a Debian kernel, or uses the
-> configuration that Debian uses for its kernels to build a vanilla
-> kernel.org kernel. This has, after a gazillion of reoboots and
-> experimenting with man different blacklist entries and kernel
-> configuration, led me to the fact that this bug does not show if the
-> kernel is compiled with CONFIG_SND_SUPPORT_OLD_API=y.
+On 2013/7/1 20:32, Masami Hiramatsu wrote:
+> (2013/06/29 18:30), zhangwei(Jovi) wrote:
+>>> This patchset implements 'trace event triggers', which are similar to
+>>> the function triggers implemented for 'ftrace filter commands' (see
+>>> 'Filter commands' in Documentation/trace/ftrace.txt), but instead of
+>>> being invoked from function calls are invoked by trace events.
+>>> Basically the patchset allows 'commands' to be triggered whenever a
+>>> given trace event is hit.  The set of commands implemented by this
+>>> patchset are:
+>>>
+>>>  - enable/disable_event - enable or disable another event whenever
+>>>    the trigger event is hit
+>>>
+>>>  - stacktrace - dump a stacktrace to the trace buffer whenever the
+>>>    trigger event is hit
+>>>
+>>>  - snapshot - create a snapshot of the current trace buffer whenever
+>>>    the trigger event is hit
+>>>
+>>>  - traceon/traceoff - turn tracing on or off whenever the trigger
+>>>    event is hit
+>>>
+>>> Triggers can also be conditionally invoked by associating a standard
+>>> trace event filter with them - if the given event passes the filter,
+>>> the trigger is invoked, otherwise it's not. (see 'Event filtering' in
+>>> Documentation/trace/events.txt for info on event filters).
+>>>
+>>
+>> I just aware that we are implementing more and more scripting functionality into
+>> tracing subsystem, like filter and trigger mode, of cause we don't call it
+>> as scripting, but basically the pattern is same, all is "do something when event hit".
+> 
+> Agreed, that's a good direction to handle event by script in kernel :)
+> That may be simply done with an extension of "event trigger". Of course
+> your ktap work will be the next step for ftrace. But I think, the basic
+> implementation can be done by just passing recorded event entry to
+> each action. (other works are for debugfs management)
+> And that could be a generic trace-event interface for other users too.
+> 
+Fully agree "passing recorded event entry to each action".
+Actually there already have this interface, it's perf.
 
-> So it was my error to dump backwards compatibility and to remove the
-> old api support. I have now set CONFIG_SND_SUPPORT_OLD_API=y again and
-> everything is fine.
+struct perf_event *
+perf_event_create_kernel_counter(struct perf_event_attr *attr,
+                                int cpu,
+                                struct task_struct *task,
+                                perf_overflow_handler_t callback,
+                                void *context);
 
-Even with this option, I get the problem, so this is not enough...
+As we known, each event has a id, register this id in perf_event_attr, and
+give a callback function, then it will call the callback function when event hit.
 
--- 
-Damien
+void overflow_callback(struct perf_event *event,
+                       struct perf_sample_data *data,
+                       struct pt_regs *regs)
+
+the recorded event entry is passed as data->raw->data;
+
+This perf interface is a generic action trigger interface now, it support
+tracepoint, k(ret)probe, u(ret)probe, PMU, hw_breakpoint(perhaps we could implement
+PMU and hw_breakpoint trigger in future)
+
+So why we need to reinvent another trigger interface as this patchset did?
+(this patchset changed lots of places, include macro in ftrace.h, and will change more
+if support kprobe/uprobe trigger in future.)
+
+jovi
+
+
+
+
+
