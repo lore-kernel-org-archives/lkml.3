@@ -1,171 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3GBU16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:27:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9935 "EHLO
+	id S932971Ab3GBU2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:28:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33065 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab3GBUY1 (ORCPT
+	with ESMTP id S1755512Ab3GBUY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Jul 2013 16:24:27 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=h-VoTAdJlvcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=brlZdUSUxb0A:10 a=VwQbUJbxAAAA:8 a=i0EeH86SAAAA:8 a=3nbZYyFuAAAA:8 a=zNOThPvcOk8uDMcW1_oA:9 a=jeBq3FmKZ4MA:10 a=hPjdaMEvmhQA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=8bHPLWCpmD0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PUDWgdFKh_AA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=liAV-VWemG3EvjLrsgkA:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130702202425.344090135@goodmis.org>
+Message-Id: <20130702202425.667999594@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Tue, 02 Jul 2013 16:22:17 -0400
+Date: Tue, 02 Jul 2013 16:22:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [for-next][PATCH 01/14] tracing: Failed to create system directory
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [for-next][PATCH 03/14] tracing/kprobes: Kill probe_enable_lock
 References: <20130702202216.623562799@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Failed-to-create-system-directory.patch
+Content-Disposition: inline; filename=0003-tracing-kprobes-Kill-probe_enable_lock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-Running the following:
+enable_trace_probe() and disable_trace_probe() should not worry about
+serialization, the caller (perf_trace_init or __ftrace_set_clr_event)
+holds event_mutex.
 
- # cd /sys/kernel/debug/tracing
- # echo p:i do_sys_open > kprobe_events
- # echo p:j schedule >> kprobe_events
- # cat kprobe_events
-p:kprobes/i do_sys_open
-p:kprobes/j schedule
- # echo p:i do_sys_open >> kprobe_events
- # cat kprobe_events
-p:kprobes/j schedule
-p:kprobes/i do_sys_open
- # ls /sys/kernel/debug/tracing/events/kprobes/
-enable  filter  j
+They are also called by kprobe_trace_self_tests_init(), but this __init
+function can't race with itself or trace_events.c
 
-Notice that the 'i' is missing from the kprobes directory.
+And note that this code depended on event_mutex even before 41a7dd420c
+which introduced probe_enable_lock. In fact it assumes that the caller
+kprobe_register() can never race with itself. Otherwise, say, tp->flags
+manipulations are racy.
 
-The console produces:
+Link: http://lkml.kernel.org/r/20130620173809.GA13158@redhat.com
 
-"Failed to create system directory kprobes"
-
-This is because kprobes passes in a allocated name for the system
-and the ftrace event subsystem saves off that name instead of creating
-a duplicate for it. But the kprobes may free the system name making
-the pointer to it invalid.
-
-This bug was introduced by 92edca073c37 "tracing: Use direct field, type
-and system names" which switched from using kstrdup() on the system name
-in favor of just keeping apointer to it, as the internal ftrace event
-system names are static and exist for the life of the computer being booted.
-
-Instead of reverting back to duplicating system names again, we can use
-core_kernel_data() to determine if the passed in name was allocated or
-static. Then use the MSB of the ref_count to be a flag to keep track if
-the name was allocated or not. Then we can still save from having to duplicate
-strings that will always exist, but still copy the ones that may be freed.
-
-Cc: stable@vger.kernel.org # 3.10
-Reported-by: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Reported-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Tested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_events.c |   41 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 35 insertions(+), 6 deletions(-)
+ kernel/trace/trace_kprobe.c |   43 ++++++++++++++++++++-----------------------
+ 1 file changed, 20 insertions(+), 23 deletions(-)
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index f57b015..903a0bf 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -41,6 +41,23 @@ static LIST_HEAD(ftrace_common_fields);
- static struct kmem_cache *field_cachep;
- static struct kmem_cache *file_cachep;
- 
-+#define SYSTEM_FL_FREE_NAME		(1 << 31)
-+
-+static inline int system_refcount(struct event_subsystem *system)
-+{
-+	return system->ref_count & ~SYSTEM_FL_FREE_NAME;
-+}
-+
-+static int system_refcount_inc(struct event_subsystem *system)
-+{
-+	return (system->ref_count++) & ~SYSTEM_FL_FREE_NAME;
-+}
-+
-+static int system_refcount_dec(struct event_subsystem *system)
-+{
-+	return (--system->ref_count) & ~SYSTEM_FL_FREE_NAME;
-+}
-+
- /* Double loops, do not use break, only goto's work */
- #define do_for_each_event_file(tr, file)			\
- 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {	\
-@@ -344,8 +361,8 @@ static void __put_system(struct event_subsystem *system)
- {
- 	struct event_filter *filter = system->filter;
- 
--	WARN_ON_ONCE(system->ref_count == 0);
--	if (--system->ref_count)
-+	WARN_ON_ONCE(system_refcount(system) == 0);
-+	if (system_refcount_dec(system))
- 		return;
- 
- 	list_del(&system->list);
-@@ -354,13 +371,15 @@ static void __put_system(struct event_subsystem *system)
- 		kfree(filter->filter_string);
- 		kfree(filter);
- 	}
-+	if (system->ref_count & SYSTEM_FL_FREE_NAME)
-+		kfree(system->name);
- 	kfree(system);
- }
- 
- static void __get_system(struct event_subsystem *system)
- {
--	WARN_ON_ONCE(system->ref_count == 0);
--	system->ref_count++;
-+	WARN_ON_ONCE(system_refcount(system) == 0);
-+	system_refcount_inc(system);
- }
- 
- static void __get_system_dir(struct ftrace_subsystem_dir *dir)
-@@ -374,7 +393,7 @@ static void __put_system_dir(struct ftrace_subsystem_dir *dir)
- {
- 	WARN_ON_ONCE(dir->ref_count == 0);
- 	/* If the subsystem is about to be freed, the dir must be too */
--	WARN_ON_ONCE(dir->subsystem->ref_count == 1 && dir->ref_count != 1);
-+	WARN_ON_ONCE(system_refcount(dir->subsystem) == 1 && dir->ref_count != 1);
- 
- 	__put_system(dir->subsystem);
- 	if (!--dir->ref_count)
-@@ -1274,7 +1293,15 @@ create_new_subsystem(const char *name)
- 		return NULL;
- 
- 	system->ref_count = 1;
--	system->name = name;
-+
-+	/* Only allocate if dynamic (kprobes and modules) */
-+	if (!core_kernel_data((unsigned long)name)) {
-+		system->ref_count |= SYSTEM_FL_FREE_NAME;
-+		system->name = kstrdup(name, GFP_KERNEL);
-+		if (!system->name)
-+			goto out_free;
-+	} else
-+		system->name = name;
- 
- 	system->filter = NULL;
- 
-@@ -1287,6 +1314,8 @@ create_new_subsystem(const char *name)
- 	return system;
- 
-  out_free:
-+	if (system->ref_count & SYSTEM_FL_FREE_NAME)
-+		kfree(system->name);
- 	kfree(system);
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index c35bebe..282f86c 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -183,16 +183,15 @@ static struct trace_probe *find_trace_probe(const char *event,
  	return NULL;
  }
+ 
++/*
++ * This and enable_trace_probe/disable_trace_probe rely on event_mutex
++ * held by the caller, __ftrace_set_clr_event().
++ */
+ static int trace_probe_nr_files(struct trace_probe *tp)
+ {
+-	struct ftrace_event_file **file;
++	struct ftrace_event_file **file = rcu_dereference_raw(tp->files);
+ 	int ret = 0;
+ 
+-	/*
+-	 * Since all tp->files updater is protected by probe_enable_lock,
+-	 * we don't need to lock an rcu_read_lock.
+-	 */
+-	file = rcu_dereference_raw(tp->files);
+ 	if (file)
+ 		while (*(file++))
+ 			ret++;
+@@ -200,8 +199,6 @@ static int trace_probe_nr_files(struct trace_probe *tp)
+ 	return ret;
+ }
+ 
+-static DEFINE_MUTEX(probe_enable_lock);
+-
+ /*
+  * Enable trace_probe
+  * if the file is NULL, enable "perf" handler, or enable "trace" handler.
+@@ -211,8 +208,6 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ {
+ 	int ret = 0;
+ 
+-	mutex_lock(&probe_enable_lock);
+-
+ 	if (file) {
+ 		struct ftrace_event_file **new, **old;
+ 		int n = trace_probe_nr_files(tp);
+@@ -223,7 +218,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 			      GFP_KERNEL);
+ 		if (!new) {
+ 			ret = -ENOMEM;
+-			goto out_unlock;
++			goto out;
+ 		}
+ 		memcpy(new, old, n * sizeof(struct ftrace_event_file *));
+ 		new[n] = file;
+@@ -246,10 +241,7 @@ enable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		else
+ 			ret = enable_kprobe(&tp->rp.kp);
+ 	}
+-
+- out_unlock:
+-	mutex_unlock(&probe_enable_lock);
+-
++ out:
+ 	return ret;
+ }
+ 
+@@ -282,8 +274,6 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ {
+ 	int ret = 0;
+ 
+-	mutex_lock(&probe_enable_lock);
+-
+ 	if (file) {
+ 		struct ftrace_event_file **new, **old;
+ 		int n = trace_probe_nr_files(tp);
+@@ -292,7 +282,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		old = rcu_dereference_raw(tp->files);
+ 		if (n == 0 || trace_probe_file_index(tp, file) < 0) {
+ 			ret = -EINVAL;
+-			goto out_unlock;
++			goto out;
+ 		}
+ 
+ 		if (n == 1) {	/* Remove the last file */
+@@ -303,7 +293,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 				      GFP_KERNEL);
+ 			if (!new) {
+ 				ret = -ENOMEM;
+-				goto out_unlock;
++				goto out;
+ 			}
+ 
+ 			/* This copy & check loop copies the NULL stopper too */
+@@ -326,10 +316,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		else
+ 			disable_kprobe(&tp->rp.kp);
+ 	}
+-
+- out_unlock:
+-	mutex_unlock(&probe_enable_lock);
+-
++ out:
+ 	return ret;
+ }
+ 
+@@ -1214,6 +1201,12 @@ kretprobe_perf_func(struct trace_probe *tp, struct kretprobe_instance *ri,
+ }
+ #endif	/* CONFIG_PERF_EVENTS */
+ 
++/*
++ * called by perf_trace_init() or __ftrace_set_clr_event() under event_mutex.
++ *
++ * kprobe_trace_self_tests_init() does enable_trace_probe/disable_trace_probe
++ * lockless, but we can't race with this __init function.
++ */
+ static __kprobes
+ int kprobe_register(struct ftrace_event_call *event,
+ 		    enum trace_reg type, void *data)
+@@ -1379,6 +1372,10 @@ find_trace_probe_file(struct trace_probe *tp, struct trace_array *tr)
+ 	return NULL;
+ }
+ 
++/*
++ * Nobody but us can call enable_trace_probe/disable_trace_probe at this
++ * stage, we can do this lockless.
++ */
+ static __init int kprobe_trace_self_tests_init(void)
+ {
+ 	int ret, warn = 0;
 -- 
 1.7.10.4
 
