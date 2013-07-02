@@ -1,97 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab3GBAPJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 20:15:09 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:49507 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755179Ab3GBAPH (ORCPT
+	id S932071Ab3GBAPp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 20:15:45 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:42986 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755950Ab3GBAPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 20:15:07 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Hebbar Gururaja <gururaja.hebbar@ti.com>
-Cc: <tony@atomide.com>, <b-cousson@ti.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sekhar Nori <nsekhar@ti.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        <rtc-linux@googlegroups.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 3/4] rtc: omap: add rtc wakeup support to alarm events
-References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
-	<1372412109-986-4-git-send-email-gururaja.hebbar@ti.com>
-Date: Mon, 01 Jul 2013 17:15:01 -0700
-In-Reply-To: <1372412109-986-4-git-send-email-gururaja.hebbar@ti.com> (Hebbar
-	Gururaja's message of "Fri, 28 Jun 2013 15:05:08 +0530")
-Message-ID: <871u7hom0q.fsf@linaro.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 1 Jul 2013 20:15:32 -0400
+Date: Mon, 1 Jul 2013 17:15:31 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+cc: debian-kernel@lists.debian.org, kernel-team@lists.ubuntu.com
+Subject: [PATCH] scripts/package/builddeb: build perftools package
+Message-ID: <alpine.DEB.2.00.1307011713030.13163@cobra.newdream.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
+This will build a linux-tools-$version package for each build that includes
+perf.
 
-> On some platforms (like AM33xx), a special register (RTC_IRQWAKEEN)
-> is available to enable Alarm Wakeup feature. This register needs to be
-> properly handled for the rtcwake to work properly.
->
-> Platforms using such IP should set "ti,am3352-rtc" in rtc device dt
-> compatibility node.
->
-> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Alessandro Zummo <a.zummo@towertech.it>
-> Cc: rtc-linux@googlegroups.com
-> Cc: devicetree-discuss@lists.ozlabs.org
-> Cc: linux-doc@vger.kernel.org
+Signed-off-by: Gary Lowell <gary.lowell@inktank.com>
+---
+ scripts/package/builddeb |   95 +++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 94 insertions(+), 1 deletion(-)
 
-Acked-by: Kevin Hilman <khilman@linaro.org>
+diff --git a/scripts/package/builddeb b/scripts/package/builddeb
+index acb8650..f57d33c 100644
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -78,17 +78,20 @@ tmpdir="$objtree/debian/tmp"
+ fwdir="$objtree/debian/fwtmp"
+ kernel_headers_dir="$objtree/debian/hdrtmp"
+ libc_headers_dir="$objtree/debian/headertmp"
++tools_dir="$objtree/debian/toolstmp"
++tmp_build_dir="$objtree/debian/toolsbuild"
+ packagename=linux-image-$version
+ fwpackagename=linux-firmware-image
+ kernel_headers_packagename=linux-headers-$version
+ libc_headers_packagename=linux-libc-dev
++tools_packagename=linux-tools-$version
+ 
+ if [ "$ARCH" = "um" ] ; then
+ 	packagename=user-mode-linux-$version
+ fi
+ 
+ # Setup the directory structure
+-rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
++rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir" "$tools_dir" "$tmp_build_dir"
+ mkdir -m 755 -p "$tmpdir/DEBIAN"
+ mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
+ mkdir -m 755 -p "$fwdir/DEBIAN"
+@@ -98,6 +101,10 @@ mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
+ mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
+ mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
+ mkdir -p "$kernel_headers_dir/lib/modules/$version/"
++mkdir -m 755 -p "$tools_dir/DEBIAN"
++mkdir -p "$tools_dir/usr/share/doc/$tools_packagename"
++mkdir -p "$tools_dir/usr/bin/"
++mkdir -p "$tmp_build_dir"
+ if [ "$ARCH" = "um" ] ; then
+ 	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
+ fi
+@@ -120,6 +127,77 @@ else
+ 	fi
+ fi
+ 
++# Build the tools
++num_tools="0"
++tools_flavour_abi=${version#*-}
++tools_flavour=${tools_flavour_abi#*-}
++tools_version=${version%-$tools_flavour}
++debian_tools_version="${version%%-*}"
++debian_tools_version="${version%.*}"
++if grep -q '^CONFIG_PERF_EVENTS=y' .config ; then
++	# Build and install perf
++	(
++	 unset MAKEFLAGS
++	 unset MFLAGS
++	 unset MAKEOVERRIDES
++
++	 mkdir -p $objtree/tools/perf
++	 cd "$srctree/tools/perf"
++	 $MAKE DESTDIR="$tools_dir/usr/" LDFLAGS= O=$objtree/tools/perf/ install
++	 mv "$tools_dir/usr/bin/perf" "$tools_dir/usr/bin/perf_$debian_tools_version"
++	 ln -s "/usr/bin/perf_$debian_tools_version" "$tools_dir/usr/bin/perf_$tools_version"
++	 mv "$tools_dir/usr/libexec/perf-core" "$tools_dir/usr/share/perf_$debian_tools_version-core"
++	 rmdir "$tools_dir/usr/libexec"
++
++	 # Documentation can't be built out-of-tree so copy source
++	 # over to objtree and build man pages there
++	 mkdir -p $tmp_build_dir/perf
++	 cp -a "$srctree/tools/perf/Documentation" "$tmp_build_dir/perf/"
++	 cp -a "$srctree/tools/perf/config" "$tmp_build_dir/perf/"
++	 cd "$tmp_build_dir/perf/Documentation"
++	 $MAKE man
++	 $MAKE DESTDIR="$tools_dir/usr/" install
++	 for manpage in `find $tools_dir/usr/share/man/ -type f`; do
++		mv $manpage ${manpage/perf/perf_$debian_tools_version}
++		gzip -9 ${manpage/perf/perf_$debian_tools_version}
++	 done
++	)
++	num_tools=$(($num_tools+1))
++fi
++
++if [[ "$ARCH" = "i386" || "$ARCH" = "x86_64" ]]; then
++	# Build turbostat
++	(
++	 cp -a $srctree/tools/power/x86/turbostat "$tmp_build_dir"
++	 ln -s $srctree/arch "$tmp_build_dir/../../../arch"
++	 cd "$tmp_build_dir/turbostat/"
++	 unset MAKEFLAGS
++	 unset MFLAGS
++	 unset MAKEOVERRIDES
++	 $MAKE LDFLAGS=
++	 cp turbostat "$tools_dir/usr/bin/turbostat_$debian_tools_version"
++	 ln -s "/usr/bin/turbostat_$debian_tools_version" "$tools_dir/usr/bin/turbostat_$tools_version"
++	 mkdir -p "$tools_dir/usr/share/man/man8"
++	 cp turbostat.8 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
++	 gzip -9 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
++	)
++
++	# Build x86_energy_perf_policy
++	(
++	 cp -a $srctree/tools/power/x86/x86_energy_perf_policy "$tmp_build_dir"
++	 cd "$tmp_build_dir/x86_energy_perf_policy"
++	 unset MAKEFLAGS
++	 unset MFLAGS
++	 unset MAKEOVERRIDES
++	 $MAKE LDFLAGS=
++	 cp x86_energy_perf_policy "$tools_dir/usr/bin/x86_energy_perf_policy_$debian_tools_version"
++	 ln -s "/usr/bin/x86_energy_perf_policy_$debian_tools_version" "$tools_dir/usr/bin/x86_energy_perf_policy_$tools_version"
++	 cp x86_energy_perf_policy.8 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
++	 gzip -9 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
++	)
++	num_tools=$(($num_tools+2))
++fi
++
+ if grep -q '^CONFIG_MODULES=y' .config ; then
+ 	INSTALL_MOD_PATH="$tmpdir" $MAKE KBUILD_SRC= modules_install
+ 	rm -f "$tmpdir/lib/modules/$version/build"
+@@ -292,9 +370,24 @@ Description: Linux support headers for userspace development
+  are used by the installed headers for GNU glibc and other system libraries.
+ EOF
+ 
++cat <<EOF >> debian/control
++
++Package: $tools_packagename
++Section: devel
++Architecture: $arch
++Depends: \${shlibs:Depends}
++Description: Linux kernel tools for version $version
++ This package provides the architecture dependant parts for kernel
++ version locked tools for version $version
++EOF
++
+ if [ "$ARCH" != "um" ]; then
+ 	create_package "$kernel_headers_packagename" "$kernel_headers_dir"
+ 	create_package "$libc_headers_packagename" "$libc_headers_dir"
++	if [ "$num_tools" > "0" ]; then
++		dpkg-shlibdeps $tools_dir/usr/bin/*
++		create_package "$tools_packagename" "$tools_dir"
++	fi
+ fi
+ 
+ create_package "$packagename" "$tmpdir"
+-- 
+1.7.9.5
 
-...with a minor nit below...
-
-> ---
-> :100644 100644 b47aa41... 5a0f02d... M	Documentation/devicetree/bindings/rtc/rtc-omap.txt
-> :100644 100644 761919d... 666b0c2... M	drivers/rtc/rtc-omap.c
->  Documentation/devicetree/bindings/rtc/rtc-omap.txt |    6 ++-
->  drivers/rtc/rtc-omap.c                             |   56 +++++++++++++++++---
->  2 files changed, 54 insertions(+), 8 deletions(-)
->
-> diff --git a/Documentation/devicetree/bindings/rtc/rtc-omap.txt b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-> index b47aa41..5a0f02d 100644
-> --- a/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-> +++ b/Documentation/devicetree/bindings/rtc/rtc-omap.txt
-> @@ -1,7 +1,11 @@
->  TI Real Time Clock
->  
->  Required properties:
-> -- compatible: "ti,da830-rtc"
-> +- compatible:
-> +	- "ti,da830-rtc"  - for RTC IP used similar to that on DA8xx SoC family.
-> +	- "ti,am3352-rtc" - for RTC IP used similar to that on AM335x SoC family.
-> +			    This RTC IP has special WAKE-EN Register to enable
-> +			    Wakeup generation for event Alarm.
->  - reg: Address range of rtc register set
->  - interrupts: rtc timer, alarm interrupts in order
->  - interrupt-parent: phandle for the interrupt controller
-> diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
-> index 761919d..666b0c2 100644
-> --- a/drivers/rtc/rtc-omap.c
-> +++ b/drivers/rtc/rtc-omap.c
-> @@ -72,6 +72,8 @@
->  #define OMAP_RTC_KICK0_REG		0x6c
->  #define OMAP_RTC_KICK1_REG		0x70
->  
-> +#define OMAP_RTC_IRQWAKEEN		0x7C
-> +
-
-nit: letters in hex numbers are usually lower-case.
-
-
-Kevin
