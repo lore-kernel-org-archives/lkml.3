@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab3GBQls (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:41:48 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:43851 "EHLO smtp3-g21.free.fr"
+	id S1754708Ab3GBQmH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:42:07 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:44065 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753769Ab3GBQk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 12:40:27 -0400
+	id S1754253Ab3GBQk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:40:26 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH 10/13] xfs: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue,  2 Jul 2013 18:39:34 +0200
-Message-Id: <8d21b76c621dbfc59b2dbbfc933f96170835304d.1372777600.git.ydroneaud@opteya.com>
+Subject: [PATCH 08/13] file: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Tue,  2 Jul 2013 18:39:32 +0200
+Message-Id: <2ec0d238c8193849938a1f53da68cd47c667d887.1372777600.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1372777600.git.ydroneaud@opteya.com>
 References: <cover.1372777600.git.ydroneaud@opteya.com>
@@ -43,22 +43,22 @@ and, if possible, set to O_CLOEXEC.
 
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- fs/xfs/xfs_ioctl.c | 2 +-
+ fs/file.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-index 5e99968..dc5b659 100644
---- a/fs/xfs/xfs_ioctl.c
-+++ b/fs/xfs/xfs_ioctl.c
-@@ -248,7 +248,7 @@ xfs_open_by_handle(
- 		goto out_dput;
- 	}
+diff --git a/fs/file.c b/fs/file.c
+index 4a78f98..1420d28 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -897,7 +897,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
+ 	struct file *file = fget_raw(fildes);
  
--	fd = get_unused_fd();
-+	fd = get_unused_fd_flags(0);
- 	if (fd < 0) {
- 		error = fd;
- 		goto out_dput;
+ 	if (file) {
+-		ret = get_unused_fd();
++		ret = get_unused_fd_flags(0);
+ 		if (ret >= 0)
+ 			fd_install(ret, file);
+ 		else
 -- 
 1.8.3.1
 
