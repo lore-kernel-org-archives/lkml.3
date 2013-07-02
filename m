@@ -1,100 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab3GBJ3V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:29:21 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:49459 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab3GBJ3S (ORCPT
+	id S932541Ab3GBJbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:31:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39022 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab3GBJbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:29:18 -0400
-Date: Tue, 2 Jul 2013 17:29:15 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: sage <sage@inktank.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [RFC PATCH] ceph: send the ctime of file/snap when send a cap msg.
-X-Priority: 3
-X-GUID: DDB9110B-B11B-476B-A07E-35E299E4755F
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
-Mime-Version: 1.0
-Message-ID: <201307021700280328740@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+	Tue, 2 Jul 2013 05:31:35 -0400
+Date: Tue, 2 Jul 2013 10:31:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: David Dajun Chen <david.chen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Message-ID: <20130702093130.GX27646@sirena.org.uk>
+References: <20130701164833.GL27646@sirena.org.uk>
+ <1372757513.28415.2.camel@matrix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="i4PQY6bUD8mHTt/C"
+Content-Disposition: inline
+In-Reply-To: <1372757513.28415.2.camel@matrix>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: Multiple DA9055 chips
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r629TZ9F006797
 
-Now,when sent a cap msg to inode/snap, it don't include the ctime of
-inode/snap.So make the mtime ahead of ctime.
 
-BTY,for snap, i'm not exactly send the ctime of snap or null.
+--i4PQY6bUD8mHTt/C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- fs/ceph/caps.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+On Tue, Jul 02, 2013 at 03:01:53PM +0530, Ashish Chavan wrote:
+> On Mon, 2013-07-01 at 17:48 +0100, Mark Brown wrote:
+> > It seems we have two drivers in mainline for da9055 on I2C.  We've got
+> > one in sound/soc/codecs/da9055.c and one in drivers/mfd/da9055-i2c.c,
+> > both registering themselves identically.  What's going on here?  Is this
+> > a combined CODEC and PMIC, has someone decided to release two chips with
+> > the same name or is one of the drivers misnamed?
 
-diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
-index da0f9b8..8735108 100644
---- a/fs/ceph/caps.c
-+++ b/fs/ceph/caps.c
-@@ -943,7 +943,7 @@ static int send_cap_msg(struct ceph_mds_session *session,
- 			u32 seq, u64 flush_tid, u32 issue_seq, u32 mseq,
- 			u64 size, u64 max_size,
- 			struct timespec *mtime, struct timespec *atime,
--			u64 time_warp_seq,
-+			struct timespec *ctime, u64 time_warp_seq,
- 			kuid_t uid, kgid_t gid, umode_t mode,
- 			u64 xattr_version,
- 			struct ceph_buffer *xattrs_buf,
-@@ -986,6 +986,8 @@ static int send_cap_msg(struct ceph_mds_session *session,
- 		ceph_encode_timespec(&fc->mtime, mtime);
- 	if (atime)
- 		ceph_encode_timespec(&fc->atime, atime);
-+	if (ctime)
-+		ceph_encode_timespec(&fc->ctime, ctime);
- 	fc->time_warp_seq = cpu_to_le32(time_warp_seq);
- 
- 	fc->uid = cpu_to_le32(from_kuid(&init_user_ns, uid));
-@@ -1092,7 +1094,7 @@ static int __send_cap(struct ceph_mds_client *mdsc, struct ceph_cap *cap,
- 	int held, revoking, dropping, keep;
- 	u64 seq, issue_seq, mseq, time_warp_seq, follows;
- 	u64 size, max_size;
--	struct timespec mtime, atime;
-+	struct timespec mtime, atime, ctime;
- 	int wake = 0;
- 	umode_t mode;
- 	kuid_t uid;
-@@ -1176,6 +1178,7 @@ static int __send_cap(struct ceph_mds_client *mdsc, struct ceph_cap *cap,
- 	ci->i_requested_max_size = max_size;
- 	mtime = inode->i_mtime;
- 	atime = inode->i_atime;
-+	ctime = inode->i_ctime;
- 	time_warp_seq = ci->i_time_warp_seq;
- 	uid = inode->i_uid;
- 	gid = inode->i_gid;
-@@ -1191,7 +1194,7 @@ static int __send_cap(struct ceph_mds_client *mdsc, struct ceph_cap *cap,
- 
- 	ret = send_cap_msg(session, ceph_vino(inode).ino, cap_id,
- 		op, keep, want, flushing, seq, flush_tid, issue_seq, mseq,
--		size, max_size, &mtime, &atime, time_warp_seq,
-+		size, max_size, &mtime, &atime, &ctime, time_warp_seq,
- 		uid, gid, mode, xattr_version, xattr_blob,
- 		follows);
- 	if (ret < 0) {
-@@ -1310,7 +1313,7 @@ retry:
- 			     CEPH_CAP_OP_FLUSHSNAP, capsnap->issued, 0,
- 			     capsnap->dirty, 0, capsnap->flush_tid, 0, mseq,
- 			     capsnap->size, 0,
--			     &capsnap->mtime, &capsnap->atime,
-+			     &capsnap->mtime, &capsnap->atime, &capsnap->ctime,
- 			     capsnap->time_warp_seq,
- 			     capsnap->uid, capsnap->gid, capsnap->mode,
- 			     capsnap->xattr_version, capsnap->xattr_blob,
--- 
-1.8.1.2
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Yes, this is a combined CODEC and PMIC.
+
+OK, in that case the CODEC driver is just plain broken then.  Did anyone
+actually test this stuff?  Please fix.
+
+--i4PQY6bUD8mHTt/C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0p3vAAoJELSic+t+oim9ROQP/16p+njQaqCQ4WODW7mrlBJn
+kaEJ/XfRMpP5b3OnsZ46Q2DK2S54le1RAnoeOihPPA5PI7jS8vbmiBRrmBAhNwMb
+OIJ+qCFiq7V7qZHqnMUgiC0VraYR0E3xukipidP8NaRocfcdy5Hn48YVmZuYzLF1
+ERjKxBfpAFxPQm4nPYnthbgpgYES0G6v27rm2NQ7fk+Mk2gHIgjCZuIHSDuNUCJ2
+1TtZ+nGmlBudAgEiBdSUAAMou3l3Cx+W5QI7b60NAPy4myFPhh2qi5x5T1pNEcu2
+t1IosELLwMrz/O5PYVwWaIJDd5e+I71j2VZEQWBJEdn0cDGhaPxNnV2iYE//pSDt
+pl8fPV8CjOdqGguooKsW2ul6I7S9xTpZ5/xe3lDiXz3iILTZpd66AxJVWl9U5WpM
+/6zOmgyUHHEIty2iSNyZWy06iFqwRQmfZPxu+5NSDIMVx4ETEDJP3TngZI5bZk/L
+ARcq2wkx1u58xWk37JaHfrbPfuMoC6W5/kdjCJ7IBAqFKtjjApuQAbTXHDSYHOPg
+9bF4a5CyLNpjqVqlzE1ApeD5TAM8ShZhK5+joLjsk6kxfY18XThHSHiLZiz8z4GK
+P8LUB/sHRUssQWu7kVMFTtMSLgKkKi8lfHg7aaoB2DTXGNMgJHnopk5VlYpvRiNV
+nQwzX2OiVk+3H163kon4
+=UnbR
+-----END PGP SIGNATURE-----
+
+--i4PQY6bUD8mHTt/C--
