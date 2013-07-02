@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab3GBQnX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:43:23 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:43765 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754155Ab3GBQkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754189Ab3GBQkW (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Jul 2013 12:40:22 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:43561 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753703Ab3GBQkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:40:19 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        cbe-oss-dev@lists.ozlabs.org
 Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH 04/13] android/sw_sync: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue,  2 Jul 2013 18:39:28 +0200
-Message-Id: <73593d09ced9d2d64bebe0fb71e74ac00d8738c6.1372777600.git.ydroneaud@opteya.com>
+Subject: [PATCH 02/13] ppc/cell: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Tue,  2 Jul 2013 18:39:26 +0200
+Message-Id: <72f6f9ae898a664033f6b958bc7976b994544963.1372777600.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1372777600.git.ydroneaud@opteya.com>
 References: <cover.1372777600.git.ydroneaud@opteya.com>
@@ -43,22 +44,31 @@ and, if possible, set to O_CLOEXEC.
 
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- drivers/staging/android/sw_sync.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/platforms/cell/spufs/inode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/android/sw_sync.c b/drivers/staging/android/sw_sync.c
-index 765c757..a4ed0b9 100644
---- a/drivers/staging/android/sw_sync.c
-+++ b/drivers/staging/android/sw_sync.c
-@@ -163,7 +163,7 @@ static int sw_sync_release(struct inode *inode, struct file *file)
- static long sw_sync_ioctl_create_fence(struct sw_sync_timeline *obj,
- 				       unsigned long arg)
- {
--	int fd = get_unused_fd();
-+	int fd = get_unused_fd_flags(0);
- 	int err;
- 	struct sync_pt *pt;
- 	struct sync_fence *fence;
+diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
+index f390042..88df441 100644
+--- a/arch/powerpc/platforms/cell/spufs/inode.c
++++ b/arch/powerpc/platforms/cell/spufs/inode.c
+@@ -301,7 +301,7 @@ static int spufs_context_open(struct path *path)
+ 	int ret;
+ 	struct file *filp;
+ 
+-	ret = get_unused_fd();
++	ret = get_unused_fd_flags(0);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -518,7 +518,7 @@ static int spufs_gang_open(struct path *path)
+ 	int ret;
+ 	struct file *filp;
+ 
+-	ret = get_unused_fd();
++	ret = get_unused_fd_flags(0);
+ 	if (ret < 0)
+ 		return ret;
+ 
 -- 
 1.8.3.1
 
