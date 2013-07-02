@@ -1,114 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932308Ab3GBGUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 02:20:07 -0400
-Received: from mga14.intel.com ([143.182.124.37]:55569 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932116Ab3GBGUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 02:20:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,978,1363158000"; 
-   d="scan'208";a="325557647"
-Message-ID: <51D27280.30007@intel.com>
-Date: Tue, 02 Jul 2013 09:26:08 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932325Ab3GBGUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 02:20:23 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54701 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932238Ab3GBGUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 02:20:20 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "khilman@linaro.org" <khilman@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        =?utf-8?B?QmVub8OudCBDb3Vzc29u?= <benoit.cousson@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>
+Subject: RE: [PATCH 4/4] ARM: dts: AM33XX: update rtc node compatibility
+Thread-Topic: [PATCH 4/4] ARM: dts: AM33XX: update rtc node compatibility
+Thread-Index: AQHOc+J1f8AO46OdWkqH7B3vNxGLJplQaHmAgACHx2A=
+Date: Tue, 2 Jul 2013 06:19:45 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC4E80D@DBDE04.ent.ti.com>
+References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
+ <1372412109-986-5-git-send-email-gururaja.hebbar@ti.com>
+ <51D26F61.7080308@ti.com>
+In-Reply-To: <51D26F61.7080308@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V3 06/15] perf tools: fix parse_events_terms() freeing
- local variable on error path
-References: <1372409006-8431-1-git-send-email-adrian.hunter@intel.com> <1372409006-8431-7-git-send-email-adrian.hunter@intel.com> <51CDC589.8070306@gmail.com> <51D13754.4080602@intel.com> <51D1CE93.7070804@gmail.com>
-In-Reply-To: <51D1CE93.7070804@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r626KWPT005930
 
-On 01/07/13 21:46, David Ahern wrote:
-> On 7/1/13 2:01 AM, Adrian Hunter wrote:
->> On 28/06/13 20:19, David Ahern wrote:
->>> On 6/28/13 2:43 AM, Adrian Hunter wrote:
->>>> The list_head is on the stack, so just free the rest of the list.
->>>>
->>>> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->>>> ---
->>>>    tools/perf/util/parse-events.c | 7 ++++++-
->>>>    tools/perf/util/parse-events.h | 1 +
->>>>    tools/perf/util/pmu.c          | 2 +-
->>>>    3 files changed, 8 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/tools/perf/util/parse-events.c
->>>> b/tools/perf/util/parse-events.c
->>>> index 995fc25..d9cb055 100644
->>>> --- a/tools/perf/util/parse-events.c
->>>> +++ b/tools/perf/util/parse-events.c
->>>> @@ -1231,12 +1231,17 @@ int parse_events_term__clone(struct
->>>> parse_events_term **new,
->>>>                term->val.str, term->val.num);
->>>>    }
->>>>
->>>> -void parse_events__free_terms(struct list_head *terms)
->>>> +void parse_events__free_terms_only(struct list_head *terms)
->>>>    {
->>>>        struct parse_events_term *term, *h;
->>>>
->>>>        list_for_each_entry_safe(term, h, terms, list)
->>>>            free(term);
->>>> +}
->>>> +
->>>> +void parse_events__free_terms(struct list_head *terms)
->>>> +{
->>>> +    parse_events__free_terms_only(terms);
->>>>
->>>>        free(terms);
->>>>    }
->>>
->>> I still don't understand the reasoning for an _only function. There is only
->>> 1 place that mallocs the list_head and that 1 user should free its own
->>> memory. All of the other users pass a stack variable.
->>
->> No.  See parse-events.y
+On Tue, Jul 02, 2013 at 11:42:49, Nori, Sekhar wrote:
+> Changing to Benoit's gmail id since he apparently wont access TI mail
+> anymore.
 > 
-> Fine. Fix both then. My point is that parse-events.c code should not be
-> freeing memory it does not allocate.
+> On 6/28/2013 3:05 PM, Hebbar Gururaja wrote:
+> > Since AM33xx  RTC IP has RTC_IRQWAKEEN to support Alarm Wake-up.
+> > 
+> > Update the rtc compatible property to "ti,am3352-rtc" to enable handling
+> > of this feature inside rtc-omap driver.
+> > 
+> > Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> > Cc: Tony Lindgren <tony@atomide.com>
+> > Cc: Sekhar Nori <nsekhar@ti.com>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Cc: b-cousson@ti.com
+> > ---
+> > :100644 100644 77aa1b0... dde180a... M	arch/arm/boot/dts/am33xx.dtsi
+> >  arch/arm/boot/dts/am33xx.dtsi |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
+> > index 77aa1b0..dde180a 100644
+> > --- a/arch/arm/boot/dts/am33xx.dtsi
+> > +++ b/arch/arm/boot/dts/am33xx.dtsi
+> > @@ -297,7 +297,7 @@
+> >  		};
+> >  
+> >  		rtc@44e3e000 {
+> > -			compatible = "ti,da830-rtc";
+> > +			compatible = "ti,am3352-rtc";
+> 
+> compatible is a list so you can instead do:
+> 	
+> 	compatible = "ti,am3352-rtc", "ti,da830-rtc";
 
-No.  Read the code.  The 'head' member is shared with other lists.  It does
-not make sense to turn a tiny bug-fix into such a lot of re-work.
+I believe the order is not important here. I mean, below is also fine. Right?
 
->>
->> The list head is defined as a pointer in the YYTYPE stack element:
->>
->> %union
->> {
->>     char *str;
->>     u64 num;
->>     struct list_head *head;
->>     struct parse_events_term *term;
->> }
->>
->> It is malloc'ed when terms are created:
->>
->> event_term
->> {
->>     struct list_head *head = malloc(sizeof(*head));
->>     struct parse_events_term *term = $1;
->>
->>     ABORT_ON(!head);
->>     INIT_LIST_HEAD(head);
->>     list_add_tail(&term->list, head);
->>     $$ = head;
->> }
->>
+	compatible = "ti,da830-rtc", "ti,am3352-rtc";
+
+
 > 
+> That way the dts works irrespective of driver updates. When driver
+> supports enhanced features of hardware, they are available to the user
+> else the basic functionality still works.
 > 
+> Thanks,
+> Sekhar
 > 
 
+
+Regards, 
+Gururaja
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
