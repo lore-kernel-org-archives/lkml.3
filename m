@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3GBIyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:54:11 -0400
-Received: from nm11-vm10.access.bullet.mail.bf1.yahoo.com ([216.109.114.233]:28546
-	"EHLO nm11-vm10.access.bullet.mail.bf1.yahoo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932422Ab3GBIyI convert rfc822-to-8bit (ORCPT
+	id S932475Ab3GBI43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:56:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40793 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932321Ab3GBI40 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:54:08 -0400
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Jul 2013 04:54:08 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 14169.9462.bm@omp1004.access.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=mayfV23aJvn11QHFlKIzNGEShhpW+JWDI2h+AILudrSeo9y6K0Qxamtpc5i2qKJgBmmkWejNpcyRjEGdpqLVSuANYy8ZzJgG7WetdwbVgycREIi48B9ZCJLIWQwrSLVVNQzZukRU6ttU6VMG0F2/mBPGHJ7d6cpDbstA5ovmcbU=  ;
-X-YMail-OSG: PgK_V5MVM1ns68W6AOifuXk72ryirvBV7M5AOKO6hn.nAIR
- rjvFqTKIIYHuLLvH7lACQnG1_1Uv7rsSbqnpNinrSk9Xf7u1Kc5Kp1tsZgXZ
- 4VB.uzXM3sd_DsMcE_SZ6NvlipRMWmHvEv0fh0O2G4LWDgJ2vjiEkXzIg5BR
- EBJg_grr3ZWrHDJkGpt8lYNkJndLUdFjLDOaz3wEe6Vcv5rM4CW5iy7JpL4V
- 6RRymBtJzMhFWUo6gnjegKZPcHpQW6gNPIXuYZ9lCeg4z1jQLWwY3EkmxcE.
- 5ljDtJpQDWHFdgS4Fnk5o6mybSAwJta19RlfAFACLm1NpSChuCeBMQHtu6Si
- gjVKtGTbRBrOuPzq.Dhps_UwJV8rM1EeBBjarhDi2h1cSkyz05aehMsY8PfU
- ksxiHz9092IJNGGt1pumhC1565bOsrhoCZVEiDt9kcqqdPwqLOZpxYkjasXF
- KJOO5XrNYQCIPNyPk_FDBD9sZyBkpJrkHLFsbyAOp__7QA1l1cXD7oJg62JG
- i42QnOhuF2k.vJZdDevus6OUapYDH0qUcr9xZNOo01N6_SYHGfkuL8_1KUPX
- dc2Fw4td.EpSbhTJfgb7HGY4glVK3KFzjf2DSLAt_IIQOau1wZ.d58NXsaEd
- Gh_761A--
-X-Rocket-MIMEInfo: 002.001,Pj4gTGludXgga2VybmVsIGJ1aWxkLCB3aGlsZSBjb3JyZWN0LCBpcyBzb21ld2hhdCBzbG93LCBhbmQgdGhlIHNvdXJjZXMKCj4.IGNvdWxkIGJlIG1vcmUgcmVhZGFibGUuCgpHcmVnIHdyb3RlOgo.SG93IGlzIGl0ICJzbG93Ij8gwqAKCldlbGwsIHRoZSBwcm9wb3J0aW9uIG9mIHRpbWUgc3BlbnQgYnkgdGhlIENQVSBjb3JlcyBvbiBhY3Rpdml0aWVzIG90aGVyIHRoYW4gY29tcGlsaW5nIHNlZW1lZCBoaWdoLgoKCj5XaGF0ICJzb3VyY2VzIiBhcmUgeW91IHJlZmVycmluZyB0byBhcyBiZWluZyBub3QgcmUBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.148.557
-References: <1372723921.53875.YahooMailNeo@web182202.mail.bf1.yahoo.com> <20130702044516.GA31484@kroah.com>
-Message-ID: <1372754805.73620.YahooMailNeo@web182206.mail.bf1.yahoo.com>
-Date: Tue, 2 Jul 2013 01:46:45 -0700 (PDT)
-From: Mark Galeck <mark_galeck@pacbell.net>
-Reply-To: Mark Galeck <mark_galeck@pacbell.net>
-Subject: Re: is it desirable to improve the build system?
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20130702044516.GA31484@kroah.com>
+	Tue, 2 Jul 2013 04:56:26 -0400
+Date: Tue, 2 Jul 2013 10:55:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Basic scheduler support for automatic NUMA balancing
+Message-ID: <20130702085546.GE21726@dyad.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <20130628135422.GA21895@linux.vnet.ibm.com>
+ <20130702074659.GC21726@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130702074659.GC21726@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Linux kernel build, while correct, is somewhat slow, and the sources
+On Tue, Jul 02, 2013 at 09:46:59AM +0200, Peter Zijlstra wrote:
+> So on the biggest system I've got; 4 nodes 32 cpus:
+> 
+>  Performance counter stats for './numa02' (5 runs):
+> 
+> 3.10.0+ + patches - NO_NUMA	58.235353126 seconds time elapsed    ( +-  0.45% )
+> 3.10.0+ + patches -    NUMA   17.580963359 seconds time elapsed    ( +-  0.09% )
 
->> could be more readable.
+I just 'noticed' that I included my migrate_degrades_locality patch -- the one
+posted somewhere in this thread (+ compile fixes).
 
-Greg wrote:
->How is it "slow"?  
+Let me re-run without that one to see if there's any difference.
 
-Well, the proportion of time spent by the CPU cores on activities other than compiling seemed high.
-
-
->What "sources" are you referring to as being not readable?
-
-Not "not readable at all", just "could be made more readable" - the main Makefile and other main Make files; it seemed that one reason, IMHO, was not enough comments. 
-
-
->What do you not understand that you think could be changed?
-
-I did not make careful notes in that area (details would come back to me if I look at this carefully), but right now I remember two things.
-
-As every child in kindergarten knows, recursive make is bad (except when it is good, which you learn in primary school). One reason is that all that re-parsing costs time. Linux kernel build is very heavy recursive.
-
-Frequent use of FORCE phony prerequisites to circumvent the normal GNU Make recipe avoidance mechanism, and then using a custom recipe mechanism to decide what to execute, seems to go against the philosophy of the tool being used (GNU Make) and as such seems, IMHO, to also waste time.
-
-Of course if one were to attempt a change, the first thing would be to do look carefully at the amount of time spent on such activities, rather than using words such as "seems". 
-
-
-What I don't understand of course is the reasons behind these choices have been made.
-
-
->Have you looked at the history of the build code to help understand why
-things were changed to be they way they are?  git should help you out
-here.
-
-No. IMHO, looking at source, and especially past history thereof, to understand it, is a very inefficient use of one's time, only to be undertaken if all else fails. Much better is looking at comments and documentation, if available, and also, asking well-informed persons such as yourself.  
-
-
-Mark
+NO_NUMA		57.961384751 seconds time elapsed    ( +-  0.64% )
+   NUMA		17.482115801 seconds time elapsed    ( +-  0.15% )
