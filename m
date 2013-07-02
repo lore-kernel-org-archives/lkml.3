@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab3GBFhs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 01:37:48 -0400
-Received: from na3sys009aog132.obsmtp.com ([74.125.149.250]:56412 "EHLO
-	na3sys009aog132.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751106Ab3GBFhq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 01:37:46 -0400
-From: Bing Zhao <bzhao@marvell.com>
-To: Harvey Yang <harvey.huawei.yang@gmail.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 1 Jul 2013 22:33:13 -0700
-Subject: RE: [PATCH V2 1/1] mwifiex: add tx info to skb when forming mgmt
- frame
-Thread-Topic: [PATCH V2 1/1] mwifiex: add tx info to skb when forming mgmt
- frame
-Thread-Index: Ac52yoPPGnwaeGtMQXe7d7QirRFfjAAF97dQ
-Message-ID: <477F20668A386D41ADCC57781B1F70430EA2E061D9@SC-VEXCH1.marvell.com>
-References: <1372731526-2979-1-git-send-email-harvey.huawei.yang@gmail.com>
-In-Reply-To: <1372731526-2979-1-git-send-email-harvey.huawei.yang@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1751537Ab3GBFiq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 01:38:46 -0400
+Received: from mout.gmx.net ([212.227.15.15]:57624 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750714Ab3GBFip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 01:38:45 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18KAIA63vQKAGMi2tFSKVYnT+7aHPLFWCTPlxb9He
+	VHp3pdVH8RVJQJ
+Message-ID: <1372743517.7363.129.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: smart wake-affine
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Tue, 02 Jul 2013 07:38:37 +0200
+In-Reply-To: <51D25A80.8090406@linux.vnet.ibm.com>
+References: <51A43B16.9080801@linux.vnet.ibm.com>
+	 <51D25A80.8090406@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Harvey,
+On Tue, 2013-07-02 at 12:43 +0800, Michael Wang wrote:
 
-> From: Huawei Yang <harvey.huawei.yang@gmail.com>
-> 
-> In function 'mwifiex_write_data_complete' it need tx info to find the
-> mwifiex_private to updates statistics and wake up tx queues.
-> Or we may trigger tx queues timeout when transmitting lots of mgmt frames.
-> 
-> Signed-off-by: Huawei Yang <harvey.huawei.yang@gmail.com>
-> ---
->  drivers/net/wireless/mwifiex/cfg80211.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/drivers/net/wireless/mwifiex/cfg80211.c
-> b/drivers/net/wireless/mwifiex/cfg80211.c
-> index e42b266..b4e2538 100644
-> --- a/drivers/net/wireless/mwifiex/cfg80211.c
-> +++ b/drivers/net/wireless/mwifiex/cfg80211.c
-> @@ -186,6 +186,7 @@ mwifiex_cfg80211_mgmt_tx(struct wiphy *wiphy,
-> struct wireless_dev *wdev,
->  	struct sk_buff *skb;
->  	u16 pkt_len;
->  	const struct ieee80211_mgmt *mgmt;
-> +	struct mwifiex_txinfo *tx_info;
->  	struct mwifiex_private *priv = mwifiex_netdev_get_priv(wdev-
-> >netdev);
-> 
->  	if (!buf || !len) {
-> @@ -212,6 +213,10 @@ mwifiex_cfg80211_mgmt_tx(struct wiphy *wiphy,
-> struct wireless_dev *wdev,
->  		wiphy_err(wiphy, "allocate skb failed for management
-> frame\n");
->  		return -ENOMEM;
->  	}
+> +static int nasty_pull(struct task_struct *p)
+> +{
+> +	int factor = cpumask_weight(cpu_online_mask);
 > +
+> +	/*
+> +	 * Yeah, it's the switching-frequency, could means many wakee or
+> +	 * rapidly switch, use factor here will just help to automatically
+> +	 * adjust the loose-degree, so more cpu will lead to more pull.
+> +	 */
+> +	if (p->nr_wakee_switch > factor) {
+> +		/*
+> +		 * wakee is somewhat hot, it needs certain amount of cpu
+> +		 * resource, so if waker is far more hot, prefer to leave
+> +		 * it alone.
+> +		 */
+> +		if (current->nr_wakee_switch > (factor * p->nr_wakee_switch))
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
 
-Here checkpatch.pl script reports whitespace damaged error.
-I can fix it in my local tree and resend v3 to John after the 3.11 merge window.
+Ew.  I haven't gotten around to test-driving this patchlet, and I see
+you haven't gotten around to finding a better name either.  Any other
+name will likely have a better chance of flying.
 
-Thanks,
-Bing
+tasks_related()
+...
+well, nearly any..
+tasks_think_wake_affine_sucks_rocks()
+..that won't fly either :)
 
-> +	tx_info = MWIFIEX_SKB_TXCB(skb);
-> +	tx_info->bss_num = priv->bss_num;
-> +	tx_info->bss_type = priv->bss_type;
-> 
->  	mwifiex_form_mgmt_frame(skb, buf, len);
->  	mwifiex_queue_tx_pkt(priv, skb);
-> --
-> 1.7.10.4
+-Mike
 
