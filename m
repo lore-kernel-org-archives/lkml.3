@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab3GBLH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:07:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36143 "EHLO
+	id S1752064Ab3GBLU1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:20:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36148 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754419Ab3GBLHz (ORCPT
+	with ESMTP id S1754484Ab3GBLH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:07:55 -0400
+	Tue, 2 Jul 2013 07:07:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Dave Chiluk <chiluk@canonical.com>, Petr Vandrovec <petr@vandrovec.name>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 02/50] ALSA: usb-audio: work around Android accessory firmware bug
-Date: Tue,  2 Jul 2013 12:06:50 +0100
-Message-Id: <1372763258-20664-3-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 04/50] ncpfs: fix rmdir returns Device or resource busy
+Date: Tue,  2 Jul 2013 12:06:52 +0100
+Message-Id: <1372763258-20664-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,69 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Dave Chiluk <chiluk@canonical.com>
 
-commit 342cda29343a6272c630f94ed56810a76740251b upstream.
+commit 698b8223631472bf982ed570b0812faa61955683 upstream.
 
-When the Android firmware enables the audio interfaces in accessory
-mode, it always declares in the control interface's baInterfaceNr array
-that interfaces 0 and 1 belong to the audio function.  However, the
-accessory interface itself, if also enabled, already is at index 0 and
-shifts the actual audio interface numbers to 1 and 2, which prevents the
-PCM streaming interface from being seen by the host driver.
+1d2ef5901483004d74947bbf78d5146c24038fe7 caused a regression in ncpfs such that
+directories could no longer be removed.  This was because ncp_rmdir checked
+to see if a dentry could be unhashed before allowing it to be removed. Since
+1d2ef5901483004d74947bbf78d5146c24038fe7 introduced a change that incremented
+dentry->d_count causing it to always be greater than 1 unhash would always
+fail.  Thus causing the error path in ncp_rmdir to always be taken.  Removing
+this error path is safe as unhashing is still accomplished by calls to dput
+from vfs_rmdir.
 
-To get the PCM interface interface to work, detect when the descriptors
-point to the (for this driver useless) accessory interface, and redirect
-to the correct one.
-
-Reported-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Tested-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dave Chiluk <chiluk@canonical.com>
+Signed-off-by: Petr Vandrovec <petr@vandrovec.name>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/usb/card.c | 22 ++++++++++++++++++++--
- 1 file changed, 20 insertions(+), 2 deletions(-)
+ fs/ncpfs/dir.c | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-diff --git a/sound/usb/card.c b/sound/usb/card.c
-index aa25e04..51241f4 100644
---- a/sound/usb/card.c
-+++ b/sound/usb/card.c
-@@ -150,14 +150,32 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
- 		return -EINVAL;
- 	}
+diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
+index aeed93a..9560fd7 100644
+--- a/fs/ncpfs/dir.c
++++ b/fs/ncpfs/dir.c
+@@ -1033,15 +1033,6 @@ static int ncp_rmdir(struct inode *dir, struct dentry *dentry)
+ 	DPRINTK("ncp_rmdir: removing %s/%s\n",
+ 		dentry->d_parent->d_name.name, dentry->d_name.name);
  
-+	alts = &iface->altsetting[0];
-+	altsd = get_iface_desc(alts);
-+
-+	/*
-+	 * Android with both accessory and audio interfaces enabled gets the
-+	 * interface numbers wrong.
-+	 */
-+	if ((chip->usb_id == USB_ID(0x18d1, 0x2d04) ||
-+	     chip->usb_id == USB_ID(0x18d1, 0x2d05)) &&
-+	    interface == 0 &&
-+	    altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC &&
-+	    altsd->bInterfaceSubClass == USB_SUBCLASS_VENDOR_SPEC) {
-+		interface = 2;
-+		iface = usb_ifnum_to_if(dev, interface);
-+		if (!iface)
-+			return -EINVAL;
-+		alts = &iface->altsetting[0];
-+		altsd = get_iface_desc(alts);
-+	}
-+
- 	if (usb_interface_claimed(iface)) {
- 		snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n",
- 						dev->devnum, ctrlif, interface);
- 		return -EINVAL;
- 	}
- 
--	alts = &iface->altsetting[0];
--	altsd = get_iface_desc(alts);
- 	if ((altsd->bInterfaceClass == USB_CLASS_AUDIO ||
- 	     altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC) &&
- 	    altsd->bInterfaceSubClass == USB_SUBCLASS_MIDISTREAMING) {
+-	/*
+-	 * fail with EBUSY if there are still references to this
+-	 * directory.
+-	 */
+-	dentry_unhash(dentry);
+-	error = -EBUSY;
+-	if (!d_unhashed(dentry))
+-		goto out;
+-
+ 	len = sizeof(__name);
+ 	error = ncp_io2vol(server, __name, &len, dentry->d_name.name,
+ 			   dentry->d_name.len, !ncp_preserve_case(dir));
 -- 
 1.8.1.2
 
