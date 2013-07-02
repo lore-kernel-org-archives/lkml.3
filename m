@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab3GBQmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:42:39 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:44031 "EHLO smtp3-g21.free.fr"
+	id S1754800Ab3GBQnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:43:00 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:43851 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754231Ab3GBQk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 12:40:26 -0400
+	id S1754174Ab3GBQkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:40:23 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
 Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH 07/13] binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue,  2 Jul 2013 18:39:31 +0200
-Message-Id: <629d6f30ee0d7d94bc6c8f6c6b6aeb7dee34a908.1372777600.git.ydroneaud@opteya.com>
+Subject: [PATCH 05/13] android/sync: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Tue,  2 Jul 2013 18:39:29 +0200
+Message-Id: <747eab1873d0e8285a243ed42540485f12af1e91.1372777600.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1372777600.git.ydroneaud@opteya.com>
 References: <cover.1372777600.git.ydroneaud@opteya.com>
@@ -43,22 +43,22 @@ and, if possible, set to O_CLOEXEC.
 
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- fs/binfmt_misc.c | 2 +-
+ drivers/staging/android/sync.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 1c740e1..052f6dc 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -138,7 +138,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
- 		/* if the binary should be opened on behalf of the
- 		 * interpreter than keep it open and assign descriptor
- 		 * to it */
-- 		fd_binary = get_unused_fd();
-+		fd_binary = get_unused_fd_flags(0);
-  		if (fd_binary < 0) {
-  			retval = fd_binary;
-  			goto _ret;
+diff --git a/drivers/staging/android/sync.c b/drivers/staging/android/sync.c
+index 2996077..c40c743 100644
+--- a/drivers/staging/android/sync.c
++++ b/drivers/staging/android/sync.c
+@@ -697,7 +697,7 @@ static long sync_fence_ioctl_wait(struct sync_fence *fence, unsigned long arg)
+ 
+ static long sync_fence_ioctl_merge(struct sync_fence *fence, unsigned long arg)
+ {
+-	int fd = get_unused_fd();
++	int fd = get_unused_fd_flags(0);
+ 	int err;
+ 	struct sync_fence *fence2, *fence3;
+ 	struct sync_merge_data data;
 -- 
 1.8.3.1
 
