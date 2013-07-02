@@ -1,127 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3GBPiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:38:24 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:39828 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753726Ab3GBPiW (ORCPT
+	id S1753183Ab3GBPmC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:42:02 -0400
+Received: from cpc6-farn7-2-0-cust119.6-2.cable.virginmedia.com ([81.110.26.120]:42311
+	"EHLO localhost.localdomain" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752152Ab3GBPl6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:38:22 -0400
-Date: Tue, 2 Jul 2013 08:38:17 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup changes for v3.11-rc1
-Message-ID: <20130702153817.GA17986@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Jul 2013 11:41:58 -0400
+From: Dean Jenkins <Dean_Jenkins@mentor.com>
+To: Andre Naujoks <nautsch2@gmail.com>, linux-kernel@vger.kernel.org
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 0/5] SLIP SLIP-Improve robustness to crashing
+Date: Tue,  2 Jul 2013 16:31:29 +0100
+Message-Id: <1372779094-11730-1-git-send-email-Dean_Jenkins@mentor.com>
+X-Mailer: git-send-email 1.8.1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Using SLIP bound to RFCOMM or PTY/TTY has identified some weaknesses to crashing
+under abnormal conditions.
 
-Please note that cgroup/for-3.11 branch pulled in percpu/for-3.11 to
-convert cgroup_subsys_state reference counting to percpu-ref and this
-pull request assumes that percpu/for-3.11 is pulled in first.
+Here is a proposed patchset baselined and built on Linux 3.9.
 
-This pull request contains the following changes.
+Note the patches have not been tested on x86 Linux 3.9. However similar patches
+have been used on ARM Linux 2.6.34 to avoid kernel crashes in a commercial
+project. I believe the same weaknesses still exist in Linux 3.9.
 
-* cgroup_subsys_state (css) reference counting has been converted to
-  percpu-ref.  css is what each resource controller embeds into its
-  own control structure and perform reference count against.  It may
-  be used in hot paths of various subsystems and is similar to module
-  refcnt in that aspect.  For example, block-cgroup's css refcnting
-  was showing up a lot in Mikulaus's device-mapper scalability work
-  and this should alleviate it.
+If some or all of the patches look to be useful to the community then I may
+attempt to test on x86 but this is not straight forward for me.
 
-* cgroup subtree iterator has been updated so that RCU read lock can
-  be released after grabbing reference.  This allows simplifying its
-  users which requires blocking which used to build iteration list
-  under RCU read lock and then traverse it outside.  This pull request
-  contains simplification of cgroup core and device-cgroup.  A
-  separate pull request will update cpuset.
+I welcome any feedback and whether the fixes are a suitable solution.
 
-* Fixes for various bugs including corner race conditions and RCU
-  usage bugs.
+Who is the maintainer of SLIP in the kernel ?
 
-* A lot of cleanups and some prepartory work for the planned unified
-  hierarchy support.
+The patchset consists of:
 
-The changes are available in the following git branch
+0001-Bluetooth-Add-RFCOMM-TTY-write-return-error-codes.patch
+0002-SLIP-Handle-error-codes-from-the-TTY-layer.patch
+0003-SLIP-Prevent-recursion-stack-overflow-and-scheduler-.patch
+0004-SLIP-Add-error-message-for-xleft-non-zero.patch
+0005-SLIP-Fix-transmission-segmentation-mechanism.patches
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.11
+Some background:
 
-for you to fetch changes up to c7ba8287cd11f2fc9e2feee9e1fac34b7293658f:
+0001-Bluetooth-Add-RFCOMM-TTY-write-return-error-codes.patch
+This patch is a Bluetooth change to add some error return codes to RFCOMM to
+avoid NULL pointer dereference crashes. Note RFCOMM can already generate an
+error code that will cause SLIP to malfunction.
 
-  cgroup: CGRP_ROOT_SUBSYS_BOUND should also be ignored when mounting an existing hierarchy (2013-06-29 14:06:10 -0700)
+0002-SLIP-Handle-error-codes-from-the-TTY-layer.patches
+This patch allows SLIP to handle error codes from RFCOMM or other bound TTY layers.
 
-Thanks.
+0003-SLIP-Prevent-recursion-stack-overflow-and-scheduler-.patches
+This patch prevents SLIP from causing a recursive loop that overflows the stack
+and catastrophically crashes the kernel. The scenario is SLIP bound to PTY/TTY.
+The underlying trigger is a probably a failure to allocate a TTY buffer in
+tty_buffer_alloc() but this is unproven. The crash is sporadic in an ARM
+embedded environment where resources are limited.
 
-----------------------------------------------------------------
-Greg KH (1):
-      cgroup.h: remove some functions that are now gone
+0004-SLIP-Add-error-message-for-xleft-non-zero.patch
+This is an error message patch to identify when a SLIP frame has not been fully
+transmitted meaning the frame was truncated.
 
-Li Zefan (6):
-      cgroup: fix umount vs cgroup_cfts_commit() race
-      cgroup: fix umount vs cgroup_event_remove() race
-      cgroup: fix memory leak in cgroup_rm_cftypes()
-      cgroup: make serial_nr_cursor available throughout cgroup.c
-      cgroup: convert cgroup_cft_commit() to use cgroup_for_each_descendant_pre()
-      cgroup: rename cont to cgrp
+0005-SLIP-Fix-transmission-segmentation-mechanism.patches
+This patch allows multiple attempts to transmit segments of the SLIP frame.
+Currently only 1 attempt at writing the whole SLIP frame to PTY/TTY occurs.
+This could truncate transmitted SLIP frames. In addition the modification
+relies on the TTY write wake-up event to complete the transmission of the
+SLIP frame rather than the sl_encaps() call to pty_write(). Probably,
+pty_write() should not call tty_wakeup() but safer to modify SLIP rather
+than the PTY/TTY layer.
 
-Tejun Heo (43):
-      cgroup: refactor hierarchy_id handling
-      cgroup: drop hierarchy_id_lock
-      cgroup: make hierarchy_id use cyclic idr
-      cgroup: implement task_cgroup_path_from_hierarchy()
-      Merge branch 'for-3.10-fixes' into for-3.11
-      cgroup: make cgroup_is_removed() static
-      cgroup: add cgroup->serial_nr and implement cgroup_next_sibling()
-      cgroup: update iterators to use cgroup_next_sibling()
-      device_cgroup: simplify cgroup tree walk in propagate_exception()
-      cgroup: mark "tasks" cgroup file as insane
-      cgroup: mark "notify_on_release" and "release_agent" cgroup files insane
-      cgroup: clean up the cftype array for the base cgroup files
-      cgroup: remove now unused css_depth()
-      cgroup: consistently use @cset for struct css_set variables
-      cgroup: bring some sanity to naming around cg_cgroup_link
-      cgroup: use kzalloc() instead of kmalloc()
-      cgroup: clean up css_[try]get() and css_put()
-      cgroup: rename CGRP_REMOVED to CGRP_DEAD
-      cgroup: drop unnecessary RCU dancing from __put_css_set()
-      cgroup: remove cgroup->count and use
-      cgroup: reorder the operations in cgroup_destroy_locked()
-      cgroup: split cgroup destruction into two steps
-      Merge branch 'for-3.11' of git://git.kernel.org/.../tj/percpu into for-3.11
-      cgroup: use percpu refcnt for cgroup_subsys_states
-      cgroup: update sane_behavior documentation
-      cgroup: disallow rename(2) if sane_behavior
-      cgroup: clean up cgroup_serial_nr_cursor
-      cgroup: convert CFTYPE_* flags to enums
-      cgroup: prefix global variables with "cgroup_"
-      cgroup: remove cgroup->actual_subsys_mask
-      cgroup: clean up find_css_set() and friends
-      cgroup: s/for_each_subsys()/for_each_root_subsys()/
-      cgroup: move init_css_set initialization inside cgroup_mutex
-      cgroup: implement for_each_[builtin_]subsys()
-      cgroup: reserve ID 0 for dummy_root and 1 for unified hierarchy
-      cgroup: fix cgroupfs_root early destruction path
-      cgroup: grab cgroup_mutex in drop_parsed_module_refcounts()
-      cgroup: fix RCU accesses to task->cgroups
-      cgroup: fix RCU accesses around task->cgroups
-      cgroup: always use RCU accessors for protected accesses
-      cgroup: fix deadlock on cgroup_mutex via drop_parsed_module_refcounts()
-      cgroup: CGRP_ROOT_SUBSYS_BOUND should be ignored when comparing mount options
-      cgroup: CGRP_ROOT_SUBSYS_BOUND should also be ignored when mounting an existing hierarchy
-
- include/linux/cgroup.h   |  222 ++++---
- kernel/cgroup.c          | 1536 ++++++++++++++++++++++++++--------------------
- security/device_cgroup.c |   56 +-
- 3 files changed, 1029 insertions(+), 785 deletions(-)
-
+Thanks,
+Dean Jenkins
+Mentor Graphics
 -- 
-tejun
+1.8.1.5
+
