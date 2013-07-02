@@ -1,157 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab3GBQJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:09:45 -0400
-Received: from smarthost03.mail.zen.net.uk ([212.23.1.3]:38987 "EHLO
-	smarthost03.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753497Ab3GBQJo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 12:09:44 -0400
-Message-ID: <1372781381.3689.27.camel@linaro1.home>
-Subject: Re: [PATCH 4/4] drivers: clocksource: add CPU PM notifier for ARM
- architected timer
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, linux@arm.linux.org.uk, catalin.marinas@arm.com,
-        will.deacon@arm.com, marc.zyngier@arm.com, tglx@linutronix.de
-Date: Tue, 02 Jul 2013 17:09:41 +0100
-In-Reply-To: <1371575223-21702-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-	 <1371575223-21702-5-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost03-IP: [82.69.122.217]
+	id S1753877Ab3GBQKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:10:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59128 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752985Ab3GBQKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:10:21 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: kye: Add report fixup for Genius Gila Gaming mouse
+Date: Tue,  2 Jul 2013 18:10:09 +0200
+Message-Id: <1372781409-5356-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-06-18 at 18:07 +0100, Sudeep KarkadaNagesha wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> 
-> Few control settings done in architected timer as part of initialisation
-> are lost when CPU enters deeper power states. They need to be re-initialised
-> when the CPU is (warm)reset again.
-> 
-> This patch moves all such initialisation into separate function that can
-> be used both in cold and warm CPU reset paths. It also adds CPU PM
-> notifiers to do the timer initialisation on warm resets.
-> 
-> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> Reviewed-by: Will Deacon <will.deacon@arm.com>
-> ---
->  drivers/clocksource/arm_arch_timer.c | 51 +++++++++++++++++++++++++++++++-----
->  1 file changed, 44 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-> index 11aaf06..1c691b1 100644
-> --- a/drivers/clocksource/arm_arch_timer.c
-> +++ b/drivers/clocksource/arm_arch_timer.c
-> @@ -13,6 +13,7 @@
->  #include <linux/device.h>
->  #include <linux/smp.h>
->  #include <linux/cpu.h>
-> +#include <linux/cpu_pm.h>
->  #include <linux/clockchips.h>
->  #include <linux/interrupt.h>
->  #include <linux/of_irq.h>
-> @@ -123,10 +124,20 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
->  	return 0;
->  }
->  
-> -static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
-> +static void arch_timer_initialise(void)
->  {
->  	int evt_stream_div, pos;
->  
-> +	/* Find the closest power of two to the divisor */
-> +	evt_stream_div = arch_timer_rate / ARCH_TIMER_EVT_STREAM_FREQ;
-> +	pos = fls(evt_stream_div);
-> +	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
-> +		pos--;
-> +	arch_counter_set_user_access(min(pos, 15));
+Genius Gila Gaming Mouse presents an obviously wrong report descriptor.
+the Consumer control (report ID 3) is the following:
+0x05, 0x0c,                    // Usage Page (Consumer Devices)       105
+0x09, 0x01,                    // Usage (Consumer Control)            107
+0xa1, 0x01,                    // Collection (Application)            109
+0x85, 0x03,                    //   Report ID (3)                     111
+0x19, 0x00,                    //   Usage Minimum (0)                 113
+0x2a, 0xff, 0x7f,              //   Usage Maximum (32767)             115
+0x15, 0x00,                    //   Logical Minimum (0)               118
+0x26, 0xff, 0x7f,              //   Logical Maximum (32767)           120
+0x75, 0x10,                    //   Report Size (16)                  123
+0x95, 0x03,                    //   Report Count (3)                  125
+0x81, 0x00,                    //   Input (Data,Arr,Abs)              127
+0x75, 0x08,                    //   Report Size (8)                   129
+0x95, 0x01,                    //   Report Count (1)                  131
+0x81, 0x01,                    //   Input (Cnst,Arr,Abs)              133
+0xc0,                          // End Collection                      135
 
-Would it not be good to calculate the value once in arch_timer_setup
-rather than repeatedly in this function? The calculations aren't that
-expensive, but when I gave these patches a spin on TC2 I noticed that
-this function gets called >500 times a second, so it seems a bit
-wasteful.
+So the first input whithin this report has a count of 3 but a usage range
+of 32768. So this value is obviously wrong as it should not be greater than
+the report count.
 
-> +}
-> +
-> +static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
-> +{
->  	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
->  	clk->name = "arch_sys_timer";
->  	clk->rating = 450;
-> @@ -155,12 +166,7 @@ static int __cpuinit arch_timer_setup(struct clock_event_device *clk)
->  			enable_percpu_irq(arch_timer_ppi[PHYS_NONSECURE_PPI], 0);
->  	}
->  
-> -	/* Find the closest power of two to the divisor */
-> -	evt_stream_div = arch_timer_rate / ARCH_TIMER_EVT_STREAM_FREQ;
-> -	pos = fls(evt_stream_div);
-> -	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
-> -		pos--;
-> -	arch_counter_set_user_access(min(pos, 15));
-> +	arch_timer_initialise();
->  
->  	return 0;
->  }
-> @@ -267,6 +273,31 @@ static struct notifier_block arch_timer_cpu_nb __cpuinitdata = {
->  	.notifier_call = arch_timer_cpu_notify,
->  };
->  
-> +#ifdef CONFIG_CPU_PM
-> +static int arch_timer_cpu_pm_notify(struct notifier_block *self,
-> +				    unsigned long action, void *hcpu)
-> +{
-> +	if (action == CPU_PM_EXIT)
-> +		arch_timer_initialise();
-> +
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block arch_timer_cpu_pm_notifier = {
-> +	.notifier_call = arch_timer_cpu_pm_notify,
-> +};
-> +
-> +static int __init arch_timer_cpu_pm_init(void)
-> +{
-> +	return cpu_pm_register_notifier(&arch_timer_cpu_pm_notifier);
-> +}
-> +#else
-> +static int __init arch_timer_cpu_pm_init(void)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->  static int __init arch_timer_register(void)
->  {
->  	int err;
-> @@ -316,11 +347,17 @@ static int __init arch_timer_register(void)
->  	if (err)
->  		goto out_free_irq;
->  
-> +	err = arch_timer_cpu_pm_init();
-> +	if (err)
-> +		goto out_unreg_notify;
-> +
->  	/* Immediately configure the timer on the boot CPU */
->  	arch_timer_setup(this_cpu_ptr(arch_timer_evt));
->  
->  	return 0;
->  
-> +out_unreg_notify:
-> +	unregister_cpu_notifier(&arch_timer_cpu_nb);
->  out_free_irq:
->  	if (arch_timer_use_virtual)
->  		free_percpu_irq(arch_timer_ppi[VIRT_PPI], arch_timer_evt);
+Fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=959721
 
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+Hi Jiri,
+
+I know the window just opened and you don't really like receiving patches at
+that time. Still, my patch queue is growing, and I would like you to consider
+this patch for 3.11.
+
+FYI, my patch queue is the following:
+- one hid-multitouch patch which set the quirk NO_INIT_REPORTS for mt devices
+- few hidp cleanup related to the wrong init_report called during start
+- re-implement the hidinput_input_event callback in hidp to allow LEDs to work with BT keyboards
+- some trivial devm conversions for some special HID drivers
+- add devm_hid_allocate_device which allow to devm-ize i2c-hid
+
+All of these are cleanups/enhancements, so I think we can postpone those patches
+to 3.12 to get a maximum testing time.
+
+Cheers,
+Benjamin
+
+ drivers/hid/hid-core.c |  1 +
+ drivers/hid/hid-ids.h  |  1 +
+ drivers/hid/hid-kye.c  | 21 +++++++++++++++++++++
+ 3 files changed, 23 insertions(+)
+
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 0951a9a..e39dac6 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1593,6 +1593,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KEYTOUCH, USB_DEVICE_ID_KEYTOUCH_IEC) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_ERGO_525V) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_EASYPEN_I405X) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE, USB_DEVICE_ID_KYE_MOUSEPEN_I608X) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 2afa99a..c5aea29 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -478,6 +478,7 @@
+ 
+ #define USB_VENDOR_ID_KYE		0x0458
+ #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
++#define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
+ #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
+ #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
+ #define USB_DEVICE_ID_KYE_MOUSEPEN_I608X	0x5011
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index 6af90db..1e2ee2aa 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -314,6 +314,25 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 			*rsize = sizeof(easypen_m610x_rdesc_fixed);
+ 		}
+ 		break;
++	case USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE:
++		/*
++		 * the fixup that need to be done:
++		 *   - change Usage Maximum in the Comsumer Control
++		 *     (report ID 3) to a reasonable value
++		 */
++		if (*rsize >= 135 &&
++			/* Usage Page (Consumer Devices) */
++			rdesc[104] == 0x05 && rdesc[105] == 0x0c &&
++			/* Usage (Consumer Control) */
++			rdesc[106] == 0x09 && rdesc[107] == 0x01 &&
++			/*   Usage Maximum > 12287 */
++			rdesc[114] == 0x2a && rdesc[116] > 0x2f) {
++			hid_info(hdev,
++				 "fixing up Genius Gila Gaming Mouse "
++				 "report descriptor\n");
++			rdesc[116] = 0x2f;
++		}
++		break;
+ 	}
+ 	return rdesc;
+ }
+@@ -407,6 +426,8 @@ static const struct hid_device_id kye_devices[] = {
+ 				USB_DEVICE_ID_KYE_MOUSEPEN_I608X) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
+ 				USB_DEVICE_ID_KYE_EASYPEN_M610X) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
++				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, kye_devices);
 -- 
-Tixy
+1.8.3.1
 
