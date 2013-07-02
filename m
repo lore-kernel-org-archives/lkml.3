@@ -1,306 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab3GBPCj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:02:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:52203 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753313Ab3GBPCh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:02:37 -0400
-Date: Tue, 2 Jul 2013 10:02:08 -0500
-From: Nishanth Menon <nm@ti.com>
-To: Luciano Coelho <coelho@ti.com>
-CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 4/9] wl12xx: use frequency instead of enumerations for
- pdata clocks
-Message-ID: <20130702150208.GA4233@kahuna>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
- <1372776948-24840-5-git-send-email-coelho@ti.com>
+	id S1753883Ab3GBPC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:02:57 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:13620 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753198Ab3GBPCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 11:02:55 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH] metag: move EXPORT_SYMBOLs in libs to metag_ksyms.c
+Date: Tue, 2 Jul 2013 15:07:54 +0100
+Message-ID: <1372774074-18553-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1372776948-24840-5-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_07_02_16_00_57
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17:55-20130702, Luciano Coelho wrote:
-> Instead of defining an enumeration with the FW specific values for the
-> different clock rates, use the actual frequency instead.  Also add a
-> boolean to specify whether the clock is XTAL or not.
-> 
-> Change all board files to reflect this.
-> 
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
-> ---
->  arch/arm/mach-davinci/board-da850-evm.c      |    3 +-
->  arch/arm/mach-omap2/board-4430sdp.c          |    5 ++-
-^^
->  arch/arm/mach-omap2/board-omap3evm.c         |    3 +-
->  arch/arm/mach-omap2/board-omap4panda.c       |    3 +-
-^^
-Please do not add more platform data to platforms that are DT only.
+Move all EXPORT_SYMBOLs in libs-y directories (arch/metag/{lib,tbx})
+into metag_ksyms.c so that they don't get omitted by the static linker
+if they're not used by any other statically linked code, which can
+result in undefined symbols when building modules.
 
->  arch/arm/mach-omap2/board-zoom-peripherals.c |    3 +-
->  drivers/net/wireless/ti/wl12xx/main.c        |   58 +++++++++++++++++++++++++-
->  drivers/net/wireless/ti/wl12xx/wl12xx.h      |   28 +++++++++++++
->  include/linux/wl12xx.h                       |   28 ++-----------
->  8 files changed, 99 insertions(+), 32 deletions(-)
-> 
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-> index d2a2a98..202f3d0 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@ -1378,7 +1378,8 @@ static const short da850_wl12xx_pins[] __initconst = {
->  static struct wl12xx_platform_data da850_wl12xx_wlan_data __initdata = {
->  	.irq			= -1,
->  	.irq_flags		= IRQF_TRIGGER_RISING,
-> -	.board_ref_clock	= WL12XX_REFCLOCK_38,
-> +	.ref_clock_freq		= 38400000,
-> +	.ref_clock_xtal		= false,
->  };
->  
->  static __init int da850_wl12xx_init(void)
-> diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-> index c2334aa..da2b892 100644
-> --- a/arch/arm/mach-omap2/board-4430sdp.c
-> +++ b/arch/arm/mach-omap2/board-4430sdp.c
-> @@ -694,8 +694,9 @@ static void __init omap4_sdp4430_wifi_mux_init(void)
->  
->  static struct wl12xx_platform_data omap4_sdp4430_wlan_data __initdata = {
->  	.irq_flags = IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> -	.board_ref_clock = WL12XX_REFCLOCK_26,
-> -	.board_tcxo_clock = WL12XX_TCXOCLOCK_26,
-> +	.ref_clock_freq = 26000000,
-> +	.ref_clock_xtal = false,
-> +	.tcxo_clock_freq = 26000000,
->  };
->  
->  static void __init omap4_sdp4430_wifi_init(void)
-> diff --git a/arch/arm/mach-omap2/board-omap3evm.c b/arch/arm/mach-omap2/board-omap3evm.c
-> index a0c0adf..d24435c 100644
-> --- a/arch/arm/mach-omap2/board-omap3evm.c
-> +++ b/arch/arm/mach-omap2/board-omap3evm.c
-> @@ -459,7 +459,8 @@ static struct platform_device omap3evm_wlan_regulator = {
->  
->  struct wl12xx_platform_data omap3evm_wlan_data __initdata = {
->  	.irq_flags = IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> -	.board_ref_clock = WL12XX_REFCLOCK_38, /* 38.4 MHz */
-> +	.ref_clock_freq = 38400000,
-> +	.ref_clock_xtal = false,
->  };
->  #endif
->  
-> diff --git a/arch/arm/mach-omap2/board-omap4panda.c b/arch/arm/mach-omap2/board-omap4panda.c
-> index ba00862..ac6413c 100644
-> --- a/arch/arm/mach-omap2/board-omap4panda.c
-> +++ b/arch/arm/mach-omap2/board-omap4panda.c
-> @@ -231,7 +231,8 @@ static struct platform_device omap_vwlan_device = {
->  
->  static struct wl12xx_platform_data omap_panda_wlan_data  __initdata = {
->  	.irq_flags = IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> -	.board_ref_clock = WL12XX_REFCLOCK_38, /* 38.4 MHz */
-> +	.ref_clock_freq = 38400000,
-> +	.ref_clock_xtal = false,
->  };
->  
->  static struct twl6040_codec_data twl6040_codec = {
-> diff --git a/arch/arm/mach-omap2/board-zoom-peripherals.c b/arch/arm/mach-omap2/board-zoom-peripherals.c
-> index ced012c..f4f4fe7 100644
-> --- a/arch/arm/mach-omap2/board-zoom-peripherals.c
-> +++ b/arch/arm/mach-omap2/board-zoom-peripherals.c
-> @@ -245,7 +245,8 @@ static struct platform_device *zoom_devices[] __initdata = {
->  
->  static struct wl12xx_platform_data omap_zoom_wlan_data __initdata = {
->  	.irq_flags = IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-> -	.board_ref_clock = WL12XX_REFCLOCK_26, /* 26 MHz */
-> +	.ref_clock_freq = 26000000,
-> +	.ref_clock_xtal = false,
->  };
->  
->  static struct omap2_hsmmc_info mmc[] = {
-> diff --git a/drivers/net/wireless/ti/wl12xx/main.c b/drivers/net/wireless/ti/wl12xx/main.c
-> index 1c627da..903dcb3 100644
-> --- a/drivers/net/wireless/ti/wl12xx/main.c
-> +++ b/drivers/net/wireless/ti/wl12xx/main.c
-> @@ -1701,6 +1701,42 @@ static struct ieee80211_sta_ht_cap wl12xx_ht_cap = {
->  		},
->  };
->  
-> +static struct wl12xx_clock wl12xx_refclock_table[] = {
-> +	{ 19200000,	false,	WL12XX_REFCLOCK_19	},
-> +	{ 26000000,	false,	WL12XX_REFCLOCK_26	},
-> +	{ 26000000,	true,	WL12XX_REFCLOCK_26_XTAL	},
-> +	{ 38400000,	false,	WL12XX_REFCLOCK_38	},
-> +	{ 38400000,	true,	WL12XX_REFCLOCK_38_XTAL	},
-> +	{ 52000000,	false,	WL12XX_REFCLOCK_52	},
-> +	{ 0,		false,	0 }
-> +};
-> +
-> +static struct wl12xx_clock wl12xx_tcxoclock_table[] = {
-> +	{ 16368000,	false,	WL12XX_TCXOCLOCK_16_368	},
-> +	{ 16800000,	false,	WL12XX_TCXOCLOCK_16_8	},
-> +	{ 19200000,	false,	WL12XX_TCXOCLOCK_19_2	},
-> +	{ 26000000,	false,	WL12XX_TCXOCLOCK_26	},
-> +	{ 32736000,	false,	WL12XX_TCXOCLOCK_32_736	},
-> +	{ 33600000,	false,	WL12XX_TCXOCLOCK_33_6	},
-> +	{ 38400000,	false,	WL12XX_TCXOCLOCK_38_4	},
-> +	{ 52000000,	false,	WL12XX_TCXOCLOCK_52	},
-> +	{ 0,		false,	0 }
-> +};
-> +
-> +static int wl12xx_get_clock_idx(struct wl12xx_clock *table, u32 freq, bool xtal)
-> +{
-> +	int i = 0;
-> +
-> +	while(table[i].freq != 0) {
-> +		if ((table[i].freq == freq) &&
-> +		    (table[i].xtal == xtal))
-> +			return table[i].hw_idx;
-> +		i++;
-> +	};
-> +
-> +	return -EINVAL;
-> +}
-> +
->  static int wl12xx_setup(struct wl1271 *wl)
->  {
->  	struct wl12xx_priv *priv = wl->priv;
-> @@ -1722,7 +1758,16 @@ static int wl12xx_setup(struct wl1271 *wl)
->  	wl12xx_conf_init(wl);
->  
->  	if (!fref_param) {
-> -		priv->ref_clock = pdata->board_ref_clock;
-> +		priv->ref_clock = wl12xx_get_clock_idx(wl12xx_refclock_table,
-> +						       pdata->ref_clock_freq,
-> +						       pdata->ref_clock_xtal);
-> +		if (priv->ref_clock < 0) {
-> +			wl1271_error("Invalid ref_clock frequency (%d Hz, %s)",
-> +				pdata->ref_clock_freq,
-> +				pdata->ref_clock_xtal ? "XTAL" : "not XTAL");
-> +
-> +			return priv->ref_clock;
-> +		}
->  	} else {
->  		if (!strcmp(fref_param, "19.2"))
->  			priv->ref_clock = WL12XX_REFCLOCK_19;
-> @@ -1741,7 +1786,16 @@ static int wl12xx_setup(struct wl1271 *wl)
->  	}
->  
->  	if (!tcxo_param) {
-> -		priv->tcxo_clock = pdata->board_tcxo_clock;
-> +		priv->tcxo_clock = wl12xx_get_clock_idx(wl12xx_tcxoclock_table,
-> +							pdata->tcxo_clock_freq,
-> +							pdata->tcxo_clock_xtal);
-> +		if (priv->tcxo_clock < 0) {
-> +			wl1271_error("Invalid tcxo_clock frequency (%d Hz, %s)",
-> +				pdata->tcxo_clock_freq,
-> +				pdata->tcxo_clock_xtal ? "XTAL" : "not XTAL");
-> +
-> +			return priv->tcxo_clock;
-> +		}
->  	} else {
->  		if (!strcmp(tcxo_param, "19.2"))
->  			priv->tcxo_clock = WL12XX_TCXOCLOCK_19_2;
-> diff --git a/drivers/net/wireless/ti/wl12xx/wl12xx.h b/drivers/net/wireless/ti/wl12xx/wl12xx.h
-> index 9e5484a..05f631b 100644
-> --- a/drivers/net/wireless/ti/wl12xx/wl12xx.h
-> +++ b/drivers/net/wireless/ti/wl12xx/wl12xx.h
-> @@ -79,4 +79,32 @@ struct wl12xx_priv {
->  	struct wl127x_rx_mem_pool_addr *rx_mem_addr;
->  };
->  
-> +/* Reference clock values */
-> +enum {
-> +	WL12XX_REFCLOCK_19	= 0, /* 19.2 MHz */
-> +	WL12XX_REFCLOCK_26	= 1, /* 26 MHz */
-> +	WL12XX_REFCLOCK_38	= 2, /* 38.4 MHz */
-> +	WL12XX_REFCLOCK_52	= 3, /* 52 MHz */
-> +	WL12XX_REFCLOCK_38_XTAL = 4, /* 38.4 MHz, XTAL */
-> +	WL12XX_REFCLOCK_26_XTAL = 5, /* 26 MHz, XTAL */
-> +};
-> +
-> +/* TCXO clock values */
-> +enum {
-> +	WL12XX_TCXOCLOCK_19_2	= 0, /* 19.2MHz */
-> +	WL12XX_TCXOCLOCK_26	= 1, /* 26 MHz */
-> +	WL12XX_TCXOCLOCK_38_4	= 2, /* 38.4MHz */
-> +	WL12XX_TCXOCLOCK_52	= 3, /* 52 MHz */
-> +	WL12XX_TCXOCLOCK_16_368	= 4, /* 16.368 MHz */
-> +	WL12XX_TCXOCLOCK_32_736	= 5, /* 32.736 MHz */
-> +	WL12XX_TCXOCLOCK_16_8	= 6, /* 16.8 MHz */
-> +	WL12XX_TCXOCLOCK_33_6	= 7, /* 33.6 MHz */
-> +};
-> +
-> +struct wl12xx_clock {
-> +	u32	freq;
-> +	bool	xtal;
-> +	u8	hw_idx;
-> +};
-> +
->  #endif /* __WL12XX_PRIV_H__ */
-> diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
-> index 1e4ed6e..4982b94 100644
-> --- a/include/linux/wl12xx.h
-> +++ b/include/linux/wl12xx.h
-> @@ -26,28 +26,6 @@
->  
->  #include <linux/err.h>
->  
-> -/* Reference clock values */
-> -enum {
-> -	WL12XX_REFCLOCK_19	= 0, /* 19.2 MHz */
-> -	WL12XX_REFCLOCK_26	= 1, /* 26 MHz */
-> -	WL12XX_REFCLOCK_38	= 2, /* 38.4 MHz */
-> -	WL12XX_REFCLOCK_52	= 3, /* 52 MHz */
-> -	WL12XX_REFCLOCK_38_XTAL = 4, /* 38.4 MHz, XTAL */
-> -	WL12XX_REFCLOCK_26_XTAL = 5, /* 26 MHz, XTAL */
-> -};
-> -
-> -/* TCXO clock values */
-> -enum {
-> -	WL12XX_TCXOCLOCK_19_2	= 0, /* 19.2MHz */
-> -	WL12XX_TCXOCLOCK_26	= 1, /* 26 MHz */
-> -	WL12XX_TCXOCLOCK_38_4	= 2, /* 38.4MHz */
-> -	WL12XX_TCXOCLOCK_52	= 3, /* 52 MHz */
-> -	WL12XX_TCXOCLOCK_16_368	= 4, /* 16.368 MHz */
-> -	WL12XX_TCXOCLOCK_32_736	= 5, /* 32.736 MHz */
-> -	WL12XX_TCXOCLOCK_16_8	= 6, /* 16.8 MHz */
-> -	WL12XX_TCXOCLOCK_33_6	= 7, /* 33.6 MHz */
-> -};
-> -
->  struct wl1251_platform_data {
->  	void (*set_power)(bool enable);
->  	/* SDIO only: IRQ number if WLAN_IRQ line is used, 0 for SDIO IRQs */
-> @@ -58,8 +36,10 @@ struct wl1251_platform_data {
->  struct wl12xx_platform_data {
->  	int irq;
->  	unsigned long irq_flags;
-> -	int board_ref_clock;
-> -	int board_tcxo_clock;
-> +	int ref_clock_freq;	/* in Hertz */
-> +	bool ref_clock_xtal;	/* specify whether the clock is XTAL or not */
-> +	int tcxo_clock_freq;	/* in Hertz */
-> +	bool tcxo_clock_xtal;	/* specify whether the clock is XTAL or not */
->  };
->  
->  #ifdef CONFIG_WILINK_PLATFORM_DATA
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+For example a randconfig caused the following error:
+ERROR: "csum_partial" [fs/reiserfs/reiserfs.ko] undefined!
 
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+---
+Unless there are any objections I'll apply this patch for v3.11. I'm
+assuming *_ksyms.c is the way that this problem is normally worked
+around.
+
+ arch/metag/kernel/metag_ksyms.c | 32 ++++++++++++++++++++++++++++++++
+ arch/metag/lib/checksum.c       |  5 -----
+ arch/metag/lib/delay.c          |  4 ----
+ arch/metag/lib/usercopy.c       | 12 ------------
+ arch/metag/tbx/tbistring.c      |  1 -
+ 5 files changed, 32 insertions(+), 22 deletions(-)
+
+diff --git a/arch/metag/kernel/metag_ksyms.c b/arch/metag/kernel/metag_ksyms.c
+index ec872ef..f14e653 100644
+--- a/arch/metag/kernel/metag_ksyms.c
++++ b/arch/metag/kernel/metag_ksyms.c
+@@ -1,10 +1,14 @@
+ #include <linux/export.h>
++#include <linux/types.h>
+ 
++#include <asm/checksum.h>
++#include <asm/delay.h>
+ #include <asm/div64.h>
+ #include <asm/ftrace.h>
+ #include <asm/page.h>
+ #include <asm/string.h>
+ #include <asm/tbx.h>
++#include <asm/uaccess.h>
+ 
+ EXPORT_SYMBOL(clear_page);
+ EXPORT_SYMBOL(copy_page);
+@@ -15,11 +19,39 @@ EXPORT_SYMBOL(max_pfn);
+ EXPORT_SYMBOL(min_low_pfn);
+ #endif
+ 
++/* Network checksum functions */
++EXPORT_SYMBOL(ip_fast_csum);
++EXPORT_SYMBOL(csum_partial);
++EXPORT_SYMBOL(ip_compute_csum);
++EXPORT_SYMBOL(csum_partial_copy_from_user);
++EXPORT_SYMBOL(csum_partial_copy);
++
++/* Delay functions */
++EXPORT_SYMBOL(__delay);
++EXPORT_SYMBOL(__const_udelay);
++EXPORT_SYMBOL(__udelay);
++EXPORT_SYMBOL(__ndelay);
++
++/* Userspace copying functions */
++EXPORT_SYMBOL(__copy_user);
++EXPORT_SYMBOL(__copy_user_zeroing);
++EXPORT_SYMBOL(__do_clear_user);
++EXPORT_SYMBOL(__get_user_asm_b);
++EXPORT_SYMBOL(__get_user_asm_w);
++EXPORT_SYMBOL(__get_user_asm_d);
++EXPORT_SYMBOL(__put_user_asm_b);
++EXPORT_SYMBOL(__put_user_asm_w);
++EXPORT_SYMBOL(__put_user_asm_d);
++EXPORT_SYMBOL(__put_user_asm_l);
++EXPORT_SYMBOL(strnlen_user);
++EXPORT_SYMBOL(__strncpy_from_user);
++
+ /* TBI symbols */
+ EXPORT_SYMBOL(__TBI);
+ EXPORT_SYMBOL(__TBIFindSeg);
+ EXPORT_SYMBOL(__TBIPoll);
+ EXPORT_SYMBOL(__TBITimeStamp);
++EXPORT_SYMBOL(__TBITransStr);
+ 
+ #define DECLARE_EXPORT(name) extern void name(void); EXPORT_SYMBOL(name)
+ 
+diff --git a/arch/metag/lib/checksum.c b/arch/metag/lib/checksum.c
+index 44d2e19..1793719 100644
+--- a/arch/metag/lib/checksum.c
++++ b/arch/metag/lib/checksum.c
+@@ -99,7 +99,6 @@ static unsigned int do_csum(const unsigned char *buff, int len)
+ out:
+ 	return result;
+ }
+-EXPORT_SYMBOL(ip_fast_csum);
+ 
+ /*
+  * computes the checksum of a memory block at buff, length len,
+@@ -124,7 +123,6 @@ __wsum csum_partial(const void *buff, int len, __wsum wsum)
+ 		result += 1;
+ 	return (__force __wsum)result;
+ }
+-EXPORT_SYMBOL(csum_partial);
+ 
+ /*
+  * this routine is used for miscellaneous IP-like checksums, mainly
+@@ -134,7 +132,6 @@ __sum16 ip_compute_csum(const void *buff, int len)
+ {
+ 	return (__force __sum16)~do_csum(buff, len);
+ }
+-EXPORT_SYMBOL(ip_compute_csum);
+ 
+ /*
+  * copy from fs while checksumming, otherwise like csum_partial
+@@ -154,7 +151,6 @@ csum_partial_copy_from_user(const void __user *src, void *dst, int len,
+ 
+ 	return csum_partial(dst, len, sum);
+ }
+-EXPORT_SYMBOL(csum_partial_copy_from_user);
+ 
+ /*
+  * copy from ds while checksumming, otherwise like csum_partial
+@@ -165,4 +161,3 @@ csum_partial_copy(const void *src, void *dst, int len, __wsum sum)
+ 	memcpy(dst, src, len);
+ 	return csum_partial(dst, len, sum);
+ }
+-EXPORT_SYMBOL(csum_partial_copy);
+diff --git a/arch/metag/lib/delay.c b/arch/metag/lib/delay.c
+index 0b308f4..e6df8af 100644
+--- a/arch/metag/lib/delay.c
++++ b/arch/metag/lib/delay.c
+@@ -34,23 +34,19 @@ void __delay(unsigned long loops)
+ 		rdtimer(now);
+ 	} while ((now-bclock) < loops);
+ }
+-EXPORT_SYMBOL(__delay);
+ 
+ inline void __const_udelay(unsigned long xloops)
+ {
+ 	u64 loops = (u64)xloops * (u64)loops_per_jiffy * HZ;
+ 	__delay(loops >> 32);
+ }
+-EXPORT_SYMBOL(__const_udelay);
+ 
+ void __udelay(unsigned long usecs)
+ {
+ 	__const_udelay(usecs * 0x000010c7); /* 2**32 / 1000000 (rounded up) */
+ }
+-EXPORT_SYMBOL(__udelay);
+ 
+ void __ndelay(unsigned long nsecs)
+ {
+ 	__const_udelay(nsecs * 0x00005); /* 2**32 / 1000000000 (rounded up) */
+ }
+-EXPORT_SYMBOL(__ndelay);
+diff --git a/arch/metag/lib/usercopy.c b/arch/metag/lib/usercopy.c
+index b3ebfe9..19e5f92 100644
+--- a/arch/metag/lib/usercopy.c
++++ b/arch/metag/lib/usercopy.c
+@@ -611,7 +611,6 @@ unsigned long __copy_user(void __user *pdst, const void *psrc,
+ 
+ 	return retn;
+ }
+-EXPORT_SYMBOL(__copy_user);
+ 
+ #define __asm_copy_from_user_1(to, from, ret) \
+ 	__asm_copy_user_cont(to, from, ret,	\
+@@ -938,7 +937,6 @@ unsigned long __copy_user_zeroing(void *pdst, const void __user *psrc,
+ 
+ 	return retn + n;
+ }
+-EXPORT_SYMBOL(__copy_user_zeroing);
+ 
+ #define __asm_clear_8x64(to, ret) \
+ 	asm volatile (					\
+@@ -1092,7 +1090,6 @@ unsigned long __do_clear_user(void __user *pto, unsigned long pn)
+ 
+ 	return retn;
+ }
+-EXPORT_SYMBOL(__do_clear_user);
+ 
+ unsigned char __get_user_asm_b(const void __user *addr, long *err)
+ {
+@@ -1116,7 +1113,6 @@ unsigned char __get_user_asm_b(const void __user *addr, long *err)
+ 		: "D0FrT");
+ 	return x;
+ }
+-EXPORT_SYMBOL(__get_user_asm_b);
+ 
+ unsigned short __get_user_asm_w(const void __user *addr, long *err)
+ {
+@@ -1140,7 +1136,6 @@ unsigned short __get_user_asm_w(const void __user *addr, long *err)
+ 		: "D0FrT");
+ 	return x;
+ }
+-EXPORT_SYMBOL(__get_user_asm_w);
+ 
+ unsigned int __get_user_asm_d(const void __user *addr, long *err)
+ {
+@@ -1164,7 +1159,6 @@ unsigned int __get_user_asm_d(const void __user *addr, long *err)
+ 		: "D0FrT");
+ 	return x;
+ }
+-EXPORT_SYMBOL(__get_user_asm_d);
+ 
+ long __put_user_asm_b(unsigned int x, void __user *addr)
+ {
+@@ -1188,7 +1182,6 @@ long __put_user_asm_b(unsigned int x, void __user *addr)
+ 		: "D0FrT");
+ 	return err;
+ }
+-EXPORT_SYMBOL(__put_user_asm_b);
+ 
+ long __put_user_asm_w(unsigned int x, void __user *addr)
+ {
+@@ -1212,7 +1205,6 @@ long __put_user_asm_w(unsigned int x, void __user *addr)
+ 		: "D0FrT");
+ 	return err;
+ }
+-EXPORT_SYMBOL(__put_user_asm_w);
+ 
+ long __put_user_asm_d(unsigned int x, void __user *addr)
+ {
+@@ -1236,7 +1228,6 @@ long __put_user_asm_d(unsigned int x, void __user *addr)
+ 		: "D0FrT");
+ 	return err;
+ }
+-EXPORT_SYMBOL(__put_user_asm_d);
+ 
+ long __put_user_asm_l(unsigned long long x, void __user *addr)
+ {
+@@ -1260,7 +1251,6 @@ long __put_user_asm_l(unsigned long long x, void __user *addr)
+ 		: "D0FrT");
+ 	return err;
+ }
+-EXPORT_SYMBOL(__put_user_asm_l);
+ 
+ long strnlen_user(const char __user *src, long count)
+ {
+@@ -1297,7 +1287,6 @@ long strnlen_user(const char __user *src, long count)
+ 
+ 	return res;
+ }
+-EXPORT_SYMBOL(strnlen_user);
+ 
+ long __strncpy_from_user(char *dst, const char __user *src, long count)
+ {
+@@ -1351,4 +1340,3 @@ long __strncpy_from_user(char *dst, const char __user *src, long count)
+ 
+ 	return res;
+ }
+-EXPORT_SYMBOL(__strncpy_from_user);
+diff --git a/arch/metag/tbx/tbistring.c b/arch/metag/tbx/tbistring.c
+index f90cd08..ea537dd 100644
+--- a/arch/metag/tbx/tbistring.c
++++ b/arch/metag/tbx/tbistring.c
+@@ -111,4 +111,3 @@ const void *__TBITransStr(const char *str, int len)
+ 	/* Return base address of translation data or NULL */
+ 	return res;
+ }
+-EXPORT_SYMBOL(__TBITransStr);
 -- 
-Regards,
-Nishanth Menon
+1.8.1.2
+
+
