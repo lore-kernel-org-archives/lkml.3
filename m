@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab3GBHa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 03:30:27 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:59287 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932152Ab3GBHa0 (ORCPT
+	id S932283Ab3GBHro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 03:47:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39475 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab3GBHrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 03:30:26 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At4LALCA0lF5LCeA/2dsb2JhbABagwmDGbgChSgEAXwXdIIjAQEEAScTHDMIAxgJJQ8FJQMhARKICQW7SBaOIAuBJIMEYwOXR5FGgyMq
-Date: Tue, 2 Jul 2013 17:30:20 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>,
-        axboe@kernel.dk
-Subject: Re: block layer softlockup
-Message-ID: <20130702073020.GB14996@dastard>
-References: <20130626191853.GA29049@redhat.com>
- <20130627002255.GA16553@redhat.com>
- <20130627075543.GA32195@dastard>
- <20130627143055.GA1000@redhat.com>
- <20130628011843.GD32195@dastard>
- <CA+55aFze-=6e_P1syCs=3b6-xj-itVyZKvpejqBR83gA5tV+4w@mail.gmail.com>
- <20130628035437.GB29338@dastard>
- <20130701175734.GA13641@redhat.com>
- <20130702020741.GE4072@dastard>
- <20130702060146.GA5835@redhat.com>
+	Tue, 2 Jul 2013 03:47:43 -0400
+Date: Tue, 2 Jul 2013 09:46:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] Basic scheduler support for automatic NUMA balancing
+Message-ID: <20130702074659.GC21726@dyad.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <20130628135422.GA21895@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130702060146.GA5835@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130628135422.GA21895@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 02:01:46AM -0400, Dave Jones wrote:
-> On Tue, Jul 02, 2013 at 12:07:41PM +1000, Dave Chinner wrote:
->  > On Mon, Jul 01, 2013 at 01:57:34PM -0400, Dave Jones wrote:
->  > > On Fri, Jun 28, 2013 at 01:54:37PM +1000, Dave Chinner wrote:
->  > >  > On Thu, Jun 27, 2013 at 04:54:53PM -1000, Linus Torvalds wrote:
->  > >  > > On Thu, Jun 27, 2013 at 3:18 PM, Dave Chinner <david@fromorbit.com> wrote:
->  > >  > > >
->  > >  > > > Right, that will be what is happening - the entire system will go
->  > >  > > > unresponsive when a sync call happens, so it's entirely possible
->  > >  > > > to see the soft lockups on inode_sb_list_add()/inode_sb_list_del()
->  > >  > > > trying to get the lock because of the way ticket spinlocks work...
->  > >  > > 
->  > >  > > So what made it all start happening now? I don't recall us having had
->  > >  > > these kinds of issues before..
->  > >  > 
->  > >  > Not sure - it's a sudden surprise for me, too. Then again, I haven't
->  > >  > been looking at sync from a performance or lock contention point of
->  > >  > view any time recently.  The algorithm that wait_sb_inodes() is
->  > >  > effectively unchanged since at least 2009, so it's probably a case
->  > >  > of it having been protected from contention by some external factor
->  > >  > we've fixed/removed recently.  Perhaps the bdi-flusher thread
->  > >  > replacement in -rc1 has changed the timing sufficiently that it no
->  > >  > longer serialises concurrent sync calls as much....
->  > > 
->  > > This mornings new trace reminded me of this last sentence. Related ?
->  > 
->  > Was this running the last patch I posted, or a vanilla kernel?
+On Fri, Jun 28, 2013 at 07:24:22PM +0530, Srikar Dronamraju wrote:
+> * Mel Gorman <mgorman@suse.de> [2013-06-26 15:37:59]:
 > 
-> yeah, this had v2 of your patch (the one post lockdep warnings)
-
-Ok, I can see how that one might cause that issues to occur. The
-current patchset I'm working on doesn't have all the nasty io
-completion time stuff in it, so shouldn't cause any problems like
-this...
-
+> > It's several months overdue and everything was quiet after 3.8 came out
+> > but I recently had a chance to revisit automatic NUMA balancing for a few
+> > days. I looked at basic scheduler integration resulting in the following
+> > small series. Much of the following is heavily based on the numacore series
+> > which in itself takes part of the autonuma series from back in November. In
+> > particular it borrows heavily from Peter Ziljstra's work in "sched, numa,
+> > mm: Add adaptive NUMA affinity support" but deviates too much to preserve
+> > Signed-off-bys. As before, if the relevant authors are ok with it I'll
+> > add Signed-off-bys (or add them yourselves if you pick the patches up).
 > 
->  > That's doing IO completion processing in softirq time, and the lock
->  > it just dropped was the q->queue_lock. But that lock is held over
->  > end IO processing, so it is possible that the way the page writeback
->  > transition handling of my POC patch caused this.
->  > 
->  > FWIW, I've attached a simple patch you might like to try to see if
->  > it *minimises* the inode_sb_list_lock contention problems. All it
->  > does is try to prevent concurrent entry in wait_sb_inodes() for a
->  > given superblock and hence only have one walker on the contending
->  > filesystem at a time. Replace the previous one I sent with it. If
->  > that doesn't work, I have another simple patch that makes the
->  > inode_sb_list_lock per-sb to take this isolation even further....
->  
-> I can try it, though as always, proving a negative....
+> 
+> Here is a snapshot of the results of running autonuma-benchmark running on 8
+> node 64 cpu system with hyper threading disabled. Ran 5 iterations for each
+> setup
+> 
+> 	KernelVersion: 3.9.0-mainline_v39+()
+> 				Testcase:      Min      Max      Avg
+> 				  numa01:  1784.16  1864.15  1800.16
+> 				  numa02:    32.07    32.72    32.59
+> 
+> 	KernelVersion: 3.9.0-mainline_v39+() + mel's patches
+> 				Testcase:      Min      Max      Avg  %Change
+> 				  numa01:  1752.48  1859.60  1785.60    0.82%
+> 				  numa02:    47.21    60.58    53.43  -39.00%
 
-Very true, though all I'm really interested in is whether you see
-the soft lockup warnings or not. i.e. if you don't see them, then we
-have a minimal patch that might be sufficient for -stable kernels...
+I had to go look at these benchmarks again; and numa02 is the one that's purely
+private and thus should run well with this patch set. numa01 is the purely
+shared one and should fare less good for now.
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+So on the biggest system I've got; 4 nodes 32 cpus:
+
+ Performance counter stats for './numa02' (5 runs):
+
+3.10.0+ - NO_NUMA		57.973118199 seconds time elapsed    ( +-  0.71% )
+3.10.0+ -    NUMA		17.619811716 seconds time elapsed    ( +-  0.32% )
+
+3.10.0+ + patches - NO_NUMA	58.235353126 seconds time elapsed    ( +-  0.45% )
+3.10.0+ + patches -    NUMA     17.580963359 seconds time elapsed    ( +-  0.09% )
+
+
+Which is a small to no improvement. We'd have to look at what makes the 8 node
+go funny, but I don't think its realistic to hold off on the patches for that
+system.
+
