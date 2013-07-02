@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab3GBPgE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:36:04 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54159 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab3GBPgB (ORCPT
+	id S1753633Ab3GBPiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:38:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63704 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab3GBPiI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:36:01 -0400
-Date: Tue, 2 Jul 2013 18:35:26 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Luciano Coelho <coelho@ti.com>
-CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 8/9] wlcore: sdio: get clocks from device tree
-Message-ID: <20130702153526.GI7013@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
- <1372776948-24840-9-git-send-email-coelho@ti.com>
+	Tue, 2 Jul 2013 11:38:08 -0400
+Date: Tue, 2 Jul 2013 17:37:58 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-sh@vger.kernel.org
+cc: "Koul, Vinod" <vinod.koul@intel.com>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Subject: [PATCH] DMA: shdma: fix CHCLR register address calculation
+Message-ID: <Pine.LNX.4.64.1307021733280.1965@axis700.grange>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3eH4Qcq5fItR5cpy"
-Content-Disposition: inline
-In-Reply-To: <1372776948-24840-9-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:rQbIwGp8xqxoC0KnPjvYDt+gz5URqlv6wQls5vdN0Mc
+ Z6yLIUu27OFM7R5y2w4d6IM+T/VevCPAN35ns7nutcw256BQSs
+ +d8BzTiWS+D17vWDSR3J2s+X/X9BmCcg7Kw8XdyfbPbEnm+exd
+ 2VqNv3tJ0BW3gTys5Zk/J/0P6D8wvJzQ+ZufJygvE07wWFzZJO
+ wcDUKd06suaA8nHSmPS/sZ26PDeFj/UgHPUWxgdkqkvHjj/s3J
+ U7ySagPUF/ckoN2TclisO+SSMELmhnCEiRibIafhEEUFq9A4Zb
+ rXvDSgKMllTcds46MeezOF2JR7YMpFz7ykaMzCX79G9e5q0IQI
+ e5MmPe4g8mCYDS7VLRdFUTFHy9dLre5vqBwTttXH/dxru0P2wF
+ pIuKQBQvuSNxQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---3eH4Qcq5fItR5cpy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+struct sh_dmae_device::chan_reg is a pointer to u32, therefore when adding
+offsets to it care should be taken to add offsets in sizeof(u32) units, not
+in bytes. This patch corrects such a bug. While at it we also remove the
+redundant parameter of the affected function.
 
-Hi,
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+---
 
-On Tue, Jul 02, 2013 at 05:55:47PM +0300, Luciano Coelho wrote:
-> @@ -294,6 +316,8 @@ static int wl1271_probe(struct sdio_func *func,
->  	/* Use block mode for transferring over one block size of data */
->  	func->card->quirks |=3D MMC_QUIRK_BLKSZ_FOR_BYTE_MODE;
-> =20
-> +	sdio_set_drvdata(func, glue);
+This is a theoretical fix, I don't have a test-case for it, but the 
+original calculation does seem to be buggy to me. Reviews and tests are 
+welcome.
 
-is this move really necessary ?
+ drivers/dma/sh/shdma.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
---=20
-balbi
+diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
+index 98b2693..c7950be 100644
+--- a/drivers/dma/sh/shdma.c
++++ b/drivers/dma/sh/shdma.c
+@@ -51,12 +51,12 @@
+ static DEFINE_SPINLOCK(sh_dmae_lock);
+ static LIST_HEAD(sh_dmae_devices);
+ 
+-static void chclr_write(struct sh_dmae_chan *sh_dc, u32 data)
++static void channel_clear(struct sh_dmae_chan *sh_dc)
+ {
+ 	struct sh_dmae_device *shdev = to_sh_dev(sh_dc);
+ 
+-	__raw_writel(data, shdev->chan_reg +
+-		     shdev->pdata->channel[sh_dc->shdma_chan.id].chclr_offset);
++	__raw_writel(0, shdev->chan_reg +
++		shdev->pdata->channel[sh_dc->shdma_chan.id].chclr_offset / sizeof(u32));
+ }
+ 
+ static void sh_dmae_writel(struct sh_dmae_chan *sh_dc, u32 data, u32 reg)
+@@ -135,7 +135,7 @@ static int sh_dmae_rst(struct sh_dmae_device *shdev)
+ 		for (i = 0; i < shdev->pdata->channel_num; i++) {
+ 			struct sh_dmae_chan *sh_chan = shdev->chan[i];
+ 			if (sh_chan)
+-				chclr_write(sh_chan, 0);
++				channel_clear(sh_chan);
+ 		}
+ 	}
+ 
+-- 
+1.7.2.5
 
---3eH4Qcq5fItR5cpy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR0vM+AAoJEIaOsuA1yqREC0QQAJ6PUt5wCGYot1Z9OVllgCWy
-4JvzQJKqDKB9TtP7/OpCJFjWiwxRmC/Vg6FxKwpetCOwFJW9sWPbgBjUWuyVKyZj
-R3pZM2h6oCiJdOxMdoAlmrNC8IswXksivnjN/PEmUJUYDMKcSVWqo+v/ssk+2gYg
-fyfSRgoPef2KbL9xDnRuft30CNRa8QaiaF+tpM0M9QLqlsmB2Mf/QjmXfcf5Gh+O
-eMFCGNsfjZKrkMhZZo4QzeZUkA3fM0jGhI6EmmocOdW9I51mFn2Zg9+mrZdREd/e
-Hf+3nZZ+KtusXrtzcQfP8mu5kTD+mzET/dvklKp4d2xQdc2zLiDl11lQDqgxs889
-e7Oly32DHFMMyKgyOEnnOHt9AExR2mZ7qJs8/2Xf6DHK0wSaK9864n1mlSC6XuDT
-izvKmNnk7kNY1ZPCwHa9yt85FPlcH8mq0l1TmH3Z10HS/NpTtOzyZ+PGyPs4c6FC
-SjbiB71LRie3gAY43wTETKCFXQ/RGvNE110v6sVHH350orMTg+hGd+mwrtx+ovj7
-5qvlWxAZ64QVpiAFDxl7F2L8pDnU80L+D8a6FcGoKU1PPtO2FNmkP+x6fe96Q2zg
-4SCewk9i6SblMV0Rk8vSlBh0cVUrsP9rYJBe/QsnizC6bIUi9oqunIlP9zcSheX5
-RDl7TCEZjO/o9oIvABby
-=h1mL
------END PGP SIGNATURE-----
-
---3eH4Qcq5fItR5cpy--
