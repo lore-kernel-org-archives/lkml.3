@@ -1,109 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752843Ab3GBPUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:20:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53271 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3GBPT7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:19:59 -0400
-Date: Tue, 2 Jul 2013 18:19:47 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
-        <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
-Message-ID: <20130702151947.GD7013@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com>
- <20130702093247.GY27646@sirena.org.uk>
- <20130702094404.GL3352@arwen.pp.htv.fi>
- <20130702101718.GE27646@sirena.org.uk>
- <20130702104338.GA5107@arwen.pp.htv.fi>
- <20130702110432.GJ27646@sirena.org.uk>
+	id S1752947Ab3GBPVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:21:21 -0400
+Received: from mail.qboosh.pl ([217.73.31.61]:57025 "EHLO mail.qboosh.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752591Ab3GBPVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 11:21:20 -0400
+Date: Tue, 2 Jul 2013 17:20:48 +0200
+From: Jakub Bogusz <qboosh@pld-linux.org>
+To: Miloslav Trmac <mitr@volny.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH] [RESEND] wistron_btns: FS AMILO Pro 8210 support
+Message-ID: <20130702152048.GB6668@stranger.qboosh.pl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Ycz6tD7Th1CMF4v7"
+Content-Type: multipart/mixed; boundary="CE+1k2dSO48ffgeK"
 Content-Disposition: inline
-In-Reply-To: <20130702110432.GJ27646@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Ycz6tD7Th1CMF4v7
+
+--CE+1k2dSO48ffgeK
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 02, 2013 at 12:04:32PM +0100, Mark Brown wrote:
-> On Tue, Jul 02, 2013 at 01:43:38PM +0300, Felipe Balbi wrote:
-> > On Tue, Jul 02, 2013 at 11:17:18AM +0100, Mark Brown wrote:
->=20
-> > > +	/* setup command reg */
-> > > +	qspi->cmd =3D 0;
-> > > +	qspi->cmd |=3D QSPI_WLEN(8);
->=20
-> > Sourav hardcodes wordlenght to 8-bits, and yet he enables 8, 16 and
-> > 32-bits per word.
->=20
-> Yeah, that's what I noticed (well first off I noticed that there were no
-> constraints on bits per word at all).
->=20
-> > > +	qspi->cmd |=3D QSPI_EN_CS(0);
->=20
-> > he's also hardcoding the chipselect line which should be take from
-> > m->spi->chip_select
->=20
-> This one *can* be OK if the driver only accepts one chip select (though
-> obviously supporting more is better).  I'd really only done a fairly
+(sorry, I forgot to attach the actual patch in my previous message)
 
-this controller has 6 chip selects IIRC
+Hello,
 
-> high level review for framework stuff so hadn't got that far yet.
->=20
-> One thing I really want to get round to doing with the SPI core is
-> providing an easy to pick up GPIO chip select as standard=20
+The attached patch adds Fujitsu-Siemens AMILO Pro 8210 support to
+wistron_btns driver.
 
-that should be fairly simple I guess. Just lack of time, I'm assuming ?
+I already sent it in 2011, but there was no feedback.
+It still applies to linux 3.10 sources.
 
-Complex will be to support up to 128-bits per word as this particular
-controller supports. In fact, this controller is, IMO, overly flexible.
-You can do 1, 2, 3, 4, 5, 6, ... , 128 bits per word.
 
-The only problem is that the DATA registers which give you access to the
-shift register, aren't mapped to consecutive offsets, but that should
-still be ok since we will, anyway, be using readl/writel for each
-register. Still, for platforms which can provide writeq/readq (not sure
-if that's already supported on ARM) we could save a few cycles, no ?
+-- 
+Jakub Bogusz    http://qboosh.pl/
 
-anyway... it is what it is.
+--CE+1k2dSO48ffgeK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="linux-wistron-amilo8210.patch"
 
---=20
-balbi
+This patch adds Fujitsu-Siemens AMILO Pro 8210 support to wistron_btns driver.
 
---Ycz6tD7Th1CMF4v7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Functions are very similar to already supported AMILO Pro 3505, but 8210
+has WIFI led.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Such functionality is needed to enable WiFi under Linux on 8210 when it cold
+boots with hardware rfkill enabled, without booting another operating system
+or running custom utility that calls appropriate BIOS function.
 
-iQIcBAEBAgAGBQJR0u+SAAoJEIaOsuA1yqREm9EQAJ+r138z4rCoBi8STfIS0NYa
-om18NcTr31ycXVyrr+/RkbPcUqKVgO7bksM+cCBezbOnlyqw1qoca0xXpLbGnMmR
-79+TXW13KamKMbcoEn3HuhmqcE58Ajdn7I5g8O1umt02NdA2LgTSYUFINz8I7Qz+
-VFo//cTyv6Iq1OQfxZx+fU0wA5ZI4c3bLmxbQwhJnoEE9m/y+4XvKv6WgmNYs63j
-uVs5GDj2WqG2gj8raPIc3xlUiL9M1rXAw6NFdMIXFlNoQRmLlcHm3AYIZs80jFcs
-RKxBcL4BmrFly+XyzVCZxl9FAxv6lT/sSOCtrngqcUFAdFBxAvGM7lGORaQ2OH4q
-3kQfRvaKGWI8zXMxkZnPGw4ZPRoMRWf3WdD3yiCpR4tm15SnCEbnZI8bCultYTuZ
-wtUWM7H95Pe2TPXtBa5GiafSwsx1uqT/vVEznSeRBDmMNoIiGYxtNGinhjhoGb65
-NtxvhGHGF4egS0aHtWuOXBBwGZAFAW94C0LkPNwWn15KFWmyJXj8uCQNnCGwxk4z
-cgmvtop9W58leJqQKZrXAYcL/Lyg9oM9x3vqD4eQ40ymDBpCGoJVo53yr9FrZMHN
-XvejSfD3khBNgP+mIjJvfsZ9J0lCXxcdk49R2nnvCJfJFX+i+bhYw2fIvzaB/NRK
-x43POSrTnm3jId+DKfsh
-=p6My
------END PGP SIGNATURE-----
+Signed-off-by: Jakub Bogusz <qboosh@pld-linux.org>
 
---Ycz6tD7Th1CMF4v7--
+--- linux-2.6.37/drivers/input/misc/wistron_btns.c.orig	2011-01-05 01:50:19.000000000 +0100
++++ linux-2.6.37/drivers/input/misc/wistron_btns.c	2011-02-19 07:51:36.000000000 +0100
+@@ -278,6 +278,16 @@
+ 	{ KE_END,       0 }
+ };
+ 
++static struct key_entry keymap_fs_amilo_pro_v8210[] __initdata = {
++	{ KE_KEY,       0x01, {KEY_HELP} },          /* Fn+F1 */
++	{ KE_KEY,       0x06, {KEY_DISPLAYTOGGLE} }, /* Fn+F4 */
++	{ KE_BLUETOOTH, 0x30 },                      /* Fn+F10 */
++	{ KE_KEY,       0x31, {KEY_MAIL} },          /* mail button */
++	{ KE_KEY,       0x36, {KEY_WWW} },           /* www button */
++	{ KE_WIFI,      0x78 },                      /* satelite dish button */
++	{ KE_END,       FE_WIFI_LED }
++};
++
+ static struct key_entry keymap_fujitsu_n3510[] __initdata = {
+ 	{ KE_KEY, 0x11, {KEY_PROG1} },
+ 	{ KE_KEY, 0x12, {KEY_PROG2} },
+@@ -655,6 +665,15 @@
+ 		.driver_data = keymap_fs_amilo_pro_v3505
+ 	},
+ 	{
++		/* Fujitsu-Siemens Amilo Pro Edition V8210 */
++		.callback = dmi_matched,
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "AMILO Pro Series V8210"),
++		},
++		.driver_data = keymap_fs_amilo_pro_v8210
++	},
++	{
+ 		/* Fujitsu-Siemens Amilo M7400 */
+ 		.callback = dmi_matched,
+ 		.matches = {
+
+--CE+1k2dSO48ffgeK--
