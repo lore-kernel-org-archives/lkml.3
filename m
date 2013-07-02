@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab3GBXOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:14:31 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:54975 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab3GBXO3 (ORCPT
+	id S1755847Ab3GBXQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 19:16:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31287 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab3GBXQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:14:29 -0400
-Date: Tue, 02 Jul 2013 16:14:28 -0700 (PDT)
-Message-Id: <20130702.161428.1703028286206350504.davem@davemloft.net>
-To: vyasevich@gmail.com
-Cc: ydroneaud@opteya.com, linux-kernel@vger.kernel.org,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 12/13] sctp: use get_unused_fd_flags(0) instead of
- get_unused_fd()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <51D312E8.6090702@gmail.com>
-References: <cover.1372777600.git.ydroneaud@opteya.com>
-	<6d4271e2e0b05ae2728cba1d890e77cac50cf8f0.1372777600.git.ydroneaud@opteya.com>
-	<51D312E8.6090702@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 2 Jul 2013 19:16:27 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=hagb512zhIEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=nmCG74HkNA8A:10 a=i0EeH86SAAAA:8 a=Kg2J0U58kaBxNp7LJ_8A:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372806986.22688.75.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 00/12] event tracing expose change and bugfix/cleanup
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Date: Tue, 02 Jul 2013 19:16:26 -0400
+In-Reply-To: <1365606496.9609.13.camel@gandalf.local.home>
+References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
+	 <1365606496.9609.13.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vlad Yasevich <vyasevich@gmail.com>
-Date: Tue, 02 Jul 2013 13:50:32 -0400
-
-> On 07/02/2013 12:39 PM, Yann Droneaud wrote:
->> Macro get_unused_fd() is used to allocate a file descriptor with
->> default flags. Those default flags (0) can be "unsafe":
->> O_CLOEXEC must be used by default to not leak file descriptor
->> across exec().
->>
->> Instead of macro get_unused_fd(), functions anon_inode_getfd()
->> or get_unused_fd_flags() should be used with flags given by userspace.
->> If not possible, flags should be set to O_CLOEXEC to provide userspace
->> with a default safe behavor.
->>
->> In a further patch, get_unused_fd() will be removed so that
->> new code start using anon_inode_getfd() or get_unused_fd_flags()
->> with correct flags.
->>
->> This patch replaces calls to get_unused_fd() with equivalent call to
->> get_unused_fd_flags(0) to preserve current behavor for existing code.
->>
->> The hard coded flag value (0) should be reviewed on a per-subsystem
->> basis,
->> and, if possible, set to O_CLOEXEC.
->>
->> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+On Wed, 2013-04-10 at 11:08 -0400, Steven Rostedt wrote:
+> On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
+> > From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+> > 
+> > Hi steven,
+> > 
+> > I have reworked this patchset again with minor change.
+> > [v2 -> v3:
+> > -   change trace_descripte_t defintion in patch 3
+> > -   new patch "export ftrace_events"
+> > -   remove patch "export syscall metadata"
+> >     (syscall tracing are use same event_trace_ops backend as normal event tracepoint,
+> >      so there's no need to export anything of syscall)
+> > -   remove private data field in ftrace_event_file struct (also not needed)
+> > ]
 > 
-> Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+> Thanks,
+> 
+> Note, I'm trying to catch up on my -rt responsibilities, and most likely
+> wont get to this this week, and next week I'll be at collaboration
+> summit. It may not be till after I get back from that, that I'll have a
+> chance to look at these.
+> 
+> Depending on when Linus opens the next merge window, even if everything
+> goes fine, this patch set may not make it into 3.10, and will have to
+> wait till 3.11.
 
-Applied to net-next, thanks.
+Sorry, I've been buried in other work and going through my TODO list in
+my inbox I've stumbled on this. If anything, it will have to wait for
+3.12, but I have some questions about this patch set that needs to be
+answered first. I'll reply to individual patches.
+
+-- Steve
+
+
