@@ -1,283 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077Ab3GBSPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 14:15:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50985 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753131Ab3GBSPe (ORCPT
+	id S1754025Ab3GBSQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 14:16:14 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:37296 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab3GBSQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 14:15:34 -0400
-Date: Tue, 2 Jul 2013 20:15:22 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/8] sched: Reschedule task on preferred NUMA node once
- selected
-Message-ID: <20130702181522.GC23916@twins.programming.kicks-ass.net>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <1372257487-9749-7-git-send-email-mgorman@suse.de>
+	Tue, 2 Jul 2013 14:16:12 -0400
+Date: Tue, 2 Jul 2013 19:15:44 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de,
+        grant.likely@linaro.org, rob.herring@calxeda.com, lee.jones@linaro.org,
+        linus.walleij@linaro.org, ola.o.lilja@stericsson.com,
+        wfp5p@virginia.edu, yongjun_wei@trendmicro.com.cn,
+        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130702181544.GY27646@sirena.org.uk>
+References: <CAPgLHd8i0kcs5RE2UUPmFS5ueMgRAzofeaAUnGz4WuYFBANeBw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IbuFj1t1LJkAAh+4"
 Content-Disposition: inline
-In-Reply-To: <1372257487-9749-7-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAPgLHd8i0kcs5RE2UUPmFS5ueMgRAzofeaAUnGz4WuYFBANeBw@mail.gmail.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: mop500: add .owner to struct snd_soc_card
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--IbuFj1t1LJkAAh+4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Something like this should avoid tasks being lumped back onto one node..
+On Tue, Jul 02, 2013 at 05:25:37PM +0800, Wei Yongjun wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>=20
+> Add missing .owner of struct snd_soc_card. This prevents the
+> module from being removed from underneath its users.
 
-Compile tested only, need food.
+Applied, thanks.
 
----
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1037,6 +1037,23 @@ struct migration_arg {
- 
- static int migration_cpu_stop(void *data);
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+int migrate_curr_to(int cpu)
-+{
-+	struct task_struct *p = current;
-+	struct migration_arg arg = { p, cpu };
-+	int curr_cpu = task_cpu(p);
-+
-+	if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
-+		return -EINVAL;
-+
-+	if (curr_cpu == cpu)
-+		return 0;
-+
-+	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
-+}
-+#endif
-+
- /*
-  * wait_task_inactive - wait for a thread to unschedule.
-  *
-@@ -5183,30 +5200,6 @@ enum s_alloc {
- 
- struct sched_domain_topology_level;
- 
--#ifdef CONFIG_NUMA_BALANCING
--
--/* Set a tasks preferred NUMA node and reschedule to it */
--void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu)
--{
--	int curr_cpu = task_cpu(p);
--	struct migration_arg arg = { p, idlest_cpu };
--
--	p->numa_preferred_nid = nid;
--	p->numa_migrate_seq = 0;
--
--	/* Do not reschedule if already running on the target CPU */
--	if (idlest_cpu == curr_cpu)
--		return;
--
--	/* Ensure the target CPU is eligible */
--	if (!cpumask_test_cpu(idlest_cpu, tsk_cpus_allowed(p)))
--		return;
--
--	/* Move current running task to idlest CPU on preferred node */
--	stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
--}
--#endif /* CONFIG_NUMA_BALANCING */
--
- typedef struct sched_domain *(*sched_domain_init_f)(struct sched_domain_topology_level *tl, int cpu);
- typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
- 
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -838,34 +838,76 @@ unsigned int sysctl_numa_balancing_scan_
-  */
- unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
- 
--static unsigned long weighted_cpuload(const int cpu);
- 
--static int find_idlest_cpu_node(int this_cpu, int nid)
--{
--	unsigned long load, min_load = ULONG_MAX;
--	int i, idlest_cpu = this_cpu;
-+static unsigned long source_load(int cpu, int type);
-+static unsigned long target_load(int cpu, int type);
-+static unsigned long power_of(int cpu);
-+static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
-+
-+static int task_numa_find_cpu(struct task_struct *p)
-+{
-+	int nid = p->numa_preferred_nid;
-+	int node_cpu = cpumask_first(cpumask_of_node(nid));
-+	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
-+	unsigned long src_load, dst_load, min_load = ULONG_MAX;
-+	struct task_group *tg = task_group(p);
-+	s64 src_eff_load, dst_eff_load;
-+	struct sched_domain *sd;
-+	unsigned long weight;
-+	bool balanced;
-+	int idx;
- 
--	BUG_ON(cpu_to_node(this_cpu) == nid);
-+	rcu_read_lock();
-+	for_each_domain(src_cpu, sd) {
-+		if (cpumask_test_cpu(src_cpu,  sched_domain_span(sd)) &&
-+		    cpumask_test_cpu(node_cpu, sched_domain_span(sd)))
-+			break;
-+	}
- 
--	for_each_cpu(i, cpumask_of_node(nid)) {
--		load = weighted_cpuload(i);
-+	if (WARN_ON_ONCE(!sd)) {
-+		rcu_read_unlock();
-+		return dst_cpu;
-+	}
- 
--		if (load < min_load) {
--			struct task_struct *p;
--			struct rq *rq = cpu_rq(i);
-+	/*
-+	 * XXX the below is mostly nicked from wake_affine(); we should
-+	 * see about sharing a bit if at all possible; also it might want
-+	 * some per entity weight love.
-+	 */
- 
--			/* Do not preempt a task running on its preferred node */
--			raw_spin_lock_irq(&rq->lock);
--			p = rq->curr;
--			if (p->numa_preferred_nid != nid) {
--				min_load = load;
--				idlest_cpu = i;
--			}
--			raw_spin_unlock_irq(&rq->lock);
-+	idx = sd->busy_idx; /* XXX do we want another idx? */
-+	weight = p->se.load.weight;
-+
-+	src_load = source_load(src_cpu, idx);
-+
-+	src_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
-+	src_eff_load *= power_of(src_cpu);
-+	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
-+
-+	rcu_read_unlock();
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		dst_load = target_load(cpu, idx);
-+
-+		dst_eff_load = 100;
-+		dst_eff_load *= power_of(cpu);
-+		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
-+
-+		balanced = (dst_eff_load <= src_eff_load);
-+
-+		/*
-+		 * If the dst cpu wasn't idle; don't allow imbalances
-+		 */
-+		if (dst_load && !balanced)
-+			continue;
-+
-+		if (dst_load < min_load) {
-+			min_load = dst_load;
-+			dst_cpu = cpu;
- 		}
- 	}
- 
--	return idlest_cpu;
-+	return dst_cpu;
- }
- 
- static inline int task_faults_idx(int nid, int priv)
-@@ -915,29 +957,31 @@ static void task_numa_placement(struct t
- 	 * the working set placement.
- 	 */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
--		int preferred_cpu;
- 		int old_migrate_seq = p->numa_migrate_seq;
- 
--		/*
--		 * If the task is not on the preferred node then find the most
--		 * idle CPU to migrate to.
--		 */
--		preferred_cpu = task_cpu(p);
--		if (cpu_to_node(preferred_cpu) != max_nid)
--			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
--							     max_nid);
--
--		sched_setnuma(p, max_nid, preferred_cpu);
-+		p->numa_preferred_nid = max_nid;
-+		p->numa_migrate_seq = 0;
- 
- 		/*
- 		 * If preferred nodes changes frequently then the scan rate
- 		 * will be continually high. Mitigate this by increaseing the
- 		 * scan rate only if the task was settled.
- 		 */
--		if (old_migrate_seq >= sysctl_numa_balancing_settle_count)
--			p->numa_scan_period = max(p->numa_scan_period >> 1,
--					sysctl_numa_balancing_scan_period_min);
-+		if (old_migrate_seq >= sysctl_numa_balancing_settle_count) {
-+			p->numa_scan_period =
-+				max(p->numa_scan_period >> 1,
-+				    sysctl_numa_balancing_scan_period_min);
-+		}
- 	}
-+
-+	if (p->numa_preferred_nid == numa_node_id())
-+		return;
-+
-+	/*
-+	 * If the task is not on the preferred node then find the most
-+	 * idle CPU to migrate to.
-+	 */
-+	migrate_curr_to(task_numa_find_cpu(p));
- }
- 
- /*
-@@ -956,7 +1000,7 @@ void task_numa_fault(int last_nid, int n
- 		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
- 
- 		/* numa_faults and numa_faults_buffer share the allocation */
--		p->numa_faults = kzalloc(size * 4, GFP_KERNEL);
-+		p->numa_faults = kzalloc(size * 2, GFP_KERNEL);
- 		if (!p->numa_faults)
- 			return;
- 
-@@ -968,9 +1012,10 @@ void task_numa_fault(int last_nid, int n
- 	 * If pages are properly placed (did not migrate) then scan slower.
- 	 * This is reset periodically in case of phase changes
- 	 */
--        if (!migrated)
-+        if (!migrated) {
- 		p->numa_scan_period = min(sysctl_numa_balancing_scan_period_max,
- 			p->numa_scan_period + jiffies_to_msecs(10));
-+	}
- 
- 	task_numa_placement(p);
- 
-@@ -3245,8 +3290,7 @@ static long effective_load(struct task_g
- }
- #else
- 
--static inline unsigned long effective_load(struct task_group *tg, int cpu,
--		unsigned long wl, unsigned long wg)
-+static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
- {
- 	return wl;
- }
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -555,7 +555,7 @@ static inline u64 rq_clock_task(struct r
- }
- 
- #ifdef CONFIG_NUMA_BALANCING
--extern void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu);
-+extern int migrate_curr_to(int cpu);
- static inline void task_numa_free(struct task_struct *p)
- {
- 	kfree(p->numa_faults);
+--IbuFj1t1LJkAAh+4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR0xjNAAoJELSic+t+oim9WVUP/25evwO0QIx9g7+xCIMtyTrb
+dmNWDo+hbZlzIJyi9mqV7Pj5LEfnxtHhxv6fxUVoli7rs0tmyYcBd/MMOr4IFrD5
+Ri+73worFrx8Oyps3KsC6j6Pfx+MKnjC8Btvc+wSLFvMYe5Q/w/BlQT6VQ9ng6wB
+hZXdJgkcsRCsmkUlqOx73CI9zyXHBGYMJZxU3SGbZALdg4ITPCFqxQufywfckS8N
+H5ybFtFM1b+3bLbZwaX0O16JjPJqAU7DH6BIiXhubooPtzSFK+ei12hBwWC72PZZ
+Q4TsRGkdiLpbHZUq4Z3xbG3VABsa6VbkJcZZVQtsF78uCp0/YPZCOkrxWvWLQTUc
+goRBENFY7zm6Hjt9qTT85ijH63XHs2rK2xKRElsCwJM99GMKtO5vPP1Z/AhBMVUi
+1mq2zA6bLTVWZT0GeKKffhDE5OzuEMzHAFQIyWwsdWBxSwGwk5wgMmmGi9bBLebN
+ZhB2LZNjJ7IBksPm/Bj1fpDR+a7XuZ8lEb3IznUXDbBXImCBpkKb9ZY7eStUC2FN
+vDAZ2sbNxYtE0yiFx7WiC97vcZ6Kk1L0Gpfzmq0jmS3PkwiFAWbfABVwYMHUPw1L
+ph2kGSNywx8a6JvECFFVogL+DYqaSRKzUWauc3vf+BFhnhUX7qvbx8PYL/iF0/gs
+im0LXaCo0KwvbqUdJRlc
+=4hk4
+-----END PGP SIGNATURE-----
 
+--IbuFj1t1LJkAAh+4--
