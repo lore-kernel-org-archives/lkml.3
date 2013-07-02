@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3GBMtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 08:49:43 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:51181 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3GBMtm (ORCPT
+	id S1752727Ab3GBMvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 08:51:22 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:60060 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab3GBMvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 08:49:42 -0400
-X-Nat-Received: from [202.181.97.72]:49968 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1372769366.26296
-To: akpm@linux-foundation.org
-Cc: cl@linux.com, glommer@parallels.com, penberg@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-next-20130422] Bug in SLAB?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201305071938.DAC81273.HOSJOFFOQLtMFV@I-love.SAKURA.ne.jp>
-	<0000013e7f651028-9a57bc30-4148-4aba-a0e6-737b83bf2458-000000@email.amazonses.com>
-	<20130701130903.61459f57f4ba31e282065001@linux-foundation.org>
-	<201307020645.JGI86434.FFHOLOSFOtJVMQ@I-love.SAKURA.ne.jp>
-	<20130701145356.f9c43875890d1aec90fe1ad9@linux-foundation.org>
-In-Reply-To: <20130701145356.f9c43875890d1aec90fe1ad9@linux-foundation.org>
-Message-Id: <201307022149.HEB90128.QFJFHOLMVtFSOO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Tue, 2 Jul 2013 21:49:26 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 02072013 #10463928, status: clean
+	Tue, 2 Jul 2013 08:51:21 -0400
+Message-ID: <51D2CCC4.30109@gmail.com>
+Date: Tue, 02 Jul 2013 14:51:16 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Jason Cooper <jason@lakedaemon.net>
+CC: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 5/7] ARM: kirkwood: convert to DT irqchip and clocksource
+References: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com> <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com> <20130702115311.GG19937@titan.lakedaemon.net>
+In-Reply-To: <20130702115311.GG19937@titan.lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> Look, I'll make this easier:
-> 
-> : Subject: slab: fix init_lock_keys
-> : 
-> : In 3.10 kernels with CONFIG_LOCKDEP=y on architectures with
-> : PAGE_SHIFT + MAX_ORDER > 26 such as [architecture goes here], the kernel does
-> : [x] when the user does [y].
-> :
-> : init_lock_keys() goes too far in initializing values in kmalloc_caches
-> : because it assumed that the size of the kmalloc array goes up to
-> : MAX_ORDER.  However, the size of the kmalloc array for SLAB may be
-> : restricted due to increased page sizes or CONFIG_FORCE_MAX_ZONEORDER.
-> :
-> : Fix this by [z].
-> 
-> 
-> Please fill in the text within [].
-> 
-OK. I made from http://marc.info/?l=linux-kernel&m=136810234704350&w=2 .
------
-Some architectures (e.g. powerpc built with CONFIG_PPC_256K_PAGES=y
-CONFIG_FORCE_MAX_ZONEORDER=11) get PAGE_SHIFT + MAX_ORDER > 26.
+On 07/02/13 13:53, Jason Cooper wrote:
+> On Tue, Jul 02, 2013 at 01:03:41PM +0200, Sebastian Hesselbarth wrote:
+>> With recent support for true irqchip and clocksource drivers for Orion
+>> SoCs, now make use of it on DT enabled Kirkwood boards.
+>>
+>> This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
+>> where old code is moved out to and polishes DT board file a little bit.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+[...]
+>> diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
+>> index 881f37e..385244c 100644
+>> --- a/arch/arm/mach-kirkwood/board-dt.c
+>> +++ b/arch/arm/mach-kirkwood/board-dt.c
+>> @@ -15,6 +15,9 @@
+>>   #include <linux/of.h>
+>>   #include <linux/of_platform.h>
+>>   #include <linux/clk-provider.h>
+>> +#include <linux/clocksource.h>
+>> +#include <linux/dma-mapping.h>
+>> +#include <linux/irqchip.h>
+>>   #include <linux/kexec.h>
+>>   #include <asm/mach/arch.h>
+>>   #include <asm/mach/map.h>
+>> @@ -67,10 +70,18 @@ static void __init kirkwood_legacy_clk_init(void)
+>>   	clk_prepare_enable(clk);
+>>   }
+>>
+>> -static void __init kirkwood_of_clk_init(void)
+>> +static void __init kirkwood_dt_time_init(void)
+>>   {
+>>   	of_clk_init(NULL);
+>> -	kirkwood_legacy_clk_init();
+>> +	clocksource_of_init();
+>> +}
+>> +
+>> +static void __init kirkwood_dt_init_early(void)
+>> +{
+>
+>
+>> +	init_dma_coherent_pool_size(SZ_1M);
+>
+> This shouldn't be needed any more.  Is there a reason you're adding it
+> back in?
 
-In 3.10 kernels, CONFIG_LOCKDEP=y with PAGE_SHIFT + MAX_ORDER > 26 makes
-init_lock_keys() dereference beyond kmalloc_caches[26].
-This leads to an unbootable system (kernel panic at initializing SLAB)
-if one of kmalloc_caches[26...PAGE_SHIFT+MAX_ORDER-1] is not NULL.
+Jason, thanks for catching this. The last patch I had was before removal
+of init_dma_coherent_pool_size. I slipped back in because I missed the
+removal patches.
 
-Fix this by making sure that init_lock_keys() does not dereference beyond
-kmalloc_caches[26] arrays.
------
+Can you remove it prior merge, should I prepare a fixup patch, or respin
+this patch?
+
+Sebastian
+
