@@ -1,73 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab3GBQur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:50:47 -0400
-Received: from fallback5.mail.ru ([94.100.176.59]:43300 "EHLO
-	fallback5.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753971Ab3GBQup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 12:50:45 -0400
-From: Alexander Shiyan <shc_work@mail.ru>
-To: rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH 1/3] rtc: ds1742: Using devm_ioremap_resource()
-Date: Tue,  2 Jul 2013 20:50:00 +0400
-Message-Id: <1372783802-6569-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.1.5
-X-Spam: Not detected
-X-Mras: Ok
+	id S1752577Ab3GBQyj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:54:39 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:37672
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975Ab3GBQyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:54:37 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 1/1] Drivers: hv: util: Fix a bug in version negotiation code for util services
+Date: Tue,  2 Jul 2013 10:31:30 -0700
+Message-Id: <1372786290-12641-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The current code picked the highest version advertised by the host. WS2012 R2
+has implemented a protocol version for KVP that is not compatible with prior
+protocol versions of KVP. Fix the bug in the current code by explicitly specifying
+the protocol version that the guest can support.
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/rtc/rtc-ds1742.c | 18 ++++++------------
- 1 file changed, 6 insertions(+), 12 deletions(-)
+ drivers/hv/channel_mgmt.c |   75 +++++++++++++++++++++++++++++++-------------
+ drivers/hv/hv_kvp.c       |   24 ++++++++++++++-
+ drivers/hv/hv_snapshot.c  |   18 +++-------
+ drivers/hv/hv_util.c      |   21 +++++++++++--
+ include/linux/hyperv.h    |   10 +++++-
+ 5 files changed, 109 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/rtc/rtc-ds1742.c b/drivers/rtc/rtc-ds1742.c
-index eccdc62..9fba0ae 100644
---- a/drivers/rtc/rtc-ds1742.c
-+++ b/drivers/rtc/rtc-ds1742.c
-@@ -56,7 +56,6 @@ struct rtc_plat_data {
- 	void __iomem *ioaddr_nvram;
- 	void __iomem *ioaddr_rtc;
- 	size_t size_nvram;
--	size_t size;
- 	unsigned long last_jiffies;
- 	struct bin_attribute nvram_attr;
- };
-@@ -168,22 +167,17 @@ static int ds1742_rtc_probe(struct platform_device *pdev)
- 	void __iomem *ioaddr;
- 	int ret = 0;
+diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+index 0df7590..12ec8c8 100644
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -48,30 +48,39 @@ struct vmbus_channel_message_table_entry {
+  * @negop is of type &struct icmsg_negotiate.
+  * Set up and fill in default negotiate response message.
+  *
+- * The max_fw_version specifies the maximum framework version that
+- * we can support and max _srv_version specifies the maximum service
+- * version we can support. A special value MAX_SRV_VER can be
+- * specified to indicate that we can handle the maximum version
+- * exposed by the host.
++ * The fw_version specifies the  framework version that
++ * we can support and srv_version specifies the service
++ * version we can support.
+  *
+  * Mainly used by Hyper-V drivers.
+  */
+-void vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
++bool vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
+ 				struct icmsg_negotiate *negop, u8 *buf,
+-				int max_fw_version, int max_srv_version)
++				int fw_version, int srv_version)
+ {
+-	int icframe_vercnt;
+-	int icmsg_vercnt;
++	int icframe_major, icframe_minor;
++	int icmsg_major, icmsg_minor;
++	int fw_major, fw_minor;
++	int srv_major, srv_minor;
+ 	int i;
++	bool found_match = false;
  
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
- 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata)
- 		return -ENOMEM;
--	pdata->size = resource_size(res);
--	if (!devm_request_mem_region(&pdev->dev, res->start, pdata->size,
--		pdev->name))
--		return -EBUSY;
--	ioaddr = devm_ioremap(&pdev->dev, res->start, pdata->size);
--	if (!ioaddr)
--		return -ENOMEM;
+ 	icmsghdrp->icmsgsize = 0x10;
++	fw_major = (fw_version >> 16);
++	fw_minor = (fw_version & 0xFFFF);
 +
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	ioaddr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(ioaddr))
-+		return PTR_ERR(ioaddr);
++	srv_major = (srv_version >> 16);
++	srv_minor = (srv_version & 0xFFFF);
  
- 	pdata->ioaddr_nvram = ioaddr;
--	pdata->size_nvram = pdata->size - RTC_SIZE;
-+	pdata->size_nvram = resource_size(res) - RTC_SIZE;
- 	pdata->ioaddr_rtc = ioaddr + pdata->size_nvram;
+ 	negop = (struct icmsg_negotiate *)&buf[
+ 		sizeof(struct vmbuspipe_hdr) +
+ 		sizeof(struct icmsg_hdr)];
  
- 	sysfs_bin_attr_init(&pdata->nvram_attr);
+-	icframe_vercnt = negop->icframe_vercnt;
+-	icmsg_vercnt = negop->icmsg_vercnt;
++	icframe_major = negop->icframe_vercnt;
++	icframe_minor = 0;
++
++	icmsg_major = negop->icmsg_vercnt;
++	icmsg_minor = 0;
+ 
+ 	/*
+ 	 * Select the framework version number we will
+@@ -79,26 +88,48 @@ void vmbus_prep_negotiate_resp(struct icmsg_hdr *icmsghdrp,
+ 	 */
+ 
+ 	for (i = 0; i < negop->icframe_vercnt; i++) {
+-		if (negop->icversion_data[i].major <= max_fw_version)
+-			icframe_vercnt = negop->icversion_data[i].major;
++		if ((negop->icversion_data[i].major == fw_major) &&
++		   (negop->icversion_data[i].minor == fw_minor)) {
++			icframe_major = negop->icversion_data[i].major;
++			icframe_minor = negop->icversion_data[i].minor;
++			found_match = true;
++		}
+ 	}
+ 
++	if (!found_match)
++		goto fw_error;
++
++	found_match = false;
++
+ 	for (i = negop->icframe_vercnt;
+ 		 (i < negop->icframe_vercnt + negop->icmsg_vercnt); i++) {
+-		if (negop->icversion_data[i].major <= max_srv_version)
+-			icmsg_vercnt = negop->icversion_data[i].major;
++		if ((negop->icversion_data[i].major == srv_major) &&
++		   (negop->icversion_data[i].minor == srv_minor)) {
++			icmsg_major = negop->icversion_data[i].major;
++			icmsg_minor = negop->icversion_data[i].minor;
++			found_match = true;
++		}
+ 	}
+ 
+ 	/*
+-	 * Respond with the maximum framework and service
++	 * Respond with the framework and service
+ 	 * version numbers we can support.
+ 	 */
+-	negop->icframe_vercnt = 1;
+-	negop->icmsg_vercnt = 1;
+-	negop->icversion_data[0].major = icframe_vercnt;
+-	negop->icversion_data[0].minor = 0;
+-	negop->icversion_data[1].major = icmsg_vercnt;
+-	negop->icversion_data[1].minor = 0;
++
++fw_error:
++	if (!found_match) {
++		negop->icframe_vercnt = 0;
++		negop->icmsg_vercnt = 0;
++	} else {
++		negop->icframe_vercnt = 1;
++		negop->icmsg_vercnt = 1;
++	}
++
++	negop->icversion_data[0].major = icframe_major;
++	negop->icversion_data[0].minor = icframe_minor;
++	negop->icversion_data[1].major = icmsg_major;
++	negop->icversion_data[1].minor = icmsg_minor;
++	return found_match;
+ }
+ 
+ EXPORT_SYMBOL_GPL(vmbus_prep_negotiate_resp);
+diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+index ed50e9e..5312720 100644
+--- a/drivers/hv/hv_kvp.c
++++ b/drivers/hv/hv_kvp.c
+@@ -29,6 +29,16 @@
+ #include <linux/hyperv.h>
+ 
+ 
++/*
++ * Pre win8 version numbers used in ws2008 and ws 2008 r2 (win7)
++ */
++#define WIN7_SRV_MAJOR   3
++#define WIN7_SRV_MINOR   0
++#define WIN7_SRV_MAJOR_MINOR     (WIN7_SRV_MAJOR << 16 | WIN7_SRV_MINOR)
++
++#define WIN8_SRV_MAJOR   4
++#define WIN8_SRV_MINOR   0
++#define WIN8_SRV_MAJOR_MINOR     (WIN8_SRV_MAJOR << 16 | WIN8_SRV_MINOR)
+ 
+ /*
+  * Global state maintained for transaction that is being processed.
+@@ -593,8 +603,19 @@ void hv_kvp_onchannelcallback(void *context)
+ 			sizeof(struct vmbuspipe_hdr)];
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
++			/*
++			 * We start with win8 version and if the host cannot
++			 * support that we use the previous version.
++			 */
++			if (vmbus_prep_negotiate_resp(icmsghdrp, negop,
++				 recv_buffer, UTIL_FW_MAJOR_MINOR,
++				 WIN8_SRV_MAJOR_MINOR))
++				goto done;
++
+ 			vmbus_prep_negotiate_resp(icmsghdrp, negop,
+-				 recv_buffer, MAX_SRV_VER, MAX_SRV_VER);
++				 recv_buffer, UTIL_FW_MAJOR_MINOR,
++				 WIN7_SRV_MAJOR_MINOR);
++
+ 		} else {
+ 			kvp_msg = (struct hv_kvp_msg *)&recv_buffer[
+ 				sizeof(struct vmbuspipe_hdr) +
+@@ -626,6 +647,7 @@ void hv_kvp_onchannelcallback(void *context)
+ 			return;
+ 
+ 		}
++done:
+ 
+ 		icmsghdrp->icflags = ICMSGHDRFLAG_TRANSACTION
+ 			| ICMSGHDRFLAG_RESPONSE;
+diff --git a/drivers/hv/hv_snapshot.c b/drivers/hv/hv_snapshot.c
+index 8ad5653..e4572f3 100644
+--- a/drivers/hv/hv_snapshot.c
++++ b/drivers/hv/hv_snapshot.c
+@@ -24,6 +24,10 @@
+ #include <linux/workqueue.h>
+ #include <linux/hyperv.h>
+ 
++#define VSS_MAJOR  5
++#define VSS_MINOR  0
++#define VSS_MAJOR_MINOR    (VSS_MAJOR << 16 | VSS_MINOR)
++
+ 
+ 
+ /*
+@@ -186,18 +190,8 @@ void hv_vss_onchannelcallback(void *context)
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+ 			vmbus_prep_negotiate_resp(icmsghdrp, negop,
+-				 recv_buffer, MAX_SRV_VER, MAX_SRV_VER);
+-			/*
+-			 * We currently negotiate the highest number the
+-			 * host has presented. If this version is not
+-			 * atleast 5.0, reject.
+-			 */
+-			negop = (struct icmsg_negotiate *)&recv_buffer[
+-				sizeof(struct vmbuspipe_hdr) +
+-				sizeof(struct icmsg_hdr)];
+-
+-			if (negop->icversion_data[1].major < 5)
+-				negop->icframe_vercnt = 0;
++				 recv_buffer, UTIL_FW_MAJOR_MINOR,
++				 VSS_MAJOR_MINOR);
+ 		} else {
+ 			vss_msg = (struct hv_vss_msg *)&recv_buffer[
+ 				sizeof(struct vmbuspipe_hdr) +
+diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+index 2f561c5..c16164d 100644
+--- a/drivers/hv/hv_util.c
++++ b/drivers/hv/hv_util.c
+@@ -28,6 +28,18 @@
+ #include <linux/reboot.h>
+ #include <linux/hyperv.h>
+ 
++#define SHUTDOWN_MAJOR	3
++#define SHUTDOWN_MINOR  0
++#define SHUTDOWN_MAJOR_MINOR	(SHUTDOWN_MAJOR << 16 | SHUTDOWN_MINOR)
++
++#define TIMESYNCH_MAJOR	3
++#define TIMESYNCH_MINOR 0
++#define TIMESYNCH_MAJOR_MINOR	(TIMESYNCH_MAJOR << 16 | TIMESYNCH_MINOR)
++
++#define HEARTBEAT_MAJOR	3
++#define HEARTBEAT_MINOR 0
++#define HEARTBEAT_MAJOR_MINOR	(HEARTBEAT_MAJOR << 16 | HEARTBEAT_MINOR)
++
+ static void shutdown_onchannelcallback(void *context);
+ static struct hv_util_service util_shutdown = {
+ 	.util_cb = shutdown_onchannelcallback,
+@@ -87,7 +99,8 @@ static void shutdown_onchannelcallback(void *context)
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+ 			vmbus_prep_negotiate_resp(icmsghdrp, negop,
+-					shut_txf_buf, MAX_SRV_VER, MAX_SRV_VER);
++					shut_txf_buf, UTIL_FW_MAJOR_MINOR,
++					SHUTDOWN_MAJOR_MINOR);
+ 		} else {
+ 			shutdown_msg =
+ 				(struct shutdown_msg_data *)&shut_txf_buf[
+@@ -213,7 +226,8 @@ static void timesync_onchannelcallback(void *context)
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+ 			vmbus_prep_negotiate_resp(icmsghdrp, NULL, time_txf_buf,
+-						MAX_SRV_VER, MAX_SRV_VER);
++						UTIL_FW_MAJOR_MINOR,
++						TIMESYNCH_MAJOR_MINOR);
+ 		} else {
+ 			timedatap = (struct ictimesync_data *)&time_txf_buf[
+ 				sizeof(struct vmbuspipe_hdr) +
+@@ -253,7 +267,8 @@ static void heartbeat_onchannelcallback(void *context)
+ 
+ 		if (icmsghdrp->icmsgtype == ICMSGTYPE_NEGOTIATE) {
+ 			vmbus_prep_negotiate_resp(icmsghdrp, NULL,
+-				hbeat_txf_buf, MAX_SRV_VER, MAX_SRV_VER);
++				hbeat_txf_buf, UTIL_FW_MAJOR_MINOR,
++				HEARTBEAT_MAJOR_MINOR);
+ 		} else {
+ 			heartbeat_msg =
+ 				(struct heartbeat_msg_data *)&hbeat_txf_buf[
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index fae8bac..4994907 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -27,6 +27,14 @@
+ 
+ #include <linux/types.h>
+ 
++/*
++ * Framework version for util services.
++ */
++
++#define UTIL_FW_MAJOR  3
++#define UTIL_FW_MINOR  0
++#define UTIL_FW_MAJOR_MINOR     (UTIL_FW_MAJOR << 16 | UTIL_FW_MINOR)
++
+ 
+ /*
+  * Implementation of host controlled snapshot of the guest.
+@@ -1494,7 +1502,7 @@ struct hyperv_service_callback {
+ };
+ 
+ #define MAX_SRV_VER	0x7ffffff
+-extern void vmbus_prep_negotiate_resp(struct icmsg_hdr *,
++extern bool vmbus_prep_negotiate_resp(struct icmsg_hdr *,
+ 					struct icmsg_negotiate *, u8 *, int,
+ 					int);
+ 
 -- 
-1.8.1.5
+1.7.4.1
 
