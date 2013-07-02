@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3GBVp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 17:45:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11445 "EHLO mx1.redhat.com"
+	id S1755402Ab3GBVzd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 17:55:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13010 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754963Ab3GBVp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 17:45:57 -0400
-Date: Tue, 2 Jul 2013 23:41:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
-Message-ID: <20130702214109.GA25633@redhat.com>
-References: <20130626185205.GA27894@redhat.com> <51CBEE3E.70103@hitachi.com> <20130627161716.GA17889@redhat.com> <51CCF8BA.4030601@hitachi.com> <20130628180946.GA30838@redhat.com> <51D16E1D.5040904@hitachi.com> <20130702190037.GA6289@redhat.com> <20130702193425.GA8813@redhat.com> <1372799087.22688.58.camel@gandalf.local.home> <20130702213808.GA24757@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130702213808.GA24757@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752453Ab3GBVzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 17:55:32 -0400
+Date: Tue, 2 Jul 2013 17:55:19 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
+        minchan@kernel.org, anton@enomsg.org, akpm@linux-foundation.org
+Subject: Re: [PATCH] vmpressure: implement strict mode
+Message-ID: <20130702175519.16148e5c@redhat.com>
+In-Reply-To: <20130702194703.GA19373@amd.pavel.ucw.cz>
+References: <20130625175129.7c0d79e1@redhat.com>
+	<20130701085103.GA19798@amd.pavel.ucw.cz>
+	<20130702110628.5dbb75e0@redhat.com>
+	<20130702194703.GA19373@amd.pavel.ucw.cz>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02, Oleg Nesterov wrote:
->
-> On 07/02, Steven Rostedt wrote:
-> >
-> > I'm actually worried about this change.
->
-> Me too.
->
-> But again. Any reason trace_remove_event_call() should succeed if
-> this this ftrace_event_call is active?
+On Tue, 2 Jul 2013 21:47:03 +0200
+Pavel Machek <pavel@ucw.cz> wrote:
 
-And note that kprobes/uprobes are the only users of trace_remove_event_call(),
-and both need the same semantics: kill it only if it is not active.
+> On Tue 2013-07-02 11:06:28, Luiz Capitulino wrote:
+> > On Mon, 1 Jul 2013 10:51:03 +0200
+> > Pavel Machek <pavel@ucw.cz> wrote:
+> > 
+> > > Hi!
+> > > 
+> > > > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> > > > index ddf4f93..3c589cf 100644
+> > > > --- a/Documentation/cgroups/memory.txt
+> > > > +++ b/Documentation/cgroups/memory.txt
+> > > > @@ -807,12 +807,14 @@ register a notification, an application must:
+> > > >  
+> > > >  - create an eventfd using eventfd(2);
+> > > >  - open memory.pressure_level;
+> > > > -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
+> > > > +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
+> > > >    to cgroup.event_control.
+> > > >  
+> > > 
+> > > This is.. pretty strange interface. Would it be cleaner to do ioctl()?
+> > > New syscall?
+> > 
+> > Are you referring to my new mode or to the whole thing?
+> 
+> Well. The interface was already very strange and you made it even
+> worse.
 
-Oleg.
+The existing interface is the cgroup's notification mechanism, I think
+discussing it is a bit out of scope for my extension.
 
+Now, regarding my extension itself and the current vmpressure API, I
+believe that delivering all events to user-space (ie. w/o any filtering
+in the kernel) is a better solution.
+
+Point is whether we can do it with the current vmpressure API (which
+is cgroup based) or whether we should move to something else.
