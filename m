@@ -1,74 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408Ab3GBHSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 03:18:17 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:33157
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932219Ab3GBHSO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 03:18:14 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Stehle Vincent-B46079 <B46079@freescale.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Stephen Boyd <sboyd@codeaurora.org>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Subject: RE: next-20130627 breaks i.MX6 sabre sd UART console
-Thread-Topic: next-20130627 breaks i.MX6 sabre sd UART console
-Thread-Index: Ac5zZxBZeupdDlSIRDWI6ggVo3oJ5QAkUYcAAAf2xwAAAZFOUAAA2+yAABLhygAAdGeRAAAHHZgAAACKafAACWuggAAENQ6AAADXUgAAFuhZwA==
-Date: Tue, 2 Jul 2013 07:18:10 +0000
-Message-ID: <F7C43F8B2814514CA05F3436BC68046EF33576@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <F7C43F8B2814514CA05F3436BC68046EF1EB72@039-SN2MPN1-013.039d.mgd.msft.net>
- <alpine.DEB.2.02.1306281403530.4013@ionos.tec.linutronix.de>
- <51CDB26A.9060500@codeaurora.org>
- <F7C43F8B2814514CA05F3436BC68046EF2297D@039-SN2MPN1-013.039d.mgd.msft.net>
- <51CDC2B3.1030907@codeaurora.org> <20130629020738.GG11625@codeaurora.org>
- <F7C43F8B2814514CA05F3436BC68046EF2EF29@039-SN2MPN1-011.039d.mgd.msft.net>
- <alpine.DEB.2.02.1307011425500.4013@ionos.tec.linutronix.de>
- <F7C43F8B2814514CA05F3436BC68046EF2F708@039-SN2MPN1-011.039d.mgd.msft.net>
- <alpine.DEB.2.02.1307011531210.4013@ionos.tec.linutronix.de>
- <51D1DD6D.8050805@codeaurora.org>
- <alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.214.137.192]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932418Ab3GBHTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 03:19:43 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:40717 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab3GBHTm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 03:19:42 -0400
+Date: Tue, 02 Jul 2013 02:19:38 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH] nbd: correct disconnect behavior
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Paul Clements <paul.clements@steeleye.com>, linux-kernel@vger.kernel.org,
+        nbd-general@lists.sourceforge.net
+In-Reply-To: <20130626162107.9237360f7646ec25f23cf5aa@linux-foundation.org>
+	(from akpm@linux-foundation.org on Wed Jun 26 18:21:07 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1372749578.5019.8@driftwood>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-(..)
-> So we need two fixes:
+On 06/26/2013 06:21:07 PM, Andrew Morton wrote:
+> On Wed, 19 Jun 2013 17:09:18 -0400 (EDT) Paul Clements  
+> <paul.clements@steeleye.com> wrote:
 > 
-> 1) The replacement of the dummy timer and the effect on the broadcast
->    mask/device
+> > Currently, when a disconnect is requested by the user (via  
+> NBD_DISCONNECT
+> > ioctl) the return from NBD_DO_IT is undefined (it is usually one of
+> > several error codes). This means that nbd-client does not know if a
+> > manual disconnect was performed or whether a network error occurred.
+> > Because of this, nbd-client's persist mode (which tries to  
+> reconnect after
+> > error, but not after manual disconnect) does not always work  
+> correctly.
+> >
+> > This change fixes this by causing NBD_DO_IT to always return 0 if a  
+> user
+> > requests a disconnect. This means that nbd-client can correctly  
+> either
+> > persist the connection (if an error occurred) or disconnect (if the  
+> user
+> > requested it).
 > 
-> 2) tick_check_oneshot_broadcast needs a sanity check
+> This sounds like something which users of 3.10 and earlier kernels
+> might want, so I added the Cc:stable tag.  Please let me know if
+> you disagree.
 > 
-> Patch below.
+> > --- a/drivers/block/nbd.c
+> > +++ b/drivers/block/nbd.c
+> > @@ -623,6 +623,8 @@ static int __nbd_ioctl(struct block_device  
+> *bdev, struct nbd_device *nbd,
+> >  		if (!nbd->sock)
+> >  			return -EINVAL;
+> >
+> > +		nbd->disconnect = 1;
+> > +
+> >  		nbd_send_req(nbd, &sreq);
+> >                  return 0;
+> >  	}
+> > @@ -654,6 +656,7 @@ static int __nbd_ioctl(struct block_device  
+> *bdev, struct nbd_device *nbd,
+> >  				nbd->sock = SOCKET_I(inode);
+> >  				if (max_part > 0)
+> >  					bdev->bd_invalidated = 1;
+> > +				nbd->disconnect = 0; /* we're connected  
+> now */
+> >  				return 0;
+> >  			} else {
+> >  				fput(file);
+> > @@ -742,6 +745,8 @@ static int __nbd_ioctl(struct block_device  
+> *bdev, struct nbd_device *nbd,
+> >  		set_capacity(nbd->disk, 0);
+> >  		if (max_part > 0)
+> >  			ioctl_by_bdev(bdev, BLKRRPART, 0);
+> > +		if (nbd->disconnect) /* user requested, ignore socket  
+> errors */
+> > +			return 0;
+> >  		return nbd->harderror;
+> >  	}
+> 
+> hm, how does nbd work...  Hard to tell as nothing seems to be  
+> documented
+> anywhere :(
 
-Hi,
+I wrote the busybox version, which might be a bit simpler:
 
-Thank you for your patch Thomas; I think it works :)
+   http://git.busybox.net/busybox/tree/networking/nbd-client.c
 
-With your patch, next-20130702 boots pretty far on i.MX6 sabre sd, until it crashes in wm8962_probe(). Without this patch, I don't even get the first kernel messages. (Both with ARM config imx_v6_v7_defconfig.)
+(Sorry about the #ifdefs, they're not mine.)
 
-Also, I am pretty sure the wm8962_probe() issue is unrelated, as it happened even before this timer thing.
+> afacit the code assumes that the user will run ioctl(NBD_DISCONNECT)  
+> and
+> then ioctl(NBD_DO_IT) and then ioctl(NBD_SET_SOCK), yes?  Does this
+> change mean that if userspace calls the ioctls in an
+> other-than-expected order, Weird Things will happen?  Would it be  
+> safer
+> to clear ->disconnect in NBD_DO_IT?
+> > --- a/include/linux/nbd.h
+> > +++ b/include/linux/nbd.h
+> > @@ -41,6 +41,7 @@ struct nbd_device {
+> >  	u64 bytesize;
+> >  	pid_t pid; /* pid of nbd-client, if attached */
+> >  	int xmit_timeout;
+> > +	int disconnect; /* a disconnect has been requested by user */
+> >  };
+> 
+> The cool kids are using bool lately ;)
 
-Thank you!
+No, they're not. The C++ guys and stuffy old ex-cobol types are, and  
+think it helps. (Does any architecture anywhere _not_ use int for bool?)
 
-Best regards,
-
-V.
-
-
+Rob
