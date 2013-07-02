@@ -1,108 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab3GBAAm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 20:00:42 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:51016 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755033Ab3GBAAl (ORCPT
+	id S1755967Ab3GBAGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 20:06:44 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:33765 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755656Ab3GBAGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 20:00:41 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <alpine.DEB.2.02.1307020022570.4013@ionos.tec.linutronix.de>
-References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com> <1372694659-30176-5-git-send-email-james.hogan@imgtec.com> <alpine.DEB.2.02.1307012346320.4013@ionos.tec.linutronix.de> <CAAG0J9_fTNrKe7idPi3=O2kGRWBJmYSwMQuzGPiT2G+rXy4QuA@mail.gmail.com> <alpine.DEB.2.02.1307020022570.4013@ionos.tec.linutronix.de>
+	Mon, 1 Jul 2013 20:06:42 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Hebbar Gururaja <gururaja.hebbar@ti.com>
+Cc: <tony@atomide.com>, <b-cousson@ti.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>
+Subject: Re: [PATCH 1/4] rtc: omap: restore back (hard-code) wakeup support
+References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
+	<1372412109-986-2-git-send-email-gururaja.hebbar@ti.com>
+Date: Mon, 01 Jul 2013 17:06:38 -0700
+In-Reply-To: <1372412109-986-2-git-send-email-gururaja.hebbar@ti.com> (Hebbar
+	Gururaja's message of "Fri, 28 Jun 2013 15:05:06 +0530")
+Message-ID: <87ehbhomep.fsf@linaro.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 4/5] metag: kick: prevent nested kick handlers
-From: James Hogan <james.hogan@imgtec.com>
-Date: Tue, 02 Jul 2013 01:00:26 +0100
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, james.hogan@imgtec.com
-Message-ID: <0095784b-d55b-4b14-8510-5c6bc3ea782b@email.android.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner <tglx@linutronix.de> wrote:
+Hebbar Gururaja <gururaja.hebbar@ti.com> writes:
 
->On Mon, 1 Jul 2013, James Hogan wrote:
->> On 1 July 2013 22:51, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > On Mon, 1 Jul 2013, James Hogan wrote:
->> >
->> >> The main kick trigger handler iterates a list of kick handlers and
->calls
->> >> each one. This is done with the kick_handlers_lock spin lock held,
->but
->> >> this causes a problem on SMP where IPIs are implemented with
->kicks. A
->> >> reschedule IPI calls scheduler_ipi() which uses irq_enter() and
->> >> irq_exit(). This results in the scheduler being invoked with
->> >> kick_handlers_lock held which can result in a nested kick trigger
->> >> attempting to acquire the lock, resulting in deadlock.
->> >>
->> >> irq_enter() and irq_exit() can nest, so call them from the main
->kick
->> >> interrupt handler so that softirqs are only handled after
->> >> kick_handlers_lock is released.
->> >
->> > This changelog is confusing. What I decode from the patch is, that
->you
->> > are adding a missing irq_enter/exit pair to the kick_handler, right
->?
->> 
->> Yes. Previously the outermost pair of irq_enter/exit was inside the
->> spin lock critical section (inside scheduler_ipi). so soft-irqs
->> (apparently including the scheduler) would run from irq_exit with the
->> spinlock still held. Now it waits until the new outermost irq_exit(),
->> after the spin lock is released.
->> 
->> I should probably have increased the number of lines of diff context.
->> http://lxr.linux.no/#linux+v3.10/arch/metag/kernel/kick.c#L66
+> rtc-omap driver modules is used both by OMAP1/2, Davinci SoC platforms.
 >
->No, you should have written the changelog less confusing. I can see
->the context by just looking at the current and the patched code.
-
-Yes, i agree, sorry it wasn't clear.
-
->The explanation you provided right now that the outermost pair of
->irq_enter/exit was inside the spin locked section matches the patch
->and makes sense.
+> However, rtc wake support on OMAP1 is broken. Hence the
+> device_init_wakeup() was removed from rtc-omap driver and moved to
+> platform board files that supported it (DA850/OMAP-L138). [1]
 >
->So the real issue is, that all of your various interrupts come from
-
-Only kicks, which are the hardware IPI mechanism (in practice only used for SMP IPIs and for communication with non-linux hw threads). Timer/peripheral interrupts come via different handlers.
-
->the same place, i.e. kick_handler. The kick_handler locks a global
->lock and calls the handlers which have registered. These handlers
->(partially calling generic code) might invoke irq_enter/exit pairs,
->which leads to the underlying problem.
+> However, recently [2] it was suggested that driver should always do a
+> device_init_wakeup(dev, true). Platforms that don't want/need
+> wakeup support can disable it from userspace via:
 >
->If irq_exit() results in a nest count of hard interrupts = 0, then it
->invokes eventually pending soft interrupts. The softirq callbacks can
->issue an IPI of some sorts and because this IPI will end up in the
->kick handler, the systems livelocks on the already held global lock
->which protects the kick_handler list. This can happen from any invoked
->handler, because the kick_handler is missing an irq_enter/pair
->preventing a kick_handler invocation recursion.
-
-Yes, that's my understanding of the problem.
-
+>     echo disabled > /sys/devices/.../power/wakeup
 >
->The obvious fix for now is to add an irq_enter/exit() pair around the
->spin locked section in the kick handler, so irq_exit() invocations of
->subhandlers wont lead to softirq execution.
+> Also, with the new DT boot-up, board file doesn't exist and hence there
+> is no way to have device wakeup support rtc.
 >
->The more elegant fix would be to replace that global lock which is not
->really scalable with an RCU protected list of subscribed handlers.
+> The fix for above issues, is to hard code device_init_wakeup() inside
+> driver and let platforms that don't need this, handle it through the
+> sysfs power entry.
+>
+> [1]
+> https://patchwork.kernel.org/patch/136731/
+>
+> [2]
+> http://www.mail-archive.com/davinci-linux-open-source@linux.
+> davincidsp.com/msg26077.html
+>
+> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: rtc-linux@googlegroups.com
 
-Yes, I considered switching it to an RCU list (thanks for confirming that), but this patch looks sensible to me even with rcu, so I figured that can be a separate patch.
+Acked-by: Kevin Hilman <khilman@linaro.org>
 
->The most elegant fix would be to have separate entry points for
->various exceptions, but that seems to be an architectural issue.
-
-thanks for taking the time to review and for the other acks. i'll rewrite the commit message of this patch and resend.
-
-cheers
-James
-
+> ---
+> :100644 100644 b0ba3fc... 761919d... M	drivers/rtc/rtc-omap.c
+>  drivers/rtc/rtc-omap.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/drivers/rtc/rtc-omap.c b/drivers/rtc/rtc-omap.c
+> index b0ba3fc..761919d 100644
+> --- a/drivers/rtc/rtc-omap.c
+> +++ b/drivers/rtc/rtc-omap.c
+> @@ -423,6 +423,8 @@ static int __init omap_rtc_probe(struct platform_device *pdev)
+>  	 *    is write-only, and always reads as zero...)
+>  	 */
+>  
+> +	device_init_wakeup(&pdev->dev, true);
+> +
+>  	if (new_ctrl & (u8) OMAP_RTC_CTRL_SPLIT)
+>  		pr_info("%s: split power mode\n", pdev->name);
