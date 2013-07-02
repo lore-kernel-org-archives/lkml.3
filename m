@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755605Ab3GBTtN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 15:49:13 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62296 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754646Ab3GBTtL (ORCPT
+	id S1755304Ab3GBT4J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 15:56:09 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:53391 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab3GBT4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 15:49:11 -0400
-Message-ID: <51D32F7F.4090606@metafoo.de>
-Date: Tue, 02 Jul 2013 21:52:31 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
-MIME-Version: 1.0
-To: Shuah Khan <shuah.kh@samsung.com>
-CC: Hauke Mehrtens <hauke@hauke-m.de>, "bzhao@marvell.com" <bzhao@marvell.com>,
-        "linville@tuxdriver.com" <linville@tuxdriver.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [PATCH] wireless: Convert mwifiex/pcie to dev_pm_ops from legacy
- pm ops
-References: <1372778675-2909-1-git-send-email-shuah.kh@samsung.com> <51D32116.4010109@hauke-m.de> <B8EFE96D1287C24090BAD9D858E15E61734462@sisaex02sj>
-In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E61734462@sisaex02sj>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 2 Jul 2013 15:56:07 -0400
+Date: Tue, 02 Jul 2013 12:56:06 -0700 (PDT)
+Message-Id: <20130702.125606.2222663509004529601.davem@davemloft.net>
+To: eliezer.tamir@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
+        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
+        devel-lists@codyps.com, eliezer@tamir.org.il
+Subject: Re: [PATCH v2 net-next] net: convert lls to use time_in_range()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <51D2A246.3000705@linux.intel.com>
+References: <51D2919F.7050007@linux.intel.com>
+	<51D29329.4060004@linux.intel.com>
+	<51D2A246.3000705@linux.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 09:24 PM, Shuah Khan wrote:
-[...]
->>> +#ifdef CONFIG_PM
->>> +/* Power Management Hooks */
->>> +static const struct dev_pm_ops mwifiex_pcie_pm_ops = {
->>> +	.suspend = mwifiex_pcie_suspend,
->>> +	.resume = mwifiex_pcie_resume,
->>> +};
->>> +#endif
->>> +
->>
->> Is it intended that you do not use SIMPLE_DEV_PM_OPS() like most of the
->> other wifi drivers?
-> 
-> So the reason for this is SIMPLE_DEV_PM_OPS() is defined only when 
-> CONFIG_PM_SLEEP is enabled. This driver doesn't defines suspend and 
-> resume when CONFIG_PM is enabled and I didn't want to change that. Hope 
-> that helps understand why I didn't use SIMPLE_DEV_PM_OPS()
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Date: Tue, 02 Jul 2013 12:49:58 +0300
 
-Change the ifdefs to CONFIG_PM_SLEEP and use SIMPLE_DEV_PM_OPS. The driver does
-not support runtime PM.
+> @@ -403,7 +403,8 @@ int do_select(int n, fd_set_bits *fds, struct
+> timespec *end_time)
 
-- Lars
+Your email client has corrupted this patch, please repost with this
+issue corrected.
 
+Thanks.
