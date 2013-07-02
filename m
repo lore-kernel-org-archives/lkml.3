@@ -1,78 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab3GBKb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 06:31:26 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50837 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488Ab3GBKbZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 06:31:25 -0400
-Date: Tue, 2 Jul 2013 11:31:01 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: David Dajun Chen <david.chen@diasemi.com>,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-Message-ID: <20130702103101.GH27646@sirena.org.uk>
-References: <20130701164833.GL27646@sirena.org.uk>
- <1372757513.28415.2.camel@matrix>
- <20130702093130.GX27646@sirena.org.uk>
- <1372759357.29900.3.camel@matrix>
+	id S932700Ab3GBKbj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 06:31:39 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60260 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932576Ab3GBKbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 06:31:37 -0400
+Date: Tue, 2 Jul 2013 13:31:22 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <balbi@ti.com>, <broonie@kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
+        <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
+Message-ID: <20130702103122.GP3352@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com>
+ <20130702092458.GI3352@arwen.pp.htv.fi>
+ <51D2A4CA.5030804@ti.com>
+ <20130702101608.GO3352@arwen.pp.htv.fi>
+ <51D2AA35.2070002@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="g8QXd9oEDP0MouNi"
+	protocol="application/pgp-signature"; boundary="NEaRsfQExFH3jWtg"
 Content-Disposition: inline
-In-Reply-To: <1372759357.29900.3.camel@matrix>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <51D2AA35.2070002@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: Multiple DA9055 chips
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---g8QXd9oEDP0MouNi
+--NEaRsfQExFH3jWtg
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jul 02, 2013 at 03:32:37PM +0530, Ashish Chavan wrote:
+Hi,
 
-> > OK, in that case the CODEC driver is just plain broken then.  Did anyone
-> > actually test this stuff?  Please fix.
+On Tue, Jul 02, 2013 at 03:53:49PM +0530, Sourav Poddar wrote:
+> On Tuesday 02 July 2013 03:46 PM, Felipe Balbi wrote:
+> >Hi,
+> >
+> >On Tue, Jul 02, 2013 at 03:30:42PM +0530, Sourav Poddar wrote:
+> >>>>+static int dra7xxx_qspi_setup(struct spi_device *spi)
+> >>>>+{
+> >>>>+	struct dra7xxx_qspi	*qspi =3D
+> >>>>+			spi_master_get_devdata(spi->master);
+> >>>>+
+> >>>>+	int clk_div;
+> >>>>+
+> >>>>+	if (!qspi->spi_max_frequency)
+> >>>>+		clk_div =3D 0;
+> >>>won't this generate division by zero ?
+> >>>
+> >>Yes, Probably only an error should be thrown here. ?
+> >>since min clk_div should be kept at 1.
+> >right, if spi_max_frequency isn't passed, this is a broken DT binding.
+> >Bail out.
+> >
+> >>>>+	pm_runtime_get_sync(qspi->dev);
+> >>>>+
+> >>>>+	/* disable SCLK */
+> >>>>+	dra7xxx_writel(qspi, dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG)
+> >>>>+			&   ~QSPI_CLK_EN, QSPI_SPI_CLOCK_CNTRL_REG);
+> >>>>+
+> >>>>+	if (clk_div<   0) {
+> >btw, add a space between clk_div and<
+> >
+> >>>>+			dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
+> >>>>+			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+> >>>>+			dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
+> >>>>+					QSPI_SPI_CMD_REG);
+> >>>>+			status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> >>>>+			timeout =3D QSPI_TIMEOUT;
+> >>>>+			while ((status&   QSPI_WC_BUSY) !=3D QSPI_XFER_DONE) {
+> >>>do you really need to poll ? No IRQ available ?
+> >>>
+> >>There is an interrupt available, I will try using that.
+> >look at how i2c-omap.c synchronizes interrupt with the transfer_msg
+> >code. It just uses a wait_for_completion().
+> >
+> Ok.
+> >>>>+static int dra7xxx_qspi_start_transfer_one(struct spi_master *master,
+> >>>>+		struct spi_message *m)
+> >>>>+{
+> >>>>+	struct dra7xxx_qspi *qspi =3D spi_master_get_devdata(master);
+> >>>>+	struct spi_device *spi =3D m->spi;
+> >>>>+	struct spi_transfer *t;
+> >>>>+	int status =3D 0;
+> >>>>+	int flags =3D 0;
+> >>>>+
+> >>>>+	/* setup command reg */
+> >>>>+	qspi->cmd =3D 0;
+> >>>>+	qspi->cmd |=3D QSPI_WLEN(8);
+> >>>>+	qspi->cmd |=3D QSPI_EN_CS(0);
+> >>>>+	qspi->cmd |=3D 0xfff;
+> >>Since, we dont know the number of frame lenght that need to be
+> >>transferred and it comes from the spi framework, we keep the frame
+> >>lenght to maximum.
+> >>Then depending on the count value above in while loop, we terminate
+> >>our trasnfer.
+> >what ? seriously didn't get what you meant.
+> >
+> I mean, the lower 12 bits of cmd register is meant to be filled with
+> frame lenght.
+>=20
+> But the frame lenght is parsed when you iterate the list. So, what is
 
-> Yes, I think so. Actually the CODEC driver was merged before PMIC ino
-> main line and was tested at that time. I will check with PMIC team if
-> they did test with CODEC.
+which list ?
 
-> I guess the fix should be in PMIC, right?
+> done here is that
+> the framelenght is kept to its maximum value.
 
-Both drivers need to be changed.
+why ? That seems wrong. If you can get the actual frame length at some
+point, that's what you should use.
 
---g8QXd9oEDP0MouNi
+>=20
+> Then, to signal the the end of the frame, we use
+>=20
+> static int qspi_transfer_msg(struct dra7xxx_qspi *qspi, unsigned count,
+>                         const u8 *txbuf, u8 *rxbuf, bool flags)
+> {
+>         uint status;
+>         int timeout;
+>=20
+>         while (count--) {
+>                 if (txbuf) {
+>                         pr_debug("tx cmd %08x dc %08x data %02x\n",
+>                                 qspi->cmd | QSPI_WR_SNGL, qspi->dc,
+> *txbuf);
+>                         dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
+>                         dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+>                         dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
+>                                         QSPI_SPI_CMD_REG);
+>                         status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_RE=
+G);
+>                         timeout =3D QSPI_TIMEOUT;
+>                         while ((status & QSPI_WC_BUSY) !=3D QSPI_XFER_DON=
+E) {
+>                                 if (--timeout < 0) {
+>                                         pr_debug("QSPI tx timed out\n");
+>                                         return
+>=20
+>      .............................
+>=20
+>                                    status, *(rxbuf-1));
+>                 }
+>         }
+>=20
+>         if (flags & XFER_END)
+>                 dra7xxx_writel(qspi, qspi->cmd | QSPI_INVAL,
+> QSPI_SPI_CMD_REG);
+>=20
+> }
+> INVAL will terminate the current frame.
+
+nevermind that this value is "RESERVED" on the documentation. You should
+not rely on reserved features, they can go away at any point in time.
+
+That's probably there only for some IP debugging kinda thing.
+
+--=20
+balbi
+
+--NEaRsfQExFH3jWtg
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR0qviAAoJELSic+t+oim97eoP+gOx5ZqxRkblT8lV/P35yvk9
-XTp8QGrGoJKloI/UrGr61b2y/l65kCm1lHLpCMy4AdR8fj5a8JSwRBgu5pMKNQ+h
-YO8mos0PcLY5EZxXs6aAUn/FsTxPnNCcxsegCltadlt8bGZ46XApTOdUH+Ng3HOH
-d4JETfVv/Y1Bp0/c/W8InrO6t2eWARq3KQwq5jwIgpvZL2MqR4Jy1MR6WGcd5v1p
-uFOIRIhEjSQXXFcjf9PwJpw7ywc8psHn4UsA918oEcOiP1LF0XWIO2HczxO7A2AQ
-MWliv7mGFiEb9vycus6gTsb7mRTyuwJ5DqeWsSZ5BHLxxUbiO2sacfLOEYsynhYs
-xOe78V/3ea0+kc23CxuXc3nvi41VHmOp5uMrh5uCiOZxfasXOljg898tHcN7tvEG
-1nhqrlFSiCiV6Tz69DH1sklfyyaetDUYkEtZ1/otUnPXZGkBoODFIbRCldLqRLy8
-Mj/GH/SmkPDCRy+ngjmWX4d303lIh91eqJbTUP2hcDBrmN/8e4zXvcOUJ2cvBq2s
-Zv2qj/ph6N9fg24r63tEPkot7KPoNr8sVZB5kYoQ7nGCe6iygjRzLMkHaO3rp6Qf
-cLMCHeM/nEZyrELwsTKfng5eFUEG/nyS3j1YPa8cq+oU+ANfCQjjF0maaNRQ5G8T
-6TzGPcHLwjSGwiIlEbrX
-=hY9q
+iQIcBAEBAgAGBQJR0qv6AAoJEIaOsuA1yqREUHgP/39XjT3owSfpKDAoR+X2jOjP
+GMDcIrB3H5kJlwj7GrV611u/ZlqWs9z8uzBNKg6DwI2IIQfhzj/fryLWGTDEzrs5
+gzsMfrlQIL764qWwgUoeiahJcvgH4U3/cB7FGMxGxjJ74+225B/4zaPpkkefcj0/
+80EEvmZQJDfqYM/YbBiVL1Ojz3ZFJSHwZ9QgyOUpf0J1+A1XzkO50QeVXUHAo/f8
+sA4GLxFx25fvNFY5/hHioPgU9Fq4wBIvwXlvaIFibmtSJcVfNRFSJo3IQMUIPI51
+0OoXhpqfsUiXK7x5sNfGe/3vSLd+OrSK7w4egDEMMTemmkYB8ELIQsUhekrOPyUH
+WpihZBMORcTUxO04prY36a2Rpd8i5+92wvkicP+p4eeRFh9IF5HvvpYtR8wdjIwf
+ER0gu+IV1gGtg0cSTrl6eT8zuIJ4j3PIGD+BrQatfhFw3yBOIjtusa76nzvKbXYn
+Gopi08s2IPhf+Xrswkke69nXObvfWjAEy5j7w2ENELLYTt4S4ermu1X3c8/BVXzJ
+NVDfGrXzsk0A7zw8hyn/6dD78izMDD0MMEzRxwJZS7SzhQYEPIt58/6k+Cg7AjVa
+hRIFVjBHVkrA6ZqXnwr9mNco1tPvIZPuTDqPMEELVcdZ4YPWHINo5E34FRSyuUtZ
+eeSW4xiVg630fc+TSw4T
+=nHhg
 -----END PGP SIGNATURE-----
 
---g8QXd9oEDP0MouNi--
+--NEaRsfQExFH3jWtg--
