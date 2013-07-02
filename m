@@ -1,74 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab3GBIgK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:36:10 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:14988 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab3GBIgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:36:07 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-f7-51d290f0b285
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [GIT PULL] DMA-mapping updates for v3.11
-Date: Tue, 02 Jul 2013 10:35:08 +0200
-Message-id: <1372754108-21075-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t9jAd0PEy4FGnRcF7a4vGsOm8XaI3fZ
-	LR71vWV3YPY4MeM3i0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBl3Fj+gb3gF2dF/6clrA2M
-	fRxdjJwcEgImEh3vOxkhbDGJC/fWs3UxcnEICSxilLgw4S0LhNPOJHGq/ScTSBWbgKFE19su
-	NhBbRMBI4vOLK6wgNrOAr8SdV6tYQGxhoJo1O26C2SwCqhLLp94Cs3kFPCQ+Pj4KVM8BtE1B
-	Ys4kmwmM3AsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBHv6mfQOxlUNFocYBTgYlXh4
-	FeZdDBRiTSwrrsw9xCjBwawkwnvTGyjEm5JYWZValB9fVJqTWnyIUZqDRUmc92CrdaCQQHpi
-	SWp2ampBahFMlomDU6qBkeOrQvSD0GucJ97Ou3n91uZLXTEXnk4QyF/9yOlD19GV35dvbDgX
-	embDw0U3ihepz2AXTWmdaf2Db4p06hrvbG3jY91lAUv0/m7X0Fp5vYM/8YavhCPbObGIDuan
-	eWlFz1suLz3KfCTn65lN1m0Vyd0S626eU2Qo40k2/bA4/cxxZcPsW4Z11UosxRmJhlrMRcWJ
-	AM/KG4nwAQAA
+	id S932435Ab3GBIjH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:39:07 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15002 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236Ab3GBIjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 04:39:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,980,1363158000"; 
+   d="scan'208";a="339171987"
+Message-ID: <51D2919F.7050007@linux.intel.com>
+Date: Tue, 02 Jul 2013 11:38:55 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
+        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
+        devel-lists@codyps.com, eliezer@tamir.org.il
+Subject: Re: [PATCH net-next 0/2] net: lls cleanup patches
+References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com> <20130701.140833.1705666564717621661.davem@davemloft.net>
+In-Reply-To: <20130701.140833.1705666564717621661.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 02/07/2013 00:08, David Miller wrote:
+> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> Date: Fri, 28 Jun 2013 15:59:18 +0300
+>
+>> Here are two cleanup patches.
+>>
+>> 1. fix warning from debug_smp_processor_id().
+>> - reported by Cody P Schafer.
+>>
 
-I would like to ask You for pulling some fixes for ARM dma-mapping subsystem
-for v3.11.
+> Applied, but like Ben said perhaps you want to remember the last cpu you
+> got the sched_clock() measurement from and abort the ll poll if it changes
+> on you instead of using a comparison between two cpus.
+>
+> But then again, since preemption is enabled, the cpu could change
+> back and forth during the sched_clock() call, so you wouldn't be able
+> to reliably detect this anyways.
+>
+> In the grand scheme of things all of this probably doesn't matter at
+> all.
+
+The only thing that really worries me, is the possibility of time
+on the new cpu to be completely random, then we could be back in the
+range where time_after() will be false again and end up polling for
+another year.
+
+A simple way to limit the damage would be to use time_in_range()
+instead of time_after(), then if we have a completely random time we
+would be out of the range and fail safely.
+
+would something like this be an acceptable solution?
+
+---
+[PATCH net-next] net: convert lls to use time_in_range()
+
+Time in range will fail safely if we move to a different cpu with an
+extremely large clock skew.
+Add time_in_range64() and convert lls to use it.
+
+Signed-of-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+---
+
+  fs/select.c             |   10 ++++++----
+  include/linux/jiffies.h |    4 ++++
+  include/net/ll_poll.h   |   24 +++++++++++++++---------
+  3 files changed, 25 insertions(+), 13 deletions(-)
+
+diff --git a/fs/select.c b/fs/select.c
+index 3654075..f28a585 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -403,7 +403,8 @@ int do_select(int n, fd_set_bits *fds, struct 
+timespec *end_time)
+  	int retval, i, timed_out = 0;
+  	unsigned long slack = 0;
+  	unsigned int ll_flag = ll_get_flag();
+-	u64 ll_time = ll_end_time();
++	u64 ll_start = ll_start_time(ll_flag);
++	u64 ll_time = ll_run_time();
+
+  	rcu_read_lock();
+  	retval = max_select_fd(n, fds);
+@@ -498,7 +499,7 @@ int do_select(int n, fd_set_bits *fds, struct 
+timespec *end_time)
+  		}
+
+  		/* only if on, have sockets with POLL_LL and not out of time */
+-		if (ll_flag && can_ll && can_poll_ll(ll_time))
++		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+  			continue;
+
+  		/*
+@@ -770,7 +771,8 @@ static int do_poll(unsigned int nfds,  struct 
+poll_list *list,
+  	int timed_out = 0, count = 0;
+  	unsigned long slack = 0;
+  	unsigned int ll_flag = ll_get_flag();
+-	u64 ll_time = ll_end_time();
++	u64 ll_start = ll_start_time(ll_flag);
++	u64 ll_time = ll_run_time();
+
+  	/* Optimise the no-wait case */
+  	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+@@ -819,7 +821,7 @@ static int do_poll(unsigned int nfds,  struct 
+poll_list *list,
+  			break;
+
+  		/* only if on, have sockets with POLL_LL and not out of time */
+-		if (ll_flag && can_ll && can_poll_ll(ll_time))
++		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+  			continue;
+
+  		/*
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 8fb8edf..37b7354 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -139,6 +139,10 @@ static inline u64 get_jiffies_64(void)
+  	 ((__s64)(a) - (__s64)(b) >= 0))
+  #define time_before_eq64(a,b)	time_after_eq64(b,a)
+
++#define time_in_range64(a,b,c) \
++	(time_after_eq64(a,b) && \
++	 time_before_eq64(a,c))
++
+  /*
+   * These four macros compare jiffies and 'a' for convenience.
+   */
+diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
+index 6c06f7c..61c2daf 100644
+--- a/include/net/ll_poll.h
++++ b/include/net/ll_poll.h
+@@ -67,19 +67,23 @@ static inline u64 ll_sched_clock(void)
+  /* we don't mind a ~2.5% imprecision so <<10 instead of *1000
+   * sk->sk_ll_usec is a u_int so this can't overflow
+   */
+-static inline u64 ll_sk_end_time(struct sock *sk)
++static inline u64 ll_sk_run_time(struct sock *sk)
+  {
+-	return ((u64)ACCESS_ONCE(sk->sk_ll_usec) << 10) + ll_sched_clock();
++	return (u64)ACCESS_ONCE(sk->sk_ll_usec) << 10;
+  }
+
+  /* in poll/select we use the global sysctl_net_ll_poll value
+   * only call sched_clock() if enabled
+   */
+-static inline u64 ll_end_time(void)
++static inline u64 ll_run_time(void)
+  {
+-	u64 end_time = ACCESS_ONCE(sysctl_net_ll_poll);
++	return (u64)ACCESS_ONCE(sysctl_net_ll_poll) << 10;
++}
+
+-	return end_time ? (end_time << 10) + ll_sched_clock() : 0;
++/* if flag is not set we don't need to know the time */
++static inline u64 ll_start_time(unsigned int flag)
++{
++	return flag ? ll_sched_clock() : 0;
+  }
+
+  static inline bool sk_valid_ll(struct sock *sk)
+@@ -88,9 +92,10 @@ static inline bool sk_valid_ll(struct sock *sk)
+  	       !need_resched() && !signal_pending(current);
+  }
+
+-static inline bool can_poll_ll(u64 end_time)
++static inline bool can_poll_ll(u64 start_time, u64 run_time)
+  {
+-	return !time_after64(ll_sched_clock(), end_time);
++	return time_in_range64(ll_sched_clock(), start_time,
++			       start_time + run_time);
+  }
+
+  /* when used in sock_poll() nonblock is known at compile time to be true
+@@ -98,7 +103,8 @@ static inline bool can_poll_ll(u64 end_time)
+   */
+  static inline bool sk_poll_ll(struct sock *sk, int nonblock)
+  {
+-	u64 end_time = nonblock ? 0 : ll_sk_end_time(sk);
++	u64 start_time = ll_start_time(!nonblock);
++	u64 run_time = ll_sk_run_time(sk);
+  	const struct net_device_ops *ops;
+  	struct napi_struct *napi;
+  	int rc = false;
+@@ -129,7 +135,7 @@ static inline bool sk_poll_ll(struct sock *sk, int 
+nonblock)
+  					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
+
+  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+-		 can_poll_ll(end_time));
++		 can_poll_ll(start_time, run_time));
+
+  	rc = !skb_queue_empty(&sk->sk_receive_queue);
+  out:
 
 
-The following changes since commit 8bb495e3f02401ee6f76d1b1d77f3ac9f079e376:
 
-  Linux 3.10 (2013-06-30 15:13:29 -0700)
-
-are available in the git repository at:
-
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.11
-
-for you to fetch changes up to 1e3d09b223f349a5f6cc14d62b4df66c0798d762:
-
-  ARM: dma: Drop __GFP_COMP for iommu dma memory allocations (2013-07-02 10:30:59 +0200)
-
-----------------------------------------------------------------
-
-This pull request contains an important bugfixes and update for IOMMU
-integration support for ARM architecture.
-
-Thanks!
-
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
-
-Patch summary:
-
-Richard Zhao (1):
-      ARM: dma: Drop __GFP_COMP for iommu dma memory allocations
-
-Will Deacon (2):
-      ARM: dma-mapping: convert DMA direction into IOMMU protection attributes
-      ARM: dma-mapping: NULLify dev->archdata.mapping pointer on detach
-
-YoungJun Cho (1):
-      ARM: dma-mapping: Get pages if the cpu_addr is out of atomic_pool
-
- arch/arm/mm/dma-mapping.c |   40 ++++++++++++++++++++++++++++++++--------
- 1 file changed, 32 insertions(+), 8 deletions(-)
