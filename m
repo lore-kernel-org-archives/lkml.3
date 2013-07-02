@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab3GBFbo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 01:31:44 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:54437 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932097Ab3GBFbm (ORCPT
+	id S932173Ab3GBFdR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 01:33:17 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60379 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117Ab3GBFdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 01:31:42 -0400
+	Tue, 2 Jul 2013 01:33:15 -0400
+Message-ID: <51D2660A.8000401@linux.vnet.ibm.com>
+Date: Tue, 02 Jul 2013 13:32:58 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXnHaT75NhhSx+AhcMEKybHugH9+hV_mS5h5-cimFdz6A@mail.gmail.com>
-References: <CA+icZUXyizuCR3YDfFXD5hCkgycFYGzMHaJxg=m9UackT7uzGQ@mail.gmail.com>
-	<CAKMK7uFzwiztE8H1rvSDWQmw08JGoKdnTs5BYqxdrHwb=pK50A@mail.gmail.com>
-	<CA+icZUXnHaT75NhhSx+AhcMEKybHugH9+hV_mS5h5-cimFdz6A@mail.gmail.com>
-Date: Tue, 2 Jul 2013 07:31:41 +0200
-Message-ID: <CA+icZUVQ_UO_VnN9+Q7B3hhuFmw4XPEw19rhO+T4jU5hLGWaTQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jul 1 [ drm-intel-next: Several call-traces ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: "Barnes, Jesse" <jbarnes@virtuousgeek.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        DRI <dri-devel@lists.freedesktop.org>, Dave Airlie <airlied@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com,
+        David.Laight@aculab.com, rostedt@goodmis.org,
+        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
+        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wang YanQing <udknight@gmail.com>,
+        Shaohua Li <shli@fusionio.com>, Jan Beulich <jbeulich@suse.com>,
+        liguang <lig.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH v3 10/45] smp: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
+References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com> <20130627195418.29830.34958.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130627195418.29830.34958.stgit@srivatsabhat.in.ibm.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070205-7014-0000-0000-0000034295D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 11:03 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Mon, Jul 1, 2013 at 10:52 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->> On Mon, Jul 1, 2013 at 10:49 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Mon, Jul 1, 2013 at 9:59 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>>> Hi all,
->>>>
->>>> Changes since 20130628:
->>>>
->>>> The regulator tree gained a build failure so I used the version from
->>>> next-20130628.
->>>>
->>>> The trivial tree gained a conflict against the fbdev tree.
->>>>
->>>> The arm-soc tree gained a conflict against the net-next tree.
->>>>
->>>> The akpm tree lost a few patches that turned up elsewhere and I removed 2
->>>> that were causing run time problems.
->>>>
->>>
->>> [ CC drm and drm-intel folks ]
->>>
->>> [ Did not check any relevant MLs ]
->>>
->>> Please, see attached dmesg output.
->>
->> Clock mismatch, one for Jesse to figure out. Note that this patch is
->> for 3.12, I simply haven't yet gotten around to properly split my
->> patch queue so a few spilled into -next. I'll do that now.
->
-> I like lightspeed-fast replies :-).
->
-> Guess "drm/i915: get mode clock when reading the pipe config v9" [1]
-> is the cause.
->
+Hi, Srivatsa
 
-Problem solved by applying these patches to next-20130701 from
-intel-gfx patchwork-service [0]:
+On 06/28/2013 03:54 AM, Srivatsa S. Bhat wrote:
+[snip]
+> @@ -625,8 +632,9 @@ EXPORT_SYMBOL(on_each_cpu_mask);
+>   * The function might sleep if the GFP flags indicates a non
+>   * atomic allocation is allowed.
+>   *
+> - * Preemption is disabled to protect against CPUs going offline but not online.
+> - * CPUs going online during the call will not be seen or sent an IPI.
+> + * We use get/put_online_cpus_atomic() to protect against CPUs going
+> + * offline but not online. CPUs going online during the call will
+> + * not be seen or sent an IPI.
 
-   [1/2] drm/i915: fixup messages in pipe_config_compare
-   [2/2] drm/i915: get clock config when checking CRTC state too
+I was a little confused about this comment, if the offline-cpu still
+have chances to become online, then there is chances that we will pick
+it from for_each_online_cpu(), isn't it? Did I miss some point?
 
-AFAICS 2/2 was folded into updated "drm/i915: get mode clock when
-reading the pipe config v9" [3].
+Regards,
+Michael Wang
 
-It would be kind to be CCed on the patches and get also some credits.
-Also a CC to the report in linux-next should IMHO be done.
+>   *
+>   * You must not call this function with disabled interrupts or
+>   * from a hardware interrupt handler or from a bottom half handler.
+> @@ -641,26 +649,26 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+>  	might_sleep_if(gfp_flags & __GFP_WAIT);
+> 
+>  	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags|__GFP_NOWARN)))) {
+> -		preempt_disable();
+> +		get_online_cpus_atomic();
+>  		for_each_online_cpu(cpu)
+>  			if (cond_func(cpu, info))
+>  				cpumask_set_cpu(cpu, cpus);
+>  		on_each_cpu_mask(cpus, func, info, wait);
+> -		preempt_enable();
+> +		put_online_cpus_atomic();
+>  		free_cpumask_var(cpus);
+>  	} else {
+>  		/*
+>  		 * No free cpumask, bother. No matter, we'll
+>  		 * just have to IPI them one by one.
+>  		 */
+> -		preempt_disable();
+> +		get_online_cpus_atomic();
+>  		for_each_online_cpu(cpu)
+>  			if (cond_func(cpu, info)) {
+>  				ret = smp_call_function_single(cpu, func,
+>  								info, wait);
+>  				WARN_ON_ONCE(!ret);
+>  			}
+> -		preempt_enable();
+> +		put_online_cpus_atomic();
+>  	}
+>  }
+>  EXPORT_SYMBOL(on_each_cpu_cond);
+> 
 
-- Sedat -
-
-[0] https://patchwork.kernel.org/project/intel-gfx/list/
-[1] https://patchwork.kernel.org/patch/2809031/
-[2] https://patchwork.kernel.org/patch/2809021/
-[3] http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-nightly&id=f1f644dc66cbaf5a4c7dcde683361536b41885b9
-
-> - Sedat -
->
-> [1] http://cgit.freedesktop.org/~danvet/drm-intel/commit/?h=drm-intel-next-queued&id=d325d8b4f351f9d45e7c8baabf581fd21f343133
->
->> -Daniel
->> --
->> Daniel Vetter
->> Software Engineer, Intel Corporation
->> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
