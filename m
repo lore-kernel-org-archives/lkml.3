@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab3GBQmF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:42:05 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:44100 "EHLO smtp3-g21.free.fr"
+	id S1754750Ab3GBQmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:42:39 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:44031 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753709Ab3GBQk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754231Ab3GBQk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Jul 2013 12:40:26 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH 09/13] fanotify: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue,  2 Jul 2013 18:39:33 +0200
-Message-Id: <e7030a0fa1adb159b9ccaf7ebb975d09068633f1.1372777600.git.ydroneaud@opteya.com>
+Subject: [PATCH 07/13] binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Tue,  2 Jul 2013 18:39:31 +0200
+Message-Id: <629d6f30ee0d7d94bc6c8f6c6b6aeb7dee34a908.1372777600.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1372777600.git.ydroneaud@opteya.com>
 References: <cover.1372777600.git.ydroneaud@opteya.com>
@@ -43,22 +43,22 @@ and, if possible, set to O_CLOEXEC.
 
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- fs/notify/fanotify/fanotify_user.c | 2 +-
+ fs/binfmt_misc.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index e44cb64..644b9a7 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -69,7 +69,7 @@ static int create_fd(struct fsnotify_group *group,
- 
- 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
- 
--	client_fd = get_unused_fd();
-+	client_fd = get_unused_fd_flags(0);
- 	if (client_fd < 0)
- 		return client_fd;
- 
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index 1c740e1..052f6dc 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -138,7 +138,7 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 		/* if the binary should be opened on behalf of the
+ 		 * interpreter than keep it open and assign descriptor
+ 		 * to it */
+- 		fd_binary = get_unused_fd();
++		fd_binary = get_unused_fd_flags(0);
+  		if (fd_binary < 0) {
+  			retval = fd_binary;
+  			goto _ret;
 -- 
 1.8.3.1
 
