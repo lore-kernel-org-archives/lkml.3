@@ -1,38 +1,289 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab3GBWXV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 18:23:21 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:49277 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab3GBWXU (ORCPT
+	id S1753933Ab3GBW2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 18:28:00 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44777 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab3GBW16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 18:23:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <73593d09ced9d2d64bebe0fb71e74ac00d8738c6.1372777600.git.ydroneaud@opteya.com>
-References: <cover.1372777600.git.ydroneaud@opteya.com> <73593d09ced9d2d64bebe0fb71e74ac00d8738c6.1372777600.git.ydroneaud@opteya.com>
-From: Erik Gilling <konkers@android.com>
-Date: Tue, 2 Jul 2013 15:22:58 -0700
-X-Google-Sender-Auth: GdGq8U3UoMTCasUUToSqxnQCWqI
-Message-ID: <CACSP8SjZcpcpEtQHzcGYhf-MP7QGo0XpN7-uN7rmD=vNtopG=w@mail.gmail.com>
-Subject: Re: [PATCH 04/13] android/sw_sync: use get_unused_fd_flags(0) instead
- of get_unused_fd()
-To: Yann Droneaud <ydroneaud@opteya.com>, Colin Cross <ccross@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 2 Jul 2013 18:27:58 -0400
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: linux-kernel@vger.kernel.org
+Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [PATCH] Add support driver for Intel Rapid Start Technology
+Date: Tue,  2 Jul 2013 18:27:41 -0400
+Message-Id: <1372804061-2260-1-git-send-email-mjg59@srcf.ucam.org>
+X-Mailer: git-send-email 1.8.3.1
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:422c:f4ff:fe92:dff9
+X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 2, 2013 at 9:39 AM, Yann Droneaud <ydroneaud@opteya.com> wrote:
->  static long sw_sync_ioctl_create_fence(struct sw_sync_timeline *obj,
->                                        unsigned long arg)
->  {
-> -       int fd = get_unused_fd();
-> +       int fd = get_unused_fd_flags(0);
+Intel Rapid Start Technology is a firmware-based suspend-to-disk
+implementation. Once placed in S3, the device will wake once either a
+timeout elapses or the battery reaches a critical level. It will then resume
+to the firmware and copy the contents of RAM to a specialised partition, and
+then power off the machine. If the user turns the machine back on the
+firmware will copy the contents of the partition back to RAM and then resume
+from S3 as normal.
 
-I think we should use O_CLOEXEC here.  Colin and I can't think of any
-case where one would want keep fences across exec.
+This driver provides an interface for configuring the wakeup events and
+timeout. It still requires firmware support and an appropriate suspend
+partition.
 
-Cheers,
-   Erik
+Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
+---
+ .../ABI/testing/sysfs-driver-intel-rapid-start     |  21 +++
+ drivers/platform/x86/intel-rst.c                   | 209 +++++++++++++++++++++
+ 2 files changed, 230 insertions(+)
+ create mode 100644 Documentation/ABI/testing/sysfs-driver-intel-rapid-start
+ create mode 100644 drivers/platform/x86/intel-rst.c
+
+diff --git a/Documentation/ABI/testing/sysfs-driver-intel-rapid-start b/Documentation/ABI/testing/sysfs-driver-intel-rapid-start
+new file mode 100644
+index 0000000..5a7d2e2
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-driver-intel-rapid-start
+@@ -0,0 +1,21 @@
++What:		/sys/bus/acpi/intel-rapid-start/wakeup_events
++Date:		July 2, 2013
++KernelVersion:	3.11
++Contact:	Matthew Garrett <mjg59@srcf.ucam.org>
++Description:	An integer representing a set of wakeup events as follows:
++		1: Wake to enter hibernation when the wakeup timer expires
++		2: Wake to enter hibernation when the battery reaches a
++		critical level
++
++		These values are ORed together. For example, a value of 3
++		indicates that the system will wake to enter hibernation when
++		either the wakeup timer expires or the battery reaches a
++		critical level.
++
++What:		/sys/bus/acpi/intel-rapid-start/wakeup_time
++Date:		July 2, 2013
++KernelVersion:	3.11
++Contact:	Matthew Garrett <mjg59@srcf.ucam.org>
++Description:	An integer representing the length of time the system will
++		remain asleep before waking up to enter hibernation.
++		This value is in minutes.
+diff --git a/drivers/platform/x86/intel-rst.c b/drivers/platform/x86/intel-rst.c
+new file mode 100644
+index 0000000..9385afd
+--- /dev/null
++++ b/drivers/platform/x86/intel-rst.c
+@@ -0,0 +1,209 @@
++/*
++ *  Copyright 2013 Matthew Garrett <mjg59@srcf.ucam.org>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <acpi/acpi_drivers.h>
++
++MODULE_LICENSE("GPL");
++
++static ssize_t irst_show_wakeup_events(struct device *dev,
++				       struct device_attribute *attr,
++				       char *buf)
++{
++	struct acpi_device *acpi;
++	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
++	union acpi_object *result;
++	acpi_status status;
++
++	acpi = to_acpi_device(dev);
++
++	status = acpi_evaluate_object(acpi->handle, "GFFS", NULL, &output);
++	if (!ACPI_SUCCESS(status))
++		return -EINVAL;
++
++	result = output.pointer;
++
++	if (result->type != ACPI_TYPE_INTEGER) {
++		kfree(result);
++		return -EINVAL;
++	}
++
++	return sprintf(buf, "%lld\n", result->integer.value);
++}
++
++static ssize_t irst_store_wakeup_events(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t count)
++{
++	struct acpi_device *acpi;
++	struct acpi_object_list input;
++	union acpi_object param;
++	acpi_status status;
++	unsigned long value;
++	int error;
++
++	acpi = to_acpi_device(dev);
++
++	error = kstrtoul(buf, 0, &value);
++
++	if (error)
++		return error;
++
++	param.type = ACPI_TYPE_INTEGER;
++	param.integer.value = value;
++
++	input.count = 1;
++	input.pointer = &param;
++
++	status = acpi_evaluate_object(acpi->handle, "SFFS", &input, NULL);
++
++	if (!ACPI_SUCCESS(status))
++		return -EINVAL;
++
++	return count;
++}
++
++static struct device_attribute irst_wakeup_attr = {
++	.attr = { .name = "wakeup_events", .mode = 0600 },
++	.show = irst_show_wakeup_events,
++	.store = irst_store_wakeup_events
++};
++
++static ssize_t irst_show_wakeup_time(struct device *dev,
++				     struct device_attribute *attr, char *buf)
++{
++	struct acpi_device *acpi;
++	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
++	union acpi_object *result;
++	acpi_status status;
++
++	acpi = to_acpi_device(dev);
++
++	status = acpi_evaluate_object(acpi->handle, "GFTV", NULL, &output);
++	if (!ACPI_SUCCESS(status))
++		return -EINVAL;
++
++	result = output.pointer;
++
++	if (result->type != ACPI_TYPE_INTEGER) {
++		kfree(result);
++		return -EINVAL;
++	}
++
++	return sprintf(buf, "%lld\n", result->integer.value);
++}
++
++static ssize_t irst_store_wakeup_time(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t count)
++{
++	struct acpi_device *acpi;
++	struct acpi_object_list input;
++	union acpi_object param;
++	acpi_status status;
++	unsigned long value;
++	int error;
++
++	acpi = to_acpi_device(dev);
++
++	error = kstrtoul(buf, 0, &value);
++
++	if (error)
++		return error;
++
++	param.type = ACPI_TYPE_INTEGER;
++	param.integer.value = value;
++
++	input.count = 1;
++	input.pointer = &param;
++
++	status = acpi_evaluate_object(acpi->handle, "SFTV", &input, NULL);
++
++	if (!ACPI_SUCCESS(status))
++		return -EINVAL;
++
++	return count;
++}
++
++static struct device_attribute irst_timeout_attr = {
++	.attr = { .name = "wakeup_time", .mode = 0600 },
++	.show = irst_show_wakeup_time,
++	.store = irst_store_wakeup_time
++};
++
++static int irst_add(struct acpi_device *acpi)
++{
++	int error = 0;
++
++	error = device_create_file(&acpi->dev, &irst_timeout_attr);
++	if (error)
++		goto out;
++
++	error = device_create_file(&acpi->dev, &irst_wakeup_attr);
++	if (error)
++		goto out_timeout;
++
++	return 0;
++
++out_timeout:
++	device_remove_file(&acpi->dev, &irst_timeout_attr);
++out:
++	return error;
++}
++
++static int irst_remove(struct acpi_device *acpi)
++{
++	device_remove_file(&acpi->dev, &irst_wakeup_attr);
++	device_remove_file(&acpi->dev, &irst_timeout_attr);
++
++	return 0;
++}
++
++static const struct acpi_device_id irst_ids[] = {
++	{"INT3392", 0},
++	{"", 0}
++};
++
++static struct acpi_driver irst_driver = {
++	.owner = THIS_MODULE,
++	.name = "intel_rapid_start",
++	.class = "intel_rapid_start",
++	.ids = irst_ids,
++	.ops = {
++		.add = irst_add,
++		.remove = irst_remove,
++	},
++};
++
++static int irst_init(void)
++{
++	return acpi_bus_register_driver(&irst_driver);
++}
++
++static void irst_exit(void)
++{
++	acpi_bus_unregister_driver(&irst_driver);
++}
++
++module_init(irst_init);
++module_exit(irst_exit);
++
++MODULE_DEVICE_TABLE(acpi, irst_ids);
+-- 
+1.8.3.1
+
