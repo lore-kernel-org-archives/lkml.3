@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab3GBXXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:23:03 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35901 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab3GBXXA (ORCPT
+	id S1755939Ab3GBXZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 19:25:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42478 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751312Ab3GBXZA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:23:00 -0400
-Date: Tue, 2 Jul 2013 16:22:59 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
-Message-ID: <20130702232259.GH11625@codeaurora.org>
-References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
+	Tue, 2 Jul 2013 19:25:00 -0400
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Oskar Andero <oskar.andero@sonymobile.com>,
+        Shingo Nakao <shingo.x.nakao@sonymobile.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        Radovan Lekanovic <Radovan.Lekanovic@sonymobile.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH] backlight: lp855x: set zero brightness at FBBLANK
+Thread-Topic: [PATCH] backlight: lp855x: set zero brightness at FBBLANK
+Thread-Index: AQHOdx3rU8OKtaAMc0+51xVGHFhPc5lSB/xt
+Date: Tue, 2 Jul 2013 23:24:42 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E7C42D@DQHE06.ent.ti.com>
+References: <1372767354-16499-1-git-send-email-oskar.andero@sonymobile.com>
+In-Reply-To: <1372767354-16499-1-git-send-email-oskar.andero@sonymobile.com>
+Accept-Language: en-US, ko-KR
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.49]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+> From: Shingo Nakao <shingo.x.nakao@sonymobile.com>
 > 
-> Commit 281ecb7 "arm: delete __cpuinit/__CPUINIT usage from all ARM
-> users" removed a __CPUINIT from head-common.S. However, the code
-> immediately before the removed tag was marked __INIT, and was missing
-> a match __FINIT. This caused code after the removed __CPUINIT to end
-> up in the init section rather than the main text section as desired.
-> This caused issues such as secondary CPU boot failures or crashes.
-> Add the missing __FINIT to solve this.
+> When backlight turns on early from display, a white line can be
+> seen on the screen. Therefore make sure backlight is off when we
+> are under an fb blank event.
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> Signed-off-by: Shingo Nakao <shingo.x.nakao@sonymobile.com>
+> Cc: Milo Kim <milo.kim@ti.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+
+Acked-by: Milo Kim <milo.kim@ti.com>
+
 > ---
->  arch/arm/kernel/head-common.S | 2 ++
->  1 file changed, 2 insertions(+)
+>  drivers/video/backlight/lp855x_bl.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
-> index 529ce99..a9dc804 100644
-> --- a/arch/arm/kernel/head-common.S
-> +++ b/arch/arm/kernel/head-common.S
-> @@ -122,6 +122,8 @@ __mmap_switched_data:
->  	.long	init_thread_union + THREAD_START_SP @ sp
->  	.size	__mmap_switched_data, . - __mmap_switched_data
->  
-> +	__FINIT
-> +
->  /*
->   * This provides a C-API version of __lookup_processor_type
->   */
+> diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
+> index a0e1e02..c0b41f1 100644
+> --- a/drivers/video/backlight/lp855x_bl.c
+> +++ b/drivers/video/backlight/lp855x_bl.c
+> @@ -246,7 +246,7 @@ static int lp855x_bl_update_status(struct backlight_device *bl)
+>  {
+>         struct lp855x *lp = bl_get_data(bl);
+> 
+> -       if (bl->props.state & BL_CORE_SUSPENDED)
+> +       if (bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
+>                 bl->props.brightness = 0;
+> 
+>         if (lp->mode == PWM_BASED) {
+> --
+> 1.8.1.5
 
-Shouldn't this come after lookup_processor_type()? Otherwise you
-just removed that function from the init section?
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
