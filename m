@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab3GBLKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:10:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36380 "EHLO
+	id S1755972Ab3GBLKC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:10:02 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36385 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755783Ab3GBLIr (ORCPT
+	with ESMTP id S1755796Ab3GBLIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Jul 2013 07:08:47 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
+Cc: Daniel Drake <dsd@laptop.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jonghwan Choi <jhbird.choi@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 48/50] UBIFS: fix a horrid bug
-Date: Tue,  2 Jul 2013 12:07:36 +0100
-Message-Id: <1372763258-20664-49-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 44/50] Bluetooth: btmrvl: fix thread stopping race
+Date: Tue,  2 Jul 2013 12:07:32 +0100
+Message-Id: <1372763258-20664-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,99 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Daniel Drake <dsd@laptop.org>
 
-commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
+commit ea05fea9042620ac3b8ab9a3e5e4d2ed80c89244 upstream.
 
-Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
-mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
-in the middle of 'ubifs_readdir()'.
+There is currently a race condition in the btmrvl_remove_card() which
+is causing hangs on suspend for OLPC. When the race occurs,
+kthread_stop() never returns.
 
-This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
-it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
-but this may corrupt memory and lead to all kinds of problems like crashes an
-security holes.
+The problem is that btmrvl_service_main_thread() calls kthread_should_stop()
+and then does a fair number of things before restarting the loop and
+sleeping.
 
-This patch fixes the problem by using the 'file->f_version' field, which
-'->llseek()' always unconditionally sets to zero. We set it to 1 in
-'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
-seek and it is time to clear the state saved in 'file->private_data'.
+If the thread gets stopped after kthread_should_stop() is checked, but
+before the sleep happens, the thread will go to sleep and won't necessarily
+be woken up.
 
-I tested this patch by writing a user-space program which runds readdir and
-seek in parallell. I could easily crash the kernel without these patches, but
-could not crash it with these patches.
+Move the kthread_should_stop() check into a race-free place.
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Jonghwan Choi <jhbird.choi@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ubifs/dir.c | 30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+ drivers/bluetooth/btmrvl_main.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index 918ce52..1ce4953 100644
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -365,6 +365,24 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 		 */
- 		return 0;
+diff --git a/drivers/bluetooth/btmrvl_main.c b/drivers/bluetooth/btmrvl_main.c
+index dc304de..2c63a21 100644
+--- a/drivers/bluetooth/btmrvl_main.c
++++ b/drivers/bluetooth/btmrvl_main.c
+@@ -496,6 +496,10 @@ static int btmrvl_service_main_thread(void *data)
+ 		add_wait_queue(&thread->wait_q, &wait);
  
-+	if (file->f_version == 0) {
-+		/*
-+		 * The file was seek'ed, which means that @file->private_data
-+		 * is now invalid. This may also be just the first
-+		 * 'ubifs_readdir()' invocation, in which case
-+		 * @file->private_data is NULL, and the below code is
-+		 * basically a no-op.
-+		 */
-+		kfree(file->private_data);
-+		file->private_data = NULL;
-+	}
-+
-+	/*
-+	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
-+	 * zero, and we use this for detecting whether the file was seek'ed.
-+	 */
-+	file->f_version = 1;
-+
- 	/* File positions 0 and 1 correspond to "." and ".." */
- 	if (pos == 0) {
- 		ubifs_assert(!file->private_data);
-@@ -438,6 +456,14 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
-+
-+		if (file->f_version == 0)
-+			/*
-+			 * The file was seek'ed meanwhile, lets return and start
-+			 * reading direntries from the new position on the next
-+			 * invocation.
-+			 */
-+			return 0;
- 	}
+ 		set_current_state(TASK_INTERRUPTIBLE);
++		if (kthread_should_stop()) {
++			BT_DBG("main_thread: break from main thread");
++			break;
++		}
  
- out:
-@@ -448,15 +474,13 @@ out:
+ 		if (adapter->wakeup_tries ||
+ 				((!adapter->int_count) &&
+@@ -511,11 +515,6 @@ static int btmrvl_service_main_thread(void *data)
  
- 	kfree(file->private_data);
- 	file->private_data = NULL;
-+	/* 2 is a special value indicating that there are no more direntries */
- 	file->f_pos = 2;
- 	return 0;
- }
+ 		BT_DBG("main_thread woke up");
  
--/* If a directory is seeked, we have to free saved readdir() state */
- static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int origin)
- {
--	kfree(file->private_data);
--	file->private_data = NULL;
- 	return generic_file_llseek(file, offset, origin);
- }
- 
+-		if (kthread_should_stop()) {
+-			BT_DBG("main_thread: break from main thread");
+-			break;
+-		}
+-
+ 		spin_lock_irqsave(&priv->driver_lock, flags);
+ 		if (adapter->int_count) {
+ 			adapter->int_count = 0;
 -- 
 1.8.1.2
 
