@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab3GBU22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:28:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35064 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932974Ab3GBU2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 16:28:06 -0400
-Message-ID: <1372796850.21065.93.camel@cumari.coelho.fi>
-Subject: Re: [PATCH v2 4/9] wl12xx: use frequency instead of enumerations
- for pdata clocks
-From: Luciano Coelho <coelho@ti.com>
-To: Nishanth Menon <nm@ti.com>
-CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Tue, 2 Jul 2013 23:27:30 +0300
-In-Reply-To: <20130702150208.GA4233@kahuna>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
-	 <1372776948-24840-5-git-send-email-coelho@ti.com>
-	 <20130702150208.GA4233@kahuna>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932170Ab3GBU17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:27:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27520 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533Ab3GBUY1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 16:24:27 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=rl2FCl9SyfAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=TQi8bcP0i80A:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=Zitr5sS-VtFECFcuw-cA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130702202425.824494298@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 02 Jul 2013 16:22:20 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [for-next][PATCH 04/14] tracing: Simplify code for showing of soft disabled flag
+References: <20130702202216.623562799@goodmis.org>
+Content-Disposition: inline; filename=0004-tracing-Simplify-code-for-showing-of-soft-disabled-f.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-02 at 10:02 -0500, Nishanth Menon wrote:
-> On 17:55-20130702, Luciano Coelho wrote:
-> > Instead of defining an enumeration with the FW specific values for the
-> > different clock rates, use the actual frequency instead.  Also add a
-> > boolean to specify whether the clock is XTAL or not.
-> > 
-> > Change all board files to reflect this.
-> > 
-> > Cc: Tony Lindgren <tony@atomide.com>
-> > Cc: Sekhar Nori <nsekhar@ti.com>
-> > Signed-off-by: Luciano Coelho <coelho@ti.com>
-> > ---
-> >  arch/arm/mach-davinci/board-da850-evm.c      |    3 +-
-> >  arch/arm/mach-omap2/board-4430sdp.c          |    5 ++-
-> ^^
-> >  arch/arm/mach-omap2/board-omap3evm.c         |    3 +-
-> >  arch/arm/mach-omap2/board-omap4panda.c       |    3 +-
-> ^^
-> Please do not add more platform data to platforms that are DT only.
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-Ah, I hadn't realized that board_omap4panda.c and board-4430sdp.c had
-been removed in linux-next.  I base my tree on wireless-next and it
-doesn't contain these changes yet.  I would only have noticed this when
-I rebased my tree once the merge window is closed. ;)
+Rather than enumerating each permutation, build the enable state
+string up from the combination of states.  This also allows for the
+simpler addition of more states.
 
-Thanks for pointing out, I'll make sure these changes will not be there
-when I send the pull request.
+Link: http://lkml.kernel.org/r/9aff5af6dee2f5a40ca30df41c39d5f33e998d7a.1372479499.git.tom.zanussi@linux.intel.com
 
---
-Cheers,
-Luca.
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_events.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 903a0bf..7ee08b9 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -638,17 +638,17 @@ event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 		  loff_t *ppos)
+ {
+ 	struct ftrace_event_file *file = filp->private_data;
+-	char *buf;
++	char buf[4] = "0";
+ 
+-	if (file->flags & FTRACE_EVENT_FL_ENABLED) {
+-		if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED)
+-			buf = "0*\n";
+-		else if (file->flags & FTRACE_EVENT_FL_SOFT_MODE)
+-			buf = "1*\n";
+-		else
+-			buf = "1\n";
+-	} else
+-		buf = "0\n";
++	if (file->flags & FTRACE_EVENT_FL_ENABLED &&
++	    !(file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
++		strcpy(buf, "1");
++
++	if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
++	    file->flags & FTRACE_EVENT_FL_SOFT_MODE)
++		strcat(buf, "*");
++
++	strcat(buf, "\n");
+ 
+ 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, strlen(buf));
+ }
+-- 
+1.7.10.4
+
 
