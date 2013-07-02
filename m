@@ -1,608 +1,433 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529Ab3GBJWJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:22:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38290 "EHLO mx2.suse.de"
+	id S932572Ab3GBJZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:25:17 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56046 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752301Ab3GBJWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:22:06 -0400
-Date: Tue, 2 Jul 2013 11:22:00 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130702092200.GB16815@dhcp22.suse.cz>
-References: <20130618135025.GK13677@dhcp22.suse.cz>
- <20130625022754.GP29376@dastard>
- <20130626081509.GF28748@dhcp22.suse.cz>
- <20130626232426.GA29034@dastard>
- <20130627145411.GA24206@dhcp22.suse.cz>
- <20130629025509.GG9047@dastard>
- <20130630183349.GA23731@dhcp22.suse.cz>
- <20130701012558.GB27780@dastard>
- <20130701075005.GA28765@dhcp22.suse.cz>
- <20130701081056.GA4072@dastard>
+	id S932521Ab3GBJZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 05:25:15 -0400
+Date: Tue, 2 Jul 2013 12:24:58 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>, <balbi@ti.com>, <rnayak@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
+Message-ID: <20130702092458.GI3352@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="rwEMma7ioTxnRzrJ"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pWOmaDnDlrCGjNh4"
 Content-Disposition: inline
-In-Reply-To: <20130701081056.GA4072@dastard>
+In-Reply-To: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---rwEMma7ioTxnRzrJ
+--pWOmaDnDlrCGjNh4
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon 01-07-13 18:10:56, Dave Chinner wrote:
-> On Mon, Jul 01, 2013 at 09:50:05AM +0200, Michal Hocko wrote:
-> > On Mon 01-07-13 11:25:58, Dave Chinner wrote:
-> > > On Sun, Jun 30, 2013 at 08:33:49PM +0200, Michal Hocko wrote:
-> > > > On Sat 29-06-13 12:55:09, Dave Chinner wrote:
-> > > > > On Thu, Jun 27, 2013 at 04:54:11PM +0200, Michal Hocko wrote:
-> > > > > > On Thu 27-06-13 09:24:26, Dave Chinner wrote:
-> > > > > > > On Wed, Jun 26, 2013 at 10:15:09AM +0200, Michal Hocko wrote:
-> > > > > > > > On Tue 25-06-13 12:27:54, Dave Chinner wrote:
-> > > > > > > > > On Tue, Jun 18, 2013 at 03:50:25PM +0200, Michal Hocko wrote:
-> > > > > > > > > > And again, another hang. It looks like the inode deletion never
-> > > > > > > > > > finishes. The good thing is that I do not see any LRU related BUG_ONs
-> > > > > > > > > > anymore. I am going to test with the other patch in the thread.
-> > > > > > > > > > 
-> > > > > > > > > > 2476 [<ffffffff8118325e>] __wait_on_freeing_inode+0x9e/0xc0	<<< waiting for an inode to go away
-> > > > > > > > > > [<ffffffff81183321>] find_inode_fast+0xa1/0xc0
-> > > > > > > > > > [<ffffffff8118525f>] iget_locked+0x4f/0x180
-> > > > > > > > > > [<ffffffff811ef9e3>] ext4_iget+0x33/0x9f0
-> > > > > > > > > > [<ffffffff811f6a1c>] ext4_lookup+0xbc/0x160
-> > > > > > > > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > > > > > > > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > > > > > > > > > [<ffffffff8117815e>] do_last+0x2de/0x780			<<< holds i_mutex
-> > > > > > > > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > > > > > > > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > > > > > > > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > > > > > > > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > > > > > > > > > [<ffffffff81582fe9>] system_call_fastpath+0x16/0x1b
-> > > > > > > > > > [<ffffffffffffffff>] 0xffffffffffffffff
-> > > 
-> > > .....
-> > > > Do you mean sysrq+t? It is attached. 
-> > > > 
-> > > > Btw. I was able to reproduce this again. The stuck processes were
-> > > > sitting in the same traces for more than 28 hours without any change so
-> > > > I do not think this is a temporal condition.
-> > > > 
-> > > > Traces of all processes in the D state:
-> > > > 7561 [<ffffffffa029c03e>] xfs_iget+0xbe/0x190 [xfs]
-> > > > [<ffffffffa02a8e98>] xfs_lookup+0xe8/0x110 [xfs]
-> > > > [<ffffffffa029fad9>] xfs_vn_lookup+0x49/0x90 [xfs]
-> > > > [<ffffffff81174ad0>] lookup_real+0x20/0x60
-> > > > [<ffffffff81177e25>] lookup_open+0x175/0x1d0
-> > > > [<ffffffff8117815e>] do_last+0x2de/0x780
-> > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
-> > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
-> > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
-> > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
-> > > > [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
-> > > > [<ffffffffffffffff>] 0xffffffffffffffff
-> > > 
-> > > This looks like it may be equivalent to the ext4 trace above, though
-> > > I'm not totally sure on that yet. Can you get me the line of code
-> > > where the above code is sleeping - 'gdb> l *(xfs_iget+0xbe)' output
-> > > is sufficient.
-> > 
-> > OK, this is a bit tricky because I have xfs built as a module so objdump
-> > on xfs.ko shows nonsense
-> >    19039:       e8 00 00 00 00          callq  1903e <xfs_iget+0xbe>
-> >    1903e:       48 8b 75 c0             mov    -0x40(%rbp),%rsi
-> > 
-> > crash was more clever though and it says:
-> > 0xffffffffa029c034 <xfs_iget+180>:      mov    $0x1,%edi
-> > 0xffffffffa029c039 <xfs_iget+185>:      callq  0xffffffff815776d0
-> > <schedule_timeout_uninterruptible>
-> > /dev/shm/mhocko-build/BUILD/kernel-3.9.0mmotm+/fs/xfs/xfs_icache.c: 423
-> > 0xffffffffa029c03e <xfs_iget+190>:      mov    -0x40(%rbp),%rsi
-> > 
-> > which maps to:
-> > out_error_or_again:
-> >         if (error == EAGAIN) {
-> >                 delay(1);
-> >                 goto again;
-> >         }
-> > 
-> > So this looks like this path loops in goto again and out_error_or_again.
-> 
-> Yup, that's what I suspected.
-> 
-> > > If it's where I suspect it is, we are hitting a VFS inode that
-> > > igrab() is failing on because I_FREEING is set and that is returning
-> > > EAGAIN. Hence xfs_iget() sleeps for a short period and retries the
-> > > lookup. If you've still got a system in this state, can you dump the
-> > > xfs stats a few times about 5s apart i.e.
-> > > 
-> > > $ for i in `seq 0 1 5`; do echo ; date; cat /proc/fs/xfs/stat ; sleep 5 ; done
-> > > 
-> > > Depending on what stat is changing (i'm looking for skip vs recycle
-> > > in the inode cache stats), that will tell us why the lookup is
-> > > failing...
-> > 
-> > $ for i in `seq 0 1 5`; do echo ; date; cat /proc/fs/xfs/stat ; sleep 5 ; done
-> > 
-> > Mon Jul  1 09:29:57 CEST 2013
-> > extent_alloc 1484333 2038118 1678 13182
-> > abt 0 0 0 0
-> > blk_map 21004635 3433178 1450438 1461372 1450017 25888309 0
-> > bmbt 0 0 0 0
-> > dir 1482235 1466711 7281 2529
-> > trans 7676 6231535 1444850
-> > ig 0 8534 299 1463749 0 1256778 262381
->             ^^^
-> 
-> That is the recycle stat, which indicates we've found an inode being
-> reclaimed. When it's found an inode that have been evicted, but not
-> yet reclaimed at the XFS level, that stat will increase. If the
-> inode is still valid at the VFS level, and igrab() fails, then we'll
-> get EAGAIN without that stat being increased. So, igrab() is
-> failing, and that means I_FREEING|I_WILL_FREE are set.
-> 
-> So, it looks to be the same case as the ext4 hang, and it's likely
-> that we have some dangling inode dispose list somewhere. So, here's
-> the fun part. Use tracing to grab the inode number that is stuck
-> (tracepoint xfs::xfs_iget_skip), 
+Hi,
 
-$ cat /sys/kernel/debug/tracing/trace_pipe > demon.trace.log &
-$ pid=$!
-$ sleep 10s ; kill $pid
-$ awk '{print $1, $9}' demon.trace.log | sort -u
-cc1-7561 0xf78d4f
-cc1-9100 0x80b2a35
+On Tue, Jul 02, 2013 at 02:26:39PM +0530, Sourav Poddar wrote:
+> diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+> index 33f9c09..ea14eff 100644
+> --- a/drivers/spi/Makefile
+> +++ b/drivers/spi/Makefile
+> @@ -46,6 +46,7 @@ obj-$(CONFIG_SPI_OCTEON)		+=3D spi-octeon.o
+>  obj-$(CONFIG_SPI_OMAP_UWIRE)		+=3D spi-omap-uwire.o
+>  obj-$(CONFIG_SPI_OMAP_100K)		+=3D spi-omap-100k.o
+>  obj-$(CONFIG_SPI_OMAP24XX)		+=3D spi-omap2-mcspi.o
+> +obj-$(CONFIG_QSPI_DRA7xxx)              +=3D ti-qspi.o
 
-> and then run crash on the live kernel on the process that is looping,
-> and find the struct xfs_inode and print it.  Use the inode number from
-> the trace point to check you've got the right inode.
+all other drivers are prepended with spi-
 
-crash> bt -f 7561
- #4 [ffff88003744db40] xfs_iget at ffffffffa029c03e [xfs]
-    ffff88003744db48: 0000000000000000 0000000000000000 
-    ffff88003744db58: 0000000000013b40 ffff88003744dc30 
-    ffff88003744db68: 0000000000000000 0000000000000000 
-    ffff88003744db78: 0000000000f78d4f ffffffffa02dafec 
-    ffff88003744db88: ffff88000c09e1c0 0000000000000008 
-    ffff88003744db98: 0000000000000000 ffff88000c0a0ac0 
-    ffff88003744dba8: ffff88003744dc18 0000000000000000 
-    ffff88003744dbb8: ffff88003744dc08 ffffffffa02a8e98
-crash> dis xfs_iget
-[...]
-0xffffffffa029c045 <xfs_iget+197>:      callq  0xffffffff812ca190 <radix_tree_lookup>
-0xffffffffa029c04a <xfs_iget+202>:      test   %rax,%rax
-0xffffffffa029c04d <xfs_iget+205>:      mov    %rax,-0x30(%rbp)
+> diff --git a/drivers/spi/ti-qspi.c b/drivers/spi/ti-qspi.c
+> new file mode 100644
+> index 0000000..e646a93
+> --- /dev/null
+> +++ b/drivers/spi/ti-qspi.c
+> @@ -0,0 +1,357 @@
+> +/*
+> + * TI QSPI driver
+> + *
+> + * Copyright (C) 2013, Texas Instruments, Incorporated
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License as
+> + * published by the Free Software Foundation; either version 2 of
+> + * the License, or (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR /PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/module.h>
+> +#include <linux/device.h>
+> +#include <linux/delay.h>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/dmaengine.h>
+> +#include <linux/omap-dma.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/err.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/slab.h>
+> +#include <linux/pm_runtime.h>
+> +#include <linux/of.h>
+> +#include <linux/of_device.h>
+> +#include <linux/pinctrl/consumer.h>
+> +
+> +#include <linux/spi/spi.h>
+> +
+> +struct dra7xxx_qspi {
+> +	struct spi_master	*master;
+> +	void __iomem            *base;
+> +	int device_type;
+> +	struct device           *dev;
 
-So the inode should be at -0x30(%rbp) which is
-crash> struct xfs_inode.i_ino ffff88000c09e1c0
-  i_ino = 16223567
-crash> p /x 16223567
-$15 = 0xf78d4f
+nit: move this pointer up and the int down.
 
-> Th struct inode of the VFS inode is embedded into the struct
-> xfs_inode, 
+> +	u32 spi_max_frequency;
+> +	u32 cmd;
+> +	u32 dc;
+> +};
+> +
+> +#define QSPI_PID			(0x0)
+> +#define QSPI_SYSCONFIG			(0x10)
+> +#define QSPI_INTR_STATUS_RAW_SET	(0x20)
+> +#define QSPI_INTR_STATUS_ENABLED_CLEAR	(0x24)
+> +#define QSPI_INTR_ENABLE_SET_REG	(0x28)
+> +#define QSPI_INTR_ENABLE_CLEAR_REG	(0x2c)
+> +#define QSPI_SPI_CLOCK_CNTRL_REG	(0x40)
+> +#define QSPI_SPI_DC_REG			(0x44)
+> +#define QSPI_SPI_CMD_REG		(0x48)
+> +#define QSPI_SPI_STATUS_REG		(0x4c)
+> +#define QSPI_SPI_DATA_REG		(0x50)
+> +#define QSPI_SPI_SETUP0_REG		(0x54)
+> +#define QSPI_SPI_SWITCH_REG		(0x64)
+> +#define QSPI_SPI_SETUP1_REG		(0x58)
+> +#define QSPI_SPI_SETUP2_REG		(0x5c)
+> +#define QSPI_SPI_SETUP3_REG		(0x60)
+> +#define QSPI_SPI_DATA_REG_1		(0x68)
+> +#define QSPI_SPI_DATA_REG_2		(0x6c)
+> +#define QSPI_SPI_DATA_REG_3		(0x70)
+> +
+> +#define QSPI_TIMEOUT			2000000
+> +
+> +#define QSPI_FCLK			192000000
+> +
+> +/* Clock Control */
+> +#define QSPI_CLK_EN			(1 << 31)
+> +#define QSPI_CLK_DIV_MAX		0xffff
+> +
+> +/* Command */
+> +#define QSPI_EN_CS(n)			(n << 28)
+> +#define QSPI_WLEN(n)			((n-1) << 19)
+> +#define QSPI_3_PIN			(1 << 18)
+> +#define QSPI_RD_SNGL			(1 << 16)
+> +#define QSPI_WR_SNGL			(2 << 16)
+> +#define QSPI_RD_QUAD			(7 << 16)
+> +#define QSPI_INVAL			(4 << 16)
+> +
+> +/* Device Control */
+> +#define QSPI_DD(m, n)			(m << (3 + n*8))
+> +#define QSPI_CKPHA(n)			(1 << (2 + n*8))
+> +#define QSPI_CSPOL(n)			(1 << (1 + n*8))
+> +#define QSPI_CKPOL(n)			(1 << (n*8))
+> +
+> +/* Status */
+> +#define QSPI_WC				(1 << 1)
+> +#define QSPI_BUSY			(1 << 0)
+> +#define QSPI_WC_BUSY			(QSPI_WC | QSPI_BUSY)
+> +#define QSPI_XFER_DONE			QSPI_WC
+> +
+> +#define XFER_END			0x01
+> +
+> +#define SPI_AUTOSUSPEND_TIMEOUT         2000
+> +
+> +static inline unsigned long dra7xxx_readl(struct dra7xxx_qspi *qspi,
+> +		unsigned long reg)
+> +{
+> +	return readl(qspi->base + reg);
+> +}
+> +
+> +static inline void dra7xxx_writel(struct dra7xxx_qspi *qspi,
+> +		unsigned long val, unsigned long reg)
+> +{
+> +	writel(val, qspi->base + reg);
+> +}
+> +
+> +static int dra7xxx_qspi_setup(struct spi_device *spi)
+> +{
+> +	struct dra7xxx_qspi	*qspi =3D
+> +			spi_master_get_devdata(spi->master);
+> +
+> +	int clk_div;
+> +
+> +	if (!qspi->spi_max_frequency)
+> +		clk_div =3D 0;
 
-crash> struct -o xfs_inode.i_vnode ffff88000c09e1c0
-struct xfs_inode {
-  [ffff88000c09e2f8] struct inode i_vnode;
-}
+won't this generate division by zero ?
 
-> and the dispose list that it is on should be the on the
-> inode->i_lru_list. 
+> +	else
+> +		clk_div =3D (QSPI_FCLK / qspi->spi_max_frequency) - 1;
 
-crash> struct inode.i_lru ffff88000c09e2f8
-  i_lru = {
-    next = 0xffff88000c09e3e8, 
-    prev = 0xffff88000c09e3e8
-  }
-crash> struct inode.i_flags ffff88000c09e2f8
-  i_flags = 4096
+this QSPI_FCLK looks like it should be a clk_get_rate().
 
-The full xfs_inode dump is attached.
+> +	pr_debug("%s: hz: %d, clock divider %d\n", __func__,
+> +			qspi->spi_max_frequency, clk_div);
 
-> What that, and see how many other inodes are on that list. Once we
-> know if it's a single inode,
+dev_dbg()
 
-The list seems to be empty. And the same is the case for the other inode:
-crash> bt -f 9100
- #4 [ffff88001c8c5b40] xfs_iget at ffffffffa029c03e [xfs]
-    ffff88001c8c5b48: 0000000000000000 0000000000000000 
-    ffff88001c8c5b58: 0000000000013b40 ffff88001c8c5c30 
-    ffff88001c8c5b68: 0000000000000000 0000000000000000 
-    ffff88001c8c5b78: 00000000000b2a35 ffffffffa02dafec 
-    ffff88001c8c5b88: ffff88000c09ec40 0000000000000008 
-    ffff88001c8c5b98: 0000000000000000 ffff8800359e9b00 
-    ffff88001c8c5ba8: ffff88001c8c5c18 0000000000000000 
-    ffff88001c8c5bb8: ffff88001c8c5c08 ffffffffa02a8e98
-crash> p /x 0xffff88001c8c5bb8-0x30
-$16 = 0xffff88001c8c5b88
-sh> struct xfs_inode.i_ino ffff88000c09ec40
-  i_ino = 134949429
-crash> p /x 134949429
-$17 = 0x80b2a35
-crash> struct -o xfs_inode.i_vnode ffff88000c09ec40
-struct xfs_inode {
-  [ffff88000c09ed78] struct inode i_vnode;
-}
-crash> struct inode.i_lru ffff88000c09ed78
-  i_lru = {
-    next = 0xffff88000c09ee68, 
-    prev = 0xffff88000c09ee68
-  }
-crash> struct inode.i_flags ffff88000c09ed78
-  i_flags = 4096
+> +	pm_runtime_get_sync(qspi->dev);
+> +
+> +	/* disable SCLK */
+> +	dra7xxx_writel(qspi, dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG)
+> +			& ~QSPI_CLK_EN, QSPI_SPI_CLOCK_CNTRL_REG);
+> +
+> +	if (clk_div < 0) {
+> +		pr_debug("%s: clock divider < 0, using /1 divider\n", __func__);
+> +		clk_div =3D 0;
+> +	}
+> +
+> +	if (clk_div > QSPI_CLK_DIV_MAX) {
+> +		pr_debug("%s: clock divider >%d , using /%d divider\n",
+> +			__func__, QSPI_CLK_DIV_MAX, QSPI_CLK_DIV_MAX + 1);
+> +		clk_div =3D QSPI_CLK_DIV_MAX;
+> +	}
+> +
+> +	/* enable SCLK */
+> +	dra7xxx_writel(qspi, QSPI_CLK_EN | clk_div, QSPI_SPI_CLOCK_CNTRL_REG);
+> +
+> +	pm_runtime_mark_last_busy(qspi->dev);
+> +	pm_runtime_put_autosuspend(qspi->dev);
+> +
+> +	pr_debug("%s: spi_clock_cntrl %ld\n", __func__,
+> +		dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG));
 
-> and whether the dispose list it is on is intact, empty or corrupt, we
-> might have a better idea of how these inodes are getting lost....
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
+dev_dbg(), also use a cached value of the control register. Read only
+once.
 
--- 
-Michal Hocko
-SUSE Labs
+> +
+> +	return 0;
+> +}
+> +
+> +static int dra7xxx_qspi_prepare_xfer(struct spi_master *master)
+> +{
+> +	struct dra7xxx_qspi *qspi =3D spi_master_get_devdata(master);
+> +
+> +	pm_runtime_get_sync(qspi->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dra7xxx_qspi_unprepare_xfer(struct spi_master *master)
+> +{
+> +	struct dra7xxx_qspi *qspi =3D spi_master_get_devdata(master);
+> +
+> +	pm_runtime_mark_last_busy(qspi->dev);
+> +	pm_runtime_put_autosuspend(qspi->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static int qspi_transfer_msg(struct dra7xxx_qspi *qspi, unsigned count,
+> +			const u8 *txbuf, u8 *rxbuf, bool flags)
+> +{
+> +	uint status;
+> +	int timeout;
+> +
+> +	while (count--) {
+> +		if (txbuf) {
+> +			pr_debug("tx cmd %08x dc %08x data %02x\n",
+> +				qspi->cmd | QSPI_WR_SNGL, qspi->dc, *txbuf);
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=xfs_inode
+dev_dbg()
 
-crash> struct xfs_inode ffff88000c09e1c0
-struct xfs_inode {
-  i_mount = 0xffff88001ca4d000, 
-  i_udquot = 0x0, 
-  i_gdquot = 0x0, 
-  i_ino = 16223567, 
-  i_imap = {
-    im_blkno = 8111776, 
-    im_len = 16, 
-    im_boffset = 3840
-  }, 
-  i_afp = 0x0, 
-  i_df = {
-    if_bytes = 16, 
-    if_real_bytes = 0, 
-    if_broot = 0x0, 
-    if_broot_bytes = 0, 
-    if_flags = 2 '\002', 
-    if_u1 = {
-      if_extents = 0xffff88000c09e218, 
-      if_ext_irec = 0xffff88000c09e218, 
-      if_data = 0xffff88000c09e218 ""
-    }, 
-    if_u2 = {
-      if_inline_ext = {{
-          l0 = 0, 
-          l1 = 2135699750913
-        }, {
-          l0 = 0, 
-          l1 = 0
-        }}, 
-      if_inline_data = "\000\000\000\000\000\000\000\000\001\000\240A\361\001\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000", 
-      if_rdev = 0, 
-      if_uuid = {
-        __u_bits = "\000\000\000\000\000\000\000\000\001\000\240A\361\001\000"
-      }
-    }
-  }, 
-  i_itemp = 0x0, 
-  i_lock = {
-    mr_lock = {
-      count = 0, 
-      wait_lock = {
-        raw_lock = {
-          {
-            head_tail = 0, 
-            tickets = {
-              head = 0, 
-              tail = 0
-            }
-          }
-        }
-      }, 
-      wait_list = {
-        next = 0xffff88000c09e250, 
-        prev = 0xffff88000c09e250
-      }
-    }
-  }, 
-  i_iolock = {
-    mr_lock = {
-      count = 0, 
-      wait_lock = {
-        raw_lock = {
-          {
-            head_tail = 0, 
-            tickets = {
-              head = 0, 
-              tail = 0
-            }
-          }
-        }
-      }, 
-      wait_list = {
-        next = 0xffff88000c09e270, 
-        prev = 0xffff88000c09e270
-      }
-    }
-  }, 
-  i_pincount = {
-    counter = 0
-  }, 
-  i_flags_lock = {
-    {
-      rlock = {
-        raw_lock = {
-          {
-            head_tail = 878654559, 
-            tickets = {
-              head = 13407, 
-              tail = 13407
-            }
-          }
-        }
-      }
-    }
-  }, 
-  i_flags = 0, 
-  i_delayed_blks = 0, 
-  i_d = {
-    di_magic = 18766, 
-    di_mode = 33204, 
-    di_version = 2 '\002', 
-    di_format = 2 '\002', 
-    di_onlink = 0, 
-    di_uid = 0, 
-    di_gid = 0, 
-    di_nlink = 1, 
-    di_projid_lo = 0, 
-    di_projid_hi = 0, 
-    di_pad = "\000\000\000\000\000", 
-    di_flushiter = 2, 
-    di_atime = {
-      t_sec = 1372433043, 
-      t_nsec = 599568074
-    }, 
-    di_mtime = {
-      t_sec = 1352637873, 
-      t_nsec = 0
-    }, 
-    di_ctime = {
-      t_sec = 1372432997, 
-      t_nsec = 935341638
-    }, 
-    di_size = 3280, 
-    di_nblocks = 1, 
-    di_extsize = 0, 
-    di_nextents = 1, 
-    di_anextents = 0, 
-    di_forkoff = 0 '\000', 
-    di_aformat = 2 '\002', 
-    di_dmevmask = 0, 
-    di_dmstate = 0, 
-    di_flags = 0, 
-    di_gen = 15307555
-  }, 
-  i_vnode = {
-    i_mode = 33204, 
-    i_opflags = 5, 
-    i_uid = 0, 
-    i_gid = 0, 
-    i_flags = 4096, 
-    i_acl = 0x0, 
-    i_default_acl = 0x0, 
-    i_op = 0xffffffffa0301800, 
-    i_sb = 0xffff88001e70c800, 
-    i_mapping = 0xffff88000c09e440, 
-    i_security = 0x0, 
-    i_ino = 16223567, 
-    {
-      i_nlink = 1, 
-      __i_nlink = 1
-    }, 
-    i_rdev = 0, 
-    i_size = 3280, 
-    i_atime = {
-      tv_sec = 1372433043, 
-      tv_nsec = 599568074
-    }, 
-    i_mtime = {
-      tv_sec = 1352637873, 
-      tv_nsec = 0
-    }, 
-    i_ctime = {
-      tv_sec = 1372432997, 
-      tv_nsec = 935341638
-    }, 
-    i_lock = {
-      {
-        rlock = {
-          raw_lock = {
-            {
-              head_tail = 852898518, 
-              tickets = {
-                head = 13014, 
-                tail = 13014
-              }
-            }
-          }
-        }
-      }
-    }, 
-    i_bytes = 0, 
-    i_blkbits = 12, 
-    i_blocks = 0, 
-    i_state = 32, 
-    i_mutex = {
-      count = {
-        counter = 1
-      }, 
-      wait_lock = {
-        {
-          rlock = {
-            raw_lock = {
-              {
-                head_tail = 0, 
-                tickets = {
-                  head = 0, 
-                  tail = 0
-                }
-              }
-            }
-          }
-        }
-      }, 
-      wait_list = {
-        next = 0xffff88000c09e3a8, 
-        prev = 0xffff88000c09e3a8
-      }, 
-      owner = 0x0
-    }, 
-    dirtied_when = 0, 
-    i_hash = {
-      next = 0x0, 
-      pprev = 0xffff88000c09e3c8
-    }, 
-    i_wb_list = {
-      next = 0xffff88000c09e3d8, 
-      prev = 0xffff88000c09e3d8
-    }, 
-    i_lru = {
-      next = 0xffff88000c09e3e8, 
-      prev = 0xffff88000c09e3e8
-    }, 
-    i_sb_list = {
-      next = 0xffff88000c0a0cf8, 
-      prev = 0xffff880012423d38
-    }, 
-    {
-      i_dentry = {
-        first = 0x0
-      }, 
-      i_rcu = {
-        next = 0x0, 
-        func = 0xffffffffa029acb0 <xfs_inode_free_callback>
-      }
-    }, 
-    i_version = 0, 
-    i_count = {
-      counter = 0
-    }, 
-    i_dio_count = {
-      counter = 0
-    }, 
-    i_writecount = {
-      counter = 0
-    }, 
-    i_fop = 0xffffffffa03015c0, 
-    i_flock = 0x0, 
-    i_data = {
-      host = 0xffff88000c09e2f8, 
-      page_tree = {
-        height = 0, 
-        gfp_mask = 32, 
-        rnode = 0x0
-      }, 
-      tree_lock = {
-        {
-          rlock = {
-            raw_lock = {
-              {
-                head_tail = 4849738, 
-                tickets = {
-                  head = 74, 
-                  tail = 74
-                }
-              }
-            }
-          }
-        }
-      }, 
-      i_mmap_writable = 0, 
-      i_mmap = {
-        rb_node = 0x0
-      }, 
-      i_mmap_nonlinear = {
-        next = 0xffff88000c09e468, 
-        prev = 0xffff88000c09e468
-      }, 
-      i_mmap_mutex = {
-        count = {
-          counter = 1
-        }, 
-        wait_lock = {
-          {
-            rlock = {
-              raw_lock = {
-                {
-                  head_tail = 0, 
-                  tickets = {
-                    head = 0, 
-                    tail = 0
-                  }
-                }
-              }
-            }
-          }
-        }, 
-        wait_list = {
-          next = 0xffff88000c09e480, 
-          prev = 0xffff88000c09e480
-        }, 
-        owner = 0x0
-      }, 
-      nrpages = 0, 
-      writeback_index = 0, 
-      a_ops = 0xffffffffa0301460, 
-      flags = 131290, 
-      backing_dev_info = 0xffff88001c7b9950, 
-      private_lock = {
-        {
-          rlock = {
-            raw_lock = {
-              {
-                head_tail = 1835036, 
-                tickets = {
-                  head = 28, 
-                  tail = 28
-                }
-              }
-            }
-          }
-        }
-      }, 
-      private_list = {
-        next = 0xffff88000c09e4c8, 
-        prev = 0xffff88000c09e4c8
-      }, 
-      private_data = 0x0
-    }, 
-    i_dquot = {0x0, 0x0}, 
-    i_devices = {
-      next = 0xffff88000c09e4f0, 
-      prev = 0xffff88000c09e4f0
-    }, 
-    {
-      i_pipe = 0x0, 
-      i_bdev = 0x0, 
-      i_cdev = 0x0
-    }, 
-    i_generation = 15307555, 
-    i_fsnotify_mask = 0, 
-    i_fsnotify_marks = {
-      first = 0x0
-    }, 
-    i_private = 0x0
-  }
-}
+> +			dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
+> +			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+> +			dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
+> +					QSPI_SPI_CMD_REG);
+> +			status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			timeout =3D QSPI_TIMEOUT;
+> +			while ((status & QSPI_WC_BUSY) !=3D QSPI_XFER_DONE) {
 
---rwEMma7ioTxnRzrJ--
+do you really need to poll ? No IRQ available ?
+
+> +				if (--timeout < 0) {
+> +					pr_debug("QSPI tx timed out\n");
+
+dev_dbg()
+
+> +					return -1;
+> +				}
+> +				status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			}
+> +			pr_debug("tx done, status %08x\n", status);
+
+dev_dbg()
+
+> +		}
+> +		if (rxbuf) {
+> +			pr_debug("rx cmd %08x dc %08x\n",
+> +				qspi->cmd | QSPI_RD_SNGL, qspi->dc);
+
+dev_dbg()
+
+> +			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+> +			dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
+> +					QSPI_SPI_CMD_REG);
+> +			status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			timeout =3D QSPI_TIMEOUT;
+> +			while ((status & QSPI_WC_BUSY) !=3D QSPI_XFER_DONE) {
+> +				if (--timeout < 0) {
+> +					pr_debug("QSPI rx timed out\n");
+
+dev_dbg()
+
+> +					return -1;
+> +				}
+> +				status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> +			}
+> +			*rxbuf++ =3D dra7xxx_readl(qspi, QSPI_SPI_DATA_REG);
+> +			pr_debug("rx done, status %08x, read %02x\n",
+> +				status, *(rxbuf-1));
+
+dev_dbg()
+
+> +		}
+> +	}
+> +
+> +	if (flags & XFER_END)
+> +		dra7xxx_writel(qspi, qspi->cmd | QSPI_INVAL, QSPI_SPI_CMD_REG);
+> +
+> +	return 0;
+> +}
+> +
+> +static int dra7xxx_qspi_start_transfer_one(struct spi_master *master,
+> +		struct spi_message *m)
+> +{
+> +	struct dra7xxx_qspi *qspi =3D spi_master_get_devdata(master);
+> +	struct spi_device *spi =3D m->spi;
+> +	struct spi_transfer *t;
+> +	int status =3D 0;
+> +	int flags =3D 0;
+> +
+> +	/* setup command reg */
+> +	qspi->cmd =3D 0;
+> +	qspi->cmd |=3D QSPI_WLEN(8);
+> +	qspi->cmd |=3D QSPI_EN_CS(0);
+> +	qspi->cmd |=3D 0xfff;
+
+what is this magic number ???
+
+> +	/* setup device control reg */
+> +	qspi->dc =3D 0;
+> +
+> +	if (spi->mode & SPI_CPHA)
+> +		qspi->dc |=3D QSPI_CKPHA(0);
+> +	if (spi->mode & SPI_CPOL)
+> +		qspi->dc |=3D QSPI_CKPOL(0);
+> +	if (spi->mode & SPI_CS_HIGH)
+> +		qspi->dc |=3D QSPI_CSPOL(0);
+> +
+> +	list_for_each_entry(t, &m->transfers, transfer_list) {
+> +		if (list_is_last(&t->transfer_list, &m->transfers))
+> +			flags =3D XFER_END;
+> +
+> +		qspi_transfer_msg(qspi, t->len, t->tx_buf,
+> +			t->rx_buf, flags);
+> +
+> +		m->actual_length +=3D t->len;
+> +	}
+> +	m->status =3D status;
+> +	spi_finalize_current_message(master);
+> +
+> +	return status;
+> +}
+> +
+> +static const struct of_device_id dra7xxx_qspi_match[] =3D {
+> +	{.compatible =3D "ti,dra7xxx-qspi" },
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, dra7xxx_qspi_match);
+> +
+> +static int dra7xxx_qspi_probe(struct platform_device *pdev)
+> +{
+> +	struct  dra7xxx_qspi *qspi;
+> +	struct spi_master *master;
+> +	struct resource         *r;
+> +	struct device_node *np =3D pdev->dev.of_node;
+> +	u32 max_freq;
+> +	int ret;
+> +
+> +	master =3D spi_alloc_master(&pdev->dev, sizeof(*qspi));
+> +	if (!master)
+> +		return -ENOMEM;
+> +
+> +	master->mode_bits =3D SPI_CPOL | SPI_CPHA;
+> +
+> +	master->num_chipselect =3D 1;
+> +	master->bus_num =3D -1;
+> +	master->setup =3D dra7xxx_qspi_setup;
+> +	master->prepare_transfer_hardware =3D dra7xxx_qspi_prepare_xfer;
+> +	master->transfer_one_message =3D dra7xxx_qspi_start_transfer_one;
+> +	master->unprepare_transfer_hardware =3D dra7xxx_qspi_unprepare_xfer;
+> +	master->dev.of_node =3D pdev->dev.of_node;
+> +	master->bits_per_word_mask =3D BIT(32 - 1) | BIT(16 - 1) | BIT(8 - 1);
+> +
+> +	dev_set_drvdata(&pdev->dev, master);
+> +
+> +	qspi =3D spi_master_get_devdata(master);
+> +	qspi->master =3D master;
+> +	qspi->dev =3D &pdev->dev;
+> +
+> +	r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (r =3D=3D NULL) {
+> +		ret =3D -ENODEV;
+> +		goto free_master;
+> +	}
+> +
+> +	qspi->base =3D devm_ioremap_resource(&pdev->dev, r);
+> +	if (!qspi->base) {
+> +		dev_dbg(&pdev->dev, "can't ioremap MCSPI\n");
+
+no need to print anything, devm_ioremap_resource() already prints error
+messages.
+
+--=20
+balbi
+
+--pWOmaDnDlrCGjNh4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0pxqAAoJEIaOsuA1yqREhxgQAKxb0WxmsII+8N9AwD1jiiEV
+rd4YtcVXxtrXr36+EF8mTbFyX11EPNRFS97wOrMP+mYLTEKwyzGGdV8qCjh+7J1v
+KKqJH9uGFCHtGocq8NkHIXq+7+hu4ZfEAljfaYEe56lS29c0FZK2rBwkVnjVNVHo
+s7X3umV4lTfn2nxYcgDR7ynVS+6PXe1FkuG7mw3iVnWVEJhjbfhO/xFfoNOBvoar
+yTgejwZXrGHDOGo1aCTdfsU/VvGmNF5Qkf8Ek2r9MZHiXBoTKt2eOu/hFgPiNY6x
+n3D+l8jdQ/1zlPRnQ54rdMJY+g2BRnFA5LNmx+7Ux2JrdlziU0yiWq3yag3ujXqp
+otcrcoCc8TWPSYsvqdENMQkkrZbIF2mpWMF2KEZO8quiYJOYm0zVda/1H+x8Nf5s
+CtkHvqfypqmvGo7AT901kkDbFNRVMD3KDwrUc4M7lHhC3vxJO9HTo2Z/zfByZ5vk
+kHV7AN8TWWGQgd71K9aHTDW4/VuPLa0TG7WCnidP9Upq8VYQjmpnK1jsCdhGirxS
+EZjoohX43Z3rXDpH0KbB2u8z27IxcCN0SAW9myiDVHQwVfLzMBSMbStCVq5lhj3G
+FVQaBgAM/jAdMLc3oPvdzy4gJs3BsWQswiMrP/e/5emIH5lv+2jOlVMMWbTb2gbX
+NtYWKNtSWgqYIQzJRAWs
+=zoy8
+-----END PGP SIGNATURE-----
+
+--pWOmaDnDlrCGjNh4--
