@@ -1,238 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab3GBGA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 02:00:28 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:47498 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3GBGA0 (ORCPT
+	id S932181Ab3GBGAr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 02:00:47 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:49182 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3GBGAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 02:00:26 -0400
-Message-ID: <51D26C6D.6070601@gmail.com>
-Date: Tue, 02 Jul 2013 02:00:13 -0400
-From: Dong Fang <yp.fangdong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 2 Jul 2013 02:00:45 -0400
 MIME-Version: 1.0
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-CC: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: remove the unnecessrary code of fs/inode.c
-References: <1372681143-23465-1-git-send-email-yp.fangdong@gmail.com> <51D253CB.2070408@cn.fujitsu.com>
-In-Reply-To: <51D253CB.2070408@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73E9E3BF5@DBDE04.ent.ti.com>
+References: <20130702152954.f25bbf51c1a79aa4437e22ee@canb.auug.org.au>
+	<20980858CB6D3A4BAE95CA194937D5E73E9E3BF5@DBDE04.ent.ti.com>
+Date: Mon, 1 Jul 2013 23:00:44 -0700
+Message-ID: <CAOesGMgh=CLCrtohrNF59Sh40-weCorL1_yjFgFKr47qhVy+xg@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the l2-mtd tree
+From: Olof Johansson <olof@lixom.net>
+To: "Gupta, Pekon" <pekon@ti.com>, Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Jackson <mpfj-list@newflow.co.uk>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 12:15 AM, Gu Zheng wrote:
-> On 07/01/2013 08:19 PM, Dong Fang wrote:
+On Mon, Jul 1, 2013 at 10:44 PM, Gupta, Pekon <pekon@ti.com> wrote:
+>>
+>> Hi all,
+>>
+>> Today's linux-next merge of the arm-soc tree got a conflict in
+>> Documentation/devicetree/bindings/mtd/gpmc-nand.txt between commits
+>> 6c88058ef927 ("ARM: OMAP2+: cleaned-up DT support of various ECC
+>> schemes") and 212012138deb ("mtd: nand: omap2: updated support for
+>> BCH4
+>> ECC scheme") from the l2-mtd tree and commit 496c8a0bbb72 ("ARM:
+>> OMAP2+:
+>> Allow NAND transfer mode to be specified in DT") from the arm-soc tree.
+>>
+>> I fixed it up (maybe - see below) and can carry the fix as necessary (no
+>> action is required).
+>>
+>> --
+>> Cheers,
+>> Stephen Rothwell                    sfr@canb.auug.org.au
+>>
+> Yes following merge is correct. Apologies, as there were multiple OMAP2 NAND and GPMC updates and clean-up going into different trees, so these conflict came. Going forward you shouldn't find such issues, as code is more stable now. Thanks for help.
 >
->> These functions, such as find_inode_fast() and find_inode(), iget_lock() and
->> iget5_lock(), insert_inode_locked() and insert_inode_locked4(), almost have
->> the same code.
->
-> Maybe the title "[PATCH] vfs: remove the reduplicate code of fs/inode.c" is more
-> suitable.
->
+> with regards, pekon
 
-that's right, thanks for your advice
+Sigh. The new bindings seem to never have been reviewed by any device
+tree maintainers, and from the look of it, it might need some
+discussion. It wasn't even cc:d to devicetree-discuss.
 
->>
->> Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
->
->
-> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
->
-> Thanks,
-> Gu
->
->> ---
->>   fs/inode.c |  134 ++++++++++++------------------------------------------------
->>   1 files changed, 26 insertions(+), 108 deletions(-)
->>
->> diff --git a/fs/inode.c b/fs/inode.c
->> index 00d5fc3..847eee9 100644
->> --- a/fs/inode.c
->> +++ b/fs/inode.c
->> @@ -790,6 +790,22 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
->>   }
->>
->>   static void __wait_on_freeing_inode(struct inode *inode);
->> +
->> +
->> +static int test_ino(struct inode *inode, void *data)
->> +{
->> +	unsigned long ino = *(unsigned long *) data;
->> +	return inode->i_ino == ino;
->
-> Can be more concise:
-> 	return inode->i_ino == *(unsigned long *) data;
-> ,so does the new insert_inode_locked():
-> 	
->
->> +}
->> +
->> +static int set_ino(struct inode *inode, void *data)
->> +{
->> +	inode->i_ino = *(unsigned long *) data;
->> +	return 0;
->> +}
->> +
->> +
->> +
->>   /*
->>    * Called with the inode lock held.
->>    */
->> @@ -829,28 +845,7 @@ repeat:
->>   static struct inode *find_inode_fast(struct super_block *sb,
->>   				struct hlist_head *head, unsigned long ino)
->>   {
->> -	struct inode *inode = NULL;
->> -
->> -repeat:
->> -	hlist_for_each_entry(inode, head, i_hash) {
->> -		spin_lock(&inode->i_lock);
->> -		if (inode->i_ino != ino) {
->> -			spin_unlock(&inode->i_lock);
->> -			continue;
->> -		}
->> -		if (inode->i_sb != sb) {
->> -			spin_unlock(&inode->i_lock);
->> -			continue;
->> -		}
->> -		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
->> -			__wait_on_freeing_inode(inode);
->> -			goto repeat;
->> -		}
->> -		__iget(inode);
->> -		spin_unlock(&inode->i_lock);
->> -		return inode;
->> -	}
->> -	return NULL;
->> +	return find_inode(sb, head, test_ino, (void *)&ino);
->>   }
->>
->>   /*
->> @@ -1073,50 +1068,7 @@ EXPORT_SYMBOL(iget5_locked);
->>    */
->>   struct inode *iget_locked(struct super_block *sb, unsigned long ino)
->>   {
->> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
->> -	struct inode *inode;
->> -
->> -	spin_lock(&inode_hash_lock);
->> -	inode = find_inode_fast(sb, head, ino);
->> -	spin_unlock(&inode_hash_lock);
->> -	if (inode) {
->> -		wait_on_inode(inode);
->> -		return inode;
->> -	}
->> -
->> -	inode = alloc_inode(sb);
->> -	if (inode) {
->> -		struct inode *old;
->> -
->> -		spin_lock(&inode_hash_lock);
->> -		/* We released the lock, so.. */
->> -		old = find_inode_fast(sb, head, ino);
->> -		if (!old) {
->> -			inode->i_ino = ino;
->> -			spin_lock(&inode->i_lock);
->> -			inode->i_state = I_NEW;
->> -			hlist_add_head(&inode->i_hash, head);
->> -			spin_unlock(&inode->i_lock);
->> -			inode_sb_list_add(inode);
->> -			spin_unlock(&inode_hash_lock);
->> -
->> -			/* Return the locked inode with I_NEW set, the
->> -			 * caller is responsible for filling in the contents
->> -			 */
->> -			return inode;
->> -		}
->> -
->> -		/*
->> -		 * Uhhuh, somebody else created the same inode under
->> -		 * us. Use the old inode instead of the one we just
->> -		 * allocated.
->> -		 */
->> -		spin_unlock(&inode_hash_lock);
->> -		destroy_inode(inode);
->> -		inode = old;
->> -		wait_on_inode(inode);
->> -	}
->> -	return inode;
->> +	return iget5_locked(sb, ino, test_ino, set_ino, (void *)&ino);
->>   }
->>   EXPORT_SYMBOL(iget_locked);
->>
->> @@ -1281,48 +1233,6 @@ struct inode *ilookup(struct super_block *sb, unsigned long ino)
->>   }
->>   EXPORT_SYMBOL(ilookup);
->>
->> -int insert_inode_locked(struct inode *inode)
->> -{
->> -	struct super_block *sb = inode->i_sb;
->> -	ino_t ino = inode->i_ino;
->> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
->> -
->> -	while (1) {
->> -		struct inode *old = NULL;
->> -		spin_lock(&inode_hash_lock);
->> -		hlist_for_each_entry(old, head, i_hash) {
->> -			if (old->i_ino != ino)
->> -				continue;
->> -			if (old->i_sb != sb)
->> -				continue;
->> -			spin_lock(&old->i_lock);
->> -			if (old->i_state & (I_FREEING|I_WILL_FREE)) {
->> -				spin_unlock(&old->i_lock);
->> -				continue;
->> -			}
->> -			break;
->> -		}
->> -		if (likely(!old)) {
->> -			spin_lock(&inode->i_lock);
->> -			inode->i_state |= I_NEW;
->> -			hlist_add_head(&inode->i_hash, head);
->> -			spin_unlock(&inode->i_lock);
->> -			spin_unlock(&inode_hash_lock);
->> -			return 0;
->> -		}
->> -		__iget(old);
->> -		spin_unlock(&old->i_lock);
->> -		spin_unlock(&inode_hash_lock);
->> -		wait_on_inode(old);
->> -		if (unlikely(!inode_unhashed(old))) {
->> -			iput(old);
->> -			return -EBUSY;
->> -		}
->> -		iput(old);
->> -	}
->> -}
->> -EXPORT_SYMBOL(insert_inode_locked);
->> -
->>   int insert_inode_locked4(struct inode *inode, unsigned long hashval,
->>   		int (*test)(struct inode *, void *), void *data)
->>   {
->> @@ -1366,6 +1276,14 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
->>   }
->>   EXPORT_SYMBOL(insert_inode_locked4);
->>
->> +int insert_inode_locked(struct inode *inode)
->> +{
->> +	unsigned long ino = inode->i_ino;
->> +	return insert_inode_locked4(inode, ino, test_ino, (void *)&ino);
->
-> return insert_inode_locked4(inode, inode->i_ino, test_ino, (void *)&ino);
->
->> +}
->> +EXPORT_SYMBOL(insert_inode_locked);
->> +
->> +
->>
->>   int generic_delete_inode(struct inode *inode)
->>   {
->
->
->
+It's completely inappropriate to merge a patch like this at this time
+without any kind of acks from the people reviewing bindings. Can it
+please be dropped ASAP from the MTD tree? Thanks!
 
+Or, if you want it in different wording: The mtd-tree patch is a
+strong NAK until this has been sorted out.
+
+It was also applied today, after the merge window opened. Don't merge
+it for 3.11. Artem?
+
+
+-Olof
