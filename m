@@ -1,82 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab3GBGsh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 02:48:37 -0400
-Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:47369 "EHLO
-	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932231Ab3GBGsg (ORCPT
+	id S932319Ab3GBGvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 02:51:51 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:51004 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab3GBGvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 02:48:36 -0400
-Message-ID: <51D27658.1060806@st.com>
-Date: Tue, 02 Jul 2013 07:42:32 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
+	Tue, 2 Jul 2013 02:51:48 -0400
+X-Originating-IP: 108.223.40.66
+Date: Mon, 1 Jul 2013 23:51:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 0/8] 3.0.85-stable review
+Message-ID: <20130702065147.GA26042@roeck-us.net>
+References: <20130701200232.909858308@linuxfoundation.org>
 MIME-Version: 1.0
-To: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-Cc: netdev@vger.kernel.org, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/3] dt:net:stmmac: Add support to dwmac version 3.610
- and 3.710
-References: <1372678962-12959-1-git-send-email-srinivas.kandagatla@st.com> <1372679034-13139-1-git-send-email-srinivas.kandagatla@st.com> <51D1BA52.3030201@st.com>
-In-Reply-To: <51D1BA52.3030201@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701200232.909858308@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Peppe for the comments,
-On 01/07/13 18:20, Giuseppe CAVALLARO wrote:
-> On 7/1/2013 1:43 PM, Srinivas KANDAGATLA wrote:
->> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
->>
->> +
->> +    plat->bus_id = of_alias_get_id(np, "ethernet");
->> +    if (plat->bus_id < 0)
->> +        plat->bus_id = 0;
->> +
->> +    of_property_read_u32(np, "snps,phy-addr", &plat->phy_addr);
->> +
->>       plat->mdio_bus_data = devm_kzalloc(&pdev->dev,
->>                          sizeof(struct stmmac_mdio_bus_data),
->>                          GFP_KERNEL);
->> @@ -51,11 +60,25 @@ static int stmmac_probe_config_dt(struct
->> platform_device *pdev,
->>        */
->>       if (of_device_is_compatible(np, "st,spear600-gmac") ||
->>           of_device_is_compatible(np, "snps,dwmac-3.70a") ||
->> +        of_device_is_compatible(np, "snps,dwmac-3.610") ||
-I forgot to add "snps,dwmac-3.710" to this list, I will do it in V2 patch.
-
->>           of_device_is_compatible(np, "snps,dwmac")) {
->>           plat->has_gmac = 1;
->>           plat->pmt = 1;
->>       }
->>
->> +    if (of_device_is_compatible(np, "snps,dwmac-3.610") ||
->> +        of_device_is_compatible(np, "snps,dwmac-3.710")) {
->> +        plat->enh_desc = 1;
->> +        plat->bugged_jumbo = 1;
->> +        plat->force_sf_dma_mode = 1;
->> +    }
+On Mon, Jul 01, 2013 at 01:10:32PM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.85 release.
+> There are 8 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
 > 
-> I think some these shouldn't be forced here. Maybe plat->enh_desc could
-> be set because for new syn mac cores.
+> Responses should be made by Wed Jul  3 19:59:07 UTC 2013.
+> Anything received after that time might be too late.
 > 
-> Also pmt could not be forced because it is an extra module so it could
-> happen that a new chip has no PMT block.
-I agree with you, But the new chips should/will have different version
-numbers, so having the version number in the compatible string should
-make it possible for cores without PMT module to not set pmt or any
-other properties.
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.85-rc1.gz
+> and the diffstat can be found below.
+> 
 
-Are you happy with the setting pmt based on compatible string or do you
-think passing pmt as another property to device tree makes more sense?
+Build results are as follows. Same results as with 3.0.84.
 
-Thanks,
-srini
+Guenter
 
+---
+Build x86_64:defconfig passed
+Build x86_64:allyesconfig passed
+Build x86_64:allmodconfig passed
+Build x86_64:allnoconfig passed
+Build x86_64:alldefconfig passed
+Build i386:defconfig passed
+Build i386:allyesconfig passed
+Build i386:allmodconfig passed
+Build i386:allnoconfig passed
+Build i386:alldefconfig passed
+Build mips:defconfig passed
+Build mips:bcm47xx_defconfig passed
+Build mips:bcm63xx_defconfig passed
+Build mips:ar7_defconfig passed
+Build mips:fuloong2e_defconfig passed
+Build mips:e55_defconfig passed
+Build mips:powertv_defconfig passed
+Build mips:malta_defconfig passed
+Build powerpc:defconfig failed
+Build powerpc:allyesconfig failed
+Build powerpc:allmodconfig failed
+Build powerpc:maple_defconfig failed
+Build powerpc:ppc6xx_defconfig passed
+Build powerpc:mpc83xx_defconfig passed
+Build powerpc:mpc85xx_defconfig passed
+Build powerpc:mpc85xx_smp_defconfig passed
+Build powerpc:tqm8xx_defconfig passed
+Build powerpc:85xx/sbc8548_defconfig passed
+Build powerpc:83xx/mpc834x_mds_defconfig passed
+Build powerpc:86xx/sbc8641d_defconfig passed
+Build arm:defconfig passed
+Build arm:allyesconfig failed
+Build arm:allmodconfig failed
+Build arm:exynos4_defconfig passed
+Build arm:kirkwood_defconfig passed
+Build arm:omap2plus_defconfig passed
+Build arm:tegra_defconfig passed
+Build arm:u8500_defconfig failed
+Build arm:ap4evb_defconfig passed
+Build arm:pxa910_defconfig passed
+Build m68k:defconfig passed
+Build m68k:m5272c3_defconfig failed
+Build m68k:m5307c3_defconfig failed
+Build m68k:m5249evb_defconfig failed
+Build m68k:m5407c3_defconfig failed
+Build m68k:sun3_defconfig passed
+Build sparc:defconfig passed
+Build sparc:sparc64_defconfig passed
+Build xtensa:defconfig failed
+Build xtensa:iss_defconfig failed
+Build microblaze:mmu_defconfig failed
+Build microblaze:nommu_defconfig failed
+Build blackfin:defconfig failed
+Build parisc:defconfig failed
+
+-----------------------
+Total builds: 54 Total build errors: 17
