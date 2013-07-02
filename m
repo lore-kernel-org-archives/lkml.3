@@ -1,84 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab3GBXZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:25:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23060 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab3GBXZ0 (ORCPT
+	id S1755626Ab3GBXaE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 19:30:04 -0400
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:53848 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754392Ab3GBXaB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:25:26 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=7pBTIyHDArkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kWN4WHtJ9-kA:10 a=i0EeH86SAAAA:8 a=xrUKD_JN5Fumvqy-xqYA:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372807524.22688.78.camel@gandalf.local.home>
-Subject: Re: [PATCH v3 02/12] tracing: fix irqs-off tag display in syscall
- tracing
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 02 Jul 2013 19:25:24 -0400
-In-Reply-To: <1365564393-10972-3-git-send-email-jovi.zhangwei@huawei.com>
-References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
-	 <1365564393-10972-3-git-send-email-jovi.zhangwei@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Tue, 2 Jul 2013 19:30:01 -0400
+Message-ID: <51D36274.6020204@gmail.com>
+Date: Wed, 03 Jul 2013 01:29:56 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+MIME-Version: 1.0
+To: Arnaud Ebalard <arno@natisbad.org>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 5/7] ARM: kirkwood: remove redundant DT board files
+References: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com> <1372762824-12202-6-git-send-email-sebastian.hesselbarth@gmail.com> <87k3l8v9s1.fsf@natisbad.org>
+In-Reply-To: <87k3l8v9s1.fsf@natisbad.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
-> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-> 
-> Now all syscall tracing irqs-off tag is wrong,
-> syscall enter entry doesn't disable irq.
-> 
->  [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
->  [root@jovi tracing]# cat trace
->  # tracer: nop
->  #
->  # entries-in-buffer/entries-written: 13/13   #P:2
->  #
->  #                              _-----=> irqs-off
->  #                             / _----=> need-resched
->  #                            | / _---=> hardirq/softirq
->  #                            || / _--=> preempt-depth
->  #                            ||| /     delay
->  #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->  #              | |       |   ||||       |         |
->        irqbalance-513   [000] d... 56115.496766: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
->        irqbalance-513   [000] d... 56115.497008: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
->          sendmail-771   [000] d... 56115.827982: sys_open(filename: b770e6d1, flags: 0, mode: 1b6)
-> 
-> The reason is syscall tracing doesn't record irq_flags into buffer.
-> Fix this after this patch:
-> 
->  [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
->  [root@jovi tracing]# cat trace
->  # tracer: nop
->  #
->  # entries-in-buffer/entries-written: 14/14   #P:2
->  #
->  #                              _-----=> irqs-off
->  #                             / _----=> need-resched
->  #                            | / _---=> hardirq/softirq
->  #                            || / _--=> preempt-depth
->  #                            ||| /     delay
->  #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
->  #              | |       |   ||||       |         |
->        irqbalance-514   [001] ....    46.213921: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
->        irqbalance-514   [001] ....    46.214160: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
->             <...>-920   [001] ....    47.307260: sys_open(filename: 4e82a0c5, flags: 80000, mode: 0)
-> 
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+On 07/03/2013 01:09 AM, Arnaud Ebalard wrote:
+> Hi Sebastian,
+>
+> Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>  writes:
+>
+>> With DT support for mv643xx_eth board specific init for some boards now
+>> is unneccessary. Remove those board files, Kconfig entries, and
+>> corresponding entries in kirkwood_defconfig.
+>
+> Applying above your set an old quilt cleaning patch Jason asked at some
+> point, it became empty except for arch/arm/mach_kirkwood/common.h in
+> which some declarations were left behind. If this is correct, can you
+> just merge the hunks below in your 5/7 in next round?
+>
+> AFAICT, only dnskw_init() remains, which matches the list of board-*.c
+> files in arch/arm/mach_kirkwood/ (i.e. board-dt.c and board-dnskw.c).
+
+Arnaud,
+
+thanks for sending this! I will squash it into v6 and send a v7 of this
+patch. Looks like ARM SoC pull request causes some issues with Russell's
+tree, so there is plenty of time left to resend (and re-test :))
+
+And you are right, only board-dt.c and board-dnskw.c remain in
+mach-kirkwood. With irqchip/clocksource patches in, IMHO kirkwood is
+quite ready for mach-mvebu. mach-dove is still missing DT pcie, and I 
+haven't had any success to get my hands on a board with pcie to test,
+yet.
+
+Sebastian
+
+> Signed-off-by: Arnaud Ebalard<arno@natisbad.org>
 > ---
-
-I'll pull this one in for 3.11 and mark for stable.
-
-Thanks,
-
--- Steve
-
+>   arch/arm/mach-kirkwood/common.h | 108 ----------------------------------------
+>   1 file changed, 108 deletions(-)
+>
+> diff --git a/arch/arm/mach-kirkwood/common.h b/arch/arm/mach-kirkwood/common.h
+> index 1c09f3f..1cbdd2b 100644
+> --- a/arch/arm/mach-kirkwood/common.h
+> +++ b/arch/arm/mach-kirkwood/common.h
+> @@ -57,26 +57,6 @@ void kirkwood_restart(char, const char *);
+>   void kirkwood_clk_init(void);
+>
+>   /* board init functions for boards not fully converted to fdt */
+> -#ifdef CONFIG_MACH_DREAMPLUG_DT
+> -void dreamplug_init(void);
+> -#else
+> -static inline void dreamplug_init(void) {};
+> -#endif
+> -#ifdef CONFIG_MACH_GURUPLUG_DT
+> -void guruplug_dt_init(void);
+> -#else
+> -static inline void guruplug_dt_init(void) {};
+> -#endif
+> -#ifdef CONFIG_MACH_SHEEVAPLUG_DT
+> -void sheevaplug_dt_init(void);
+> -#else
+> -static inline void sheevaplug_dt_init(void) {};
+> -#endif
+> -#ifdef CONFIG_MACH_TS219_DT
+> -void qnap_dt_ts219_init(void);
+> -#else
+> -static inline void qnap_dt_ts219_init(void) {};
+> -#endif
+>
+>   #ifdef CONFIG_MACH_DLINK_KIRKWOOD_DT
+>   void dnskw_init(void);
+> @@ -84,94 +64,6 @@ void dnskw_init(void);
+>   static inline void dnskw_init(void) {};
+>   #endif
+>
+> -#ifdef CONFIG_MACH_ICONNECT_DT
+> -void iconnect_init(void);
+> -#else
+> -static inline void iconnect_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_IB62X0_DT
+> -void ib62x0_init(void);
+> -#else
+> -static inline void ib62x0_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_DOCKSTAR_DT
+> -void dockstar_dt_init(void);
+> -#else
+> -static inline void dockstar_dt_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_GOFLEXNET_DT
+> -void goflexnet_init(void);
+> -#else
+> -static inline void goflexnet_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_LSXL_DT
+> -void lsxl_init(void);
+> -#else
+> -static inline void lsxl_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_IOMEGA_IX2_200_DT
+> -void iomega_ix2_200_init(void);
+> -#else
+> -static inline void iomega_ix2_200_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_KM_KIRKWOOD_DT
+> -void km_kirkwood_init(void);
+> -#else
+> -static inline void km_kirkwood_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_DB88F628X_BP_DT
+> -void db88f628x_init(void);
+> -#else
+> -static inline void db88f628x_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_MPLCEC4_DT
+> -void mplcec4_init(void);
+> -#else
+> -static inline void mplcec4_init(void) {};
+> -#endif
+> -
+> -#if defined(CONFIG_MACH_INETSPACE_V2_DT) || \
+> -	defined(CONFIG_MACH_NETSPACE_V2_DT) || \
+> -	defined(CONFIG_MACH_NETSPACE_MAX_V2_DT) || \
+> -	defined(CONFIG_MACH_NETSPACE_LITE_V2_DT) || \
+> -	defined(CONFIG_MACH_NETSPACE_MINI_V2_DT)
+> -void ns2_init(void);
+> -#else
+> -static inline void ns2_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_OPENBLOCKS_A6_DT
+> -void openblocks_a6_init(void);
+> -#else
+> -static inline void openblocks_a6_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_READYNAS_DT
+> -void netgear_readynas_init(void);
+> -#else
+> -static inline void netgear_readynas_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_TOPKICK_DT
+> -void usi_topkick_init(void);
+> -#else
+> -static inline void usi_topkick_init(void) {};
+> -#endif
+> -
+> -#ifdef CONFIG_MACH_CLOUDBOX_DT
+> -void cloudbox_init(void);
+> -#else
+> -static inline void cloudbox_init(void) {};
+> -#endif
+> -
+>   /* early init functions not converted to fdt yet */
+>   char *kirkwood_id(void);
+>   void kirkwood_l2_init(void);
 
