@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034Ab3GBQXv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:23:51 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:60863 "EHLO smtp3-g21.free.fr"
+	id S1752758Ab3GBQYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:24:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24051 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab3GBQXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 12:23:46 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH] MAINTAINERS: xfs@oss.sgi.com is a list
-Date: Tue,  2 Jul 2013 17:00:47 +0200
-Message-Id: <1372777248-4114-1-git-send-email-ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752056Ab3GBQYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:24:18 -0400
+Date: Tue, 2 Jul 2013 12:23:23 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v6 2/5] s390/vmcore: Use ELF header in new memory feature
+Message-ID: <20130702162322.GD22603@redhat.com>
+References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
+ <1372707159-10425-3-git-send-email-holzheu@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372707159-10425-3-git-send-email-holzheu@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes type of xfs@oss.sgi.com
+On Mon, Jul 01, 2013 at 09:32:36PM +0200, Michael Holzheu wrote:
 
-The output of ./scripts/get_maintainer.pl is
-modified to report xfs@oss.sgi.com as a list:
+[..]
+> +ssize_t elfcorehdr_read(char *buf, size_t count, u64 *ppos)
+> +{
+> +	void *src = (void *)(unsigned long)*ppos;
+> +
+> +	src = elfcorehdr_newmem ? src : src - OLDMEM_BASE;
 
- Ben Myers <bpm@sgi.com> (supporter:XFS FILESYSTEM)
- Alex Elder <elder@kernel.org> (supporter:XFS FILESYSTEM)
--xfs@oss.sgi.com (supporter:XFS FILESYSTEM)
-+xfs@oss.sgi.com (open list:XFS FILESYSTEM)
- linux-kernel@vger.kernel.org (open list)
+Seriously, we need to get rid of all this OLDMEM_BASE logic in s390
+specific code. For regular kdump, it is no different than x86. Only
+special handling required for zfcpdump for HSA region.
 
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
----
- MAINTAINERS | 1 -
- 1 file changed, 1 deletion(-)
+Why do we need above. Is it to cover the case where elfcorehdr have
+been prepared by user space? Are elf headers initially stored in
+reserved region and then swapped. Why do we need to swap these or
+why kexec-tools could not take care of swapping it.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ad7e322..7b6ab51 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -9139,7 +9139,6 @@ XFS FILESYSTEM
- P:	Silicon Graphics Inc
- M:	Ben Myers <bpm@sgi.com>
- M:	Alex Elder <elder@kernel.org>
--M:	xfs@oss.sgi.com
- L:	xfs@oss.sgi.com
- W:	http://oss.sgi.com/projects/xfs
- T:	git git://oss.sgi.com/xfs/xfs.git
--- 
-1.8.3.1
+Anyway, I think in a separate patch series it is good to cleanup
+s390 code for removing all the swap logic related stuff. I can't
+wrap my head around it anymore.
 
+Thanks
+Vivek
