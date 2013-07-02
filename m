@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab3GBFkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 01:40:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45578 "EHLO comal.ext.ti.com"
+	id S1752623Ab3GBFmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 01:42:19 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45001 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab3GBFkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 01:40:51 -0400
-Message-ID: <51D267BE.8090605@ti.com>
-Date: Tue, 2 Jul 2013 11:10:14 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Hebbar Gururaja <gururaja.hebbar@ti.com>
-CC: <khilman@linaro.org>, <tony@atomide.com>, <b-cousson@ti.com>,
-        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
+	id S1750857Ab3GBFmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 01:42:18 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "khilman@linaro.org" <khilman@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
         Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 2/4] davinci: da8xx/omap-l1: Remove hard coding of rtc
+Subject: RE: [PATCH 2/4] davinci: da8xx/omap-l1: Remove hard coding of rtc
  device wakeup
-References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com> <1372412109-986-3-git-send-email-gururaja.hebbar@ti.com>
-In-Reply-To: <1372412109-986-3-git-send-email-gururaja.hebbar@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Thread-Topic: [PATCH 2/4] davinci: da8xx/omap-l1: Remove hard coding of rtc
+ device wakeup
+Thread-Index: AQHOc+J0RsbXSUDawkGOsr/q2+BaoplQX14AgACGVwA=
+Date: Tue, 2 Jul 2013 05:41:37 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC4E74E@DBDE04.ent.ti.com>
+References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
+ <1372412109-986-3-git-send-email-gururaja.hebbar@ti.com>
+ <51D267BE.8090605@ti.com>
+In-Reply-To: <51D267BE.8090605@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r625gODx005620
 
-
-On 6/28/2013 3:05 PM, Hebbar Gururaja wrote:
-> Since now rtc-omap driver itself calls deice_init_wakeup(dev, true),
-> duplicate call from the rtc device registration can be removed.
+On Tue, Jul 02, 2013 at 11:10:14, Nori, Sekhar wrote:
 > 
-> This is basically a partial revert of the prev commit
+> On 6/28/2013 3:05 PM, Hebbar Gururaja wrote:
+> > Since now rtc-omap driver itself calls deice_init_wakeup(dev, true),
+> > duplicate call from the rtc device registration can be removed.
+> > 
+> > This is basically a partial revert of the prev commit
+> > 
+> > commit 75c99bb0006ee065b4e2995078d779418b0fab54
+> > Author: Sekhar Nori <nsekhar@ti.com>
+> > 
+> >     davinci: da8xx/omap-l1: mark RTC as a wakeup source
+> > 
+> > Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> > Cc: Sekhar Nori <nsekhar@ti.com>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Cc: Russell King <linux@arm.linux.org.uk>
 > 
-> commit 75c99bb0006ee065b4e2995078d779418b0fab54
-> Author: Sekhar Nori <nsekhar@ti.com>
+> Subject line should be prefixed with ARM: keeping with arch/arm
+> convention. Otherwise looks good.
+
+Will fix it in v2.
+
 > 
->     davinci: da8xx/omap-l1: mark RTC as a wakeup source
+> Acked-by: Sekhar Nori <nsekhar@ti.com>
+
+Thanks for the review.
+
 > 
-> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Cc: Kevin Hilman <khilman@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
+> Thanks,
+> Sekhar
+> 
 
-Subject line should be prefixed with ARM: keeping with arch/arm
-convention. Otherwise looks good.
 
-Acked-by: Sekhar Nori <nsekhar@ti.com>
-
-Thanks,
-Sekhar
+Regards, 
+Gururaja
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
