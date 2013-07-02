@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402Ab3GBIxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:53:47 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:60406 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab3GBIxo (ORCPT
+	id S932370Ab3GBIyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:54:11 -0400
+Received: from nm11-vm10.access.bullet.mail.bf1.yahoo.com ([216.109.114.233]:28546
+	"EHLO nm11-vm10.access.bullet.mail.bf1.yahoo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932422Ab3GBIyI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:53:44 -0400
-From: joeyli.kernel@gmail.com
-To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
-        davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH] asymmetric keys: explicitly add the leading zero byte to encoded message
-Date: Tue,  2 Jul 2013 16:53:13 +0800
-Message-Id: <51d29516.a4df440a.5c67.7bfc@mx.google.com>
-X-Mailer: git-send-email 1.6.0.2
+	Tue, 2 Jul 2013 04:54:08 -0400
+X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Jul 2013 04:54:08 EDT
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 14169.9462.bm@omp1004.access.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=mayfV23aJvn11QHFlKIzNGEShhpW+JWDI2h+AILudrSeo9y6K0Qxamtpc5i2qKJgBmmkWejNpcyRjEGdpqLVSuANYy8ZzJgG7WetdwbVgycREIi48B9ZCJLIWQwrSLVVNQzZukRU6ttU6VMG0F2/mBPGHJ7d6cpDbstA5ovmcbU=  ;
+X-YMail-OSG: PgK_V5MVM1ns68W6AOifuXk72ryirvBV7M5AOKO6hn.nAIR
+ rjvFqTKIIYHuLLvH7lACQnG1_1Uv7rsSbqnpNinrSk9Xf7u1Kc5Kp1tsZgXZ
+ 4VB.uzXM3sd_DsMcE_SZ6NvlipRMWmHvEv0fh0O2G4LWDgJ2vjiEkXzIg5BR
+ EBJg_grr3ZWrHDJkGpt8lYNkJndLUdFjLDOaz3wEe6Vcv5rM4CW5iy7JpL4V
+ 6RRymBtJzMhFWUo6gnjegKZPcHpQW6gNPIXuYZ9lCeg4z1jQLWwY3EkmxcE.
+ 5ljDtJpQDWHFdgS4Fnk5o6mybSAwJta19RlfAFACLm1NpSChuCeBMQHtu6Si
+ gjVKtGTbRBrOuPzq.Dhps_UwJV8rM1EeBBjarhDi2h1cSkyz05aehMsY8PfU
+ ksxiHz9092IJNGGt1pumhC1565bOsrhoCZVEiDt9kcqqdPwqLOZpxYkjasXF
+ KJOO5XrNYQCIPNyPk_FDBD9sZyBkpJrkHLFsbyAOp__7QA1l1cXD7oJg62JG
+ i42QnOhuF2k.vJZdDevus6OUapYDH0qUcr9xZNOo01N6_SYHGfkuL8_1KUPX
+ dc2Fw4td.EpSbhTJfgb7HGY4glVK3KFzjf2DSLAt_IIQOau1wZ.d58NXsaEd
+ Gh_761A--
+X-Rocket-MIMEInfo: 002.001,Pj4gTGludXgga2VybmVsIGJ1aWxkLCB3aGlsZSBjb3JyZWN0LCBpcyBzb21ld2hhdCBzbG93LCBhbmQgdGhlIHNvdXJjZXMKCj4.IGNvdWxkIGJlIG1vcmUgcmVhZGFibGUuCgpHcmVnIHdyb3RlOgo.SG93IGlzIGl0ICJzbG93Ij8gwqAKCldlbGwsIHRoZSBwcm9wb3J0aW9uIG9mIHRpbWUgc3BlbnQgYnkgdGhlIENQVSBjb3JlcyBvbiBhY3Rpdml0aWVzIG90aGVyIHRoYW4gY29tcGlsaW5nIHNlZW1lZCBoaWdoLgoKCj5XaGF0ICJzb3VyY2VzIiBhcmUgeW91IHJlZmVycmluZyB0byBhcyBiZWluZyBub3QgcmUBMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.148.557
+References: <1372723921.53875.YahooMailNeo@web182202.mail.bf1.yahoo.com> <20130702044516.GA31484@kroah.com>
+Message-ID: <1372754805.73620.YahooMailNeo@web182206.mail.bf1.yahoo.com>
+Date: Tue, 2 Jul 2013 01:46:45 -0700 (PDT)
+From: Mark Galeck <mark_galeck@pacbell.net>
+Reply-To: Mark Galeck <mark_galeck@pacbell.net>
+Subject: Re: is it desirable to improve the build system?
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20130702044516.GA31484@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Yi Lee <jlee@suse.com>
+>> Linux kernel build, while correct, is somewhat slow, and the sources
 
-Per PKCS1 spec, the EMSA-PKCS1-v1_5 encoded message is leading by 0x00 0x01 in
-its first 2 bytes. The leading zero byte is suppressed by MPI so we pass a
-pointer to the _preceding_ byte to RSA_verify() in original code, but it has
-risk for the byte is not zero because it's not in EM buffer's scope, neither
-RSA_verify() nor mpi_get_buffer() didn't take care the leading byte.
+>> could be more readable.
 
-To avoid the risk, that's better we explicitly add the leading zero byte to EM
-for pass to RSA_verify(). This patch allocate a _EM buffer to capture the
-result from RSA_I2OSP(), then set the first byte to zero in EM and copy the
-remaining bytes from _EM.
+Greg wrote:
+>How is it "slow"?  
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
----
- crypto/asymmetric_keys/rsa.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+Well, the proportion of time spent by the CPU cores on activities other than compiling seemed high.
 
-diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-index ca1a4f3..7bc99d2 100644
---- a/crypto/asymmetric_keys/rsa.c
-+++ b/crypto/asymmetric_keys/rsa.c
-@@ -303,6 +303,7 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* Variables as per RFC3447 sec 8.2.2 */
- 	const u8 *H = sig->digest;
- 	u8 *EM = NULL;
-+	u8 *_EM = NULL;
- 	MPI m = NULL;
- 	size_t k;
- 
-@@ -337,14 +338,19 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* (2c) Convert the message representative (m) to an encoded message
- 	 *      (EM) of length k octets.
- 	 *
--	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
--	 *      pointer to the _preceding_ byte to RSA_verify()!
-+	 *      NOTE!  The leading zero byte is suppressed by MPI, so we add it
-+	 *      back to EM before input to RSA_verify()!
- 	 */
--	ret = RSA_I2OSP(m, k, &EM);
-+	ret = RSA_I2OSP(m, k, &_EM);
- 	if (ret < 0)
- 		goto error;
- 
--	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
-+	EM = kmalloc(k, GFP_KERNEL);
-+	memset(EM, 0, 1);
-+	memcpy(EM + 1, _EM, k-1);
-+	kfree(_EM);
-+
-+	ret = RSA_verify(H, EM, k, sig->digest_size,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
- 
--- 
-1.6.4.2
 
+>What "sources" are you referring to as being not readable?
+
+Not "not readable at all", just "could be made more readable" - the main Makefile and other main Make files; it seemed that one reason, IMHO, was not enough comments. 
+
+
+>What do you not understand that you think could be changed?
+
+I did not make careful notes in that area (details would come back to me if I look at this carefully), but right now I remember two things.
+
+As every child in kindergarten knows, recursive make is bad (except when it is good, which you learn in primary school). One reason is that all that re-parsing costs time. Linux kernel build is very heavy recursive.
+
+Frequent use of FORCE phony prerequisites to circumvent the normal GNU Make recipe avoidance mechanism, and then using a custom recipe mechanism to decide what to execute, seems to go against the philosophy of the tool being used (GNU Make) and as such seems, IMHO, to also waste time.
+
+Of course if one were to attempt a change, the first thing would be to do look carefully at the amount of time spent on such activities, rather than using words such as "seems". 
+
+
+What I don't understand of course is the reasons behind these choices have been made.
+
+
+>Have you looked at the history of the build code to help understand why
+things were changed to be they way they are?  git should help you out
+here.
+
+No. IMHO, looking at source, and especially past history thereof, to understand it, is a very inefficient use of one's time, only to be undertaken if all else fails. Much better is looking at comments and documentation, if available, and also, asking well-informed persons such as yourself.  
+
+
+Mark
