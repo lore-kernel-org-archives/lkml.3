@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3GBO4n (ORCPT <rfc822;w@1wt.eu>);
+	id S1753800Ab3GBO6K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 10:58:10 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:46240 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753384Ab3GBO4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Jul 2013 10:56:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51886 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753227Ab3GBO4h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 10:56:37 -0400
 From: Luciano Coelho <coelho@ti.com>
 To: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>
 CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
@@ -14,9 +13,9 @@ CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <coelho@ti.com>
-Subject: [PATCH v2 1/9] wl1251: split wl251 platform data to a separate structure
-Date: Tue, 2 Jul 2013 17:55:40 +0300
-Message-ID: <1372776948-24840-2-git-send-email-coelho@ti.com>
+Subject: [PATCH v2 6/9] wlcore: add initial device tree support to the sdio module
+Date: Tue, 2 Jul 2013 17:55:45 +0300
+Message-ID: <1372776948-24840-7-git-send-email-coelho@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1372776948-24840-1-git-send-email-coelho@ti.com>
 References: <1372776948-24840-1-git-send-email-coelho@ti.com>
@@ -26,214 +25,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the wl1251 part of the wl12xx platform data structure into a new
-structure specifically for wl1251.  Change the platform data built-in
-block and board files accordingly.
+If platform data is not available, try to get the required information
+from the device tree.  Register an OF match table and parse the
+appropriate device tree nodes.
 
-Cc: Tony Lindgren <tony@atomide.com>
+Parse interrupt property only, for now.
+
 Signed-off-by: Luciano Coelho <coelho@ti.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-omap2/board-omap3pandora.c       |    4 +--
- arch/arm/mach-omap2/board-rx51-peripherals.c   |    2 +-
- drivers/net/wireless/ti/wilink_platform_data.c |   37 ++++++++++++++++++++----
- drivers/net/wireless/ti/wl1251/sdio.c          |   12 ++++----
- drivers/net/wireless/ti/wl1251/spi.c           |    2 +-
- include/linux/wl12xx.h                         |   22 +++++++++++++-
- 6 files changed, 62 insertions(+), 17 deletions(-)
+ drivers/net/wireless/ti/wlcore/sdio.c |   69 ++++++++++++++++++++++++++++++---
+ 1 file changed, 63 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
-index 28133d5..bf06d95 100644
---- a/arch/arm/mach-omap2/board-omap3pandora.c
-+++ b/arch/arm/mach-omap2/board-omap3pandora.c
-@@ -540,7 +540,7 @@ static struct spi_board_info omap3pandora_spi_board_info[] __initdata = {
- 
- static void __init pandora_wl1251_init(void)
- {
--	struct wl12xx_platform_data pandora_wl1251_pdata;
-+	struct wl1251_platform_data pandora_wl1251_pdata;
- 	int ret;
- 
- 	memset(&pandora_wl1251_pdata, 0, sizeof(pandora_wl1251_pdata));
-@@ -554,7 +554,7 @@ static void __init pandora_wl1251_init(void)
- 		goto fail_irq;
- 
- 	pandora_wl1251_pdata.use_eeprom = true;
--	ret = wl12xx_set_platform_data(&pandora_wl1251_pdata);
-+	ret = wl1251_set_platform_data(&pandora_wl1251_pdata);
- 	if (ret < 0)
- 		goto fail_irq;
- 
-diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
-index 18ca61e..733f3f2 100644
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -80,7 +80,7 @@ enum {
- 	RX51_SPI_MIPID,		/* LCD panel */
+diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/ti/wlcore/sdio.c
+index 4c7e8ac..9370d7e 100644
+--- a/drivers/net/wireless/ti/wlcore/sdio.c
++++ b/drivers/net/wireless/ti/wlcore/sdio.c
+@@ -30,7 +30,7 @@
+ #include <linux/mmc/sdio_ids.h>
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+-#include <linux/gpio.h>
++#include <linux/of_irq.h>
+ #include <linux/wl12xx.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/printk.h>
+@@ -214,6 +214,43 @@ static struct wl1271_if_operations sdio_ops = {
+ 	.set_block_size = wl1271_sdio_set_block_size,
  };
  
--static struct wl12xx_platform_data wl1251_pdata;
-+static struct wl1251_platform_data wl1251_pdata;
- static struct tsc2005_platform_data tsc2005_pdata;
- 
- #if defined(CONFIG_SENSORS_LIS3_I2C) || defined(CONFIG_SENSORS_LIS3_I2C_MODULE)
-diff --git a/drivers/net/wireless/ti/wilink_platform_data.c b/drivers/net/wireless/ti/wilink_platform_data.c
-index 998e958..a92bd3e 100644
---- a/drivers/net/wireless/ti/wilink_platform_data.c
-+++ b/drivers/net/wireless/ti/wilink_platform_data.c
-@@ -23,17 +23,17 @@
- #include <linux/err.h>
- #include <linux/wl12xx.h>
- 
--static struct wl12xx_platform_data *platform_data;
-+static struct wl12xx_platform_data *wl12xx_platform_data;
- 
- int __init wl12xx_set_platform_data(const struct wl12xx_platform_data *data)
- {
--	if (platform_data)
-+	if (wl12xx_platform_data)
- 		return -EBUSY;
- 	if (!data)
- 		return -EINVAL;
- 
--	platform_data = kmemdup(data, sizeof(*data), GFP_KERNEL);
--	if (!platform_data)
-+	wl12xx_platform_data = kmemdup(data, sizeof(*data), GFP_KERNEL);
-+	if (!wl12xx_platform_data)
- 		return -ENOMEM;
- 
- 	return 0;
-@@ -41,9 +41,34 @@ int __init wl12xx_set_platform_data(const struct wl12xx_platform_data *data)
- 
- struct wl12xx_platform_data *wl12xx_get_platform_data(void)
- {
--	if (!platform_data)
-+	if (!wl12xx_platform_data)
- 		return ERR_PTR(-ENODEV);
- 
--	return platform_data;
-+	return wl12xx_platform_data;
- }
- EXPORT_SYMBOL(wl12xx_get_platform_data);
-+
-+static struct wl1251_platform_data *wl1251_platform_data;
-+
-+int __init wl1251_set_platform_data(const struct wl1251_platform_data *data)
++static struct wl12xx_platform_data *wlcore_get_pdata_from_of(struct device *dev)
 +{
-+	if (wl1251_platform_data)
-+		return -EBUSY;
-+	if (!data)
-+		return -EINVAL;
++	struct wl12xx_platform_data *pdata;
++	struct device_node *np = dev->of_node;
 +
-+	wl1251_platform_data = kmemdup(data, sizeof(*data), GFP_KERNEL);
-+	if (!wl1251_platform_data)
-+		return -ENOMEM;
++	if (!np) {
++		np = of_find_matching_node(NULL, dev->driver->of_match_table);
++		if (!np) {
++			dev_notice(dev, "device tree node not available\n");
++			pdata = ERR_PTR(-ENODEV);
++			goto out;
++		}
++	}
 +
-+	return 0;
++	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(dev, "can't allocate platform data\n");
++		pdata = ERR_PTR(-ENODEV);
++		goto out;
++	}
++
++	pdata->irq = irq_of_parse_and_map(np, 0);
++	if (pdata->irq < 0) {
++		dev_err(dev, "can't get interrupt gpio from the device tree\n");
++		goto out_free;
++	}
++
++	goto out;
++
++out_free:
++	kfree(pdata);
++	pdata = ERR_PTR(-ENODEV);
++
++out:
++	return pdata;
 +}
 +
-+struct wl1251_platform_data *wl1251_get_platform_data(void)
-+{
-+	if (!wl1251_platform_data)
-+		return ERR_PTR(-ENODEV);
+ static int wl1271_probe(struct sdio_func *func,
+ 				  const struct sdio_device_id *id)
+ {
+@@ -248,11 +285,22 @@ static int wl1271_probe(struct sdio_func *func,
+ 	/* Use block mode for transferring over one block size of data */
+ 	func->card->quirks |= MMC_QUIRK_BLKSZ_FOR_BYTE_MODE;
+ 
++	/* The pdata allocated here is freed when the device is freed,
++	 * so we don't need an additional out label to free it in case
++	 * of error further on.
++	 */
 +
-+	return wl1251_platform_data;
-+}
-+EXPORT_SYMBOL(wl1251_get_platform_data);
-diff --git a/drivers/net/wireless/ti/wl1251/sdio.c b/drivers/net/wireless/ti/wl1251/sdio.c
-index e2b3d9c..b75a37a 100644
---- a/drivers/net/wireless/ti/wl1251/sdio.c
-+++ b/drivers/net/wireless/ti/wl1251/sdio.c
-@@ -227,7 +227,7 @@ static int wl1251_sdio_probe(struct sdio_func *func,
- 	struct wl1251 *wl;
- 	struct ieee80211_hw *hw;
- 	struct wl1251_sdio *wl_sdio;
--	const struct wl12xx_platform_data *wl12xx_board_data;
-+	const struct wl1251_platform_data *wl1251_board_data;
- 
- 	hw = wl1251_alloc_hw();
- 	if (IS_ERR(hw))
-@@ -254,11 +254,11 @@ static int wl1251_sdio_probe(struct sdio_func *func,
- 	wl->if_priv = wl_sdio;
- 	wl->if_ops = &wl1251_sdio_ops;
- 
--	wl12xx_board_data = wl12xx_get_platform_data();
--	if (!IS_ERR(wl12xx_board_data)) {
--		wl->set_power = wl12xx_board_data->set_power;
--		wl->irq = wl12xx_board_data->irq;
--		wl->use_eeprom = wl12xx_board_data->use_eeprom;
-+	wl1251_board_data = wl1251_get_platform_data();
-+	if (!IS_ERR(wl1251_board_data)) {
-+		wl->set_power = wl1251_board_data->set_power;
-+		wl->irq = wl1251_board_data->irq;
-+		wl->use_eeprom = wl1251_board_data->use_eeprom;
++	/* Try to get legacy platform data from the board file */
+ 	pdev_data->pdata = wl12xx_get_platform_data();
+ 	if (IS_ERR(pdev_data->pdata)) {
+-		ret = PTR_ERR(pdev_data->pdata);
+-		dev_err(glue->dev, "missing wlan platform data: %d\n", ret);
+-		goto out_free_glue;
++		dev_info(&func->dev,
++			 "legacy platform data not found, trying device tree\n");
++
++		pdev_data->pdata = wlcore_get_pdata_from_of(&func->dev);
++		if (IS_ERR(pdev_data->pdata)) {
++			dev_err(&func->dev, "can't get platform data\n");
++			goto out_free_glue;
++		}
  	}
  
- 	if (wl->irq) {
-diff --git a/drivers/net/wireless/ti/wl1251/spi.c b/drivers/net/wireless/ti/wl1251/spi.c
-index c7dc6fe..6bbbfe6 100644
---- a/drivers/net/wireless/ti/wl1251/spi.c
-+++ b/drivers/net/wireless/ti/wl1251/spi.c
-@@ -238,7 +238,7 @@ static const struct wl1251_if_operations wl1251_spi_ops = {
+ 	/* if sdio can keep power while host is suspended, enable wow */
+@@ -386,16 +434,25 @@ static const struct dev_pm_ops wl1271_sdio_pm_ops = {
+ };
+ #endif
  
- static int wl1251_spi_probe(struct spi_device *spi)
- {
--	struct wl12xx_platform_data *pdata;
-+	struct wl1251_platform_data *pdata;
- 	struct ieee80211_hw *hw;
- 	struct wl1251 *wl;
- 	int ret;
-diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
-index a54fe82..b516b4f 100644
---- a/include/linux/wl12xx.h
-+++ b/include/linux/wl12xx.h
-@@ -48,11 +48,15 @@ enum {
- 	WL12XX_TCXOCLOCK_33_6	= 7, /* 33.6 MHz */
++static const struct of_device_id wlcore_sdio_of_match_table[] = {
++	{ .compatible = "ti,wilink6" },
++	{ .compatible = "ti,wilink7" },
++	{ .compatible = "ti,wilink8" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, wlcore_sdio_of_match_table);
++
+ static struct sdio_driver wl1271_sdio_driver = {
+ 	.name		= "wl1271_sdio",
+ 	.id_table	= wl1271_devices,
+ 	.probe		= wl1271_probe,
+ 	.remove		= wl1271_remove,
+-#ifdef CONFIG_PM
+ 	.drv = {
++#ifdef CONFIG_PM
+ 		.pm = &wl1271_sdio_pm_ops,
+-	},
+ #endif
++		.of_match_table = of_match_ptr(wlcore_sdio_of_match_table),
++	},
  };
  
--struct wl12xx_platform_data {
-+struct wl1251_platform_data {
- 	void (*set_power)(bool enable);
- 	/* SDIO only: IRQ number if WLAN_IRQ line is used, 0 for SDIO IRQs */
- 	int irq;
- 	bool use_eeprom;
-+};
-+
-+struct wl12xx_platform_data {
-+	int irq;
- 	int board_ref_clock;
- 	int board_tcxo_clock;
- 	unsigned long platform_quirks;
-@@ -68,6 +72,10 @@ int wl12xx_set_platform_data(const struct wl12xx_platform_data *data);
- 
- struct wl12xx_platform_data *wl12xx_get_platform_data(void);
- 
-+int wl1251_set_platform_data(const struct wl1251_platform_data *data);
-+
-+struct wl1251_platform_data *wl1251_get_platform_data(void);
-+
- #else
- 
- static inline
-@@ -82,6 +90,18 @@ struct wl12xx_platform_data *wl12xx_get_platform_data(void)
- 	return ERR_PTR(-ENODATA);
- }
- 
-+static inline
-+int wl1251_set_platform_data(const struct wl1251_platform_data *data)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline
-+struct wl1251_platform_data *wl1251_get_platform_data(void)
-+{
-+	return ERR_PTR(-ENODATA);
-+}
-+
- #endif
- 
- #endif
+ static int __init wl1271_init(void)
 -- 
 1.7.10.4
 
