@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab3GBNg5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 09:36:57 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40427 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750985Ab3GBNg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 09:36:56 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19eWzU485PfPjkExjCd/Dh5VO1CzWFjmHY=
-Date: Tue, 2 Jul 2013 09:36:46 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 5/7] ARM: kirkwood: convert to DT irqchip and
- clocksource
-Message-ID: <20130702133646.GB17110@titan.lakedaemon.net>
-References: <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
- <1372770907-32738-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1752560Ab3GBN4S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 09:56:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:23072 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869Ab3GBN4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 09:56:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,980,1363158000"; 
+   d="scan'208";a="359347897"
+Message-ID: <51D2DC1D.60101@intel.com>
+Date: Tue, 02 Jul 2013 21:56:45 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372770907-32738-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Matthew Garrett <matthew.garrett@nebula.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
+        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        Bob Moore <robert.moore@intel.com>
+Subject: [PATCH 0/2] Expose OSI version
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <1371508629.523.3.camel@x230> <10189900.qsvQBSpnvI@vostro.rjw.lan> <2211483.MscZsfrrDc@vostro.rjw.lan>
+In-Reply-To: <2211483.MscZsfrrDc@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 03:15:07PM +0200, Sebastian Hesselbarth wrote:
-> With recent support for true irqchip and clocksource drivers for Orion
-> SoCs, now make use of it on DT enabled Kirkwood boards.
-> 
-> This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
-> where old code is moved out to and polishes DT board file a little bit.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> --- 
-> Changelog:
-> v4->v5:
-> - do not re-introduce already removed init_dma_coherent_pool_size
->   (Reported by Jason Cooper)
-> 
-> @Jason: I did a 'git grep init_dma_coherent_pool_size' and now there
-> are no users of that function - as it was before. Patch 6/7 only differs
-> in the 'index' diff line because of the rebase here. I will not resend that,
-> it should still apply.
+This is a re-spin of patch 2/3:
+ACPICA: Add interface for getting latest OS version requested via _OSI
+to address the comments suggested by Bob and Rafael.
 
-ok, great, thanks for turning that around.
+To be exact, the patchset does:
+1 Expose acpi_gbl_osi_data through include/acpi/acpixf.h and move all
+  OSI definitions to include/acpi/actypes.h in patch 1;
+2 Add a wrapper function acpi_osi_version in osl.c to return
+  acpi_gbl_osi_data in patch 2.
 
-thx,
+Matthew,
+I suppose you might be busy so I've done the re-spin for you,
+please let me know if you think something wrong, thanks.
 
-Jason.
+Aaron Lu (2):
+  ACPICA: expose OSI version
+  ACPI / OSL: add a wrapper function to return OSI version
+
+ drivers/acpi/acpica/aclocal.h | 13 -------------
+ drivers/acpi/osl.c            |  6 ++++++
+ include/acpi/acpixf.h         |  1 +
+ include/acpi/actypes.h        | 15 +++++++++++++++
+ include/linux/acpi.h          |  6 ++++++
+ 5 files changed, 28 insertions(+), 13 deletions(-)
+
+-- 
+1.8.3.2.10.g43d11f4
