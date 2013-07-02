@@ -1,70 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab3GBI1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:27:22 -0400
-Received: from mysmtp1.stec-inc.com ([1.9.68.9]:56863 "HELO
-	stec-inc.com.stec-inc.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1753309Ab3GBI1T convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:27:19 -0400
-X-ASG-Debug-ID: 1372753635-053ea947e82e8f80001-xx1T2L
-X-Barracuda-Envelope-From: osengineering@stec-inc.com
-From: OS Engineering <osengineering@stec-inc.com>
-To: Mike Snitzer <snitzer@gmail.com>
-CC: Amit Phansalkar <aphansalkar@stec-inc.com>,
-        "thornber@redhat.com" <thornber@redhat.com>,
-        "dm-devel@redhat.com" <dm-devel@redhat.com>,
-        "Jens Axboe" <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-bcache@vger.kernel.org" <linux-bcache@vger.kernel.org>,
-        "Padmini Balasubramaniyan" <padminib@stec-inc.com>,
-        "koverstreet@google.com" <koverstreet@google.com>
-Subject: RE: Performance Comparison among EnhanceIO, bcache and dm-cache.
-Thread-Topic: Performance Comparison among EnhanceIO, bcache and dm-cache.
-X-ASG-Orig-Subj: RE: Performance Comparison among EnhanceIO, bcache and dm-cache.
-Thread-Index: AQHOaKoi3ZDPNgozIE2Qnh8POgAh+JlRKGdg
-Date: Tue, 2 Jul 2013 08:25:17 +0000
-Message-ID: <D399C715A2AD7F4F891A75871FC3117508A112@MYMBX3.stec-inc.ad>
-References: <D399C715A2AD7F4F891A75871FC3117507866B@MYMBX3.stec-inc.ad>
- <CAMM=eLfKku3CuHUS-0Akv=FdEzk_OWz3j+3oTAWCrFnFLZ0b1g@mail.gmail.com>
-In-Reply-To: <CAMM=eLfKku3CuHUS-0Akv=FdEzk_OWz3j+3oTAWCrFnFLZ0b1g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.20.20.131]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S932424Ab3GBI2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:28:48 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:45350 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932257Ab3GBI2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 04:28:44 -0400
+Message-ID: <51D28E69.9060205@linux.vnet.ibm.com>
+Date: Tue, 02 Jul 2013 13:55:13 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-X-Barracuda-Connect: mycas03.stec-inc.ad[172.30.8.21]
-X-Barracuda-Start-Time: 1372753635
-X-Barracuda-URL: http://myspam1.stec-inc.com:8000/cgi-mod/mark.cgi
-X-Barracuda-BRTS-Status: 1
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.135574
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
+        vincent.guittot@linaro.org, laijs@cn.fujitsu.com,
+        David.Laight@aculab.com, rostedt@goodmis.org,
+        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
+        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wang YanQing <udknight@gmail.com>,
+        Shaohua Li <shli@fusionio.com>, Jan Beulich <jbeulich@suse.com>,
+        liguang <lig.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH v3 10/45] smp: Use get/put_online_cpus_atomic() to prevent
+ CPU offline
+References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com> <20130627195418.29830.34958.stgit@srivatsabhat.in.ibm.com> <51D2660A.8000401@linux.vnet.ibm.com>
+In-Reply-To: <51D2660A.8000401@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070208-6102-0000-0000-000003CA3A3F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Jun 11, 2013 11:06 AM, "OS Engineering" <osengineering@stec-inc.com> wrote:
->>
->> Hi Jens,
->>
->> In continuation with our previous communication, we have carried out performance comparison among EnhanceIO, bcache and dm-cache.
+Hi Michael,
 
->How reproducible are these results?  Any chance you could do 5-10 runs to get the avg and stddev?  May (or may not) prove interesting.
+On 07/02/2013 11:02 AM, Michael Wang wrote:
+> Hi, Srivatsa
+> 
+> On 06/28/2013 03:54 AM, Srivatsa S. Bhat wrote:
+> [snip]
+>> @@ -625,8 +632,9 @@ EXPORT_SYMBOL(on_each_cpu_mask);
+>>   * The function might sleep if the GFP flags indicates a non
+>>   * atomic allocation is allowed.
+>>   *
+>> - * Preemption is disabled to protect against CPUs going offline but not online.
+>> - * CPUs going online during the call will not be seen or sent an IPI.
+>> + * We use get/put_online_cpus_atomic() to protect against CPUs going
+>> + * offline but not online. CPUs going online during the call will
+>> + * not be seen or sent an IPI.
+> 
+> I was a little confused about this comment, if the offline-cpu still
+> have chances to become online, then there is chances that we will pick
+> it from for_each_online_cpu(), isn't it? Did I miss some point?
+>
 
-Hi mike,
-
-We found that, in case of write through caches, the test results were consistent for all caching solution with EnhanceIO providing better throughput in comparison to bcache and dm-cache. However, under write-back mode, dm-cache showed a large standard deviation. The results for EnhanceIO and bcache were consistent with EnhanceIO providing higher throughput when compared to bcache.
-
-We have performed 5 runs for all our performance tests and observed their mean and standard deviations. 
-The test results can be found at: https://gist.github.com/sanoj-stec/5858574
-The test scripts can be found at:  https://github.com/stec-inc/EnhanceIO/tree/master/performance_test
+Whether or not the newly onlined CPU is observed in our for_each_online_cpu()
+loop, is dependent on timing. On top of that, there are 2 paths in the code:
+one which uses a temporary cpumask and the other which doesn't. In the former
+case, if a CPU comes online _after_ we populate the temporary cpumask, then
+we won't send an IPI to that cpu, since the temporary cpumask doesn't contain
+that CPU. Whereas, if we observe the newly onlined CPU in the for_each_online_cpu()
+loop itself (either in the former or the latter case), then yes, we will send
+the IPI to that CPU.
 
 Regards,
-Sanoj
+Srivatsa S. Bhat
+
+> 
+>>   *
+>>   * You must not call this function with disabled interrupts or
+>>   * from a hardware interrupt handler or from a bottom half handler.
+>> @@ -641,26 +649,26 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
+>>  	might_sleep_if(gfp_flags & __GFP_WAIT);
+>>
+>>  	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags|__GFP_NOWARN)))) {
+>> -		preempt_disable();
+>> +		get_online_cpus_atomic();
+>>  		for_each_online_cpu(cpu)
+>>  			if (cond_func(cpu, info))
+>>  				cpumask_set_cpu(cpu, cpus);
+>>  		on_each_cpu_mask(cpus, func, info, wait);
+>> -		preempt_enable();
+>> +		put_online_cpus_atomic();
+>>  		free_cpumask_var(cpus);
+>>  	} else {
+>>  		/*
+>>  		 * No free cpumask, bother. No matter, we'll
+>>  		 * just have to IPI them one by one.
+>>  		 */
+>> -		preempt_disable();
+>> +		get_online_cpus_atomic();
+>>  		for_each_online_cpu(cpu)
+>>  			if (cond_func(cpu, info)) {
+>>  				ret = smp_call_function_single(cpu, func,
+>>  								info, wait);
+>>  				WARN_ON_ONCE(!ret);
+>>  			}
+>> -		preempt_enable();
+>> +		put_online_cpus_atomic();
+>>  	}
+>>  }
+>>  EXPORT_SYMBOL(on_each_cpu_cond);
+>>
+> 
 
