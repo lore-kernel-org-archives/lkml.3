@@ -1,113 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab3GBKPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 06:15:13 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:40526 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab3GBKPL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 06:15:11 -0400
+	id S1756130Ab3GBKQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 06:16:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59671 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755046Ab3GBKQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 06:16:24 -0400
+Date: Tue, 2 Jul 2013 13:16:08 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <balbi@ti.com>, <broonie@kernel.org>,
+        <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
+        <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
+Message-ID: <20130702101608.GO3352@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com>
+ <20130702092458.GI3352@arwen.pp.htv.fi>
+ <51D2A4CA.5030804@ti.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130630181945.GA5171@redhat.com>
-References: <CA+icZUXo=Z4gDfCMvLqRQDq_fpNAq+UqtUw=jrU=3=kVZP-2+A@mail.gmail.com>
-	<20130630181945.GA5171@redhat.com>
-Date: Tue, 2 Jul 2013 12:15:09 +0200
-Message-ID: <CA+icZUWLUSg-Sfd9FHXs8Amz+-s6vs_VOJsQpUSa9+fYM8XyNQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jun 28 [ BISECTED: rsyslog/imklog: High CPU
- usage ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Imre Deak <imre.deak@intel.com>, Lukas Czerner <lczerner@redhat.com>,
-        Samuel Ortiz <samuel@sortiz.org>, Wensong Zhang <wensong@linux-vs.org>,
-        Simon Horman <horms@verge.net.au>, Julian Anastasov <ja@ssi.bg>,
-        Ralf Baechle <ralf@linux-mips.org>, Valdis.Kletnieks@vt.edu,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SavPGzlo48F1Gxyz"
+Content-Disposition: inline
+In-Reply-To: <51D2A4CA.5030804@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 30, 2013 at 8:19 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> Andrew, please drop these
->
->         wait-introduce-wait_event_commonwq-condition-state-timeout.patch
->         wait-introduce-prepare_to_wait_event.patch
->
-> patches again. I'll send v3 although it really looks like I should
-> never try to touch wait.h.
->
-> On 06/29, Sedat Dilek wrote:
->>
->> As this all did not show me what caused the problem I started a
->> git-bisect session.
->>
->> This revealed the following culprit commit:
->>
->>      commit bb1f30cb7d3ba21098f0ee7e0382160ba2599a43
->>      "wait: introduce wait_event_common(wq, condition, state, timeout)"
->
-> Heh. First of all, I am really sorry.
->
-> Not only "__wait_no_timeout(tout) ?:" was wrong, I didn't bother
-> to recheck this logic even after I got the "warning: the omitted
-> middle operand in ?:" reports.
->
-> Sedat, thanks you very much! Any chance you can try the patch below?
->
+--SavPGzlo48F1Gxyz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[ CC linux-mm ML ]
+Hi,
 
-Hi Oleg,
+On Tue, Jul 02, 2013 at 03:30:42PM +0530, Sourav Poddar wrote:
+> >>+static int dra7xxx_qspi_setup(struct spi_device *spi)
+> >>+{
+> >>+	struct dra7xxx_qspi	*qspi =3D
+> >>+			spi_master_get_devdata(spi->master);
+> >>+
+> >>+	int clk_div;
+> >>+
+> >>+	if (!qspi->spi_max_frequency)
+> >>+		clk_div =3D 0;
+> >won't this generate division by zero ?
+> >
+> Yes, Probably only an error should be thrown here. ?
+> since min clk_div should be kept at 1.
 
-did you made a cleaned-up version?
-AFAICS v3, I read that on linux-mm ML, sorry if I ask here in this thread.
+right, if spi_max_frequency isn't passed, this is a broken DT binding.
+Bail out.
 
-Regards,
-- Sedat -
+> >>+	pm_runtime_get_sync(qspi->dev);
+> >>+
+> >>+	/* disable SCLK */
+> >>+	dra7xxx_writel(qspi, dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG)
+> >>+			&  ~QSPI_CLK_EN, QSPI_SPI_CLOCK_CNTRL_REG);
+> >>+
+> >>+	if (clk_div<  0) {
 
-> Oleg.
->
->
-> --- a/include/linux/wait.h
-> +++ b/include/linux/wait.h
-> @@ -191,12 +191,8 @@ wait_queue_head_t *bit_waitqueue(void *, int);
->         for (;;) {                                                      \
->                 __ret = prepare_to_wait_event(&wq, &__wait, state);     \
->                 if (condition) {                                        \
-> -                       __ret = __wait_no_timeout(tout);                \
-> -                       if (!__ret) {                                   \
-> -                               __ret = __tout;                         \
-> -                               if (!__ret)                             \
-> -                                       __ret = 1;                      \
-> -                       }                                               \
-> +                       __ret = __wait_no_timeout(tout) ? 0 :           \
-> +                                                       (__tout ?: 1);  \
->                         break;                                          \
->                 }                                                       \
->                                                                         \
-> @@ -217,16 +213,10 @@ wait_queue_head_t *bit_waitqueue(void *, int);
->  #define wait_event_common(wq, condition, state, tout)                  \
->  ({                                                                     \
->         long __ret;                                                     \
-> -       if (condition) {                                                \
-> -               __ret = __wait_no_timeout(tout);                        \
-> -               if (!__ret) {                                           \
-> -                       __ret = tout;                                   \
-> -                       if (!__ret)                                     \
-> -                               __ret = 1;                              \
-> -               }                                                       \
-> -       } else {                                                        \
-> +       if (condition)                                                  \
-> +               __ret = __wait_no_timeout(tout) ? 0 : ((tout) ?: 1);    \
-> +       else                                                            \
->                 __ret = __wait_event_common(wq, condition, state, tout);\
-> -       }                                                               \
->         __ret;                                                          \
->  })
->
->
+btw, add a space between clk_div and <
+
+> >>+			dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
+> >>+			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+> >>+			dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
+> >>+					QSPI_SPI_CMD_REG);
+> >>+			status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
+> >>+			timeout =3D QSPI_TIMEOUT;
+> >>+			while ((status&  QSPI_WC_BUSY) !=3D QSPI_XFER_DONE) {
+> >do you really need to poll ? No IRQ available ?
+> >
+> There is an interrupt available, I will try using that.
+
+look at how i2c-omap.c synchronizes interrupt with the transfer_msg
+code. It just uses a wait_for_completion().
+
+> >>+static int dra7xxx_qspi_start_transfer_one(struct spi_master *master,
+> >>+		struct spi_message *m)
+> >>+{
+> >>+	struct dra7xxx_qspi *qspi =3D spi_master_get_devdata(master);
+> >>+	struct spi_device *spi =3D m->spi;
+> >>+	struct spi_transfer *t;
+> >>+	int status =3D 0;
+> >>+	int flags =3D 0;
+> >>+
+> >>+	/* setup command reg */
+> >>+	qspi->cmd =3D 0;
+> >>+	qspi->cmd |=3D QSPI_WLEN(8);
+> >>+	qspi->cmd |=3D QSPI_EN_CS(0);
+> >>+	qspi->cmd |=3D 0xfff;
+> Since, we dont know the number of frame lenght that need to be
+> transferred and it comes from the spi framework, we keep the frame
+> lenght to maximum.
+> Then depending on the count value above in while loop, we terminate
+> our trasnfer.
+
+what ? seriously didn't get what you meant.
+
+--=20
+balbi
+
+--SavPGzlo48F1Gxyz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0qhoAAoJEIaOsuA1yqREP5AP+QGI/eQ3znaX9WBL4nqPcL5J
+1+4mz/qOgMtEHOQdc4njPyaaq+fay2qVwQ0IqezE65nlVKcEv+RX5IA4FC4aCXE/
+oqO+I4P3PL1lUQDdusVoZf2VUeq9yZI55z/m2tuFu88QcLK4qKxWig6Ji/MRfaXK
+GRCGNz0eUMWyXCfWh/tYCUWctibHg6Rjp4F/73spQC/5ni0L9dsdcNHYaeVKOfL4
++HJBvpMAwsLufrXLkhbIPexr2E2dKtTLHvn3ibxSHnsZJGmEkOoaBCobw+wBCH1g
+xuvEAybHxhgukVMR4DAH/pTLK4cFthHHYllgMM/Kx86385+cUuHYcgz4bPUBQpN1
+BCNBgqirSFtZgpUsalFh/MNf5CboYs2FZsgR+pO4G3/3WSOxyxk4Ng9dgrWIatQN
+ZtmHP1CGifv3E5iLQXKgbnifZUaGU98PRbxYTSm+kdQhoCpXKxXaWmm1p8r+sGUX
+/OnQ0uGMXb6VRWRJsEqOr6qqZDkWhT8j2wnCpKqJK1D8Y7wyPyr67nckOJ9haHMw
+vngvnCMHbDV2M1HV22wKBn15U1+5QNfLA051ZnuVtHWoXSEv5XO8YD0D+o3KMecG
+ReeF/fV4Le6f9kr4Hxi9susqFOSOX1Ich0ayifg8P6wu2Tx2m6OnTsW//lHj1pin
+D0x/UqrNCw3bNFAvb3h3
+=hyWc
+-----END PGP SIGNATURE-----
+
+--SavPGzlo48F1Gxyz--
