@@ -1,81 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab3GBJra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:47:30 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:40201
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932324Ab3GBJr2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:47:28 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzc89bhzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h93fhd24he5bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
-From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>
-To: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-i2c@vger.kernel.org>
-CC: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: [PATCH linux-next] i2c-designware: use div_u64 to fix link
-Date: Tue, 2 Jul 2013 11:46:54 +0200
-Message-ID: <1372758414-21513-1-git-send-email-vincent.stehle@freescale.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S932634Ab3GBJuE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:50:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:51633 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751Ab3GBJuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 05:50:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,980,1363158000"; 
+   d="scan'208";a="363410236"
+Message-ID: <51D2A246.3000705@linux.intel.com>
+Date: Tue, 02 Jul 2013 12:49:58 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
+        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
+        devel-lists@codyps.com, eliezer@tamir.org.il
+Subject: [PATCH v2 net-next] net: convert lls to use time_in_range()
+References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com> <20130701.140833.1705666564717621661.davem@davemloft.net> <51D2919F.7050007@linux.intel.com> <51D29329.4060004@linux.intel.com>
+In-Reply-To: <51D29329.4060004@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the following link error:
+Time in range will fail safely if we move to a different cpu with an
+extremely large clock skew.
+Add time_in_range64() and convert lls to use it.
 
-  drivers/built-in.o: In function `dw_i2c_probe':
-  of_iommu.c:(.text+0x18c8f0): undefined reference to `__aeabi_uldivmod'
-  make: *** [vmlinux] Error 1
-
-Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>
-Cc: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 ---
+v1->v2
+fixed double call to sched_clock() in can_poll_ll(), checkpatchisms
 
 
-Hi,
+  fs/select.c             |   10 ++++++----
+  include/linux/jiffies.h |    4 ++++
+  include/net/ll_poll.h   |   26 +++++++++++++++++---------
+  3 files changed, 27 insertions(+), 13 deletions(-)
 
-Linux next-20130702 link broke for ARM config multi_v7_defconfig. This is with
-gcc 4.7.2 but I am not sure it matters much here.
+diff --git a/fs/select.c b/fs/select.c
+index 3654075..f28a585 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -403,7 +403,8 @@ int do_select(int n, fd_set_bits *fds, struct 
+timespec *end_time)
+  	int retval, i, timed_out = 0;
+  	unsigned long slack = 0;
+  	unsigned int ll_flag = ll_get_flag();
+-	u64 ll_time = ll_end_time();
++	u64 ll_start = ll_start_time(ll_flag);
++	u64 ll_time = ll_run_time();
 
-This patch repairs the link.
+  	rcu_read_lock();
+  	retval = max_select_fd(n, fds);
+@@ -498,7 +499,7 @@ int do_select(int n, fd_set_bits *fds, struct 
+timespec *end_time)
+  		}
 
-It did not break anything for me on i.MX6 sabre sd, but it does'nt have a
-designware i2c, so more reviewing/testing is welcome.
+  		/* only if on, have sockets with POLL_LL and not out of time */
+-		if (ll_flag && can_ll && can_poll_ll(ll_time))
++		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+  			continue;
 
-Best regards,
+  		/*
+@@ -770,7 +771,8 @@ static int do_poll(unsigned int nfds,  struct 
+poll_list *list,
+  	int timed_out = 0, count = 0;
+  	unsigned long slack = 0;
+  	unsigned int ll_flag = ll_get_flag();
+-	u64 ll_time = ll_end_time();
++	u64 ll_start = ll_start_time(ll_flag);
++	u64 ll_time = ll_run_time();
 
-V.
+  	/* Optimise the no-wait case */
+  	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+@@ -819,7 +821,7 @@ static int do_poll(unsigned int nfds,  struct 
+poll_list *list,
+  			break;
 
+  		/* only if on, have sockets with POLL_LL and not out of time */
+-		if (ll_flag && can_ll && can_poll_ll(ll_time))
++		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+  			continue;
 
- drivers/i2c/busses/i2c-designware-platdrv.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+  		/*
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 8fb8edf..97ba4e7 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -139,6 +139,10 @@ static inline u64 get_jiffies_64(void)
+  	 ((__s64)(a) - (__s64)(b) >= 0))
+  #define time_before_eq64(a,b)	time_after_eq64(b,a)
 
-diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-index def79b5..4c5fada 100644
---- a/drivers/i2c/busses/i2c-designware-platdrv.c
-+++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-@@ -122,7 +122,8 @@ static int dw_i2c_probe(struct platform_device *pdev)
- 
- 		of_property_read_u32(pdev->dev.of_node,
- 					"i2c-sda-hold-time-ns", &ht);
--		dev->sda_hold_time = ((u64)ic_clk * ht + 500000) / 1000000;
-+		dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000,
-+					     1000000);
- 	}
- 
- 	dev->functionality =
--- 
-1.7.10.4
++#define time_in_range64(a, b, c) \
++	(time_after_eq64(a, b) && \
++	 time_before_eq64(a, c))
++
+  /*
+   * These four macros compare jiffies and 'a' for convenience.
+   */
+diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
+index 6c06f7c..b76f004 100644
+--- a/include/net/ll_poll.h
++++ b/include/net/ll_poll.h
+@@ -67,19 +67,23 @@ static inline u64 ll_sched_clock(void)
+  /* we don't mind a ~2.5% imprecision so <<10 instead of *1000
+   * sk->sk_ll_usec is a u_int so this can't overflow
+   */
+-static inline u64 ll_sk_end_time(struct sock *sk)
++static inline u64 ll_sk_run_time(struct sock *sk)
+  {
+-	return ((u64)ACCESS_ONCE(sk->sk_ll_usec) << 10) + ll_sched_clock();
++	return (u64)ACCESS_ONCE(sk->sk_ll_usec) << 10;
+  }
 
+  /* in poll/select we use the global sysctl_net_ll_poll value
+   * only call sched_clock() if enabled
+   */
+-static inline u64 ll_end_time(void)
++static inline u64 ll_run_time(void)
+  {
+-	u64 end_time = ACCESS_ONCE(sysctl_net_ll_poll);
++	return (u64)ACCESS_ONCE(sysctl_net_ll_poll) << 10;
++}
 
+-	return end_time ? (end_time << 10) + ll_sched_clock() : 0;
++/* if flag is not set we don't need to know the time */
++static inline u64 ll_start_time(unsigned int flag)
++{
++	return flag ? ll_sched_clock() : 0;
+  }
+
+  static inline bool sk_valid_ll(struct sock *sk)
+@@ -88,9 +92,12 @@ static inline bool sk_valid_ll(struct sock *sk)
+  	       !need_resched() && !signal_pending(current);
+  }
+
+-static inline bool can_poll_ll(u64 end_time)
++/* careful! time_in_range64 will evaluate now twice */
++static inline bool can_poll_ll(u64 start_time, u64 run_time)
+  {
+-	return !time_after64(ll_sched_clock(), end_time);
++	u64 now = ll_sched_clock();
++
++	return time_in_range64(now, start_time, start_time + run_time);
+  }
+
+  /* when used in sock_poll() nonblock is known at compile time to be true
+@@ -98,7 +105,8 @@ static inline bool can_poll_ll(u64 end_time)
+   */
+  static inline bool sk_poll_ll(struct sock *sk, int nonblock)
+  {
+-	u64 end_time = nonblock ? 0 : ll_sk_end_time(sk);
++	u64 start_time = ll_start_time(!nonblock);
++	u64 run_time = ll_sk_run_time(sk);
+  	const struct net_device_ops *ops;
+  	struct napi_struct *napi;
+  	int rc = false;
+@@ -129,7 +137,7 @@ static inline bool sk_poll_ll(struct sock *sk, int 
+nonblock)
+  					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
+
+  	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+-		 can_poll_ll(end_time));
++		 can_poll_ll(start_time, run_time));
+
+  	rc = !skb_queue_empty(&sk->sk_receive_queue);
+  out:
 
