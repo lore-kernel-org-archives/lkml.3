@@ -1,174 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab3GBAPp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 20:15:45 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:42986 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755950Ab3GBAPc (ORCPT
+	id S1755924Ab3GBAQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 20:16:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30607 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab3GBAQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 20:15:32 -0400
-Date: Mon, 1 Jul 2013 17:15:31 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-cc: debian-kernel@lists.debian.org, kernel-team@lists.ubuntu.com
-Subject: [PATCH] scripts/package/builddeb: build perftools package
-Message-ID: <alpine.DEB.2.00.1307011713030.13163@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 1 Jul 2013 20:16:46 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=rGC8Lj73z8IA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=4pZ9hBHD-EsA:10 a=2kocwz7sFZBVBdPnKKsA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372724204.22688.29.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/3] tracing: Use a ring buffer size of 1 when creating
+ a new trace buffer
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Alexander Z Lam <azl@google.com>
+Cc: linux-kernel@vger.kernel.org, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>
+Date: Mon, 01 Jul 2013 20:16:44 -0400
+In-Reply-To: <1372717885-4543-1-git-send-email-azl@google.com>
+References: <1372717885-4543-1-git-send-email-azl@google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This will build a linux-tools-$version package for each build that includes
-perf.
+On Mon, 2013-07-01 at 15:31 -0700, Alexander Z Lam wrote:
+> Use deferred ring buffer allocation in new trace buffer instances by
+> copying the behavior of the deferred allocation of global_trace's buffer.
+> Without this, each new trace buffer instance will attempt to allocate
+> num_cpus * TRACE_BUF_SIZE_DEFAULT bytes for the ring buffer, which might
+> fail on a system with many cores. If this fails, the new instance is not
+> created, precluding the user from setting a smaller buffer for which
+> allocation might succeed.
+> 
 
-Signed-off-by: Gary Lowell <gary.lowell@inktank.com>
----
- scripts/package/builddeb |   95 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 94 insertions(+), 1 deletion(-)
+Actually no, I don't like this approach. The reason for the expanded
+buffer for ftrace is because we wanted distros to configure it enabled,
+thus we needed a way not to waste memory in the buffers for tracing
+which is used by 1% of distro uses, and the 99% of distro uses just have
+wasted memory.
 
-diff --git a/scripts/package/builddeb b/scripts/package/builddeb
-index acb8650..f57d33c 100644
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -78,17 +78,20 @@ tmpdir="$objtree/debian/tmp"
- fwdir="$objtree/debian/fwtmp"
- kernel_headers_dir="$objtree/debian/hdrtmp"
- libc_headers_dir="$objtree/debian/headertmp"
-+tools_dir="$objtree/debian/toolstmp"
-+tmp_build_dir="$objtree/debian/toolsbuild"
- packagename=linux-image-$version
- fwpackagename=linux-firmware-image
- kernel_headers_packagename=linux-headers-$version
- libc_headers_packagename=linux-libc-dev
-+tools_packagename=linux-tools-$version
- 
- if [ "$ARCH" = "um" ] ; then
- 	packagename=user-mode-linux-$version
- fi
- 
- # Setup the directory structure
--rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir"
-+rm -rf "$tmpdir" "$fwdir" "$kernel_headers_dir" "$libc_headers_dir" "$tools_dir" "$tmp_build_dir"
- mkdir -m 755 -p "$tmpdir/DEBIAN"
- mkdir -p  "$tmpdir/lib" "$tmpdir/boot" "$tmpdir/usr/share/doc/$packagename"
- mkdir -m 755 -p "$fwdir/DEBIAN"
-@@ -98,6 +101,10 @@ mkdir -p "$libc_headers_dir/usr/share/doc/$libc_headers_packagename"
- mkdir -m 755 -p "$kernel_headers_dir/DEBIAN"
- mkdir -p "$kernel_headers_dir/usr/share/doc/$kernel_headers_packagename"
- mkdir -p "$kernel_headers_dir/lib/modules/$version/"
-+mkdir -m 755 -p "$tools_dir/DEBIAN"
-+mkdir -p "$tools_dir/usr/share/doc/$tools_packagename"
-+mkdir -p "$tools_dir/usr/bin/"
-+mkdir -p "$tmp_build_dir"
- if [ "$ARCH" = "um" ] ; then
- 	mkdir -p "$tmpdir/usr/lib/uml/modules/$version" "$tmpdir/usr/bin"
- fi
-@@ -120,6 +127,77 @@ else
- 	fi
- fi
- 
-+# Build the tools
-+num_tools="0"
-+tools_flavour_abi=${version#*-}
-+tools_flavour=${tools_flavour_abi#*-}
-+tools_version=${version%-$tools_flavour}
-+debian_tools_version="${version%%-*}"
-+debian_tools_version="${version%.*}"
-+if grep -q '^CONFIG_PERF_EVENTS=y' .config ; then
-+	# Build and install perf
-+	(
-+	 unset MAKEFLAGS
-+	 unset MFLAGS
-+	 unset MAKEOVERRIDES
-+
-+	 mkdir -p $objtree/tools/perf
-+	 cd "$srctree/tools/perf"
-+	 $MAKE DESTDIR="$tools_dir/usr/" LDFLAGS= O=$objtree/tools/perf/ install
-+	 mv "$tools_dir/usr/bin/perf" "$tools_dir/usr/bin/perf_$debian_tools_version"
-+	 ln -s "/usr/bin/perf_$debian_tools_version" "$tools_dir/usr/bin/perf_$tools_version"
-+	 mv "$tools_dir/usr/libexec/perf-core" "$tools_dir/usr/share/perf_$debian_tools_version-core"
-+	 rmdir "$tools_dir/usr/libexec"
-+
-+	 # Documentation can't be built out-of-tree so copy source
-+	 # over to objtree and build man pages there
-+	 mkdir -p $tmp_build_dir/perf
-+	 cp -a "$srctree/tools/perf/Documentation" "$tmp_build_dir/perf/"
-+	 cp -a "$srctree/tools/perf/config" "$tmp_build_dir/perf/"
-+	 cd "$tmp_build_dir/perf/Documentation"
-+	 $MAKE man
-+	 $MAKE DESTDIR="$tools_dir/usr/" install
-+	 for manpage in `find $tools_dir/usr/share/man/ -type f`; do
-+		mv $manpage ${manpage/perf/perf_$debian_tools_version}
-+		gzip -9 ${manpage/perf/perf_$debian_tools_version}
-+	 done
-+	)
-+	num_tools=$(($num_tools+1))
-+fi
-+
-+if [[ "$ARCH" = "i386" || "$ARCH" = "x86_64" ]]; then
-+	# Build turbostat
-+	(
-+	 cp -a $srctree/tools/power/x86/turbostat "$tmp_build_dir"
-+	 ln -s $srctree/arch "$tmp_build_dir/../../../arch"
-+	 cd "$tmp_build_dir/turbostat/"
-+	 unset MAKEFLAGS
-+	 unset MFLAGS
-+	 unset MAKEOVERRIDES
-+	 $MAKE LDFLAGS=
-+	 cp turbostat "$tools_dir/usr/bin/turbostat_$debian_tools_version"
-+	 ln -s "/usr/bin/turbostat_$debian_tools_version" "$tools_dir/usr/bin/turbostat_$tools_version"
-+	 mkdir -p "$tools_dir/usr/share/man/man8"
-+	 cp turbostat.8 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
-+	 gzip -9 "$tools_dir/usr/share/man/man8/turbotstat_${debian_tools_version}.8"
-+	)
-+
-+	# Build x86_energy_perf_policy
-+	(
-+	 cp -a $srctree/tools/power/x86/x86_energy_perf_policy "$tmp_build_dir"
-+	 cd "$tmp_build_dir/x86_energy_perf_policy"
-+	 unset MAKEFLAGS
-+	 unset MFLAGS
-+	 unset MAKEOVERRIDES
-+	 $MAKE LDFLAGS=
-+	 cp x86_energy_perf_policy "$tools_dir/usr/bin/x86_energy_perf_policy_$debian_tools_version"
-+	 ln -s "/usr/bin/x86_energy_perf_policy_$debian_tools_version" "$tools_dir/usr/bin/x86_energy_perf_policy_$tools_version"
-+	 cp x86_energy_perf_policy.8 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
-+	 gzip -9 "$tools_dir/usr/share/man/man8/x86_energy_perf_policy_${debian_tools_version}.8"
-+	)
-+	num_tools=$(($num_tools+2))
-+fi
-+
- if grep -q '^CONFIG_MODULES=y' .config ; then
- 	INSTALL_MOD_PATH="$tmpdir" $MAKE KBUILD_SRC= modules_install
- 	rm -f "$tmpdir/lib/modules/$version/build"
-@@ -292,9 +370,24 @@ Description: Linux support headers for userspace development
-  are used by the installed headers for GNU glibc and other system libraries.
- EOF
- 
-+cat <<EOF >> debian/control
-+
-+Package: $tools_packagename
-+Section: devel
-+Architecture: $arch
-+Depends: \${shlibs:Depends}
-+Description: Linux kernel tools for version $version
-+ This package provides the architecture dependant parts for kernel
-+ version locked tools for version $version
-+EOF
-+
- if [ "$ARCH" != "um" ]; then
- 	create_package "$kernel_headers_packagename" "$kernel_headers_dir"
- 	create_package "$libc_headers_packagename" "$libc_headers_dir"
-+	if [ "$num_tools" > "0" ]; then
-+		dpkg-shlibdeps $tools_dir/usr/bin/*
-+		create_package "$tools_packagename" "$tools_dir"
-+	fi
- fi
- 
- create_package "$packagename" "$tmpdir"
--- 
-1.7.9.5
+The reason I don't like this, is because it can fail to allocate when
+the user starts the trace, which may cause strange results. For the main
+buffer, we need to deal with this because of the distro issue. There's
+plenty of ways to allocate the buffer on boot up in case you don't want
+to worry about the buffer later. But for instances, I think the creation
+of the instance should be dependent on whether or not you have the space
+for the buffer, and not to find this out at time of starting the trace.
+
+Now, the solution you do want is a new file called,
+"instance_default_buffer_size_kb", that is used when creating a new
+buffer. That is, let users change what a new instance buffer size will
+be.
+
+By default, this should be what the buffer_size is. Perhaps have it
+change with the buffer_size as long as the
+instance_default_buffer_size_kb hasn't changed manually yet.
+
+-- Steve
+
 
