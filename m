@@ -1,93 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3GBGCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 02:02:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60651 "EHLO mx1.redhat.com"
+	id S932191Ab3GBGDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 02:03:30 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46070 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750887Ab3GBGCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 02:02:07 -0400
-Date: Tue, 2 Jul 2013 02:01:46 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>,
-        axboe@kernel.dk
-Subject: Re: block layer softlockup
-Message-ID: <20130702060146.GA5835@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Oleg Nesterov <oleg@redhat.com>,
-	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrey Vagin <avagin@openvz.org>,
-	Steven Rostedt <rostedt@goodmis.org>, axboe@kernel.dk
-References: <20130625153520.GA7784@redhat.com>
- <20130626191853.GA29049@redhat.com>
- <20130627002255.GA16553@redhat.com>
- <20130627075543.GA32195@dastard>
- <20130627143055.GA1000@redhat.com>
- <20130628011843.GD32195@dastard>
- <CA+55aFze-=6e_P1syCs=3b6-xj-itVyZKvpejqBR83gA5tV+4w@mail.gmail.com>
- <20130628035437.GB29338@dastard>
- <20130701175734.GA13641@redhat.com>
- <20130702020741.GE4072@dastard>
+	id S1750887Ab3GBGD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 02:03:28 -0400
+Message-ID: <51D26CFA.5090500@ti.com>
+Date: Tue, 2 Jul 2013 11:32:34 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130702020741.GE4072@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hebbar Gururaja <gururaja.hebbar@ti.com>
+CC: <khilman@linaro.org>, <tony@atomide.com>, <b-cousson@ti.com>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Alessandro Zummo <a.zummo@towertech.it>, <rtc-linux@googlegroups.com>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 3/4] rtc: omap: add rtc wakeup support to alarm events
+References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com> <1372412109-986-4-git-send-email-gururaja.hebbar@ti.com>
+In-Reply-To: <1372412109-986-4-git-send-email-gururaja.hebbar@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 12:07:41PM +1000, Dave Chinner wrote:
- > On Mon, Jul 01, 2013 at 01:57:34PM -0400, Dave Jones wrote:
- > > On Fri, Jun 28, 2013 at 01:54:37PM +1000, Dave Chinner wrote:
- > >  > On Thu, Jun 27, 2013 at 04:54:53PM -1000, Linus Torvalds wrote:
- > >  > > On Thu, Jun 27, 2013 at 3:18 PM, Dave Chinner <david@fromorbit.com> wrote:
- > >  > > >
- > >  > > > Right, that will be what is happening - the entire system will go
- > >  > > > unresponsive when a sync call happens, so it's entirely possible
- > >  > > > to see the soft lockups on inode_sb_list_add()/inode_sb_list_del()
- > >  > > > trying to get the lock because of the way ticket spinlocks work...
- > >  > > 
- > >  > > So what made it all start happening now? I don't recall us having had
- > >  > > these kinds of issues before..
- > >  > 
- > >  > Not sure - it's a sudden surprise for me, too. Then again, I haven't
- > >  > been looking at sync from a performance or lock contention point of
- > >  > view any time recently.  The algorithm that wait_sb_inodes() is
- > >  > effectively unchanged since at least 2009, so it's probably a case
- > >  > of it having been protected from contention by some external factor
- > >  > we've fixed/removed recently.  Perhaps the bdi-flusher thread
- > >  > replacement in -rc1 has changed the timing sufficiently that it no
- > >  > longer serialises concurrent sync calls as much....
- > > 
- > > This mornings new trace reminded me of this last sentence. Related ?
- > 
- > Was this running the last patch I posted, or a vanilla kernel?
+On 6/28/2013 3:05 PM, Hebbar Gururaja wrote:
+> On some platforms (like AM33xx), a special register (RTC_IRQWAKEEN)
+> is available to enable Alarm Wakeup feature. This register needs to be
+> properly handled for the rtcwake to work properly.
+> 
+> Platforms using such IP should set "ti,am3352-rtc" in rtc device dt
+> compatibility node.
+> 
+> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> Cc: rtc-linux@googlegroups.com
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: linux-doc@vger.kernel.org
+> ---
 
-yeah, this had v2 of your patch (the one post lockdep warnings)
+[...]
 
- > That's doing IO completion processing in softirq time, and the lock
- > it just dropped was the q->queue_lock. But that lock is held over
- > end IO processing, so it is possible that the way the page writeback
- > transition handling of my POC patch caused this.
- > 
- > FWIW, I've attached a simple patch you might like to try to see if
- > it *minimises* the inode_sb_list_lock contention problems. All it
- > does is try to prevent concurrent entry in wait_sb_inodes() for a
- > given superblock and hence only have one walker on the contending
- > filesystem at a time. Replace the previous one I sent with it. If
- > that doesn't work, I have another simple patch that makes the
- > inode_sb_list_lock per-sb to take this isolation even further....
- 
-I can try it, though as always, proving a negative....
+> -#define	OMAP_RTC_DATA_DA830_IDX	1
+> +#define	OMAP_RTC_DATA_DA830_IDX		1
+> +#define	OMAP_RTC_DATA_AM335X_IDX	2
+>  
+>  static struct platform_device_id omap_rtc_devtype[] = {
+>  	{
+> @@ -309,6 +321,9 @@ static struct platform_device_id omap_rtc_devtype[] = {
+>  	}, {
+>  		.name	= "da830-rtc",
+>  		.driver_data = OMAP_RTC_HAS_KICKER,
+> +	}, {
+> +		.name	= "am335x-rtc",
 
-	Dave
+may be use am3352-rtc here just to keep the platform device name and of
+compatible in sync.
+
+> +		.driver_data = OMAP_RTC_HAS_KICKER | OMAP_RTC_HAS_IRQWAKEEN,
+>  	},
+>  	{},
+
+It is better to use the index defined above in the static initialization
+so they remain in sync.
+
+	...
+	[OMAP_RTC_DATA_DA830_IDX] = {
+		.name	= "da830-rtc",
+		.driver_data = OMAP_RTC_HAS_KICKER,
+	},
+	...
+
+>  };
+> @@ -318,6 +333,9 @@ static const struct of_device_id omap_rtc_of_match[] = {
+>  	{	.compatible	= "ti,da830-rtc",
+>  		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
+>  	},
+> +	{	.compatible	= "ti,am3352-rtc",
+> +		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_AM335X_IDX],
+> +	},
+>  	{},
+>  };
+>  MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
+
+Apart from these minor issues, the patch looks good to me.
+
+Acked-by: Sekhar Nori <nsekhar@ti.com>
+
+Thanks,
+Sekhar
