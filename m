@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522Ab3GBXi1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:38:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49712 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752592Ab3GBXi0 (ORCPT
+	id S1754861Ab3GBXjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 19:39:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22976 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab3GBXjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:38:26 -0400
-Date: Wed, 3 Jul 2013 09:38:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, linux-cachefs@redhat.com,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        milosz@adfin.com
-Subject: Re: [GIT PULL] Fix assorted FS-Cache issues
-Message-Id: <20130703093815.006437fd5f18210b7729b060@canb.auug.org.au>
-In-Reply-To: <6302.1372775256@warthog.procyon.org.uk>
-References: <6302.1372775256@warthog.procyon.org.uk>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+	Tue, 2 Jul 2013 19:39:53 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=gRE7txOSQBgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zYSyO7zkCp0A:10 a=i0EeH86SAAAA:8 a=RHthe3nIL10Pa05Di_8A:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372808392.22688.83.camel@gandalf.local.home>
+Subject: Re: [PATCH v3 07/12] tracing: remove TRACE_EVENT_TYPE enum
+ definition
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
+Date: Tue, 02 Jul 2013 19:39:52 -0400
+In-Reply-To: <1365564393-10972-8-git-send-email-jovi.zhangwei@huawei.com>
+References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
+	 <1365564393-10972-8-git-send-email-jovi.zhangwei@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Jul_2013_09_38_15_+1000_9NdgPHqZVeTtkxKU"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Jul_2013_09_38_15_+1000_9NdgPHqZVeTtkxKU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
+> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+> 
+> TRACE_EVENT_TYPE enum is not used at present, remove it.
 
-On Tue, 02 Jul 2013 15:27:36 +0100 David Howells <dhowells@redhat.com> wrot=
-e:
->
-> Hi Linus,
->=20
-> The following changes since commit b973425cbb51e08301b34fecdfd476a44507d8=
-cf:
->=20
->   Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux=
-/kernel/git/tytso/ext4 (2013-05-14 09:30:54 -0700)
->=20
-> are available in the git repository at:
->=20
->=20
->   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tag=
-s/fscache-20130702
+Looks reasonable, pulled.
 
-/me wonders where this has been hiding for the last month and a half ...
+Thanks,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- Steve
 
---Signature=_Wed__3_Jul_2013_09_38_15_+1000_9NdgPHqZVeTtkxKU
-Content-Type: application/pgp-signature
+> 
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+> ---
+>  kernel/trace/trace.h |    6 ------
+>  1 file changed, 6 deletions(-)
+> 
+> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+> index 89da073..9964695 100644
+> --- a/kernel/trace/trace.h
+> +++ b/kernel/trace/trace.h
+> @@ -794,12 +794,6 @@ static inline void trace_branch_disable(void)
+>  /* set ring buffers to default size if not already done so */
+>  int tracing_update_buffers(void);
+>  
+> -/* trace event type bit fields, not numeric */
+> -enum {
+> -	TRACE_EVENT_TYPE_PRINTF		= 1,
+> -	TRACE_EVENT_TYPE_RAW		= 2,
+> -};
+> -
+>  struct event_filter {
+>  	int			n_preds;	/* Number assigned */
+>  	int			a_preds;	/* allocated */
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBCAAGBQJR02RrAAoJEECxmPOUX5FE77oP/0P9ssO3c4Q1hTXdwzq8+zF2
-tXhN0GaToykhxJAXn0bo0dFhiPlTemC+Ow5qSTS+L7XF4LeOuB2eUNM+Z1/HNZVp
-afHaTPMGyMYtHeqZ3/Qcz98C6E7maCD8r0d9X2ont3rRmVItquvBycJ1N82vSnnm
-QpsRDoszyE2m89lkUjxWTWlqKFOpRM3OqplP0Wucal6JEVJHA7udPukG2DicwTGr
-iq4n7hz5VTXFnQJ1PkhoISXj+vDIXPZQP23OgNOTiSD1UvHyjvWVYqqOudQPtn9y
-sttF8siqsI+xnXu1bd+oL34oe+xzvSRAw6mmzmCd1fyuIw6ZEJbw7T6za5Y6PyQZ
-FYksiAt1NPSq3yFyN7J8ahziREQIRu3LVTu4sG2qldodPTr0VshPWKcpoURwxjQ7
-ZSRkSv7HqoUtuAGaINp7U7d8UOVXwmhqMDBF4UvCLrg4ArTQ9TFi6LzTWAgn87Xh
-SZCXGk3X9Njkd5ucV5EhXsrWNUqrBcks/JOrqQ/4eRHiLQ04ej5HYI5vX6tg/UQW
-Ux+hfuYCeqGpcMlpbUdkdJfU7ekzhERIIQoYqb4dGyILlilU7xLe0eDEDjY6b/Te
-SPkXz1Yg/3wQVWOJKhX7ieKYMQyv91zcC76byNcNqNKymwga4wthbi0JjIVJE0mt
-rB729Pj6LMTmldGD2h8u
-=SEpm
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Jul_2013_09_38_15_+1000_9NdgPHqZVeTtkxKU--
