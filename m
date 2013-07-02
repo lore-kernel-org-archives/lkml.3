@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3GBLIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:08:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36368 "EHLO
+	id S1756009Ab3GBLJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:09:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683Ab3GBLIo (ORCPT
+	with ESMTP id S1755805Ab3GBLIs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:44 -0400
+	Tue, 2 Jul 2013 07:08:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 46/50] perf: Disable monitoring on setuid processes for regular users
-Date: Tue,  2 Jul 2013 12:07:34 +0100
-Message-Id: <1372763258-20664-47-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 47/50] UBIFS: prepare to fix a horrid bug
+Date: Tue,  2 Jul 2013 12:07:35 +0100
+Message-Id: <1372763258-20664-48-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,63 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Eranian <eranian@google.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 2976b10f05bd7f6dab9f9e7524451ddfed656a89 upstream.
+commit 33f1a63ae84dfd9ad298cf275b8f1887043ced36 upstream.
 
-There was a a bug in setup_new_exec(), whereby
-the test to disabled perf monitoring was not
-correct because the new credentials for the
-process were not yet committed and therefore
-the get_dumpable() test was never firing.
+Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
+mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
+in the middle of 'ubifs_readdir()'.
 
-The patch fixes the problem by moving the
-perf_event test until after the credentials
-are committed.
+First of all, this means that 'file->private_data' can be freed while
+'ubifs_readdir()' uses it.  But this particular patch does not fix the problem.
+This patch is only a preparation, and the fix will follow next.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Tested-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+In this patch we make 'ubifs_readdir()' stop using 'file->f_pos' directly,
+because 'file->f_pos' can be changed by '->llseek()' at any point. This may
+lead 'ubifs_readdir()' to returning inconsistent data: directory entry names
+may correspond to incorrect file positions.
+
+So here we introduce a local variable 'pos', read 'file->f_pose' once at very
+the beginning, and then stick to 'pos'. The result of this is that when
+'ubifs_dir_llseek()' changes 'file->f_pos' while we are in the middle of
+'ubifs_readdir()', the latter "wins".
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/exec.c | 16 +++++++++-------
- 1 file changed, 9 insertions(+), 7 deletions(-)
+ fs/ubifs/dir.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 5a76464..832763a 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1162,13 +1162,6 @@ void setup_new_exec(struct linux_binprm * bprm)
- 			set_dumpable(current->mm, suid_dumpable);
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index a6d42ef..918ce52 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -349,15 +349,16 @@ static unsigned int vfs_dent_type(uint8_t type)
+ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ {
+ 	int err, over = 0;
++	loff_t pos = file->f_pos;
+ 	struct qstr nm;
+ 	union ubifs_key key;
+ 	struct ubifs_dent_node *dent;
+ 	struct inode *dir = file->f_path.dentry->d_inode;
+ 	struct ubifs_info *c = dir->i_sb->s_fs_info;
+ 
+-	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, file->f_pos);
++	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, pos);
+ 
+-	if (file->f_pos > UBIFS_S_KEY_HASH_MASK || file->f_pos == 2)
++	if (pos > UBIFS_S_KEY_HASH_MASK || pos == 2)
+ 		/*
+ 		 * The directory was seek'ed to a senseless position or there
+ 		 * are no more entries.
+@@ -365,15 +366,15 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 		return 0;
+ 
+ 	/* File positions 0 and 1 correspond to "." and ".." */
+-	if (file->f_pos == 0) {
++	if (pos == 0) {
+ 		ubifs_assert(!file->private_data);
+ 		over = filldir(dirent, ".", 1, 0, dir->i_ino, DT_DIR);
+ 		if (over)
+ 			return 0;
+-		file->f_pos = 1;
++		file->f_pos = pos = 1;
  	}
  
--	/*
--	 * Flush performance counters when crossing a
--	 * security domain:
--	 */
--	if (!get_dumpable(current->mm))
--		perf_event_exit_task(current);
--
- 	/* An exec changes our domain. We are no longer part of the thread
- 	   group */
+-	if (file->f_pos == 1) {
++	if (pos == 1) {
+ 		ubifs_assert(!file->private_data);
+ 		over = filldir(dirent, "..", 2, 1,
+ 			       parent_ino(file->f_path.dentry), DT_DIR);
+@@ -389,7 +390,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 			goto out;
+ 		}
  
-@@ -1232,6 +1225,15 @@ void install_exec_creds(struct linux_binprm *bprm)
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
  
- 	commit_creds(bprm->cred);
- 	bprm->cred = NULL;
-+
-+	/*
-+	 * Disable monitoring for regular users
-+	 * when executing setuid binaries. Must
-+	 * wait until new credentials are committed
-+	 * by commit_creds() above
-+	 */
-+	if (get_dumpable(current->mm) != SUID_DUMP_USER)
-+		perf_event_exit_task(current);
- 	/*
- 	 * cred_guard_mutex must be held at least to this point to prevent
- 	 * ptrace_attach() from altering our determination of the task's
+@@ -397,17 +398,16 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 	if (!dent) {
+ 		/*
+ 		 * The directory was seek'ed to and is now readdir'ed.
+-		 * Find the entry corresponding to @file->f_pos or the
+-		 * closest one.
++		 * Find the entry corresponding to @pos or the closest one.
+ 		 */
+-		dent_key_init_hash(c, &key, dir->i_ino, file->f_pos);
++		dent_key_init_hash(c, &key, dir->i_ino, pos);
+ 		nm.name = NULL;
+ 		dent = ubifs_tnc_next_ent(c, &key, &nm);
+ 		if (IS_ERR(dent)) {
+ 			err = PTR_ERR(dent);
+ 			goto out;
+ 		}
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 	}
+ 
+@@ -419,7 +419,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 			     ubifs_inode(dir)->creat_sqnum);
+ 
+ 		nm.len = le16_to_cpu(dent->nlen);
+-		over = filldir(dirent, dent->name, nm.len, file->f_pos,
++		over = filldir(dirent, dent->name, nm.len, pos,
+ 			       le64_to_cpu(dent->inum),
+ 			       vfs_dent_type(dent->type));
+ 		if (over)
+@@ -435,7 +435,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
+ 		}
+ 
+ 		kfree(file->private_data);
+-		file->f_pos = key_hash_flash(c, &dent->key);
++		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
+ 	}
 -- 
 1.8.1.2
 
