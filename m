@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142Ab3GBLom (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:44:42 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:15823 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750889Ab3GBLol (ORCPT
+	id S1752457Ab3GBLp7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:45:59 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:58751 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab3GBLp5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:44:41 -0400
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Jul 2013 07:44:40 EDT
-From: Oskar Andero <oskar.andero@sonymobile.com>
-To: <linux-kernel@vger.kernel.org>, <usb-storage@lists.one-eyed-alien.net>,
-        <linux-usb@vger.kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        Radovan Lekanovic <Radovan.Lekanovic@sonymobile.com>,
-        Ren Bigcren <bigcren.ren@sonymobile.com>,
-        Oskar Andero <oskar.andero@sonymobile.com>
-Subject: [PATCH] USB: storage: Add MicroVault Flash Drive to unusual_devs
-Date: Tue, 2 Jul 2013 13:34:30 +0200
-Message-ID: <1372764870-19485-1-git-send-email-oskar.andero@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
+	Tue, 2 Jul 2013 07:45:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <51D2BB05.9040201@free-electrons.com>
+References: <1372094699-3832-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1372094699-3832-3-git-send-email-alexandre.belloni@free-electrons.com>
+	<CAOMZO5CLcT=OXYd=ggxpDzUqFxoXSaanqUPGugYLT2Og-VgzCA@mail.gmail.com>
+	<51D2BB05.9040201@free-electrons.com>
+Date: Tue, 2 Jul 2013 08:45:56 -0300
+Message-ID: <CAOMZO5DZufiOjguOCEbe5n0j=w9B5ezBYh0Rejv3zF5Xht5_qQ@mail.gmail.com>
+Subject: Re: [PATCHv3 2/3] ARM: mxs: cfa10049: Switch bus i2c1 to bitbanging
+From: Fabio Estevam <festevam@gmail.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        brian@crystalfontz.com, linux-doc@vger.kernel.org,
+        linux-iio@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        jimwall@q.com, Rob Herring <rob.herring@calxeda.com>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Lucas Stach <l.stach@pengutronix.de>, Marek Vasut <marex@denx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ren Bigcren <bigcren.ren@sonymobile.com>
+On Tue, Jul 2, 2013 at 8:35 AM, Alexandre Belloni
+<alexandre.belloni@free-electrons.com> wrote:
 
-The device report an error capacity when read_capacity_16().
-Using read_capacity_10() can get the correct capacity.
+> mxs-i2c 8005a000.i2c: Failed to get PIO reg. write descriptor.
+>
+> That is the one line 243. I'm open to any suggestion.
+>
+> BTW, I also tested PIO mode with and without touchscreen support as that
+> seemed to toggle the issue on your side. It is also worse than what it
+> was in 3.9. Trying to read the nau7802 ADC never returns.
+>
+> The excerpt from my DT:
+>
+> i2c1: i2c@8005a000 {
+>         pinctrl-names = "default";
+>         pinctrl-0 = <&i2c1_pins_a>;
+>         status = "okay";
+> };
+>
+> i2cmux {
+>         compatible = "i2c-mux-gpio";
+>         #address-cells = <1>;
+>         #size-cells = <0>;
+>         pinctrl-names = "default";
+>         pinctrl-0 = <&i2cmux_pins_cfa10049>;
+>         mux-gpios = <&gpio1 22 0 &gpio1 23 0>;
+>         i2c-parent = <&i2c1>;
+>
+>         i2c@0 {
+>                 reg = <0>;
 
-Signed-off-by: Ren Bigcren <bigcren.ren@sonymobile.com>
-Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
-Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
----
- drivers/usb/storage/unusual_devs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+Shouldn't this be
 
-diff --git a/drivers/usb/storage/unusual_devs.h b/drivers/usb/storage/unusual_devs.h
-index 179933528..c015f2c 100644
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -665,6 +665,13 @@ UNUSUAL_DEV(  0x054c, 0x016a, 0x0000, 0x9999,
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_FIX_INQUIRY ),
- 
-+/* Submitted by Ren Bigcren <bigcren.ren@sonymobile.com> */
-+UNUSUAL_DEV(  0x054c, 0x02a5, 0x0100, 0x0100,
-+		"Sony Corp.",
-+		"MicroVault Flash Drive",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_NO_READ_CAPACITY_16 ),
-+
- /* floppy reports multiple luns */
- UNUSUAL_DEV(  0x055d, 0x2020, 0x0000, 0x0210,
- 		"SAMSUNG",
--- 
-1.8.1.5
-
+         i2c@1 {
+                 reg = <1>; ?
