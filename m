@@ -1,196 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab3GBXJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:09:39 -0400
-Received: from mic92-1-81-57-185-249.fbx.proxad.net ([81.57.185.249]:60605
-	"EHLO smtp.natisbad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab3GBXJh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:09:37 -0400
-From: arno@natisbad.org (Arnaud Ebalard)
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 5/7] ARM: kirkwood: remove redundant DT board files
-References: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	<1372762824-12202-6-git-send-email-sebastian.hesselbarth@gmail.com>
-X-PGP-Key-URL: http://natisbad.org/arno@natisbad.org.asc
-X-Fingerprint: D3A5 B68A 839B 38A5 815A 781B B77C 0748 A7AE 341B
-X-Hashcash: 1:20:130702:linux-arm-kernel@lists.infradead.org::UcZA9gg84B+jAiCA:00000000000000000000000000bPb
-X-Hashcash: 1:20:130702:linux-kernel@vger.kernel.org::CpqbPwQEyWwohWPa:0000000000000000000000000000000001VU0
-X-Hashcash: 1:20:130702:andrew@lunn.ch::RNBvSz1xEPZEsHFG:0001FJp
-X-Hashcash: 1:20:130702:thomas.petazzoni@free-electrons.com::6OWm2EOT7QamNhxH:000000000000000000000000001Vbd
-X-Hashcash: 1:20:130702:netdev@vger.kernel.org::itSLa3JpiSDgN84o:0000000000000000000000000000000000000001jzb
-X-Hashcash: 1:20:130702:linux@arm.linux.org.uk::Zw/WM1liEciGB21q:0000000000000000000000000000000000000002nCW
-X-Hashcash: 1:20:130702:jason@lakedaemon.net::O1UpPPJUUEkJLuiI:000000000000000000000000000000000000000004ikL
-X-Hashcash: 1:20:130702:gregory.clement@free-electrons.com::hxOh9JM7D0OpXmn8:0000000000000000000000000002p33
-X-Hashcash: 1:20:130702:sebastian.hesselbarth@gmail.com::ByiXDE3wsgk3hHJT:000000000000000000000000000000AtOv
-Date: Wed, 03 Jul 2013 01:09:50 +0200
-In-Reply-To: <1372762824-12202-6-git-send-email-sebastian.hesselbarth@gmail.com>
-	(Sebastian Hesselbarth's message of "Tue, 2 Jul 2013 13:00:22 +0200")
-Message-ID: <87k3l8v9s1.fsf@natisbad.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1755034Ab3GBXNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 19:13:23 -0400
+Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:51362
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751312Ab3GBXNW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 19:13:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+Date: Tue, 2 Jul 2013 18:13:06 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH 2/2] DMA: Freescale: update driver to support 8-channel
+ DMA engine
+To: <hongbo.zhang@freescale.com>
+CC: <vinod.koul@intel.com>, <djbw@fb.com>, <vakul@freescale.com>,
+        <leoLi@freescale.com>, <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>
+In-Reply-To: <1372650378-2936-2-git-send-email-hongbo.zhang@freescale.com>
+	(from hongbo.zhang@freescale.com on Sun Jun 30 22:46:18 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1372806786.8183.127@snotra>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On 06/30/2013 10:46:18 PM, hongbo.zhang@freescale.com wrote:
+> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+> 
+> This patch adds support to 8-channel DMA engine, thus the driver  
+> works for both
+> the new 8-channel and the legacy 4-channel DMA engines.
+> 
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> ---
+>  drivers/dma/fsldma.c |   48  
+> ++++++++++++++++++++++++++++++++++--------------
+>  drivers/dma/fsldma.h |    4 ++--
+>  2 files changed, 36 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index 4fc2980..0f453ea 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -1119,27 +1119,33 @@ static irqreturn_t fsldma_ctrl_irq(int irq,  
+> void *data)
+>  	struct fsldma_device *fdev = data;
+>  	struct fsldma_chan *chan;
+>  	unsigned int handled = 0;
+> -	u32 gsr, mask;
+> +	u8 chan_sr[round_up(FSL_DMA_MAX_CHANS_PER_DEVICE, 4)];
+> +	u32 gsr;
+>  	int i;
+> 
+> -	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ? in_be32(fdev->regs)
+> -						   :  
+> in_le32(fdev->regs);
+> -	mask = 0xff000000;
+> -	dev_dbg(fdev->dev, "IRQ: gsr 0x%.8x\n", gsr);
+> +	memset(&chan_sr, 0, sizeof(chan_sr));
+> +	gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ?  
+> in_be32(fdev->regs0)
+> +						   :  
+> in_le32(fdev->regs0);
+> +	memcpy(&chan_sr[0], &gsr, 4);
+> +	dev_dbg(fdev->dev, "IRQ: gsr0 0x%.8x\n", gsr);
+> +
+> +	if (of_device_is_compatible(fdev->dev->of_node,  
+> "fsl,eloplus-dma2")) {
 
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> writes:
+NACK; Figure out what sort of device you've got when you first probe  
+the device, and store the information for later.  Do not call device  
+tree stuff in an interrupt handler.
 
-> With DT support for mv643xx_eth board specific init for some boards now
-> is unneccessary. Remove those board files, Kconfig entries, and
-> corresponding entries in kirkwood_defconfig.
+> +		gsr = (fdev->feature & FSL_DMA_BIG_ENDIAN) ?
+> +			in_be32(fdev->regs1) : in_le32(fdev->regs1);
+> +		memcpy(&chan_sr[4], &gsr, 4);
+> +		dev_dbg(fdev->dev, "IRQ: gsr1 0x%.8x\n", gsr);
+> +	}
 
-Applying above your set an old quilt cleaning patch Jason asked at some
-point, it became empty except for arch/arm/mach_kirkwood/common.h in
-which some declarations were left behind. If this is correct, can you
-just merge the hunks below in your 5/7 in next round?
+Do these memcpy()s get inlined?  If not (and maybe even if they do),  
+it'd be better to use a union instead.
 
-AFAICT, only dnskw_init() remains, which matches the list of board-*.c
-files in arch/arm/mach_kirkwood/ (i.e. board-dt.c and board-dnskw.c).
+Wait a second -- how are we even getting into this code on these new  
+DMA controllers?  All 85xx-family DMA controllers use fsldma_chan_irq  
+directly.
 
-Cheers,
+> @@ -1341,13 +1349,22 @@ static int fsldma_of_probe(struct  
+> platform_device *op)
+>  	INIT_LIST_HEAD(&fdev->common.channels);
+> 
+>  	/* ioremap the registers for use */
+> -	fdev->regs = of_iomap(op->dev.of_node, 0);
+> -	if (!fdev->regs) {
+> -		dev_err(&op->dev, "unable to ioremap registers\n");
+> +	fdev->regs0 = of_iomap(op->dev.of_node, 0);
+> +	if (!fdev->regs0) {
+> +		dev_err(&op->dev, "unable to ioremap register0\n");
+>  		err = -ENOMEM;
+>  		goto out_free_fdev;
+>  	}
+> 
+> +	if (of_device_is_compatible(op->dev.of_node,  
+> "fsl,eloplus-dma2")) {
 
-a+
+Not "fsl,eloplusplus-dma"? :-)
 
-Signed-off-by: Arnaud Ebalard <arno@natisbad.org>
----
- arch/arm/mach-kirkwood/common.h | 108 ----------------------------------------
- 1 file changed, 108 deletions(-)
+More seriously, if we're sticking with this "elo" naming, maybe  
+"fsl,elo3-dma" would be better.  It would be odd to have "2" in the  
+name of the third generation of this hardware.
 
-diff --git a/arch/arm/mach-kirkwood/common.h b/arch/arm/mach-kirkwood/common.h
-index 1c09f3f..1cbdd2b 100644
---- a/arch/arm/mach-kirkwood/common.h
-+++ b/arch/arm/mach-kirkwood/common.h
-@@ -57,26 +57,6 @@ void kirkwood_restart(char, const char *);
- void kirkwood_clk_init(void);
- 
- /* board init functions for boards not fully converted to fdt */
--#ifdef CONFIG_MACH_DREAMPLUG_DT
--void dreamplug_init(void);
--#else
--static inline void dreamplug_init(void) {};
--#endif
--#ifdef CONFIG_MACH_GURUPLUG_DT
--void guruplug_dt_init(void);
--#else
--static inline void guruplug_dt_init(void) {};
--#endif
--#ifdef CONFIG_MACH_SHEEVAPLUG_DT
--void sheevaplug_dt_init(void);
--#else
--static inline void sheevaplug_dt_init(void) {};
--#endif
--#ifdef CONFIG_MACH_TS219_DT
--void qnap_dt_ts219_init(void);
--#else
--static inline void qnap_dt_ts219_init(void) {};
--#endif
- 
- #ifdef CONFIG_MACH_DLINK_KIRKWOOD_DT
- void dnskw_init(void);
-@@ -84,94 +64,6 @@ void dnskw_init(void);
- static inline void dnskw_init(void) {};
- #endif
- 
--#ifdef CONFIG_MACH_ICONNECT_DT
--void iconnect_init(void);
--#else
--static inline void iconnect_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_IB62X0_DT
--void ib62x0_init(void);
--#else
--static inline void ib62x0_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_DOCKSTAR_DT
--void dockstar_dt_init(void);
--#else
--static inline void dockstar_dt_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_GOFLEXNET_DT
--void goflexnet_init(void);
--#else
--static inline void goflexnet_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_LSXL_DT
--void lsxl_init(void);
--#else
--static inline void lsxl_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_IOMEGA_IX2_200_DT
--void iomega_ix2_200_init(void);
--#else
--static inline void iomega_ix2_200_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_KM_KIRKWOOD_DT
--void km_kirkwood_init(void);
--#else
--static inline void km_kirkwood_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_DB88F628X_BP_DT
--void db88f628x_init(void);
--#else
--static inline void db88f628x_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_MPLCEC4_DT
--void mplcec4_init(void);
--#else
--static inline void mplcec4_init(void) {};
--#endif
--
--#if defined(CONFIG_MACH_INETSPACE_V2_DT) || \
--	defined(CONFIG_MACH_NETSPACE_V2_DT) || \
--	defined(CONFIG_MACH_NETSPACE_MAX_V2_DT) || \
--	defined(CONFIG_MACH_NETSPACE_LITE_V2_DT) || \
--	defined(CONFIG_MACH_NETSPACE_MINI_V2_DT)
--void ns2_init(void);
--#else
--static inline void ns2_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_OPENBLOCKS_A6_DT
--void openblocks_a6_init(void);
--#else
--static inline void openblocks_a6_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_READYNAS_DT
--void netgear_readynas_init(void);
--#else
--static inline void netgear_readynas_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_TOPKICK_DT
--void usi_topkick_init(void);
--#else
--static inline void usi_topkick_init(void) {};
--#endif
--
--#ifdef CONFIG_MACH_CLOUDBOX_DT
--void cloudbox_init(void);
--#else
--static inline void cloudbox_init(void) {};
--#endif
--
- /* early init functions not converted to fdt yet */
- char *kirkwood_id(void);
- void kirkwood_l2_init(void);
--- 
-1.8.3.1
+> diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
+> index f5c3879..880664d 100644
+> --- a/drivers/dma/fsldma.h
+> +++ b/drivers/dma/fsldma.h
+> @@ -112,10 +112,10 @@ struct fsldma_chan_regs {
+>  };
+> 
+>  struct fsldma_chan;
+> -#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
+> +#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
+> 
+>  struct fsldma_device {
+> -	void __iomem *regs;	/* DGSR register base */
+> +	void __iomem *regs0, *regs1;	/* DGSR registers */
 
+Either give these meaningful names, or use an array.  Or both (dgsr[2]).
+
+Or just get rid of this, since I don't see why we need DGSR1 at all, as  
+previously noted.
+
+-Scott
