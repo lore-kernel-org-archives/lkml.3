@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025Ab3GBT1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 15:27:36 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:62609 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764Ab3GBT1b (ORCPT
+	id S1756616Ab3GBTmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 15:42:12 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:33986 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754961Ab3GBT1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 15:27:31 -0400
+	Tue, 2 Jul 2013 15:27:33 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>
-Subject: [PATCH 0/6] perf: bug fixes, cleanup of parse events memory allocations
-Date: Tue,  2 Jul 2013 13:27:19 -0600
-Message-Id: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: [PATCH 1/6] perf evsel: fix count parameter to read call in event_format__new
+Date: Tue,  2 Jul 2013 13:27:20 -0600
+Message-Id: <1372793245-4136-2-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
+References: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Ahern (6):
-  perf evsel: fix count parameter to read call in event_format__new
-  perf evlist: fix use of uninitialized variable
-  perf event: initialize allocated memory for synthesized events
-  perf: don't free list head in parse_events__free_terms
-  perf test: make terms a stack variable in test_term
-  perf parse events: demystify memory allocations
+per realloc above the length of the buffer is alloc_size, not BUFSIZ.
+Adjust length per size as done for buf start.
 
- tools/perf/tests/parse-events.c |   14 ++++-----
- tools/perf/util/event.c         |    8 ++---
- tools/perf/util/evlist.c        |    2 +-
- tools/perf/util/evsel.c         |    2 +-
- tools/perf/util/parse-events.c  |   54 ++++++++++------------------------
- tools/perf/util/parse-events.h  |   10 +++----
- tools/perf/util/parse-events.y  |   62 +++++++++++++++++++++++++--------------
- 7 files changed, 72 insertions(+), 80 deletions(-)
+Addresses some valgrind complaints:
 
+==1870== Syscall param read(buf) points to unaddressable byte(s)
+==1870==    at 0x4E3F610: __read_nocancel (in /lib64/libpthread-2.14.90.so)
+==1870==    by 0x44AEE1: event_format__new (unistd.h:45)
+==1870==    by 0x44B025: perf_evsel__newtp (evsel.c:158)
+==1870==    by 0x451919: add_tracepoint_event (parse-events.c:395)
+==1870==    by 0x479815: parse_events_parse (parse-events.y:292)
+==1870==    by 0x45463A: parse_events_option (parse-events.c:861)
+==1870==    by 0x44FEE4: get_value (parse-options.c:113)
+==1870==    by 0x450767: parse_options_step (parse-options.c:192)
+==1870==    by 0x450C40: parse_options (parse-options.c:422)
+==1870==    by 0x42735F: cmd_record (builtin-record.c:918)
+==1870==    by 0x419D72: run_builtin (perf.c:319)
+==1870==    by 0x4195F2: main (perf.c:376)
+==1870==  Address 0xcffebf0 is 0 bytes after a block of size 8,192 alloc'd
+==1870==    at 0x4C2A62F: malloc (vg_replace_malloc.c:270)
+==1870==    by 0x4C2A7A3: realloc (vg_replace_malloc.c:662)
+==1870==    by 0x44AF07: event_format__new (evsel.c:121)
+==1870==    by 0x44B025: perf_evsel__newtp (evsel.c:158)
+==1870==    by 0x451919: add_tracepoint_event (parse-events.c:395)
+==1870==    by 0x479815: parse_events_parse (parse-events.y:292)
+==1870==    by 0x45463A: parse_events_option (parse-events.c:861)
+==1870==    by 0x44FEE4: get_value (parse-options.c:113)
+==1870==    by 0x450767: parse_options_step (parse-options.c:192)
+==1870==    by 0x450C40: parse_options (parse-options.c:422)
+==1870==    by 0x42735F: cmd_record (builtin-record.c:918)
+==1870==    by 0x419D72: run_builtin (perf.c:319)
+
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/evsel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index dea0684..01fdfc6 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -124,7 +124,7 @@ struct event_format *event_format__new(const char *sys, const char *name)
+ 			bf = nbf;
+ 		}
+ 
+-		n = read(fd, bf + size, BUFSIZ);
++		n = read(fd, bf + size, alloc_size - size);
+ 		if (n < 0)
+ 			goto out_free_bf;
+ 		size += n;
 -- 
 1.7.10.1
 
