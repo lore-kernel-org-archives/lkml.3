@@ -1,128 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932655Ab3GBJnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:43:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37227 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932250Ab3GBJm7 convert rfc822-to-8bit (ORCPT
+	id S932671Ab3GBJnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:43:19 -0400
+Received: from na3sys009aog133.obsmtp.com ([74.125.149.82]:57491 "EHLO
+	na3sys009aog133.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932250Ab3GBJnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:42:59 -0400
-From: "J, KEERTHY" <j-keerthy@ti.com>
-To: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
-Thread-Topic: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
-Thread-Index: AQHObaYtxXLB3GJS60SmpjiKShwczJlE2MoggAQqidCACDI3cA==
-Date: Tue, 2 Jul 2013 09:42:41 +0000
-Message-ID: <DC88CAD03C0052499C1907B327FC63229F80C6@DBDE04.ent.ti.com>
-References: <1371726289-10042-1-git-send-email-j-keerthy@ti.com>
- <DC88CAD03C0052499C1907B327FC63229EF495@DBDE04.ent.ti.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 2 Jul 2013 05:43:18 -0400
+From: Nenghua Cao <nhcao@marvell.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
+CC: Henry zhao <xzhao10@marvell.com>, nhcao <nhcao@marvell.com>
+Subject: [PATCH] ASOC: pcm: support fe dapm widget derived from codec_dai
+Date: Tue, 2 Jul 2013 17:42:46 +0800
+Message-ID: <1372758166-14798-1-git-send-email-nhcao@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: nhcao <nhcao@marvell.com>
 
-Hello Grant,
+	In some chips, the codec_dai in cpu is abstracted as one dapm
+widget. Enhance the framework to use codec_dai as fe widget.
 
-> -----Original Message-----
-> From: J, KEERTHY
-> Sent: Thursday, June 27, 2013 10:03 AM
-> To: grant.likely@secretlab.ca
-> Cc: broonie@kernel.org; ldewangan@nvidia.com; sameo@linux.intel.com;
-> swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
-> doc@vger.kernel.org; devicetree-discuss@lists.ozlabs.org;
-> gg@slimlogic.co.uk; linux-omap@vger.kernel.org
-> Subject: RE: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
-> 
-> Hi Grant,
-> 
-> 
-> > -----Original Message-----
-> > From: J, KEERTHY
-> > Sent: Monday, June 24, 2013 6:26 PM
-> > To: grant.likely@secretlab.ca
-> > Cc: broonie@kernel.org; ldewangan@nvidia.com; sameo@linux.intel.com;
-> > swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-
-> > doc@vger.kernel.org; devicetree-discuss@lists.ozlabs.org;
-> > gg@slimlogic.co.uk; J, KEERTHY; linux-omap@vger.kernel.org
-> > Subject: RE: [PATCH 1/4] MFD: Add TPS659038 documentation under
-> Palmas
-> >
-> > Hello Grant,
-> >
-> > > -----Original Message-----
-> > > From: J, KEERTHY
-> > > Sent: Thursday, June 20, 2013 4:35 PM
-> > > To: linux-omap@vger.kernel.org; grant.likely@secretlab.ca
-> > > Cc: broonie@kernel.org; J, KEERTHY; ldewangan@nvidia.com;
-> > > sameo@linux.intel.com; swarren@nvidia.com; linux-
-> > > kernel@vger.kernel.org; linux-doc@vger.kernel.org; devicetree-
-> > > discuss@lists.ozlabs.org; gg@slimlogic.co.uk
-> > > Subject: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
-> > >
-> > > Add TPS659038 documentation under Palmas.
-> > >
-> >
-> > Could you pull this Please?
-> 
-> A gentle ping on this.
->
+Change-Id: I1b545bd1e2f24288f4508a7c6d4efbcfe1e03c5b
+Signed-off-by: nhcao <nhcao@marvell.com>
+---
+ sound/soc/soc-pcm.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
 
-A gentle ping on this. Could you pull this one?
+diff --git a/sound/soc/soc-pcm.c b/sound/soc/soc-pcm.c
+index 73bb8ee..6ca23d7 100644
+--- a/sound/soc/soc-pcm.c
++++ b/sound/soc/soc-pcm.c
+@@ -856,17 +856,37 @@ static int widget_in_list(struct snd_soc_dapm_widget_list *list,
+ static int dpcm_path_get(struct snd_soc_pcm_runtime *fe,
+ 	int stream, struct snd_soc_dapm_widget_list **list_)
+ {
+-	struct snd_soc_dai *cpu_dai = fe->cpu_dai;
++	struct snd_soc_dai *dai = fe->cpu_dai ;
+ 	struct snd_soc_dapm_widget_list *list;
+ 	int paths;
  
-> >
-> > > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > > Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> > > ---
-> > >  Documentation/devicetree/bindings/mfd/palmas.txt |    2 ++
-> > >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > >
-> > > diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt
-> > > b/Documentation/devicetree/bindings/mfd/palmas.txt
-> > > index 7bcd59c..89cb773 100644
-> > > --- a/Documentation/devicetree/bindings/mfd/palmas.txt
-> > > +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
-> > > @@ -5,6 +5,7 @@ twl6035 (palmas)
-> > >  twl6037 (palmas)
-> > >  tps65913 (palmas)
-> > >  tps65914 (palmas)
-> > > +tps659038
-> > >
-> > >  Required properties:
-> > >  - compatible : Should be from the list @@ -14,6 +15,7 @@ Required
-> > > properties:
-> > >    ti,tps65913
-> > >    ti,tps65914
-> > >    ti,tps80036
-> > > +  ti,tps659038
-> > >  and also the generic series names
-> > >    ti,palmas
-> > >  - interrupt-controller : palmas has its own internal IRQs
-> > > --
-> > > 1.7.5.4
-> >
-> > Regards,
-> > Keerthy
-> 
-> Regards,
-> Keerthy
++	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		if (fe->cpu_dai->playback_widget) {
++			dai = fe->cpu_dai;
++		} else if (fe->codec_dai->playback_widget) {
++			dai = fe->codec_dai;
++		} else {
++			dev_err(fe->dev, "ASoC: can't find the correspond playback_widget for the dai\n");
++			return -EINVAL;
++		}
++	} else if (stream == SNDRV_PCM_STREAM_CAPTURE) {
++		if (fe->cpu_dai->capture_widget) {
++			dai = fe->cpu_dai;
++		} else if (fe->codec_dai->capture_widget) {
++			dai = fe->codec_dai;
++		} else {
++			dev_err(fe->dev, "ASoC: can't find the correspond capture_widget for the dai\n");
++			return -EINVAL;
++		}
++	}
++
+ 	list = kzalloc(sizeof(struct snd_soc_dapm_widget_list) +
+ 			sizeof(struct snd_soc_dapm_widget *), GFP_KERNEL);
+ 	if (list == NULL)
+ 		return -ENOMEM;
+ 
+ 	/* get number of valid DAI paths and their widgets */
+-	paths = snd_soc_dapm_dai_get_connected_widgets(cpu_dai, stream, &list);
++	paths = snd_soc_dapm_dai_get_connected_widgets(dai, stream, &list);
+ 
+ 	dev_dbg(fe->dev, "ASoC: found %d audio %s paths\n", paths,
+ 			stream ? "capture" : "playback");
+-- 
+1.7.0.4
 
-Regards,
-Keerthy
