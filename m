@@ -1,260 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab3GBLEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:04:33 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:57300 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025Ab3GBLD4 (ORCPT
+	id S1754488Ab3GBLEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:04:41 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58233 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754415Ab3GBLEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:03:56 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 5/7] ARM: kirkwood: convert to DT irqchip and clocksource
-Date: Tue,  2 Jul 2013 13:03:41 +0200
-Message-Id: <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Tue, 2 Jul 2013 07:04:38 -0400
+Date: Tue, 2 Jul 2013 12:04:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>,
+        spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
+        rnayak@ti.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130702110432.GJ27646@sirena.org.uk>
+References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com>
+ <20130702093247.GY27646@sirena.org.uk>
+ <20130702094404.GL3352@arwen.pp.htv.fi>
+ <20130702101718.GE27646@sirena.org.uk>
+ <20130702104338.GA5107@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0uEakrcbPVGl0QO8"
+Content-Disposition: inline
+In-Reply-To: <20130702104338.GA5107@arwen.pp.htv.fi>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent support for true irqchip and clocksource drivers for Orion
-SoCs, now make use of it on DT enabled Kirkwood boards.
 
-This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
-where old code is moved out to and polishes DT board file a little bit.
+--0uEakrcbPVGl0QO8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
---- 
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-kirkwood/Kconfig    |   22 ++++++++++++++++++++++
- arch/arm/mach-kirkwood/Makefile   |    4 ++--
- arch/arm/mach-kirkwood/board-dt.c |   24 +++++++++++++++++-------
- 3 files changed, 41 insertions(+), 9 deletions(-)
+On Tue, Jul 02, 2013 at 01:43:38PM +0300, Felipe Balbi wrote:
+> On Tue, Jul 02, 2013 at 11:17:18AM +0100, Mark Brown wrote:
 
-diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
-index 493c71a..ede131e 100644
---- a/arch/arm/mach-kirkwood/Kconfig
-+++ b/arch/arm/mach-kirkwood/Kconfig
-@@ -2,67 +2,81 @@ if ARCH_KIRKWOOD
- 
- menu "Marvell Kirkwood Implementations"
- 
-+config KIRKWOOD_LEGACY
-+	bool
-+
- config MACH_D2NET_V2
- 	bool "LaCie d2 Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie d2 Network v2 NAS.
- 
- config MACH_DOCKSTAR
- 	bool "Seagate FreeAgent DockStar"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Seagate FreeAgent DockStar.
- 
- config MACH_ESATA_SHEEVAPLUG
- 	bool "Marvell eSATA SheevaPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell eSATA SheevaPlug Reference Board.
- 
- config MACH_GURUPLUG
- 	bool "Marvell GuruPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell GuruPlug Reference Board.
- 
- config MACH_INETSPACE_V2
- 	bool "LaCie Internet Space v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Internet Space v2 NAS.
- 
- config MACH_MV88F6281GTW_GE
- 	bool "Marvell 88F6281 GTW GE Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell 88F6281 GTW GE Board.
- 
- config MACH_NET2BIG_V2
- 	bool "LaCie 2Big Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie 2Big Network v2 NAS.
- 
- config MACH_NET5BIG_V2
- 	bool "LaCie 5Big Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie 5Big Network v2 NAS.
- 
- config MACH_NETSPACE_MAX_V2
- 	bool "LaCie Network Space Max v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Network Space Max v2 NAS.
- 
- config MACH_NETSPACE_V2
- 	bool "LaCie Network Space v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Network Space v2 NAS.
- 
- config MACH_OPENRD
-+	select KIRKWOOD_LEGACY
-         bool
- 
- config MACH_OPENRD_BASE
-@@ -88,30 +102,35 @@ config MACH_OPENRD_ULTIMATE
- 
- config MACH_RD88F6192_NAS
- 	bool "Marvell RD-88F6192-NAS Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell RD-88F6192-NAS Reference Board.
- 
- config MACH_RD88F6281
- 	bool "Marvell RD-88F6281 Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell RD-88F6281 Reference Board.
- 
- config MACH_SHEEVAPLUG
- 	bool "Marvell SheevaPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell SheevaPlug Reference Board.
- 
- config MACH_T5325
- 	bool "HP t5325 Thin Client"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  HP t5325 Thin Client.
- 
- config MACH_TS219
- 	bool "QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and TS-219P+ Turbo NAS"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and
-@@ -119,6 +138,7 @@ config MACH_TS219
- 
- config MACH_TS41X
- 	bool "QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo NAS"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo
-@@ -129,6 +149,8 @@ comment "Device tree entries"
- config ARCH_KIRKWOOD_DT
- 	bool "Marvell Kirkwood Flattened Device Tree"
- 	select KIRKWOOD_CLK
-+	select ORION_IRQCHIP
-+	select ORION_TIMER
- 	select POWER_SUPPLY
- 	select POWER_RESET
- 	select POWER_RESET_GPIO
-diff --git a/arch/arm/mach-kirkwood/Makefile b/arch/arm/mach-kirkwood/Makefile
-index 062f8c7..f78f333 100644
---- a/arch/arm/mach-kirkwood/Makefile
-+++ b/arch/arm/mach-kirkwood/Makefile
-@@ -1,5 +1,5 @@
--obj-y				+= common.o irq.o pcie.o mpp.o
--
-+obj-y				+= common.o pcie.o
-+obj-$(CONFIG_KIRKWOOD_LEGACY)	+= irq.o mpp.o
- obj-$(CONFIG_MACH_D2NET_V2)		+= d2net_v2-setup.o lacie_v2-common.o
- obj-$(CONFIG_MACH_DOCKSTAR)		+= dockstar-setup.o
- obj-$(CONFIG_MACH_ESATA_SHEEVAPLUG)	+= sheevaplug-setup.o
-diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
-index 881f37e..385244c 100644
---- a/arch/arm/mach-kirkwood/board-dt.c
-+++ b/arch/arm/mach-kirkwood/board-dt.c
-@@ -15,6 +15,9 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/clk-provider.h>
-+#include <linux/clocksource.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/irqchip.h>
- #include <linux/kexec.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -67,10 +70,18 @@ static void __init kirkwood_legacy_clk_init(void)
- 	clk_prepare_enable(clk);
- }
- 
--static void __init kirkwood_of_clk_init(void)
-+static void __init kirkwood_dt_time_init(void)
- {
- 	of_clk_init(NULL);
--	kirkwood_legacy_clk_init();
-+	clocksource_of_init();
-+}
-+
-+static void __init kirkwood_dt_init_early(void)
-+{
-+	init_dma_coherent_pool_size(SZ_1M);
-+	mvebu_mbus_init("marvell,kirkwood-mbus",
-+			BRIDGE_WINS_BASE, BRIDGE_WINS_SZ,
-+			DDR_WINDOW_CPU_BASE, DDR_WINDOW_CPU_SZ);
- }
- 
- static void __init kirkwood_dt_init(void)
-@@ -91,8 +102,8 @@ static void __init kirkwood_dt_init(void)
- 
- 	kirkwood_cpufreq_init();
- 
--	/* Setup root of clk tree */
--	kirkwood_of_clk_init();
-+	/* Setup clocks for legacy devices */
-+	kirkwood_legacy_clk_init();
- 
- 	kirkwood_cpuidle_init();
- 
-@@ -114,9 +125,8 @@ static const char * const kirkwood_dt_board_compat[] = {
- DT_MACHINE_START(KIRKWOOD_DT, "Marvell Kirkwood (Flattened Device Tree)")
- 	/* Maintainer: Jason Cooper <jason@lakedaemon.net> */
- 	.map_io		= kirkwood_map_io,
--	.init_early	= kirkwood_init_early,
--	.init_irq	= orion_dt_init_irq,
--	.init_time	= kirkwood_timer_init,
-+	.init_early	= kirkwood_dt_init_early,
-+	.init_time	= kirkwood_dt_time_init,
- 	.init_machine	= kirkwood_dt_init,
- 	.restart	= kirkwood_restart,
- 	.dt_compat	= kirkwood_dt_board_compat,
--- 
-1.7.2.5
+> > +	/* setup command reg */
+> > +	qspi->cmd =3D 0;
+> > +	qspi->cmd |=3D QSPI_WLEN(8);
 
+> Sourav hardcodes wordlenght to 8-bits, and yet he enables 8, 16 and
+> 32-bits per word.
+
+Yeah, that's what I noticed (well first off I noticed that there were no
+constraints on bits per word at all).
+
+> > +	qspi->cmd |=3D QSPI_EN_CS(0);
+
+> he's also hardcoding the chipselect line which should be take from
+> m->spi->chip_select
+
+This one *can* be OK if the driver only accepts one chip select (though
+obviously supporting more is better).  I'd really only done a fairly
+high level review for framework stuff so hadn't got that far yet.
+
+One thing I really want to get round to doing with the SPI core is
+providing an easy to pick up GPIO chip select as standard=20
+
+--0uEakrcbPVGl0QO8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0rO9AAoJELSic+t+oim9/icP/04F45yCdn1B7anQgFZwmjYe
+XuvyHwMbJRHboM43B5ZuVtDeiFBR64VbM9av0JmiCcdGxbIGUwc61Pzj8YcGNGbC
++pKLGiUHahuIDJrCOQz6HfkA1pt6GqRcEHmCry/v8GFQodwIrfYyu+Jy/+SSkrd6
+r1vh8k+5ecjII20YCgkn4X5fMut004PeIydTo6+lyaCJQBBhpOK7nN9XaQ7uR1Sp
+5P+ZI+WGsJuFHj3sYkAbe77B84sq4UP6M8UpAPQwEQZx/VZp60vp/yyCixed3ntr
+HymFJk21mjbm8sJ8MYl32F3yG3pr2XGdpIiNyYs83PnGg3BoOzO2A3h9CjpgZt0f
+c5c7Pg/C+26V5hGxqdxJAztITMOHt9vxCSWjdYPOM0BG2T+pPXsTzSFLz7Mc8GTl
+5MofPJhkSe7o7DnjzQhMoCRo32/NZluqE2uwe9cFufqNFApMzJo9vEhd68ttD+jd
+TS6FQh6IQj0IwwF8jx+luIWWJ2dX3JMy/UKEoN/mS4UZNyRbC3o6CKM4F0xUlxsX
+2e2yYicCso5qHaQmHZSbKwqf5lVJeQkcrVBgTBJtQREQLevvAC0RGcZ78G291b7W
+sGyjU2C0lJWk+6VwVstogQfvfUgnApqFvBamkXAMAtaMB+sDqrYPPOfJzZSdu0/J
+lprgbktWiCSbmzDvZtox
+=ZiK7
+-----END PGP SIGNATURE-----
+
+--0uEakrcbPVGl0QO8--
