@@ -1,105 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab3GBUcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:32:20 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45620 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755610Ab3GBUcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 16:32:18 -0400
-Message-ID: <51D338CF.7040300@gmail.com>
-Date: Tue, 02 Jul 2013 22:32:15 +0200
-From: Andre Naujoks <nautsch2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	id S932367Ab3GBUjC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:39:02 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:56955 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754906Ab3GBUjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 16:39:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the hierarhcy
+Date: Tue, 02 Jul 2013 22:48:37 +0200
+Message-ID: <1459525.3jRt3S4aX6@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130702174542.18099E0090@blue.fi.intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com> <CAErSpo7GQ8M1rpWnez+=SByR_wmyAnJH7wfqdY20ZcvXW9_90Q@mail.gmail.com> <20130702174542.18099E0090@blue.fi.intel.com>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Dean Jenkins <Dean_Jenkins@mentor.com>
-Subject: Re: [PATCH] kernel panic, pty.c: remove direct call to tty_wakup
- in pty_write
-References: <51D196EA.7010809@gmail.com> <51D32303.2060904@hurleysoftware.com>
-In-Reply-To: <51D32303.2060904@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.07.2013 20:59, Peter Hurley wrote:
-> On 07/01/2013 10:49 AM, Andre Naujoks wrote:
->> Hello.
->>
->> This patch removes the direct call to tty_wakeup in pty_write. I have
->> not noticed any drawbacks with this but I am not familiar with the pty
->> driver at all. I think what happens is a recursive loop,
->> write_wakeup->write->write_wakeup ...
->>
->> The documentation for the tty interface forbids this direct call:
->>
->> (from Documentation/serial/tty.txt)
->> write_wakeup()  - May be called at any point between open and close.
->>        The TTY_DO_WRITE_WAKEUP flag indicates if a call
->>        is needed but always races versus calls. Thus the
->>        ldisc must be careful about setting order and to
->>        handle unexpected calls. Must not sleep.
->>
->>        The driver is forbidden from calling this directly
->>        from the ->write call from the ldisc as the ldisc
->>        is permitted to call the driver write method from
->>        this function. In such a situation defer it.
->>
->>
->>
->> The direct call caused a reproducable kernel panic (see bottom of this
->> mail) for me with the following setup:
->>
->> - using can-utils from git://gitorious.org/linux-can/can-utils.git
->>    slcan_attach and cangen are used
->>
->> - create a network link between two serial CAN interfaces with:
->>    $ socat PTY,link=/tmp/slcan0,raw TCP4-LISTEN:50000 &
->>    $ socat TCP4:localhost:50000 PTY,link=/tmp/slcan1,raw &
->>    $ slcan_attach /tmp/slcan0
->>    $ slcan_attach /tmp/slcan1
->>    $ ip link set slcan0 up
->>    $ ip link set slcan1 up
->>
->> - produce a kernel panic by overloading the CAN interfaces:
->>    $ cangen slcan0 -g0
->>
->>
->> Please keep me in CC. I am not subscribed to the list.
->> If I can provide any more information, I will be glad to do so.
->>
->> This is the patch. It applies to the current linux master branch:
->
-> An identical patch is in Greg's queue for linux-next:
->    'tty: Remove extra wakeup from pty write() path'
->
-> That patch's commit message details why tty_wakeup() is unnecessary,
-> but does not foresee or document the SLIP ldisc write()/write_wakeup()
-> recursion.
->
-> Since this fix will now likely go back through stable, the commit
-> message should include a description of the recursion, so that Greg can
-> merge the commit messages.
->
-> Separately, the stack trace for the WARN and the oops implicates
-> the network stack alone. Maybe there is some other problem?
+On Tuesday, July 02, 2013 08:45:42 PM Kirill A. Shutemov wrote:
+> Bjorn Helgaas wrote:
+> > On Tue, Jul 2, 2013 at 4:44 AM, Kirill A. Shutemov
+> > <kirill.shutemov@linux.intel.com> wrote:
+> > > Mika Westerberg wrote:
+> > >> The acpiphp driver finds out whether the device is hotpluggable by checking
+> > >> whether it has _RMV method behind it (and if it returns 1). However, at
+> > >> least Acer Aspire S5 with Thunderbolt host router has this method placed
+> > >> behind device called EPUP (endpoint upstream port?) and not directly behind
+> > >> the root port as can be seen from the ASL code below:
+> > >>
+> > >> Device (RP05)
+> > >> {
+> > >>       ...
+> > >>       Device (HRUP)
+> > >>       {
+> > >>               Name (_ADR, Zero)
+> > >>               Name (_PRW, Package (0x02)
+> > >>               {
+> > >>                       0x09,
+> > >>                       0x04
+> > >>               })
+> > >>               Device (HRDN)
+> > >>               {
+> > >>                       Name (_ADR, 0x00040000)
+> > >>                       Name (_PRW, Package (0x02)
+> > >>                       {
+> > >>                               0x09,
+> > >>                               0x04
+> > >>                       })
+> > >>                       Device (EPUP)
+> > >>                       {
+> > >>                               Name (_ADR, Zero)
+> > >>                               Method (_RMV, 0, NotSerialized)
+> > >>                               {
+> > >>                                       Return (One)
+> > >>                               }
+> > >>                       }
+> > >>               }
+> > >>       }
+> > >>
+> > >> If we want to support such machines we must look for the _RMV method a bit
+> > >> deeper in the hierarchy. Fix this by changing pcihp_is_ejectable() to check
+> > >> few more devices down from the root port.
+> > >
+> > > We found that this approach is broken. We've got false positive: host
+> > > bridge itself was detected as hotplugable slot %) I think it's not
+> > > acceptable.
+> > >
+> > > Mika has tried few more approaches, but we haven't found anything better
+> > > then hardcoded path like in original workaround patch[1]. It's not generic
+> > > at all, but safe from false positives.
+> > >
+> > > Any thoughts?
+> > >
+> > > [1] http://article.gmane.org/gmane.linux.kernel.pci/19102
+> > 
+> > The changelog of this patch ([1]) says "Correct ACPI PCI hotplug
+> > implementation should have _RMV method in a PCI slot (device under pci
+> > bridge). In Acer Aspire S5 case we have it deeper in hierarchy ..."
+> > 
+> > This is exactly what I mean about acpiphp being brittle because of the
+> > assumptions it makes about the ACPI namespace.  Is there actually
+> > something in the spec that requires the _RMV method to be where
+> > pcihp_is_ejectable() expects it?
+> 
+> Spec says that _RMV indicates the device which can be removed.
+> Rest, I believe, are assumptions: if the device is removable, then parent
+> must be a hotpluggable slot.
 
-I haven't run into any other problems so far with the patch applied. If 
-there is another problem, I will probably run into it soon, because I 
-will use this facility very extensively in the near future. We'll see 
-how that works out.
+Where "hotpluggable slot" is a very weakly defined entity. :-)
 
-Regards
-   Andre Naujoks
+_RMV means: this device only supports surprise-style removal.  Moreover, it
+is mandatory for removable devices without _LCK or _EJx.  _RMV on one device
+doesn't actually mean anything for other devices.
 
->
-> Regards,
-> Peter Hurley
->
->
->
+> It looks reasonable, but doesn't work in this case. And it's not obvious
+> how we can generalize the assumption to cover the case.
+> 
+> > I'm not 100% dead-set against merging the workaround with hard-coded
+> > path, but I still don't think it's a good idea.  It "fixes" it for one
+> > particular machine, but there will likely be other machines that
+> > require similar fixes in the future.  It makes it harder for somebody
+> > to clean up the design later, because that person won't have an Aspire
+> > S5 to test.  It makes it less likely that somebody *will* clean it up
+> > later, because "everything is already working."
+> > 
+> > That's why my preference (given infinite resources) would be to rework
+> > acpiphp now, while people are interested and can test it.  I'm sure
+> > this would be a major redesign of acpiphp and its interaction with
+> > pciehp, but I think it's something we're going to have to do at some
+> > point.
+> 
+> Basically, we run out of ideas. Any input is welcome! :)
+> 
+> For now we can post new version of patchset without the workaround and
+> come back later with workaround (or proper solution if we'll find any).
+> 
+> Does it work for you? Or you prefer everything in one patchset?
 
+Please post the current version of the patchset with as much of the feedback
+taken into account as possible without breaking functionality.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
