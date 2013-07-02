@@ -1,328 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab3GBWl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 18:41:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44903 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3GBWlU (ORCPT
+	id S1756447Ab3GBWne (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 18:43:34 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:16211 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755582Ab3GBWn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 18:41:20 -0400
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: linux-kernel@vger.kernel.org
-Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: [PATCH V2] Add support driver for Intel Rapid Start Technology
-Date: Tue,  2 Jul 2013 18:41:03 -0400
-Message-Id: <1372804863-2861-1-git-send-email-mjg59@srcf.ucam.org>
-X-Mailer: git-send-email 1.8.3.1
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 2001:470:1f07:1371:422c:f4ff:fe92:dff9
-X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Tue, 2 Jul 2013 18:43:28 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsALAJpW01Fbti7d/2dsb2JhbABagwnAbwQBgQcXdIJRLwYdJlwCFjeHfAEDE6sBhyYKGScNWId6jHyBHDCBHYN0A4tsiXaBaIwghSWDEzo
+From: Peter De Wachter <pdewacht@gmail.com>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        Peter De Wachter <pdewacht@gmail.com>
+Subject: [PATCH] hid: add driver for IBM/Lenovo ScrollPoint mice
+Date: Wed,  3 Jul 2013 00:42:31 +0200
+Message-Id: <1372804951-7135-1-git-send-email-pdewacht@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intel Rapid Start Technology is a firmware-based suspend-to-disk
-implementation. Once placed in S3, the device will wake once either a
-timeout elapses or the battery reaches a critical level. It will then resume
-to the firmware and copy the contents of RAM to a specialised partition, and
-then power off the machine. If the user turns the machine back on the
-firmware will copy the contents of the partition back to RAM and then resume
-from S3 as normal.
+IBM Scrollpoint have a trackpoint-like gizmo instead of a scroll wheel,
+which allows for two-dimensional scrolling. This driver provides an
+input mapping to make that work.
 
-This driver provides an interface for configuring the wakeup events and
-timeout. It still requires firmware support and an appropriate suspend
-partition.
+The scrollpoint is also much more sensitive than a typical mouse wheel.
+X can use this to provide smooth scrolling, but the kernel doesn't seem
+to have a way to communicate this fact. As a result this mouse simply
+scrolls way too fast. For now I've created an xorg patch to provide a
+manual setting (fdo #48118).
 
-Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
+Signed-off-by: Peter De Wachter <pdewacht@gmail.com>
 ---
+ drivers/hid/Kconfig           |  8 ++++++
+ drivers/hid/Makefile          |  1 +
+ drivers/hid/hid-core.c        |  7 +++++
+ drivers/hid/hid-ids.h         |  7 +++++
+ drivers/hid/hid-scrollpoint.c | 67 +++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 90 insertions(+)
+ create mode 100644 drivers/hid/hid-scrollpoint.c
 
-V2 with the Makefile and Kconfig.
-
- .../ABI/testing/sysfs-driver-intel-rapid-start     |  21 +++
- drivers/platform/x86/Kconfig                       |  12 ++
- drivers/platform/x86/Makefile                      |   1 +
- drivers/platform/x86/intel-rst.c                   | 209 +++++++++++++++++++++
- 4 files changed, 243 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-intel-rapid-start
- create mode 100644 drivers/platform/x86/intel-rst.c
-
-diff --git a/Documentation/ABI/testing/sysfs-driver-intel-rapid-start b/Documentation/ABI/testing/sysfs-driver-intel-rapid-start
-new file mode 100644
-index 0000000..5a7d2e2
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-driver-intel-rapid-start
-@@ -0,0 +1,21 @@
-+What:		/sys/bus/acpi/intel-rapid-start/wakeup_events
-+Date:		July 2, 2013
-+KernelVersion:	3.11
-+Contact:	Matthew Garrett <mjg59@srcf.ucam.org>
-+Description:	An integer representing a set of wakeup events as follows:
-+		1: Wake to enter hibernation when the wakeup timer expires
-+		2: Wake to enter hibernation when the battery reaches a
-+		critical level
-+
-+		These values are ORed together. For example, a value of 3
-+		indicates that the system will wake to enter hibernation when
-+		either the wakeup timer expires or the battery reaches a
-+		critical level.
-+
-+What:		/sys/bus/acpi/intel-rapid-start/wakeup_time
-+Date:		July 2, 2013
-+KernelVersion:	3.11
-+Contact:	Matthew Garrett <mjg59@srcf.ucam.org>
-+Description:	An integer representing the length of time the system will
-+		remain asleep before waking up to enter hibernation.
-+		This value is in minutes.
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 8577261..2365d08 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -781,6 +781,18 @@ config APPLE_GMUX
- 	  graphics as well as the backlight. Currently only backlight
- 	  control is supported by the driver.
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index fb52f3f..fdc49ca 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -593,6 +593,14 @@ config HID_SAMSUNG
+ 	---help---
+ 	Support for Samsung InfraRed remote control or keyboards.
  
-+config INTEL_RST
-+        tristate "Intel Rapid Start Technology Driver"
-+	depends on ACPI
++config HID_SCROLLPOINT
++	tristate "IBM/Lenovo ScrollPoint mice"
++	depends on HID
 +	---help---
-+	  This driver provides support for modifying paramaters on systems
-+	  equipped with Intel's Rapid Start Technology. When put in an ACPI
-+	  sleep state, these devices will wake after either a configured
-+	  timeout or when the system battery reaches a critical state,
-+	  automatically copying memory contents to disk. On resume, the
-+	  firmware will copy the memory contents back to RAM and resume the OS
-+	  as usual.
++	Support for IBM/Lenovo ScrollPoint mice.
++	Say Y here if you have a ScrollPoint mouse and want horizontal
++	scrolling to work.
 +
- config PVPANIC
- 	tristate "pvpanic device support"
- 	depends on ACPI
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index ef0ec74..5c669ce 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -51,5 +51,6 @@ obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
- obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
- obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
- obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
-+obj-$(CONFIG_INTEL_RST)		+= intel-rst.o
+ config HID_SONY
+ 	tristate "Sony PS3 controller"
+ 	depends on USB_HID
+diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
+index 2065694..4a4c279 100644
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -99,6 +99,7 @@ obj-$(CONFIG_HID_ROCCAT)	+= hid-roccat.o hid-roccat-common.o \
+ 	hid-roccat-lua.o hid-roccat-pyra.o hid-roccat-savu.o
+ obj-$(CONFIG_HID_SAITEK)	+= hid-saitek.o
+ obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
++obj-$(CONFIG_HID_SCROLLPOINT)	+= hid-scrollpoint.o
+ obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
+ obj-$(CONFIG_HID_SONY)		+= hid-sony.o
+ obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index 264f550..003f419 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1584,6 +1584,13 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
++#if IS_ENABLED(CONFIG_HID_SCROLLPOINT)
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
++#endif
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 38535c9..f813fab 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -441,6 +441,13 @@
+ #define USB_VENDOR_ID_HOLTEK_ALT		0x04d9
+ #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD	0xa055
  
- obj-$(CONFIG_PVPANIC)           += pvpanic.o
-diff --git a/drivers/platform/x86/intel-rst.c b/drivers/platform/x86/intel-rst.c
++#define USB_VENDOR_ID_IBM					0x04b3
++#define USB_DEVICE_ID_IBM_SCROLLPOINT_III			0x3100
++#define USB_DEVICE_ID_IBM_SCROLLPOINT_PRO			0x3103
++#define USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL			0x3105
++#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL		0x3108
++#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO	0x3109
++
+ #define USB_VENDOR_ID_IMATION		0x0718
+ #define USB_DEVICE_ID_DISC_STAKKA	0xd000
+ 
+diff --git a/drivers/hid/hid-scrollpoint.c b/drivers/hid/hid-scrollpoint.c
 new file mode 100644
-index 0000000..9385afd
+index 0000000..48e7696
 --- /dev/null
-+++ b/drivers/platform/x86/intel-rst.c
-@@ -0,0 +1,209 @@
++++ b/drivers/hid/hid-scrollpoint.c
+@@ -0,0 +1,67 @@
 +/*
-+ *  Copyright 2013 Matthew Garrett <mjg59@srcf.ucam.org>
++ * HID driver for IBM/Lenovo ScrollPoint mice
 + *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ * Copyright (c) 2012 Peter De Wachter <pdewacht@gmail.com>
 + */
 +
++/*
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ */
 +
-+#include <linux/init.h>
++#include <linux/device.h>
++#include <linux/hid.h>
 +#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <acpi/acpi_drivers.h>
 +
++#include "hid-ids.h"
++
++static int scrollpoint_input_mapping(struct hid_device *hdev,
++		struct hid_input *hi, struct hid_field *field,
++		struct hid_usage *usage, unsigned long **bit, int *max)
++{
++	if (usage->hid == HID_GD_Z) {
++		hid_map_usage(hi, usage, bit, max, EV_REL, REL_HWHEEL);
++		return 1;
++	}
++	return 0;
++}
++
++static const struct hid_device_id scrollpoint_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
++		USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
++		USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
++		USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
++		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
++		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, scrollpoint_devices);
++
++static struct hid_driver scrollpoint_driver = {
++	.name = "scrollpoint",
++	.id_table = scrollpoint_devices,
++	.input_mapping = scrollpoint_input_mapping
++};
++
++static int __init scrollpoint_init(void)
++{
++	return hid_register_driver(&scrollpoint_driver);
++}
++
++static void __exit scrollpoint_exit(void)
++{
++	hid_unregister_driver(&scrollpoint_driver);
++}
++
++module_init(scrollpoint_init);
++module_exit(scrollpoint_exit);
++
++MODULE_AUTHOR("Peter De Wachter");
++MODULE_DESCRIPTION("IBM/Lenovo ScrollPoint mouse driver");
 +MODULE_LICENSE("GPL");
-+
-+static ssize_t irst_show_wakeup_events(struct device *dev,
-+				       struct device_attribute *attr,
-+				       char *buf)
-+{
-+	struct acpi_device *acpi;
-+	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-+	union acpi_object *result;
-+	acpi_status status;
-+
-+	acpi = to_acpi_device(dev);
-+
-+	status = acpi_evaluate_object(acpi->handle, "GFFS", NULL, &output);
-+	if (!ACPI_SUCCESS(status))
-+		return -EINVAL;
-+
-+	result = output.pointer;
-+
-+	if (result->type != ACPI_TYPE_INTEGER) {
-+		kfree(result);
-+		return -EINVAL;
-+	}
-+
-+	return sprintf(buf, "%lld\n", result->integer.value);
-+}
-+
-+static ssize_t irst_store_wakeup_events(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct acpi_device *acpi;
-+	struct acpi_object_list input;
-+	union acpi_object param;
-+	acpi_status status;
-+	unsigned long value;
-+	int error;
-+
-+	acpi = to_acpi_device(dev);
-+
-+	error = kstrtoul(buf, 0, &value);
-+
-+	if (error)
-+		return error;
-+
-+	param.type = ACPI_TYPE_INTEGER;
-+	param.integer.value = value;
-+
-+	input.count = 1;
-+	input.pointer = &param;
-+
-+	status = acpi_evaluate_object(acpi->handle, "SFFS", &input, NULL);
-+
-+	if (!ACPI_SUCCESS(status))
-+		return -EINVAL;
-+
-+	return count;
-+}
-+
-+static struct device_attribute irst_wakeup_attr = {
-+	.attr = { .name = "wakeup_events", .mode = 0600 },
-+	.show = irst_show_wakeup_events,
-+	.store = irst_store_wakeup_events
-+};
-+
-+static ssize_t irst_show_wakeup_time(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
-+{
-+	struct acpi_device *acpi;
-+	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-+	union acpi_object *result;
-+	acpi_status status;
-+
-+	acpi = to_acpi_device(dev);
-+
-+	status = acpi_evaluate_object(acpi->handle, "GFTV", NULL, &output);
-+	if (!ACPI_SUCCESS(status))
-+		return -EINVAL;
-+
-+	result = output.pointer;
-+
-+	if (result->type != ACPI_TYPE_INTEGER) {
-+		kfree(result);
-+		return -EINVAL;
-+	}
-+
-+	return sprintf(buf, "%lld\n", result->integer.value);
-+}
-+
-+static ssize_t irst_store_wakeup_time(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count)
-+{
-+	struct acpi_device *acpi;
-+	struct acpi_object_list input;
-+	union acpi_object param;
-+	acpi_status status;
-+	unsigned long value;
-+	int error;
-+
-+	acpi = to_acpi_device(dev);
-+
-+	error = kstrtoul(buf, 0, &value);
-+
-+	if (error)
-+		return error;
-+
-+	param.type = ACPI_TYPE_INTEGER;
-+	param.integer.value = value;
-+
-+	input.count = 1;
-+	input.pointer = &param;
-+
-+	status = acpi_evaluate_object(acpi->handle, "SFTV", &input, NULL);
-+
-+	if (!ACPI_SUCCESS(status))
-+		return -EINVAL;
-+
-+	return count;
-+}
-+
-+static struct device_attribute irst_timeout_attr = {
-+	.attr = { .name = "wakeup_time", .mode = 0600 },
-+	.show = irst_show_wakeup_time,
-+	.store = irst_store_wakeup_time
-+};
-+
-+static int irst_add(struct acpi_device *acpi)
-+{
-+	int error = 0;
-+
-+	error = device_create_file(&acpi->dev, &irst_timeout_attr);
-+	if (error)
-+		goto out;
-+
-+	error = device_create_file(&acpi->dev, &irst_wakeup_attr);
-+	if (error)
-+		goto out_timeout;
-+
-+	return 0;
-+
-+out_timeout:
-+	device_remove_file(&acpi->dev, &irst_timeout_attr);
-+out:
-+	return error;
-+}
-+
-+static int irst_remove(struct acpi_device *acpi)
-+{
-+	device_remove_file(&acpi->dev, &irst_wakeup_attr);
-+	device_remove_file(&acpi->dev, &irst_timeout_attr);
-+
-+	return 0;
-+}
-+
-+static const struct acpi_device_id irst_ids[] = {
-+	{"INT3392", 0},
-+	{"", 0}
-+};
-+
-+static struct acpi_driver irst_driver = {
-+	.owner = THIS_MODULE,
-+	.name = "intel_rapid_start",
-+	.class = "intel_rapid_start",
-+	.ids = irst_ids,
-+	.ops = {
-+		.add = irst_add,
-+		.remove = irst_remove,
-+	},
-+};
-+
-+static int irst_init(void)
-+{
-+	return acpi_bus_register_driver(&irst_driver);
-+}
-+
-+static void irst_exit(void)
-+{
-+	acpi_bus_unregister_driver(&irst_driver);
-+}
-+
-+module_init(irst_init);
-+module_exit(irst_exit);
-+
-+MODULE_DEVICE_TABLE(acpi, irst_ids);
 -- 
-1.8.3.1
+1.8.3.2
 
