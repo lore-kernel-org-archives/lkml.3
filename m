@@ -1,238 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab3GBESc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 00:18:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16429 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab3GBESa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 00:18:30 -0400
-X-IronPort-AV: E=Sophos;i="4.87,978,1363104000"; 
-   d="scan'208";a="7754984"
-Message-ID: <51D253CB.2070408@cn.fujitsu.com>
-Date: Tue, 02 Jul 2013 12:15:07 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751335Ab3GBEdB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 00:33:01 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:42277 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab3GBEc7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 00:32:59 -0400
+Date: Mon, 1 Jul 2013 21:32:56 -0700
+From: Anton Vorontsov <anton@enomsg.org>
+To: Hyunhee Kim <hyunhee.kim@samsung.com>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130702043256.GA14927@teo>
+References: <20130628043411.GA9100@teo>
+ <20130628050712.GA10097@teo>
+ <20130628100027.31504abe@redhat.com>
+ <20130628165722.GA12271@teo>
+ <20130628170917.GA12610@teo>
+ <20130628144507.37d28ed9@redhat.com>
+ <20130628185547.GA14520@teo>
+ <20130628154402.4035f2fa@redhat.com>
+ <20130629005637.GA16068@teo>
+ <CAOK=xROD2AKbgw4V65ddqWFODtn4B1-uYG-NF==oANqVFmZZtg@mail.gmail.com>
 MIME-Version: 1.0
-To: Dong Fang <yp.fangdong@gmail.com>
-CC: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vfs: remove the unnecessrary code of fs/inode.c
-References: <1372681143-23465-1-git-send-email-yp.fangdong@gmail.com>
-In-Reply-To: <1372681143-23465-1-git-send-email-yp.fangdong@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/02 12:16:51,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/02 12:17:01,
-	Serialize complete at 2013/07/02 12:17:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAOK=xROD2AKbgw4V65ddqWFODtn4B1-uYG-NF==oANqVFmZZtg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2013 08:19 PM, Dong Fang wrote:
-
-> These functions, such as find_inode_fast() and find_inode(), iget_lock() and
-> iget5_lock(), insert_inode_locked() and insert_inode_locked4(), almost have
-> the same code.
-
-Maybe the title "[PATCH] vfs: remove the reduplicate code of fs/inode.c" is more
-suitable.
-
+On Mon, Jul 01, 2013 at 05:22:36PM +0900, Hyunhee Kim wrote:
+> >> > > for each event in memory.pressure_level; do
+> >> > >   /* register eventfd to be notified on "event" */
+> >> > > done
+> >> >
+> >> > This scheme registers "all" events.
+> >>
+> >> Yes, because I thought that's the user-case that matters for activity
+> >> manager :)
+> >
+> > Some activity managers use only low levels (Android), some might use only
+> > medium levels (simple load-balancing).
 > 
-> Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
-
-
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-
-Thanks,
-Gu
-
-> ---
->  fs/inode.c |  134 ++++++++++++------------------------------------------------
->  1 files changed, 26 insertions(+), 108 deletions(-)
+> When the platform like Android uses only "low" level, is it the
+> process you intended when designing vmpressure?
 > 
-> diff --git a/fs/inode.c b/fs/inode.c
-> index 00d5fc3..847eee9 100644
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -790,6 +790,22 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
->  }
->  
->  static void __wait_on_freeing_inode(struct inode *inode);
-> +
-> +
-> +static int test_ino(struct inode *inode, void *data)
-> +{
-> +	unsigned long ino = *(unsigned long *) data;
-> +	return inode->i_ino == ino;
+> 1. activity manager receives "low" level events
+> 2. it reads and checks the current memory (e.g. available memory) using vmstat
+> 3. if the available memory is not under the threshold (defined e.g. by
+> activity manager), activity manager does nothing
+> 4. if the available memory is under the threshold, activity manager
+> handles it by e.g. reclaiming or killing processes?
 
-Can be more concise:
-	return inode->i_ino == *(unsigned long *) data;
-,so does the new insert_inode_locked():
-	
+Yup, exactly.
 
-> +}
-> +
-> +static int set_ino(struct inode *inode, void *data)
-> +{
-> +	inode->i_ino = *(unsigned long *) data;
-> +	return 0;
-> +}
-> +
-> +
-> +
->  /*
->   * Called with the inode lock held.
->   */
-> @@ -829,28 +845,7 @@ repeat:
->  static struct inode *find_inode_fast(struct super_block *sb,
->  				struct hlist_head *head, unsigned long ino)
->  {
-> -	struct inode *inode = NULL;
-> -
-> -repeat:
-> -	hlist_for_each_entry(inode, head, i_hash) {
-> -		spin_lock(&inode->i_lock);
-> -		if (inode->i_ino != ino) {
-> -			spin_unlock(&inode->i_lock);
-> -			continue;
-> -		}
-> -		if (inode->i_sb != sb) {
-> -			spin_unlock(&inode->i_lock);
-> -			continue;
-> -		}
-> -		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
-> -			__wait_on_freeing_inode(inode);
-> -			goto repeat;
-> -		}
-> -		__iget(inode);
-> -		spin_unlock(&inode->i_lock);
-> -		return inode;
-> -	}
-> -	return NULL;
-> +	return find_inode(sb, head, test_ino, (void *)&ino);
->  }
->  
->  /*
-> @@ -1073,50 +1068,7 @@ EXPORT_SYMBOL(iget5_locked);
->   */
->  struct inode *iget_locked(struct super_block *sb, unsigned long ino)
->  {
-> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
-> -	struct inode *inode;
-> -
-> -	spin_lock(&inode_hash_lock);
-> -	inode = find_inode_fast(sb, head, ino);
-> -	spin_unlock(&inode_hash_lock);
-> -	if (inode) {
-> -		wait_on_inode(inode);
-> -		return inode;
-> -	}
-> -
-> -	inode = alloc_inode(sb);
-> -	if (inode) {
-> -		struct inode *old;
-> -
-> -		spin_lock(&inode_hash_lock);
-> -		/* We released the lock, so.. */
-> -		old = find_inode_fast(sb, head, ino);
-> -		if (!old) {
-> -			inode->i_ino = ino;
-> -			spin_lock(&inode->i_lock);
-> -			inode->i_state = I_NEW;
-> -			hlist_add_head(&inode->i_hash, head);
-> -			spin_unlock(&inode->i_lock);
-> -			inode_sb_list_add(inode);
-> -			spin_unlock(&inode_hash_lock);
-> -
-> -			/* Return the locked inode with I_NEW set, the
-> -			 * caller is responsible for filling in the contents
-> -			 */
-> -			return inode;
-> -		}
-> -
-> -		/*
-> -		 * Uhhuh, somebody else created the same inode under
-> -		 * us. Use the old inode instead of the one we just
-> -		 * allocated.
-> -		 */
-> -		spin_unlock(&inode_hash_lock);
-> -		destroy_inode(inode);
-> -		inode = old;
-> -		wait_on_inode(inode);
-> -	}
-> -	return inode;
-> +	return iget5_locked(sb, ino, test_ino, set_ino, (void *)&ino);
->  }
->  EXPORT_SYMBOL(iget_locked);
->  
-> @@ -1281,48 +1233,6 @@ struct inode *ilookup(struct super_block *sb, unsigned long ino)
->  }
->  EXPORT_SYMBOL(ilookup);
->  
-> -int insert_inode_locked(struct inode *inode)
-> -{
-> -	struct super_block *sb = inode->i_sb;
-> -	ino_t ino = inode->i_ino;
-> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
-> -
-> -	while (1) {
-> -		struct inode *old = NULL;
-> -		spin_lock(&inode_hash_lock);
-> -		hlist_for_each_entry(old, head, i_hash) {
-> -			if (old->i_ino != ino)
-> -				continue;
-> -			if (old->i_sb != sb)
-> -				continue;
-> -			spin_lock(&old->i_lock);
-> -			if (old->i_state & (I_FREEING|I_WILL_FREE)) {
-> -				spin_unlock(&old->i_lock);
-> -				continue;
-> -			}
-> -			break;
-> -		}
-> -		if (likely(!old)) {
-> -			spin_lock(&inode->i_lock);
-> -			inode->i_state |= I_NEW;
-> -			hlist_add_head(&inode->i_hash, head);
-> -			spin_unlock(&inode->i_lock);
-> -			spin_unlock(&inode_hash_lock);
-> -			return 0;
-> -		}
-> -		__iget(old);
-> -		spin_unlock(&old->i_lock);
-> -		spin_unlock(&inode_hash_lock);
-> -		wait_on_inode(old);
-> -		if (unlikely(!inode_unhashed(old))) {
-> -			iput(old);
-> -			return -EBUSY;
-> -		}
-> -		iput(old);
-> -	}
-> -}
-> -EXPORT_SYMBOL(insert_inode_locked);
-> -
->  int insert_inode_locked4(struct inode *inode, unsigned long hashval,
->  		int (*test)(struct inode *, void *), void *data)
->  {
-> @@ -1366,6 +1276,14 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
->  }
->  EXPORT_SYMBOL(insert_inode_locked4);
->  
-> +int insert_inode_locked(struct inode *inode)
-> +{
-> +	unsigned long ino = inode->i_ino;
-> +	return insert_inode_locked4(inode, ino, test_ino, (void *)&ino);
+> At first time when I saw this vmpressure, I thought that I should
+> register all events ("low", "medium", and "critical
+> ") and use different handler for each event. However, without the mode
+> like strict mode, I should see too many events. So, now, I think that
+> it is better to use only one level and run each handler after checking
+> available memory as you mentioned.
 
-return insert_inode_locked4(inode, inode->i_ino, test_ino, (void *)&ino);
+Yup, this should work ideally.
 
-> +}
-> +EXPORT_SYMBOL(insert_inode_locked);
-> +
-> +
->  
->  int generic_delete_inode(struct inode *inode)
->  {
+> But,
+> 
+> 1. Isn't it overhead to read event and check memory state every time
+> we receive events?
 
+Even if it is an overhead, is it measurable? Plus, vmstat/memcg stats are
+the only source of information that Activity Manager can use to make a
+decision, so there is no point in duplicating the information in the
+notifications.
 
+>     - sometimes, even when there are lots of available memory, low
+> level event could occur if most of them is reclaimable memory not free
+> pages.
+
+The point of low level is to signal [any] reclaiming activity. So, yes, 
+
+>     - Don't most of platforms use available memory to judge their
+> current memory state?
+
+No, because you hardly want to monitor available memory only. You want to
+take into account the level of the page caches, etc.
+
+> Is there any reason vmpressure use reclaim rate?
+
+Yes, you can refer to this email:
+
+  http://lkml.org/lkml/2012/10/4/145
+
+And here is about the levels thing:
+
+  http://lkml.org/lkml/2012/10/22/177
+
+> IMO, activity manager doesn't have to check available memory if it
+> could receive signal based on the available memory.
+
+But userspace can define its own policy of managing the tasks/resouces
+based on different factors, other than just available memory. And that is
+exactly why we don't filter the events in the kernel anymore. The only
+filtering that we make is the levels, which, as it appears, can work for
+many use-cases. 
+
+> 2. If we use only "medium" to avoid the overheads occurred when using
+> "low" level, isn't it possible to miss sending events when there is a
+> little available memory but reclaim ratio is high?
+
+If your app don't "trust" reclaim ratio idicator, then the application can
+use its own heuristics, using low level just to monitor reclaiming
+activity. More than that, you can change vmpressure itself to use
+different heuristics for low/med/crit levels: the point of introducing
+levels was also to hide the implementation and memory management details,
+so if you can come up with a better approach for vmpressure "internals"
+you are more than welcome to do so. :)
+
+> IMHO, we cannot consider and cover all the use cases, but considering
+> some use cases and giving some guides and directions to use this
+> vmpressure will be helpful to make many platform accept this for their
+> low memory manager.
+
+Can't argue with that. :) I guess I will need to better document current
+behavior of the levels and when exactly the events trigger.
+
+Thanks!
+
+Anton
