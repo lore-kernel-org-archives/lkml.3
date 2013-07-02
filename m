@@ -1,162 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab3GBJLV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:11:21 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:51741 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab3GBJLT (ORCPT
+	id S932537Ab3GBJQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:16:20 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:35436 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932257Ab3GBJQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:11:19 -0400
-Date: Tue, 2 Jul 2013 11:11:13 +0200
-From: Jan Glauber <jan.glauber@gmail.com>
-To: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: Ambigiuous thread stack annotation in /proc/pid/[s]maps
-Message-ID: <20130702091110.GA3986@hal>
-References: <20130626114324.GA3538@hal>
- <CAAHN_R1LyhSJE5bAisx39sOyFfRTXQGpCx=CrwQYHWZHSTnOcw@mail.gmail.com>
- <20130627160232.GA1748@hal>
- <CAAHN_R1Y0q7MCbe+uhQVwME491BK_aRt=E_H1sDDTfi_V+OHcg@mail.gmail.com>
+	Tue, 2 Jul 2013 05:16:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAHN_R1Y0q7MCbe+uhQVwME491BK_aRt=E_H1sDDTfi_V+OHcg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51CADA58.2030602@ti.com>
+References: <1368688257-18705-1-git-send-email-prabhakar.csengg@gmail.com>
+ <1368688257-18705-3-git-send-email-prabhakar.csengg@gmail.com>
+ <51CAD305.30407@ti.com> <CA+V-a8uhK5-QJKifkiSUN6Nz0aBc2moraWQUJPCmZg9zaFX0eg@mail.gmail.com>
+ <51CAD7E4.2000403@ti.com> <CA+V-a8u6vjSc5EV3z4FCQ8LEHxL79bUXtHzX8svhQwqVtj6w=g@mail.gmail.com>
+ <51CADA58.2030602@ti.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Tue, 2 Jul 2013 14:45:57 +0530
+Message-ID: <CA+V-a8vij-4s1FsePmSZrdUTBZJPWZV6Wq9s=uurOHh2k47JNA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] video:da8xx-fb: Convert to devm_* api
+To: "Etheridge, Darren" <detheridge@ti.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LFBDEV <linux-fbdev@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 10:00:51PM +0530, Siddhesh Poyarekar wrote:
-> On 27 June 2013 21:32, Jan Glauber <jan.glauber@gmail.com> wrote:
-> > But isn't that confusing to the user? At least it is to me. Imagine someone
-> > who uses the maps or smaps output to determine the size of code, data and
-> > stack of a process. Maybe it would be better to not print the stack:tid data
-> > at all if the kernel cannot distinguish the vma's?
-> > Is that behaviour documented anywhere?
-> 
-> I'm afraid the documentation update I made to proc.txt did not mention
-> this.  In fact I went through the discussion thread and I don't think
-> I or anyone mentioned this in the thread either.  I think I assumed
-> back then that this was accepted since there was a point made that
-> vmas used by makecontext/swapcontext should also get marked correctly
-> with [stack].
-> 
-> However, I agree that you have a point about it being misleading.
-> Avoiding a vma merge is a possible solution, but we don't have flags
-> available any more to do that.  I'll try to think of another way.  In
-> the mean time I could add a note to the proc.txt documentation and
-> even adjust the language.  Would that be good enough or do you think
-> the patch should be reverted until I or someone else comes up with a
-> better solution?
+Hi Darren,
 
-I think we should try to solve the problem first. If it turns out that
-it is not possible to prevent these vma merges than we should document it.
-Removing the annotation would IMHO be bad since it is really useful
-information to the user.
+On Wed, Jun 26, 2013 at 5:41 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 26/06/13 15:06, Prabhakar Lad wrote:
+>> Hi Tomi,
+>>
+>> On Wed, Jun 26, 2013 at 5:30 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+>>> On 26/06/13 14:56, Prabhakar Lad wrote:
+>>>> Hi Tomi,
+>>>>
+>>>> On Wed, Jun 26, 2013 at 5:09 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+>>>>> On 16/05/13 10:10, Lad Prabhakar wrote:
+>>>>>> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>>>
+>>>>>> Use devm_ioremap_resource instead of reques_mem_region()/ioremap() and
+>>>>>> devm_request_irq() instead of request_irq().
+>>>>>>
+>>>>>> This ensures more consistent error values and simplifies error paths.
+>>>>>>
+>>>>>> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+>>>>>> ---
+>>>>>>  drivers/video/da8xx-fb.c |   39 +++++++--------------------------------
+>>>>>>  1 files changed, 7 insertions(+), 32 deletions(-)
+>>>>>
+>>>>> There's something similar in Darren's da8xx-fb series. Can you check if
+>>>>> there are differences?
+>>>>>
+>>>> I don't see similar changes in his patch series.
+>>>
+>>> [PATCH 14/23] video: da8xx-fb: use devres
+>>>
+>> Oops missed it out :), patch is almost similar except
+>> for following block,
+>>
+>> -       fb_clk = clk_get(&device->dev, "fck");
+>> +       fb_clk = devm_clk_get(&device->dev, "fck");
+>>         if (IS_ERR(fb_clk)) {
+>>                 dev_err(&device->dev, "Can not get device clock\n");
+>> -               ret = -ENODEV;
+>> -               goto err_ioremap;
+>> +               return -ENODEV;
+>>         }
+>>
+>> How do you suggest to handle it ?
+>
+> I think it's easiest if Darren handles the da8xx-fb series for 3.11. So
+> if there's something missing from Darren's series, please discuss with him.
+>
+Either you merge this patch with yours or rebase your patch on top of my patch.
+Let me know how you would like to handle it ?
 
-Can anyone from the mm folks comment on the vm_flags situation (CC-ing linux-mm) ?
-Would it be possible to re-use one of the defined flags? Or should we come up with a
-crude hack?
- 
-> > Never seen that makecontext stuff before. Do you have an example output how
-> > the maps would look like if that is used?
-> 
-> This is a sample program I cribbed from the makecontext man page and
-> modified slightly.  The stack is in the data area in this example.
-> There could be a case of a stack being with the main program stack or
-> even in the heap.
-> 
-> #include <ucontext.h>
-> #include <stdio.h>
-> #include <stdlib.h>
-> 
-> static ucontext_t uctx_main, uctx_func1, uctx_func2;
-> 
-> #define handle_error(msg) \
->            do { perror(msg); exit(EXIT_FAILURE); } while (0)
-> 
-> static char func1_stack[16384];
-> static char func2_stack[16384];
-> 
-> static void func1(void)
-> {
->         printf("func1: started\n");
->         printf("func1: swapcontext(&uctx_func1, &uctx_func2)\n");
->         if (swapcontext(&uctx_func1, &uctx_func2) == -1)
->                 handle_error("swapcontext");
-> 
->         sleep (1);
->         printf("func1: returning\n");
-> }
-> 
-> static void func2(void)
-> {
->         printf("func2: started\n");
->         printf("func2: swapcontext(&uctx_func2, &uctx_func1)\n");
->         if (swapcontext(&uctx_func2, &uctx_func1) == -1)
->                 handle_error("swapcontext");
->         sleep (1);
->         printf("func2: returning\n");
-> }
-> 
-> int main(int argc, char *argv[])
-> {
->         if (getcontext(&uctx_func1) == -1)
->                 handle_error("getcontext");
->         uctx_func1.uc_stack.ss_sp = func1_stack;
->         uctx_func1.uc_stack.ss_size = sizeof(func1_stack);
->         uctx_func1.uc_link = &uctx_main;
->         makecontext(&uctx_func1, func1, 0);
-> 
->         if (getcontext(&uctx_func2) == -1)
->                 handle_error("getcontext");
->         uctx_func2.uc_stack.ss_sp = func2_stack;
->         uctx_func2.uc_stack.ss_size = sizeof(func2_stack);
->         /* Successor context is f1(), unless argc > 1 */
->         uctx_func2.uc_link = (argc > 1) ? NULL : &uctx_func1;
->         makecontext(&uctx_func2, func2, 0);
-> 
->         printf("main: swapcontext(&uctx_main, &uctx_func2)\n");
->         if (swapcontext(&uctx_main, &uctx_func2) == -1)
->                 handle_error("swapcontext");
-> 
->         printf("main: exiting\n");
->         exit(EXIT_SUCCESS);
-> }
-> 
-> 
-> $./a.out
-> $ cat /proc/$(pgrep a.out)/maps
-> 
-> 00400000-00401000 r-xp 00000000 fd:00 1704114
->   /tmp/a.out
-> 00601000-00602000 rw-p 00001000 fd:00 1704114
->   /tmp/a.out
-> 00602000-0060a000 rw-p 00000000 00:00 0
->   [stack:7352]
-> 7fac662d2000-7fac6647e000 r-xp 00000000 fd:00 524922
->   /usr/lib64/libc-2.15.so
-> 7fac6647e000-7fac6667e000 ---p 001ac000 fd:00 524922
->   /usr/lib64/libc-2.15.so
-> 7fac6667e000-7fac66682000 r--p 001ac000 fd:00 524922
->   /usr/lib64/libc-2.15.so
-> 7fac66682000-7fac66684000 rw-p 001b0000 fd:00 524922
->   /usr/lib64/libc-2.15.so
-> 7fac66684000-7fac66689000 rw-p 00000000 00:00 0
-> 7fac66689000-7fac666a9000 r-xp 00000000 fd:00 524913
->   /usr/lib64/ld-2.15.so
-> 7fac6688f000-7fac66892000 rw-p 00000000 00:00 0
-> 7fac668a6000-7fac668a8000 rw-p 00000000 00:00 0
-> 7fac668a8000-7fac668a9000 r--p 0001f000 fd:00 524913
->   /usr/lib64/ld-2.15.so
-> 7fac668a9000-7fac668aa000 rw-p 00020000 fd:00 524913
->   /usr/lib64/ld-2.15.so
-> 7fac668aa000-7fac668ab000 rw-p 00000000 00:00 0
-> 7fff5b8a8000-7fff5b8ca000 rw-p 00000000 00:00 0
-> 7fff5b9fe000-7fff5ba00000 r-xp 00000000 00:00 0                          [vdso]
-> ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0
->   [vsyscall]
-> 
-> 
-> --
-> http://siddhesh.in
+Regards,
+--Prabhakar Lad
