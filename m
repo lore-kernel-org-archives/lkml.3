@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3GBRui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 13:50:38 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:60375 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab3GBRug (ORCPT
+	id S1753574Ab3GBRvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 13:51:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32801 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab3GBRvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 13:50:36 -0400
-Message-ID: <51D312E8.6090702@gmail.com>
-Date: Tue, 02 Jul 2013 13:50:32 -0400
-From: Vlad Yasevich <vyasevich@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Yann Droneaud <ydroneaud@opteya.com>
-CC: linux-kernel@vger.kernel.org, linux-sctp@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 12/13] sctp: use get_unused_fd_flags(0) instead of get_unused_fd()
-References: <cover.1372777600.git.ydroneaud@opteya.com> <6d4271e2e0b05ae2728cba1d890e77cac50cf8f0.1372777600.git.ydroneaud@opteya.com>
-In-Reply-To: <6d4271e2e0b05ae2728cba1d890e77cac50cf8f0.1372777600.git.ydroneaud@opteya.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 2 Jul 2013 13:51:35 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=DHx38szrmA4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=XmgD9TfWiMYA:10 a=VwQbUJbxAAAA:8 a=AW3oBweNy5cexTvsksYA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372787493.22688.50.camel@gandalf.local.home>
+Subject: Re: 3.6 NULL kernel dereference in skb_gro_receive()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        "Luis Claudio R. Goncalves" <lgoncalv@redhat.com>
+Date: Tue, 02 Jul 2013 13:51:33 -0400
+In-Reply-To: <1372783137.4979.10.camel@edumazet-glaptop>
+References: <1372782217.22688.48.camel@gandalf.local.home>
+	 <1372783137.4979.10.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 12:39 PM, Yann Droneaud wrote:
-> Macro get_unused_fd() is used to allocate a file descriptor with
-> default flags. Those default flags (0) can be "unsafe":
-> O_CLOEXEC must be used by default to not leak file descriptor
-> across exec().
->
-> Instead of macro get_unused_fd(), functions anon_inode_getfd()
-> or get_unused_fd_flags() should be used with flags given by userspace.
-> If not possible, flags should be set to O_CLOEXEC to provide userspace
-> with a default safe behavor.
->
-> In a further patch, get_unused_fd() will be removed so that
-> new code start using anon_inode_getfd() or get_unused_fd_flags()
-> with correct flags.
->
-> This patch replaces calls to get_unused_fd() with equivalent call to
-> get_unused_fd_flags(0) to preserve current behavor for existing code.
->
-> The hard coded flag value (0) should be reviewed on a per-subsystem basis,
-> and, if possible, set to O_CLOEXEC.
->
-> Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+On Tue, 2013-07-02 at 09:38 -0700, Eric Dumazet wrote:
 
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+> Could you check if your kernel has commit 2e71a6f8084e ("net: gro:
 
--vlad
+Yeah, I saw this in the git logs, and no our tree doesn't have that
+commit.
 
-> ---
->   net/sctp/socket.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-> index 66fcdcf..caa5919 100644
-> --- a/net/sctp/socket.c
-> +++ b/net/sctp/socket.c
-> @@ -4320,7 +4320,7 @@ static int sctp_getsockopt_peeloff(struct sock *sk, int len, char __user *optval
->   		goto out;
->
->   	/* Map the socket to an unused fd that can be returned to the user.  */
-> -	retval = get_unused_fd();
-> +	retval = get_unused_fd_flags(0);
->   	if (retval < 0) {
->   		sock_release(newsock);
->   		goto out;
->
+> selective flush of packets"), and the fix contained in commit
+> c3c7c254b2e8cd99b0adf288c2a1bddacd7ba255
+> ("net: gro: fix possible panic in skb_gro_receive() ")
+> 
+> Normally, first commit was in 3.7-rc1, but maybe it was backported into
+> you 3.6.11 kernel ?
+> 
+> Do you have a git tree for your kernel ?
+
+I'm not sure if the Red Hat kernel has a public git tree, but it's
+almost identical to my 3.6-rt tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+branch: v3.6-rt
+
+-- Steve
+
 
