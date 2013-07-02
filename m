@@ -1,118 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab3GBO1p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 10:27:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30434 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752055Ab3GBO1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 10:27:43 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-cc: dhowells@redhat.com, linux-cachefs@redhat.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, milosz@adfin.com
-Subject: [GIT PULL] Fix assorted FS-Cache issues
-Date: Tue, 02 Jul 2013 15:27:36 +0100
-Message-ID: <6302.1372775256@warthog.procyon.org.uk>
+	id S1752824Ab3GBOje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 10:39:34 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:53795 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab3GBOjd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 10:39:33 -0400
+X-Originating-IP: 108.223.40.66
+Date: Tue, 2 Jul 2013 07:39:32 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 00/13] 3.4.52-stable review
+Message-ID: <20130702143932.GA24055@roeck-us.net>
+References: <20130701200523.096669485@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130701200523.096669485@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 01, 2013 at 01:10:19PM -0700, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.52 release.
+> There are 13 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+> 
+> Responses should be made by Wed Jul  3 20:03:01 UTC 2013.
+> Anything received after that time might be too late.
+> 
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.52-rc1.gz
+> and the diffstat can be found below.
+> 
+Build results are as follows.
 
-Hi Linus,
+Guenter
 
-Can you please pull this GIT branch?  It contains a number of fixes for
-various FS-Cache issues plus some cleanups.  The commits are, in order:
-
- (1) Provide a system wait_on_atomic_t() and wake_up_atomic_t() sharing the
-     bit-wait table (enhancement for #8).
-
- (2) Don't put spin_lock() in a while-condition as spin_lock() may have a
-     do {} while(0) wrapper (cleanup).
-
- (3) Symbolically name i_mutex lock classes rather than using numbers in
-     CacheFiles (cleanup).
-
- (4) Don't sleep in page release if __GFP_FS is not set (deadlock vs ext4).
-
- (5) Uninline fscache_object_init() (cleanup for #7).
-
- (6) Wrap checks on object state (cleanup for #7).
-
- (7) Simplify the object state machine by separating work states from wait
-     states.
-
- (8) Simplify cookie retention by objects (NULL pointer deref fix).
-
- (9) Remove unused list_to_page() macro (cleanup).
-
-(10) Make the remaining-pages counter in the retrieval op atomic (assertion
-     failure fix).
-
-(11) Don't use spin_is_locked() in assertions (assertion failure fix).
-
-This is tagged with fscache-20130702.  This is the same as fscache-20130619
-but with added acks.
-
-Thanks,
-David
 ---
-The following changes since commit b973425cbb51e08301b34fecdfd476a44507d8cf:
+Build reference: v3.4.51-13-g4384bdb
 
-  Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2013-05-14 09:30:54 -0700)
+Build x86_64:defconfig passed
+Build x86_64:allyesconfig passed
+Build x86_64:allmodconfig passed
+Build x86_64:allnoconfig passed
+Build x86_64:alldefconfig passed
+Build i386:defconfig passed
+Build i386:allyesconfig passed
+Build i386:allmodconfig passed
+Build i386:allnoconfig passed
+Build i386:alldefconfig passed
+Build mips:defconfig passed
+Build mips:bcm47xx_defconfig passed
+Build mips:bcm63xx_defconfig passed
+Build mips:nlm_xlp_defconfig passed
+Build mips:ar7_defconfig passed
+Build mips:fuloong2e_defconfig passed
+Build mips:e55_defconfig passed
+Build mips:powertv_defconfig passed
+Build mips:malta_defconfig passed
+Build powerpc:defconfig passed
+Build powerpc:allyesconfig failed
+Build powerpc:allmodconfig passed
+Build powerpc:chroma_defconfig failed
+Build powerpc:maple_defconfig passed
+Build powerpc:ppc6xx_defconfig passed
+Build powerpc:mpc83xx_defconfig passed
+Build powerpc:mpc85xx_defconfig passed
+Build powerpc:mpc85xx_smp_defconfig passed
+Build powerpc:tqm8xx_defconfig passed
+Build powerpc:85xx/sbc8548_defconfig passed
+Build powerpc:83xx/mpc834x_mds_defconfig passed
+Build powerpc:86xx/sbc8641d_defconfig passed
+Build arm:defconfig passed
+Build arm:allyesconfig failed
+Build arm:allmodconfig failed
+Build arm:exynos4_defconfig passed
+Build arm:kirkwood_defconfig passed
+Build arm:omap2plus_defconfig passed
+Build arm:tegra_defconfig passed
+Build arm:u8500_defconfig passed
+Build arm:at91sam9rl_defconfig passed
+Build arm:ap4evb_defconfig passed
+Build arm:bonito_defconfig passed
+Build arm:pxa910_defconfig passed
+Build m68k:defconfig passed
+Build m68k:m5272c3_defconfig passed
+Build m68k:m5307c3_defconfig passed
+Build m68k:m5249evb_defconfig passed
+Build m68k:m5407c3_defconfig passed
+Build m68k:sun3_defconfig passed
+Build sparc:defconfig passed
+Build sparc:sparc64_defconfig passed
+Build xtensa:defconfig failed
+Build xtensa:iss_defconfig failed
+Build microblaze:mmu_defconfig failed
+Build microblaze:nommu_defconfig passed
+Build blackfin:defconfig failed
+Build parisc:defconfig passed
 
-are available in the git repository at:
+-----------------------
+Total builds: 58 Total build errors: 8
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git tags/fscache-20130702
-
-for you to fetch changes up to dcfae32f892f03dee9896b19d1960c1ecd3f0583:
-
-  FS-Cache: Don't use spin_is_locked() in assertions (2013-06-19 14:16:47 +0100)
-
-----------------------------------------------------------------
-(from the branch description for fscache local branch)
-
-clone of "master"
-FS-Cache patches 2013-07-02
-
-----------------------------------------------------------------
-David Howells (8):
-      Add wait_on_atomic_t() and wake_up_atomic_t()
-      FS-Cache: Don't sleep in page release if __GFP_FS is not set
-      FS-Cache: Uninline fscache_object_init()
-      FS-Cache: Wrap checks on object state
-      FS-Cache: Fix object state machine to have separate work and wait states
-      FS-Cache: Simplify cookie retention for fscache_objects, fixing oops
-      FS-Cache: The retrieval remaining-pages counter needs to be atomic_t
-      FS-Cache: Don't use spin_is_locked() in assertions
-
-Haicheng Li (1):
-      cachefiles: remove unused macro list_to_page()
-
-J. Bruce Fields (1):
-      CacheFiles: name i_mutex lock class explicitly
-
-Sebastian Andrzej Siewior (1):
-      fs/fscache: remove spin_lock() from the condition in while()
-
- fs/cachefiles/interface.c     |   13 +-
- fs/cachefiles/namei.c         |   10 +-
- fs/cachefiles/xattr.c         |    6 +-
- fs/fscache/cache.c            |   34 +-
- fs/fscache/cookie.c           |   93 ++--
- fs/fscache/fsdef.c            |    1 +
- fs/fscache/internal.h         |   11 +-
- fs/fscache/main.c             |   11 +-
- fs/fscache/netfs.c            |    1 +
- fs/fscache/object-list.c      |  103 ++--
- fs/fscache/object.c           | 1106 +++++++++++++++++++++--------------------
- fs/fscache/operation.c        |   37 +-
- fs/fscache/page.c             |   65 ++-
- include/linux/fscache-cache.h |  175 +++----
- include/linux/wait.h          |   24 +
- kernel/wait.c                 |   88 ++++
- 16 files changed, 956 insertions(+), 822 deletions(-)
