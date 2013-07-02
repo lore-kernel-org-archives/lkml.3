@@ -1,111 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab3GBI2s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:28:48 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:45350 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab3GBI2o (ORCPT
+	id S932454Ab3GBI3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:29:15 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:56046 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932257Ab3GBI3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:28:44 -0400
-Message-ID: <51D28E69.9060205@linux.vnet.ibm.com>
-Date: Tue, 02 Jul 2013 13:55:13 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Tue, 2 Jul 2013 04:29:10 -0400
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: tglx@linutronix.de, peterz@infradead.org, tj@kernel.org, oleg@redhat.com,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org, walken@google.com,
-        vincent.guittot@linaro.org, laijs@cn.fujitsu.com,
-        David.Laight@aculab.com, rostedt@goodmis.org,
-        xiaoguangrong@linux.vnet.ibm.com, sbw@mit.edu, fweisbec@gmail.com,
-        zhong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-arch@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Wang YanQing <udknight@gmail.com>,
-        Shaohua Li <shli@fusionio.com>, Jan Beulich <jbeulich@suse.com>,
-        liguang <lig.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH v3 10/45] smp: Use get/put_online_cpus_atomic() to prevent
- CPU offline
-References: <20130627195136.29830.10445.stgit@srivatsabhat.in.ibm.com> <20130627195418.29830.34958.stgit@srivatsabhat.in.ibm.com> <51D2660A.8000401@linux.vnet.ibm.com>
-In-Reply-To: <51D2660A.8000401@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070208-6102-0000-0000-000003CA3A3F
+In-Reply-To: <20130702043256.GA14927@teo>
+References: <20130628043411.GA9100@teo>
+	<20130628050712.GA10097@teo>
+	<20130628100027.31504abe@redhat.com>
+	<20130628165722.GA12271@teo>
+	<20130628170917.GA12610@teo>
+	<20130628144507.37d28ed9@redhat.com>
+	<20130628185547.GA14520@teo>
+	<20130628154402.4035f2fa@redhat.com>
+	<20130629005637.GA16068@teo>
+	<CAOK=xROD2AKbgw4V65ddqWFODtn4B1-uYG-NF==oANqVFmZZtg@mail.gmail.com>
+	<20130702043256.GA14927@teo>
+Date: Tue, 2 Jul 2013 17:29:06 +0900
+X-Google-Sender-Auth: hwPmMzLThoXL62eaxOj4e9lhUs4
+Message-ID: <CAOK=xRP9o7+qoOMmKj-ZZOHZtDqErS-SCnDXf86fvTjocQROTg@mail.gmail.com>
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+From: Hyunhee Kim <hyunhee.kim@samsung.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael,
-
-On 07/02/2013 11:02 AM, Michael Wang wrote:
-> Hi, Srivatsa
-> 
-> On 06/28/2013 03:54 AM, Srivatsa S. Bhat wrote:
-> [snip]
->> @@ -625,8 +632,9 @@ EXPORT_SYMBOL(on_each_cpu_mask);
->>   * The function might sleep if the GFP flags indicates a non
->>   * atomic allocation is allowed.
->>   *
->> - * Preemption is disabled to protect against CPUs going offline but not online.
->> - * CPUs going online during the call will not be seen or sent an IPI.
->> + * We use get/put_online_cpus_atomic() to protect against CPUs going
->> + * offline but not online. CPUs going online during the call will
->> + * not be seen or sent an IPI.
-> 
-> I was a little confused about this comment, if the offline-cpu still
-> have chances to become online, then there is chances that we will pick
-> it from for_each_online_cpu(), isn't it? Did I miss some point?
+2013/7/2 Anton Vorontsov <anton@enomsg.org>:
+> On Mon, Jul 01, 2013 at 05:22:36PM +0900, Hyunhee Kim wrote:
+>> >> > > for each event in memory.pressure_level; do
+>> >> > >   /* register eventfd to be notified on "event" */
+>> >> > > done
+>> >> >
+>> >> > This scheme registers "all" events.
+>> >>
+>> >> Yes, because I thought that's the user-case that matters for activity
+>> >> manager :)
+>> >
+>> > Some activity managers use only low levels (Android), some might use only
+>> > medium levels (simple load-balancing).
+>>
+>> When the platform like Android uses only "low" level, is it the
+>> process you intended when designing vmpressure?
+>>
+>> 1. activity manager receives "low" level events
+>> 2. it reads and checks the current memory (e.g. available memory) using vmstat
+>> 3. if the available memory is not under the threshold (defined e.g. by
+>> activity manager), activity manager does nothing
+>> 4. if the available memory is under the threshold, activity manager
+>> handles it by e.g. reclaiming or killing processes?
 >
+> Yup, exactly.
+>
+>> At first time when I saw this vmpressure, I thought that I should
+>> register all events ("low", "medium", and "critical
+>> ") and use different handler for each event. However, without the mode
+>> like strict mode, I should see too many events. So, now, I think that
+>> it is better to use only one level and run each handler after checking
+>> available memory as you mentioned.
+>
+> Yup, this should work ideally.
 
-Whether or not the newly onlined CPU is observed in our for_each_online_cpu()
-loop, is dependent on timing. On top of that, there are 2 paths in the code:
-one which uses a temporary cpumask and the other which doesn't. In the former
-case, if a CPU comes online _after_ we populate the temporary cpumask, then
-we won't send an IPI to that cpu, since the temporary cpumask doesn't contain
-that CPU. Whereas, if we observe the newly onlined CPU in the for_each_online_cpu()
-loop itself (either in the former or the latter case), then yes, we will send
-the IPI to that CPU.
+Thanks for your reply.
+I think that, as you mentioned, using one level event could work well
+when activity manager checks available memory in user space.
 
-Regards,
-Srivatsa S. Bhat
+I also think that Luiz's use case and the use case I thought at first
+(registering "low", "medium", and "critical", and run each handler)
+are another examples of use cases that could be widely used.
+For example, let's think about the case when userland wants to know
+"pressure level" (reclaim ratio calculated by vmpressure 0~60~100).
+In this case, if we do not register all of these events and register
+only "low" level, we cannot distinguish "low", "medium", and
+"critical" pressure level in userland.
+This reclaim ratio cannot be identified in userland.
 
-> 
->>   *
->>   * You must not call this function with disabled interrupts or
->>   * from a hardware interrupt handler or from a bottom half handler.
->> @@ -641,26 +649,26 @@ void on_each_cpu_cond(bool (*cond_func)(int cpu, void *info),
->>  	might_sleep_if(gfp_flags & __GFP_WAIT);
+Thanks.
+Hyunhee Kim.
+
+>
+>> But,
 >>
->>  	if (likely(zalloc_cpumask_var(&cpus, (gfp_flags|__GFP_NOWARN)))) {
->> -		preempt_disable();
->> +		get_online_cpus_atomic();
->>  		for_each_online_cpu(cpu)
->>  			if (cond_func(cpu, info))
->>  				cpumask_set_cpu(cpu, cpus);
->>  		on_each_cpu_mask(cpus, func, info, wait);
->> -		preempt_enable();
->> +		put_online_cpus_atomic();
->>  		free_cpumask_var(cpus);
->>  	} else {
->>  		/*
->>  		 * No free cpumask, bother. No matter, we'll
->>  		 * just have to IPI them one by one.
->>  		 */
->> -		preempt_disable();
->> +		get_online_cpus_atomic();
->>  		for_each_online_cpu(cpu)
->>  			if (cond_func(cpu, info)) {
->>  				ret = smp_call_function_single(cpu, func,
->>  								info, wait);
->>  				WARN_ON_ONCE(!ret);
->>  			}
->> -		preempt_enable();
->> +		put_online_cpus_atomic();
->>  	}
->>  }
->>  EXPORT_SYMBOL(on_each_cpu_cond);
->>
-> 
-
+>> 1. Isn't it overhead to read event and check memory state every time
+>> we receive events?
+>
+> Even if it is an overhead, is it measurable? Plus, vmstat/memcg stats are
+> the only source of information that Activity Manager can use to make a
+> decision, so there is no point in duplicating the information in the
+> notifications.
+>
+>>     - sometimes, even when there are lots of available memory, low
+>> level event could occur if most of them is reclaimable memory not free
+>> pages.
+>
+> The point of low level is to signal [any] reclaiming activity. So, yes,
+>
+>>     - Don't most of platforms use available memory to judge their
+>> current memory state?
+>
+> No, because you hardly want to monitor available memory only. You want to
+> take into account the level of the page caches, etc.
+>
+>> Is there any reason vmpressure use reclaim rate?
+>
+> Yes, you can refer to this email:
+>
+>   http://lkml.org/lkml/2012/10/4/145
+>
+> And here is about the levels thing:
+>
+>   http://lkml.org/lkml/2012/10/22/177
+>
+>> IMO, activity manager doesn't have to check available memory if it
+>> could receive signal based on the available memory.
+>
+> But userspace can define its own policy of managing the tasks/resouces
+> based on different factors, other than just available memory. And that is
+> exactly why we don't filter the events in the kernel anymore. The only
+> filtering that we make is the levels, which, as it appears, can work for
+> many use-cases.
+>
+>> 2. If we use only "medium" to avoid the overheads occurred when using
+>> "low" level, isn't it possible to miss sending events when there is a
+>> little available memory but reclaim ratio is high?
+>
+> If your app don't "trust" reclaim ratio idicator, then the application can
+> use its own heuristics, using low level just to monitor reclaiming
+> activity. More than that, you can change vmpressure itself to use
+> different heuristics for low/med/crit levels: the point of introducing
+> levels was also to hide the implementation and memory management details,
+> so if you can come up with a better approach for vmpressure "internals"
+> you are more than welcome to do so. :)
+>
+>> IMHO, we cannot consider and cover all the use cases, but considering
+>> some use cases and giving some guides and directions to use this
+>> vmpressure will be helpful to make many platform accept this for their
+>> low memory manager.
+>
+> Can't argue with that. :) I guess I will need to better document current
+> behavior of the levels and when exactly the events trigger.
+>
+> Thanks!
+>
+> Anton
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
