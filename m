@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab3GBLO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:14:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36263 "EHLO
+	id S1755234Ab3GBLIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:08:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36229 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab3GBLIW (ORCPT
+	with ESMTP id S1755038Ab3GBLIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:22 -0400
+	Tue, 2 Jul 2013 07:08:14 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zheng Li <zheng.x.li@oracle.com>, Jay Vosburgh <fubar@us.ibm.com>,
-        Andy Gospodarek <andy@greyhouse.net>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 24/50] bonding: rlb mode of bond should not alter ARP originating via bridge
-Date: Tue,  2 Jul 2013 12:07:12 +0100
-Message-Id: <1372763258-20664-25-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 19/50] net: sctp: fix NULL pointer dereference in socket destruction
+Date: Tue,  2 Jul 2013 12:07:07 +0100
+Message-Id: <1372763258-20664-20-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -29,86 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zheng.li" <zheng.x.li@oracle.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 567b871e503316b0927e54a3d7c86d50b722d955 upstream.
+commit 1abd165ed757db1afdefaac0a4bc8a70f97d258c upstream.
 
-Do not modify or load balance ARP packets passing through balance-alb
-mode (wherein the ARP did not originate locally, and arrived via a bridge).
+While stress testing sctp sockets, I hit the following panic:
 
-Modifying pass-through ARP replies causes an incorrect MAC address
-to be placed into the ARP packet, rendering peers unable to communicate
-with the actual destination from which the ARP reply originated.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+IP: [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+PGD 7cead067 PUD 7ce76067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: sctp(F) libcrc32c(F) [...]
+CPU: 7 PID: 2950 Comm: acc Tainted: GF            3.10.0-rc2+ #1
+Hardware name: Dell Inc. PowerEdge T410/0H19HD, BIOS 1.6.3 02/01/2011
+task: ffff88007ce0e0c0 ti: ffff88007b568000 task.ti: ffff88007b568000
+RIP: 0010:[<ffffffffa0490c4e>]  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+RSP: 0018:ffff88007b569e08  EFLAGS: 00010292
+RAX: 0000000000000000 RBX: ffff88007db78a00 RCX: dead000000200200
+RDX: ffffffffa049fdb0 RSI: ffff8800379baf38 RDI: 0000000000000000
+RBP: ffff88007b569e18 R08: ffff88007c230da0 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+R13: ffff880077990d00 R14: 0000000000000084 R15: ffff88007db78a00
+FS:  00007fc18ab61700(0000) GS:ffff88007fc60000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000020 CR3: 000000007cf9d000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Stack:
+ ffff88007b569e38 ffff88007db78a00 ffff88007b569e38 ffffffffa049fded
+ ffffffff81abf0c0 ffff88007db78a00 ffff88007b569e58 ffffffff8145b60e
+ 0000000000000000 0000000000000000 ffff88007b569eb8 ffffffff814df36e
+Call Trace:
+ [<ffffffffa049fded>] sctp_destroy_sock+0x3d/0x80 [sctp]
+ [<ffffffff8145b60e>] sk_common_release+0x1e/0xf0
+ [<ffffffff814df36e>] inet_create+0x2ae/0x350
+ [<ffffffff81455a6f>] __sock_create+0x11f/0x240
+ [<ffffffff81455bf0>] sock_create+0x30/0x40
+ [<ffffffff8145696c>] SyS_socket+0x4c/0xc0
+ [<ffffffff815403be>] ? do_page_fault+0xe/0x10
+ [<ffffffff8153cb32>] ? page_fault+0x22/0x30
+ [<ffffffff81544e02>] system_call_fastpath+0x16/0x1b
+Code: 0c c9 c3 66 2e 0f 1f 84 00 00 00 00 00 e8 fb fe ff ff c9 c3 66 0f
+      1f 84 00 00 00 00 00 55 48 89 e5 53 48 83 ec 08 66 66 66 66 90 <48>
+      8b 47 20 48 89 fb c6 47 1c 01 c6 40 12 07 e8 9e 68 01 00 48
+RIP  [<ffffffffa0490c4e>] sctp_endpoint_free+0xe/0x40 [sctp]
+ RSP <ffff88007b569e08>
+CR2: 0000000000000020
+---[ end trace e0d71ec1108c1dd9 ]---
 
-Load balancing pass-through ARP requests causes an entry to be
-created for the peer in the rlb table, and bond_alb_monitor will
-occasionally issue ARP updates to all peers in the table instrucing them
-as to which MAC address they should communicate with; this occurs when
-some event sets rx_ntt.  In the bridged case, however, the MAC address
-used for the update would be the MAC of the slave, not the actual source
-MAC of the originating destination.  This would render peers unable to
-communicate with the destinations beyond the bridge.
+I did not hit this with the lksctp-tools functional tests, but with a
+small, multi-threaded test program, that heavily allocates, binds,
+listens and waits in accept on sctp sockets, and then randomly kills
+some of them (no need for an actual client in this case to hit this).
+Then, again, allocating, binding, etc, and then killing child processes.
 
-Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: Andy Gospodarek <andy@greyhouse.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+This panic then only occurs when ``echo 1 > /proc/sys/net/sctp/auth_enable''
+is set. The cause for that is actually very simple: in sctp_endpoint_init()
+we enter the path of sctp_auth_init_hmacs(). There, we try to allocate
+our crypto transforms through crypto_alloc_hash(). In our scenario,
+it then can happen that crypto_alloc_hash() fails with -EINTR from
+crypto_larval_wait(), thus we bail out and release the socket via
+sk_common_release(), sctp_destroy_sock() and hit the NULL pointer
+dereference as soon as we try to access members in the endpoint during
+sctp_endpoint_free(), since endpoint at that time is still NULL. Now,
+if we have that case, we do not need to do any cleanup work and just
+leave the destruction handler.
+
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/bonding/bond_alb.c |  6 ++++++
- drivers/net/bonding/bonding.h  | 13 +++++++++++++
- 2 files changed, 19 insertions(+)
+ net/sctp/socket.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
-index 0f59c15..38e72fb 100644
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -704,6 +704,12 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
- 	struct arp_pkt *arp = arp_pkt(skb);
- 	struct slave *tx_slave = NULL;
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 957bb6e..7e40284 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -3929,6 +3929,12 @@ SCTP_STATIC void sctp_destroy_sock(struct sock *sk)
  
-+	/* Don't modify or load balance ARPs that do not originate locally
-+	 * (e.g.,arrive via a bridge).
+ 	/* Release our hold on the endpoint. */
+ 	sp = sctp_sk(sk);
++	/* This could happen during socket init, thus we bail out
++	 * early, since the rest of the below is not setup either.
 +	 */
-+	if (!bond_slave_has_mac(bond, arp->mac_src))
-+		return NULL;
++	if (sp->ep == NULL)
++		return;
 +
- 	if (arp->op_code == htons(ARPOP_REPLY)) {
- 		/* the arp must be sent on the selected
- 		* rx channel
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index 4581aa5..a9fd3de 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -22,6 +22,7 @@
- #include <linux/in6.h>
- #include <linux/netpoll.h>
- #include <linux/inetdevice.h>
-+#include <linux/etherdevice.h>
- #include "bond_3ad.h"
- #include "bond_alb.h"
- 
-@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir(struct bond_net *bn)
- }
- #endif
- 
-+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
-+					       const u8 *mac)
-+{
-+	int i = 0;
-+	struct slave *tmp;
-+
-+	bond_for_each_slave(bond, tmp, i)
-+		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-+			return tmp;
-+
-+	return NULL;
-+}
- 
- /* exported from bond_main.c */
- extern int bond_net_id;
+ 	if (sp->do_auto_asconf) {
+ 		sp->do_auto_asconf = 0;
+ 		list_del(&sp->auto_asconf_list);
 -- 
 1.8.1.2
 
