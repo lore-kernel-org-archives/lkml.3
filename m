@@ -1,145 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab3GBJo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:44:27 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:60891 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab3GBJoY (ORCPT
+	id S932241Ab3GBJqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:46:23 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:60902 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753546Ab3GBJqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:44:24 -0400
-Message-ID: <51D2A0EA.4080307@linux.vnet.ibm.com>
-Date: Tue, 02 Jul 2013 17:44:10 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 2 Jul 2013 05:46:22 -0400
+Date: Tue, 2 Jul 2013 11:46:06 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Anders Hammarquist <iko@iko.pp.se>
+Cc: Johan Hovold <jhovold@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
+Message-ID: <20130702094606.GA30165@localhost>
+References: <20130619225315.GB12282@kroah.com>
+ <201306212308.r5LN8C7M020720@eskarina.iko.pp.se>
+ <20130621235603.GA1603@kroah.com>
+ <201306221854.r5MIshv5013882@eskarina.iko.pp.se>
+ <20130625233911.GA1087@kroah.com>
+ <201306260829.r5Q8Txm5003881@eskarina.iko.pp.se>
+ <20130626103924.GA30828@localhost>
+ <201306272150.r5RLoq2u006119@eskarina.iko.pp.se>
+ <20130628102333.GA13241@localhost>
+ <201307012322.r61NM1vv019204@eskarina.iko.pp.se>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: smart wake-affine
-References: <51A43B16.9080801@linux.vnet.ibm.com> <51D25A80.8090406@linux.vnet.ibm.com> <20130702085202.GA23916@twins.programming.kicks-ass.net> <51D29EE5.8080307@linux.vnet.ibm.com>
-In-Reply-To: <51D29EE5.8080307@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070220-3568-0000-0000-000003DCFB04
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201307012322.r61NM1vv019204@eskarina.iko.pp.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 05:35 PM, Michael Wang wrote:
-[snip]
->> I've seen there's some discussion as to this function name.. good :-) It
->> really wants to change. How about something like:
->>
->> int wake_affine()
->> {
->>   ...
->>
->>   /*
->>    * If we wake multiple tasks be careful to not bounce
->>    * ourselves around too much.
->>    */
->>   if (wake_wide(p))
->>   	return 0;
+On Tue, Jul 02, 2013 at 01:22:01AM +0200, Anders Hammarquist wrote:
+> In a message of Fri, 28 Jun 2013 12:23:33 +0200, Johan Hovold writes:
+> >> I did a quick check of adding the device id though sysfs, and although
+> >> it partly works, it doesn't find the correct firmware (it ends up trying
+> >> to load 5052 firmware for a 3410 device. Looking at the code it seems
+> >> (struct ti_device) td_is_3410 isn't set properly.)
+> >
+> >Turns out that the drivers device-type detection has never worked with
+> >the dynamic id interface (all devices were detected as 2-port devices).
+> >
+> >I'm responding to this mail with a fix. Care to give it a try?
 > 
-> Do you mean wake_wipe() here?
+> Yes, this works fine. 
 
-Oh, wake_wide() means don't pull tasks together, I got it ;-)
+Thanks for testing.
 
-Regards,
-Michael Wang
-
-> 
->>
->>
->>> +{
->>> +	int factor = cpumask_weight(cpu_online_mask);
->>
->> We have num_cpus_online() for this.. however both are rather expensive.
->> Having to walk and count a 4096 bitmap for every wakeup if going to get
->> tiresome real quick.
->>
->> I suppose the question is; to what level do we really want to scale?
->>
->> One fair answer would be node size I suppose; do you really want to go
->> bigger than that?
-> 
-> Agree, it sounds more reasonable, let me do some testing on it.
-> 
->>
->> Also; you compare a size against a switching frequency, that's not
->> really and apples to apples comparison.
->>
->>> +
->>> +	/*
->>> +	 * Yeah, it's the switching-frequency, could means many wakee or
->>> +	 * rapidly switch, use factor here will just help to automatically
->>> +	 * adjust the loose-degree, so more cpu will lead to more pull.
->>> +	 */
->>> +	if (p->nr_wakee_switch > factor) {
->>> +		/*
->>> +		 * wakee is somewhat hot, it needs certain amount of cpu
->>> +		 * resource, so if waker is far more hot, prefer to leave
->>> +		 * it alone.
->>> +		 */
->>> +		if (current->nr_wakee_switch > (factor * p->nr_wakee_switch))
->>> +			return 1;
->>
->> Ah ok, this makes more sense; the first is simply a filter to avoid
->> doing the second dereference I suppose.
-> 
-> Yeah, the first one is some kind of vague filter, the second one is the
-> core filter ;-)
-> 
->>
->>> +	}
->>> +
->>> +	return 0;
->>> +}
->>> +
->>>  static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->>>  {
->>>  	s64 this_load, load;
->>> @@ -3118,6 +3157,9 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->>>  	unsigned long weight;
->>>  	int balanced;
->>>  
->>> +	if (nasty_pull(p))
->>> +		return 0;
->>> +
->>>  	idx	  = sd->wake_idx;
->>>  	this_cpu  = smp_processor_id();
->>>  	prev_cpu  = task_cpu(p);
->>> @@ -3410,6 +3452,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
->>>  		/* while loop will break here if sd == NULL */
->>>  	}
->>>  unlock:
->>> +	if (sd_flag & SD_BALANCE_WAKE)
->>> +		record_wakee(p);
->>
->> if we put this in task_waking_fair() we can avoid an entire conditional!
-> 
-> Nice, will do it in next version :)
-> 
-> Regards,
-> Michael Wang
-> 
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+Johan
