@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab3GBQk1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:40:27 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:43911 "EHLO smtp3-g21.free.fr"
+	id S1754460Ab3GBQks (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:40:48 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:44065 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753703Ab3GBQkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 12:40:24 -0400
+	id S1753703Ab3GBQkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:40:31 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+To: linux-kernel@vger.kernel.org, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org
 Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH 06/13] vfio: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue,  2 Jul 2013 18:39:30 +0200
-Message-Id: <078cccd995198447b895d0a32da231544c81f182.1372777600.git.ydroneaud@opteya.com>
+Subject: [PATCH 12/13] sctp: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Tue,  2 Jul 2013 18:39:36 +0200
+Message-Id: <6d4271e2e0b05ae2728cba1d890e77cac50cf8f0.1372777600.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1372777600.git.ydroneaud@opteya.com>
 References: <cover.1372777600.git.ydroneaud@opteya.com>
@@ -43,22 +44,22 @@ and, if possible, set to O_CLOEXEC.
 
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- drivers/vfio/vfio.c | 2 +-
+ net/sctp/socket.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
-index c488da5..bb4e9fd 100644
---- a/drivers/vfio/vfio.c
-+++ b/drivers/vfio/vfio.c
-@@ -1126,7 +1126,7 @@ static int vfio_group_get_device_fd(struct vfio_group *group, char *buf)
- 		 * We can't use anon_inode_getfd() because we need to modify
- 		 * the f_mode flags directly to allow more than just ioctls
- 		 */
--		ret = get_unused_fd();
-+		ret = get_unused_fd_flags(0);
- 		if (ret < 0) {
- 			device->ops->release(device->device_data);
- 			break;
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 66fcdcf..caa5919 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -4320,7 +4320,7 @@ static int sctp_getsockopt_peeloff(struct sock *sk, int len, char __user *optval
+ 		goto out;
+ 
+ 	/* Map the socket to an unused fd that can be returned to the user.  */
+-	retval = get_unused_fd();
++	retval = get_unused_fd_flags(0);
+ 	if (retval < 0) {
+ 		sock_release(newsock);
+ 		goto out;
 -- 
 1.8.3.1
 
