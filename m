@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229Ab3GBLTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:19:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36153 "EHLO
+	id S1754619Ab3GBLH5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:07:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36143 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab3GBLH6 (ORCPT
+	with ESMTP id S1754419Ab3GBLHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:07:58 -0400
+	Tue, 2 Jul 2013 07:07:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Bernhard Beck <bbeck@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 05/50] tcp: fix tcp_md5_hash_skb_data()
-Date: Tue,  2 Jul 2013 12:06:53 +0100
-Message-Id: <1372763258-20664-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 02/50] ALSA: usb-audio: work around Android accessory firmware bug
+Date: Tue,  2 Jul 2013 12:06:50 +0100
+Message-Id: <1372763258-20664-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,50 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 54d27fcb338bd9c42d1dfc5a39e18f6f9d373c2e upstream.
+commit 342cda29343a6272c630f94ed56810a76740251b upstream.
 
-TCP md5 communications fail [1] for some devices, because sg/crypto code
-assume page offsets are below PAGE_SIZE.
+When the Android firmware enables the audio interfaces in accessory
+mode, it always declares in the control interface's baInterfaceNr array
+that interfaces 0 and 1 belong to the audio function.  However, the
+accessory interface itself, if also enabled, already is at index 0 and
+shifts the actual audio interface numbers to 1 and 2, which prevents the
+PCM streaming interface from being seen by the host driver.
 
-This was discovered using mlx4 driver [2], but I suspect loopback
-might trigger the same bug now we use order-3 pages in tcp_sendmsg()
+To get the PCM interface interface to work, detect when the descriptors
+point to the (for this driver useless) accessory interface, and redirect
+to the correct one.
 
-[1] Failure is giving following messages.
-
-huh, entered softirq 3 NET_RX ffffffff806ad230 preempt_count 00000100,
-exited with 00000101?
-
-[2] mlx4 driver uses order-2 pages to allocate RX frags
-
-Reported-by: Matt Schnall <mischnal@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Bernhard Beck <bbeck@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
+Tested-by: Jeremy Rosen <jeremy.rosen@openwide.fr>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/tcp.c | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ sound/usb/card.c | 22 ++++++++++++++++++++--
+ 1 file changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 1a763b7..75936ee 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -3294,8 +3294,11 @@ int tcp_md5_hash_skb_data(struct tcp_md5sig_pool *hp,
- 
- 	for (i = 0; i < shi->nr_frags; ++i) {
- 		const struct skb_frag_struct *f = &shi->frags[i];
--		struct page *page = skb_frag_page(f);
--		sg_set_page(&sg, page, skb_frag_size(f), f->page_offset);
-+		unsigned int offset = f->page_offset;
-+		struct page *page = skb_frag_page(f) + (offset >> PAGE_SHIFT);
-+
-+		sg_set_page(&sg, page, skb_frag_size(f),
-+			    offset_in_page(offset));
- 		if (crypto_hash_update(desc, &sg, skb_frag_size(f)))
- 			return 1;
+diff --git a/sound/usb/card.c b/sound/usb/card.c
+index aa25e04..51241f4 100644
+--- a/sound/usb/card.c
++++ b/sound/usb/card.c
+@@ -150,14 +150,32 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
+ 		return -EINVAL;
  	}
+ 
++	alts = &iface->altsetting[0];
++	altsd = get_iface_desc(alts);
++
++	/*
++	 * Android with both accessory and audio interfaces enabled gets the
++	 * interface numbers wrong.
++	 */
++	if ((chip->usb_id == USB_ID(0x18d1, 0x2d04) ||
++	     chip->usb_id == USB_ID(0x18d1, 0x2d05)) &&
++	    interface == 0 &&
++	    altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC &&
++	    altsd->bInterfaceSubClass == USB_SUBCLASS_VENDOR_SPEC) {
++		interface = 2;
++		iface = usb_ifnum_to_if(dev, interface);
++		if (!iface)
++			return -EINVAL;
++		alts = &iface->altsetting[0];
++		altsd = get_iface_desc(alts);
++	}
++
+ 	if (usb_interface_claimed(iface)) {
+ 		snd_printdd(KERN_INFO "%d:%d:%d: skipping, already claimed\n",
+ 						dev->devnum, ctrlif, interface);
+ 		return -EINVAL;
+ 	}
+ 
+-	alts = &iface->altsetting[0];
+-	altsd = get_iface_desc(alts);
+ 	if ((altsd->bInterfaceClass == USB_CLASS_AUDIO ||
+ 	     altsd->bInterfaceClass == USB_CLASS_VENDOR_SPEC) &&
+ 	    altsd->bInterfaceSubClass == USB_SUBCLASS_MIDISTREAMING) {
 -- 
 1.8.1.2
 
