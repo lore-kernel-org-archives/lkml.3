@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3GBLIg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:08:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36294 "EHLO
+	id S1755842Ab3GBLLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:11:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36337 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342Ab3GBLI3 (ORCPT
+	with ESMTP id S1754163Ab3GBLIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:29 -0400
+	Tue, 2 Jul 2013 07:08:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiri Pirko <jiri@resnulli.us>, "David S. Miller" <davem@davemloft.net>,
+Cc: Anderson Lizardo <anderson.lizardo@openbossa.org>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 33/50] team: move add to port list before port enablement
-Date: Tue,  2 Jul 2013 12:07:21 +0100
-Message-Id: <1372763258-20664-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 38/50] Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
+Date: Tue,  2 Jul 2013 12:07:26 +0100
+Message-Id: <1372763258-20664-39-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +29,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Pirko <jiri@resnulli.us>
+From: Anderson Lizardo <anderson.lizardo@openbossa.org>
 
-commit 72df935d985c1575ed44ad2c8c653b28147993fa upstream.
+commit 300b962e5244a1ea010df7e88595faa0085b461d upstream.
 
-team_port_enable() adds port to port_hashlist. Reader sees port
-in team_get_port_by_index_rcu() and returns it, but
-team_get_first_port_txable_rcu() tries to go through port_list, where the
-port is not inserted yet -> NULL pointer dereference.
-Fix this by reordering port_list and port_hashlist insertion.
-Panic is easily triggeable when txing packets and adding/removing port
-in a loop.
+If a too small MTU value is set with ioctl(HCISETACLMTU) or by a bogus
+controller, memory corruption happens due to a memcpy() call with
+negative length.
 
-Introduced by commit 3d249d4c "net: introduce ethernet teaming device"
+Fix this crash on either incoming or outgoing connections with a MTU
+smaller than L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE:
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[   46.885433] BUG: unable to handle kernel paging request at f56ad000
+[   46.888037] IP: [<c03d94cd>] memcpy+0x1d/0x40
+[   46.888037] *pdpt = 0000000000ac3001 *pde = 00000000373f8067 *pte = 80000000356ad060
+[   46.888037] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
+[   46.888037] Modules linked in: hci_vhci bluetooth virtio_balloon i2c_piix4 uhci_hcd usbcore usb_common
+[   46.888037] CPU: 0 PID: 1044 Comm: kworker/u3:0 Not tainted 3.10.0-rc1+ #12
+[   46.888037] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[   46.888037] Workqueue: hci0 hci_rx_work [bluetooth]
+[   46.888037] task: f59b15b0 ti: f55c4000 task.ti: f55c4000
+[   46.888037] EIP: 0060:[<c03d94cd>] EFLAGS: 00010212 CPU: 0
+[   46.888037] EIP is at memcpy+0x1d/0x40
+[   46.888037] EAX: f56ac1c0 EBX: fffffff8 ECX: 3ffffc6e EDX: f55c5cf2
+[   46.888037] ESI: f55c6b32 EDI: f56ad000 EBP: f55c5c68 ESP: f55c5c5c
+[   46.888037]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   46.888037] CR0: 8005003b CR2: f56ad000 CR3: 3557d000 CR4: 000006f0
+[   46.888037] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[   46.888037] DR6: ffff0ff0 DR7: 00000400
+[   46.888037] Stack:
+[   46.888037]  fffffff8 00000010 00000003 f55c5cac f8c6a54c ffffffff f8c69eb2 00000000
+[   46.888037]  f4783cdc f57f0070 f759c590 1001c580 00000003 0200000a 00000000 f5a88560
+[   46.888037]  f5ba2600 f5a88560 00000041 00000000 f55c5d90 f8c6f4c7 00000008 f55c5cf2
+[   46.888037] Call Trace:
+[   46.888037]  [<f8c6a54c>] l2cap_send_cmd+0x1cc/0x230 [bluetooth]
+[   46.888037]  [<f8c69eb2>] ? l2cap_global_chan_by_psm+0x152/0x1a0 [bluetooth]
+[   46.888037]  [<f8c6f4c7>] l2cap_connect+0x3f7/0x540 [bluetooth]
+[   46.888037]  [<c019b37b>] ? trace_hardirqs_off+0xb/0x10
+[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
+[   46.888037]  [<c064ad20>] ? mutex_lock_nested+0x280/0x360
+[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
+[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
+[   46.888037]  [<c064ad08>] ? mutex_lock_nested+0x268/0x360
+[   46.888037]  [<c01a125b>] ? trace_hardirqs_on+0xb/0x10
+[   46.888037]  [<f8c72f8d>] l2cap_recv_frame+0xb2d/0x1d30 [bluetooth]
+[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
+[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
+[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
+[   46.888037]  [<f8c754f1>] l2cap_recv_acldata+0x2a1/0x320 [bluetooth]
+[   46.888037]  [<f8c491d8>] hci_rx_work+0x518/0x810 [bluetooth]
+[   46.888037]  [<f8c48df2>] ? hci_rx_work+0x132/0x810 [bluetooth]
+[   46.888037]  [<c0158979>] process_one_work+0x1a9/0x600
+[   46.888037]  [<c01588fb>] ? process_one_work+0x12b/0x600
+[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
+[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
+[   46.888037]  [<c0159187>] worker_thread+0xf7/0x320
+[   46.888037]  [<c0159090>] ? rescuer_thread+0x290/0x290
+[   46.888037]  [<c01602f8>] kthread+0xa8/0xb0
+[   46.888037]  [<c0656777>] ret_from_kernel_thread+0x1b/0x28
+[   46.888037]  [<c0160250>] ? flush_kthread_worker+0x120/0x120
+[   46.888037] Code: c3 90 8d 74 26 00 e8 63 fc ff ff eb e8 90 55 89 e5 83 ec 0c 89 5d f4 89 75 f8 89 7d fc 3e 8d 74 26 00 89 cb 89 c7 c1 e9 02 89 d6 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 8b 5d f4 8b 75 f8 8b 7d fc 89
+[   46.888037] EIP: [<c03d94cd>] memcpy+0x1d/0x40 SS:ESP 0068:f55c5c5c
+[   46.888037] CR2: 00000000f56ad000
+[   46.888037] ---[ end trace 0217c1f4d78714a9 ]---
+
+Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/team/team.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bluetooth/l2cap_core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index c61ae35..acd3ec3 100644
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -817,8 +817,8 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
- 	}
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 6204170..bfaec3c 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -2191,6 +2191,9 @@ static struct sk_buff *l2cap_build_cmd(struct l2cap_conn *conn,
+ 	BT_DBG("conn %p, code 0x%2.2x, ident 0x%2.2x, len %d",
+ 			conn, code, ident, dlen);
  
- 	port->index = -1;
--	team_port_enable(team, port);
- 	list_add_tail_rcu(&port->list, &team->port_list);
-+	team_port_enable(team, port);
- 	team_adjust_ops(team);
- 	__team_compute_features(team);
- 	__team_port_change_check(port, !!netif_carrier_ok(port_dev));
++	if (conn->mtu < L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE)
++		return NULL;
++
+ 	len = L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE + dlen;
+ 	count = min_t(unsigned int, conn->mtu, len);
+ 
 -- 
 1.8.1.2
 
