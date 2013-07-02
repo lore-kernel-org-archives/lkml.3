@@ -1,65 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834Ab3GBFLe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 01:11:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50616 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab3GBFLd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 01:11:33 -0400
-Message-ID: <1372741852.7363.110.camel@marge.simpson.net>
-Subject: Re: [PATCH RFC nohz_full v2 2/7] nohz_full: Add rcu_dyntick data
- for scalable detection of all-idle state
-From: Mike Galbraith <bitbucket@online.de>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Date: Tue, 02 Jul 2013 07:10:52 +0200
-In-Reply-To: <20130701191656.GR3773@linux.vnet.ibm.com>
-References: <20130628200949.GA17458@linux.vnet.ibm.com>
-	 <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1372450222-19420-2-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20130701153150.GB2923@leaf> <20130701155220.GL3773@linux.vnet.ibm.com>
-	 <20130701181601.GA7964@jtriplet-mobl1>
-	 <20130701182326.GQ3773@linux.vnet.ibm.com>
-	 <20130701183412.GA18804@jtriplet-mobl1>
-	 <20130701191656.GR3773@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:+Ivh9WrW0Y5kO3NZkSOh9UT+EYHWNEdZdf7rHOWDyY3
- j7aiZxFAA7LEuoosmQ+V486mBO91JbaZRYNISzeWufXouY64oi
- 0SUT93+YXa4tSxmFc7aUSQ7NQLThjLGocQQEHaZzP7S28qfUP/
- Msg4L5UW3mVnse3mEPPZDplHeQ29yaqD7zNkSt3lJ5rO3IBK2W
- Zre5bbjARXI7RlE/LQvLGIbqm4XyV77dsf9eH5YoByywlwpH2t
- ZOcO5w4W1cuanRas7vjQSFy5+mJ1cgryw+z06pO5p/ufJbsv1y
- lTU6GFXn4DNGz2Mtz2XfyqBNBFfU++pG8B5fleoL+fP6PDrLQk
- TxPH3kX4CjT2oi60HUuv7YFYh1tcQpXPJy0fayUuUxaE73tCab
- 5JO+RGRDYZ15Q==
+	id S1752352Ab3GBFPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 01:15:24 -0400
+Received: from mail-db9lp0250.outbound.messaging.microsoft.com ([213.199.154.250]:46129
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750994Ab3GBFPW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 01:15:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz9371I542I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
+From: Bhushan Bharat-R65777 <R65777@freescale.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [v2][PATCH 1/7] powerpc/book3e: support CONFIG_RELOCATABLE
+Thread-Topic: [v2][PATCH 1/7] powerpc/book3e: support CONFIG_RELOCATABLE
+Thread-Index: AQHObYtkoKg8Y68jF0mPRcVEsufq0plQ5dAQ
+Date: Tue, 2 Jul 2013 05:00:13 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D0709474E@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1371714797-7898-1-git-send-email-tiejun.chen@windriver.com>
+ <1371714797-7898-2-git-send-email-tiejun.chen@windriver.com>
+In-Reply-To: <1371714797-7898-2-git-send-email-tiejun.chen@windriver.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.2]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-01 at 12:16 -0700, Paul E. McKenney wrote: 
-> On Mon, Jul 01, 2013 at 11:34:13AM -0700, Josh Triplett wrote:
 
-> > > > This also naturally raises the question "How can we let userspace get
-> > > > accurate time without forcing a timer tick?".
-> > > 
-> > > We don't.  ;-)
-> > 
-> > We don't currently, hence my question about how we can. :)
+
+> -----Original Message-----
+> From: Linuxppc-dev [mailto:linuxppc-dev-
+> bounces+bharat.bhushan=freescale.com@lists.ozlabs.org] On Behalf Of Tiejun Chen
+> Sent: Thursday, June 20, 2013 1:23 PM
+> To: benh@kernel.crashing.org
+> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> Subject: [v2][PATCH 1/7] powerpc/book3e: support CONFIG_RELOCATABLE
 > 
-> Per-CPU atomic clocks?
+> book3e is different with book3s since 3s includes the exception
+> vectors code in head_64.S as it relies on absolute addressing
+> which is only possible within this compilation unit. So we have
+> to get that label address with got.
+> 
+> And when boot a relocated kernel, we should reset ipvr properly again
+> after .relocate.
+> 
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> ---
+>  arch/powerpc/include/asm/exception-64e.h |    8 ++++++++
+>  arch/powerpc/kernel/exceptions-64e.S     |   15 ++++++++++++++-
+>  arch/powerpc/kernel/head_64.S            |   22 ++++++++++++++++++++++
+>  arch/powerpc/lib/feature-fixups.c        |    7 +++++++
+>  4 files changed, 51 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/include/asm/exception-64e.h
+> b/arch/powerpc/include/asm/exception-64e.h
+> index 51fa43e..89e940d 100644
+> --- a/arch/powerpc/include/asm/exception-64e.h
+> +++ b/arch/powerpc/include/asm/exception-64e.h
+> @@ -214,10 +214,18 @@ exc_##label##_book3e:
+>  #define TLB_MISS_STATS_SAVE_INFO_BOLTED
+>  #endif
+> 
+> +#ifndef CONFIG_RELOCATABLE
+>  #define SET_IVOR(vector_number, vector_offset)	\
+>  	li	r3,vector_offset@l; 		\
+>  	ori	r3,r3,interrupt_base_book3e@l;	\
+>  	mtspr	SPRN_IVOR##vector_number,r3;
+> +#else
+> +#define SET_IVOR(vector_number, vector_offset)	\
+> +	LOAD_REG_ADDR(r3,interrupt_base_book3e);\
+> +	rlwinm	r3,r3,0,15,0;			\
+> +	ori	r3,r3,vector_offset@l;		\
+> +	mtspr	SPRN_IVOR##vector_number,r3;
+> +#endif
+> 
+>  #endif /* _ASM_POWERPC_EXCEPTION_64E_H */
+> 
+> diff --git a/arch/powerpc/kernel/exceptions-64e.S
+> b/arch/powerpc/kernel/exceptions-64e.S
+> index 645170a..4b23119 100644
+> --- a/arch/powerpc/kernel/exceptions-64e.S
+> +++ b/arch/powerpc/kernel/exceptions-64e.S
+> @@ -1097,7 +1097,15 @@ skpinv:	addi	r6,r6,1				/*
+> Increment */
+>   * r4 = MAS0 w/TLBSEL & ESEL for the temp mapping
+>   */
+>  	/* Now we branch the new virtual address mapped by this entry */
+> +#ifdef CONFIG_RELOCATABLE
+> +	/* We have to find out address from lr. */
+> +	bl	1f		/* Find our address */
+> +1:	mflr	r6
+> +	addi	r6,r6,(2f - 1b)
+> +	tovirt(r6,r6)
+> +#else
+>  	LOAD_REG_IMMEDIATE(r6,2f)
+> +#endif
+>  	lis	r7,MSR_KERNEL@h
+>  	ori	r7,r7,MSR_KERNEL@l
+>  	mtspr	SPRN_SRR0,r6
+> @@ -1348,9 +1356,14 @@ _GLOBAL(book3e_secondary_thread_init)
+>  	mflr	r28
+>  	b	3b
+> 
+> -_STATIC(init_core_book3e)
+> +_GLOBAL(init_core_book3e)
+>  	/* Establish the interrupt vector base */
+> +#ifdef CONFIG_RELOCATABLE
+> +	tovirt(r2,r2)
+> +	LOAD_REG_ADDR(r3, interrupt_base_book3e)
+> +#else
+>  	LOAD_REG_IMMEDIATE(r3, interrupt_base_book3e)
+> +#endif
+>  	mtspr	SPRN_IVPR,r3
+>  	sync
+>  	blr
+> diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+> index b61363d..0942f3a 100644
+> --- a/arch/powerpc/kernel/head_64.S
+> +++ b/arch/powerpc/kernel/head_64.S
+> @@ -414,12 +414,22 @@ _STATIC(__after_prom_start)
+>  	/* process relocations for the final address of the kernel */
+>  	lis	r25,PAGE_OFFSET@highest	/* compute virtual base of kernel */
+>  	sldi	r25,r25,32
+> +#if defined(CONFIG_PPC_BOOK3E)
+> +	tovirt(r26,r26)			/* on booke, we already run at
+> PAGE_OFFSET */
+> +#endif
+>  	lwz	r7,__run_at_load-_stext(r26)
+> +#if defined(CONFIG_PPC_BOOK3E)
+> +	tophys(r26,r26)			/* Restore for the remains. */
+> +#endif
+>  	cmplwi	cr0,r7,1	/* flagged to stay where we are ? */
+>  	bne	1f
+>  	add	r25,r25,r26
+>  1:	mr	r3,r25
+>  	bl	.relocate
+> +#if defined(CONFIG_PPC_BOOK3E)
+> +	/* We should set ivpr again after .relocate. */
+> +	bl	.init_core_book3e
+> +#endif
+>  #endif
+> 
+>  /*
+> @@ -447,12 +457,24 @@ _STATIC(__after_prom_start)
+>   * variable __run_at_load, if it is set the kernel is treated as relocatable
+>   * kernel, otherwise it will be moved to PHYSICAL_START
+>   */
+> +#if defined(CONFIG_PPC_BOOK3E)
+> +	tovirt(r26,r26)			/* on booke, we already run at
+> PAGE_OFFSET */
+> +#endif
+>  	lwz	r7,__run_at_load-_stext(r26)
+> +#if defined(CONFIG_PPC_BOOK3E)
+> +	tophys(r26,r26)			/* Restore for the remains. */
+> +#endif
+>  	cmplwi	cr0,r7,1
+>  	bne	3f
+> 
+> +#ifdef CONFIG_PPC_BOOK3E
+> +	LOAD_REG_ADDR(r5, interrupt_end_book3e)
+> +	LOAD_REG_ADDR(r11, _stext)
+> +	sub	r5,r5,r11
+> +#else
+>  	/* just copy interrupts */
+>  	LOAD_REG_IMMEDIATE(r5, __end_interrupts - _stext)
+> +#endif
+>  	b	5f
+>  3:
+>  #endif
+> diff --git a/arch/powerpc/lib/feature-fixups.c b/arch/powerpc/lib/feature-
+> fixups.c
+> index 7a8a748..13f20ed 100644
+> --- a/arch/powerpc/lib/feature-fixups.c
+> +++ b/arch/powerpc/lib/feature-fixups.c
+> @@ -135,13 +135,20 @@ void do_final_fixups(void)
+>  #if defined(CONFIG_PPC64) && defined(CONFIG_RELOCATABLE)
+>  	int *src, *dest;
+>  	unsigned long length;
+> +#ifdef CONFIG_PPC_BOOK3E
+> +	extern char interrupt_end_book3e[];
+> +#endif
 
-Great idea, who needs timekeeping code. 
+Cannot we do this in arch/powerpc/kernel/asm/sections.h
 
-http://www.euronews.com/2013/04/02/swiss-sets-sights-on-miniscule-atomic-clock/
+> 
+>  	if (PHYSICAL_START == 0)
+>  		return;
+> 
+>  	src = (int *)(KERNELBASE + PHYSICAL_START);
+>  	dest = (int *)KERNELBASE;
+> +#ifdef CONFIG_PPC_BOOK3E
+> +	length = (interrupt_end_book3e - _stext) / sizeof(int);
+> +#else
+>  	length = (__end_interrupts - _stext) / sizeof(int);
+> +#endif
 
--Mike
+can we keep same name in books and booke; __end_interrupts ? this way we can avoid such #ifdefs
+
+-Bharat
+
+> 
+>  	while (length--) {
+>  		patch_instruction(dest, *src);
+> --
+> 1.7.9.5
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+
 
