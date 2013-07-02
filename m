@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab3GBLA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:00:56 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:41807 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab3GBLAl (ORCPT
+	id S1754109Ab3GBLAz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:00:55 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:61551 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab3GBLAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Jul 2013 07:00:41 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
@@ -16,9 +16,9 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Gregory CLEMENT <gregory.clement@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org
-Subject: [PATCH v6 6/7] ARM: kirkwood: remove legacy clk alias for mv643xx_eth
-Date: Tue,  2 Jul 2013 13:00:23 +0200
-Message-Id: <1372762824-12202-7-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v6 7/7] ARM: orion5x: remove legacy mv643xx_eth board setup
+Date: Tue,  2 Jul 2013 13:00:24 +0200
+Message-Id: <1372762824-12202-8-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -26,8 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With all boards converted to DT enabled mv643xx_eth we can now
-remove the clock alias for gbe clocks.
+With DT support for mv643xx_eth we do not need legacy platform_data
+based setup for DT enabled boards. This patch removes eth setup
+for all orion5x DT board files.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -44,26 +45,44 @@ Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Cc: netdev@vger.kernel.org
 ---
- arch/arm/mach-kirkwood/board-dt.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ arch/arm/mach-orion5x/edmini_v2-setup.c |   10 ----------
+ 1 files changed, 0 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
-index a3271f6..881f37e 100644
---- a/arch/arm/mach-kirkwood/board-dt.c
-+++ b/arch/arm/mach-kirkwood/board-dt.c
-@@ -60,12 +60,10 @@ static void __init kirkwood_legacy_clk_init(void)
+diff --git a/arch/arm/mach-orion5x/edmini_v2-setup.c b/arch/arm/mach-orion5x/edmini_v2-setup.c
+index 1cecedc..7d316ed 100644
+--- a/arch/arm/mach-orion5x/edmini_v2-setup.c
++++ b/arch/arm/mach-orion5x/edmini_v2-setup.c
+@@ -25,7 +25,6 @@
+ #include <linux/irq.h>
+ #include <linux/mbus.h>
+ #include <linux/mtd/physmap.h>
+-#include <linux/mv643xx_eth.h>
+ #include <linux/leds.h>
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+@@ -97,14 +96,6 @@ static struct platform_device edmini_v2_nor_flash = {
+ };
+ 
+ /*****************************************************************************
+- * Ethernet
+- ****************************************************************************/
+-
+-static struct mv643xx_eth_platform_data edmini_v2_eth_data = {
+-	.phy_addr	= 8,
+-};
+-
+-/*****************************************************************************
+  * RTC 5C372a on I2C bus
+  ****************************************************************************/
+ 
+@@ -153,7 +144,6 @@ void __init edmini_v2_init(void)
+ 	 * Configure peripherals.
  	 */
- 	clkspec.args[0] = CGC_BIT_GE0;
- 	clk = of_clk_get_from_provider(&clkspec);
--	orion_clkdev_add(NULL, "mv643xx_eth_port.0", clk);
- 	clk_prepare_enable(clk);
+ 	orion5x_ehci0_init();
+-	orion5x_eth_init(&edmini_v2_eth_data);
  
- 	clkspec.args[0] = CGC_BIT_GE1;
- 	clk = of_clk_get_from_provider(&clkspec);
--	orion_clkdev_add(NULL, "mv643xx_eth_port.1", clk);
- 	clk_prepare_enable(clk);
- }
- 
+ 	mvebu_mbus_add_window("devbus-boot", EDMINI_V2_NOR_BOOT_BASE,
+ 			      EDMINI_V2_NOR_BOOT_SIZE);
 -- 
 1.7.2.5
 
