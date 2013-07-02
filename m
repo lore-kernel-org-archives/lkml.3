@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018Ab3GBBNY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 21:13:24 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:6128 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755648Ab3GBBNX (ORCPT
+	id S1756005Ab3GBBOf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 21:14:35 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:27822 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755304Ab3GBBOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 21:13:23 -0400
-Message-ID: <51D22931.1080008@hp.com>
-Date: Mon, 01 Jul 2013 18:13:21 -0700
-From: Chegu Vinod <chegu_vinod@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 1 Jul 2013 21:14:34 -0400
+Message-ID: <51D2295E.8010601@huawei.com>
+Date: Tue, 2 Jul 2013 09:14:06 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: prarit@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: kvm_intel: Could not allocate 42 bytes percpu data
-References: <51C897A7.50302@hp.com> <87ehbisstv.fsf@rustcorp.com.au>
-In-Reply-To: <87ehbisstv.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Yijing Wang <wangyijing@huawei.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Forest Bond <forest@alittletooquiet.net>,
+        Jiri Kosina <trivial@kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        Devendra Naga <devendra.aaru@gmail.com>,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Devendra Naga <devendra.aaru@gmail.com>, Joe Perches <joe@perches.com>,
+        Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+Subject: Re: [PATCH 4/6] vt6655/trivial: replace numeric with standard PM
+ state macros
+References: <1372337843-24624-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1372337843-24624-1-git-send-email-wangyijing@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/30/2013 11:22 PM, Rusty Russell wrote:
-> Chegu Vinod <chegu_vinod@hp.com> writes:
->> Hello,
->>
->> Lots (~700+) of the following messages are showing up in the dmesg of a
->> 3.10-rc1 based kernel (Host OS is running on a large socket count box
->> with HT-on).
->>
->> [   82.270682] PERCPU: allocation failed, size=42 align=16, alloc from
->> reserved chunk failed
->> [   82.272633] kvm_intel: Could not allocate 42 bytes percpu data
-> Woah, weird....
->
-> Oh.  Shit.  Um, this is embarrassing.
->
-> Thanks,
-> Rusty.
+ping...?
+
+On 2013/6/27 20:57, Yijing Wang wrote:
+> Use standard PM state macros PCI_Dx instead of numeric 0/1/2..
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Cc: Forest Bond <forest@alittletooquiet.net>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Jiri Kosina <trivial@kernel.org>
+> Cc: Devendra Naga <devendra.aaru@gmail.com>
+> Cc :Joe Perches <joe@perches.com>
+> Cc: Marcos Paulo de Souza <marcos.souza.org@gmail.com>
+> Cc: Bill Pemberton <wfp5p@virginia.edu>
+> Cc: devel@driverdev.osuosl.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/staging/vt6655/device_main.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+> index 08b250f..7f36a71 100644
+> --- a/drivers/staging/vt6655/device_main.c
+> +++ b/drivers/staging/vt6655/device_main.c
+> @@ -3370,8 +3370,8 @@ viawget_resume(struct pci_dev *pcid)
+>  	PSMgmtObject  pMgmt = pDevice->pMgmt;
+>  	int power_status;   // to silence the compiler
+>  
+> -	power_status = pci_set_power_state(pcid, 0);
+> -	power_status = pci_enable_wake(pcid, 0, 0);
+> +	power_status = pci_set_power_state(pcid, PCI_D0);
+> +	power_status = pci_enable_wake(pcid, PCI_D0, 0);
+>  	pci_restore_state(pcid);
+>  	if (netif_running(pDevice->dev)) {
+>  		spin_lock_irq(&pDevice->lock);
+> 
 
 
-Thanks for your response!
-
-> ===
-> module: do percpu allocation after uniqueness check.  No, really!
->
-> v3.8-rc1-5-g1fb9341 was supposed to stop parallel kvm loads exhausting
-> percpu memory on large machines:
->
->      Now we have a new state MODULE_STATE_UNFORMED, we can insert the
->      module into the list (and thus guarantee its uniqueness) before we
->      allocate the per-cpu region.
->
-> In my defence, it didn't actually say the patch did this.  Just that
-> we "can".
->
-> This patch actually *does* it.
->
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Tested-by: Noone it seems.
-
-Your following "updated" fix seems to be working fine on the larger 
-socket count machine with HT-on.
-
-Thx
-Vinod
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index cab4bce..fa53db8 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2927,7 +2927,6 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
->   {
->   	/* Module within temporary copy. */
->   	struct module *mod;
-> -	Elf_Shdr *pcpusec;
->   	int err;
->   
->   	mod = setup_load_info(info, flags);
-> @@ -2942,17 +2941,10 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
->   	err = module_frob_arch_sections(info->hdr, info->sechdrs,
->   					info->secstrings, mod);
->   	if (err < 0)
-> -		goto out;
-> +		return ERR_PTR(err);
->   
-> -	pcpusec = &info->sechdrs[info->index.pcpu];
-> -	if (pcpusec->sh_size) {
-> -		/* We have a special allocation for this section. */
-> -		err = percpu_modalloc(mod,
-> -				      pcpusec->sh_size, pcpusec->sh_addralign);
-> -		if (err)
-> -			goto out;
-> -		pcpusec->sh_flags &= ~(unsigned long)SHF_ALLOC;
-> -	}
-> +	/* We will do a special allocation for per-cpu sections later. */
-> +	info->sechdrs[info->index.pcpu].sh_flags &= ~(unsigned long)SHF_ALLOC;
->   
->   	/* Determine total sizes, and put offsets in sh_entsize.  For now
->   	   this is done generically; there doesn't appear to be any
-> @@ -2963,17 +2955,22 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
->   	/* Allocate and move to the final place */
->   	err = move_module(mod, info);
->   	if (err)
-> -		goto free_percpu;
-> +		return ERR_PTR(err);
->   
->   	/* Module has been copied to its final place now: return it. */
->   	mod = (void *)info->sechdrs[info->index.mod].sh_addr;
->   	kmemleak_load_module(mod, info);
->   	return mod;
-> +}
->   
-> -free_percpu:
-> -	percpu_modfree(mod);
-> -out:
-> -	return ERR_PTR(err);
-> +static int alloc_module_percpu(struct module *mod, struct load_info *info)
-> +{
-> +	Elf_Shdr *pcpusec = &info->sechdrs[info->index.pcpu];
-> +	if (!pcpusec->sh_size)
-> +		return 0;
-> +
-> +	/* We have a special allocation for this section. */
-> +	return percpu_modalloc(mod, pcpusec->sh_size, pcpusec->sh_addralign);
->   }
->   
->   /* mod is no longer valid after this! */
-> @@ -3237,6 +3234,11 @@ static int load_module(struct load_info *info, const char __user *uargs,
->   	}
->   #endif
->   
-> +	/* To avoid stressing percpu allocator, do this once we're unique. */
-> +	err = alloc_module_percpu(mod, info);
-> +	if (err)
-> +		goto unlink_mod;
-> +
->   	/* Now module is in final location, initialize linked lists, etc. */
->   	err = module_unload_init(mod);
->   	if (err)
-> .
->
+-- 
+Thanks!
+Yijing
 
