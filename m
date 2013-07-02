@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab3GBIpi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:45:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:55363 "EHLO mga02.intel.com"
+	id S932498Ab3GBIrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:47:42 -0400
+Received: from canardo.mork.no ([148.122.252.1]:32769 "EHLO canardo.mork.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab3GBIpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:45:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,980,1363158000"; 
-   d="scan'208";a="339174394"
-Message-ID: <51D29329.4060004@linux.intel.com>
-Date: Tue, 02 Jul 2013 11:45:29 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S932225Ab3GBIrk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 04:47:40 -0400
+From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: Wrapping EXPORT_SYMBOL_GPL symbols and re-exporting the wrappers with EXPORT_SYMBOL
+Organization: m
+References: <87bo6m2yok.fsf@nemi.mork.no> <20130701213859.GC23539@pd.tnic>
+	<CAFLxGvw5byx2gu47oD5yOMSHHxieh8qs0z5ZyeCRpAi7T3ibOA@mail.gmail.com>
+Date: Tue, 02 Jul 2013 10:47:19 +0200
+In-Reply-To: <CAFLxGvw5byx2gu47oD5yOMSHHxieh8qs0z5ZyeCRpAi7T3ibOA@mail.gmail.com>
+	(richard's message of "Tue, 2 Jul 2013 09:57:08 +0200")
+Message-ID: <87hagdz6ug.fsf@nemi.mork.no>
+User-Agent: Gnus/5.11002 (No Gnus v0.20) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
-        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
-        devel-lists@codyps.com, eliezer@tamir.org.il
-Subject: Re: [PATCH net-next 0/2] net: lls cleanup patches
-References: <20130628125918.14419.36214.stgit@ladj378.jer.intel.com> <20130701.140833.1705666564717621661.davem@davemloft.net> <51D2919F.7050007@linux.intel.com>
-In-Reply-To: <51D2919F.7050007@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 11:38, Eliezer Tamir wrote:
-> On 02/07/2013 00:08, David Miller wrote:
->> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
->> Date: Fri, 28 Jun 2013 15:59:18 +0300
->>
->>> Here are two cleanup patches.
+richard -rw- weinberger <richard.weinberger@gmail.com> writes:
+> On Mon, Jul 1, 2013 at 11:38 PM, Borislav Petkov <bp@alien8.de> wrote:
+>> On Mon, Jul 01, 2013 at 03:32:27PM +0200, Bjørn Mork wrote:
+>>> I just got a new wireless router and stumbled across an odd set of
+>>> out-of-tree modules, where two GPL licensed modules were used by a third
+>>> proprietary licensed one.
 >>>
->>> 1. fix warning from debug_smp_processor_id().
->>> - reported by Cody P Schafer.
->>>
->
->> Applied, but like Ben said perhaps you want to remember the last cpu you
->> got the sched_clock() measurement from and abort the ll poll if it
->> changes
->> on you instead of using a comparison between two cpus.
+>>> The nice router vendor sent me the GPL'd source code, and as expected
+>>> the GPL modules are little more than wrappers working around the
+>>> EXPORT_SYMBOL_GPL restrictions.  Here's a complete example of one of
+>>> them:
 >>
->> But then again, since preemption is enabled, the cpu could change
->> back and forth during the sched_clock() call, so you wouldn't be able
->> to reliably detect this anyways.
->>
->> In the grand scheme of things all of this probably doesn't matter at
->> all.
+>> I'm wondering if we could fail building modules which do EXPORT_SYMBOL.
 >
-> The only thing that really worries me, is the possibility of time
-> on the new cpu to be completely random, then we could be back in the
-> range where time_after() will be false again and end up polling for
-> another year.
->
-> A simple way to limit the damage would be to use time_in_range()
-> instead of time_after(), then if we have a completely random time we
-> would be out of the range and fail safely.
->
-> would something like this be an acceptable solution?
->
-> ---
+> Then vendors will do a s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/g on the kernel.
+> Recently I've identified such a case.
 
-actually, this code has a bug.
+Well, in this particular case I don't think that would happen.  I
+believe the router vendor is actually trying their best to comply with
+the GPL.  They have a well documented and working way to request full
+source, and the source I received seems complete and matching the latest
+firmware version (as requested).
 
-> -static inline bool can_poll_ll(u64 end_time)
-> +static inline bool can_poll_ll(u64 start_time, u64 run_time)
->   {
-> -    return !time_after64(ll_sched_clock(), end_time);
-> +    return time_in_range64(ll_sched_clock(), start_time,
-> +                   start_time + run_time);
->   }
->
-this will call sched_clock() twice.
+I believe they are unware of this issue in a minor software component
+they have obviously bought from a 3rd party, sold as a SDK with a few
+standalone kernel modules . I do believe the router vendor would have
+refused if this software required any modifications to the kernel.  I
+believe the same goes for the SoC vendor which of course is responsible
+for most of the firmware, including the kernel.
 
-I will send a fix after I test it.
+> Bjørn, please post this on legal@lists.gpl-violations.org too.
 
--Eliezer
+Done.
+
+
+
+Bjørn
