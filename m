@@ -1,166 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932956Ab3GBTj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 15:39:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932938Ab3GBTjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 15:39:14 -0400
-Date: Tue, 2 Jul 2013 21:34:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+	id S1756297Ab3GBTkG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 15:40:06 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:45758 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab3GBT1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 15:27:46 -0400
+From: David Ahern <dsahern@gmail.com>
+To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Cc: David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: PATCH? trace_remove_event_call() should fail if call is active
-Message-ID: <20130702193425.GA8813@redhat.com>
-References: <51C951CD.50701@huawei.com> <20130625172359.GA8523@redhat.com> <20130626185205.GA27894@redhat.com> <51CBEE3E.70103@hitachi.com> <20130627161716.GA17889@redhat.com> <51CCF8BA.4030601@hitachi.com> <20130628180946.GA30838@redhat.com> <51D16E1D.5040904@hitachi.com> <20130702190037.GA6289@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130702190037.GA6289@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH 6/6] perf parse events: demystify memory allocations
+Date: Tue,  2 Jul 2013 13:27:25 -0600
+Message-Id: <1372793245-4136-7-git-send-email-dsahern@gmail.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
+References: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To remind/summarise, the usage of unregister_trace_probe() in
-trace_kprobe.c and trace_uprobe.c is racy.
+List heads are currently allocated way down the function chain in __add_event
+and add_tracepoint and then freed when the scanner code calls
+parse_events_update_lists.
 
-unregister_trace_probe() checks trace_probe_is_enabled() but
-we can't trust the result, we can race with kprobe_register()
-which is going to set TP_FLAG_TRACE/PROFILE.
+Be more explicit with where memory is allocated and who should free it. With
+this patch the list_head is allocated in the scanner code and freed when the
+scanner code calls parse_events_update_lists.
 
-And we can't add the new lock (or reuse probe_lock) to avoid
-the race. kprobe_register() is called under event_mutex, so
-unregister_trace_probe() can't hold this new lock around
-unregister_probe_event() which takes event_mutex.
+Signed-off-by: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+---
+ tools/perf/util/parse-events.c |   52 +++++++++++----------------------
+ tools/perf/util/parse-events.h |   10 +++----
+ tools/perf/util/parse-events.y |   62 ++++++++++++++++++++++++++--------------
+ 3 files changed, 61 insertions(+), 63 deletions(-)
 
-And we shouldn't shift event_mutex from trace_remove_event_call()
-to its callers, this lock should be private to the core tracing
-code.
-
-
-Masami, Steven. What do you think about the patch below?
-
-To simplify, lets ignore trace_module_remove_events() which calls
-__trace_remove_event_call() too, although at first glance this
-case should be fine too.
-
-It really seems to me that trace_remove_event_call() should not
-succeed if this ftrace_event_call is "active". Even if we forget
-about perf, ftrace_event_enable_disable(file, 0) doesn't guarantee
-reg(call, TRACE_REG_UNREGISTER) if SOFT_MODE is set.
-
-
-
-If something like this patch can work then we can fix trace_kprobe.
-unregister_trace_probe() can do unregister_probe_event() first and
-abort if trace_remove_event_call() fails.
-
-As for release_all_trace_probes(), we lose the all-or-nothing
-semantics, but probably this is fine.
-
-Or I misunderstood this logic completely?
-
-Oleg.
--------------------------------------------------------------------------------
-
-In essence this change is one-liner, it does
-
-	-	ftrace_event_enable_disable(file);
-	+	if (file->flags & FTRACE_EVENT_FL_ENABLED)
-	+		return -EBUSY;
-
-and propagates the error.
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4372658..f98ab06 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -332,7 +332,7 @@ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
- 			      const char *name, int offset, int size,
- 			      int is_signed, int filter_type);
- extern int trace_add_event_call(struct ftrace_event_call *call);
--extern void trace_remove_event_call(struct ftrace_event_call *call);
-+extern int trace_remove_event_call(struct ftrace_event_call *call);
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 3a34f7b..8e3e270 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -264,40 +264,29 @@ const char *event_type(int type)
  
- #define is_signed_type(type)	(((type)(-1)) < (type)1)
  
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 27963e2..876957c 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1473,15 +1473,20 @@ static void remove_event_from_tracers(struct ftrace_event_call *call)
- 	} while_for_each_event_file();
- }
  
--static void event_remove(struct ftrace_event_call *call)
-+static int event_remove(struct ftrace_event_call *call)
+-static int __add_event(struct list_head **_list, int *idx,
++static int __add_event(struct list_head *list, int *idx,
+ 		       struct perf_event_attr *attr,
+ 		       char *name, struct cpu_map *cpus)
  {
- 	struct trace_array *tr;
- 	struct ftrace_event_file *file;
+ 	struct perf_evsel *evsel;
+-	struct list_head *list = *_list;
+-
+-	if (!list) {
+-		list = malloc(sizeof(*list));
+-		if (!list)
+-			return -ENOMEM;
+-		INIT_LIST_HEAD(list);
+-	}
  
-+#ifdef CONFIG_PERF_EVENTS
-+	if (call->perf_refcount)
-+		return -EBUSY;
-+#endif
- 	do_for_each_event_file(tr, file) {
- 		if (file->event_call != call)
- 			continue;
--		ftrace_event_enable_disable(file, 0);
-+		if (file->flags & FTRACE_EVENT_FL_ENABLED)
-+			return -EBUSY;
- 		/*
- 		 * The do_for_each_event_file() is
- 		 * a double loop. After finding the call for this
-@@ -1495,6 +1500,7 @@ static void event_remove(struct ftrace_event_call *call)
- 		__unregister_ftrace_event(&call->event);
- 	remove_event_from_tracers(call);
- 	list_del(&call->list);
-+	return 0;
+ 	event_attr_init(attr);
+ 
+ 	evsel = perf_evsel__new(attr, (*idx)++);
+-	if (!evsel) {
+-		free(list);
++	if (!evsel)
+ 		return -ENOMEM;
+-	}
+ 
+ 	evsel->cpus = cpus;
+ 	if (name)
+ 		evsel->name = strdup(name);
+ 	list_add_tail(&evsel->node, list);
+-	*_list = list;
+ 	return 0;
  }
  
- static int event_init(struct ftrace_event_call *call)
-@@ -1604,21 +1610,30 @@ int trace_add_event_call(struct ftrace_event_call *call)
- /*
-  * Must be called under locking both of event_mutex and trace_event_sem.
-  */
--static void __trace_remove_event_call(struct ftrace_event_call *call)
-+static int __trace_remove_event_call(struct ftrace_event_call *call)
+-static int add_event(struct list_head **_list, int *idx,
++static int add_event(struct list_head *list, int *idx,
+ 		     struct perf_event_attr *attr, char *name)
  {
--	event_remove(call);
--	trace_destroy_fields(call);
--	destroy_preds(call);
-+	int err = event_remove(call);
-+
-+	if (!err) {
-+		trace_destroy_fields(call);
-+		destroy_preds(call);
-+	}
-+
-+	return err;
+-	return __add_event(_list, idx, attr, name, NULL);
++	return __add_event(list, idx, attr, name, NULL);
  }
  
- /* Remove an event_call */
--void trace_remove_event_call(struct ftrace_event_call *call)
-+int trace_remove_event_call(struct ftrace_event_call *call)
+ static int parse_aliases(char *str, const char *names[][PERF_EVSEL__MAX_ALIASES], int size)
+@@ -318,7 +307,7 @@ static int parse_aliases(char *str, const char *names[][PERF_EVSEL__MAX_ALIASES]
+ 	return -1;
+ }
+ 
+-int parse_events_add_cache(struct list_head **list, int *idx,
++int parse_events_add_cache(struct list_head *list, int *idx,
+ 			   char *type, char *op_result1, char *op_result2)
  {
-+	int err;
-+
- 	mutex_lock(&event_mutex);
- 	down_write(&trace_event_sem);
--	__trace_remove_event_call(call);
-+	err = __trace_remove_event_call(call);
- 	up_write(&trace_event_sem);
- 	mutex_unlock(&event_mutex);
-+
-+	return err;
+ 	struct perf_event_attr attr;
+@@ -379,31 +368,21 @@ int parse_events_add_cache(struct list_head **list, int *idx,
+ 	return add_event(list, idx, &attr, name);
  }
  
- #define for_each_event(event, start, end)			\
+-static int add_tracepoint(struct list_head **listp, int *idx,
++static int add_tracepoint(struct list_head *list, int *idx,
+ 			  char *sys_name, char *evt_name)
+ {
+ 	struct perf_evsel *evsel;
+-	struct list_head *list = *listp;
+-
+-	if (!list) {
+-		list = malloc(sizeof(*list));
+-		if (!list)
+-			return -ENOMEM;
+-		INIT_LIST_HEAD(list);
+-	}
+ 
+ 	evsel = perf_evsel__newtp(sys_name, evt_name, (*idx)++);
+-	if (!evsel) {
+-		free(list);
++	if (!evsel)
+ 		return -ENOMEM;
+-	}
+ 
+ 	list_add_tail(&evsel->node, list);
+-	*listp = list;
++
+ 	return 0;
+ }
+ 
+-static int add_tracepoint_multi_event(struct list_head **list, int *idx,
++static int add_tracepoint_multi_event(struct list_head *list, int *idx,
+ 				      char *sys_name, char *evt_name)
+ {
+ 	char evt_path[MAXPATHLEN];
+@@ -435,7 +414,7 @@ static int add_tracepoint_multi_event(struct list_head **list, int *idx,
+ 	return ret;
+ }
+ 
+-static int add_tracepoint_event(struct list_head **list, int *idx,
++static int add_tracepoint_event(struct list_head *list, int *idx,
+ 				char *sys_name, char *evt_name)
+ {
+ 	return strpbrk(evt_name, "*?") ?
+@@ -443,7 +422,7 @@ static int add_tracepoint_event(struct list_head **list, int *idx,
+ 	       add_tracepoint(list, idx, sys_name, evt_name);
+ }
+ 
+-static int add_tracepoint_multi_sys(struct list_head **list, int *idx,
++static int add_tracepoint_multi_sys(struct list_head *list, int *idx,
+ 				    char *sys_name, char *evt_name)
+ {
+ 	struct dirent *events_ent;
+@@ -475,7 +454,7 @@ static int add_tracepoint_multi_sys(struct list_head **list, int *idx,
+ 	return ret;
+ }
+ 
+-int parse_events_add_tracepoint(struct list_head **list, int *idx,
++int parse_events_add_tracepoint(struct list_head *list, int *idx,
+ 				char *sys, char *event)
+ {
+ 	int ret;
+@@ -530,7 +509,7 @@ do {					\
+ 	return 0;
+ }
+ 
+-int parse_events_add_breakpoint(struct list_head **list, int *idx,
++int parse_events_add_breakpoint(struct list_head *list, int *idx,
+ 				void *ptr, char *type)
+ {
+ 	struct perf_event_attr attr;
+@@ -611,7 +590,7 @@ static int config_attr(struct perf_event_attr *attr,
+ 	return 0;
+ }
+ 
+-int parse_events_add_numeric(struct list_head **list, int *idx,
++int parse_events_add_numeric(struct list_head *list, int *idx,
+ 			     u32 type, u64 config,
+ 			     struct list_head *head_config)
+ {
+@@ -644,7 +623,7 @@ static char *pmu_event_name(struct list_head *head_terms)
+ 	return NULL;
+ }
+ 
+-int parse_events_add_pmu(struct list_head **list, int *idx,
++int parse_events_add_pmu(struct list_head *list, int *idx,
+ 			 char *name, struct list_head *head_config)
+ {
+ 	struct perf_event_attr attr;
+@@ -687,6 +666,7 @@ void parse_events__set_leader(char *name, struct list_head *list)
+ 	leader->group_name = name ? strdup(name) : NULL;
+ }
+ 
++/* list_event is assumed to point to malloc'ed memory */
+ void parse_events_update_lists(struct list_head *list_event,
+ 			       struct list_head *list_all)
+ {
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index 080f7cf..f1cb4c4 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -85,16 +85,16 @@ void parse_events__free_terms(struct list_head *terms);
+ int parse_events__modifier_event(struct list_head *list, char *str, bool add);
+ int parse_events__modifier_group(struct list_head *list, char *event_mod);
+ int parse_events_name(struct list_head *list, char *name);
+-int parse_events_add_tracepoint(struct list_head **list, int *idx,
++int parse_events_add_tracepoint(struct list_head *list, int *idx,
+ 				char *sys, char *event);
+-int parse_events_add_numeric(struct list_head **list, int *idx,
++int parse_events_add_numeric(struct list_head *list, int *idx,
+ 			     u32 type, u64 config,
+ 			     struct list_head *head_config);
+-int parse_events_add_cache(struct list_head **list, int *idx,
++int parse_events_add_cache(struct list_head *list, int *idx,
+ 			   char *type, char *op_result1, char *op_result2);
+-int parse_events_add_breakpoint(struct list_head **list, int *idx,
++int parse_events_add_breakpoint(struct list_head *list, int *idx,
+ 				void *ptr, char *type);
+-int parse_events_add_pmu(struct list_head **list, int *idx,
++int parse_events_add_pmu(struct list_head *list, int *idx,
+ 			 char *pmu , struct list_head *head_config);
+ void parse_events__set_leader(char *name, struct list_head *list);
+ void parse_events_update_lists(struct list_head *list_event,
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index afc44c1..4eb67ec 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -22,6 +22,13 @@ do { \
+ 		YYABORT; \
+ } while (0)
+ 
++#define ALLOC_LIST(list) \
++do { \
++	list = malloc(sizeof(*list)); \
++	ABORT_ON(!list);              \
++	INIT_LIST_HEAD(list);         \
++} while (0)
++
+ static inc_group_count(struct list_head *list,
+ 		       struct parse_events_evlist *data)
+ {
+@@ -196,9 +203,10 @@ event_pmu:
+ PE_NAME '/' event_config '/'
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_pmu(&list, &data->idx, $1, $3));
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_pmu(list, &data->idx, $1, $3));
+ 	parse_events__free_terms($3);
+ 	$$ = list;
+ }
+@@ -212,11 +220,12 @@ event_legacy_symbol:
+ value_sym '/' event_config '/'
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 	int type = $1 >> 16;
+ 	int config = $1 & 255;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_numeric(list, &data->idx,
+ 					  type, config, $3));
+ 	parse_events__free_terms($3);
+ 	$$ = list;
+@@ -225,11 +234,12 @@ value_sym '/' event_config '/'
+ value_sym sep_slash_dc
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 	int type = $1 >> 16;
+ 	int config = $1 & 255;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_numeric(list, &data->idx,
+ 					  type, config, NULL));
+ 	$$ = list;
+ }
+@@ -238,27 +248,30 @@ event_legacy_cache:
+ PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT '-' PE_NAME_CACHE_OP_RESULT
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, $5));
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_cache(list, &data->idx, $1, $3, $5));
+ 	$$ = list;
+ }
+ |
+ PE_NAME_CACHE_TYPE '-' PE_NAME_CACHE_OP_RESULT
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, $3, NULL));
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_cache(list, &data->idx, $1, $3, NULL));
+ 	$$ = list;
+ }
+ |
+ PE_NAME_CACHE_TYPE
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_cache(&list, &data->idx, $1, NULL, NULL));
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_cache(list, &data->idx, $1, NULL, NULL));
+ 	$$ = list;
+ }
+ 
+@@ -266,9 +279,10 @@ event_legacy_mem:
+ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+ 					     (void *) $2, $4));
+ 	$$ = list;
+ }
+@@ -276,9 +290,10 @@ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+ PE_PREFIX_MEM PE_VALUE sep_dc
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+ 					     (void *) $2, NULL));
+ 	$$ = list;
+ }
+@@ -287,9 +302,10 @@ event_legacy_tracepoint:
+ PE_NAME ':' PE_NAME
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_tracepoint(&list, &data->idx, $1, $3));
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_tracepoint(list, &data->idx, $1, $3));
+ 	$$ = list;
+ }
+ 
+@@ -297,9 +313,10 @@ event_legacy_numeric:
+ PE_VALUE ':' PE_VALUE
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, &data->idx, (u32)$1, $3, NULL));
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_numeric(list, &data->idx, (u32)$1, $3, NULL));
+ 	$$ = list;
+ }
+ 
+@@ -307,9 +324,10 @@ event_legacy_raw:
+ PE_RAW
+ {
+ 	struct parse_events_evlist *data = _data;
+-	struct list_head *list = NULL;
++	struct list_head *list;
+ 
+-	ABORT_ON(parse_events_add_numeric(&list, &data->idx,
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_numeric(list, &data->idx,
+ 					  PERF_TYPE_RAW, $1, NULL));
+ 	$$ = list;
+ }
+-- 
+1.7.10.1
 
