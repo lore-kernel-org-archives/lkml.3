@@ -1,136 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab3GBUV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:21:58 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:33134 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755131Ab3GBUV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 16:21:56 -0400
-Message-ID: <51D3365B.5010503@gmail.com>
-Date: Tue, 02 Jul 2013 22:21:47 +0200
-From: Andre Naujoks <nautsch2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+	id S1755573Ab3GBUWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:22:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:29141 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754487Ab3GBUWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 16:22:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,983,1363158000"; 
+   d="scan'208";a="359540338"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH net-next v2 (repost)] net: convert lls to use time_in_range()
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        HPA <hpa@zytor.com>, Eliezer Tamir <eliezer@tamir.org.il>
+Date: Tue, 02 Jul 2013 23:22:47 +0300
+Message-ID: <20130702202247.31615.19867.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Dean Jenkins <Dean_Jenkins@mentor.com>
-Subject: Re: [PATCH] kernel panic, pty.c: remove direct call to tty_wakup
- in pty_write with better commit message
-References: <51D196EA.7010809@gmail.com> <51D32303.2060904@hurleysoftware.com>
-In-Reply-To: <51D32303.2060904@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the pointer. Since your patch is from April, does that mean, 
-that we cannot expect it to hit 3.11?
+Time in range will fail safely if we move to a different cpu with an
+extremely large clock skew.
+Add time_in_range64() and convert lls to use it.
 
+changelog:
+v2
+- fixed double call to sched_clock in can_poll_ll
+- fixed checkpatchisms
 
- From 6cbfeb6cb9bbe7455cddbf162a7b158e1debd578 Mon Sep 17 00:00:00 2001
-From: Andre Naujoks <nautsch2@googlemail.com>
-Date: Tue, 2 Jul 2013 22:11:33 +0200
-Subject: [PATCH] Remove the tty_wakeup call inside pty_write
-
-The call to tty_wakeup can cause a recursive loop and therefore a
-kernel oops when pty_write is called again from the ldisc wakeup
-function but there is not enough room for all data at once.
-
-Signed-off-by: Andre Naujoks <nautsch2@googlemail.com>
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 ---
-  drivers/tty/pty.c | 4 +---
-  1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index abfd990..cae4e4f 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -125,10 +125,8 @@ static int pty_write(struct tty_struct *tty, const 
-unsigned char *buf, int c)
-  		/* Stuff the data into the input queue of the other end */
-  		c = tty_insert_flip_string(to->port, buf, c);
-  		/* And shovel */
--		if (c) {
-+		if (c)
-  			tty_flip_buffer_push(to->port);
--			tty_wakeup(tty);
--		}
-  	}
-  	return c;
-  }
--- 
-1.8.3.1
+ fs/select.c             |   10 ++++++----
+ include/linux/jiffies.h |    4 ++++
+ include/net/ll_poll.h   |   26 +++++++++++++++++---------
+ 3 files changed, 27 insertions(+), 13 deletions(-)
 
-
-
-On 02.07.2013 20:59, Peter Hurley wrote:
-> On 07/01/2013 10:49 AM, Andre Naujoks wrote:
->> Hello.
->>
->> This patch removes the direct call to tty_wakeup in pty_write. I have
->> not noticed any drawbacks with this but I am not familiar with the pty
->> driver at all. I think what happens is a recursive loop,
->> write_wakeup->write->write_wakeup ...
->>
->> The documentation for the tty interface forbids this direct call:
->>
->> (from Documentation/serial/tty.txt)
->> write_wakeup()  - May be called at any point between open and close.
->>        The TTY_DO_WRITE_WAKEUP flag indicates if a call
->>        is needed but always races versus calls. Thus the
->>        ldisc must be careful about setting order and to
->>        handle unexpected calls. Must not sleep.
->>
->>        The driver is forbidden from calling this directly
->>        from the ->write call from the ldisc as the ldisc
->>        is permitted to call the driver write method from
->>        this function. In such a situation defer it.
->>
->>
->>
->> The direct call caused a reproducable kernel panic (see bottom of this
->> mail) for me with the following setup:
->>
->> - using can-utils from git://gitorious.org/linux-can/can-utils.git
->>    slcan_attach and cangen are used
->>
->> - create a network link between two serial CAN interfaces with:
->>    $ socat PTY,link=/tmp/slcan0,raw TCP4-LISTEN:50000 &
->>    $ socat TCP4:localhost:50000 PTY,link=/tmp/slcan1,raw &
->>    $ slcan_attach /tmp/slcan0
->>    $ slcan_attach /tmp/slcan1
->>    $ ip link set slcan0 up
->>    $ ip link set slcan1 up
->>
->> - produce a kernel panic by overloading the CAN interfaces:
->>    $ cangen slcan0 -g0
->>
->>
->> Please keep me in CC. I am not subscribed to the list.
->> If I can provide any more information, I will be glad to do so.
->>
->> This is the patch. It applies to the current linux master branch:
->
-> An identical patch is in Greg's queue for linux-next:
->    'tty: Remove extra wakeup from pty write() path'
->
-> That patch's commit message details why tty_wakeup() is unnecessary,
-> but does not foresee or document the SLIP ldisc write()/write_wakeup()
-> recursion.
->
-> Since this fix will now likely go back through stable, the commit
-> message should include a description of the recursion, so that Greg can
-> merge the commit messages.
->
-> Separately, the stack trace for the WARN and the oops implicates
-> the network stack alone. Maybe there is some other problem?
->
-> Regards,
-> Peter Hurley
->
->
->
+diff --git a/fs/select.c b/fs/select.c
+index 3654075..f28a585 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -403,7 +403,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 	int retval, i, timed_out = 0;
+ 	unsigned long slack = 0;
+ 	unsigned int ll_flag = ll_get_flag();
+-	u64 ll_time = ll_end_time();
++	u64 ll_start = ll_start_time(ll_flag);
++	u64 ll_time = ll_run_time();
+ 
+ 	rcu_read_lock();
+ 	retval = max_select_fd(n, fds);
+@@ -498,7 +499,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 		}
+ 
+ 		/* only if on, have sockets with POLL_LL and not out of time */
+-		if (ll_flag && can_ll && can_poll_ll(ll_time))
++		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+ 			continue;
+ 
+ 		/*
+@@ -770,7 +771,8 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 	int timed_out = 0, count = 0;
+ 	unsigned long slack = 0;
+ 	unsigned int ll_flag = ll_get_flag();
+-	u64 ll_time = ll_end_time();
++	u64 ll_start = ll_start_time(ll_flag);
++	u64 ll_time = ll_run_time();
+ 
+ 	/* Optimise the no-wait case */
+ 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+@@ -819,7 +821,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 			break;
+ 
+ 		/* only if on, have sockets with POLL_LL and not out of time */
+-		if (ll_flag && can_ll && can_poll_ll(ll_time))
++		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+ 			continue;
+ 
+ 		/*
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 8fb8edf..97ba4e7 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -139,6 +139,10 @@ static inline u64 get_jiffies_64(void)
+ 	 ((__s64)(a) - (__s64)(b) >= 0))
+ #define time_before_eq64(a,b)	time_after_eq64(b,a)
+ 
++#define time_in_range64(a, b, c) \
++	(time_after_eq64(a, b) && \
++	 time_before_eq64(a, c))
++
+ /*
+  * These four macros compare jiffies and 'a' for convenience.
+  */
+diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
+index 6c06f7c..b76f004 100644
+--- a/include/net/ll_poll.h
++++ b/include/net/ll_poll.h
+@@ -67,19 +67,23 @@ static inline u64 ll_sched_clock(void)
+ /* we don't mind a ~2.5% imprecision so <<10 instead of *1000
+  * sk->sk_ll_usec is a u_int so this can't overflow
+  */
+-static inline u64 ll_sk_end_time(struct sock *sk)
++static inline u64 ll_sk_run_time(struct sock *sk)
+ {
+-	return ((u64)ACCESS_ONCE(sk->sk_ll_usec) << 10) + ll_sched_clock();
++	return (u64)ACCESS_ONCE(sk->sk_ll_usec) << 10;
+ }
+ 
+ /* in poll/select we use the global sysctl_net_ll_poll value
+  * only call sched_clock() if enabled
+  */
+-static inline u64 ll_end_time(void)
++static inline u64 ll_run_time(void)
+ {
+-	u64 end_time = ACCESS_ONCE(sysctl_net_ll_poll);
++	return (u64)ACCESS_ONCE(sysctl_net_ll_poll) << 10;
++}
+ 
+-	return end_time ? (end_time << 10) + ll_sched_clock() : 0;
++/* if flag is not set we don't need to know the time */
++static inline u64 ll_start_time(unsigned int flag)
++{
++	return flag ? ll_sched_clock() : 0;
+ }
+ 
+ static inline bool sk_valid_ll(struct sock *sk)
+@@ -88,9 +92,12 @@ static inline bool sk_valid_ll(struct sock *sk)
+ 	       !need_resched() && !signal_pending(current);
+ }
+ 
+-static inline bool can_poll_ll(u64 end_time)
++/* careful! time_in_range64 will evaluate now twice */
++static inline bool can_poll_ll(u64 start_time, u64 run_time)
+ {
+-	return !time_after64(ll_sched_clock(), end_time);
++	u64 now = ll_sched_clock();
++
++	return time_in_range64(now, start_time, start_time + run_time);
+ }
+ 
+ /* when used in sock_poll() nonblock is known at compile time to be true
+@@ -98,7 +105,8 @@ static inline bool can_poll_ll(u64 end_time)
+  */
+ static inline bool sk_poll_ll(struct sock *sk, int nonblock)
+ {
+-	u64 end_time = nonblock ? 0 : ll_sk_end_time(sk);
++	u64 start_time = ll_start_time(!nonblock);
++	u64 run_time = ll_sk_run_time(sk);
+ 	const struct net_device_ops *ops;
+ 	struct napi_struct *napi;
+ 	int rc = false;
+@@ -129,7 +137,7 @@ static inline bool sk_poll_ll(struct sock *sk, int nonblock)
+ 					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
+ 
+ 	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
+-		 can_poll_ll(end_time));
++		 can_poll_ll(start_time, run_time));
+ 
+ 	rc = !skb_queue_empty(&sk->sk_receive_queue);
+ out:
 
