@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab3GBUTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:19:42 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:56942 "EHLO hydra.sisk.pl"
+	id S1755479Ab3GBUUa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:20:30 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58738 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754487Ab3GBUTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 16:19:40 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH 1/6] PCI: acpiphp: do not check for SLOT_ENABLED in enable_device()
-Date: Tue, 02 Jul 2013 22:29:12 +0200
-Message-ID: <4523014.G6VJLhZf81@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAErSpo7P5+Yc9r9RFMJPqOzGQ-CFr8RAW7ehgumTzhdxoYCF6Q@mail.gmail.com>
-References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com> <3216917.m2IEX2IHod@vostro.rjw.lan> <CAErSpo7P5+Yc9r9RFMJPqOzGQ-CFr8RAW7ehgumTzhdxoYCF6Q@mail.gmail.com>
+	id S1754231Ab3GBUU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 16:20:28 -0400
+Message-ID: <1372796394.21065.89.camel@cumari.coelho.fi>
+Subject: Re: [PATCH v2 8/9] wlcore: sdio: get clocks from device tree
+From: Luciano Coelho <coelho@ti.com>
+To: <balbi@ti.com>
+CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
+        <mturquette@linaro.org>, <mark.rutland@arm.com>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Date: Tue, 2 Jul 2013 23:19:54 +0300
+In-Reply-To: <20130702153526.GI7013@arwen.pp.htv.fi>
+References: <1372776948-24840-1-git-send-email-coelho@ti.com>
+	 <1372776948-24840-9-git-send-email-coelho@ti.com>
+	 <20130702153526.GI7013@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 02, 2013 10:40:39 AM Bjorn Helgaas wrote:
-> On Mon, Jul 1, 2013 at 7:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, July 01, 2013 09:36:13 PM Mika Westerberg wrote:
-> >> On Mon, Jul 01, 2013 at 04:01:37PM +0200, Rafael J. Wysocki wrote:
-> >> > > Given the fact that SLOT_ENABLED is only checked in acpiphp_enable_slot()
-> >> > > (after this patch) and that /sys/bus/pci/slots/*/power uses SLOT_POWEREDON
-> >> > > anyway, should we remove the whole flag?
-> >> >
-> >> > Sure, if it is not necessary any more, we should remove it.
-> >>
-> >> Well, there is one thing that changes due that. Once the flag is gone
-> >> userspace can do 'echo 1 > /sys/bus/pci/slots/*/power' several times and
-> >> the slot is always re-enumerated.
-> >>
-> >> If that is not acceptable we should probably move the SLOT_ENABLED check
-> >> closer to acpiphp_core:enable_device() and drop it from here, so that we
-> >> always re-enumerate on Bus Check event but userspace can only do enable
-> >> once (we still re-enumerate on Bus Check).
-> >
-> > Yes, that sounds like the right thing to do.
+On Tue, 2013-07-02 at 18:35 +0300, Felipe Balbi wrote:
+> Hi,
 > 
-> Is it actually a problem if we re-enumerate every time userspace does
-> 'echo 1 > /sys/bus/pci/slots/*/power'?  I assume re-enumeration is a
-> no-op if nothing has changed.
+> On Tue, Jul 02, 2013 at 05:55:47PM +0300, Luciano Coelho wrote:
+> > @@ -294,6 +316,8 @@ static int wl1271_probe(struct sdio_func *func,
+> >  	/* Use block mode for transferring over one block size of data */
+> >  	func->card->quirks |= MMC_QUIRK_BLKSZ_FOR_BYTE_MODE;
+> >  
+> > +	sdio_set_drvdata(func, glue);
+> 
+> is this move really necessary ?
 
-Well, if it's a no-op in that case, then re-enumerating shouldn't be a problem,
-but is it a no-op?
+It is, because I use the glue in wlcore_get_pdata_from_of(), so I need
+to call sdio_set_drvdata() earlier.  I reckoned it wouldn't hurt to move
+this, so I wouldn't have to pass the glue in the
+wlcore_get_pdata_from_of() call.
 
-Rafael (who's not really sure)
+--
+Luca.
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
