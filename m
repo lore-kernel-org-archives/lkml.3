@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab3GBLId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:08:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36290 "EHLO
+	id S1755594Ab3GBLMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:12:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36315 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755413Ab3GBLI2 (ORCPT
+	with ESMTP id S1755407Ab3GBLIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:28 -0400
+	Tue, 2 Jul 2013 07:08:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Zhang Haoyu <haoyu.zhang@huawei.com>, Paolo Bonzini <pbonzini@redhat.com>,
+Cc: Simon Baatz <gmbnomis@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 29/50] KVM: x86: remove vcpu's CPL check in host-invoked XCR set
-Date: Tue,  2 Jul 2013 12:07:17 +0100
-Message-Id: <1372763258-20664-30-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 36/50] ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_page
+Date: Tue,  2 Jul 2013 12:07:24 +0100
+Message-Id: <1372763258-20664-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,56 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Zhanghaoyu (A)" <haoyu.zhang@huawei.com>
+From: Simon Baatz <gmbnomis@gmail.com>
 
-commit 764bcbc5a6d7a2f3e75c9f0e4caa984e2926e346 upstream.
+commit 1bc39742aab09248169ef9d3727c9def3528b3f3 upstream.
 
-__kvm_set_xcr function does the CPL check when set xcr. __kvm_set_xcr is
-called in two flows, one is invoked by guest, call stack shown as below,
+Commit f8b63c1 made flush_kernel_dcache_page a no-op assuming that
+the pages it needs to handle are kernel mapped only.  However, for
+example when doing direct I/O, pages with user space mappings may
+occur.
 
-  handle_xsetbv(or xsetbv_interception)
-    kvm_set_xcr
-      __kvm_set_xcr
+Thus, continue to do lazy flushing if there are no user space
+mappings.  Otherwise, flush the kernel cache lines directly.
 
-the other one is invoked by host, for example during system reset:
-
-  kvm_arch_vcpu_ioctl
-    kvm_vcpu_ioctl_x86_set_xcrs
-      __kvm_set_xcr
-
-The former does need the CPL check, but the latter does not.
-
-Signed-off-by: Zhang Haoyu <haoyu.zhang@huawei.com>
-[Tweaks to commit message. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kvm/x86.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/arm/include/asm/cacheflush.h |  4 +---
+ arch/arm/mm/flush.c               | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index a7c8796..671e5df 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -555,8 +555,6 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- 	if (index != XCR_XFEATURE_ENABLED_MASK)
- 		return 1;
- 	xcr0 = xcr;
--	if (kvm_x86_ops->get_cpl(vcpu) != 0)
--		return 1;
- 	if (!(xcr0 & XSTATE_FP))
- 		return 1;
- 	if ((xcr0 & XSTATE_YMM) && !(xcr0 & XSTATE_SSE))
-@@ -570,7 +568,8 @@ int __kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
+diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
+index e4448e1..76d7f24 100644
+--- a/arch/arm/include/asm/cacheflush.h
++++ b/arch/arm/include/asm/cacheflush.h
+@@ -305,9 +305,7 @@ static inline void flush_anon_page(struct vm_area_struct *vma,
+ }
  
- int kvm_set_xcr(struct kvm_vcpu *vcpu, u32 index, u64 xcr)
- {
--	if (__kvm_set_xcr(vcpu, index, xcr)) {
-+	if (kvm_x86_ops->get_cpl(vcpu) != 0 ||
-+	    __kvm_set_xcr(vcpu, index, xcr)) {
- 		kvm_inject_gp(vcpu, 0);
- 		return 1;
- 	}
+ #define ARCH_HAS_FLUSH_KERNEL_DCACHE_PAGE
+-static inline void flush_kernel_dcache_page(struct page *page)
+-{
+-}
++extern void flush_kernel_dcache_page(struct page *);
+ 
+ #define flush_dcache_mmap_lock(mapping) \
+ 	spin_lock_irq(&(mapping)->tree_lock)
+diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
+index 40ca11e..8f0d285 100644
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -299,6 +299,39 @@ void flush_dcache_page(struct page *page)
+ EXPORT_SYMBOL(flush_dcache_page);
+ 
+ /*
++ * Ensure cache coherency for the kernel mapping of this page. We can
++ * assume that the page is pinned via kmap.
++ *
++ * If the page only exists in the page cache and there are no user
++ * space mappings, this is a no-op since the page was already marked
++ * dirty at creation.  Otherwise, we need to flush the dirty kernel
++ * cache lines directly.
++ */
++void flush_kernel_dcache_page(struct page *page)
++{
++	if (cache_is_vivt() || cache_is_vipt_aliasing()) {
++		struct address_space *mapping;
++
++		mapping = page_mapping(page);
++
++		if (!mapping || mapping_mapped(mapping)) {
++			void *addr;
++
++			addr = page_address(page);
++			/*
++			 * kmap_atomic() doesn't set the page virtual
++			 * address for highmem pages, and
++			 * kunmap_atomic() takes care of cache
++			 * flushing already.
++			 */
++			if (!IS_ENABLED(CONFIG_HIGHMEM) || addr)
++				__cpuc_flush_dcache_area(addr, PAGE_SIZE);
++		}
++	}
++}
++EXPORT_SYMBOL(flush_kernel_dcache_page);
++
++/*
+  * Flush an anonymous page so that users of get_user_pages()
+  * can safely access the data.  The expected sequence is:
+  *
 -- 
 1.8.1.2
 
