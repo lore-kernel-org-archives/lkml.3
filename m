@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab3GBVK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 17:10:27 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:51694 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752923Ab3GBVK0 (ORCPT
+	id S932073Ab3GBVMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 17:12:42 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:55419 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754428Ab3GBVMk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 17:10:26 -0400
-Message-ID: <51D341C0.1060904@kernel.org>
-Date: Tue, 02 Jul 2013 22:10:24 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Tue, 2 Jul 2013 17:12:40 -0400
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, stable@vger.kernel.org
-Subject: Re: [PATCH] iio: Fix iio_channel_has_info
-References: <1372688430-13120-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1372688430-13120-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <1372758414-21513-1-git-send-email-vincent.stehle@freescale.com>
+References: <1372758414-21513-1-git-send-email-vincent.stehle@freescale.com>
+Date: Tue, 2 Jul 2013 14:12:39 -0700
+Message-ID: <CAGa+x859XVrV3r_XAMREkUgQEdjNJ5Z+0E8ZQfPqfb+1e3SLaw@mail.gmail.com>
+Subject: Re: [PATCH linux-next] i2c-designware: use div_u64 to fix link
+From: Kevin Hilman <khilman@linaro.org>
+To: =?ISO-8859-1?Q?Vincent_Stehl=E9?= <vincent.stehle@freescale.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2013 03:20 PM, Alexandre Belloni wrote:
-> Since the info_mask split, iio_channel_has_info() is not working correctly.
-> info_mask_separate and info_mask_shared_by_type, it is not possible to compare
-> them directly with the iio_chan_info_enum enum. Correct that bit using the BIT()
-> macro.
-> 
-> Cc: <stable@vger.kernel.org> # 3.10.x
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-ouch / oops is about all I can say to this one.  Ideally might have had a note
-in the description about what the effect of this bug is (breakage in the inkern interface)
-
-Thanks and applied to the fixes-togreg branch of iio.git
-
-
+On Tue, Jul 2, 2013 at 2:46 AM, Vincent Stehlé
+<vincent.stehle@freescale.com> wrote:
+> This fixes the following link error:
+>
+>   drivers/built-in.o: In function `dw_i2c_probe':
+>   of_iommu.c:(.text+0x18c8f0): undefined reference to `__aeabi_uldivmod'
+>   make: *** [vmlinux] Error 1
+>
+> Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+> Cc: Wolfram Sang <wsa@the-dreams.de>
+> Cc: Christian Ruppert <christian.ruppert@abilis.com>
+> Cc: Pierrick Hascoet <pierrick.hascoet@abilis.com>
 > ---
->  include/linux/iio/iio.h | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-> index 8d171f4..3d35b70 100644
-> --- a/include/linux/iio/iio.h
-> +++ b/include/linux/iio/iio.h
-> @@ -211,8 +211,8 @@ struct iio_chan_spec {
->  static inline bool iio_channel_has_info(const struct iio_chan_spec *chan,
->  	enum iio_chan_info_enum type)
->  {
-> -	return (chan->info_mask_separate & type) |
-> -	       (chan->info_mask_shared_by_type & type);
-> +	return (chan->info_mask_separate & BIT(type)) |
-> +	       (chan->info_mask_shared_by_type & BIT(type));
->  }
->  
->  #define IIO_ST(si, rb, sb, sh)						\
-> 
+>
+>
+> Hi,
+>
+> Linux next-20130702 link broke for ARM config multi_v7_defconfig. This is with
+> gcc 4.7.2 but I am not sure it matters much here.
+>
+> This patch repairs the link.
+>
+> It did not break anything for me on i.MX6 sabre sd, but it does'nt have a
+> designware i2c, so more reviewing/testing is welcome.
+
+This also broke a handful of other ARM defconfigs (notably spear*_defconfig,)
+
+I build tested this on top of next-20130702 for multi_v7_defconfig as
+well as all 3 spear defconfigs, and confirm that linux-next is back to
+building for those platforms.
+
+Tested-by: Kevin Hilman <khilman@linaro.org.
+
+Kevin
