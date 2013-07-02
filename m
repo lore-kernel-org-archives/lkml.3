@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756248Ab3GBWyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 18:54:00 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59622 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755461Ab3GBWx6 (ORCPT
+	id S1756297Ab3GBWye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 18:54:34 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:54789 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755240Ab3GBWyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 18:53:58 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] ARM: move body of head-common.S back to text section
-Date: Tue,  2 Jul 2013 16:53:49 -0600
-Message-Id: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Tue, 2 Jul 2013 18:54:32 -0400
+Date: Tue, 02 Jul 2013 15:54:29 -0700 (PDT)
+Message-Id: <20130702.155429.367173377456020422.davem@davemloft.net>
+To: eliezer.tamir@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
+        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
+        eliezer@tamir.org.il
+Subject: Re: [PATCH net-next v2 (repost)] net: convert lls to use
+ time_in_range()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130702202247.31615.19867.stgit@ladj378.jer.intel.com>
+References: <20130702202247.31615.19867.stgit@ladj378.jer.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Date: Tue, 02 Jul 2013 23:22:47 +0300
 
-Commit 281ecb7 "arm: delete __cpuinit/__CPUINIT usage from all ARM
-users" removed a __CPUINIT from head-common.S. However, the code
-immediately before the removed tag was marked __INIT, and was missing
-a match __FINIT. This caused code after the removed __CPUINIT to end
-up in the init section rather than the main text section as desired.
-This caused issues such as secondary CPU boot failures or crashes.
-Add the missing __FINIT to solve this.
+> Time in range will fail safely if we move to a different cpu with an
+> extremely large clock skew.
+> Add time_in_range64() and convert lls to use it.
+> 
+> changelog:
+> v2
+> - fixed double call to sched_clock in can_poll_ll
+> - fixed checkpatchisms
+> 
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/kernel/head-common.S | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
-index 529ce99..a9dc804 100644
---- a/arch/arm/kernel/head-common.S
-+++ b/arch/arm/kernel/head-common.S
-@@ -122,6 +122,8 @@ __mmap_switched_data:
- 	.long	init_thread_union + THREAD_START_SP @ sp
- 	.size	__mmap_switched_data, . - __mmap_switched_data
- 
-+	__FINIT
-+
- /*
-  * This provides a C-API version of __lookup_processor_type
-  */
--- 
-1.8.1.5
-
+Much better, applied, thanks.
