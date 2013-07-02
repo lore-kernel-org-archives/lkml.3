@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab3GBTTJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 15:19:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62199 "EHLO
+	id S1754825Ab3GBTTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 15:19:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:51742 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093Ab3GBTTD (ORCPT
+	with ESMTP id S1753093Ab3GBTTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 15:19:03 -0400
+	Tue, 2 Jul 2013 15:19:10 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL 2/7] ARM SoC cleanups
-Date: Tue, 2 Jul 2013 21:01:44 +0200
+Subject: [GIT PULL 7/7] ARM SoC late changes
+Date: Tue, 2 Jul 2013 21:14:19 +0200
 User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         arm@kernel.org
@@ -20,15 +20,15 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307022101.44753.arnd@arndb.de>
-X-Provags-ID: V02:K0:4A/FTIbTBL+dFlkb8EEOWLWiqKNKlG/mAgHMzi0kjVn
- I2/EWIxcQ5LDhyljofqCp4i/AlByxs+ocQhlAcIDMaa7FgU8jt
- 9YW2kKd/y1WzwERg3fqT32dG6C+67MEtC0Sur+RUodxPitwx+m
- erjz08GYrbX61ohgssdoA3BJYrnfdD338/2giC1pmHCcYX+Xtq
- YLCjghEGnQvm8B49gTDn8YH+5TLfhI1vgD2oXRXgkcs+3y/TOG
- Ot8gvKaUH4OlY5LDzx03mlHw0YWj+L9a2xKc/aldGpLK9Mio2O
- fpP8ait36RfgmENsvzEXZd1vI0yYZ7HcoazzVEXWmegXtJvs/a
- 9J9JP1E8Q0IRrz3M9NZ0=
+Message-Id: <201307022114.19228.arnd@arndb.de>
+X-Provags-ID: V02:K0:yZs9/c+HZ8+xWgQeq2M2u92do5waDC70X8bU8+mB6+R
+ jXVK4zjMrpKvhtTY4UW7y+8BbG7OMlGjImewskOflsfcxFv+ZQ
+ jLxz0oTz/hpx2kBNAjUg7CFVCBzI2vTRgkvR11BlCbXNXHLyNm
+ MDkRqdARGicnn5r+B1CshD4KMM018wqE1DSjFCgmfJ+cPOBbcT
+ dmVqi0ORkHk4rXEh0m1p6GV+XUN6CVv+/VCjaEzR74LQUGyhY9
+ 6F99TxhEqn33sntxUgUtl1LwT7WPXqv2aNSQT0v+y0wWzITMqP
+ nvN6D6UyrxrSrJaXzvd0ulD8O0T83kDC4vJSh3Lm+519pR42aM
+ nM4qmAEBfiB3YKhZGJtg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -39,374 +39,254 @@ The following changes since commit 7d132055814ef17a6c7b69f342244c410a5e000f:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/cleanup-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/late-for-linus
 
-for you to fetch changes up to 0ee8090c1d059eca4d60e8e473bee91fb5d1996b:
+for you to fetch changes up to 8c3d913888cfb0066d62831969c3a992f7e4aba5:
 
-  Merge branch 'armsoc/for-3.11/cleanups' of git://github.com/broadcom/bcm11351 into next/cleanup (2013-06-21 15:39:24 +0200)
-
-----------------------------------------------------------------
-
-ARM SoC cleanups
-
-This contains cleanups as preparation for other branches adding new
-features, we pulled 16 branches for 9 platforms into this one.
-
-Most notable here is the removal of support for ATAGS based OMAP4
-systems. Since all OMAP4 machines are fully functional with DT based
-booting in 3.10, we can remove a lot of code here.
-
-Also noteworthy is Maxime Ripard's cleanup of the machine descriptors,
-which means we need no machine descriptors in a lot more cases and
-can boot additional machines by just having the respective device
-drivers enabled.
+  Merge tag 'msm-clock-for-3.11b' of git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm into next/late (2013-06-27 17:04:27 -0700)
 
 ----------------------------------------------------------------
 
-Andrew Lunn (1):
-      ARM: Orion: Remove redundant init_dma_coherent_pool_size()
+ARM SoC late changes
 
-Andrew Murray (1):
-      of/pci: Provide support for parsing PCI DT ranges property
+These are changes that arrived a little late before the merge
+window or that have multiple dependencies on previous branches
+so they did not fit into one of the earlier ones. There
+are 10 branches merged here, a total of 39 non-merge commits.
+Contents are a mixed bag for the above reasons:
 
-Arnd Bergmann (11):
-      Merge tag 'zynq-cleanup-for-3.11' of git://git.xilinx.com/linux-xlnx into next/cleanup
-      Merge tag 'at91-cleanup' of git://github.com/at91linux/linux-at91 into next/cleanup
-      Merge branch 'picoxcell-next' of git://github.com/jamieiles/linux-2.6-ji into next/cleanup
-      Merge tag 'omap-for-v3.11/pm-serial-signed' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup
-      Merge tag 'omap-for-v3.11/pm-voltdomain-signed' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup
-      Merge tag 'omap-for-v3.11/dma-signed' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup
-      Merge tag 'samsung-cleanup-1' of git://git.kernel.org/.../kgene/linux-samsung into next/cleanup
-      ARM: s5p64x0: avoid build warning for uncompress.h
-      ARM: picoxcell: remove .nr_irqs reference
-      Merge branch 'armsoc/for-3.11/cleanups' of git://github.com/broadcom/bcm11351 into next/cleanup
-      Merge tag 'cleanup-for-linus' into for-linus
+* Two new SoC platforms: ST microelectronics stixxxx and
+  the TI 'Nspire' graphing calculator. These should have
+  been in the 'soc' branch but were a little late
+* Support for the Exynos 5420 variant in mach-exynos,
+  which is based on the other exynos branches to avoid
+  conflicts.
+* Various small changes for sh-mobile, ux500 and davinci
+* Common clk support for MSM
 
-David Brown (1):
-      ARM: dts: msm: Fix merge resolution
+Conflicts:
+* In Kconfig.debug, various additions trivially conflict,
+  the list should be kept in alphabetical order when
+  resolving.
 
-Ezequiel Garcia (1):
-      bus: mvebu-mbus: Use pr_fmt
+----------------------------------------------------------------
 
-Jamie Iles (1):
-      picoxcell: remove redundant common.h
+Arnd Bergmann (6):
+      Merge tag 'renesas-cleanup-for-v3.11' of git://git.kernel.org/.../horms/renesas into next/late
+      Merge tag 'soc-exynos5420-1' of git://git.kernel.org/.../kgene/linux-samsung into next/late
+      Merge branch 'renesas/boards2' into next/late
+      Merge tag 'renesas-sh-sci-for-v3.11' of git://git.kernel.org/.../horms/renesas into next/late
+      Merge tag 'davinci-for-v3.11/dt' of git://git.kernel.org/.../nsekhar/linux-davinci into next/late
+      Merge tag 'late-for-linus' into for-linus
 
-Jarkko Nikula (8):
-      ARM: OMAP2+: Remove AES crypto device DMA channel definitions
-      ARM: OMAP2+: Remove duplicated DMA channel definitions
-      ARM: OMAP2+: hwmod: Remove remaining DMA channel definitions
-      ARM: OMAP2+: Remove dma.h
-      ARM: OMAP1: Remove McBSP DMA channel definitions
-      ARM: OMAP1: Remove duplicated DMA channel definitions
-      ARM: OMAP1: Remove legacy irda.h and irda setup from board files
-      ARM: OMAP1: Remove dma.h
+Chander Kashyap (10):
+      ARM: dts: fork out common EXYNOS5 nodes
+      ARM: dts: list the CPU nodes for EXYNOS5250
+      ARM: EXYNOS: Add support for EXYNOS5420 SoC
+      serial: samsung: select EXYNOS specific driver data if ARCH_EXYNOS is defined
+      ARM: EXYNOS: use four additional chipid bits to identify EXYNOS family
+      clk: exynos5420: register clocks using common clock framework
+      ARM: dts: Add initial device tree support for EXYNOS5420
+      clocksource: exynos_mct: use (request/free)_irq calls for local timer registration
+      ARM: EXYNOS: add secondary CPU boot base location for EXYNOS5420
+      ARM: EXYNOS: extend soft-reset support for EXYNOS5420
 
-Jean-Christophe PLAGNIOL-VILLARD (7):
-      ARM: at91: dt: use #include for all device trees
-      ARM: at91: dt: switch to standard GPIO flag defines.
-      ARM: at91: dt: add pinctrl pre-processor define
-      ARM: at91: dt: switch to pinctrl to pre-processor
-      ARM: at91: dt: switch to standard IRQ flag defines
-      ARM: at91: udpate defconfigs
-      ARM: at91: drop rm9200dk board support
+Daniel Tang (2):
+      arm: Add device trees for TI-Nspire hardware
+      arm: Add Initial TI-Nspire support
 
-Maxime Ripard (18):
-      ARM: picoxcell: Remove init_irq declaration in machine description
-      ARM: bcm281xx: Remove init_irq declaration in machine description
-      ARM: sunxi: Remove init_irq declaration in machine description
-      ARM: msm: Remove init_irq declaration in machine description
-      ARM: mvebu: Remove init_irq declaration in machine description
-      ARM: zynq: Remove init_irq declaration in machine description
-      ARM: nomadik: Remove init_irq declaration in machine description
-      ARM: spear: Remove init_irq declaration in machine description
-      ARM: sirf: Remove init_irq declaration in machine description
-      ARM: vexpress: Remove init_irq declaration in machine description
-      ARM: virt: Remove init_irq declaration in machine description
-      ARM: vt8500: Remove init_irq declaration in machine description
-      ARM: mmu: Call debug_ll_io_init if no map_io function is specified
-      ARM: highbank: remove the .map_io declaration
-      ARM: mxs: remove the .map_io declaration
-      ARM: sunxi: Remove the .map_io function declaration
-      ARM: sunxi: Update datasheet documentation
-      ARM: sunxi: irqchip: Update the documentation
+Kuninori Morimoto (1):
+      ARM: shmobile: r8a7790: add __initdata on resource and device data
 
-Michal Simek (1):
-      ARM: zynq: Not to rewrite jump code when starting address is 0x0
+Leela Krishna Amudala (2):
+      ARM: dts: add pinctrl support to EXYNOS5420
+      pinctrl: exynos: add exynos5420 SoC specific data
 
-Olof Johansson (10):
-      Merge tag 'at91-cleanup' of git://github.com/at91linux/linux-at91 into next/cleanup
-      Merge tag 'arm-soc-cleanups-for-3.11' of git://github.com/mripard/linux into next/cleanup
-      Merge tag 'cleanup-3.11-3' of git://git.infradead.org/users/jcooper/linux into next/cleanup
-      Merge tag 'of_pci-3.11' of git://git.infradead.org/users/jcooper/linux into next/cleanup
-      Merge tag 'omap-for-v3.10/fixes-v3.10-rc4' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup
-      Merge tag 'omap-for-v3.11/cleanup-signed' of git://git.kernel.org/.../tmlind/linux-omap into next/cleanup
-      Merge tag 'cleanup-3.11-4' of git://git.infradead.org/users/jcooper/linux into next/cleanup
-      Merge tag 'msm-fix-for-3.11' of git://git.kernel.org/.../davidb/linux-msm into next/cleanup
-      Merge tag 'msm-cleanup-for-3.11' of git://git.kernel.org/.../davidb/linux-msm into next/cleanup
-      Merge tag 'sunxi-core-for-3.11' of git://github.com/mripard/linux into next/cleanup
+Linus Walleij (1):
+      ARM: ux500: bail out on alien cpus
 
-R Sricharan (2):
-      ARM: OMAP: dma: Remove the wrong dev_id check
-      ARM: OMAP: dma: Fix the dma_chan_link_map init order
+Manjunathappa, Prakash (1):
+      ARM: davinci: da850: adopt to pinctrl-single change for configuring multiple pins
 
-Rajendra Nayak (3):
-      ARM: OMAP2+: Powerdomain: Remove the need to always have a voltdm associated to a pwrdm
-      ARM: AM33xx: Remove the unused voltagedomain data
-      ARM: OMAP: dma: Remove the erroneous freeing of platform data
+Olof Johansson (5):
+      Merge tag 'soc-exynos5420-2' of git://git.kernel.org/.../kgene/linux-samsung into next/late
+      Merge branch 'nspire/soc' into next/late
+      Merge branch 'sti/soc' into next/late
+      Merge branch 'msm/fixes' into next/late
+      Merge tag 'msm-clock-for-3.11b' of git://git.kernel.org/.../davidb/linux-msm into next/late
 
-Rohit Vaswani (4):
-      msm: Remove unused file core.h
-      msm: iomap: Remove unused bases and mappings
-      ARM: msm: Remove gpiomux-v2 and re-organize MSM_GPIOMUX configs
-      gpio: msm: Add device tree and irqdomain support for gpio-msm-v2
+Philip Avinash (1):
+      ARM: davinci: da850: Use #include for all device trees
 
-Sourav Poddar (3):
-      arm: omap2+: serial: remove no_console_suspend support
-      arm: dts: am33xx: Remove "ti,no_idle_on_suspend" property.
-      arm: omap2+: omap_device: remove no_idle_on_suspend
+Simon Horman (2):
+      Merge tags 'renesas-pinmux-for-v3.11' and 'renesas-soc-for-v3.11' into cleanup
+      serial: sh-sci: Initialise variables before access in sci_set_termios()
 
-Sricharan R (2):
-      ARM: OMAP4: hwmod data: Clean up the data file
-      ARM: OMAP4: hwmod data: Remove irq entries from mcspi, mmc hwmods
+Srinivas Kandagatla (5):
+      ARM: sti: Add STiH415 SOC support
+      ARM: sti: Add STiH416 SOC support
+      ARM: sti: Add DEBUG_LL console support
+      ARM: stih41x: Add B2000 board support
+      ARM: stih41x: Add B2020 board support
 
-Stephen Boyd (1):
-      mfd: ssbi: Use devm_* and simplify code
+Stephen Boyd (12):
+      msm_serial: Convert to clk_prepare/unprepare
+      msm_serial: Use devm_clk_get() and properly return errors
+      usb: otg: msm: Convert to clk_prepare/unprepare
+      msm_sdcc: Convert to clk_prepare/unprepare
+      msm: iommu: Convert to clk_prepare/unprepare
+      msm: iommu: Use clk_set_rate() instead of clk_set_min_rate()
+      ARM: msm: Remove custom clk_set_flags() API
+      ARM: msm: Remove custom clk_set_{max,min}_rate() API
+      ARM: msm: Remove clock-7x30.h include file
+      ARM: msm: Prepare clk_get() users in mach-msm for clock-pcom driver
+      ARM: msm: Make proc_comm clock control into a platform driver
+      ARM: msm: Migrate to common clock framework
 
-Thierry Reding (2):
-      of/pci: Add of_pci_get_devfn() function
-      of/pci: Add of_pci_parse_bus_range() function
+Ulrich Hecht (3):
+      serial: sh-sci: HSCIF support
+      ARM: shmobile: r8a7790: HSCIF support
+      ARM: shmobile: r8a7790: don't use external clock for SCIFs
 
-Thomas Petazzoni (1):
-      arm: mvebu: mark functions of armada-370-xp.c as static
-
-Tomasz Figa (7):
-      ARM: S5P64X0: Use common uncompress.h part for plat-samsung
-      watchdog: s3c2410_wdt: Use local register definitions
-      ARM: SAMSUNG: Use local definitions of watchdog registers
-      ARM: SAMSUNG: Add watchdog reset driver
-      ARM: SAMSUNG: Let platforms use the new watchdog reset driver
-      ARM: SAMSUNG: Remove legacy watchdog reset code
-      ARM: SAMSUNG: Remove unused plat/regs-watchdog.h header
-
-Tomi Valkeinen (1):
-      ARM: OMAP4: hwmod data: add DSS data back
-
-Tony Lindgren (10):
-      ARM: OMAP2+: Legacy support for wl12xx when booted with devicetree
-      ARM: OMAP2+: Remove board-4430sdp.c
-      ARM: OMAP2+: Remove board-omap4panda.c
-      ARM: OMAP2+: Remove legacy mux data for omap4
-      ARM: OMAP2+: Remove omap4 pdata from hsmmc.c
-      ARM: OMAP2+: Remove omap4 pdata for USB
-      ARM: OMAP2+: Remove omap4 ocp2scp pdata
-      Merge branch 'am33xx' into omap-for-v3.11/cleanup
-      Merge tag 'omap-pm-v3.11/cleanup/pm' of git://git.kernel.org/.../khilman/linux-omap-pm into omap-for-v3.11/pm-serial
-      Merge tag 'omap-pm-v3.11/voltdm' of git://git.kernel.org/.../khilman/linux-omap-pm into omap-for-v3.11/pm-voltdomain
-
-Tushar Behera (1):
-      ARM: SAMSUNG: Consolidate uncompress subroutine
-
-Vaibhav Hiremath (1):
-      ARM: AM33XX: hwmod data: irq, dma and addr info clean up
-
- Documentation/arm/sunxi/README                     |   21 +-
- .../devicetree/bindings/gpio/gpio-msm.txt          |   26 +
- .../interrupt-controller/allwinner,sun4i-ic.txt    |   87 +-
- .../interrupt-controller/sunxi/sun4i-a10.txt       |   89 ++
- .../interrupt-controller/sunxi/sun5i-a13.txt       |   55 +
- arch/arm/Kconfig                                   |    3 +
- arch/arm/boot/dts/aks-cdu.dts                      |   12 +-
- arch/arm/boot/dts/am33xx.dtsi                      |    1 -
- arch/arm/boot/dts/animeo_ip.dts                    |   18 +-
- arch/arm/boot/dts/at91-ariag25.dts                 |    6 +-
- arch/arm/boot/dts/at91rm9200.dtsi                  |  207 +--
- arch/arm/boot/dts/at91rm9200ek.dts                 |   10 +-
- arch/arm/boot/dts/at91sam9260.dtsi                 |  215 +--
- arch/arm/boot/dts/at91sam9263.dtsi                 |  203 +--
- arch/arm/boot/dts/at91sam9263ek.dts                |   24 +-
- arch/arm/boot/dts/at91sam9g15.dtsi                 |    2 +-
- arch/arm/boot/dts/at91sam9g15ek.dts                |    4 +-
- arch/arm/boot/dts/at91sam9g20.dtsi                 |    2 +-
- arch/arm/boot/dts/at91sam9g20ek.dts                |    6 +-
- arch/arm/boot/dts/at91sam9g20ek_2mmc.dts           |   10 +-
- arch/arm/boot/dts/at91sam9g20ek_common.dtsi        |   28 +-
- arch/arm/boot/dts/at91sam9g25.dtsi                 |    2 +-
- arch/arm/boot/dts/at91sam9g25ek.dts                |    4 +-
- arch/arm/boot/dts/at91sam9g35.dtsi                 |    2 +-
- arch/arm/boot/dts/at91sam9g35ek.dts                |    4 +-
- arch/arm/boot/dts/at91sam9g45.dtsi                 |  213 +--
- arch/arm/boot/dts/at91sam9m10g45ek.dts             |   38 +-
- arch/arm/boot/dts/at91sam9n12.dtsi                 |  141 +-
- arch/arm/boot/dts/at91sam9n12ek.dts                |   14 +-
- arch/arm/boot/dts/at91sam9x25.dtsi                 |   22 +-
- arch/arm/boot/dts/at91sam9x25ek.dts                |    4 +-
- arch/arm/boot/dts/at91sam9x35.dtsi                 |    2 +-
- arch/arm/boot/dts/at91sam9x35ek.dts                |    4 +-
- arch/arm/boot/dts/at91sam9x5.dtsi                  |  279 ++--
- arch/arm/boot/dts/at91sam9x5cm.dtsi                |    8 +-
- arch/arm/boot/dts/at91sam9x5ek.dtsi                |   14 +-
- arch/arm/boot/dts/ethernut5.dts                    |    6 +-
- arch/arm/boot/dts/evk-pro3.dts                     |    6 +-
- arch/arm/boot/dts/ge863-pro3.dtsi                  |    2 +-
- arch/arm/boot/dts/kizbox.dts                       |   16 +-
- arch/arm/boot/dts/mpa1600.dts                      |    4 +-
- arch/arm/boot/dts/msm8660-surf.dts                 |   11 +
- arch/arm/boot/dts/msm8960-cdp.dts                  |   11 +
- arch/arm/boot/dts/pm9g45.dts                       |   22 +-
- arch/arm/boot/dts/sama5d3.dtsi                     |  520 +++----
- arch/arm/boot/dts/sama5d31ek.dts                   |    6 +-
- arch/arm/boot/dts/sama5d33ek.dts                   |    4 +-
- arch/arm/boot/dts/sama5d34ek.dts                   |    6 +-
- arch/arm/boot/dts/sama5d35ek.dts                   |    4 +-
- arch/arm/boot/dts/sama5d3xcm.dtsi                  |    4 +-
- arch/arm/boot/dts/sama5d3xdm.dtsi                  |    2 +-
- arch/arm/boot/dts/sama5d3xmb.dtsi                  |   26 +-
- arch/arm/boot/dts/tny_a9260.dts                    |    4 +-
- arch/arm/boot/dts/tny_a9263.dts                    |    4 +-
- arch/arm/boot/dts/tny_a9g20.dts                    |    4 +-
- arch/arm/boot/dts/usb_a9260.dts                    |    4 +-
- arch/arm/boot/dts/usb_a9260_common.dtsi            |    6 +-
- arch/arm/boot/dts/usb_a9263.dts                    |    8 +-
- arch/arm/boot/dts/usb_a9g20-dab-mmx.dtsi           |   22 +-
- arch/arm/boot/dts/usb_a9g20.dts                    |    4 +-
- arch/arm/configs/at91_dt_defconfig                 |   55 +-
- arch/arm/configs/at91rm9200_defconfig              |  219 +--
- ...am9g20_defconfig => at91sam9260_9g20_defconfig} |   67 +-
- arch/arm/configs/at91sam9260_defconfig             |   91 --
- ...am9261_defconfig => at91sam9261_9g10_defconfig} |   19 +-
- arch/arm/configs/at91sam9263_defconfig             |   39 +-
- arch/arm/configs/at91sam9g45_defconfig             |   94 +-
- arch/arm/configs/sama5_defconfig                   |   35 +-
- arch/arm/mach-at91/Kconfig.non_dt                  |  166 +--
- arch/arm/mach-at91/Makefile                        |    3 -
- arch/arm/mach-at91/board-rm9200dk.c                |  228 ---
- arch/arm/mach-at91/board-sam9261ek.c               |   28 +-
- arch/arm/mach-bcm/board_bcm.c                      |    2 -
- arch/arm/mach-exynos/include/mach/uncompress.h     |    3 -
- arch/arm/mach-highbank/highbank.c                  |    1 -
- arch/arm/mach-msm/Kconfig                          |   13 +-
- arch/arm/mach-msm/Makefile                         |    6 +-
- arch/arm/mach-msm/board-dt-8660.c                  |    2 -
- arch/arm/mach-msm/board-dt-8960.c                  |    2 -
- arch/arm/mach-msm/core.h                           |    2 -
- arch/arm/mach-msm/gpiomux-8x60.c                   |   19 -
- arch/arm/mach-msm/gpiomux-v2.c                     |   25 -
- arch/arm/mach-msm/gpiomux-v2.h                     |   61 -
- arch/arm/mach-msm/gpiomux.c                        |   15 +
- arch/arm/mach-msm/gpiomux.h                        |    5 -
- arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |    7 -
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |    6 -
- arch/arm/mach-msm/include/mach/msm_iomap.h         |    2 -
- arch/arm/mach-msm/io.c                             |    4 -
- arch/arm/mach-mvebu/armada-370-xp.c                |    8 +-
- arch/arm/mach-mxs/mach-mxs.c                       |    1 -
- arch/arm/mach-nomadik/cpu-8815.c                   |    2 -
- arch/arm/mach-omap1/board-h2.c                     |   36 -
- arch/arm/mach-omap1/board-palmte.c                 |   31 -
- arch/arm/mach-omap1/board-palmtt.c                 |   30 -
- arch/arm/mach-omap1/board-palmz71.c                |   31 -
- arch/arm/mach-omap1/board-sx1.c                    |   36 -
- arch/arm/mach-omap1/devices.c                      |    9 +-
- arch/arm/mach-omap1/dma.c                          |    2 -
- arch/arm/mach-omap1/dma.h                          |   42 -
- arch/arm/mach-omap1/include/mach/irda.h            |   33 -
- arch/arm/mach-omap1/lcd_dma.c                      |    2 -
- arch/arm/mach-omap1/mcbsp.c                        |   33 +-
- arch/arm/mach-omap2/Kconfig                        |   22 -
- arch/arm/mach-omap2/Makefile                       |    4 -
- arch/arm/mach-omap2/board-4430sdp.c                |  765 ----------
- arch/arm/mach-omap2/board-omap4panda.c             |  455 ------
- arch/arm/mach-omap2/devices.c                      |  133 +-
- arch/arm/mach-omap2/dma.h                          |   61 -
- arch/arm/mach-omap2/hsmmc.c                        |  103 +-
- arch/arm/mach-omap2/io.c                           |    1 -
- arch/arm/mach-omap2/mux.h                          |    3 -
- arch/arm/mach-omap2/mux44xx.c                      | 1356 -----------------
- arch/arm/mach-omap2/mux44xx.h                      |  298 ----
- arch/arm/mach-omap2/omap_device.c                  |    9 +-
- arch/arm/mach-omap2/omap_device.h                  |   10 -
- .../mach-omap2/omap_hwmod_2xxx_3xxx_ipblock_data.c |   21 +-
- arch/arm/mach-omap2/omap_hwmod_33xx_data.c         | 1074 --------------
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c         |   19 +-
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c         | 1544 +-------------------
- arch/arm/mach-omap2/powerdomain.c                  |    5 +
- arch/arm/mach-omap2/powerdomain.h                  |    2 +
- arch/arm/mach-omap2/prm33xx.c                      |    7 +
- arch/arm/mach-omap2/serial.c                       |    7 -
- arch/arm/mach-omap2/usb-host.c                     |  194 ---
- arch/arm/mach-omap2/usb-musb.c                     |    3 -
- arch/arm/mach-omap2/voltage.h                      |    1 -
- arch/arm/mach-omap2/voltagedomains33xx_data.c      |   43 -
- arch/arm/mach-picoxcell/common.c                   |    8 -
- arch/arm/mach-picoxcell/common.h                   |   17 -
- arch/arm/mach-prima2/common.c                      |    4 -
- arch/arm/mach-s3c24xx/Kconfig                      |    2 +
- arch/arm/mach-s3c24xx/include/mach/uncompress.h    |    3 +
- arch/arm/mach-s3c24xx/s3c2410.c                    |    3 +-
- arch/arm/mach-s3c24xx/s3c244x.c                    |    3 +-
- arch/arm/mach-s3c64xx/common.c                     |    8 +-
- arch/arm/mach-s3c64xx/include/mach/uncompress.h    |    3 +
- arch/arm/mach-s5p64x0/common.c                     |    4 +-
- arch/arm/mach-s5p64x0/include/mach/uncompress.h    |  162 +-
- arch/arm/mach-s5pc100/common.c                     |    3 +-
- arch/arm/mach-s5pc100/include/mach/uncompress.h    |    2 +
- arch/arm/mach-s5pv210/include/mach/uncompress.h    |    2 +
- arch/arm/mach-spear/spear1310.c                    |    2 -
- arch/arm/mach-spear/spear1340.c                    |    2 -
- arch/arm/mach-spear/spear300.c                     |    2 -
- arch/arm/mach-spear/spear310.c                     |    2 -
- arch/arm/mach-spear/spear320.c                     |    2 -
- arch/arm/mach-spear/spear6xx.c                     |    2 -
- arch/arm/mach-sunxi/sunxi.c                        |   19 -
- arch/arm/mach-sunxi/sunxi.h                        |   20 -
- arch/arm/mach-vexpress/v2m.c                       |    2 -
- arch/arm/mach-virt/virt.c                          |    2 -
- arch/arm/mach-vt8500/vt8500.c                      |    2 -
- arch/arm/mach-zynq/common.c                        |    2 -
- arch/arm/mach-zynq/platsmp.c                       |   52 +-
- arch/arm/mm/mmu.c                                  |    2 +
- arch/arm/plat-omap/dma.c                           |   11 +-
- arch/arm/plat-samsung/Kconfig                      |    6 +
- arch/arm/plat-samsung/Makefile                     |    1 +
- arch/arm/plat-samsung/include/plat/regs-watchdog.h |   41 -
- arch/arm/plat-samsung/include/plat/uncompress.h    |   21 +-
- .../arm/plat-samsung/include/plat/watchdog-reset.h |   38 +-
- arch/arm/plat-samsung/watchdog-reset.c             |   97 ++
- drivers/bus/mvebu-mbus.c                           |    8 +-
- drivers/bus/omap-ocp2scp.c                         |   60 -
- drivers/gpio/Kconfig                               |    2 +-
- drivers/gpio/gpio-msm-v2.c                         |  195 ++-
- drivers/of/address.c                               |   67 +
- drivers/of/of_pci.c                                |   59 +-
- drivers/ssbi/ssbi.c                                |   69 +-
- drivers/watchdog/s3c2410_wdt.c                     |   17 +-
- include/dt-bindings/pinctrl/at91.h                 |   35 +
- include/linux/of_address.h                         |   48 +
- include/linux/of_pci.h                             |    2 +
- include/linux/platform_data/omap_ocp2scp.h         |   31 -
- 175 files changed, 2257 insertions(+), 9029 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/gpio/gpio-msm.txt
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/sunxi/sun4i-a10.txt
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/sunxi/sun5i-a13.txt
- rename arch/arm/configs/{at91sam9g20_defconfig => at91sam9260_9g20_defconfig} (67%)
- delete mode 100644 arch/arm/configs/at91sam9260_defconfig
- rename arch/arm/configs/{at91sam9261_defconfig => at91sam9261_9g10_defconfig} (91%)
- delete mode 100644 arch/arm/mach-at91/board-rm9200dk.c
- delete mode 100644 arch/arm/mach-msm/core.h
- delete mode 100644 arch/arm/mach-msm/gpiomux-8x60.c
- delete mode 100644 arch/arm/mach-msm/gpiomux-v2.c
- delete mode 100644 arch/arm/mach-msm/gpiomux-v2.h
- delete mode 100644 arch/arm/mach-omap1/dma.h
- delete mode 100644 arch/arm/mach-omap1/include/mach/irda.h
- delete mode 100644 arch/arm/mach-omap2/board-4430sdp.c
- delete mode 100644 arch/arm/mach-omap2/board-omap4panda.c
- delete mode 100644 arch/arm/mach-omap2/dma.h
- delete mode 100644 arch/arm/mach-omap2/mux44xx.c
- delete mode 100644 arch/arm/mach-omap2/mux44xx.h
- delete mode 100644 arch/arm/mach-omap2/voltagedomains33xx_data.c
- delete mode 100644 arch/arm/mach-picoxcell/common.h
- delete mode 100644 arch/arm/mach-sunxi/sunxi.h
- delete mode 100644 arch/arm/plat-samsung/include/plat/regs-watchdog.h
- create mode 100644 arch/arm/plat-samsung/watchdog-reset.c
- create mode 100644 include/dt-bindings/pinctrl/at91.h
- delete mode 100644 include/linux/platform_data/omap_ocp2scp.h
+ Documentation/arm/sti/overview.txt                 |  33 +
+ Documentation/arm/sti/stih415-overview.txt         |  12 +
+ Documentation/arm/sti/stih416-overview.txt         |  12 +
+ Documentation/devicetree/bindings/arm/nspire.txt   |  14 +
+ .../devicetree/bindings/clock/exynos5420-clock.txt | 201 ++++++
+ .../bindings/pinctrl/samsung-pinctrl.txt           |   1 +
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ MAINTAINERS                                        |   9 +
+ arch/arm/Kconfig                                   |   6 +-
+ arch/arm/Kconfig.debug                             |  52 ++
+ arch/arm/Makefile                                  |   2 +
+ arch/arm/boot/dts/Makefile                         |   8 +
+ arch/arm/boot/dts/da850-enbw-cmc.dts               |   2 +-
+ arch/arm/boot/dts/da850-evm.dts                    |   2 +-
+ arch/arm/boot/dts/da850.dtsi                       |   4 +-
+ arch/arm/boot/dts/exynos5.dtsi                     | 111 +++
+ arch/arm/boot/dts/exynos5250.dtsi                  |  78 +--
+ arch/arm/boot/dts/exynos5420-pinctrl.dtsi          | 680 ++++++++++++++++++
+ arch/arm/boot/dts/exynos5420-smdk5420.dts          |  33 +
+ arch/arm/boot/dts/exynos5420.dtsi                  | 148 ++++
+ arch/arm/boot/dts/nspire-classic.dtsi              |  74 ++
+ arch/arm/boot/dts/nspire-clp.dts                   |  45 ++
+ arch/arm/boot/dts/nspire-cx.dts                    | 112 +++
+ arch/arm/boot/dts/nspire-tp.dts                    |  44 ++
+ arch/arm/boot/dts/nspire.dtsi                      | 175 +++++
+ arch/arm/boot/dts/st-pincfg.h                      |  71 ++
+ arch/arm/boot/dts/stih415-b2000.dts                |  15 +
+ arch/arm/boot/dts/stih415-b2020.dts                |  15 +
+ arch/arm/boot/dts/stih415-clock.dtsi               |  38 +
+ arch/arm/boot/dts/stih415-pinctrl.dtsi             | 268 ++++++++
+ arch/arm/boot/dts/stih415.dtsi                     |  87 +++
+ arch/arm/boot/dts/stih416-b2000.dts                |  16 +
+ arch/arm/boot/dts/stih416-b2020.dts                |  16 +
+ arch/arm/boot/dts/stih416-clock.dtsi               |  41 ++
+ arch/arm/boot/dts/stih416-pinctrl.dtsi             | 295 ++++++++
+ arch/arm/boot/dts/stih416.dtsi                     |  96 +++
+ arch/arm/boot/dts/stih41x-b2000.dtsi               |  41 ++
+ arch/arm/boot/dts/stih41x-b2020.dtsi               |  42 ++
+ arch/arm/boot/dts/stih41x.dtsi                     |  38 +
+ arch/arm/include/debug/nspire.S                    |  28 +
+ arch/arm/include/debug/sti.S                       |  61 ++
+ arch/arm/mach-exynos/Kconfig                       |  10 +
+ arch/arm/mach-exynos/common.c                      |  18 +-
+ arch/arm/mach-exynos/include/mach/uncompress.h     |   7 +-
+ arch/arm/mach-exynos/mach-exynos5-dt.c             |   1 +
+ arch/arm/mach-exynos/platsmp.c                     |  12 +-
+ arch/arm/mach-msm/Makefile                         |  10 +-
+ arch/arm/mach-msm/board-halibut.c                  |   2 +-
+ arch/arm/mach-msm/board-msm7x30.c                  |   2 +-
+ arch/arm/mach-msm/board-qsd8x50.c                  |   2 +-
+ arch/arm/mach-msm/board-trout-panel.c              |  19 +-
+ arch/arm/mach-msm/board-trout.c                    |   3 +-
+ arch/arm/mach-msm/clock-7x30.h                     | 155 -----
+ arch/arm/mach-msm/clock-debug.c                    | 130 ----
+ arch/arm/mach-msm/clock-pcom.c                     | 149 ++--
+ arch/arm/mach-msm/clock-pcom.h                     |  31 +-
+ arch/arm/mach-msm/clock.c                          | 166 +----
+ arch/arm/mach-msm/clock.h                          |  51 +-
+ arch/arm/mach-msm/devices-msm7x00.c                |  12 +-
+ arch/arm/mach-msm/devices-msm7x30.c                |  15 +-
+ arch/arm/mach-msm/devices-qsd8x50.c                |  12 +-
+ arch/arm/mach-msm/devices.h                        |  15 +-
+ arch/arm/mach-msm/dma.c                            |   5 +-
+ arch/arm/mach-msm/include/mach/board.h             |   5 -
+ arch/arm/mach-msm/include/mach/clk.h               |   9 -
+ arch/arm/mach-nspire/Kconfig                       |  16 +
+ arch/arm/mach-nspire/Makefile                      |   2 +
+ arch/arm/mach-nspire/Makefile.boot                 |   0
+ arch/arm/mach-nspire/clcd.c                        | 119 ++++
+ arch/arm/mach-nspire/clcd.h                        |  14 +
+ arch/arm/mach-nspire/mmio.h                        |  20 +
+ arch/arm/mach-nspire/nspire.c                      |  89 +++
+ arch/arm/mach-shmobile/setup-r8a7790.c             |  28 +-
+ arch/arm/mach-sti/Kconfig                          |  45 ++
+ arch/arm/mach-sti/Makefile                         |   2 +
+ arch/arm/mach-sti/board-dt.c                       |  48 ++
+ arch/arm/mach-sti/headsmp.S                        |  44 ++
+ arch/arm/mach-sti/platsmp.c                        | 117 ++++
+ arch/arm/mach-sti/smp.h                            |  17 +
+ arch/arm/mach-ux500/cache-l2x0.c                   |   3 +-
+ arch/arm/plat-samsung/include/plat/cpu.h           |   8 +
+ drivers/clk/samsung/Makefile                       |   1 +
+ drivers/clk/samsung/clk-exynos5420.c               | 762 +++++++++++++++++++++
+ drivers/clocksource/exynos_mct.c                   |  35 +-
+ drivers/iommu/msm_iommu_dev.c                      |  20 +-
+ drivers/mmc/host/msm_sdcc.c                        |  14 +-
+ drivers/pinctrl/pinctrl-exynos.c                   | 118 ++++
+ drivers/pinctrl/pinctrl-samsung.c                  |   2 +
+ drivers/pinctrl/pinctrl-samsung.h                  |   1 +
+ drivers/tty/serial/msm_serial.c                    |  35 +-
+ drivers/tty/serial/samsung.c                       |   4 +-
+ drivers/tty/serial/sh-sci.c                        | 104 ++-
+ drivers/usb/phy/phy-msm-usb.c                      |  38 +-
+ include/linux/serial_sci.h                         |  12 +-
+ include/uapi/linux/serial_core.h                   |   3 +
+ 95 files changed, 4799 insertions(+), 790 deletions(-)
+ create mode 100644 Documentation/arm/sti/overview.txt
+ create mode 100644 Documentation/arm/sti/stih415-overview.txt
+ create mode 100644 Documentation/arm/sti/stih416-overview.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/nspire.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/exynos5420-clock.txt
+ create mode 100644 arch/arm/boot/dts/exynos5.dtsi
+ create mode 100644 arch/arm/boot/dts/exynos5420-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/exynos5420-smdk5420.dts
+ create mode 100644 arch/arm/boot/dts/exynos5420.dtsi
+ create mode 100644 arch/arm/boot/dts/nspire-classic.dtsi
+ create mode 100644 arch/arm/boot/dts/nspire-clp.dts
+ create mode 100644 arch/arm/boot/dts/nspire-cx.dts
+ create mode 100644 arch/arm/boot/dts/nspire-tp.dts
+ create mode 100644 arch/arm/boot/dts/nspire.dtsi
+ create mode 100644 arch/arm/boot/dts/st-pincfg.h
+ create mode 100644 arch/arm/boot/dts/stih415-b2000.dts
+ create mode 100644 arch/arm/boot/dts/stih415-b2020.dts
+ create mode 100644 arch/arm/boot/dts/stih415-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih415-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih415.dtsi
+ create mode 100644 arch/arm/boot/dts/stih416-b2000.dts
+ create mode 100644 arch/arm/boot/dts/stih416-b2020.dts
+ create mode 100644 arch/arm/boot/dts/stih416-clock.dtsi
+ create mode 100644 arch/arm/boot/dts/stih416-pinctrl.dtsi
+ create mode 100644 arch/arm/boot/dts/stih416.dtsi
+ create mode 100644 arch/arm/boot/dts/stih41x-b2000.dtsi
+ create mode 100644 arch/arm/boot/dts/stih41x-b2020.dtsi
+ create mode 100644 arch/arm/boot/dts/stih41x.dtsi
+ create mode 100644 arch/arm/include/debug/nspire.S
+ create mode 100644 arch/arm/include/debug/sti.S
+ delete mode 100644 arch/arm/mach-msm/clock-7x30.h
+ delete mode 100644 arch/arm/mach-msm/clock-debug.c
+ create mode 100644 arch/arm/mach-nspire/Kconfig
+ create mode 100644 arch/arm/mach-nspire/Makefile
+ create mode 100644 arch/arm/mach-nspire/Makefile.boot
+ create mode 100644 arch/arm/mach-nspire/clcd.c
+ create mode 100644 arch/arm/mach-nspire/clcd.h
+ create mode 100644 arch/arm/mach-nspire/mmio.h
+ create mode 100644 arch/arm/mach-nspire/nspire.c
+ create mode 100644 arch/arm/mach-sti/Kconfig
+ create mode 100644 arch/arm/mach-sti/Makefile
+ create mode 100644 arch/arm/mach-sti/board-dt.c
+ create mode 100644 arch/arm/mach-sti/headsmp.S
+ create mode 100644 arch/arm/mach-sti/platsmp.c
+ create mode 100644 arch/arm/mach-sti/smp.h
+ create mode 100644 drivers/clk/samsung/clk-exynos5420.c
