@@ -1,160 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab3GBI3P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:29:15 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:56046 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab3GBI3K (ORCPT
+	id S932400Ab3GBIdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:33:07 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:58329 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932241Ab3GBIdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:29:10 -0400
+	Tue, 2 Jul 2013 04:33:02 -0400
+Message-ID: <51D28C24.904@huawei.com>
+Date: Tue, 2 Jul 2013 16:15:32 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130702043256.GA14927@teo>
-References: <20130628043411.GA9100@teo>
-	<20130628050712.GA10097@teo>
-	<20130628100027.31504abe@redhat.com>
-	<20130628165722.GA12271@teo>
-	<20130628170917.GA12610@teo>
-	<20130628144507.37d28ed9@redhat.com>
-	<20130628185547.GA14520@teo>
-	<20130628154402.4035f2fa@redhat.com>
-	<20130629005637.GA16068@teo>
-	<CAOK=xROD2AKbgw4V65ddqWFODtn4B1-uYG-NF==oANqVFmZZtg@mail.gmail.com>
-	<20130702043256.GA14927@teo>
-Date: Tue, 2 Jul 2013 17:29:06 +0900
-X-Google-Sender-Auth: hwPmMzLThoXL62eaxOj4e9lhUs4
-Message-ID: <CAOK=xRP9o7+qoOMmKj-ZZOHZtDqErS-SCnDXf86fvTjocQROTg@mail.gmail.com>
-Subject: Re: [PATCH v2] vmpressure: implement strict mode
-From: Hyunhee Kim <hyunhee.kim@samsung.com>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jens Axboe <axboe@kernel.dk>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+CC: Mike Miller <mike.miller@hp.com>, <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, <iss_storagedev@hp.com>
+Subject: Re: [PATCH 5/9] cciss: rework pci pm related code for simplification
+References: <1371543553-13064-1-git-send-email-wangyijing@huawei.com> <51D23169.1070405@huawei.com> <20130702080215.GT32428@kernel.dk>
+In-Reply-To: <20130702080215.GT32428@kernel.dk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/2 Anton Vorontsov <anton@enomsg.org>:
-> On Mon, Jul 01, 2013 at 05:22:36PM +0900, Hyunhee Kim wrote:
->> >> > > for each event in memory.pressure_level; do
->> >> > >   /* register eventfd to be notified on "event" */
->> >> > > done
->> >> >
->> >> > This scheme registers "all" events.
->> >>
->> >> Yes, because I thought that's the user-case that matters for activity
->> >> manager :)
->> >
->> > Some activity managers use only low levels (Android), some might use only
->> > medium levels (simple load-balancing).
->>
->> When the platform like Android uses only "low" level, is it the
->> process you intended when designing vmpressure?
->>
->> 1. activity manager receives "low" level events
->> 2. it reads and checks the current memory (e.g. available memory) using vmstat
->> 3. if the available memory is not under the threshold (defined e.g. by
->> activity manager), activity manager does nothing
->> 4. if the available memory is under the threshold, activity manager
->> handles it by e.g. reclaiming or killing processes?
->
-> Yup, exactly.
->
->> At first time when I saw this vmpressure, I thought that I should
->> register all events ("low", "medium", and "critical
->> ") and use different handler for each event. However, without the mode
->> like strict mode, I should see too many events. So, now, I think that
->> it is better to use only one level and run each handler after checking
->> available memory as you mentioned.
->
-> Yup, this should work ideally.
+Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Thanks for your reply.
-I think that, as you mentioned, using one level event could work well
-when activity manager checks available memory in user space.
+On 2013/7/2 16:02, Jens Axboe wrote:
+> On Tue, Jul 02 2013, Yijing Wang wrote:
+>> Hi Jens,
+>>    Sorry to disturb you, do you have any comments for this patch?
+> 
+> Looks fine to me, was waiting for Stephen/Mike to ack it and I'll pick
+> it up.
+> 
 
-I also think that Luiz's use case and the use case I thought at first
-(registering "low", "medium", and "critical", and run each handler)
-are another examples of use cases that could be widely used.
-For example, let's think about the case when userland wants to know
-"pressure level" (reclaim ratio calculated by vmpressure 0~60~100).
-In this case, if we do not register all of these events and register
-only "low" level, we cannot distinguish "low", "medium", and
-"critical" pressure level in userland.
-This reclaim ratio cannot be identified in userland.
+I find his address by git log info, thanks!
 
-Thanks.
-Hyunhee Kim.
 
->
->> But,
->>
->> 1. Isn't it overhead to read event and check memory state every time
->> we receive events?
->
-> Even if it is an overhead, is it measurable? Plus, vmstat/memcg stats are
-> the only source of information that Activity Manager can use to make a
-> decision, so there is no point in duplicating the information in the
-> notifications.
->
->>     - sometimes, even when there are lots of available memory, low
->> level event could occur if most of them is reclaimable memory not free
->> pages.
->
-> The point of low level is to signal [any] reclaiming activity. So, yes,
->
->>     - Don't most of platforms use available memory to judge their
->> current memory state?
->
-> No, because you hardly want to monitor available memory only. You want to
-> take into account the level of the page caches, etc.
->
->> Is there any reason vmpressure use reclaim rate?
->
-> Yes, you can refer to this email:
->
->   http://lkml.org/lkml/2012/10/4/145
->
-> And here is about the levels thing:
->
->   http://lkml.org/lkml/2012/10/22/177
->
->> IMO, activity manager doesn't have to check available memory if it
->> could receive signal based on the available memory.
->
-> But userspace can define its own policy of managing the tasks/resouces
-> based on different factors, other than just available memory. And that is
-> exactly why we don't filter the events in the kernel anymore. The only
-> filtering that we make is the levels, which, as it appears, can work for
-> many use-cases.
->
->> 2. If we use only "medium" to avoid the overheads occurred when using
->> "low" level, isn't it possible to miss sending events when there is a
->> little available memory but reclaim ratio is high?
->
-> If your app don't "trust" reclaim ratio idicator, then the application can
-> use its own heuristics, using low level just to monitor reclaiming
-> activity. More than that, you can change vmpressure itself to use
-> different heuristics for low/med/crit levels: the point of introducing
-> levels was also to hide the implementation and memory management details,
-> so if you can come up with a better approach for vmpressure "internals"
-> you are more than welcome to do so. :)
->
->> IMHO, we cannot consider and cover all the use cases, but considering
->> some use cases and giving some guides and directions to use this
->> vmpressure will be helpful to make many platform accept this for their
->> low memory manager.
->
-> Can't argue with that. :) I guess I will need to better document current
-> behavior of the levels and when exactly the events trigger.
->
-> Thanks!
->
-> Anton
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+-- 
+Thanks!
+Yijing
+
