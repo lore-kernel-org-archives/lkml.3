@@ -1,230 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3GBP2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:28:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5915 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab3GBP2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:28:12 -0400
-Date: Tue, 2 Jul 2013 11:27:28 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH v6 1/5] vmcore: Introduce ELF header in new memory feature
-Message-ID: <20130702152727.GB22603@redhat.com>
-References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
- <1372707159-10425-2-git-send-email-holzheu@linux.vnet.ibm.com>
+	id S1753482Ab3GBPbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:31:07 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:63000 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752907Ab3GBPbE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 11:31:04 -0400
+Message-ID: <51D2F306.7040603@metafoo.de>
+Date: Tue, 02 Jul 2013 17:34:30 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372707159-10425-2-git-send-email-holzheu@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bo Shen <voice.shen@atmel.com>
+CC: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
+        richard.genoud@gmail.com, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-kernel@vger.kernel.org, linux-sound@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: atmel-pcm: use generic dmaengine
+ framework
+References: <1372755849-19546-1-git-send-email-voice.shen@atmel.com> <1372755849-19546-3-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1372755849-19546-3-git-send-email-voice.shen@atmel.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 09:32:35PM +0200, Michael Holzheu wrote:
-> Currently for s390 we create the ELF core header in the 2nd kernel
-> with a small trick. We relocate the addresses in the ELF header in
-> a way that for the /proc/vmcore code it seems to be in the 1st kernel
-> (old) memory and the read_from_oldmem() returns the correct data.
-> This allows the /proc/vmcore code to use the ELF header in the
-> 2nd kernel.
-> 
-> This patch now exchanges the old mechanism with the new and much
-> cleaner function call override feature that now offcially allows to
-> create the ELF core header in the 2nd kernel.
-> 
-> To use the new feature the following function have to be defined
-> by the architecture backend code to read from new memory:
-> 
->  * elfcorehdr_alloc: Allocate ELF header
->  * elfcorehdr_free: Free the memory of the ELF header
->  * elfcorehdr_read: Read from ELF header
->  * elfcorehdr_read_notes: Read from ELF notes
-> 
-> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+On 07/02/2013 11:04 AM, Bo Shen wrote:
+[...]
+> -/*--------------------------------------------------------------------------*\
+> - * DMAENGINE operations
+> -\*--------------------------------------------------------------------------*/
+> -static bool filter(struct dma_chan *chan, void *slave)
+> -{
+> -	struct at_dma_slave *sl = slave;
+> -
+> -	if (sl->dma_dev == chan->device->dev) {
+> -		chan->private = sl;
+> -		return true;
+> -	} else {
+> -		return false;
+> -	}
+> -}
 
-Looks good to me.
+I'm wondering why is filtering no longer required?
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+[...]
+> +		slave_config->dst_addr = (dma_addr_t)ssc->phybase + SSC_THR;
+[...]
+> +		slave_config->src_addr = (dma_addr_t)ssc->phybase + SSC_RHR;
 
-Vivek
+Change the type of phybase to dma_addr_t
 
-> ---
->  fs/proc/vmcore.c           | 61 ++++++++++++++++++++++++++++++++++++++--------
->  include/linux/crash_dump.h |  6 +++++
->  2 files changed, 57 insertions(+), 10 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 0f6db52..c28189c 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -123,6 +123,36 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
->  	return read;
+[...]
 >  }
 >  
-> +/*
-> + * Architectures may override this function to allocate ELF header in 2nd kernel
-> + */
-> +int __weak elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
-> +{
-> +	return 0;
-> +}
-> +
-> +/*
-> + * Architectures may override this function to free header
-> + */
-> +void __weak elfcorehdr_free(unsigned long long addr)
-> +{}
-> +
-> +/*
-> + * Architectures may override this function to read from ELF header
-> + */
-> +ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos)
-> +{
-> +	return read_from_oldmem(buf, count, ppos, 0);
-> +}
-> +
-> +/*
-> + * Architectures may override this function to read from notes sections
-> + */
-> +ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
-> +{
-> +	return read_from_oldmem(buf, count, ppos, 0);
-> +}
-> +
->  /* Read from the ELF header and then the crash dump. On error, negative value is
->   * returned otherwise number of bytes read are returned.
->   */
-> @@ -322,7 +352,7 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
->  		notes_section = kmalloc(max_sz, GFP_KERNEL);
->  		if (!notes_section)
->  			return -ENOMEM;
-> -		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
->  		if (rc < 0) {
->  			kfree(notes_section);
->  			return rc;
-> @@ -409,7 +439,8 @@ static int __init copy_notes_elf64(const Elf64_Ehdr *ehdr_ptr, char *notes_buf)
->  		if (phdr_ptr->p_type != PT_NOTE)
->  			continue;
->  		offset = phdr_ptr->p_offset;
-> -		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-> +					   &offset);
->  		if (rc < 0)
->  			return rc;
->  		notes_buf += phdr_ptr->p_memsz;
-> @@ -510,7 +541,7 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
->  		notes_section = kmalloc(max_sz, GFP_KERNEL);
->  		if (!notes_section)
->  			return -ENOMEM;
-> -		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
->  		if (rc < 0) {
->  			kfree(notes_section);
->  			return rc;
-> @@ -597,7 +628,8 @@ static int __init copy_notes_elf32(const Elf32_Ehdr *ehdr_ptr, char *notes_buf)
->  		if (phdr_ptr->p_type != PT_NOTE)
->  			continue;
->  		offset = phdr_ptr->p_offset;
-> -		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-> +		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-> +					   &offset);
->  		if (rc < 0)
->  			return rc;
->  		notes_buf += phdr_ptr->p_memsz;
-> @@ -793,7 +825,7 @@ static int __init parse_crash_elf64_headers(void)
->  	addr = elfcorehdr_addr;
->  
->  	/* Read Elf header */
-> -	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf64_Ehdr), &addr, 0);
-> +	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf64_Ehdr), &addr);
->  	if (rc < 0)
->  		return rc;
->  
-> @@ -820,7 +852,7 @@ static int __init parse_crash_elf64_headers(void)
->  	if (!elfcorebuf)
->  		return -ENOMEM;
->  	addr = elfcorehdr_addr;
-> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-> +	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
->  	if (rc < 0)
->  		goto fail;
->  
-> @@ -849,7 +881,7 @@ static int __init parse_crash_elf32_headers(void)
->  	addr = elfcorehdr_addr;
->  
->  	/* Read Elf header */
-> -	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf32_Ehdr), &addr, 0);
-> +	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf32_Ehdr), &addr);
->  	if (rc < 0)
->  		return rc;
->  
-> @@ -875,7 +907,7 @@ static int __init parse_crash_elf32_headers(void)
->  	if (!elfcorebuf)
->  		return -ENOMEM;
->  	addr = elfcorehdr_addr;
-> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-> +	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
->  	if (rc < 0)
->  		goto fail;
->  
-> @@ -902,7 +934,7 @@ static int __init parse_crash_elf_headers(void)
->  	int rc=0;
->  
->  	addr = elfcorehdr_addr;
-> -	rc = read_from_oldmem(e_ident, EI_NIDENT, &addr, 0);
-> +	rc = elfcorehdr_read(e_ident, EI_NIDENT, &addr);
->  	if (rc < 0)
->  		return rc;
->  	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
-> @@ -935,7 +967,14 @@ static int __init vmcore_init(void)
->  {
->  	int rc = 0;
->  
-> -	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
-> +	/* Allow architectures to allocate ELF header in 2nd kernel */
-> +	rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
-> +	if (rc)
-> +		return rc;
-> +	/*
-> +	 * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
-> +	 * then capture the dump.
-> +	 */
->  	if (!(is_vmcore_usable()))
->  		return rc;
->  	rc = parse_crash_elf_headers();
-> @@ -943,6 +982,8 @@ static int __init vmcore_init(void)
->  		pr_warn("Kdump: vmcore not initialized\n");
->  		return rc;
->  	}
-> +	elfcorehdr_free(elfcorehdr_addr);
-> +	elfcorehdr_addr = ELFCORE_ADDR_ERR;
->  
->  	proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
->  	if (proc_vmcore)
-> diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-> index 37e4f8d..6571f82 100644
-> --- a/include/linux/crash_dump.h
-> +++ b/include/linux/crash_dump.h
-> @@ -12,6 +12,12 @@
->  extern unsigned long long elfcorehdr_addr;
->  extern unsigned long long elfcorehdr_size;
->  
-> +extern int __weak elfcorehdr_alloc(unsigned long long *addr,
-> +				   unsigned long long *size);
-> +extern void __weak elfcorehdr_free(unsigned long long addr);
-> +extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
-> +extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
-> +
->  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
->  						unsigned long, int);
->  
-> -- 
-> 1.8.2.2
+> -static int atmel_pcm_dma_prepare(struct snd_pcm_substream *substream)
+> -{
+> -	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+> -	struct atmel_pcm_dma_params *prtd;
+> -
+> -	prtd = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
+> -
+> -	ssc_writex(prtd->ssc->regs, SSC_IER, prtd->mask->ssc_error);
+> -	ssc_writex(prtd->ssc->regs, SSC_CR, prtd->mask->ssc_enable);
+
+These writes are also completely lost
+
+> -
+> -	return 0;
+> -}
+
+I think it would also be good to get rid of any references to the ssc struct
+from the DMA driver and move them over to the DAI driver.
+
+- Lars
