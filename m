@@ -1,113 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab3GBX4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:56:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7324 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab3GBX4p (ORCPT
+	id S1754743Ab3GBX5V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 19:57:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:34138 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab3GBX5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:56:45 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=3fHPkcu3S-gA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=-RI5mPAZ62QA:10 a=i0EeH86SAAAA:8 a=SGm2OBi7Ds1blE9zezwA:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372809403.22688.90.camel@gandalf.local.home>
-Subject: Re: [PATCH v3 11/12] tracing: guard tracing_selftest_disabled by
- CONFIG_FTRACE_STARTUP_TEST
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 02 Jul 2013 19:56:43 -0400
-In-Reply-To: <1365564393-10972-12-git-send-email-jovi.zhangwei@huawei.com>
-References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
-	 <1365564393-10972-12-git-send-email-jovi.zhangwei@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Jul 2013 19:57:19 -0400
+Date: Wed, 3 Jul 2013 01:57:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Lennart Poettering <lpoetter@redhat.com>
+cc: Tim Hockin <thockin@hockin.org>, Michal Hocko <mhocko@suse.cz>,
+        Tejun Heo <tj@kernel.org>, Mike Galbraith <bitbucket@online.de>,
+        Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+In-Reply-To: <51D08976.6040005@redhat.com>
+Message-ID: <alpine.DEB.2.02.1307030021480.4013@ionos.tec.linutronix.de>
+References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com> <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net> <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net> <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz>
+ <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com> <51CE3CE0.9010506@redhat.com> <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com> <51D08976.6040005@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
-> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Lennart,
+
+On Sun, 30 Jun 2013, Lennart Poettering wrote:
+> On 29.06.2013 05:05, Tim Hockin wrote:
+> > But that's not my point.  It seems pretty easy to make this cgroup
+> > management (in "native mode") a library that can have either a thin
+> > veneer of a main() function, while also being usable by systemd.  The
+> > point is to solve all of the problems ONCE.  I'm trying to make the
+> > case that systemd itself should be focusing on features and policies
+> > and awesome APIs.
 > 
-> Variable tracing_selftest_disabled have not any sense when
-> CONFIG_FTRACE_STARTUP_TEST is disabled.
-> 
-> This patch also remove __read_mostly attribute, since variable
-> tracing_selftest_disabled really not read mostly.
+> You know, getting this all right isn't easy. If you want to do things
+> properly, then you need to propagate attribute changes between the units you
+> manage. You also need something like a scheduler, since a number of
+> controllers can only be configured under certain external conditions (for
+> example: the blkio or devices controller use major/minor parameters for
+> configuring per-device limits. Since major/minor assignments are pretty much
+> unpredictable these days -- and users probably want to configure things with
+> friendly and stable /dev/disk/by-id/* symlinks anyway -- this requires us to
+> wait for devices to show up before we can configure the parameters.) Soo...
+> you need a graph of units, where you can propagate things, and schedule things
+> based on some execution/event queue. And the propagation and scheduling are
+> closely intermingled.
 
-Yes it is mostly read only. Sure, it's not read much, but it is also
-only written to once. That makes it, "read mostly".
+you are confusing policy and mechanisms.
 
--- Steve
+    The access to cgroupfs is mechanism.
 
-> 
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-> ---
->  kernel/trace/trace.c        |    6 ++++--
->  kernel/trace/trace.h        |    2 +-
->  kernel/trace/trace_events.c |    2 ++
->  3 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index ee4e110..09a3aa8 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -58,10 +58,12 @@ bool ring_buffer_expanded;
->   */
->  static bool __read_mostly tracing_selftest_running;
->  
-> +#ifdef CONFIG_FTRACE_STARTUP_TEST
->  /*
->   * If a tracer is running, we do not want to run SELFTEST.
->   */
-> -bool __read_mostly tracing_selftest_disabled;
-> +bool tracing_selftest_disabled;
-> +#endif
->  
->  /* For tracers that don't implement custom flags */
->  static struct tracer_opt dummy_tracer_opt[] = {
-> @@ -1069,8 +1071,8 @@ int register_tracer(struct tracer *type)
->  	tracing_set_tracer(type->name);
->  	default_bootup_tracer = NULL;
->  	/* disable other selftests, since this will break it. */
-> -	tracing_selftest_disabled = true;
->  #ifdef CONFIG_FTRACE_STARTUP_TEST
-> +	tracing_selftest_disabled = true;
->  	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
->  	       type->name);
->  #endif
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 9b8afa7..e9ef8b7 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -546,10 +546,10 @@ extern int DYN_FTRACE_TEST_NAME(void);
->  extern int DYN_FTRACE_TEST_NAME2(void);
->  
->  extern bool ring_buffer_expanded;
-> -extern bool tracing_selftest_disabled;
->  DECLARE_PER_CPU(int, ftrace_cpu_disabled);
->  
->  #ifdef CONFIG_FTRACE_STARTUP_TEST
-> +extern bool tracing_selftest_disabled;
->  extern int trace_selftest_startup_function(struct tracer *trace,
->  					   struct trace_array *tr);
->  extern int trace_selftest_startup_function_graph(struct tracer *trace,
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 7c52a51..7c4a16b 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -2251,7 +2251,9 @@ static __init int setup_trace_event(char *str)
->  {
->  	strlcpy(bootup_event_buf, str, COMMAND_LINE_SIZE);
->  	ring_buffer_expanded = true;
-> +#ifdef CONFIG_FTRACE_STARTUP_TEST
->  	tracing_selftest_disabled = true;
-> +#endif
->  
->  	return 1;
->  }
+    The propagation of changes, the scheduling of cgroupfs access and
+    the correlation to external conditions are policy.
 
+What Tim is asking for is to have a common interface, i.e. a library
+which implements the low level access to the cgroupfs mechanism
+without imposing systemd defined policies to it (It might implement a
+set of common useful policies, but that's a different discussion).
 
+That's definitely not an unreasonable request, because he wants to
+implement his own set of policies which are not necessarily the same
+as those which are implemented by systemd.
+
+You are simply ignoring the fact, that Linux is used in other ways
+than those which you are focussed on. That's true for Google's way to
+manage its gazillion machines and that's equally true for the other
+end of the spectrum which is deep embedded or any other specialized
+use case. Just face it: running Linux on your laptop and on some RHT
+lab machines is covering about 1% of the use cases.
+
+Nevertheless you repeatedly claim, that systemd is the only way to
+deal with system startup and system management, is covering _ALL_ use
+cases and the interfaces you expose are sufficient.
+
+Did you ever work on specialized embedded or big data use cases? I
+really doubt that, but I might be wrong as usual.
+
+So I invite you to prove that you can beat an existing setup for an
+automotive use case with your magic systemd foo. I refund you fully,
+if you can beat the mark of a functional system less than 800ms after
+reset release on a 200MHz ARM machine. Functional is defined by the
+use case requirements and means:
+
+    - Basic cgroups management working
+    - GUI up and running
+    - Main communication interface (CAN bus) up and running
+
+The rest of the system is starting up after that including a more
+complex cgroup management.
+
+According to your claim that systemd is covering everything and some
+more, this should take you a few hours. I grant you a full week to
+work on that.
+
+The use case Tim is talking about is different, but has similar
+constraints which are completely driven by his particular use case
+scenario. I'm sure, that Tim can persuade his management to setup a
+similar contest to prove your expertise on the other extreme of the
+Linux world.
+
+Before answering please think about the relevance of your statements
+"getting this all right isn't easy", "something like a scheduler",
+"users probably want ..."  and "stable /dev/disk/by-id/* symlinks" in
+those contexts.
+
+Thanks,
+
+	tglx
