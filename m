@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753709Ab3GBO5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 10:57:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:46270 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753470Ab3GBO4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 10:56:54 -0400
+	id S1753402Ab3GBO4n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 10:56:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51886 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753227Ab3GBO4h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 10:56:37 -0400
 From: Luciano Coelho <coelho@ti.com>
 To: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>
 CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
@@ -13,9 +14,9 @@ CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <coelho@ti.com>
-Subject: [PATCH v2 9/9] wlcore/wl12xx: check if we got correct clock data from DT
-Date: Tue, 2 Jul 2013 17:55:48 +0300
-Message-ID: <1372776948-24840-10-git-send-email-coelho@ti.com>
+Subject: [PATCH v2 1/9] wl1251: split wl251 platform data to a separate structure
+Date: Tue, 2 Jul 2013 17:55:40 +0300
+Message-ID: <1372776948-24840-2-git-send-email-coelho@ti.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1372776948-24840-1-git-send-email-coelho@ti.com>
 References: <1372776948-24840-1-git-send-email-coelho@ti.com>
@@ -25,109 +26,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fref and the tcxo clocks settings are optional in some platforms.
-WiLink8 doesn't need either, so we don't check the values.  WiLink 6
-only needs the fref clock, so we check that it is valid or return with
-an error.  WiLink7 needs both clocks, if either is not available we
-return with an error.
+Move the wl1251 part of the wl12xx platform data structure into a new
+structure specifically for wl1251.  Change the platform data built-in
+block and board files accordingly.
 
+Cc: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Luciano Coelho <coelho@ti.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
 ---
- drivers/net/wireless/ti/wl12xx/main.c |   20 +++++++++++++++++---
- drivers/net/wireless/ti/wlcore/sdio.c |    4 ----
- 2 files changed, 17 insertions(+), 7 deletions(-)
+ arch/arm/mach-omap2/board-omap3pandora.c       |    4 +--
+ arch/arm/mach-omap2/board-rx51-peripherals.c   |    2 +-
+ drivers/net/wireless/ti/wilink_platform_data.c |   37 ++++++++++++++++++++----
+ drivers/net/wireless/ti/wl1251/sdio.c          |   12 ++++----
+ drivers/net/wireless/ti/wl1251/spi.c           |    2 +-
+ include/linux/wl12xx.h                         |   22 +++++++++++++-
+ 6 files changed, 62 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/net/wireless/ti/wl12xx/main.c b/drivers/net/wireless/ti/wl12xx/main.c
-index 903dcb3..72d13e4 100644
---- a/drivers/net/wireless/ti/wl12xx/main.c
-+++ b/drivers/net/wireless/ti/wl12xx/main.c
-@@ -927,6 +927,11 @@ static int wl128x_boot_clk(struct wl1271 *wl, int *selected_clock)
- 	u16 sys_clk_cfg;
+diff --git a/arch/arm/mach-omap2/board-omap3pandora.c b/arch/arm/mach-omap2/board-omap3pandora.c
+index 28133d5..bf06d95 100644
+--- a/arch/arm/mach-omap2/board-omap3pandora.c
++++ b/arch/arm/mach-omap2/board-omap3pandora.c
+@@ -540,7 +540,7 @@ static struct spi_board_info omap3pandora_spi_board_info[] __initdata = {
+ 
+ static void __init pandora_wl1251_init(void)
+ {
+-	struct wl12xx_platform_data pandora_wl1251_pdata;
++	struct wl1251_platform_data pandora_wl1251_pdata;
  	int ret;
  
-+	if ((priv->ref_clock < 0) || (priv->tcxo_clock < 0)) {
-+		wl1271_error("Missing fref and/or tcxo clock settings\n");
-+		return -EINVAL;
-+	}
+ 	memset(&pandora_wl1251_pdata, 0, sizeof(pandora_wl1251_pdata));
+@@ -554,7 +554,7 @@ static void __init pandora_wl1251_init(void)
+ 		goto fail_irq;
+ 
+ 	pandora_wl1251_pdata.use_eeprom = true;
+-	ret = wl12xx_set_platform_data(&pandora_wl1251_pdata);
++	ret = wl1251_set_platform_data(&pandora_wl1251_pdata);
+ 	if (ret < 0)
+ 		goto fail_irq;
+ 
+diff --git a/arch/arm/mach-omap2/board-rx51-peripherals.c b/arch/arm/mach-omap2/board-rx51-peripherals.c
+index 18ca61e..733f3f2 100644
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@ -80,7 +80,7 @@ enum {
+ 	RX51_SPI_MIPID,		/* LCD panel */
+ };
+ 
+-static struct wl12xx_platform_data wl1251_pdata;
++static struct wl1251_platform_data wl1251_pdata;
+ static struct tsc2005_platform_data tsc2005_pdata;
+ 
+ #if defined(CONFIG_SENSORS_LIS3_I2C) || defined(CONFIG_SENSORS_LIS3_I2C_MODULE)
+diff --git a/drivers/net/wireless/ti/wilink_platform_data.c b/drivers/net/wireless/ti/wilink_platform_data.c
+index 998e958..a92bd3e 100644
+--- a/drivers/net/wireless/ti/wilink_platform_data.c
++++ b/drivers/net/wireless/ti/wilink_platform_data.c
+@@ -23,17 +23,17 @@
+ #include <linux/err.h>
+ #include <linux/wl12xx.h>
+ 
+-static struct wl12xx_platform_data *platform_data;
++static struct wl12xx_platform_data *wl12xx_platform_data;
+ 
+ int __init wl12xx_set_platform_data(const struct wl12xx_platform_data *data)
+ {
+-	if (platform_data)
++	if (wl12xx_platform_data)
+ 		return -EBUSY;
+ 	if (!data)
+ 		return -EINVAL;
+ 
+-	platform_data = kmemdup(data, sizeof(*data), GFP_KERNEL);
+-	if (!platform_data)
++	wl12xx_platform_data = kmemdup(data, sizeof(*data), GFP_KERNEL);
++	if (!wl12xx_platform_data)
+ 		return -ENOMEM;
+ 
+ 	return 0;
+@@ -41,9 +41,34 @@ int __init wl12xx_set_platform_data(const struct wl12xx_platform_data *data)
+ 
+ struct wl12xx_platform_data *wl12xx_get_platform_data(void)
+ {
+-	if (!platform_data)
++	if (!wl12xx_platform_data)
+ 		return ERR_PTR(-ENODEV);
+ 
+-	return platform_data;
++	return wl12xx_platform_data;
+ }
+ EXPORT_SYMBOL(wl12xx_get_platform_data);
 +
- 	/* For XTAL-only modes, FREF will be used after switching from TCXO */
- 	if (priv->ref_clock == WL12XX_REFCLOCK_26_XTAL ||
- 	    priv->ref_clock == WL12XX_REFCLOCK_38_XTAL) {
-@@ -976,6 +981,11 @@ static int wl127x_boot_clk(struct wl1271 *wl)
- 	u32 clk;
++static struct wl1251_platform_data *wl1251_platform_data;
++
++int __init wl1251_set_platform_data(const struct wl1251_platform_data *data)
++{
++	if (wl1251_platform_data)
++		return -EBUSY;
++	if (!data)
++		return -EINVAL;
++
++	wl1251_platform_data = kmemdup(data, sizeof(*data), GFP_KERNEL);
++	if (!wl1251_platform_data)
++		return -ENOMEM;
++
++	return 0;
++}
++
++struct wl1251_platform_data *wl1251_get_platform_data(void)
++{
++	if (!wl1251_platform_data)
++		return ERR_PTR(-ENODEV);
++
++	return wl1251_platform_data;
++}
++EXPORT_SYMBOL(wl1251_get_platform_data);
+diff --git a/drivers/net/wireless/ti/wl1251/sdio.c b/drivers/net/wireless/ti/wl1251/sdio.c
+index e2b3d9c..b75a37a 100644
+--- a/drivers/net/wireless/ti/wl1251/sdio.c
++++ b/drivers/net/wireless/ti/wl1251/sdio.c
+@@ -227,7 +227,7 @@ static int wl1251_sdio_probe(struct sdio_func *func,
+ 	struct wl1251 *wl;
+ 	struct ieee80211_hw *hw;
+ 	struct wl1251_sdio *wl_sdio;
+-	const struct wl12xx_platform_data *wl12xx_board_data;
++	const struct wl1251_platform_data *wl1251_board_data;
+ 
+ 	hw = wl1251_alloc_hw();
+ 	if (IS_ERR(hw))
+@@ -254,11 +254,11 @@ static int wl1251_sdio_probe(struct sdio_func *func,
+ 	wl->if_priv = wl_sdio;
+ 	wl->if_ops = &wl1251_sdio_ops;
+ 
+-	wl12xx_board_data = wl12xx_get_platform_data();
+-	if (!IS_ERR(wl12xx_board_data)) {
+-		wl->set_power = wl12xx_board_data->set_power;
+-		wl->irq = wl12xx_board_data->irq;
+-		wl->use_eeprom = wl12xx_board_data->use_eeprom;
++	wl1251_board_data = wl1251_get_platform_data();
++	if (!IS_ERR(wl1251_board_data)) {
++		wl->set_power = wl1251_board_data->set_power;
++		wl->irq = wl1251_board_data->irq;
++		wl->use_eeprom = wl1251_board_data->use_eeprom;
+ 	}
+ 
+ 	if (wl->irq) {
+diff --git a/drivers/net/wireless/ti/wl1251/spi.c b/drivers/net/wireless/ti/wl1251/spi.c
+index c7dc6fe..6bbbfe6 100644
+--- a/drivers/net/wireless/ti/wl1251/spi.c
++++ b/drivers/net/wireless/ti/wl1251/spi.c
+@@ -238,7 +238,7 @@ static const struct wl1251_if_operations wl1251_spi_ops = {
+ 
+ static int wl1251_spi_probe(struct spi_device *spi)
+ {
+-	struct wl12xx_platform_data *pdata;
++	struct wl1251_platform_data *pdata;
+ 	struct ieee80211_hw *hw;
+ 	struct wl1251 *wl;
  	int ret;
+diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
+index a54fe82..b516b4f 100644
+--- a/include/linux/wl12xx.h
++++ b/include/linux/wl12xx.h
+@@ -48,11 +48,15 @@ enum {
+ 	WL12XX_TCXOCLOCK_33_6	= 7, /* 33.6 MHz */
+ };
  
-+	if (priv->ref_clock < 0) {
-+		wl1271_error("Missing fref clock settings\n");
-+		return -EINVAL;
-+	}
+-struct wl12xx_platform_data {
++struct wl1251_platform_data {
+ 	void (*set_power)(bool enable);
+ 	/* SDIO only: IRQ number if WLAN_IRQ line is used, 0 for SDIO IRQs */
+ 	int irq;
+ 	bool use_eeprom;
++};
 +
- 	if (WL127X_PG_GET_MAJOR(wl->hw_pg_ver) < 3)
- 		wl->quirks |= WLCORE_QUIRK_END_OF_TRANSACTION;
++struct wl12xx_platform_data {
++	int irq;
+ 	int board_ref_clock;
+ 	int board_tcxo_clock;
+ 	unsigned long platform_quirks;
+@@ -68,6 +72,10 @@ int wl12xx_set_platform_data(const struct wl12xx_platform_data *data);
  
-@@ -1757,7 +1767,7 @@ static int wl12xx_setup(struct wl1271 *wl)
- 	wlcore_set_ht_cap(wl, IEEE80211_BAND_5GHZ, &wl12xx_ht_cap);
- 	wl12xx_conf_init(wl);
+ struct wl12xx_platform_data *wl12xx_get_platform_data(void);
  
--	if (!fref_param) {
-+	if (!fref_param && (pdata->ref_clock_freq > 0)) {
- 		priv->ref_clock = wl12xx_get_clock_idx(wl12xx_refclock_table,
- 						       pdata->ref_clock_freq,
- 						       pdata->ref_clock_xtal);
-@@ -1768,6 +1778,8 @@ static int wl12xx_setup(struct wl1271 *wl)
++int wl1251_set_platform_data(const struct wl1251_platform_data *data);
++
++struct wl1251_platform_data *wl1251_get_platform_data(void);
++
+ #else
  
- 			return priv->ref_clock;
- 		}
-+	} else if (!fref_param) {
-+		priv->ref_clock = -EINVAL;
- 	} else {
- 		if (!strcmp(fref_param, "19.2"))
- 			priv->ref_clock = WL12XX_REFCLOCK_19;
-@@ -1785,7 +1797,7 @@ static int wl12xx_setup(struct wl1271 *wl)
- 			wl1271_error("Invalid fref parameter %s", fref_param);
- 	}
+ static inline
+@@ -82,6 +90,18 @@ struct wl12xx_platform_data *wl12xx_get_platform_data(void)
+ 	return ERR_PTR(-ENODATA);
+ }
  
--	if (!tcxo_param) {
-+	if (!fref_param && (pdata->tcxo_clock_freq > 0)) {
- 		priv->tcxo_clock = wl12xx_get_clock_idx(wl12xx_tcxoclock_table,
- 							pdata->tcxo_clock_freq,
- 							pdata->tcxo_clock_xtal);
-@@ -1796,7 +1808,9 @@ static int wl12xx_setup(struct wl1271 *wl)
++static inline
++int wl1251_set_platform_data(const struct wl1251_platform_data *data)
++{
++	return -ENOSYS;
++}
++
++static inline
++struct wl1251_platform_data *wl1251_get_platform_data(void)
++{
++	return ERR_PTR(-ENODATA);
++}
++
+ #endif
  
- 			return priv->tcxo_clock;
- 		}
--	} else {
-+	} else if (!fref_param) {
-+		priv->tcxo_clock = -EINVAL;
-+	}else {
- 		if (!strcmp(tcxo_param, "19.2"))
- 			priv->tcxo_clock = WL12XX_TCXOCLOCK_19_2;
- 		else if (!strcmp(tcxo_param, "26"))
-diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/ti/wlcore/sdio.c
-index 60fce49..c76eb66 100644
---- a/drivers/net/wireless/ti/wlcore/sdio.c
-+++ b/drivers/net/wireless/ti/wlcore/sdio.c
-@@ -252,20 +252,16 @@ static struct wl12xx_platform_data *wlcore_get_pdata_from_of(struct device *dev)
- 	for_each_matching_node(clock_node, wlcore_sdio_of_clk_match_table)
- 		of_fixed_clk_setup(clock_node);
- 
--	/* TODO: make sure we have this when needed (ie. for WL6 and WL7) */
- 	glue->refclock = of_clk_get_by_name(np, "refclock");
- 	if (IS_ERR(glue->refclock)) {
--		dev_err(dev, "couldn't find refclock on the device tree\n");
- 		glue->refclock = NULL;
- 	} else {
- 		clk_prepare_enable(glue->refclock);
- 		pdata->ref_clock_freq = clk_get_rate(glue->refclock);
- 	}
- 
--	/* TODO: make sure we have this when needed (ie. for WL7) */
- 	glue->tcxoclock = of_clk_get_by_name(np, "tcxoclock");
- 	if (IS_ERR(glue->tcxoclock)) {
--		dev_err(dev, "couldn't find tcxoclock on the device tree\n");
- 		glue->tcxoclock = NULL;
- 	} else {
- 		clk_prepare_enable(glue->tcxoclock);
+ #endif
 -- 
 1.7.10.4
 
