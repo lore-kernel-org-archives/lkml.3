@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab3GBLRC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:17:02 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36219 "EHLO
+	id S1754968Ab3GBLIL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:08:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36165 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab3GBLIM (ORCPT
+	with ESMTP id S1754499Ab3GBLIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:12 -0400
+	Tue, 2 Jul 2013 07:08:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>, Roman Gushchin <klamm@yandex-team.ru>,
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 17/50] net: force a reload of first item in hlist_nulls_for_each_entry_rcu
-Date: Tue,  2 Jul 2013 12:07:05 +0100
-Message-Id: <1372763258-20664-18-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 06/50] gianfar: add missing iounmap() on error in gianfar_ptp_probe()
+Date: Tue,  2 Jul 2013 12:06:54 +0100
+Message-Id: <1372763258-20664-7-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,56 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit c87a124a5d5e8cf8e21c4363c3372bcaf53ea190 upstream.
+commit e5f5e380e0f3bb11f04ca5bc66a551e58e0ad26e upstream.
 
-Roman Gushchin discovered that udp4_lib_lookup2() was not reloading
-first item in the rcu protected list, in case the loop was restarted.
+Add the missing iounmap() before return from gianfar_ptp_probe()
+in the error handling case.
 
-This produced soft lockups as in https://lkml.org/lkml/2013/4/16/37
-
-rcu_dereference(X)/ACCESS_ONCE(X) seem to not work as intended if X is
-ptr->field :
-
-In some cases, gcc caches the value or ptr->field in a register.
-
-Use a barrier() to disallow such caching, as documented in
-Documentation/atomic_ops.txt line 114
-
-Thanks a lot to Roman for providing analysis and numerous patches.
-
-Diagnosed-by: Roman Gushchin <klamm@yandex-team.ru>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Reported-by: Boris Zhmurov <zhmurov@yandex-team.ru>
-Signed-off-by: Roman Gushchin <klamm@yandex-team.ru>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/rculist_nulls.h | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/freescale/gianfar_ptp.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/include/linux/rculist_nulls.h b/include/linux/rculist_nulls.h
-index 2ae1371..1c33dd7 100644
---- a/include/linux/rculist_nulls.h
-+++ b/include/linux/rculist_nulls.h
-@@ -105,9 +105,14 @@ static inline void hlist_nulls_add_head_rcu(struct hlist_nulls_node *n,
-  * @head:	the head for your list.
-  * @member:	the name of the hlist_nulls_node within the struct.
-  *
-+ * The barrier() is needed to make sure compiler doesn't cache first element [1],
-+ * as this loop can be restarted [2]
-+ * [1] Documentation/atomic_ops.txt around line 114
-+ * [2] Documentation/RCU/rculist_nulls.txt around line 146
-  */
- #define hlist_nulls_for_each_entry_rcu(tpos, pos, head, member)			\
--	for (pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
-+	for (({barrier();}),							\
-+	     pos = rcu_dereference_raw(hlist_nulls_first_rcu(head));		\
- 		(!is_a_nulls(pos)) &&						\
- 		({ tpos = hlist_nulls_entry(pos, typeof(*tpos), member); 1; }); \
- 		pos = rcu_dereference_raw(hlist_nulls_next_rcu(pos)))
+diff --git a/drivers/net/ethernet/freescale/gianfar_ptp.c b/drivers/net/ethernet/freescale/gianfar_ptp.c
+index d81c7af..d98b3f2 100644
+--- a/drivers/net/ethernet/freescale/gianfar_ptp.c
++++ b/drivers/net/ethernet/freescale/gianfar_ptp.c
+@@ -521,6 +521,7 @@ static int gianfar_ptp_probe(struct platform_device *dev)
+ 	return 0;
+ 
+ no_clock:
++	iounmap(etsects->regs);
+ no_ioremap:
+ 	release_resource(etsects->rsrc);
+ no_resource:
 -- 
 1.8.1.2
 
