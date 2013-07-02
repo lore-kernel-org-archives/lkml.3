@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755917Ab3GBXTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:19:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22413 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab3GBXTw (ORCPT
+	id S1755924Ab3GBXXD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 19:23:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35901 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754499Ab3GBXXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:19:52 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=nUu-TyO2RPcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=eJBYe9u5HvsA:10 a=i0EeH86SAAAA:8 a=9JWOj2uIYgInK8W6ojUA:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=sHycelHf8_oA:10 a=QJXD6YIqSi4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372807191.22688.76.camel@gandalf.local.home>
-Subject: Re: [PATCH v3 01/12] tracing: move trace_array definition into
- include/linux/trace_array.h
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Date: Tue, 02 Jul 2013 19:19:51 -0400
-In-Reply-To: <1365564393-10972-2-git-send-email-jovi.zhangwei@huawei.com>
-References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>
-	 <1365564393-10972-2-git-send-email-jovi.zhangwei@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 2 Jul 2013 19:23:00 -0400
+Date: Tue, 2 Jul 2013 16:22:59 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Joseph Lo <josephl@nvidia.com>, linux-tegra@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
+Message-ID: <20130702232259.GH11625@codeaurora.org>
+References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
-> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+On 07/02, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> Prepare for expose event tracing infrastructure.
-> (struct trace_array shall be use by external modules)
+> Commit 281ecb7 "arm: delete __cpuinit/__CPUINIT usage from all ARM
+> users" removed a __CPUINIT from head-common.S. However, the code
+> immediately before the removed tag was marked __INIT, and was missing
+> a match __FINIT. This caused code after the removed __CPUINIT to end
+> up in the init section rather than the main text section as desired.
+> This caused issues such as secondary CPU boot failures or crashes.
+> Add the missing __FINIT to solve this.
 > 
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  arch/arm/kernel/head-common.S | 2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
+> index 529ce99..a9dc804 100644
+> --- a/arch/arm/kernel/head-common.S
+> +++ b/arch/arm/kernel/head-common.S
+> @@ -122,6 +122,8 @@ __mmap_switched_data:
+>  	.long	init_thread_union + THREAD_START_SP @ sp
+>  	.size	__mmap_switched_data, . - __mmap_switched_data
+>  
+> +	__FINIT
+> +
+>  /*
+>   * This provides a C-API version of __lookup_processor_type
+>   */
 
-What module is going to be using this?
+Shouldn't this come after lookup_processor_type()? Otherwise you
+just removed that function from the init section?
 
--- Steve
-
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
