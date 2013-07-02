@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab3GBQmH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:42:07 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:44065 "EHLO smtp3-g21.free.fr"
+	id S1754661Ab3GBQmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:42:05 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:44100 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754253Ab3GBQk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753709Ab3GBQk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 2 Jul 2013 12:40:26 -0400
 From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+To: linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>
 Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH 08/13] file: use get_unused_fd_flags(0) instead of get_unused_fd()
-Date: Tue,  2 Jul 2013 18:39:32 +0200
-Message-Id: <2ec0d238c8193849938a1f53da68cd47c667d887.1372777600.git.ydroneaud@opteya.com>
+Subject: [PATCH 09/13] fanotify: use get_unused_fd_flags(0) instead of get_unused_fd()
+Date: Tue,  2 Jul 2013 18:39:33 +0200
+Message-Id: <e7030a0fa1adb159b9ccaf7ebb975d09068633f1.1372777600.git.ydroneaud@opteya.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <cover.1372777600.git.ydroneaud@opteya.com>
 References: <cover.1372777600.git.ydroneaud@opteya.com>
@@ -43,22 +43,22 @@ and, if possible, set to O_CLOEXEC.
 
 Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
 ---
- fs/file.c | 2 +-
+ fs/notify/fanotify/fanotify_user.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 4a78f98..1420d28 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -897,7 +897,7 @@ SYSCALL_DEFINE1(dup, unsigned int, fildes)
- 	struct file *file = fget_raw(fildes);
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index e44cb64..644b9a7 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -69,7 +69,7 @@ static int create_fd(struct fsnotify_group *group,
  
- 	if (file) {
--		ret = get_unused_fd();
-+		ret = get_unused_fd_flags(0);
- 		if (ret >= 0)
- 			fd_install(ret, file);
- 		else
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+ 
+-	client_fd = get_unused_fd();
++	client_fd = get_unused_fd_flags(0);
+ 	if (client_fd < 0)
+ 		return client_fd;
+ 
 -- 
 1.8.3.1
 
