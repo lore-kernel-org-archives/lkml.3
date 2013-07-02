@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab3GBTkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 15:40:51 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:32941 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab3GBT1l (ORCPT
+	id S932962Ab3GBTlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 15:41:15 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:35851 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab3GBTlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 15:27:41 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 4/6] perf: don't free list head in parse_events__free_terms
-Date: Tue,  2 Jul 2013 13:27:23 -0600
-Message-Id: <1372793245-4136-5-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
-References: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
+	Tue, 2 Jul 2013 15:41:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <004501ce7754$25c5a0b0$7150e210$@lucidpixels.com>
+References: <004101ce7752$989eca50$c9dc5ef0$@lucidpixels.com>
+	<CADnq5_ODTumYOq19BMuF6vJNq+RtUA631XqyUet4qzjVU1tg-Q@mail.gmail.com>
+	<004501ce7754$25c5a0b0$7150e210$@lucidpixels.com>
+Date: Tue, 2 Jul 2013 15:41:10 -0400
+Message-ID: <CADnq5_Mj=RBTpX9i2Rg4qQK83WLWz7qbFGepw74O2vZx789GCg@mail.gmail.com>
+Subject: Re: 3.10 kernel: [drm:evergreen_startup] *ERROR* radeon: error
+ initializing UVD (-1).
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function should only be freeing the entries in the list, not
-the list_head itself.
+On Tue, Jul 2, 2013 at 2:44 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
+>
+>
+> -----Original Message-----
+> From: Alex Deucher [mailto:alexdeucher@gmail.com]
+> Sent: Tuesday, July 02, 2013 2:36 PM
+> To: Justin Piszcz
+> Cc: linux-kernel@vger.kernel.org; dri-devel@lists.freedesktop.org
+> Subject: Re: 3.10 kernel: [drm:evergreen_startup] *ERROR* radeon: error
+> initializing UVD (-1).
+>
+>> The screen goes black for ~5 seconds and then come back on.
+>> Not sure if this has been reported or not (w/CEDAR chipset) but FYI.
+>
+> Make sure you have the the latest CEDAR_rlc.bin in addition to
+> CYPRESS_uvd.bin and make sure the latest images are available in your
+> initrd or kernel image, etc.
+>
+> Alex
+>
+> --
+>
+> Hi,
+>
+> Even with the latest (confirmed below) and built-in to the kernel:
+>
+> $ git clone
+> git://git.kernel.org/pub/scm/linux/kernel/git/dwmw2/linux-firmware.git
+> Cloning into 'linux-firmware'...
+> remote: Counting objects: 2210, done.
+> remote: Compressing objects: 100% (1102/1102), done.
+> remote: Total 2210 (delta 1123), reused 2113 (delta 1073)
+> Receiving objects: 100% (2210/2210), 39.84 MiB | 6.49 MiB/s, done.
+> Resolving deltas: 100% (1123/1123), done.
+> $ date
+> Tue Jul  2 14:39:19 EDT 2013
+>
+> 2b244d41832f46382bfbb8994522dcdd  d/linux-firmware/radeon/CEDAR_me.bin
+> 23915e382ea0d2f2491a19146ca3001c  d/linux-firmware/radeon/CEDAR_pfp.bin
+> e8770d3d588f24dc6f1a8609c9db3467  d/linux-firmware/radeon/CEDAR_rlc.bin
+> fb23b281dcc94a035d374e709c9842bd  d/linux-firmware/radeon/CYPRESS_uvd.bin
+>
+> Current system firmware (/lib/firmware/radeon):
+> $ for i in $CONFIG_EXTRA_FIRMWARE; do md5sum $i; done
+> 2b244d41832f46382bfbb8994522dcdd  radeon/CEDAR_me.bin
+> 23915e382ea0d2f2491a19146ca3001c  radeon/CEDAR_pfp.bin
+> e8770d3d588f24dc6f1a8609c9db3467  radeon/CEDAR_rlc.bin
+> fb23b281dcc94a035d374e709c9842bd  radeon/CYPRESS_uvd.bin
+>
+> CONFIG_EXTRA_FIRMWARE="radeon/CEDAR_me.bin radeon/CEDAR_pfp.bin
+> radeon/CEDAR_rlc.bin radeon/CYPRESS_uvd.bin"
+>
+> Same issue.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/util/parse-events.c |    2 --
- 1 file changed, 2 deletions(-)
+Please open a bug (product: DRI, component: DRM/Radeon):
+https://bugs.freedesktop.org
+and attach your dmesg output and xorg log.
 
-diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
-index 1ae166c..3a34f7b 100644
---- a/tools/perf/util/parse-events.c
-+++ b/tools/perf/util/parse-events.c
-@@ -1258,6 +1258,4 @@ void parse_events__free_terms(struct list_head *terms)
- 
- 	list_for_each_entry_safe(term, h, terms, list)
- 		free(term);
--
--	free(terms);
- }
--- 
-1.7.10.1
-
+Alex
