@@ -1,170 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab3GBUWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:22:54 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29141 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754487Ab3GBUWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 16:22:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,983,1363158000"; 
-   d="scan'208";a="359540338"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH net-next v2 (repost)] net: convert lls to use time_in_range()
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Willem de Bruijn <willemb@google.com>,
-        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-        HPA <hpa@zytor.com>, Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 02 Jul 2013 23:22:47 +0300
-Message-ID: <20130702202247.31615.19867.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S932457Ab3GBUYc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:24:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4154 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755569Ab3GBUY2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 16:24:28 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=fUn4yX_rMIUA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PAeOUu9xePkA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=J9qbYULwuoSPCMvwlroA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130702202426.151542980@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 02 Jul 2013 16:22:22 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tom Zanussi <tom.zanussi@linux.intel.com>
+Subject: [for-next][PATCH 06/14] tracing: Fix disabling of soft disable
+References: <20130702202216.623562799@goodmis.org>
+Content-Disposition: inline; filename=0006-tracing-Fix-disabling-of-soft-disable.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Time in range will fail safely if we move to a different cpu with an
-extremely large clock skew.
-Add time_in_range64() and convert lls to use it.
+From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-changelog:
-v2
-- fixed double call to sched_clock in can_poll_ll
-- fixed checkpatchisms
+The comment on the soft disable 'disable' case of
+__ftrace_event_enable_disable() states that the soft disable bit
+should be cleared in that case, but currently only the soft mode bit
+is actually cleared.
 
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+This essentially leaves the standard non-soft-enable enable/disable
+paths as the only way to clear the soft disable flag, but the soft
+disable bit should also be cleared when removing a trigger with '!'.
+
+Also, the SOFT_DISABLED bit should never be set if SOFT_MODE is
+cleared.
+
+This fixes the above discrepancies.
+
+Link: http://lkml.kernel.org/r/b9c68dd50bc07019e6c67d3f9b29be4ef1b2badb.1372479499.git.tom.zanussi@linux.intel.com
+
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
+ kernel/trace/trace_events.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
- fs/select.c             |   10 ++++++----
- include/linux/jiffies.h |    4 ++++
- include/net/ll_poll.h   |   26 +++++++++++++++++---------
- 3 files changed, 27 insertions(+), 13 deletions(-)
-
-diff --git a/fs/select.c b/fs/select.c
-index 3654075..f28a585 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -403,7 +403,8 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 	int retval, i, timed_out = 0;
- 	unsigned long slack = 0;
- 	unsigned int ll_flag = ll_get_flag();
--	u64 ll_time = ll_end_time();
-+	u64 ll_start = ll_start_time(ll_flag);
-+	u64 ll_time = ll_run_time();
- 
- 	rcu_read_lock();
- 	retval = max_select_fd(n, fds);
-@@ -498,7 +499,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 7ee08b9..5892470 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -291,9 +291,11 @@ static int __ftrace_event_enable_disable(struct ftrace_event_file *file,
+ 			}
+ 			call->class->reg(call, TRACE_REG_UNREGISTER, file);
  		}
- 
- 		/* only if on, have sockets with POLL_LL and not out of time */
--		if (ll_flag && can_ll && can_poll_ll(ll_time))
-+		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
- 			continue;
- 
+-		/* If in SOFT_MODE, just set the SOFT_DISABLE_BIT */
++		/* If in SOFT_MODE, just set the SOFT_DISABLE_BIT, else clear it */
+ 		if (file->flags & FTRACE_EVENT_FL_SOFT_MODE)
+ 			set_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
++		else
++			clear_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &file->flags);
+ 		break;
+ 	case 1:
  		/*
-@@ -770,7 +771,8 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 	int timed_out = 0, count = 0;
- 	unsigned long slack = 0;
- 	unsigned int ll_flag = ll_get_flag();
--	u64 ll_time = ll_end_time();
-+	u64 ll_start = ll_start_time(ll_flag);
-+	u64 ll_time = ll_run_time();
- 
- 	/* Optimise the no-wait case */
- 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
-@@ -819,7 +821,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 			break;
- 
- 		/* only if on, have sockets with POLL_LL and not out of time */
--		if (ll_flag && can_ll && can_poll_ll(ll_time))
-+		if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
- 			continue;
- 
- 		/*
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 8fb8edf..97ba4e7 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -139,6 +139,10 @@ static inline u64 get_jiffies_64(void)
- 	 ((__s64)(a) - (__s64)(b) >= 0))
- #define time_before_eq64(a,b)	time_after_eq64(b,a)
- 
-+#define time_in_range64(a, b, c) \
-+	(time_after_eq64(a, b) && \
-+	 time_before_eq64(a, c))
-+
- /*
-  * These four macros compare jiffies and 'a' for convenience.
-  */
-diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
-index 6c06f7c..b76f004 100644
---- a/include/net/ll_poll.h
-+++ b/include/net/ll_poll.h
-@@ -67,19 +67,23 @@ static inline u64 ll_sched_clock(void)
- /* we don't mind a ~2.5% imprecision so <<10 instead of *1000
-  * sk->sk_ll_usec is a u_int so this can't overflow
-  */
--static inline u64 ll_sk_end_time(struct sock *sk)
-+static inline u64 ll_sk_run_time(struct sock *sk)
- {
--	return ((u64)ACCESS_ONCE(sk->sk_ll_usec) << 10) + ll_sched_clock();
-+	return (u64)ACCESS_ONCE(sk->sk_ll_usec) << 10;
- }
- 
- /* in poll/select we use the global sysctl_net_ll_poll value
-  * only call sched_clock() if enabled
-  */
--static inline u64 ll_end_time(void)
-+static inline u64 ll_run_time(void)
- {
--	u64 end_time = ACCESS_ONCE(sysctl_net_ll_poll);
-+	return (u64)ACCESS_ONCE(sysctl_net_ll_poll) << 10;
-+}
- 
--	return end_time ? (end_time << 10) + ll_sched_clock() : 0;
-+/* if flag is not set we don't need to know the time */
-+static inline u64 ll_start_time(unsigned int flag)
-+{
-+	return flag ? ll_sched_clock() : 0;
- }
- 
- static inline bool sk_valid_ll(struct sock *sk)
-@@ -88,9 +92,12 @@ static inline bool sk_valid_ll(struct sock *sk)
- 	       !need_resched() && !signal_pending(current);
- }
- 
--static inline bool can_poll_ll(u64 end_time)
-+/* careful! time_in_range64 will evaluate now twice */
-+static inline bool can_poll_ll(u64 start_time, u64 run_time)
- {
--	return !time_after64(ll_sched_clock(), end_time);
-+	u64 now = ll_sched_clock();
-+
-+	return time_in_range64(now, start_time, start_time + run_time);
- }
- 
- /* when used in sock_poll() nonblock is known at compile time to be true
-@@ -98,7 +105,8 @@ static inline bool can_poll_ll(u64 end_time)
-  */
- static inline bool sk_poll_ll(struct sock *sk, int nonblock)
- {
--	u64 end_time = nonblock ? 0 : ll_sk_end_time(sk);
-+	u64 start_time = ll_start_time(!nonblock);
-+	u64 run_time = ll_sk_run_time(sk);
- 	const struct net_device_ops *ops;
- 	struct napi_struct *napi;
- 	int rc = false;
-@@ -129,7 +137,7 @@ static inline bool sk_poll_ll(struct sock *sk, int nonblock)
- 					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
- 
- 	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
--		 can_poll_ll(end_time));
-+		 can_poll_ll(start_time, run_time));
- 
- 	rc = !skb_queue_empty(&sk->sk_receive_queue);
- out:
+-- 
+1.7.10.4
+
 
