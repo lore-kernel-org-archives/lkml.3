@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab3GBFiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 01:38:46 -0400
-Received: from mout.gmx.net ([212.227.15.15]:57624 "EHLO mout.gmx.net"
+	id S1752445Ab3GBFkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 01:40:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45578 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab3GBFip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 01:38:45 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18KAIA63vQKAGMi2tFSKVYnT+7aHPLFWCTPlxb9He
-	VHp3pdVH8RVJQJ
-Message-ID: <1372743517.7363.129.camel@marge.simpson.net>
-Subject: Re: [PATCH] sched: smart wake-affine
-From: Mike Galbraith <efault@gmx.de>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Date: Tue, 02 Jul 2013 07:38:37 +0200
-In-Reply-To: <51D25A80.8090406@linux.vnet.ibm.com>
-References: <51A43B16.9080801@linux.vnet.ibm.com>
-	 <51D25A80.8090406@linux.vnet.ibm.com>
+	id S1750887Ab3GBFkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 01:40:51 -0400
+Message-ID: <51D267BE.8090605@ti.com>
+Date: Tue, 2 Jul 2013 11:10:14 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Hebbar Gururaja <gururaja.hebbar@ti.com>
+CC: <khilman@linaro.org>, <tony@atomide.com>, <b-cousson@ti.com>,
+        <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 2/4] davinci: da8xx/omap-l1: Remove hard coding of rtc
+ device wakeup
+References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com> <1372412109-986-3-git-send-email-gururaja.hebbar@ti.com>
+In-Reply-To: <1372412109-986-3-git-send-email-gururaja.hebbar@ti.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-02 at 12:43 +0800, Michael Wang wrote:
 
-> +static int nasty_pull(struct task_struct *p)
-> +{
-> +	int factor = cpumask_weight(cpu_online_mask);
-> +
-> +	/*
-> +	 * Yeah, it's the switching-frequency, could means many wakee or
-> +	 * rapidly switch, use factor here will just help to automatically
-> +	 * adjust the loose-degree, so more cpu will lead to more pull.
-> +	 */
-> +	if (p->nr_wakee_switch > factor) {
-> +		/*
-> +		 * wakee is somewhat hot, it needs certain amount of cpu
-> +		 * resource, so if waker is far more hot, prefer to leave
-> +		 * it alone.
-> +		 */
-> +		if (current->nr_wakee_switch > (factor * p->nr_wakee_switch))
-> +			return 1;
-> +	}
-> +
-> +	return 0;
-> +}
+On 6/28/2013 3:05 PM, Hebbar Gururaja wrote:
+> Since now rtc-omap driver itself calls deice_init_wakeup(dev, true),
+> duplicate call from the rtc device registration can be removed.
+> 
+> This is basically a partial revert of the prev commit
+> 
+> commit 75c99bb0006ee065b4e2995078d779418b0fab54
+> Author: Sekhar Nori <nsekhar@ti.com>
+> 
+>     davinci: da8xx/omap-l1: mark RTC as a wakeup source
+> 
+> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> Cc: Sekhar Nori <nsekhar@ti.com>
+> Cc: Kevin Hilman <khilman@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
 
-Ew.  I haven't gotten around to test-driving this patchlet, and I see
-you haven't gotten around to finding a better name either.  Any other
-name will likely have a better chance of flying.
+Subject line should be prefixed with ARM: keeping with arch/arm
+convention. Otherwise looks good.
 
-tasks_related()
-...
-well, nearly any..
-tasks_think_wake_affine_sucks_rocks()
-..that won't fly either :)
+Acked-by: Sekhar Nori <nsekhar@ti.com>
 
--Mike
-
+Thanks,
+Sekhar
