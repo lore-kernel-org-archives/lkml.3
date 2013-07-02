@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab3GBLNS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:13:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36306 "EHLO
+	id S1756048Ab3GBLNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:13:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36299 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755449Ab3GBLIb (ORCPT
+	with ESMTP id S1754244Ab3GBLIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:31 -0400
+	Tue, 2 Jul 2013 07:08:30 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 34/50] net: sh_eth: fix incorrect RX length error if R8A7740
-Date: Tue,  2 Jul 2013 12:07:22 +0100
-Message-Id: <1372763258-20664-35-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 30/50] x86: fix build error and kconfig for ia32_emulation and binfmt
+Date: Tue,  2 Jul 2013 12:07:18 +0100
+Message-Id: <1372763258-20664-31-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
+From: Randy Dunlap <rdunlap@infradead.org>
 
-commit dd019897358b815f7828dab90b51d51df4d3658d upstream.
+commit d1603990ea626668c78527376d9ec084d634202d upstream.
 
-This patch fixes an issue that the driver increments the "RX length error"
-on every buffer in sh_eth_rx() if the R8A7740.
-This patch also adds a description about the Receive Frame Status bits.
+Fix kconfig warning and build errors on x86_64 by selecting BINFMT_ELF
+when COMPAT_BINFMT_ELF is being selected.
 
-Signed-off-by: Yoshihiro Shimoda <yoshihiro.shimoda.uh@renesas.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+warning: (IA32_EMULATION) selects COMPAT_BINFMT_ELF which has unmet direct dependencies (COMPAT && BINFMT_ELF)
+
+fs/built-in.o: In function `elf_core_dump':
+compat_binfmt_elf.c:(.text+0x3e093): undefined reference to `elf_core_extra_phdrs'
+compat_binfmt_elf.c:(.text+0x3ebcd): undefined reference to `elf_core_extra_data_size'
+compat_binfmt_elf.c:(.text+0x3eddd): undefined reference to `elf_core_write_extra_phdrs'
+compat_binfmt_elf.c:(.text+0x3f004): undefined reference to `elf_core_write_extra_data'
+
+[ hpa: This was sent to me for -next but it is a low risk build fix ]
+
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Link: http://lkml.kernel.org/r/51C0B614.5000708@infradead.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/renesas/sh_eth.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/ethernet/renesas/sh_eth.c b/drivers/net/ethernet/renesas/sh_eth.c
-index 79bf09b..2ff4f0b 100644
---- a/drivers/net/ethernet/renesas/sh_eth.c
-+++ b/drivers/net/ethernet/renesas/sh_eth.c
-@@ -1027,16 +1027,23 @@ static int sh_eth_rx(struct net_device *ndev, u32 intr_status)
- 		desc_status = edmac_to_cpu(mdp, rxdesc->status);
- 		pkt_len = rxdesc->frame_length;
- 
--#if defined(CONFIG_ARCH_R8A7740)
--		desc_status >>= 16;
--#endif
--
- 		if (--boguscnt < 0)
- 			break;
- 
- 		if (!(desc_status & RDFEND))
- 			ndev->stats.rx_length_errors++;
- 
-+#if defined(CONFIG_ARCH_R8A7740)
-+		/*
-+		 * In case of almost all GETHER/ETHERs, the Receive Frame State
-+		 * (RFS) bits in the Receive Descriptor 0 are from bit 9 to
-+		 * bit 0. However, in case of the R8A7740's GETHER, the RFS
-+		 * bits are from bit 25 to bit 16. So, the driver needs right
-+		 * shifting by 16.
-+		 */
-+		desc_status >>= 16;
-+#endif
-+
- 		if (desc_status & (RD_RFS1 | RD_RFS2 | RD_RFS3 | RD_RFS4 |
- 				   RD_RFS5 | RD_RFS6 | RD_RFS10)) {
- 			ndev->stats.rx_errors++;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b2b22a6..eebd0d9 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2150,6 +2150,7 @@ source "fs/Kconfig.binfmt"
+ config IA32_EMULATION
+ 	bool "IA32 Emulation"
+ 	depends on X86_64
++	select BINFMT_ELF
+ 	select COMPAT_BINFMT_ELF
+ 	---help---
+ 	  Include code to run legacy 32-bit programs under a
 -- 
 1.8.1.2
 
