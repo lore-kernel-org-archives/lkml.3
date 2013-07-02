@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3GBSjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 14:39:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013Ab3GBSi7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 14:38:59 -0400
-Date: Tue, 2 Jul 2013 14:38:22 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Anton Vorontsov <anton@enomsg.org>
+	id S1754343Ab3GBSnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 14:43:19 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:54510 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab3GBSnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 14:43:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130701171759.GA25767@kroah.com>
+References: <20130701171759.GA25767@kroah.com>
+Date: Tue, 2 Jul 2013 11:43:17 -0700
+X-Google-Sender-Auth: 8X0PLUz02v0LbVyo_3yfAOv_ipk
+Message-ID: <CA+55aFx+RcyqT6smdcH0MOPRRJzUgHtY0t5DD5-EngjePxw0CA@mail.gmail.com>
+Subject: Re: [GIT PATCH] Staging driver patches for 3.11-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Greg KH <gregkh@linuxfoundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org,
-        hyunhee.kim@samsung.com
-Subject: Re: [PATCH v2] vmpressure: implement strict mode
-Message-ID: <20130702143822.4af2ebe3@redhat.com>
-In-Reply-To: <20130702172409.GA13695@teo>
-References: <20130628043411.GA9100@teo>
-	<20130628050712.GA10097@teo>
-	<20130628100027.31504abe@redhat.com>
-	<20130628165722.GA12271@teo>
-	<20130628170917.GA12610@teo>
-	<20130628144507.37d28ed9@redhat.com>
-	<20130628185547.GA14520@teo>
-	<20130628154402.4035f2fa@redhat.com>
-	<20130629005637.GA16068@teo>
-	<20130702105911.2830181d@redhat.com>
-	<20130702172409.GA13695@teo>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Driver Project <devel@linuxdriverproject.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Jul 2013 10:24:09 -0700
-Anton Vorontsov <anton@enomsg.org> wrote:
+On Mon, Jul 1, 2013 at 10:17 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> The following changes since commit 7d132055814ef17a6c7b69f342244c410a5e000f:
+>
+>   Linux 3.10-rc6 (2013-06-15 11:51:07 -1000)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git/ staging-next
 
-> > Honestly, what Andrew suggested is the best design for me: apps
-> > are notified on all events but the event name is sent to the application.
-> 
-> I am fine with this approach (or any other, I'm really indifferent to the
-> API itself -- read/netlink/notification per file/whatever for the
-> payload),
+Hmm. I think you meant the "staging-3.11-rc1" tag, not the
+"staging-next" branch..
 
-That's a very good thing because we've managed to agree on something :)
-
-I'm also indifferent to the API, as long as we have 100% of the policy
-in user-space. To me this means we do absolutely no filtering in the
-kernel, which in turn means user-space gets all the events. Of course,
-we need the event name as a payload.
-
-Do we agree this solves all use-cases we have discussed so far?
-
-> except that you still have the similar problem:
-> 
->   read() old    read() new
->   --------------------------
->        "low"           "low"
->        "low"           "foo" -- the app does not know what does this mean
->        "med"           "bar" -- ditto
-
-It can just ignore it, have a special handling, log it, fail or whatever.
-That's the good of having the policy in user-space.
+            Linus
