@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475Ab3GBI43 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:56:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40793 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932321Ab3GBI40 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:56:26 -0400
-Date: Tue, 2 Jul 2013 10:55:46 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] Basic scheduler support for automatic NUMA balancing
-Message-ID: <20130702085546.GE21726@dyad.programming.kicks-ass.net>
-References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
- <20130628135422.GA21895@linux.vnet.ibm.com>
- <20130702074659.GC21726@dyad.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130702074659.GC21726@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S932503Ab3GBI4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:56:51 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39567 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932321Ab3GBI4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 04:56:49 -0400
+Message-ID: <1372755248.3616.5.camel@pasglop>
+Subject: Re: [PATCH] Add hsize argument in write_buf call of
+ pstore_ftrace_call
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, kbuild-all@01.org, rostedt@goodmis.org
+Date: Tue, 02 Jul 2013 18:54:08 +1000
+In-Reply-To: <20130702053611.11466.71343.stgit@aruna-ThinkPad-T420>
+References: <20130702053611.11466.71343.stgit@aruna-ThinkPad-T420>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 09:46:59AM +0200, Peter Zijlstra wrote:
-> So on the biggest system I've got; 4 nodes 32 cpus:
+On Tue, 2013-07-02 at 11:06 +0530, Aruna Balakrishnaiah wrote:
+> Incorporate the addition of hsize argument in write_buf callback
+> of pstore.
+
+Thanks. I've added that to powerpc-next. It should hit Stephen tomorrow.
+
+Cheers,
+Ben.
+
+> Signed-off-by: Aruna Balakrishnaiah <aruna@linux.vnet.ibm.com>
+> ---
 > 
->  Performance counter stats for './numa02' (5 runs):
+>  fs/pstore/ftrace.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> 3.10.0+ + patches - NO_NUMA	58.235353126 seconds time elapsed    ( +-  0.45% )
-> 3.10.0+ + patches -    NUMA   17.580963359 seconds time elapsed    ( +-  0.09% )
+> diff --git a/fs/pstore/ftrace.c b/fs/pstore/ftrace.c
+> index 43b1280..76a4eeb 100644
+> --- a/fs/pstore/ftrace.c
+> +++ b/fs/pstore/ftrace.c
+> @@ -44,7 +44,7 @@ static void notrace pstore_ftrace_call(unsigned long ip,
+>  	rec.parent_ip = parent_ip;
+>  	pstore_ftrace_encode_cpu(&rec, raw_smp_processor_id());
+>  	psinfo->write_buf(PSTORE_TYPE_FTRACE, 0, NULL, 0, (void *)&rec,
+> -			  sizeof(rec), psinfo);
+> +			  0, sizeof(rec), psinfo);
+>  
+>  	local_irq_restore(flags);
+>  }
 
-I just 'noticed' that I included my migrate_degrades_locality patch -- the one
-posted somewhere in this thread (+ compile fixes).
 
-Let me re-run without that one to see if there's any difference.
-
-NO_NUMA		57.961384751 seconds time elapsed    ( +-  0.64% )
-   NUMA		17.482115801 seconds time elapsed    ( +-  0.15% )
