@@ -1,125 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3GBP2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:28:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48134 "EHLO comal.ext.ti.com"
+	id S1753315Ab3GBP2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:28:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5915 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab3GBP2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:28:14 -0400
-Date: Tue, 2 Jul 2013 18:26:57 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Luciano Coelho <coelho@ti.com>
-CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/9] wlcore: use irq_flags in pdata instead of hiding
- it behind a quirk
-Message-ID: <20130702152657.GE7013@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
- <1372776948-24840-3-git-send-email-coelho@ti.com>
+	id S1752775Ab3GBP2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 11:28:12 -0400
+Date: Tue, 2 Jul 2013 11:27:28 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v6 1/5] vmcore: Introduce ELF header in new memory feature
+Message-ID: <20130702152727.GB22603@redhat.com>
+References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
+ <1372707159-10425-2-git-send-email-holzheu@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HnQK338I3UIa/qiP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372776948-24840-3-git-send-email-coelho@ti.com>
+In-Reply-To: <1372707159-10425-2-git-send-email-holzheu@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---HnQK338I3UIa/qiP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 01, 2013 at 09:32:35PM +0200, Michael Holzheu wrote:
+> Currently for s390 we create the ELF core header in the 2nd kernel
+> with a small trick. We relocate the addresses in the ELF header in
+> a way that for the /proc/vmcore code it seems to be in the 1st kernel
+> (old) memory and the read_from_oldmem() returns the correct data.
+> This allows the /proc/vmcore code to use the ELF header in the
+> 2nd kernel.
+> 
+> This patch now exchanges the old mechanism with the new and much
+> cleaner function call override feature that now offcially allows to
+> create the ELF core header in the 2nd kernel.
+> 
+> To use the new feature the following function have to be defined
+> by the architecture backend code to read from new memory:
+> 
+>  * elfcorehdr_alloc: Allocate ELF header
+>  * elfcorehdr_free: Free the memory of the ELF header
+>  * elfcorehdr_read: Read from ELF header
+>  * elfcorehdr_read_notes: Read from ELF notes
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-Hi,
+Looks good to me.
 
-On Tue, Jul 02, 2013 at 05:55:41PM +0300, Luciano Coelho wrote:
-> The platform_quirk element in the platform data was used to change the
-> way the IRQ is triggered.  When set, the EDGE_IRQ quirk would change
-> the irqflags used and treat edge trigger differently from the rest.
->=20
-> Instead of hiding this irq flag setting behind the quirk, export the
-> whole irq_flags element and let the board file define what to use.
-> This will be more meaningful than driver-specific quirks when we
-> switch to DT.
->=20
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
-> Acked-by: Tony Lindgren <tony@atomide.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+
+Vivek
+
 > ---
->  arch/arm/mach-davinci/board-da850-evm.c      |    2 +-
->  arch/arm/mach-omap2/board-4430sdp.c          |    1 +
->  arch/arm/mach-omap2/board-omap3evm.c         |    1 +
->  arch/arm/mach-omap2/board-omap4panda.c       |    1 +
->  arch/arm/mach-omap2/board-zoom-peripherals.c |    1 +
->  drivers/net/wireless/ti/wlcore/debugfs.c     |    2 +-
->  drivers/net/wireless/ti/wlcore/main.c        |   13 +++----------
->  drivers/net/wireless/ti/wlcore/wlcore.h      |    5 ++---
->  include/linux/wl12xx.h                       |    5 +----
->  9 files changed, 12 insertions(+), 19 deletions(-)
->=20
-> diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davi=
-nci/board-da850-evm.c
-> index 8a24b6c..d2a2a98 100644
-> --- a/arch/arm/mach-davinci/board-da850-evm.c
-> +++ b/arch/arm/mach-davinci/board-da850-evm.c
-> @@ -1377,8 +1377,8 @@ static const short da850_wl12xx_pins[] __initconst =
-=3D {
-> =20
->  static struct wl12xx_platform_data da850_wl12xx_wlan_data __initdata =3D=
- {
->  	.irq			=3D -1,
-> +	.irq_flags		=3D IRQF_TRIGGER_RISING,
->  	.board_ref_clock	=3D WL12XX_REFCLOCK_38,
-> -	.platform_quirks	=3D WL12XX_PLATFORM_QUIRK_EDGE_IRQ,
->  };
-> =20
->  static __init int da850_wl12xx_init(void)
-> diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/bo=
-ard-4430sdp.c
-> index 56a9a4f..c2334aa 100644
-> --- a/arch/arm/mach-omap2/board-4430sdp.c
-> +++ b/arch/arm/mach-omap2/board-4430sdp.c
-> @@ -693,6 +693,7 @@ static void __init omap4_sdp4430_wifi_mux_init(void)
+>  fs/proc/vmcore.c           | 61 ++++++++++++++++++++++++++++++++++++++--------
+>  include/linux/crash_dump.h |  6 +++++
+>  2 files changed, 57 insertions(+), 10 deletions(-)
+> 
+> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+> index 0f6db52..c28189c 100644
+> --- a/fs/proc/vmcore.c
+> +++ b/fs/proc/vmcore.c
+> @@ -123,6 +123,36 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
+>  	return read;
 >  }
-> =20
->  static struct wl12xx_platform_data omap4_sdp4430_wlan_data __initdata =
-=3D {
-> +	.irq_flags =3D IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
-
-couldn't you just call irq_set_irq_type() from the board-file itself ?
-Then on your driver you can just pass IRQF_ONESHOT (to make sure heh) to
-your request_threaded_irq_handler()
-
---=20
-balbi
-
---HnQK338I3UIa/qiP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR0vFBAAoJEIaOsuA1yqRECwQP/2IQS04PpctSEMcrjcDpUu92
-tSnO/JSi9PxeftIE/brxPLI0x0fvzeR6t7W8mAo9aki1rIEfIgNdVPXBaaQmM7Ng
-jqzQ/66sp3f6ukuQGKmtfsIRTbORHRa2O232MfTAjULr4By1pSwB3SFg3qbg1Jd4
-csAc99AajYy54HAQA7ZrI4u0XO802rqa5MJMwa1QXrTVwhwPCMYQaJxToDg9FzLG
-3pnI2ImTgN2oKx93il+lcbL2v9eDoGruZ1l/iIdKlljLPkvbM1baDqc0hNuAtVUP
-ty27MDze9BhO2ZO5S4l/Oui/XlPtXt6tpebB5QaqtUFcUWEzkoQ9nwEqBkDzrfZA
-zB7h2g0R5GxaFJBVz/px8A8gCkXPS0fpAkstMCMHI59r/fk27GROmvuoLFE3oD9v
-aMUnqjqtRWr9ZLaxFO8i+Vq6gxI8LLIOxoWg3eTlRyo/eUorTp6qccAY/4nb49Ii
-Dp2T465o+MWWZS6E4OlbJh9R7uGhCY/Yrd6iOezfr4gQoaNttaSMIwElivZSJySd
-M3WHbHlpczxmzBEy94yvh+vb5DE2dmNwDcOu2aXU9A/+SBVoAy+7bwhM9RgwamMC
-nZ/cbOLf2zhfunCGXqNZy6ukqiS7SW9keaTiurx1rejg0Nkrckm2pfbphqqOIc6I
-ZKIynSdelkum1AQUfEEO
-=Tmqu
------END PGP SIGNATURE-----
-
---HnQK338I3UIa/qiP--
+>  
+> +/*
+> + * Architectures may override this function to allocate ELF header in 2nd kernel
+> + */
+> +int __weak elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
+> +{
+> +	return 0;
+> +}
+> +
+> +/*
+> + * Architectures may override this function to free header
+> + */
+> +void __weak elfcorehdr_free(unsigned long long addr)
+> +{}
+> +
+> +/*
+> + * Architectures may override this function to read from ELF header
+> + */
+> +ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos)
+> +{
+> +	return read_from_oldmem(buf, count, ppos, 0);
+> +}
+> +
+> +/*
+> + * Architectures may override this function to read from notes sections
+> + */
+> +ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
+> +{
+> +	return read_from_oldmem(buf, count, ppos, 0);
+> +}
+> +
+>  /* Read from the ELF header and then the crash dump. On error, negative value is
+>   * returned otherwise number of bytes read are returned.
+>   */
+> @@ -322,7 +352,7 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
+>  		notes_section = kmalloc(max_sz, GFP_KERNEL);
+>  		if (!notes_section)
+>  			return -ENOMEM;
+> -		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
+> +		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
+>  		if (rc < 0) {
+>  			kfree(notes_section);
+>  			return rc;
+> @@ -409,7 +439,8 @@ static int __init copy_notes_elf64(const Elf64_Ehdr *ehdr_ptr, char *notes_buf)
+>  		if (phdr_ptr->p_type != PT_NOTE)
+>  			continue;
+>  		offset = phdr_ptr->p_offset;
+> -		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
+> +		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
+> +					   &offset);
+>  		if (rc < 0)
+>  			return rc;
+>  		notes_buf += phdr_ptr->p_memsz;
+> @@ -510,7 +541,7 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
+>  		notes_section = kmalloc(max_sz, GFP_KERNEL);
+>  		if (!notes_section)
+>  			return -ENOMEM;
+> -		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
+> +		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
+>  		if (rc < 0) {
+>  			kfree(notes_section);
+>  			return rc;
+> @@ -597,7 +628,8 @@ static int __init copy_notes_elf32(const Elf32_Ehdr *ehdr_ptr, char *notes_buf)
+>  		if (phdr_ptr->p_type != PT_NOTE)
+>  			continue;
+>  		offset = phdr_ptr->p_offset;
+> -		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
+> +		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
+> +					   &offset);
+>  		if (rc < 0)
+>  			return rc;
+>  		notes_buf += phdr_ptr->p_memsz;
+> @@ -793,7 +825,7 @@ static int __init parse_crash_elf64_headers(void)
+>  	addr = elfcorehdr_addr;
+>  
+>  	/* Read Elf header */
+> -	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf64_Ehdr), &addr, 0);
+> +	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf64_Ehdr), &addr);
+>  	if (rc < 0)
+>  		return rc;
+>  
+> @@ -820,7 +852,7 @@ static int __init parse_crash_elf64_headers(void)
+>  	if (!elfcorebuf)
+>  		return -ENOMEM;
+>  	addr = elfcorehdr_addr;
+> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
+> +	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
+>  	if (rc < 0)
+>  		goto fail;
+>  
+> @@ -849,7 +881,7 @@ static int __init parse_crash_elf32_headers(void)
+>  	addr = elfcorehdr_addr;
+>  
+>  	/* Read Elf header */
+> -	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf32_Ehdr), &addr, 0);
+> +	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf32_Ehdr), &addr);
+>  	if (rc < 0)
+>  		return rc;
+>  
+> @@ -875,7 +907,7 @@ static int __init parse_crash_elf32_headers(void)
+>  	if (!elfcorebuf)
+>  		return -ENOMEM;
+>  	addr = elfcorehdr_addr;
+> -	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
+> +	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
+>  	if (rc < 0)
+>  		goto fail;
+>  
+> @@ -902,7 +934,7 @@ static int __init parse_crash_elf_headers(void)
+>  	int rc=0;
+>  
+>  	addr = elfcorehdr_addr;
+> -	rc = read_from_oldmem(e_ident, EI_NIDENT, &addr, 0);
+> +	rc = elfcorehdr_read(e_ident, EI_NIDENT, &addr);
+>  	if (rc < 0)
+>  		return rc;
+>  	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
+> @@ -935,7 +967,14 @@ static int __init vmcore_init(void)
+>  {
+>  	int rc = 0;
+>  
+> -	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
+> +	/* Allow architectures to allocate ELF header in 2nd kernel */
+> +	rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
+> +	if (rc)
+> +		return rc;
+> +	/*
+> +	 * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
+> +	 * then capture the dump.
+> +	 */
+>  	if (!(is_vmcore_usable()))
+>  		return rc;
+>  	rc = parse_crash_elf_headers();
+> @@ -943,6 +982,8 @@ static int __init vmcore_init(void)
+>  		pr_warn("Kdump: vmcore not initialized\n");
+>  		return rc;
+>  	}
+> +	elfcorehdr_free(elfcorehdr_addr);
+> +	elfcorehdr_addr = ELFCORE_ADDR_ERR;
+>  
+>  	proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
+>  	if (proc_vmcore)
+> diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
+> index 37e4f8d..6571f82 100644
+> --- a/include/linux/crash_dump.h
+> +++ b/include/linux/crash_dump.h
+> @@ -12,6 +12,12 @@
+>  extern unsigned long long elfcorehdr_addr;
+>  extern unsigned long long elfcorehdr_size;
+>  
+> +extern int __weak elfcorehdr_alloc(unsigned long long *addr,
+> +				   unsigned long long *size);
+> +extern void __weak elfcorehdr_free(unsigned long long addr);
+> +extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
+> +extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
+> +
+>  extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
+>  						unsigned long, int);
+>  
+> -- 
+> 1.8.2.2
