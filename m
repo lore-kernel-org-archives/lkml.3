@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab3GBS0z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 14:26:55 -0400
-Received: from caiajhbihbdd.dreamhost.com ([208.97.187.133]:58366 "EHLO
-	webmail5.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753250Ab3GBS0B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 14:26:01 -0400
-Message-ID: <eafcf0e02e67ec530cecceb9c8824232.squirrel@webmail.investimoveissorocaba.com.br>
-Date: Tue, 2 Jul 2013 11:13:40 -0700
-Subject: =?iso-8859-1?Q?Actualizaci=F3n_Administraci=F3n_de_Correo_Electr=F3nico_?=
-From: =?iso-8859-1?Q?=22Administraci=F3n_del_Correo_Webmail=22?= 
-	<correo@quota.com>
-Reply-To: inf-ociticen@live.com
-User-Agent: SquirrelMail/1.4.21
+	id S1754156Ab3GBSbD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 14:31:03 -0400
+Received: from na3sys009aog128.obsmtp.com ([74.125.149.141]:51907 "EHLO
+	na3sys009aog128.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753165Ab3GBSbA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 14:31:00 -0400
+From: Bing Zhao <bzhao@marvell.com>
+To: Shuah Khan <shuah.kh@samsung.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>
+CC: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Date: Tue, 2 Jul 2013 11:30:50 -0700
+Subject: RE: [PATCH] wireless: Convert mwifiex/pcie to dev_pm_ops from
+ legacy pm ops
+Thread-Topic: [PATCH] wireless: Convert mwifiex/pcie to dev_pm_ops from
+ legacy pm ops
+Thread-Index: Ac53OIRauuproGcOQS67twjHMC6muQAGZvnQ
+Message-ID: <477F20668A386D41ADCC57781B1F70430EA2E06335@SC-VEXCH1.marvell.com>
+References: <1372778675-2909-1-git-send-email-shuah.kh@samsung.com>
+In-Reply-To: <1372778675-2909-1-git-send-email-shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Estimado Webmail cuentas de usuario,
+Hi Shuah,
 
-Su buzón está casi lleno o haber superado la cuota límite, Actualice su
-teniendo en cuenta que tener una cuota mayor y llenar la información de su
-cuenta de correo electrónico a actualización. Haga clic en el enlace de
-abajo para actualizar
-http://admincorroe.webs.com/
+Thanks for the patch.
 
-El no actualizar esta vez daría lugar a la pérdida de futuro importante
-mails o terminación de su cuenta de usuario.
+> Convert the mwifiex/pci driver to use dev_pm_ops for power management and
+> remove Legacy PM handling. This change re-uses existing suspend and resume
+> interfaces for dev_pm_ops.
+> 
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 
-Gracias por tu colaboración.
-WEBMAIL ADMINISTRADOR v101.2013
+Acked-by: Bing Zhao <bzhao@marvell.com>
+
+Thanks,
+Bing
 
