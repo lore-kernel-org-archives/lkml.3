@@ -1,94 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753183Ab3GBO4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 10:56:37 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51877 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186Ab3GBO4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 10:56:32 -0400
-From: Luciano Coelho <coelho@ti.com>
-To: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>
-CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <coelho@ti.com>
-Subject: [PATCH v2 3/9] wlcore: remove pwr_in_suspend from platform data
-Date: Tue, 2 Jul 2013 17:55:42 +0300
-Message-ID: <1372776948-24840-4-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1372776948-24840-1-git-send-email-coelho@ti.com>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753860Ab3GBO7x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 10:59:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243Ab3GBO7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 10:59:52 -0400
+Date: Tue, 2 Jul 2013 10:59:11 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, kmpark@infradead.org,
+        hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130702105911.2830181d@redhat.com>
+In-Reply-To: <20130629005637.GA16068@teo>
+References: <20130628005852.GA8093@teo>
+	<20130627181353.3d552e64.akpm@linux-foundation.org>
+	<20130628043411.GA9100@teo>
+	<20130628050712.GA10097@teo>
+	<20130628100027.31504abe@redhat.com>
+	<20130628165722.GA12271@teo>
+	<20130628170917.GA12610@teo>
+	<20130628144507.37d28ed9@redhat.com>
+	<20130628185547.GA14520@teo>
+	<20130628154402.4035f2fa@redhat.com>
+	<20130629005637.GA16068@teo>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pwr_in_suspend flag depends on the MMC settings which can be
-retrieved from the SDIO subsystem, so it doesn't need to be part of
-the platform data structure.  Move it to the platform device data that
-is passed from SDIO to wlcore.
+On Fri, 28 Jun 2013 17:56:37 -0700
+Anton Vorontsov <anton@enomsg.org> wrote:
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
----
- drivers/net/wireless/ti/wlcore/main.c     |    2 +-
- drivers/net/wireless/ti/wlcore/sdio.c     |    2 +-
- drivers/net/wireless/ti/wlcore/wlcore_i.h |    1 +
- include/linux/wl12xx.h                    |    1 -
- 4 files changed, 3 insertions(+), 3 deletions(-)
+> On Fri, Jun 28, 2013 at 03:44:02PM -0400, Luiz Capitulino wrote:
+> > > Why can't you use poll() and demultiplex the events? Check if there is an
+> > > event in the crit fd, and if there is, then just ignore all the rest.
+> > 
+> > This may be a valid workaround for current kernels, but application
+> > behavior will be different among kernels with a different number of
+> > events.
+> 
+> This is not a workaround, this is how poll works, and this is kinda
+> expected...
 
-diff --git a/drivers/net/wireless/ti/wlcore/main.c b/drivers/net/wireless/ti/wlcore/main.c
-index e7294b8..d306cd5 100644
---- a/drivers/net/wireless/ti/wlcore/main.c
-+++ b/drivers/net/wireless/ti/wlcore/main.c
-@@ -5941,7 +5941,7 @@ static void wlcore_nvs_cb(const struct firmware *fw, void *context)
- 	if (!ret) {
- 		wl->irq_wake_enabled = true;
- 		device_init_wakeup(wl->dev, 1);
--		if (pdata->pwr_in_suspend)
-+		if (pdev_data->pwr_in_suspend)
- 			wl->hw->wiphy->wowlan = &wlcore_wowlan_support;
- 	}
- #endif
-diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/ti/wlcore/sdio.c
-index 29ef249..4c7e8ac 100644
---- a/drivers/net/wireless/ti/wlcore/sdio.c
-+++ b/drivers/net/wireless/ti/wlcore/sdio.c
-@@ -260,7 +260,7 @@ static int wl1271_probe(struct sdio_func *func,
- 	dev_dbg(glue->dev, "sdio PM caps = 0x%x\n", mmcflags);
- 
- 	if (mmcflags & MMC_PM_KEEP_POWER)
--		pdev_data->pdata->pwr_in_suspend = true;
-+		pdev_data->pwr_in_suspend = true;
- 
- 	sdio_set_drvdata(func, glue);
- 
-diff --git a/drivers/net/wireless/ti/wlcore/wlcore_i.h b/drivers/net/wireless/ti/wlcore/wlcore_i.h
-index e5e1464..f2c4227 100644
---- a/drivers/net/wireless/ti/wlcore/wlcore_i.h
-+++ b/drivers/net/wireless/ti/wlcore/wlcore_i.h
-@@ -209,6 +209,7 @@ struct wl1271_if_operations {
- struct wlcore_platdev_data {
- 	struct wl12xx_platform_data *pdata;
- 	struct wl1271_if_operations *if_ops;
-+	bool pwr_in_suspend;
- };
- 
- #define MAX_NUM_KEYS 14
-diff --git a/include/linux/wl12xx.h b/include/linux/wl12xx.h
-index 04e3096..1e4ed6e 100644
---- a/include/linux/wl12xx.h
-+++ b/include/linux/wl12xx.h
-@@ -60,7 +60,6 @@ struct wl12xx_platform_data {
- 	unsigned long irq_flags;
- 	int board_ref_clock;
- 	int board_tcxo_clock;
--	bool pwr_in_suspend;
- };
- 
- #ifdef CONFIG_WILINK_PLATFORM_DATA
--- 
-1.7.10.4
+I think this is a workaround because it's tailored to my specific
+use-case and to a specific kernel version, as:
 
+ 1. Applications registering for lower levels (eg. low) are still
+    unable to tell which level actually caused them to be notified,
+    as lower levels are triggered along with higher levels
+
+ 2. Considering the interface can be extended, how can new applications
+    work on backwards mode? Say, we add ultra-critical on 3.12 and
+    I update my application to work on it, how will my application
+    work on 3.11?
+
+    Hint: Try and error is an horribly bad approach.
+
+ 3. I also don't believe we have good forward compatibility with
+    the current API, as adding new events will cause existing ones
+    to be triggered more often, so I'd expect app behavior to vary
+    among kernels with a different number of events.
+
+Honestly, what Andrew suggested is the best design for me: apps
+are notified on all events but the event name is sent to the application.
+
+This is pretty simple and solves all the problems we've discussed
+so far.
+
+Why can't we just do it?
+
+> But not that I had this plan in mind when I was designing the
+> current scheme... :)
+
+Hehe :)
+
+> > Say, we events on top of critical. Then crit fd will now be
+> > notified for cases where it didn't use to on older kernels.
+> 
+> I'm not sure I am following here... but thinking about it more, I guess
+> the extra read() will be needed anyway (to reset the counter).
+
+I hope I have explained this more clearly above.
+
+> > > > However, it *is* possible to make non-strict work on strict if we make
+> > > > strict default _and_ make reads on memory.pressure_level return
+> > > > available events. Just do this on app initialization:
+> > > > 
+> > > > for each event in memory.pressure_level; do
+> > > > 	/* register eventfd to be notified on "event" */
+> > > > done
+> > > 
+> > > This scheme registers "all" events.
+> > 
+> > Yes, because I thought that's the user-case that matters for activity
+> > manager :)
+> 
+> Some activity managers use only low levels (Android), some might use only
+> medium levels (simple load-balancing).
+> 
+> Being able to register only "all" does not make sense to me.
+
+Well, you can skip events if you want.
+
+> > > Here is more complicated case:
+> > > 
+> > > Old kernels, pressure_level reads:
+> > > 
+> > >   low, med, crit
+> > > 
+> > > The app just wants to listen for med level.
+> > > 
+> > > New kernels, pressure_level reads:
+> > > 
+> > >   low, FOO, med, BAR, crit
+> > > 
+> > > How would application decide which of FOO and BAR are ex-med levels?
+> > 
+> > What you meant by ex-med?
+> 
+> The scale is continuous and non-overlapping. If you add some other level,
+> you effectively "shrinking" other levels, so the ex-med in the list above
+> might correspond to "FOO, med" or "med, BAR" or "FOO, med, BAR", and that
+> is exactly the problem.
+
+Just return the events in order?
