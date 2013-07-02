@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab3GBTrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 15:47:09 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:33816 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754984Ab3GBTrH (ORCPT
+	id S1755605Ab3GBTtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 15:49:13 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:62296 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754646Ab3GBTtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 15:47:07 -0400
-Date: Tue, 2 Jul 2013 21:47:03 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        minchan@kernel.org, anton@enomsg.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] vmpressure: implement strict mode
-Message-ID: <20130702194703.GA19373@amd.pavel.ucw.cz>
-References: <20130625175129.7c0d79e1@redhat.com>
- <20130701085103.GA19798@amd.pavel.ucw.cz>
- <20130702110628.5dbb75e0@redhat.com>
+	Tue, 2 Jul 2013 15:49:11 -0400
+Message-ID: <51D32F7F.4090606@metafoo.de>
+Date: Tue, 02 Jul 2013 21:52:31 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130702110628.5dbb75e0@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Shuah Khan <shuah.kh@samsung.com>
+CC: Hauke Mehrtens <hauke@hauke-m.de>, "bzhao@marvell.com" <bzhao@marvell.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [PATCH] wireless: Convert mwifiex/pcie to dev_pm_ops from legacy
+ pm ops
+References: <1372778675-2909-1-git-send-email-shuah.kh@samsung.com> <51D32116.4010109@hauke-m.de> <B8EFE96D1287C24090BAD9D858E15E61734462@sisaex02sj>
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E61734462@sisaex02sj>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-07-02 11:06:28, Luiz Capitulino wrote:
-> On Mon, 1 Jul 2013 10:51:03 +0200
-> Pavel Machek <pavel@ucw.cz> wrote:
+On 07/02/2013 09:24 PM, Shuah Khan wrote:
+[...]
+>>> +#ifdef CONFIG_PM
+>>> +/* Power Management Hooks */
+>>> +static const struct dev_pm_ops mwifiex_pcie_pm_ops = {
+>>> +	.suspend = mwifiex_pcie_suspend,
+>>> +	.resume = mwifiex_pcie_resume,
+>>> +};
+>>> +#endif
+>>> +
+>>
+>> Is it intended that you do not use SIMPLE_DEV_PM_OPS() like most of the
+>> other wifi drivers?
 > 
-> > Hi!
-> > 
-> > > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> > > index ddf4f93..3c589cf 100644
-> > > --- a/Documentation/cgroups/memory.txt
-> > > +++ b/Documentation/cgroups/memory.txt
-> > > @@ -807,12 +807,14 @@ register a notification, an application must:
-> > >  
-> > >  - create an eventfd using eventfd(2);
-> > >  - open memory.pressure_level;
-> > > -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
-> > > +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
-> > >    to cgroup.event_control.
-> > >  
-> > 
-> > This is.. pretty strange interface. Would it be cleaner to do ioctl()?
-> > New syscall?
-> 
-> Are you referring to my new mode or to the whole thing?
+> So the reason for this is SIMPLE_DEV_PM_OPS() is defined only when 
+> CONFIG_PM_SLEEP is enabled. This driver doesn't defines suspend and 
+> resume when CONFIG_PM is enabled and I didn't want to change that. Hope 
+> that helps understand why I didn't use SIMPLE_DEV_PM_OPS()
 
-Well. The interface was already very strange and you made it even
-worse.
+Change the ifdefs to CONFIG_PM_SLEEP and use SIMPLE_DEV_PM_OPS. The driver does
+not support runtime PM.
 
-For example... How is the string terminated? \0? \n? Not at all? Needs
-to be written in single write? How many spaces are allowed? Can I put
-there \t? How many leading zeros? How do you know that you can stop
-looking for "strict" string?
+- Lars
 
-Dunno. Passing fd by writting it out in ascii is strange. (And writing
-fd in ascii to the same fd is ... very strange.)
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
