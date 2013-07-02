@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab3GBLD5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:03:57 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:58951 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753819Ab3GBLDy (ORCPT
+	id S1754392Ab3GBLEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:04:33 -0400
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:57300 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab3GBLD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:03:54 -0400
+	Tue, 2 Jul 2013 07:03:56 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -15,9 +15,9 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Gregory CLEMENT <gregory.clement@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/7] ARM: orion5x: update intc device tree node to new reg layout
-Date: Tue,  2 Jul 2013 13:03:39 +0200
-Message-Id: <1372763023-12374-4-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH v4 5/7] ARM: kirkwood: convert to DT irqchip and clocksource
+Date: Tue,  2 Jul 2013 13:03:41 +0200
+Message-Id: <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -25,12 +25,11 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Future irqchip driver for Orion SoCs has a modified reg layout starting
-from CAUSE register. The former DT irq driver stub just used what the
-non-DT driver wants. Currently, orion5x is not ready for irqchip driver
-because of legacy timer and missing DT clk provider. To ease future
-conversion and just because orion-intc binding documentation already
-reflects new reg layout, we convert orion5x DT now.
+With recent support for true irqchip and clocksource drivers for Orion
+SoCs, now make use of it on DT enabled Kirkwood boards.
+
+This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
+where old code is moved out to and polishes DT board file a little bit.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 --- 
@@ -42,28 +41,220 @@ Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/boot/dts/orion5x.dtsi |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/mach-kirkwood/Kconfig    |   22 ++++++++++++++++++++++
+ arch/arm/mach-kirkwood/Makefile   |    4 ++--
+ arch/arm/mach-kirkwood/board-dt.c |   24 +++++++++++++++++-------
+ 3 files changed, 41 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/boot/dts/orion5x.dtsi b/arch/arm/boot/dts/orion5x.dtsi
-index 2d241fc..ede6c3b 100644
---- a/arch/arm/boot/dts/orion5x.dtsi
-+++ b/arch/arm/boot/dts/orion5x.dtsi
-@@ -16,11 +16,12 @@
- 	aliases {
- 		gpio0 = &gpio0;
- 	};
-+
- 	intc: interrupt-controller {
--		compatible = "marvell,orion-intc", "marvell,intc";
-+		compatible = "marvell,orion-intc";
- 		interrupt-controller;
- 		#interrupt-cells = <1>;
--		reg = <0xf1020204 0x04>;
-+		reg = <0xf1020200 0x08>;
- 	};
+diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
+index 493c71a..ede131e 100644
+--- a/arch/arm/mach-kirkwood/Kconfig
++++ b/arch/arm/mach-kirkwood/Kconfig
+@@ -2,67 +2,81 @@ if ARCH_KIRKWOOD
  
- 	ocp@f1000000 {
+ menu "Marvell Kirkwood Implementations"
+ 
++config KIRKWOOD_LEGACY
++	bool
++
+ config MACH_D2NET_V2
+ 	bool "LaCie d2 Network v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie d2 Network v2 NAS.
+ 
+ config MACH_DOCKSTAR
+ 	bool "Seagate FreeAgent DockStar"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Seagate FreeAgent DockStar.
+ 
+ config MACH_ESATA_SHEEVAPLUG
+ 	bool "Marvell eSATA SheevaPlug Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell eSATA SheevaPlug Reference Board.
+ 
+ config MACH_GURUPLUG
+ 	bool "Marvell GuruPlug Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell GuruPlug Reference Board.
+ 
+ config MACH_INETSPACE_V2
+ 	bool "LaCie Internet Space v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie Internet Space v2 NAS.
+ 
+ config MACH_MV88F6281GTW_GE
+ 	bool "Marvell 88F6281 GTW GE Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell 88F6281 GTW GE Board.
+ 
+ config MACH_NET2BIG_V2
+ 	bool "LaCie 2Big Network v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie 2Big Network v2 NAS.
+ 
+ config MACH_NET5BIG_V2
+ 	bool "LaCie 5Big Network v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie 5Big Network v2 NAS.
+ 
+ config MACH_NETSPACE_MAX_V2
+ 	bool "LaCie Network Space Max v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie Network Space Max v2 NAS.
+ 
+ config MACH_NETSPACE_V2
+ 	bool "LaCie Network Space v2 NAS Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  LaCie Network Space v2 NAS.
+ 
+ config MACH_OPENRD
++	select KIRKWOOD_LEGACY
+         bool
+ 
+ config MACH_OPENRD_BASE
+@@ -88,30 +102,35 @@ config MACH_OPENRD_ULTIMATE
+ 
+ config MACH_RD88F6192_NAS
+ 	bool "Marvell RD-88F6192-NAS Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell RD-88F6192-NAS Reference Board.
+ 
+ config MACH_RD88F6281
+ 	bool "Marvell RD-88F6281 Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell RD-88F6281 Reference Board.
+ 
+ config MACH_SHEEVAPLUG
+ 	bool "Marvell SheevaPlug Reference Board"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  Marvell SheevaPlug Reference Board.
+ 
+ config MACH_T5325
+ 	bool "HP t5325 Thin Client"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  HP t5325 Thin Client.
+ 
+ config MACH_TS219
+ 	bool "QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and TS-219P+ Turbo NAS"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and
+@@ -119,6 +138,7 @@ config MACH_TS219
+ 
+ config MACH_TS41X
+ 	bool "QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo NAS"
++	select KIRKWOOD_LEGACY
+ 	help
+ 	  Say 'Y' here if you want your kernel to support the
+ 	  QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo
+@@ -129,6 +149,8 @@ comment "Device tree entries"
+ config ARCH_KIRKWOOD_DT
+ 	bool "Marvell Kirkwood Flattened Device Tree"
+ 	select KIRKWOOD_CLK
++	select ORION_IRQCHIP
++	select ORION_TIMER
+ 	select POWER_SUPPLY
+ 	select POWER_RESET
+ 	select POWER_RESET_GPIO
+diff --git a/arch/arm/mach-kirkwood/Makefile b/arch/arm/mach-kirkwood/Makefile
+index 062f8c7..f78f333 100644
+--- a/arch/arm/mach-kirkwood/Makefile
++++ b/arch/arm/mach-kirkwood/Makefile
+@@ -1,5 +1,5 @@
+-obj-y				+= common.o irq.o pcie.o mpp.o
+-
++obj-y				+= common.o pcie.o
++obj-$(CONFIG_KIRKWOOD_LEGACY)	+= irq.o mpp.o
+ obj-$(CONFIG_MACH_D2NET_V2)		+= d2net_v2-setup.o lacie_v2-common.o
+ obj-$(CONFIG_MACH_DOCKSTAR)		+= dockstar-setup.o
+ obj-$(CONFIG_MACH_ESATA_SHEEVAPLUG)	+= sheevaplug-setup.o
+diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
+index 881f37e..385244c 100644
+--- a/arch/arm/mach-kirkwood/board-dt.c
++++ b/arch/arm/mach-kirkwood/board-dt.c
+@@ -15,6 +15,9 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/clk-provider.h>
++#include <linux/clocksource.h>
++#include <linux/dma-mapping.h>
++#include <linux/irqchip.h>
+ #include <linux/kexec.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -67,10 +70,18 @@ static void __init kirkwood_legacy_clk_init(void)
+ 	clk_prepare_enable(clk);
+ }
+ 
+-static void __init kirkwood_of_clk_init(void)
++static void __init kirkwood_dt_time_init(void)
+ {
+ 	of_clk_init(NULL);
+-	kirkwood_legacy_clk_init();
++	clocksource_of_init();
++}
++
++static void __init kirkwood_dt_init_early(void)
++{
++	init_dma_coherent_pool_size(SZ_1M);
++	mvebu_mbus_init("marvell,kirkwood-mbus",
++			BRIDGE_WINS_BASE, BRIDGE_WINS_SZ,
++			DDR_WINDOW_CPU_BASE, DDR_WINDOW_CPU_SZ);
+ }
+ 
+ static void __init kirkwood_dt_init(void)
+@@ -91,8 +102,8 @@ static void __init kirkwood_dt_init(void)
+ 
+ 	kirkwood_cpufreq_init();
+ 
+-	/* Setup root of clk tree */
+-	kirkwood_of_clk_init();
++	/* Setup clocks for legacy devices */
++	kirkwood_legacy_clk_init();
+ 
+ 	kirkwood_cpuidle_init();
+ 
+@@ -114,9 +125,8 @@ static const char * const kirkwood_dt_board_compat[] = {
+ DT_MACHINE_START(KIRKWOOD_DT, "Marvell Kirkwood (Flattened Device Tree)")
+ 	/* Maintainer: Jason Cooper <jason@lakedaemon.net> */
+ 	.map_io		= kirkwood_map_io,
+-	.init_early	= kirkwood_init_early,
+-	.init_irq	= orion_dt_init_irq,
+-	.init_time	= kirkwood_timer_init,
++	.init_early	= kirkwood_dt_init_early,
++	.init_time	= kirkwood_dt_time_init,
+ 	.init_machine	= kirkwood_dt_init,
+ 	.restart	= kirkwood_restart,
+ 	.dt_compat	= kirkwood_dt_board_compat,
 -- 
 1.7.2.5
 
