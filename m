@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756130Ab3GBKQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 06:16:25 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59671 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755046Ab3GBKQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 06:16:24 -0400
-Date: Tue, 2 Jul 2013 13:16:08 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sourav Poddar <sourav.poddar@ti.com>
-CC: <balbi@ti.com>, <broonie@kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
-        <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
-Message-ID: <20130702101608.GO3352@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
+	id S1756141Ab3GBKRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 06:17:45 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33731 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755245Ab3GBKRn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 06:17:43 -0400
+Date: Tue, 2 Jul 2013 11:17:18 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Sourav Poddar <sourav.poddar@ti.com>,
+        spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
+        rnayak@ti.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130702101718.GE27646@sirena.org.uk>
 References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com>
- <20130702092458.GI3352@arwen.pp.htv.fi>
- <51D2A4CA.5030804@ti.com>
+ <20130702093247.GY27646@sirena.org.uk>
+ <20130702094404.GL3352@arwen.pp.htv.fi>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SavPGzlo48F1Gxyz"
+	protocol="application/pgp-signature"; boundary="l6uVvLg33S+39+i8"
 Content-Disposition: inline
-In-Reply-To: <51D2A4CA.5030804@ti.com>
+In-Reply-To: <20130702094404.GL3352@arwen.pp.htv.fi>
+X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SavPGzlo48F1Gxyz
+
+--l6uVvLg33S+39+i8
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Tue, Jul 02, 2013 at 12:44:04PM +0300, Felipe Balbi wrote:
+> On Tue, Jul 02, 2013 at 10:32:47AM +0100, Mark Brown wrote:
 
-On Tue, Jul 02, 2013 at 03:30:42PM +0530, Sourav Poddar wrote:
-> >>+static int dra7xxx_qspi_setup(struct spi_device *spi)
-> >>+{
-> >>+	struct dra7xxx_qspi	*qspi =3D
-> >>+			spi_master_get_devdata(spi->master);
-> >>+
-> >>+	int clk_div;
-> >>+
-> >>+	if (!qspi->spi_max_frequency)
-> >>+		clk_div =3D 0;
-> >won't this generate division by zero ?
-> >
-> Yes, Probably only an error should be thrown here. ?
-> since min clk_div should be kept at 1.
+> > Does this hardware really support anything other than 8 bits per word?
+> > There is no code in the driver which pays any attention to the word
+> > size...
 
-right, if spi_max_frequency isn't passed, this is a broken DT binding.
-Bail out.
+> the HW has a 128-bit shift register ;-) but driver doesn't look
+> complete.
 
-> >>+	pm_runtime_get_sync(qspi->dev);
-> >>+
-> >>+	/* disable SCLK */
-> >>+	dra7xxx_writel(qspi, dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG)
-> >>+			&  ~QSPI_CLK_EN, QSPI_SPI_CLOCK_CNTRL_REG);
-> >>+
-> >>+	if (clk_div<  0) {
+That's not the issue - remember that SPI specifies big endian byte
+ordering for words on the bus so things will need to be reordered by the
+hardware for anything except 8 bits.
 
-btw, add a space between clk_div and <
-
-> >>+			dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
-> >>+			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
-> >>+			dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
-> >>+					QSPI_SPI_CMD_REG);
-> >>+			status =3D dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
-> >>+			timeout =3D QSPI_TIMEOUT;
-> >>+			while ((status&  QSPI_WC_BUSY) !=3D QSPI_XFER_DONE) {
-> >do you really need to poll ? No IRQ available ?
-> >
-> There is an interrupt available, I will try using that.
-
-look at how i2c-omap.c synchronizes interrupt with the transfer_msg
-code. It just uses a wait_for_completion().
-
-> >>+static int dra7xxx_qspi_start_transfer_one(struct spi_master *master,
-> >>+		struct spi_message *m)
-> >>+{
-> >>+	struct dra7xxx_qspi *qspi =3D spi_master_get_devdata(master);
-> >>+	struct spi_device *spi =3D m->spi;
-> >>+	struct spi_transfer *t;
-> >>+	int status =3D 0;
-> >>+	int flags =3D 0;
-> >>+
-> >>+	/* setup command reg */
-> >>+	qspi->cmd =3D 0;
-> >>+	qspi->cmd |=3D QSPI_WLEN(8);
-> >>+	qspi->cmd |=3D QSPI_EN_CS(0);
-> >>+	qspi->cmd |=3D 0xfff;
-> Since, we dont know the number of frame lenght that need to be
-> transferred and it comes from the spi framework, we keep the frame
-> lenght to maximum.
-> Then depending on the count value above in while loop, we terminate
-> our trasnfer.
-
-what ? seriously didn't get what you meant.
-
---=20
-balbi
-
---SavPGzlo48F1Gxyz
+--l6uVvLg33S+39+i8
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR0qhoAAoJEIaOsuA1yqREP5AP+QGI/eQ3znaX9WBL4nqPcL5J
-1+4mz/qOgMtEHOQdc4njPyaaq+fay2qVwQ0IqezE65nlVKcEv+RX5IA4FC4aCXE/
-oqO+I4P3PL1lUQDdusVoZf2VUeq9yZI55z/m2tuFu88QcLK4qKxWig6Ji/MRfaXK
-GRCGNz0eUMWyXCfWh/tYCUWctibHg6Rjp4F/73spQC/5ni0L9dsdcNHYaeVKOfL4
-+HJBvpMAwsLufrXLkhbIPexr2E2dKtTLHvn3ibxSHnsZJGmEkOoaBCobw+wBCH1g
-xuvEAybHxhgukVMR4DAH/pTLK4cFthHHYllgMM/Kx86385+cUuHYcgz4bPUBQpN1
-BCNBgqirSFtZgpUsalFh/MNf5CboYs2FZsgR+pO4G3/3WSOxyxk4Ng9dgrWIatQN
-ZtmHP1CGifv3E5iLQXKgbnifZUaGU98PRbxYTSm+kdQhoCpXKxXaWmm1p8r+sGUX
-/OnQ0uGMXb6VRWRJsEqOr6qqZDkWhT8j2wnCpKqJK1D8Y7wyPyr67nckOJ9haHMw
-vngvnCMHbDV2M1HV22wKBn15U1+5QNfLA051ZnuVtHWoXSEv5XO8YD0D+o3KMecG
-ReeF/fV4Le6f9kr4Hxi9susqFOSOX1Ich0ayifg8P6wu2Tx2m6OnTsW//lHj1pin
-D0x/UqrNCw3bNFAvb3h3
-=hyWc
+iQIcBAEBAgAGBQJR0qiqAAoJELSic+t+oim9YAsP/1np9MigYru6uKF4qNf7pVl9
+UKaCIhPzQAAmC1V5eqfHyPkKCsX2a4SWA0W0KGFRUbGplW997utTsJGe0P3GzQ36
+m/8RQtJTZV4LmsTJi/dPxJ3DvT9X5KZOUFF6KULUHHyG8UNGwHycKc/+oTOeZmFq
+AUlBbSOBPGm8g7zsZ9D4+0jvQtlyVc3c8SmIjQWYj9CnJru2l2RYlBrYrYQ24yT7
+vpgIzoFtxhrAmEOxGzh/XYyfkaTCq/yIwNvbh47OlYKCYafYExPwCe3DH3NDNfyN
+1wLx6xykQCU0lVG4/FF1/JhWwUdWt9R2zyVMj9eNZC8ZV7jM9iiUyhNrtEAGJ1wI
+NqexzOCvTlnFbtSRwRLC8pB0mcYldkNpq0v8HkI2gLDhXYWMEtgkUwNbJoXaJ7yL
+dHUSPk5YINWy6sqgli4m4I1w6iMRSjZLRf+3VZsuccpIIrITX768PzF9WhyF8rVd
+oqOeSD1R9F/pczYchvNtGlHlvSAdGjq/xsTydVA4f8aOlDFn7+/W7WrpKVPjJQZi
+eaYjB/Tp1CJiU1VeF5XMxLZkYUZmSJWoUNNNFs3TzOa+Qg4C1fqf/ygYTC5E9XaM
+JIhmSVfDoHogTPyKYjiwacsUrytsMoQGeFlGIyHDsHBlxYL/gu/ggxh/Qc6sN1V5
+tNa4OodyOnAA9tUgabd9
+=39MU
 -----END PGP SIGNATURE-----
 
---SavPGzlo48F1Gxyz--
+--l6uVvLg33S+39+i8--
