@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab3GBNAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 09:00:25 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:14674 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751134Ab3GBNAY (ORCPT
+	id S1752056Ab3GBNKT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 09:10:19 -0400
+Received: from eu1sys200aog121.obsmtp.com ([207.126.144.151]:36969 "EHLO
+	eu1sys200aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750799Ab3GBNKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 09:00:24 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19Kx/EUk5MezVgB4J91YIwBfxyX2KEzRGg=
-Date: Tue, 2 Jul 2013 09:00:13 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 5/7] ARM: kirkwood: convert to DT irqchip and
- clocksource
-Message-ID: <20130702130013.GJ19937@titan.lakedaemon.net>
-References: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130702115311.GG19937@titan.lakedaemon.net>
- <51D2CCC4.30109@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51D2CCC4.30109@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 2 Jul 2013 09:10:17 -0400
+X-Greylist: delayed 22901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 02 Jul 2013 09:10:16 EDT
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+To: netdev@vger.kernel.org
+Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Subject: [PATCH v1 0/3] extend stmmac DT support.
+Date: Tue,  2 Jul 2013 14:03:39 +0100
+Message-Id: <1372770219-1643-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 02:51:16PM +0200, Sebastian Hesselbarth wrote:
-> On 07/02/13 13:53, Jason Cooper wrote:
-> >On Tue, Jul 02, 2013 at 01:03:41PM +0200, Sebastian Hesselbarth wrote:
-> >>With recent support for true irqchip and clocksource drivers for Orion
-> >>SoCs, now make use of it on DT enabled Kirkwood boards.
-> >>
-> >>This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
-> >>where old code is moved out to and polishes DT board file a little bit.
-> >>
-> >>Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> >>---
-> [...]
-> >>diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
-> >>index 881f37e..385244c 100644
-> >>--- a/arch/arm/mach-kirkwood/board-dt.c
-> >>+++ b/arch/arm/mach-kirkwood/board-dt.c
-> >>@@ -15,6 +15,9 @@
-> >>  #include <linux/of.h>
-> >>  #include <linux/of_platform.h>
-> >>  #include <linux/clk-provider.h>
-> >>+#include <linux/clocksource.h>
-> >>+#include <linux/dma-mapping.h>
-> >>+#include <linux/irqchip.h>
-> >>  #include <linux/kexec.h>
-> >>  #include <asm/mach/arch.h>
-> >>  #include <asm/mach/map.h>
-> >>@@ -67,10 +70,18 @@ static void __init kirkwood_legacy_clk_init(void)
-> >>  	clk_prepare_enable(clk);
-> >>  }
-> >>
-> >>-static void __init kirkwood_of_clk_init(void)
-> >>+static void __init kirkwood_dt_time_init(void)
-> >>  {
-> >>  	of_clk_init(NULL);
-> >>-	kirkwood_legacy_clk_init();
-> >>+	clocksource_of_init();
-> >>+}
-> >>+
-> >>+static void __init kirkwood_dt_init_early(void)
-> >>+{
-> >
-> >
-> >>+	init_dma_coherent_pool_size(SZ_1M);
-> >
-> >This shouldn't be needed any more.  Is there a reason you're adding it
-> >back in?
-> 
-> Jason, thanks for catching this. The last patch I had was before removal
-> of init_dma_coherent_pool_size. I slipped back in because I missed the
-> removal patches.
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-ah, ok.
+Hi Peppe,
 
-> Can you remove it prior merge, should I prepare a fixup patch, or respin
-> this patch?
+Thankyou for the comments on RFC patches.
 
-Please check for other occurrences (all should be gone), and post a v2
-of only the affected patches.
+This patch series adds support to new gmac versions 3.6.10 and 3.710, these
+versions of IP are integrated into ST STiH415/STiH416 SOCs.
+This patchset also adds phy reset capablity to stmmac-mdio driver via DT.
 
-thx,
+Changes since RFC:
+	- re-use existing compatible strings to select right properties.
+	- clean up reset callback support so that DT is not parsed everytime.
 
-Jason.
+Thanks,
+srini
+
+Srinivas Kandagatla (3):
+  dt:net:stmmac: Allocate platform data only if its NULL.
+  dt:net:stmmac: Add support to dwmac version 3.610 and 3.710
+  dt:net:stmmac: Add dt specific phy reset callback support.
+
+ Documentation/devicetree/bindings/net/stmmac.txt   |   10 ++++
+ drivers/net/ethernet/stmicro/stmmac/stmmac_mdio.c  |   50 +++++++++++++++++++-
+ .../net/ethernet/stmicro/stmmac/stmmac_platform.c  |   32 +++++++++++-
+ include/linux/stmmac.h                             |    4 ++
+ 4 files changed, 91 insertions(+), 5 deletions(-)
+
+-- 
+1.7.6.5
+
