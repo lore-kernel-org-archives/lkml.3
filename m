@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab3GBGpf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 02:45:35 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:50912 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab3GBGpe (ORCPT
+	id S932342Ab3GBGpp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 02:45:45 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:47545 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932318Ab3GBGpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 02:45:34 -0400
-Message-ID: <51D27704.20908@linux.vnet.ibm.com>
-Date: Tue, 02 Jul 2013 14:45:24 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+	Tue, 2 Jul 2013 02:45:42 -0400
+Date: Tue, 2 Jul 2013 08:45:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: smart wake-affine
-References: <51A43B16.9080801@linux.vnet.ibm.com> <51D25A80.8090406@linux.vnet.ibm.com> <1372744486.7363.133.camel@marge.simpson.net> <51D2708C.1050901@linux.vnet.ibm.com> <1372746555.7363.147.camel@marge.simpson.net>
-In-Reply-To: <1372746555.7363.147.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070206-5490-0000-0000-000003BF379B
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+Message-ID: <20130702064538.GB3143@gmail.com>
+References: <20130626095108.GB29181@gmail.com>
+ <1372282560.22432.139.camel@schen9-DESK>
+ <1372292701.22432.152.camel@schen9-DESK>
+ <20130627083651.GA3730@gmail.com>
+ <1372366385.22432.185.camel@schen9-DESK>
+ <1372375873.22432.200.camel@schen9-DESK>
+ <20130628093809.GB29205@gmail.com>
+ <1372453461.22432.216.camel@schen9-DESK>
+ <20130629071245.GA5084@gmail.com>
+ <1372710497.22432.224.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372710497.22432.224.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 02:29 PM, Mike Galbraith wrote:
-> On Tue, 2013-07-02 at 14:17 +0800, Michael Wang wrote:
+
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> On Sat, 2013-06-29 at 09:12 +0200, Ingo Molnar wrote:
+> > * Tim Chen <tim.c.chen@linux.intel.com> wrote:
+> > 
+> > > > If my analysis is correct so far then it might be useful to add two 
+> > > > more stats: did rwsem_spin_on_owner() fail because lock->owner == NULL 
+> > > > [owner released the rwsem], or because owner_running() failed [owner 
+> > > > went to sleep]?
+> > > 
+> > > Ingo,
+> > > 
+> > > I tabulated the cases where rwsem_spin_on_owner returns false and causes 
+> > > us to stop spinning.
+> > > 
+> > > 97.12%  was due to lock's owner switching to another writer
+> > >  0.01% was due to the owner of the lock sleeping
+> > >  2.87%  was due to need_resched() 
+> > > 
+> > > I made a change to allow us to continue to spin even when lock's owner 
+> > > switch to another writer.  I did get the lock to be acquired now mostly 
+> > > (98%) via optimistic spin and lock stealing, but my benchmark's 
+> > > throughput actually got reduced by 30% (too many cycles spent on useless 
+> > > spinning?).
+> > 
+> > Hm, I'm running out of quick ideas :-/ The writer-ends-spinning sequence 
+> > is pretty similar in the rwsem and in the mutex case. I'd have a look at 
+> > one more detail: is the wakeup of another writer in the rwsem case 
+> > singular, is only a single writer woken? I suspect the answer is yes ...
 > 
->> As Peter mentioned before, we currently need some solution like the
->> buddy-idea, and when folks report regression (I suppose they won't...),
->> we will have more data then.
->>
->> So we could firstly try to regain the lost performance of pgbench, if it
->> strip the benefit of other benchmarks, let's fix it, and at last we will
->> have a real smart wake-affine and no one will complain ;-)
+> Ingo, we can only wake one writer, right? In __rwsem_do_wake, that is 
+> indeed the case.  Or you are talking about something else?
+
+Yeah, I was talking about that, and my understanding and reading of the 
+code says that too - I just wanted to make sure :-)
+
+> >
+> > A quick glance suggests that the ordering of wakeups of waiters is the 
+> > same for mutexes and rwsems: FIFO, single waiter woken on 
+> > slowpath-unlock. So that shouldn't make a big difference.
 > 
-> The idea is plenty simple (and the fastpath has a deep and abiding love
-> of simple) so the idea itself flies in my book.  It doesn't add as much
-> knowledge as may be nice to have, but if it adds enough to help pgbench
-> and ilk without harming others, cool.
-
-Nice to know you like it ;-)
-
-There are some thinking behind the idea, since the knob is unacceptable,
-I try to make the filter more strict, we actually
-could get all the lost 50% performance back, but will run the risk to
-strip other's benefit (like hackbench), but if just get 40% performance
-back, then we may could reduce the risk nearly to 0.
-
-So the principle of this idea is to filter out the extremely bad cases,
-and we make sure under such cases, the chances of mess things up is very
-high, thus the wake_affine() will become a little smart and know to stop
-in front of the cliff...
-
-Regards,
-Michael Wang
-
-
+> > If all last-ditch efforts to analyze it via counters fail then the way 
+> > I'd approach it next is brute-force instrumentation:
+> > 
+> >  - First I'd create a workload 'steady state' that can be traced and 
+> >    examined without worrying that that it ends or switches to some other 
+> >    workload.
+> > 
+> >  - Then I'd create a relatively lightweight trace (maybe trace_printk() is
+> >    lightweight enough), and capture key mutex and rwsem events.
+> > 
+> >  - I'd capture a 1-10 seconds trace in steady state, both with rwsems and 
+> >    mutexes. I'd have a good look at which tasks take locks and schedule
+> >    how and why. I'd try to eliminate any assymetries in behavior, i.e. 
+> >    make rwsems behave like mutexes.
 > 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> You mean adding trace points to record the events?  If you can be more 
+> specific on what data to capture, that will be helpful.  It will be 
+> holidays here in US so I may get around to this the following week.
 
+Yeah, adding the relevant tracepoints (or trace_printk(), which is much 
+simpler albeit a bit more expensive) - and capturing a 1-second 
+steady-state traces via ftrace.
+
+Then I'd compare the two traces and look at the biggest difference, and 
+try to zoom in on to figure out why the difference occurs. More 
+trace_printk()s can be added as you suspect specific areas or want to 
+confirm various theories.
+
+[ Assuming the phenomenon does not go away under tracing :-/ ]
+
+[
+  Another brute-force approach is to add a dynamic debug knob to switch 
+  between a spinlock and an rwsem implementation for that lock: I'd do it 
+  by adding both types of locks to the data structure, initializing both 
+  but using a /proc/sys/kernel/ knob to decide whether to use spin_*() or
+  rwsem facilities to utilize it. This way you could switch between the 
+  two implementations without rebooting the system. In theory.
+]
+
+Thanks,
+
+	Ingo
