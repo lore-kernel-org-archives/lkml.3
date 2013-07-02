@@ -1,50 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677Ab3GBU11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:27:27 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:44845 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754860Ab3GBU1X (ORCPT
+	id S1755780Ab3GBU16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:27:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9935 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754883Ab3GBUY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 16:27:23 -0400
-Date: Tue, 2 Jul 2013 16:32:42 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: [testcase] perf: yet another fuzzer triggered crash
-In-Reply-To: <alpine.DEB.2.10.1307011112090.8216@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1307021628510.8353@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
- <20130701090713.GO6626@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1307011112090.8216@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 2 Jul 2013 16:24:27 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=h-VoTAdJlvcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=brlZdUSUxb0A:10 a=VwQbUJbxAAAA:8 a=i0EeH86SAAAA:8 a=3nbZYyFuAAAA:8 a=zNOThPvcOk8uDMcW1_oA:9 a=jeBq3FmKZ4MA:10 a=hPjdaMEvmhQA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130702202425.344090135@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Tue, 02 Jul 2013 16:22:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [for-next][PATCH 01/14] tracing: Failed to create system directory
+References: <20130702202216.623562799@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Failed-to-create-system-directory.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 1 Jul 2013, Vince Weaver wrote:
+From: Steven Rostedt <rostedt@goodmis.org>
 
-> I'm in the process of kernel bisecting this, though all I can tell you so 
-> far is 2.6.32 is unaffected by the bug but 3.2 and later are.
+Running the following:
 
-well, I spent 2 days bisecting between 3.1 and 3.2 (after 
-wasting time bisecting between 3.0 and 3.1 by mistake) 
-(also, a pox on whoever introduced that ethernet .config change between 
-3.1. 3.2).
+ # cd /sys/kernel/debug/tracing
+ # echo p:i do_sys_open > kprobe_events
+ # echo p:j schedule >> kprobe_events
+ # cat kprobe_events
+p:kprobes/i do_sys_open
+p:kprobes/j schedule
+ # echo p:i do_sys_open >> kprobe_events
+ # cat kprobe_events
+p:kprobes/j schedule
+p:kprobes/i do_sys_open
+ # ls /sys/kernel/debug/tracing/events/kprobes/
+enable  filter  j
 
-and of course what it gives me is
-   a240f76165e6255384d4bdb8139895fac7988799
+Notice that the 'i' is missing from the kprobes directory.
 
-   perf, core: Introduce attrs to count in either host or guest mode
+The console produces:
 
-so the test case wasn't crashing because the auto-generated file
-was setting exclude_guest and exclude_host causing perf_event_open() 
-to fail.  If I drop setting those bits it still crashes.  
+"Failed to create system directory kprobes"
 
-I guess back to the drawing board.
+This is because kprobes passes in a allocated name for the system
+and the ftrace event subsystem saves off that name instead of creating
+a duplicate for it. But the kprobes may free the system name making
+the pointer to it invalid.
 
-Vince
+This bug was introduced by 92edca073c37 "tracing: Use direct field, type
+and system names" which switched from using kstrdup() on the system name
+in favor of just keeping apointer to it, as the internal ftrace event
+system names are static and exist for the life of the computer being booted.
+
+Instead of reverting back to duplicating system names again, we can use
+core_kernel_data() to determine if the passed in name was allocated or
+static. Then use the MSB of the ref_count to be a flag to keep track if
+the name was allocated or not. Then we can still save from having to duplicate
+strings that will always exist, but still copy the ones that may be freed.
+
+Cc: stable@vger.kernel.org # 3.10
+Reported-by: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Reported-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Tested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_events.c |   41 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 35 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index f57b015..903a0bf 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -41,6 +41,23 @@ static LIST_HEAD(ftrace_common_fields);
+ static struct kmem_cache *field_cachep;
+ static struct kmem_cache *file_cachep;
+ 
++#define SYSTEM_FL_FREE_NAME		(1 << 31)
++
++static inline int system_refcount(struct event_subsystem *system)
++{
++	return system->ref_count & ~SYSTEM_FL_FREE_NAME;
++}
++
++static int system_refcount_inc(struct event_subsystem *system)
++{
++	return (system->ref_count++) & ~SYSTEM_FL_FREE_NAME;
++}
++
++static int system_refcount_dec(struct event_subsystem *system)
++{
++	return (--system->ref_count) & ~SYSTEM_FL_FREE_NAME;
++}
++
+ /* Double loops, do not use break, only goto's work */
+ #define do_for_each_event_file(tr, file)			\
+ 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {	\
+@@ -344,8 +361,8 @@ static void __put_system(struct event_subsystem *system)
+ {
+ 	struct event_filter *filter = system->filter;
+ 
+-	WARN_ON_ONCE(system->ref_count == 0);
+-	if (--system->ref_count)
++	WARN_ON_ONCE(system_refcount(system) == 0);
++	if (system_refcount_dec(system))
+ 		return;
+ 
+ 	list_del(&system->list);
+@@ -354,13 +371,15 @@ static void __put_system(struct event_subsystem *system)
+ 		kfree(filter->filter_string);
+ 		kfree(filter);
+ 	}
++	if (system->ref_count & SYSTEM_FL_FREE_NAME)
++		kfree(system->name);
+ 	kfree(system);
+ }
+ 
+ static void __get_system(struct event_subsystem *system)
+ {
+-	WARN_ON_ONCE(system->ref_count == 0);
+-	system->ref_count++;
++	WARN_ON_ONCE(system_refcount(system) == 0);
++	system_refcount_inc(system);
+ }
+ 
+ static void __get_system_dir(struct ftrace_subsystem_dir *dir)
+@@ -374,7 +393,7 @@ static void __put_system_dir(struct ftrace_subsystem_dir *dir)
+ {
+ 	WARN_ON_ONCE(dir->ref_count == 0);
+ 	/* If the subsystem is about to be freed, the dir must be too */
+-	WARN_ON_ONCE(dir->subsystem->ref_count == 1 && dir->ref_count != 1);
++	WARN_ON_ONCE(system_refcount(dir->subsystem) == 1 && dir->ref_count != 1);
+ 
+ 	__put_system(dir->subsystem);
+ 	if (!--dir->ref_count)
+@@ -1274,7 +1293,15 @@ create_new_subsystem(const char *name)
+ 		return NULL;
+ 
+ 	system->ref_count = 1;
+-	system->name = name;
++
++	/* Only allocate if dynamic (kprobes and modules) */
++	if (!core_kernel_data((unsigned long)name)) {
++		system->ref_count |= SYSTEM_FL_FREE_NAME;
++		system->name = kstrdup(name, GFP_KERNEL);
++		if (!system->name)
++			goto out_free;
++	} else
++		system->name = name;
+ 
+ 	system->filter = NULL;
+ 
+@@ -1287,6 +1314,8 @@ create_new_subsystem(const char *name)
+ 	return system;
+ 
+  out_free:
++	if (system->ref_count & SYSTEM_FL_FREE_NAME)
++		kfree(system->name);
+ 	kfree(system);
+ 	return NULL;
+ }
+-- 
+1.7.10.4
+
+
