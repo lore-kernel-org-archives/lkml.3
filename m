@@ -1,150 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab3GBKjf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 06:39:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34558 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751665Ab3GBKje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 06:39:34 -0400
-Message-ID: <51D2ADD7.4020408@ti.com>
-Date: Tue, 2 Jul 2013 16:09:19 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1753601Ab3GBKjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 06:39:54 -0400
+Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:35678 "EHLO
+	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab3GBKjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 06:39:52 -0400
+Message-ID: <51D2ADCC.1090807@lab.ntt.co.jp>
+Date: Tue, 02 Jul 2013 19:39:08 +0900
+From: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
-        <grant.likely@linaro.org>, <rnayak@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
-References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com> <20130702092458.GI3352@arwen.pp.htv.fi> <51D2A4CA.5030804@ti.com> <20130702101608.GO3352@arwen.pp.htv.fi> <51D2AA35.2070002@ti.com> <20130702103122.GP3352@arwen.pp.htv.fi>
-In-Reply-To: <20130702103122.GP3352@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH] proc: Add workaround for idle/iowait decreasing problem.
+References: <201301152014.AAD52192.FOOHQVtSFMFOJL@I-love.SAKURA.ne.jp> <alpine.LFD.2.02.1301151313170.7475@ionos> <201301180857.r0I8vK7c052791@www262.sakura.ne.jp> <1363660703.4993.3.camel@nexus> <201304012205.DFC60784.HVOMJSFFLFtOOQ@I-love.SAKURA.ne.jp> <201304232145.AHE52181.HJVOOQSFLMFOtF@I-love.SAKURA.ne.jp> <20130428004940.GA10354@somewhere> <51D24F54.1000703@lab.ntt.co.jp>
+In-Reply-To: <51D24F54.1000703@lab.ntt.co.jp>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 02 July 2013 04:01 PM, Felipe Balbi wrote:
-> Hi,
+On 2013年07月02日 12:56, Fernando Luis Vazquez Cao wrote:
+> Hi Frederic,
 >
-> On Tue, Jul 02, 2013 at 03:53:49PM +0530, Sourav Poddar wrote:
->> On Tuesday 02 July 2013 03:46 PM, Felipe Balbi wrote:
->>> Hi,
->>>
->>> On Tue, Jul 02, 2013 at 03:30:42PM +0530, Sourav Poddar wrote:
->>>>>> +static int dra7xxx_qspi_setup(struct spi_device *spi)
->>>>>> +{
->>>>>> +	struct dra7xxx_qspi	*qspi =
->>>>>> +			spi_master_get_devdata(spi->master);
->>>>>> +
->>>>>> +	int clk_div;
->>>>>> +
->>>>>> +	if (!qspi->spi_max_frequency)
->>>>>> +		clk_div = 0;
->>>>> won't this generate division by zero ?
->>>>>
->>>> Yes, Probably only an error should be thrown here. ?
->>>> since min clk_div should be kept at 1.
->>> right, if spi_max_frequency isn't passed, this is a broken DT binding.
->>> Bail out.
->>>
->>>>>> +	pm_runtime_get_sync(qspi->dev);
->>>>>> +
->>>>>> +	/* disable SCLK */
->>>>>> +	dra7xxx_writel(qspi, dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG)
->>>>>> +			&    ~QSPI_CLK_EN, QSPI_SPI_CLOCK_CNTRL_REG);
->>>>>> +
->>>>>> +	if (clk_div<    0) {
->>> btw, add a space between clk_div and<
->>>
->>>>>> +			dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
->>>>>> +			dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
->>>>>> +			dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
->>>>>> +					QSPI_SPI_CMD_REG);
->>>>>> +			status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
->>>>>> +			timeout = QSPI_TIMEOUT;
->>>>>> +			while ((status&    QSPI_WC_BUSY) != QSPI_XFER_DONE) {
->>>>> do you really need to poll ? No IRQ available ?
->>>>>
->>>> There is an interrupt available, I will try using that.
->>> look at how i2c-omap.c synchronizes interrupt with the transfer_msg
->>> code. It just uses a wait_for_completion().
->>>
->> Ok.
->>>>>> +static int dra7xxx_qspi_start_transfer_one(struct spi_master *master,
->>>>>> +		struct spi_message *m)
->>>>>> +{
->>>>>> +	struct dra7xxx_qspi *qspi = spi_master_get_devdata(master);
->>>>>> +	struct spi_device *spi = m->spi;
->>>>>> +	struct spi_transfer *t;
->>>>>> +	int status = 0;
->>>>>> +	int flags = 0;
->>>>>> +
->>>>>> +	/* setup command reg */
->>>>>> +	qspi->cmd = 0;
->>>>>> +	qspi->cmd |= QSPI_WLEN(8);
->>>>>> +	qspi->cmd |= QSPI_EN_CS(0);
->>>>>> +	qspi->cmd |= 0xfff;
->>>> Since, we dont know the number of frame lenght that need to be
->>>> transferred and it comes from the spi framework, we keep the frame
->>>> lenght to maximum.
->>>> Then depending on the count value above in while loop, we terminate
->>>> our trasnfer.
->>> what ? seriously didn't get what you meant.
->>>
->> I mean, the lower 12 bits of cmd register is meant to be filled with
->> frame lenght.
->>
->> But the frame lenght is parsed when you iterate the list. So, what is
-> which list ?
+> I'm sorry it's taken me so long to respond; I got sidetracked for
+> a while. Comments follow below.
 >
-message list, from which we iterate through each transfers.
->> done here is that
->> the framelenght is kept to its maximum value.
-> why ? That seems wrong. If you can get the actual frame length at some
-> point, that's what you should use.
+> On 2013/04/28 09:49, Frederic Weisbecker wrote:
+>> On Tue, Apr 23, 2013 at 09:45:23PM +0900, Tetsuo Handa wrote:
+>>> CONFIG_NO_HZ=y can cause idle/iowait values to decrease.
+> [...]
+>> It's not clear in the changelog why you see non-monotonic idle/iowait 
+>> values.
+>>
+>> Looking at the previous patch from Fernando, it seems that's because 
+>> we can
+>> race with concurrent updates from the CPU target when it wakes up 
+>> from idle?
+>> (could be updated by drivers/cpufreq/cpufreq_governor.c as well).
+>>
+>> If so the bug has another symptom: we may also report a wrong 
+>> iowait/idle time
+>> by accounting the last idle time twice.
+>>
+>> In this case we should fix the bug from the source, for example we 
+>> can force
+>> the given ordering:
+>>
+>> = Write side =                          = Read side =
+>>
+>> // tick_nohz_start_idle()
+>> write_seqcount_begin(ts->seq)
+>> ts->idle_entrytime = now
+>> ts->idle_active = 1
+>> write_seqcount_end(ts->seq)
+>>
+>> // tick_nohz_stop_idle()
+>> write_seqcount_begin(ts->seq)
+>> ts->iowait_sleeptime += now - ts->idle_entrytime
+>> t->idle_active = 0
+>> write_seqcount_end(ts->seq)
+>>
+>>                                          // get_cpu_iowait_time_us()
+>>                                          do {
+>>                                              seq = 
+>> read_seqcount_begin(ts->seq)
+>>                                              if (t->idle_active) {
+>>                                                  time = now - 
+>> ts->idle_entrytime
+>>                                                  time += 
+>> ts->iowait_sleeptime
+>>                                              } else {
+>>                                                  time = 
+>> ts->iowait_sleeptime
+>>                                              }
+>>                                          } while 
+>> (read_seqcount_retry(ts->seq, seq));
+>>
+>> Right? seqcount should be enough to make sure we are getting a 
+>> consistent result.
+>> I doubt we need harder locking.
 >
-Ok.Then probably it makes sense to have frame count interrupt also to
-signal the end of frame.
->> Then, to signal the the end of the frame, we use
->>
->> static int qspi_transfer_msg(struct dra7xxx_qspi *qspi, unsigned count,
->>                          const u8 *txbuf, u8 *rxbuf, bool flags)
->> {
->>          uint status;
->>          int timeout;
->>
->>          while (count--) {
->>                  if (txbuf) {
->>                          pr_debug("tx cmd %08x dc %08x data %02x\n",
->>                                  qspi->cmd | QSPI_WR_SNGL, qspi->dc,
->> *txbuf);
->>                          dra7xxx_writel(qspi, *txbuf++, QSPI_SPI_DATA_REG);
->>                          dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
->>                          dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
->>                                          QSPI_SPI_CMD_REG);
->>                          status = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
->>                          timeout = QSPI_TIMEOUT;
->>                          while ((status&  QSPI_WC_BUSY) != QSPI_XFER_DONE) {
->>                                  if (--timeout<  0) {
->>                                          pr_debug("QSPI tx timed out\n");
->>                                          return
->>
->>       .............................
->>
->>                                     status, *(rxbuf-1));
->>                  }
->>          }
->>
->>          if (flags&  XFER_END)
->>                  dra7xxx_writel(qspi, qspi->cmd | QSPI_INVAL,
->> QSPI_SPI_CMD_REG);
->>
->> }
->> INVAL will terminate the current frame.
-> nevermind that this value is "RESERVED" on the documentation. You should
-> not rely on reserved features, they can go away at any point in time.
+> I tried that and it doesn't suffice. The problem that causes the most
+> serious skews is related to the CPU scheduler: the per-run queue
+> counter nr_iowait can be updated not only from the CPU it belongs
+> to but also from any other CPU if tasks are migrated out while
+> waiting on I/O.
 >
-> That's probably there only for some IP debugging kinda thing.
+> The race looks like this:
 >
+> CPU0                            CPU1
+>                                 [ CPU1_rq->nr_iowait == 0 ]
+>                                 Task foo: io_schedule()
+>                                             schedule()
+>                                 [ CPU1_rq->nr_iowait == 1) ]
+>                                 Task foo migrated to CPU0
+>                                 Goes to sleep
+>
+> // get_cpu_iowait_time_us(1, NULL)
+> [ CPU1_ts->idle_active == 1, CPU1_rq->nr_iowait == 1 ]
+> [ CPU1_ts->iowait_sleeptime = 4, CPU1_ts->idle_entrytime = 3 ]
+> now = 5
+> delta = 5 - 3 = 2
+> iowait = 4 + 2 = 6
+>
+> Task foo wakes up
+> [ CPU1_rq->nr_iowait == 0 ]
+>
+>                                 CPU1 comes out of sleep state
+>                                 tick_nohz_stop_idle()
+>                                   update_ts_time_stats()
+>                                     [ CPU1_ts->idle_active == 1, 
+> CPU1_rq->nr_iowait == 0         ]
+>                                     [ CPU1_ts->iowait_sleeptime = 4, 
+> CPU1_ts->idle_entrytime = 3 ]
+>                                     now = 6
+>                                     delta = 6 - 3 = 3
+>                                     (CPU1_ts->iowait_sleeptime is not 
+> updated)
+>                                     CPU1_ts->idle_entrytime = now = 6
+>                                   CPU1_ts->idle_active = 0
+>
+> // get_cpu_iowait_time_us(1, NULL)
+> [ CPU1_ts->idle_active == 0, CPU1_rq->nr_iowait == 0 ]
+> [ CPU1_ts->iowait_sleeptime = 4, CPU1_ts->idle_entrytime = 6 ]
+> iowait = CPU1_ts->iowait_sleeptime = 4
+> (iowait decreased from 6 to 4)
 
+A possible solution to the races above would be to add
+a per-cpu variable such ->iowait_sleeptime_user which
+shadows ->iowait_sleeptime but is maintained in
+get_cpu_iowait_time_us() and kept monotonic,
+the former being the one we would export to user
+space.
+
+Another approach would be updating ->nr_iowait
+of the source and destination CPUs during task
+migration, but this may be overkill.
+
+What do you think?
+
+Thanks,
+Fernando
