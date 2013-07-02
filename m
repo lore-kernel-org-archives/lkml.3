@@ -1,187 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab3GBWne (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 18:43:34 -0400
-Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:16211 "EHLO
-	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755582Ab3GBWn2 (ORCPT
+	id S1756435Ab3GBWtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 18:49:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31391 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932793Ab3GBWt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 18:43:28 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AsALAJpW01Fbti7d/2dsb2JhbABagwnAbwQBgQcXdIJRLwYdJlwCFjeHfAEDE6sBhyYKGScNWId6jHyBHDCBHYN0A4tsiXaBaIwghSWDEzo
-From: Peter De Wachter <pdewacht@gmail.com>
-To: linux-input@vger.kernel.org
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        Peter De Wachter <pdewacht@gmail.com>
-Subject: [PATCH] hid: add driver for IBM/Lenovo ScrollPoint mice
-Date: Wed,  3 Jul 2013 00:42:31 +0200
-Message-Id: <1372804951-7135-1-git-send-email-pdewacht@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 2 Jul 2013 18:49:28 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ys9SgDZjGkgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_7JHcU0X-nEA:10 a=maXIUhv72Fdg4Jm-8tsA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372805365.22688.68.camel@gandalf.local.home>
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Date: Tue, 02 Jul 2013 18:49:25 -0400
+In-Reply-To: <20130702222359.GA27629@redhat.com>
+References: <20130626185205.GA27894@redhat.com> <51CBEE3E.70103@hitachi.com>
+	 <20130627161716.GA17889@redhat.com> <51CCF8BA.4030601@hitachi.com>
+	 <20130628180946.GA30838@redhat.com> <51D16E1D.5040904@hitachi.com>
+	 <20130702190037.GA6289@redhat.com> <20130702193425.GA8813@redhat.com>
+	 <1372799087.22688.58.camel@gandalf.local.home>
+	 <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IBM Scrollpoint have a trackpoint-like gizmo instead of a scroll wheel,
-which allows for two-dimensional scrolling. This driver provides an
-input mapping to make that work.
+On Wed, 2013-07-03 at 00:23 +0200, Oleg Nesterov wrote:
+> On 07/02, Oleg Nesterov wrote:
+> >
+> > So please ignore modules ;)
+> 
+> Or lets discuss the change above.
 
-The scrollpoint is also much more sensitive than a typical mouse wheel.
-X can use this to provide smooth scrolling, but the kernel doesn't seem
-to have a way to communicate this fact. As a result this mouse simply
-scrolls way too fast. For now I've created an xorg patch to provide a
-manual setting (fdo #48118).
+I like this better than your first change, as the module code really
+can't fail to remove events, as that will complicate things more than
+they already are ;-)
 
-Signed-off-by: Peter De Wachter <pdewacht@gmail.com>
----
- drivers/hid/Kconfig           |  8 ++++++
- drivers/hid/Makefile          |  1 +
- drivers/hid/hid-core.c        |  7 +++++
- drivers/hid/hid-ids.h         |  7 +++++
- drivers/hid/hid-scrollpoint.c | 67 +++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 90 insertions(+)
- create mode 100644 drivers/hid/hid-scrollpoint.c
+> 
+> Oleg.
+> 
+> --- x/kernel/trace/trace_events.c
+> +++ x/kernel/trace/trace_events.c
+> @@ -1611,14 +1611,40 @@ static void __trace_remove_event_call(st
+>  	destroy_preds(call);
+>  }
+>  
+> +static int event_can_remove(struct ftrace_event_call *call)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index fb52f3f..fdc49ca 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -593,6 +593,14 @@ config HID_SAMSUNG
- 	---help---
- 	Support for Samsung InfraRed remote control or keyboards.
- 
-+config HID_SCROLLPOINT
-+	tristate "IBM/Lenovo ScrollPoint mice"
-+	depends on HID
-+	---help---
-+	Support for IBM/Lenovo ScrollPoint mice.
-+	Say Y here if you have a ScrollPoint mouse and want horizontal
-+	scrolling to work.
-+
- config HID_SONY
- 	tristate "Sony PS3 controller"
- 	depends on USB_HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 2065694..4a4c279 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -99,6 +99,7 @@ obj-$(CONFIG_HID_ROCCAT)	+= hid-roccat.o hid-roccat-common.o \
- 	hid-roccat-lua.o hid-roccat-pyra.o hid-roccat-savu.o
- obj-$(CONFIG_HID_SAITEK)	+= hid-saitek.o
- obj-$(CONFIG_HID_SAMSUNG)	+= hid-samsung.o
-+obj-$(CONFIG_HID_SCROLLPOINT)	+= hid-scrollpoint.o
- obj-$(CONFIG_HID_SMARTJOYPLUS)	+= hid-sjoy.o
- obj-$(CONFIG_HID_SONY)		+= hid-sony.o
- obj-$(CONFIG_HID_SPEEDLINK)	+= hid-speedlink.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 264f550..003f419 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1584,6 +1584,13 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_GYRATION, USB_DEVICE_ID_GYRATION_REMOTE_3) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK, USB_DEVICE_ID_HOLTEK_ON_LINE_GRIP) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_HOLTEK_ALT, USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD) },
-+#if IS_ENABLED(CONFIG_HID_SCROLLPOINT)
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM, USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
-+#endif
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_JESS2, USB_DEVICE_ID_JESS2_COLOR_RUMBLE_PAD) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_ION, USB_DEVICE_ID_ICADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_KENSINGTON, USB_DEVICE_ID_KS_SLIMBLADE) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index 38535c9..f813fab 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -441,6 +441,13 @@
- #define USB_VENDOR_ID_HOLTEK_ALT		0x04d9
- #define USB_DEVICE_ID_HOLTEK_ALT_KEYBOARD	0xa055
- 
-+#define USB_VENDOR_ID_IBM					0x04b3
-+#define USB_DEVICE_ID_IBM_SCROLLPOINT_III			0x3100
-+#define USB_DEVICE_ID_IBM_SCROLLPOINT_PRO			0x3103
-+#define USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL			0x3105
-+#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL		0x3108
-+#define USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO	0x3109
-+
- #define USB_VENDOR_ID_IMATION		0x0718
- #define USB_DEVICE_ID_DISC_STAKKA	0xd000
- 
-diff --git a/drivers/hid/hid-scrollpoint.c b/drivers/hid/hid-scrollpoint.c
-new file mode 100644
-index 0000000..48e7696
---- /dev/null
-+++ b/drivers/hid/hid-scrollpoint.c
-@@ -0,0 +1,67 @@
-+/*
-+ * HID driver for IBM/Lenovo ScrollPoint mice
-+ *
-+ * Copyright (c) 2012 Peter De Wachter <pdewacht@gmail.com>
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/module.h>
-+
-+#include "hid-ids.h"
-+
-+static int scrollpoint_input_mapping(struct hid_device *hdev,
-+		struct hid_input *hi, struct hid_field *field,
-+		struct hid_usage *usage, unsigned long **bit, int *max)
-+{
-+	if (usage->hid == HID_GD_Z) {
-+		hid_map_usage(hi, usage, bit, max, EV_REL, REL_HWHEEL);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+static const struct hid_device_id scrollpoint_devices[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-+		USB_DEVICE_ID_IBM_SCROLLPOINT_III) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-+		USB_DEVICE_ID_IBM_SCROLLPOINT_PRO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-+		USB_DEVICE_ID_IBM_SCROLLPOINT_OPTICAL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-+		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_IBM,
-+		USB_DEVICE_ID_IBM_SCROLLPOINT_800DPI_OPTICAL_PRO) },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(hid, scrollpoint_devices);
-+
-+static struct hid_driver scrollpoint_driver = {
-+	.name = "scrollpoint",
-+	.id_table = scrollpoint_devices,
-+	.input_mapping = scrollpoint_input_mapping
-+};
-+
-+static int __init scrollpoint_init(void)
-+{
-+	return hid_register_driver(&scrollpoint_driver);
-+}
-+
-+static void __exit scrollpoint_exit(void)
-+{
-+	hid_unregister_driver(&scrollpoint_driver);
-+}
-+
-+module_init(scrollpoint_init);
-+module_exit(scrollpoint_exit);
-+
-+MODULE_AUTHOR("Peter De Wachter");
-+MODULE_DESCRIPTION("IBM/Lenovo ScrollPoint mouse driver");
-+MODULE_LICENSE("GPL");
--- 
-1.8.3.2
+Should rename this to "event_is_busy" as we are only seeing if the event
+is active or not, as we do allow for events to be removed when active.
+This may confuse new reviewers.
+
+> +{
+> +	struct trace_array *tr;
+> +	struct ftrace_event_file *file;
+> +
+> +#ifdef CONFIG_PERF_EVENTS
+> +	if (call->perf_refcount)
+> +		return -EBUSY;
+> +#endif
+> +	do_for_each_event_file(tr, file) {
+> +		if (file->event_call != call)
+> +			continue;
+> +		if (file->flags & FTRACE_EVENT_FL_ENABLED)
+> +			return -EBUSY;
+> +		break;
+> +	} while_for_each_event_file();
+> +
+> +	return 0;
+> +}
+> +
+>  /* Remove an event_call */
+> -void trace_remove_event_call(struct ftrace_event_call *call)
+> +int trace_remove_event_call(struct ftrace_event_call *call)
+
+Probably should rename this to trace_probe_remove_event_call() as this
+deals only with the probe callers (kprobe and uprobe). Also this code
+will need to be documented a bit more.
+
+Other than that, sure, go with it. Masami, you have any comments?
+
+-- Steve
+
+>  {
+> +	int err;
+> +
+>  	mutex_lock(&event_mutex);
+>  	down_write(&trace_event_sem);
+> -	__trace_remove_event_call(call);
+> +	err = event_can_remove(call);
+> +	if (!err)
+> +		__trace_remove_event_call(call);
+>  	up_write(&trace_event_sem);
+>  	mutex_unlock(&event_mutex);
+> +
+> +	return err;
+>  }
+>  
+>  #define for_each_event(event, start, end)			\
+
 
