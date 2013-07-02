@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab3GBURi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 16:17:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:58622 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752758Ab3GBURg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 16:17:36 -0400
-Message-ID: <1372796218.21065.87.camel@cumari.coelho.fi>
-Subject: Re: [PATCH v2 5/9] wlcore: always use one-shot IRQ
-From: Luciano Coelho <coelho@ti.com>
-To: <balbi@ti.com>
-CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Tue, 2 Jul 2013 23:16:58 +0300
-In-Reply-To: <20130702153229.GG7013@arwen.pp.htv.fi>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
-	 <1372776948-24840-6-git-send-email-coelho@ti.com>
-	 <20130702153229.GG7013@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1755367Ab3GBUTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 16:19:38 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:36561 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754231Ab3GBUTg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 16:19:36 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1372687359-18235-1-git-send-email-jonas.jensen@gmail.com>
+References: <1372332203-30228-1-git-send-email-jonas.jensen@gmail.com>
+	<1372687359-18235-1-git-send-email-jonas.jensen@gmail.com>
+Date: Tue, 2 Jul 2013 22:19:36 +0200
+Message-ID: <CACRpkdbT3yiq79rCRK0kFe39Y6QkSZHJ+7kbcmKFH8esGEN3LQ@mail.gmail.com>
+Subject: Re: [PATCH v4] ARM: clocksource: add support for MOXA ART SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arm@kernel.org" <arm@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-02 at 18:32 +0300, Felipe Balbi wrote:
-> On Tue, Jul 02, 2013 at 05:55:44PM +0300, Luciano Coelho wrote:
-> > Since we are now using threaded IRQs without the primary handler, we
-> > need to set IRQF_ONESHOT, otherwise our request will fail.
-> > 
-> > Signed-off-by: Luciano Coelho <coelho@ti.com>
-> 
-> good to see this happening, I remember we talked about this a while back
-> :-)
+On Mon, Jul 1, 2013 at 4:02 PM, Jonas Jensen <jonas.jensen@gmail.com> wrote:
 
-Yeah, we talked about it and I did the patch immediately.  This is
-needed because this is obviously not set automatically in the interrupts
-created via device tree.
+> This patch adds an clocksource driver for the main timer(s)
+> found on MOXA ART SoCs.
+>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 
+I'm pretty happy with this version, tglx points out a possible optimization
+getting rid of some unnecessary reads in hotpath but anyway:
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
 
-> Acked-by: Felipe Balbi <balbi@ti.com>
-> 
-> Still, if you call irq_set_irq_type() on board-file (since DT will do
-> something similar for you anyway) then you can completely drop
-> irq_flags.
-
-Yep.
-
---
-Luca.
-
+Yours,
+Linus Walleij
