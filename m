@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab3GBJqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:46:23 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:60902 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546Ab3GBJqW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:46:22 -0400
-Date: Tue, 2 Jul 2013 11:46:06 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Anders Hammarquist <iko@iko.pp.se>
-Cc: Johan Hovold <jhovold@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 0/2] *** SUBJECT HERE ***
-Message-ID: <20130702094606.GA30165@localhost>
-References: <20130619225315.GB12282@kroah.com>
- <201306212308.r5LN8C7M020720@eskarina.iko.pp.se>
- <20130621235603.GA1603@kroah.com>
- <201306221854.r5MIshv5013882@eskarina.iko.pp.se>
- <20130625233911.GA1087@kroah.com>
- <201306260829.r5Q8Txm5003881@eskarina.iko.pp.se>
- <20130626103924.GA30828@localhost>
- <201306272150.r5RLoq2u006119@eskarina.iko.pp.se>
- <20130628102333.GA13241@localhost>
- <201307012322.r61NM1vv019204@eskarina.iko.pp.se>
+	id S932641Ab3GBJra (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:47:30 -0400
+Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:40201
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932324Ab3GBJr2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 05:47:28 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzc89bhzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h93fhd24he5bhf0ah107ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>
+To: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-i2c@vger.kernel.org>
+CC: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: [PATCH linux-next] i2c-designware: use div_u64 to fix link
+Date: Tue, 2 Jul 2013 11:46:54 +0200
+Message-ID: <1372758414-21513-1-git-send-email-vincent.stehle@freescale.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201307012322.r61NM1vv019204@eskarina.iko.pp.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 01:22:01AM +0200, Anders Hammarquist wrote:
-> In a message of Fri, 28 Jun 2013 12:23:33 +0200, Johan Hovold writes:
-> >> I did a quick check of adding the device id though sysfs, and although
-> >> it partly works, it doesn't find the correct firmware (it ends up trying
-> >> to load 5052 firmware for a 3410 device. Looking at the code it seems
-> >> (struct ti_device) td_is_3410 isn't set properly.)
-> >
-> >Turns out that the drivers device-type detection has never worked with
-> >the dynamic id interface (all devices were detected as 2-port devices).
-> >
-> >I'm responding to this mail with a fix. Care to give it a try?
-> 
-> Yes, this works fine. 
+This fixes the following link error:
 
-Thanks for testing.
+  drivers/built-in.o: In function `dw_i2c_probe':
+  of_iommu.c:(.text+0x18c8f0): undefined reference to `__aeabi_uldivmod'
+  make: *** [vmlinux] Error 1
 
-Johan
+Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>
+Cc: Christian Ruppert <christian.ruppert@abilis.com>
+Cc: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+---
+
+
+Hi,
+
+Linux next-20130702 link broke for ARM config multi_v7_defconfig. This is with
+gcc 4.7.2 but I am not sure it matters much here.
+
+This patch repairs the link.
+
+It did not break anything for me on i.MX6 sabre sd, but it does'nt have a
+designware i2c, so more reviewing/testing is welcome.
+
+Best regards,
+
+V.
+
+
+ drivers/i2c/busses/i2c-designware-platdrv.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index def79b5..4c5fada 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -122,7 +122,8 @@ static int dw_i2c_probe(struct platform_device *pdev)
+ 
+ 		of_property_read_u32(pdev->dev.of_node,
+ 					"i2c-sda-hold-time-ns", &ht);
+-		dev->sda_hold_time = ((u64)ic_clk * ht + 500000) / 1000000;
++		dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000,
++					     1000000);
+ 	}
+ 
+ 	dev->functionality =
+-- 
+1.7.10.4
+
+
+
