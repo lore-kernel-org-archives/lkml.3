@@ -1,269 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab3GBNPS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 09:15:18 -0400
-Received: from mail-bk0-f53.google.com ([209.85.214.53]:63601 "EHLO
-	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217Ab3GBNPR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 09:15:17 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 5/7] ARM: kirkwood: convert to DT irqchip and clocksource
-Date: Tue,  2 Jul 2013 15:15:07 +0200
-Message-Id: <1372770907-32738-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1372763023-12374-6-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1751758Ab3GBN3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 09:29:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47997 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750769Ab3GBN3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 09:29:46 -0400
+Date: Tue, 2 Jul 2013 15:29:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kmpark@infradead.org,
+        hyunhee.kim@samsung.com
+Subject: Re: [PATCH v2] vmpressure: implement strict mode
+Message-ID: <20130702132942.GH16815@dhcp22.suse.cz>
+References: <20130627181353.3d552e64.akpm@linux-foundation.org>
+ <20130628043411.GA9100@teo>
+ <20130628050712.GA10097@teo>
+ <20130628100027.31504abe@redhat.com>
+ <20130628165722.GA12271@teo>
+ <20130628170917.GA12610@teo>
+ <20130628144507.37d28ed9@redhat.com>
+ <20130628185547.GA14520@teo>
+ <20130628154402.4035f2fa@redhat.com>
+ <20130629005637.GA16068@teo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130629005637.GA16068@teo>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With recent support for true irqchip and clocksource drivers for Orion
-SoCs, now make use of it on DT enabled Kirkwood boards.
+On Fri 28-06-13 17:56:37, Anton Vorontsov wrote:
+> On Fri, Jun 28, 2013 at 03:44:02PM -0400, Luiz Capitulino wrote:
+> > > Why can't you use poll() and demultiplex the events? Check if there is an
+> > > event in the crit fd, and if there is, then just ignore all the rest.
+> > 
+> > This may be a valid workaround for current kernels, but application
+> > behavior will be different among kernels with a different number of
+> > events.
+> 
+> This is not a workaround, this is how poll works, and this is kinda
+> expected... But not that I had this plan in mind when I was designing the
+> current scheme... :)
 
-This also introduces a new Kconfig option for legacy (non-DT) Kirkwood
-where old code is moved out to and polishes DT board file a little bit.
+One thing I found strict mode useful is that a poll based implementation
+would be PITA without kernel help. First the timing is nothing you can
+rely on. There might be arbitrary timeout between two eventfd_signal
+calls. So you would see Medium while critical is waiting for being
+scheduled.
+Kernel might help here though and signal from the highest event down to
+lower ones. The core issue would stay though. What is a tolerable period
+when an event is considered separate one?
 
-Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
---- 
-Changelog:
-v4->v5:
-- do not re-introduce already removed init_dma_coherent_pool_size
-  (Reported by Jason Cooper)
-
-@Jason: I did a 'git grep init_dma_coherent_pool_size' and now there
-are no users of that function - as it was before. Patch 6/7 only differs
-in the 'index' diff line because of the rebase here. I will not resend that,
-it should still apply.
-
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
----
- arch/arm/mach-kirkwood/Kconfig    |   22 ++++++++++++++++++++++
- arch/arm/mach-kirkwood/Makefile   |    4 ++--
- arch/arm/mach-kirkwood/board-dt.c |   23 ++++++++++++++++-------
- 3 files changed, 40 insertions(+), 9 deletions(-)
-
-diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
-index 493c71a..ede131e 100644
---- a/arch/arm/mach-kirkwood/Kconfig
-+++ b/arch/arm/mach-kirkwood/Kconfig
-@@ -2,67 +2,81 @@ if ARCH_KIRKWOOD
- 
- menu "Marvell Kirkwood Implementations"
- 
-+config KIRKWOOD_LEGACY
-+	bool
-+
- config MACH_D2NET_V2
- 	bool "LaCie d2 Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie d2 Network v2 NAS.
- 
- config MACH_DOCKSTAR
- 	bool "Seagate FreeAgent DockStar"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Seagate FreeAgent DockStar.
- 
- config MACH_ESATA_SHEEVAPLUG
- 	bool "Marvell eSATA SheevaPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell eSATA SheevaPlug Reference Board.
- 
- config MACH_GURUPLUG
- 	bool "Marvell GuruPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell GuruPlug Reference Board.
- 
- config MACH_INETSPACE_V2
- 	bool "LaCie Internet Space v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Internet Space v2 NAS.
- 
- config MACH_MV88F6281GTW_GE
- 	bool "Marvell 88F6281 GTW GE Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell 88F6281 GTW GE Board.
- 
- config MACH_NET2BIG_V2
- 	bool "LaCie 2Big Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie 2Big Network v2 NAS.
- 
- config MACH_NET5BIG_V2
- 	bool "LaCie 5Big Network v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie 5Big Network v2 NAS.
- 
- config MACH_NETSPACE_MAX_V2
- 	bool "LaCie Network Space Max v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Network Space Max v2 NAS.
- 
- config MACH_NETSPACE_V2
- 	bool "LaCie Network Space v2 NAS Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  LaCie Network Space v2 NAS.
- 
- config MACH_OPENRD
-+	select KIRKWOOD_LEGACY
-         bool
- 
- config MACH_OPENRD_BASE
-@@ -88,30 +102,35 @@ config MACH_OPENRD_ULTIMATE
- 
- config MACH_RD88F6192_NAS
- 	bool "Marvell RD-88F6192-NAS Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell RD-88F6192-NAS Reference Board.
- 
- config MACH_RD88F6281
- 	bool "Marvell RD-88F6281 Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell RD-88F6281 Reference Board.
- 
- config MACH_SHEEVAPLUG
- 	bool "Marvell SheevaPlug Reference Board"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell SheevaPlug Reference Board.
- 
- config MACH_T5325
- 	bool "HP t5325 Thin Client"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  HP t5325 Thin Client.
- 
- config MACH_TS219
- 	bool "QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and TS-219P+ Turbo NAS"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and
-@@ -119,6 +138,7 @@ config MACH_TS219
- 
- config MACH_TS41X
- 	bool "QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo NAS"
-+	select KIRKWOOD_LEGACY
- 	help
- 	  Say 'Y' here if you want your kernel to support the
- 	  QNAP TS-410, TS-410U, TS-419P, TS-419P+ and TS-419U Turbo
-@@ -129,6 +149,8 @@ comment "Device tree entries"
- config ARCH_KIRKWOOD_DT
- 	bool "Marvell Kirkwood Flattened Device Tree"
- 	select KIRKWOOD_CLK
-+	select ORION_IRQCHIP
-+	select ORION_TIMER
- 	select POWER_SUPPLY
- 	select POWER_RESET
- 	select POWER_RESET_GPIO
-diff --git a/arch/arm/mach-kirkwood/Makefile b/arch/arm/mach-kirkwood/Makefile
-index 062f8c7..f78f333 100644
---- a/arch/arm/mach-kirkwood/Makefile
-+++ b/arch/arm/mach-kirkwood/Makefile
-@@ -1,5 +1,5 @@
--obj-y				+= common.o irq.o pcie.o mpp.o
--
-+obj-y				+= common.o pcie.o
-+obj-$(CONFIG_KIRKWOOD_LEGACY)	+= irq.o mpp.o
- obj-$(CONFIG_MACH_D2NET_V2)		+= d2net_v2-setup.o lacie_v2-common.o
- obj-$(CONFIG_MACH_DOCKSTAR)		+= dockstar-setup.o
- obj-$(CONFIG_MACH_ESATA_SHEEVAPLUG)	+= sheevaplug-setup.o
-diff --git a/arch/arm/mach-kirkwood/board-dt.c b/arch/arm/mach-kirkwood/board-dt.c
-index 881f37e..56d4a5e 100644
---- a/arch/arm/mach-kirkwood/board-dt.c
-+++ b/arch/arm/mach-kirkwood/board-dt.c
-@@ -15,6 +15,9 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/clk-provider.h>
-+#include <linux/clocksource.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/irqchip.h>
- #include <linux/kexec.h>
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -67,10 +70,17 @@ static void __init kirkwood_legacy_clk_init(void)
- 	clk_prepare_enable(clk);
- }
- 
--static void __init kirkwood_of_clk_init(void)
-+static void __init kirkwood_dt_time_init(void)
- {
- 	of_clk_init(NULL);
--	kirkwood_legacy_clk_init();
-+	clocksource_of_init();
-+}
-+
-+static void __init kirkwood_dt_init_early(void)
-+{
-+	mvebu_mbus_init("marvell,kirkwood-mbus",
-+			BRIDGE_WINS_BASE, BRIDGE_WINS_SZ,
-+			DDR_WINDOW_CPU_BASE, DDR_WINDOW_CPU_SZ);
- }
- 
- static void __init kirkwood_dt_init(void)
-@@ -91,8 +101,8 @@ static void __init kirkwood_dt_init(void)
- 
- 	kirkwood_cpufreq_init();
- 
--	/* Setup root of clk tree */
--	kirkwood_of_clk_init();
-+	/* Setup clocks for legacy devices */
-+	kirkwood_legacy_clk_init();
- 
- 	kirkwood_cpuidle_init();
- 
-@@ -114,9 +124,8 @@ static const char * const kirkwood_dt_board_compat[] = {
- DT_MACHINE_START(KIRKWOOD_DT, "Marvell Kirkwood (Flattened Device Tree)")
- 	/* Maintainer: Jason Cooper <jason@lakedaemon.net> */
- 	.map_io		= kirkwood_map_io,
--	.init_early	= kirkwood_init_early,
--	.init_irq	= orion_dt_init_irq,
--	.init_time	= kirkwood_timer_init,
-+	.init_early	= kirkwood_dt_init_early,
-+	.init_time	= kirkwood_dt_time_init,
- 	.init_machine	= kirkwood_dt_init,
- 	.restart	= kirkwood_restart,
- 	.dt_compat	= kirkwood_dt_board_compat,
+That being said I think both modes make sense and they cover different
+usecases.
 -- 
-1.7.2.5
-
+Michal Hocko
+SUSE Labs
