@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab3GBQkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 12:40:17 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:42826 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753703Ab3GBQkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 12:40:13 -0400
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, cbe-oss-dev@lists.ozlabs.org,
-        linux-rdma@vger.kernel.org, devel@driverdev.osuosl.org,
-        kvm@vger.kernel.org, linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com,
-        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Yann Droneaud <ydroneaud@opteya.com>
-Subject: [PATCH 00/13] Getting rid of get_unused_fd()
-Date: Tue,  2 Jul 2013 18:39:24 +0200
-Message-Id: <cover.1372777600.git.ydroneaud@opteya.com>
-X-Mailer: git-send-email 1.8.3.1
+	id S1752623Ab3GBQsU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 12:48:20 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:51213 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3GBQsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 12:48:18 -0400
+Date: Tue, 2 Jul 2013 09:48:18 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: majianpeng <majianpeng@gmail.com>
+cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mds: update atime if client can read.
+In-Reply-To: <201307021345090019137@gmail.com>
+Message-ID: <alpine.DEB.2.00.1307020946520.1067@cobra.newdream.net>
+References: <201307021345090019137@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2 Jul 2013, majianpeng wrote:
+> Now, update atime only for CEPH_CAP_FILE_EXCL.Change this if
+> CEPH_CAP_FILE_RD.
 
-Macro get_unused_fd() is a shortcut to call function get_unused_fd_flags(),
-to allocate a file descriptor.
+Can we introduce a global config optoin (bool mds_atime in 
+common/config_opts.h, maybe) so that users can turn this off?  And/or add 
+a 'relatime' option?  More users won't want this as it is very expensive 
+to maintain this extra level of metadata.
 
-The macro use 0 as flags, so the file descriptor is created
-without O_CLOEXEC flag.
+That aside, this approach looks right to me. :)
 
-This can be seen as an unsafe default eg. in most case O_CLOEXEC
-must be used to not leak file descriptor across exec().
+Thanks!
+sage
 
-Newer kernel code should use anon_inode_getfd() or get_unused_fd_flags()
-with flags provided by userspace. If flags cannot be given by userspace,
-O_CLOEXEC must be the default flag.
 
-Using O_CLOEXEC by default allows userspace to choose, without race,
-if the file descriptor is going to be inherited across exec().
-
-They are two ways to achieve this:
-
-- makes get_unused_fd() use O_CLOEXEC by default
-
-  It's difficult to get it right: every code using of get_unused_fd()
-  must take this change into account and be fixed as soon as
-  macro get_unused_fd() do the switch. Non updated code will have
-  unexpected behavor and it's likely going to break API contract.
-
-- remove get_unused_fd()
-
-  It's going to break some out of tree, not yet upstream kernel code,
-  but it's easy to notice and fix. Anyway, newer code should use
-  anon_inode_getfd() or get_unused_fd_flags().
-
-The latter option was choosen to ensure no unexpected behavor
-for out of tree, not yet upstream code. Removing the macro is the safest
-choice: it's better to break build than trying to make get_unused_fd()
-use O_CLOEXEC by default and get all user of get_unused_fd() update.
-
-Additionnaly, removing the macro is not going to break modules ABI.
-
-In linux-next tag 20130702, they're currently:
-
-- 15 calls to get_unused_fd_flags()
-     not counting get_unused_fd() and anon_inode_getfd()
-- 14 calls to get_unused_fd()
-- 11 calls to anon_inode_getfd()
-
-The following patchset try to convert all calls to get_unused_fd()
-to get_unused_fd_flags(0) before removing get_unused_fd() macro.
-
-Without get_unused_fd() macro, more subsystems are likely to use
-anon_inode_getfd() and be teached to provide an API that let userspace
-choose the opening flags of the file descriptor.
-
-Yann Droneaud (13):
-  ia64: use get_unused_fd_flags(0) instead of get_unused_fd()
-  ppc/cell: use get_unused_fd_flags(0) instead of get_unused_fd()
-  infiniband: use get_unused_fd_flags(0) instead of get_unused_fd()
-  android/sw_sync: use get_unused_fd_flags(0) instead of get_unused_fd()
-  android/sync: use get_unused_fd_flags(0) instead of get_unused_fd()
-  vfio: use get_unused_fd_flags(0) instead of get_unused_fd()
-  binfmt_misc: use get_unused_fd_flags(0) instead of get_unused_fd()
-  file: use get_unused_fd_flags(0) instead of get_unused_fd()
-  fanotify: use get_unused_fd_flags(0) instead of get_unused_fd()
-  xfs: use get_unused_fd_flags(0) instead of get_unused_fd()
-  events: use get_unused_fd_flags(0) instead of get_unused_fd()
-  sctp: use get_unused_fd_flags(0) instead of get_unused_fd()
-  file: remove get_unused_fd()
-
- arch/ia64/kernel/perfmon.c                | 2 +-
- arch/powerpc/platforms/cell/spufs/inode.c | 4 ++--
- drivers/infiniband/core/uverbs_cmd.c      | 4 ++--
- drivers/staging/android/sw_sync.c         | 2 +-
- drivers/staging/android/sync.c            | 2 +-
- drivers/vfio/vfio.c                       | 2 +-
- fs/binfmt_misc.c                          | 2 +-
- fs/file.c                                 | 2 +-
- fs/notify/fanotify/fanotify_user.c        | 2 +-
- fs/xfs/xfs_ioctl.c                        | 2 +-
- include/linux/file.h                      | 1 -
- kernel/events/core.c                      | 2 +-
- net/sctp/socket.c                         | 2 +-
- 13 files changed, 14 insertions(+), 15 deletions(-)
-
--- 
-1.8.3.1
+ > 
+> Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+> ---
+>  src/mds/Locker.cc | 15 +++++++++------
+>  1 file changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/src/mds/Locker.cc b/src/mds/Locker.cc
+> index 30e014a..58f953f 100644
+> --- a/src/mds/Locker.cc
+> +++ b/src/mds/Locker.cc
+> @@ -2676,8 +2676,9 @@ void Locker::_do_snap_update(CInode *in, snapid_t snap, int dirty, snapid_t foll
+>  void Locker::_update_cap_fields(CInode *in, int dirty, MClientCaps *m, inode_t *pi)
+>  {
+>    // file
+> +  utime_t atime = m->get_atime();
+> +
+>    if (dirty & (CEPH_CAP_FILE_EXCL|CEPH_CAP_FILE_WR)) {
+> -    utime_t atime = m->get_atime();
+>      utime_t mtime = m->get_mtime();
+>      utime_t ctime = m->get_ctime();
+>      uint64_t size = m->get_size();
+> @@ -2700,11 +2701,7 @@ void Locker::_update_cap_fields(CInode *in, int dirty, MClientCaps *m, inode_t *
+>        pi->size = size;
+>        pi->rstat.rbytes = size;
+>      }
+> -    if ((dirty & CEPH_CAP_FILE_EXCL) && atime != pi->atime) {
+> -      dout(7) << "  atime " << pi->atime << " -> " << atime
+> -	      << " for " << *in << dendl;
+> -      pi->atime = atime;
+> -    }
+> +    
+>      if ((dirty & CEPH_CAP_FILE_EXCL) &&
+>  	ceph_seq_cmp(pi->time_warp_seq, m->get_time_warp_seq()) < 0) {
+>        dout(7) << "  time_warp_seq " << pi->time_warp_seq << " -> " << m->get_time_warp_seq()
+> @@ -2712,6 +2709,12 @@ void Locker::_update_cap_fields(CInode *in, int dirty, MClientCaps *m, inode_t *
+>        pi->time_warp_seq = m->get_time_warp_seq();
+>      }
+>    }
+> +  
+> +  if ((dirty & CEPH_CAP_FILE_RD) && atime > pi->atime) {
+> +      dout(7) << "  atime " << pi->atime << " -> " << atime
+> +	      << " for " << *in << dendl;
+> +      pi->atime = atime;
+> +  }
+>    // auth
+>    if (dirty & CEPH_CAP_AUTH_EXCL) {
+>      if (m->head.uid != pi->uid) {
+> -- 
+> 1.8.3.rc1.44.gb387c77
+> 
