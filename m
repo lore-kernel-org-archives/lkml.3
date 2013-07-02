@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3GBAZI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 1 Jul 2013 20:25:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22777 "EHLO
+	id S1755964Ab3GBA3B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 1 Jul 2013 20:29:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5517 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab3GBAZF (ORCPT
+	with ESMTP id S1754607Ab3GBA27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 1 Jul 2013 20:25:05 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5aBJmaktoMwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=h9pOgsNgohEA:10 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=vrmj5f9Dx7mH3hxr5ucA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Mon, 1 Jul 2013 20:28:59 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=P84HKLajjusA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PCnuL9RVHEUA:10 a=1XWaLZrsAAAA:8 a=pGLkceISAAAA:8 a=eTuon03C81no0s9xlFsA:9 a=QEXdDO2ut3YA:10 a=UTB_XpHje0EA:10 a=MSl-tDqOz04A:10 a=QgTLi5_nSonkQ-me:21 a=DKKZycBlpjtaoSRS:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-ID: <1372724704.22688.30.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/3] tracing: Make trace_marker use the correct
- per-instance buffer
+Message-ID: <1372724938.22688.31.camel@gandalf.local.home>
+Subject: Re: [PATCH 3/3] tracing: Protect ftrace_trace_arrays list in
+ trace_events.c
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Alexander Z Lam <azl@google.com>
 Cc: linux-kernel@vger.kernel.org, David Sharp <dhsharp@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         Alexander Z Lam <lambchop468@gmail.com>
-Date: Mon, 01 Jul 2013 20:25:04 -0400
-In-Reply-To: <1372717885-4543-2-git-send-email-azl@google.com>
+Date: Mon, 01 Jul 2013 20:28:58 -0400
+In-Reply-To: <1372717885-4543-3-git-send-email-azl@google.com>
 References: <1372717885-4543-1-git-send-email-azl@google.com>
-	 <1372717885-4543-2-git-send-email-azl@google.com>
+	 <1372717885-4543-3-git-send-email-azl@google.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
@@ -32,44 +32,77 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, 2013-07-01 at 15:31 -0700, Alexander Z Lam wrote:
-> The trace_marker file was present for each new instance created, but it
-> added the trace mark to the global trace buffer instead of to
-> the instance's buffer.
+> There are multiple places where the ftrace_trace_arrays list is accessed in
+> trace_events.c without the trace_types_lock held.
 
-Thanks, I'll get this into this merge window. And maybe even mark it for
-stable.
+Thanks, this I'll also pull into 3.11 and mark stable.
 
 -- Steve
 
 > 
 > Cc: David Sharp <dhsharp@google.com>
-> Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
 > Cc: Alexander Z Lam <lambchop468@gmail.com>
 > Signed-off-by: Alexander Z Lam <azl@google.com>
 > ---
->  kernel/trace/trace.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+>  kernel/trace/trace_events.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
 > 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index e0b0d2a..2f7307e 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -4351,6 +4351,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
->  					size_t cnt, loff_t *fpos)
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 6db3290..26351cc 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -1586,6 +1586,7 @@ static void __add_event_to_tracers(struct ftrace_event_call *call,
+>  int trace_add_event_call(struct ftrace_event_call *call)
 >  {
->  	unsigned long addr = (unsigned long)ubuf;
-> +	struct trace_array *tr = filp->private_data;
->  	struct ring_buffer_event *event;
->  	struct ring_buffer *buffer;
->  	struct print_entry *entry;
-> @@ -4410,7 +4411,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
+>  	int ret;
+> +	mutex_lock(&trace_types_lock);
+>  	mutex_lock(&event_mutex);
 >  
->  	local_save_flags(irq_flags);
->  	size = sizeof(*entry) + cnt + 2; /* possible \n added */
-> -	buffer = global_trace.trace_buffer.buffer;
-> +	buffer = tr->trace_buffer.buffer;
->  	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, size,
->  					  irq_flags, preempt_count());
->  	if (!event) {
+>  	ret = __register_event(call, NULL);
+> @@ -1593,11 +1594,13 @@ int trace_add_event_call(struct ftrace_event_call *call)
+>  		__add_event_to_tracers(call, NULL);
+>  
+>  	mutex_unlock(&event_mutex);
+> +	mutex_unlock(&trace_types_lock);
+>  	return ret;
+>  }
+>  
+>  /*
+> - * Must be called under locking both of event_mutex and trace_event_sem.
+> + * Must be called under locking of trace_types_lock, event_mutex and
+> + * trace_event_sem.
+>   */
+>  static void __trace_remove_event_call(struct ftrace_event_call *call)
+>  {
+> @@ -1609,11 +1612,13 @@ static void __trace_remove_event_call(struct ftrace_event_call *call)
+>  /* Remove an event_call */
+>  void trace_remove_event_call(struct ftrace_event_call *call)
+>  {
+> +	mutex_lock(&trace_types_lock);
+>  	mutex_lock(&event_mutex);
+>  	down_write(&trace_event_sem);
+>  	__trace_remove_event_call(call);
+>  	up_write(&trace_event_sem);
+>  	mutex_unlock(&event_mutex);
+> +	mutex_unlock(&trace_types_lock);
+>  }
+>  
+>  #define for_each_event(event, start, end)			\
+> @@ -1757,6 +1762,7 @@ static int trace_module_notify(struct notifier_block *self,
+>  {
+>  	struct module *mod = data;
+>  
+> +	mutex_lock(&trace_types_lock);
+>  	mutex_lock(&event_mutex);
+>  	switch (val) {
+>  	case MODULE_STATE_COMING:
+> @@ -1767,6 +1773,7 @@ static int trace_module_notify(struct notifier_block *self,
+>  		break;
+>  	}
+>  	mutex_unlock(&event_mutex);
+> +	mutex_unlock(&trace_types_lock);
+>  
+>  	return 0;
+>  }
 
 
