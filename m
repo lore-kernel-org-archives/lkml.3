@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab3GBK1f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 06:27:35 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:38662 "EHLO multi.imgtec.com"
+	id S932681Ab3GBK1w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 06:27:52 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:47782 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932521Ab3GBK1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 06:27:34 -0400
+	id S932521Ab3GBK1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 06:27:51 -0400
+Message-ID: <51D2A46A.2000808@imgtec.com>
+Date: Tue, 2 Jul 2013 10:59:06 +0100
 From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v2] metag: kick: add missing irq_enter/exit to kick_handler()
-Date: Tue, 2 Jul 2013 10:56:53 +0100
-Message-ID: <1372759013-29911-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01192__2013_07_02_11_26_27
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 5/5] metag: cpu hotplug: route_irq: preserve irq mask
+References: <1372694659-30176-1-git-send-email-james.hogan@imgtec.com> <1372694659-30176-6-git-send-email-james.hogan@imgtec.com> <51D27044.6050604@linux.vnet.ibm.com>
+In-Reply-To: <51D27044.6050604@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_07_02_11_26_34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kick_handler() doesn't have an irq_enter/exit pair, but it's used for
-handling SMP IPIs which require work to be done in softirqs, which are
-invoked from irq_exit() when the hard irq nest count reaches 0.
+On 02/07/13 07:16, Srivatsa S. Bhat wrote:
+> On 07/01/2013 09:34 PM, James Hogan wrote:
+>> The route_irq() function needs to preserve the irq mask by using the
+>> _irqsave/irqrestore variants of raw spin lock functions instead of the
+>> _irq variants. This is because it is called from __cpu_disable() (via
+>> migrate_irqs()), which is called with IRQs disabled, so using the _irq
+>> variants re-enables IRQs.
+>>
+>> This appears to have been causing occasional hits of the
+>> BUG_ON(!irqs_disabled()) in __irq_work_run() during CPU hotplug soak
+>> testing:
+>>   BUG: failure at kernel/irq_work.c:122/__irq_work_run()!
+>>
+>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+>> ---
+> 
+> Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-The scheduler_ipi() callback in the IPI handler calls irq_enter/exit
-itself, but this is inside kick_handler()'s spin lock critical section,
-so if an invoked softirq issues an IPI the kick_handler() will be
-re-entered on the same CPU and will deadlock.
+Thanks for taking the time to review these patches
 
-This is easily fixed by adding the missing irq_enter/exit to
-kick_handler() so that the hard irq nest count doesn't reach 0 until
-after the spin lock has been released.
-
-Ideally the spin lock protected handler list will also be replaced by a
-lockless RCU protected list since it is certainly mostly read. That can
-be done in a later change though.
-
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
-Changes in v2:
- - Reworded commit message to hopefully be less confusing (previously
-   "metag: kick: prevent nested kick handlers").
-
- arch/metag/kernel/kick.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/arch/metag/kernel/kick.c b/arch/metag/kernel/kick.c
-index 50fcbec..beb3776 100644
---- a/arch/metag/kernel/kick.c
-+++ b/arch/metag/kernel/kick.c
-@@ -26,6 +26,8 @@
-  * pass it as an argument.
-  */
- #include <linux/export.h>
-+#include <linux/hardirq.h>
-+#include <linux/irq.h>
- #include <linux/kernel.h>
- #include <linux/mm.h>
- #include <linux/types.h>
-@@ -66,6 +68,7 @@ EXPORT_SYMBOL(kick_unregister_func);
- TBIRES
- kick_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
- {
-+	struct pt_regs *old_regs;
- 	struct kick_irq_handler *kh;
- 	struct list_head *lh;
- 	int handled = 0;
-@@ -79,6 +82,9 @@ kick_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
- 
- 	trace_hardirqs_off();
- 
-+	old_regs = set_irq_regs((struct pt_regs *)State.Sig.pCtx);
-+	irq_enter();
-+
- 	/*
- 	 * There is no need to disable interrupts here because we
- 	 * can't nest KICK interrupts in a KICK interrupt handler.
-@@ -97,5 +103,8 @@ kick_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
- 
- 	WARN_ON(!handled);
- 
-+	irq_exit();
-+	set_irq_regs(old_regs);
-+
- 	return tail_end(ret);
- }
--- 
-1.8.1.2
-
+Cheers
+James
 
