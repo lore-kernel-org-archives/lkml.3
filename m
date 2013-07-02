@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab3GBPbs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:31:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45849 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab3GBPbq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:31:46 -0400
-Date: Tue, 2 Jul 2013 18:31:13 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Luciano Coelho <coelho@ti.com>
-CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 4/9] wl12xx: use frequency instead of enumerations for
- pdata clocks
-Message-ID: <20130702153113.GF7013@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
- <1372776948-24840-5-git-send-email-coelho@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K/NRh952CO+2tg14"
-Content-Disposition: inline
-In-Reply-To: <1372776948-24840-5-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753840Ab3GBPco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:32:44 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:54557 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab3GBPcn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 11:32:43 -0400
+Message-ID: <1372779141.4979.7.camel@edumazet-glaptop>
+Subject: Re: [PATCH] pkt_sched: rate overflow fix
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Yang Yingliang <yangyingliang@huawei.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, chenweilong@huawei.com,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Tue, 02 Jul 2013 08:32:21 -0700
+In-Reply-To: <51D2ADFA.1090208@huawei.com>
+References: <51D2ADFA.1090208@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---K/NRh952CO+2tg14
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Tue, Jul 02, 2013 at 05:55:43PM +0300, Luciano Coelho wrote:
-> diff --git a/drivers/net/wireless/ti/wl12xx/main.c b/drivers/net/wireless=
-/ti/wl12xx/main.c
-> index 1c627da..903dcb3 100644
-> --- a/drivers/net/wireless/ti/wl12xx/main.c
-> +++ b/drivers/net/wireless/ti/wl12xx/main.c
-> @@ -1701,6 +1701,42 @@ static struct ieee80211_sta_ht_cap wl12xx_ht_cap =
-=3D {
->  		},
+On Tue, 2013-07-02 at 18:39 +0800, Yang Yingliang wrote:
+> Use bonding to aggregate two 82599 nics which have 4 ports and max rate is 40gbit.
+> Then set rate to 35gbit, the rate is overflow.
+> 
+> tc qdisc add dev $bond root handle 1: \
+> tbf latency 50ms burst 35mb rate 35gbit mtu 64k
+> 
+> tc qdisc show dev $bond
+> qdisc tbf 1: root refcnt 2 rate 640262Kbit burst 35Mb lat 50.0ms
+> 
+> iperf -c host -t 30 -i 10
+> [ ID] Interval       Transfer     Bandwidth
+> [  3]  0.0-10.0 sec   764 MBytes   641 Mbits/sec
+> [  3] 10.0-20.0 sec   730 MBytes   612 Mbits/sec
+> 
+> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+> ---
+>  include/uapi/linux/pkt_sched.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/include/uapi/linux/pkt_sched.h b/include/uapi/linux/pkt_sched.h
+> index 32aef0a..261042c 100644
+> --- a/include/uapi/linux/pkt_sched.h
+> +++ b/include/uapi/linux/pkt_sched.h
+> @@ -79,7 +79,7 @@ struct tc_ratespec {
+>         unsigned short  overhead;
+>         short           cell_align;
+>         unsigned short  mpu;
+> -       __u32           rate;
+> +       __u64           rate;
 >  };
-> =20
-> +static struct wl12xx_clock wl12xx_refclock_table[] =3D {
+> 
+>  #define TC_RTAB_SIZE   1024
 
-const
+OK, you just broke all previous tc binaries.
 
-> +	{ 19200000,	false,	WL12XX_REFCLOCK_19	},
-> +	{ 26000000,	false,	WL12XX_REFCLOCK_26	},
-> +	{ 26000000,	true,	WL12XX_REFCLOCK_26_XTAL	},
-> +	{ 38400000,	false,	WL12XX_REFCLOCK_38	},
-> +	{ 38400000,	true,	WL12XX_REFCLOCK_38_XTAL	},
-> +	{ 52000000,	false,	WL12XX_REFCLOCK_52	},
-> +	{ 0,		false,	0 }
-> +};
-> +
-> +static struct wl12xx_clock wl12xx_tcxoclock_table[] =3D {
+I wonder why people keep posting such buggy patches, while we are slowly
+doing all the right changes for this problem, in the kernel and
+userland.
 
-const
+Guys, if it was that simple, we would have done it years ago.
 
---=20
-balbi
+In the mean time, I suggest you update your iproute2 package to include
+the fix for this problem (commit a303853e844ce4
+"get_rate: detect 32bit overflows")
 
---K/NRh952CO+2tg14
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR0vJBAAoJEIaOsuA1yqREKRUQAJ73pu94CGu/7VONZrN80bat
-GH4zZVV6q3bbm63/NzlUdZklonA5LwYUU8RUcRuF7xHBfkrt/iogHVfEtbtIrrgj
-izP9hFLOWEM/iIkT8IIRMtIjsiIh10rH3JQ0s+WECz5/6G+B4hz1lRf9/bibNCxh
-kyYCHD9ngHAtld0soEd2r7Yps0kzu4p1Eo+nmlTJg8pn9lB1eCPSOsMKfvATt32u
-sawu3i+hwDlC6fG6x9GKidWEU9/6I31nNgyoKNXZgINp0P51h9cC2WoulboweWmy
-SODIrBFfFfzp3YyCYpTxmD1bmN8vh8HCFTh+AdCiAG1rnN8/8m3qM0XfCSxWRO9b
-zbYmrUlFQW4uIcrG62YTX3Cmv/z/4Wg2oNNR6FGJLdOK7xWDgdsWEedpUcOMJ7yw
-MRed1iC7ve2Nk+iYv/T7jclfCIJYOpICs5VbwDca0eU1cu/vcKFC5/f13eR4qtdF
-uMgkSTCoOTyQYeDSiVxy1Cwk5cDOTOWFpnxWbCaUlp3uVFM6QtDt8pZzQxupZJIv
-bnd8LWXCvpktROTqJAeVZKOSaWRis1iJttgXF2j+cXaYIVe4cUVmYnPvbVYJsLbZ
-w+ulUSiE3AIlEul5IGo4lA6Qrt8cmRDLJBz3hAUFADdKbb+WllUU6nw3O71uJoFo
-Do6SpsKoCkxMoveFwq8p
-=rKY4
------END PGP SIGNATURE-----
-
---K/NRh952CO+2tg14--
