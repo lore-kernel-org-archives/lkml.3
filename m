@@ -1,76 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab3GBT1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 15:27:51 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:41390 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195Ab3GBT1o (ORCPT
+	id S1756502Ab3GBTiJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 15:38:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58541 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932909Ab3GBTiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 15:27:44 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH 5/6] perf test: make terms a stack variable in test_term
-Date: Tue,  2 Jul 2013 13:27:24 -0600
-Message-Id: <1372793245-4136-6-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
-References: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
+	Tue, 2 Jul 2013 15:38:06 -0400
+Date: Tue, 2 Jul 2013 12:38:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Maxim Patlasov <MPatlasov@parallels.com>
+Cc: miklos@szeredi.hu, riel@redhat.com, dev@parallels.com, xemul@parallels.com,
+        fuse-devel@lists.sourceforge.net, bfoster@redhat.com,
+        linux-kernel@vger.kernel.org, jbottomley@parallels.com,
+        linux-mm@kvack.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, fengguang.wu@intel.com,
+        devel@openvz.org, mgorman@suse.de
+Subject: Re: [PATCH] mm: strictlimit feature -v2
+Message-Id: <20130702123804.9f252487f86c12b0f4edee57@linux-foundation.org>
+In-Reply-To: <20130702174316.15075.84993.stgit@maximpc.sw.ru>
+References: <20130629174706.20175.78184.stgit@maximpc.sw.ru>
+	<20130702174316.15075.84993.stgit@maximpc.sw.ru>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to malloc the memory for it.
+On Tue, 02 Jul 2013 21:44:47 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/tests/parse-events.c |   14 +++++---------
- 1 file changed, 5 insertions(+), 9 deletions(-)
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> The feature prevents mistrusted filesystems to grow a large number of dirty
+> pages before throttling. For such filesystems balance_dirty_pages always
+> check bdi counters against bdi limits. I.e. even if global "nr_dirty" is under
+> "freerun", it's not allowed to skip bdi checks. The only use case for now is
+> fuse: it sets bdi max_ratio to 1% by default and system administrators are
+> supposed to expect that this limit won't be exceeded.
+> 
+> The feature is on if address space is marked by AS_STRICTLIMIT flag.
+> A filesystem may set the flag when it initializes a new inode.
+> 
+> Changed in v2 (thanks to Andrew Morton):
+>  - added a few explanatory comments
+>  - cleaned up the mess in backing_dev_info foo_stamp fields: now it's clearly
+>    stated that bw_time_stamp is measured in jiffies; renamed other foo_stamp
+>    fields to reflect that they are in units of number-of-pages.
+> 
 
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index ad950f5..344c844 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -1246,24 +1246,20 @@ static int test_events(struct evlist_test *events, unsigned cnt)
- 
- static int test_term(struct terms_test *t)
- {
--	struct list_head *terms;
-+	struct list_head terms;
- 	int ret;
- 
--	terms = malloc(sizeof(*terms));
--	if (!terms)
--		return -ENOMEM;
--
--	INIT_LIST_HEAD(terms);
-+	INIT_LIST_HEAD(&terms);
- 
--	ret = parse_events_terms(terms, t->str);
-+	ret = parse_events_terms(&terms, t->str);
- 	if (ret) {
- 		pr_debug("failed to parse terms '%s', err %d\n",
- 			 t->str , ret);
- 		return ret;
- 	}
- 
--	ret = t->check(terms);
--	parse_events__free_terms(terms);
-+	ret = t->check(&terms);
-+	parse_events__free_terms(&terms);
- 
- 	return ret;
- }
--- 
-1.7.10.1
+Better, thanks.
+
+The writeback arithemtic makes my head spin - I'd really like Fengguang
+to go over this, please.
+
+A quick visit from the spelling police:
+
+>
+> ...
+>
+> @@ -41,8 +43,15 @@ typedef int (congested_fn)(void *, int);
+>  enum bdi_stat_item {
+>  	BDI_RECLAIMABLE,
+>  	BDI_WRITEBACK,
+> -	BDI_DIRTIED,
+> -	BDI_WRITTEN,
+> +
+> +	/*
+> +	 * The three counters below reflects number of events of specific type
+> +	 * happened since bdi_init(). The type is defined in comments below:
+
+"The three counters below reflect the number of events of specific
+types since bdi_init()"
+
+> +	 */
+> +	BDI_DIRTIED,	  /* a page was dirtied */
+> +	BDI_WRITTEN,	  /* writeout completed for a page */
+> +	BDI_WRITTEN_BACK, /* a page went to writeback */
+> +
+>  	NR_BDI_STAT_ITEMS
+>  };
+>  
+>
+> ...
+>
+> @@ -680,28 +712,55 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
+>  		return 0;
+>  
+>  	/*
+> -	 * global setpoint
+> +	 * The strictlimit feature is a tool preventing mistrusted filesystems
+> +	 * to grow a large number of dirty pages before throttling. For such
+
+"from growing"
+
+> +	 * filesystems balance_dirty_pages always checks bdi counters against
+> +	 * bdi limits. Even if global "nr_dirty" is under "freerun". This is
+> +	 * especially important for fuse who sets bdi->max_ratio to 1% by
+
+s/who/which/
+
+> +	 * default. Without strictlimit feature, fuse writeback may consume
+> +	 * arbitrary amount of RAM because it is accounted in
+> +	 * NR_WRITEBACK_TEMP which is not involved in calculating "nr_dirty".
+>
+> ...
+>
+> @@ -994,6 +1054,26 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
+>  	 * keep that period small to reduce time lags).
+>  	 */
+>  	step = 0;
+> +
+> +	/*
+> +	 * For strictlimit case, balanced_dirty_ratelimit was calculated
+
+balance_dirty_ratelimit?
+
+> +	 * above based on bdi counters and limits (see bdi_position_ratio()).
+> +	 * Hence, to calculate "step" properly, we have to use bdi_dirty as
+> +	 * "dirty" and bdi_setpoint as "setpoint".
+> +	 *
+> +	 * We rampup dirty_ratelimit forcibly if bdi_dirty is low because
+> +	 * it's possible that bdi_thresh is close to zero due to inactivity
+> +	 * of backing device (see the implementation of bdi_dirty_limit()).
+> +	 */
+> +	if (unlikely(strictlimit)) {
+> +		dirty = bdi_dirty;
+> +		if (bdi_dirty < 8)
+> +			setpoint = bdi_dirty + 1;
+> +		else
+>
+> ...
+>
+> @@ -1057,18 +1140,32 @@ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+>  	if (elapsed > HZ && time_before(bdi->bw_time_stamp, start_time))
+>  		goto snapshot;
+>  
+> +	/*
+> +	 * Skip periods when backing dev was idle due to abscence of pages
+
+"absence"
+
+> +	 * under writeback (when over_bground_thresh() returns false)
+> +	 */
+> +	if (test_bit(BDI_idle, &bdi->state) &&
+> +	    bdi->writeback_nr_stamp == writeback)
+>
+> ...
+>
 
