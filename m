@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab3GBVzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 17:55:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453Ab3GBVzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 17:55:32 -0400
-Date: Tue, 2 Jul 2013 17:55:19 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mhocko@suse.cz,
-        minchan@kernel.org, anton@enomsg.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] vmpressure: implement strict mode
-Message-ID: <20130702175519.16148e5c@redhat.com>
-In-Reply-To: <20130702194703.GA19373@amd.pavel.ucw.cz>
-References: <20130625175129.7c0d79e1@redhat.com>
-	<20130701085103.GA19798@amd.pavel.ucw.cz>
-	<20130702110628.5dbb75e0@redhat.com>
-	<20130702194703.GA19373@amd.pavel.ucw.cz>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754892Ab3GBWHD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 18:07:03 -0400
+Received: from fep18.mx.upcmail.net ([62.179.121.38]:33985 "EHLO
+	fep18.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab3GBWHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 18:07:00 -0400
+X-SourceIP: 84.112.62.194
+Date: Wed, 3 Jul 2013 00:06:51 +0200
+From: Thomas Zeitlhofer <thomas.zeitlhofer@nt.tuwien.ac.at>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, jasowang@redhat.com
+Subject: Re: tuntap regression in v3.9.8 and v3.10
+Message-ID: <20130702220651.GA23097@toau.bambla>
+References: <20130702195910.GA20271@toau.bambla>
+ <CAOMZO5B7Yx7tRy8Q5wi6ngcD0FDJzKXHOEGPXyUo52+f3oUHEg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5B7Yx7tRy8Q5wi6ngcD0FDJzKXHOEGPXyUo52+f3oUHEg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Jul 2013 21:47:03 +0200
-Pavel Machek <pavel@ucw.cz> wrote:
-
-> On Tue 2013-07-02 11:06:28, Luiz Capitulino wrote:
-> > On Mon, 1 Jul 2013 10:51:03 +0200
-> > Pavel Machek <pavel@ucw.cz> wrote:
-> > 
-> > > Hi!
-> > > 
-> > > > diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-> > > > index ddf4f93..3c589cf 100644
-> > > > --- a/Documentation/cgroups/memory.txt
-> > > > +++ b/Documentation/cgroups/memory.txt
-> > > > @@ -807,12 +807,14 @@ register a notification, an application must:
-> > > >  
-> > > >  - create an eventfd using eventfd(2);
-> > > >  - open memory.pressure_level;
-> > > > -- write string like "<event_fd> <fd of memory.pressure_level> <level>"
-> > > > +- write string like "<event_fd> <fd of memory.pressure_level> <level> [strict]"
-> > > >    to cgroup.event_control.
-> > > >  
-> > > 
-> > > This is.. pretty strange interface. Would it be cleaner to do ioctl()?
-> > > New syscall?
-> > 
-> > Are you referring to my new mode or to the whole thing?
+On Tue, Jul 02, 2013 at 06:01:12PM -0300, Fabio Estevam wrote:
+> On Tue, Jul 2, 2013 at 4:59 PM, Thomas Zeitlhofer
+> <thomas.zeitlhofer@nt.tuwien.ac.at> wrote:
+> > Commit "tuntap: set SOCK_ZEROCOPY flag during open" introduces a
+> > regression which is observed with live migration of qemu/kvm based
+> > virtual machines that are connected to an openvswitch bridge.
+> >
+> > Reverting this commit (b26c93c46a3dec25ed236d4ba6107eb4ed5d9401 in
+> > v3.9.8 and accordingly 19a6afb23e5d323e1245baa4e62755492b2f1200 in
+> > v3.10) fixes the following problem:
 > 
-> Well. The interface was already very strange and you made it even
-> worse.
+> Should the sock_set_flag stay in tun_set_iff as it was prior to 54f968d6efd?
+> 
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -1652,6 +1652,7 @@ static int tun_set_iff(struct net *net, struct
+> file *file, struct ifreq *ifr)
+>                 tun->txflt.count = 0;
+>                 tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+> 
+> +               sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
+>                 tun->filter_attached = false;
+>                 tun->sndbuf = tfile->socket.sk->sk_sndbuf;
+> 
+> @@ -2159,8 +2160,6 @@ static int tun_chr_open(struct inode *inode,
+> struct file * file)
+>         set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
+>         INIT_LIST_HEAD(&tfile->next);
+> 
+> -       sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
+> -
+>         return 0;
+>  }
 
-The existing interface is the cgroup's notification mechanism, I think
-discussing it is a bit out of scope for my extension.
-
-Now, regarding my extension itself and the current vmpressure API, I
-believe that delivering all events to user-space (ie. w/o any filtering
-in the kernel) is a better solution.
-
-Point is whether we can do it with the current vmpressure API (which
-is cgroup based) or whether we should move to something else.
+I guess no, as this also leads to a kernel panic (tested against v3.10).
