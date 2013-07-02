@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab3GBLIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:08:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36335 "EHLO
+	id S1756063Ab3GBLKy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:10:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36354 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755342Ab3GBLIg (ORCPT
+	with ESMTP id S1755675Ab3GBLIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:36 -0400
+	Tue, 2 Jul 2013 07:08:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Simon Baatz <gmbnomis@gmail.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 40/50] ARM: 7772/1: Fix missing flush_kernel_dcache_page() for noMMU
-Date: Tue,  2 Jul 2013 12:07:28 +0100
-Message-Id: <1372763258-20664-41-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 43/50] dlci: validate the net device in dlci_del()
+Date: Tue,  2 Jul 2013 12:07:31 +0100
+Message-Id: <1372763258-20664-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Baatz <gmbnomis@gmail.com>
+From: Zefan Li <lizefan@huawei.com>
 
-commit 63384fd0b1509acf522a8a8fcede09087eedb7df upstream.
+commit 578a1310f2592ba90c5674bca21c1dbd1adf3f0a upstream.
 
-Commit 1bc3974 (ARM: 7755/1: handle user space mapped pages in
-flush_kernel_dcache_page) moved the implementation of
-flush_kernel_dcache_page() into mm/flush.c but did not implement it
-on noMMU ARM.
+We triggered an oops while running trinity with 3.4 kernel:
 
-Signed-off-by: Simon Baatz <gmbnomis@gmail.com>
-Acked-by: Kevin Hilman <khilman@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+BUG: unable to handle kernel paging request at 0000000100000d07
+IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
+PGD 640c0d067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+CPU 3
+...
+Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
+RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
+...
+Call Trace:
+  [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
+  [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
+  [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
+  [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
+  [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
+...
+
+It's because the net device is not a dlci device.
+
+Reported-by: Li Jinyue <lijinyue@huawei.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/mm/nommu.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wan/dlci.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/arm/mm/nommu.c b/arch/arm/mm/nommu.c
-index d51225f..eb5293a 100644
---- a/arch/arm/mm/nommu.c
-+++ b/arch/arm/mm/nommu.c
-@@ -57,6 +57,12 @@ void flush_dcache_page(struct page *page)
- }
- EXPORT_SYMBOL(flush_dcache_page);
+diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
+index 1f6e053..6a8a382 100644
+--- a/drivers/net/wan/dlci.c
++++ b/drivers/net/wan/dlci.c
+@@ -384,6 +384,7 @@ static int dlci_del(struct dlci_add *dlci)
+ 	struct frad_local	*flp;
+ 	struct net_device	*master, *slave;
+ 	int			err;
++	bool			found = false;
  
-+void flush_kernel_dcache_page(struct page *page)
-+{
-+	__cpuc_flush_dcache_area(page_address(page), PAGE_SIZE);
-+}
-+EXPORT_SYMBOL(flush_kernel_dcache_page);
+ 	rtnl_lock();
+ 
+@@ -394,6 +395,17 @@ static int dlci_del(struct dlci_add *dlci)
+ 		goto out;
+ 	}
+ 
++	list_for_each_entry(dlp, &dlci_devs, list) {
++		if (dlp->master == master) {
++			found = true;
++			break;
++		}
++	}
++	if (!found) {
++		err = -ENODEV;
++		goto out;
++	}
 +
- void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
- 		       unsigned long uaddr, void *dst, const void *src,
- 		       unsigned long len)
+ 	if (netif_running(master)) {
+ 		err = -EBUSY;
+ 		goto out;
 -- 
 1.8.1.2
 
