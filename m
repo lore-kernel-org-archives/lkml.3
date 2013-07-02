@@ -1,118 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab3GBHTn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 03:19:43 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:40717 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932219Ab3GBHTm convert rfc822-to-8bit (ORCPT
+	id S932436Ab3GBHTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 03:19:54 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:63184 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab3GBHTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 03:19:42 -0400
-Date: Tue, 02 Jul 2013 02:19:38 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] nbd: correct disconnect behavior
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Paul Clements <paul.clements@steeleye.com>, linux-kernel@vger.kernel.org,
-        nbd-general@lists.sourceforge.net
-In-Reply-To: <20130626162107.9237360f7646ec25f23cf5aa@linux-foundation.org>
-	(from akpm@linux-foundation.org on Wed Jun 26 18:21:07 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1372749578.5019.8@driftwood>
+	Tue, 2 Jul 2013 03:19:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <51D23766.8000605@asianux.com>
+References: <51CA8AB8.7080504@asianux.com>
+	<51CA900E.9020407@nod.at>
+	<51CA9E92.4000107@asianux.com>
+	<51CAA0C6.60007@nod.at>
+	<51CAA78C.5040900@asianux.com>
+	<51CAA8D6.9000505@nod.at>
+	<51CAAD1D.8050801@asianux.com>
+	<51CAAE7C.9090003@nod.at>
+	<51CAB556.4070700@asianux.com>
+	<51CAB689.70008@nod.at>
+	<CAMuHMdXw6VYhnNWcVfWc9ssxKTqKFcDbN4WXL5i=eNGy+gXcRA@mail.gmail.com>
+	<51CABBDD.403@asianux.com>
+	<51CABFAC.1040505@nod.at>
+	<51CAC0D0.60505@asianux.com>
+	<51D0DE09.4090702@asianux.com>
+	<51D0FAFE.5010500@asianux.com>
+	<51D23766.8000605@asianux.com>
+Date: Tue, 2 Jul 2013 09:19:51 +0200
+X-Google-Sender-Auth: 9TyBfwZnM2hw7V6BmHpgxOxkjUI
+Message-ID: <CAMuHMdUvctqqStGE0QKM_BqgK2f6f_E6T=przdYszZo9A_oDzg@mail.gmail.com>
+Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
+ 'COMPILE_TEST' in 'asm-generic'.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Richard Weinberger <richard@nod.at>, Arnd Bergmann <arnd@arndb.de>,
+        Jeff Dike <jdike@addtoit.com>, David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/26/2013 06:21:07 PM, Andrew Morton wrote:
-> On Wed, 19 Jun 2013 17:09:18 -0400 (EDT) Paul Clements  
-> <paul.clements@steeleye.com> wrote:
-> 
-> > Currently, when a disconnect is requested by the user (via  
-> NBD_DISCONNECT
-> > ioctl) the return from NBD_DO_IT is undefined (it is usually one of
-> > several error codes). This means that nbd-client does not know if a
-> > manual disconnect was performed or whether a network error occurred.
-> > Because of this, nbd-client's persist mode (which tries to  
-> reconnect after
-> > error, but not after manual disconnect) does not always work  
-> correctly.
-> >
-> > This change fixes this by causing NBD_DO_IT to always return 0 if a  
-> user
-> > requests a disconnect. This means that nbd-client can correctly  
-> either
-> > persist the connection (if an error occurred) or disconnect (if the  
-> user
-> > requested it).
-> 
-> This sounds like something which users of 3.10 and earlier kernels
-> might want, so I added the Cc:stable tag.  Please let me know if
-> you disagree.
-> 
-> > --- a/drivers/block/nbd.c
-> > +++ b/drivers/block/nbd.c
-> > @@ -623,6 +623,8 @@ static int __nbd_ioctl(struct block_device  
-> *bdev, struct nbd_device *nbd,
-> >  		if (!nbd->sock)
-> >  			return -EINVAL;
-> >
-> > +		nbd->disconnect = 1;
-> > +
-> >  		nbd_send_req(nbd, &sreq);
-> >                  return 0;
-> >  	}
-> > @@ -654,6 +656,7 @@ static int __nbd_ioctl(struct block_device  
-> *bdev, struct nbd_device *nbd,
-> >  				nbd->sock = SOCKET_I(inode);
-> >  				if (max_part > 0)
-> >  					bdev->bd_invalidated = 1;
-> > +				nbd->disconnect = 0; /* we're connected  
-> now */
-> >  				return 0;
-> >  			} else {
-> >  				fput(file);
-> > @@ -742,6 +745,8 @@ static int __nbd_ioctl(struct block_device  
-> *bdev, struct nbd_device *nbd,
-> >  		set_capacity(nbd->disk, 0);
-> >  		if (max_part > 0)
-> >  			ioctl_by_bdev(bdev, BLKRRPART, 0);
-> > +		if (nbd->disconnect) /* user requested, ignore socket  
-> errors */
-> > +			return 0;
-> >  		return nbd->harderror;
-> >  	}
-> 
-> hm, how does nbd work...  Hard to tell as nothing seems to be  
-> documented
-> anywhere :(
+On Tue, Jul 2, 2013 at 4:13 AM, Chen Gang <gang.chen@asianux.com> wrote:
+> 'asm-generic' need provide necessary configuration checking, if can't
+> pass checking, 'asm-generic' shouldn't implement it.
+>
+> For 'COMPILE_TEST', according to its help contents, 'asm-generic' need
+> let it pass configuration checking, and provide related dummy contents
+> for it.
+>
+> Part of 'COMPLE_TEST' help contents in "init/Kconfig":
+>
+>   "...Despite they cannot be loaded there (or even when they load they cannot be used due to missing HW support)..."
+>
+>
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
 
-I wrote the busybox version, which might be a bit simpler:
+NAKed-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-   http://git.busybox.net/busybox/tree/networking/nbd-client.c
+Please don't clutter the code with checks for CONFIG_COMPILE_TEST.
 
-(Sorry about the #ifdefs, they're not mine.)
+Gr{oetje,eeting}s,
 
-> afacit the code assumes that the user will run ioctl(NBD_DISCONNECT)  
-> and
-> then ioctl(NBD_DO_IT) and then ioctl(NBD_SET_SOCK), yes?  Does this
-> change mean that if userspace calls the ioctls in an
-> other-than-expected order, Weird Things will happen?  Would it be  
-> safer
-> to clear ->disconnect in NBD_DO_IT?
-> > --- a/include/linux/nbd.h
-> > +++ b/include/linux/nbd.h
-> > @@ -41,6 +41,7 @@ struct nbd_device {
-> >  	u64 bytesize;
-> >  	pid_t pid; /* pid of nbd-client, if attached */
-> >  	int xmit_timeout;
-> > +	int disconnect; /* a disconnect has been requested by user */
-> >  };
-> 
-> The cool kids are using bool lately ;)
+                        Geert
 
-No, they're not. The C++ guys and stuffy old ex-cobol types are, and  
-think it helps. (Does any architecture anywhere _not_ use int for bool?)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Rob
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
