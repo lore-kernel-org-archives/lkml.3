@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab3GBKko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 06:40:44 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:48531 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab3GBKkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 06:40:43 -0400
-Message-ID: <51D2ADFA.1090208@huawei.com>
-Date: Tue, 2 Jul 2013 18:39:54 +0800
-From: Yang Yingliang <yangyingliang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, <chenweilong@huawei.com>
-CC: David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: [PATCH] pkt_sched: rate overflow fix
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1753459Ab3GBKlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 06:41:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26678 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750772Ab3GBKlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 06:41:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,980,1363158000"; 
+   d="scan'208";a="363430554"
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        x86@kernel.org
+In-Reply-To: <1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
+References: <1372177330-28013-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372177330-28013-6-git-send-email-mika.westerberg@linux.intel.com>
+Subject: RE: [PATCH 5/6] PCI: acpiphp: look _RMV method a bit deeper in the
+ hierarhcy
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.218]
-X-CFilter-Loop: Reflected
+Message-Id: <20130702104406.4473EE0090@blue.fi.intel.com>
+Date: Tue,  2 Jul 2013 13:44:06 +0300 (EEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use bonding to aggregate two 82599 nics which have 4 ports and max rate is 40gbit.
-Then set rate to 35gbit, the rate is overflow.
+Mika Westerberg wrote:
+> The acpiphp driver finds out whether the device is hotpluggable by checking
+> whether it has _RMV method behind it (and if it returns 1). However, at
+> least Acer Aspire S5 with Thunderbolt host router has this method placed
+> behind device called EPUP (endpoint upstream port?) and not directly behind
+> the root port as can be seen from the ASL code below:
+> 
+> Device (RP05)
+> {
+> 	...
+> 	Device (HRUP)
+> 	{
+> 		Name (_ADR, Zero)
+> 		Name (_PRW, Package (0x02)
+> 		{
+> 			0x09,
+> 			0x04
+> 		})
+> 		Device (HRDN)
+> 		{
+> 			Name (_ADR, 0x00040000)
+> 			Name (_PRW, Package (0x02)
+> 			{
+> 				0x09,
+> 				0x04
+> 			})
+> 			Device (EPUP)
+> 			{
+> 				Name (_ADR, Zero)
+> 				Method (_RMV, 0, NotSerialized)
+> 				{
+> 					Return (One)
+> 				}
+> 			}
+> 		}
+> 	}
+> 
+> If we want to support such machines we must look for the _RMV method a bit
+> deeper in the hierarchy. Fix this by changing pcihp_is_ejectable() to check
+> few more devices down from the root port.
 
-tc qdisc add dev $bond root handle 1: \
-tbf latency 50ms burst 35mb rate 35gbit mtu 64k
+We found that this approach is broken. We've got false positive: host
+bridge itself was detected as hotplugable slot %) I think it's not
+acceptable.
 
-tc qdisc show dev $bond
-qdisc tbf 1: root refcnt 2 rate 640262Kbit burst 35Mb lat 50.0ms
+Mika has tried few more approaches, but we haven't found anything better
+then hardcoded path like in original workaround patch[1]. It's not generic
+at all, but safe from false positives.
 
-iperf -c host -t 30 -i 10
-[ ID] Interval       Transfer     Bandwidth
-[  3]  0.0-10.0 sec   764 MBytes   641 Mbits/sec
-[  3] 10.0-20.0 sec   730 MBytes   612 Mbits/sec
+Any thoughts?
 
-Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
----
- include/uapi/linux/pkt_sched.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+[1] http://article.gmane.org/gmane.linux.kernel.pci/19102
 
-diff --git a/include/uapi/linux/pkt_sched.h b/include/uapi/linux/pkt_sched.h
-index 32aef0a..261042c 100644
---- a/include/uapi/linux/pkt_sched.h
-+++ b/include/uapi/linux/pkt_sched.h
-@@ -79,7 +79,7 @@ struct tc_ratespec {
-        unsigned short  overhead;
-        short           cell_align;
-        unsigned short  mpu;
--       __u32           rate;
-+       __u64           rate;
- };
-
- #define TC_RTAB_SIZE   1024
 -- 
-1.7.12
-
+ Kirill A. Shutemov
