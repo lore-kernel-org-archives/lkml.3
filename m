@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3GBSAN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 14:00:13 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:33462 "EHLO kanga.kvack.org"
+	id S1753583Ab3GBSEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 14:04:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57863 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060Ab3GBSAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 14:00:11 -0400
-Date: Tue, 2 Jul 2013 14:00:08 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
-        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
-Message-ID: <20130702180008.GQ16399@kvack.org>
-References: <20130515132453.GB11497@suse.de> <5194748A.5070700@cn.fujitsu.com> <20130517002349.GI1008@kvack.org> <5195A3F4.70803@cn.fujitsu.com> <20130517143718.GK1008@kvack.org> <519AD6F8.2070504@cn.fujitsu.com> <20130521022733.GT1008@kvack.org> <51B6F107.80501@cn.fujitsu.com> <20130611144525.GB14404@kvack.org> <51D12E7B.6080301@cn.fujitsu.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752060Ab3GBSEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 14:04:51 -0400
+Date: Tue, 2 Jul 2013 20:04:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.11
+Message-ID: <20130702180447.GB16282@quack.suse.cz>
+References: <nsxbo6mxu38.fsf@lambda.thunk.org>
+ <CA+55aFyRLc81s03ULLZ26N0qwRqxS-9+6XpyhxVH62qx2b5o2A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51D12E7B.6080301@cn.fujitsu.com>
-User-Agent: Mutt/1.4.2.2i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFyRLc81s03ULLZ26N0qwRqxS-9+6XpyhxVH62qx2b5o2A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 01, 2013 at 03:23:39PM +0800, Gu Zheng wrote:
-> Hi Ben,
-> Are you still working on this patch?
-> As you know, using the current anon inode will lead to more than one instance of
-> aio can not work. Have you found a way to fix this issue? Or can we use some
-> other ones to replace the anon inode?
+On Tue 02-07-13 10:18:32, Linus Torvalds wrote:
+> Hmm I'm getting this compiler warning:
+> 
+>   fs/ext4/inode.c: In function ‘ext4_writepages’:
+>   fs/ext4/inode.c:2219:6: warning: ‘err’ may be used uninitialized in
+> this function [-Wmaybe-uninitialized]
+> 
+> and I think the compiler is right to warn. The 'err' variable is set
+> inside a whilte() and an if() statement, and it is not at all obvious
+> that those codepaths are always taken.
+> 
+> Maybe that "map->m_len" is always guaranteed to be nonzero, and the
+> "while()" statement could be a "do { } while()" one. But if so, make
+> it so, don't write code as if it might never be executed, when the
+> return value seems to *depend* on it being executed.
+  That's caused by my patches (only for certain gcc versions). map->m_len
+is guaranteed to be > 0 in the first iteration (the function is called from
+under if (map->m_len > 0)). I though Ted silenced that warning but
+apparently he did not. The cleanest fix is likely to make a do-while loop
+from that one. I'll send Ted a patch for that.
 
-This patch hasn't been a high priority for me.  I would really appreciate 
-it if someone could confirm that this patch does indeed fix the hotplug 
-page migration issue by testing it in a system that hits the bug.  Removing 
-the anon_inode bits isn't too much work, but I'd just like to have some 
-confirmation that this fix is considered to be "good enough" for the 
-problem at hand before spending any further time on it.  There was talk of 
-using another approach, but it's not clear if there was any progress.
-
-		-ben
+								Honza
 -- 
-"Thought is the essence of where you are now."
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
