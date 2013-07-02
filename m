@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab3GBMXh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 08:23:37 -0400
-Received: from ozlabs.org ([203.10.76.45]:38491 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab3GBMXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 08:23:35 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Chegu Vinod <chegu_vinod@hp.com>
-Cc: prarit@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: kvm_intel: Could not allocate 42 bytes percpu data
-In-Reply-To: <51D22931.1080008@hp.com>
-References: <51C897A7.50302@hp.com> <87ehbisstv.fsf@rustcorp.com.au> <51D22931.1080008@hp.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 02 Jul 2013 15:19:14 +0930
-Message-ID: <8761wth5ph.fsf@rustcorp.com.au>
+	id S1752267Ab3GBM2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 08:28:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:60296 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3GBM2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 08:28:49 -0400
+Date: Tue, 2 Jul 2013 14:28:51 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Hogan <james.hogan@imgtec.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] metag: kick: add missing irq_enter/exit to
+ kick_handler()
+In-Reply-To: <1372759013-29911-1-git-send-email-james.hogan@imgtec.com>
+Message-ID: <alpine.DEB.2.02.1307021428370.4013@ionos.tec.linutronix.de>
+References: <1372759013-29911-1-git-send-email-james.hogan@imgtec.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chegu Vinod <chegu_vinod@hp.com> writes:
-> On 6/30/2013 11:22 PM, Rusty Russell wrote:
->> Chegu Vinod <chegu_vinod@hp.com> writes:
->>> Hello,
->>>
->>> Lots (~700+) of the following messages are showing up in the dmesg of a
->>> 3.10-rc1 based kernel (Host OS is running on a large socket count box
->>> with HT-on).
->>>
->>> [   82.270682] PERCPU: allocation failed, size=42 align=16, alloc from
->>> reserved chunk failed
->>> [   82.272633] kvm_intel: Could not allocate 42 bytes percpu data
->> Woah, weird....
->>
->> Oh.  Shit.  Um, this is embarrassing.
->>
->> Thanks,
->> Rusty.
->
->
-> Thanks for your response!
->
->> ===
->> module: do percpu allocation after uniqueness check.  No, really!
->>
->> v3.8-rc1-5-g1fb9341 was supposed to stop parallel kvm loads exhausting
->> percpu memory on large machines:
->>
->>      Now we have a new state MODULE_STATE_UNFORMED, we can insert the
->>      module into the list (and thus guarantee its uniqueness) before we
->>      allocate the per-cpu region.
->>
->> In my defence, it didn't actually say the patch did this.  Just that
->> we "can".
->>
->> This patch actually *does* it.
->>
->> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->> Tested-by: Noone it seems.
->
-> Your following "updated" fix seems to be working fine on the larger 
-> socket count machine with HT-on.
+On Tue, 2 Jul 2013, James Hogan wrote:
 
-OK, did you definitely revert every other workaround?
+> kick_handler() doesn't have an irq_enter/exit pair, but it's used for
+> handling SMP IPIs which require work to be done in softirqs, which are
+> invoked from irq_exit() when the hard irq nest count reaches 0.
+> 
+> The scheduler_ipi() callback in the IPI handler calls irq_enter/exit
+> itself, but this is inside kick_handler()'s spin lock critical section,
+> so if an invoked softirq issues an IPI the kick_handler() will be
+> re-entered on the same CPU and will deadlock.
+> 
+> This is easily fixed by adding the missing irq_enter/exit to
+> kick_handler() so that the hard irq nest count doesn't reach 0 until
+> after the spin lock has been released.
+> 
+> Ideally the spin lock protected handler list will also be replaced by a
+> lockless RCU protected list since it is certainly mostly read. That can
+> be done in a later change though.
+> 
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
 
-If so, please give me a Tested-by: line...
-
-Thanks,
-Rusty.
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
