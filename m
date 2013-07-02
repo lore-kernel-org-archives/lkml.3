@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab3GBVn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 17:43:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59380 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab3GBVn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 17:43:28 -0400
-Date: Tue, 2 Jul 2013 14:43:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: ecashin@noserose.net
-Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
-Subject: Re: [PATCH 1/3] aoe: perform I/O completions in parallel
-Message-Id: <20130702144326.f891debce89e6b8f82efa39c@linux-foundation.org>
-In-Reply-To: <419af57660dd6fbb436e76291c1e532eede0cea3.1372710099.git.ecashin@coraid.com>
-References: <cover.1372710099.git.ecashin@coraid.com>
-	<419af57660dd6fbb436e76291c1e532eede0cea3.1372710099.git.ecashin@coraid.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755820Ab3GBVp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 17:45:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11445 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754963Ab3GBVp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 17:45:57 -0400
+Date: Tue, 2 Jul 2013 23:41:09 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+Message-ID: <20130702214109.GA25633@redhat.com>
+References: <20130626185205.GA27894@redhat.com> <51CBEE3E.70103@hitachi.com> <20130627161716.GA17889@redhat.com> <51CCF8BA.4030601@hitachi.com> <20130628180946.GA30838@redhat.com> <51D16E1D.5040904@hitachi.com> <20130702190037.GA6289@redhat.com> <20130702193425.GA8813@redhat.com> <1372799087.22688.58.camel@gandalf.local.home> <20130702213808.GA24757@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130702213808.GA24757@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Jul 2013 14:23:51 -0700 ecashin@noserose.net wrote:
-
-> Some users have a large AoE target while others like to use
-> many AoE targets at the same time.  In the latter case, there
-> is an opportunity to greatly improve aggregate throughput by
-> allowing different threads to complete the I/O associated
-> with each target.  For 36 targets, 4 KiB read throughput
-> roughly doubles, for example, with these changes in place.
-> 
-> ...
+On 07/02, Oleg Nesterov wrote:
 >
-> --- a/drivers/block/aoe/aoecmd.c
-> +++ b/drivers/block/aoe/aoecmd.c
-> @@ -35,14 +35,24 @@ module_param(aoe_maxout, int, 0644);
->  MODULE_PARM_DESC(aoe_maxout,
->  	"Only aoe_maxout outstanding packets for every MAC on eX.Y.");
->  
-> -static wait_queue_head_t ktiowq;
-> -static struct ktstate kts;
-> +/* The number of online cpus in the system,
-> + * this dictates the number of ktio threads
-> + * which will be spawned.
-> + */
-> +static int ncpus;
+> On 07/02, Steven Rostedt wrote:
+> >
+> > I'm actually worried about this change.
+>
+> Me too.
+>
+> But again. Any reason trace_remove_event_call() should succeed if
+> this this ftrace_event_call is active?
 
-I can see that doing it this way simplifies the code rather a lot, but
-of course CPU hotplug can and will make ncpus grossly different from
-the current num_online_cpus.
+And note that kprobes/uprobes are the only users of trace_remove_event_call(),
+and both need the same semantics: kill it only if it is not active.
 
-I suggest it's worth adding a comment here mentioning this, and
-explaining why and how that's OK.  If it indeed is OK ;)
+Oleg.
 
-Also, these patches were sent as being from ecashin@noserose.net.  I
-rewrote that to ecashin@coraid.com which is what I suspect you
-intended.  You can do this override yourself by putting a From: line
-right at the top of the changelog.
