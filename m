@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351Ab3GBIR7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:17:59 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53554 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932167Ab3GBIR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:17:57 -0400
-Date: Tue, 2 Jul 2013 10:17:54 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: =?utf-8?B?QmrDuHJu?= Mork <bjorn@mork.no>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: Wrapping EXPORT_SYMBOL_GPL symbols and re-exporting the wrappers
- with EXPORT_SYMBOL
-Message-ID: <20130702081754.GA4535@pd.tnic>
-References: <87bo6m2yok.fsf@nemi.mork.no>
- <20130701213859.GC23539@pd.tnic>
- <CAFLxGvw5byx2gu47oD5yOMSHHxieh8qs0z5ZyeCRpAi7T3ibOA@mail.gmail.com>
+	id S932382Ab3GBISq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:18:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40088 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007Ab3GBISp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 04:18:45 -0400
+Date: Tue, 2 Jul 2013 10:18:31 +0200
+From: Jens Axboe <axboe@kernel.dk>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Mike Miller <mike.miller@hp.com>, linux-kernel@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>, iss_storagedev@hp.com,
+        scameron@beardog.cce.hp.com
+Subject: Re: [PATCH 5/9] cciss: rework pci pm related code for simplification
+Message-ID: <20130702081831.GW32428@kernel.dk>
+References: <1371543553-13064-1-git-send-email-wangyijing@huawei.com>
+ <51D23169.1070405@huawei.com>
+ <20130702080215.GT32428@kernel.dk>
+ <51D28B11.60607@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFLxGvw5byx2gu47oD5yOMSHHxieh8qs0z5ZyeCRpAi7T3ibOA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51D28B11.60607@huawei.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 09:57:08AM +0200, richard -rw- weinberger wrote:
-> Then vendors will do a s/EXPORT_SYMBOL_GPL/EXPORT_SYMBOL/g on the kernel.
+On Tue, Jul 02 2013, Yijing Wang wrote:
+> On 2013/7/2 16:02, Jens Axboe wrote:
+> > On Tue, Jul 02 2013, Yijing Wang wrote:
+> >> Hi Jens,
+> >>    Sorry to disturb you, do you have any comments for this patch?
+> > 
+> > Looks fine to me, was waiting for Stephen/Mike to ack it and I'll pick
+> > it up.
+> > 
+> 
+> Hi Jens,
+>    Thanks for your comment, because I'm not familiar with cciss driver, so
+> should I cc Stephen email address ? And what is his e-mail address?
 
-Huh, "fail building if a module does EXPORT_SYMBOL"...
-
-> Recently I've identified such a case.
-
-Regardless, there's not really a whole lot we can do technically as long
-as they go and change the kernel. The EXPORT_SYMBOL_GPL thing protects
-only against separately distributed modules but if you deliver the whole
-kernel, you can do whatever you want. :-\
+Now CC'ed :-)
 
 -- 
-Regards/Gruss,
-    Boris.
+Jens Axboe
 
-Sent from a fat crate under my desk. Formatting is fine.
---
