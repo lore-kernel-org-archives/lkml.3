@@ -1,203 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab3GBIeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 04:34:11 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33329 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750851Ab3GBIeF (ORCPT
+	id S932462Ab3GBIgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 04:36:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:14988 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab3GBIgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 04:34:05 -0400
-Message-ID: <51D2906A.3030909@parallels.com>
-Date: Tue, 2 Jul 2013 12:33:46 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <miklos@szeredi.hu>, <riel@redhat.com>, <dev@parallels.com>,
-        <xemul@parallels.com>, <fuse-devel@lists.sourceforge.net>,
-        <bfoster@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <jbottomley@parallels.com>, <linux-mm@kvack.org>,
-        <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
-        <fengguang.wu@intel.com>, <devel@openvz.org>, <mgorman@suse.de>
-Subject: Re: [PATCH 16/16] mm: strictlimit feature
-References: <20130629172211.20175.70154.stgit@maximpc.sw.ru> <20130629174706.20175.78184.stgit@maximpc.sw.ru> <20130701141612.04d867863319bcc23d007a23@linux-foundation.org>
-In-Reply-To: <20130701141612.04d867863319bcc23d007a23@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+	Tue, 2 Jul 2013 04:36:07 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-f7-51d290f0b285
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: [GIT PULL] DMA-mapping updates for v3.11
+Date: Tue, 02 Jul 2013 10:35:08 +0200
+Message-id: <1372754108-21075-1-git-send-email-m.szyprowski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLJMWRmVeSWpSXmKPExsVy+t9jAd0PEy4FGnRcF7a4vGsOm8XaI3fZ
+	LR71vWV3YPY4MeM3i0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBl3Fj+gb3gF2dF/6clrA2M
+	fRxdjJwcEgImEh3vOxkhbDGJC/fWs3UxcnEICSxilLgw4S0LhNPOJHGq/ScTSBWbgKFE19su
+	NhBbRMBI4vOLK6wgNrOAr8SdV6tYQGxhoJo1O26C2SwCqhLLp94Cs3kFPCQ+Pj4KVM8BtE1B
+	Ys4kmwmM3AsYGVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBHv6mfQOxlUNFocYBTgYlXh4
+	FeZdDBRiTSwrrsw9xCjBwawkwnvTGyjEm5JYWZValB9fVJqTWnyIUZqDRUmc92CrdaCQQHpi
+	SWp2ampBahFMlomDU6qBkeOrQvSD0GucJ97Ou3n91uZLXTEXnk4QyF/9yOlD19GV35dvbDgX
+	embDw0U3ihepz2AXTWmdaf2Db4p06hrvbG3jY91lAUv0/m7X0Fp5vYM/8YavhCPbObGIDuan
+	eWlFz1suLz3KfCTn65lN1m0Vyd0S626eU2Qo40k2/bA4/cxxZcPsW4Z11UosxRmJhlrMRcWJ
+	AM/KG4nwAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+Hi Linus,
 
-07/02/2013 01:16 AM, Andrew Morton пишет:
-> On Sat, 29 Jun 2013 21:48:54 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
->
->> From: Miklos Szeredi <mszeredi@suse.cz>
->>
->> The feature prevents mistrusted filesystems to grow a large number of dirty
->> pages before throttling. For such filesystems balance_dirty_pages always
->> check bdi counters against bdi limits. I.e. even if global "nr_dirty" is under
->> "freerun", it's not allowed to skip bdi checks. The only use case for now is
->> fuse: it sets bdi max_ratio to 1% by default and system administrators are
->> supposed to expect that this limit won't be exceeded.
->>
->> The feature is on if address space is marked by AS_STRICTLIMIT flag.
->> A filesystem may set the flag when it initializes a new inode.
->>
-> Fengguang, could you please review this patch?
->
-> I suggest you await the next version, which hopefully will be more
-> reviewable...
+I would like to ask You for pulling some fixes for ARM dma-mapping subsystem
+for v3.11.
 
-Thanks a lot for quick review, I'll update the patch according to your 
-comments soon.
 
-I'm answering the question about BDI_idle below inline, but I'll add 
-some comment about it where BDI_idle is actually used as well.
+The following changes since commit 8bb495e3f02401ee6f76d1b1d77f3ac9f079e376:
 
-Thanks,
-Maxim
+  Linux 3.10 (2013-06-30 15:13:29 -0700)
 
->
->> ...
->>
->> --- a/include/linux/backing-dev.h
->> +++ b/include/linux/backing-dev.h
->> @@ -33,6 +33,8 @@ enum bdi_state {
->>   	BDI_sync_congested,	/* The sync queue is getting full */
->>   	BDI_registered,		/* bdi_register() was done */
->>   	BDI_writeback_running,	/* Writeback is in progress */
->> +	BDI_idle,		/* No pages under writeback at the moment of
->> +				 * last update of write bw */
-> Why does BDI_idle exist?
+are available in the git repository at:
 
-BDI_idle along with BDI_WRITTEN_BACK exists to distinguish two cases:
+  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.11
 
-1st. BDI_WRITTEN has not been incremented since we looked at it last 
-time because backing dev is unresponding. I.e. it had some pages under 
-writeback but it have not made any progress for some reasons.
+for you to fetch changes up to 1e3d09b223f349a5f6cc14d62b4df66c0798d762:
 
-2nd. BDI_WRITTEN has not been incremented since we looked at it last 
-time because backing dev had nothing to do. I.e. there are some dirty 
-pages on bdi, but they have not been passed to backing dev yet. This is 
-the case when bdi_dirty is under bdi background threshold and flusher 
-refrains from flushing even if we woke it up explicitly by 
-bdi_start_background_writeback.
+  ARM: dma: Drop __GFP_COMP for iommu dma memory allocations (2013-07-02 10:30:59 +0200)
 
-We have to skip bdi_update_write_bandwidth() in the 2nd case because 
-otherwise bdi_update_write_bandwidth() will see written==0 and 
-mistakenly decrease write_bandwidth. The criterion to skip is the 
-following: BDI_idle is set (i.e. there were no pages under writeback 
-when we looked at the bdi last time) && BDI_WRITTEN_BACK counter has not 
-changed (i.e. no new pages has been sent to writeback since we looked at 
-the bdi last time).
+----------------------------------------------------------------
 
-Thanks,
-Maxim
+This pull request contains an important bugfixes and update for IOMMU
+integration support for ARM architecture.
 
->
->>   	BDI_unused,		/* Available bits start here */
->>   };
->>   
->> @@ -43,6 +45,7 @@ enum bdi_stat_item {
->>   	BDI_WRITEBACK,
->>   	BDI_DIRTIED,
->>   	BDI_WRITTEN,
->> +	BDI_WRITTEN_BACK,
->>   	NR_BDI_STAT_ITEMS
->>   };
->>   
->> @@ -76,6 +79,8 @@ struct backing_dev_info {
->>   	unsigned long bw_time_stamp;	/* last time write bw is updated */
->>   	unsigned long dirtied_stamp;
->>   	unsigned long written_stamp;	/* pages written at bw_time_stamp */
->> +	unsigned long writeback_stamp;	/* pages sent to writeback at
->> +					 * bw_time_stamp */
-> Well this sucks.  Some of the "foo_stamp" fields are in units of time
-> (jiffies?  We aren't told) and some of the "foo_stamp" fields are in
-> units of number-of-pages.  It would be good to fix the naming here.
->
->>   	unsigned long write_bandwidth;	/* the estimated write bandwidth */
->>   	unsigned long avg_write_bandwidth; /* further smoothed write bw */
->>   
->> diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
->> index e3dea75..baac702 100644
->> --- a/include/linux/pagemap.h
->> +++ b/include/linux/pagemap.h
->> @@ -25,6 +25,7 @@ enum mapping_flags {
->>   	AS_MM_ALL_LOCKS	= __GFP_BITS_SHIFT + 2,	/* under mm_take_all_locks() */
->>   	AS_UNEVICTABLE	= __GFP_BITS_SHIFT + 3,	/* e.g., ramdisk, SHM_LOCK */
->>   	AS_BALLOON_MAP  = __GFP_BITS_SHIFT + 4, /* balloon page special map */
->> +	AS_STRICTLIMIT	= __GFP_BITS_SHIFT + 5, /* strict dirty limit */
-> Thing is, "strict dirty limit" isn't documented anywhere, so this
-> reference is left dangling.
->
->> ...
->>
->> --- a/mm/backing-dev.c
->> +++ b/mm/backing-dev.c
->> @@ -94,6 +94,7 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
->>   		   "BackgroundThresh:   %10lu kB\n"
->>   		   "BdiDirtied:         %10lu kB\n"
->>   		   "BdiWritten:         %10lu kB\n"
->> +		   "BdiWrittenBack:     %10lu kB\n"
->>   		   "BdiWriteBandwidth:  %10lu kBps\n"
->>   		   "b_dirty:            %10lu\n"
->>   		   "b_io:               %10lu\n"
-> I can't imagine what the difference is between BdiWritten and
-> BdiWrittenBack.
->
-> I suggest you document this at the BDI_WRITTEN_BACK definition site in
-> enum bdi_stat_item.  BDI_WRITTEN (at least) will also need
-> documentation so people can understand the difference.
->
->> ...
->>
->> @@ -679,29 +711,31 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
->>   	if (unlikely(dirty >= limit))
->>   		return 0;
->>   
->> +	if (unlikely(strictlimit)) {
->> +		if (bdi_dirty < 8)
->> +			return 2 << RATELIMIT_CALC_SHIFT;
->> +
->> +		if (bdi_dirty >= bdi_thresh)
->> +			return 0;
->> +
->> +		bdi_setpoint = bdi_thresh + bdi_dirty_limit(bdi, bg_thresh);
->> +		bdi_setpoint /= 2;
->> +
->> +		if (bdi_setpoint == 0 || bdi_setpoint == bdi_thresh)
->> +			return 0;
->> +
->> +		pos_ratio = pos_ratio_polynom(bdi_setpoint, bdi_dirty,
->> +					      bdi_thresh);
->> +		return min_t(long long, pos_ratio, 2 << RATELIMIT_CALC_SHIFT);
->> +	}
-> This would be a suitable site at which to document the strictlimit
-> feature.  What it is, how it works and most importantly, why it exists.
->
->> ...
->>
->> @@ -994,6 +1029,16 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
->>   	 * keep that period small to reduce time lags).
->>   	 */
->>   	step = 0;
->> +
->> +	if (unlikely(strictlimit)) {
->> +		dirty = bdi_dirty;
->> +		if (bdi_dirty < 8)
->> +			setpoint = bdi_dirty + 1;
->> +		else
->> +			setpoint = (bdi_thresh +
->> +				    bdi_dirty_limit(bdi, bg_thresh)) / 2;
->> +	}
-> Explain this to the reader, please.
->
->> ...
->>
->
->
+Thanks!
 
+Best regards
+Marek Szyprowski
+Samsung Poland R&D Center
+
+Patch summary:
+
+Richard Zhao (1):
+      ARM: dma: Drop __GFP_COMP for iommu dma memory allocations
+
+Will Deacon (2):
+      ARM: dma-mapping: convert DMA direction into IOMMU protection attributes
+      ARM: dma-mapping: NULLify dev->archdata.mapping pointer on detach
+
+YoungJun Cho (1):
+      ARM: dma-mapping: Get pages if the cpu_addr is out of atomic_pool
+
+ arch/arm/mm/dma-mapping.c |   40 ++++++++++++++++++++++++++++++++--------
+ 1 file changed, 32 insertions(+), 8 deletions(-)
