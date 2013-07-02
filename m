@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab3GBLIZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:08:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36261 "EHLO
+	id S1755736Ab3GBLIn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:08:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36352 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755038Ab3GBLIW (ORCPT
+	with ESMTP id S1755657Ab3GBLIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:22 -0400
+	Tue, 2 Jul 2013 07:08:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ferruh Yigit <fery@cypress.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+Cc: Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 26/50] Input: cyttsp - fix memcpy size param
-Date: Tue,  2 Jul 2013 12:07:14 +0100
-Message-Id: <1372763258-20664-27-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 42/50] dlci: acquire rtnl_lock before calling __dev_get_by_name()
+Date: Tue,  2 Jul 2013 12:07:30 +0100
+Message-Id: <1372763258-20664-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -28,35 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ferruh Yigit <fery@cypress.com>
+From: Zefan Li <lizefan@huawei.com>
 
-commit d2983cdb480157f637df07723f28aaa657b1080d upstream.
+commit 11eb2645cbf38a08ae491bf6c602eea900ec0bb5 upstream.
 
-memcpy param is wrong because of offset in bl_cmd, this may corrupt the
-stack which may cause a crash.
+Otherwise the net device returned can be freed at anytime.
 
-Tested-by: Ferruh Yigit <fery@cypress.com> on TMA300-DVK
-Signed-off-by: Ferruh Yigit <fery@cypress.com>
-Acked-by: Javier Martinez Canillas <javier@dowhile0.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/input/touchscreen/cyttsp_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wan/dlci.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/input/touchscreen/cyttsp_core.c b/drivers/input/touchscreen/cyttsp_core.c
-index f030d9e..3f505d5 100644
---- a/drivers/input/touchscreen/cyttsp_core.c
-+++ b/drivers/input/touchscreen/cyttsp_core.c
-@@ -133,7 +133,7 @@ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
- 	memcpy(bl_cmd, bl_command, sizeof(bl_command));
- 	if (ts->pdata->bl_keys)
- 		memcpy(&bl_cmd[sizeof(bl_command) - CY_NUM_BL_KEYS],
--			ts->pdata->bl_keys, sizeof(bl_command));
-+			ts->pdata->bl_keys, CY_NUM_BL_KEYS);
+diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
+index 147614e..1f6e053 100644
+--- a/drivers/net/wan/dlci.c
++++ b/drivers/net/wan/dlci.c
+@@ -385,20 +385,24 @@ static int dlci_del(struct dlci_add *dlci)
+ 	struct net_device	*master, *slave;
+ 	int			err;
  
- 	error = ttsp_write_block_data(ts, CY_REG_BASE,
- 				      sizeof(bl_cmd), bl_cmd);
++	rtnl_lock();
++
+ 	/* validate slave device */
+ 	master = __dev_get_by_name(&init_net, dlci->devname);
+-	if (!master)
+-		return -ENODEV;
++	if (!master) {
++		err = -ENODEV;
++		goto out;
++	}
+ 
+ 	if (netif_running(master)) {
+-		return -EBUSY;
++		err = -EBUSY;
++		goto out;
+ 	}
+ 
+ 	dlp = netdev_priv(master);
+ 	slave = dlp->slave;
+ 	flp = netdev_priv(slave);
+ 
+-	rtnl_lock();
+ 	err = (*flp->deassoc)(slave, master);
+ 	if (!err) {
+ 		list_del(&dlp->list);
+@@ -407,8 +411,8 @@ static int dlci_del(struct dlci_add *dlci)
+ 
+ 		dev_put(slave);
+ 	}
++out:
+ 	rtnl_unlock();
+-
+ 	return err;
+ }
+ 
 -- 
 1.8.1.2
 
