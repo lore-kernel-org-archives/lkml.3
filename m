@@ -1,293 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752880Ab3GBOqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 10:46:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:36757 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab3GBOqu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 10:46:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,980,1363158000"; 
-   d="scan'208";a="364188400"
-Message-ID: <1372776404.4072.143.camel@empanada>
-Subject: Re: [PATCH v2 00/11] tracing: trace event triggers
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: rostedt@goodmis.org, masami.hiramatsu.pt@hitachi.com,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Tue, 02 Jul 2013 09:46:44 -0500
-In-Reply-To: <51D24F11.7090201@huawei.com>
-References: <cover.1372479499.git.tom.zanussi@linux.intel.com>
-	  <51CEA92F.3040802@huawei.com> <1372693762.4072.96.camel@empanada>
-	 <51D24F11.7090201@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.1 (3.4.1-2.fc17) 
-Content-Transfer-Encoding: 7bit
+	id S1752864Ab3GBOtQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 10:49:16 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36053 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751937Ab3GBOtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 10:49:14 -0400
+Message-ID: <1372776552.2821.14.camel@dabdike>
+Subject: [GIT PULL] First round of SCSI updates for the 3.10+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 02 Jul 2013 07:49:12 -0700
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
 Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-02 at 11:54 +0800, zhangwei(Jovi) wrote:
-> On 2013/7/1 23:49, Tom Zanussi wrote:
-> > Hi jovi,
-> > 
-> > On Sat, 2013-06-29 at 17:30 +0800, zhangwei(Jovi) wrote:
-> >> On 2013/6/29 13:08, Tom Zanussi wrote:
-> >>> Hi,
-> >>>
-> >>> This is v2 of the trace event triggers patchset, addressing comments
-> >>> from Masami Hiramatsu, zhangwei(Jovi), and Steve Rostedt (thanks for
-> >>> reviewing v1).
-> >>>
-> >>> v2:
-> >>>  - removed all changes to __ftrace_event_enable_disable() (except
-> >>>    for patch 04/11 which clears the soft_disabled bit as discussed)
-> >>>    and created a separate trace_event_trigger_enable_disable() that
-> >>>    calls it after setting/clearing the TRIGGER_MODE_BIT.
-> >>>  - added a trigger_mode enum for future patches that break up the
-> >>>    trigger calls for filtering, but that's also now used as a command
-> >>>    id for registering/unregistering commands.
-> >>>  - removed the enter_file/exit_file members that were added to
-> >>>    syscall_metadata after realizing that they were unnecessary if
-> >>>    ftrace_syscall_enter/exit() were modified to receive a pointer
-> >>>    to the ftrace_file instead of the pointer to the trace_array in
-> >>>    the ftrace_file.
-> >>>  - broke up the trigger invocation into two parts so that triggers
-> >>>    like 'stacktrace' that themselves log into the trace buffer can
-> >>>    defer the actual trigger invocation until after the current
-> >>>    record is closed, which is needed for the filter check that
-> >>>    in turn determines whether the trigger gets invoked.
-> >>>  - other minor cleanup
-> >>>
-> >>>
-> >>> This patchset implements 'trace event triggers', which are similar to
-> >>> the function triggers implemented for 'ftrace filter commands' (see
-> >>> 'Filter commands' in Documentation/trace/ftrace.txt), but instead of
-> >>> being invoked from function calls are invoked by trace events.
-> >>> Basically the patchset allows 'commands' to be triggered whenever a
-> >>> given trace event is hit.  The set of commands implemented by this
-> >>> patchset are:
-> >>>
-> >>>  - enable/disable_event - enable or disable another event whenever
-> >>>    the trigger event is hit
-> >>>
-> >>>  - stacktrace - dump a stacktrace to the trace buffer whenever the
-> >>>    trigger event is hit
-> >>>
-> >>>  - snapshot - create a snapshot of the current trace buffer whenever
-> >>>    the trigger event is hit
-> >>>
-> >>>  - traceon/traceoff - turn tracing on or off whenever the trigger
-> >>>    event is hit
-> >>>
-> >>> Triggers can also be conditionally invoked by associating a standard
-> >>> trace event filter with them - if the given event passes the filter,
-> >>> the trigger is invoked, otherwise it's not. (see 'Event filtering' in
-> >>> Documentation/trace/events.txt for info on event filters).
-> >>>
-> >>
-> >> I just aware that we are implementing more and more scripting functionality into
-> >> tracing subsystem, like filter and trigger mode, of cause we don't call it
-> >> as scripting, but basically the pattern is same, all is "do something when event hit".
-> >>
-> > 
-> > Not really - this patchset is just reusing the existing filter code
-> > that's been there for years, and yes, it does follow the pattern of
-> > 'doing something when an event is hit', but the things it does are
-> > really dirt simple - toggling of other events or the global tracing
-> > on/off switch, snapshotting trace buffers, etc.  All things that don't
-> > require any kind of scripting - this is more on the level of wiring
-> > things together on a breadboard.  And it's all available by simply using
-> > 'cat' and 'echo' - no separate command and scripts to keep track of.  
-> > 
-> >> FYI, a pretty simple scripting module of tracing is there:
-> >> 	https://github.com/ktap/ktap.git
-> >>
-> > 
-> > It looks pretty nice, but I wonder if Linux is ready for a full-fledged
-> > language interpreter in the kernel.  It's been tried before - see
-> > DProbes (in fact that effort is where kprobes came from - after it was
-> > obvious DProbes wouldn't make it into the kernel, it was broken up into
-> > multiple pieces - kprobes and uprobes eventually got in, but the RPN
-> > interpreter, which also had an ANSI C compiler targeting the bytecode
-> > (dpcc) never did...).  Well, following that, DTrace came along and
-> > showed how useful it could be, so maybe there wouldn't be as much
-> > resistance these days...
-> 
-> Actually ktap is very lightweight compare with Dtrace and other tools,
-> it doesn't reinvent tracing interface, it make use on kprobe/uprobe/tracepoint/perf,
-> it doesn't engage with debugging info, just a simple script interface for tracing,
-> as demoed in example, the tracing interface is same as perf.
-> > 
-> > Also, assuming an in-kernel language interpreter would fly, did you
-> > consider starting with something already-baked rather than starting from
-> > scratch?  How about taking something like the parrot VM and carving out
-> > a minimal core subset of that suitable for embedding in the kernel?  It
-> > probably wouldn't be easy, but you'd be building on a relatively mature
-> > and tested VM that's been designed for targeting many languages
-> > (including lua).
-> > 
-> ktap is building on mature interpreter(lua) which proven fast and widely used,
-> the core interpreter is very simple and small, and really easy to hack it.
-> 
-> I will never try to put a general purpose VM(like parrot) into kernel, we need to
-> care on safety, size, performance, memory footprint, etc. Compared with
-> many other languages, you will find ktap interpreter(based on lua) is
-> very suit for kernel than others, the interpreter just have 5000 LOC, with
-> 40+ bytecodes, and there have a lot of space to improve.
-> 
+The patch set is mostly driver updates (usf, zfcp, lpfc, mpt2sas,
+megaraid_sas, bfa, ipr) and a few bug fixes.  Also of note is that the
+Buslogic driver has been rewritten to a better coding style and 64 bit
+support added.  We also removed the libsas limitation on 16 bytes for
+the command size (currently no drivers make use of this).
 
-Right, and I didn't suggest putting an unmodified general-purpose VM in
-the kernel either - I suggested that *if* you were going to put a VM in
-the kernel, why not start with one designed to target many languages,
-especially the ones it was initially designed for and that most people
-actually know (perl and python).  Of course, modifying it for 'safety,
-size, ..., etc', as I mentioned probably wouldn't be easy, but maybe it
-would be worth it if you could avoid forcing your users into learning
-lua to use your tool...
+The patch is available here:
 
-> > Another thing you could consider is taking a page from the DProbes and
-> > breaking up and submitting ktap piecemeal.  For instance, you could
-> > break out and submit the associative array piece and with a little
-> > thought tie it to a 'histogram' trigger e.g. something like:
-> > 
-> > echo 'hist[key,val] if filter' > trigger
-> > 
-> > For example, something like this could be used to accomplish a similar
-> > thing to your scripts/syscalls_histogram.kp script (keeping and dumping
-> > a per-syscall count):
-> > 
-> > echo 'hist[e.name,count()]' > /syscalls/trigger
-> > 
-> > Similarly, this would keep a per-executable syscall count like
-> > syscalls_histogram2.kp:
-> > 
-> > echo 'hist[comm,count()]' > /syscalls/trigger
-> > 
-> > Any field defined in an event's 'format' file could be used as a key or
-> > value (e.g. using 'comm' as a hash key as above).  For example, keeping
-> > a per-pid hash of total bytes written by 'sys_exit_write' (both
-> > common_pid and ret are sys_exit_write fields, and I assume a small set
-> > of utility functions that say what to do with numeric fields, perhaps
-> > 'add' could be the default) would show which process is doing most of
-> > the writing:
-> > 
-> > echo 'hist[common_pid,add(ret)]' > syscalls/sys_exit_write/trigger
-> > 
-> > Making the trace_dump_stack() available as a utility function would
-> > allow things like this: 
-> > 
-> > echo 'hist[stacktrace(),count()] if bytes_req > 16384' >
-> > kmem/kmalloc/trigger
-> > 
-> > Basically the above would use the stacktrace itself as a hash key and
-> > the value stored for each key would be a per-execution-path count of >
-> > 16k kernel memory requests.  Dumping out the hash would show the top
-> > execution paths leading to large kmalloc requests.
-> > 
-> > This would give users the ability to accomplish what a lot of them seem
-> > to use these tools for, and without any scripting  (I'm not saying
-> > scripting wouldn't be useful, but I think you can still accomplish quite
-> > a bit without it).
-> > 
-> > Tom
-> 
-> Thanks for your comments.
-> 
-> There have some technical limitation if using oneline echo/cat style trigger.
-> 
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-misc
 
-Yes, there are many, I claimed otherwise.
+The short changelog is:
 
-> - subsystem level trigger
->   How to handle subsystem level trigger like "syscalls:*" and all tracepoint "*:*"?
->   you need to add /sys/kernel/debug/tracing/events/$system/trigger file, otherwise
->   user need to use echo command to all events belong the subsystem.
-> 
+Akinobu Mita (3):
+      ufshcd-pltfrm: remove unnecessary dma_set_coherent_mask() call
+      ufs: fix register address in UIC error interrupt handling
+      ufshcd-pltfrm: add missing empty slot in ufs_of_match[]
 
-Yes, there are already $system/filter and $system/enable, so adding
-$system/trigger shouldn't be too much of a stretch.
+Ben Hutchings (1):
+      sd: Fix parsing of 'temporary ' cache mode prefix
 
-> - userspace uprobe (debugging info)
->   I couldn't image how to handle userspace probe if only use echo/cat(you will need
->   help from perf-probe), the other issue is userspace symbol resolving(like call stack),
->   there must need some userspace utility in there, like perf, systemtap, dtrace, etc.
-> 
-> - timer
->   I also cannot image how to handle timer into there, normally we need to record
->   timestamps when event is hit and calculate duration.
-> 
-> - associative array
->   Is really use echo/cat to present associative array would be more descriptive than
->   scripting?
-> 
+Dan Carpenter (2):
+      fnic: potential dead lock in fnic_is_abts_pending()
+      pm80xx: remove unneeded NULL check
 
-No, you're putting words in my mouth, who said it was more descriptive?
-I was just trying to show what could be done with a simple associative
-array trigger, and that it could probably account for 80% of the basic
-'quick-and-dirty' use cases people seem to use these tools for (and it
-looks like about 80% of the scripts in your ktap/scripts directory as
-well).
+Daniel Hansel (1):
+      zfcp: fix adapter (re)open recovery while link to SAN is down
 
-> - arith calculation
->   Usually we need to do arith calculation in script, but it will be hard to do in oneline.
-> 
-> - variable declaration
->   Of course there don't have variable declaration in oneline style trigger.
-> 
-> There have many technical advantage to use script in there which I can't list all.
-> 
-> The question is if you put more and more trigger command into event tracing, eventually it
-> will became a script engine, from this point of view, script tracing is a flexible and extendable
-> framework of trace event trigger.
-> 
-> Since this thread is purpose on trace event trigger patchset, it's not suit for ktap detail
+Eddie Wai (1):
+      libiscsi: Added new boot entries in the session sysfs
 
-Well, you're the one who started the ktap discussion here...
+Geert Uytterhoeven (1):
+      ufs: SCSI_UFSHCD should depend on SCSI_DMA
 
-Tom
+Hannes Reinecke (1):
+      sd: avoid deadlocks when running under multipath
 
-> discussion, I will open a new ktap thread in LKML soon, feel free to give your comment in there. :)
-> 
-> jovi
-> > 
-> > 
-> >> For the trigger mode, you can perform any command when event hit if using scripting,
-> >> in contrast with this patchset, ktap use perf callback handler to invoke command,
-> >> so it don't need extra code to support trigger mode in tracepoint/k(ret)probe/u(ret)probe.
-> >>
-> >> 	---------------------
-> >> 	trace "syscalls:*" function (e) {
-> >>                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
-> >>         }
-> >> 	---------------------
-> >> 	trace "probe:do_sys_open dfd=%di filename=%dx flags=%cx mode=+4($stack)" function (e) {
-> >>                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
-> >>         }
-> >> 	---------------------
-> >> 	trace "probe:do_sys_open%return fd=$retval" function (e) {
-> >>                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
-> >>         }
-> >> 	---------------------
-> >> 	trace "probe:/lib/libc.so.6:0x000773c0" function (e) {
-> >>                 printf("%d %d\t%s\t%s", cpu(), pid(), execname(), e.tostring())
-> >>         }
-> >>
-> >>
-> >> what I'm thinking now is perhaps we can use a more generic mechanism in future
-> >> to let user do more magic things when event hit.
-> >>
-> >> To be clear, I'm not against on this patchset, I'm on the same side with Tom,
-> >> the trigger mode of this patchset is useful(awesome work). I'm just sharing some extra info,
-> >> hopeful you don't mind it :)
-> >>
-> >> Thanks.
-> >> jovi
-> >>
-> >>
-> 
-> 
+Jakob Normark (1):
+      bfa: Fixes for 0-terminated strncpy and possible null pointer dereference
+
+James Bottomley (1):
+      libsas: implement > 16 byte CDB support
+
+James Georgas (1):
+      megaraid: minor cut and paste error fixed.
+
+James Smart (17):
+      lpfc 8.3.40: Update lpfc version to driver version 8.3.40
+      lpfc 8.3.40: Update Copyrights to 2013 for 8.3.38, 8.3.39, and 8.3.40 modifications
+      lpfc 8.3.40: Fixed a race condition between SLI host and port failed FCF rediscovery
+      lpfc 8.3.40: Fixed issue mailbox wait routine failed to issue dump memory mbox command
+      lpfc 8.3.40: Fixed system panic due to unsafe walking and deleting linked list
+      lpfc 8.3.40: Fixed FCoE connection list vlan identifier and add FCF list debug
+      lpfc 8.3.40: Clarified the behavior of the lpfc_max_luns module parameter
+      lpfc 8.3.40: Fix to allow OCM to report FEC status
+      lpfc 8.3.40: Fixed a missing return code in a logging message
+      lpfc 8.3.40: Fixed some logging message fields
+      lpfc 8.3.40: Fixed list corruption when lpfc_drain_tx runs.
+      lpfc 8.3.40: Fix starting reference tag when calculating BG error
+      lpfc 8.3.40: Fix inconsistent list removal causes crash.
+      lpfc 8.3.40: Fixed system panic during handling unsolicited receive buffer error condition
+      lpfc 8.3.40: Fix BlockGuard error checking
+      lpfc 8.3.40: Fixed crash during FCoE failover testing.
+      lpfc 8.3.40: Fix lpfc_used_cpu to be more dynamic
+
+K. Y. Srinivasan (2):
+      storvsc: Update the storage protocol to win8 level
+      storvsc: Increase the value of scsi timeout for storvsc devices
+
+Karen Xie (1):
+      cxgb4i: add support for T5 adapter
+
+Khalid Aziz (3):
+      MAINTAINERS: Add myself as the maintainer for BusLogic SCSI driver
+      BusLogic: Port driver to 64-bit.
+      BusLogic: Fix style issues
+
+Mahesh Rajashekhara (1):
+      aacraid: Fix for arrays are going offline in the system. System hangs
+
+Martin K. Petersen (4):
+      sd: Update WRITE SAME heuristics
+      3w-xxxx: Create sense buffer for unsupported commands
+      Workaround for disks that report bad optimal transfer length
+      Allow error handling timeout to be specified
+
+Martin Peschke (1):
+      zfcp: remove access control tables interface
+
+Naresh Kumar Inna (1):
+      csiostor: Retain default adapter configuration in absence of config file.
+
+Reddy, Sreekanth (2):
+      mpt2sas: fix for unused variable 'event_data' warning
+      mpt2sas: Fix for issue Missing delay not getting set during system bootup
+
+Sachin Kamat (1):
+      ufs: Remove redundant platform_set_drvdata()
+
+Sebastian Ott (4):
+      zfcp: remove unused device_unregister wrapper
+      zfcp: cleanup unit sysfs attribute usage
+      zfcp: cleanup port sysfs attribute usage
+      zfcp: cfdc fops add owner
+
+Sergei Shtylyov (1):
+      ipr: qc_fill_rtf() method should not store alternate status register
+
+Seungwon Jeon (5):
+      ufs: use devres functions for ufshcd
+      ufs: rework link start-up process
+      ufs: remove version check before IS reg clear
+      ufs: amend interrupt configuration
+      ufs: wrap the i/o access operations
+
+Sreekanth Reddy (6):
+      mpt2sas: Bump driver vesion to v15.100.00.00
+      mpt2sas: Calulate the Reply post queue depth calculation as per the MPI spec
+      mpt2sas: fix firmware failure with wrong task attribute
+      mpt2sas: Fix for device scan following host reset could get stuck in a infinite loop
+      mpt2sas: Update the timing requirements for issuing a Hard Reset
+      mpt2sas: MPI2 Rev W (2.00.15) specification
+
+Steffen Maier (3):
+      zfcp: status read buffers on first adapter open with link down
+      zfcp: module parameter dbflevel for early debugging
+      zfcp: block queue limits with data router
+
+Sujit Reddy Thumma (2):
+      ufs: Fix the response UPIU length setting
+      Documentation/devicetree: Add DT bindings for UFS host controller
+
+Sumit.Saxena@lsi.com (12):
+      megaraid_sas: Changelog and driver version update
+      megaraid_sas: Add support to differentiate between iMR vs MR Firmware
+      megaraid_sas: Add support for Uneven Span PRL11
+      megaraid_sas: Add support for Extended MSI-x vectors for 12Gb/s controller
+      megaraid_sas: Set IoFlags to enable Fast Path for JBODs for 12 Gb/s controllers
+      megaraid_sas: Add support to display Customer branding details in syslog
+      megaraid_sas: Add support for MegaRAID Fury (device ID-0x005f) 12Gb/s controllers
+      megaraid_sas: Set IO request timeout value provided by OS timeout for Tape devices
+      megaraid_sas: Free event detail memory without device ID check
+      megaraid_sas: Update balance count in driver to be in sync of firmware
+      megaraid_sas: Fix the interrupt mask for Gen2 controller
+      megaraid_sas: Return DID_ERROR for SCSI IO, when controller is in critical h/w error
+
+Vijay Mohan Guvva (2):
+      bfa: fix for FC Direct Attach LUN discovery failure
+      bfa: fix faulty handling of events in lps sm
+
+Vijaya Mohan Guvva (17):
+      bfa: Update the driver version to 3.2.21.1
+      bfa: dis-associate bfa path_tov with dev_loss_tmo
+      bfa: Support for chinook-quad port card
+      bfa: fix endianess issue for firmware stats
+      bfa: Fix bug_on condition in RPSC rsp handling
+      bfa: Allow rsp queue process during ioc disable
+      bfa: firmware statistics update
+      bfa: fru vpd date update changes
+      bfa: driver compatibility with 32bit libs
+      bfa: kdump fix on 815 and 825 adapters
+      bfa: Fix FDISC timeout handling
+      bfa: Fix 1860 port initialize when ATC is enabled
+      bfa: FDMI enhancements
+      bfa: Fix WARN_ON condition check
+      bfa: Add dynamic diagnostic port support
+      bfa: Forward Error Correction status query
+      bfa: Support for FC BB credit recovery
+
+wenxiong@linux.vnet.ibm.com (3):
+      ipr: IOA Status Code(IOASC) update
+      ipr: possible irq lock inversion dependency detected
+      ipr: Avoid target_destroy accessing memory after it was freed
+
+and the diffstat:
+
+ .../devicetree/bindings/ufs/ufshcd-pltfrm.txt      |   16 +
+ Documentation/scsi/ChangeLog.megaraid_sas          |   22 +
+ MAINTAINERS                                        |    7 +
+ drivers/s390/scsi/Makefile                         |    2 +-
+ drivers/s390/scsi/zfcp_aux.c                       |   36 +-
+ drivers/s390/scsi/zfcp_ccw.c                       |   13 +-
+ drivers/s390/scsi/zfcp_cfdc.c                      |  446 --
+ drivers/s390/scsi/zfcp_dbf.c                       |   11 +-
+ drivers/s390/scsi/zfcp_def.h                       |    4 -
+ drivers/s390/scsi/zfcp_erp.c                       |    3 +-
+ drivers/s390/scsi/zfcp_ext.h                       |   20 +-
+ drivers/s390/scsi/zfcp_fc.c                        |    2 +-
+ drivers/s390/scsi/zfcp_fsf.c                       |  154 +-
+ drivers/s390/scsi/zfcp_fsf.h                       |   26 -
+ drivers/s390/scsi/zfcp_scsi.c                      |   10 +-
+ drivers/s390/scsi/zfcp_sysfs.c                     |   27 +-
+ drivers/s390/scsi/zfcp_unit.c                      |    9 +-
+ drivers/scsi/3w-xxxx.c                             |    4 +-
+ drivers/scsi/BusLogic.c                            | 4452 +++++++++++---------
+ drivers/scsi/BusLogic.h                            | 1487 ++++---
+ drivers/scsi/FlashPoint.c                          |  626 ++-
+ drivers/scsi/Kconfig                               |    2 +-
+ drivers/scsi/aacraid/src.c                         |    3 +
+ drivers/scsi/aic94xx/aic94xx_task.c                |    3 +-
+ drivers/scsi/bfa/bfa_core.c                        |    3 +-
+ drivers/scsi/bfa/bfa_defs.h                        |  103 +-
+ drivers/scsi/bfa/bfa_defs_svc.h                    |   77 +-
+ drivers/scsi/bfa/bfa_fc.h                          |   15 +
+ drivers/scsi/bfa/bfa_fcpim.c                       |    2 +-
+ drivers/scsi/bfa/bfa_fcs.c                         |   62 +-
+ drivers/scsi/bfa/bfa_fcs.h                         |   34 +-
+ drivers/scsi/bfa/bfa_fcs_lport.c                   |  209 +-
+ drivers/scsi/bfa/bfa_fcs_rport.c                   |   11 +-
+ drivers/scsi/bfa/bfa_ioc.c                         |   74 +-
+ drivers/scsi/bfa/bfa_ioc.h                         |    9 +-
+ drivers/scsi/bfa/bfa_ioc_cb.c                      |   86 +-
+ drivers/scsi/bfa/bfa_ioc_ct.c                      |   46 +
+ drivers/scsi/bfa/bfa_svc.c                         |  700 ++-
+ drivers/scsi/bfa/bfa_svc.h                         |   34 +-
+ drivers/scsi/bfa/bfad.c                            |   14 +-
+ drivers/scsi/bfa/bfad_attr.c                       |   33 +-
+ drivers/scsi/bfa/bfad_bsg.c                        |  137 +-
+ drivers/scsi/bfa/bfad_bsg.h                        |   52 +-
+ drivers/scsi/bfa/bfad_drv.h                        |    2 +-
+ drivers/scsi/bfa/bfad_im.c                         |   10 +-
+ drivers/scsi/bfa/bfi.h                             |   78 +-
+ drivers/scsi/bfa/bfi_ms.h                          |    5 +-
+ drivers/scsi/csiostor/csio_hw.c                    |   91 -
+ drivers/scsi/csiostor/csio_hw.h                    |   11 -
+ drivers/scsi/csiostor/csio_mb.c                    |   77 -
+ drivers/scsi/csiostor/csio_mb.h                    |   11 -
+ drivers/scsi/csiostor/csio_scsi.c                  |    4 +-
+ drivers/scsi/cxgbi/cxgb4i/cxgb4i.c                 |  159 +-
+ drivers/scsi/fnic/fnic_scsi.c                      |    6 +-
+ drivers/scsi/ipr.c                                 |   74 +-
+ drivers/scsi/ipr.h                                 |    6 +-
+ drivers/scsi/isci/request.c                        |    4 +-
+ drivers/scsi/libiscsi.c                            |   18 +
+ drivers/scsi/libsas/sas_scsi_host.c                |    2 +-
+ drivers/scsi/lpfc/lpfc.h                           |    2 +-
+ drivers/scsi/lpfc/lpfc_attr.c                      |   23 +-
+ drivers/scsi/lpfc/lpfc_bsg.c                       |    4 +-
+ drivers/scsi/lpfc/lpfc_crtn.h                      |    2 +-
+ drivers/scsi/lpfc/lpfc_ct.c                        |    2 +-
+ drivers/scsi/lpfc/lpfc_els.c                       |    2 +-
+ drivers/scsi/lpfc/lpfc_hbadisc.c                   |   38 +-
+ drivers/scsi/lpfc/lpfc_hw.h                        |    2 +-
+ drivers/scsi/lpfc/lpfc_hw4.h                       |    2 +-
+ drivers/scsi/lpfc/lpfc_init.c                      |  129 +-
+ drivers/scsi/lpfc/lpfc_mbox.c                      |    2 +-
+ drivers/scsi/lpfc/lpfc_nportdisc.c                 |    2 +-
+ drivers/scsi/lpfc/lpfc_scsi.c                      |  125 +-
+ drivers/scsi/lpfc/lpfc_scsi.h                      |    2 +-
+ drivers/scsi/lpfc/lpfc_sli.c                       |   52 +-
+ drivers/scsi/lpfc/lpfc_sli4.h                      |    3 +-
+ drivers/scsi/lpfc/lpfc_version.h                   |    6 +-
+ drivers/scsi/megaraid/megaraid_sas.h               |  186 +-
+ drivers/scsi/megaraid/megaraid_sas_base.c          |  226 +-
+ drivers/scsi/megaraid/megaraid_sas_fp.c            |  784 +++-
+ drivers/scsi/megaraid/megaraid_sas_fusion.c        |  148 +-
+ drivers/scsi/megaraid/megaraid_sas_fusion.h        |   35 +-
+ drivers/scsi/mpt2sas/mpi/mpi2.h                    |    6 +-
+ drivers/scsi/mpt2sas/mpi/mpi2_init.h               |    4 +-
+ drivers/scsi/mpt2sas/mpi/mpi2_ioc.h                |    8 +-
+ drivers/scsi/mpt2sas/mpi/mpi2_raid.h               |    9 +-
+ drivers/scsi/mpt2sas/mpi/mpi2_tool.h               |   10 +-
+ drivers/scsi/mpt2sas/mpt2sas_base.c                |   59 +-
+ drivers/scsi/mpt2sas/mpt2sas_base.h                |    7 +-
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c               |  143 +-
+ drivers/scsi/mvsas/mv_sas.c                        |    3 +-
+ drivers/scsi/pm8001/pm8001_hwi.c                   |    5 +-
+ drivers/scsi/pm8001/pm80xx_hwi.c                   |   21 +-
+ drivers/scsi/scsi.c                                |    8 +-
+ drivers/scsi/scsi_devinfo.c                        |    1 +
+ drivers/scsi/scsi_error.c                          |    7 +-
+ drivers/scsi/scsi_scan.c                           |    5 +
+ drivers/scsi/scsi_sysfs.c                          |   30 +
+ drivers/scsi/scsi_transport_iscsi.c                |   12 +
+ drivers/scsi/sd.c                                  |   77 +-
+ drivers/scsi/sd.h                                  |    1 +
+ drivers/scsi/storvsc_drv.c                         |  210 +-
+ drivers/scsi/ufs/Kconfig                           |    2 +-
+ drivers/scsi/ufs/ufshcd-pci.c                      |    1 -
+ drivers/scsi/ufs/ufshcd-pltfrm.c                   |   76 +-
+ drivers/scsi/ufs/ufshcd.c                          |  537 ++-
+ drivers/scsi/ufs/ufshcd.h                          |   21 +-
+ drivers/scsi/ufs/ufshci.h                          |    5 +-
+ include/scsi/iscsi_if.h                            |    5 +
+ include/scsi/libiscsi.h                            |    4 +
+ include/scsi/libsas.h                              |    2 +-
+ include/scsi/scsi.h                                |    5 +
+ include/scsi/scsi_device.h                         |    1 +
+ include/scsi/scsi_devinfo.h                        |    1 +
+ 113 files changed, 7532 insertions(+), 5175 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ufs/ufshcd-pltfrm.txt
+ delete mode 100644 drivers/s390/scsi/zfcp_cfdc.c
+
+James
 
 
