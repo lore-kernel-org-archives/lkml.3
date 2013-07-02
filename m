@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753743Ab3GBRyD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 13:54:03 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:60248 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab3GBRyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 13:54:00 -0400
-Date: Tue, 2 Jul 2013 13:53:00 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Joseph Lo <josephl@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <will.deacon@arm.com>, <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 07/32] arm: delete __cpuinit/__CPUINIT usage from all ARM
- users
-Message-ID: <20130702175257.GC21817@windriver.com>
-References: <1372102237-8757-1-git-send-email-paul.gortmaker@windriver.com>
- <1372102237-8757-8-git-send-email-paul.gortmaker@windriver.com>
- <1372755120.2874.18.camel@jlo-ubuntu-64.nvidia.com>
- <20130702085818.GD24642@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S1753497Ab3GBSAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 14:00:13 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:33462 "EHLO kanga.kvack.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752060Ab3GBSAL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 14:00:11 -0400
+Date: Tue, 2 Jul 2013 14:00:08 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
+Message-ID: <20130702180008.GQ16399@kvack.org>
+References: <20130515132453.GB11497@suse.de> <5194748A.5070700@cn.fujitsu.com> <20130517002349.GI1008@kvack.org> <5195A3F4.70803@cn.fujitsu.com> <20130517143718.GK1008@kvack.org> <519AD6F8.2070504@cn.fujitsu.com> <20130521022733.GT1008@kvack.org> <51B6F107.80501@cn.fujitsu.com> <20130611144525.GB14404@kvack.org> <51D12E7B.6080301@cn.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130702085818.GD24642@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51D12E7B.6080301@cn.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH 07/32] arm: delete __cpuinit/__CPUINIT usage from all ARM users] On 02/07/2013 (Tue 09:58) Russell King - ARM Linux wrote:
+On Mon, Jul 01, 2013 at 03:23:39PM +0800, Gu Zheng wrote:
+> Hi Ben,
+> Are you still working on this patch?
+> As you know, using the current anon inode will lead to more than one instance of
+> aio can not work. Have you found a way to fix this issue? Or can we use some
+> other ones to replace the anon inode?
 
-> On Tue, Jul 02, 2013 at 04:52:00PM +0800, Joseph Lo wrote:
-> > I just tested this series on Tegra platform. It looks broken CPU hotplug
-> > function for Tegra at least. The CPU can't plug-in after unplugging. And
-> > the system resume function also not working when "enable_nonboot_cpus".
-> > 
-> > Both of the issue cause system hang up. Are we missing something for
-> > __cpuinit removal work?
-> 
-> Check that any assembly code you're using where the __CPUINIT* marker has
-> been removed is not preceded by an __INIT or similar.   This code needs
-> to end up in the normal .text, .data or .bss sections now.
+This patch hasn't been a high priority for me.  I would really appreciate 
+it if someone could confirm that this patch does indeed fix the hotplug 
+page migration issue by testing it in a system that hits the bug.  Removing 
+the anon_inode bits isn't too much work, but I'd just like to have some 
+confirmation that this fix is considered to be "good enough" for the 
+problem at hand before spending any further time on it.  There was talk of 
+using another approach, but it's not clear if there was any progress.
 
-Yes, As Russell says it is entirely possible that the earlier section
-was __INIT and there was already a missing __FINIT (or .previous).
-
-Hence what was __cpuinit got grandfathered into __INIT instead of
-.text/.data/.bss
-
-I'm offline at the moment but will double check myself later this
-evening if nothing obvious has been found by then.
-
-Thanks,
-Paul.
---
+		-ben
+-- 
+"Thought is the essence of where you are now."
