@@ -1,48 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab3GBGFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 02:05:21 -0400
-Received: from smtp03.smtpout.orange.fr ([80.12.242.125]:40031 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab3GBGFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932210Ab3GBGFS (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 2 Jul 2013 02:05:18 -0400
-Message-ID: <51D26D9B.10301@free.fr>
-Date: Tue, 02 Jul 2013 08:05:15 +0200
-From: Eric Valette <eric.valette@free.fr>
-Reply-To: eric.valette@free.fr
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+Received: from comal.ext.ti.com ([198.47.26.152]:47987 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750887Ab3GBGFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 02:05:16 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "khilman@linaro.org" <khilman@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, "Rob Landley" <rob@landley.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH 3/4] rtc: omap: add rtc wakeup support to alarm events
+Thread-Topic: [PATCH 3/4] rtc: omap: add rtc wakeup support to alarm events
+Thread-Index: AQHOc+J3RdUEBUL1FkS6xaDIitR2t5lQZZwAgACGXFA=
+Date: Tue, 2 Jul 2013 06:04:22 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC4E7AB@DBDE04.ent.ti.com>
+References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
+ <1372412109-986-4-git-send-email-gururaja.hebbar@ti.com>
+ <51D26CFA.5090500@ti.com>
+In-Reply-To: <51D26CFA.5090500@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: eric.valette@free.fr
-Subject: Re: memmap exclude boot command: how to check if it was indeed applied
-References: <51D1CD3B.80804@free.fr>
-In-Reply-To: <51D1CD3B.80804@free.fr>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6265bM7005835
 
-On 01/07/2013 20:40, Eric Valette wrote:
-> Hi,
->
-> After  hunting an unreproducible bug, I decided to run memtest86+ and
-> found that only 8 byte of memory refuse to write the last two digit on
-> the last 4GB memory stick.
->
-> Memory is at 0x31db357558
->
-> So I decided to add a memmap=4K@0x000000031db35000 boot options in
-> GRUB_CMDLINE_LINUX. But checking dmesg, I see no mention of this page
-> being reserved.
->
-> PS: CC me I'm not subscribed.
+On Tue, Jul 02, 2013 at 11:32:34, Nori, Sekhar wrote:
+> On 6/28/2013 3:05 PM, Hebbar Gururaja wrote:
+> > On some platforms (like AM33xx), a special register (RTC_IRQWAKEEN)
+> > is available to enable Alarm Wakeup feature. This register needs to be
+> > properly handled for the rtcwake to work properly.
+> > 
+> > Platforms using such IP should set "ti,am3352-rtc" in rtc device dt
+> > compatibility node.
+> > 
+> > Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+> > Cc: Grant Likely <grant.likely@linaro.org>
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> > Cc: Rob Landley <rob@landley.net>
+> > Cc: Sekhar Nori <nsekhar@ti.com>
+> > Cc: Kevin Hilman <khilman@linaro.org>
+> > Cc: Alessandro Zummo <a.zummo@towertech.it>
+> > Cc: rtc-linux@googlegroups.com
+> > Cc: devicetree-discuss@lists.ozlabs.org
+> > Cc: linux-doc@vger.kernel.org
+> > ---
+> 
+> [...]
+> 
+> > -#define	OMAP_RTC_DATA_DA830_IDX	1
+> > +#define	OMAP_RTC_DATA_DA830_IDX		1
+> > +#define	OMAP_RTC_DATA_AM335X_IDX	2
+> >  
+> >  static struct platform_device_id omap_rtc_devtype[] = {
+> >  	{
+> > @@ -309,6 +321,9 @@ static struct platform_device_id omap_rtc_devtype[] = {
+> >  	}, {
+> >  		.name	= "da830-rtc",
+> >  		.driver_data = OMAP_RTC_HAS_KICKER,
+> > +	}, {
+> > +		.name	= "am335x-rtc",
+> 
+> may be use am3352-rtc here just to keep the platform device name and of
+> compatible in sync.
 
-Analysing /sys/firmware/memmap files, I see no trace of buggy address 
-exclusion. Any help?
+Correct. I will update the same in v2.
+
+> 
+> > +		.driver_data = OMAP_RTC_HAS_KICKER | OMAP_RTC_HAS_IRQWAKEEN,
+> >  	},
+> >  	{},
+> 
+> It is better to use the index defined above in the static initialization
+> so they remain in sync.
+
+Sorry. I didnâ€™t get this.
+
+> 
+> 	...
+> 	[OMAP_RTC_DATA_DA830_IDX] = {
+> 		.name	= "da830-rtc",
+> 		.driver_data = OMAP_RTC_HAS_KICKER,
+> 	},
+> 	...
+> 
+> >  };
+> > @@ -318,6 +333,9 @@ static const struct of_device_id omap_rtc_of_match[] = {
+> >  	{	.compatible	= "ti,da830-rtc",
+> >  		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
+> >  	},
+> > +	{	.compatible	= "ti,am3352-rtc",
+> > +		.data		= &omap_rtc_devtype[OMAP_RTC_DATA_AM335X_IDX],
+> > +	},
+> >  	{},
+> >  };
+> >  MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
+> 
+> Apart from these minor issues, the patch looks good to me.
+> 
+> Acked-by: Sekhar Nori <nsekhar@ti.com>
+> 
+> Thanks,
+> Sekhar
+> 
 
 
-
---eric
-
+Regards, 
+Gururaja
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
