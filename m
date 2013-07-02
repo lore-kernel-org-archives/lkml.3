@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab3GBPco (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 11:32:44 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:54557 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab3GBPcn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 11:32:43 -0400
-Message-ID: <1372779141.4979.7.camel@edumazet-glaptop>
-Subject: Re: [PATCH] pkt_sched: rate overflow fix
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Yang Yingliang <yangyingliang@huawei.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, chenweilong@huawei.com,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Tue, 02 Jul 2013 08:32:21 -0700
-In-Reply-To: <51D2ADFA.1090208@huawei.com>
-References: <51D2ADFA.1090208@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753917Ab3GBPdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 11:33:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45922 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753228Ab3GBPdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 11:33:00 -0400
+Date: Tue, 2 Jul 2013 18:32:29 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Luciano Coelho <coelho@ti.com>
+CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
+        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 5/9] wlcore: always use one-shot IRQ
+Message-ID: <20130702153229.GG7013@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1372776948-24840-1-git-send-email-coelho@ti.com>
+ <1372776948-24840-6-git-send-email-coelho@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KIzF6Cje4W/osXrF"
+Content-Disposition: inline
+In-Reply-To: <1372776948-24840-6-git-send-email-coelho@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-02 at 18:39 +0800, Yang Yingliang wrote:
-> Use bonding to aggregate two 82599 nics which have 4 ports and max rate is 40gbit.
-> Then set rate to 35gbit, the rate is overflow.
-> 
-> tc qdisc add dev $bond root handle 1: \
-> tbf latency 50ms burst 35mb rate 35gbit mtu 64k
-> 
-> tc qdisc show dev $bond
-> qdisc tbf 1: root refcnt 2 rate 640262Kbit burst 35Mb lat 50.0ms
-> 
-> iperf -c host -t 30 -i 10
-> [ ID] Interval       Transfer     Bandwidth
-> [  3]  0.0-10.0 sec   764 MBytes   641 Mbits/sec
-> [  3] 10.0-20.0 sec   730 MBytes   612 Mbits/sec
-> 
-> Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
-> ---
->  include/uapi/linux/pkt_sched.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/include/uapi/linux/pkt_sched.h b/include/uapi/linux/pkt_sched.h
-> index 32aef0a..261042c 100644
-> --- a/include/uapi/linux/pkt_sched.h
-> +++ b/include/uapi/linux/pkt_sched.h
-> @@ -79,7 +79,7 @@ struct tc_ratespec {
->         unsigned short  overhead;
->         short           cell_align;
->         unsigned short  mpu;
-> -       __u32           rate;
-> +       __u64           rate;
->  };
-> 
->  #define TC_RTAB_SIZE   1024
+--KIzF6Cje4W/osXrF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, you just broke all previous tc binaries.
+On Tue, Jul 02, 2013 at 05:55:44PM +0300, Luciano Coelho wrote:
+> Since we are now using threaded IRQs without the primary handler, we
+> need to set IRQF_ONESHOT, otherwise our request will fail.
+>=20
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
 
-I wonder why people keep posting such buggy patches, while we are slowly
-doing all the right changes for this problem, in the kernel and
-userland.
+good to see this happening, I remember we talked about this a while back
+:-)
 
-Guys, if it was that simple, we would have done it years ago.
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-In the mean time, I suggest you update your iproute2 package to include
-the fix for this problem (commit a303853e844ce4
-"get_rate: detect 32bit overflows")
+Still, if you call irq_set_irq_type() on board-file (since DT will do
+something similar for you anyway) then you can completely drop
+irq_flags.
 
+--=20
+balbi
 
+--KIzF6Cje4W/osXrF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR0vKNAAoJEIaOsuA1yqREmRsP/jO/ZAuUxhzbh2M71eQy9fQJ
+Lt82NfhFv+D+lZYtWPoDlbU4mOGWMPiK1YRNLiN1GLo4MKfLbRbRGIzOaJnedsMw
+Wt02ejUWZhGe5REI5ocK8jOlyQUDbqv2s3dTAmRR1CryYQWerk3n9CFcJC9gxn+w
+RZ5PQBmdCKanyEX7CH2oUFZyALofTLm2N9UWwlWPbllY7zZQvn1eQqVEdsW1zzBP
+/tFzCTSclYWK1UmA5K0f3UWfKXo8EHppA9PocCvQduQnzgWy803E8OTrimRG9y3C
+6HT/9iW5eJXs+J5lOIPkk72o0/3Wb+k3rdrPCnhbvz0nptsMsHkN2MIN/9TbEYx/
+DjjW/pVTQ2ebCf8q0J5N7XueDGyTK6zb6OmQzPwAll3bsQwQMAmVAtObK5b4yujw
+DJfxqcqyY22P28qpddnvQqo95UAZlmYe69sRhL+H/FtA3UxhHBz5Be+H0fF7xsQd
+GZpxKN6tDhvEJ8EBSyQhC8UxrFpTWXK+INGXTxKwmGNMtMoWxdeUnXJT4kIPKEXQ
+uxgRK2T2OpTxP4PzvKdbCUhyFOioCLkXHNWuCRrUmPiB8v1I+5o5TI0FFA1ALBqc
+RpGiAwmESavLYYRz2qFqTs4iNQbLQEiXByGu5CGt5SU+WcFaZXo9Al0umWLT758B
+5sMG+JR26qBIqjRSTpJg
+=H+Sx
+-----END PGP SIGNATURE-----
+
+--KIzF6Cje4W/osXrF--
