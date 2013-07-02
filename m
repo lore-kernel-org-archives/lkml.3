@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab3GBRPz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 13:15:55 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:47463 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab3GBRPx (ORCPT
+	id S1754059Ab3GBRSD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 13:18:03 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:52596 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753089Ab3GBRR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 13:15:53 -0400
-Message-ID: <51D30AC5.9000701@free-electrons.com>
-Date: Tue, 02 Jul 2013 19:15:49 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 2 Jul 2013 13:17:59 -0400
+Date: Tue, 2 Jul 2013 13:17:58 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <rogerq@ti.com>
+cc: Felipe Balbi <balbi@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
+ bus suspend
+In-Reply-To: <51D28DB9.704@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1307021302430.1086-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: Fabio Estevam <festevam@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>, brian@crystalfontz.com,
-        linux-doc@vger.kernel.org, linux-iio@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, jimwall@q.com,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Lucas Stach <l.stach@pengutronix.de>
-Subject: Re: [PATCHv3 2/3] ARM: mxs: cfa10049: Switch bus i2c1 to bitbanging
-References: <1372094699-3832-1-git-send-email-alexandre.belloni@free-electrons.com> <51D2BEA1.6010206@free-electrons.com> <51D2DE5B.9060309@free-electrons.com> <201307021833.04282.marex@denx.de>
-In-Reply-To: <201307021833.04282.marex@denx.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/07/2013 18:33, Marek Vasut wrote:
-> Dear Alexandre Belloni,
+On Tue, 2 Jul 2013, Roger Quadros wrote:
+
+> On 07/02/2013 12:01 AM, Alan Stern wrote:
+> > On Mon, 1 Jul 2013, Felipe Balbi wrote:
+> > 
+> >>> I don't know what Pad wakeup is.  The wakeup signal has to originate 
+> >>> from the EHCI controller, doesn't it?  If not, how does the Pad know 
+> >>> when a wakeup is needed?
+> >>
+> >> That's really an OMAP thing, I guess. Pad wakeup sits in the PRCM (IIRC)
+> >> inside and always on power domain. EHCI sits in another power domain
+> >> which be turned off. When it's turned off (power gated and clock gated)
+> >> the EHCI block has no means to wakeup whatsoever. That's when pad wakeup
+> >> comes into play. It is generated when PRCM sees a change in the actual
+> >> pad of the die. To check who should 'own' the wakeup, it checks the
+> >> muxing settings to verify whose pad is that.
+> > 
+> > How does the PRCM know which changes should generate wakeup events?  
 > 
->> On 02/07/2013 13:50, Alexandre Belloni wrote:
->>> On 02/07/2013 13:45, Fabio Estevam wrote:
->>>> Shouldn't this be
->>>>
->>>>          i2c@1 {
->>>>          
->>>>                  reg = <1>; ?
->>>
->>> No, we have 4 devices on that mux and 2 pins to select the muxing.
->>
->> OK, got it working.
->>
->> So, the results:
->>
->> bitbanging:
->>
->> # time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
->> 2637
->> real	0m 0.09s
->> user	0m 0.01s
->> sys	0m 0.01s
->>
->>
->> i2c-mxs PIO mode:
->>
->> # time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
->> [   35.007650] [sched_delayed] sched: RT throttling activated
->> 2627
->> real	0m 7.14s
->> user	0m 0.02s
->> sys	0m 0.01s
->>
->>
->> i2c-mxs PIO mode without LRADC:
->>
->> # time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
->> [   18.007432] [sched_delayed] sched: RT throttling activated
->> 2629
->> real	0m 7.09s
->> user	0m 0.00s
->> sys	0m 0.03s
->>
->>
->> i2c-mxs DMA mode:
->>
->> # time cat /sys/bus/iio/devices/iio\:device1/in_voltage0_raw
->> 2631
->> real	0m 0.12s
->> user	0m 0.01s
->> sys	0m 0.01s
->>
->>
->> It seems fine for me.
+> It doesn't know. It will always generate a wakeup on any change in the monitored pins.
+> We can only configure which pins we want to monitor.
+> So we can't choose which wakeup events we want to monitor. We just can
+> enable or disable all events.
 > 
-> I think I'm getting a little lost in these gazilions of i2c and lradc threads. 
-> Can we not create one thread and keep the related stuff in there instead of 
-> discussing it all around !?
+> > In the EHCI controller, this is managed by the settings of the WKOC_E,
+> > WKDSCNNT_E, and WKCNNT_E bits in the PORTSC registers.  But if EHCI is
+> > powered off, those bits can't be used.
 > 
-> Only one question comes to mind with this email -- what do LRADC and I2C have to 
-> do with each other here ?
+> Is "powered off" same as ehci_suspend? If yes then how does it work on other systems
+> for remote wakeup?
+
+Above, Felipe wrote that on OMAP, EHCI sits in a power domain which is
+turned off: power gated and clock gated.  ehci_suspend() doesn't do
+those things, but they are what I was referring to.
+
+A PCI-based EHCI controller has two power sources: the core well (which
+is turned off during suspend) and the auxiliary well (which remains
+powered).  That's how remote wakeup works; it uses the auxiliary well.
+
+> > Also, once the wakeup signal has been turned on, how does it get turned 
+> > off again?
 > 
-
-Yeah, sorry, I meant the lradc touchscreen support. This seemed to
-trigger the issue for Fabio but as my testing shows, this is not the
-case for me, I get the issue with PIO, whether the lradc touchscreen
-support is activated or not.
-
-I think Torsten is the one that investigated it the most :
-
-http://www.spinics.net/lists/linux-i2c/msg12619.html
-
-
-> It'd be nice if someone could summarize on what I should focus and possibly 
-> prepare a testcase.
+> That is taken care of by the OMAP pinctrl driver. It will always turn off the
+> wakeup signal once the event is detected and forwarded as an IRQ.
 > 
+> I know that all this is a bit ugly :(.
 
-On my setup, it happens on every i2c read that are done in PIO mode.
-But, my setup may be a bit unconventional as we are using a i2c gpio muxer.
+I still a little confused.  The wakeup signal turns on.  Then the
+pinctrl driver sees it, forwards it as an IRQ, and turns the wakeup
+signal off.  But what if the IRQ is disabled (as it would be with your
+patch)?  Does the IRQ line remain active until it causes an interrupt?  
+What eventually turns off the IRQ line?
 
-Regards,
+Alan Stern
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
