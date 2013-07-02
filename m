@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363Ab3GBHD7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 03:03:59 -0400
-Received: from mga14.intel.com ([143.182.124.37]:64908 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932219Ab3GBHDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 03:03:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,979,1363158000"; 
-   d="scan'208";a="262946311"
-Message-ID: <51D27CC6.1050209@intel.com>
-Date: Tue, 02 Jul 2013 10:09:58 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S932378Ab3GBHE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 03:04:58 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:22509 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932219Ab3GBHE5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 03:04:57 -0400
+Message-ID: <51D27B88.1020002@huawei.com>
+Date: Tue, 2 Jul 2013 15:04:40 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH V2 12/15] perf tools: allow non-matching sample types
-References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com> <1372319707-13892-13-git-send-email-adrian.hunter@intel.com> <51CC6AAF.4030404@gmail.com> <51D14CB6.206@intel.com> <51D1D043.5030509@gmail.com>
-In-Reply-To: <51D1D043.5030509@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] tracing/uprobes: Support ftrace_event_file base multibuffer
+References: <51CE920C.5020001@huawei.com> <20130701202722.GA413@redhat.com> <20130701211003.GA2147@redhat.com>
+In-Reply-To: <20130701211003.GA2147@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/13 21:53, David Ahern wrote:
-> On 7/1/13 3:32 AM, Adrian Hunter wrote:
->> Snip
+On 2013/7/2 5:10, Oleg Nesterov wrote:
+> On 07/01, Oleg Nesterov wrote:
 >>
+>> On 06/29, zhangwei(Jovi) wrote:
 >>>
->>> While this works for a combined S/W and tracepoint events session, I do not
->>> like promoting sample types to the minimum compatible level for all events
->>> in the session. perf needs to allow each event to have its own sample_type
->>> and not force a minimal compatibility.
+>>> [v3->v4]:
 >>
->> Why?  The impact is small. The kernel API is completely unchanged.
+>> I am wondering how much you will hate me if I suggest to make v5 ;)
+>>
+>> But look, imho probe_event_enable() looks a bit more confusing than
+>> it needs.
 > 
-> I'd like to see libperf become a stable, usable library - usable by more
-> than the perf binary and its builtin commands. I have already done this once
-> for a daemon, and it was a PITA to get the specific use functional without
-> memory leaks/growth in the libperf part.
+> And I am a bit worried this patch removes the is_trace_uprobe_enabled()
+> check from probe_event_enable()...
 > 
-> With respect to this specific patch it means appropriate flexibility in the
-> data collected for events. ie., each event can have its own sample_type. For
-> example if the tracepoint already contains task information TID is not
-> needed - and IP may not be wanted either. The code processing the samples
-> should not require all events to have some minimum data format - that just
-> wastes buffer space.
+> Yes I think it was never needed, afaics TRACE_REG_*_UNREGISTER can't
+> come without successfull _REGISTER. And the bogus uprobe_unregister()
+> is harmless in this particular case.
+> 
+> So I think this is fine, but perhaps the changelog should mention this
+> "offtopic" change.
+> 
+> Oleg.
+> 
+I think it would be better to leave that checking in there now, we can remove
+that checking in a separated patch if needed.
 
-It would be more compelling to provide a use-case where that "waste"
-actually makes any difference.
+(I need to make sure the code will not go to there because each ftrace_event_file
+already have enable/disable flag, also need to look at perf enable/disable case).
+
+jovi
+
 
