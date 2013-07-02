@@ -1,51 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab3GBK1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 06:27:11 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60087 "EHLO arroyo.ext.ti.com"
+	id S932653Ab3GBK1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 06:27:35 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:38662 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623Ab3GBK1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 06:27:10 -0400
-Message-ID: <51D2AAF1.4080803@ti.com>
-Date: Tue, 2 Jul 2013 15:56:57 +0530
-From: Sourav Poddar <sourav.poddar@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S932521Ab3GBK1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 06:27:34 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v2] metag: kick: add missing irq_enter/exit to kick_handler()
+Date: Tue, 2 Jul 2013 10:56:53 +0100
+Message-ID: <1372759013-29911-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Balbi <balbi@ti.com>, <spi-devel-general@lists.sourceforge.net>,
-        <grant.likely@linaro.org>, <rnayak@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2] drivers: spi: Add qspi flash controller
-References: <1372755399-21769-1-git-send-email-sourav.poddar@ti.com> <20130702093247.GY27646@sirena.org.uk> <20130702094404.GL3352@arwen.pp.htv.fi> <20130702101718.GE27646@sirena.org.uk>
-In-Reply-To: <20130702101718.GE27646@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-SEF-Processed: 7_3_0_01192__2013_07_02_11_26_27
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
-On Tuesday 02 July 2013 03:47 PM, Mark Brown wrote:
-> On Tue, Jul 02, 2013 at 12:44:04PM +0300, Felipe Balbi wrote:
->> On Tue, Jul 02, 2013 at 10:32:47AM +0100, Mark Brown wrote:
->>> Does this hardware really support anything other than 8 bits per word?
->>> There is no code in the driver which pays any attention to the word
->>> size...
->> the HW has a 128-bit shift register ;-) but driver doesn't look
->> complete.
-> That's not the issue - remember that SPI specifies big endian byte
-> ordering for words on the bus so things will need to be reordered by the
-> hardware for anything except 8 bits.
-Yes, I defaulted my driver to assume 8 bits.
-I will introduce case by case reads based on t->len
+kick_handler() doesn't have an irq_enter/exit pair, but it's used for
+handling SMP IPIs which require work to be done in softirqs, which are
+invoked from irq_exit() when the hard irq nest count reaches 0.
 
-Something like..
-case 8:
-    readb();
-case 16:
-    readw();
-case 32:
-    readl();
+The scheduler_ipi() callback in the IPI handler calls irq_enter/exit
+itself, but this is inside kick_handler()'s spin lock critical section,
+so if an invoked softirq issues an IPI the kick_handler() will be
+re-entered on the same CPU and will deadlock.
+
+This is easily fixed by adding the missing irq_enter/exit to
+kick_handler() so that the hard irq nest count doesn't reach 0 until
+after the spin lock has been released.
+
+Ideally the spin lock protected handler list will also be replaced by a
+lockless RCU protected list since it is certainly mostly read. That can
+be done in a later change though.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+Changes in v2:
+ - Reworded commit message to hopefully be less confusing (previously
+   "metag: kick: prevent nested kick handlers").
+
+ arch/metag/kernel/kick.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/metag/kernel/kick.c b/arch/metag/kernel/kick.c
+index 50fcbec..beb3776 100644
+--- a/arch/metag/kernel/kick.c
++++ b/arch/metag/kernel/kick.c
+@@ -26,6 +26,8 @@
+  * pass it as an argument.
+  */
+ #include <linux/export.h>
++#include <linux/hardirq.h>
++#include <linux/irq.h>
+ #include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/types.h>
+@@ -66,6 +68,7 @@ EXPORT_SYMBOL(kick_unregister_func);
+ TBIRES
+ kick_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
+ {
++	struct pt_regs *old_regs;
+ 	struct kick_irq_handler *kh;
+ 	struct list_head *lh;
+ 	int handled = 0;
+@@ -79,6 +82,9 @@ kick_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
+ 
+ 	trace_hardirqs_off();
+ 
++	old_regs = set_irq_regs((struct pt_regs *)State.Sig.pCtx);
++	irq_enter();
++
+ 	/*
+ 	 * There is no need to disable interrupts here because we
+ 	 * can't nest KICK interrupts in a KICK interrupt handler.
+@@ -97,5 +103,8 @@ kick_handler(TBIRES State, int SigNum, int Triggers, int Inst, PTBI pTBI)
+ 
+ 	WARN_ON(!handled);
+ 
++	irq_exit();
++	set_irq_regs(old_regs);
++
+ 	return tail_end(ret);
+ }
+-- 
+1.8.1.2
 
 
-~Sourav
