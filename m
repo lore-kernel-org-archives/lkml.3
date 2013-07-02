@@ -1,169 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3GBJGv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 05:06:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:35496 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab3GBJGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 05:06:49 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [ 07/13] net/tg3: Avoid delay during MMIO access
-References: <20130701200523.096669485@linuxfoundation.org>
-	<20130701200523.963352818@linuxfoundation.org>
-Date: Tue, 02 Jul 2013 10:06:44 +0100
-In-Reply-To: <20130701200523.963352818@linuxfoundation.org> (Greg
-	Kroah-Hartman's message of "Mon, 1 Jul 2013 13:10:26 -0700")
-Message-ID: <87d2r1jpp7.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S932558Ab3GBJHM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 05:07:12 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:3884 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932521Ab3GBJHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 05:07:09 -0400
+From: Bo Shen <voice.shen@atmel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, richard.genoud@gmail.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        alsa-devel@alsa-project.org, linux-sound@vger.kernel.org,
+        Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH 1/2] ASoC: atmel_ssc_dai: move set dma data to startup callback
+Date: Tue,  2 Jul 2013 17:04:08 +0800
+Message-Id: <1372755849-19546-2-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372755849-19546-1-git-send-email-voice.shen@atmel.com>
+References: <1372755849-19546-1-git-send-email-voice.shen@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+move set dma data to startup callback function, if the set dma
+data exist in hw_params callback, so the dma data only usable when
+call hw_params, if want use it before hw_params callback, it will
+cause NULL pointer access oops
 
-> 3.4-stable review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: Gavin Shan <shangw@linux.vnet.ibm.com>
->
-> commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
->
-> When the EEH error is the result of a fenced host bridge, MMIO accesses
-> can be very slow (milliseconds) to timeout and return all 1's,
-> thus causing the driver various timeout loops to take way too long and
-> trigger soft-lockup warnings (in addition to taking minutes to recover).
->
-> It might be worthwhile to check if for any of these cases, ffffffff is
-> a valid possible value, and if not, bail early since that means the HW
-> is either gone or isolated. In the meantime, checking that the PCI channel
-> is offline would be workaround of the problem.
->
-> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
-> ---
->  drivers/net/ethernet/broadcom/tg3.c |   36 ++++++++++++++++++++++++++++++++++++
->  1 file changed, 36 insertions(+)
->
-> --- a/drivers/net/ethernet/broadcom/tg3.c
-> +++ b/drivers/net/ethernet/broadcom/tg3.c
-> @@ -689,6 +689,9 @@ static int tg3_ape_lock(struct tg3 *tp,
->  		status = tg3_ape_read32(tp, gnt + off);
->  		if (status == bit)
->  			break;
-> +		if (pci_channel_offline(tp->pdev))
-> +			break;
-> +
->  		udelay(10);
->  	}
->  
-> @@ -1466,6 +1469,9 @@ static void tg3_wait_for_event_ack(struc
->  	for (i = 0; i < delay_cnt; i++) {
->  		if (!(tr32(GRC_RX_CPU_EVENT) & GRC_RX_CPU_DRIVER_EVENT))
->  			break;
-> +		if (pci_channel_offline(tp->pdev))
-> +			break;
-> +
->  		udelay(8);
->  	}
->  }
-> @@ -1636,6 +1642,9 @@ static int tg3_poll_fw(struct tg3 *tp)
->  		for (i = 0; i < 200; i++) {
->  			if (tr32(VCPU_STATUS) & VCPU_STATUS_INIT_DONE)
->  				return 0;
-> +			if (pci_channel_offline(tp->pdev))
-> +				return -ENODEV;
-> +
->  			udelay(100);
->  		}
->  		return -ENODEV;
-> @@ -1646,6 +1655,15 @@ static int tg3_poll_fw(struct tg3 *tp)
->  		tg3_read_mem(tp, NIC_SRAM_FIRMWARE_MBOX, &val);
->  		if (val == ~NIC_SRAM_FIRMWARE_MBOX_MAGIC1)
->  			break;
-> +		if (pci_channel_offline(tp->pdev)) {
-> +			if (!tg3_flag(tp, NO_FWARE_REPORTED)) {
-> +				tg3_flag_set(tp, NO_FWARE_REPORTED);
-> +				netdev_info(tp->dev, "No firmware running\n");
-> +			}
-> +
-> +			break;
-> +		}
-> +
->  		udelay(10);
->  	}
->  
-> @@ -3204,6 +3222,8 @@ static int tg3_nvram_write_block_buffere
->  		ret = tg3_nvram_exec_cmd(tp, nvram_cmd);
->  		if (ret)
->  			break;
-> +		if (pci_channel_offline(tp->pdev))
-> +			return -EBUSY;
->  	}
->  	return ret;
->  }
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+---
+ sound/soc/atmel/atmel_ssc_dai.c |   33 ++++++++++++++++-----------------
+ 1 file changed, 16 insertions(+), 17 deletions(-)
 
-As I referred in a previous email, I'm not sure about the correctness
-of this backport.  The original commit modifies function tg3_pause_cpu
-(and not tg3_nvram_write_block_buffered).
-
-My backport to the 3.5 kernel modifies tg3_halt_cpu code which
-contains the code that has been moved into tg3_pause_cpu in mainline
-(by commit 837c45bb4eaf367ac738c8d746990da33b3402ee).
-
-Cheers
+diff --git a/sound/soc/atmel/atmel_ssc_dai.c b/sound/soc/atmel/atmel_ssc_dai.c
+index f3fdfa0..6cf9cf1 100644
+--- a/sound/soc/atmel/atmel_ssc_dai.c
++++ b/sound/soc/atmel/atmel_ssc_dai.c
+@@ -196,15 +196,27 @@ static int atmel_ssc_startup(struct snd_pcm_substream *substream,
+ 			     struct snd_soc_dai *dai)
+ {
+ 	struct atmel_ssc_info *ssc_p = &ssc_info[dai->id];
+-	int dir_mask;
++	struct atmel_pcm_dma_params *dma_params;
++	int dir, dir_mask;
+ 
+ 	pr_debug("atmel_ssc_startup: SSC_SR=0x%u\n",
+ 		ssc_readl(ssc_p->ssc->regs, SR));
+ 
+-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		dir = 0;
+ 		dir_mask = SSC_DIR_MASK_PLAYBACK;
+-	else
++	} else {
++		dir = 1;
+ 		dir_mask = SSC_DIR_MASK_CAPTURE;
++	}
++
++	dma_params = &ssc_dma_params[dai->id][dir];
++	dma_params->ssc = ssc_p->ssc;
++	dma_params->substream = substream;
++
++	ssc_p->dma_params[dir] = dma_params;
++
++	snd_soc_dai_set_dma_data(dai, substream, dma_params);
+ 
+ 	spin_lock_irq(&ssc_p->lock);
+ 	if (ssc_p->dir_mask & dir_mask) {
+@@ -325,7 +337,6 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
+ 	struct snd_pcm_hw_params *params,
+ 	struct snd_soc_dai *dai)
+ {
+-	struct snd_soc_pcm_runtime *rtd = snd_pcm_substream_chip(substream);
+ 	int id = dai->id;
+ 	struct atmel_ssc_info *ssc_p = &ssc_info[id];
+ 	struct atmel_pcm_dma_params *dma_params;
+@@ -344,19 +355,7 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
+ 	else
+ 		dir = 1;
+ 
+-	dma_params = &ssc_dma_params[id][dir];
+-	dma_params->ssc = ssc_p->ssc;
+-	dma_params->substream = substream;
+-
+-	ssc_p->dma_params[dir] = dma_params;
+-
+-	/*
+-	 * The snd_soc_pcm_stream->dma_data field is only used to communicate
+-	 * the appropriate DMA parameters to the pcm driver hw_params()
+-	 * function.  It should not be used for other purposes
+-	 * as it is common to all substreams.
+-	 */
+-	snd_soc_dai_set_dma_data(rtd->cpu_dai, substream, dma_params);
++	dma_params = ssc_p->dma_params[dir];
+ 
+ 	channels = params_channels(params);
+ 
 -- 
-Luis
+1.7.9.5
 
-> @@ -7674,6 +7694,14 @@ static int tg3_stop_block(struct tg3 *tp
-> tw32_f(ofs, val);
->  
->  	for (i = 0; i < MAX_WAIT_CNT; i++) {
-> +		if (pci_channel_offline(tp->pdev)) {
-> +			dev_err(&tp->pdev->dev,
-> +				"tg3_stop_block device offline, "
-> +				"ofs=%lx enable_bit=%x\n",
-> +				ofs, enable_bit);
-> +			return -ENODEV;
-> +		}
-> +
->  		udelay(100);
->  		val = tr32(ofs);
->  		if ((val & enable_bit) == 0)
-> @@ -7697,6 +7725,13 @@ static int tg3_abort_hw(struct tg3 *tp,
->  
->  	tg3_disable_ints(tp);
->  
-> +	if (pci_channel_offline(tp->pdev)) {
-> +		tp->rx_mode &= ~(RX_MODE_ENABLE | TX_MODE_ENABLE);
-> +		tp->mac_mode &= ~MAC_MODE_TDE_ENABLE;
-> +		err = -ENODEV;
-> +		goto err_no_dev;
-> +	}
-> +
->  	tp->rx_mode &= ~RX_MODE_ENABLE;
->  	tw32_f(MAC_RX_MODE, tp->rx_mode);
->  	udelay(10);
-> @@ -7745,6 +7780,7 @@ static int tg3_abort_hw(struct tg3 *tp,
->  	err |= tg3_stop_block(tp, BUFMGR_MODE, BUFMGR_MODE_ENABLE, silent);
->  	err |= tg3_stop_block(tp, MEMARB_MODE, MEMARB_MODE_ENABLE, silent);
->  
-> +err_no_dev:
->  	for (i = 0; i < tp->irq_cnt; i++) {
->  		struct tg3_napi *tnapi = &tp->napi[i];
->  		if (tnapi->hw_status)
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
