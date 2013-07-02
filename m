@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab3GBLKy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 07:10:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36354 "EHLO
+	id S1756104Ab3GBLLV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 07:11:21 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36346 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab3GBLIl (ORCPT
+	with ESMTP id S1755174Ab3GBLIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 07:08:41 -0400
+	Tue, 2 Jul 2013 07:08:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 43/50] dlci: validate the net device in dlci_del()
-Date: Tue,  2 Jul 2013 12:07:31 +0100
-Message-Id: <1372763258-20664-44-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 39/50] hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
+Date: Tue,  2 Jul 2013 12:07:27 +0100
+Message-Id: <1372763258-20664-40-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
 References: <1372763258-20664-1-git-send-email-luis.henriques@canonical.com>
@@ -27,69 +27,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zefan Li <lizefan@huawei.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 578a1310f2592ba90c5674bca21c1dbd1adf3f0a upstream.
+commit c790b0ad23f427c7522ffed264706238c57c007e upstream.
 
-We triggered an oops while running trinity with 3.4 kernel:
+fetch_bp_busy_slots() and toggle_bp_slot() use
+for_each_online_cpu(), this is obviously wrong wrt cpu_up() or
+cpu_down(), we can over/under account the per-cpu numbers.
 
-BUG: unable to handle kernel paging request at 0000000100000d07
-IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-PGD 640c0d067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-CPU 3
-...
-Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
-RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-...
-Call Trace:
-  [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
-  [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
-  [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
-  [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
-  [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
-...
+For example:
 
-It's because the net device is not a dlci device.
+	# echo 0 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10 -p 1 &
+	# echo 1 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10 -C1 -a &
+	# taskset -p 0x2 1
 
-Reported-by: Li Jinyue <lijinyue@huawei.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+triggers the same WARN_ONCE("Can't find any breakpoint slot") in
+arch_install_hw_breakpoint().
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/20130620155009.GA6327@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wan/dlci.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ kernel/events/hw_breakpoint.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
-index 1f6e053..6a8a382 100644
---- a/drivers/net/wan/dlci.c
-+++ b/drivers/net/wan/dlci.c
-@@ -384,6 +384,7 @@ static int dlci_del(struct dlci_add *dlci)
- 	struct frad_local	*flp;
- 	struct net_device	*master, *slave;
- 	int			err;
-+	bool			found = false;
- 
- 	rtnl_lock();
- 
-@@ -394,6 +395,17 @@ static int dlci_del(struct dlci_add *dlci)
- 		goto out;
+diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
+index bb38c4d..fc8bfcf 100644
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -147,7 +147,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+ 		return;
  	}
  
-+	list_for_each_entry(dlp, &dlci_devs, list) {
-+		if (dlp->master == master) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	if (!found) {
-+		err = -ENODEV;
-+		goto out;
-+	}
-+
- 	if (netif_running(master)) {
- 		err = -EBUSY;
- 		goto out;
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		unsigned int nr;
+ 
+ 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
+@@ -233,7 +233,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
+ 	if (cpu >= 0) {
+ 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	} else {
+-		for_each_online_cpu(cpu)
++		for_each_possible_cpu(cpu)
+ 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	}
+ 
 -- 
 1.8.1.2
 
