@@ -1,60 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294Ab3GBEPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 00:15:23 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:51946 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796Ab3GBEPW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 00:15:22 -0400
-Message-ID: <51D253CA.5080204@huawei.com>
-Date: Tue, 2 Jul 2013 12:15:06 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	id S1751399Ab3GBESc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 00:18:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16429 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750714Ab3GBESa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 00:18:30 -0400
+X-IronPort-AV: E=Sophos;i="4.87,978,1363104000"; 
+   d="scan'208";a="7754984"
+Message-ID: <51D253CB.2070408@cn.fujitsu.com>
+Date: Tue, 02 Jul 2013 12:15:07 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-CC: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Li Zefan <lizefan@huawei.com>, Zhang Hang <bob.zhanghang@huawei.com>,
-        Li Bin <huawei.libin@huawei.com>
-Subject: Re: [PATCH] sched: fix cpu utilization account error
-References: <51D12570.9070100@huawei.com> <1372664187.7678.45.camel@marge.simpson.net> <51D16777.5000703@huawei.com> <51D24708.1060206@linux.vnet.ibm.com>
-In-Reply-To: <51D24708.1060206@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Dong Fang <yp.fangdong@gmail.com>
+CC: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: remove the unnecessrary code of fs/inode.c
+References: <1372681143-23465-1-git-send-email-yp.fangdong@gmail.com>
+In-Reply-To: <1372681143-23465-1-git-send-email-yp.fangdong@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/02 12:16:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/02 12:17:01,
+	Serialize complete at 2013/07/02 12:17:01
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.18]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/2 11:20, Michael Wang wrote:
-> Hi, Xie
-> 
-> On 07/01/2013 07:26 PM, Xie XiuQi wrote:
-> [snip]
->> Here is the kthread main logic. Although it's not a good idea, but it does
->> exist:
->> while (!kthread_should_stop()) {
->> 	/* call schedule every 1 sec */
->> 	if (HZ <= jiffies - last) {
->> 		last = jiffies;
->> 		schedule();
->> 	}
->>
->> 	/* get data and sent it */
->> 	get_msg();
->> 	send_msg();
-> 
-> What about use cond_resched() here? Isn't that more gentle?
-> 
+On 07/01/2013 08:19 PM, Dong Fang wrote:
 
-That's a good idea for driver implementation.
-Thank you Michael.
+> These functions, such as find_inode_fast() and find_inode(), iget_lock() and
+> iget5_lock(), insert_inode_locked() and insert_inode_locked4(), almost have
+> the same code.
 
-> Regards,
-> Michael Wang
+Maybe the title "[PATCH] vfs: remove the reduplicate code of fs/inode.c" is more
+suitable.
+
 > 
+> Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
+
+
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+
+Thanks,
+Gu
+
+> ---
+>  fs/inode.c |  134 ++++++++++++------------------------------------------------
+>  1 files changed, 26 insertions(+), 108 deletions(-)
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 00d5fc3..847eee9 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -790,6 +790,22 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+>  }
+>  
+>  static void __wait_on_freeing_inode(struct inode *inode);
+> +
+> +
+> +static int test_ino(struct inode *inode, void *data)
+> +{
+> +	unsigned long ino = *(unsigned long *) data;
+> +	return inode->i_ino == ino;
+
+Can be more concise:
+	return inode->i_ino == *(unsigned long *) data;
+,so does the new insert_inode_locked():
+	
+
+> +}
+> +
+> +static int set_ino(struct inode *inode, void *data)
+> +{
+> +	inode->i_ino = *(unsigned long *) data;
+> +	return 0;
+> +}
+> +
+> +
+> +
+>  /*
+>   * Called with the inode lock held.
+>   */
+> @@ -829,28 +845,7 @@ repeat:
+>  static struct inode *find_inode_fast(struct super_block *sb,
+>  				struct hlist_head *head, unsigned long ino)
+>  {
+> -	struct inode *inode = NULL;
+> -
+> -repeat:
+> -	hlist_for_each_entry(inode, head, i_hash) {
+> -		spin_lock(&inode->i_lock);
+> -		if (inode->i_ino != ino) {
+> -			spin_unlock(&inode->i_lock);
+> -			continue;
+> -		}
+> -		if (inode->i_sb != sb) {
+> -			spin_unlock(&inode->i_lock);
+> -			continue;
+> -		}
+> -		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+> -			__wait_on_freeing_inode(inode);
+> -			goto repeat;
+> -		}
+> -		__iget(inode);
+> -		spin_unlock(&inode->i_lock);
+> -		return inode;
+> -	}
+> -	return NULL;
+> +	return find_inode(sb, head, test_ino, (void *)&ino);
+>  }
+>  
+>  /*
+> @@ -1073,50 +1068,7 @@ EXPORT_SYMBOL(iget5_locked);
+>   */
+>  struct inode *iget_locked(struct super_block *sb, unsigned long ino)
+>  {
+> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
+> -	struct inode *inode;
+> -
+> -	spin_lock(&inode_hash_lock);
+> -	inode = find_inode_fast(sb, head, ino);
+> -	spin_unlock(&inode_hash_lock);
+> -	if (inode) {
+> -		wait_on_inode(inode);
+> -		return inode;
+> -	}
+> -
+> -	inode = alloc_inode(sb);
+> -	if (inode) {
+> -		struct inode *old;
+> -
+> -		spin_lock(&inode_hash_lock);
+> -		/* We released the lock, so.. */
+> -		old = find_inode_fast(sb, head, ino);
+> -		if (!old) {
+> -			inode->i_ino = ino;
+> -			spin_lock(&inode->i_lock);
+> -			inode->i_state = I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> -			spin_unlock(&inode->i_lock);
+> -			inode_sb_list_add(inode);
+> -			spin_unlock(&inode_hash_lock);
+> -
+> -			/* Return the locked inode with I_NEW set, the
+> -			 * caller is responsible for filling in the contents
+> -			 */
+> -			return inode;
+> -		}
+> -
+> -		/*
+> -		 * Uhhuh, somebody else created the same inode under
+> -		 * us. Use the old inode instead of the one we just
+> -		 * allocated.
+> -		 */
+> -		spin_unlock(&inode_hash_lock);
+> -		destroy_inode(inode);
+> -		inode = old;
+> -		wait_on_inode(inode);
+> -	}
+> -	return inode;
+> +	return iget5_locked(sb, ino, test_ino, set_ino, (void *)&ino);
+>  }
+>  EXPORT_SYMBOL(iget_locked);
+>  
+> @@ -1281,48 +1233,6 @@ struct inode *ilookup(struct super_block *sb, unsigned long ino)
+>  }
+>  EXPORT_SYMBOL(ilookup);
+>  
+> -int insert_inode_locked(struct inode *inode)
+> -{
+> -	struct super_block *sb = inode->i_sb;
+> -	ino_t ino = inode->i_ino;
+> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
+> -
+> -	while (1) {
+> -		struct inode *old = NULL;
+> -		spin_lock(&inode_hash_lock);
+> -		hlist_for_each_entry(old, head, i_hash) {
+> -			if (old->i_ino != ino)
+> -				continue;
+> -			if (old->i_sb != sb)
+> -				continue;
+> -			spin_lock(&old->i_lock);
+> -			if (old->i_state & (I_FREEING|I_WILL_FREE)) {
+> -				spin_unlock(&old->i_lock);
+> -				continue;
+> -			}
+> -			break;
+> -		}
+> -		if (likely(!old)) {
+> -			spin_lock(&inode->i_lock);
+> -			inode->i_state |= I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> -			spin_unlock(&inode->i_lock);
+> -			spin_unlock(&inode_hash_lock);
+> -			return 0;
+> -		}
+> -		__iget(old);
+> -		spin_unlock(&old->i_lock);
+> -		spin_unlock(&inode_hash_lock);
+> -		wait_on_inode(old);
+> -		if (unlikely(!inode_unhashed(old))) {
+> -			iput(old);
+> -			return -EBUSY;
+> -		}
+> -		iput(old);
+> -	}
+> -}
+> -EXPORT_SYMBOL(insert_inode_locked);
+> -
+>  int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+>  		int (*test)(struct inode *, void *), void *data)
+>  {
+> @@ -1366,6 +1276,14 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+>  }
+>  EXPORT_SYMBOL(insert_inode_locked4);
+>  
+> +int insert_inode_locked(struct inode *inode)
+> +{
+> +	unsigned long ino = inode->i_ino;
+> +	return insert_inode_locked4(inode, ino, test_ino, (void *)&ino);
+
+return insert_inode_locked4(inode, inode->i_ino, test_ino, (void *)&ino);
+
+> +}
+> +EXPORT_SYMBOL(insert_inode_locked);
+> +
+> +
+>  
+>  int generic_delete_inode(struct inode *inode)
+>  {
 
 
