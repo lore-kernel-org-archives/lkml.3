@@ -1,67 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab3GBF6x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 01:58:53 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:42300 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab3GBF6w (ORCPT
+	id S932146Ab3GBGA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 02:00:28 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:47498 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3GBGA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 01:58:52 -0400
-Date: Mon, 1 Jul 2013 22:58:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full v2 2/7] nohz_full: Add rcu_dyntick data for
- scalable detection of all-idle state
-Message-ID: <20130702055839.GZ3773@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130628200949.GA17458@linux.vnet.ibm.com>
- <1372450222-19420-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1372450222-19420-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130701153150.GB2923@leaf>
- <20130701155220.GL3773@linux.vnet.ibm.com>
- <20130701181601.GA7964@jtriplet-mobl1>
- <20130701182326.GQ3773@linux.vnet.ibm.com>
- <20130701183412.GA18804@jtriplet-mobl1>
- <20130701191656.GR3773@linux.vnet.ibm.com>
- <1372741852.7363.110.camel@marge.simpson.net>
+	Tue, 2 Jul 2013 02:00:26 -0400
+Message-ID: <51D26C6D.6070601@gmail.com>
+Date: Tue, 02 Jul 2013 02:00:13 -0400
+From: Dong Fang <yp.fangdong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1372741852.7363.110.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070205-4834-0000-0000-0000089C13C1
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+CC: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] vfs: remove the unnecessrary code of fs/inode.c
+References: <1372681143-23465-1-git-send-email-yp.fangdong@gmail.com> <51D253CB.2070408@cn.fujitsu.com>
+In-Reply-To: <51D253CB.2070408@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 07:10:52AM +0200, Mike Galbraith wrote:
-> On Mon, 2013-07-01 at 12:16 -0700, Paul E. McKenney wrote: 
-> > On Mon, Jul 01, 2013 at 11:34:13AM -0700, Josh Triplett wrote:
-> 
-> > > > > This also naturally raises the question "How can we let userspace get
-> > > > > accurate time without forcing a timer tick?".
-> > > > 
-> > > > We don't.  ;-)
-> > > 
-> > > We don't currently, hence my question about how we can. :)
-> > 
-> > Per-CPU atomic clocks?
-> 
-> Great idea, who needs timekeeping code. 
-> 
-> http://www.euronews.com/2013/04/02/swiss-sets-sights-on-miniscule-atomic-clock/
+On 07/02/2013 12:15 AM, Gu Zheng wrote:
+> On 07/01/2013 08:19 PM, Dong Fang wrote:
+>
+>> These functions, such as find_inode_fast() and find_inode(), iget_lock() and
+>> iget5_lock(), insert_inode_locked() and insert_inode_locked4(), almost have
+>> the same code.
+>
+> Maybe the title "[PATCH] vfs: remove the reduplicate code of fs/inode.c" is more
+> suitable.
+>
 
-"in theory you’ll only need to set it once every 3,000 years, providing
-of course your battery lasts that long" ;-) ;-) ;-)
+that's right, thanks for your advice
 
-							Thanx, Paul
+>>
+>> Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
+>
+>
+> Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>
+> Thanks,
+> Gu
+>
+>> ---
+>>   fs/inode.c |  134 ++++++++++++------------------------------------------------
+>>   1 files changed, 26 insertions(+), 108 deletions(-)
+>>
+>> diff --git a/fs/inode.c b/fs/inode.c
+>> index 00d5fc3..847eee9 100644
+>> --- a/fs/inode.c
+>> +++ b/fs/inode.c
+>> @@ -790,6 +790,22 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
+>>   }
+>>
+>>   static void __wait_on_freeing_inode(struct inode *inode);
+>> +
+>> +
+>> +static int test_ino(struct inode *inode, void *data)
+>> +{
+>> +	unsigned long ino = *(unsigned long *) data;
+>> +	return inode->i_ino == ino;
+>
+> Can be more concise:
+> 	return inode->i_ino == *(unsigned long *) data;
+> ,so does the new insert_inode_locked():
+> 	
+>
+>> +}
+>> +
+>> +static int set_ino(struct inode *inode, void *data)
+>> +{
+>> +	inode->i_ino = *(unsigned long *) data;
+>> +	return 0;
+>> +}
+>> +
+>> +
+>> +
+>>   /*
+>>    * Called with the inode lock held.
+>>    */
+>> @@ -829,28 +845,7 @@ repeat:
+>>   static struct inode *find_inode_fast(struct super_block *sb,
+>>   				struct hlist_head *head, unsigned long ino)
+>>   {
+>> -	struct inode *inode = NULL;
+>> -
+>> -repeat:
+>> -	hlist_for_each_entry(inode, head, i_hash) {
+>> -		spin_lock(&inode->i_lock);
+>> -		if (inode->i_ino != ino) {
+>> -			spin_unlock(&inode->i_lock);
+>> -			continue;
+>> -		}
+>> -		if (inode->i_sb != sb) {
+>> -			spin_unlock(&inode->i_lock);
+>> -			continue;
+>> -		}
+>> -		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+>> -			__wait_on_freeing_inode(inode);
+>> -			goto repeat;
+>> -		}
+>> -		__iget(inode);
+>> -		spin_unlock(&inode->i_lock);
+>> -		return inode;
+>> -	}
+>> -	return NULL;
+>> +	return find_inode(sb, head, test_ino, (void *)&ino);
+>>   }
+>>
+>>   /*
+>> @@ -1073,50 +1068,7 @@ EXPORT_SYMBOL(iget5_locked);
+>>    */
+>>   struct inode *iget_locked(struct super_block *sb, unsigned long ino)
+>>   {
+>> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
+>> -	struct inode *inode;
+>> -
+>> -	spin_lock(&inode_hash_lock);
+>> -	inode = find_inode_fast(sb, head, ino);
+>> -	spin_unlock(&inode_hash_lock);
+>> -	if (inode) {
+>> -		wait_on_inode(inode);
+>> -		return inode;
+>> -	}
+>> -
+>> -	inode = alloc_inode(sb);
+>> -	if (inode) {
+>> -		struct inode *old;
+>> -
+>> -		spin_lock(&inode_hash_lock);
+>> -		/* We released the lock, so.. */
+>> -		old = find_inode_fast(sb, head, ino);
+>> -		if (!old) {
+>> -			inode->i_ino = ino;
+>> -			spin_lock(&inode->i_lock);
+>> -			inode->i_state = I_NEW;
+>> -			hlist_add_head(&inode->i_hash, head);
+>> -			spin_unlock(&inode->i_lock);
+>> -			inode_sb_list_add(inode);
+>> -			spin_unlock(&inode_hash_lock);
+>> -
+>> -			/* Return the locked inode with I_NEW set, the
+>> -			 * caller is responsible for filling in the contents
+>> -			 */
+>> -			return inode;
+>> -		}
+>> -
+>> -		/*
+>> -		 * Uhhuh, somebody else created the same inode under
+>> -		 * us. Use the old inode instead of the one we just
+>> -		 * allocated.
+>> -		 */
+>> -		spin_unlock(&inode_hash_lock);
+>> -		destroy_inode(inode);
+>> -		inode = old;
+>> -		wait_on_inode(inode);
+>> -	}
+>> -	return inode;
+>> +	return iget5_locked(sb, ino, test_ino, set_ino, (void *)&ino);
+>>   }
+>>   EXPORT_SYMBOL(iget_locked);
+>>
+>> @@ -1281,48 +1233,6 @@ struct inode *ilookup(struct super_block *sb, unsigned long ino)
+>>   }
+>>   EXPORT_SYMBOL(ilookup);
+>>
+>> -int insert_inode_locked(struct inode *inode)
+>> -{
+>> -	struct super_block *sb = inode->i_sb;
+>> -	ino_t ino = inode->i_ino;
+>> -	struct hlist_head *head = inode_hashtable + hash(sb, ino);
+>> -
+>> -	while (1) {
+>> -		struct inode *old = NULL;
+>> -		spin_lock(&inode_hash_lock);
+>> -		hlist_for_each_entry(old, head, i_hash) {
+>> -			if (old->i_ino != ino)
+>> -				continue;
+>> -			if (old->i_sb != sb)
+>> -				continue;
+>> -			spin_lock(&old->i_lock);
+>> -			if (old->i_state & (I_FREEING|I_WILL_FREE)) {
+>> -				spin_unlock(&old->i_lock);
+>> -				continue;
+>> -			}
+>> -			break;
+>> -		}
+>> -		if (likely(!old)) {
+>> -			spin_lock(&inode->i_lock);
+>> -			inode->i_state |= I_NEW;
+>> -			hlist_add_head(&inode->i_hash, head);
+>> -			spin_unlock(&inode->i_lock);
+>> -			spin_unlock(&inode_hash_lock);
+>> -			return 0;
+>> -		}
+>> -		__iget(old);
+>> -		spin_unlock(&old->i_lock);
+>> -		spin_unlock(&inode_hash_lock);
+>> -		wait_on_inode(old);
+>> -		if (unlikely(!inode_unhashed(old))) {
+>> -			iput(old);
+>> -			return -EBUSY;
+>> -		}
+>> -		iput(old);
+>> -	}
+>> -}
+>> -EXPORT_SYMBOL(insert_inode_locked);
+>> -
+>>   int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+>>   		int (*test)(struct inode *, void *), void *data)
+>>   {
+>> @@ -1366,6 +1276,14 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+>>   }
+>>   EXPORT_SYMBOL(insert_inode_locked4);
+>>
+>> +int insert_inode_locked(struct inode *inode)
+>> +{
+>> +	unsigned long ino = inode->i_ino;
+>> +	return insert_inode_locked4(inode, ino, test_ino, (void *)&ino);
+>
+> return insert_inode_locked4(inode, inode->i_ino, test_ino, (void *)&ino);
+>
+>> +}
+>> +EXPORT_SYMBOL(insert_inode_locked);
+>> +
+>> +
+>>
+>>   int generic_delete_inode(struct inode *inode)
+>>   {
+>
+>
+>
 
