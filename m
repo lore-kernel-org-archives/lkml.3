@@ -1,120 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3GCGBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 02:01:39 -0400
-Received: from 60-250-193-73.HINET-IP.hinet.net ([60.250.193.73]:60989 "EHLO
-	mail.davicom.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab3GCGBh (ORCPT
+	id S1754078Ab3GCGCw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 02:02:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40003 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753471Ab3GCGCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 02:01:37 -0400
-X-Greylist: delayed 730 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Jul 2013 02:01:36 EDT
-Message-Id: <201307030548.r635mxI6027578@mail.davicom.com.tw>
-From: "Joseph Chang" <joseph_chang@davicom.com.tw>
-To: "'Peter Korsgaard'" <jacmet@sunsite.dk>,
-        "'Joseph CHANG'" <josright123@gmail.com>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <joseph_chang@davicom.com.tw>,
-        <josright@hotmail.com>
-Subject: RE: [PATCH 1/1] net: add dm9620 net usb driver
-Date: Wed, 3 Jul 2013 13:49:11 +0800
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook, Build 11.0.5510
-In-Reply-To: <87mwqglhqj.fsf@dell.be.48ers.dk>
-thread-index: Ac5wTG0Rtpug/80ZRBGYdbz3KCdWawHYEtwQ
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+	Wed, 3 Jul 2013 02:02:50 -0400
+Date: Wed, 3 Jul 2013 16:02:47 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: monstr@monstr.eu
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the xilinx tree
+Message-Id: <20130703160247.bc20792d7bfaef893ee72137@canb.auug.org.au>
+In-Reply-To: <51D3BC5C.1080505@monstr.eu>
+References: <20130703111030.c0df2a231fc3e4ba6cb566cd@canb.auug.org.au>
+	<51D3BC5C.1080505@monstr.eu>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__3_Jul_2013_16_02_47_+1000_izrMlHwUF6z193NS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Peter,
+--Signature=_Wed__3_Jul_2013_16_02_47_+1000_izrMlHwUF6z193NS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-  This is Joseph CHANG, I am glade to contact and work with you.
-  I am busy in some affairs else these days, and will like to be back soon.
+Hi Michal,
 
-  For the begin, We copy the source code 'dm9601.c' which was by you,
-   In order to work for our new chips (DM9620, DM9621, DM9621A... series),
-   We did modify to get 'dm9620.c' base on 'dm0601.c',
-   Since you are the author and also the owner, so keep MODULE_AUTHOR() as you.
+On Wed, 03 Jul 2013 07:53:32 +0200 Michal Simek <monstr@monstr.eu> wrote:
+>
+> I have fixed it - it should be fixed there soon.
 
-  To generate DM9620.c is a way to distinguish the different generation chips:
-(as below)
+Thanks.
 
-   DM9601: old revision:     USB1.1, Ethernet 10/100,     Phase out
-   DM9620: current revision:  USB2.0, Ethernet 10/100,     Mass production state
-   DM9633: next revision:    USB3.0, Ethernet 10/100/1000, Will to release on
-2013/E
+> But I am thinking about removing this tree from linux-next
+> because we are pushing arm changes through arm-soc tree
+> and they require to have specific feature branches.
 
-  So want to make it from the configuration by "make menuconfig".
+Just let me know when you decide.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-  Can you help give further advices, we hope you can go ahead be the owner
-(author) of the 
-  'dm9620.c', And then we make patch to it. Would you agree this idea? If so we
-will be happy
-  because we did not ever create such a code.
+--Signature=_Wed__3_Jul_2013_16_02_47_+1000_izrMlHwUF6z193NS
+Content-Type: application/pgp-signature
 
-  * Think about DM9633 driver to be, It will be is total different compare to
-DM9601 & 
-    DM9620. And will get the same issue.
- 
-ThankYou and Best Regards,
-Joseph CHANG 
-System Application Engineering Division 
-Davicom Semiconductor, Inc. 
-No. 6 Li-Hsin Rd. VI, Science-Based Park, 
-Hsin-Chu, Taiwan. 
-Tel: 886-3-5798797 Ex 8534
-Fax: 886-3-5646929 
-Web: http://www.davicom.com.tw 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJR076HAAoJEECxmPOUX5FEUScQAKofcOkmXIiInGIWpl7zVTKX
+nEZVELCEPloH5LyDAwpuGByi1t0x95mkX2FwtLongcQ0HeHNX6td6cLpfUblPTmx
+orNinPClozzv9k8mbpabwJtGhxcMSZkpp8ty4yzBIrQB9aLdHDvNCCpEtbo7H1Jn
+FTWyTBHDor4fL25UL291tk9Y8HW5EBMtfUYfe+KhSJq5rr7UlaZbFiZtQQJqj9mq
+2EHvV8OweVcvTxbguFmLXXI1g8ymusPj9FdjdNUNxZD10bzN0d3rI6XscNFNnSvN
+y84hyF5Xg+lNV/KC+6BOQxEGo2oqXTsFwfEle27+rncbE7bFXAQiUSYfeTJ2RhFV
+RMYtSzPh0QM5M59E7hflpw6Dlo/xcEnK6uozVwXt06qn2lSF4OVf2QA9IgJhmRUA
+TqAh1Q/D6sreqmJ4EiAwLlA+Rl7eZZVomAknWnznwZUJBRZOL3pkjUG4Hmgbo5f9
+hJNkKTywLFRKiOqffdWhQtuizvJuUj25Ip7z3QRpfEOauXFnyr5CBMAG2XBMCct4
+BTRt2TfHcJXCQg2xULEoYjNOf324uuGPfLOBWJ6rzgUl/8buU6HzrUyROpqnAwEY
+1Ngbg73FCorTdDZPp1sgGZzQ6JINopTEQDdteWi17MQaRN9FFUOjUyI/ZJxUDq7K
+No8hEDQi63qC4+IF5ZVx
+=qBde
+-----END PGP SIGNATURE-----
 
------Original Message-----
-From: Peter Korsgaard [mailto:jacmet@gmail.com] On Behalf Of Peter Korsgaard
-Sent: Monday, June 24, 2013 4:01 AM
-To: Joseph CHANG
-Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org;
-netdev@vger.kernel.org; joseph_chang@davicom.com.tw; josright@hotmail.com
-Subject: Re: [PATCH 1/1] net: add dm9620 net usb driver
-
->>>>> "Joseph" == Joseph CHANG <josright123@gmail.com> writes:
-
- Joseph> DM9620 is an USB2.0 network adapter rather than DM9601 USB1.1. This
- Joseph> driver processed the RX data 4 bytes header, TX data 2 bytes header,
- Joseph> make the control bit exactly right in PHY write function, and optional
- Joseph> IFF_ALLMUTLI bit for RX control.
-
-But dm9601.c already supports the dm9620 based devices. Why another
-driver for the same hardware?
-
-Please CC me on dm9601 related patches.
-
- Joseph> Tested good for many platforms, include X86 desktop and ARM embedded.
-
- Joseph> +static struct usb_driver dm9620_driver = {
- Joseph> +	.name = "dm9620",
- Joseph> +	.id_table = products,
- Joseph> +	.probe = usbnet_probe,
- Joseph> +	.disconnect = usbnet_disconnect,
- Joseph> +	.suspend = usbnet_suspend,
- Joseph> +	.resume = usbnet_resume,
- Joseph> +	.disable_hub_initiated_lpm = 1,
- Joseph> +};
- Joseph> +
- Joseph> +module_usb_driver(dm9620_driver);
- Joseph> +
- Joseph> +MODULE_AUTHOR("Peter Korsgaard <jacmet@sunsite.dk>");
-
-I'm not the author of this file.
-
-
--- 
-Bye, Peter Korsgaard
-
--- 
-This message has been scanned for viruses and
-dangerous content by MailScanner, and is
-believed to be clean.
-
+--Signature=_Wed__3_Jul_2013_16_02_47_+1000_izrMlHwUF6z193NS--
