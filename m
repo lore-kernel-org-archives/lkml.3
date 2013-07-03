@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab3GCHhD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 03:37:03 -0400
-Received: from mga14.intel.com ([143.182.124.37]:29403 "EHLO mga14.intel.com"
+	id S932147Ab3GCHhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 03:37:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59297 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734Ab3GCHhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 03:37:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,986,1363158000"; 
-   d="scan'208";a="359791703"
-Date: Wed, 3 Jul 2013 15:36:58 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [FMC] BUG: scheduling while atomic: swapper/1/0x10000002
-Message-ID: <20130703073658.GA27303@localhost>
-References: <20130703071540.GC25674@localhost>
- <20130703073249.GA27110@mail.gnudd.com>
+	id S932105Ab3GCHhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 03:37:43 -0400
+Date: Wed, 3 Jul 2013 09:37:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Kay Sievers <kay@vrfy.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Lennart Poettering <lpoetter@redhat.com>,
+        Tim Hockin <thockin@hockin.org>, Michal Hocko <mhocko@suse.cz>,
+        Tejun Heo <tj@kernel.org>, Mike Galbraith <bitbucket@online.de>,
+        Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+Message-ID: <20130703073740.GA14096@pd.tnic>
+References: <20130628040930.GC2500@htj.dyndns.org>
+ <1372394950.5989.128.camel@marge.simpson.net>
+ <20130628050138.GD2500@htj.dyndns.org>
+ <20130628150513.GD5125@dhcp22.suse.cz>
+ <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com>
+ <51CE3CE0.9010506@redhat.com>
+ <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
+ <51D08976.6040005@redhat.com>
+ <alpine.DEB.2.02.1307030021480.4013@ionos.tec.linutronix.de>
+ <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130703073249.GA27110@mail.gnudd.com>
+In-Reply-To: <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alessandro,
-
-On Wed, Jul 03, 2013 at 09:32:49AM +0200, Alessandro Rubini wrote:
-> Hello.
+On Wed, Jul 03, 2013 at 02:44:31AM +0200, Kay Sievers wrote:
+> I don't think anybody needs your money.
 > 
-> > I got the below dmesg and the first bad commit is
-> > 
-> > commit 4debfe409b6e550032bfef9733e9f6f7c5613617
-> > Author: Alessandro Rubini <rubini@gnudd.com>
-> > Date:   Tue Jun 18 23:48:07 2013 +0200
-> > 
-> >     FMC: add a char-device mezzanine driver
-> 
-> thank you for your report. I already got a problem report with
-> built-in FMC subsystem, but I couldn't reproduce it.  Actually, I use
-> drivers/fmc daily (I'm currently finalizing an ADC driver), but I run
-> the whole subsystem as module; it never happens in that case.
-> 
-> Thank you for bisecting, I'll take a deeper look as soon as possible
-> (hopefully today).  Meanwhile, please disable FMC or build as modules.
+> But it's sure an improvement over last time when you wanted to use a
+> "Kantholz" to make your statement.
 
-No problem for me. I actually run the tests in KVM which does not have
-real FMC hardware at all.
+Kantholz, frozen sharks, whatever helps get the real point across. Hint:
+this is not at all about the money.
 
-Thanks,
-Fengguang
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
