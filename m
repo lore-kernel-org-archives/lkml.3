@@ -1,97 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932789Ab3GCMgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 08:36:05 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:35929 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671Ab3GCMgB (ORCPT
+	id S932773Ab3GCMf5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 08:35:57 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52553 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932671Ab3GCMfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 08:36:01 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <lm-sensors@lm-sensors.org>
-Subject: 3.10: NCT6776F sensor question with Supermicro X9SRL-F motherboard
-Date: Wed, 3 Jul 2013 08:35:59 -0400
-Message-ID: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac536YXBnlAKAB+9QhSjCgQ+kECjNQ==
-Content-language: en-us
+	Wed, 3 Jul 2013 08:35:53 -0400
+X-AuditID: 9c93017e-b7c04ae00000295f-ef-51d41aa448c8
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hyeoncheol Lee <cheol.lee@lge.com>, LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH 06/12] tracing/kprobes: Move common functions to trace_probe.c
+Date: Wed,  3 Jul 2013 21:35:40 +0900
+Message-Id: <1372854946-17074-7-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
+References: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Currently running 3.10 with:
-CONFIG_SENSORS_NCT6775=y
+The __get_data_size() and store_trace_args() will be used by uprobes
+too.  Move them to a common location.
 
-Motherboard: Supermicro X9SRL-F
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ kernel/trace/trace_kprobe.c | 48 ---------------------------------------------
+ kernel/trace/trace_probe.c  | 46 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/trace_probe.h  |  4 ++++
+ 3 files changed, 50 insertions(+), 48 deletions(-)
 
-A couple questions:
-1) Was curious if the PCH CHIP/CPU/MCH temperatures should be populated for
-this board? 
-2) Additionally, why is the CPUTIN in alarm?
-
-I also found:
-http://www.lm-sensors.org/wiki/Configurations/SuperMicro/X9SRA
-
-Does Super Micro also have such a config file for the X9SRL-F?
-This board uses a NCT6776F.
-
-Relevant output from lm_sensors 3.6.0+dfsg1-1:
-
-nct6776-isa-0a30
-Adapter: ISA adapter
-Vcore:          +0.81 V  (min =  +0.54 V, max =  +1.49 V)
-in1:            +1.85 V  (min =  +1.62 V, max =  +1.99 V)
-AVCC:           +3.30 V  (min =  +2.98 V, max =  +3.63 V)
-+3.3V:          +3.30 V  (min =  +2.98 V, max =  +3.63 V)
-in4:            +1.51 V  (min =  +1.35 V, max =  +1.65 V)
-in5:            +1.27 V  (min =  +1.13 V, max =  +1.38 V)
-in6:            +1.06 V  (min =  +0.92 V, max =  +1.34 V)
-3VSB:           +3.57 V  (min =  +2.98 V, max =  +3.63 V)
-Vbat:           +3.49 V  (min =  +2.70 V, max =  +3.63 V)
-fan1:           986 RPM  (min =  700 RPM)
-fan2:          1322 RPM  (min =  700 RPM)
-fan3:          1103 RPM  (min =  700 RPM)
-fan4:          1080 RPM  (min =  700 RPM)
-fan5:          1001 RPM  (min =  700 RPM)
-SYSTIN:         +42.0 C  (high = +75.0 C, hyst = +70.0 C)  sensor =
-thermistor
-CPUTIN:         +33.0 C  (high = +95.0 C, hyst = +92.0 C)  ALARM  sensor =
-thermistor
-AUXTIN:         +23.0 C  (high = +80.0 C, hyst = +75.0 C)  sensor =
-thermistor
-PECI Agent 0:    +0.0 C  (high = +95.0 C, hyst = +92.0 C)
-                         (crit = +100.0 C)
-PCH_CHIP_TEMP:   +0.0 C  
-PCH_CPU_TEMP:    +0.0 C  
-PCH_MCH_TEMP:    +0.0 C  
-intrusion0:    ALARM
-intrusion1:    ALARM
-
-sensors3.conf snippet:
-
-chip "w83627ehf-*" "w83627dhg-*" "w83667hg-*" "nct6775-*" "nct6776-*"
-
-    label in0 "Vcore"
-    label in2 "AVCC"
-    label in3 "+3.3V"
-    label in7 "3VSB"
-    label in8 "Vbat"
-
-    set in2_min  3.3 * 0.90
-    set in2_max  3.3 * 1.10
-    set in3_min  3.3 * 0.90
-    set in3_max  3.3 * 1.10
-    set in7_min  3.3 * 0.90
-    set in7_max  3.3 * 1.10
-    set in8_min  3.0 * 0.90
-    set in8_max  3.3 * 1.10
-
-Justin.
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 28360bbbb0b0..5a85ab5007bb 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -892,54 +892,6 @@ const struct fetch_type kprobes_fetch_type_table[] = {
+ 	ASSIGN_FETCH_TYPE(s64, u64, 1),
+ };
+ 
+-/* Sum up total data length for dynamic arraies (strings) */
+-static __kprobes int __get_data_size(struct trace_probe *tp,
+-				     struct pt_regs *regs)
+-{
+-	int i, ret = 0;
+-	u32 len;
+-
+-	for (i = 0; i < tp->nr_args; i++)
+-		if (unlikely(tp->args[i].fetch_size.fn)) {
+-			call_fetch(&tp->args[i].fetch_size, regs, &len);
+-			ret += len;
+-		}
+-
+-	return ret;
+-}
+-
+-/* Store the value of each argument */
+-static __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
+-				       struct pt_regs *regs,
+-				       u8 *data, int maxlen)
+-{
+-	int i;
+-	u32 end = tp->size;
+-	u32 *dl;	/* Data (relative) location */
+-
+-	for (i = 0; i < tp->nr_args; i++) {
+-		if (unlikely(tp->args[i].fetch_size.fn)) {
+-			/*
+-			 * First, we set the relative location and
+-			 * maximum data length to *dl
+-			 */
+-			dl = (u32 *)(data + tp->args[i].offset);
+-			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
+-			/* Then try to fetch string or dynamic array data */
+-			call_fetch(&tp->args[i].fetch, regs, dl);
+-			/* Reduce maximum length */
+-			end += get_rloc_len(*dl);
+-			maxlen -= get_rloc_len(*dl);
+-			/* Trick here, convert data_rloc to data_loc */
+-			*dl = convert_rloc_to_loc(*dl,
+-				 ent_size + tp->args[i].offset);
+-		} else
+-			/* Just fetching data normally */
+-			call_fetch(&tp->args[i].fetch, regs,
+-				   data + tp->args[i].offset);
+-	}
+-}
+-
+ /* Kprobe handler */
+ static __kprobes void
+ __kprobe_trace_func(struct trace_kprobe *tp, struct pt_regs *regs,
+diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
+index c123a890c5b1..5e491d82b6ad 100644
+--- a/kernel/trace/trace_probe.c
++++ b/kernel/trace/trace_probe.c
+@@ -701,3 +701,49 @@ out:
+ 
+ 	return ret;
+ }
++
++/* Sum up total data length for dynamic arraies (strings) */
++__kprobes int __get_data_size(struct trace_probe *tp, struct pt_regs *regs)
++{
++	int i, ret = 0;
++	u32 len;
++
++	for (i = 0; i < tp->nr_args; i++)
++		if (unlikely(tp->args[i].fetch_size.fn)) {
++			call_fetch(&tp->args[i].fetch_size, regs, &len);
++			ret += len;
++		}
++
++	return ret;
++}
++
++/* Store the value of each argument */
++__kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
++				struct pt_regs *regs, u8 *data, int maxlen)
++{
++	int i;
++	u32 end = tp->size;
++	u32 *dl;	/* Data (relative) location */
++
++	for (i = 0; i < tp->nr_args; i++) {
++		if (unlikely(tp->args[i].fetch_size.fn)) {
++			/*
++			 * First, we set the relative location and
++			 * maximum data length to *dl
++			 */
++			dl = (u32 *)(data + tp->args[i].offset);
++			*dl = make_data_rloc(maxlen, end - tp->args[i].offset);
++			/* Then try to fetch string or dynamic array data */
++			call_fetch(&tp->args[i].fetch, regs, dl);
++			/* Reduce maximum length */
++			end += get_rloc_len(*dl);
++			maxlen -= get_rloc_len(*dl);
++			/* Trick here, convert data_rloc to data_loc */
++			*dl = convert_rloc_to_loc(*dl,
++				 ent_size + tp->args[i].offset);
++		} else
++			/* Just fetching data normally */
++			call_fetch(&tp->args[i].fetch, regs,
++				   data + tp->args[i].offset);
++	}
++}
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
+index 4563e0befa01..04768d2faf11 100644
+--- a/kernel/trace/trace_probe.h
++++ b/kernel/trace/trace_probe.h
+@@ -297,3 +297,7 @@ extern ssize_t traceprobe_probes_write(struct file *file,
+ 		int (*createfn)(int, char**));
+ 
+ extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
++
++extern int __get_data_size(struct trace_probe *tp, struct pt_regs *regs);
++extern void store_trace_args(int ent_size, struct trace_probe *tp,
++			     struct pt_regs *regs, u8 *data, int maxlen);
+-- 
+1.7.11.7
 
