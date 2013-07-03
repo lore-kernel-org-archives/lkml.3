@@ -1,90 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab3GCLqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:46:43 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:54564 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756282Ab3GCLql (ORCPT
+	id S1756013Ab3GCLvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:51:08 -0400
+Received: from 6.mo2.mail-out.ovh.net ([87.98.165.38]:56378 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752503Ab3GCLvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:46:41 -0400
+	Wed, 3 Jul 2013 07:51:06 -0400
+Date: Wed, 3 Jul 2013 13:10:16 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Boris BREZILLON <b.brezillon@overkiz.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH v2 4/4] at91/avr32/atmel_lcdfb: prepare clk before
+ calling enable
+Message-ID: <20130703111016.GM305@game.jcrosoft.org>
+References: <1372147702-4074-1-git-send-email-b.brezillon@overkiz.com>
+ <1372148053-4477-1-git-send-email-b.brezillon@overkiz.com>
+ <51C951C2.8090901@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-	<1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
-Date: Wed, 3 Jul 2013 17:16:41 +0530
-Message-ID: <CAK9yfHwvkZsARpWyZYu7+1_nap_Px8TMYCm+hyubA_peobdQMw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] mfd: s2mps11: Add device tree support
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Cc: linux-kernel@vger.kernel.org, yadi.brar01@gmail.com, sbkim73@samsung.com,
-        broonie@kernel.org, lgirdwood@gmail.com, sameo@linux.intel.com,
-        rob.herring@calxeda.com, grant.likely@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51C951C2.8090901@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 356347322541058924
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrleekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrleekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2013 16:50, Yadwinder Singh Brar <yadi.brar@samsung.com> wrote:
-> This patch adds DT compatible string for s2mps11 and binding documentation.
->
-> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-> ---
->  Documentation/devicetree/bindings/mfd/s2mps11.txt |   98 +++++++++++++++++++++
->  drivers/mfd/sec-core.c                            |    3 +
->  2 files changed, 101 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/mfd/s2mps11.txt
->
-> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> new file mode 100644
-> index 0000000..7984625
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
-> @@ -0,0 +1,98 @@
-> +
-> +* Samsung S2MPS11 Voltage and Current Regulator
-> +
-> +The Samsung S2MP211 is a multi-function device which includes volatage and
+On 10:16 Tue 25 Jun     , Nicolas Ferre wrote:
+> On 25/06/2013 10:14, Boris BREZILLON :
+> >Replace clk_enable/disable with clk_prepare_enable/disable_unprepare to
+> >avoid common clk framework warnings.
+> >
+> >Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> 
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> 
+> Jean-Christophe, can you take this one?
 
-s/volatage/voltage
+Yes I'll
 
-> +current regulators, rtc, charger controller and other sub-blocks. It is
-
-s/rtc/RTC
-
-> +interfaced to the host controller using a i2c interface. Each sub-block is
-> +addressed by the host system using different i2c slave address.
-
-s/i2c/I2C -> also elsewhere
-
-> +
-> +Required properties:
-> +- compatible: Should be "samsung,s2mps11-pmic".
-> +- reg: Specifies the i2c slave address of the pmic block. It should be 0x66.
-> +
-> +Optional properties:
-> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
-> +  the interrupts from s2mps11 are delivered to.
-> +- interrupts: Interrupt specifiers for interrupt sources.
-> +
-> +Optional nodes:
-> +- regulators: The regulators of s2mps11 that have to be instantiated should be
-> +included in a sub-node named 'regulators'. Regulator nodes included in this
-> +sub-node should be of the format as listed below.
-> +
-> +       regulator_name {
-> +               [standard regulator constraints....];
-> +               [regulator-ramp-disable];
-> +       };
-> +
-> + regulator-ramp-delay for BUCKs = [6250/12500/25000(default)/50000] uV/us
-> +
-> + Optional property for BUCK[2/3/4/6] only:
-> + regulator-ramp-disable: boolean, disables ramp delay on hardware.
-> +
-> +NOTE: Some BUCKs shares the ramp rate setting i.e. same ramp value will be set
-
-s/shares/share
-
--- 
-With warm regards,
-Sachin
+Best Regards,
+J.
+> 
+> Thanks, best regards,
+> 
+> >---
+> >  drivers/video/atmel_lcdfb.c |    8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> >
+> >diff --git a/drivers/video/atmel_lcdfb.c b/drivers/video/atmel_lcdfb.c
+> >index 540909d..8525457 100644
+> >--- a/drivers/video/atmel_lcdfb.c
+> >+++ b/drivers/video/atmel_lcdfb.c
+> >@@ -893,14 +893,14 @@ static int __init atmel_lcdfb_init_fbinfo(struct atmel_lcdfb_info *sinfo)
+> >
+> >  static void atmel_lcdfb_start_clock(struct atmel_lcdfb_info *sinfo)
+> >  {
+> >-	clk_enable(sinfo->bus_clk);
+> >-	clk_enable(sinfo->lcdc_clk);
+> >+	clk_prepare_enable(sinfo->bus_clk);
+> >+	clk_prepare_enable(sinfo->lcdc_clk);
+> >  }
+> >
+> >  static void atmel_lcdfb_stop_clock(struct atmel_lcdfb_info *sinfo)
+> >  {
+> >-	clk_disable(sinfo->bus_clk);
+> >-	clk_disable(sinfo->lcdc_clk);
+> >+	clk_disable_unprepare(sinfo->bus_clk);
+> >+	clk_disable_unprepare(sinfo->lcdc_clk);
+> >  }
+> >
+> >
+> >
+> 
+> 
+> -- 
+> Nicolas Ferre
