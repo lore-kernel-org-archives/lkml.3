@@ -1,249 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3GCCOA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 22:14:00 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:36486 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab3GCCNr (ORCPT
+	id S1755129Ab3GCCVD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 22:21:03 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:38540 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215Ab3GCCVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 22:13:47 -0400
-X-AuditID: 85900ec0-d42c9b900000151e-7a-51d388d82cd1
-X-Mailbox-Line: From nobody Wed Jul  3 10:46:16 2013
-From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Subject: [RFC PATCH 3/5] tools/include: Add jhash.h
+	Tue, 2 Jul 2013 22:21:00 -0400
+From: bintian.wang@linaro.org
 To: linux-kernel@vger.kernel.org
-Cc: yrl.pp-manager.tt@hitachi.com, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, kay@vrfy.org, davem@davemloft.net,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+Cc: Mike Lockwood <lockwood@android.com>,
+        dmitry pervushin <dpervushin@gmail.com>,
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay@vrfy.org>, "David S. Miller" <davem@davemloft.net>
-Date: Wed, 03 Jul 2013 10:46:16 +0900
-Message-ID: <20130703014616.18745.28678.stgit@localhost.localdomain>
-In-Reply-To: <20130703014616.18745.34699.stgit@localhost.localdomain>
-References: <20130703014616.18745.34699.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+        John Stultz <john.stultz@linaro.org>, Sean McNeil <sean@mcneil.com>,
+        Bintian Wang <bintian.wang@linaro.org>
+Subject: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
+Date: Wed,  3 Jul 2013 10:19:42 +0800
+Message-Id: <1372817982-3917-1-git-send-email-bintian.wang@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copy include/linux/jhash.h to tools/include/tools/ for userland
-tools.  The original jhash.h includes a couple of header files
-which is not suitable for userland.  So unfold the only necessary
-part in those header files to the copied jhash.h
+From: Mike Lockwood <lockwood@android.com>
 
-Signed-off-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+This patch, originally from Android kernel, adds vfat ioctl command
+FAT_IOCTL_GET_VOLUME_ID, with this command we can get the vfat volume ID using
+following code:
+
+	ioctl(fd, FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
+
+This patch is a modified version of the patch by Mike Lockwood, with changes
+from Dmitry Pervushin, who noticed the original patch makes some volume IDs
+abiguous with error returns: for example, if volume id is 0xFFFFFDAD, that
+matches -ENOIOCTLCMD, we get "FFFFFFFF" from the user space.
+
+So add a parameter to ioctl to get the correct volume ID.
+
+Android uses vfat volume ID to identify different sd card, when a new sd card
+is inserted to device, android can scan the media on it and pop up new contents.
+
+Cc: dmitry pervushin <dpervushin@gmail.com>
+Cc: Mike Lockwood <lockwood@android.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: "David S. Miller" <davem@davemloft.net>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Sean McNeil <sean@mcneil.com>
+
+Signed-off-by: Bintian Wang <bintian.wang@linaro.org>
 ---
+ fs/fat/fat.h                  |    1 +
+ fs/fat/file.c                 |    8 ++++++++
+ fs/fat/inode.c                |   12 ++++++++++++
+ include/uapi/linux/msdos_fs.h |   10 ++++++++++
+ 4 files changed, 31 insertions(+)
 
- tools/include/tools/jhash.h |  192 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 192 insertions(+), 0 deletions(-)
- create mode 100644 tools/include/tools/jhash.h
-
-diff --git a/tools/include/tools/jhash.h b/tools/include/tools/jhash.h
-new file mode 100644
-index 0000000..872d7f9
---- /dev/null
-+++ b/tools/include/tools/jhash.h
-@@ -0,0 +1,192 @@
-+#ifndef _TOOLS_JHASH_H
-+#define _TOOLS_JHASH_H
-+
-+/* jhash.h: Jenkins hash support.
-+ *
-+ * Copyright (C) 2006. Bob Jenkins (bob_jenkins@burtleburtle.net)
-+ *
-+ * http://burtleburtle.net/bob/hash/
-+ *
-+ * These are the credits from Bob's sources:
-+ *
-+ * lookup3.c, by Bob Jenkins, May 2006, Public Domain.
-+ *
-+ * These are functions for producing 32-bit hashes for hash table lookup.
-+ * hashword(), hashlittle(), hashlittle2(), hashbig(), mix(), and final()
-+ * are externally useful functions.  Routines to test the hash are included
-+ * if SELF_TEST is defined.  You can use this free for any purpose.  It's in
-+ * the public domain.  It has no warranty.
-+ *
-+ * Copyright (C) 2009-2010 Jozsef Kadlecsik (kadlec@blackhole.kfki.hu)
-+ *
-+ * I've modified Bob's hash to be useful in the Linux kernel, and
-+ * any bugs present are my fault.
-+ * Jozsef
-+ */
-+
-+#define __packed	__attribute__((packed))
-+
-+/*
-+ * __get_unaligned_cpu32 was copied from
-+ * include/linux/unaligned/packed_struct.h
-+ */
-+struct __una_u32 { u32 x; } __packed;
-+static inline u32 __get_unaligned_cpu32(const void *p)
+diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+index 21664fc..4241e6f 100644
+--- a/fs/fat/fat.h
++++ b/fs/fat/fat.h
+@@ -86,6 +86,7 @@ struct msdos_sb_info {
+ 	const void *dir_ops;	      /* Opaque; default directory operations */
+ 	int dir_per_block;	      /* dir entries per block */
+ 	int dir_per_block_bits;	      /* log2(dir_per_block) */
++	unsigned int vol_id;		/*volume ID*/
+ 
+ 	int fatent_shift;
+ 	struct fatent_operations *fatent_ops;
+diff --git a/fs/fat/file.c b/fs/fat/file.c
+index b0b632e..9b104f5 100644
+--- a/fs/fat/file.c
++++ b/fs/fat/file.c
+@@ -114,6 +114,12 @@ out:
+ 	return err;
+ }
+ 
++static int fat_ioctl_get_volume_id(struct inode *inode, u32 __user *user_attr)
 +{
-+	const struct __una_u32 *ptr = (const struct __una_u32 *)p;
-+	return ptr->x;
++	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
++	return put_user(sbi->vol_id, user_attr);
 +}
 +
-+/* rol32 was copied from include/linux/bitops.h */
-+/**
-+ * rol32 - rotate a 32-bit value left
-+ * @word: value to rotate
-+ * @shift: bits to roll
-+ */
-+static inline u32 rol32(u32 word, unsigned int shift)
-+{
-+	return (word << shift) | (word >> (32 - shift));
-+}
+ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ {
+ 	struct inode *inode = file_inode(filp);
+@@ -124,6 +130,8 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 		return fat_ioctl_get_attributes(inode, user_attr);
+ 	case FAT_IOCTL_SET_ATTRIBUTES:
+ 		return fat_ioctl_set_attributes(filp, user_attr);
++	case FAT_IOCTL_GET_VOLUME_ID:
++		return fat_ioctl_get_volume_id(inode, user_attr);
+ 	default:
+ 		return -ENOTTY;	/* Inappropriate ioctl for device */
+ 	}
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 5d4513c..11b51bb 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -1415,6 +1415,18 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+ 		brelse(fsinfo_bh);
+ 	}
+ 
++	/* interpret volume ID as a little endian 32 bit integer */
++	if (sbi->fat_bits == 32)
++		sbi->vol_id = (((u32)b->fat32.vol_id[0]) |
++					((u32)b->fat32.vol_id[1] << 8) |
++					((u32)b->fat32.vol_id[2] << 16) |
++					((u32)b->fat32.vol_id[3] << 24));
++	else /* fat 16 or 12 */
++		sbi->vol_id = (((u32)b->fat16.vol_id[0]) |
++					((u32)b->fat16.vol_id[1] << 8) |
++					((u32)b->fat16.vol_id[2] << 16) |
++					((u32)b->fat16.vol_id[3] << 24));
 +
-+/* Best hash sizes are of power of two */
-+#define jhash_size(n)   ((u32)1<<(n))
-+/* Mask the hash value, i.e (value & jhash_mask(n)) instead of (value % n) */
-+#define jhash_mask(n)   (jhash_size(n)-1)
-+
-+/* __jhash_mix -- mix 3 32-bit values reversibly. */
-+#define __jhash_mix(a, b, c)			\
-+{						\
-+	a -= c;  a ^= rol32(c, 4);  c += b;	\
-+	b -= a;  b ^= rol32(a, 6);  a += c;	\
-+	c -= b;  c ^= rol32(b, 8);  b += a;	\
-+	a -= c;  a ^= rol32(c, 16); c += b;	\
-+	b -= a;  b ^= rol32(a, 19); a += c;	\
-+	c -= b;  c ^= rol32(b, 4);  b += a;	\
-+}
-+
-+/* __jhash_final - final mixing of 3 32-bit values (a,b,c) into c */
-+#define __jhash_final(a, b, c)			\
-+{						\
-+	c ^= b; c -= rol32(b, 14);		\
-+	a ^= c; a -= rol32(c, 11);		\
-+	b ^= a; b -= rol32(a, 25);		\
-+	c ^= b; c -= rol32(b, 16);		\
-+	a ^= c; a -= rol32(c, 4);		\
-+	b ^= a; b -= rol32(a, 14);		\
-+	c ^= b; c -= rol32(b, 24);		\
-+}
-+
-+/* An arbitrary initial parameter */
-+#define JHASH_INITVAL		0xdeadbeef
-+
-+/* jhash - hash an arbitrary key
-+ * @k: sequence of bytes as key
-+ * @length: the length of the key
-+ * @initval: the previous hash, or an arbitray value
-+ *
-+ * The generic version, hashes an arbitrary sequence of bytes.
-+ * No alignment or length assumptions are made about the input key.
-+ *
-+ * Returns the hash value of the key. The result depends on endianness.
-+ */
-+static inline u32 jhash(const void *key, u32 length, u32 initval)
-+{
-+	u32 a, b, c;
-+	const u8 *k = key;
-+
-+	/* Set up the internal state */
-+	a = b = c = JHASH_INITVAL + length + initval;
-+
-+	/* All but the last block: affect some 32 bits of (a,b,c) */
-+	while (length > 12) {
-+		a += __get_unaligned_cpu32(k);
-+		b += __get_unaligned_cpu32(k + 4);
-+		c += __get_unaligned_cpu32(k + 8);
-+		__jhash_mix(a, b, c);
-+		length -= 12;
-+		k += 12;
-+	}
-+	/* Last block: affect all 32 bits of (c) */
-+	/* All the case statements fall through */
-+	switch (length) {
-+	case 12: c += (u32)k[11]<<24;
-+	case 11: c += (u32)k[10]<<16;
-+	case 10: c += (u32)k[9]<<8;
-+	case 9:  c += k[8];
-+	case 8:  b += (u32)k[7]<<24;
-+	case 7:  b += (u32)k[6]<<16;
-+	case 6:  b += (u32)k[5]<<8;
-+	case 5:  b += k[4];
-+	case 4:  a += (u32)k[3]<<24;
-+	case 3:  a += (u32)k[2]<<16;
-+	case 2:  a += (u32)k[1]<<8;
-+	case 1:  a += k[0];
-+		 __jhash_final(a, b, c);
-+	case 0: /* Nothing left to add */
-+		break;
-+	}
-+
-+	return c;
-+}
-+
-+/* jhash2 - hash an array of u32's
-+ * @k: the key which must be an array of u32's
-+ * @length: the number of u32's in the key
-+ * @initval: the previous hash, or an arbitray value
-+ *
-+ * Returns the hash value of the key.
-+ */
-+static inline u32 jhash2(const u32 *k, u32 length, u32 initval)
-+{
-+	u32 a, b, c;
-+
-+	/* Set up the internal state */
-+	a = b = c = JHASH_INITVAL + (length<<2) + initval;
-+
-+	/* Handle most of the key */
-+	while (length > 3) {
-+		a += k[0];
-+		b += k[1];
-+		c += k[2];
-+		__jhash_mix(a, b, c);
-+		length -= 3;
-+		k += 3;
-+	}
-+
-+	/* Handle the last 3 u32's: all the case statements fall through */
-+	switch (length) {
-+	case 3: c += k[2];
-+	case 2: b += k[1];
-+	case 1: a += k[0];
-+		__jhash_final(a, b, c);
-+	case 0:	/* Nothing left to add */
-+		break;
-+	}
-+
-+	return c;
-+}
-+
-+
-+/* jhash_3words - hash exactly 3, 2 or 1 word(s) */
-+static inline u32 jhash_3words(u32 a, u32 b, u32 c, u32 initval)
-+{
-+	a += JHASH_INITVAL;
-+	b += JHASH_INITVAL;
-+	c += initval;
-+
-+	__jhash_final(a, b, c);
-+
-+	return c;
-+}
-+
-+static inline u32 jhash_2words(u32 a, u32 b, u32 initval)
-+{
-+	return jhash_3words(a, b, 0, initval);
-+}
-+
-+static inline u32 jhash_1word(u32 a, u32 initval)
-+{
-+	return jhash_3words(a, 0, 0, initval);
-+}
-+
-+#endif /* _TOOLS_JHASH_H */
-
+ 	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
+ 	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
+ 
+diff --git a/include/uapi/linux/msdos_fs.h b/include/uapi/linux/msdos_fs.h
+index f055e58..e284ff9 100644
+--- a/include/uapi/linux/msdos_fs.h
++++ b/include/uapi/linux/msdos_fs.h
+@@ -104,6 +104,8 @@ struct __fat_dirent {
+ /* <linux/videotext.h> has used 0x72 ('r') in collision, so skip a few */
+ #define FAT_IOCTL_GET_ATTRIBUTES	_IOR('r', 0x10, __u32)
+ #define FAT_IOCTL_SET_ATTRIBUTES	_IOW('r', 0x11, __u32)
++/*Android kernel has used 0x12, so we use 0x13*/
++#define FAT_IOCTL_GET_VOLUME_ID		_IOR('r', 0x13, __u32)
+ 
+ struct fat_boot_sector {
+ 	__u8	ignored[3];	/* Boot strap short or near jump */
+@@ -128,6 +130,10 @@ struct fat_boot_sector {
+ 			__u8	drive_number;	/* Physical drive number */
+ 			__u8	state;		/* undocumented, but used
+ 						   for mount state. */
++			__u8	signature;  /* extended boot signature */
++			__u8	vol_id[4];	/* volume ID */
++			__u8	vol_label[11];	/* volume label */
++			__u8	fs_type[8];		/* file system type */
+ 			/* other fiealds are not added here */
+ 		} fat16;
+ 
+@@ -147,6 +153,10 @@ struct fat_boot_sector {
+ 			__u8	drive_number;   /* Physical drive number */
+ 			__u8    state;       	/* undocumented, but used
+ 						   for mount state. */
++			__u8	signature;  /* extended boot signature */
++			__u8	vol_id[4];	/* volume ID */
++			__u8	vol_label[11];	/* volume label */
++			__u8	fs_type[8];		/* file system type */
+ 			/* other fiealds are not added here */
+ 		} fat32;
+ 	};
+-- 
+1.7.9.5
 
