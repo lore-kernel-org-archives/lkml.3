@@ -1,26 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756419Ab3GCSvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:51:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29296 "EHLO
+	id S933240Ab3GCSk7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:40:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14694 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933246Ab3GCSlA (ORCPT
+	with ESMTP id S933110Ab3GCSkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:41:00 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=UKOr1vTc5KgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Gb6nhOijYjsA:10 a=tA7aZXjiAAAA:8 a=zd2uoN0lAAAA:8 a=VwQbUJbxAAAA:8 a=f6BnWCRjR6PYCV02OEAA:9 a=qM0ISud-tAQA:10 a=wu_e27o_rKQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 3 Jul 2013 14:40:52 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=sSs8Rc0GeRsA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=MeVT9ic14I8A:10 a=eJfxgxciAAAA:8 a=Z4Rwk6OoAAAA:8 a=nrACCIEEAAAA:8 a=20KFwNOVAAAA:8 a=QyXUC8HyAAAA:8 a=ufHFDILaAAAA:8 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=Qh1Ymx8tmssLK64GRpsA:9 a=W39ifWXXhksA:10 a=jbrJJM5MRmoA:10 a=jEp0ucaQiEUA:10 a=dGJ0OcVc7YAA:10 a=l7ZknGph1ugA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=SPsn2YPxnBF0o1ca:21 a=zhOIdVJuCVEVppaP:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184053.234133111@goodmis.org>
+Message-Id: <20130703184049.742853643@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:49 -0400
+Date: Wed, 03 Jul 2013 14:39:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [052/141] iommu/amd: Workaround for ERBT1312
+Cc: Cliff Wickman <cpw@sgi.com>, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>, David Sterba <dsterba@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [031/141] mm/pagewalk.c: walk_page_range should avoid VM_PFNMAP areas
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0052-iommu-amd-Workaround-for-ERBT1312.patch
+Content-Disposition: inline; filename=0031-mm-pagewalk.c-walk_page_range-should-avoid-VM_PFNMAP.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,86 +35,154 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Joerg Roedel <joro@8bytes.org>
+From: Cliff Wickman <cpw@sgi.com>
 
-[ Upstream commit d3263bc29706e42f74d8800807c2dedf320d77f1 ]
+[ Upstream commit a9ff785e4437c83d2179161e012f5bdfbd6381f0 ]
 
-Work around an IOMMU  hardware bug where clearing the
-EVT_INT or PPR_INT bit in the status register may race with
-the hardware trying to set it again. When not handled the
-bit might not be cleared and we lose all future event or ppr
-interrupts.
+A panic can be caused by simply cat'ing /proc/<pid>/smaps while an
+application has a VM_PFNMAP range.  It happened in-house when a
+benchmarker was trying to decipher the memory layout of his program.
 
-Reported-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+/proc/<pid>/smaps and similar walks through a user page table should not
+be looking at VM_PFNMAP areas.
+
+Certain tests in walk_page_range() (specifically split_huge_page_pmd())
+assume that all the mapped PFN's are backed with page structures.  And
+this is not usually true for VM_PFNMAP areas.  This can result in panics
+on kernel page faults when attempting to address those page structures.
+
+There are a half dozen callers of walk_page_range() that walk through a
+task's entire page table (as N.  Horiguchi pointed out).  So rather than
+change all of them, this patch changes just walk_page_range() to ignore
+VM_PFNMAP areas.
+
+The logic of hugetlb_vma() is moved back into walk_page_range(), as we
+want to test any vma in the range.
+
+VM_PFNMAP areas are used by:
+- graphics memory manager   gpu/drm/drm_gem.c
+- global reference unit     sgi-gru/grufile.c
+- sgi special memory        char/mspec.c
+- and probably several out-of-tree modules
+
+[akpm@linux-foundation.org: remove now-unused hugetlb_vma() stub]
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Dave Hansen <dave.hansen@intel.com>
+Cc: David Sterba <dsterba@suse.cz>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/iommu/amd_iommu.c |   34 ++++++++++++++++++++++++++--------
- 1 file changed, 26 insertions(+), 8 deletions(-)
+ mm/pagewalk.c |   70 +++++++++++++++++++++++++++++----------------------------
+ 1 file changed, 36 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index 195ec2e..e5c773d 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -598,14 +598,23 @@ retry:
+diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+index 6c118d0..449cad6 100644
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -127,28 +127,7 @@ static int walk_hugetlb_range(struct vm_area_struct *vma,
+ 	return 0;
+ }
  
- static void iommu_poll_events(struct amd_iommu *iommu)
- {
--	u32 head, tail;
-+	u32 head, tail, status;
- 	unsigned long flags;
- 
--	/* enable event interrupts again */
--	writel(MMIO_STATUS_EVT_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	struct vm_area_struct *vma;
 -
- 	spin_lock_irqsave(&iommu->lock, flags);
- 
-+	/* enable event interrupts again */
-+	do {
-+		/*
-+		 * Workaround for Erratum ERBT1312
-+		 * Clearing the EVT_INT bit may race in the hardware, so read
-+		 * it again and make sure it was really cleared
-+		 */
-+		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-+		writel(MMIO_STATUS_EVT_INT_MASK,
-+		       iommu->mmio_base + MMIO_STATUS_OFFSET);
-+	} while (status & MMIO_STATUS_EVT_INT_MASK);
-+
- 	head = readl(iommu->mmio_base + MMIO_EVT_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_EVT_TAIL_OFFSET);
- 
-@@ -642,16 +651,25 @@ static void iommu_handle_ppr_entry(struct amd_iommu *iommu, u64 *raw)
- static void iommu_poll_ppr_log(struct amd_iommu *iommu)
- {
- 	unsigned long flags;
--	u32 head, tail;
-+	u32 head, tail, status;
- 
- 	if (iommu->ppr_log == NULL)
- 		return;
- 
--	/* enable ppr interrupts again */
--	writel(MMIO_STATUS_PPR_INT_MASK, iommu->mmio_base + MMIO_STATUS_OFFSET);
+-	/* We don't need vma lookup at all. */
+-	if (!walk->hugetlb_entry)
+-		return NULL;
 -
- 	spin_lock_irqsave(&iommu->lock, flags);
+-	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
+-	vma = find_vma(walk->mm, addr);
+-	if (vma && vma->vm_start <= addr && is_vm_hugetlb_page(vma))
+-		return vma;
+-
+-	return NULL;
+-}
+-
+ #else /* CONFIG_HUGETLB_PAGE */
+-static struct vm_area_struct* hugetlb_vma(unsigned long addr, struct mm_walk *walk)
+-{
+-	return NULL;
+-}
+-
+ static int walk_hugetlb_range(struct vm_area_struct *vma,
+ 			      unsigned long addr, unsigned long end,
+ 			      struct mm_walk *walk)
+@@ -198,30 +177,53 @@ int walk_page_range(unsigned long addr, unsigned long end,
+ 	if (!walk->mm)
+ 		return -EINVAL;
  
-+	/* enable ppr interrupts again */
-+	do {
-+		/*
-+		 * Workaround for Erratum ERBT1312
-+		 * Clearing the PPR_INT bit may race in the hardware, so read
-+		 * it again and make sure it was really cleared
-+		 */
-+		status = readl(iommu->mmio_base + MMIO_STATUS_OFFSET);
-+		writel(MMIO_STATUS_PPR_INT_MASK,
-+		       iommu->mmio_base + MMIO_STATUS_OFFSET);
-+	} while (status & MMIO_STATUS_PPR_INT_MASK);
++	VM_BUG_ON(!rwsem_is_locked(&walk->mm->mmap_sem));
 +
- 	head = readl(iommu->mmio_base + MMIO_PPR_HEAD_OFFSET);
- 	tail = readl(iommu->mmio_base + MMIO_PPR_TAIL_OFFSET);
+ 	pgd = pgd_offset(walk->mm, addr);
+ 	do {
+-		struct vm_area_struct *vma;
++		struct vm_area_struct *vma = NULL;
  
+ 		next = pgd_addr_end(addr, end);
+ 
+ 		/*
+-		 * handle hugetlb vma individually because pagetable walk for
+-		 * the hugetlb page is dependent on the architecture and
+-		 * we can't handled it in the same manner as non-huge pages.
++		 * This function was not intended to be vma based.
++		 * But there are vma special cases to be handled:
++		 * - hugetlb vma's
++		 * - VM_PFNMAP vma's
+ 		 */
+-		vma = hugetlb_vma(addr, walk);
++		vma = find_vma(walk->mm, addr);
+ 		if (vma) {
+-			if (vma->vm_end < next)
++			/*
++			 * There are no page structures backing a VM_PFNMAP
++			 * range, so do not allow split_huge_page_pmd().
++			 */
++			if ((vma->vm_start <= addr) &&
++			    (vma->vm_flags & VM_PFNMAP)) {
+ 				next = vma->vm_end;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 			/*
+-			 * Hugepage is very tightly coupled with vma, so
+-			 * walk through hugetlb entries within a given vma.
++			 * Handle hugetlb vma individually because pagetable
++			 * walk for the hugetlb page is dependent on the
++			 * architecture and we can't handled it in the same
++			 * manner as non-huge pages.
+ 			 */
+-			err = walk_hugetlb_range(vma, addr, next, walk);
+-			if (err)
+-				break;
+-			pgd = pgd_offset(walk->mm, next);
+-			continue;
++			if (walk->hugetlb_entry && (vma->vm_start <= addr) &&
++			    is_vm_hugetlb_page(vma)) {
++				if (vma->vm_end < next)
++					next = vma->vm_end;
++				/*
++				 * Hugepage is very tightly coupled with vma,
++				 * so walk through hugetlb entries within a
++				 * given vma.
++				 */
++				err = walk_hugetlb_range(vma, addr, next, walk);
++				if (err)
++					break;
++				pgd = pgd_offset(walk->mm, next);
++				continue;
++			}
+ 		}
+ 
+ 		if (pgd_none_or_clear_bad(pgd)) {
 -- 
 1.7.10.4
 
