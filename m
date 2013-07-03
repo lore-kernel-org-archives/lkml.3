@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075Ab3GCHtr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 03:49:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60956 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239Ab3GCHto (ORCPT
+	id S932128Ab3GCHvR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 03:51:17 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:55222 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753960Ab3GCHvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 03:49:44 -0400
-Date: Wed, 3 Jul 2013 09:49:29 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: [bisected] perf: yet another fuzzer triggered crash
-Message-ID: <20130703074929.GE23916@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
- <20130701090713.GO6626@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1307011112090.8216@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1307021628510.8353@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1307022314450.11385@vincent-weaver-1.um.maine.edu>
+	Wed, 3 Jul 2013 03:51:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1307022314450.11385@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
+References: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
+Date: Wed, 3 Jul 2013 09:51:14 +0200
+Message-ID: <CA+icZUW53Rdh6PbsVJVGTH3-HAx=0pOO_o5MixdC_ZpBKrO71w@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 11:15:59PM -0400, Vince Weaver wrote:
-> 
-> OK, I have bisected this problem to the following change:
-> 
-> commit 8dc85d547285668e509f86c177bcd4ea055bcaaf
-> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date:   Thu Sep 2 16:50:03 2010 +0200
-> 
->     perf: Multiple task contexts
->     
->     Provide the infrastructure for multiple task contexts.
-> 
+On Wed, Jul 3, 2013 at 9:48 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+[...]
+> Caused by commit 1bc2774d8664 ("net: convert lls to use time_in_range()")
+> from the net-next tree.
+>
+> I cherry-picked the commit 419076f59fc5 ("net: lls fix build with
+> allnoconfig") out of tomorrow's net-next tree.  (I am feeling generous
+> and noticed that patch being applied :-))
+>
 
-Thanks, that narrows down the scope a bit. As it happens I was also
-narrowing down on that particular area so that's good.
+/me loves generous coders and shy girls.
 
+- Sedat -
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
