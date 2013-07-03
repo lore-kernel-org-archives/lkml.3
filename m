@@ -1,125 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752021Ab3GCEMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 00:12:54 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:42329 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3GCEMx (ORCPT
+	id S1752083Ab3GCEO3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 00:14:29 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:57045 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab3GCEO2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 00:12:53 -0400
-Message-ID: <51D3A495.3080908@huawei.com>
-Date: Wed, 3 Jul 2013 12:12:05 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <fweisbec@gmail.com>, <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 11/12] tracing: guard tracing_selftest_disabled by
- CONFIG_FTRACE_STARTUP_TEST
-References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>  <1365564393-10972-12-git-send-email-jovi.zhangwei@huawei.com> <1372809403.22688.90.camel@gandalf.local.home>
-In-Reply-To: <1372809403.22688.90.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+	Wed, 3 Jul 2013 00:14:28 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-sh@vger.kernel.org
+Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org, horms@verge.net.au,
+        laurent.pinchart@ideasonboard.com, grant.likely@linaro.org,
+        Magnus Damm <magnus.damm@gmail.com>
+Date: Wed, 03 Jul 2013 13:14:32 +0900
+Message-Id: <20130703041432.7351.45970.sendpatchset@w520>
+Subject: [PATCH] gpio: em: Add pinctrl support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/3 7:56, Steven Rostedt wrote:
-> On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
->> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
->>
->> Variable tracing_selftest_disabled have not any sense when
->> CONFIG_FTRACE_STARTUP_TEST is disabled.
->>
->> This patch also remove __read_mostly attribute, since variable
->> tracing_selftest_disabled really not read mostly.
-> 
-> Yes it is mostly read only. Sure, it's not read much, but it is also
-> only written to once. That makes it, "read mostly".
-> 
-> -- Steve
-> 
-Ok, we can leave the __read_mostly attribute.
+From: Magnus Damm <damm@opensource.se>
 
-And tracing_selftest_disabled still can move to CONFIG_FTRACE_STARTUP_TEST
-guard, normally CONFIG_FTRACE_STARTUP_TEST is disabled in most system.
+Register the GPIO pin range, and request and free GPIO pins using the
+pinctrl API. The pctl_name platform data member should be used by
+platform devices to point out which pinctrl device to use.
 
-Do I need to resend this patch?
+Follows same style as "dc3465a gpio-rcar: Add pinctrl support",
+by Laurent Pinchart, thanks to him.
 
-jovi
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
->>
->> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
->> ---
->>  kernel/trace/trace.c        |    6 ++++--
->>  kernel/trace/trace.h        |    2 +-
->>  kernel/trace/trace_events.c |    2 ++
->>  3 files changed, 7 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
->> index ee4e110..09a3aa8 100644
->> --- a/kernel/trace/trace.c
->> +++ b/kernel/trace/trace.c
->> @@ -58,10 +58,12 @@ bool ring_buffer_expanded;
->>   */
->>  static bool __read_mostly tracing_selftest_running;
->>  
->> +#ifdef CONFIG_FTRACE_STARTUP_TEST
->>  /*
->>   * If a tracer is running, we do not want to run SELFTEST.
->>   */
->> -bool __read_mostly tracing_selftest_disabled;
->> +bool tracing_selftest_disabled;
->> +#endif
->>  
->>  /* For tracers that don't implement custom flags */
->>  static struct tracer_opt dummy_tracer_opt[] = {
->> @@ -1069,8 +1071,8 @@ int register_tracer(struct tracer *type)
->>  	tracing_set_tracer(type->name);
->>  	default_bootup_tracer = NULL;
->>  	/* disable other selftests, since this will break it. */
->> -	tracing_selftest_disabled = true;
->>  #ifdef CONFIG_FTRACE_STARTUP_TEST
->> +	tracing_selftest_disabled = true;
->>  	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
->>  	       type->name);
->>  #endif
->> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
->> index 9b8afa7..e9ef8b7 100644
->> --- a/kernel/trace/trace.h
->> +++ b/kernel/trace/trace.h
->> @@ -546,10 +546,10 @@ extern int DYN_FTRACE_TEST_NAME(void);
->>  extern int DYN_FTRACE_TEST_NAME2(void);
->>  
->>  extern bool ring_buffer_expanded;
->> -extern bool tracing_selftest_disabled;
->>  DECLARE_PER_CPU(int, ftrace_cpu_disabled);
->>  
->>  #ifdef CONFIG_FTRACE_STARTUP_TEST
->> +extern bool tracing_selftest_disabled;
->>  extern int trace_selftest_startup_function(struct tracer *trace,
->>  					   struct trace_array *tr);
->>  extern int trace_selftest_startup_function_graph(struct tracer *trace,
->> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
->> index 7c52a51..7c4a16b 100644
->> --- a/kernel/trace/trace_events.c
->> +++ b/kernel/trace/trace_events.c
->> @@ -2251,7 +2251,9 @@ static __init int setup_trace_event(char *str)
->>  {
->>  	strlcpy(bootup_event_buf, str, COMMAND_LINE_SIZE);
->>  	ring_buffer_expanded = true;
->> +#ifdef CONFIG_FTRACE_STARTUP_TEST
->>  	tracing_selftest_disabled = true;
->> +#endif
->>  
->>  	return 1;
->>  }
-> 
-> 
-> 
-> .
-> 
+ drivers/gpio/gpio-em.c                |   25 +++++++++++++++++++++++++
+ include/linux/platform_data/gpio-em.h |    1 +
+ 2 files changed, 26 insertions(+)
 
-
+--- 0001/drivers/gpio/gpio-em.c
++++ work/drivers/gpio/gpio-em.c	2013-07-03 12:49:55.000000000 +0900
+@@ -30,6 +30,7 @@
+ #include <linux/gpio.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
++#include <linux/pinctrl/consumer.h>
+ #include <linux/platform_data/gpio-em.h>
+ 
+ struct em_gio_priv {
+@@ -216,6 +217,21 @@ static int em_gio_to_irq(struct gpio_chi
+ 	return irq_create_mapping(gpio_to_priv(chip)->irq_domain, offset);
+ }
+ 
++static int em_gio_request(struct gpio_chip *chip, unsigned offset)
++{
++	return pinctrl_request_gpio(chip->base + offset);
++}
++
++static void em_gio_free(struct gpio_chip *chip, unsigned offset)
++{
++	pinctrl_free_gpio(chip->base + offset);
++
++	/* Set the GPIO as an input to ensure that the next GPIO request won't
++	* drive the GPIO pin as an output.
++	*/
++	em_gio_direction_input(chip, offset);
++}
++
+ static int em_gio_irq_domain_map(struct irq_domain *h, unsigned int virq,
+ 				 irq_hw_number_t hw)
+ {
+@@ -308,6 +324,8 @@ static int em_gio_probe(struct platform_
+ 	gpio_chip->direction_output = em_gio_direction_output;
+ 	gpio_chip->set = em_gio_set;
+ 	gpio_chip->to_irq = em_gio_to_irq;
++	gpio_chip->request = em_gio_request;
++	gpio_chip->free = em_gio_free;
+ 	gpio_chip->label = name;
+ 	gpio_chip->owner = THIS_MODULE;
+ 	gpio_chip->base = pdata->gpio_base;
+@@ -351,6 +369,13 @@ static int em_gio_probe(struct platform_
+ 		dev_err(&pdev->dev, "failed to add GPIO controller\n");
+ 		goto err1;
+ 	}
++
++	if (pdata->pctl_name) {
++		ret = gpiochip_add_pin_range(gpio_chip, pdata->pctl_name, 0,
++					     gpio_chip->base, gpio_chip->ngpio);
++		if (ret < 0)
++			dev_warn(&pdev->dev, "failed to add pin range\n");
++	}
+ 	return 0;
+ 
+ err1:
+--- 0001/include/linux/platform_data/gpio-em.h
++++ work/include/linux/platform_data/gpio-em.h	2013-07-03 12:45:27.000000000 +0900
+@@ -5,6 +5,7 @@ struct gpio_em_config {
+ 	unsigned int gpio_base;
+ 	unsigned int irq_base;
+ 	unsigned int number_of_pins;
++	const char *pctl_name;
+ };
+ 
+ #endif /* __GPIO_EM_H__ */
