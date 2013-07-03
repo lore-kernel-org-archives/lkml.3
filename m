@@ -1,67 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab3GCEGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 00:06:06 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:44128 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706Ab3GCEGE (ORCPT
+	id S1752021Ab3GCEMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 00:12:54 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:42329 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab3GCEMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 00:06:04 -0400
-Date: Wed, 3 Jul 2013 14:05:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alasdair G Kergon <agk@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, NeilBrown <neilb@suse.de>
-Subject: linux-next: manual merge of the device-mapper tree with the md tree
-Message-Id: <20130703140552.7e8ecf58b0578bfa15d58935@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Jul_2013_14_05_52_+1000_fDvHTzvplm7F531H"
+	Wed, 3 Jul 2013 00:12:53 -0400
+Message-ID: <51D3A495.3080908@huawei.com>
+Date: Wed, 3 Jul 2013 12:12:05 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <fweisbec@gmail.com>, <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 11/12] tracing: guard tracing_selftest_disabled by
+ CONFIG_FTRACE_STARTUP_TEST
+References: <1365564393-10972-1-git-send-email-jovi.zhangwei@huawei.com>  <1365564393-10972-12-git-send-email-jovi.zhangwei@huawei.com> <1372809403.22688.90.camel@gandalf.local.home>
+In-Reply-To: <1372809403.22688.90.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Jul_2013_14_05_52_+1000_fDvHTzvplm7F531H
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2013/7/3 7:56, Steven Rostedt wrote:
+> On Wed, 2013-04-10 at 11:26 +0800, zhangwei(Jovi) wrote:
+>> From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+>>
+>> Variable tracing_selftest_disabled have not any sense when
+>> CONFIG_FTRACE_STARTUP_TEST is disabled.
+>>
+>> This patch also remove __read_mostly attribute, since variable
+>> tracing_selftest_disabled really not read mostly.
+> 
+> Yes it is mostly read only. Sure, it's not read much, but it is also
+> only written to once. That makes it, "read mostly".
+> 
+> -- Steve
+> 
+Ok, we can leave the __read_mostly attribute.
 
-Hi Alasdair,
+And tracing_selftest_disabled still can move to CONFIG_FTRACE_STARTUP_TEST
+guard, normally CONFIG_FTRACE_STARTUP_TEST is disabled in most system.
 
-Today's linux-next merge of the device-mapper tree got a conflict in
-drivers/md/dm-raid.c between commit 3f6bbd3ffd7b ("dm-raid: silence
-compiler warning on rebuilds_per_group") from the md tree and commit
-acc946bad465 ("his patch suppresses this warning:") from the
-device-mapper tree.
+Do I need to resend this patch?
 
-I fixed it up (I just used the md tree version) and can carry the fix as
-necessary (no action is required).
+jovi
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>>
+>> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+>> ---
+>>  kernel/trace/trace.c        |    6 ++++--
+>>  kernel/trace/trace.h        |    2 +-
+>>  kernel/trace/trace_events.c |    2 ++
+>>  3 files changed, 7 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+>> index ee4e110..09a3aa8 100644
+>> --- a/kernel/trace/trace.c
+>> +++ b/kernel/trace/trace.c
+>> @@ -58,10 +58,12 @@ bool ring_buffer_expanded;
+>>   */
+>>  static bool __read_mostly tracing_selftest_running;
+>>  
+>> +#ifdef CONFIG_FTRACE_STARTUP_TEST
+>>  /*
+>>   * If a tracer is running, we do not want to run SELFTEST.
+>>   */
+>> -bool __read_mostly tracing_selftest_disabled;
+>> +bool tracing_selftest_disabled;
+>> +#endif
+>>  
+>>  /* For tracers that don't implement custom flags */
+>>  static struct tracer_opt dummy_tracer_opt[] = {
+>> @@ -1069,8 +1071,8 @@ int register_tracer(struct tracer *type)
+>>  	tracing_set_tracer(type->name);
+>>  	default_bootup_tracer = NULL;
+>>  	/* disable other selftests, since this will break it. */
+>> -	tracing_selftest_disabled = true;
+>>  #ifdef CONFIG_FTRACE_STARTUP_TEST
+>> +	tracing_selftest_disabled = true;
+>>  	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
+>>  	       type->name);
+>>  #endif
+>> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+>> index 9b8afa7..e9ef8b7 100644
+>> --- a/kernel/trace/trace.h
+>> +++ b/kernel/trace/trace.h
+>> @@ -546,10 +546,10 @@ extern int DYN_FTRACE_TEST_NAME(void);
+>>  extern int DYN_FTRACE_TEST_NAME2(void);
+>>  
+>>  extern bool ring_buffer_expanded;
+>> -extern bool tracing_selftest_disabled;
+>>  DECLARE_PER_CPU(int, ftrace_cpu_disabled);
+>>  
+>>  #ifdef CONFIG_FTRACE_STARTUP_TEST
+>> +extern bool tracing_selftest_disabled;
+>>  extern int trace_selftest_startup_function(struct tracer *trace,
+>>  					   struct trace_array *tr);
+>>  extern int trace_selftest_startup_function_graph(struct tracer *trace,
+>> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+>> index 7c52a51..7c4a16b 100644
+>> --- a/kernel/trace/trace_events.c
+>> +++ b/kernel/trace/trace_events.c
+>> @@ -2251,7 +2251,9 @@ static __init int setup_trace_event(char *str)
+>>  {
+>>  	strlcpy(bootup_event_buf, str, COMMAND_LINE_SIZE);
+>>  	ring_buffer_expanded = true;
+>> +#ifdef CONFIG_FTRACE_STARTUP_TEST
+>>  	tracing_selftest_disabled = true;
+>> +#endif
+>>  
+>>  	return 1;
+>>  }
+> 
+> 
+> 
+> .
+> 
 
---Signature=_Wed__3_Jul_2013_14_05_52_+1000_fDvHTzvplm7F531H
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR06MlAAoJEECxmPOUX5FE87kQAJoz1iHcpt7KF3go87egCCyw
-w0B2AAYFzgSOPIqarAxoNfj5229xLneJCetFiIpbV6C1ku//3BYQrDY2JK33ouD1
-vA46S5iIrbKzfChcW9zmI1y7i/eYqovrraxtXnK7JLCVvswtgqMiFQi1M0hnIzXJ
-/qrex8rK6IfvFY0iIIcVb52Lu+NAtZreD59zynRrn/Icm7cVL0xoUST9zpjyAmZ/
-a6h8QYyKvIVwc5k8oDERVKgBoMblle4LXFllifHAUu6FKDzfTlgrvictgTIpTbtE
-d4HUzBxG69z62KX2P2x4HNqw78TRw896+/gT4c8xV3x3PNMnIQlOX4Rn4/3048gG
-ETl/JznvO2sF7/k57Xjyz7U+WqggW/ceEr3K4WqNjWeRxTkxu13g3mGQZ3ac2fDo
-nAY3K6GXdR+mOH4eonQaGkNoaCB/Z61cujHUKT31VYO5meudhdYuWkQSX0kpblBi
-zpPt70q75QKsSWnvh7gct+kwlkbyxMFUsIOyfmJxAjmwK8Y9UNAVfAIjsr4muHzC
-E2wOE9wlQ7BH0iONbbXotZYXPs0SDuCo9HCV8/QU/rxuIUUdyB71XWjlEoOYpUKn
-w01RntmpC8txwcr29Y4G8khbo5Iy5Es5Svyv9Wpk+T0yrwqYQsYQrPtKb/61rxTy
-LFhzHAmOPyiqqOj09iZo
-=tN0e
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Jul_2013_14_05_52_+1000_fDvHTzvplm7F531H--
