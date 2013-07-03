@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab3GCSNE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:13:04 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49643 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932630Ab3GCSNB (ORCPT
+	id S932842Ab3GCSQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:16:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38608 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab3GCSQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:13:01 -0400
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Will Deacon <will.deacon@arm.com>, Joseph Lo <josephl@nvidia.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH V2] ARM: add missing __FINIT to head-common.S to match __INIT
-Date: Wed,  3 Jul 2013 12:12:54 -0600
-Message-Id: <1372875174-26812-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Wed, 3 Jul 2013 14:16:25 -0400
+Date: Wed, 3 Jul 2013 11:16:24 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.85
+Message-ID: <20130703181624.GA2991@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
 
-Macro __INIT is used to place various code in head-common.S into the init
-section. This should be matched by a closing __FINIT at the end of the
-code destined for the init section. Add this missing macro.
+--bg08WKrSYDhXBjb5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This historically caused no problem, because macro __CPUINIT was used at
-the exact location where __FINIT was missing, which then placed following
-code into the cpuinit section. However, with commit 22f0a2736 "init.h:
-remove __cpuinit sections from the kernel" applied, __CPUINIT becomes a
-no-op, thus leaving all this code in the init section, rather than the
-regular text section. This caused issues such as secondary CPU boot
-failures or crashes.
+I'm announcing the release of the 3.0.85 kernel.
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Acked-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
-v2: Moved __FINIT after lookup_processor_type, to correctly match the
-location of __CPUINIT.
+All users of the 3.0 kernel series must upgrade.
 
-Russell, I assume I should add this to the ARM patch tracker.
+The updated 3.0.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-This version is based on v3.10.
----
- arch/arm/kernel/head-common.S | 2 ++
- 1 file changed, 2 insertions(+)
+thanks,
 
-diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
-index 5b391a6..1fb887d 100644
---- a/arch/arm/kernel/head-common.S
-+++ b/arch/arm/kernel/head-common.S
-@@ -133,6 +133,8 @@ ENTRY(lookup_processor_type)
- 	ldmfd	sp!, {r4 - r6, r9, pc}
- ENDPROC(lookup_processor_type)
- 
-+	__FINIT
-+
- /*
-  * Read processor ID register (CP#15, CR0), and look up in the linker-built
-  * supported processor list.  Note that we can't use the absolute addresses
--- 
-1.8.1.5
+greg k-h
 
+------------
+
+ Makefile                      |    2 -
+ drivers/net/wan/dlci.c        |   26 ++++++++++++++++----
+ drivers/tty/serial/pch_uart.c |   29 +++++++++++++++++-----
+ fs/exec.c                     |   16 +++++++-----
+ fs/ubifs/dir.c                |   54 ++++++++++++++++++++++++++++++------------
+ kernel/events/hw_breakpoint.c |    4 +--
+ net/bluetooth/l2cap_core.c    |    3 ++
+ 7 files changed, 97 insertions(+), 37 deletions(-)
+
+Anderson Lizardo (1):
+      Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
+
+Artem Bityutskiy (2):
+      UBIFS: prepare to fix a horrid bug
+      UBIFS: fix a horrid bug
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.85
+
+Liang Li (1):
+      pch_uart: fix a deadlock when pch_uart as console
+
+Oleg Nesterov (1):
+      hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
+
+Stephane Eranian (1):
+      perf: Disable monitoring on setuid processes for regular users
+
+Zefan Li (2):
+      dlci: acquire rtnl_lock before calling __dev_get_by_name()
+      dlci: validate the net device in dlci_del()
+
+
+--bg08WKrSYDhXBjb5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1Gp4AAoJEDjbvchgkmk+IxcP/0WqhJaOw7ra/JjJMrUwrAPh
+7ZUJb8T/WgiHkLBOkWLVwF7wMky7X5/FsS9SQElLmmPemkfgYEn1skIJRvkQFVkc
+VwlGrhIBXybxWko1PXrrU1eJpXuGcxMzVw7BuN29/g7opisnjKOmIETGXZjursPY
+u4mq58aqTX1kj3dXZnL7mj7oxVFFSZyvehY5NHxWNCi6kgTW0vLlf3+pmPrcnYjI
+mqxKmLDrMk3g7WDVMedhtoQKXNXpP5YOnpKsGRJCN373asxH2SlJipraj3ZRbdQZ
+6p6DpICVL/BSgL5NZEbgOqhMtiXxlLnxUluzxlAOGv71i9OeopqTr8Iaz/W99IWB
+PZmhMKOGyOSABsgxcosVfeVEhuLCzJ1Ywxb9U7VbydCP1ieYMSCCEbI/8YS6s8jY
+9tQDgK4nHu4xWJ4R/obiOf4XRbnwqYHN1omyizxg6zJo7knRzJll2HSLpF9NVpnZ
+EBjQkSEsWibkTwwedDVHmuQ62honmw8yhZLzA9ND23VXMgluyz/Hrvis5a+JuJyr
+/pxpdad2bNKqW1r2OvvFusg9rqicWZ/dq0D28RqkM3q35QdAeZMhInBtZ072kmJE
+Siz4VsIWokhj6JR4hDTuPtE+e+suvo+9uRo12Ft/cUVMI7Bwr1ilKhPTNBq5nzP3
+IFhAvR8qVaCt1h/nG3DR
+=1XsQ
+-----END PGP SIGNATURE-----
+
+--bg08WKrSYDhXBjb5--
