@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab3GCSro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:47:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6045 "EHLO
+	id S933440Ab3GCSrn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:47:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9805 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933039Ab3GCSlE (ORCPT
+	with ESMTP id S933187Ab3GCSlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 14:41:04 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=7-rs4MOcfLIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Egj-ZAtVUj8A:10 a=jdP34snFAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=oCcaPWc0AAAA:8 a=e0gVtgZ23HrhdBXb4dMA:9 a=9mtjllxcxZAA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=OWA8jfZRzJIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PqPlYQHtIA4A:10 a=z11f-joXAAAA:8 a=4K-K1uyHAAAA:8 a=VwQbUJbxAAAA:8 a=e0gVtgZ23HrhdBXb4dMA:9 a=CJVq-v20pXUA:10 a=wATGTE7Z8MQA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184054.015760269@goodmis.org>
+Message-Id: <20130703184054.356183920@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:54 -0400
+Date: Wed, 03 Jul 2013 14:39:56 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Gabor Juhos <juhosg@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [057/141] ath9k: use correct OTP register offsets for AR9550
+Cc: Joern Engel <joern@logfs.org>, Roland Dreier <roland@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [059/141] target: Re-instate sess_wait_list for target_wait_for_sess_cmds
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0057-ath9k-use-correct-OTP-register-offsets-for-AR9550.patch
+Content-Disposition: inline; filename=0059-target-Re-instate-sess_wait_list-for-target_wait_for.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,98 +30,104 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-[ Upstream commit add295a4afbdf5852d004c754c552d692b0fcac8 ]
+[ Upstream commit 9b31a328e344e62e7cc98ae574edcb7b674719bb ]
 
-Accessing the OTP memory on AR9950 causes a data bus
-like this:
+Switch back to pre commit 1c7b13fe652 list splicing logic for active I/O
+shutdown with tcm_qla2xxx + ib_srpt fabrics.
 
-  Data bus error, epc == 801f7774, ra == 801f7774
-  Oops[#1]:
-  CPU: 0 PID: 1 Comm: swapper Not tainted 3.10.0-rc3 #592
-  task: 87c28000 ti: 87c22000 task.ti: 87c22000
-  $ 0   : 00000000 00000061 deadc0de 00000000
-  $ 4   : b8115f18 00015f18 00000007 00000004
-  $ 8   : 00000001 7c7c3c7c 7c7c7c7c 7c7c7c7c
-  $12   : 7c7c3c7c 80320a68 00000000 7c7c7c3c
-  $16   : 87cd8010 00015f18 00000007 00000000
-  $20   : 00000064 00000004 87c23c7c 8035210c
-  $24   : 00000000 801f3674
-  $28   : 87c22000 87c23b48 00000001 801f7774
-  Hi    : 00000000
-  Lo    : 00000064
-  epc   : 801f7774 ath9k_hw_wait+0x58/0xb0
-      Not tainted
-  ra    : 801f7774 ath9k_hw_wait+0x58/0xb0
-  Status: 1000cc03 KERNEL EXL IE
-  Cause : 4080801c
-  PrId  : 00019750 (MIPS 74Kc)
-  Modules linked in:
-  Process swapper (pid: 1, threadinfo=87c22000, task=87c28000, ts=00000000)
-  Stack : 0000000f 00000061 00002710 8006240c 00000001 87cd8010 87c23bb0 87cd8010
-          00000000 00000004 00000003 80210c7c 000000b3 67fa8000 0000032a 000006fe
-          000003e8 00000002 00000028 87c23bf0 000003ff 80210d24 803e5630 80210e28
-          00000000 00000007 87cd8010 00007044 00000004 00000061 000003ff 000001ff
-          87c26000 87cd8010 00000220 87cd8bb8 80210000 8020fcf4 87c22000 87c23c08
-          ...
-  Call Trace:
-  [<801f7774>] ath9k_hw_wait+0x58/0xb0
-  [<80210c7c>] ar9300_otp_read_word+0x80/0xd4
-  [<80210d24>] ar9300_read_otp+0x54/0xb0
-  [<8020fcf4>] ar9300_check_eeprom_header+0x1c/0x40
-  [<80210fe4>] ath9k_hw_ar9300_fill_eeprom+0x118/0x39c
-  [<80206650>] ath9k_hw_eeprom_init+0x74/0xb4
-  [<801f96d0>] ath9k_hw_init+0x7ec/0x96c
-  [<801e65ec>] ath9k_init_device+0x340/0x758
-  [<801f35d0>] ath_ahb_probe+0x21c/0x2c0
-  [<801c041c>] driver_probe_device+0xc0/0x1e4
-  [<801c05ac>] __driver_attach+0x6c/0xa4
-  [<801bea08>] bus_for_each_dev+0x64/0xa8
-  [<801bfa40>] bus_add_driver+0xcc/0x24c
-  [<801c0954>] driver_register+0xbc/0x17c
-  [<803f8fc0>] ath9k_init+0x5c/0x88
-  [<800608fc>] do_one_initcall+0xec/0x1a0
-  [<803e6a68>] kernel_init_freeable+0x13c/0x200
-  [<80309cdc>] kernel_init+0x1c/0xe4
-  [<80062450>] ret_from_kernel_thread+0x10/0x18
+The original commit was done under the incorrect assumption that it's safe to
+walk se_sess->sess_cmd_list unprotected in target_wait_for_sess_cmds() after
+sess->sess_tearing_down = 1 has been set by target_sess_cmd_list_set_waiting()
+during session shutdown.
 
-On the AR9550, the OTP registers are located at
-the same address as on the AR9340. Use the correct
-values to avoid the error.
+So instead of adding sess->sess_cmd_lock protection around sess->sess_cmd_list
+during target_wait_for_sess_cmds(), switch back to sess->sess_wait_list to
+allow wait_for_completion() + TFO->release_cmd() to occur without having to
+walk ->sess_cmd_list after the list_splice.
 
-Cc: stable@vger.kernel.org  # 3.6+
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Also add a check to exit if target_sess_cmd_list_set_waiting() has already
+been called, and add a WARN_ON to check for any fabric bug where new se_cmds
+are added to sess->sess_cmd_list after sess->sess_tearing_down = 1 has already
+been set.
+
+Cc: Joern Engel <joern@logfs.org>
+Cc: Roland Dreier <roland@kernel.org>
+Cc: stable@vger.kernel.org
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.h |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/target/target_core_transport.c |   18 ++++++++++++++----
+ include/target/target_core_base.h      |    1 +
+ 2 files changed, 15 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-index 3a1ff55..51dd475 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-@@ -68,13 +68,16 @@
- #define AR9300_BASE_ADDR 0x3ff
- #define AR9300_BASE_ADDR_512 0x1ff
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index 140bfb3..725ab56 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -232,6 +232,7 @@ struct se_session *transport_init_session(void)
+ 	INIT_LIST_HEAD(&se_sess->sess_list);
+ 	INIT_LIST_HEAD(&se_sess->sess_acl_list);
+ 	INIT_LIST_HEAD(&se_sess->sess_cmd_list);
++	INIT_LIST_HEAD(&se_sess->sess_wait_list);
+ 	spin_lock_init(&se_sess->sess_cmd_lock);
+ 	kref_init(&se_sess->sess_kref);
  
--#define AR9300_OTP_BASE			0x14000
--#define AR9300_OTP_STATUS		0x15f18
-+#define AR9300_OTP_BASE \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30000 : 0x14000)
-+#define AR9300_OTP_STATUS \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30018 : 0x15f18)
- #define AR9300_OTP_STATUS_TYPE		0x7
- #define AR9300_OTP_STATUS_VALID		0x4
- #define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
- #define AR9300_OTP_STATUS_SM_BUSY	0x1
--#define AR9300_OTP_READ_DATA		0x15f1c
-+#define AR9300_OTP_READ_DATA \
-+		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x3001c : 0x15f1c)
+@@ -2469,11 +2470,14 @@ void target_sess_cmd_list_set_waiting(struct se_session *se_sess)
+ 	unsigned long flags;
  
- enum targetPowerHTRates {
- 	HT_TARGET_RATE_0_8_16,
+ 	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
+-
+-	WARN_ON(se_sess->sess_tearing_down);
++	if (se_sess->sess_tearing_down) {
++		spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++		return;
++	}
+ 	se_sess->sess_tearing_down = 1;
++	list_splice_init(&se_sess->sess_cmd_list, &se_sess->sess_wait_list);
+ 
+-	list_for_each_entry(se_cmd, &se_sess->sess_cmd_list, se_cmd_list)
++	list_for_each_entry(se_cmd, &se_sess->sess_wait_list, se_cmd_list)
+ 		se_cmd->cmd_wait_set = 1;
+ 
+ 	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
+@@ -2490,9 +2494,10 @@ void target_wait_for_sess_cmds(
+ {
+ 	struct se_cmd *se_cmd, *tmp_cmd;
+ 	bool rc = false;
++	unsigned long flags;
+ 
+ 	list_for_each_entry_safe(se_cmd, tmp_cmd,
+-				&se_sess->sess_cmd_list, se_cmd_list) {
++				&se_sess->sess_wait_list, se_cmd_list) {
+ 		list_del(&se_cmd->se_cmd_list);
+ 
+ 		pr_debug("Waiting for se_cmd: %p t_state: %d, fabric state:"
+@@ -2520,6 +2525,11 @@ void target_wait_for_sess_cmds(
+ 
+ 		se_cmd->se_tfo->release_cmd(se_cmd);
+ 	}
++
++	spin_lock_irqsave(&se_sess->sess_cmd_lock, flags);
++	WARN_ON(!list_empty(&se_sess->sess_cmd_list));
++	spin_unlock_irqrestore(&se_sess->sess_cmd_lock, flags);
++
+ }
+ EXPORT_SYMBOL(target_wait_for_sess_cmds);
+ 
+diff --git a/include/target/target_core_base.h b/include/target/target_core_base.h
+index 5be8937..71f7662 100644
+--- a/include/target/target_core_base.h
++++ b/include/target/target_core_base.h
+@@ -613,6 +613,7 @@ struct se_session {
+ 	struct list_head	sess_list;
+ 	struct list_head	sess_acl_list;
+ 	struct list_head	sess_cmd_list;
++	struct list_head	sess_wait_list;
+ 	spinlock_t		sess_cmd_lock;
+ 	struct kref		sess_kref;
+ };
 -- 
 1.7.10.4
 
