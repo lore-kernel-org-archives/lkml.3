@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964857Ab3GCUrB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 16:47:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57965 "EHLO mga09.intel.com"
+	id S933238Ab3GCUuA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 16:50:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49993 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933124Ab3GCUq7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 16:46:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,990,1363158000"; 
-   d="scan'208";a="340116356"
-From: "Ronciak, John" <john.ronciak@intel.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: RE: [PATCH v2 0/8] Thunderbolt workarounds
-Thread-Topic: [PATCH v2 0/8] Thunderbolt workarounds
-Thread-Index: AQHOeBtA1zw+fxVX+U+4yVMqNweJnJlTvKyAgAADLwD//57hoIAAgCsA//+NTYA=
-Date: Wed, 3 Jul 2013 20:46:57 +0000
-Message-ID: <D38E8E86660E514AB505863C19C9287C73E5F18F@ORSMSX102.amr.corp.intel.com>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
- <20130703182900.GA29079@srcf.ucam.org> <20130703183311.GA17340@kroah.com>
- <20130703184434.GA29587@srcf.ucam.org>
- <D38E8E86660E514AB505863C19C9287C73E5F07D@ORSMSX102.amr.corp.intel.com>
- <20130703203542.GA32736@srcf.ucam.org>
-In-Reply-To: <20130703203542.GA32736@srcf.ucam.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933131Ab3GCUt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 16:49:59 -0400
+Message-ID: <51D48E72.5010403@suse.cz>
+Date: Wed, 03 Jul 2013 22:49:54 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: =?UTF-8?B?5byg5b+g5bGx?= <zzs0213@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] let kbuild mkdir for dir/file.o
+References: <51CE11C2.5020406@suse.cz> <1372583368-32618-1-git-send-email-zzs0213@gmail.com>
+In-Reply-To: <1372583368-32618-1-git-send-email-zzs0213@gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apple does their own thing and do not talk to Intel about it at all. This includes writing special drivers and user-space components.  So we (Intel) don't know so we can't comment about it.  Sorry.
-
-Cheers,
-John
-
-
-> -----Original Message-----
-> From: Matthew Garrett [mailto:mjg59@srcf.ucam.org]
-> Sent: Wednesday, July 03, 2013 1:36 PM
-> To: Ronciak, John
-> Cc: Greg Kroah-Hartman; Mika Westerberg; Bjorn Helgaas; Wysocki, Rafael
-> J; Jesse Barnes; Yinghai Lu; Penner, Miles J; Allan, Bruce W; Heikki
-> Krogerus; Kirill A. Shutemov; linux-kernel@vger.kernel.org; linux-
-> acpi@vger.kernel.org; linux-pci@vger.kernel.org; x86@kernel.org
-> Subject: Re: [PATCH v2 0/8] Thunderbolt workarounds
+Dne 30.6.2013 11:09, 张忠山 napsal(a):
+> When add a obj with dir to obj-y, like this
 > 
-> On Wed, Jul 03, 2013 at 07:57:21PM +0000, Ronciak, John wrote:
-> > Are you talking about Apple platforms specifically?
+>     obj-y += dir/file.o
 > 
-> Yeah, that's the specific example.
+> The $(obj)/dir not created, this patch fix this.
 > 
-> --
-> Matthew Garrett | mjg59@srcf.ucam.org
+> When try to add a file(which in a subdir) to my board's obj-y, the build
+> progress crashed.
+> 
+> For example, I use at91rm9200ek board, and in kernel dir run:
+> 
+>   mkdir objtree
+>   make O=objtree at91rm9200_defconfig
+>   mkdir arch/arm/mach-at91/dir
+>   touch arch/arm/mach-at91/dir/file.c
+> 
+> and edit arch/arm/mach-at91/dir/file.c to add some code.
+> then edit arch/arm/mach-at91/Makefile, change the following line:
+> 
+>   obj-$(CONFIG_MACH_AT91RM9200EK) += board-rm9200ek.o
+> 
+> to:
+> 
+>   obj-$(CONFIG_MACH_AT91RM9200EK) += board-rm9200ek.o dir/file.o
+> 
+> Now build it:
+> 
+>   make O=objtree
+> 
+> Then the error appears:
+>   ...
+>   CC      arch/arm/mach-at91/board-rm9200dk.o
+>   CC      arch/arm/mach-at91/board-rm9200ek.o
+>   CC      arch/arm/mach-at91/dir/file.o
+>   linux-2.6/arch/arm/mach-at91/dir/file.c:5:
+>     fatal error: opening dependency file
+>     arch/arm/mach-at91/dir/.file.o.d: No such file or directory
+> 
+> Check the objtree:
+>   LANG=en ls objtree/arch/arm/mach-at91/dir
+>   ls: cannot access objtree/arch/arm/mach-at91/dir: No such file or directory
+> 
+> It's apparently that the target dir not created for file.o
+> 
+> Check kbuild source code. It seems that kbuild create dirs for that in
+> $(obj-dirs).  But if the dir need not to create a built-in.o, It should
+> never in  $(obj-dirs).
+> 
+> So I make this patch to make sure It in  $(obj-dirs)
+> 
+> this bug caused by commit
+>    f5fb976520a53f45f8bbf2e851f16b3b5558d485
+> ---
+
+You forgot to sign off this patch, can I add
+
+  Signed-off-by: 张忠山 <zzs0213@gmail.com>
+
+like you did in the previous versions? Otherwise, the patch looks OK.
+
+Michal
