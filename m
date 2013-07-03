@@ -1,67 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab3GCCpH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 22:45:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39535 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab3GCCpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 22:45:05 -0400
-Message-ID: <51D39010.5090902@redhat.com>
-Date: Wed, 03 Jul 2013 10:44:32 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755329Ab3GCCrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 22:47:16 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:44456 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab3GCCrO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 22:47:14 -0400
+Date: Tue, 2 Jul 2013 19:47:09 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org
+Subject: [GIT PULL] cpuset changes for v3.11-rc1
+Message-ID: <20130703024709.GB17986@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Thomas Zeitlhofer <thomas.zeitlhofer@nt.tuwien.ac.at>
-CC: Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: tuntap regression in v3.9.8 and v3.10
-References: <20130702195910.GA20271@toau.bambla> <CAOMZO5B7Yx7tRy8Q5wi6ngcD0FDJzKXHOEGPXyUo52+f3oUHEg@mail.gmail.com> <20130702220651.GA23097@toau.bambla>
-In-Reply-To: <20130702220651.GA23097@toau.bambla>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2013 06:06 AM, Thomas Zeitlhofer wrote:
-> On Tue, Jul 02, 2013 at 06:01:12PM -0300, Fabio Estevam wrote:
->> On Tue, Jul 2, 2013 at 4:59 PM, Thomas Zeitlhofer
->> <thomas.zeitlhofer@nt.tuwien.ac.at> wrote:
->>> Commit "tuntap: set SOCK_ZEROCOPY flag during open" introduces a
->>> regression which is observed with live migration of qemu/kvm based
->>> virtual machines that are connected to an openvswitch bridge.
->>>
->>> Reverting this commit (b26c93c46a3dec25ed236d4ba6107eb4ed5d9401 in
->>> v3.9.8 and accordingly 19a6afb23e5d323e1245baa4e62755492b2f1200 in
->>> v3.10) fixes the following problem:
->> Should the sock_set_flag stay in tun_set_iff as it was prior to 54f968d6efd?
->>
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
->> @@ -1652,6 +1652,7 @@ static int tun_set_iff(struct net *net, struct
->> file *file, struct ifreq *ifr)
->>                 tun->txflt.count = 0;
->>                 tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
->>
->> +               sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
->>                 tun->filter_attached = false;
->>                 tun->sndbuf = tfile->socket.sk->sk_sndbuf;
->>
->> @@ -2159,8 +2160,6 @@ static int tun_chr_open(struct inode *inode,
->> struct file * file)
->>         set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
->>         INIT_LIST_HEAD(&tfile->next);
->>
->> -       sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
->> -
->>         return 0;
->>  }
-> I guess no, as this also leads to a kernel panic (tested against v3.10).
+Hello, Linus.
 
-Yes, commit "tuntap: set SOCK_ZEROCOPY flag during open" just re-enable
-the zerocopy capability of tuntap. I believe it just uncover other
-zerocopy bugs.
+Please note that this cgroup/for-3.11-cpuset pull request assumes that
+cgroup/for-3.11 branch is pulled in first.
 
-Which regression did you see?
+cpuset has always been rather odd about its configurations - a cgroup
+right after creation didn't allow any task executions before
+configuration, changing configuration in the parent modifies the
+descendants irreversibly and so on.  These behaviors are inherently
+nasty and almost hostile against sharing the hierarchy with other
+controllers making it very difficult to use in unified hierarchy.
 
-Thanks
+Li is currently in the process of updating the behaviors for
+__DEVEL__sane_behavior which is the bulk of changes in this pull
+request.  It isn't complete yet and the behaviors will change further
+but all changes are gated behind sane_behavior.  In the process, the
+rather hairy work-item punting which was used to work around the
+limitations of cgroup descendant iterator was simplified.
+
+Pulling this branch creates a conflict in include/linux/cgroup.h in
+the comment area which catalogues the behavior changes gated by
+__DEVEL__sane_behavior.  The cgroup main branch reorganized and added
+some entries and this branch adds to it too.  The conflict and
+resolution is trivial.
+
+The conflict:
+
+<<<<<<< HEAD
+	 * - "tasks" is removed.  Everything should be at process
+	 *   granularity.  Use "cgroup.procs" instead.
+=======
+	 * - cpuset: tasks will be kept in empty cpusets when hotplug happens
+	 *   and take masks of ancestors with non-empty cpus/mems, instead of
+	 *   being moved to an ancestor.
+	 *
+	 * - cpuset: a task can be moved into an empty cpuset, and again it
+	 *   takes masks of ancestors.
+	 *
+	 * - memcg: use_hierarchy is on by default and the cgroup file for
+	 *   the flag is not created.
+>>>>>>> c9e5fe66f5947c9e56dfc7655e5b4b127ca2120f
+	 *
+	 * - "release_agent" and "notify_on_release" are removed.
+	 *   Replacement notification mechanism will be implemented.
+	 *
+	 * - rename(2) is disallowed.
+	 *
+	 * - memcg: use_hierarchy is on by default and the cgroup file for
+	 *   the flag is not created.
+	 */
+
+The resolution:
+
+ 	 * - "tasks" is removed.  Everything should be at process
+	 *   granularity.  Use "cgroup.procs" instead.
+	 *
+	 * - "release_agent" and "notify_on_release" are removed.
+	 *   Replacement notification mechanism will be implemented.
+	 *
+	 * - rename(2) is disallowed.
+	 *
+	 * - cpuset: tasks will be kept in empty cpusets when hotplug happens
+	 *   and take masks of ancestors with non-empty cpus/mems, instead of
+	 *   being moved to an ancestor.
+	 *
+	 * - cpuset: a task can be moved into an empty cpuset, and again it
+	 *   takes masks of ancestors.
+	 *
+	 * - memcg: use_hierarchy is on by default and the cgroup file for
+	 *   the flag is not created.
+	 */
+
+The described changes are available in the following branch
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.11-cpuset
+
+for you to fetch changes up to c9e5fe66f5947c9e56dfc7655e5b4b127ca2120f:
+
+  cpuset: rename @cont to @cgrp (2013-06-13 20:48:19 -0700)
+
+Just in case, an example merge is available.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git test-merge-3.11
+
+----------------------------------------------------------------
+Li Zefan (13):
+      cpuset: remove redundant check in cpuset_cpus_allowed_fallback()
+      cpuset: cleanup guarantee_online_{cpus|mems}()
+      cpuset: remove unnecessary variable in cpuset_attach()
+      cpuset: remove cpuset_test_cpumask()
+      cpuset: re-structure update_cpumask() a bit
+      cpuset: let hotplug propagation work wait for task attaching
+      cpuset: remove async hotplug propagation work
+      cpuset: record old_mems_allowed in struct cpuset
+      cpuset: introduce effective_{cpumask|nodemask}_cpuset()
+      cpuset: allow to keep tasks in empty cpusets
+      cpuset: allow to move tasks to empty cpusets
+      cpuset: fix to migrate mm correctly in a corner case
+      cpuset: rename @cont to @cgrp
+
+ include/linux/cgroup.h |   7 +
+ kernel/cpuset.c        | 478 +++++++++++++++++++++++++++++--------------------
+ 2 files changed, 294 insertions(+), 191 deletions(-)
+
+Thanks.
+
+-- 
+tejun
