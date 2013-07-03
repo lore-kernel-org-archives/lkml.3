@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab3GCRVc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 13:21:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35528 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754784Ab3GCRVb (ORCPT
+	id S932767Ab3GCRX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 13:23:27 -0400
+Received: from nm14-vm9.access.bullet.mail.gq1.yahoo.com ([216.39.63.252]:22153
+	"EHLO nm14-vm9.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932143Ab3GCRX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 13:21:31 -0400
-Date: Wed, 3 Jul 2013 18:20:01 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, Joseph Lo <josephl@nvidia.com>,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
-Message-ID: <20130703172001.GH24642@n2100.arm.linux.org.uk>
-References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org> <20130702232259.GH11625@codeaurora.org> <51D39004.9000907@wwwdotorg.org> <20130703051907.GA22702@windriver.com> <20130703100044.GG24642@n2100.arm.linux.org.uk> <20130703153012.GK22702@windriver.com>
+	Wed, 3 Jul 2013 13:23:26 -0400
+X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Jul 2013 13:23:26 EDT
+X-Yahoo-Newman-Id: 77265.65258.bm@smtp115.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: LIIHhHcVM1nKHMD9ZuzAX35vyVX9dYYY6hImCTZHfGnCY8X
+ sDEbjIKyy.PxpNWAdLVs99Ua3u7a5TumNnwyWzhWGIlmmJwgtc2MV7ihVp00
+ Fh7zBDWbWb3UJYbxL1NLSprrWJzPQic9CQE.s9q_RnB4nwL9P9SwepNJ5AfV
+ 8RXo19aTb5ZGvR99hGgVfxBtneoPkZ1IDvKsl_YlxcU5CuW0lV1z5SaeGOFs
+ iEF55b6RzLP.VhKk13_EgCUh9.j2PYcQWMxQGwZp3fkjlV9BOlzYd.1gxxcP
+ y220Sma2n75hdBoyb0xR5oFZS1AqOABpMzteZxYuFTJLClH7gcWquA5Nn.MS
+ n42c_WiIzkmZsITuOAREBClYKt2e7d7ycA8VHJWMOGI9qDUhrLlFOPQK1hWA
+ 9WoqQ.vnazoKhn.a9yLpLT7VBv9Fm3QOf0SioKb88rVZ9g3FjnxQ3HJW9y0w
+ wpVUhdgE.jCNSNJ8piFH8V7TgxkxpLObzVhrPQBLQXnk3VRUplUc..nq7Fws
+ AF1T6Y5CA9vP8Vu6r3OMLCGyv4MkInWVb_D9NUfmIVRmj69MZ3kIAUb.aZGk
+ 4
+X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
+X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
+        by smtp115.sbc.mail.ne1.yahoo.com with SMTP; 03 Jul 2013 10:17:11 -0700 PDT
+Date: Wed, 3 Jul 2013 10:17:13 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
+ X9SRL-F motherboard
+Message-ID: <20130703171713.GA26555@roeck-us.net>
+References: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com>
+ <20130703144201.GA10323@roeck-us.net>
+ <007101ce7807$88cfb160$9a6f1420$@lucidpixels.com>
+ <20130703163311.GB12506@roeck-us.net>
+ <008001ce780d$0d1a79f0$274f6dd0$@lucidpixels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130703153012.GK22702@windriver.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <008001ce780d$0d1a79f0$274f6dd0$@lucidpixels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 11:30:12AM -0400, Paul Gortmaker wrote:
-> [Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 11:00) Russell King - ARM Linux wrote:
+On Wed, Jul 03, 2013 at 12:47:47PM -0400, Justin Piszcz wrote:
 > 
-> > On Wed, Jul 03, 2013 at 01:19:07AM -0400, Paul Gortmaker wrote:
-> > > As an aside, I'm now thinking any __INIT that implicitly rely on EOF for
-> > > closure are nasty traps waiting to happen and it might be worthwhile to
-> > > audit and explicitly __FINIT them before someone appends to the file...
+> 
+> -----Original Message-----
+> From: Guenter Roeck [mailto:linux@roeck-us.net] 
+> Sent: Wednesday, July 03, 2013 12:33 PM
+> To: Justin Piszcz
+> Cc: linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
+> Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
+> X9SRL-F motherboard
+> 
+> [ .. ]
 > > 
-> > That hides a different kind of bug though - I hate __FINIT for exactly
-> > that reason.  Consider this:
+> Can you install superiotool and run "sudo superiotool -V -e" ?
+> I would like to see raw data from the superio chip.
 > 
-> Agreed - perhaps masking that it is a ".previous" just hides the fact
-> that it is more like a pop operation vs. an on/off operation, or per
-> function as we have in C.
+> # superiotool -V -e
+> superiotool r6637
+> ..
+> Probing for Nuvoton Super I/O (sid=0xfc) at 0x164e...
+> Found Nuvoton WPCM450 (id=0x1a11, rev=0x00) at 0x164e
+> Probing for Nuvoton Super I/O at 0x2e...
+> Found Nuvoton NCT6776F (C) (id=0xc333) at 0x2e
+> 
+Version is too old :(.
 
-I read the info pages, because I thought it was a pop operation too.
-I was concerned that .section didn't push the previous section onto the
-stack.
+Can you try http://roeck-us.net/linux/bin/superiotool ?
 
-However, .popsection is the pseudio-op which pops.  .previous just toggles
-the current section with the section immediately before it.
+> [ .. ]
+> 
+> You have to specify the raw attribute names, not the symbolic ones.
+> You see the raw attribute names with "sensors -u".
+> 
+> # sensors -u
+> PCH_CHIP_TEMP:
+>   temp8_input: 0.000
+> PCH_CPU_TEMP:
+>   temp9_input: 0.000
+> PCH_MCH_TEMP:
+>   temp10_input: 0.000
+> 
+> Tried:
+>     ignore PCH_CHIP_TEMP
+>     ignore temp8_input
+> 
+> For some reason still can't get rid of it appearing:
+> PCH_CHIP_TEMP:   +0.0 C  
+> (..as well as the others)
+> 
+It has to be
+	ignore temp8
+	ignore temp9
+	ignore temp10
 
-So:
-
-	.text
-	.data
-	.previous
-	/* this is .text */
-	.previous
-	/* this is .data */
-	.previous
-	/* this is .text */
-	.previous
-	/* this is .data */
-
-> That seems reasonable to me.  I can't think of any self auditing that is
-> reasonably simple to implement.  One downside of __FINIT as a no-op vs.
-> what it is today, is that a dangling __FINIT in a file with no other
-> previous sections will emit a warning.  But that is a small low value
-> corner case I think.
-
-That warning from __FINIT will only happen if there has been no section
-or .text or .data statement in the file at all.  As soon as you have any
-statement setting any kind of section, .previous doesn't warn.
-
-So:
-
-	.text
-	...
-	__FINIT
-
-produces no warning.
+Thanks,
+Guenter
