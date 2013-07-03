@@ -1,102 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab3GCEO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 00:14:29 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:57045 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3GCEO2 (ORCPT
+	id S1751839Ab3GCEtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 00:49:16 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:63470 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750787Ab3GCEtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 00:14:28 -0400
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-sh@vger.kernel.org
-Cc: linus.walleij@linaro.org, linux-kernel@vger.kernel.org, horms@verge.net.au,
-        laurent.pinchart@ideasonboard.com, grant.likely@linaro.org,
-        Magnus Damm <magnus.damm@gmail.com>
-Date: Wed, 03 Jul 2013 13:14:32 +0900
-Message-Id: <20130703041432.7351.45970.sendpatchset@w520>
-Subject: [PATCH] gpio: em: Add pinctrl support
+	Wed, 3 Jul 2013 00:49:15 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqQMANms01F5LCeA/2dsb2JhbABagwm7bYUlBAGBAhd0giMBAQQBJxMcIwULCAMYCSUPBSUDIROICQW7VBaOMoEdB4NtA5dJkUaDIyo
+Date: Wed, 3 Jul 2013 14:49:01 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: frequent softlockups with 3.10rc6.
+Message-ID: <20130703044901.GI14996@dastard>
+References: <20130701120037.GA6196@quack.suse.cz>
+ <20130702062954.GA14996@dastard>
+ <20130702081937.GA31770@quack.suse.cz>
+ <20130702123835.GF14996@dastard>
+ <20130702140508.GB31770@quack.suse.cz>
+ <CA+55aFwZHOUCYvojbP9q3D5MDgCH7GttkUGiJerra9uyduFLKw@mail.gmail.com>
+ <20130702165752.GA12179@quack.suse.cz>
+ <CA+55aFxSY76aWEC04yREjFObPF3ZJFMHdczoT=yGmSpsg5hhyg@mail.gmail.com>
+ <20130703030759.GG14996@dastard>
+ <CA+55aFxN2-qZwBywE3b+RYyPLg1-ru5ZwJLHLohy0KJ0fD0vqA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxN2-qZwBywE3b+RYyPLg1-ru5ZwJLHLohy0KJ0fD0vqA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On Tue, Jul 02, 2013 at 08:28:42PM -0700, Linus Torvalds wrote:
+> On Tue, Jul 2, 2013 at 8:07 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >>
+> >> Then that test would become
+> >>
+> >>         if (wbc->sync_mode == WB_SYNC_SINGLE) {
+> >>
+> >> instead, and now "sync_mode" would actually describe what mode of
+> >> syncing the caller wants, without that hacky special "we know what the
+> >> caller _really_ meant by looking at *which* caller it is".
+> >
+> > The problem is that all the code that currently looks for
+> > WB_SYNC_ALL for it's behavioural cue during writeback now has
+> > multiple different modes they have to handle.  IOWs, it's not a
+> > straight forward conversion process. WB_SYNC_ALL reaches right down
+> > into filesystem ->writepages implementations and they all need to be
+> > changed if we make up a new sync_mode behaviour.
+> 
+> I have to admit that I absolutely detest our current "sync_mode" to
+> begin with, so I'd personally be happy to see some major surgery in
+> this area.
+> 
+> For example, maybe we'd be much better off with something that has
+> various behavioral flags rather than distinct "mode values".  So
+> instead of being an enum of different reasons for syncing, it would be
+> a set of bitmasks for specific sync behavior. We have a much better
+> sync model in our sync_file_range() model, where we have flags like
+> SYNC_FILE_RANGE_WAIT_xxx (where xxx is BEFORE, WRITE, AFTER to
+> describe whether you should wait for old writes, start new writes, or
+> wait after the newly started writes).
 
-Register the GPIO pin range, and request and free GPIO pins using the
-pinctrl API. The pctl_name platform data member should be used by
-platform devices to point out which pinctrl device to use.
+I agree that the flag model for writeback behaviour that it uses is
+a good example to follow.
 
-Follows same style as "dc3465a gpio-rcar: Add pinctrl support",
-by Laurent Pinchart, thanks to him.
+> That's a very powerful model, and it's also much more easy to think
+> about. So the above test could become
+> 
+>         if (wbc->sync_mode & WB_SYNC_AFTER) {
+>                 int err = filemap_fdatawait(mapping);
+>                 ....
+> 
+> in that kind of model, and the code actually looks sensible. It reads
+> like "if the caller asked us to synchronize after writing, then we do
+> an fdatawait on the mapping".
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
+*nod*
 
- drivers/gpio/gpio-em.c                |   25 +++++++++++++++++++++++++
- include/linux/platform_data/gpio-em.h |    1 +
- 2 files changed, 26 insertions(+)
+> So I think something like that might make sense. And there aren't
+> _that_ many users of WB_SYNC_xxx, and the patch should be pretty
+> straightforward.
 
---- 0001/drivers/gpio/gpio-em.c
-+++ work/drivers/gpio/gpio-em.c	2013-07-03 12:49:55.000000000 +0900
-@@ -30,6 +30,7 @@
- #include <linux/gpio.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-+#include <linux/pinctrl/consumer.h>
- #include <linux/platform_data/gpio-em.h>
- 
- struct em_gio_priv {
-@@ -216,6 +217,21 @@ static int em_gio_to_irq(struct gpio_chi
- 	return irq_create_mapping(gpio_to_priv(chip)->irq_domain, offset);
- }
- 
-+static int em_gio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinctrl_request_gpio(chip->base + offset);
-+}
-+
-+static void em_gio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinctrl_free_gpio(chip->base + offset);
-+
-+	/* Set the GPIO as an input to ensure that the next GPIO request won't
-+	* drive the GPIO pin as an output.
-+	*/
-+	em_gio_direction_input(chip, offset);
-+}
-+
- static int em_gio_irq_domain_map(struct irq_domain *h, unsigned int virq,
- 				 irq_hw_number_t hw)
- {
-@@ -308,6 +324,8 @@ static int em_gio_probe(struct platform_
- 	gpio_chip->direction_output = em_gio_direction_output;
- 	gpio_chip->set = em_gio_set;
- 	gpio_chip->to_irq = em_gio_to_irq;
-+	gpio_chip->request = em_gio_request;
-+	gpio_chip->free = em_gio_free;
- 	gpio_chip->label = name;
- 	gpio_chip->owner = THIS_MODULE;
- 	gpio_chip->base = pdata->gpio_base;
-@@ -351,6 +369,13 @@ static int em_gio_probe(struct platform_
- 		dev_err(&pdev->dev, "failed to add GPIO controller\n");
- 		goto err1;
- 	}
-+
-+	if (pdata->pctl_name) {
-+		ret = gpiochip_add_pin_range(gpio_chip, pdata->pctl_name, 0,
-+					     gpio_chip->base, gpio_chip->ngpio);
-+		if (ret < 0)
-+			dev_warn(&pdev->dev, "failed to add pin range\n");
-+	}
- 	return 0;
- 
- err1:
---- 0001/include/linux/platform_data/gpio-em.h
-+++ work/include/linux/platform_data/gpio-em.h	2013-07-03 12:45:27.000000000 +0900
-@@ -5,6 +5,7 @@ struct gpio_em_config {
- 	unsigned int gpio_base;
- 	unsigned int irq_base;
- 	unsigned int number_of_pins;
-+	const char *pctl_name;
- };
- 
- #endif /* __GPIO_EM_H__ */
+Patching might be straight forward, but the testing isn't - it's
+spread across 30 different filesystems...
+
+> WB_SYNC_NONE semantics would presumably be "just
+> start writeout" (so it would become WB_SYNC_WRITE), while WB_SYNC_ALL
+> would become (WB_SYNC_BEFORE | WB_SYNC_WRITE | WB_SYNC_AFTER), but
+> then the "for_sync" case would remove WB_SYNC_AFTER, because it does
+> its own waiting after.
+
+Not exactly. WB_SYNC_NONE currently means "best effort writeback"
+which means if we are going to block on a lock, it's ok to abort
+writeback as we can try again later. For writeback, WB_SYNC_ALL
+means "write everything that is dirty" and means we must block
+waiting for locks to do the required writeback.  So there's WB_WRITE
+and WB_WRITE_SYNC behaviours at minimum.
+
+Also, we don't currently have a WB_SYNC_BEFORE use case, so I'm not
+sure we want to add code for something nobody currently uses. We can
+add that later if anyone ever needs it to be implemented....
+
+> Sounds fairly sensible and straightforward to me. Much more
+> self-explanatory than the current "WB_SYNC_NONE/ALL" distinction,
+> methinks (well, you'd still have to explain what the point of
+> BEFORE/AFTER is, and how it interacts with starting writeout, but
+> especially since we already have that concept for file_sync_range(), I
+> think that's not too bad).
+
+Yeah, it makes sense from a a high level perspective, but we've also
+got to handle inode metadata writeback as well (which can be done
+separately to data writeback via sync_inode_metadata()) and that
+means we probably need WB_WRITE_META flags as well.
+
+I suspect that we will also need to have filesystems set their
+default behaviour flags on the superblock as well so that we can
+make things like filemap_fdatawrite() and friends do exactly the
+right thing for each filesystem without having callers need to pass
+in flags. e.g. XFS doesn't require any data waiting or inode
+metadata writeback, while ext2 requires inode metadata writeback
+after data writeback dispatch and NFS needs WB_SYNC_AFTER behaviour
+before inode metadata writeback....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
