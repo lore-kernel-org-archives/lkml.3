@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab3GCRz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 13:55:28 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38320 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753738Ab3GCRz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 13:55:26 -0400
-Date: Wed, 3 Jul 2013 18:55:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Cc: linux-kernel@vger.kernel.org, yadi.brar01@gmail.com, sbkim73@samsung.com,
-        lgirdwood@gmail.com, sameo@linux.intel.com, rob.herring@calxeda.com,
-        grant.likely@linaro.org
-Message-ID: <20130703175523.GW27646@sirena.org.uk>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
- <1372072858-6559-3-git-send-email-yadi.brar@samsung.com>
+	id S1755992Ab3GCR7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 13:59:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753358Ab3GCR7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 13:59:09 -0400
+Date: Wed, 3 Jul 2013 19:54:20 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+Message-ID: <20130703175420.GA25668@redhat.com>
+References: <51CCF8BA.4030601@hitachi.com> <20130628180946.GA30838@redhat.com> <51D16E1D.5040904@hitachi.com> <20130702190037.GA6289@redhat.com> <20130702193425.GA8813@redhat.com> <1372799087.22688.58.camel@gandalf.local.home> <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com> <51D38F8D.3010708@hitachi.com> <20130703172029.GA14309@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QJLNdq7A0R34yxmQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372072858-6559-3-git-send-email-yadi.brar@samsung.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/4] regulator: s2mps11: Implement set_voltage_time_sel()
- ops for bucks
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130703172029.GA14309@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/03, Oleg Nesterov wrote:
+>
+> IOW. So far _I think_ we just need the additional changes in
+> trace_remove_event_call() if it succeeds (with the patch I sent)
+> to prevent the races like above, but I didn't even try to think
+> about this problem.
 
---QJLNdq7A0R34yxmQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+And I guess greatly underestimated the problem(s). When I look at
+this code now, it seems that, say, event_enable_write() will use
+the already freed ftrace_event_file in this case.
 
-On Mon, Jun 24, 2013 at 04:50:56PM +0530, Yadwinder Singh Brar wrote:
-> Currently driver uses local struct s2mps11_info to store ramp rate for bucks
-> whic its getting through platform data, so instead of using regulator
-> constraints it should use s2mps11_info to calculate ramp delay.
+Still I think this is another (although closely related) problem.
 
-Applied, thanks.
+> Or I missed your point completely?
 
---QJLNdq7A0R34yxmQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yes?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Oleg.
 
-iQIcBAEBAgAGBQJR1GWIAAoJELSic+t+oim9yzwP+gMuhFZlOlkAl1vBB3ZwSFhZ
-9bXUwXaN0xHAhvB2PQlBfWSEBA0yt+sfSibs3OjqG0ooE6aTbJCIJ/PBYokvO4A/
-W1D9gJVJUTrjySnlSvhr1KZwoIYRWQEauHZZyy+PWBjk4J3cb2z9MRscTu+bYOCp
-910LtMjEmYUWiFY9+liFjApoOnhUf+QhEhs4LeLjZrvTP4006PIglVPcWdsF0vEk
-57OMh0QOYImekGRl47HbvMWShDxSXYw5qkArJ2auR4HnfqzydkweSSuBDsIgJ3fG
-vrt50Cp2fUj04PBSGaIpTNnBevOolmiyNtLClwxrngYhFCBDO0c4WeNGjZTZSzo2
-sSLaKzTNUaX34EWWmyG/BK8E+iAUmnS1FjbpXriOnUs2RpLpCc/4XT5OLuw9aXD0
-vIcrbWWkDioC5ANk3SoQyfJUvej+oBuDYyou8mSwOiFCgAEe61FpzbbHyhcQuOD1
-1eDdzPbP1WOdLEg02ROLCivbodovZNRHQ0zjpFb4eKJ8i6FRTM6rPG0PpblJ7X18
-Zd2b/1/D7YvcU9JFkG+I0CjlytV9h6XmvEMN3mrHrQ7dC/rh1/YO66phKLewkbQj
-f8jlZdD/TdoMmK/bWeNort321L7zX0eSTFkLz47rQVsPmHgT08zon3nSvDjqmu6D
-X/w7B0F44z9Q/6zrTbLq
-=Dbh4
------END PGP SIGNATURE-----
-
---QJLNdq7A0R34yxmQ--
