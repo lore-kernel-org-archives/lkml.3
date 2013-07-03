@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965360Ab3GCTP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:15:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28849 "EHLO
+	id S965340Ab3GCTP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:15:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6261 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933592Ab3GCTAP (ORCPT
+	with ESMTP id S933586Ab3GCTAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 15:00:15 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Gvb0uAJMIQoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=RP31ACToYCAA:10 a=taGs_qngAAAA:8 a=e5mUnYsNAAAA:8 a=VwQbUJbxAAAA:8 a=HqBHPJKoD76ig-6nzqEA:9 a=0kPLrQdw3YYA:10 a=n7Cch7CHiCMA:10 a=jeBq3FmKZ4MA:10 a=BeuDQNqZoyMhOs7P:21 a=xRJh194nYD8zr7xH:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=J2PZ5pSPc3kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5i5m-4ZMNSAA:10 a=cH6R9-kdAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=bRQBf3FelYaKDuBU-sEA:9 a=bt0zGP92IBIA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184107.632354550@goodmis.org>
+Message-Id: <20130703184107.464420196@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:41:03 -0400
+Date: Wed, 03 Jul 2013 14:41:02 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Egbert Eich <eich@suse.de>, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [126/141] drm/i915: prefer VBT modes for SVDO-LVDS over EDID
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        Jens Axboe <axboe@kernel.dk>, Mike Miller <mike.miller@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [125/141] cciss: fix broken mutex usage in ioctl
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0126-drm-i915-prefer-VBT-modes-for-SVDO-LVDS-over-EDID.patch
+Content-Disposition: inline; filename=0125-cciss-fix-broken-mutex-usage-in-ioctl.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,74 +31,182 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 
-[ Upstream commit c3456fb3e4712d0448592af3c5d644c9472cd3c1 ]
+[ Upstream commit 03f47e888daf56c8e9046c674719a0bcc644eed5 ]
 
-In
+If a new logical drive is added and the CCISS_REGNEWD ioctl is invoked
+(as is normal with the Array Configuration Utility) the process will
+hang as below.  It attempts to acquire the same mutex twice, once in
+do_ioctl() and once in cciss_unlocked_open().  The BKL was recursive,
+the mutex isn't.
 
-commit 53d3b4d7778daf15900867336c85d3f8dd70600c
-Author: Egbert Eich <eich@suse.de>
-Date:   Tue Jun 4 17:13:21 2013 +0200
+  Linux version 3.10.0-rc2 (scameron@localhost.localdomain) (gcc version 4.4.7 20120313 (Red Hat 4.4.7-3) (GCC) ) #1 SMP Fri May 24 14:32:12 CDT 2013
+  [...]
+  acu             D 0000000000000001     0  3246   3191 0x00000080
+  Call Trace:
+    schedule+0x29/0x70
+    schedule_preempt_disabled+0xe/0x10
+    __mutex_lock_slowpath+0x17b/0x220
+    mutex_lock+0x2b/0x50
+    cciss_unlocked_open+0x2f/0x110 [cciss]
+    __blkdev_get+0xd3/0x470
+    blkdev_get+0x5c/0x1e0
+    register_disk+0x182/0x1a0
+    add_disk+0x17c/0x310
+    cciss_add_disk+0x13a/0x170 [cciss]
+    cciss_update_drive_info+0x39b/0x480 [cciss]
+    rebuild_lun_table+0x258/0x370 [cciss]
+    cciss_ioctl+0x34f/0x470 [cciss]
+    do_ioctl+0x49/0x70 [cciss]
+    __blkdev_driver_ioctl+0x28/0x30
+    blkdev_ioctl+0x200/0x7b0
+    block_ioctl+0x3c/0x40
+    do_vfs_ioctl+0x89/0x350
+    SyS_ioctl+0xa1/0xb0
+    system_call_fastpath+0x16/0x1b
 
-    drm/i915/sdvo: Use &intel_sdvo->ddc instead of intel_sdvo->i2c for DDC
+This mutex usage was added into the ioctl path when the big kernel lock
+was removed.  As it turns out, these paths are all thread safe anyway
+(or can easily be made so) and we don't want ioctl() to be single
+threaded in any case.
 
-Egbert Eich fixed a long-standing bug where we simply used a
-non-working i2c controller to read the EDID for SDVO-LVDS panels.
-Unfortunately some machines seem to not be able to cope with the mode
-provided in the EDID. Specifically they seem to not be able to cope
-with a 4x pixel mutliplier instead of a 2x one, which seems to have
-been worked around by slightly changing the panels native mode in the
-VBT so that the dotclock is just barely above 50MHz.
-
-Since it took forever to notice the breakage it's fairly safe to
-assume that at least for SDVO-LVDS panels the VBT contains fairly sane
-data. So just switch around the order and use VBT modes first.
-
-v2: Also add EDID modes just in case, and spell Egbert correctly.
-
-v3: Elaborate a bit more about what's going on on Chris' machine.
-
-Cc: Egbert Eich <eich@suse.de>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=65524
-Cc: stable@vger.kernel.org
-Reported-and-tested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Mike Miller <mike.miller@hp.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/i915/intel_sdvo.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/block/cciss.c |   32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-index 95c0433..2ee6bf1 100644
---- a/drivers/gpu/drm/i915/intel_sdvo.c
-+++ b/drivers/gpu/drm/i915/intel_sdvo.c
-@@ -1604,10 +1604,13 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
- 	 * arranged in priority order.
- 	 */
- 	intel_ddc_get_modes(connector, &intel_sdvo->ddc);
--	if (list_empty(&connector->probed_modes) == false)
--		goto end;
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index b0f553b..d3446f6 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -161,8 +161,6 @@ static irqreturn_t do_cciss_msix_intr(int irq, void *dev_id);
+ static int cciss_open(struct block_device *bdev, fmode_t mode);
+ static int cciss_unlocked_open(struct block_device *bdev, fmode_t mode);
+ static int cciss_release(struct gendisk *disk, fmode_t mode);
+-static int do_ioctl(struct block_device *bdev, fmode_t mode,
+-		    unsigned int cmd, unsigned long arg);
+ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
+ 		       unsigned int cmd, unsigned long arg);
+ static int cciss_getgeo(struct block_device *bdev, struct hd_geometry *geo);
+@@ -229,7 +227,7 @@ static const struct block_device_operations cciss_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = cciss_unlocked_open,
+ 	.release = cciss_release,
+-	.ioctl = do_ioctl,
++	.ioctl = cciss_ioctl,
+ 	.getgeo = cciss_getgeo,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl = cciss_compat_ioctl,
+@@ -1140,16 +1138,6 @@ static int cciss_release(struct gendisk *disk, fmode_t mode)
+ 	return 0;
+ }
  
--	/* Fetch modes from VBT */
-+	/*
-+	 * Fetch modes from VBT. For SDVO prefer the VBT mode since some
-+	 * SDVO->LVDS transcoders can't cope with the EDID mode. Since
-+	 * drm_mode_probed_add adds the mode at the head of the list we add it
-+	 * last.
-+	 */
- 	if (dev_priv->sdvo_lvds_vbt_mode != NULL) {
- 		newmode = drm_mode_duplicate(connector->dev,
- 					     dev_priv->sdvo_lvds_vbt_mode);
-@@ -1619,7 +1622,6 @@ static void intel_sdvo_get_lvds_modes(struct drm_connector *connector)
- 		}
- 	}
+-static int do_ioctl(struct block_device *bdev, fmode_t mode,
+-		    unsigned cmd, unsigned long arg)
+-{
+-	int ret;
+-	mutex_lock(&cciss_mutex);
+-	ret = cciss_ioctl(bdev, mode, cmd, arg);
+-	mutex_unlock(&cciss_mutex);
+-	return ret;
+-}
+-
+ #ifdef CONFIG_COMPAT
  
--end:
- 	list_for_each_entry(newmode, &connector->probed_modes, head) {
- 		if (newmode->type & DRM_MODE_TYPE_PREFERRED) {
- 			intel_sdvo->sdvo_lvds_fixed_mode =
+ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+@@ -1176,7 +1164,7 @@ static int cciss_compat_ioctl(struct block_device *bdev, fmode_t mode,
+ 	case CCISS_REGNEWD:
+ 	case CCISS_RESCANDISK:
+ 	case CCISS_GETLUNINFO:
+-		return do_ioctl(bdev, mode, cmd, arg);
++		return cciss_ioctl(bdev, mode, cmd, arg);
+ 
+ 	case CCISS_PASSTHRU32:
+ 		return cciss_ioctl32_passthru(bdev, mode, cmd, arg);
+@@ -1216,7 +1204,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
+ 	if (err)
+ 		return -EFAULT;
+ 
+-	err = do_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
++	err = cciss_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
+ 	if (err)
+ 		return err;
+ 	err |=
+@@ -1258,7 +1246,7 @@ static int cciss_ioctl32_big_passthru(struct block_device *bdev, fmode_t mode,
+ 	if (err)
+ 		return -EFAULT;
+ 
+-	err = do_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
++	err = cciss_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
+ 	if (err)
+ 		return err;
+ 	err |=
+@@ -1308,11 +1296,14 @@ static int cciss_getpciinfo(ctlr_info_t *h, void __user *argp)
+ static int cciss_getintinfo(ctlr_info_t *h, void __user *argp)
+ {
+ 	cciss_coalint_struct intinfo;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	intinfo.delay = readl(&h->cfgtable->HostWrite.CoalIntDelay);
+ 	intinfo.count = readl(&h->cfgtable->HostWrite.CoalIntCount);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user
+ 	    (argp, &intinfo, sizeof(cciss_coalint_struct)))
+ 		return -EFAULT;
+@@ -1353,12 +1344,15 @@ static int cciss_setintinfo(ctlr_info_t *h, void __user *argp)
+ static int cciss_getnodename(ctlr_info_t *h, void __user *argp)
+ {
+ 	NodeName_type NodeName;
++	unsigned long flags;
+ 	int i;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	for (i = 0; i < 16; i++)
+ 		NodeName[i] = readb(&h->cfgtable->ServerName[i]);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, NodeName, sizeof(NodeName_type)))
+ 		return -EFAULT;
+ 	return 0;
+@@ -1395,10 +1389,13 @@ static int cciss_setnodename(ctlr_info_t *h, void __user *argp)
+ static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
+ {
+ 	Heartbeat_type heartbeat;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	heartbeat = readl(&h->cfgtable->HeartBeat);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, &heartbeat, sizeof(Heartbeat_type)))
+ 		return -EFAULT;
+ 	return 0;
+@@ -1407,10 +1404,13 @@ static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
+ static int cciss_getbustypes(ctlr_info_t *h, void __user *argp)
+ {
+ 	BusTypes_type BusTypes;
++	unsigned long flags;
+ 
+ 	if (!argp)
+ 		return -EINVAL;
++	spin_lock_irqsave(&h->lock, flags);
+ 	BusTypes = readl(&h->cfgtable->BusTypes);
++	spin_unlock_irqrestore(&h->lock, flags);
+ 	if (copy_to_user(argp, &BusTypes, sizeof(BusTypes_type)))
+ 		return -EFAULT;
+ 	return 0;
 -- 
 1.7.10.4
 
