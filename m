@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965371Ab3GCTQi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:16:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20027 "EHLO
+	id S965326Ab3GCTQg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:16:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20493 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933451Ab3GCTAO (ORCPT
+	with ESMTP id S933591Ab3GCTAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 15:00:14 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=oEOFmBnEXU4A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6OMNPqgMwyMA:10 a=ASTB1Uf0AAAA:8 a=VwQbUJbxAAAA:8 a=OOrwYj2FSiaMdqAGCxgA:9 a=pDhNVk4yl4oA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=3secFIVIplEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qDHKUpw6SRIA:10 a=20KFwNOVAAAA:8 a=ufHFDILaAAAA:8 a=omOdbC7AAAAA:8 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=pQFG53Joc4AfjvbZiugA:9 a=jEp0ucaQiEUA:10 a=l7ZknGph1ugA:10 a=UTB_XpHje0EA:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184107.950822331@goodmis.org>
+Message-Id: <20130703184107.792578937@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:41:05 -0400
+Date: Wed, 03 Jul 2013 14:41:04 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alex Lyakas <alex@zadarastorage.com>, NeilBrown <neilb@suse.de>
-Subject: [128/141] md/raid1: consider WRITE as successful only if at least one
- non-Faulty and non-rebuilding drive completed it.
+Cc: Rafael Aquini <aquini@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [127/141] swap: avoid read_swap_cache_async() race to deadlock while waiting
+ on discard I/O completion
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0128-md-raid1-consider-WRITE-as-successful-only-if-at-lea.patch
+Content-Disposition: inline; filename=0127-swap-avoid-read_swap_cache_async-race-to-deadlock-wh.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,93 +33,69 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Lyakas <alex@zadarastorage.com>
+From: Rafael Aquini <aquini@redhat.com>
 
-[ Upstream commit 3056e3aec8d8ba61a0710fb78b2d562600aa2ea7 ]
+[ Upstream commit cbab0e4eec299e9059199ebe6daf48730be46d2b ]
 
-Without that fix, the following scenario could happen:
+read_swap_cache_async() can race against get_swap_page(), and stumble
+across a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought
+into the swapcache yet.
 
-- RAID1 with drives A and B; drive B was freshly-added and is rebuilding
-- Drive A fails
-- WRITE request arrives to the array. It is failed by drive A, so
-r1_bio is marked as R1BIO_WriteError, but the rebuilding drive B
-succeeds in writing it, so the same r1_bio is marked as
-R1BIO_Uptodate.
-- r1_bio arrives to handle_write_finished, badblocks are disabled,
-md_error()->error() does nothing because we don't fail the last drive
-of raid1
-- raid_end_bio_io()  calls call_bio_endio()
-- As a result, in call_bio_endio():
-        if (!test_bit(R1BIO_Uptodate, &r1_bio->state))
-                clear_bit(BIO_UPTODATE, &bio->bi_flags);
-this code doesn't clear the BIO_UPTODATE flag, and the whole master
-WRITE succeeds, back to the upper layer.
+This transient swap_map state is expected to be transitory, but the
+actual placement of discard at scan_swap_map() inserts a wait for I/O
+completion thus making the thread at read_swap_cache_async() to loop
+around its -EEXIST case, while the other end at get_swap_page() is
+scheduled away at scan_swap_map().  This can leave the system deadlocked
+if the I/O completion happens to be waiting on the CPU waitqueue where
+read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
 
-So we returned success to the upper layer, even though we had written
-the data onto the rebuilding drive only. But when we want to read the
-data back, we would not read from the rebuilding drive, so this data
-is lost.
+This patch introduces a cond_resched() call to make the aforementioned
+read_swap_cache_async() busy loop condition to bail out when necessary,
+thus avoiding the subtle race window.
 
-[neilb - applied identical change to raid10 as well]
-
-This bug can result in lost data, so it is suitable for any
--stable kernel.
-
-Cc: stable@vger.kernel.org
-Signed-off-by: Alex Lyakas <alex@zadarastorage.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Rafael Aquini <aquini@redhat.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Cc: Shaohua Li <shli@kernel.org>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/md/raid1.c  |   12 +++++++++++-
- drivers/md/raid10.c |   12 +++++++++++-
- 2 files changed, 22 insertions(+), 2 deletions(-)
+ mm/swap_state.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 36c6003..cda27cb 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -427,7 +427,17 @@ static void raid1_end_write_request(struct bio *bio, int error)
- 
- 		r1_bio->bios[mirror] = NULL;
- 		to_put = bio;
--		set_bit(R1BIO_Uptodate, &r1_bio->state);
-+		/*
-+		 * Do not set R1BIO_Uptodate if the current device is
-+		 * rebuilding or Faulty. This is because we cannot use
-+		 * such device for properly reading the data back (we could
-+		 * potentially use it, if the current write would have felt
-+		 * before rdev->recovery_offset, but for simplicity we don't
-+		 * check this here.
-+		 */
-+		if (test_bit(In_sync, &conf->mirrors[mirror].rdev->flags) &&
-+		    !test_bit(Faulty, &conf->mirrors[mirror].rdev->flags))
-+			set_bit(R1BIO_Uptodate, &r1_bio->state);
- 
- 		/* Maybe we can clear some bad blocks. */
- 		if (is_badblock(conf->mirrors[mirror].rdev,
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index bec9db8..5c3fb0b 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -475,7 +475,17 @@ static void raid10_end_write_request(struct bio *bio, int error)
- 		sector_t first_bad;
- 		int bad_sectors;
- 
--		set_bit(R10BIO_Uptodate, &r10_bio->state);
-+		/*
-+		 * Do not set R10BIO_Uptodate if the current device is
-+		 * rebuilding or Faulty. This is because we cannot use
-+		 * such device for properly reading the data back (we could
-+		 * potentially use it, if the current write would have felt
-+		 * before rdev->recovery_offset, but for simplicity we don't
-+		 * check this here.
-+		 */
-+		if (test_bit(In_sync, &rdev->flags) &&
-+		    !test_bit(Faulty, &rdev->flags))
-+			set_bit(R10BIO_Uptodate, &r10_bio->state);
- 
- 		/* Maybe we can clear some bad blocks. */
- 		if (is_badblock(rdev,
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index 0cb36fb..f854fbd 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -314,8 +314,24 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+ 		 * Swap entry may have been freed since our caller observed it.
+ 		 */
+ 		err = swapcache_prepare(entry);
+-		if (err == -EEXIST) {	/* seems racy */
++		if (err == -EEXIST) {
+ 			radix_tree_preload_end();
++			/*
++			 * We might race against get_swap_page() and stumble
++			 * across a SWAP_HAS_CACHE swap_map entry whose page
++			 * has not been brought into the swapcache yet, while
++			 * the other end is scheduled away waiting on discard
++			 * I/O completion at scan_swap_map().
++			 *
++			 * In order to avoid turning this transitory state
++			 * into a permanent loop around this -EEXIST case
++			 * if !CONFIG_PREEMPT and the I/O completion happens
++			 * to be waiting on the CPU waitqueue where we are now
++			 * busy looping, we just conditionally invoke the
++			 * scheduler here, if there are some more important
++			 * tasks to run.
++			 */
++			cond_resched();
+ 			continue;
+ 		}
+ 		if (err) {		/* swp entry is obsolete ? */
 -- 
 1.7.10.4
 
