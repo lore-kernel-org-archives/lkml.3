@@ -1,68 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964909Ab3GCSWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:22:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40721 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964792Ab3GCSWn (ORCPT
+	id S964896Ab3GCSW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:22:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29273 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab3GCSW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:22:43 -0400
-Date: Wed, 3 Jul 2013 19:22:24 +0100
-From: Mark Brown <broonie@kernel.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net,
-        Ryan Mallon <rmallon@gmail.com>, mika.westerberg@iki.fi,
-        grant.likely@linaro.org, hsweeten@visionengravers.com
-Message-ID: <20130703182224.GD27646@sirena.org.uk>
-References: <201307021009.00176.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fzqeIE+j4cN25Pqf"
-Content-Disposition: inline
-In-Reply-To: <201307021009.00176.hartleys@visionengravers.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 06/11] spi: spi-ep93xx: remove dev_err() for kzalloc()
- failure
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 3 Jul 2013 14:22:26 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=iOqIF9DObZoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=B34Q1QjHyxkA:10 a=-e53cmuEBXkvV6LJiWQA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372875744.22688.114.camel@gandalf.local.home>
+Subject: [PATCH stable 2.6.33+ ] tracing: Use current_uid() for critical
+ time tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+To: stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Wed, 03 Jul 2013 14:22:24 -0400
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+upstream commit f17a5194859a82afe4164e938b92035b86c55794
 
---fzqeIE+j4cN25Pqf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The irqsoff tracer records the max time that interrupts are disabled.
+There are hooks in the assembly code that calls back into the tracer when
+interrupts are disabled or enabled.
 
-On Tue, Jul 02, 2013 at 10:08:59AM -0700, H Hartley Sweeten wrote:
-> The kzalloc() failure will have already output a message.
+When they are enabled, the tracer checks if the amount of time they
+were disabled is larger than the previous recorded max interrupts off
+time. If it is, it creates a snapshot of the currently running trace
+to store where the last largest interrupts off time was held and how
+it happened.
 
-Applied, thanks.
+During testing, this RCU lockdep dump appeared:
 
---fzqeIE+j4cN25Pqf
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[ 1257.829021] ===============================
+[ 1257.829021] [ INFO: suspicious RCU usage. ]
+[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
+[ 1257.829021] -------------------------------
+[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
+[ 1257.829021]
+[ 1257.829021] other info that might help us debug this:
+[ 1257.829021]
+[ 1257.829021]
+[ 1257.829021] RCU used illegally from idle CPU!
+[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
+[ 1257.829021] RCU used illegally from extended quiescent state!
+[ 1257.829021] 2 locks held by trace-cmd/4831:
+[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
+[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
+[ 1257.829021]
+[ 1257.829021] stack backtrace:
+[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
+[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
+[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
+[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
+[ 1257.829021] Call Trace:
+[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
+[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
+[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
+[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
+[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
+[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
+[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+What happened was entering into the user code, the interrupts were enabled
+and a max interrupts off was recorded. The trace buffer was saved along with
+various information about the task: comm, pid, uid, priority, etc.
 
-iQIcBAEBAgAGBQJR1GvdAAoJELSic+t+oim9g5AP/1uFRYDfa4Fclshb1MqePv/9
-4n6ep42kQrDuyNcV9Bv5DHjUNpwRbblm/5w+TsYSd8/P5cYs0v6xQ+MeZjrYfd1q
-bXTDPeGpxwNL2xGUpd0bELmM5cmj+C38J3RkPJ4QeOEC0tnAcpJbx6PIDeJdVuj+
-x3GEMisEur8oKQGyl+Db/Qpe0y+IxKfJJXDgaJbEx4DymegDHR8gnC7BJbBzniXw
-NNszEeqR3nN0iw7LGNLmjkf3btSqenoen1y6GsHKhxSaJQPsgyKcdhjytAquiIaI
-hXunOLhnCnRMgfyZIRRnor2BTlXOer7KxD1fgPOSIJNARQD9ji7GGAmqAE0nG/uw
-ScbGWfGMDZlMIMrEPlTxbOUGAgwlQPcoaYsXgF5VgtRlbgYdjZEsiahym4h47nM3
-Uyan8xZkFyEbk3qtAm8RN1PZWBV8fMA/+Ms8EpeVCNdccX0phuIU3uFwSnMskX3n
-aA/YfIpWBDYmudXpM4l8+Zh1OdrtAbqLnxGKi/kUmIspTzzT/nCOrPobquG13BcC
-hUD8JQOi/fR4sntgNBAm4KPZTBp1dROc0/zcen7+U1cafzCDdhdTTUW2XMPwfMM6
-8H5YjRpiqE/hpwnEsNl0+IyYsyYP0ud/Kie0gP5yI/lzKDt28A1yx88yjPtiFcLH
-B/VYQ3Zz8Aj5s9EjZkfB
-=eYyE
------END PGP SIGNATURE-----
+The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
+to retrieve the data, and this happened to happen where RCU is blind (user_enter).
 
---fzqeIE+j4cN25Pqf--
+As only the preempt and irqs off tracers can have this happen, and they both
+only have the tsk == current, if tsk == current, use current_uid() instead of
+task_uid(), as current_uid() does not use RCU as only current can change its uid.
+
+This fixes the RCU suspicious splat.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+Index: stable-rt.git/kernel/trace/trace.c
+===================================================================
+--- stable-rt.git.orig/kernel/trace/trace.c	2013-07-03 14:00:56.713028912 -0400
++++ stable-rt.git/kernel/trace/trace.c	2013-07-03 14:00:56.685028248 -0400
+@@ -672,7 +672,15 @@ __update_max_tr(struct trace_array *tr,
+ 
+ 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
+ 	max_data->pid = tsk->pid;
+-	max_data->uid = task_uid(tsk);
++	/*
++	 * If tsk == current, then use current_uid(), as that does not use
++	 * RCU. The irq tracer can be called out of RCU scope.
++	 */
++	if (tsk == current)
++		max_data->uid = current_uid();
++	else
++		max_data->uid = task_uid(tsk);
++
+ 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+ 	max_data->policy = tsk->policy;
+ 	max_data->rt_priority = tsk->rt_priority;
+
+
