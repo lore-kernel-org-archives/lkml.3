@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933279Ab3GCVO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:14:29 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57659 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752340Ab3GCVO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:14:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Haicheng Li <haicheng.li@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 3/3] acpi: remove unused LIST_HEAD(acpi_device_list)
-Date: Wed, 03 Jul 2013 23:24:03 +0200
-Message-ID: <2729967.3EomeQlnR1@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1372864578-6925-3-git-send-email-haicheng.li@linux.intel.com>
-References: <1372864578-6925-1-git-send-email-haicheng.li@linux.intel.com> <1372864578-6925-3-git-send-email-haicheng.li@linux.intel.com>
+	id S933335Ab3GCVRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 17:17:38 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:48191 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756158Ab3GCVRg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 17:17:36 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <51D491AD.7050008@suse.cz>
+References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
+ <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com>
+ <87sj3tsawh.fsf@rustcorp.com.au> <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com>
+ <87hak8qfu5.fsf@rustcorp.com.au> <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com>
+ <87sj3qpwdz.fsf@rustcorp.com.au> <87a9m6sri3.fsf@rustcorp.com.au>
+ <9F26321B-7088-4D16-80D5-72EB388F8E49@redhat.com> <51D491AD.7050008@suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 3 Jul 2013 14:17:15 -0700
+Message-ID: <CALCETrWOUE=2fX1k+igfNizUfxRaZCc9NDgMzy7SM6fAjZMZuA@mail.gmail.com>
+Subject: Re: [RFC PATCH] Allow optional module parameters
+To: Michal Marek <mmarek@suse.cz>
+Cc: Jonathan Masters <jcm@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 03, 2013 11:16:18 PM Haicheng Li wrote:
-> Cc: Len Brown <lenb@kernel.org>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: linux-acpi@vger.kernel.org
-> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+On Wed, Jul 3, 2013 at 2:03 PM, Michal Marek <mmarek@suse.cz> wrote:
+> Dne 1.7.2013 18:33, Jonathan Masters napsal(a):
+>> One caveat. Sometimes we have manufactured parameters intentionally
+>> to cause a module to fail. We should standardize that piece.
+>
+> You have:
+>
+>   blacklist foo
+>
+> to prevent udev from loading a module and
+>
+>   install foo /bin/true
+>
+> to prevent modprobe from loading the module at all. What is the
+> motivation for inventing a third way, through adding invalid parameters?
+>
 
--ENOCHANGELOG
+FWIW, I've occasionally booted with modulename.garbage=1 to prevent
+modulename from loading at boot.  It may be worth adding a more
+intentional way to do that.
 
-Apart from this, please send the *whole* patchset to linux-acpi.
+--Andy
 
-Thanks,
-Rafael
-
-
-> ---
->  drivers/acpi/scan.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 27da630..fcc0cdc 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -29,7 +29,6 @@ extern struct acpi_device *acpi_root;
->  
->  static const char *dummy_hid = "device";
->  
-> -static LIST_HEAD(acpi_device_list);
->  static LIST_HEAD(acpi_bus_id_list);
->  static DEFINE_MUTEX(acpi_scan_lock);
->  static LIST_HEAD(acpi_scan_handlers_list);
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Andy Lutomirski
+AMA Capital Management, LLC
