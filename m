@@ -1,27 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab3GCVsP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:48:15 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57689 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932221Ab3GCVsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:48:13 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
+	id S933252Ab3GCVtN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 17:49:13 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:61893 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932241Ab3GCVtK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 17:49:10 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
-        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        Bob Moore <robert.moore@intel.com>
-Subject: Re: [PATCH 2/2] ACPI / OSL: add a wrapper function to return OSI version
-Date: Wed, 03 Jul 2013 23:57:52 +0200
-Message-ID: <3141401.j726us1HYg@vostro.rjw.lan>
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
+Date: Wed, 03 Jul 2013 23:58:48 +0200
+Message-ID: <2379111.jZKlkkBZzV@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51D2DD37.2040000@intel.com>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <51D2DC1D.60101@intel.com> <51D2DD37.2040000@intel.com>
+In-Reply-To: <CAErSpo5QQym0b828gq9sAjvh0SdbNhXo0mo8_dU1_52dTVO+GA@mail.gmail.com>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com> <1372860295-8306-7-git-send-email-mika.westerberg@linux.intel.com> <CAErSpo5QQym0b828gq9sAjvh0SdbNhXo0mo8_dU1_52dTVO+GA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -29,62 +36,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 02, 2013 10:01:27 PM Aaron Lu wrote:
-> Drivers may need to make policy decisions based on the OS that the firmware
-> believes it's interacting with. ACPI firmware will make a series of _OSI
-> calls, starting from the oldest OS version they support and ending with the
-> most recent. This patchset adds a function in ACPI OSL layer to return the
-> last successful call so that drivers know what the firmware's expecting.
+On Wednesday, July 03, 2013 03:45:50 PM Bjorn Helgaas wrote:
+> On Wed, Jul 3, 2013 at 8:04 AM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >
+> > Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+> > PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+> > deeper in hierarchy:
+> >
+> > Device (RP05)
+> > {
+> >    // ...
+> >    Device (HRUP)
+> >    {
+> >        // ...
+> >        Device (HRDN)
+> >        {
+> >            // ...
+> >            Device (EPUP)
+> >            {
+> >                // ...
+> >                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+> >                {
+> >                    Return (One)
+> >                }
+> >            }
+> >        }
+> >    }
+> > }
+> >
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > ---
+> >  drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
+> >  1 file changed, 13 insertions(+)
+> >
+> > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> > index 2a47e82..d92ebfb 100644
+> > --- a/drivers/pci/hotplug/acpi_pcihp.c
+> > +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> > @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+> >         status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+> >         if (ACPI_SUCCESS(status) && removable)
+> >                 return 1;
+> > +
+> > +       /*
+> > +        * Workaround for Thunderbolt implementation on Acer Aspire S5.
+> > +        *
+> > +        * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+> > +        * slot (device under pci bridge). In Acer Aspire S5 case we have it
+> > +        * deeper in hierarchy.
 > 
-> Based on a patch by Matthew Garrett <matthew.garrett@nebula.com>, which
-> is again based on a patch by Seth Forshee <seth.forshee@canonical.com>.
+> s/imeplementation/implementation/
 > 
-> Changelog-by: Matthew Garrett <matthew.garrett@nebula.com>
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-> Cc: Matthew Garrett <matthew.garrett@nebula.com>
-> Cc: Seth Forshee <seth.forshee@canonical.com>
-> ---
->  drivers/acpi/osl.c   | 6 ++++++
->  include/linux/acpi.h | 6 ++++++
->  2 files changed, 12 insertions(+)
-> 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 6ab2c35..7ebf07d 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -1799,3 +1799,9 @@ void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
->  		kfree(hp_work);
->  }
->  EXPORT_SYMBOL_GPL(alloc_acpi_hp_work);
-> +
-> +u8 acpi_osi_version(void)
-> +{
-> +	return acpi_gbl_osi_data;
-> +}
+> If you're casting aspersions on Acer for having an incorrect ACPI
+> implementation, you should probably provide a spec reference.  I think
+> it's likely that the Acer implementation is actually correct per the
+> spec, but Linux just isn't smart enough to handle it.
 
-Actually, is there a reason not to make this static inline and put it into
-the header?
+Agreed.
 
-Rafael
+> > +        */
+> > +       status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+> > +                       &removable);
+> > +       if (ACPI_SUCCESS(status) && removable)
+> > +               return 1;
+> > +
+> >         return 0;
+> >  }
+> >
+> > --
+> > 1.8.3.2
+> >
 
-
-> +EXPORT_SYMBOL_GPL(acpi_osi_version);
-> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-> index 353ba25..fc3b5c2 100644
-> --- a/include/linux/acpi.h
-> +++ b/include/linux/acpi.h
-> @@ -578,4 +578,10 @@ acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
->  })
->  #endif
->  
-> +#ifdef CONFIG_ACPI
-> +u8 acpi_osi_version(void);
-> +#else
-> +static inline u8 acpi_osi_version(void) { return 0; }
-> +#endif
-> +
->  #endif	/*_LINUX_ACPI_H*/
-> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
