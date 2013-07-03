@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab3GCOCJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:02:09 -0400
-Received: from mga09.intel.com ([134.134.136.24]:7914 "EHLO mga09.intel.com"
+	id S932820Ab3GCOCg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:02:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59992 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754158Ab3GCOCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:02:05 -0400
+	id S932081Ab3GCOCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:02:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,988,1363158000"; 
-   d="scan'208";a="359952427"
+   d="scan'208";a="364197909"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Bjorn Helgaas <bhelgaas@google.com>,
@@ -21,9 +21,9 @@ Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Yinghai Lu <yinghai@kernel.org>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
         linux-pci@vger.kernel.org, x86@kernel.org
-Subject: [PATCH v2 2/8] PCI: acpiphp: do not check for SLOT_ENABLED in enable_device()
-Date: Wed,  3 Jul 2013 17:04:49 +0300
-Message-Id: <1372860295-8306-3-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH v2 8/8] PCI: acpiphp: sanitize acpiphp_get_[latch|adapter]_status()
+Date: Wed,  3 Jul 2013 17:04:55 +0300
+Message-Id: <1372860295-8306-9-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -31,44 +31,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-
-With Thunderbolt you can chain devices: connect a new devices to plugged
-one. In this case the slot is already enabled, but we still want to look
-for new devices behind it.
-
-We're going to reuse enable_device() for rescan for new devices on the
-enabled slot. Let's push the check up by stack.
+There is no need for a temporary variable and all the tricks with ternary
+operators. Change the functions to be a bit more straightforward.
 
 Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index 59df857..b983e29 100644
+index 506f38f..810ca4c 100644
 --- a/drivers/pci/hotplug/acpiphp_glue.c
 +++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -688,9 +688,6 @@ static int __ref enable_device(struct acpiphp_slot *slot)
- 	int num, max, pass;
- 	LIST_HEAD(add_list);
- 
--	if (slot->flags & SLOT_ENABLED)
--		goto err_exit;
+@@ -1271,11 +1271,7 @@ u8 acpiphp_get_power_status(struct acpiphp_slot *slot)
+  */
+ u8 acpiphp_get_latch_status(struct acpiphp_slot *slot)
+ {
+-	unsigned int sta;
 -
- 	list_for_each_entry(func, &slot->funcs, sibling)
- 		acpiphp_bus_add(func);
+-	sta = get_slot_status(slot);
+-
+-	return (sta & ACPI_STA_DEVICE_UI) ? 0 : 1;
++	return !(get_slot_status(slot) & ACPI_STA_DEVICE_UI);
+ }
  
-@@ -1242,6 +1239,8 @@ int acpiphp_enable_slot(struct acpiphp_slot *slot)
- 		goto err_exit;
  
- 	if (get_slot_status(slot) == ACPI_STA_ALL) {
-+		if (slot->flags & SLOT_ENABLED)
-+			goto err_exit;
- 		/* configure all functions */
- 		retval = enable_device(slot);
- 		if (retval)
+@@ -1285,9 +1281,5 @@ u8 acpiphp_get_latch_status(struct acpiphp_slot *slot)
+  */
+ u8 acpiphp_get_adapter_status(struct acpiphp_slot *slot)
+ {
+-	unsigned int sta;
+-
+-	sta = get_slot_status(slot);
+-
+-	return (sta == 0) ? 0 : 1;
++	return !!get_slot_status(slot);
+ }
 -- 
 1.8.3.2
 
