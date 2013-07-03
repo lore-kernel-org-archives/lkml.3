@@ -1,142 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab3GCJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 05:34:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38747 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932261Ab3GCJeG convert rfc822-to-8bit (ORCPT
+	id S932599Ab3GCJgn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 05:36:43 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:51192 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932221Ab3GCJgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 05:34:06 -0400
-From: "Patel, Satish" <satish.patel@ti.com>
-To: "ABRAHAM, KISHON VIJAY" <kishon@ti.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "tony@atomide.com" <tony@atomide.com>, "Balbi, Felipe" <balbi@ti.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "sylvester.nawrocki@gmail.com" <sylvester.nawrocki@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "cesarb@cesarb.net" <cesarb@cesarb.net>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        "Cherian, George" <george.cherian@ti.com>
-Subject: RE: [PATCH v9 0/8] Generic PHY Framework
-Thread-Topic: [PATCH v9 0/8] Generic PHY Framework
-Thread-Index: AQHOdw77xykZy/FeEkimWDEHI8wd/plSghWw
-Date: Wed, 3 Jul 2013 09:32:58 +0000
-Message-ID: <780E789C2E067A4BB8F69D0BB9EC4F253E975B5E@DBDE04.ent.ti.com>
-References: <1372247257-30186-1-git-send-email-kishon@ti.com>
-In-Reply-To: <1372247257-30186-1-git-send-email-kishon@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Wed, 3 Jul 2013 05:36:42 -0400
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Wed, 03 Jul 2013 11:36:39 +0200
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, ydroneaud@opteya.com
+Subject: Re: [PATCH] MAINTAINERS: xfs@oss.sgi.com is a list
+Organization: OPTEYA
+In-Reply-To: <20130703092406.GM14996@dastard>
+References: <1372777248-4114-1-git-send-email-ydroneaud@opteya.com>
+ <20130703064026.GL14996@dastard> <c229feab100a72240128ef81297680a1@meuh.org>
+ <20130703092406.GM14996@dastard>
+Message-ID: <5e9d66217e0fa968863177d73dd492b1@meuh.org>
+User-Agent: Roundcube Webmail/0.9.2
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
-
-> -----Original Message-----
-> From: ABRAHAM, KISHON VIJAY
-> Sent: Wednesday, June 26, 2013 5:17 PM
-> To: grant.likely@linaro.org; tony@atomide.com; Balbi, Felipe; ABRAHAM,
-> KISHON VIJAY; arnd@arndb.de; swarren@nvidia.com;
-> sylvester.nawrocki@gmail.com; linux-kernel@vger.kernel.org; linux-
-> omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> usb@vger.kernel.org; gregkh@linuxfoundation.org; akpm@linux-
-> foundation.org
-> Cc: rob.herring@calxeda.com; rob@landley.net; linux@arm.linux.org.uk;
-> benoit.cousson@linaro.org; mchehab@redhat.com; cesarb@cesarb.net;
-> davem@davemloft.net; Nayak, Rajendra; shawn.guo@linaro.org; Shilimkar,
-> Santosh; devicetree-discuss@lists.ozlabs.org; linux-
-> doc@vger.kernel.org; Nori, Sekhar; Krishnamoorthy, Balaji T; Cherian,
-> George
-> Subject: [PATCH v9 0/8] Generic PHY Framework
+Le 03.07.2013 11:24, Dave Chinner a Ã©critÂ :
+> On Wed, Jul 03, 2013 at 10:14:41AM +0200, Yann Droneaud wrote:
+>> Le 03.07.2013 08:40, Dave Chinner a Ã©critÂ :
+>> >On Tue, Jul 02, 2013 at 05:00:47PM +0200, Yann Droneaud wrote:
+>> >>This patch changes type of xfs@oss.sgi.com
+>> >>
+>> >>The output of ./scripts/get_maintainer.pl is
+>> >>modified to report xfs@oss.sgi.com as a list:
+>> >
+>> >What's the problem with that? All XFS patches and problem
+>> >reports should be sent to the xfs@oss.sgi.com list. There are far
+>> >more people than just the maintainer that can triage problems,
+>> >answer questions and review patches...
+>> >
+>> 
+>> It was just disturbing: I was looking for a list for XFS
+>> and found only maintainers.
 > 
-> Added a generic PHY framework that provides a set of APIs for the PHY
-> drivers
-> to create/destroy a PHY and APIs for the PHY users to obtain a
-> reference to
-> the PHY with or without using phandle.
+> That's what the:
 > 
-> This framework will be of use only to devices that uses external PHY
-> (PHY
-> functionality is not embedded within the controller).
+> L:      xfs@oss.sgi.com
 > 
-> The intention of creating this framework is to bring the phy drivers
-> spread
-> all over the Linux kernel to drivers/phy to increase code re-use and
-> to
-> increase code maintainability.
+> entry is, yes?
+> 
 
-I would like to use this framework for a smart-card controller connected to a
-smart-card phy. I have some questions and would like to get feedback on the same.
+In the output of ./scripts/get_maintainer.pl:
 
-I am using “TDA8026" Smartcard PHY from NXP. Here is the link for datasheet
-and app note for the same. The smart card controller is inside the TI SoC
-I am working with.
+Ben Myers <bpm@sgi.com> (supporter:XFS FILESYSTEM)
+Alex Elder <elder@kernel.org> (supporter:XFS FILESYSTEM)
+xfs@oss.sgi.com (supporter:XFS FILESYSTEM)
+linux-kernel@vger.kernel.org (open list)
 
-Datasheet : 
-www.nxp.com/documents/data_sheet/TDA8026.pdf?
+[If having the mailing list listed as the maintainer/supporter is 
+correct,
+  could ./scripts/get_maintainer.pl also report the mailing list as a 
+list ?]
 
-Appnote :
-http://www.nxp.com/documents/application_note/AN10724.pdf
+Regards.
 
-The TI SoC details are not public (yet). I can provide details to you offline.
-
-Brief about operation:
--	The controller can work with and without a PHY
--	When not using PHY, it is limited to talking to a single
-	smart card. There is also a need to put external de-activation logic
-	on card removal for this case.
--	With a PHY you can use more than one smart card.
--	Phy has 5 slots :  1 for smart card (credit/debit/other card with chip) 
-      and others for SAM – SIM like modules
-- 	Once the PHY is initialized, there are some operations that the controller
-	can request of the PHY like:
-	- Card configurations  - set voltage
-	- Activation of card
-	- ATR – Answer to reset
-	- Warm reset
-	- ADPU exchange
-	- Deactivation ( Normal/Emergency)
-- 	In the mode when smartcard controller talks directly to the card	without the need
-	for a PHY, all the above operations will be carried	out by the controller itself
-
-My current thought process is to make the controller driver provide the user interface
-and talk to the PHY using the generic PHY framework you proposed. In the case where there
-is no PHY, my idea is to create a "dummy" PHY which uses the controller functionality itself.
-
-What I seem to be missing from the PHY framework is support for event detection and generic
-read/write API which will enable the controller to talk to the PHY for the operations listed
-above and also react to events from the PHY.
-
-Is there a reason why such functionality has not been included. If it was only a case
-of lack of use case, then do you think it will be useful to extend the framework to add
-such functionality? I can help with the development.
-
-Thanks,
-Satish
+-- 
+Yann Droneaud
+OPTEYA
 
