@@ -1,238 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932716Ab3GCRVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 13:21:12 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51786 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753358Ab3GCRVK (ORCPT
+	id S932773Ab3GCRVc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 13:21:32 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35528 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784Ab3GCRVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 13:21:10 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Guenter Roeck'" <linux@roeck-us.net>
-Cc: <linux-kernel@vger.kernel.org>, <lm-sensors@lm-sensors.org>
-References: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com> <20130703144201.GA10323@roeck-us.net> <007101ce7807$88cfb160$9a6f1420$@lucidpixels.com> <20130703163311.GB12506@roeck-us.net> <008001ce780d$0d1a79f0$274f6dd0$@lucidpixels.com> <20130703171713.GA26555@roeck-us.net>
-In-Reply-To: <20130703171713.GA26555@roeck-us.net>
-Subject: RE: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro X9SRL-F motherboard
-Date: Wed, 3 Jul 2013 13:21:06 -0400
-Message-ID: <008e01ce7811$b50c9180$1f25b480$@lucidpixels.com>
+	Wed, 3 Jul 2013 13:21:31 -0400
+Date: Wed, 3 Jul 2013 18:20:01 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, Joseph Lo <josephl@nvidia.com>,
+        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
+Message-ID: <20130703172001.GH24642@n2100.arm.linux.org.uk>
+References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org> <20130702232259.GH11625@codeaurora.org> <51D39004.9000907@wwwdotorg.org> <20130703051907.GA22702@windriver.com> <20130703100044.GG24642@n2100.arm.linux.org.uk> <20130703153012.GK22702@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIBG1i38eH5ocpI2BHQpKIJ/u+ELQK02s2OAOyqsYwB45ZSoAJZuzqdAnnKLoSYmybvYA==
-Content-language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130703153012.GK22702@windriver.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
------Original Message-----
-From: Guenter Roeck [mailto:linux@roeck-us.net] 
-Sent: Wednesday, July 03, 2013 1:17 PM
-To: Justin Piszcz
-Cc: linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
-X9SRL-F motherboard
-
-[ .. ]
-
-Can you try http://roeck-us.net/linux/bin/superiotool ?
-
-Sure, below:
-
-$ sudo ./superiotool 
-superiotool r4.0-2514-gf419483
-Found Nuvoton WPCM450 (id=0x1a11, rev=0x00) at 0x164e
-Found Nuvoton NCT6776F (C) (id=0xc333) at 0x2e
-$ sudo ./superiotool -V -e
-Probing for Nuvoton Super I/O (sid=0xfc) at 0x164e...
-Found Nuvoton WPCM450 (id=0x1a11, rev=0x00) at 0x164e
-Probing for Nuvoton Super I/O at 0x2e...
-Found Nuvoton NCT6776F (C) (id=0xc333) at 0x2e
-Bank 0:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: 03 33 03 33 00 ff ff ff ff ff ff ff ff ff ff ff 
-01: 04 ff 00 00 00 00 ff ff 00 00 00 00 00 83 00 00 
-02: 69 e6 ce ce bc 9e 84 2b ff ff ff ba 43 f9 cb e3 
-03: ba e3 ba ce a9 ac 8d a8 73 4b 46 ff ff ff ff ff 
-04: 03 fe 58 ff ff 80 3f ff 2d ff ff ff 10 05 00 a3 
-05: ff ff ff ff ff ff ff ff c1 ff ff ff ff 01 00 ff 
-06: 00 ff ff ff ff 01 07 ff ff ff ff ff ff ff ff ff 
-07: 00 0a 00 21 00 00 00 17 00 ff ff ff ff ff ff ff 
-08: ff 03 1f 0f ff 3c 3c 3c 00 00 00 00 00 00 00 00 
-09: 0a 00 00 00 00 0a 0a 0a 0a aa ef 80 ff 40 46 c4 
-0a: 0e 01 00 00 ff 00 00 ff 00 00 80 66 66 06 01 01 
-0b: 00 00 00 00 02 01 35 00 1c 00 00 04 38 c0 c4 ff 
-0c: 01 00 00 00 00 00 00 00 00 07 02 ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Bank 1:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: 82 00 00 01 01 28 01 3c ff 33 ff ff 00 ff ff ff 
-01: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-02: 01 23 28 37 37 ff ff 28 51 ff ff ff ff ff ff ff 
-03: ff 00 ff ff 00 55 ff ff 05 01 00 00 00 00 00 00 
-04: ff ff ff ff ff d9 03 ff ff ff ff ff ff ff 01 ff 
-05: 00 00 00 5c 00 5f 00 ff ff ff ff ff ff ff ff ff 
-06: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-07: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-08: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-09: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0a: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0b: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0c: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Bank 2:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: 8c 32 00 01 01 33 01 3c ff 33 ff ff 00 ff ff ff 
-01: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-02: 01 32 5a 5a 5a ff ff 33 ff ff ff ff ff ff ff ff 
-03: ff 00 ff ff 00 5f ff ff 03 01 00 00 00 00 00 00 
-04: ff ff ff ff ff 2c 05 ff ff ff ff ff ff ff 02 ff 
-05: 21 00 00 5c 00 5f 00 ff ff ff ff ff ff ff ff ff 
-06: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-07: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-08: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-09: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0a: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0b: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0c: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Bank 3:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: 03 00 00 0a 0a 01 01 3c ff ff ff ff 00 ff ff ff 
-01: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-02: 00 19 23 2d 37 ff ff 8c aa c8 e6 ff ff ff ff ff 
-03: ff 00 ff ff 00 3c ff ff 00 01 00 00 00 00 00 00 
-04: ff ff ff ff ff 48 04 ff ff ff ff ff ff ff 03 ff 
-05: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-06: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-07: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-08: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-09: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0a: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0b: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0c: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Bank 4:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 
-01: 00 00 00 00 00 00 00 00 00 00 00 ff ff ff ff ff 
-02: ff ff ff 96 64 96 64 e1 96 ff ff ff ff ff ff ff 
-03: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-04: 3f 00 03 ff ff ff ff ff ff ff ff ff ff ff 04 ff 
-05: 31 13 ff ff 00 00 00 ff 00 20 12 00 09 ff ff ff 
-06: ff 01 00 00 00 00 00 00 ff ff ff ff ff ff ff ff 
-07: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-08: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-09: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0a: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0b: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0c: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Bank 5:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: ff ff 00 00 00 00 ff ff ff ff ff ff ff 00 00 ff 
-01: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-02: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-03: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-04: ff ff ff ff ff ff ff ff ff ff ff ff ff ff 05 ff 
-05: df d9 c0 ff e3 ba e3 a9 ff ff ff ff ff ff ff ff 
-06: 00 00 00 00 00 00 07 01 01 ff ff ff ff ff ff ff 
-07: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-08: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-09: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0a: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0b: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0c: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Bank 6:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: 00 00 ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-01: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-02: ff 01 0c 02 03 01 01 ff 00 00 00 17 2b 2b 00 ff 
-03: 2a 1a 1f 1c 26 0f 26 1f 2a 04 3c 06 3c 06 3c 06 
-04: 3c 06 3c 06 02 02 02 ff ff ff ff ff ff ff 06 ff 
-05: 7f 7f 7f 7f 7f 7f 03 d9 05 2b 04 48 04 3a 03 e9 
-06: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-07: 7f 7f 50 4b 04 7f 7f 50 4b 04 7f 7f 50 4b 04 ff 
-08: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-09: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0a: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0b: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0c: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Bank 7:
-    00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-00: ff 95 02 10 00 00 00 00 00 64 00 00 00 00 00 00 
-01: 00 00 00 00 00 00 00 f8 80 f8 80 f8 80 f8 80 00 
-02: 28 00 06 00 00 09 00 00 00 ef 00 00 00 00 00 00 
-03: 00 00 00 ff ff ff ff ff ff ff ff ff ff ff ff ff 
-04: ff ff ff ff ff ff ff ff ff ff ff ff ff ff 07 ff 
-05: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-06: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-07: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-08: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-09: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0a: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0b: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0c: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0d: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0e: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-0f: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff 
-Probing for Nuvoton Super I/O at 0x4e...
-  Failed. Returned data: chip_id=0xffff
-Probing for Nuvoton Super I/O (sid=0xfc) at 0x4e...
-
-
-> [ .. ]
+On Wed, Jul 03, 2013 at 11:30:12AM -0400, Paul Gortmaker wrote:
+> [Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 11:00) Russell King - ARM Linux wrote:
 > 
-> You have to specify the raw attribute names, not the symbolic ones.
-> You see the raw attribute names with "sensors -u".
+> > On Wed, Jul 03, 2013 at 01:19:07AM -0400, Paul Gortmaker wrote:
+> > > As an aside, I'm now thinking any __INIT that implicitly rely on EOF for
+> > > closure are nasty traps waiting to happen and it might be worthwhile to
+> > > audit and explicitly __FINIT them before someone appends to the file...
+> > 
+> > That hides a different kind of bug though - I hate __FINIT for exactly
+> > that reason.  Consider this:
 > 
-It has to be
-	ignore temp8
-	ignore temp9
-	ignore temp10
+> Agreed - perhaps masking that it is a ".previous" just hides the fact
+> that it is more like a pop operation vs. an on/off operation, or per
+> function as we have in C.
 
-Woohoo! Thank you.
+I read the info pages, because I thought it was a pop operation too.
+I was concerned that .section didn't push the previous section onto the
+stack.
 
-nct6776-isa-0a30
-Adapter: ISA adapter
-Vcore:        +0.83 V  (min =  +0.54 V, max =  +1.49 V)
-in1:          +1.85 V  (min =  +1.62 V, max =  +1.99 V)
-AVCC:         +3.30 V  (min =  +2.98 V, max =  +3.63 V)
-+3.3V:        +3.28 V  (min =  +2.98 V, max =  +3.63 V)
-in4:          +1.50 V  (min =  +1.35 V, max =  +1.65 V)
-in5:          +1.26 V  (min =  +1.13 V, max =  +1.38 V)
-in6:          +1.06 V  (min =  +0.92 V, max =  +1.34 V)
-3VSB:         +3.57 V  (min =  +2.98 V, max =  +3.63 V)
-Vbat:         +3.47 V  (min =  +2.70 V, max =  +3.63 V)
-fan1:        1010 RPM  (min =  700 RPM)
-fan2:        1324 RPM  (min =  700 RPM)
-fan3:        1102 RPM  (min =  700 RPM)
-fan4:        1062 RPM  (min =  700 RPM)
-fan5:         991 RPM  (min =  700 RPM)
-SYSTIN:       +43.0 C  (high = +75.0 C, hyst = +70.0 C)  sensor = thermistor
-CPUTIN:       +33.0 C  (high = +95.0 C, hyst = +92.0 C)  ALARM  sensor =
-thermistor
-AUXTIN:       +23.0 C  (high = +80.0 C, hyst = +75.0 C)  sensor = thermistor
+However, .popsection is the pseudio-op which pops.  .previous just toggles
+the current section with the section immediately before it.
 
-Justin.
+So:
 
+	.text
+	.data
+	.previous
+	/* this is .text */
+	.previous
+	/* this is .data */
+	.previous
+	/* this is .text */
+	.previous
+	/* this is .data */
 
+> That seems reasonable to me.  I can't think of any self auditing that is
+> reasonably simple to implement.  One downside of __FINIT as a no-op vs.
+> what it is today, is that a dangling __FINIT in a file with no other
+> previous sections will emit a warning.  But that is a small low value
+> corner case I think.
+
+That warning from __FINIT will only happen if there has been no section
+or .text or .data statement in the file at all.  As soon as you have any
+statement setting any kind of section, .previous doesn't warn.
+
+So:
+
+	.text
+	...
+	__FINIT
+
+produces no warning.
