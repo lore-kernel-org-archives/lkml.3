@@ -1,170 +1,342 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab3GCDWi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 23:22:38 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:50116 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab3GCDWh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 23:22:37 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: bintian.wang@linaro.org
-Cc: linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
-        dmitry pervushin <dpervushin@gmail.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>, Sean McNeil <sean@mcneil.com>
-Subject: Re: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
-References: <1372817982-3917-1-git-send-email-bintian.wang@linaro.org>
-Date: Wed, 03 Jul 2013 12:22:33 +0900
-In-Reply-To: <1372817982-3917-1-git-send-email-bintian.wang@linaro.org>
-	(bintian wang's message of "Wed, 3 Jul 2013 10:19:42 +0800")
-Message-ID: <8738rwqqdi.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1755663Ab3GCDWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 23:22:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:36089 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755209Ab3GCDWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 23:22:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,984,1363104000"; 
+   d="scan'208";a="7767472"
+Message-ID: <51D398FE.7060700@cn.fujitsu.com>
+Date: Wed, 03 Jul 2013 11:22:38 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Kees Cook <keescook@chromium.org>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@alien8.de>,
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Jacob Shin <jacob.shin@amd.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [RESEND][PATCH] x86, relocs: move ELF relocation handling to
+ C
+References: <20130702182206.GA4055@www.outflux.net>
+In-Reply-To: <20130702182206.GA4055@www.outflux.net>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/03 11:21:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/03 11:21:11,
+	Serialize complete at 2013/07/03 11:21:11
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bintian.wang@linaro.org writes:
+Hello Kees,
 
-> From: Mike Lockwood <lockwood@android.com>
->
-> This patch, originally from Android kernel, adds vfat ioctl command
-> FAT_IOCTL_GET_VOLUME_ID, with this command we can get the vfat volume ID using
-> following code:
->
-> 	ioctl(fd, FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
->
-> This patch is a modified version of the patch by Mike Lockwood, with changes
-> from Dmitry Pervushin, who noticed the original patch makes some volume IDs
-> abiguous with error returns: for example, if volume id is 0xFFFFFDAD, that
-> matches -ENOIOCTLCMD, we get "FFFFFFFF" from the user space.
->
-> So add a parameter to ioctl to get the correct volume ID.
->
-> Android uses vfat volume ID to identify different sd card, when a new sd card
-> is inserted to device, android can scan the media on it and pop up new contents.
-
-Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-
-Thanks.
-
-> Cc: dmitry pervushin <dpervushin@gmail.com>
-> Cc: Mike Lockwood <lockwood@android.com>
-> Cc: Colin Cross <ccross@android.com>
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Sean McNeil <sean@mcneil.com>
->
-> Signed-off-by: Bintian Wang <bintian.wang@linaro.org>
+On 07/03/2013 02:22 AM, Kees Cook wrote:
+> Moves the relocation handling into C, after decompression. This requires
+> that the decompressed size is passed to the decompression routine as
+> well so that relocations can be found. Only kernels that need relocation
+> support will use the code (currently just x86_32), but this is laying
+> the ground work for 64-bit support in support of KASLR.
+> 
+> Based on work by Neill Clift and Michael Davidson.
+> 
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 > ---
->  fs/fat/fat.h                  |    1 +
->  fs/fat/file.c                 |    8 ++++++++
->  fs/fat/inode.c                |   12 ++++++++++++
->  include/uapi/linux/msdos_fs.h |   10 ++++++++++
->  4 files changed, 31 insertions(+)
->
-> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-> index 21664fc..4241e6f 100644
-> --- a/fs/fat/fat.h
-> +++ b/fs/fat/fat.h
-> @@ -86,6 +86,7 @@ struct msdos_sb_info {
->  	const void *dir_ops;	      /* Opaque; default directory operations */
->  	int dir_per_block;	      /* dir entries per block */
->  	int dir_per_block_bits;	      /* log2(dir_per_block) */
-> +	unsigned int vol_id;		/*volume ID*/
+>  arch/x86/Kconfig                     |    4 +-
+>  arch/x86/Makefile                    |    8 ++--
+>  arch/x86/boot/compressed/head_32.S   |   31 ++------------
+>  arch/x86/boot/compressed/head_64.S   |    1 +
+>  arch/x86/boot/compressed/misc.c      |   77 +++++++++++++++++++++++++++++++++-
+>  arch/x86/include/asm/page_32_types.h |    2 +
+>  arch/x86/include/asm/page_64_types.h |    5 ---
+>  arch/x86/include/asm/page_types.h    |    6 +++
+>  8 files changed, 94 insertions(+), 40 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index fe120da..f11ad6f 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1695,13 +1695,13 @@ config RELOCATABLE
+>  	  it has been loaded at and the compile time physical address
+>  	  (CONFIG_PHYSICAL_START) is ignored.
 >  
->  	int fatent_shift;
->  	struct fatent_operations *fatent_ops;
-> diff --git a/fs/fat/file.c b/fs/fat/file.c
-> index b0b632e..9b104f5 100644
-> --- a/fs/fat/file.c
-> +++ b/fs/fat/file.c
-> @@ -114,6 +114,12 @@ out:
->  	return err;
+> -# Relocation on x86-32 needs some additional build support
+> +# Relocation on x86 needs some additional build support
+>  config X86_NEED_RELOCS
+>  	def_bool y
+>  	depends on X86_32 && RELOCATABLE
+
+Here it still actually depends on x86_32, so why change the comment?
+
+>  
+>  config PHYSICAL_ALIGN
+> -	hex "Alignment value to which kernel should be aligned" if X86_32
+> +	hex "Alignment value to which kernel should be aligned"
+>  	default "0x1000000"
+>  	range 0x2000 0x1000000
+
+If you open this option for x86_64, the range should be modified a bit
+to indicate the fact that on x86_64, the alignment of the kernel should
+be at least 2M and the alignment itself should be 2M aligned.
+
+otherwise, someone specifies an incorrect value here, say 0x300000,
+which will cause the error:
+
+#error "Invalid value for CONFIG_PHYSICAL_ALIGN"
+
+when compiling the kernel.
+
+>  	---help---
+> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+> index 5c47726..43f8cef 100644
+> --- a/arch/x86/Makefile
+> +++ b/arch/x86/Makefile
+> @@ -16,6 +16,10 @@ endif
+>  # e.g.: obj-y += foo_$(BITS).o
+>  export BITS
+>  
+> +ifdef CONFIG_X86_NEED_RELOCS
+> +        LDFLAGS_vmlinux := --emit-relocs
+> +endif
+> +
+>  ifeq ($(CONFIG_X86_32),y)
+>          BITS := 32
+>          UTS_MACHINE := i386
+> @@ -25,10 +29,6 @@ ifeq ($(CONFIG_X86_32),y)
+>          KBUILD_AFLAGS += $(biarch)
+>          KBUILD_CFLAGS += $(biarch)
+>  
+> -        ifdef CONFIG_RELOCATABLE
+> -                LDFLAGS_vmlinux := --emit-relocs
+> -        endif
+> -
+>          KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
+>  
+>          # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
+> diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
+> index 1e3184f..5d6f689 100644
+> --- a/arch/x86/boot/compressed/head_32.S
+> +++ b/arch/x86/boot/compressed/head_32.S
+> @@ -181,8 +181,9 @@ relocated:
+>  /*
+>   * Do the decompression, and jump to the new kernel..
+>   */
+> -	leal	z_extract_offset_negative(%ebx), %ebp
+>  				/* push arguments for decompress_kernel: */
+> +	pushl	$z_output_len	/* decompressed length */
+> +	leal	z_extract_offset_negative(%ebx), %ebp
+>  	pushl	%ebp		/* output address */
+>  	pushl	$z_input_len	/* input_len */
+>  	leal	input_data(%ebx), %eax
+> @@ -191,33 +192,7 @@ relocated:
+>  	pushl	%eax		/* heap area */
+>  	pushl	%esi		/* real mode pointer */
+>  	call	decompress_kernel
+> -	addl	$20, %esp
+> -
+> -#if CONFIG_RELOCATABLE
+> -/*
+> - * Find the address of the relocations.
+> - */
+> -	leal	z_output_len(%ebp), %edi
+> -
+> -/*
+> - * Calculate the delta between where vmlinux was compiled to run
+> - * and where it was actually loaded.
+> - */
+> -	movl	%ebp, %ebx
+> -	subl	$LOAD_PHYSICAL_ADDR, %ebx
+> -	jz	2f	/* Nothing to be done if loaded at compiled addr. */
+> -/*
+> - * Process relocations.
+> - */
+> -
+> -1:	subl	$4, %edi
+> -	movl	(%edi), %ecx
+> -	testl	%ecx, %ecx
+> -	jz	2f
+> -	addl	%ebx, -__PAGE_OFFSET(%ebx, %ecx)
+> -	jmp	1b
+> -2:
+> -#endif
+> +	addl	$24, %esp
+>  
+>  /*
+>   * Jump to the decompressed kernel.
+> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
+> index 16f24e6..6632693 100644
+> --- a/arch/x86/boot/compressed/head_64.S
+> +++ b/arch/x86/boot/compressed/head_64.S
+> @@ -340,6 +340,7 @@ relocated:
+>  	leaq	input_data(%rip), %rdx  /* input_data */
+>  	movl	$z_input_len, %ecx	/* input_len */
+>  	movq	%rbp, %r8		/* output target address */
+> +	movq	$z_output_len, %r9	/* decompressed length */
+>  	call	decompress_kernel
+>  	popq	%rsi
+>  
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 7cb56c6..b756a04 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -267,6 +267,79 @@ static void error(char *x)
+>  		asm("hlt");
 >  }
 >  
-> +static int fat_ioctl_get_volume_id(struct inode *inode, u32 __user *user_attr)
+> +#if CONFIG_X86_NEED_RELOCS
+> +static void handle_relocations(void *output, unsigned long output_len)
 > +{
-> +	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-> +	return put_user(sbi->vol_id, user_attr);
+> +	int *reloc;
+> +	unsigned long delta, map, ptr;
+> +	unsigned long min_addr = (unsigned long)output;
+> +	unsigned long max_addr = min_addr + output_len;
+> +
+> +	/*
+> +	 * Calculate the delta between where vmlinux was linked to load
+> +	 * and where it was actually loaded.
+> +	 */
+> +	delta = min_addr - LOAD_PHYSICAL_ADDR;
+> +	if (!delta) {
+> +		debug_putstr("No relocation needed... ");
+> +		return;
+> +	}
+> +	debug_putstr("Performing relocations... ");
+> +
+> +	/*
+> +	 * The kernel contains a table of relocation addresses. Those
+> +	 * addresses have the final load address of the kernel in virtual
+> +	 * memory. We are currently working in the self map. So we need to
+> +	 * create an adjustment for kernel memory addresses to the self map.
+> +	 * This will involve subtracting out the base address of the kernel.
+> +	 */
+> +	map = delta - __START_KERNEL_map;
+> +
+> +	/*
+> +	 * Process relocations: 32 bit relocations first then 64 bit after.
+> +	 * Two sets of binary relocations are added to the end of the kernel
+> +	 * before compression. Each relocation table entry is the kernel
+> +	 * address of the location which needs to be updated stored as a
+> +	 * 32-bit value which is sign extended to 64 bits.
+> +	 *
+> +	 * Format is:
+> +	 *
+> +	 * kernel bits...
+> +	 * 0 - zero terminator for 64 bit relocations
+> +	 * 64 bit relocation repeated
+> +	 * 0 - zero terminator for 32 bit relocations
+> +	 * 32 bit relocation repeated
+> +	 *
+> +	 * So we work backwards from the end of the decompressed image.
+> +	 */
+> +	for (reloc = output + output_len - sizeof(*reloc); *reloc; reloc--) {
+> +		int extended = *reloc;
+> +		extended += map;
+> +
+> +		ptr = (unsigned long)extended;
+> +		if (ptr < min_addr || ptr > max_addr)
+> +			error("32-bit relocation outside of kernel!\n");
+> +
+> +		*(uint32_t *)ptr += delta;
+> +	}
+> +#ifdef CONFIG_X86_64
+> +	for (reloc--; *reloc; reloc--) {
+> +		long extended = *reloc;
+> +		extended += map;
+> +
+> +		ptr = (unsigned long)extended;
+> +		if (ptr < min_addr || ptr > max_addr)
+> +			error("64-bit relocation outside of kernel!\n");
+> +
+> +		*(uint64_t *)ptr += delta;
+> +	}
+> +#endif
 > +}
+> +#else
+> +static inline void handle_relocations(void *output, unsigned long output_len)
+> +{ }
+> +#endif
 > +
->  long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  static void parse_elf(void *output)
 >  {
->  	struct inode *inode = file_inode(filp);
-> @@ -124,6 +130,8 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  		return fat_ioctl_get_attributes(inode, user_attr);
->  	case FAT_IOCTL_SET_ATTRIBUTES:
->  		return fat_ioctl_set_attributes(filp, user_attr);
-> +	case FAT_IOCTL_GET_VOLUME_ID:
-> +		return fat_ioctl_get_volume_id(inode, user_attr);
->  	default:
->  		return -ENOTTY;	/* Inappropriate ioctl for device */
->  	}
-> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-> index 5d4513c..11b51bb 100644
-> --- a/fs/fat/inode.c
-> +++ b/fs/fat/inode.c
-> @@ -1415,6 +1415,18 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
->  		brelse(fsinfo_bh);
->  	}
+>  #ifdef CONFIG_X86_64
+> @@ -321,7 +394,8 @@ static void parse_elf(void *output)
+>  asmlinkage void decompress_kernel(void *rmode, memptr heap,
+>  				  unsigned char *input_data,
+>  				  unsigned long input_len,
+> -				  unsigned char *output)
+> +				  unsigned char *output,
+> +				  unsigned long output_len)
+>  {
+>  	real_mode = rmode;
 >  
-> +	/* interpret volume ID as a little endian 32 bit integer */
-> +	if (sbi->fat_bits == 32)
-> +		sbi->vol_id = (((u32)b->fat32.vol_id[0]) |
-> +					((u32)b->fat32.vol_id[1] << 8) |
-> +					((u32)b->fat32.vol_id[2] << 16) |
-> +					((u32)b->fat32.vol_id[3] << 24));
-> +	else /* fat 16 or 12 */
-> +		sbi->vol_id = (((u32)b->fat16.vol_id[0]) |
-> +					((u32)b->fat16.vol_id[1] << 8) |
-> +					((u32)b->fat16.vol_id[2] << 16) |
-> +					((u32)b->fat16.vol_id[3] << 24));
+> @@ -361,6 +435,7 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
+>  	debug_putstr("\nDecompressing Linux... ");
+>  	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+>  	parse_elf(output);
+> +	handle_relocations(output, output_len);
+>  	debug_putstr("done.\nBooting the kernel.\n");
+>  	return;
+>  }
+> diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
+> index ef17af0..f48b17d 100644
+> --- a/arch/x86/include/asm/page_32_types.h
+> +++ b/arch/x86/include/asm/page_32_types.h
+> @@ -15,6 +15,8 @@
+>   */
+>  #define __PAGE_OFFSET		_AC(CONFIG_PAGE_OFFSET, UL)
+>  
+> +#define __START_KERNEL_map	__PAGE_OFFSET
 > +
->  	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
->  	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
+>  #define THREAD_SIZE_ORDER	1
+>  #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
 >  
-> diff --git a/include/uapi/linux/msdos_fs.h b/include/uapi/linux/msdos_fs.h
-> index f055e58..e284ff9 100644
-> --- a/include/uapi/linux/msdos_fs.h
-> +++ b/include/uapi/linux/msdos_fs.h
-> @@ -104,6 +104,8 @@ struct __fat_dirent {
->  /* <linux/videotext.h> has used 0x72 ('r') in collision, so skip a few */
->  #define FAT_IOCTL_GET_ATTRIBUTES	_IOR('r', 0x10, __u32)
->  #define FAT_IOCTL_SET_ATTRIBUTES	_IOW('r', 0x11, __u32)
-> +/*Android kernel has used 0x12, so we use 0x13*/
-> +#define FAT_IOCTL_GET_VOLUME_ID		_IOR('r', 0x13, __u32)
+> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+> index 6c896fb..43dcd80 100644
+> --- a/arch/x86/include/asm/page_64_types.h
+> +++ b/arch/x86/include/asm/page_64_types.h
+> @@ -32,11 +32,6 @@
+>   */
+>  #define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
 >  
->  struct fat_boot_sector {
->  	__u8	ignored[3];	/* Boot strap short or near jump */
-> @@ -128,6 +130,10 @@ struct fat_boot_sector {
->  			__u8	drive_number;	/* Physical drive number */
->  			__u8	state;		/* undocumented, but used
->  						   for mount state. */
-> +			__u8	signature;  /* extended boot signature */
-> +			__u8	vol_id[4];	/* volume ID */
-> +			__u8	vol_label[11];	/* volume label */
-> +			__u8	fs_type[8];		/* file system type */
->  			/* other fiealds are not added here */
->  		} fat16;
+> -#define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
+> -				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
+> -				 ~(CONFIG_PHYSICAL_ALIGN - 1))
+> -
+> -#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
+>  #define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
 >  
-> @@ -147,6 +153,10 @@ struct fat_boot_sector {
->  			__u8	drive_number;   /* Physical drive number */
->  			__u8    state;       	/* undocumented, but used
->  						   for mount state. */
-> +			__u8	signature;  /* extended boot signature */
-> +			__u8	vol_id[4];	/* volume ID */
-> +			__u8	vol_label[11];	/* volume label */
-> +			__u8	fs_type[8];		/* file system type */
->  			/* other fiealds are not added here */
->  		} fat32;
->  	};
+>  /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
+> diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+> index 54c9787..086c2fa 100644
+> --- a/arch/x86/include/asm/page_types.h
+> +++ b/arch/x86/include/asm/page_types.h
+> @@ -33,6 +33,12 @@
+>  	(((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0 ) | \
+>  	 VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
+>  
+> +#define __PHYSICAL_START	((CONFIG_PHYSICAL_START +		\
+> +				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
+> +				 ~(CONFIG_PHYSICAL_ALIGN - 1))
+
+I know you just moved the code. Could this macro be like this:
+
+#define __PHYSICAL_START ALIGN(CONFIG_PHYSICAL_START, CONFIG_PHYSICAL_ALIGN)
+
+> +
+> +#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
+> +
+>  #ifdef CONFIG_X86_64
+>  #include <asm/page_64_types.h>
+>  #else
+> 
+
 
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Thanks.
+Zhang Yanfei
