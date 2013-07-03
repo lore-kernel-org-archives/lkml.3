@@ -1,82 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964927Ab3GCSlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:41:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6045 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964780Ab3GCSlO (ORCPT
+	id S964939Ab3GCSmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:42:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45346 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932919Ab3GCSmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:41:14 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=P19OJLiwtJ8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=DdxKdol1BvYA:10 a=pGLkceISAAAA:8 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=nHUrWhAopbcH2RfJhBIA:9 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=YUkUdY_67zmQZWC4:21 a=ikeVVFr-BU4G3erS:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184056.246771268@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:40:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sergey Dyasly <dserrg@gmail.com>, Vladimir Murzin <murzin.v@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [070/141] xhci: fix list access before init
-References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0070-xhci-fix-list-access-before-init.patch
+	Wed, 3 Jul 2013 14:42:02 -0400
+Date: Wed, 3 Jul 2013 20:41:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 12/13] mm: numa: Scan pages with elevated page_mapcount
+Message-ID: <20130703184124.GD18898@dyad.programming.kicks-ass.net>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-13-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372861300-9973-13-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.11.6 stable review patch.
-If anyone has any objections, please let me know.
+On Wed, Jul 03, 2013 at 03:21:39PM +0100, Mel Gorman wrote:
 
-------------------
+> Note that the patch still leaves shared, file-backed in VM_EXEC vmas in
+> place guessing that these are shared library pages. Migrating them are
+> likely to be of major benefit as generally the expectation would be that
+> these are read-shared between caches and that iTLB and iCache pressure is
+> generally low.
 
-From: Vladimir Murzin <murzin.v@gmail.com>
+I'm failing to grasp.. we don't migrate them because migrating them would
+likely be beneficial?
 
-[ Upstream commit 88696ae432ce7321540ac53d9caab3de9118b094 ]
-
-If for whatever reason we fall into fail path in xhci_mem_init()
-before bw table gets initialized we may access the uninitialized lists
-in xhci_mem_cleanup().
-
-Check for bw table before traversing lists in cleanup routine.
-
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 839c817ce67178ca3c7c7ad534c571bba1e69ebe "xhci: Store
-information about roothubs and TTs."
-
-Reported-by: Sergey Dyasly <dserrg@gmail.com>
-Tested-by: Sergey Dyasly <dserrg@gmail.com>
-Signed-off-by: Vladimir Murzin <murzin.v@gmail.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/usb/host/xhci-mem.c |    4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 0550d53..419d34a 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1840,6 +1840,9 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
- 	}
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
-+	if (!xhci->rh_bw)
-+		goto no_bw;
-+
- 	num_ports = HCS_MAX_PORTS(xhci->hcs_params1);
- 	for (i = 0; i < num_ports; i++) {
- 		struct xhci_interval_bw_table *bwt = &xhci->rh_bw[i].bw_table;
-@@ -1858,6 +1861,7 @@ void xhci_mem_cleanup(struct xhci_hcd *xhci)
- 		}
- 	}
- 
-+no_bw:
- 	xhci->num_usb2_ports = 0;
- 	xhci->num_usb3_ports = 0;
- 	xhci->num_active_eps = 0;
--- 
-1.7.10.4
-
-
+Missing a negative somewhere?
