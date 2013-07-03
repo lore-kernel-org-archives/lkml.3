@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933506Ab3GCS57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:57:59 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33750 "EHLO
+	id S964951Ab3GCS6t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:58:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29296 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933191Ab3GCSkw (ORCPT
+	with ESMTP id S933131Ab3GCSkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:40:52 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=vEu6x0szfNcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jiCc1kl0oEEA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=eJfxgxciAAAA:8 a=pQFG53Joc4AfjvbZiugA:9 a=jEp0ucaQiEUA:10 a=W39ifWXXhksA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 3 Jul 2013 14:40:49 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=EyNd4zUO85UA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=DX2O-1nfEJ0A:10 a=6rXeCiQDAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=u2FFtJyP77WqBqQUAawA:9 a=-Fbca3v37V8A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184050.051420878@goodmis.org>
+Message-Id: <20130703184046.265176155@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:30 -0400
+Date: Wed, 03 Jul 2013 14:39:07 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
-        Ben Myers <bpm@sgi.com>
-Subject: [033/141] xfs: kill suid/sgid through the truncate path.
+Cc: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [010/141] USB: Blacklisted Cinterions PLxx WWAN Interface
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0033-xfs-kill-suid-sgid-through-the-truncate-path.patch
+Content-Disposition: inline; filename=0010-USB-Blacklisted-Cinterion-s-PLxx-WWAN-Interface.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,106 +30,45 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Schemmel Hans-Christoph <Hans-Christoph.Schemmel@gemalto.com>
 
-[ Upstream commit 2962f5a5dcc56f69cbf62121a7be67cc15d6940b ]
+[ Upstream commit 8ff10bdb14a52e3f25d4ce09e0582a8684c1a6db ]
 
-XFS has failed to kill suid/sgid bits correctly when truncating
-files of non-zero size since commit c4ed4243 ("xfs: split
-xfs_setattr") introduced in the 3.1 kernel. Fix it.
+/drivers/usb/serial/option.c: Blacklisted Cinterion's PLxx WWAN
+Interface (USB Interface 4), because it will be handled by QMI WWAN
+driver. Product IDs renamed.
 
-Fix it.
-
-cc: stable kernel <stable@vger.kernel.org>
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Brian Foster <bfoster@redhat.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Hans-Christoph Schemmel <hans-christoph.schemmel@gemalto.com>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-(cherry picked from commit 56c19e89b38618390addfc743d822f99519055c6)
 ---
- fs/xfs/xfs_iops.c |   47 ++++++++++++++++++++++++++++++++---------------
- 1 file changed, 32 insertions(+), 15 deletions(-)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
-index 4e00cf0..53c2145 100644
---- a/fs/xfs/xfs_iops.c
-+++ b/fs/xfs/xfs_iops.c
-@@ -454,6 +454,28 @@ xfs_vn_getattr(
- 	return 0;
- }
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 4fa928d..625bc3b 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -341,6 +341,8 @@ static void option_instat_callback(struct urb *urb);
+ #define CINTERION_PRODUCT_EU3_E			0x0051
+ #define CINTERION_PRODUCT_EU3_P			0x0052
+ #define CINTERION_PRODUCT_PH8			0x0053
++#define CINTERION_PRODUCT_AHXX			0x0055
++#define CINTERION_PRODUCT_PLXX			0x0060
  
-+static void
-+xfs_setattr_mode(
-+	struct xfs_trans	*tp,
-+	struct xfs_inode	*ip,
-+	struct iattr		*iattr)
-+{
-+	struct inode	*inode = VFS_I(ip);
-+	umode_t		mode = iattr->ia_mode;
-+
-+	ASSERT(tp);
-+	ASSERT(xfs_isilocked(ip, XFS_ILOCK_EXCL));
-+
-+	if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
-+		mode &= ~S_ISGID;
-+
-+	ip->i_d.di_mode &= S_IFMT;
-+	ip->i_d.di_mode |= mode & ~S_IFMT;
-+
-+	inode->i_mode &= S_IFMT;
-+	inode->i_mode |= mode & ~S_IFMT;
-+}
-+
- int
- xfs_setattr_nonsize(
- 	struct xfs_inode	*ip,
-@@ -605,18 +627,8 @@ xfs_setattr_nonsize(
- 	/*
- 	 * Change file access modes.
- 	 */
--	if (mask & ATTR_MODE) {
--		umode_t mode = iattr->ia_mode;
--
--		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
--			mode &= ~S_ISGID;
--
--		ip->i_d.di_mode &= S_IFMT;
--		ip->i_d.di_mode |= mode & ~S_IFMT;
--
--		inode->i_mode &= S_IFMT;
--		inode->i_mode |= mode & ~S_IFMT;
--	}
-+	if (mask & ATTR_MODE)
-+		xfs_setattr_mode(tp, ip, iattr);
- 
- 	/*
- 	 * Change file access or modified times.
-@@ -713,9 +725,8 @@ xfs_setattr_size(
- 		return XFS_ERROR(error);
- 
- 	ASSERT(S_ISREG(ip->i_d.di_mode));
--	ASSERT((mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
--			ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID|
--			ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
-+	ASSERT((mask & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
-+			ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
- 
- 	if (!(flags & XFS_ATTR_NOLOCK)) {
- 		lock_flags |= XFS_IOLOCK_EXCL;
-@@ -856,6 +867,12 @@ xfs_setattr_size(
- 		xfs_iflags_set(ip, XFS_ITRUNCATED);
- 	}
- 
-+	/*
-+	 * Change file access modes.
-+	 */
-+	if (mask & ATTR_MODE)
-+		xfs_setattr_mode(tp, ip, iattr);
-+
- 	if (mask & ATTR_CTIME) {
- 		inode->i_ctime = iattr->ia_ctime;
- 		ip->i_d.di_ctime.t_sec = iattr->ia_ctime.tv_sec;
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -1224,6 +1226,9 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_AHXX) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PLXX),
++		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, 
+ 	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
+ 	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
 -- 
 1.7.10.4
 
