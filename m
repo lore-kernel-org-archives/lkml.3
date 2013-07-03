@@ -1,94 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab3GCHsd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 03:48:33 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:47248 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab3GCHsc (ORCPT
+	id S1754690Ab3GCHtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 03:49:35 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:13967
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753481Ab3GCHte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 03:48:32 -0400
-Date: Wed, 3 Jul 2013 17:48:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: linux-next: build failure after merge of the final tree (net-next
- tree related)
-Message-Id: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN"
+	Wed, 3 Jul 2013 03:49:34 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zzbb2dI98dI9371I1432I179dNc8kzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh35h1155h)
+Message-ID: <51D3D76B.5040306@freescale.com>
+Date: Wed, 3 Jul 2013 15:48:59 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Hongbo Zhang <hongbo.zhang@freescale.com>
+CC: <vinod.koul@intel.com>, <djbw@fb.com>, <scottwood@freescale.com>,
+        <vakul@freescale.com>, <leoLi@freescale.com>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 1/2] DMA: Freescale: Add new 8-channel DMA engine device
+ tree nodes
+References: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com> <51D3A030.4020608@freescale.com>
+In-Reply-To: <51D3A030.4020608@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/03/2013 11:53 AM, Hongbo Zhang wrote:
+> hmm...add the devicetree-discuss@lists.ozlabs.org into list.
+>
+> Note that we are discussing a better naming for this new compatible 
+> property in the corresponding [PATCH 2/2], so I will resend a v2 of 
+> this patch.
+>
+>
+> On 07/01/2013 11:46 AM, hongbo.zhang@freescale.com wrote:
+>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>
+>> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this 
+>> patch add
+>> the device tree nodes for them.
+>>
+>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+>> ---
+>>   arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi |   90 
+>> +++++++++++++++++++++++++++
+>>   arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi |   90 
+>> +++++++++++++++++++++++++++
+>>   arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
+>>   3 files changed, 182 insertions(+), 2 deletions(-)
+>>   create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
+>>   create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
+Scott, any comment of these two file names?
+>>
+>> diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi 
+>> b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
+>> new file mode 100644
+>> index 0000000..c626c49
+>> --- /dev/null
+>> +++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
+>> @@ -0,0 +1,90 @@
+>> +/*
+>> + * QorIQ DMA device tree stub [ controller @ offset 0x100000 ]
+>> + *
+>> + * Copyright 2011-2013 Freescale Semiconductor Inc.
+>> + *
+>> + * Redistribution and use in source and binary forms, with or without
+>> + * modification, are permitted provided that the following 
+>> conditions are met:
+>> + *     * Redistributions of source code must retain the above copyright
+>> + *       notice, this list of conditions and the following disclaimer.
+>> + *     * Redistributions in binary form must reproduce the above 
+>> copyright
+>> + *       notice, this list of conditions and the following 
+>> disclaimer in the
+>> + *       documentation and/or other materials provided with the 
+>> distribution.
+>> + *     * Neither the name of Freescale Semiconductor nor the
+>> + *       names of its contributors may be used to endorse or promote 
+>> products
+>> + *       derived from this software without specific prior written 
+>> permission.
+>> + *
+>> + *
+>> + * ALTERNATIVELY, this software may be distributed under the terms 
+>> of the
+>> + * GNU General Public License ("GPL") as published by the Free Software
+>> + * Foundation, either version 2 of that License or (at your option) any
+>> + * later version.
+>> + *
+>> + * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' 
+>> AND ANY
+>> + * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+>> IMPLIED
+>> + * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
+>> PURPOSE ARE
+>> + * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE 
+>> FOR ANY
+>> + * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+>> CONSEQUENTIAL DAMAGES
+>> + * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+>> OR SERVICES;
+>> + * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+>> CAUSED AND
+>> + * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+>> LIABILITY, OR TORT
+>> + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
+>> USE OF THIS
+>> + * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+>> + */
+>> +
+>> +dma0: dma@100300 {
+>> +    #address-cells = <1>;
+>> +    #size-cells = <1>;
+>> +    compatible = "fsl,eloplus-dma2";
+>> +    reg = <0x100300 0x4 0x100600 0x4>;
+>> +    ranges = <0x0 0x100100 0x500>;
+>> +    cell-index = <0>;
+>> +    dma-channel@0 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x0 0x80>;
+>> +        cell-index = <0>;
+>> +        interrupts = <28 2 0 0>;
+>> +    };
+>> +    dma-channel@80 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x80 0x80>;
+>> +        cell-index = <1>;
+>> +        interrupts = <29 2 0 0>;
+>> +    };
+>> +    dma-channel@100 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x100 0x80>;
+>> +        cell-index = <2>;
+>> +        interrupts = <30 2 0 0>;
+>> +    };
+>> +    dma-channel@180 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x180 0x80>;
+>> +        cell-index = <3>;
+>> +        interrupts = <31 2 0 0>;
+>> +    };
+>> +    dma-channel@300 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x300 0x80>;
+>> +        cell-index = <4>;
+>> +        interrupts = <76 2 0 0>;
+>> +    };
+>> +    dma-channel@380 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x380 0x80>;
+>> +        cell-index = <5>;
+>> +        interrupts = <77 2 0 0>;
+>> +    };
+>> +    dma-channel@400 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x400 0x80>;
+>> +        cell-index = <6>;
+>> +        interrupts = <78 2 0 0>;
+>> +    };
+>> +    dma-channel@480 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x480 0x80>;
+>> +        cell-index = <7>;
+>> +        interrupts = <79 2 0 0>;
+>> +    };
+>> +};
+>> diff --git a/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi 
+>> b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
+>> new file mode 100644
+>> index 0000000..980ea77
+>> --- /dev/null
+>> +++ b/arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
+>> @@ -0,0 +1,90 @@
+>> +/*
+>> + * QorIQ DMA device tree stub [ controller @ offset 0x101000 ]
+>> + *
+>> + * Copyright 2011-2013 Freescale Semiconductor Inc.
+>> + *
+>> + * Redistribution and use in source and binary forms, with or without
+>> + * modification, are permitted provided that the following 
+>> conditions are met:
+>> + *     * Redistributions of source code must retain the above copyright
+>> + *       notice, this list of conditions and the following disclaimer.
+>> + *     * Redistributions in binary form must reproduce the above 
+>> copyright
+>> + *       notice, this list of conditions and the following 
+>> disclaimer in the
+>> + *       documentation and/or other materials provided with the 
+>> distribution.
+>> + *     * Neither the name of Freescale Semiconductor nor the
+>> + *       names of its contributors may be used to endorse or promote 
+>> products
+>> + *       derived from this software without specific prior written 
+>> permission.
+>> + *
+>> + *
+>> + * ALTERNATIVELY, this software may be distributed under the terms 
+>> of the
+>> + * GNU General Public License ("GPL") as published by the Free Software
+>> + * Foundation, either version 2 of that License or (at your option) any
+>> + * later version.
+>> + *
+>> + * THIS SOFTWARE IS PROVIDED BY Freescale Semiconductor ``AS IS'' 
+>> AND ANY
+>> + * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+>> IMPLIED
+>> + * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR 
+>> PURPOSE ARE
+>> + * DISCLAIMED. IN NO EVENT SHALL Freescale Semiconductor BE LIABLE 
+>> FOR ANY
+>> + * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
+>> CONSEQUENTIAL DAMAGES
+>> + * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+>> OR SERVICES;
+>> + * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+>> CAUSED AND
+>> + * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+>> LIABILITY, OR TORT
+>> + * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
+>> USE OF THIS
+>> + * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+>> + */
+>> +
+>> +dma1: dma@101300 {
+>> +    #address-cells = <1>;
+>> +    #size-cells = <1>;
+>> +    compatible = "fsl,eloplus-dma2";
+>> +    reg = <0x101300 0x4 0x101600 0x4>;
+>> +    ranges = <0x0 0x101100 0x500>;
+>> +    cell-index = <1>;
+>> +    dma-channel@0 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x0 0x80>;
+>> +        cell-index = <0>;
+>> +        interrupts = <32 2 0 0>;
+>> +    };
+>> +    dma-channel@80 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x80 0x80>;
+>> +        cell-index = <1>;
+>> +        interrupts = <33 2 0 0>;
+>> +    };
+>> +    dma-channel@100 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x100 0x80>;
+>> +        cell-index = <2>;
+>> +        interrupts = <34 2 0 0>;
+>> +    };
+>> +    dma-channel@180 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x180 0x80>;
+>> +        cell-index = <3>;
+>> +        interrupts = <35 2 0 0>;
+>> +    };
+>> +    dma-channel@300 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x300 0x80>;
+>> +        cell-index = <4>;
+>> +        interrupts = <80 2 0 0>;
+>> +    };
+>> +    dma-channel@380 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x380 0x80>;
+>> +        cell-index = <5>;
+>> +        interrupts = <81 2 0 0>;
+>> +    };
+>> +    dma-channel@400 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x400 0x80>;
+>> +        cell-index = <6>;
+>> +        interrupts = <82 2 0 0>;
+>> +    };
+>> +    dma-channel@480 {
+>> +        compatible = "fsl,eloplus-dma-channel";
+>> +        reg = <0x480 0x80>;
+>> +        cell-index = <7>;
+>> +        interrupts = <83 2 0 0>;
+>> +    };
+>> +};
+>> diff --git a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi 
+>> b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+>> index bd611a9..7d8bac6 100644
+>> --- a/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+>> +++ b/arch/powerpc/boot/dts/fsl/t4240si-post.dtsi
+>> @@ -387,8 +387,8 @@
+>>           reg       = <0xea000 0x4000>;
+>>       };
+>>   -/include/ "qoriq-dma-0.dtsi"
+>> -/include/ "qoriq-dma-1.dtsi"
+>> +/include/ "qoriq-dma2-0.dtsi"
+>> +/include/ "qoriq-dma2-1.dtsi"
+>>     /include/ "qoriq-espi-0.dtsi"
+>>       spi@110000 {
+>
+>
 
-Hi all,
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) failed like this:
 
-fs/select.c: In function 'do_select':
-fs/select.c:408:2: error: implicit declaration of function 'll_start_time' =
-[-Werror=3Dimplicit-function-declaration]
-  u64 ll_start =3D ll_start_time(ll_flag);
-  ^
-fs/select.c:409:2: error: implicit declaration of function 'll_run_time' [-=
-Werror=3Dimplicit-function-declaration]
-  u64 ll_time =3D ll_run_time();
-  ^
-fs/select.c:504:3: error: too many arguments to function 'can_poll_ll'
-   if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
-   ^
-In file included from fs/select.c:31:0:
-include/net/ll_poll.h:194:20: note: declared here
- static inline bool can_poll_ll(u64 end_time)
-                    ^
-fs/select.c: In function 'do_poll':
-fs/select.c:826:3: error: too many arguments to function 'can_poll_ll'
-   if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
-   ^
-In file included from fs/select.c:31:0:
-include/net/ll_poll.h:194:20: note: declared here
- static inline bool can_poll_ll(u64 end_time)
-                    ^
-
-Caused by commit 1bc2774d8664 ("net: convert lls to use time_in_range()")
-from the net-next tree.
-
-I cherry-picked the commit 419076f59fc5 ("net: lls fix build with
-allnoconfig") out of tomorrow's net-next tree.  (I am feeling generous
-and noticed that patch being applied :-))
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR09dKAAoJEECxmPOUX5FEcZwQAJC4R0M2sqUODcOmBTuonllQ
-Rf9DJ4LHt4Dmh4lv2SUlt38LfeRitaRyWOYZ6YDPHEb0UgmLYvycT6KrT7kvy42y
-mSm2cjkZpQFUihAMGkhL+yJWM8HVAOwnv7E3DPuJFexv+DUM6I+570NVwxCAj5JD
-vsHyTl1/ZCLA9fMkGHMb57jDw7fw30aBOzBkjl0AMx8XFpsoOaAWPKaCeGw3u2VH
-2ZSlgud+zICJGF1mSh82lwAassKTNUxcgGd8plyN1NxAD+IaQNR4gqBiLblgm4F0
-kbzwDdBt1875Vzcvycm4YQmGEK4oQzabs/RgoVDJXEDIevLg238X5orNCRYXiELa
-TdoIo0hKVgnwDlkEHKvdup1eL/YPDIRL5n43Ei46SHfH+DNgCh7f70OoVS4LwW+m
-QT88WEa7t1s6GT5+ZVk2ljCEmIm4OSPP+c/IWnN6REPoBsf2xg6puS+C6IiEMHdH
-woQlMUHiZxTTtVBQzdOMfwbvTQpIPeiiMUrDGqItMq1gbokfk5G9d2thWqinZKkJ
-pPYr/9G4VlmuEpJ0vb7wTegsKP/rlnfVh6Aw0grrWutIjzSRKDdfB8yVwjoNiR21
-47MykM6buu0IIjtbXveXjkQKGhCzufAutO8ovj/gxVWT0JcpC6U6PUnsBfx/7yKV
-XVOgjpN/SGbt3fdZlDr0
-=JRbT
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN--
