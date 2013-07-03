@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167Ab3GCGLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 02:11:16 -0400
-Received: from fep13.mx.upcmail.net ([62.179.121.33]:60642 "EHLO
-	fep13.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab3GCGLN (ORCPT
+	id S1754007Ab3GCGME (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 02:12:04 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:58163 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3GCGMC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 02:11:13 -0400
-X-SourceIP: 84.112.62.194
-Date: Wed, 3 Jul 2013 08:11:04 +0200
-From: Thomas Zeitlhofer <thomas.zeitlhofer@nt.tuwien.ac.at>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: tuntap regression in v3.9.8 and v3.10
-Message-ID: <20130703061104.GA22847@toau.bambla>
-References: <20130702195910.GA20271@toau.bambla>
- <CAOMZO5B7Yx7tRy8Q5wi6ngcD0FDJzKXHOEGPXyUo52+f3oUHEg@mail.gmail.com>
- <20130702220651.GA23097@toau.bambla>
- <51D39010.5090902@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51D39010.5090902@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Jul 2013 02:12:02 -0400
+Date: Wed, 3 Jul 2013 14:11:48 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: sage <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH 2/2] ceph: for sync_read, call file_accessed to update atime.
+X-Priority: 3
+X-GUID: 11AD6990-D96E-41B9-977E-8130DD297C8B
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201307031334535261195@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r636CCqK012464
 
-Hello Jason,
+For ceph_sync_read,it don't call file_accessed to update atime.But the
+buffer_read do it .So add it.
 
-On Wed, Jul 03, 2013 at 10:44:32AM +0800, Jason Wang wrote:
-> On 07/03/2013 06:06 AM, Thomas Zeitlhofer wrote:
-> > On Tue, Jul 02, 2013 at 06:01:12PM -0300, Fabio Estevam wrote:
-> >> On Tue, Jul 2, 2013 at 4:59 PM, Thomas Zeitlhofer
-> >> <thomas.zeitlhofer@nt.tuwien.ac.at> wrote:
-> >>> Commit "tuntap: set SOCK_ZEROCOPY flag during open" introduces a
-> >>> regression which is observed with live migration of qemu/kvm based
-> >>> virtual machines that are connected to an openvswitch bridge.
-> >>>
-> >>> Reverting this commit (b26c93c46a3dec25ed236d4ba6107eb4ed5d9401 in
-> >>> v3.9.8 and accordingly 19a6afb23e5d323e1245baa4e62755492b2f1200 in
-> >>> v3.10) fixes the following problem:
-> >> Should the sock_set_flag stay in tun_set_iff as it was prior to 54f968d6efd?
-> >>
-> >> --- a/drivers/net/tun.c
-> >> +++ b/drivers/net/tun.c
-> >> @@ -1652,6 +1652,7 @@ static int tun_set_iff(struct net *net, struct
-> >> file *file, struct ifreq *ifr)
-> >>                 tun->txflt.count = 0;
-> >>                 tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
-> >>
-> >> +               sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
-> >>                 tun->filter_attached = false;
-> >>                 tun->sndbuf = tfile->socket.sk->sk_sndbuf;
-> >>
-> >> @@ -2159,8 +2160,6 @@ static int tun_chr_open(struct inode *inode,
-> >> struct file * file)
-> >>         set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
-> >>         INIT_LIST_HEAD(&tfile->next);
-> >>
-> >> -       sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
-> >> -
-> >>         return 0;
-> >>  }
-> > I guess no, as this also leads to a kernel panic (tested against v3.10).
-> 
-> Yes, commit "tuntap: set SOCK_ZEROCOPY flag during open" just re-enable
-> the zerocopy capability of tuntap. I believe it just uncover other
-> zerocopy bugs.
-> 
-> Which regression did you see?
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ fs/ceph/file.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-a kernel panic on the host machine. The details are in the first message
-of this thread: http://lkml.org/lkml/2013/7/2/499
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index fa74e6f..b0e6f0b 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -442,6 +442,7 @@ done:
+ 		ceph_put_page_vector(pages, num_pages, true);
+ 	else
+ 		ceph_release_page_vector(pages, num_pages);
++	file_accessed(file);
+ 	dout("sync_read result %d\n", ret);
+ 	return ret;
+ }
+-- 
+1.8.1.2
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
