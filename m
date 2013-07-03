@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965121Ab3GCTCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:02:23 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:58213
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965048Ab3GCTCT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 15:02:19 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-Date: Wed, 3 Jul 2013 14:02:08 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 1/2] DMA: Freescale: Add new 8-channel DMA engine device
- tree nodes
-To: Hongbo Zhang <hongbo.zhang@freescale.com>
-CC: Hongbo Zhang <hongbo.zhang@freescale.com>, <vinod.koul@intel.com>,
-        <djbw@fb.com>, <vakul@freescale.com>, <leoLi@freescale.com>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-References: <1372650378-2936-1-git-send-email-hongbo.zhang@freescale.com>
-	<51D3A030.4020608@freescale.com> <51D3D76B.5040306@freescale.com>
-In-Reply-To: <51D3D76B.5040306@freescale.com> (from
-	hongbo.zhang@freescale.com on Wed Jul  3 02:48:59 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1372878128.8183.143@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S965149Ab3GCTBx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:01:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23390 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965067Ab3GCTAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 15:00:35 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=s5qreGecmOQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=OM1SSI8M7ScA:10 a=zd2uoN0lAAAA:8 a=VwQbUJbxAAAA:8 a=fBeKd2HRWbP4T1pgm1MA:9 a=wu_e27o_rKQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130703184050.574643350@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 03 Jul 2013 14:39:33 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Alex Deucher <alexander.deucher@amd.com>
+Subject: [036/141] drm/radeon: fix typo in cu_per_sh on verde
+References: <20130703183857.307196999@goodmis.org>
+Content-Disposition: inline; filename=0036-drm-radeon-fix-typo-in-cu_per_sh-on-verde.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2013 02:48:59 AM, Hongbo Zhang wrote:
-> On 07/03/2013 11:53 AM, Hongbo Zhang wrote:
->> hmm...add the devicetree-discuss@lists.ozlabs.org into list.
->> 
->> Note that we are discussing a better naming for this new compatible  
->> property in the corresponding [PATCH 2/2], so I will resend a v2 of  
->> this patch.
->> 
->> 
->> On 07/01/2013 11:46 AM, hongbo.zhang@freescale.com wrote:
->>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->>> 
->>> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this  
->>> patch add
->>> the device tree nodes for them.
->>> 
->>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
->>> ---
->>>   arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi |   90  
->>> +++++++++++++++++++++++++++
->>>   arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi |   90  
->>> +++++++++++++++++++++++++++
->>>   arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
->>>   3 files changed, 182 insertions(+), 2 deletions(-)
->>>   create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-0.dtsi
->>>   create mode 100644 arch/powerpc/boot/dts/fsl/qoriq-dma2-1.dtsi
-> Scott, any comment of these two file names?
+3.6.11.6 stable review patch.
+If anyone has any objections, please let me know.
 
-There's "dma2" again...
+------------------
 
-How about elo3-dma-<n>.dtsi?
+From: Alex Deucher <alexander.deucher@amd.com>
 
--Scott
+[ Upstream commit 468ef1a58c9268ac9709350bf95eaf1c22a69f29 ]
+
+Should be 5 rather than 2.
+
+Noticed by sroland and glisse on IRC.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/gpu/drm/radeon/si.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/radeon/si.c b/drivers/gpu/drm/radeon/si.c
+index 7d0026b..2fa541c 100644
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -1556,7 +1556,7 @@ static void si_gpu_init(struct radeon_device *rdev)
+ 	default:
+ 		rdev->config.si.max_shader_engines = 1;
+ 		rdev->config.si.max_tile_pipes = 4;
+-		rdev->config.si.max_cu_per_sh = 2;
++		rdev->config.si.max_cu_per_sh = 5;
+ 		rdev->config.si.max_sh_per_se = 2;
+ 		rdev->config.si.max_backends_per_se = 4;
+ 		rdev->config.si.max_texture_channel_caches = 4;
+-- 
+1.7.10.4
+
+
