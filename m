@@ -1,152 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab3GCLBy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:01:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46434 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754786Ab3GCLBw (ORCPT
+	id S1755972Ab3GCLF3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:05:29 -0400
+Received: from mo2.mail-out.ovh.net ([178.32.228.2]:55947 "EHLO
+	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab3GCLF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:01:52 -0400
-Message-ID: <51D4047F.2010700@parallels.com>
-Date: Wed, 3 Jul 2013 15:01:19 +0400
-From: Maxim Patlasov <mpatlasov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 3 Jul 2013 07:05:28 -0400
+Date: Wed, 3 Jul 2013 13:01:37 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, giometti@enneenne.com,
+        Bo Shen <voice.shen@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
+Subject: Re: [PATCH] ARM: at91/DT: at91sam9x5ek: fix USB host property to
+ enable port C
+Message-ID: <20130703110137.GE21034@game.jcrosoft.org>
+References: <1372849250-14715-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <miklos@szeredi.hu>, <riel@redhat.com>, <dev@parallels.com>,
-        <xemul@parallels.com>, <fuse-devel@lists.sourceforge.net>,
-        <bfoster@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <jbottomley@parallels.com>, <linux-mm@kvack.org>,
-        <viro@zeniv.linux.org.uk>, <linux-fsdevel@vger.kernel.org>,
-        <fengguang.wu@intel.com>, <devel@openvz.org>, <mgorman@suse.de>
-Subject: Re: [PATCH] mm: strictlimit feature -v2
-References: <20130629174706.20175.78184.stgit@maximpc.sw.ru> <20130702174316.15075.84993.stgit@maximpc.sw.ru> <20130702123804.9f252487f86c12b0f4edee57@linux-foundation.org>
-In-Reply-To: <20130702123804.9f252487f86c12b0f4edee57@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.17.2]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372849250-14715-1-git-send-email-nicolas.ferre@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 210261808565562220
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrleekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrleekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-07/02/2013 11:38 PM, Andrew Morton пишет:
-> On Tue, 02 Jul 2013 21:44:47 +0400 Maxim Patlasov <MPatlasov@parallels.com> wrote:
->
->> From: Miklos Szeredi <mszeredi@suse.cz>
->>
->> The feature prevents mistrusted filesystems to grow a large number of dirty
->> pages before throttling. For such filesystems balance_dirty_pages always
->> check bdi counters against bdi limits. I.e. even if global "nr_dirty" is under
->> "freerun", it's not allowed to skip bdi checks. The only use case for now is
->> fuse: it sets bdi max_ratio to 1% by default and system administrators are
->> supposed to expect that this limit won't be exceeded.
->>
->> The feature is on if address space is marked by AS_STRICTLIMIT flag.
->> A filesystem may set the flag when it initializes a new inode.
->>
->> Changed in v2 (thanks to Andrew Morton):
->>   - added a few explanatory comments
->>   - cleaned up the mess in backing_dev_info foo_stamp fields: now it's clearly
->>     stated that bw_time_stamp is measured in jiffies; renamed other foo_stamp
->>     fields to reflect that they are in units of number-of-pages.
->>
-> Better, thanks.
->
-> The writeback arithemtic makes my head spin - I'd really like Fengguang
-> to go over this, please.
->
-> A quick visit from the spelling police:
+On 13:00 Wed 03 Jul     , Nicolas Ferre wrote:
+> Device Tree "num-ports" property of USB host node has to be
+> set to maximum number of ports available.
+> The possibility to activate a particular port is done by specifying the proper
+> gpio configuration for its vbus.
+> 
+> This patch fixes the USB host node by configuring the 3 ports available on the
+> product and letting "port A" available for USB gadget usage.
+> 
+> Reported-by: Rodolfo Giometti <giometti@enneenne.com>
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: Bo Shen <voice.shen@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Great! Thank you, Andrew. I'll wait for Fengguang' feedback for a while 
-before respin.
+> ---
+>  arch/arm/boot/dts/at91sam9x5ek.dtsi | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9x5ek.dtsi b/arch/arm/boot/dts/at91sam9x5ek.dtsi
+> index b753855..49e3c45 100644
+> --- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
+> @@ -94,8 +94,9 @@
+>  
+>  		usb0: ohci@00600000 {
+>  			status = "okay";
+> -			num-ports = <2>;
+> -			atmel,vbus-gpio = <&pioD 19 GPIO_ACTIVE_LOW
+> +			num-ports = <3>;
+> +			atmel,vbus-gpio = <0 /* &pioD 18 GPIO_ACTIVE_LOW *//* Activate to have access to port A */
+on 2 line would have been more clear
 
->
->> ...
->>
->> @@ -41,8 +43,15 @@ typedef int (congested_fn)(void *, int);
->>   enum bdi_stat_item {
->>   	BDI_RECLAIMABLE,
->>   	BDI_WRITEBACK,
->> -	BDI_DIRTIED,
->> -	BDI_WRITTEN,
->> +
->> +	/*
->> +	 * The three counters below reflects number of events of specific type
->> +	 * happened since bdi_init(). The type is defined in comments below:
-> "The three counters below reflect the number of events of specific
-> types since bdi_init()"
->
->> +	 */
->> +	BDI_DIRTIED,	  /* a page was dirtied */
->> +	BDI_WRITTEN,	  /* writeout completed for a page */
->> +	BDI_WRITTEN_BACK, /* a page went to writeback */
->> +
->>   	NR_BDI_STAT_ITEMS
->>   };
->>   
->>
->> ...
->>
->> @@ -680,28 +712,55 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
->>   		return 0;
->>   
->>   	/*
->> -	 * global setpoint
->> +	 * The strictlimit feature is a tool preventing mistrusted filesystems
->> +	 * to grow a large number of dirty pages before throttling. For such
-> "from growing"
->
->> +	 * filesystems balance_dirty_pages always checks bdi counters against
->> +	 * bdi limits. Even if global "nr_dirty" is under "freerun". This is
->> +	 * especially important for fuse who sets bdi->max_ratio to 1% by
-> s/who/which/
->
->> +	 * default. Without strictlimit feature, fuse writeback may consume
->> +	 * arbitrary amount of RAM because it is accounted in
->> +	 * NR_WRITEBACK_TEMP which is not involved in calculating "nr_dirty".
->>
->> ...
->>
->> @@ -994,6 +1054,26 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
->>   	 * keep that period small to reduce time lags).
->>   	 */
->>   	step = 0;
->> +
->> +	/*
->> +	 * For strictlimit case, balanced_dirty_ratelimit was calculated
-> balance_dirty_ratelimit?
->
->> +	 * above based on bdi counters and limits (see bdi_position_ratio()).
->> +	 * Hence, to calculate "step" properly, we have to use bdi_dirty as
->> +	 * "dirty" and bdi_setpoint as "setpoint".
->> +	 *
->> +	 * We rampup dirty_ratelimit forcibly if bdi_dirty is low because
->> +	 * it's possible that bdi_thresh is close to zero due to inactivity
->> +	 * of backing device (see the implementation of bdi_dirty_limit()).
->> +	 */
->> +	if (unlikely(strictlimit)) {
->> +		dirty = bdi_dirty;
->> +		if (bdi_dirty < 8)
->> +			setpoint = bdi_dirty + 1;
->> +		else
->>
->> ...
->>
->> @@ -1057,18 +1140,32 @@ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
->>   	if (elapsed > HZ && time_before(bdi->bw_time_stamp, start_time))
->>   		goto snapshot;
->>   
->> +	/*
->> +	 * Skip periods when backing dev was idle due to abscence of pages
-> "absence"
->
->> +	 * under writeback (when over_bground_thresh() returns false)
->> +	 */
->> +	if (test_bit(BDI_idle, &bdi->state) &&
->> +	    bdi->writeback_nr_stamp == writeback)
->>
->> ...
->>
->
->
 
+Best Regards,
+J.
+> +					   &pioD 19 GPIO_ACTIVE_LOW
+>  					   &pioD 20 GPIO_ACTIVE_LOW
+>  					  >;
+>  		};
+> -- 
+> 1.8.2.2
+> 
