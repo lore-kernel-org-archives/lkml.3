@@ -1,162 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932798Ab3GCNUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 09:20:47 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:42550 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932461Ab3GCNUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 09:20:44 -0400
+	id S1754771Ab3GCN1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 09:27:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33726 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752410Ab3GCN1C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 09:27:02 -0400
+Message-ID: <51D4269E.4090204@suse.cz>
+Date: Wed, 03 Jul 2013 15:26:54 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <51D41E34.5010802@huawei.com>
-References: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
-	<51D41E34.5010802@huawei.com>
-Date: Wed, 3 Jul 2013 15:20:43 +0200
-Message-ID: <CA+icZUVBiJWYH9gCi6=Lg_ArDhCf7PjBmk1C4_3M5BxcVZLsvQ@mail.gmail.com>
-Subject: Re: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for mem_cgroup_sockets_{init,destroy}
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: akpm@linux-foundation.org, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-mm@kvack.org
+To: Nicolas Palix <nicolas.palix@imag.fr>
+Cc: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, linux-doc@vger.kernel.org,
+        Coccinelle <cocci@systeme.lip6.fr>
+Subject: Re: [PATCH v3] coccicheck: span checks across CPUs
+References: <20130618214929.GA15976@www.outflux.net> <CAAxaTiMxZV4gLmB6=hm4WBWPj6D+V-g+puU1Gm_E_Zzhm8UEWw@mail.gmail.com>
+In-Reply-To: <CAAxaTiMxZV4gLmB6=hm4WBWPj6D+V-g+puU1Gm_E_Zzhm8UEWw@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 2:51 PM, Li Zefan <lizefan@huawei.com> wrote:
-> On 2013/7/3 20:19, Sedat Dilek wrote:
->> When "CONFIG_MEMCG_KMEM=n" I see this in my build-log:
+On 18.6.2013 23:51, Nicolas Palix wrote:
+> On Tue, Jun 18, 2013 at 11:49 PM, Kees Cook <keescook@chromium.org> wrote:
+>> This adds parallelism by default to the "coccicheck" target using
+>> spatch's "-max" and "-index" arguments.
 >>
->>  LD      init/built-in.o
->> mm/built-in.o: In function `mem_cgroup_css_free':
->> memcontrol.c:(.text+0x5caa6): undefined reference to `mem_cgroup_sockets_destroy'
->> make[2]: *** [vmlinux] Error 1
->>
->> Inspired by the ifdef for mem_cgroup_sockets_{init,destroy} here...
->>
->> [ net/core/sock.c ]
->>
->>  #ifdef CONFIG_MEMCG_KMEM
->>  int mem_cgroup_sockets_init()
->>  ...
->>  void mem_cgroup_sockets_destroy()
->>  ...
->>  #endif
->>
->> ...I did the the same for both in "include/net/sock.h".
->>
->> This fixes the issue for me in next-20130703.
->>
->> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
->
-> Maybe it's better to add memcg_destroy_kmem(), to pair with
-> memcg_init_kmem().
->
-> This patch can be folded into "memcg: use css_get/put when charging/uncharging kmem"
->
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+> 
+> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
 
-That text can be placed into the below changelog as it explains what
-the root-cause is.
-"memcg: use css_get/put when charging/uncharging kmem" dropped 1st
-into Linux-next with next-20130703.
+Applied to kbuild.git#misc.
 
-Please, test your changes also with CONFIG_MEMCG_KMEM=n next time.
-Thanks!
+Michal
 
-> =======================
->
-> [PATCH] memcg: fix build error if CONFIG_MEMCG_KMEM=n
->
-> Fix this build error:
->
-> mm/built-in.o: In function `mem_cgroup_css_free':
-> memcontrol.c:(.text+0x5caa6): undefined reference to
-> 'mem_cgroup_sockets_destroy'
->
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-
-Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> ---
->  mm/memcontrol.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 234f311..59ea6f9 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -5876,6 +5876,11 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->         return mem_cgroup_sockets_init(memcg, ss);
->  }
->
-> +static void memcg_destroy_kmem(struct mem_cgroup *memcg)
-> +{
-> +       mem_cgroup_sockets_destroy(memcg);
-> +}
-> +
->  static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
->  {
->         if (!memcg_kmem_is_active(memcg))
-> @@ -5915,6 +5920,10 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->         return 0;
->  }
->
-> +static void memcg_destroy_kmem(struct mem_cgroup *memcg)
-> +{
-> +}
-> +
->  static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
->  {
->  }
-> @@ -6312,8 +6321,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
->  {
->         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->
-> -       mem_cgroup_sockets_destroy(memcg);
-> -
-> +       memcg_destroy_kmem(memcg);
->         __mem_cgroup_free(memcg);
->  }
->
-> --
-> 1.8.0.2
->
->
->> ---
->> [ v2: git dislikes lines beginning with hash ('#'). ]
->>
->>  include/net/sock.h | 4 +++-
->>  1 file changed, 3 insertions(+), 1 deletion(-)
->>
->> diff --git a/include/net/sock.h b/include/net/sock.h
->> index ea6206c..ad4bf7f 100644
->> --- a/include/net/sock.h
->> +++ b/include/net/sock.h
->> @@ -71,6 +71,7 @@
->>  struct cgroup;
->>  struct cgroup_subsys;
->>  #ifdef CONFIG_NET
->> +#ifdef CONFIG_MEMCG_KMEM
->
-> #if defined(CONFIG_NET) && defined(CONFIG_MEMCG_KMEM)
->
->>  int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss);
->>  void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg);
->>  #else
->> @@ -83,7 +84,8 @@ static inline
->>  void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg)
->>  {
->>  }
->> -#endif
->> +#endif /* CONFIG_NET */
->> +#endif /* CONFIG_MEMCG_KMEM */
->>  /*
->>   * This structure really needs to be cleaned up.
->>   * Most of it is for TCP, and not used by any of
->>
->
