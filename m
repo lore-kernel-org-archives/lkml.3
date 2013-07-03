@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965440Ab3GCTdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:33:39 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:55526 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965294Ab3GCTdi (ORCPT
+	id S965453Ab3GCTgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:36:47 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:50016 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965115Ab3GCTgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 15:33:38 -0400
-Date: Wed, 3 Jul 2013 15:39:10 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: perf/Documentation/ABI -- add some documentation for perf_event
- sysfs usage
-Message-ID: <alpine.DEB.2.10.1307031527390.12584@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 3 Jul 2013 15:36:46 -0400
+Date: Wed, 3 Jul 2013 20:36:40 +0100
+From: Mark Brown <broonie@kernel.org>
+To: pankaj chauhan <pankaj.chauhan@freescale.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Goyal Akhil-B35197 <B35197@freescale.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chauhan Pankaj-B32944 <B32944@freescale.com>,
+        "Getz, Robin" <robin.getz@analog.com>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        Lars-Peter Clausen <lars-peter.clausen@analog.com>
+Message-ID: <20130703193640.GF27646@sirena.org.uk>
+References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com>
+ <1371456566-4934-2-git-send-email-akhil.goyal@freescale.com>
+ <1371456566-4934-3-git-send-email-akhil.goyal@freescale.com>
+ <1371456566-4934-4-git-send-email-akhil.goyal@freescale.com>
+ <51C1AAC4.3010605@metafoo.de>
+ <51C2DAE8.2040100@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fGQQ4fAVnbJVk3ws"
+Content-Disposition: inline
+In-Reply-To: <51C2DAE8.2040100@freescale.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for
+ Radio phy
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Add some documentation for the perf_event related
-  /sys/bus/event_source/bus/devices/
-files, since in theory it's a stable interface and the only
-current documentation is some lex and yacc files in the
-perf tools directory.
+--fGQQ4fAVnbJVk3ws
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+On Thu, Jun 20, 2013 at 04:05:20PM +0530, pankaj chauhan wrote:
 
-diff --git a/Documentation/ABI/stable/sysfs-bus-event_source-devices b/Documentation/ABI/stable/sysfs-bus-event_source-devices
-new file mode 100644
-index 0000000..9ef862f
---- /dev/null
-+++ b/Documentation/ABI/stable/sysfs-bus-event_source-devices
-@@ -0,0 +1,39 @@
-+What:		/sys/bus/event_source/bus/devices/*/events/*
-+Date:		Oct 2012
-+KernelVersion:	3.8
-+Contact:	Jiri Olsa <jolsa@redhat.com>
-+Description:
-+		Each file in /sys/bus/event_source/bus/devices/*/events/
-+		represents a predefined perf_event event.
-+
-+		The contents of the file are a string describing
-+		fields to set when generating raw events for
-+		the perf_event_open() system call.
-+
-+		The layout of the file is
-+			attr=value[,attr=value]...
-+		Where attr is the name of a bitfield described
-+		in /sys/bus/event_source/bus/devices/*/format/*
-+		and value is either a hex (starting with 0x) or decimal
-+		value.
-+
-+
-+What:		/sys/bus/event_source/bus/devices/*/format/*
-+Date:		Oct 2012
-+KernelVersion:	3.8
-+Contact:	Jiri Olsa <jolsa@redhat.com>
-+Description:
-+		Each file in /sys/bus/event_source/bus/devices/*/format/
-+		represents a description of a bitfield used when 
-+		constructing raw perf_event_open() raw events.
-+
-+		The contents of the file are a string describing
-+		the name of the field and its range.
-+
-+		The layout of the file is
-+			field:low[-high]
-+		Where field is the field name, low is the low bit
-+		of the range, and the optional high value is the high
-+		bit of the range.  The low and high values are base-10
-+		integers.
-+
+> Yes modifying registers from user space is part of the patch set and
+> register read/write interface is aimed only for two purposes:
+>=20
+> 1. Debugging : taking register dumps etc.
+
+Use regmap, it should have the infrastructure you need here.
+
+> 2. Initializing AD9361 using Low level script generated by ADI GUI tool.
+
+This sounds like generating a firmmware blob that the driver can load.
+You may have to cook the GUI output to be more amenable to loading in
+the kernel (or persuade the GUI guys to generate something useful here).
+
+--fGQQ4fAVnbJVk3ws
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1H1EAAoJELSic+t+oim9E5MP/1PBn9pNBcvpZqQ1LR4WazNF
+gpz8/fEWRpst3iB926Z10r9YTVghFbCtmRIlG14VFkHab+qsZLro2vptrtRJbjjk
+ZIuFNRMWTeWmxRycVif6zcfCzm1+VWhYujZ2HraaNrlKV70+v9Byzm9MCXKZz+f+
+CLFN6g1tRphMWp7ftKMDJuEwiO6veJLbjRpbztw6JA48T+g0rC0GalRTjZFCsBRQ
+bv+9OGsMLcyyhMT1q+W0NsjKWGGTlCxI9NizVIfbK4DVOB7Hsh/ONfRtFfFkdA0B
+VTaVhmuudLw0yjA6m+ZsPsGPjiwf/aF694L1lEKIv6pNlfRudYzzrxkVyteqqRfQ
+6kDfiStUePeYGNio0C73cKCSfpr3pf7y7tLr6iYchOVU92rinIW8jdGvd/ZUz0oy
+tdunn04OpS3/BFu3hyEUYW3vrQ139T6lh29yoJeoPHBYIGSk+Zj6I0ELqCmQmwme
+2TaQonljyvYSEIwsmcr+2t2IBLWZnOBUKCi+XSPjloyNdEBZ1FGmy1MabFP5CPMg
+qX2RooGwk9ijZbyNr0stHJ5SfqczDGSRQmJSRiP9eEHyRGsS/s8W6Rr/Bd0T2HrB
+Dq1a6iiPTfyxGPSOzfB9/kCxwZNWKDhalah7TCTeV0xdsMA+9e4W+no2KrhGVS6O
+OpvB9+vgcaFfMKUCfggD
+=o/df
+-----END PGP SIGNATURE-----
+
+--fGQQ4fAVnbJVk3ws--
