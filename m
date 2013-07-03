@@ -1,282 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885Ab3GCMii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 08:38:38 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:50635 "EHLO
+	id S932690Ab3GCMfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 08:35:52 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52553 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932735Ab3GCMfz (ORCPT
+	with ESMTP id S1756027Ab3GCMfu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 08:35:55 -0400
-X-AuditID: 9c93017e-b7c04ae00000295f-f0-51d41aa4671f
+	Wed, 3 Jul 2013 08:35:50 -0400
+X-AuditID: 9c93017e-b7c04ae00000295f-e8-51d41aa42de1
 From: Namhyung Kim <namhyung@kernel.org>
 To: Steven Rostedt <rostedt@goodmis.org>
 Cc: Hyeoncheol Lee <cheol.lee@lge.com>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Oleg Nesterov <oleg@redhat.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH 07/12] tracing/kprobes: Remove duplicate set_print_fmt()
-Date: Wed,  3 Jul 2013 21:35:41 +0900
-Message-Id: <1372854946-17074-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCHSET 00/12] tracing/uprobes: Add support for more fetch methods
+Date: Wed,  3 Jul 2013 21:35:34 +0900
+Message-Id: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
-References: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hello,
 
-The set_print_fmt() functions are implemented almost same for
-[ku]probes.  Move it to a common place and get rid of the duplication.
+This patchset implements memory (address), stack[N], deference,
+bitfield and retval (it needs uretprobe tho) fetch methods for
+uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
+
+Now kprobes and uprobes have their own fetch_type_tables and, in turn,
+memory and stack access methods.  Other fetch methods are shared.
+
+For the dereference method, I added a new argument to fetch functions.
+It's because for uprobes it needs to know whether the given address is
+a file offset or a virtual address in an user process.  For instance,
+in case of fetching from a memory directly (like @offset) it should
+convert the address (offset) to a virtual address of the process, but
+if it's a dereferencing, the given address already has the virtual
+address.
+
+To determine this in a fetch function, I passed a pointer to
+trace_uprobe for direct fetch, and passed NULL for dereference.
+
+
+[1] https://lkml.org/lkml/2012/11/14/84
+
+Simple example:
+
+  # cat foo.c
+  int glob = -1;
+  char str[] = "hello uprobe.";
+
+  struct foo {
+    unsigned int unused: 2;
+    unsigned int foo: 20;
+    unsigned int bar: 10;
+  } foo = {
+    .foo = 5,
+  };
+
+  int main(int argc, char *argv[])
+  {
+    long local = 0x1234;
+
+    return 127;
+  }
+
+  # gcc -o foo -g foo.c
+
+  # objdump -d foo | grep -A9 -F '<main>'
+  00000000004004b0 <main>:
+    4004b0:	55                   	push   %rbp
+    4004b1:	48 89 e5             	mov    %rsp,%rbp
+    4004b4:	89 7d ec             	mov    %edi,-0x14(%rbp)
+    4004b7:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
+    4004bb:	48 c7 45 f8 34 12 00 	movq   $0x1234,-0x8(%rbp)
+    4004c2:	00 
+    4004c3:	b8 7f 00 00 00       	mov    $0x7f,%eax
+    4004c8:	5d                   	pop    %rbp
+    4004c9:	c3                   	retq   
+
+  # nm foo | grep -e glob$ -e str -e foo
+  00000000006008bc D foo
+  00000000006008a8 D glob
+  00000000006008ac D str
+
+  # perf probe -x /home/namhyung/tmp/foo -a 'foo=main+0x13 glob=@0x8a8:s32 \
+  > str=@0x8ac:string bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp)'
+  Added new event:
+    probe_foo:foo      (on 0x4c3 with glob=@0x8a8:s32 str=@0x8ac:string 
+                                 bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp))
+
+  You can now use it in all perf tools, such as:
+
+          perf record -e probe_foo:foo -aR sleep 1
+
+  # perf record -e probe_foo:foo ./foo
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.001 MB perf.data (~33 samples) ]
+
+  # perf script | grep -v ^#
+               foo  2008 [002  2199.867154: probe_foo:foo (4004c3)
+                   glob=4294967295 str="hello uprobe." bit=5 argc=1 local=1234
+
+Note that 4294967295 is 0xffffffff.
+
+Obviously, the perf tools also need to be improved.  I'll work on that
+later.
+
+This patchset is based on the current tip/perf/core.  I also put this
+on my 'uprobe/fetch-v1' branch in my tree:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks.
+Namhyung
+
 
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_kprobe.c | 63 +--------------------------------------------
- kernel/trace/trace_probe.c  | 62 ++++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/trace_probe.h  |  1 +
- kernel/trace/trace_uprobe.c | 55 +--------------------------------------
- 4 files changed, 65 insertions(+), 116 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 5a85ab5007bb..52b02e50a600 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1136,67 +1136,6 @@ static int kretprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
- 
--static int __set_print_fmt(struct trace_kprobe *tp, char *buf, int len)
--{
--	int i;
--	int pos = 0;
--
--	const char *fmt, *arg;
--
--	if (!trace_kprobe_is_return(tp)) {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	} else {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
--	}
--
--	/* When len=0, we just calculate the needed length */
--#define LEN_OR_ZERO (len ? len - pos : 0)
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tp->p.args[i].name, tp->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tp->p.nr_args; i++) {
--		if (strcmp(tp->p.args[i].type->name, "string") == 0)
--			pos += snprintf(buf + pos, LEN_OR_ZERO,
--					", __get_str(%s)",
--					tp->p.args[i].name);
--		else
--			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--					tp->p.args[i].name);
--	}
--
--#undef LEN_OR_ZERO
--
--	/* return the length of print_fmt */
--	return pos;
--}
--
--static int set_print_fmt(struct trace_kprobe *tp)
--{
--	int len;
--	char *print_fmt;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tp, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tp, print_fmt, len + 1);
--	tp->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- 
- /* Kprobe profile handler */
-@@ -1345,7 +1284,7 @@ static int register_probe_event(struct trace_kprobe *tp)
- 		call->event.funcs = &kprobe_funcs;
- 		call->class->define_fields = kprobe_event_define_fields;
- 	}
--	if (set_print_fmt(tp) < 0)
-+	if (set_print_fmt(&tp->p, trace_kprobe_is_return(tp)) < 0)
- 		return -ENOMEM;
- 	ret = register_ftrace_event(&call->event);
- 	if (!ret) {
-diff --git a/kernel/trace/trace_probe.c b/kernel/trace/trace_probe.c
-index 5e491d82b6ad..76ab02143b5a 100644
---- a/kernel/trace/trace_probe.c
-+++ b/kernel/trace/trace_probe.c
-@@ -747,3 +747,65 @@ __kprobes void store_trace_args(int ent_size, struct trace_probe *tp,
- 				   data + tp->args[i].offset);
- 	}
- }
-+
-+static int __set_print_fmt(struct trace_probe *tp, char *buf, int len,
-+			   bool is_return)
-+{
-+	int i;
-+	int pos = 0;
-+
-+	const char *fmt, *arg;
-+
-+	if (!is_return) {
-+		fmt = "(%lx)";
-+		arg = "REC->" FIELD_STRING_IP;
-+	} else {
-+		fmt = "(%lx <- %lx)";
-+		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
-+	}
-+
-+	/* When len=0, we just calculate the needed length */
-+#define LEN_OR_ZERO (len ? len - pos : 0)
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
-+				tp->args[i].name, tp->args[i].type->fmt);
-+	}
-+
-+	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
-+
-+	for (i = 0; i < tp->nr_args; i++) {
-+		if (strcmp(tp->args[i].type->name, "string") == 0)
-+			pos += snprintf(buf + pos, LEN_OR_ZERO,
-+					", __get_str(%s)",
-+					tp->args[i].name);
-+		else
-+			pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
-+					tp->args[i].name);
-+	}
-+
-+#undef LEN_OR_ZERO
-+
-+	/* return the length of print_fmt */
-+	return pos;
-+}
-+
-+int set_print_fmt(struct trace_probe *tp, bool is_return)
-+{
-+	int len;
-+	char *print_fmt;
-+
-+	/* First: called with 0 length to calculate the needed length */
-+	len = __set_print_fmt(tp, NULL, 0, is_return);
-+	print_fmt = kmalloc(len + 1, GFP_KERNEL);
-+	if (!print_fmt)
-+		return -ENOMEM;
-+
-+	/* Second: actually write the @print_fmt */
-+	__set_print_fmt(tp, print_fmt, len + 1, is_return);
-+	tp->call.print_fmt = print_fmt;
-+
-+	return 0;
-+}
-diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
-index 04768d2faf11..2112e50bd62a 100644
---- a/kernel/trace/trace_probe.h
-+++ b/kernel/trace/trace_probe.h
-@@ -301,3 +301,4 @@ extern int traceprobe_command(const char *buf, int (*createfn)(int, char**));
- extern int __get_data_size(struct trace_probe *tp, struct pt_regs *regs);
- extern void store_trace_args(int ent_size, struct trace_probe *tp,
- 			     struct pt_regs *regs, u8 *data, int maxlen);
-+extern int set_print_fmt(struct trace_probe *tp, bool is_return);
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 20c35e2a2339..e4e294d61bec 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -659,59 +659,6 @@ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
- 	return 0;
- }
- 
--#define LEN_OR_ZERO		(len ? len - pos : 0)
--static int __set_print_fmt(struct trace_uprobe *tu, char *buf, int len)
--{
--	const char *fmt, *arg;
--	int i;
--	int pos = 0;
--
--	if (is_ret_probe(tu)) {
--		fmt = "(%lx <- %lx)";
--		arg = "REC->" FIELD_STRING_FUNC ", REC->" FIELD_STRING_RETIP;
--	} else {
--		fmt = "(%lx)";
--		arg = "REC->" FIELD_STRING_IP;
--	}
--
--	/* When len=0, we just calculate the needed length */
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\"%s", fmt);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, " %s=%s",
--				tu->p.args[i].name, tu->p.args[i].type->fmt);
--	}
--
--	pos += snprintf(buf + pos, LEN_OR_ZERO, "\", %s", arg);
--
--	for (i = 0; i < tu->p.nr_args; i++) {
--		pos += snprintf(buf + pos, LEN_OR_ZERO, ", REC->%s",
--				tu->p.args[i].name);
--	}
--
--	return pos;	/* return the length of print_fmt */
--}
--#undef LEN_OR_ZERO
--
--static int set_print_fmt(struct trace_uprobe *tu)
--{
--	char *print_fmt;
--	int len;
--
--	/* First: called with 0 length to calculate the needed length */
--	len = __set_print_fmt(tu, NULL, 0);
--	print_fmt = kmalloc(len + 1, GFP_KERNEL);
--	if (!print_fmt)
--		return -ENOMEM;
--
--	/* Second: actually write the @print_fmt */
--	__set_print_fmt(tu, print_fmt, len + 1);
--	tu->p.call.print_fmt = print_fmt;
--
--	return 0;
--}
--
- #ifdef CONFIG_PERF_EVENTS
- static bool
- __uprobe_perf_filter(struct trace_uprobe_filter *filter, struct mm_struct *mm)
-@@ -945,7 +892,7 @@ static int register_uprobe_event(struct trace_uprobe *tu)
- 	call->event.funcs = &uprobe_funcs;
- 	call->class->define_fields = uprobe_event_define_fields;
- 
--	if (set_print_fmt(tu) < 0)
-+	if (set_print_fmt(&tu->p, is_ret_probe(tu)) < 0)
- 		return -ENOMEM;
- 
- 	ret = register_ftrace_event(&call->event);
+Hyeoncheol Lee (2):
+  tracing/kprobes: Move fetch functions to trace_kprobe.c
+  tracing/kprobes: Add fetch{,_size} member into symbol and deref fetch
+    method
+
+Namhyung Kim (10):
+  tracing/kprobes: Make stack and memory fetch functions static
+  tracing/kprobes: Factor out struct trace_probe
+  tracing/uprobes: Convert to struct trace_probe
+  tracing/kprobes: Move common functions to trace_probe.c
+  tracing/kprobes: Remove duplicate set_print_fmt()
+  tracing/uprobes: Fetch args before reserving a ring buffer
+  tracing/uprobes: Fix a comment for uprobe registration syntax
+  tracing/kprobes: Add priv argument to fetch functions
+  tracing/uprobes: Add more fetch functions
+  tracing/uprobes: Add support for full argument access methods
+
+ kernel/trace/trace_kprobe.c | 529 ++++++++++++++++++++++----------------------
+ kernel/trace/trace_probe.c  | 451 ++++++++++++++++++-------------------
+ kernel/trace/trace_probe.h  | 154 ++++++++++++-
+ kernel/trace/trace_uprobe.c | 429 ++++++++++++++++++++++++-----------
+ 4 files changed, 926 insertions(+), 637 deletions(-)
+
 -- 
 1.7.11.7
 
