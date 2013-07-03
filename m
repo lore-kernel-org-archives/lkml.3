@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab3GCIPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 04:15:34 -0400
-Received: from nasmtp02.atmel.com ([204.2.163.16]:46457 "EHLO
-	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507Ab3GCINu (ORCPT
+	id S932143Ab3GCITJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 04:19:09 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:33574 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754311Ab3GCITG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 04:13:50 -0400
-Message-ID: <51D3DD28.8050900@atmel.com>
-Date: Wed, 3 Jul 2013 16:13:28 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 3 Jul 2013 04:19:06 -0400
+Date: Wed, 3 Jul 2013 09:19:03 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+Subject: Re: [GIT PULL] EFI changes for v3.11
+Message-ID: <20130703081903.GI25291@console-pimps.org>
+References: <20130626122331.GK22026@console-pimps.org>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
-        <richard.genoud@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-sound@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: atmel-pcm: use generic dmaengine
- framework
-References: <1372755849-19546-1-git-send-email-voice.shen@atmel.com> <1372755849-19546-3-git-send-email-voice.shen@atmel.com> <51D2F306.7040603@metafoo.de> <51D37F87.2010008@atmel.com> <51D3D482.1050100@metafoo.de> <51D3D969.1060308@atmel.com> <51D3DBE8.4090407@metafoo.de>
-In-Reply-To: <51D3DBE8.4090407@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130626122331.GK22026@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars,
+On Wed, 26 Jun, at 01:23:31PM, Matt Fleming wrote:
+> The following changes since commit d3768d885c6ccbf8a137276843177d76c49033a7:
+> 
+>   x86, efi: retry ExitBootServices() on failure (2013-06-11 07:51:54 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
+> 
+> for you to fetch changes up to 5d32cf1e590bcdc879f8f862e836c542f6ba7ecb:
+> 
+>   [IA64] sim: Add casts to avoid assignment warnings (2013-06-21 11:22:21 +0100)
+> 
+> ----------------------------------------------------------------
+>  * Add casts to avoid compiler warnings about assignments making
+>    pointers from integers of different types. The warnings were
+>    introduced with Borislav's patch to move the EFI runtime service
+>    pointers to void * - Tony Luck
+> 
+> ----------------------------------------------------------------
+> Tony Luck (1):
+>       [IA64] sim: Add casts to avoid assignment warnings
+> 
+>  arch/ia64/hp/sim/boot/fw-emu.c | 20 ++++++++++----------
+>  1 file changed, 10 insertions(+), 10 deletions(-)
 
-On 7/3/2013 16:08, Lars-Peter Clausen wrote:
-> On 07/03/2013 09:57 AM, Bo Shen wrote:
->> Hi Lars,
->>
->> On 7/3/2013 15:36, Lars-Peter Clausen wrote:
->>>>>> +        slave_config->dst_addr = (dma_addr_t)ssc->phybase + SSC_THR;
->>>>>>> [...]
->>>>>>>>> +        slave_config->src_addr = (dma_addr_t)ssc->phybase + SSC_RHR;
->>>>>>>
->>>>>>> Change the type of phybase to dma_addr_t
->>>>>
->>>>> It should be:
->>>>> slave_config->dst_addr = (dma_addr_t)(ssc->phybase + SSC_THR);
->>>>> slave_config->src_addr = (dma_addr_t)(ssc->phybase + SSC_RHR);
->>> The type of phybase in the ssc_device struct should be changed from
->>> resource_size_t to dma_addr_t.
->>
->> Actually, the phybase in ssc_device structure is resource_size_t which used to
->> access the ssc device register.
->> Here, we use ssc register as dma source address or destination address, so we
->> convert it to dma_addr_t type. So, not need to change, am I right?
->
-> Isn't 'regs' used to access the registers? As far as I can see phybase is only
-> used in the audio DMA driver.
+I don't see this commit in Linus' tree so presumably Tony is still
+seeing these warnings.
 
-Thanks for point out this. I will change the phybase type from 
-resource_size_t to dma_addr_t.
-
-> - Lars
->
-
-Best Regards,
-Bo Shen
+-- 
+Matt Fleming, Intel Open Source Technology Center
