@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174Ab3GCIOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 04:14:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:52904 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754838Ab3GCIOp (ORCPT
+	id S1754935Ab3GCIPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 04:15:34 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:46457 "EHLO
+	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab3GCINu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 04:14:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chen Gang <gang.chen@asianux.com>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support 'COMPILE_TEST' in 'asm-generic'.
-Date: Wed, 3 Jul 2013 10:14:12 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        "uml-devel" <user-mode-linux-devel@lists.sourceforge.net>,
-        "uml-user" <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Linux-Arch" <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>
-References: <51CA8AB8.7080504@asianux.com> <CAMuHMdW58CZ0m-10ibs2Vyh8exqP1nSH+-ZOr5J58tx=uorM+Q@mail.gmail.com> <51D375AA.5060300@asianux.com>
-In-Reply-To: <51D375AA.5060300@asianux.com>
+	Wed, 3 Jul 2013 04:13:50 -0400
+Message-ID: <51D3DD28.8050900@atmel.com>
+Date: Wed, 3 Jul 2013 16:13:28 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="gb2312"
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
+        <richard.genoud@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-sound@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: atmel-pcm: use generic dmaengine
+ framework
+References: <1372755849-19546-1-git-send-email-voice.shen@atmel.com> <1372755849-19546-3-git-send-email-voice.shen@atmel.com> <51D2F306.7040603@metafoo.de> <51D37F87.2010008@atmel.com> <51D3D482.1050100@metafoo.de> <51D3D969.1060308@atmel.com> <51D3DBE8.4090407@metafoo.de>
+In-Reply-To: <51D3DBE8.4090407@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307031014.12583.arnd@arndb.de>
-X-Provags-ID: V02:K0:03R+OL4QUaGF9/RoL3A8ra3LFU59n83ulyHdsDuX2/q
- 0SzSQCuFXwj8HydZX1YByDoUby9TMjoDjPRE6uq3Ov4PXs0x6m
- 8JFGWEjy2uRC+IKuv/xBFyWatgkwZNigJ6ZNA+6paT1qvEJgl9
- vbiCqq2h3UqqHAxos2hCWxpot6qBXXdJgHB4HCtdQNFkBeBqey
- kgRaj3BgKsqrm+P7oX1kCFzItCVd6T8sFo6jDVgIMs5SVekel1
- T1lRK2CjIjFY8+Cc8fWVVVtlZXnWc4yFGf/DDUKjPm8YhmR/+d
- t/9Z4oR1UGg84WN8yd2usqmhUHrPC9uK0eB3sr9CLIpI0CfFTs
- Uvs5q+Q4IuejoLchWVNs=
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 July 2013, Chen Gang wrote:
-> On 07/02/2013 06:57 PM, Geert Uytterhoeven wrote:
-> > On Tue, Jul 2, 2013 at 10:00 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> >> > On 07/02/2013 03:19 PM, Geert Uytterhoeven wrote:
-> >>> >> On Tue, Jul 2, 2013 at 4:13 AM, Chen Gang <gang.chen@asianux.com> wrote:
-> > I mean that COMPILE_TEST should exist in Kconfig files only.
-> > It's only meant to have more compile coverage, not to "fix" (through #ifdef)
-> > more code to make it compile.
-> 
-> If so, can we allow the module to 'COMPILE_TEST' under one platform
-> which not support the related HW ?
-> 
->   e.g. "...Despite they cannot be loaded there (or even when they load
-> they cannot be used due to missing HW support)...".
+Hi Lars,
 
-There is a reason why ioremap and the associated functions make no
-sense on UML, and it remains important to not provide them here
-so we can find drivers that accidentally use them and are missing
-a dependency on HAS_IOMEM.
- 
-> 'asm-generic' need provide generic layer to users (both architecture
-> guys and module guys).
+On 7/3/2013 16:08, Lars-Peter Clausen wrote:
+> On 07/03/2013 09:57 AM, Bo Shen wrote:
+>> Hi Lars,
+>>
+>> On 7/3/2013 15:36, Lars-Peter Clausen wrote:
+>>>>>> +        slave_config->dst_addr = (dma_addr_t)ssc->phybase + SSC_THR;
+>>>>>>> [...]
+>>>>>>>>> +        slave_config->src_addr = (dma_addr_t)ssc->phybase + SSC_RHR;
+>>>>>>>
+>>>>>>> Change the type of phybase to dma_addr_t
+>>>>>
+>>>>> It should be:
+>>>>> slave_config->dst_addr = (dma_addr_t)(ssc->phybase + SSC_THR);
+>>>>> slave_config->src_addr = (dma_addr_t)(ssc->phybase + SSC_RHR);
+>>> The type of phybase in the ssc_device struct should be changed from
+>>> resource_size_t to dma_addr_t.
+>>
+>> Actually, the phybase in ssc_device structure is resource_size_t which used to
+>> access the ssc device register.
+>> Here, we use ssc register as dma source address or destination address, so we
+>> convert it to dma_addr_t type. So, not need to change, am I right?
+>
+> Isn't 'regs' used to access the registers? As far as I can see phybase is only
+> used in the audio DMA driver.
 
-No. It's a set of examples for the architectures to look at and
-include if they want to.
+Thanks for point out this. I will change the phybase type from 
+resource_size_t to dma_addr_t.
 
-> So for 'default', it can depend on some conditions (e.g. HW support);
-> but for 'generic', it need try to be independent from any conditions.
-> 
-> And it is also necessary for 'generic' to provide the configuration
-> checking features, but this checking must be no negative effect (or
-> consistent) with its 'generic' services.
-> 
-> So it is necessary to check 'NOMMU', 'CONFIG_HAS_IOMEM' ..., but it
-> also necessary to consider about 'COMPILE_TEST' to be consistent with
-> its 'generic' services.
+> - Lars
+>
 
-The important distinction is between drivers we want to enable in
-COMPILE_TEST because they are written in a portable way but are just
-useless if you don't have the hardware, and other drivers that rely
-on an interface and that should not be built when that interface
-is not available.
-
-	Arnd
+Best Regards,
+Bo Shen
