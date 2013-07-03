@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab3GCBwV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 21:52:21 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:32270 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab3GCBwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 21:52:18 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-26-51d383d0f5e3
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Oskar Andero'" <oskar.andero@sonymobile.com>,
-        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Cc: "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        "'Radovan Lekanovic'" <Radovan.Lekanovic@sonymobile.com>,
-        "'Shingo Nakao'" <shingo.x.nakao@sonymobile.com>,
-        "'Milo Kim'" <milo.kim@ti.com>, "'Richard Purdie'" <rpurdie@rpsys.net>,
-        Jingoo Han <jg1.han@samsung.com>
-References: <1372767354-16499-1-git-send-email-oskar.andero@sonymobile.com>
-In-reply-to: <1372767354-16499-1-git-send-email-oskar.andero@sonymobile.com>
-Subject: Re: [PATCH] backlight: lp855x: set zero brightness at FBBLANK
-Date: Wed, 03 Jul 2013 10:52:16 +0900
-Message-id: <001e01ce778f$f2033c10$d609b430$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIxjslNqYigEdFvW5A6Bjhxk1E9u5iMAX8Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEIsWRmVeSWpSXmKPExsVy+t8zI90LzZcDDa41mlpcXniJ1eJE3wdW
-	i8u75rBZLP+1jsVixykRi3UPXzBZnN6wmMli966nrBbLX31msVg//xabA5fHqwt3WDz2zP/B
-	6tG3ZRWjx50Dt1k9jt/YzuTxeZNcAFsUl01Kak5mWWqRvl0CV8bFyxIFFzkrtm16xNjA+IW9
-	i5GDQ0LAROLSHJ8uRk4gU0ziwr31bF2MXBxCAssYJe5+b2WCSJhI7Ov6DZWYziix4ftDKOcX
-	o8SWa+/ZQarYBNQkvnw5DGaLCORK7Ho9lQmkiFlgH5PElOt7GUESQgLeErc+dLCC2JwCPhL3
-	bvwBaxAWcJOYfeksG8hJLAKqEvN3C4GEeQUsJe5tmsgOYQtK/Jh8jwXEZhbQkli/8zgThC0v
-	sXnNW2aISxUkdpx9zQgyRkTASGLLFEuIEhGJfS/eMUKUdHJILNwHFmcREJD4NvkQCyQgZCU2
-	HYCaIilxcMUNlgmMErOQLJ6FZPEsJItnIdmwgJFlFaNoakFyQXFSepGpXnFibnFpXrpecn7u
-	JkZIfE/cwXj/gPUhxmSg9ROZpUST84HpIa8k3tDYzMjC1MTU2Mjc0ow0YSVxXvUW60AhgfTE
-	ktTs1NSC1KL4otKc1OJDjEwcnFINjFLhZw/lM3SoHWZ81X9l1qb6n1pJxwwSO07ayqf/77XM
-	1djvJPQl4JR424NIkzWls+/tsepKYeZY/eqcfVHBpKCnUQEZ/Xo+op+vVgQ5/Jirs6KiM7+h
-	4L1MdbZTTG5hg9TKsx6PmaY4Ji2X+nCQxdBmcVaIjccV7d2T5stuyowSN3x8ZP53JZbijERD
-	Leai4kQAQIiYDQUDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrIKsWRmVeSWpSXmKPExsVy+t9jQd0LzZcDDU5vMLC4vPASq8WJvg+s
-	Fpd3zWGzWP5rHYvFjlMiFusevmCyOL1hMZPF7l1PWS2Wv/rMYrF+/i02By6PVxfusHjsmf+D
-	1aNvyypGjzsHbrN6HL+xncnj8ya5ALaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0Nd
-	Q0sLcyWFvMTcVFslF58AXbfMHKDTlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZ
-	oIGEdYwZFy9LFFzkrNi26RFjA+MX9i5GTg4JAROJfV2/2SBsMYkL99YD2VwcQgLTGSU2fH8I
-	5fxilNhy7T1YB5uAmsSXL4fBbBGBXIldr6cygRQxC+xjkphyfS8jSEJIwFvi1ocOVhCbU8BH
-	4t6NP2ANwgJuErMvnQWaysHBIqAqMX+3EEiYV8BS4t6miewQtqDEj8n3WEBsZgEtifU7jzNB
-	2PISm9e8ZYa4VEFix9nXjCBjRASMJLZMsYQoEZHY9+Id4wRGoVlIJs1CMmkWkkmzkLQsYGRZ
-	xSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iRGcQJ5J7WBc2WBxiFGAg1GJh9fh2aVAIdbEsuLK
-	3EOMEhzMSiK8WlmXA4V4UxIrq1KL8uOLSnNSiw8xJgP9OZFZSjQ5H5jc8kriDY1NzIwsjcws
-	jEzMzUkTVhLnPdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBsXn3rJSdzE9ZPBwt5jNuLFNcJDl5
-	gUiMepICT5tH2+nVmjv36mXFXhGdsKw8ce//2p/WB2aEcV9envWw+U24Lc/By/KaP60WM6/Q
-	PNqkLPdH5Mwuf4cA8z/LGN458xmstKyscLmWz39DbqXey6v5WSGXdr81tfPZIZan0BxwKefA
-	ht5uHo4pSizFGYmGWsxFxYkA4BchvmQDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754738Ab3GCB4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 21:56:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63424 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752552Ab3GCB4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 21:56:53 -0400
+X-IronPort-AV: E=Sophos;i="4.87,984,1363104000"; 
+   d="scan'208";a="7766396"
+Message-ID: <51D3841D.9040906@cn.fujitsu.com>
+Date: Wed, 03 Jul 2013 09:53:33 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Benjamin LaHaise <bcrl@kvack.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm:
+ hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
+References: <20130515132453.GB11497@suse.de> <5194748A.5070700@cn.fujitsu.com> <20130517002349.GI1008@kvack.org> <5195A3F4.70803@cn.fujitsu.com> <20130517143718.GK1008@kvack.org> <519AD6F8.2070504@cn.fujitsu.com> <20130521022733.GT1008@kvack.org> <51B6F107.80501@cn.fujitsu.com> <20130611144525.GB14404@kvack.org> <51D12E7B.6080301@cn.fujitsu.com> <20130702180008.GQ16399@kvack.org>
+In-Reply-To: <20130702180008.GQ16399@kvack.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/03 09:55:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/03 09:55:24,
+	Serialize complete at 2013/07/03 09:55:24
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 02, 2013 9:16 PM, Oskar Andero wrote:
-> 
-> From: Shingo Nakao <shingo.x.nakao@sonymobile.com>
-> 
-> When backlight turns on early from display, a white line can be
-> seen on the screen. Therefore make sure backlight is off when we
-> are under an fb blank event.
-> 
-> Signed-off-by: Shingo Nakao <shingo.x.nakao@sonymobile.com>
-> Cc: Milo Kim <milo.kim@ti.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
+On 07/03/2013 02:00 AM, Benjamin LaHaise wrote:
 
-Acked-by: Jingoo Han <jg1.han@samsung.com>
+> On Mon, Jul 01, 2013 at 03:23:39PM +0800, Gu Zheng wrote:
+>> Hi Ben,
+>> Are you still working on this patch?
+>> As you know, using the current anon inode will lead to more than one instance of
+>> aio can not work. Have you found a way to fix this issue? Or can we use some
+>> other ones to replace the anon inode?
+> 
+> This patch hasn't been a high priority for me.  I would really appreciate 
+> it if someone could confirm that this patch does indeed fix the hotplug 
+> page migration issue by testing it in a system that hits the bug.  Removing 
+> the anon_inode bits isn't too much work, but I'd just like to have some 
+> confirmation that this fix is considered to be "good enough" for the 
+> problem at hand before spending any further time on it.  There was talk of 
+> using another approach, but it's not clear if there was any progress.
 
-Best regards,
-Jingoo Han
+Yeah, we have not seen anyone try to fix this issue using the other approach we
+talked. I'm not sure whether your patch can indeed fix the problem, but I'll
+carry out a complete test to confirm it, and I'll be very glad to continue this
+job based on your patch if you do not have enough time working on it.:)
 
-> ---
->  drivers/video/backlight/lp855x_bl.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks,
+Gu
+
 > 
-> diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-> index a0e1e02..c0b41f1 100644
-> --- a/drivers/video/backlight/lp855x_bl.c
-> +++ b/drivers/video/backlight/lp855x_bl.c
-> @@ -246,7 +246,7 @@ static int lp855x_bl_update_status(struct backlight_device *bl)
->  {
->  	struct lp855x *lp = bl_get_data(bl);
-> 
-> -	if (bl->props.state & BL_CORE_SUSPENDED)
-> +	if (bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
->  		bl->props.brightness = 0;
-> 
->  	if (lp->mode == PWM_BASED) {
-> --
-> 1.8.1.5
-> 
+> 		-ben
 
 
