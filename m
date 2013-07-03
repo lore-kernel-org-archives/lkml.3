@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab3GCMPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 08:15:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50034 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754528Ab3GCMPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 08:15:13 -0400
-Message-ID: <1372853674.21065.106.camel@cumari.coelho.fi>
-Subject: Re: [PATCH v2 4/9] wl12xx: use frequency instead of enumerations
- for pdata clocks
-From: Luciano Coelho <coelho@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Nishanth Menon <nm@ti.com>, <linux-wireless@vger.kernel.org>,
-        <nsekhar@ti.com>, <mturquette@linaro.org>, <mark.rutland@arm.com>,
-        <balbi@ti.com>, <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Date: Wed, 3 Jul 2013 15:14:34 +0300
-In-Reply-To: <20130703113334.GY5523@atomide.com>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
-	 <1372776948-24840-5-git-send-email-coelho@ti.com>
-	 <20130702150208.GA4233@kahuna> <1372796850.21065.93.camel@cumari.coelho.fi>
-	 <20130703113334.GY5523@atomide.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756198Ab3GCMUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 08:20:10 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:64787 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab3GCMUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 08:20:09 -0400
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lizefan@huawei.com, akpm@linux-foundation.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au, linux-mm@kvack.org
+Cc: Sedat Dilek <sedat.dilek@gmail.com>
+Subject: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for mem_cgroup_sockets_{init,destroy}
+Date: Wed,  3 Jul 2013 14:19:58 +0200
+Message-Id: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-03 at 04:33 -0700, Tony Lindgren wrote:
-> * Luciano Coelho <coelho@ti.com> [130702 13:33]:
-> > On Tue, 2013-07-02 at 10:02 -0500, Nishanth Menon wrote:
-> > > On 17:55-20130702, Luciano Coelho wrote:
-> > > > Instead of defining an enumeration with the FW specific values for the
-> > > > different clock rates, use the actual frequency instead.  Also add a
-> > > > boolean to specify whether the clock is XTAL or not.
-> > > > 
-> > > > Change all board files to reflect this.
-> > > > 
-> > > > Cc: Tony Lindgren <tony@atomide.com>
-> > > > Cc: Sekhar Nori <nsekhar@ti.com>
-> > > > Signed-off-by: Luciano Coelho <coelho@ti.com>
-> > > > ---
-> > > >  arch/arm/mach-davinci/board-da850-evm.c      |    3 +-
-> > > >  arch/arm/mach-omap2/board-4430sdp.c          |    5 ++-
-> > > ^^
-> > > >  arch/arm/mach-omap2/board-omap3evm.c         |    3 +-
-> > > >  arch/arm/mach-omap2/board-omap4panda.c       |    3 +-
-> > > ^^
-> > > Please do not add more platform data to platforms that are DT only.
-> > 
-> > Ah, I hadn't realized that board_omap4panda.c and board-4430sdp.c had
-> > been removed in linux-next.  I base my tree on wireless-next and it
-> > doesn't contain these changes yet.  I would only have noticed this when
-> > I rebased my tree once the merge window is closed. ;)
-> > 
-> > Thanks for pointing out, I'll make sure these changes will not be there
-> > when I send the pull request.
-> 
-> Please separate out the minimal pdata and arch/arm/mach-omap2 changes int
-> a immutable branch on v3.11-rc1 that I can also pull in. For v3.12, we're
-> going to be making more boards device tree only, so these changes may
-> otherwise cause pointless merge conflicts.
+When "CONFIG_MEMCG_KMEM=n" I see this in my build-log:
 
-Okay.  I don't want to freeze my work, I'll continue using my
-wireless-based tree (which is based on 3.10) for now.  When the merge
-window closes, I'll reorganize all this before sending pull requests, so
-we can avoid conflicts.
+ LD      init/built-in.o
+mm/built-in.o: In function `mem_cgroup_css_free':
+memcontrol.c:(.text+0x5caa6): undefined reference to `mem_cgroup_sockets_destroy'
+make[2]: *** [vmlinux] Error 1
 
-Please ignore my changes to board files that will disappear on 3.11 and
-keep reviewing the rest. ;)
+Inspired by the ifdef for mem_cgroup_sockets_{init,destroy} here...
 
---
-Cheers,
-Luca.
+[ net/core/sock.c ]
+
+ #ifdef CONFIG_MEMCG_KMEM
+ int mem_cgroup_sockets_init()
+ ...
+ void mem_cgroup_sockets_destroy()
+ ...
+ #endif
+
+...I did the the same for both in "include/net/sock.h".
+
+This fixes the issue for me in next-20130703.
+
+Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
+---
+[ v2: git dislikes lines beginning with hash ('#'). ]
+
+ include/net/sock.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index ea6206c..ad4bf7f 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -71,6 +71,7 @@
+ struct cgroup;
+ struct cgroup_subsys;
+ #ifdef CONFIG_NET
++#ifdef CONFIG_MEMCG_KMEM
+ int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss);
+ void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg);
+ #else
+@@ -83,7 +84,8 @@ static inline
+ void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg)
+ {
+ }
+-#endif
++#endif /* CONFIG_NET */
++#endif /* CONFIG_MEMCG_KMEM */
+ /*
+  * This structure really needs to be cleaned up.
+  * Most of it is for TCP, and not used by any of
+-- 
+1.8.3.2
 
