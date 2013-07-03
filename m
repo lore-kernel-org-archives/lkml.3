@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753907Ab3GCGAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 02:00:31 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:45974 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107Ab3GCGAa (ORCPT
+	id S1754011Ab3GCGBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 02:01:39 -0400
+Received: from 60-250-193-73.HINET-IP.hinet.net ([60.250.193.73]:60989 "EHLO
+	mail.davicom.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab3GCGBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 02:00:30 -0400
-Message-ID: <51D3BDFA.9080501@monstr.eu>
-Date: Wed, 03 Jul 2013 08:00:26 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 3 Jul 2013 02:01:37 -0400
+X-Greylist: delayed 730 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Jul 2013 02:01:36 EDT
+Message-Id: <201307030548.r635mxI6027578@mail.davicom.com.tw>
+From: "Joseph Chang" <joseph_chang@davicom.com.tw>
+To: "'Peter Korsgaard'" <jacmet@sunsite.dk>,
+        "'Joseph CHANG'" <josright123@gmail.com>
+Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <joseph_chang@davicom.com.tw>,
+        <josright@hotmail.com>
+Subject: RE: [PATCH 1/1] net: add dm9620 net usb driver
+Date: Wed, 3 Jul 2013 13:49:11 +0800
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Pavel Machek <pavel@ucw.cz>, Michal Simek <michal.simek@xilinx.com>,
-        linux-kernel@vger.kernel.org, "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH v3 2/2] uio: Remove uio_pdrv and use uio_pdrv_genirq instead
-References: <03c8973cc1e9efcd203e4d95d2dd9469afbcb39b.1372240320.git.michal.simek@xilinx.com> <771234ccdcd59f6918deb4a8690b4b435a9da556.1372240320.git.michal.simek@xilinx.com> <20130626231706.GA13166@amd.pavel.ucw.cz> <51D12DEA.1010700@monstr.eu> <20130701172024.GA25891@kroah.com>
-In-Reply-To: <20130701172024.GA25891@kroah.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2MELAQJPJWWHTNCVTRDVB"
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook, Build 11.0.5510
+In-Reply-To: <87mwqglhqj.fsf@dell.be.48ers.dk>
+thread-index: Ac5wTG0Rtpug/80ZRBGYdbz3KCdWawHYEtwQ
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2MELAQJPJWWHTNCVTRDVB
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Dear Peter,
 
-On 07/01/2013 07:20 PM, Greg Kroah-Hartman wrote:
-> On Mon, Jul 01, 2013 at 09:21:14AM +0200, Michal Simek wrote:
->> Hi Greg,
->>
->> On 06/27/2013 01:17 AM, Pavel Machek wrote:
->>> On Wed 2013-06-26 11:52:12, Michal Simek wrote:
->>>> The patch "UIO: fix uio_pdrv_genirq with device tree but no interrup=
-t"
->>>> (sha1: e3a3c3a205554e564751cd9c0276b2af813d7a92)
->>>> add support to use this driver with no interrupts.
->>>> uio_pdrv_genirq also supports device-tree binding
->>>> which is not available in uio_pdrv.
->>>>
->>>> That's why this uio_pdrv driver can be just removed.
->>>>
->>>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->>>
->>> Reviewed-by: Pavel Machek <pavel@denx.de>
->>
->> I see 3.10 was tagged.
->> Are you going to add this patch to your char-misc tree?
->=20
-> I will consider it after 3.11-rc1 is out, it came too late in the 3.11
-> merge cycle for me to take it.
+  This is Joseph CHANG, I am glade to contact and work with you.
+  I am busy in some affairs else these days, and will like to be back soon.
 
-No problem. I will keep my eyes on it.
+  For the begin, We copy the source code 'dm9601.c' which was by you,
+   In order to work for our new chips (DM9620, DM9621, DM9621A... series),
+   We did modify to get 'dm9620.c' base on 'dm0601.c',
+   Since you are the author and also the owner, so keep MODULE_AUTHOR() as you.
 
-Thanks,
-Michal
+  To generate DM9620.c is a way to distinguish the different generation chips:
+(as below)
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+   DM9601: old revision:     USB1.1, Ethernet 10/100,     Phase out
+   DM9620: current revision:  USB2.0, Ethernet 10/100,     Mass production state
+   DM9633: next revision:    USB3.0, Ethernet 10/100/1000, Will to release on
+2013/E
+
+  So want to make it from the configuration by "make menuconfig".
+
+  Can you help give further advices, we hope you can go ahead be the owner
+(author) of the 
+  'dm9620.c', And then we make patch to it. Would you agree this idea? If so we
+will be happy
+  because we did not ever create such a code.
+
+  * Think about DM9633 driver to be, It will be is total different compare to
+DM9601 & 
+    DM9620. And will get the same issue.
+ 
+ThankYou and Best Regards,
+Joseph CHANG 
+System Application Engineering Division 
+Davicom Semiconductor, Inc. 
+No. 6 Li-Hsin Rd. VI, Science-Based Park, 
+Hsin-Chu, Taiwan. 
+Tel: 886-3-5798797 Ex 8534
+Fax: 886-3-5646929 
+Web: http://www.davicom.com.tw 
 
 
+-----Original Message-----
+From: Peter Korsgaard [mailto:jacmet@gmail.com] On Behalf Of Peter Korsgaard
+Sent: Monday, June 24, 2013 4:01 AM
+To: Joseph CHANG
+Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org; linux-usb@vger.kernel.org;
+netdev@vger.kernel.org; joseph_chang@davicom.com.tw; josright@hotmail.com
+Subject: Re: [PATCH 1/1] net: add dm9620 net usb driver
 
-------enig2MELAQJPJWWHTNCVTRDVB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+>>>>> "Joseph" == Joseph CHANG <josright123@gmail.com> writes:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+ Joseph> DM9620 is an USB2.0 network adapter rather than DM9601 USB1.1. This
+ Joseph> driver processed the RX data 4 bytes header, TX data 2 bytes header,
+ Joseph> make the control bit exactly right in PHY write function, and optional
+ Joseph> IFF_ALLMUTLI bit for RX control.
 
-iEYEARECAAYFAlHTvfoACgkQykllyylKDCGBUgCfag5LNSBNlP5yrZ+JkK8Y2zWA
-29MAniuh8F3IhuB6xzxaruD7gL1uoKe9
-=AYYN
------END PGP SIGNATURE-----
+But dm9601.c already supports the dm9620 based devices. Why another
+driver for the same hardware?
 
-------enig2MELAQJPJWWHTNCVTRDVB--
+Please CC me on dm9601 related patches.
+
+ Joseph> Tested good for many platforms, include X86 desktop and ARM embedded.
+
+ Joseph> +static struct usb_driver dm9620_driver = {
+ Joseph> +	.name = "dm9620",
+ Joseph> +	.id_table = products,
+ Joseph> +	.probe = usbnet_probe,
+ Joseph> +	.disconnect = usbnet_disconnect,
+ Joseph> +	.suspend = usbnet_suspend,
+ Joseph> +	.resume = usbnet_resume,
+ Joseph> +	.disable_hub_initiated_lpm = 1,
+ Joseph> +};
+ Joseph> +
+ Joseph> +module_usb_driver(dm9620_driver);
+ Joseph> +
+ Joseph> +MODULE_AUTHOR("Peter Korsgaard <jacmet@sunsite.dk>");
+
+I'm not the author of this file.
+
+
+-- 
+Bye, Peter Korsgaard
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
