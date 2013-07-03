@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121Ab3GCQLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 12:11:31 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:57795 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932915Ab3GCQL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 12:11:29 -0400
+	id S933089Ab3GCQQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 12:16:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40122 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932915Ab3GCQQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 12:16:44 -0400
+Date: Wed, 3 Jul 2013 18:16:40 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: kye: Add report fixup for Genius Gila Gaming
+ mouse
+In-Reply-To: <1372781409-5356-1-git-send-email-benjamin.tissoires@redhat.com>
+Message-ID: <alpine.LNX.2.00.1307031815570.26857@pobox.suse.cz>
+References: <1372781409-5356-1-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130703155958.GC5153@dhcp22.suse.cz>
-References: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
-	<51D41E34.5010802@huawei.com>
-	<20130703152058.GA30267@dhcp22.suse.cz>
-	<CA+icZUX+mB2v9ghdhaLvpncCu+yxP4xJzzbFxXisFsB2tDM7TA@mail.gmail.com>
-	<20130703155958.GC5153@dhcp22.suse.cz>
-Date: Wed, 3 Jul 2013 18:11:28 +0200
-Message-ID: <CA+icZUWiXr=wFoXHA_V3jy0Bkg1Pc5b79LX5j1fnfgmOkYhKCg@mail.gmail.com>
-Subject: Re: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for mem_cgroup_sockets_{init,destroy}
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 5:59 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Wed 03-07-13 17:53:21, Sedat Dilek wrote:
->> On Wed, Jul 3, 2013 at 5:20 PM, Michal Hocko <mhocko@suse.cz> wrote:
->> > On Wed 03-07-13 20:51:00, Li Zefan wrote:
->> > [...]
->> >> [PATCH] memcg: fix build error if CONFIG_MEMCG_KMEM=n
->> >>
->> >> Fix this build error:
->> >>
->> >> mm/built-in.o: In function `mem_cgroup_css_free':
->> >> memcontrol.c:(.text+0x5caa6): undefined reference to
->> >> 'mem_cgroup_sockets_destroy'
->> >>
->> >> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->> >> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> >> Signed-off-by: Li Zefan <lizefan@huawei.com>
->> >
->> > I am seeing the same thing I just didn't get to reporting it.
->> > The other approach is not bad as well but I find this tiny better
->> > because mem_cgroup_css_free should care only about a single cleanup
->> > function for whole kmem. If that one needs to do tcp kmem specific
->> > cleanup then it should be done inside kmem_cgroup_css_offline.
->> >
->>
->> As said in my other mail, for me this makes sense as it is a followup.
->>
->> But, still I don't know why sock.c has is own mem_cgroup_sockets_{init,destroy}.
->
-> That is the only definition AFAICS (except for !CONFIG_NET where it
-> expands to NOOP). Please note that memcg_init_kmem is a common kmem
-> initializator and it needs to be prepared for !CONFIG_NET.
->
-> The same applies to _destroy.
-> Makes more sense now?
->
+On Tue, 2 Jul 2013, Benjamin Tissoires wrote:
 
-So, that stuff comes originally from the net-tree.
+> Genius Gila Gaming Mouse presents an obviously wrong report descriptor.
+> the Consumer control (report ID 3) is the following:
+> 0x05, 0x0c,                    // Usage Page (Consumer Devices)       105
+> 0x09, 0x01,                    // Usage (Consumer Control)            107
+> 0xa1, 0x01,                    // Collection (Application)            109
+> 0x85, 0x03,                    //   Report ID (3)                     111
+> 0x19, 0x00,                    //   Usage Minimum (0)                 113
+> 0x2a, 0xff, 0x7f,              //   Usage Maximum (32767)             115
+> 0x15, 0x00,                    //   Logical Minimum (0)               118
+> 0x26, 0xff, 0x7f,              //   Logical Maximum (32767)           120
+> 0x75, 0x10,                    //   Report Size (16)                  123
+> 0x95, 0x03,                    //   Report Count (3)                  125
+> 0x81, 0x00,                    //   Input (Data,Arr,Abs)              127
+> 0x75, 0x08,                    //   Report Size (8)                   129
+> 0x95, 0x01,                    //   Report Count (1)                  131
+> 0x81, 0x01,                    //   Input (Cnst,Arr,Abs)              133
+> 0xc0,                          // End Collection                      135
+> 
+> So the first input whithin this report has a count of 3 but a usage range
+> of 32768. So this value is obviously wrong as it should not be greater than
+> the report count.
+> 
+> Fixes:
+> https://bugzilla.redhat.com/show_bug.cgi?id=959721
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+> Hi Jiri,
+> 
+> I know the window just opened and you don't really like receiving patches at
+> that time. Still, my patch queue is growing, and I would like you to consider
+> this patch for 3.11.
 
-I understand the !CONFIG_NET case, but lack the understanding why
-memcontrol.c needs _destroy.
-Can you explain that (sorry /me is no mm-geek)?
+This one is really easy enough to go into even post -rc1 :) Now applied 
+for the Linus merge I am going to do shortly.
 
-- Sedat -
+Thanks a lot, Benjamin.
 
-[1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/net/core/sock.c?id=next-20130703#n147
-[2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/include/net/sock.h?id=next-20130703#n73
-
-> [...]
-> --
-> Michal Hocko
-> SUSE Labs
+-- 
+Jiri Kosina
+SUSE Labs
