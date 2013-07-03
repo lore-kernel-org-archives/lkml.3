@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab3GCLqL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:46:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32359 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab3GCLqJ (ORCPT
+	id S1756297Ab3GCLqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:46:43 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:54564 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756282Ab3GCLql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:46:09 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=938I8qm67NgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=A_1Y_ByquugA:10 a=D19gQVrFAAAA:8 a=WPEV3b9g5bf_FnBVzCIA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372851967.22688.98.camel@gandalf.local.home>
-Subject: Re: arch/x86/include/asm/trace/irq_vectors.h:50 suspicious
- rcu_dereference_check() usage!
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Jones <davej@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 03 Jul 2013 07:46:07 -0400
-In-Reply-To: <20130703052801.GA2591@redhat.com>
-References: <20130703052801.GA2591@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Jul 2013 07:46:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
+References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
+	<1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
+Date: Wed, 3 Jul 2013 17:16:41 +0530
+Message-ID: <CAK9yfHwvkZsARpWyZYu7+1_nap_Px8TMYCm+hyubA_peobdQMw@mail.gmail.com>
+Subject: Re: [PATCH 3/4] mfd: s2mps11: Add device tree support
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: linux-kernel@vger.kernel.org, yadi.brar01@gmail.com, sbkim73@samsung.com,
+        broonie@kernel.org, lgirdwood@gmail.com, sameo@linux.intel.com,
+        rob.herring@calxeda.com, grant.likely@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-03 at 01:28 -0400, Dave Jones wrote:
-> [ 3206.433900] ===============================
-> [ 3206.434449] [ INFO: suspicious RCU usage. ]
-> [ 3206.434999] 3.10.0+ #40 Not tainted
-> [ 3206.435468] -------------------------------
-> [ 3206.436018] /home/davej/src/linux-dj/arch/x86/include/asm/trace/irq_vectors.h:50 suspicious rcu_dereference_check() usage!
-> [ 3206.437383] 
-> other info that might help us debug this:
-> 
+On 24 June 2013 16:50, Yadwinder Singh Brar <yadi.brar@samsung.com> wrote:
+> This patch adds DT compatible string for s2mps11 and binding documentation.
+>
+> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/s2mps11.txt |   98 +++++++++++++++++++++
+>  drivers/mfd/sec-core.c                            |    3 +
+>  2 files changed, 101 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/s2mps11.txt
+>
+> diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> new file mode 100644
+> index 0000000..7984625
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+> @@ -0,0 +1,98 @@
+> +
+> +* Samsung S2MPS11 Voltage and Current Regulator
+> +
+> +The Samsung S2MP211 is a multi-function device which includes volatage and
 
-This has been fixed by Seiji and sent to Ingo:
+s/volatage/voltage
 
-https://lkml.org/lkml/2013/6/28/459
+> +current regulators, rtc, charger controller and other sub-blocks. It is
 
-Ingo or Peter, can you pull in his patch.
+s/rtc/RTC
 
-Thanks,
+> +interfaced to the host controller using a i2c interface. Each sub-block is
+> +addressed by the host system using different i2c slave address.
 
--- Steve
+s/i2c/I2C -> also elsewhere
 
-> [ 3206.438388] 
-> RCU used illegally from idle CPU!
-> rcu_scheduler_active = 1, debug_locks = 0
-> [ 3206.439733] RCU used illegally from extended quiescent state!
-> [ 3206.440474] no locks held by trinity-child1/31470.
-> [ 3206.441096] 
-> stack backtrace:
-> [ 3206.441667] CPU: 3 PID: 31470 Comm: trinity-child1 Not tainted 3.10.0+ #40
-> [ 3206.445412]  0000000000000000 ffff880244e03f60 ffffffff816ec1a2 ffff880244e03f90
-> [ 3206.447288]  ffffffff810b8b07 ffff88022e069890 ffff880207809f58 0000000000000006
-> [ 3206.449335]  0000003e127b97d8 ffff880244e03fa8 ffffffff8102629e 0000000000000282
-> [ 3206.451405] Call Trace:
-> [ 3206.452676]  <IRQ>  [<ffffffff816ec1a2>] dump_stack+0x19/0x1b
-> [ 3206.454390]  [<ffffffff810b8b07>] lockdep_rcu_suspicious+0xe7/0x120
-> [ 3206.456086]  [<ffffffff8102629e>] smp_trace_reschedule_interrupt+0x17e/0x290
-> [ 3206.457876]  [<ffffffff8170022f>] trace_reschedule_interrupt+0x6f/0x80
-> [ 3206.459593]  <EOI>  [<ffffffff8114a847>] ? user_enter+0x87/0xd0
-> [ 3206.461279]  [<ffffffff816fa6c5>] do_page_fault+0x45/0x50
-> [ 3206.462872]  [<ffffffff816f6fe2>] page_fault+0x22/0x30
+> +
+> +Required properties:
+> +- compatible: Should be "samsung,s2mps11-pmic".
+> +- reg: Specifies the i2c slave address of the pmic block. It should be 0x66.
+> +
+> +Optional properties:
+> +- interrupt-parent: Specifies the phandle of the interrupt controller to which
+> +  the interrupts from s2mps11 are delivered to.
+> +- interrupts: Interrupt specifiers for interrupt sources.
+> +
+> +Optional nodes:
+> +- regulators: The regulators of s2mps11 that have to be instantiated should be
+> +included in a sub-node named 'regulators'. Regulator nodes included in this
+> +sub-node should be of the format as listed below.
+> +
+> +       regulator_name {
+> +               [standard regulator constraints....];
+> +               [regulator-ramp-disable];
+> +       };
+> +
+> + regulator-ramp-delay for BUCKs = [6250/12500/25000(default)/50000] uV/us
+> +
+> + Optional property for BUCK[2/3/4/6] only:
+> + regulator-ramp-disable: boolean, disables ramp delay on hardware.
+> +
+> +NOTE: Some BUCKs shares the ramp rate setting i.e. same ramp value will be set
 
+s/shares/share
 
+-- 
+With warm regards,
+Sachin
