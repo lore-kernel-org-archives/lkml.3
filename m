@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3GCMUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 08:20:10 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:64787 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab3GCMUJ (ORCPT
+	id S932575Ab3GCMV2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 08:21:28 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:33731 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756125Ab3GCMV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 08:20:09 -0400
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        lizefan@huawei.com, akpm@linux-foundation.org,
-        linux-next@vger.kernel.org, sfr@canb.auug.org.au, linux-mm@kvack.org
-Cc: Sedat Dilek <sedat.dilek@gmail.com>
-Subject: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for mem_cgroup_sockets_{init,destroy}
-Date: Wed,  3 Jul 2013 14:19:58 +0200
-Message-Id: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 3 Jul 2013 08:21:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <51D29927.80900@atmel.com>
+References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
+ <1372667978-4718-2-git-send-email-richard.genoud@gmail.com>
+ <51D24299.9050209@atmel.com> <CACQ1gAgcc=j3kmcpjp8bbdHhxr_k=h8jJs6R_paJbPUMv74uGg@mail.gmail.com>
+ <51D29927.80900@atmel.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Wed, 3 Jul 2013 14:21:06 +0200
+Message-ID: <CACQ1gAhnDk-qSt_5xrsMakXqGGDO5pEbA-9UDWCJG=AABDc+zg@mail.gmail.com>
+Subject: Re: [RFC PATCH 01/13] misc: atmel_ssc: add device tree DMA support
+To: Bo Shen <voice.shen@atmel.com>
+Cc: devicetree-discuss@lists.ozlabs.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When "CONFIG_MEMCG_KMEM=n" I see this in my build-log:
+2013/7/2 Bo Shen <voice.shen@atmel.com>:
+> Hi Richard,
+>
+>
+> On 7/2/2013 16:13, Richard Genoud wrote:
+>>>
+>>> Please hold on of this, as to the ASoC dmaengine will deal with this. So,
+>>> we
+>>> >not need do it manually.
+>>> >
+>>> >Now, I am working on it. And will send out the patch soon after testing
+>>> > OK.
+>>
+>> Ok, I stay tuned !
+>
+>
+> I think you can go on working with the two patches I send just now.
+> [1]: ASoC: atmel_ssc_dai: move set dma data to startup callback
+> https://patchwork.kernel.org/patch/2811241/
+>
+> [2]: ASoC: atmel-pcm: use generic dmaengine framework
+> https://patchwork.kernel.org/patch/2811261/
+>
+> I use your patches 4 ~ 8 do a quick testing, it works. Please note the name
+> of asound.state under /etc in your rootfs should the same with atmel,model
+> in patch 6.
 
- LD      init/built-in.o
-mm/built-in.o: In function `mem_cgroup_css_free':
-memcontrol.c:(.text+0x5caa6): undefined reference to `mem_cgroup_sockets_destroy'
-make[2]: *** [vmlinux] Error 1
+Thanks for testing !
+I was just doing the same test, it works with
+aplay  -Dplug:default  good_music.wav
 
-Inspired by the ifdef for mem_cgroup_sockets_{init,destroy} here...
+but there's a violent hang (kernel stops, no trace) when I try the record :
+arecord -v -V stereo -Dplug:default -f cd -t wav -c 2 /tmp/toto.wav
+last thing I see is :
+dma dma0chan3: atc_control (3)
 
-[ net/core/sock.c ]
+I'll try to trace that.
 
- #ifdef CONFIG_MEMCG_KMEM
- int mem_cgroup_sockets_init()
- ...
- void mem_cgroup_sockets_destroy()
- ...
- #endif
 
-...I did the the same for both in "include/net/sock.h".
-
-This fixes the issue for me in next-20130703.
-
-Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
----
-[ v2: git dislikes lines beginning with hash ('#'). ]
-
- include/net/sock.h | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/include/net/sock.h b/include/net/sock.h
-index ea6206c..ad4bf7f 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -71,6 +71,7 @@
- struct cgroup;
- struct cgroup_subsys;
- #ifdef CONFIG_NET
-+#ifdef CONFIG_MEMCG_KMEM
- int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss);
- void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg);
- #else
-@@ -83,7 +84,8 @@ static inline
- void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg)
- {
- }
--#endif
-+#endif /* CONFIG_NET */
-+#endif /* CONFIG_MEMCG_KMEM */
- /*
-  * This structure really needs to be cleaned up.
-  * Most of it is for TCP, and not used by any of
--- 
-1.8.3.2
-
+Best regards,
+Richard.
