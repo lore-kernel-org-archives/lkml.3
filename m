@@ -1,66 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab3GCKCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 06:02:20 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35449 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab3GCKCT (ORCPT
+	id S1755864Ab3GCKHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 06:07:42 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:58478 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab3GCKHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 06:02:19 -0400
-Date: Wed, 3 Jul 2013 11:00:44 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, Joseph Lo <josephl@nvidia.com>,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
-Message-ID: <20130703100044.GG24642@n2100.arm.linux.org.uk>
-References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org> <20130702232259.GH11625@codeaurora.org> <51D39004.9000907@wwwdotorg.org> <20130703051907.GA22702@windriver.com>
+	Wed, 3 Jul 2013 06:07:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703051907.GA22702@windriver.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Wed, 03 Jul 2013 12:07:40 +0200
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, ydroneaud@opteya.com
+Subject: Re: [PATCH] MAINTAINERS: xfs@oss.sgi.com is a list
+Organization: OPTEYA
+Message-ID: <ea519baa117add8c12bbe65f77708a4d@meuh.org>
+User-Agent: Roundcube Webmail/0.9.2
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 01:19:07AM -0400, Paul Gortmaker wrote:
-> As an aside, I'm now thinking any __INIT that implicitly rely on EOF for
-> closure are nasty traps waiting to happen and it might be worthwhile to
-> audit and explicitly __FINIT them before someone appends to the file...
+Le 03.07.2013 11:50, Dave Chinner a écrit :
+> On Wed, Jul 03, 2013 at 11:36:39AM +0200, Yann Droneaud wrote:
+>> Le 03.07.2013 11:24, Dave Chinner a écrit :
+>> >On Wed, Jul 03, 2013 at 10:14:41AM +0200, Yann Droneaud wrote:
+>> >>Le 03.07.2013 08:40, Dave Chinner a écrit :
+>> >>>On Tue, Jul 02, 2013 at 05:00:47PM +0200, Yann Droneaud wrote:
+>> >>>>This patch changes type of xfs@oss.sgi.com
+>> >>>>
+>> >>>>The output of ./scripts/get_maintainer.pl is
+>> >>>>modified to report xfs@oss.sgi.com as a list:
+>> >>>
+>> >>>What's the problem with that? All XFS patches and problem
+>> >>>reports should be sent to the xfs@oss.sgi.com list. There are far
+>> >>>more people than just the maintainer that can triage problems,
+>> >>>answer questions and review patches...
+>> >>>
+>> >>
+>> >>It was just disturbing: I was looking for a list for XFS
+>> >>and found only maintainers.
+>> >
+>> >That's what the:
+>> >
+>> >L:      xfs@oss.sgi.com
+>> >
+>> >entry is, yes?
+>> >
+>> 
+>> In the output of ./scripts/get_maintainer.pl:
+>> 
+>> Ben Myers <bpm@sgi.com> (supporter:XFS FILESYSTEM)
+>> Alex Elder <elder@kernel.org> (supporter:XFS FILESYSTEM)
+>> xfs@oss.sgi.com (supporter:XFS FILESYSTEM)
+>> linux-kernel@vger.kernel.org (open list)
+> 
+> You're smarter than a dumb script. If the information that the
+> script parses is correct and the dumb script doesn't give you the
+> right information, then what needs fixing?
+> 
 
-That hides a different kind of bug though - I hate __FINIT for exactly
-that reason.  Consider this:
+And what about:
 
-	.text
-	blah blah blah
-	__INIT
-	lots of init stuff
-	__FINIT
-	more .text stuff
+   If you are the only one[*] to abuse ./scripts/get_maintainer.pl,
+   then what needs fixing ?
 
-Now, someone comes along and modifies this to be:
+[*] I have found three other examples of duplicating mailing list as 
+maintainer:
 
-	.text
-	blah blah blah
-	.data
-	something else
-	__INIT
-	lots of init stuff
-	__FINIT
-	more .text stuff
+$ sed -n 's/^L:[[:space:]]*//p' MAINTAINERS | sort | uniq > L
+$ sed -n 's/^M:[[:space:]]*//p' MAINTAINERS | sort | uniq > M
+$ comm -12 L M
+ceph-devel@vger.kernel.org
+dm-devel@redhat.com
+xfs@oss.sgi.com
 
-Now, what is the effect of that __FINIT now?  You get the following .text
-emitted into the .data section instead.  This is basically the same problem
-you've just encounted.
+I've sent a patch for xfs@oss.sgi.com and dm-devel@redhat.com,
+in my first pass I've missed ceph-devel@vger.kernel.org
 
-Maybe:
+> Seriously, all you are proving is the old adage that
+> scripts/get_maintainer.pl should be considered harmful because
+> people use it without first engaging their brain.
 
-	__FINIT
-	.text
+Just thinking about the whole picture.
+In this case ./scripts/get_maintainer.pl is going to be right most of 
+time
+except for 3 subsystems on about 1160. So having the same address for 
+maintainer
+and list is a rather uncommon case. Which could be misleading for most.
 
-is the safest solution - and __FINIT becomes just a no-op marker to avoid
-anyone relying on its properties.
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
+
