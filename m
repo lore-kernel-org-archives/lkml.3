@@ -1,125 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933142Ab3GCOZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:25:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35594 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932894Ab3GCOVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:21:45 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 03/13] sched: Select a preferred node with the most numa hinting faults
-Date: Wed,  3 Jul 2013 15:21:30 +0100
-Message-Id: <1372861300-9973-4-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1372861300-9973-1-git-send-email-mgorman@suse.de>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+	id S1755355Ab3GCOae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:30:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49923 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752578Ab3GCOac (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:30:32 -0400
+Date: Wed, 3 Jul 2013 10:30:30 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
+ bus suspend
+In-Reply-To: <20130703131513.GH15056@arwen.pp.htv.fi>
+Message-ID: <Pine.LNX.4.44L0.1307031023060.1241-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch selects a preferred node for a task to run on based on the
-NUMA hinting faults. This information is later used to migrate tasks
-towards the node during balancing.
+On Wed, 3 Jul 2013, Felipe Balbi wrote:
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- include/linux/sched.h |  1 +
- kernel/sched/core.c   | 10 ++++++++++
- kernel/sched/fair.c   | 16 ++++++++++++++--
- kernel/sched/sched.h  |  1 +
- 4 files changed, 26 insertions(+), 2 deletions(-)
+> On Wed, Jul 03, 2013 at 04:06:04PM +0300, Roger Quadros wrote:
+> > On 07/03/2013 03:57 PM, Felipe Balbi wrote:
+> > > Hi,
+> > > 
+> > > On Tue, Jul 02, 2013 at 01:17:58PM -0400, Alan Stern wrote:
+> > >> A PCI-based EHCI controller has two power sources: the core well (which
+> > >> is turned off during suspend) and the auxiliary well (which remains
+> > >> powered).  That's how remote wakeup works; it uses the auxiliary well.
+> > > 
+> > > This, kinda, matches what OMAP tries to do with pad wakeup. Just that
+> > > pad wakeup sits outside of the device itself. Perhaps we could look into
+> > > how PCI handles the aux well and take some inspiration from there.
+> > > 
+> > > Any pointers under drivers/pci/ would be great :-)
+> > > 
+> > From what I understood, auxiliary well is just a power source, and it keeps
+> > the EHCI controller powered even during suspend.
+> > 
+> > If that is true then it is different from our situation as we power down the
+> > EHCI controller completely.
+> 
+> right but our "auxiliary well" keeps PRCM powered which can wake EHCI up
+> ;-)
+> 
+> What I'm saying is that from ehci-omap's perspective, there's very
+> little difference, specially since we route the wakeup through the same
+> IRQ line anyway. Perhaps we could take some inspiration from the PCI
+> land to make our hwmod/omap_device a little easier from driver
+> perspective.
+> 
+> Or maybe it doesn't make sense ;-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 72861b4..ba46a64 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1507,6 +1507,7 @@ struct task_struct {
- 	struct callback_head numa_work;
- 
- 	unsigned long *numa_faults;
-+	int numa_preferred_nid;
- #endif /* CONFIG_NUMA_BALANCING */
- 
- 	struct rcu_head rcu;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index f332ec0..019baae 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1593,6 +1593,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
- 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
-+	p->numa_preferred_nid = -1;
- 	p->numa_work.next = &p->numa_work;
- 	p->numa_faults = NULL;
- #endif /* CONFIG_NUMA_BALANCING */
-@@ -5713,6 +5714,15 @@ enum s_alloc {
- 
- struct sched_domain_topology_level;
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+
-+/* Set a tasks preferred NUMA node */
-+void sched_setnuma(struct task_struct *p, int nid)
-+{
-+	p->numa_preferred_nid = nid;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- typedef struct sched_domain *(*sched_domain_init_f)(struct sched_domain_topology_level *tl, int cpu);
- typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 904fd6f..f8c3f61 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -793,7 +793,8 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
- 
- static void task_numa_placement(struct task_struct *p)
- {
--	int seq;
-+	int seq, nid, max_nid = 0;
-+	unsigned long max_faults = 0;
- 
- 	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
- 		return;
-@@ -802,7 +803,18 @@ static void task_numa_placement(struct task_struct *p)
- 		return;
- 	p->numa_scan_seq = seq;
- 
--	/* FIXME: Scheduling placement policy hints go here */
-+	/* Find the node with the highest number of faults */
-+	for (nid = 0; nid < nr_node_ids; nid++) {
-+		unsigned long faults = p->numa_faults[nid];
-+		p->numa_faults[nid] >>= 1;
-+		if (faults > max_faults) {
-+			max_faults = faults;
-+			max_nid = nid;
-+		}
-+	}
-+
-+	if (max_faults && max_nid != p->numa_preferred_nid)
-+		sched_setnuma(p, max_nid);
- }
- 
- /*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c5f773d..65a0cf0 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -504,6 +504,7 @@ DECLARE_PER_CPU(struct rq, runqueues);
- #define raw_rq()		(&__raw_get_cpu_var(runqueues))
- 
- #ifdef CONFIG_NUMA_BALANCING
-+extern void sched_setnuma(struct task_struct *p, int nid);
- static inline void task_numa_free(struct task_struct *p)
- {
- 	kfree(p->numa_faults);
--- 
-1.8.1.4
+This idea probably won't lead anywhere.  To the best of my knowledge 
+(and I'm not an expert on PCI), these different power wells are simply 
+part of the PCI bus.  The bus controller knows to turn off one of them 
+when the device (or maybe when all the devices on a bus segment) goes 
+into D3.
+
+One big difference with respect to OMAP is the way PCI handles wakeup
+messages.  There's a separate bus signal, PME# (which stands for Power
+Management Event), that a device asserts when it wants to send a wakeup
+request.  When the ACPI driver sees the PME# signal, it searches
+through the entire PCI tree to find the device or devices which need to
+be resumed.  Or maybe when ACPI sees the signal, it tells the PCI core 
+to do this -- I'm not sure of the details.
+
+Alan Stern
 
