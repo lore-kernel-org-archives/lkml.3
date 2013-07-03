@@ -1,81 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945Ab3GCOjV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:39:21 -0400
-Received: from mail.abilis.ch ([195.70.19.74]:14377 "EHLO mail.abilis.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753642Ab3GCOjU convert rfc822-to-8bit (ORCPT
+	id S933082Ab3GCOjw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:39:52 -0400
+Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:46670 "EHLO
+	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933029Ab3GCOju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:39:20 -0400
-Date: Wed, 3 Jul 2013 16:38:37 +0200
-From: Christian Ruppert <christian.ruppert@abilis.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: vincent.stehle@freescale.lan, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-Subject: Re: [PATCH v10] i2c-designware: make SDA hold time configurable
-Message-ID: <20130703143835.GD3929@ab42.lan>
-References: <20130625163902.GA2973@katana>
- <201307031343.11647.arnd@arndb.de>
- <20130703132905.GC3929@ab42.lan>
- <201307031620.03785.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <201307031620.03785.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Wed, 3 Jul 2013 10:39:50 -0400
+Date: Wed, 3 Jul 2013 16:39:44 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: Re: [PATCH v6 2/5] s390/vmcore: Use ELF header in new memory
+ feature
+Message-ID: <20130703163944.70319e0a@holzheu>
+In-Reply-To: <20130703141529.GB1460@redhat.com>
+References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
+	<1372707159-10425-3-git-send-email-holzheu@linux.vnet.ibm.com>
+	<20130702162322.GD22603@redhat.com>
+	<20130703095913.6f6d145d@holzheu>
+	<20130703141529.GB1460@redhat.com>
+Organization: IBM
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070314-8372-0000-0000-0000067B95A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 04:20:03PM +0200, Arnd Bergmann wrote:
-> On Wednesday 03 July 2013, Christian Ruppert wrote:
-> > On Wed, Jul 03, 2013 at 01:43:11PM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 26 June 2013, Wolfram Sang wrote:
-> > > >   On Wed, Jun 26, 2013 at 10:55:06AM +0200, Christian Ruppert wrote:
-> > > > > This patch makes the SDA hold time configurable through device tree.
-> > > > > 
-> > > > > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > > > > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> > > > 
-> > > > Applied to for-next, thanks for keeping at it and providing lots of
-> > > > useful information. Much appreciated!
-> > > 
-> > > Sorry, but I got a regression that I didn't find reported elsewhere
-> > > so far, even though it breaks a lot of the ARM defconfig builds:
-> > > 
-> > > drivers/built-in.o: In function `dw_i2c_probe':
-> > > /git/arm-soc/drivers/i2c/busses/i2c-designware-platdrv.c:125: undefined reference to `__udivdi3'
-> > > 
-> > > I suspect you want something like the change below.
+On Wed, 3 Jul 2013 10:15:29 -0400
+Vivek Goyal <vgoyal@redhat.com> wrote:
+
+> On Wed, Jul 03, 2013 at 09:59:13AM +0200, Michael Holzheu wrote:
+> > On Tue, 2 Jul 2013 12:23:23 -0400
+> > Vivek Goyal <vgoyal@redhat.com> wrote:
 > > 
-> > This looks similar to a patch Vincent Stehle submitted yesterday, see
-> > https://lkml.org/lkml/2013/7/2/145
+> > > On Mon, Jul 01, 2013 at 09:32:36PM +0200, Michael Holzheu wrote:
+> > > 
+> > > [..]
+> > > > +ssize_t elfcorehdr_read(char *buf, size_t count, u64 *ppos)
+> > > > +{
+> > > > +	void *src = (void *)(unsigned long)*ppos;
+> > > > +
+> > > > +	src = elfcorehdr_newmem ? src : src - OLDMEM_BASE;
+> > > 
+> > > Seriously, we need to get rid of all this OLDMEM_BASE logic in s390
+> > > specific code. For regular kdump, it is no different than x86. Only
+> > > special handling required for zfcpdump for HSA region.
+> > > 
+> > > Why do we need above. Is it to cover the case where elfcorehdr have
+> > > been prepared by user space? Are elf headers initially stored in
+> > > reserved region and then swapped. Why do we need to swap these or
+> > > why kexec-tools could not take care of swapping it.
+> > 
+> > I know it is confusing. The "src - OLDMEM_BASE" term is currently
+> > needed because of the swap issue that we have discussed already. We
+> > load the ELF header into reserved memory
+> > [OLDMEM_BASE, OLDMEM_BASE + OLDMEM_SIZE] that is swapped with
+> > [0, OLDMEM_SIZE]. So the ELF header address has to be adjusted.
 > 
-> Thanks for the link. Actually his patch looks wrong to me, because
+> Can't kexec-tools could easily do this swapping and modify elfcorehdr=
+> command line accordingly so that second kernel does not have to do
+> swapping for ELF headers.
 > 
->  dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000, 1000000); 
+> And for PT_LOAD segment swapping, we could use ELF header swapping trick
+> (again in kexec-tools).
 > 
-> assigns the division remainder to sda_hold_time, not the quotient.
+> After above two changes I think all the OLD_MEMBASE magic will go away
+> from s390 code and only HSA region special handling will remain.
+> 
+> This brings it inline with x86 code and it becomes easier to understand
+> the s390 code. Otherwise there so may special corner cases that it is
+> easy to get lost.
 
-Hrmmm... At least when I tested it this morning on an ARC architecture
-it worked as intended and returned the quotient. Does that mean we have
-an issue with this function on ARC? Can anyone who knows these functions
-better than I comment?
+Right, I agree that it is possible to do the swap in the kexec tool.
+Then we would load in the kexec tool the ELF header to address
+"OLDMEM_BASE + addr" (or "crashkernel base + addr") and would specify
+the kernel parameter as "elfcorehdr=addr".
 
-Greetings,
-  Christian
+Currently we specify "elfcorehdr=OLDMEM_BASE + addr" and the kernel
+reverses the swap.
 
--- 
-  Christian Ruppert              ,          <christian.ruppert@abilis.com>
-                                /|
-  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
-                             _// | bilis Systems   CH-1228 Plan-les-Ouates
+Michael
+
