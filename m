@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932764Ab3GCS2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:28:39 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45006 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754184Ab3GCS2i (ORCPT
+	id S932885Ab3GCS3b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:29:31 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56342 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab3GCS33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:28:38 -0400
-Date: Wed, 3 Jul 2013 20:27:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/13] sched: Favour moving tasks towards nodes that
- incurred more faults
-Message-ID: <20130703182748.GA18898@dyad.programming.kicks-ass.net>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-10-git-send-email-mgorman@suse.de>
+	Wed, 3 Jul 2013 14:29:29 -0400
+Date: Wed, 3 Jul 2013 19:29:00 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 0/8] Thunderbolt workarounds
+Message-ID: <20130703182900.GA29079@srcf.ucam.org>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372861300-9973-10-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 03:21:36PM +0100, Mel Gorman wrote:
->  static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
->  {
+Are there any plans to provide native support for the Thunderbolt 
+controller, rather than relying on system management mode?
 
-> +	if (p->numa_faults[task_faults_idx(dst_nid, 1)] >
-> +	    p->numa_faults[task_faults_idx(src_nid, 1)])
-> +		return true;
-
-> +}
-
-> +static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
-> +{
-
-> +	if (p->numa_faults[src_nid] > p->numa_faults[dst_nid])
->  		return true;
-
-I bet you wanted to use task_faults_idx() there too ;-)
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
