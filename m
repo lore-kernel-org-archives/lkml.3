@@ -1,161 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab3GCCVD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 22:21:03 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:38540 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab3GCCVA (ORCPT
+	id S1755210Ab3GCCaH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 22:30:07 -0400
+Received: from fallback.hitachi.co.jp ([133.145.228.50]:34170 "EHLO
+	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753634Ab3GCCaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 22:21:00 -0400
-From: bintian.wang@linaro.org
+	Tue, 2 Jul 2013 22:30:05 -0400
+X-AuditID: 85900ec0-d1ac5b900000151e-78-51d388d8a2d8
+X-Mailbox-Line: From nobody Wed Jul  3 10:46:16 2013
+From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+Subject: [RFC PATCH 1/5] printk: make printk a macro
 To: linux-kernel@vger.kernel.org
-Cc: Mike Lockwood <lockwood@android.com>,
-        dmitry pervushin <dpervushin@gmail.com>,
-        Colin Cross <ccross@android.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+Cc: yrl.pp-manager.tt@hitachi.com, akpm@linux-foundation.org,
+        gregkh@linuxfoundation.org, kay@vrfy.org, davem@davemloft.net,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <john.stultz@linaro.org>, Sean McNeil <sean@mcneil.com>,
-        Bintian Wang <bintian.wang@linaro.org>
-Subject: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
-Date: Wed,  3 Jul 2013 10:19:42 +0800
-Message-Id: <1372817982-3917-1-git-send-email-bintian.wang@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay@vrfy.org>, "David S. Miller" <davem@davemloft.net>
+Date: Wed, 03 Jul 2013 10:46:16 +0900
+Message-ID: <20130703014616.18745.16576.stgit@localhost.localdomain>
+In-Reply-To: <20130703014616.18745.34699.stgit@localhost.localdomain>
+References: <20130703014616.18745.34699.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Lockwood <lockwood@android.com>
+To allow building up metadata transparently for each printk(), make
+printk() a macro while keeping printk()'s API.  Then, printk() calls
+_printk() which implements the original printk() function.
 
-This patch, originally from Android kernel, adds vfat ioctl command
-FAT_IOCTL_GET_VOLUME_ID, with this command we can get the vfat volume ID using
-following code:
+printk() is used from assembly sources, but they don't include printk.h
+and don't use this new printk() macro.  This is addressed by assigning
+the printk symbol to _printk in the linker script.
 
-	ioctl(fd, FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
-
-This patch is a modified version of the patch by Mike Lockwood, with changes
-from Dmitry Pervushin, who noticed the original patch makes some volume IDs
-abiguous with error returns: for example, if volume id is 0xFFFFFDAD, that
-matches -ENOIOCTLCMD, we get "FFFFFFFF" from the user space.
-
-So add a parameter to ioctl to get the correct volume ID.
-
-Android uses vfat volume ID to identify different sd card, when a new sd card
-is inserted to device, android can scan the media on it and pop up new contents.
-
-Cc: dmitry pervushin <dpervushin@gmail.com>
-Cc: Mike Lockwood <lockwood@android.com>
-Cc: Colin Cross <ccross@android.com>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Signed-off-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Sean McNeil <sean@mcneil.com>
-
-Signed-off-by: Bintian Wang <bintian.wang@linaro.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: "David S. Miller" <davem@davemloft.net>
 ---
- fs/fat/fat.h                  |    1 +
- fs/fat/file.c                 |    8 ++++++++
- fs/fat/inode.c                |   12 ++++++++++++
- include/uapi/linux/msdos_fs.h |   10 ++++++++++
- 4 files changed, 31 insertions(+)
 
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 21664fc..4241e6f 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -86,6 +86,7 @@ struct msdos_sb_info {
- 	const void *dir_ops;	      /* Opaque; default directory operations */
- 	int dir_per_block;	      /* dir entries per block */
- 	int dir_per_block_bits;	      /* log2(dir_per_block) */
-+	unsigned int vol_id;		/*volume ID*/
+ include/asm-generic/vmlinux.lds.h |    1 +
+ include/linux/printk.h            |    4 +++-
+ kernel/printk.c                   |   12 ++++++++----
+ 3 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index eb58d2d..0380add 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -416,6 +416,7 @@
+ 		*(.text.hot)						\
+ 		*(.text)						\
+ 		*(.ref.text)						\
++	VMLINUX_SYMBOL(printk) = VMLINUX_SYMBOL(_printk);		\
+ 	DEV_KEEP(init.text)						\
+ 	DEV_KEEP(exit.text)						\
+ 	CPU_KEEP(init.text)						\
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 22c7052..c7a8c6b 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -121,7 +121,9 @@ asmlinkage int printk_emit(int facility, int level,
+ 			   const char *fmt, ...);
  
- 	int fatent_shift;
- 	struct fatent_operations *fatent_ops;
-diff --git a/fs/fat/file.c b/fs/fat/file.c
-index b0b632e..9b104f5 100644
---- a/fs/fat/file.c
-+++ b/fs/fat/file.c
-@@ -114,6 +114,12 @@ out:
- 	return err;
- }
- 
-+static int fat_ioctl_get_volume_id(struct inode *inode, u32 __user *user_attr)
-+{
-+	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-+	return put_user(sbi->vol_id, user_attr);
-+}
+ asmlinkage __printf(1, 2) __cold
+-int printk(const char *fmt, ...);
++int _printk(const char *fmt, ...);
 +
- long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++#define printk(fmt, args...) _printk(fmt, ## args)
+ 
+ /*
+  * Special printk facility for scheduler use only, _DO_NOT_USE_ !
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 8212c1a..1ec264e 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1658,10 +1658,14 @@ asmlinkage int printk_emit(int facility, int level,
+ EXPORT_SYMBOL(printk_emit);
+ 
+ /**
+- * printk - print a kernel message
++ * _printk - print a kernel message
+  * @fmt: format string
+  *
+- * This is printk(). It can be called from any context. We want it to work.
++ * Now, printk() is a macro defined in include/linux/printk.h, and this
++ * function is its body.  It can be called from any context, but please
++ * use printk() macro.  Directly calling _printk() is not recommended.
++ * In assembly sources, you can call printk as in the past because the
++ * linker program links the printk symbol in assembly sources to _printk.
+  *
+  * We try to grab the console_lock. If we succeed, it's easy - we log the
+  * output and call the console drivers.  If we fail to get the semaphore, we
+@@ -1678,7 +1682,7 @@ EXPORT_SYMBOL(printk_emit);
+  *
+  * See the vsnprintf() documentation for format string extensions over C99.
+  */
+-asmlinkage int printk(const char *fmt, ...)
++asmlinkage int _printk(const char *fmt, ...)
  {
- 	struct inode *inode = file_inode(filp);
-@@ -124,6 +130,8 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		return fat_ioctl_get_attributes(inode, user_attr);
- 	case FAT_IOCTL_SET_ATTRIBUTES:
- 		return fat_ioctl_set_attributes(filp, user_attr);
-+	case FAT_IOCTL_GET_VOLUME_ID:
-+		return fat_ioctl_get_volume_id(inode, user_attr);
- 	default:
- 		return -ENOTTY;	/* Inappropriate ioctl for device */
- 	}
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 5d4513c..11b51bb 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1415,6 +1415,18 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 		brelse(fsinfo_bh);
- 	}
+ 	va_list args;
+ 	int r;
+@@ -1697,7 +1701,7 @@ asmlinkage int printk(const char *fmt, ...)
  
-+	/* interpret volume ID as a little endian 32 bit integer */
-+	if (sbi->fat_bits == 32)
-+		sbi->vol_id = (((u32)b->fat32.vol_id[0]) |
-+					((u32)b->fat32.vol_id[1] << 8) |
-+					((u32)b->fat32.vol_id[2] << 16) |
-+					((u32)b->fat32.vol_id[3] << 24));
-+	else /* fat 16 or 12 */
-+		sbi->vol_id = (((u32)b->fat16.vol_id[0]) |
-+					((u32)b->fat16.vol_id[1] << 8) |
-+					((u32)b->fat16.vol_id[2] << 16) |
-+					((u32)b->fat16.vol_id[3] << 24));
-+
- 	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
- 	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
+ 	return r;
+ }
+-EXPORT_SYMBOL(printk);
++EXPORT_SYMBOL(_printk);
  
-diff --git a/include/uapi/linux/msdos_fs.h b/include/uapi/linux/msdos_fs.h
-index f055e58..e284ff9 100644
---- a/include/uapi/linux/msdos_fs.h
-+++ b/include/uapi/linux/msdos_fs.h
-@@ -104,6 +104,8 @@ struct __fat_dirent {
- /* <linux/videotext.h> has used 0x72 ('r') in collision, so skip a few */
- #define FAT_IOCTL_GET_ATTRIBUTES	_IOR('r', 0x10, __u32)
- #define FAT_IOCTL_SET_ATTRIBUTES	_IOW('r', 0x11, __u32)
-+/*Android kernel has used 0x12, so we use 0x13*/
-+#define FAT_IOCTL_GET_VOLUME_ID		_IOR('r', 0x13, __u32)
+ #else /* CONFIG_PRINTK */
  
- struct fat_boot_sector {
- 	__u8	ignored[3];	/* Boot strap short or near jump */
-@@ -128,6 +130,10 @@ struct fat_boot_sector {
- 			__u8	drive_number;	/* Physical drive number */
- 			__u8	state;		/* undocumented, but used
- 						   for mount state. */
-+			__u8	signature;  /* extended boot signature */
-+			__u8	vol_id[4];	/* volume ID */
-+			__u8	vol_label[11];	/* volume label */
-+			__u8	fs_type[8];		/* file system type */
- 			/* other fiealds are not added here */
- 		} fat16;
- 
-@@ -147,6 +153,10 @@ struct fat_boot_sector {
- 			__u8	drive_number;   /* Physical drive number */
- 			__u8    state;       	/* undocumented, but used
- 						   for mount state. */
-+			__u8	signature;  /* extended boot signature */
-+			__u8	vol_id[4];	/* volume ID */
-+			__u8	vol_label[11];	/* volume label */
-+			__u8	fs_type[8];		/* file system type */
- 			/* other fiealds are not added here */
- 		} fat32;
- 	};
--- 
-1.7.9.5
+
 
