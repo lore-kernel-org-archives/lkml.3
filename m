@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab3GBX51 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 19:57:27 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:53432 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab3GBX5Y (ORCPT
+	id S1754671Ab3GCAAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 20:00:45 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:38106 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab3GCAAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 19:57:24 -0400
-Date: Wed, 3 Jul 2013 09:57:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, linux-cachefs@redhat.com,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        milosz@adfin.com
-Subject: Re: [GIT PULL] Fix assorted FS-Cache issues
-Message-Id: <20130703095715.8ea67921e398429fe8e8a643@canb.auug.org.au>
-In-Reply-To: <20130703093815.006437fd5f18210b7729b060@canb.auug.org.au>
-References: <6302.1372775256@warthog.procyon.org.uk>
-	<20130703093815.006437fd5f18210b7729b060@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__3_Jul_2013_09_57_15_+1000_76kV07irQKkH5Scw"
+	Tue, 2 Jul 2013 20:00:44 -0400
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <CA+55aFzV12kJgNOax7B1rM8capK2uYLH66wHnQRNn4k5wa1LMQ@mail.gmail.com>
+References: <201307022055.50717.arnd@arndb.de>
+	<201307022104.01826.arnd@arndb.de>
+	<20130702231706.GF24642@n2100.arm.linux.org.uk>
+	<CA+55aFzV12kJgNOax7B1rM8capK2uYLH66wHnQRNn4k5wa1LMQ@mail.gmail.com>
+Date: Tue, 2 Jul 2013 17:00:43 -0700
+Message-ID: <CAOesGMifPRVr=TVWJfEOm83tMVE0aXFCBVNvAKLV8mvqbDEJmQ@mail.gmail.com>
+Subject: Re: [GIT PULL 3/7] ARM SoC specific changes
+From: Olof Johansson <olof@lixom.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        ARM SoC <arm@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__3_Jul_2013_09_57_15_+1000_76kV07irQKkH5Scw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 3 Jul 2013 09:38:15 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+On Tue, Jul 2, 2013 at 4:51 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jul 2, 2013 at 4:17 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> Please don't merge this yet.
 >
-> On Tue, 02 Jul 2013 15:27:36 +0100 David Howells <dhowells@redhat.com> wr=
-ote:
-> >
-> > Hi Linus,
-> >=20
-> > The following changes since commit b973425cbb51e08301b34fecdfd476a44507=
-d8cf:
-> >=20
-> >   Merge tag 'ext4_for_linus_stable' of git://git.kernel.org/pub/scm/lin=
-ux/kernel/git/tytso/ext4 (2013-05-14 09:30:54 -0700)
-> >=20
-> > are available in the git repository at:
-> >=20
-> >=20
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git t=
-ags/fscache-20130702
->=20
-> /me wonders where this has been hiding for the last month and a half ...
+> Oops, too late. The ARM SoC pull requests got merged a couple of hours ago..
 
-Ah ha! they have been in linux-next as a different set of commits based
-in the same commit and some with even the same commit date/times ...
+It should hopefully not be a big problem, you'll see a merge conflict
+(so will sfr) when merging from Russell due to add/add conflicts been
+resolved by ordering them in opposite order in
+arch/arm/include/asm/glue-proc.h.
 
-Oh, well, at least the other set have been removed form linux-next today.
+Feel free to flip them back to Russell's preferred ordering at that
+time, of course.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Wed__3_Jul_2013_09_57_15_+1000_76kV07irQKkH5Scw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR02jgAAoJEECxmPOUX5FEntgP/1SDhXRRtZqheyZjiaH8WMKW
-iRbjPjpThXFgrmNS0zfSe2DRRDSNfb0WaovN99shFkPJ+ZmNpj0ncTlS9TUysgIX
-pxtymn1b9RCnymdsFzRpRISN/KLxGr7/3hV0osSei20Je2K31Z4pk2pWVyrTIlJr
-iW5fbXLx/viMyKEKZOGB19MOxi4Kil73brv86FDJ7E8R8X3FWJNetik05PB7aT/7
-vTFJ+Tyysv+R4uKLVgi0j+EBDH6zerZSoycXlCgZ+T1GrUBrdNd73Ixhum03maMp
-65PpspF4b/oLw/Y61VdUfYeNJ7cQbzhGVIBApS+G56zMTe5BwdB4W9VTaQ+Vr16+
-kAc5Q1o4yCjdmf4VbLfpfjTPVXbDMLV3iHbh5cwREin8CnKg8YPMrNHcRQVUj8wf
-Q1/9tphQSzcOhzHONKGv1y7CRyNne+0l7Vf8+y6TNAyDh7JmLk6dAiRCApaIx51u
-FLm0InoiXLrb28IUqOM0tS3V+nzmR16gT5wy9lHMn3JbZGtjH1g0ntFmg16d5huU
-aWzc8zaPo+lsR1H6GCSn9KIhgwLwqpaODO08ejIsNsd5Wkyc7tLX2lmDsyZrFxFA
-LKOEkGciZP0yLqOZVODAem2xvsawUifzjbZn/dSKApV0+Oevi7kdTNcsr8h07/k4
-95A0nxfcWTyl3vSGSBrJ
-=vqin
------END PGP SIGNATURE-----
-
---Signature=_Wed__3_Jul_2013_09_57_15_+1000_76kV07irQKkH5Scw--
+-Olof
