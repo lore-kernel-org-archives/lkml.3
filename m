@@ -1,136 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932241Ab3GCL1P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:27:15 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:65354 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab3GCL1O (ORCPT
+	id S1756082Ab3GCLcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:32:07 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:50346 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755129Ab3GCLbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:27:14 -0400
+	Wed, 3 Jul 2013 07:31:53 -0400
+Message-ID: <51D40BA3.6000603@gmail.com>
+Date: Wed, 03 Jul 2013 13:31:47 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUWtvuq=KP2YsoUfWAZTzZWQymcXk72UbMquYGPCFkpnjg@mail.gmail.com>
-References: <CA+icZUUWGa0f1pKM4Vegmk3Ns8cMbQcQTR6i=XGUtpr8CkvLYA@mail.gmail.com>
-	<CA+icZUWtvuq=KP2YsoUfWAZTzZWQymcXk72UbMquYGPCFkpnjg@mail.gmail.com>
-Date: Wed, 3 Jul 2013 13:27:12 +0200
-Message-ID: <CA+icZUXPFYJAFedfq29pArsr7Wo-iAdu9NeYnr8ADYkpC6D21w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jul 3 [ BROKEN: memcontrol.c:(.text+0x5caa6):
- undefined reference to `mem_cgroup_sockets_destroy' ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm <linux-mm@kvack.org>, Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+To: Arnaud Ebalard <arno@natisbad.org>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 5/7] ARM: kirkwood: remove redundant DT board files
+References: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com> <1372762824-12202-6-git-send-email-sebastian.hesselbarth@gmail.com> <87k3l8v9s1.fsf@natisbad.org>
+In-Reply-To: <87k3l8v9s1.fsf@natisbad.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 12:58 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Jul 3, 2013 at 11:29 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> On Wed, Jul 3, 2013 at 10:06 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> Hi all,
->>>
->>> Changes since 20130702:
->>>
->>> The powerpc tree lost its build failure.
->>>
->>> The device-mapper tree gained a conflict against the md tree.
->>>
->>> The net-next tree gained a build failure for which I cherry-picked an
->>> upcoming fix.
->>>
->>> The trivial tree gained conflicts against the btrfs and Linus' trees.
->>>
->>> The xen-two tree gained a conflict against the tip tree.
->>>
->>> The akpm tree lost some patches that turned up elsewhere.
->>>
->>> The cpuinit tree lost a patch that turned up elsewhere.
->>>
->>> ----------------------------------------------------------------------------
->>>
->>
->> From my build-log:
->> ...
->>  CC      mm/memcontrol.o
->> ...
->>   MODPOST vmlinux.o
->> WARNING: modpost: Found 1 section mismatch(es).
->> To see full details build your kernel with:
->> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
->>   GEN     .version
->>   CHK     include/generated/compile.h
->>   UPD     include/generated/compile.h
->>   CC      init/version.o
->>   LD      init/built-in.o
->> mm/built-in.o: In function `mem_cgroup_css_free':
->> memcontrol.c:(.text+0x5caa6): undefined reference to
->> `mem_cgroup_sockets_destroy'
->> make[2]: *** [vmlinux] Error 1
->> make[1]: *** [deb-pkg] Error 2
->> make: *** [deb-pkg] Error 2
->>
->> My kernel-config is attached.
->>
+On 07/03/13 01:09, Arnaud Ebalard wrote:
+> Hi Sebastian,
 >
-> [ CC linux-mm and Li Zefan ]
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> writes:
 >
-> Trying with the attached patch... Building...
+>> With DT support for mv643xx_eth board specific init for some boards now
+>> is unneccessary. Remove those board files, Kconfig entries, and
+>> corresponding entries in kirkwood_defconfig.
 >
-
-Looks like this was not a good idea:
-...
-  CC      mm/memcontrol.o
-mm/memcontrol.c: In function 'mem_cgroup_css_free':
-mm/memcontrol.c:6335:2: warning: passing argument 1 of
-'mem_cgroup_css_offline' from incompatible pointer type [enabled by
-default]
-mm/memcontrol.c:6320:13: note: expected 'struct cgroup *' but argument
-is of type 'struct mem_cgroup *'
-
-I see I have in my kernel-config...:
-
-# CONFIG_MEMCG_KMEM is not set
-
-...inspired by:
-
-[ net/core/sock.c ]
-...
-#ifdef CONFIG_MEMCG_KMEM
-int mem_cgroup_sockets_init()
-...
-void mem_cgroup_sockets_destroy()
-...
-#endif
-
-Not sure if...
-
-[ include/net/sock.h ]
-...
-struct cgroup;
-struct cgroup_subsys;
-#ifdef CONFIG_NET
-int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss);
-void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg);
-#else
-static inline
-int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
-{
-        return 0;
-}
-static inline
-void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg)
-{
-}
-#endif
-...
-
-...needs some massage.
-
-- Sedat -
-
-> - Sedat -
+> Applying above your set an old quilt cleaning patch Jason asked at some
+> point, it became empty except for arch/arm/mach_kirkwood/common.h in
+> which some declarations were left behind. If this is correct, can you
+> just merge the hunks below in your 5/7 in next round?
 >
->
->> - Sedat -
+> AFAICT, only dnskw_init() remains, which matches the list of board-*.c
+> files in arch/arm/mach_kirkwood/ (i.e. board-dt.c and board-dnskw.c).
+
+While updating the patch with yours, I stumbled upon MACH_TS219_DT that
+also remains because it includes tsx1x-common.c.
+
+I cannot recall if Jason or Andrew said something about removing it..
+
+Sebastian
