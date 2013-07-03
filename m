@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab3GCGlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 02:41:19 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:38792 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab3GCGlO (ORCPT
+	id S1754158Ab3GCGo1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 02:44:27 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:35751 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3GCGo0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 02:41:14 -0400
+	Wed, 3 Jul 2013 02:44:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <51D2B03A.3010806@samsung.com>
-References: <1372405697-13556-1-git-send-email-cw00.choi@samsung.com>
-	<CAKohpon6AaSRQKvffPG+J=NUU+5JdVhFo-_uMm=2H3u-yT5h0A@mail.gmail.com>
-	<51CD55E2.5060205@samsung.com>
-	<CAKohpokY+GEt9UaU5inWaiooLq8sX7jy63sok+FFvs_KyQpcKg@mail.gmail.com>
-	<51D2B03A.3010806@samsung.com>
-Date: Wed, 3 Jul 2013 12:11:14 +0530
-Message-ID: <CAKohpokZP=zJFoMGmQ7RY7OrttmbG+o2Hf+6ybJdx9PFqKmNPg@mail.gmail.com>
-Subject: Re: [PATCH v4] cpufreq: stats: Add 'load_table' debugfs file to show
- accumulated data of CPUs
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <51D27CC6.1050209@intel.com>
+References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
+	<1372319707-13892-13-git-send-email-adrian.hunter@intel.com>
+	<51CC6AAF.4030404@gmail.com>
+	<51D14CB6.206@intel.com>
+	<51D1D043.5030509@gmail.com>
+	<51D27CC6.1050209@intel.com>
+Date: Wed, 3 Jul 2013 08:44:25 +0200
+Message-ID: <CABPqkBQar4SKq_A+=ShdjJgYfxW90yuD=M=WQ2HjFwR_bKxKkg@mail.gmail.com>
+Subject: Re: [PATCH V2 12/15] perf tools: allow non-matching sample types
+From: Stephane Eranian <eranian@google.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2 July 2013 16:19, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> Previously, I sent two reply about your reply. But, Please ignore previous reply.
-> Those have wrong function flow about creating sysfs file and poor wrong opinion.
+On Tue, Jul 2, 2013 at 9:09 AM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> On 01/07/13 21:53, David Ahern wrote:
+>> On 7/1/13 3:32 AM, Adrian Hunter wrote:
+>>> Snip
+>>>
+>>>>
+>>>> While this works for a combined S/W and tracepoint events session, I do not
+>>>> like promoting sample types to the minimum compatible level for all events
+>>>> in the session. perf needs to allow each event to have its own sample_type
+>>>> and not force a minimal compatibility.
+>>>
+>>> Why?  The impact is small. The kernel API is completely unchanged.
+>>
+>> I'd like to see libperf become a stable, usable library - usable by more
+>> than the perf binary and its builtin commands. I have already done this once
+>> for a daemon, and it was a PITA to get the specific use functional without
+>> memory leaks/growth in the libperf part.
+>>
+>> With respect to this specific patch it means appropriate flexibility in the
+>> data collected for events. ie., each event can have its own sample_type. For
+>> example if the tracepoint already contains task information TID is not
+>> needed - and IP may not be wanted either. The code processing the samples
+>> should not require all events to have some minimum data format - that just
+>> wastes buffer space.
 >
-> I'm so sorry if you're confused.
-
-Its okay.
-
-> OK. I'll create link for CPU[1-3] if multiple core use one cpufreq policy.
-> In result, we can check below directory structure.
+> It would be more compelling to provide a use-case where that "waste"
+> actually makes any difference.
 >
-> sh-4.1# ls -al /sys/kernel/debug/cpufreq/
-> total 0
-> drwxr-xr-x  3 root root 0 Jan  1 09:00 .
-> drwx------ 26 root root 0 Jan  1 09:00 ..
-> drwxr-xr-x  2 root root 0 Jan  1 09:00 cpu0
-> lrwxrwxrwx  1 root root 0 Jan  1 09:00 cpu1 -> ./cpu0
-> lrwxrwxrwx  1 root root 0 Jan  1 09:00 cpu2 -> ./cpu0
-> lrwxrwxrwx  1 root root 0 Jan  1 09:00 cpu3 -> ./cpu0
->
-> And then I will create load_table debugfs file below of /sys/kernel/debug/cpufreq/cpu0
-> in cpufreq_stats.c
+In my opinion, it's not so much of the "wasted" space than on the ease of use
+for tools. With your change, tools would have to know something about the order
+in which sample_type is laid out. And it just happens that it is not
+as trivial as
+expected. It is NOT the bit position order in sample_type. So this is more error
+prone.
 
-Looks good.
-
-> I understand your opinion. But I have a suggestion for using load_table debugfs file
-> if cpufreq governor is performance/powersave.
->
-> So, I suggest that performance/powersave governor may need to executes dbs_check_cpu()
-> to calculate CPUx load. Sometimes, we need CPUs load on performance/powersave
-> govenor because we could get different power-consumption according to CPUs load
-> on same cpu frequency when we estimate power-consumption on specific test case.
-
-How will these two call dbs_check_cpu()? We don't have a timer for
-those two governors :)
-
-Okay do one thing. Create debugfs and debug/cpufreq/cpuX directory always.
-Let load_table contain zero when we have irrelevant governors set for it.
-
-We will see if we want some smart code in place for this or not.
+I prefer your IDENTIFIER solution better, yet it also implies that this flag is
+special. It provides the event ID at the first position in the sample's body.
