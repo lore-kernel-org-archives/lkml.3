@@ -1,73 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab3GCHoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 03:44:38 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:39338 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab3GCHog (ORCPT
+	id S1754558Ab3GCHsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 03:48:33 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47248 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3GCHsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 03:44:36 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130702223405.AF5BB5A4016@corp2gmr1-2.hot.corp.google.com>
-References: <20130702223405.AF5BB5A4016@corp2gmr1-2.hot.corp.google.com>
-Date: Wed, 3 Jul 2013 09:44:34 +0200
-Message-ID: <CA+icZUWX761O5tAfdYfgR0_QA8zMiZOqBBjzbWVeEcZPL+M_pQ@mail.gmail.com>
-Subject: Re: mmotm 2013-07-02-15-32 uploaded
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Jul 2013 03:48:32 -0400
+Date: Wed, 3 Jul 2013 17:48:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+Message-Id: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 12:34 AM,  <akpm@linux-foundation.org> wrote:
-> The mm-of-the-moment snapshot 2013-07-02-15-32 has been uploaded to
->
->    http://www.ozlabs.org/~akpm/mmotm/
->
-> mmotm-readme.txt says
->
-> README for mm-of-the-moment:
->
-> http://www.ozlabs.org/~akpm/mmotm/
->
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
->
-> You will need quilt to apply these patches to the latest Linus release (3.x
-> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> http://ozlabs.org/~akpm/mmotm/series
->
-> The file broken-out.tar.gz contains two datestamp files: .DATE and
-> .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-> followed by the base kernel version against which this patch series is to
-> be applied.
->
-> This tree is partially included in linux-next.  To see which patches are
-> included in linux-next, consult the `series' file.  Only the patches
-> within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-> linux-next.
->
+--Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Andrew,
+Hi all,
 
-1st, I would like to see a diff to previous mmotm release.
-Is that possible - with the announce.
-For example, I like to diff series file of mmot*m* and mmot*s*.
+After merging the final tree, today's linux-next build (powerpc
+allnoconfig) failed like this:
 
-AFAICS, you wanted to fold the fix into the real patch?
+fs/select.c: In function 'do_select':
+fs/select.c:408:2: error: implicit declaration of function 'll_start_time' =
+[-Werror=3Dimplicit-function-declaration]
+  u64 ll_start =3D ll_start_time(ll_flag);
+  ^
+fs/select.c:409:2: error: implicit declaration of function 'll_run_time' [-=
+Werror=3Dimplicit-function-declaration]
+  u64 ll_time =3D ll_run_time();
+  ^
+fs/select.c:504:3: error: too many arguments to function 'can_poll_ll'
+   if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+   ^
+In file included from fs/select.c:31:0:
+include/net/ll_poll.h:194:20: note: declared here
+ static inline bool can_poll_ll(u64 end_time)
+                    ^
+fs/select.c: In function 'do_poll':
+fs/select.c:826:3: error: too many arguments to function 'can_poll_ll'
+   if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+   ^
+In file included from fs/select.c:31:0:
+include/net/ll_poll.h:194:20: note: declared here
+ static inline bool can_poll_ll(u64 end_time)
+                    ^
 
-ipcmsg-shorten-critical-region-in-msgctl_down.patch
-ipcmsg-shorten-critical-region-in-msgrcv-fix-race-in-msgrcv2.patch
+Caused by commit 1bc2774d8664 ("net: convert lls to use time_in_range()")
+from the net-next tree.
 
-3rd, is the "sysv-ipc-shm-optimizations" patchset from Davidlohr included here?
-( I had no closer look. )
+I cherry-picked the commit 419076f59fc5 ("net: lls fix build with
+allnoconfig") out of tomorrow's net-next tree.  (I am feeling generous
+and noticed that patch being applied :-))
 
-Thanks for maintaining -mm stuff!
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Regards,
-- Sedat -
+--Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR09dKAAoJEECxmPOUX5FEcZwQAJC4R0M2sqUODcOmBTuonllQ
+Rf9DJ4LHt4Dmh4lv2SUlt38LfeRitaRyWOYZ6YDPHEb0UgmLYvycT6KrT7kvy42y
+mSm2cjkZpQFUihAMGkhL+yJWM8HVAOwnv7E3DPuJFexv+DUM6I+570NVwxCAj5JD
+vsHyTl1/ZCLA9fMkGHMb57jDw7fw30aBOzBkjl0AMx8XFpsoOaAWPKaCeGw3u2VH
+2ZSlgud+zICJGF1mSh82lwAassKTNUxcgGd8plyN1NxAD+IaQNR4gqBiLblgm4F0
+kbzwDdBt1875Vzcvycm4YQmGEK4oQzabs/RgoVDJXEDIevLg238X5orNCRYXiELa
+TdoIo0hKVgnwDlkEHKvdup1eL/YPDIRL5n43Ei46SHfH+DNgCh7f70OoVS4LwW+m
+QT88WEa7t1s6GT5+ZVk2ljCEmIm4OSPP+c/IWnN6REPoBsf2xg6puS+C6IiEMHdH
+woQlMUHiZxTTtVBQzdOMfwbvTQpIPeiiMUrDGqItMq1gbokfk5G9d2thWqinZKkJ
+pPYr/9G4VlmuEpJ0vb7wTegsKP/rlnfVh6Aw0grrWutIjzSRKDdfB8yVwjoNiR21
+47MykM6buu0IIjtbXveXjkQKGhCzufAutO8ovj/gxVWT0JcpC6U6PUnsBfx/7yKV
+XVOgjpN/SGbt3fdZlDr0
+=JRbT
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__3_Jul_2013_17_48_22_+1000_kF2TGyGWWDgMaPhN--
