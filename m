@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab3GCFTu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 01:19:50 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:40864 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab3GCFTs (ORCPT
+	id S1752987Ab3GCFWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 01:22:50 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44158 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab3GCFWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 01:19:48 -0400
-Date: Wed, 3 Jul 2013 01:19:07 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
-        Joseph Lo <josephl@nvidia.com>, <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
-Message-ID: <20130703051907.GA22702@windriver.com>
-References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
- <20130702232259.GH11625@codeaurora.org>
- <51D39004.9000907@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <51D39004.9000907@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Jul 2013 01:22:48 -0400
+Date: Wed, 3 Jul 2013 15:22:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masanari Iida <standby24x7@gmail.com>, David Sterba <dsterba@suse.cz>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Josef Bacik <jbacik@fusionio.com>
+Subject: linux-next: manual merge of the trivial tree with the btrfs tree
+Message-Id: <20130703152241.d9f23c7709f13a40493656f7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__3_Jul_2013_15_22_41_+1000_=pcOMf_/QdbFHNBL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH] ARM: move body of head-common.S back to text section] On 02/07/2013 (Tue 20:44) Stephen Warren wrote:
+--Signature=_Wed__3_Jul_2013_15_22_41_+1000_=pcOMf_/QdbFHNBL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 07/02/2013 05:22 PM, Stephen Boyd wrote:
-> > On 07/02, Stephen Warren wrote:
-> >> From: Stephen Warren <swarren@nvidia.com>
-> >>
-> >> Commit 281ecb7 "arm: delete __cpuinit/__CPUINIT usage from all ARM
+Hi Jiri,
 
-We shouldn't reference this commit since (a) the SHA is from linux-next
-and hence is transient, and (b) this commit really isn't the one that
-triggers the breakage.  It is the commit where we dummy out the macros
-that will reveal the missing __FINIT.
+Today's linux-next merge of the trivial tree got a conflict in
+fs/btrfs/free-space-cache.c between commit 905d0f564e9c ("btrfs: add
+prefix to sanity tests messages") from the btrfs tree and commit
+8b513d0cf603 ("treewide: Fix typo in printk") from the trivial tree.
 
-So, assuming Linus takes my pull request here...
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-https://lkml.org/lkml/2013/7/2/405
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-...for phase one of the __cpuinit purge, then the SHA you want to
-blame for triggering this hidden bug into life is:
+diff --cc fs/btrfs/free-space-cache.c
+index 7517285,2750b50..0000000
+--- a/fs/btrfs/free-space-cache.c
++++ b/fs/btrfs/free-space-cache.c
+@@@ -3202,7 -3200,7 +3202,7 @@@ static int test_extents(struct btrfs_bl
+ =20
+  	ret =3D btrfs_remove_free_space(cache, 2 * 1024 * 1024, 4096);
+  	if (ret) {
+- 		test_msg("Error removing middle peice %d\n", ret);
+ -		printk(KERN_ERR "Error removing middle piece %d\n", ret);
+++		test_msg("Error removing middle piece %d\n", ret);
+  		return ret;
+  	}
+ =20
 
-22f0a2736 "init.h: remove __cpuinit sections from the kernel" at:
+--Signature=_Wed__3_Jul_2013_15_22_41_+1000_=pcOMf_/QdbFHNBL
+Content-Type: application/pgp-signature
 
-http://git.kernel.org/cgit/linux/kernel/git/paulg/linux.git/log/?h=cpuinit-delete
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-After you update the commit log (and make the change below), it probably
-makes sense for this to go in via one of the ARM trees, since if I take
-it, it will go in at the very end of the merge window with the phase two
-commits.  If it goes in via an arm tree, the regression window within
-3.10 --> 3.11-rc1 will be minimized. (That and it is a pre-existing bug).
+iQIcBAEBCAAGBQJR07UlAAoJEECxmPOUX5FEi50QAJTqp5o36dxEblrAbw+4K9XM
+PGekDyfeLVwDfiVitG7+3Sg6naUrUmmh/7oEEmD+pDZ8Sz5797OD9c5OMvcXr8by
+gQc3phahswqA6zDeZloBJGjyPYDmkYLvZ666ua9gi6Jp+0hFh/oHpB+vTA5APT7U
+hoqw2agoMdbVi2i3tzyWFQNPDpEWgsAGheIq0IFlffz/J9gab7NMzCss+JEorFyW
+hkouop64iDZxpDyd0Au15JozY5eBIoSUSich0H1lzSYD2bdgEkZ/x0zrwetNrdL6
+A4weAQsRpLWBTvirsPkl2gOMwZBYmeK1XlQbu3aXvYaFwPo2axbNdt05IHsuwSDV
+eqUNArzO4+yBUCAXfrt7rvYlMzyVxc5qrYhFSGsmLrJJ3gRtzWLIBYo5na4J9Mba
+5ZRJZoCt5xwjPpCjfbm3bvWUcAmKuukuebg0/ugWapJfHfq2yc8jsIdANcwoTTfe
+6DLFRbt+8CfmETaxqgU9QZlRpvJaOcatfrD5HLPc/IWku2f9RHY1WzKIdBqicEMi
+A1rQaBqIDyRRWAp1Gfj5hrDBPTmcGJYk/PiMcn57WZzo4IMxR6aJqP/oNMYNHX9T
+QGi4i9Qs9q4jO0CgFYPRv/vqkmJ4rCF7fA8sDXbSCU7N2diDihFVcyEP2KL54mtK
+ZPqWHdVvFmKEDK7rAuPS
+=4ioF
+-----END PGP SIGNATURE-----
 
-> >> users" removed a __CPUINIT from head-common.S. However, the code
-> >> immediately before the removed tag was marked __INIT, and was missing
-> >> a match __FINIT. This caused code after the removed __CPUINIT to end
-> >> up in the init section rather than the main text section as desired.
-> >> This caused issues such as secondary CPU boot failures or crashes.
-> >> Add the missing __FINIT to solve this.
-> >>
-> >> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> >> ---
-> >>  arch/arm/kernel/head-common.S | 2 ++
-> >>  1 file changed, 2 insertions(+)
-> >>
-> >> diff --git a/arch/arm/kernel/head-common.S b/arch/arm/kernel/head-common.S
-> >> index 529ce99..a9dc804 100644
-> >> --- a/arch/arm/kernel/head-common.S
-> >> +++ b/arch/arm/kernel/head-common.S
-> >> @@ -122,6 +122,8 @@ __mmap_switched_data:
-> >>  	.long	init_thread_union + THREAD_START_SP @ sp
-> >>  	.size	__mmap_switched_data, . - __mmap_switched_data
-> >>  
-> >> +	__FINIT
-> >> +
-> >>  /*
-> >>   * This provides a C-API version of __lookup_processor_type
-> >>   */
-> > 
-> > Shouldn't this come after lookup_processor_type()? Otherwise you
-> > just removed that function from the init section?
-> 
-> I think this is correct. Prior to "arm: delete __cpuinit/__CPUINIT usage
-> from all ARM users", lookup_processor_type() was in the cpuinit section.
-
-No, it was __lookup_processor_type that was in the cpuinit section.
-The non-underscore (C-API) version was __INIT, and if you look at the
-one and only calling function in C, it too is tagged __init.  So it
-appears to me that was a thought out and deliberate choice.
-
-> After that commit, it moved to the init section and hence got dumped
-> soon after boot. The change above moves lookup_processor_type() back
-> into the regular text section, which I believe was the intent of the
-> __cpuinit removal patch.
-
-Given the above, actually I think StephenB is right here.  The __FINIT
-can go exactly where the removed __CPUINIT was (plus or minus a blank
-line...)
-
-Thanks for testing, reporting and then tracking down where it was once
-you knew what it was that you were looking for (and to Russell for the
-quick and accurate diagnosis.)  You can add an Acked-by from me to the
-updated patch if you want.
-
-As an aside, I'm now thinking any __INIT that implicitly rely on EOF for
-closure are nasty traps waiting to happen and it might be worthwhile to
-audit and explicitly __FINIT them before someone appends to the file...
-
-Paul.
---
+--Signature=_Wed__3_Jul_2013_15_22_41_+1000_=pcOMf_/QdbFHNBL--
