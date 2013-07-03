@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab3GCRct (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 13:32:49 -0400
-Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:57822
-	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932304Ab3GCRcs (ORCPT
+	id S932575Ab3GCRwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 13:52:05 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:45955 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab3GCRwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 13:32:48 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2dh668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-X-WSS-ID: 0MPDFEC-02-4L9-02
-X-M-MSG: 
-Message-ID: <51D46034.5000209@amd.com>
-Date: Wed, 3 Jul 2013 12:32:36 -0500
-From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 3 Jul 2013 13:52:04 -0400
+Date: Wed, 3 Jul 2013 18:51:57 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: linux-kernel@vger.kernel.org, yadi.brar01@gmail.com, sbkim73@samsung.com,
+        lgirdwood@gmail.com, sameo@linux.intel.com, rob.herring@calxeda.com,
+        grant.likely@linaro.org
+Message-ID: <20130703175157.GV27646@sirena.org.uk>
+References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
+ <1372072858-6559-2-git-send-email-yadi.brar@samsung.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.11
-References: <20130701090356.GA14912@gmail.com> <CA+55aFwJwYRbPBBN1ma8TBHuomo_AJjajxT6YDmdGXJdE4EgrQ@mail.gmail.com> <20130703075542.GF23916@twins.programming.kicks-ass.net>
-In-Reply-To: <20130703075542.GF23916@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8DDUPozX52++RchQ"
+Content-Disposition: inline
+In-Reply-To: <1372072858-6559-2-git-send-email-yadi.brar@samsung.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/4] regulator: s2mps11: Convert ramp rate to uV/us and
+ set default ramp rate
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/3/2013 2:55 AM, Peter Zijlstra wrote:
-> On Tue, Jul 02, 2013 at 05:50:29PM -0700, Linus Torvalds wrote:
->> On Mon, Jul 1, 2013 at 2:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
->>>     git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-core-for-linus
->>>
->>> Kernel improvements:
->>>
->>>   * AMD IOMMU uncore PMU support by Suravee Suthikulpanit001a
->> This one prints a really annoying error message if you're not on an
->> AMD platform:
->>
->> +       if (!amd_iommu_pc_supported()) {
->> +               pr_err("perf: amd_iommu PMU not installed. No support!\n");
->> +               return -ENODEV;
->> +       }
->>
->> and you know what? That's not acceptable. It damn well is *not* an
->> error to not have an AMD IOMMU.
->>
->> It should - at most - be a pr_info(). Maybe nothing at all. "pr_err()"
->> is just totally out of line.
-> Quite; it prints enough stuff when it does find one so I'm all for
-> scrapping that one print when it doesn't find it.
->
-> Sorry for not seeing that; when I initially read that code I thought it was for
-> the case where the hardware was expected to have the device but we couldn't
-> find it for some weird reason.
->
-> ---
-> Subject: perf, amd: Do not print an error when the device is not present
->
-> As Linus said its not an error to not have an AMD IOMMU; esp. when you're not
-> even running on an AMD platform.
->
-> Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->   arch/x86/kernel/cpu/perf_event_amd_iommu.c | 4 +---
->   1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.c b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-> index 0db655e..639d128 100644
-> --- a/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-> +++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-> @@ -491,10 +491,8 @@ static struct perf_amd_iommu __perf_iommu = {
->   static __init int amd_iommu_pc_init(void)
->   {
->   	/* Make sure the IOMMU PC resource is available */
-> -	if (!amd_iommu_pc_supported()) {
-> -		pr_err("perf: amd_iommu PMU not installed. No support!\n");
-> +	if (!amd_iommu_pc_supported())
->   		return -ENODEV;
-> -	}
->   
->   	_init_perf_amd_iommu(&__perf_iommu, "amd_iommu");
->   
-Linus, sorry for inconvenience.  This is a mistake in my part.
 
-Peter, thank you for sending out the patch quickly.  I have checked the 
-patch and this is okay.
+--8DDUPozX52++RchQ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Suravee
+On Mon, Jun 24, 2013 at 04:50:55PM +0530, Yadwinder Singh Brar wrote:
+> This patch makes driver to use uV/us as units of ramp_delay. It makes driver
+> in compliance with regulator framework and make ramp rate precise.
 
+Applied, thanks.
+
+--8DDUPozX52++RchQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1GS6AAoJELSic+t+oim9mT0P/RF4NMQD9zzgoK1w7PHbonNA
+cZOx5O1ND/WGqubumYVvlXws0gBMGFj3aCMoNGamiGRthg1lcvaXIPrInzw8jYEH
+L54evOok1slUgv1GCGNpMa9m5j+6keLw12NemUTgx+LXh0C4nz5VUzbC1fCBK3iR
+1MT/ZTvH/YHT7vhxVWiuppuS/+as3llUqaxbOKDhbTxCO8u2N+RhoYyUdSsizTjQ
+oSmhpwqqVNJzOMn8sWZOsiB6D7rh99SvhG3KPrQ6QNBw/sS2xb+FqBSTpULXgyWZ
+bk9ZjWBGrnfFByxJYc4HJV6QeElmX7F9yjF+Wpd6U+0InK3+yzMWQBFYFj8tuw8S
+7ENvR29nQdBSmdkQEw5RaNJVGRMn0a1hZigJgH+zaiHcrQF370YA8wSYJ5zbI3dc
+fai62jnNb7a47VjNM2nk8ti6q111A5aSpDUD5fTC+0umJHZ+DNWsIwUWrYpn8gME
+k1avK8wwsRCXeW4eNyGFBjg1B8kMsP7i5xQUC7oUIaZtbE+E6pKq1B2dgnNppPWX
+PkCJ4iGU3g1k/R1CpeBALJNFKeEFckdF1PSveZYnShG0H1Ufzepx3yg4JpbKXFYJ
+1nnNzkySMzaAy7J2FmZkQ/P2w8kzkrLd/EeUbehTYhFGDH/UvHikudQXjkJYLxJQ
+qUN4ksY6yEd3H51KA8bO
+=lQgO
+-----END PGP SIGNATURE-----
+
+--8DDUPozX52++RchQ--
