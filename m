@@ -1,348 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab3GCSQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:16:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38611 "EHLO
+	id S1756229Ab3GCSRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:17:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38615 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755925Ab3GCSQh (ORCPT
+	with ESMTP id S1755925Ab3GCSQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:16:37 -0400
-Date: Wed, 3 Jul 2013 11:16:36 -0700
+	Wed, 3 Jul 2013 14:16:59 -0400
+Date: Wed, 3 Jul 2013 11:16:58 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.0.85
-Message-ID: <20130703181636.GB2991@kroah.com>
-References: <20130703181624.GA2991@kroah.com>
+Subject: Linux 3.4.52
+Message-ID: <20130703181658.GA3049@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
 Content-Disposition: inline
-In-Reply-To: <20130703181624.GA2991@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index ac2a241..41e03ca 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 84
-+SUBLEVEL = 85
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
-index 21b104d..af44b93 100644
---- a/drivers/net/wan/dlci.c
-+++ b/drivers/net/wan/dlci.c
-@@ -377,21 +377,37 @@ static int dlci_del(struct dlci_add *dlci)
- 	struct frad_local	*flp;
- 	struct net_device	*master, *slave;
- 	int			err;
-+	bool			found = false;
-+
-+	rtnl_lock();
- 
- 	/* validate slave device */
- 	master = __dev_get_by_name(&init_net, dlci->devname);
--	if (!master)
--		return -ENODEV;
-+	if (!master) {
-+		err = -ENODEV;
-+		goto out;
-+	}
-+
-+	list_for_each_entry(dlp, &dlci_devs, list) {
-+		if (dlp->master == master) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	if (!found) {
-+		err = -ENODEV;
-+		goto out;
-+	}
- 
- 	if (netif_running(master)) {
--		return -EBUSY;
-+		err = -EBUSY;
-+		goto out;
- 	}
- 
- 	dlp = netdev_priv(master);
- 	slave = dlp->slave;
- 	flp = netdev_priv(slave);
- 
--	rtnl_lock();
- 	err = (*flp->deassoc)(slave, master);
- 	if (!err) {
- 		list_del(&dlp->list);
-@@ -400,8 +416,8 @@ static int dlci_del(struct dlci_add *dlci)
- 
- 		dev_put(slave);
- 	}
-+out:
- 	rtnl_unlock();
--
- 	return err;
- }
- 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 73038ba..78c26ca 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -935,22 +935,37 @@ static unsigned int dma_handle_tx(struct eg20t_port *priv)
- static void pch_uart_err_ir(struct eg20t_port *priv, unsigned int lsr)
- {
- 	u8 fcr = ioread8(priv->membase + UART_FCR);
-+	struct uart_port *port = &priv->port;
-+	struct tty_struct *tty = tty_port_tty_get(&port->state->port);
-+	char   *error_msg[5] = {};
-+	int    i = 0;
- 
- 	/* Reset FIFO */
- 	fcr |= UART_FCR_CLEAR_RCVR;
- 	iowrite8(fcr, priv->membase + UART_FCR);
- 
- 	if (lsr & PCH_UART_LSR_ERR)
--		dev_err(&priv->pdev->dev, "Error data in FIFO\n");
-+		error_msg[i++] = "Error data in FIFO\n";
- 
--	if (lsr & UART_LSR_FE)
--		dev_err(&priv->pdev->dev, "Framing Error\n");
-+	if (lsr & UART_LSR_FE) {
-+		port->icount.frame++;
-+		error_msg[i++] = "  Framing Error\n";
-+	}
- 
--	if (lsr & UART_LSR_PE)
--		dev_err(&priv->pdev->dev, "Parity Error\n");
-+	if (lsr & UART_LSR_PE) {
-+		port->icount.parity++;
-+		error_msg[i++] = "  Parity Error\n";
-+	}
- 
--	if (lsr & UART_LSR_OE)
--		dev_err(&priv->pdev->dev, "Overrun Error\n");
-+	if (lsr & UART_LSR_OE) {
-+		port->icount.overrun++;
-+		error_msg[i++] = "  Overrun Error\n";
-+	}
-+
-+	if (tty == NULL) {
-+		for (i = 0; error_msg[i] != NULL; i++)
-+			dev_err(&priv->pdev->dev, error_msg[i]);
-+	}
- }
- 
- static irqreturn_t pch_uart_interrupt(int irq, void *dev_id)
-diff --git a/fs/exec.c b/fs/exec.c
-index 3801daf..9ab31ca 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1149,13 +1149,6 @@ void setup_new_exec(struct linux_binprm * bprm)
- 		set_dumpable(current->mm, suid_dumpable);
- 	}
- 
--	/*
--	 * Flush performance counters when crossing a
--	 * security domain:
--	 */
--	if (!get_dumpable(current->mm))
--		perf_event_exit_task(current);
--
- 	/* An exec changes our domain. We are no longer part of the thread
- 	   group */
- 
-@@ -1219,6 +1212,15 @@ void install_exec_creds(struct linux_binprm *bprm)
- 
- 	commit_creds(bprm->cred);
- 	bprm->cred = NULL;
-+
-+	/*
-+	 * Disable monitoring for regular users
-+	 * when executing setuid binaries. Must
-+	 * wait until new credentials are committed
-+	 * by commit_creds() above
-+	 */
-+	if (get_dumpable(current->mm) != SUID_DUMP_USER)
-+		perf_event_exit_task(current);
- 	/*
- 	 * cred_guard_mutex must be held at least to this point to prevent
- 	 * ptrace_attach() from altering our determination of the task's
-diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
-index ef5abd3..936a038 100644
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -355,31 +355,50 @@ static unsigned int vfs_dent_type(uint8_t type)
- static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- {
- 	int err, over = 0;
-+	loff_t pos = file->f_pos;
- 	struct qstr nm;
- 	union ubifs_key key;
- 	struct ubifs_dent_node *dent;
- 	struct inode *dir = file->f_path.dentry->d_inode;
- 	struct ubifs_info *c = dir->i_sb->s_fs_info;
- 
--	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, file->f_pos);
-+	dbg_gen("dir ino %lu, f_pos %#llx", dir->i_ino, pos);
- 
--	if (file->f_pos > UBIFS_S_KEY_HASH_MASK || file->f_pos == 2)
-+	if (pos > UBIFS_S_KEY_HASH_MASK || pos == 2)
- 		/*
- 		 * The directory was seek'ed to a senseless position or there
- 		 * are no more entries.
- 		 */
- 		return 0;
- 
-+	if (file->f_version == 0) {
-+		/*
-+		 * The file was seek'ed, which means that @file->private_data
-+		 * is now invalid. This may also be just the first
-+		 * 'ubifs_readdir()' invocation, in which case
-+		 * @file->private_data is NULL, and the below code is
-+		 * basically a no-op.
-+		 */
-+		kfree(file->private_data);
-+		file->private_data = NULL;
-+	}
-+
-+	/*
-+	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
-+	 * zero, and we use this for detecting whether the file was seek'ed.
-+	 */
-+	file->f_version = 1;
-+
- 	/* File positions 0 and 1 correspond to "." and ".." */
--	if (file->f_pos == 0) {
-+	if (pos == 0) {
- 		ubifs_assert(!file->private_data);
- 		over = filldir(dirent, ".", 1, 0, dir->i_ino, DT_DIR);
- 		if (over)
- 			return 0;
--		file->f_pos = 1;
-+		file->f_pos = pos = 1;
- 	}
- 
--	if (file->f_pos == 1) {
-+	if (pos == 1) {
- 		ubifs_assert(!file->private_data);
- 		over = filldir(dirent, "..", 2, 1,
- 			       parent_ino(file->f_path.dentry), DT_DIR);
-@@ -395,7 +414,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 			goto out;
- 		}
- 
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 	}
- 
-@@ -403,17 +422,16 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 	if (!dent) {
- 		/*
- 		 * The directory was seek'ed to and is now readdir'ed.
--		 * Find the entry corresponding to @file->f_pos or the
--		 * closest one.
-+		 * Find the entry corresponding to @pos or the closest one.
- 		 */
--		dent_key_init_hash(c, &key, dir->i_ino, file->f_pos);
-+		dent_key_init_hash(c, &key, dir->i_ino, pos);
- 		nm.name = NULL;
- 		dent = ubifs_tnc_next_ent(c, &key, &nm);
- 		if (IS_ERR(dent)) {
- 			err = PTR_ERR(dent);
- 			goto out;
- 		}
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 	}
- 
-@@ -425,7 +443,7 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 			     ubifs_inode(dir)->creat_sqnum);
- 
- 		nm.len = le16_to_cpu(dent->nlen);
--		over = filldir(dirent, dent->name, nm.len, file->f_pos,
-+		over = filldir(dirent, dent->name, nm.len, pos,
- 			       le64_to_cpu(dent->inum),
- 			       vfs_dent_type(dent->type));
- 		if (over)
-@@ -441,9 +459,17 @@ static int ubifs_readdir(struct file *file, void *dirent, filldir_t filldir)
- 		}
- 
- 		kfree(file->private_data);
--		file->f_pos = key_hash_flash(c, &dent->key);
-+		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
-+
-+		if (file->f_version == 0)
-+			/*
-+			 * The file was seek'ed meanwhile, lets return and start
-+			 * reading direntries from the new position on the next
-+			 * invocation.
-+			 */
-+			return 0;
- 	}
- 
- out:
-@@ -454,15 +480,13 @@ out:
- 
- 	kfree(file->private_data);
- 	file->private_data = NULL;
-+	/* 2 is a special value indicating that there are no more direntries */
- 	file->f_pos = 2;
- 	return 0;
- }
- 
--/* If a directory is seeked, we have to free saved readdir() state */
- static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int origin)
- {
--	kfree(file->private_data);
--	file->private_data = NULL;
- 	return generic_file_llseek(file, offset, origin);
- }
- 
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index 086adf2..d99cb4b 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -147,7 +147,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
- 		return;
- 	}
- 
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		unsigned int nr;
- 
- 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
-@@ -233,7 +233,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
- 	if (cpu >= 0) {
- 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	} else {
--		for_each_online_cpu(cpu)
-+		for_each_possible_cpu(cpu)
- 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	}
- 
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index 7705e26..2a74877 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -1514,6 +1514,9 @@ static struct sk_buff *l2cap_build_cmd(struct l2cap_conn *conn,
- 	BT_DBG("conn %p, code 0x%2.2x, ident 0x%2.2x, len %d",
- 			conn, code, ident, dlen);
- 
-+	if (conn->mtu < L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE)
-+		return NULL;
-+
- 	len = L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE + dlen;
- 	count = min_t(unsigned int, conn->mtu, len);
- 
+
+--PNTmBPCT7hxwcZjr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.4.52 kernel.
+
+All users of the 3.4 kernel series must upgrade.
+
+The updated 3.4.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.4.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                          |    2=20
+ arch/arm/include/asm/cacheflush.h |    4=20
+ arch/arm/mm/flush.c               |   33 +++++
+ arch/arm/mm/nommu.c               |    6=20
+ drivers/net/wan/dlci.c            |   26 +++-
+ drivers/tty/serial/pch_uart.c     |   29 +++-
+ fs/exec.c                         |   16 +-
+ fs/ubifs/dir.c                    |   54 ++++++--
+ include/linux/perf_event.h        |    3=20
+ kernel/events/core.c              |  233 ++++++++++++++++++++++++++-------=
+-----
+ kernel/events/hw_breakpoint.c     |    4=20
+ kernel/events/internal.h          |    4=20
+ net/bluetooth/l2cap_core.c        |    3=20
+ 13 files changed, 303 insertions(+), 114 deletions(-)
+
+Anderson Lizardo (1):
+      Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
+
+Artem Bityutskiy (2):
+      UBIFS: prepare to fix a horrid bug
+      UBIFS: fix a horrid bug
+
+Greg Kroah-Hartman (1):
+      Linux 3.4.52
+
+Liang Li (1):
+      pch_uart: fix a deadlock when pch_uart as console
+
+Oleg Nesterov (1):
+      hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
+
+Peter Zijlstra (2):
+      perf: Fix perf mmap bugs
+      perf: Fix mmap() accounting hole
+
+Simon Baatz (2):
+      ARM: 7755/1: handle user space mapped pages in flush_kernel_dcache_pa=
+ge
+      ARM: 7772/1: Fix missing flush_kernel_dcache_page() for noMMU
+
+Stephane Eranian (1):
+      perf: Disable monitoring on setuid processes for regular users
+
+Zefan Li (2):
+      dlci: acquire rtnl_lock before calling __dev_get_by_name()
+      dlci: validate the net device in dlci_del()
+
+
+--PNTmBPCT7hxwcZjr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1GqaAAoJEDjbvchgkmk+mesQALE2o/9NjzRGA7bo4JsO3Rs2
+njPEiZa8a+bWGSoULF9pj1ixs/GABoQNQOhqD51V3avkDCqkspB9Wd7YD5WvT0Qj
+QTg5chU5ac7GvUrIWY3bJzdkExIB3BZ1EiSJ4qLdS0vXdCY70i2hICqHIkT3mxu1
++T92canTf4nKuUswz6AkqXbvF0HyTRQqmgugHav6eEi6L+n3O30jQCpqO1qIyJET
+0CIPKJmvMcz+gQ9QQAslWvNf/tfasClkWO6S9VMF//t8ucU4uuiJkL46FspJoomX
++zPsyfmavmyrSJozpWU0q/lKyIDCk4duUI6UBJeVqu1/UXM82oU5YfnhT2AuZ9Ee
+pIa44aV20okOq5hgA25uekZOjNuO1VfR1Ix/m6ZekVyYkIX4HZ4RJhUbIB+rmMwk
+c9PzvvNPxTSvcE7f9H1pgxOWzpHRbNffRQy6UX3MSaRqD9qSi5RBx17nlgYM0TWE
+PXHc3lnAUR//5mdrvUAcireRkI1a3GcvuwcVw9KMQGQYwoo+i2XaNHZlhiX2n4hz
+SSxc469DhcrdawgqbQGV1OOo8ow+/L5RpDVVNFKZgEpW2vxc9nF1KJ09rIl2R362
+ulCr2+aqGxurl6CJseA10rhuyBEDhAEg8lifbputP0TMr28tEm1SrptDiCdOk8Xo
+fHr/YzKlu8EtnYM9Zv2p
+=JZ73
+-----END PGP SIGNATURE-----
+
+--PNTmBPCT7hxwcZjr--
