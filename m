@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777Ab3GCIZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 04:25:28 -0400
-Received: from mx-out.ocsa-data.net ([194.36.166.37]:53647 "EHLO
-	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab3GCIZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 04:25:25 -0400
-X-Greylist: delayed 641 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Jul 2013 04:25:25 EDT
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Wed, 03 Jul 2013 10:14:41 +0200
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, ydroneaud@opteya.com
-Subject: Re: [PATCH] MAINTAINERS: xfs@oss.sgi.com is a list
-Organization: OPTEYA
-In-Reply-To: <20130703064026.GL14996@dastard>
-References: <1372777248-4114-1-git-send-email-ydroneaud@opteya.com>
- <20130703064026.GL14996@dastard>
-Message-ID: <c229feab100a72240128ef81297680a1@meuh.org>
-User-Agent: Roundcube Webmail/0.9.2
-X-abuse-contact: abuse@ocsa-data.net
+	id S1754840Ab3GCIZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 04:25:56 -0400
+Received: from li42-95.members.linode.com ([209.123.162.95]:42998 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754070Ab3GCIZy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 04:25:54 -0400
+Subject: Re: [PATCH 0/6] Introducing Device Tree Overlays
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130629023703.GA12849@roeck-us.net>
+Date: Wed, 3 Jul 2013 11:25:45 +0300
+Cc: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <53DF7CF6-DCD5-44F9-B535-21290E34D65D@antoniou-consulting.com>
+References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com> <20130629023703.GA12849@roeck-us.net>
+To: Guenter Roeck <linux@roeck-us.net>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Guenter,
 
-Le 03.07.2013 08:40, Dave Chinner a écrit :
-> On Tue, Jul 02, 2013 at 05:00:47PM +0200, Yann Droneaud wrote:
->> This patch changes type of xfs@oss.sgi.com
+https://github.com/pantoniou/linux-beagle-track-mainline
+
+Against tip of the mainline, topic branches against the master,
+and a merge-branch every time I do one.
+
+Regards
+
+-- Pantelis
+
+On Jun 29, 2013, at 5:38 AM, Guenter Roeck wrote:
+
+> On Fri, Jan 04, 2013 at 09:31:04PM +0200, Pantelis Antoniou wrote:
+>> The following patchset introduces Device Tree overlays, a method
+>> of dynamically altering the kernel's live Device Tree.
 >> 
->> The output of ./scripts/get_maintainer.pl is
->> modified to report xfs@oss.sgi.com as a list:
+>> This patchset is against mainline as of Friday Jan 4 2013.
+>> (4956964 Merge tag 'driver-core-3.8-rc2' of \
+>> 	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core)
+>> 
+>> Note that a separate patch for the DTC compiler has been posted and
+>> is required to compile the DTS files according to the documentation.
+>> The patch is "dtc: Dynamic symbols & fixup support"
+>> 
+>> An implementation patchset for a beaglebone cape loader will follow,
+>> but if you want to check out a working kernel for the beaglebone please
+>> pull from:
+>> 
+>> git://github.com/pantoniou/linux-bbxm.git branch not-capebus-v8
+>> 
+>> Pantelis Antoniou (6):
+>>  OF: Introduce device tree node flag helpers.
+>>  OF: export of_property_notify
+>>  OF: Export all DT proc update functions
+>>  OF: Introduce utility helper functions
+>>  OF: Introduce Device Tree resolve support.
+>>  OF: Introduce DT overlay support.
+>> 
+> Hi Pantelis,
 > 
-> What's the problem with that? All XFS patches and problem
-> reports should be sent to the xfs@oss.sgi.com list. There are far
-> more people than just the maintainer that can triage problems,
-> answer questions and review patches...
+> do you have an update of this patchset ? I want to seriously start testing it.
+> Digging through your tree on github is a bit cumbersome, and I am not sure
+> if I got all patches. It would also be nice to get an update with all the
+> comments addressed.
 > 
-
-It was just disturbing: I was looking for a list for XFS
-and found only maintainers.
-Except dm-devel, no others public mailing list is used as a maintainer.
-So I thought it was a misinterpretation after following commit:
-
-commit 18caa67ad41212e6f82a675c40f461ffb45f098e
-Author: Ben Myers <bpm@sgi.com>
-Date:   Thu Apr 12 17:05:05 2012 +0000
-
-     MAINTAINERS: retire xfs-masters@oss.sgi.com
-
-     xfs-masters@oss.sgi.com will be retired in favor of xfs@oss.sgi.com
-     sometime soon.
-
-     Signed-off-by: Ben Myers <bpm@sgi.com>
-     Reviewed-by: Christoph Hellwig <hch@lst.de>
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 2dcfca8..12b0445 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7564,7 +7564,7 @@ XFS FILESYSTEM
-  P:     Silicon Graphics Inc
-  M:     Ben Myers <bpm@sgi.com>
-  M:     Alex Elder <elder@kernel.org>
--M:     xfs-masters@oss.sgi.com
-+M:     xfs@oss.sgi.com
-  L:     xfs@oss.sgi.com
-  W:     http://oss.sgi.com/projects/xfs
-  T:     git git://oss.sgi.com/xfs/xfs.git
-
-
-Regards.
-
--- 
-Yann Droneaud
-OPTEYA
+> Thanks,
+> Guenter
 
