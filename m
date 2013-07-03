@@ -1,105 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932324Ab3GCJOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 05:14:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37684 "EHLO bear.ext.ti.com"
+	id S932498Ab3GCJO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 05:14:57 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:45301 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754501Ab3GCJOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 05:14:22 -0400
-Message-ID: <51D3EB53.7080803@ti.com>
-Date: Wed, 3 Jul 2013 12:13:55 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S932399Ab3GCJOz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 05:14:55 -0400
+Message-ID: <51D3EB81.5040509@imgtec.com>
+Date: Wed, 3 Jul 2013 10:14:41 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Felipe Balbi <balbi@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-References: <Pine.LNX.4.44L0.1307021302430.1086-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1307021302430.1086-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] metag: move EXPORT_SYMBOLs in libs to metag_ksyms.c
+References: <1372774074-18553-1-git-send-email-james.hogan@imgtec.com> <87bo6kfp32.fsf@rustcorp.com.au> <51D3E464.9050707@imgtec.com> <CAMuHMdV6rd=rBjeF5APzL6+tpjcGx92ZPVGEx=++i5T_aodZDw@mail.gmail.com>
+In-Reply-To: <CAMuHMdV6rd=rBjeF5APzL6+tpjcGx92ZPVGEx=++i5T_aodZDw@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_07_03_10_14_53
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 08:17 PM, Alan Stern wrote:
-> On Tue, 2 Jul 2013, Roger Quadros wrote:
-> 
->> On 07/02/2013 12:01 AM, Alan Stern wrote:
->>> On Mon, 1 Jul 2013, Felipe Balbi wrote:
->>>
->>>>> I don't know what Pad wakeup is.  The wakeup signal has to originate 
->>>>> from the EHCI controller, doesn't it?  If not, how does the Pad know 
->>>>> when a wakeup is needed?
+On 03/07/13 09:50, Geert Uytterhoeven wrote:
+> On Wed, Jul 3, 2013 at 10:44 AM, James Hogan <james.hogan@imgtec.com> wrote:
+>> (cc'ing linux-arch and linux-kbuild)
+>>
+>> On 03/07/13 01:45, Rusty Russell wrote:
+>>> James Hogan <james.hogan@imgtec.com> writes:
+>>>> Move all EXPORT_SYMBOLs in libs-y directories (arch/metag/{lib,tbx})
+>>>> into metag_ksyms.c so that they don't get omitted by the static linker
+>>>> if they're not used by any other statically linked code, which can
+>>>> result in undefined symbols when building modules.
 >>>>
->>>> That's really an OMAP thing, I guess. Pad wakeup sits in the PRCM (IIRC)
->>>> inside and always on power domain. EHCI sits in another power domain
->>>> which be turned off. When it's turned off (power gated and clock gated)
->>>> the EHCI block has no means to wakeup whatsoever. That's when pad wakeup
->>>> comes into play. It is generated when PRCM sees a change in the actual
->>>> pad of the die. To check who should 'own' the wakeup, it checks the
->>>> muxing settings to verify whose pad is that.
+>>>> For example a randconfig caused the following error:
+>>>> ERROR: "csum_partial" [fs/reiserfs/reiserfs.ko] undefined!
+>>>>
+>>>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+>>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>>>> ---
+>>>> Unless there are any objections I'll apply this patch for v3.11. I'm
+>>>> assuming *_ksyms.c is the way that this problem is normally worked
+>>>> around.
 >>>
->>> How does the PRCM know which changes should generate wakeup events?  
+>>> Actually, normally those files are obj-y not lib-y.  See the top-level
+>>> lib/.
+>>>
+>>> Subtle, I know.
 >>
->> It doesn't know. It will always generate a wakeup on any change in the monitored pins.
->> We can only configure which pins we want to monitor.
->> So we can't choose which wakeup events we want to monitor. We just can
->> enable or disable all events.
+>> Hmm, subtle indeed, I hadn't noticed that.
 >>
->>> In the EHCI controller, this is managed by the settings of the WKOC_E,
->>> WKDSCNNT_E, and WKCNNT_E bits in the PORTSC registers.  But if EHCI is
->>> powered off, those bits can't be used.
+>> grepping for EXPORT_SYMBOL(csum_partial) gives:
 >>
->> Is "powered off" same as ehci_suspend? If yes then how does it work on other systems
->> for remote wakeup?
-> 
-> Above, Felipe wrote that on OMAP, EHCI sits in a power domain which is
-> turned off: power gated and clock gated.  ehci_suspend() doesn't do
-> those things, but they are what I was referring to.
-
-OK right, those things are done by OMAP platform support code.
-> 
-> A PCI-based EHCI controller has two power sources: the core well (which
-> is turned off during suspend) and the auxiliary well (which remains
-> powered).  That's how remote wakeup works; it uses the auxiliary well.
-> 
-
-OK. Thanks for the info.
-
->>> Also, once the wakeup signal has been turned on, how does it get turned 
->>> off again?
+>> ./arch/avr32/kernel/avr32_ksyms.c
+>> ./arch/sparc/lib/ksyms.c
+>> ./arch/sh/kernel/sh_ksyms_32.c
+>> ./arch/powerpc/kernel/ppc_ksyms.c
+>> ./arch/unicore32/kernel/ksyms.c
+>> ./arch/x86/um/ksyms.c
+>> ./arch/x86/kernel/x8664_ksyms_64.c
+>> ./arch/x86/kernel/i386_ksyms_32.c
+>> ./arch/cris/kernel/crisksyms.c
+>> ./arch/mips/kernel/mips_ksyms.c
+>> ./arch/xtensa/kernel/xtensa_ksyms.c
+>> ./arch/arm/kernel/armksyms.c
 >>
->> That is taken care of by the OMAP pinctrl driver. It will always turn off the
->> wakeup signal once the event is detected and forwarded as an IRQ.
+>> ./arch/ia64/lib/checksum.c
+>> ./arch/alpha/lib/checksum.c
+>> ./arch/c6x/lib/checksum.c
+>> ./arch/mn10300/lib/checksum.c
+>> ./arch/cris/arch-v10/lib/old_checksum.c
+>> ./arch/h8300/lib/checksum.c
+>> ./arch/parisc/lib/checksum.c
+>> ./arch/m32r/lib/csum_partial_copy.c
+>> ./arch/m68k/lib/checksum.c
+>> ./arch/metag/lib/checksum.c
+>> ./arch/frv/lib/checksum.c
 >>
->> I know that all this is a bit ugly :(.
+>> ./lib/checksum.c
+>>
+>> All of the above arches have *c*sum.o in lib-y. Should they all be
+>> switched to obj-y or the remaining EXPORT_SYMBOLs moved to *ksyms.c if
+>> this problem is noticed?
 > 
-> I still a little confused.  The wakeup signal turns on.  Then the
-> pinctrl driver sees it, forwards it as an IRQ, and turns the wakeup
-> signal off.  But what if the IRQ is disabled (as it would be with your
-> patch)?  Does the IRQ line remain active until it causes an interrupt?  
-> What eventually turns off the IRQ line?
-> 
+> There are more, cfr. https://lkml.org/lkml/2013/5/29/76 ("[PATCH/RFC] sh: Always
+> link in helper functions extracted from libgcc"), which no one replied to.
 
-In the beagle/panda board, the USB lines of the OMAP are used in ULPI mode.
-Here we are monitoring DATA0, DATA1 and DATA3 lines which get configured as Linestate
-and Interrupt of the PHY device whenever the PHY is put into suspend mode. This usually
-happens when we suspend the EHCI controller.
+Moving the EXPORT_SYMBOL into */ksyms.c would seem to make the
+inclusion/exclusion of unused lib-y objects automatic:
+With CONFIG_MODULES=y the EXPORT_SYMBOL in *ksyms.c would ensure it is
+included.
+With CONFIG_MODULES=n the EXPORT_SYMBOL would be preprocessed out and it
+could be unused and excluded.
 
-When EHCI is suspended, the pinctrl wakeup mechanism is active. Whenever there is
-a change in the monitored lines we get the PAD IRQ and hence the EHCI IRQ. We don't really
-care much about which line changed state.
-(NOTE: while suspending, we didn't disable the EHCI IRQ). So we will always get the first IRQ
-and then we disable it and queue a hub_resume_work.
-Then EHCI resumes, pinctrl wakeup is disabled and EHCI IRQ is enabled.
+(although it is of course uglier to separate it from the definition).
 
-When pinctrl wakeup mechanism is active, it clears the wakeup event flag after a PAD IRQ, but it
-has no control on disabling the interrupt source. If there is a change in the pad, the
-PAD IRQ will fire again.
+Cheers
+James
 
-cheers,
--roger
