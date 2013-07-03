@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab3GCV5O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:57:14 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:48515 "EHLO zene.cmpxchg.org"
+	id S1755272Ab3GCWYk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 18:24:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60832 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932221Ab3GCV5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:57:12 -0400
-Date: Wed, 3 Jul 2013 17:56:54 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	id S1753685Ab3GCWYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 18:24:39 -0400
+Date: Thu, 4 Jul 2013 00:18:47 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/13] sched: Split accounting of NUMA hinting faults
- that pass two-stage filter
-Message-ID: <20130703215654.GN17812@cmpxchg.org>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-8-git-send-email-mgorman@suse.de>
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+Message-ID: <20130703221847.GA15566@redhat.com>
+References: <20130702193425.GA8813@redhat.com> <1372799087.22688.58.camel@gandalf.local.home> <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com> <51D38F8D.3010708@hitachi.com> <20130703172029.GA14309@redhat.com> <20130703175420.GA25668@redhat.com> <1372874547.22688.111.camel@gandalf.local.home> <20130703191748.GA2884@redhat.com> <1372883643.22688.118.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372861300-9973-8-git-send-email-mgorman@suse.de>
+In-Reply-To: <1372883643.22688.118.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 03:21:34PM +0100, Mel Gorman wrote:
-> Ideally it would be possible to distinguish between NUMA hinting faults
-> that are private to a task and those that are shared. This would require
-> that the last task that accessed a page for a hinting fault would be
-> recorded which would increase the size of struct page. Instead this patch
-> approximates private pages by assuming that faults that pass the two-stage
-> filter are private pages and all others are shared. The preferred NUMA
-> node is then selected based on where the maximum number of approximately
-> private faults were measured. Shared faults are not taken into
-> consideration for a few reasons.
+On 07/03, Steven Rostedt wrote:
+>
+> No, I would avoid any changes to the debugfs infrastructure.
 
-Ingo had a patch that would just encode a few bits of the PID along
-with the last_nid (last_cpu in his case) member of struct page.  No
-extra space required and should be accurate enough.
+YEs, agreed.
 
-Otherwise this is blind to sharedness within the node the task is
-currently running on, right?
+> OK, what about the below patch, followed by an updated version of your
+> patch. I'll send that as a reply to this one.
 
-> First, if there are many tasks sharing the page then they'll all move
-> towards the same node. The node will be compute overloaded and then
-> scheduled away later only to bounce back again. Alternatively the shared
-> tasks would just bounce around nodes because the fault information is
-> effectively noise. Either way accounting for shared faults the same as
-> private faults may result in lower performance overall.
+Steven, you do understand that I can't review the changes in this area.
 
-When the node with many shared pages is compute overloaded then there
-is arguably not an optimal node for the tasks and moving them off is
-inevitable.  However, the node with the most page accesses, private or
-shared, is still the preferred node from a memory stand point.
-Compute load being equal, the task should go to the node with 2GB of
-shared memory and not to the one with 2 private pages.
+But at first glance, _I think_ this should work. And this is much simpler,
+->open() blocks trace_remove_event_call() (you added TRACE_EVENT_FL_REF_MASK
+check into the next patch).
 
-If the load balancer moves the task off due to cpu load reasons,
-wouldn't the settle count mechanism prevent it from bouncing back?
+Which tree this patch is based on? I have pulled linux-trace.git#for-next
+and I do not see tracing_open_generic_file/etc in trace_events.c.
 
-Likewise, if the cpu load situation changes, the balancer could move
-the task back to its truly preferred node.
+I do not understand what protects call->flags, I guess there is another
+lock which I do not see in my tree?
 
-> The second reason is based on a hypothetical workload that has a small
-> number of very important, heavily accessed private pages but a large shared
-> array. The shared array would dominate the number of faults and be selected
-> as a preferred node even though it's the wrong decision.
+Oleg.
 
-That's a scan granularity problem and I can't see how you solve it
-with ignoring the shared pages.  What if the situation is opposite
-with a small, heavily used shared set and many rarely used private
-pages?
