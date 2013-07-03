@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3GCOdY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:33:24 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12940 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752410Ab3GCOdW (ORCPT
+	id S932945Ab3GCOjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:39:21 -0400
+Received: from mail.abilis.ch ([195.70.19.74]:14377 "EHLO mail.abilis.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab3GCOjU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:33:22 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18E+hDMWDJP3DZmnNDzoGd+crWvs63OIcY=
-Date: Wed, 3 Jul 2013 10:33:04 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Arnaud Ebalard <arno@natisbad.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 5/7] ARM: kirkwood: remove redundant DT board files
-Message-ID: <20130703143304.GI17110@titan.lakedaemon.net>
-References: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1372762824-12202-6-git-send-email-sebastian.hesselbarth@gmail.com>
- <87k3l8v9s1.fsf@natisbad.org>
- <51D40BA3.6000603@gmail.com>
+	Wed, 3 Jul 2013 10:39:20 -0400
+Date: Wed, 3 Jul 2013 16:38:37 +0200
+From: Christian Ruppert <christian.ruppert@abilis.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: vincent.stehle@freescale.lan, Wolfram Sang <wsa@the-dreams.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>
+Subject: Re: [PATCH v10] i2c-designware: make SDA hold time configurable
+Message-ID: <20130703143835.GD3929@ab42.lan>
+References: <20130625163902.GA2973@katana>
+ <201307031343.11647.arnd@arndb.de>
+ <20130703132905.GC3929@ab42.lan>
+ <201307031620.03785.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <51D40BA3.6000603@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <201307031620.03785.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 01:31:47PM +0200, Sebastian Hesselbarth wrote:
-> On 07/03/13 01:09, Arnaud Ebalard wrote:
-> >Hi Sebastian,
-> >
-> >Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> writes:
-> >
-> >>With DT support for mv643xx_eth board specific init for some boards now
-> >>is unneccessary. Remove those board files, Kconfig entries, and
-> >>corresponding entries in kirkwood_defconfig.
-> >
-> >Applying above your set an old quilt cleaning patch Jason asked at some
-> >point, it became empty except for arch/arm/mach_kirkwood/common.h in
-> >which some declarations were left behind. If this is correct, can you
-> >just merge the hunks below in your 5/7 in next round?
-> >
-> >AFAICT, only dnskw_init() remains, which matches the list of board-*.c
-> >files in arch/arm/mach_kirkwood/ (i.e. board-dt.c and board-dnskw.c).
+On Wed, Jul 03, 2013 at 04:20:03PM +0200, Arnd Bergmann wrote:
+> On Wednesday 03 July 2013, Christian Ruppert wrote:
+> > On Wed, Jul 03, 2013 at 01:43:11PM +0200, Arnd Bergmann wrote:
+> > > On Wednesday 26 June 2013, Wolfram Sang wrote:
+> > > >   On Wed, Jun 26, 2013 at 10:55:06AM +0200, Christian Ruppert wrote:
+> > > > > This patch makes the SDA hold time configurable through device tree.
+> > > > > 
+> > > > > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+> > > > > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
+> > > > 
+> > > > Applied to for-next, thanks for keeping at it and providing lots of
+> > > > useful information. Much appreciated!
+> > > 
+> > > Sorry, but I got a regression that I didn't find reported elsewhere
+> > > so far, even though it breaks a lot of the ARM defconfig builds:
+> > > 
+> > > drivers/built-in.o: In function `dw_i2c_probe':
+> > > /git/arm-soc/drivers/i2c/busses/i2c-designware-platdrv.c:125: undefined reference to `__udivdi3'
+> > > 
+> > > I suspect you want something like the change below.
+> > 
+> > This looks similar to a patch Vincent Stehle submitted yesterday, see
+> > https://lkml.org/lkml/2013/7/2/145
 > 
-> While updating the patch with yours, I stumbled upon MACH_TS219_DT that
-> also remains because it includes tsx1x-common.c.
+> Thanks for the link. Actually his patch looks wrong to me, because
 > 
-> I cannot recall if Jason or Andrew said something about removing it..
+>  dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000, 1000000); 
+> 
+> assigns the division remainder to sda_hold_time, not the quotient.
 
-board-ts219.c can be removed as well.  It needed a check for running on
-the 6282 variant in order to set the phy address properly.  This can now
-be handled in kirkwood-ts219-628[12].dts.
+Hrmmm... At least when I tested it this morning on an ARC architecture
+it worked as intended and returned the quotient. Does that mean we have
+an issue with this function on ARC? Can anyone who knows these functions
+better than I comment?
 
-thx,
+Greetings,
+  Christian
 
-Jason.
+-- 
+  Christian Ruppert              ,          <christian.ruppert@abilis.com>
+                                /|
+  Tel: +41/(0)22 816 19-42     //|                 3, Chemin du Pré-Fleuri
+                             _// | bilis Systems   CH-1228 Plan-les-Ouates
