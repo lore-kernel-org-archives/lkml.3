@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755132Ab3GCIoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 04:44:37 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:39143 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754501Ab3GCIod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 04:44:33 -0400
-Message-ID: <51D3E464.9050707@imgtec.com>
-Date: Wed, 3 Jul 2013 09:44:20 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S932302Ab3GCIpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 04:45:05 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:33800 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755129Ab3GCIoi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 04:44:38 -0400
+X-Spam-Score: -100.7
+Message-ID: <51D3E440.7090105@asianux.com>
+Date: Wed, 03 Jul 2013 16:43:44 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: <linux-kernel@vger.kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH] metag: move EXPORT_SYMBOLs in libs to metag_ksyms.c
-References: <1372774074-18553-1-git-send-email-james.hogan@imgtec.com> <87bo6kfp32.fsf@rustcorp.com.au>
-In-Reply-To: <87bo6kfp32.fsf@rustcorp.com.au>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
+        David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>
+Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
+ 'COMPILE_TEST' in 'asm-generic'.
+References: <51CA8AB8.7080504@asianux.com> <CAMuHMdW58CZ0m-10ibs2Vyh8exqP1nSH+-ZOr5J58tx=uorM+Q@mail.gmail.com> <51D375AA.5060300@asianux.com> <201307031014.12583.arnd@arndb.de>
+In-Reply-To: <201307031014.12583.arnd@arndb.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_07_03_09_44_30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing linux-arch and linux-kbuild)
+On 07/03/2013 04:14 PM, Arnd Bergmann wrote:
+> On Wednesday 03 July 2013, Chen Gang wrote:
+>> > On 07/02/2013 06:57 PM, Geert Uytterhoeven wrote:
+>>> > > On Tue, Jul 2, 2013 at 10:00 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>>>> > >> > On 07/02/2013 03:19 PM, Geert Uytterhoeven wrote:
+>>>>>>> > >>> >> On Tue, Jul 2, 2013 at 4:13 AM, Chen Gang <gang.chen@asianux.com> wrote:
+>>> > > I mean that COMPILE_TEST should exist in Kconfig files only.
+>>> > > It's only meant to have more compile coverage, not to "fix" (through #ifdef)
+>>> > > more code to make it compile.
+>> > 
+>> > If so, can we allow the module to 'COMPILE_TEST' under one platform
+>> > which not support the related HW ?
+>> > 
+>> >   e.g. "...Despite they cannot be loaded there (or even when they load
+>> > they cannot be used due to missing HW support)...".
+> There is a reason why ioremap and the associated functions make no
+> sense on UML, and it remains important to not provide them here
+> so we can find drivers that accidentally use them and are missing
+> a dependency on HAS_IOMEM.
+>  
 
-On 03/07/13 01:45, Rusty Russell wrote:
-> James Hogan <james.hogan@imgtec.com> writes:
->> Move all EXPORT_SYMBOLs in libs-y directories (arch/metag/{lib,tbx})
->> into metag_ksyms.c so that they don't get omitted by the static linker
->> if they're not used by any other statically linked code, which can
->> result in undefined symbols when building modules.
->>
->> For example a randconfig caused the following error:
->> ERROR: "csum_partial" [fs/reiserfs/reiserfs.ko] undefined!
->>
->> Signed-off-by: James Hogan <james.hogan@imgtec.com>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> ---
->> Unless there are any objections I'll apply this patch for v3.11. I'm
->> assuming *_ksyms.c is the way that this problem is normally worked
->> around.
+Yeah, it is necessary for "asm-generic" to provide the configuration
+checking features (e.g. check HAS_IOMEM, HAS_IOMAP, ...).
+
+And it really make no sense on UML.
+
+>> > 'asm-generic' need provide generic layer to users (both architecture
+>> > guys and module guys).
+> No. It's a set of examples for the architectures to look at and
+> include if they want to.
 > 
-> Actually, normally those files are obj-y not lib-y.  See the top-level
-> lib/.
-> 
-> Subtle, I know.
 
-Hmm, subtle indeed, I hadn't noticed that.
+If really just like what you said, I recommend to use "asm-default"
+instead of "asm-generic".
 
-grepping for EXPORT_SYMBOL(csum_partial) gives:
+And for module guys, they have to use another 'generic' files instead
+of current 'asm-generic', they really need some 'generic' things to
+prevent the various definitions/implementations spread into anywhere.
 
-./arch/avr32/kernel/avr32_ksyms.c
-./arch/sparc/lib/ksyms.c
-./arch/sh/kernel/sh_ksyms_32.c
-./arch/powerpc/kernel/ppc_ksyms.c
-./arch/unicore32/kernel/ksyms.c
-./arch/x86/um/ksyms.c
-./arch/x86/kernel/x8664_ksyms_64.c
-./arch/x86/kernel/i386_ksyms_32.c
-./arch/cris/kernel/crisksyms.c
-./arch/mips/kernel/mips_ksyms.c
-./arch/xtensa/kernel/xtensa_ksyms.c
-./arch/arm/kernel/armksyms.c
+>> > So for 'default', it can depend on some conditions (e.g. HW support);
+>> > but for 'generic', it need try to be independent from any conditions.
+>> > 
+>> > And it is also necessary for 'generic' to provide the configuration
+>> > checking features, but this checking must be no negative effect (or
+>> > consistent) with its 'generic' services.
+>> > 
+>> > So it is necessary to check 'NOMMU', 'CONFIG_HAS_IOMEM' ..., but it
+>> > also necessary to consider about 'COMPILE_TEST' to be consistent with
+>> > its 'generic' services.
+> The important distinction is between drivers we want to enable in
+> COMPILE_TEST because they are written in a portable way but are just
+> useless if you don't have the hardware, and other drivers that rely
+> on an interface and that should not be built when that interface
+> is not available.
 
-./arch/ia64/lib/checksum.c
-./arch/alpha/lib/checksum.c
-./arch/c6x/lib/checksum.c
-./arch/mn10300/lib/checksum.c
-./arch/cris/arch-v10/lib/old_checksum.c
-./arch/h8300/lib/checksum.c
-./arch/parisc/lib/checksum.c
-./arch/m32r/lib/csum_partial_copy.c
-./arch/m68k/lib/checksum.c
-./arch/metag/lib/checksum.c
-./arch/frv/lib/checksum.c
+For user/distributor, they are just like what you said above, but for
+some of developers ...
 
-./lib/checksum.c
+The comments of 'COMPILE_TEST' in init/Kconfig:
 
-All of the above arches have *c*sum.o in lib-y. Should they all be
-switched to obj-y or the remaining EXPORT_SYMBOLs moved to *ksyms.c if
-this problem is noticed?
+config COMPILE_TEST
+       bool "Compile also drivers which will not load"
+       default n
+       help
+         Some drivers can be compiled on a different platform than they are
+         intended to be run on. Despite they cannot be loaded there (or even
+         when they load they cannot be used due to missing HW support),
+         developers still, opposing to distributors, might want to build such
+         drivers to compile-test them.
 
-Thanks
-James
+         If you are a developer and want to build everything available, say Y
+         here. If you are a user/distributor, say N here to exclude useless
+         drivers to be distributed.
 
+
+Thanks.
+-- 
+Chen Gang
