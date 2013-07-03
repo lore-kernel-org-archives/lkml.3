@@ -1,79 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399Ab3GCPwN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 11:52:13 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:58063 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752514Ab3GCPwK (ORCPT
+	id S932858Ab3GCPxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 11:53:25 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:55965 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab3GCPxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 11:52:10 -0400
+	Wed, 3 Jul 2013 11:53:23 -0400
 MIME-Version: 1.0
-In-Reply-To: <CACQ1gAhnDk-qSt_5xrsMakXqGGDO5pEbA-9UDWCJG=AABDc+zg@mail.gmail.com>
-References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
- <1372667978-4718-2-git-send-email-richard.genoud@gmail.com>
- <51D24299.9050209@atmel.com> <CACQ1gAgcc=j3kmcpjp8bbdHhxr_k=h8jJs6R_paJbPUMv74uGg@mail.gmail.com>
- <51D29927.80900@atmel.com> <CACQ1gAhnDk-qSt_5xrsMakXqGGDO5pEbA-9UDWCJG=AABDc+zg@mail.gmail.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 3 Jul 2013 17:51:49 +0200
-Message-ID: <CACQ1gAgPaRm3gxxJNgfj9bR565Q0+SNY3+EcjA_mrh1N+yPzSA@mail.gmail.com>
-Subject: Re: [RFC PATCH 01/13] misc: atmel_ssc: add device tree DMA support
-To: Bo Shen <voice.shen@atmel.com>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130703152058.GA30267@dhcp22.suse.cz>
+References: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
+	<51D41E34.5010802@huawei.com>
+	<20130703152058.GA30267@dhcp22.suse.cz>
+Date: Wed, 3 Jul 2013 17:53:21 +0200
+Message-ID: <CA+icZUX+mB2v9ghdhaLvpncCu+yxP4xJzzbFxXisFsB2tDM7TA@mail.gmail.com>
+Subject: Re: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for mem_cgroup_sockets_{init,destroy}
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Li Zefan <lizefan@huawei.com>, akpm@linux-foundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, linux-mm@kvack.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/3 Richard Genoud <richard.genoud@gmail.com>:
-> 2013/7/2 Bo Shen <voice.shen@atmel.com>:
->> Hi Richard,
+On Wed, Jul 3, 2013 at 5:20 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> On Wed 03-07-13 20:51:00, Li Zefan wrote:
+> [...]
+>> [PATCH] memcg: fix build error if CONFIG_MEMCG_KMEM=n
 >>
+>> Fix this build error:
 >>
->> On 7/2/2013 16:13, Richard Genoud wrote:
->>>>
->>>> Please hold on of this, as to the ASoC dmaengine will deal with this. So,
->>>> we
->>>> >not need do it manually.
->>>> >
->>>> >Now, I am working on it. And will send out the patch soon after testing
->>>> > OK.
->>>
->>> Ok, I stay tuned !
+>> mm/built-in.o: In function `mem_cgroup_css_free':
+>> memcontrol.c:(.text+0x5caa6): undefined reference to
+>> 'mem_cgroup_sockets_destroy'
 >>
->>
->> I think you can go on working with the two patches I send just now.
->> [1]: ASoC: atmel_ssc_dai: move set dma data to startup callback
->> https://patchwork.kernel.org/patch/2811241/
->>
->> [2]: ASoC: atmel-pcm: use generic dmaengine framework
->> https://patchwork.kernel.org/patch/2811261/
->>
->> I use your patches 4 ~ 8 do a quick testing, it works. Please note the name
->> of asound.state under /etc in your rootfs should the same with atmel,model
->> in patch 6.
+>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+>> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+>> Signed-off-by: Li Zefan <lizefan@huawei.com>
 >
-> Thanks for testing !
-> I was just doing the same test, it works with
-> aplay  -Dplug:default  good_music.wav
+> I am seeing the same thing I just didn't get to reporting it.
+> The other approach is not bad as well but I find this tiny better
+> because mem_cgroup_css_free should care only about a single cleanup
+> function for whole kmem. If that one needs to do tcp kmem specific
+> cleanup then it should be done inside kmem_cgroup_css_offline.
 >
-> but there's a violent hang (kernel stops, no trace) when I try the record :
-> arecord -v -V stereo -Dplug:default -f cd -t wav -c 2 /tmp/toto.wav
-> last thing I see is :
-> dma dma0chan3: atc_control (3)
->
-> I'll try to trace that.
-I think it's DMA related.
-the last thing done by the kernel is:
- i2c i2c-0: i2c_outb: 0x34 A
- i2c i2c-0: i2c_outb: 0x0c A
- i2c i2c-0: i2c_outb: 0x5a A
-meaning: enable power on, LINE IN, ADC, OSC, on the WM8731
-so, after that, data is comming from the codec to the SSC and then is
-handled by the DMA.
-there must be something nasty on the DMA bus to hang everything like that...
 
-Richard.
+As said in my other mail, for me this makes sense as it is a followup.
+
+But, still I don't know why sock.c has is own mem_cgroup_sockets_{init,destroy}.
+It's interesting, that include/net/sock.h is included by sock.c, too.
+If they are different, why do both function use the same name?
+
+> Andrew could you add this as
+> memcg-use-css_get-put-when-charging-uncharging-kmem-fix.patch, please?
+>
+
+*-fix-2 as there is *-fix already around.
+
+- Sedat -
+
+http://ozlabs.org/~akpm/mmotm/broken-out/memcg-use-css_get-put-when-charging-uncharging-kmem-fix.patch
+
+
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+>
+> Thanks
+>
+>> ---
+>>  mm/memcontrol.c | 12 ++++++++++--
+>>  1 file changed, 10 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 234f311..59ea6f9 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -5876,6 +5876,11 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>>       return mem_cgroup_sockets_init(memcg, ss);
+>>  }
+>>
+>> +static void memcg_destroy_kmem(struct mem_cgroup *memcg)
+>> +{
+>> +     mem_cgroup_sockets_destroy(memcg);
+>> +}
+>> +
+>>  static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+>>  {
+>>       if (!memcg_kmem_is_active(memcg))
+>> @@ -5915,6 +5920,10 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+>>       return 0;
+>>  }
+>>
+>> +static void memcg_destroy_kmem(struct mem_cgroup *memcg)
+>> +{
+>> +}
+>> +
+>>  static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
+>>  {
+>>  }
+>> @@ -6312,8 +6321,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+>>  {
+>>       struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>>
+>> -     mem_cgroup_sockets_destroy(memcg);
+>> -
+>> +     memcg_destroy_kmem(memcg);
+>>       __mem_cgroup_free(memcg);
+>>  }
+>>
+>> --
+>> 1.8.0.2
+>>
+>>
+>> > ---
+>> > [ v2: git dislikes lines beginning with hash ('#'). ]
+>> >
+>> >  include/net/sock.h | 4 +++-
+>> >  1 file changed, 3 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/include/net/sock.h b/include/net/sock.h
+>> > index ea6206c..ad4bf7f 100644
+>> > --- a/include/net/sock.h
+>> > +++ b/include/net/sock.h
+>> > @@ -71,6 +71,7 @@
+>> >  struct cgroup;
+>> >  struct cgroup_subsys;
+>> >  #ifdef CONFIG_NET
+>> > +#ifdef CONFIG_MEMCG_KMEM
+>>
+>> #if defined(CONFIG_NET) && defined(CONFIG_MEMCG_KMEM)
+>>
+>> >  int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss);
+>> >  void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg);
+>> >  #else
+>> > @@ -83,7 +84,8 @@ static inline
+>> >  void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg)
+>> >  {
+>> >  }
+>> > -#endif
+>> > +#endif /* CONFIG_NET */
+>> > +#endif /* CONFIG_MEMCG_KMEM */
+>> >  /*
+>> >   * This structure really needs to be cleaned up.
+>> >   * Most of it is for TCP, and not used by any of
+>> >
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+> --
+> Michal Hocko
+> SUSE Labs
