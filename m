@@ -1,174 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab3GCNK7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 09:10:59 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:45210 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471Ab3GCNK5 (ORCPT
+	id S1753098Ab3GCNP7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 09:15:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57296 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab3GCNP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 09:10:57 -0400
+	Wed, 3 Jul 2013 09:15:57 -0400
+Date: Wed, 3 Jul 2013 16:15:13 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>, <tony@atomide.com>,
+        <ruslan.bilovol@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
+ bus suspend
+Message-ID: <20130703131513.GH15056@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <51D28DB9.704@ti.com>
+ <Pine.LNX.4.44L0.1307021302430.1086-100000@iolanthe.rowland.org>
+ <20130703125719.GD15056@arwen.pp.htv.fi>
+ <51D421BC.9050600@ti.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUV0bCUDxd8qtzS-zNGwM+JKEqC4uTCxmsOH8jbNVddPXA@mail.gmail.com>
-References: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
-	<51D41E34.5010802@huawei.com>
-	<CA+icZUV0bCUDxd8qtzS-zNGwM+JKEqC4uTCxmsOH8jbNVddPXA@mail.gmail.com>
-Date: Wed, 3 Jul 2013 15:10:56 +0200
-Message-ID: <CA+icZUWR4AXDfRXXhhq0UHnn7Q7r=WY7XpShS7YWOiKLuy30PA@mail.gmail.com>
-Subject: Re: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for mem_cgroup_sockets_{init,destroy}
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Li Zefan <lizefan@huawei.com>
-Cc: akpm@linux-foundation.org, davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GBDnBH7+ZvLx8QD4"
+Content-Disposition: inline
+In-Reply-To: <51D421BC.9050600@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 3:09 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Wed, Jul 3, 2013 at 2:51 PM, Li Zefan <lizefan@huawei.com> wrote:
->> On 2013/7/3 20:19, Sedat Dilek wrote:
->>> When "CONFIG_MEMCG_KMEM=n" I see this in my build-log:
->>>
->>>  LD      init/built-in.o
->>> mm/built-in.o: In function `mem_cgroup_css_free':
->>> memcontrol.c:(.text+0x5caa6): undefined reference to `mem_cgroup_sockets_destroy'
->>> make[2]: *** [vmlinux] Error 1
->>>
->>> Inspired by the ifdef for mem_cgroup_sockets_{init,destroy} here...
->>>
->>> [ net/core/sock.c ]
->>>
->>>  #ifdef CONFIG_MEMCG_KMEM
->>>  int mem_cgroup_sockets_init()
->>>  ...
->>>  void mem_cgroup_sockets_destroy()
->>>  ...
->>>  #endif
->>>
->>> ...I did the the same for both in "include/net/sock.h".
->>>
->>> This fixes the issue for me in next-20130703.
->>>
->>> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
->>
->> Maybe it's better to add memcg_destroy_kmem(), to pair with
->> memcg_init_kmem().
->>
->> This patch can be folded into "memcg: use css_get/put when charging/uncharging kmem"
->>
->
-> Hi Li Zefan,
->
-> Can you or a guru from netdev explain me why there exists
-> mem_cgroup_sockets_init() and mem_cgroup_sockets_destroy() in
->
-> 1. net/core/sock.c <--- AFAICS this includes below sock.h, too.
-> 2. net/core/sock.h <--- mm/memcontrol.c is including this one.
->
+--GBDnBH7+ZvLx8QD4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-*** include/net/sock.h ***
+On Wed, Jul 03, 2013 at 04:06:04PM +0300, Roger Quadros wrote:
+> On 07/03/2013 03:57 PM, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Tue, Jul 02, 2013 at 01:17:58PM -0400, Alan Stern wrote:
+> >> A PCI-based EHCI controller has two power sources: the core well (which
+> >> is turned off during suspend) and the auxiliary well (which remains
+> >> powered).  That's how remote wakeup works; it uses the auxiliary well.
+> >=20
+> > This, kinda, matches what OMAP tries to do with pad wakeup. Just that
+> > pad wakeup sits outside of the device itself. Perhaps we could look into
+> > how PCI handles the aux well and take some inspiration from there.
+> >=20
+> > Any pointers under drivers/pci/ would be great :-)
+> >=20
+> From what I understood, auxiliary well is just a power source, and it kee=
+ps
+> the EHCI controller powered even during suspend.
+>=20
+> If that is true then it is different from our situation as we power down =
+the
+> EHCI controller completely.
 
-- Sedat -
+right but our "auxiliary well" keeps PRCM powered which can wake EHCI up
+;-)
 
-> Make me less confused.
->
-> And can you explain why your approach is "better" to do the change in
-> memcontrol.c than in sock.h (see sock.c).
->
-> Thanks in advance.
->
-> - Sedat -
->
->> =======================
->>
->> [PATCH] memcg: fix build error if CONFIG_MEMCG_KMEM=n
->>
->> Fix this build error:
->>
->> mm/built-in.o: In function `mem_cgroup_css_free':
->> memcontrol.c:(.text+0x5caa6): undefined reference to
->> 'mem_cgroup_sockets_destroy'
->>
->> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> Signed-off-by: Li Zefan <lizefan@huawei.com>
->> ---
->>  mm/memcontrol.c | 12 ++++++++++--
->>  1 file changed, 10 insertions(+), 2 deletions(-)
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 234f311..59ea6f9 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -5876,6 +5876,11 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->>         return mem_cgroup_sockets_init(memcg, ss);
->>  }
->>
->> +static void memcg_destroy_kmem(struct mem_cgroup *memcg)
->> +{
->> +       mem_cgroup_sockets_destroy(memcg);
->> +}
->> +
->>  static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
->>  {
->>         if (!memcg_kmem_is_active(memcg))
->> @@ -5915,6 +5920,10 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
->>         return 0;
->>  }
->>
->> +static void memcg_destroy_kmem(struct mem_cgroup *memcg)
->> +{
->> +}
->> +
->>  static void kmem_cgroup_css_offline(struct mem_cgroup *memcg)
->>  {
->>  }
->> @@ -6312,8 +6321,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
->>  {
->>         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->>
->> -       mem_cgroup_sockets_destroy(memcg);
->> -
->> +       memcg_destroy_kmem(memcg);
->>         __mem_cgroup_free(memcg);
->>  }
->>
->> --
->> 1.8.0.2
->>
->>
->>> ---
->>> [ v2: git dislikes lines beginning with hash ('#'). ]
->>>
->>>  include/net/sock.h | 4 +++-
->>>  1 file changed, 3 insertions(+), 1 deletion(-)
->>>
->>> diff --git a/include/net/sock.h b/include/net/sock.h
->>> index ea6206c..ad4bf7f 100644
->>> --- a/include/net/sock.h
->>> +++ b/include/net/sock.h
->>> @@ -71,6 +71,7 @@
->>>  struct cgroup;
->>>  struct cgroup_subsys;
->>>  #ifdef CONFIG_NET
->>> +#ifdef CONFIG_MEMCG_KMEM
->>
->> #if defined(CONFIG_NET) && defined(CONFIG_MEMCG_KMEM)
->>
->>>  int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss);
->>>  void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg);
->>>  #else
->>> @@ -83,7 +84,8 @@ static inline
->>>  void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg)
->>>  {
->>>  }
->>> -#endif
->>> +#endif /* CONFIG_NET */
->>> +#endif /* CONFIG_MEMCG_KMEM */
->>>  /*
->>>   * This structure really needs to be cleaned up.
->>>   * Most of it is for TCP, and not used by any of
->>>
->>
+What I'm saying is that from ehci-omap's perspective, there's very
+little difference, specially since we route the wakeup through the same
+IRQ line anyway. Perhaps we could take some inspiration from the PCI
+land to make our hwmod/omap_device a little easier from driver
+perspective.
+
+Or maybe it doesn't make sense ;-)
+
+--=20
+balbi
+
+--GBDnBH7+ZvLx8QD4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1CPhAAoJEIaOsuA1yqREXcUP/iz2iFfynbPWw5sT13z9TmVW
+7AxHIe+AUaQKEVm4Ga9hSwH8SA/aatCBj2mGTU5jYtZt9dCOqknazXmZt0374i9H
+ZN9e421SGZLvNECeLnAqEXJhrGTUiGSpcaos34d1WHrS6UFQt9dQTKoNJa2M7I3p
+iw86nQ7wxKkY7i2smIpk3i8Ultr8ZJBJMyXdtGUgWPVQUBHV6ROouWhT5puD4UQm
+nQShMBRug/6tUp+H2pibTfc4eHCbeCkpSqm+mRziP2aAA/W/bPqQzZUFHfXMtxeR
+4+Sbb1qh1oNLTK2xL4QRDo69mH+jT9N86rLYgBMjA4lxgzfZMFrmuvZ19cnIPvbZ
+E1tMlmKBuw+ZD1HTAi2kOxegUP77eZe40idi4x5BhTZSCryp5mfzFF4cJzq9Aohd
+uNYiBXU8gFwfNdJOck93MdjhCtpaL2kbyO9VuYhRDPN2rtfmtQ7YkgPk+c7MipPE
+GV/ask6WESRk+DyGwSJnRYfae6s6wJsUfj6x/Mjq0lxzzh3tSORV3iWNV8+c0xT2
+ShNQnupQgGJ4AMtgALCu60SLDxere8vNhfXciWbk+X9nM5+p1e7FT4HDZPCLswpO
+qVtwYl3VDGZRugfXAvQtHDls32tTcj6e+YiGFKUpSqg7eVJHDFYRZ1K9l0t/QpT8
+xN5VkpxsLDz6znd7ne/G
+=Jirn
+-----END PGP SIGNATURE-----
+
+--GBDnBH7+ZvLx8QD4--
