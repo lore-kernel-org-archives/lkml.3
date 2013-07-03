@@ -1,39 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab3GCNzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 09:55:23 -0400
-Received: from a9-50.smtp-out.amazonses.com ([54.240.9.50]:35268 "EHLO
-	a9-50.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755367Ab3GCNzV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 09:55:21 -0400
-Date: Wed, 3 Jul 2013 13:55:20 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/5] mm/slab: Fix /proc/slabinfo unwriteable for
- slab
-In-Reply-To: <1372812593-7617-3-git-send-email-liwanp@linux.vnet.ibm.com>
-Message-ID: <0000013fa4d0e060-54cc0d26-3ddf-48bb-a868-1fb5b41ea5fb-000000@email.amazonses.com>
-References: <1372812593-7617-1-git-send-email-liwanp@linux.vnet.ibm.com> <1372812593-7617-3-git-send-email-liwanp@linux.vnet.ibm.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932147Ab3GCNzh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 09:55:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34576 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754666Ab3GCNzf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 09:55:35 -0400
+Message-ID: <51D42D53.3000800@suse.cz>
+Date: Wed, 03 Jul 2013 15:55:31 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 2013.07.03-54.240.9.50
+To: strnape1@fel.cvut.cz
+Cc: Nicolas Palix <nicolas.palix@imag.fr>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Coccinelle <cocci@systeme.lip6.fr>,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: Re: [PATCH] scripts: Coccinelle script for pci_free_consistent()
+References: <20130508230308.Horde.hkDwg5wWGGBzmzKnqIjUhg1@wimap.feld.cvut.cz> <CAAxaTiPTtNTpo8DAE628=En=sa0hTzeOJ19DoxE9GwdiQnrUqg@mail.gmail.com>
+In-Reply-To: <CAAxaTiPTtNTpo8DAE628=En=sa0hTzeOJ19DoxE9GwdiQnrUqg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Jul 2013, Wanpeng Li wrote:
+On 25.6.2013 15:03, Nicolas Palix wrote:
+> On Wed, May 8, 2013 at 11:03 PM,  <strnape1@fel.cvut.cz> wrote:
+>> Created coccinelle script for reporting missing pci_free_consistent() calls.
+>>
+>> Signed-off-by: Petr Strnad <strnape1@fel.cvut.cz>
+> 
+> Signed-off-by: Nicolas Palix <nicolas.palix@imag.fr>
 
-> Slab have some tunables like limit, batchcount, and sharedfactor can be
-> tuned through function slabinfo_write. Commit (b7454ad3: mm/sl[au]b: Move
-> slabinfo processing to slab_common.c) uncorrectly change /proc/slabinfo
-> unwriteable for slab, this patch fix it by revert to original mode.
+Applied to kbuild.git#misc. BTW, the patch was malformed at several
+places, you mailer broke long lines like this:
 
-Acked-by: Christoph Lameter <cl@linux.com>
+>> +msg = "ERROR: missing pci_free_consistent; pci_alloc_consistent on line %s
+>> and return without freeing on line %s" % (p1[0].line,p2[0].line)
+
+Please send the patch to yourself next time and verify that 'git am' can
+apply it, before sending it to the mailing list.
+
+Thanks,
+Michal
