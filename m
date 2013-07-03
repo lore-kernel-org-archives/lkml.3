@@ -1,273 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab3GCOlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:41:21 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:35873 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933048Ab3GCOlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:41:20 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        "Dave Jones" <davej@redhat.com>, David Howells <dhowells@redhat.com>,
-        David Sharp <dhsharp@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Thomas Gleixner" <tglx@linutronix.de>, <linux-mips@linux-mips.org>
-Subject: [PATCH] MIPS: use generic-y where possible
-Date: Wed, 3 Jul 2013 15:40:58 +0100
-Message-ID: <1372862458-22693-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S933113Ab3GCOmH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:42:07 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:56009 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933029Ab3GCOmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:42:05 -0400
+X-Originating-IP: 108.223.40.66
+Date: Wed, 3 Jul 2013 07:42:01 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
+ X9SRL-F motherboard
+Message-ID: <20130703144201.GA10323@roeck-us.net>
+References: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01192__2013_07_03_15_41_15
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use generic-y and remove headers in arch/mips/include/[uapi/]asm/Kbuild
-where the header just includes or is identical to the corresponding
-<asm-generic/*.h>.
+On Wed, Jul 03, 2013 at 08:35:59AM -0400, Justin Piszcz wrote:
+> Hello,
+> 
+> Currently running 3.10 with:
+> CONFIG_SENSORS_NCT6775=y
+> 
+> Motherboard: Supermicro X9SRL-F
+> 
+> A couple questions:
+> 1) Was curious if the PCH CHIP/CPU/MCH temperatures should be populated for
+> this board? 
 
-We can't do the same for uapi/asm/kvm_para.h because it's presence is
-explicitly checked in include/uapi/linux/Kbuild to decide whether to add
-kvm_para.h to header-y.
+No, but the driver doesn't know, so you'll have to create an ignore entry in
+sensors3.conf.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: David Sharp <dhsharp@google.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-mips@linux-mips.org
----
- arch/mips/include/asm/Kbuild              | 13 +++++++++++++
- arch/mips/include/asm/cputime.h           |  6 ------
- arch/mips/include/asm/current.h           |  1 -
- arch/mips/include/asm/emergency-restart.h |  6 ------
- arch/mips/include/asm/local64.h           |  1 -
- arch/mips/include/asm/mutex.h             |  9 ---------
- arch/mips/include/asm/parport.h           |  1 -
- arch/mips/include/asm/percpu.h            |  6 ------
- arch/mips/include/asm/scatterlist.h       |  6 ------
- arch/mips/include/asm/sections.h          |  6 ------
- arch/mips/include/asm/segment.h           |  6 ------
- arch/mips/include/asm/serial.h            |  1 -
- arch/mips/include/asm/ucontext.h          |  1 -
- arch/mips/include/asm/xor.h               |  1 -
- arch/mips/include/uapi/asm/Kbuild         |  5 +++--
- arch/mips/include/uapi/asm/auxvec.h       |  4 ----
- arch/mips/include/uapi/asm/ipcbuf.h       |  1 -
- 17 files changed, 16 insertions(+), 58 deletions(-)
- delete mode 100644 arch/mips/include/asm/cputime.h
- delete mode 100644 arch/mips/include/asm/current.h
- delete mode 100644 arch/mips/include/asm/emergency-restart.h
- delete mode 100644 arch/mips/include/asm/local64.h
- delete mode 100644 arch/mips/include/asm/mutex.h
- delete mode 100644 arch/mips/include/asm/parport.h
- delete mode 100644 arch/mips/include/asm/percpu.h
- delete mode 100644 arch/mips/include/asm/scatterlist.h
- delete mode 100644 arch/mips/include/asm/sections.h
- delete mode 100644 arch/mips/include/asm/segment.h
- delete mode 100644 arch/mips/include/asm/serial.h
- delete mode 100644 arch/mips/include/asm/ucontext.h
- delete mode 100644 arch/mips/include/asm/xor.h
- delete mode 100644 arch/mips/include/uapi/asm/auxvec.h
- delete mode 100644 arch/mips/include/uapi/asm/ipcbuf.h
+> 2) Additionally, why is the CPUTIN in alarm?
+> 
+Because of a bug in the driver. Should get fixed with 3.10.1 or 3.10.2.
 
-diff --git a/arch/mips/include/asm/Kbuild b/arch/mips/include/asm/Kbuild
-index 9b54b7a..454ddf9 100644
---- a/arch/mips/include/asm/Kbuild
-+++ b/arch/mips/include/asm/Kbuild
-@@ -1,2 +1,15 @@
- # MIPS headers
-+generic-y += cputime.h
-+generic-y += current.h
-+generic-y += emergency-restart.h
-+generic-y += local64.h
-+generic-y += mutex.h
-+generic-y += parport.h
-+generic-y += percpu.h
-+generic-y += scatterlist.h
-+generic-y += sections.h
-+generic-y += segment.h
-+generic-y += serial.h
- generic-y += trace_clock.h
-+generic-y += ucontext.h
-+generic-y += xor.h
-diff --git a/arch/mips/include/asm/cputime.h b/arch/mips/include/asm/cputime.h
-deleted file mode 100644
-index c00eacb..0000000
---- a/arch/mips/include/asm/cputime.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef __MIPS_CPUTIME_H
--#define __MIPS_CPUTIME_H
--
--#include <asm-generic/cputime.h>
--
--#endif /* __MIPS_CPUTIME_H */
-diff --git a/arch/mips/include/asm/current.h b/arch/mips/include/asm/current.h
-deleted file mode 100644
-index 4c51401..0000000
---- a/arch/mips/include/asm/current.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/current.h>
-diff --git a/arch/mips/include/asm/emergency-restart.h b/arch/mips/include/asm/emergency-restart.h
-deleted file mode 100644
-index 108d8c4..0000000
---- a/arch/mips/include/asm/emergency-restart.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_EMERGENCY_RESTART_H
--#define _ASM_EMERGENCY_RESTART_H
--
--#include <asm-generic/emergency-restart.h>
--
--#endif /* _ASM_EMERGENCY_RESTART_H */
-diff --git a/arch/mips/include/asm/local64.h b/arch/mips/include/asm/local64.h
-deleted file mode 100644
-index 36c93b5..0000000
---- a/arch/mips/include/asm/local64.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/local64.h>
-diff --git a/arch/mips/include/asm/mutex.h b/arch/mips/include/asm/mutex.h
-deleted file mode 100644
-index 458c1f7..0000000
---- a/arch/mips/include/asm/mutex.h
-+++ /dev/null
-@@ -1,9 +0,0 @@
--/*
-- * Pull in the generic implementation for the mutex fastpath.
-- *
-- * TODO: implement optimized primitives instead, or leave the generic
-- * implementation in place, or pick the atomic_xchg() based generic
-- * implementation. (see asm-generic/mutex-xchg.h for details)
-- */
--
--#include <asm-generic/mutex-dec.h>
-diff --git a/arch/mips/include/asm/parport.h b/arch/mips/include/asm/parport.h
-deleted file mode 100644
-index cf252af..0000000
---- a/arch/mips/include/asm/parport.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/parport.h>
-diff --git a/arch/mips/include/asm/percpu.h b/arch/mips/include/asm/percpu.h
-deleted file mode 100644
-index 844e763..0000000
---- a/arch/mips/include/asm/percpu.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef __ASM_PERCPU_H
--#define __ASM_PERCPU_H
--
--#include <asm-generic/percpu.h>
--
--#endif /* __ASM_PERCPU_H */
-diff --git a/arch/mips/include/asm/scatterlist.h b/arch/mips/include/asm/scatterlist.h
-deleted file mode 100644
-index 7ee0e64..0000000
---- a/arch/mips/include/asm/scatterlist.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef __ASM_SCATTERLIST_H
--#define __ASM_SCATTERLIST_H
--
--#include <asm-generic/scatterlist.h>
--
--#endif /* __ASM_SCATTERLIST_H */
-diff --git a/arch/mips/include/asm/sections.h b/arch/mips/include/asm/sections.h
-deleted file mode 100644
-index b7e3726..0000000
---- a/arch/mips/include/asm/sections.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_SECTIONS_H
--#define _ASM_SECTIONS_H
--
--#include <asm-generic/sections.h>
--
--#endif /* _ASM_SECTIONS_H */
-diff --git a/arch/mips/include/asm/segment.h b/arch/mips/include/asm/segment.h
-deleted file mode 100644
-index 92ac001..0000000
---- a/arch/mips/include/asm/segment.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_SEGMENT_H
--#define _ASM_SEGMENT_H
--
--/* Only here because we have some old header files that expect it.. */
--
--#endif /* _ASM_SEGMENT_H */
-diff --git a/arch/mips/include/asm/serial.h b/arch/mips/include/asm/serial.h
-deleted file mode 100644
-index a0cb0ca..0000000
---- a/arch/mips/include/asm/serial.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/serial.h>
-diff --git a/arch/mips/include/asm/ucontext.h b/arch/mips/include/asm/ucontext.h
-deleted file mode 100644
-index 9bc07b9..0000000
---- a/arch/mips/include/asm/ucontext.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/ucontext.h>
-diff --git a/arch/mips/include/asm/xor.h b/arch/mips/include/asm/xor.h
-deleted file mode 100644
-index c82eb12..0000000
---- a/arch/mips/include/asm/xor.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/xor.h>
-diff --git a/arch/mips/include/uapi/asm/Kbuild b/arch/mips/include/uapi/asm/Kbuild
-index 350cccc..be7196e 100644
---- a/arch/mips/include/uapi/asm/Kbuild
-+++ b/arch/mips/include/uapi/asm/Kbuild
-@@ -1,7 +1,9 @@
- # UAPI Header export list
- include include/uapi/asm-generic/Kbuild.asm
- 
--header-y += auxvec.h
-+generic-y += auxvec.h
-+generic-y += ipcbuf.h
-+
- header-y += bitsperlong.h
- header-y += break.h
- header-y += byteorder.h
-@@ -11,7 +13,6 @@ header-y += fcntl.h
- header-y += inst.h
- header-y += ioctl.h
- header-y += ioctls.h
--header-y += ipcbuf.h
- header-y += kvm_para.h
- header-y += mman.h
- header-y += msgbuf.h
-diff --git a/arch/mips/include/uapi/asm/auxvec.h b/arch/mips/include/uapi/asm/auxvec.h
-deleted file mode 100644
-index 7cf7f2d..0000000
---- a/arch/mips/include/uapi/asm/auxvec.h
-+++ /dev/null
-@@ -1,4 +0,0 @@
--#ifndef _ASM_AUXVEC_H
--#define _ASM_AUXVEC_H
--
--#endif /* _ASM_AUXVEC_H */
-diff --git a/arch/mips/include/uapi/asm/ipcbuf.h b/arch/mips/include/uapi/asm/ipcbuf.h
-deleted file mode 100644
-index 84c7e51..0000000
---- a/arch/mips/include/uapi/asm/ipcbuf.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/ipcbuf.h>
--- 
-1.8.1.2
+> I also found:
+> http://www.lm-sensors.org/wiki/Configurations/SuperMicro/X9SRA
+> 
+> Does Super Micro also have such a config file for the X9SRL-F?
+> This board uses a NCT6776F.
+> 
+Supermicro does not provide configuration files. You can take the above file,
+test and update it, and let us know so we can add it to the wiki.
 
+> Relevant output from lm_sensors 3.6.0+dfsg1-1:
+> 
+> nct6776-isa-0a30
+> Adapter: ISA adapter
+> Vcore:          +0.81 V  (min =  +0.54 V, max =  +1.49 V)
+> in1:            +1.85 V  (min =  +1.62 V, max =  +1.99 V)
+> AVCC:           +3.30 V  (min =  +2.98 V, max =  +3.63 V)
+> +3.3V:          +3.30 V  (min =  +2.98 V, max =  +3.63 V)
+> in4:            +1.51 V  (min =  +1.35 V, max =  +1.65 V)
+> in5:            +1.27 V  (min =  +1.13 V, max =  +1.38 V)
+> in6:            +1.06 V  (min =  +0.92 V, max =  +1.34 V)
+> 3VSB:           +3.57 V  (min =  +2.98 V, max =  +3.63 V)
+> Vbat:           +3.49 V  (min =  +2.70 V, max =  +3.63 V)
+> fan1:           986 RPM  (min =  700 RPM)
+> fan2:          1322 RPM  (min =  700 RPM)
+> fan3:          1103 RPM  (min =  700 RPM)
+> fan4:          1080 RPM  (min =  700 RPM)
+> fan5:          1001 RPM  (min =  700 RPM)
+> SYSTIN:         +42.0 C  (high = +75.0 C, hyst = +70.0 C)  sensor =
+> thermistor
+> CPUTIN:         +33.0 C  (high = +95.0 C, hyst = +92.0 C)  ALARM  sensor =
+> thermistor
+> AUXTIN:         +23.0 C  (high = +80.0 C, hyst = +75.0 C)  sensor =
+> thermistor
+> PECI Agent 0:    +0.0 C  (high = +95.0 C, hyst = +92.0 C)
+>                          (crit = +100.0 C)
 
+This is surprising and might be where the alarm comes from. What output do you
+get if you load the coretemp driver ? 
+
+> PCH_CHIP_TEMP:   +0.0 C  
+> PCH_CPU_TEMP:    +0.0 C  
+> PCH_MCH_TEMP:    +0.0 C  
+> intrusion0:    ALARM
+> intrusion1:    ALARM
+
+Are those not connected ?
+
+> 
+> sensors3.conf snippet:
+> 
+> chip "w83627ehf-*" "w83627dhg-*" "w83667hg-*" "nct6775-*" "nct6776-*"
+> 
+>     label in0 "Vcore"
+>     label in2 "AVCC"
+>     label in3 "+3.3V"
+>     label in7 "3VSB"
+>     label in8 "Vbat"
+> 
+>     set in2_min  3.3 * 0.90
+>     set in2_max  3.3 * 1.10
+>     set in3_min  3.3 * 0.90
+>     set in3_max  3.3 * 1.10
+>     set in7_min  3.3 * 0.90
+>     set in7_max  3.3 * 1.10
+>     set in8_min  3.0 * 0.90
+>     set in8_max  3.3 * 1.10
+> 
+Supermicro tends to set the limits in the BIOS, so you should not have to do
+that.
+
+Thanks,
+Guenter
