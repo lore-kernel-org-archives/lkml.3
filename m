@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965547Ab3GCTnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:43:06 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35593 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933041Ab3GCTnE (ORCPT
+	id S965690Ab3GCTn3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:43:29 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:55156 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965446Ab3GCTn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 15:43:04 -0400
-Message-ID: <51D47EC3.5080305@kernel.org>
-Date: Wed, 03 Jul 2013 20:42:59 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Wed, 3 Jul 2013 15:43:27 -0400
+Date: Wed, 3 Jul 2013 20:43:03 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Jon Medhurst <tixy@linaro.org>, Achin Gupta <Achin.Gupta@arm.com>,
+        Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Message-ID: <20130703194303.GG27646@sirena.org.uk>
+References: <1371484269-11743-1-git-send-email-lorenzo.pieralisi@arm.com>
+ <1371484269-11743-3-git-send-email-lorenzo.pieralisi@arm.com>
+ <20130617174451.GF28497@quad.lixom.net>
+ <20130618102213.GA1564@e102568-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, stable@vger.kernel.org
-Subject: Re: [PATCH] iio: inkern: fix iio_convert_raw_to_processed_unlocked
-References: <1372696809-14661-1-git-send-email-alexandre.belloni@free-electrons.com> <20130701152004.cfddc36e7b3d9d63e1960514@linux-foundation.org>
-In-Reply-To: <20130701152004.cfddc36e7b3d9d63e1960514@linux-foundation.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="a8+9vHbKxlFmeYtB"
+Content-Disposition: inline
+In-Reply-To: <20130618102213.GA1564@e102568-lin.cambridge.arm.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH v4 2/2] drivers: mfd: vexpress: add Serial Power
+ Controller (SPC) support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2013 11:20 PM, Andrew Morton wrote:
-> On Mon,  1 Jul 2013 18:40:09 +0200 Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-> 
->> When reading IIO_CHAN_INFO_OFFSET, the return value of iio_channel_read() for
->> success will be IIO_VAL*, checking for 0 is not correct.
-> 
-> I have a canned response:
-> 
-> When writing a changelog, please describe the end-user-visible effects
-> of the bug, so that others can more easily decide which kernel
-> version(s) should be fixed, and so that downstream kernel maintainers
-> can more easily work out whether this patch will fix a problem which
-> they or their customers are observing.
-> 
->> Cc: <stable@vger.kernel.org> # 3.10.x
-> 
-> Especially when cc'ing -stable.
-> 
-As Andrew suggested I have added a few more details and applied the patch
-to the fixes-togreg branch of iio.git.
 
-Thanks,
+--a8+9vHbKxlFmeYtB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Jonathan
+On Tue, Jun 18, 2013 at 11:22:13AM +0100, Lorenzo Pieralisi wrote:
+> On Mon, Jun 17, 2013 at 06:44:51PM +0100, Olof Johansson wrote:
+
+> > That'll trim down the driver to a point where I think you'll find it much
+> > easier to get merged. :-)
+
+> To start with I have to understand in which directory this code should
+> live. Moving the frequency settings in clk/CPUfreq drivers should be
+> feasible with extra DT complexity for their bindings.
+
+You shoudn't really need to change the DT bindings at all - MFD is a
+purely Linux construct, it doesn't affect how the hardware is
+constructed.
+
+--a8+9vHbKxlFmeYtB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1H7DAAoJELSic+t+oim9+0MP/RWyhHhsAnEIpTmdpqahO7vc
+Gr3n04byK566EQNq2HjJwda2oT8EgFygPP1mQFx3kLwUh7DyfXCkL0rOYQmvxEnJ
+ZmcLyBH30zyTky0JAPiEZp2/tcIbXkvcfJO8LD1foWaqTu1u+Bq3DwcJv6SaZl0N
+Ymme2q/vL0fsI3OQHG7yJX22ANREMCkHDa1l4k7hWawAFxzETIrdZQUjWpUd/lho
+w7EEJCujCEDZ9SvXWMjxpcGMWSJZk90EhDdGuae7oeCvJpDvrvN0re9PH834U4Su
+NY7mwvPDgz/Iby14TfIwunbDu7IjC/cRNcTkKwW8IM99YQBTGsMDiKqSZWEgW9pg
+pAs89y86doVEDTC+JpHMUQprR3vIMlqBoLd6Aurnq0UOL/6Gb/q9pzog9x8bGCy/
+picj43+mcHhmirKcVGfxTn0EJMywbe1qXSP0KtQo9LzpOo3+fo72NGozjS1jLAgQ
+5Iw/hDdzuYfI/vHWC49IskajaVK1jaO3ZjaECSVi51icC+5K8L5KyUXSooVJi+6T
+nDGvgYEK+817KMizpKufI3ZMZ99G6gB94iO8OA5FtCRHoYGg2ayDWkFH37kHPIPI
+Q4ENp324BBtWKwMssIvsDpWbJG3Gq6idKDVGz6xqbYKVTnzVyZv+1c+bMwbUhFR1
+5eLsSVZXHjhFrFQMzbJr
+=U152
+-----END PGP SIGNATURE-----
+
+--a8+9vHbKxlFmeYtB--
