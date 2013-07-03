@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab3GCOOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:14:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51541 "EHLO bear.ext.ti.com"
+	id S932779Ab3GCOQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:16:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50755 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754123Ab3GCOOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:14:41 -0400
-Date: Wed, 3 Jul 2013 17:14:03 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Luciano Coelho <coelho@ti.com>
-CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <nm@ti.com>
-Subject: Re: [PATCH v3 3/8] wlcore: remove pwr_in_suspend from platform data
-Message-ID: <20130703141403.GP15056@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
+	id S1752784Ab3GCOQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:16:01 -0400
+Message-ID: <1372860925.21065.115.camel@cumari.coelho.fi>
+Subject: Re: [PATCH v3 2/8] wlcore: set irq_flags in the board files instead
+ of hiding behind a quirk
+From: Luciano Coelho <coelho@ti.com>
+To: <linux-wireless@vger.kernel.org>
+CC: <tony@atomide.com>, <nsekhar@ti.com>, <mturquette@linaro.org>,
+        <mark.rutland@arm.com>, <balbi@ti.com>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <nm@ti.com>
+Date: Wed, 3 Jul 2013 17:15:25 +0300
+In-Reply-To: <1372860209-3504-3-git-send-email-coelho@ti.com>
 References: <1372860209-3504-1-git-send-email-coelho@ti.com>
- <1372860209-3504-4-git-send-email-coelho@ti.com>
+	 <1372860209-3504-3-git-send-email-coelho@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v+Mbu5iuT/5Blw/K"
-Content-Disposition: inline
-In-Reply-To: <1372860209-3504-4-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---v+Mbu5iuT/5Blw/K
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, Jul 03, 2013 at 05:03:24PM +0300, Luciano Coelho wrote:
-> The pwr_in_suspend flag depends on the MMC settings which can be
-> retrieved from the SDIO subsystem, so it doesn't need to be part of
-> the platform data structure.  Move it to the platform device data that
-> is passed from SDIO to wlcore.
->=20
+On Wed, 2013-07-03 at 17:03 +0300, Luciano Coelho wrote:
+> The platform_quirk element in the platform data was used to change the
+> way the IRQ is triggered.  When set, the EDGE_IRQ quirk would change
+> the irqflags used and treat edge trigger differently from the rest.
+> 
+> Instead of hiding this irq flag setting behind the quirk, have the
+> board files set the flags during initialization.  This will be more
+> meaningful than driver-specific quirks when we switch to DT.
+> 
+> Additionally, fix missing gpio_request() calls in the boarding files
+> (so that setting the flags actually works).
+> 
+> Cc: Tony Lindgren <tony@atomide.com>
+> Cc: Sekhar Nori <nsekhar@ti.com>
 > Signed-off-by: Luciano Coelho <coelho@ti.com>
+> ---
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+[...]
 
---=20
-balbi
+> @@ -5928,16 +5927,21 @@ static void wlcore_nvs_cb(const struct firmware *fw, void *context)
+>  	wlcore_adjust_conf(wl);
+>  
+>  	wl->irq = platform_get_irq(pdev, 0);
+> -	wl->platform_quirks = pdata->platform_quirks;
+>  	wl->if_ops = pdev_data->if_ops;
+>  
+> -	if (wl->platform_quirks & WL12XX_PLATFORM_QUIRK_EDGE_IRQ)
+> -		irqflags = IRQF_TRIGGER_RISING;
+> -	else
+> -		irqflags = IRQF_TRIGGER_HIGH | IRQF_ONESHOT;
+> +	irq_data = irq_get_irq_data(wl->irq);
+> +	if (!irq_data) {
+> +		wl1271_error("couldn't get irq data for irq %d\n", wl->irq);
+> +		ret = -EINVAL;
+> +		goto out_free_nvs;
+> +	}
+> +
+> +	wl->irq_flags = irqd_get_trigger_type(irq_data);
 
---v+Mbu5iuT/5Blw/K
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+BTW, there seems to be a patch on its way to make reading the flags
+easier (ie. no need to get the irq_data first):
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+http://mid.gmane.org/1367945288-5625-1-git-send-email-javier@dowhile0.org
 
-iQIcBAEBAgAGBQJR1DGrAAoJEIaOsuA1yqREfS8P/2rrlZTd5MOYa7sI2VX2QjSD
-RQa262u7GknQOq6bNZ37RrhrdfkX/PB3Omcs/3FvY529dTzlOBI+o752H4lmFPTr
-EIMbk4RbGZ6s2cnDBq8YXio2YTBTrK+IM+RkU9WhlXFHSqvTi31I+N5nSyfZ7RGa
-EjHS4qbVz7ydsw07a2u17Qw7lHW8bjbyJnlfJAVNOK4Rj1/8H9iRi0d6EhNqULNn
-OA4RlG5YUVrW1q0Ipz34i2VYhXuv6mvA6P6jTU9eSVCjnC2J0s8Bn2pMZZDzD9XY
-lSlu1ozwxW+uL7Ex8+RnnxzWqT9xgOrV/gwXq5drdJAkJSMyx75avHvbxFO5yAOr
-e7BMmkY8+0r3inuZrI0Aagy6B4wTlmWnvd0SnVU98nrU5r0AXN5KYOjQwE75B3KW
-r8WQVisqvqenW0+EuthoBsZt3nAZ62NdfuaVoIQ2ricDDV9/jVHefKiY+TT39wTX
-YVLf/XHp9+VXWtWoVyriEEi6jzSgQhX6FPPCvhEfERoeiC64gVq6H0cYe9byiUS4
-slCl9wF4hsiGk1s9PDHbz/F8J9MAgzvu0vVe7n2aql7MlEK9h+rvGrtwZyfAOCBo
-UdCWvkiuS5Ag+XfhW1Ie7fstWWkz3LylNs2uLEonvkLOCqMWXzvZDKBWS2K5UCw1
-wLrsPp1sLgL7B5Xj///T
-=8X61
------END PGP SIGNATURE-----
+I'm not sure if this is going to be taken in, but if it does, it would
+be nice to change the code here to use the new irq_get_trigger_type()
+function.
 
---v+Mbu5iuT/5Blw/K--
+--
+Luca.
+
