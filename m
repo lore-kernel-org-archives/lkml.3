@@ -1,89 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965453Ab3GCTgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:36:47 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50016 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965115Ab3GCTgq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 15:36:46 -0400
-Date: Wed, 3 Jul 2013 20:36:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: pankaj chauhan <pankaj.chauhan@freescale.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Goyal Akhil-B35197 <B35197@freescale.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chauhan Pankaj-B32944 <B32944@freescale.com>,
-        "Getz, Robin" <robin.getz@analog.com>,
-        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
-        Lars-Peter Clausen <lars-peter.clausen@analog.com>
-Message-ID: <20130703193640.GF27646@sirena.org.uk>
-References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com>
- <1371456566-4934-2-git-send-email-akhil.goyal@freescale.com>
- <1371456566-4934-3-git-send-email-akhil.goyal@freescale.com>
- <1371456566-4934-4-git-send-email-akhil.goyal@freescale.com>
- <51C1AAC4.3010605@metafoo.de>
- <51C2DAE8.2040100@freescale.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fGQQ4fAVnbJVk3ws"
-Content-Disposition: inline
-In-Reply-To: <51C2DAE8.2040100@freescale.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for
- Radio phy
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S933592Ab3GCTlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:41:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47864 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933249Ab3GCTjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 15:39:07 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] Change SIGPIPE's siginfo.si_code from SI_USER to SI_KERNEL.
+Date: Wed,  3 Jul 2013 21:38:55 +0200
+Message-Id: <1372880335-23755-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+SI_USER means that this signal is sent by another process
+via kill(2) et al.
 
---fGQQ4fAVnbJVk3ws
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Other cases when kernel sends signals, such as ^C,
+SIGHUP on tty close, SIGXCPU when time limit is up,
+SIGALRM from alarm(2) etc, we set si_code to SI_KERNEL.
 
-On Thu, Jun 20, 2013 at 04:05:20PM +0530, pankaj chauhan wrote:
+SIGPIPE seems to be inconsistent here.
 
-> Yes modifying registers from user space is part of the patch set and
-> register read/write interface is aimed only for two purposes:
->=20
-> 1. Debugging : taking register dumps etc.
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>
+---
+ fs/fuse/dev.c | 2 +-
+ fs/pipe.c     | 4 ++--
+ fs/splice.c   | 8 ++++----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-Use regmap, it should have the infrastructure you need here.
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index 1d55f94..de55774 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1340,7 +1340,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
+ 	pipe_lock(pipe);
+ 
+ 	if (!pipe->readers) {
+-		send_sig(SIGPIPE, current, 0);
++		send_sig(SIGPIPE, current, 1);
+ 		if (!ret)
+ 			ret = -EPIPE;
+ 		goto out_unlock;
+diff --git a/fs/pipe.c b/fs/pipe.c
+index d2c45e1..ddd777e 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -514,7 +514,7 @@ pipe_write(struct kiocb *iocb, const struct iovec *_iov,
+ 	__pipe_lock(pipe);
+ 
+ 	if (!pipe->readers) {
+-		send_sig(SIGPIPE, current, 0);
++		send_sig(SIGPIPE, current, 1);
+ 		ret = -EPIPE;
+ 		goto out;
+ 	}
+@@ -563,7 +563,7 @@ redo1:
+ 		int bufs;
+ 
+ 		if (!pipe->readers) {
+-			send_sig(SIGPIPE, current, 0);
++			send_sig(SIGPIPE, current, 1);
+ 			if (!ret)
+ 				ret = -EPIPE;
+ 			break;
+diff --git a/fs/splice.c b/fs/splice.c
+index 3b7ee65..1eb18da 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -197,7 +197,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
+ 
+ 	for (;;) {
+ 		if (!pipe->readers) {
+-			send_sig(SIGPIPE, current, 0);
++			send_sig(SIGPIPE, current, 1);
+ 			if (!ret)
+ 				ret = -EPIPE;
+ 			break;
+@@ -1812,7 +1812,7 @@ static int opipe_prep(struct pipe_inode_info *pipe, unsigned int flags)
+ 
+ 	while (pipe->nrbufs >= pipe->buffers) {
+ 		if (!pipe->readers) {
+-			send_sig(SIGPIPE, current, 0);
++			send_sig(SIGPIPE, current, 1);
+ 			ret = -EPIPE;
+ 			break;
+ 		}
+@@ -1863,7 +1863,7 @@ retry:
+ 
+ 	do {
+ 		if (!opipe->readers) {
+-			send_sig(SIGPIPE, current, 0);
++			send_sig(SIGPIPE, current, 1);
+ 			if (!ret)
+ 				ret = -EPIPE;
+ 			break;
+@@ -1967,7 +1967,7 @@ static int link_pipe(struct pipe_inode_info *ipipe,
+ 
+ 	do {
+ 		if (!opipe->readers) {
+-			send_sig(SIGPIPE, current, 0);
++			send_sig(SIGPIPE, current, 1);
+ 			if (!ret)
+ 				ret = -EPIPE;
+ 			break;
+-- 
+1.8.1.4
 
-> 2. Initializing AD9361 using Low level script generated by ADI GUI tool.
-
-This sounds like generating a firmmware blob that the driver can load.
-You may have to cook the GUI output to be more amenable to loading in
-the kernel (or persuade the GUI guys to generate something useful here).
-
---fGQQ4fAVnbJVk3ws
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR1H1EAAoJELSic+t+oim9E5MP/1PBn9pNBcvpZqQ1LR4WazNF
-gpz8/fEWRpst3iB926Z10r9YTVghFbCtmRIlG14VFkHab+qsZLro2vptrtRJbjjk
-ZIuFNRMWTeWmxRycVif6zcfCzm1+VWhYujZ2HraaNrlKV70+v9Byzm9MCXKZz+f+
-CLFN6g1tRphMWp7ftKMDJuEwiO6veJLbjRpbztw6JA48T+g0rC0GalRTjZFCsBRQ
-bv+9OGsMLcyyhMT1q+W0NsjKWGGTlCxI9NizVIfbK4DVOB7Hsh/ONfRtFfFkdA0B
-VTaVhmuudLw0yjA6m+ZsPsGPjiwf/aF694L1lEKIv6pNlfRudYzzrxkVyteqqRfQ
-6kDfiStUePeYGNio0C73cKCSfpr3pf7y7tLr6iYchOVU92rinIW8jdGvd/ZUz0oy
-tdunn04OpS3/BFu3hyEUYW3vrQ139T6lh29yoJeoPHBYIGSk+Zj6I0ELqCmQmwme
-2TaQonljyvYSEIwsmcr+2t2IBLWZnOBUKCi+XSPjloyNdEBZ1FGmy1MabFP5CPMg
-qX2RooGwk9ijZbyNr0stHJ5SfqczDGSRQmJSRiP9eEHyRGsS/s8W6Rr/Bd0T2HrB
-Dq1a6iiPTfyxGPSOzfB9/kCxwZNWKDhalah7TCTeV0xdsMA+9e4W+no2KrhGVS6O
-OpvB9+vgcaFfMKUCfggD
-=o/df
------END PGP SIGNATURE-----
-
---fGQQ4fAVnbJVk3ws--
