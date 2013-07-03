@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3GCSf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:35:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45150 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755366Ab3GCSf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:35:56 -0400
-Date: Wed, 3 Jul 2013 20:35:17 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/13] mm: numa: Scan pages with elevated page_mapcount
-Message-ID: <20130703183517.GC18898@dyad.programming.kicks-ass.net>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-13-git-send-email-mgorman@suse.de>
+	id S1756311Ab3GCSgC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:36:02 -0400
+Received: from mga14.intel.com ([143.182.124.37]:36387 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755366Ab3GCSf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 14:35:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,989,1363158000"; 
+   d="scan'208";a="360086647"
+Date: Wed, 3 Jul 2013 21:41:23 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 0/8] Thunderbolt workarounds
+Message-ID: <20130703184123.GC4898@intel.com>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
+ <20130703182900.GA29079@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372861300-9973-13-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130703182900.GA29079@srcf.ucam.org>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 03:21:39PM +0100, Mel Gorman wrote:
-> Initial support for automatic NUMA balancing was unable to distinguish
-> between false shared versus private pages except by ignoring pages with an
-> elevated page_mapcount entirely. This patch kicks away the training wheels
-> as initial support for identifying shared/private pages is now in place.
-> Note that the patch still leaves shared, file-backed in VM_EXEC vmas in
-> place guessing that these are shared library pages. Migrating them are
-> likely to be of major benefit as generally the expectation would be that
-> these are read-shared between caches and that iTLB and iCache pressure is
-> generally low.
+On Wed, Jul 03, 2013 at 07:29:00PM +0100, Matthew Garrett wrote:
+> Are there any plans to provide native support for the Thunderbolt 
+> controller, rather than relying on system management mode?
 
-This reminds me; there a clause in task_numa_work() that skips 'small' VMAs. I
-don't see the point of that.
+I believe there are some to implement a native Thunderbolt controller
+driver but I don't know the details. 
 
-In fact; when using things like electric fence this might mean skipping most
-memory.
+Bruce Allan and Miles Penner (who are CC'd here) might have a better answer
+for you.
