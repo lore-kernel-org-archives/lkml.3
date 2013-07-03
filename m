@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414Ab3GCVVW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:21:22 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:59124 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933142Ab3GCVVT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:21:19 -0400
-Date: Wed, 3 Jul 2013 22:21:08 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Ronciak, John" <john.ronciak@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Subject: Re: [PATCH v2 0/8] Thunderbolt workarounds
-Message-ID: <20130703212108.GA884@srcf.ucam.org>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
- <20130703182900.GA29079@srcf.ucam.org>
- <20130703183311.GA17340@kroah.com>
- <20130703184434.GA29587@srcf.ucam.org>
- <D38E8E86660E514AB505863C19C9287C73E5F07D@ORSMSX102.amr.corp.intel.com>
- <20130703203542.GA32736@srcf.ucam.org>
- <D38E8E86660E514AB505863C19C9287C73E5F18F@ORSMSX102.amr.corp.intel.com>
+	id S933369Ab3GCVXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 17:23:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51035 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933240Ab3GCVXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 17:23:40 -0400
+Message-ID: <51D49655.8030206@suse.cz>
+Date: Wed, 03 Jul 2013 23:23:33 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D38E8E86660E514AB505863C19C9287C73E5F18F@ORSMSX102.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Jonathan Masters <jcm@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+Subject: Re: [RFC PATCH] Allow optional module parameters
+References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net> <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com> <87sj3tsawh.fsf@rustcorp.com.au> <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com> <87hak8qfu5.fsf@rustcorp.com.au> <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com> <87sj3qpwdz.fsf@rustcorp.com.au> <87a9m6sri3.fsf@rustcorp.com.au> <9F26321B-7088-4D16-80D5-72EB388F8E49@redhat.com> <51D491AD.7050008@suse.cz> <CALCETrWOUE=2fX1k+igfNizUfxRaZCc9NDgMzy7SM6fAjZMZuA@mail.gmail.com>
+In-Reply-To: <CALCETrWOUE=2fX1k+igfNizUfxRaZCc9NDgMzy7SM6fAjZMZuA@mail.gmail.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 08:46:57PM +0000, Ronciak, John wrote:
-> Apple does their own thing and do not talk to Intel about it at all. This includes writing special drivers and user-space components.  So we (Intel) don't know so we can't comment about it.  Sorry.
+Dne 3.7.2013 23:17, Andy Lutomirski napsal(a):
+> On Wed, Jul 3, 2013 at 2:03 PM, Michal Marek <mmarek@suse.cz> wrote:
+>> Dne 1.7.2013 18:33, Jonathan Masters napsal(a):
+>>> One caveat. Sometimes we have manufactured parameters intentionally
+>>> to cause a module to fail. We should standardize that piece.
+>>
+>> You have:
+>>
+>>   blacklist foo
+>>
+>> to prevent udev from loading a module and
+>>
+>>   install foo /bin/true
+>>
+>> to prevent modprobe from loading the module at all. What is the
+>> motivation for inventing a third way, through adding invalid parameters?
+>>
+> 
+> FWIW, I've occasionally booted with modulename.garbage=1 to prevent
+> modulename from loading at boot.  It may be worth adding a more
+> intentional way to do that.
 
-The hardware has an Intel part number, so I'm pretty sure someone there 
-has some idea what the register map looks like.
+Hm, right, there seems to be no clean way to achieve this via a
+commandline argument. Maybe define a magic module option to tell the
+module loader not to load a module?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+Michal
+
