@@ -1,108 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab3GCQdM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 12:33:12 -0400
-Received: from nm16-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.166]:46796
-	"EHLO nm16-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932202Ab3GCQdK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 12:33:10 -0400
-X-Yahoo-Newman-Id: 38079.13549.bm@smtp108.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: KTe8uOQVM1kDfMIhSLyzomUH2guH8FbyUWzIBFVH3JKpt3I
- .iD3QoMoL9dDvoS2X5.g6LooqZ.P_em.fsm._ycGoW0DDe9AGHdi4lkNGARn
- OJELk0HwgAzXf2c8sSjmaHwupUssrgIk93S_802hDyGsJr4rlsd_VpCRBL_X
- ojGARHyWd_fWXU.AL6anb.hMm2axVxMxNRNVW6vK3kufTih0HsA4a3zjc_eV
- kWMo83WWqiwElaeDGiCoYkc0bCzgKXHOlZ6R5LcL12Kpvk9RJeXZOH5lHJIv
- Smsr0JpvywbATnW3qvFx5k.v5RZ.rW.CFJHGe6HcQ_mzhlvJtzNaRz0qlF0K
- TTB0zCw06urVclddX3n2VmRazTACMlkX..ff6V738Ss6abY1c29AKUGyFmld
- twjPZfpNkuVPGozEUs2ByeGdWv7iD44T4qdrcaCs9QEgk88KzTOEEY70hC8G
- yQucCOqqN4wMvDPIipia.6fRF46uf7cpEE5bytDSf1AdxCf.SsHtdcJDJIV4
- utzPUWZFn6MmONDHqUQPvuL9w_b_M5t8ZIPZ23RRxKsmrwGkj47wGd1.bWuz
- k
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp108.sbc.mail.ne1.yahoo.com with SMTP; 03 Jul 2013 09:33:09 -0700 PDT
-Date: Wed, 3 Jul 2013 09:33:11 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
- X9SRL-F motherboard
-Message-ID: <20130703163311.GB12506@roeck-us.net>
-References: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com>
- <20130703144201.GA10323@roeck-us.net>
- <007101ce7807$88cfb160$9a6f1420$@lucidpixels.com>
+	id S933085Ab3GCQed (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 12:34:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40647 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751521Ab3GCQeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 12:34:31 -0400
+Date: Wed, 3 Jul 2013 18:34:29 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Li Zefan <lizefan@huawei.com>, akpm@linux-foundation.org,
+        davem@davemloft.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        sfr@canb.auug.org.au, linux-mm@kvack.org
+Subject: Re: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for
+ mem_cgroup_sockets_{init,destroy}
+Message-ID: <20130703163429.GD5153@dhcp22.suse.cz>
+References: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
+ <51D41E34.5010802@huawei.com>
+ <20130703152058.GA30267@dhcp22.suse.cz>
+ <CA+icZUX+mB2v9ghdhaLvpncCu+yxP4xJzzbFxXisFsB2tDM7TA@mail.gmail.com>
+ <20130703155958.GC5153@dhcp22.suse.cz>
+ <CA+icZUWiXr=wFoXHA_V3jy0Bkg1Pc5b79LX5j1fnfgmOkYhKCg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <007101ce7807$88cfb160$9a6f1420$@lucidpixels.com>
+In-Reply-To: <CA+icZUWiXr=wFoXHA_V3jy0Bkg1Pc5b79LX5j1fnfgmOkYhKCg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 12:08:17PM -0400, Justin Piszcz wrote:
+On Wed 03-07-13 18:11:28, Sedat Dilek wrote:
+> On Wed, Jul 3, 2013 at 5:59 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Wed 03-07-13 17:53:21, Sedat Dilek wrote:
+> >> On Wed, Jul 3, 2013 at 5:20 PM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> > On Wed 03-07-13 20:51:00, Li Zefan wrote:
+> >> > [...]
+> >> >> [PATCH] memcg: fix build error if CONFIG_MEMCG_KMEM=n
+> >> >>
+> >> >> Fix this build error:
+> >> >>
+> >> >> mm/built-in.o: In function `mem_cgroup_css_free':
+> >> >> memcontrol.c:(.text+0x5caa6): undefined reference to
+> >> >> 'mem_cgroup_sockets_destroy'
+> >> >>
+> >> >> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> >> >> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> >> >> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> >> >
+> >> > I am seeing the same thing I just didn't get to reporting it.
+> >> > The other approach is not bad as well but I find this tiny better
+> >> > because mem_cgroup_css_free should care only about a single cleanup
+> >> > function for whole kmem. If that one needs to do tcp kmem specific
+> >> > cleanup then it should be done inside kmem_cgroup_css_offline.
+> >> >
+> >>
+> >> As said in my other mail, for me this makes sense as it is a followup.
+> >>
+> >> But, still I don't know why sock.c has is own mem_cgroup_sockets_{init,destroy}.
+> >
+> > That is the only definition AFAICS (except for !CONFIG_NET where it
+> > expands to NOOP). Please note that memcg_init_kmem is a common kmem
+> > initializator and it needs to be prepared for !CONFIG_NET.
+> >
+> > The same applies to _destroy.
+> > Makes more sense now?
+> >
 > 
-> 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:linux@roeck-us.net] 
-> Sent: Wednesday, July 03, 2013 10:42 AM
-> To: Justin Piszcz
-> Cc: linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
-> Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
-> X9SRL-F motherboard
-> 
-> [ .. ]
-> 
-> This is surprising and might be where the alarm comes from. What output do
-> you
-> get if you load the coretemp driver ? 
-> 
-> coretemp-isa-0000
-> Adapter: ISA adapter
-> Physical id 0:  +38.0 C  (high = +81.0 C, crit = +91.0 C)
-> Core 0:         +36.0 C  (high = +81.0 C, crit = +91.0 C)
-> Core 1:         +35.0 C  (high = +81.0 C, crit = +91.0 C)
-> Core 2:         +35.0 C  (high = +81.0 C, crit = +91.0 C)
-> Core 3:         +34.0 C  (high = +81.0 C, crit = +91.0 C)
-> Core 4:         +37.0 C  (high = +81.0 C, crit = +91.0 C)
-> Core 5:         +38.0 C  (high = +81.0 C, crit = +91.0 C)
-> 
-Can you install superiotool and run "sudo superiotool -V -e" ?
-I would like to see raw data from the superio chip.
+> So, that stuff comes originally from the net-tree.
 
-> > PCH_CHIP_TEMP:   +0.0 C  
-> > PCH_CPU_TEMP:    +0.0 C  
-> > PCH_MCH_TEMP:    +0.0 C  
-> > intrusion0:    ALARM
-> > intrusion1:    ALARM
-> 
-> Are those not connected ?
-> 
-> The intrusion headers are not connected, also, I have not dug into it but
-> when you try to ignore the PECI or those PCH* lm_sensors seems to ignore the
-> rule.
-> 
-> sensors3.conf:
->     ignore PCH_CHIP_TEMP
->     ignore PCH_CPU_TEMP
->     ignore PCH_MCH_TEMP
-> 
-You have to specify the raw attribute names, not the symbolic ones.
-You see the raw attribute names with "sensors -u".
+No, it all came from tcp kmem accounting. It is a memcg thingy and I
+guess it was placed into sock.c because it depends on some static
+symbols there (e.g. proto_list_mutex).
 
-> $ sensors  |tail -n 4
-> PCH_CHIP_TEMP:   +0.0 C
-> PCH_CPU_TEMP:    +0.0 C
-> PCH_MCH_TEMP:    +0.0 C
-> 
-> Ignoring intrusion works though:
->     ignore intrusion0
->     ignore intrusion1
-> 
-Does the board have intrusion detection headers ? If so, you could close
-(bridge) the header(s) which should get rid of the alarm.
+> I understand the !CONFIG_NET case, but lack the understanding why
+> memcontrol.c needs _destroy.
 
-Thanks,
-Guenter
+Because it is memcg specific and it has to be called when a group is
+destroyed.
+
+> Can you explain that (sorry /me is no mm-geek)?
+> 
+> - Sedat -
+> 
+> [1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/net/core/sock.c?id=next-20130703#n147
+> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/include/net/sock.h?id=next-20130703#n73
+> 
+> > [...]
+> > --
+> > Michal Hocko
+> > SUSE Labs
+
+-- 
+Michal Hocko
+SUSE Labs
