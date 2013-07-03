@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab3GCOmv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:42:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60285 "EHLO
+	id S933135Ab3GCOoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:44:24 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51749 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932661Ab3GCOms (ORCPT
+	with ESMTP id S932926Ab3GCOoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:42:48 -0400
+	Wed, 3 Jul 2013 10:44:22 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Christian Ruppert <christian.ruppert@abilis.com>
 Subject: Re: [PATCH v10] i2c-designware: make SDA hold time configurable
-Date: Wed, 3 Jul 2013 16:42:30 +0200
+Date: Wed, 3 Jul 2013 16:44:09 +0200
 User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: vincent.stehle@freescale.lan, Wolfram Sang <wsa@the-dreams.de>,
+Cc: vincent.stehle@freescale.com, Wolfram Sang <wsa@the-dreams.de>,
         Rob Herring <robherring2@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>,
         linux-i2c@vger.kernel.org,
@@ -22,21 +22,21 @@ Cc: vincent.stehle@freescale.lan, Wolfram Sang <wsa@the-dreams.de>,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Pierrick Hascoet <pierrick.hascoet@abilis.com>
-References: <20130625163902.GA2973@katana> <201307031620.03785.arnd@arndb.de> <20130703143835.GD3929@ab42.lan>
-In-Reply-To: <20130703143835.GD3929@ab42.lan>
+References: <20130625163902.GA2973@katana> <20130703143835.GD3929@ab42.lan> <201307031642.30380.arnd@arndb.de>
+In-Reply-To: <201307031642.30380.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307031642.30380.arnd@arndb.de>
-X-Provags-ID: V02:K0:fmUdVldf1upjuC/rDO5lrajOzKf8LXjrG9svGWu8t0v
- oNIvIdNpqR/2lDZC7wuiw2pSgOPoCztd7idITm+lla/6k79/sc
- adsuJoHZzK57KEKIYBfJIHOQ2j5MV2yXoyMBKX3kaTLQVQzCE2
- asUb6dm6p0pbxKSRu8nmEmQkDU8s4haOmuP3X5bgofWUufB3zn
- a7E31h4O44ZWvgnFXjBsGB7uy+NGqtsdfDJ2xm+tYi17qR+U+t
- 3+CQ2YCQ60zY5qJMjOoz6Dj3M8QQ7H/bheIBBpmNt+UO/H5OxA
- 5HMaf7PIdVfeg5V8cyQ7tkg/p9MK1jsbU3QbYrU9nS+S3ALCZX
- ZM6f+GOyxs8MwPFWIzYo=
+Message-Id: <201307031644.09669.arnd@arndb.de>
+X-Provags-ID: V02:K0:tgpQroqkzdhCT29S/w3v67tGpYOIQj1YE7vh0In5XO3
+ KeLNf9X6hyEAcNcy8dsAZmNvtlmys6PbOND9EoV64H4HOufN9d
+ H1IX2Sdq/FDMTkamRzJFOv8R+1e/1N/FHUY3fM0l4HfqHytpwi
+ DdvNK3lNDDoz9SNKct2WjdILw5cmb1JxBbYFDjzCUTDVAPcNi2
+ PDod4cSOLogAfC2Ldu8885hZQJDsvLggVbdkxW5HUAVkPq0oK4
+ UNBZ8reVGyhWiCMR44Ig5mlTTcFOiKMMyl6mdWmgQ7Ygdb4a9q
+ RAxXhnQGgle6eRMfrp6obl23YoNIib6xAQ0bnHu9j9SXiOlfRt
+ UMSFaFxAYVJ9H0zbHiQw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -84,3 +84,5 @@ you to not cause any run-time error. You could try adding a printk
 in that function to show the values you get on ARC.
 
 	Arnd
+ 
+
