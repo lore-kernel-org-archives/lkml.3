@@ -1,139 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab3GCEtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 00:49:16 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:63470 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750787Ab3GCEtP (ORCPT
+	id S1752315Ab3GCEu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 00:50:27 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47652 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab3GCEuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 00:49:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqQMANms01F5LCeA/2dsb2JhbABagwm7bYUlBAGBAhd0giMBAQQBJxMcIwULCAMYCSUPBSUDIROICQW7VBaOMoEdB4NtA5dJkUaDIyo
-Date: Wed, 3 Jul 2013 14:49:01 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: frequent softlockups with 3.10rc6.
-Message-ID: <20130703044901.GI14996@dastard>
-References: <20130701120037.GA6196@quack.suse.cz>
- <20130702062954.GA14996@dastard>
- <20130702081937.GA31770@quack.suse.cz>
- <20130702123835.GF14996@dastard>
- <20130702140508.GB31770@quack.suse.cz>
- <CA+55aFwZHOUCYvojbP9q3D5MDgCH7GttkUGiJerra9uyduFLKw@mail.gmail.com>
- <20130702165752.GA12179@quack.suse.cz>
- <CA+55aFxSY76aWEC04yREjFObPF3ZJFMHdczoT=yGmSpsg5hhyg@mail.gmail.com>
- <20130703030759.GG14996@dastard>
- <CA+55aFxN2-qZwBywE3b+RYyPLg1-ru5ZwJLHLohy0KJ0fD0vqA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxN2-qZwBywE3b+RYyPLg1-ru5ZwJLHLohy0KJ0fD0vqA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 3 Jul 2013 00:50:25 -0400
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: linux-kernel@vger.kernel.org
+Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: [PATCH] Add trivial driver to disable Intel Smart Connect
+Date: Wed,  3 Jul 2013 00:50:13 -0400
+Message-Id: <1372827013-7301-1-git-send-email-mjg59@srcf.ucam.org>
+X-Mailer: git-send-email 1.8.3.1
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:422c:f4ff:fe92:dff9
+X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 08:28:42PM -0700, Linus Torvalds wrote:
-> On Tue, Jul 2, 2013 at 8:07 PM, Dave Chinner <david@fromorbit.com> wrote:
-> >>
-> >> Then that test would become
-> >>
-> >>         if (wbc->sync_mode == WB_SYNC_SINGLE) {
-> >>
-> >> instead, and now "sync_mode" would actually describe what mode of
-> >> syncing the caller wants, without that hacky special "we know what the
-> >> caller _really_ meant by looking at *which* caller it is".
-> >
-> > The problem is that all the code that currently looks for
-> > WB_SYNC_ALL for it's behavioural cue during writeback now has
-> > multiple different modes they have to handle.  IOWs, it's not a
-> > straight forward conversion process. WB_SYNC_ALL reaches right down
-> > into filesystem ->writepages implementations and they all need to be
-> > changed if we make up a new sync_mode behaviour.
-> 
-> I have to admit that I absolutely detest our current "sync_mode" to
-> begin with, so I'd personally be happy to see some major surgery in
-> this area.
-> 
-> For example, maybe we'd be much better off with something that has
-> various behavioral flags rather than distinct "mode values".  So
-> instead of being an enum of different reasons for syncing, it would be
-> a set of bitmasks for specific sync behavior. We have a much better
-> sync model in our sync_file_range() model, where we have flags like
-> SYNC_FILE_RANGE_WAIT_xxx (where xxx is BEFORE, WRITE, AFTER to
-> describe whether you should wait for old writes, start new writes, or
-> wait after the newly started writes).
+Intel Smart Connect is an Intel-specific ACPI interface for configuring
+devices to wake up at regular intervals so they can pull down mail or other
+internet updates, and then go to sleep again. If a user enables this in
+Windows and then reboots into Linux, the device may wake up if it's put to
+sleep. Since there's no Linux userland support for any of this, the machine
+will then remain awake until something else puts it back to sleep.
 
-I agree that the flag model for writeback behaviour that it uses is
-a good example to follow.
+I haven't figured out all that much about how this works (there's a bunch
+of different ACPI calls available on the device), but this seems to be
+enough to turn it off. We can add more features to this driver if anyone
+ever cares about figuring out what the rest of the calls do or writing some
+Linux userspace to implement the rest of it.
 
-> That's a very powerful model, and it's also much more easy to think
-> about. So the above test could become
-> 
->         if (wbc->sync_mode & WB_SYNC_AFTER) {
->                 int err = filemap_fdatawait(mapping);
->                 ....
-> 
-> in that kind of model, and the code actually looks sensible. It reads
-> like "if the caller asked us to synchronize after writing, then we do
-> an fdatawait on the mapping".
+Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
+---
+ drivers/platform/x86/Kconfig              | 14 +++++
+ drivers/platform/x86/Makefile             |  1 +
+ drivers/platform/x86/intel-smartconnect.c | 90 +++++++++++++++++++++++++++++++
+ 3 files changed, 105 insertions(+)
+ create mode 100644 drivers/platform/x86/intel-smartconnect.c
 
-*nod*
-
-> So I think something like that might make sense. And there aren't
-> _that_ many users of WB_SYNC_xxx, and the patch should be pretty
-> straightforward.
-
-Patching might be straight forward, but the testing isn't - it's
-spread across 30 different filesystems...
-
-> WB_SYNC_NONE semantics would presumably be "just
-> start writeout" (so it would become WB_SYNC_WRITE), while WB_SYNC_ALL
-> would become (WB_SYNC_BEFORE | WB_SYNC_WRITE | WB_SYNC_AFTER), but
-> then the "for_sync" case would remove WB_SYNC_AFTER, because it does
-> its own waiting after.
-
-Not exactly. WB_SYNC_NONE currently means "best effort writeback"
-which means if we are going to block on a lock, it's ok to abort
-writeback as we can try again later. For writeback, WB_SYNC_ALL
-means "write everything that is dirty" and means we must block
-waiting for locks to do the required writeback.  So there's WB_WRITE
-and WB_WRITE_SYNC behaviours at minimum.
-
-Also, we don't currently have a WB_SYNC_BEFORE use case, so I'm not
-sure we want to add code for something nobody currently uses. We can
-add that later if anyone ever needs it to be implemented....
-
-> Sounds fairly sensible and straightforward to me. Much more
-> self-explanatory than the current "WB_SYNC_NONE/ALL" distinction,
-> methinks (well, you'd still have to explain what the point of
-> BEFORE/AFTER is, and how it interacts with starting writeout, but
-> especially since we already have that concept for file_sync_range(), I
-> think that's not too bad).
-
-Yeah, it makes sense from a a high level perspective, but we've also
-got to handle inode metadata writeback as well (which can be done
-separately to data writeback via sync_inode_metadata()) and that
-means we probably need WB_WRITE_META flags as well.
-
-I suspect that we will also need to have filesystems set their
-default behaviour flags on the superblock as well so that we can
-make things like filemap_fdatawrite() and friends do exactly the
-right thing for each filesystem without having callers need to pass
-in flags. e.g. XFS doesn't require any data waiting or inode
-metadata writeback, while ext2 requires inode metadata writeback
-after data writeback dispatch and NFS needs WB_SYNC_AFTER behaviour
-before inode metadata writeback....
-
-Cheers,
-
-Dave.
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 2365d08..db14408 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -793,6 +793,20 @@ config INTEL_RST
+ 	  firmware will copy the memory contents back to RAM and resume the OS
+ 	  as usual.
+ 
++config INTEL_SMARTCONNECT
++        tristate "Intel Smart Connect disabling driver"
++	depends on ACPI
++	---help---
++	  Intel Smart Connect is a technology intended to permit devices to
++	  update state by resuming for a short period of time at regular
++	  intervals. If a user enables this functionality under Windows and
++	  then reboots into Linux, the system may remain configured to resume
++	  on suspend. In the absence of any userspace to support it, the system
++	  will then remain awake until something triggers another suspend.
++
++	  This driver checks to determine whether the device has Intel Smart
++	  Connect enabled, and if so disables it.
++
+ config PVPANIC
+ 	tristate "pvpanic device support"
+ 	depends on ACPI
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 5c669ce..5dbe193 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -52,5 +52,6 @@ obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
+ obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
+ obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
+ obj-$(CONFIG_INTEL_RST)		+= intel-rst.o
++obj-$(CONFIG_INTEL_SMARTCONNECT)	+= intel-smartconnect.o
+ 
+ obj-$(CONFIG_PVPANIC)           += pvpanic.o
+diff --git a/drivers/platform/x86/intel-smartconnect.c b/drivers/platform/x86/intel-smartconnect.c
+new file mode 100644
+index 0000000..f74e93d
+--- /dev/null
++++ b/drivers/platform/x86/intel-smartconnect.c
+@@ -0,0 +1,90 @@
++/*
++ *  Copyright 2013 Matthew Garrett <mjg59@srcf.ucam.org>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <acpi/acpi_drivers.h>
++
++MODULE_LICENSE("GPL");
++
++static int smartconnect_acpi_init(struct acpi_device *acpi)
++{
++	struct acpi_object_list input;
++	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
++	union acpi_object *result;
++	union acpi_object param;
++	acpi_status status;
++
++	status = acpi_evaluate_object(acpi->handle, "GAOS", NULL, &output);
++	if (!ACPI_SUCCESS(status))
++		return -EINVAL;
++
++	result = output.pointer;
++
++	if (result->type != ACPI_TYPE_INTEGER) {
++		kfree(result);
++		return -EINVAL;
++	}
++
++	if (result->integer.value & 0x1) {
++		param.type = ACPI_TYPE_INTEGER;
++		param.integer.value = 0;
++
++		input.count = 1;
++		input.pointer = &param;
++
++		dev_info(&acpi->dev, "Disabling Intel Smart Connect\n");
++		status = acpi_evaluate_object(acpi->handle, "SAOS", &input,
++					      NULL);
++	}
++
++	kfree(result);
++
++	return 0;
++}
++
++static const struct acpi_device_id smartconnect_ids[] = {
++	{"INT33A0", 0},
++	{"", 0}
++};
++
++static struct acpi_driver smartconnect_driver = {
++	.owner = THIS_MODULE,
++	.name = "intel_smart_connect",
++	.class = "intel_smart_connect",
++	.ids = smartconnect_ids,
++	.ops = {
++		.add = smartconnect_acpi_init,
++	},
++};
++
++static int smartconnect_init(void)
++{
++	return acpi_bus_register_driver(&smartconnect_driver);
++}
++
++static void smartconnect_exit(void)
++{
++	acpi_bus_unregister_driver(&smartconnect_driver);
++}
++
++module_init(smartconnect_init);
++module_exit(smartconnect_exit);
++
++MODULE_DEVICE_TABLE(acpi, smartconnect_ids);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.3.1
+
