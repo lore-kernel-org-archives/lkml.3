@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab3GCOW2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:22:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35644 "EHLO mx2.suse.de"
+	id S933124Ab3GCOXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:23:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35703 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932896Ab3GCOWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:22:21 -0400
+	id S933085Ab3GCOW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:22:27 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 06/13] sched: Reschedule task on preferred NUMA node once selected
-Date: Wed,  3 Jul 2013 15:21:33 +0100
-Message-Id: <1372861300-9973-7-git-send-email-mgorman@suse.de>
+Subject: [PATCH 13/13] sched: Account for the number of preferred tasks running on a node when selecting a preferred node
+Date: Wed,  3 Jul 2013 15:21:40 +0100
+Message-Id: <1372861300-9973-14-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1372861300-9973-1-git-send-email-mgorman@suse.de>
 References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
@@ -22,136 +22,133 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A preferred node is selected based on the node the most NUMA hinting
-faults was incurred on. There is no guarantee that the task is running
-on that node at the time so this patch rescheules the task to run on
-the most idle CPU of the selected node when selected. This avoids
-waiting for the balancer to make a decision.
+It is preferred that tasks always run local to their memory but it is
+not optimal if that node is compute overloaded and failing to get
+access to a CPU. This would compete with the load balancer trying to
+move tasks off and NUMA balancing moving it back.
+
+Ultimately, it will be required that the compute load be calculated
+of each node and minimise that as well as minimising the number of
+remote accesses until the optimal balance point is reached. Begin
+this process by simply accounting for the number of tasks that are
+running on their preferred node. When deciding what node to place
+a task on, do not place a task on a node that has more preferred
+placement tasks than there are CPUs.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/core.c  | 18 ++++++++++++++++--
- kernel/sched/fair.c  | 54 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- kernel/sched/sched.h |  2 +-
- 3 files changed, 69 insertions(+), 5 deletions(-)
+ kernel/sched/fair.c  | 45 ++++++++++++++++++++++++++++++++++++++++++---
+ kernel/sched/sched.h |  4 ++++
+ 2 files changed, 46 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index ba9470e..b4722d6 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -5717,11 +5717,25 @@ struct sched_domain_topology_level;
- 
- #ifdef CONFIG_NUMA_BALANCING
- 
--/* Set a tasks preferred NUMA node */
--void sched_setnuma(struct task_struct *p, int nid)
-+/* Set a tasks preferred NUMA node and reschedule to it */
-+void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu)
- {
-+	int curr_cpu = task_cpu(p);
-+	struct migration_arg arg = { p, idlest_cpu };
-+
- 	p->numa_preferred_nid = nid;
- 	p->numa_migrate_seq = 0;
-+
-+	/* Do not reschedule if already running on the target CPU */
-+	if (idlest_cpu == curr_cpu)
-+		return;
-+
-+	/* Ensure the target CPU is eligible */
-+	if (!cpumask_test_cpu(idlest_cpu, tsk_cpus_allowed(p)))
-+		return;
-+
-+	/* Move current running task to idlest CPU on preferred node */
-+	stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
- }
- #endif /* CONFIG_NUMA_BALANCING */
- 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2a0bbc2..b9139be 100644
+index 3c796b0..9ffdff3 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -800,6 +800,37 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
+@@ -777,6 +777,18 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+  * Scheduling class queueing methods:
   */
- unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
  
-+static unsigned long weighted_cpuload(const int cpu);
-+
-+static int
-+find_idlest_cpu_node(int this_cpu, int nid)
++static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
 +{
-+	unsigned long load, min_load = ULONG_MAX;
-+	int i, idlest_cpu = this_cpu;
++	rq->nr_preferred_running +=
++			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
++}
 +
-+	BUG_ON(cpu_to_node(this_cpu) == nid);
++static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++	rq->nr_preferred_running -=
++			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
++}
++
+ #ifdef CONFIG_NUMA_BALANCING
+ /*
+  * Approximate time to scan a full NUMA task in ms. The task scan period is
+@@ -865,6 +877,21 @@ static inline int task_faults_idx(int nid, int priv)
+ 	return 2 * nid + priv;
+ }
+ 
++/* Returns true if the given node is compute overloaded */
++static bool sched_numa_overloaded(int nid)
++{
++	int nr_cpus = 0;
++	int nr_preferred = 0;
++	int i;
 +
 +	for_each_cpu(i, cpumask_of_node(nid)) {
-+		load = weighted_cpuload(i);
-+
-+		if (load < min_load) {
-+			struct task_struct *p;
-+
-+			/* Do not preempt a task running on its preferred node */
-+			struct rq *rq = cpu_rq(i);
-+			raw_spin_lock_irq(&rq->lock);
-+			p = rq->curr;
-+			if (p->numa_preferred_nid != nid) {
-+				min_load = load;
-+				idlest_cpu = i;
-+			}
-+			raw_spin_unlock_irq(&rq->lock);
-+		}
++		nr_cpus++;
++		nr_preferred += cpu_rq(i)->nr_preferred_running;
 +	}
 +
-+	return idlest_cpu;
++	return nr_preferred >= nr_cpus << 1;
 +}
 +
  static void task_numa_placement(struct task_struct *p)
  {
  	int seq, nid, max_nid = 0;
-@@ -829,8 +860,27 @@ static void task_numa_placement(struct task_struct *p)
- 		}
- 	}
+@@ -892,7 +919,7 @@ static void task_numa_placement(struct task_struct *p)
  
--	if (max_faults && max_nid != p->numa_preferred_nid)
--		sched_setnuma(p, max_nid);
-+	/*
-+	 * Record the preferred node as the node with the most faults,
-+	 * requeue the task to be running on the idlest CPU on the
-+	 * preferred node and reset the scanning rate to recheck
-+	 * the working set placement.
-+	 */
-+	if (max_faults && max_nid != p->numa_preferred_nid) {
-+		int preferred_cpu;
+ 		/* Find maximum private faults */
+ 		faults = p->numa_faults[task_faults_idx(nid, 1)];
+-		if (faults > max_faults) {
++		if (faults > max_faults && !sched_numa_overloaded(nid)) {
+ 			max_faults = faults;
+ 			max_nid = nid;
+ 		}
+@@ -1144,6 +1171,14 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ static void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ {
+ }
 +
-+		/*
-+		 * If the task is not on the preferred node then find the most
-+		 * idle CPU to migrate to.
-+		 */
-+		preferred_cpu = task_cpu(p);
-+		if (cpu_to_node(preferred_cpu) != max_nid) {
-+			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
-+							     max_nid);
-+		}
++static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)
++{
++}
 +
-+		sched_setnuma(p, max_nid, preferred_cpu);
++static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++}
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ static void
+@@ -1153,8 +1188,10 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	if (!parent_entity(se))
+ 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
+ #ifdef CONFIG_SMP
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		account_numa_enqueue(rq_of(cfs_rq), task_of(se));
+ 		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
 +	}
+ #endif
+ 	cfs_rq->nr_running++;
+ }
+@@ -1165,8 +1202,10 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+ 	if (!parent_entity(se))
+ 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		account_numa_dequeue(rq_of(cfs_rq), task_of(se));
+ 		list_del_init(&se->group_node);
++	}
+ 	cfs_rq->nr_running--;
  }
  
- /*
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 65a0cf0..64c37a3 100644
+index 64c37a3..f05b31b 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -504,7 +504,7 @@ DECLARE_PER_CPU(struct rq, runqueues);
- #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+@@ -433,6 +433,10 @@ struct rq {
  
- #ifdef CONFIG_NUMA_BALANCING
--extern void sched_setnuma(struct task_struct *p, int nid);
-+extern void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu);
- static inline void task_numa_free(struct task_struct *p)
- {
- 	kfree(p->numa_faults);
+ 	struct list_head cfs_tasks;
+ 
++#ifdef CONFIG_NUMA_BALANCING
++	unsigned long nr_preferred_running;
++#endif
++
+ 	u64 rt_avg;
+ 	u64 age_stamp;
+ 	u64 idle_stamp;
 -- 
 1.8.1.4
 
