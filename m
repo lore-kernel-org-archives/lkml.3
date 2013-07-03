@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754007Ab3GCGME (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 02:12:04 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:58163 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab3GCGMC (ORCPT
+	id S1754093Ab3GCGTg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 02:19:36 -0400
+Received: from smtp.nue.novell.com ([195.135.221.5]:53391 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab3GCGTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 02:12:02 -0400
-Date: Wed, 3 Jul 2013 14:11:48 +0800
-From: majianpeng <majianpeng@gmail.com>
-To: sage <sage@inktank.com>
-Cc: ceph-devel <ceph-devel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Reply-To: majianpeng <majianpeng@gmail.com>
-Subject: [PATCH 2/2] ceph: for sync_read, call file_accessed to update atime.
-X-Priority: 3
-X-GUID: 11AD6990-D96E-41B9-977E-8130DD297C8B
-X-Has-Attach: no
-X-Mailer: Foxmail 7.0.1.90[en]
+	Wed, 3 Jul 2013 02:19:35 -0400
+Subject: Re: [PATCH -v2 4/4] x86, efi: Map runtime services 1:1
+From: joeyli <jlee@suse.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Linux EFI <linux-efi@vger.kernel.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, X86 ML <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>
+In-Reply-To: <1371491416-11037-5-git-send-email-bp@alien8.de>
+References: <1371491416-11037-1-git-send-email-bp@alien8.de>
+	 <1371491416-11037-5-git-send-email-bp@alien8.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 03 Jul 2013 14:19:03 +0800
+Message-ID: <1372832343.26878.6.camel@linux-s257.site>
 Mime-Version: 1.0
-Message-ID: <201307031334535261195@gmail.com>
-Content-Type: text/plain;
-	charset="gb2312"
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r636CCqK012464
 
-For ceph_sync_read,it don't call file_accessed to update atime.But the
-buffer_read do it .So add it.
+æ–¼ ä¸€ï¼Œ2013-06-17 æ–¼ 19:50 +0200ï¼ŒBorislav Petkov æåˆ°ï¼š
+> +#ifdef CONFIG_X86_64
+> +               efi_scratch.pgt11 = (pgd_t *)(unsigned long)real_mode_header->trampoline_pgd;
+> +#endif
+> +               efi_use_11_map = true;
+> + 
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
----
- fs/ceph/file.c | 1 +
- 1 file changed, 1 insertion(+)
+I think "efi_use_11_map = true" should moved to before "#endif",
+otherwise kernel will build fail on i586 architecture.
 
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index fa74e6f..b0e6f0b 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -442,6 +442,7 @@ done:
- 		ceph_put_page_vector(pages, num_pages, true);
- 	else
- 		ceph_release_page_vector(pages, num_pages);
-+	file_accessed(file);
- 	dout("sync_read result %d\n", ret);
- 	return ret;
- }
--- 
-1.8.1.2
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I got build error:
+arch/x86/platform/efi/efi.c:1074: error: â€˜efi_use_11_mapâ€™ undeclared (first use in this function)
+arch/x86/platform/efi/efi.c:1074: error: (Each undeclared identifier is reported only once
+arch/x86/platform/efi/efi.c:1074: error: for each function it appears in.)
+
+
+Thanks a lot!
+Joey Lee
+
