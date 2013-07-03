@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933238Ab3GCUuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 16:50:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49993 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933131Ab3GCUt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 16:49:59 -0400
-Message-ID: <51D48E72.5010403@suse.cz>
-Date: Wed, 03 Jul 2013 22:49:54 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: =?UTF-8?B?5byg5b+g5bGx?= <zzs0213@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] let kbuild mkdir for dir/file.o
-References: <51CE11C2.5020406@suse.cz> <1372583368-32618-1-git-send-email-zzs0213@gmail.com>
-In-Reply-To: <1372583368-32618-1-git-send-email-zzs0213@gmail.com>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S933256Ab3GCUwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 16:52:43 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:47395 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933059Ab3GCUwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 16:52:41 -0400
+Message-ID: <1372884741.11138.0.camel@lizardlounge>
+Subject: [PATCH] jbd: remove unneeded semicolon
+From: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+To: akpm@linux-foundation.org, jack@suse.cz
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+Date: Wed, 03 Jul 2013 13:52:21 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 30.6.2013 11:09, 张忠山 napsal(a):
-> When add a obj with dir to obj-y, like this
-> 
->     obj-y += dir/file.o
-> 
-> The $(obj)/dir not created, this patch fix this.
-> 
-> When try to add a file(which in a subdir) to my board's obj-y, the build
-> progress crashed.
-> 
-> For example, I use at91rm9200ek board, and in kernel dir run:
-> 
->   mkdir objtree
->   make O=objtree at91rm9200_defconfig
->   mkdir arch/arm/mach-at91/dir
->   touch arch/arm/mach-at91/dir/file.c
-> 
-> and edit arch/arm/mach-at91/dir/file.c to add some code.
-> then edit arch/arm/mach-at91/Makefile, change the following line:
-> 
->   obj-$(CONFIG_MACH_AT91RM9200EK) += board-rm9200ek.o
-> 
-> to:
-> 
->   obj-$(CONFIG_MACH_AT91RM9200EK) += board-rm9200ek.o dir/file.o
-> 
-> Now build it:
-> 
->   make O=objtree
-> 
-> Then the error appears:
->   ...
->   CC      arch/arm/mach-at91/board-rm9200dk.o
->   CC      arch/arm/mach-at91/board-rm9200ek.o
->   CC      arch/arm/mach-at91/dir/file.o
->   linux-2.6/arch/arm/mach-at91/dir/file.c:5:
->     fatal error: opening dependency file
->     arch/arm/mach-at91/dir/.file.o.d: No such file or directory
-> 
-> Check the objtree:
->   LANG=en ls objtree/arch/arm/mach-at91/dir
->   ls: cannot access objtree/arch/arm/mach-at91/dir: No such file or directory
-> 
-> It's apparently that the target dir not created for file.o
-> 
-> Check kbuild source code. It seems that kbuild create dirs for that in
-> $(obj-dirs).  But if the dir need not to create a built-in.o, It should
-> never in  $(obj-dirs).
-> 
-> So I make this patch to make sure It in  $(obj-dirs)
-> 
-> this bug caused by commit
->    f5fb976520a53f45f8bbf2e851f16b3b5558d485
-> ---
+This patch removes an unnecessary semicolon that was placed after the closing
+bracket of an inline JBD wrapper function.
 
-You forgot to sign off this patch, can I add
+Signed-off-by: Nathaniel Yazdani <n1ght.4nd.d4y@gmail.com>
+---
+diff --git a/include/linux/jbd.h b/include/linux/jbd.h
+index 7e0b622..9d789a9 100644
+--- a/include/linux/jbd.h
++++ b/include/linux/jbd.h
+@@ -78,7 +78,7 @@ static inline void *jbd_alloc(size_t size, gfp_t flags)
+ static inline void jbd_free(void *ptr, size_t size)
+ {
+ 	free_pages((unsigned long)ptr, get_order(size));
+-};
++}
+ 
+ #define JFS_MIN_JOURNAL_BLOCKS 1024
+ 
 
-  Signed-off-by: 张忠山 <zzs0213@gmail.com>
 
-like you did in the previous versions? Otherwise, the patch looks OK.
 
-Michal
+
+
