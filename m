@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab3GCLF3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:05:29 -0400
-Received: from mo2.mail-out.ovh.net ([178.32.228.2]:55947 "EHLO
-	mo2.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754070Ab3GCLF2 (ORCPT
+	id S1755982Ab3GCLMx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:12:53 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:48024 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab3GCLMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:05:28 -0400
-Date: Wed, 3 Jul 2013 13:01:37 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, giometti@enneenne.com,
-        Bo Shen <voice.shen@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.2 (mo2.mail-out.ovh.net)
-Subject: Re: [PATCH] ARM: at91/DT: at91sam9x5ek: fix USB host property to
- enable port C
-Message-ID: <20130703110137.GE21034@game.jcrosoft.org>
-References: <1372849250-14715-1-git-send-email-nicolas.ferre@atmel.com>
+	Wed, 3 Jul 2013 07:12:52 -0400
+Date: Wed, 3 Jul 2013 12:12:24 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-spi@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org
+Message-ID: <20130703111224.GJ27646@sirena.org.uk>
+References: <1372847106-32698-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B4aku7JZbowIR6OO"
 Content-Disposition: inline
-In-Reply-To: <1372849250-14715-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 210261808565562220
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrleekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeiiedrleekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+In-Reply-To: <1372847106-32698-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi/pxa2xx: enable DMA on newer Intel LPSS silicon
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:00 Wed 03 Jul     , Nicolas Ferre wrote:
-> Device Tree "num-ports" property of USB host node has to be
-> set to maximum number of ports available.
-> The possibility to activate a particular port is done by specifying the proper
-> gpio configuration for its vbus.
-> 
-> This patch fixes the USB host node by configuring the 3 ports available on the
-> product and letting "port A" available for USB gadget usage.
-> 
-> Reported-by: Rodolfo Giometti <giometti@enneenne.com>
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Cc: Bo Shen <voice.shen@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-> ---
->  arch/arm/boot/dts/at91sam9x5ek.dtsi | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/at91sam9x5ek.dtsi b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-> index b753855..49e3c45 100644
-> --- a/arch/arm/boot/dts/at91sam9x5ek.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9x5ek.dtsi
-> @@ -94,8 +94,9 @@
->  
->  		usb0: ohci@00600000 {
->  			status = "okay";
-> -			num-ports = <2>;
-> -			atmel,vbus-gpio = <&pioD 19 GPIO_ACTIVE_LOW
-> +			num-ports = <3>;
-> +			atmel,vbus-gpio = <0 /* &pioD 18 GPIO_ACTIVE_LOW *//* Activate to have access to port A */
-on 2 line would have been more clear
+--B4aku7JZbowIR6OO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Wed, Jul 03, 2013 at 01:25:06PM +0300, Mika Westerberg wrote:
+> There is an additional bit in the Intel LPSS SPI private registers that
+> needs to be set in order to be able to use DMA with the SPI controller.
+> Enable this as well.
 
-Best Regards,
-J.
-> +					   &pioD 19 GPIO_ACTIVE_LOW
->  					   &pioD 20 GPIO_ACTIVE_LOW
->  					  >;
->  		};
-> -- 
-> 1.8.2.2
-> 
+Applied, thanks.
+
+--B4aku7JZbowIR6OO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1AcVAAoJELSic+t+oim9wgsQAILOBMchPxxbVF3bq5Io30+y
+gl+TWZ2GuQlxi9sGg4BLztV3+XGhtmF819I62jJWkOdwtQepkHXUGEPP4fA5JnkS
+zWA5wLdl2cWPqPHqezOgW0/EQ+O/MmzOmhOcXS8qLhGuRjsz261HZZGKcV7x5fur
+/6ppC1qwQPZFbM1kNYw8S4y3tp2kWEbdYrkhwfNFBme1H20vfDpEYfZvHr20Yo1A
+iiWlCJEQDWyhIGb+IRAeIhELCJUaVkjsvXJTGzVpcZ51U7hitLSPkdX4tFWjSXVT
+Z/57OUbmMZzQeNw1nLq1NMmO7wz6E3BKGThpB7cFaG+4X0KIjpdJO1E9DsYfYa52
+PYc8d+xBe06i9oBDF+lzGGhRmapJvFr/2fX+++fkKFZcrFm3kVeFzPGgMFB+BLrT
+DSe5SsrmJLRly3iArCYeg9f8DLMq+2bQMWZujENpr8dSSZpQnrdFql6CHsRMShI/
+s3N8Ki0+Cr6PoLpTy1yRIny8Qd3CpOTHLKXAL/pQFbWvi9tr9lhlRDmEaUjL+OgB
+mlxEnhIIQFqliAYadX/QC5LwZRBKwHEzEbZO13RQf4TlNlJ4VLT3YjrJMVT3ID4I
+Dp7dUHrfwTSN/1sR70ofpvel6pvQXBjuGfdLDXAXzGTsHVPlGEe42XMHkPqGbelt
+BE6fbbL3lSW9jDOoW6Sb
+=6neb
+-----END PGP SIGNATURE-----
+
+--B4aku7JZbowIR6OO--
