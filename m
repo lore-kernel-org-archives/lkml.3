@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab3GCVu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:50:28 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:36268 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221Ab3GCVuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:50:25 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Michal Simek <michal.simek@xilinx.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH] clocksource/cadence_ttc: Reuse clocksource as sched_clock
-Date: Wed,  3 Jul 2013 14:50:16 -0700
-Message-Id: <1372888216-10726-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S933254Ab3GCV5O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 17:57:14 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:48515 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932221Ab3GCV5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 17:57:12 -0400
+Date: Wed, 3 Jul 2013 17:56:54 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/13] sched: Split accounting of NUMA hinting faults
+ that pass two-stage filter
+Message-ID: <20130703215654.GN17812@cmpxchg.org>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-8-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372861300-9973-8-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reuse the TTC clocksource timer as sched clock, too. Since only a single
-sched clock is supported in Linux, this feature optional and can be
-selected through Kconfig.
+On Wed, Jul 03, 2013 at 03:21:34PM +0100, Mel Gorman wrote:
+> Ideally it would be possible to distinguish between NUMA hinting faults
+> that are private to a task and those that are shared. This would require
+> that the last task that accessed a page for a hinting fault would be
+> recorded which would increase the size of struct page. Instead this patch
+> approximates private pages by assuming that faults that pass the two-stage
+> filter are private pages and all others are shared. The preferred NUMA
+> node is then selected based on where the maximum number of approximately
+> private faults were measured. Shared faults are not taken into
+> consideration for a few reasons.
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/clocksource/Kconfig             |  7 +++++++
- drivers/clocksource/cadence_ttc_timer.c | 18 ++++++++++++++++++
- 2 files changed, 25 insertions(+)
+Ingo had a patch that would just encode a few bits of the PID along
+with the last_nid (last_cpu in his case) member of struct page.  No
+extra space required and should be accurate enough.
 
-diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 5871933..8dda767 100644
---- a/drivers/clocksource/Kconfig
-+++ b/drivers/clocksource/Kconfig
-@@ -36,6 +36,13 @@ config VT8500_TIMER
- config CADENCE_TTC_TIMER
- 	bool
- 
-+config CADENCE_TTC_TIMER_SCHED_CLOCK
-+	bool "Cadence TTC Sched Clock"
-+	depends on CADENCE_TTC_TIMER
-+	help
-+	  Use the clocksource timer provided by the TTC as
-+	  sched clock, also.
-+
- config CLKSRC_NOMADIK_MTU
- 	bool
- 	depends on (ARCH_NOMADIK || ARCH_U8500)
-diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-index 4cbe28c..ef0f52b 100644
---- a/drivers/clocksource/cadence_ttc_timer.c
-+++ b/drivers/clocksource/cadence_ttc_timer.c
-@@ -22,6 +22,7 @@
- #include <linux/of_irq.h>
- #include <linux/slab.h>
- #include <linux/clk-provider.h>
-+#include <asm/sched_clock.h>
- 
- /*
-  * This driver configures the 2 16-bit count-up timers as follows:
-@@ -95,6 +96,10 @@ struct ttc_timer_clockevent {
- #define to_ttc_timer_clkevent(x) \
- 		container_of(x, struct ttc_timer_clockevent, ce)
- 
-+#ifdef CONFIG_CADENCE_TTC_TIMER_SCHED_CLOCK
-+static void __iomem *ttc_sched_clock_val_reg;
-+#endif
-+
- /**
-  * ttc_set_interval - Set the timer interval value
-  *
-@@ -156,6 +161,13 @@ static cycle_t __ttc_clocksource_read(struct clocksource *cs)
- 				TTC_COUNT_VAL_OFFSET);
- }
- 
-+#ifdef CONFIG_CADENCE_TTC_TIMER_SCHED_CLOCK
-+static u32 notrace ttc_sched_clock_read(void)
-+{
-+	return __raw_readl(ttc_sched_clock_val_reg);
-+}
-+#endif
-+
- /**
-  * ttc_set_next_event - Sets the time interval for next event
-  *
-@@ -297,6 +309,12 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
- 		kfree(ttccs);
- 		return;
- 	}
-+
-+#ifdef CONFIG_CADENCE_TTC_TIMER_SCHED_CLOCK
-+	ttc_sched_clock_val_reg = base + TTC_COUNT_VAL_OFFSET;
-+	setup_sched_clock(ttc_sched_clock_read, 16,
-+			clk_get_rate(ttccs->ttc.clk) / PRESCALE);
-+#endif
- }
- 
- static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
--- 
-1.8.3.2
+Otherwise this is blind to sharedness within the node the task is
+currently running on, right?
 
+> First, if there are many tasks sharing the page then they'll all move
+> towards the same node. The node will be compute overloaded and then
+> scheduled away later only to bounce back again. Alternatively the shared
+> tasks would just bounce around nodes because the fault information is
+> effectively noise. Either way accounting for shared faults the same as
+> private faults may result in lower performance overall.
+
+When the node with many shared pages is compute overloaded then there
+is arguably not an optimal node for the tasks and moving them off is
+inevitable.  However, the node with the most page accesses, private or
+shared, is still the preferred node from a memory stand point.
+Compute load being equal, the task should go to the node with 2GB of
+shared memory and not to the one with 2 private pages.
+
+If the load balancer moves the task off due to cpu load reasons,
+wouldn't the settle count mechanism prevent it from bouncing back?
+
+Likewise, if the cpu load situation changes, the balancer could move
+the task back to its truly preferred node.
+
+> The second reason is based on a hypothetical workload that has a small
+> number of very important, heavily accessed private pages but a large shared
+> array. The shared array would dominate the number of faults and be selected
+> as a preferred node even though it's the wrong decision.
+
+That's a scan granularity problem and I can't see how you solve it
+with ignoring the shared pages.  What if the situation is opposite
+with a small, heavily used shared set and many rarely used private
+pages?
