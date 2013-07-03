@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab3GCQQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 12:16:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40122 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932915Ab3GCQQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 12:16:44 -0400
-Date: Wed, 3 Jul 2013 18:16:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: kye: Add report fixup for Genius Gila Gaming
- mouse
-In-Reply-To: <1372781409-5356-1-git-send-email-benjamin.tissoires@redhat.com>
-Message-ID: <alpine.LNX.2.00.1307031815570.26857@pobox.suse.cz>
-References: <1372781409-5356-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S933043Ab3GCQSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 12:18:47 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59726 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab3GCQSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 12:18:45 -0400
+Date: Wed, 3 Jul 2013 10:48:03 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Steve Capper <steve.capper@linaro.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: linux-next: Tree for Jul 3
+Message-ID: <20130703144802.GA32130@logfs.org>
+References: <20130703180620.6919bf7d7f13f7ed21046c68@canb.auug.org.au>
+ <20130703112539.GA32584@linaro.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130703112539.GA32584@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Jul 2013, Benjamin Tissoires wrote:
-
-> Genius Gila Gaming Mouse presents an obviously wrong report descriptor.
-> the Consumer control (report ID 3) is the following:
-> 0x05, 0x0c,                    // Usage Page (Consumer Devices)       105
-> 0x09, 0x01,                    // Usage (Consumer Control)            107
-> 0xa1, 0x01,                    // Collection (Application)            109
-> 0x85, 0x03,                    //   Report ID (3)                     111
-> 0x19, 0x00,                    //   Usage Minimum (0)                 113
-> 0x2a, 0xff, 0x7f,              //   Usage Maximum (32767)             115
-> 0x15, 0x00,                    //   Logical Minimum (0)               118
-> 0x26, 0xff, 0x7f,              //   Logical Maximum (32767)           120
-> 0x75, 0x10,                    //   Report Size (16)                  123
-> 0x95, 0x03,                    //   Report Count (3)                  125
-> 0x81, 0x00,                    //   Input (Data,Arr,Abs)              127
-> 0x75, 0x08,                    //   Report Size (8)                   129
-> 0x95, 0x01,                    //   Report Count (1)                  131
-> 0x81, 0x01,                    //   Input (Cnst,Arr,Abs)              133
-> 0xc0,                          // End Collection                      135
+On Wed, 3 July 2013 12:25:41 +0100, Steve Capper wrote:
 > 
-> So the first input whithin this report has a count of 3 but a usage range
-> of 32768. So this value is obviously wrong as it should not be greater than
-> the report count.
+> Today's linux-next appears to introduce some BUGs when running the libhugetlbfs
+> testsuite (under both ARM64 and x86_64):
 > 
-> Fixes:
-> https://bugzilla.redhat.com/show_bug.cgi?id=959721
+> [   94.320661] BUG: Bad rss-counter state mm:ffff880119461040 idx:1 val:-512
+> [   94.330346] BUG: Bad rss-counter state mm:ffff880119460680 idx:1 val:-2560
+> [   94.341746] BUG: Bad rss-counter state mm:ffff880119460d00 idx:1 val:-512
+> [   94.347518] BUG: Bad rss-counter state mm:ffff880119460d00 idx:1 val:-512
+> [   94.415203] BUG: Bad rss-counter state mm:ffff8801194f9040 idx:1 val:-1024
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
-> Hi Jiri,
+> I've bisected this to commit:
+> commit 446313e3e4e7274c4d1e449d107fab6c041ec59c
+> hugetlb: properly account rss
 > 
-> I know the window just opened and you don't really like receiving patches at
-> that time. Still, my patch queue is growing, and I would like you to consider
-> this patch for 3.11.
+> The bad counter values I get are all negative.
+> 
+> To reproduce this, just run through the latest libhugetlbfs test suite, these
+> warnings appear pretty much immediately. (I set aside 200 huge pages first):
+> http://libhugetlbfs.sourceforge.net/
+> 
+> Reverting this commit allows the test suite to run without problems.
 
-This one is really easy enough to go into even post -rc1 :) Now applied 
-for the Linus merge I am going to do shortly.
+Thank you, I will have a look.  For the interim, dropping this patch
+from -mm seems the best approach.
 
-Thanks a lot, Benjamin.
+Jörn
 
--- 
-Jiri Kosina
-SUSE Labs
+--
+Geld macht nicht glücklich.
+Glück macht nicht satt.
