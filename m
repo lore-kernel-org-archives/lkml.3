@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab3GCIqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 04:46:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1827 "EHLO mga02.intel.com"
+	id S932615Ab3GCIqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 04:46:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39760 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755768Ab3GCIpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932065Ab3GCIpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 04:45:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,987,1363158000"; 
-   d="scan'208";a="364059221"
-Message-ID: <51D3E494.50206@linux.intel.com>
-Date: Wed, 03 Jul 2013 11:45:08 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+From: Hebbar Gururaja <gururaja.hebbar@ti.com>
+To: <khilman@linaro.org>, <tony@atomide.com>, <benoit.cousson@gmail.com>
+CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
+        <gururaja.hebbar@ti.com>, Russell King <linux@arm.linux.org.uk>
+Subject: [Patch V2 2/4] ARM: Davinci: da8xx/omap-l1: Remove hard coding of rtc device wakeup
+Date: Wed, 3 Jul 2013 14:17:03 +0530
+Message-ID: <1372841225-18813-3-git-send-email-gururaja.hebbar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372841225-18813-1-git-send-email-gururaja.hebbar@ti.com>
+References: <1372841225-18813-1-git-send-email-gururaja.hebbar@ti.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree (net-next
- tree related)
-References: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
-In-Reply-To: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since now rtc-omap driver itself calls deice_init_wakeup(dev, true),
+duplicate call from the rtc device registration can be removed.
 
-On 03/07/2013 10:48, Stephen Rothwell wrote:
-> Hi all,
->
-> After merging the final tree, today's linux-next build (powerpc
-> allnoconfig) failed like this:
->
-> fs/select.c: In function 'do_select':
-> fs/select.c:408:2: error: implicit declaration of function 'll_start_time' [-Werror=implicit-function-declaration]
->    u64 ll_start = ll_start_time(ll_flag);
-[..]
-> Caused by commit 1bc2774d8664 ("net: convert lls to use time_in_range()")
-> from the net-next tree.
->
-> I cherry-picked the commit 419076f59fc5 ("net: lls fix build with
-> allnoconfig") out of tomorrow's net-next tree.  (I am feeling generous
-> and noticed that patch being applied :-))
+This is basically a partial revert of the prev commit
 
-Yes, my bad.
-Thank you.
+commit 75c99bb0006ee065b4e2995078d779418b0fab54
+Author: Sekhar Nori <nsekhar@ti.com>
 
-I knew lots of people could get this so I sent out a fix ASAP (at 6AM
-my time).
+    davinci: da8xx/omap-l1: mark RTC as a wakeup source
 
-If it's not too much trouble we should add:
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com>
+Acked-by: Kevin Hilman <khilman@linaro.org>
+Acked-by: Sekhar Nori <nsekhar@ti.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+---
+Changes in V2:
+	- Coding style corrections (remove extra space)
+	- use prefix ARM: for commit subject keeping with arch/arm convention
 
--Eliezer
+:100644 100644 bf57252... 9140b1c... M	arch/arm/mach-davinci/devices-da8xx.c
+ arch/arm/mach-davinci/devices-da8xx.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
+index bf57252..9140b1c 100644
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@ -827,14 +827,7 @@ static struct platform_device da8xx_rtc_device = {
+ 
+ int da8xx_register_rtc(void)
+ {
+-	int ret;
+-
+-	ret = platform_device_register(&da8xx_rtc_device);
+-	if (!ret)
+-		/* Atleast on DA850, RTC is a wakeup source */
+-		device_init_wakeup(&da8xx_rtc_device.dev, true);
+-
+-	return ret;
++	return platform_device_register(&da8xx_rtc_device);
+ }
+ 
+ static void __iomem *da8xx_ddr2_ctlr_base;
+-- 
+1.7.9.5
+
