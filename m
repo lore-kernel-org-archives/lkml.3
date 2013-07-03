@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283Ab3GCSlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:41:05 -0400
+	id S933456Ab3GCSro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:47:44 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6045 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933189Ab3GCSkw (ORCPT
+	with ESMTP id S933039Ab3GCSlE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:40:52 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=4SCA3e2dL-EA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=JnJsX1JTYYEA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=qAcTZXhipRmz5IgGFJIA:9 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 3 Jul 2013 14:41:04 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=7-rs4MOcfLIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Egj-ZAtVUj8A:10 a=jdP34snFAAAA:8 a=VwQbUJbxAAAA:8 a=vmLDa1wCAAAA:8 a=oCcaPWc0AAAA:8 a=e0gVtgZ23HrhdBXb4dMA:9 a=9mtjllxcxZAA:10 a=gv_BBZfBKR8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184047.119487360@goodmis.org>
+Message-Id: <20130703184054.015760269@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:12 -0400
+Date: Wed, 03 Jul 2013 14:39:54 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [015/141] cifs: only set ops for inodes in I_NEW state
+Cc: Gabor Juhos <juhosg@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [057/141] ath9k: use correct OTP register offsets for AR9550
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0015-cifs-only-set-ops-for-inodes-in-I_NEW-state.patch
+Content-Disposition: inline; filename=0057-ath9k-use-correct-OTP-register-offsets-for-AR9550.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,39 +30,98 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-[ Upstream commit c2b93e0699723700f886ce17bb65ffd771195a6d ]
+[ Upstream commit add295a4afbdf5852d004c754c552d692b0fcac8 ]
 
-It's generally not safe to reset the inode ops once they've been set. In
-the case where the inode was originally thought to be a directory and
-then later found to be a DFS referral, this can lead to an oops when we
-try to trigger an inode op on it after changing the ops to the blank
-referral operations.
+Accessing the OTP memory on AR9950 causes a data bus
+like this:
 
-Cc: <stable@vger.kernel.org>
-Reported-and-Tested-by: Sachin Prabhu <sprabhu@redhat.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+  Data bus error, epc == 801f7774, ra == 801f7774
+  Oops[#1]:
+  CPU: 0 PID: 1 Comm: swapper Not tainted 3.10.0-rc3 #592
+  task: 87c28000 ti: 87c22000 task.ti: 87c22000
+  $ 0   : 00000000 00000061 deadc0de 00000000
+  $ 4   : b8115f18 00015f18 00000007 00000004
+  $ 8   : 00000001 7c7c3c7c 7c7c7c7c 7c7c7c7c
+  $12   : 7c7c3c7c 80320a68 00000000 7c7c7c3c
+  $16   : 87cd8010 00015f18 00000007 00000000
+  $20   : 00000064 00000004 87c23c7c 8035210c
+  $24   : 00000000 801f3674
+  $28   : 87c22000 87c23b48 00000001 801f7774
+  Hi    : 00000000
+  Lo    : 00000064
+  epc   : 801f7774 ath9k_hw_wait+0x58/0xb0
+      Not tainted
+  ra    : 801f7774 ath9k_hw_wait+0x58/0xb0
+  Status: 1000cc03 KERNEL EXL IE
+  Cause : 4080801c
+  PrId  : 00019750 (MIPS 74Kc)
+  Modules linked in:
+  Process swapper (pid: 1, threadinfo=87c22000, task=87c28000, ts=00000000)
+  Stack : 0000000f 00000061 00002710 8006240c 00000001 87cd8010 87c23bb0 87cd8010
+          00000000 00000004 00000003 80210c7c 000000b3 67fa8000 0000032a 000006fe
+          000003e8 00000002 00000028 87c23bf0 000003ff 80210d24 803e5630 80210e28
+          00000000 00000007 87cd8010 00007044 00000004 00000061 000003ff 000001ff
+          87c26000 87cd8010 00000220 87cd8bb8 80210000 8020fcf4 87c22000 87c23c08
+          ...
+  Call Trace:
+  [<801f7774>] ath9k_hw_wait+0x58/0xb0
+  [<80210c7c>] ar9300_otp_read_word+0x80/0xd4
+  [<80210d24>] ar9300_read_otp+0x54/0xb0
+  [<8020fcf4>] ar9300_check_eeprom_header+0x1c/0x40
+  [<80210fe4>] ath9k_hw_ar9300_fill_eeprom+0x118/0x39c
+  [<80206650>] ath9k_hw_eeprom_init+0x74/0xb4
+  [<801f96d0>] ath9k_hw_init+0x7ec/0x96c
+  [<801e65ec>] ath9k_init_device+0x340/0x758
+  [<801f35d0>] ath_ahb_probe+0x21c/0x2c0
+  [<801c041c>] driver_probe_device+0xc0/0x1e4
+  [<801c05ac>] __driver_attach+0x6c/0xa4
+  [<801bea08>] bus_for_each_dev+0x64/0xa8
+  [<801bfa40>] bus_add_driver+0xcc/0x24c
+  [<801c0954>] driver_register+0xbc/0x17c
+  [<803f8fc0>] ath9k_init+0x5c/0x88
+  [<800608fc>] do_one_initcall+0xec/0x1a0
+  [<803e6a68>] kernel_init_freeable+0x13c/0x200
+  [<80309cdc>] kernel_init+0x1c/0xe4
+  [<80062450>] ret_from_kernel_thread+0x10/0x18
+
+On the AR9550, the OTP registers are located at
+the same address as on the AR9340. Use the correct
+values to avoid the error.
+
+Cc: stable@vger.kernel.org  # 3.6+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/cifs/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.h |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index cb79c7e..8808dce 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -169,7 +169,8 @@ cifs_fattr_to_inode(struct inode *inode, struct cifs_fattr *fattr)
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
+index 3a1ff55..51dd475 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
+@@ -68,13 +68,16 @@
+ #define AR9300_BASE_ADDR 0x3ff
+ #define AR9300_BASE_ADDR_512 0x1ff
  
- 	if (fattr->cf_flags & CIFS_FATTR_DFS_REFERRAL)
- 		inode->i_flags |= S_AUTOMOUNT;
--	cifs_set_ops(inode);
-+	if (inode->i_state & I_NEW)
-+		cifs_set_ops(inode);
- }
+-#define AR9300_OTP_BASE			0x14000
+-#define AR9300_OTP_STATUS		0x15f18
++#define AR9300_OTP_BASE \
++		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30000 : 0x14000)
++#define AR9300_OTP_STATUS \
++		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x30018 : 0x15f18)
+ #define AR9300_OTP_STATUS_TYPE		0x7
+ #define AR9300_OTP_STATUS_VALID		0x4
+ #define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
+ #define AR9300_OTP_STATUS_SM_BUSY	0x1
+-#define AR9300_OTP_READ_DATA		0x15f1c
++#define AR9300_OTP_READ_DATA \
++		((AR_SREV_9340(ah) || AR_SREV_9550(ah)) ? 0x3001c : 0x15f1c)
  
- void
+ enum targetPowerHTRates {
+ 	HT_TARGET_RATE_0_8_16,
 -- 
 1.7.10.4
 
