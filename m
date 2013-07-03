@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965061Ab3GCUUX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 16:20:23 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:16437 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964912Ab3GCUUR (ORCPT
+	id S965120Ab3GCUUu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 16:20:50 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:24339 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964880Ab3GCUUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 16:20:17 -0400
+	Wed, 3 Jul 2013 16:20:47 -0400
 From: Waiman Long <Waiman.Long@hp.com>
-Cc: Jeremy Kerr <jk@ozlabs.org>, Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        cbe-oss-dev@lists.ozlabs.org, Waiman Long <Waiman.Long@hp.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: Mike Marciniszyn <infinipath@intel.com>, Roland Dreier <roland@kernel.org>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+        Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v3 04/25] powerpc: Change how dentry's d_lock field is accessed
-Date: Wed,  3 Jul 2013 16:19:57 -0400
-Message-Id: <1372882797-22614-1-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v3 05/25] infiniband: Change how dentry's d_lock field is accessed
+Date: Wed,  3 Jul 2013 16:20:31 -0400
+Message-Id: <1372882831-22671-1-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
         Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
@@ -38,35 +38,54 @@ There is no change in logic and everything should just work.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- arch/powerpc/platforms/cell/spufs/inode.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/infiniband/hw/ipath/ipath_fs.c |    6 +++---
+ drivers/infiniband/hw/qib/qib_fs.c     |    6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/platforms/cell/spufs/inode.c b/arch/powerpc/platforms/cell/spufs/inode.c
-index 35f77a4..3597c4b 100644
---- a/arch/powerpc/platforms/cell/spufs/inode.c
-+++ b/arch/powerpc/platforms/cell/spufs/inode.c
-@@ -165,18 +165,18 @@ static void spufs_prune_dir(struct dentry *dir)
- 
- 	mutex_lock(&dir->d_inode->i_mutex);
- 	list_for_each_entry_safe(dentry, tmp, &dir->d_subdirs, d_u.d_child) {
--		spin_lock(&dentry->d_lock);
-+		d_lock(dentry);
- 		if (!(d_unhashed(dentry)) && dentry->d_inode) {
- 			dget_dlock(dentry);
- 			__d_drop(dentry);
--			spin_unlock(&dentry->d_lock);
-+			d_unlock(dentry);
- 			simple_unlink(dir->d_inode, dentry);
- 			/* XXX: what was dcache_lock protecting here? Other
- 			 * filesystems (IB, configfs) release dcache_lock
- 			 * before unlink */
- 			dput(dentry);
- 		} else {
--			spin_unlock(&dentry->d_lock);
-+			d_unlock(dentry);
- 		}
+diff --git a/drivers/infiniband/hw/ipath/ipath_fs.c b/drivers/infiniband/hw/ipath/ipath_fs.c
+index e0c404b..1efee26 100644
+--- a/drivers/infiniband/hw/ipath/ipath_fs.c
++++ b/drivers/infiniband/hw/ipath/ipath_fs.c
+@@ -277,14 +277,14 @@ static int remove_file(struct dentry *parent, char *name)
+ 		goto bail;
  	}
- 	shrink_dcache_parent(dir);
+ 
+-	spin_lock(&tmp->d_lock);
++	d_lock(tmp);
+ 	if (!(d_unhashed(tmp) && tmp->d_inode)) {
+ 		dget_dlock(tmp);
+ 		__d_drop(tmp);
+-		spin_unlock(&tmp->d_lock);
++		d_unlock(tmp);
+ 		simple_unlink(parent->d_inode, tmp);
+ 	} else
+-		spin_unlock(&tmp->d_lock);
++		d_unlock(tmp);
+ 
+ 	ret = 0;
+ bail:
+diff --git a/drivers/infiniband/hw/qib/qib_fs.c b/drivers/infiniband/hw/qib/qib_fs.c
+index f247fc6..63713ee 100644
+--- a/drivers/infiniband/hw/qib/qib_fs.c
++++ b/drivers/infiniband/hw/qib/qib_fs.c
+@@ -454,14 +454,14 @@ static int remove_file(struct dentry *parent, char *name)
+ 		goto bail;
+ 	}
+ 
+-	spin_lock(&tmp->d_lock);
++	d_lock(tmp);
+ 	if (!(d_unhashed(tmp) && tmp->d_inode)) {
+ 		dget_dlock(tmp);
+ 		__d_drop(tmp);
+-		spin_unlock(&tmp->d_lock);
++		d_unlock(tmp);
+ 		simple_unlink(parent->d_inode, tmp);
+ 	} else {
+-		spin_unlock(&tmp->d_lock);
++		d_unlock(tmp);
+ 	}
+ 
+ 	ret = 0;
 -- 
 1.7.1
 
