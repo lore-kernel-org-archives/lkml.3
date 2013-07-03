@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab3GCMbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 08:31:18 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:64266 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab3GCMbR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 08:31:17 -0400
+	id S932337Ab3GCMbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 08:31:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59976 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753778Ab3GCMbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 08:31:52 -0400
+Message-ID: <51D419B2.7000502@suse.cz>
+Date: Wed, 03 Jul 2013 14:31:46 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHy1fFdU1zGcxMsoeYnz8tb-JktSYBScc+Soqge8Q-++Rw@mail.gmail.com>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-	<1372072858-6559-3-git-send-email-yadi.brar@samsung.com>
-	<CAK9yfHy1fFdU1zGcxMsoeYnz8tb-JktSYBScc+Soqge8Q-++Rw@mail.gmail.com>
-Date: Wed, 3 Jul 2013 18:01:17 +0530
-Message-ID: <CAKew6eWsyNKEUtOKQOfa7DpsQfU=N4YYrtyRY+9EeEQz6v5EZw@mail.gmail.com>
-Subject: Re: [PATCH 2/4] regulator: s2mps11: Implement set_voltage_time_sel()
- ops for bucks
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
-        sbkim73@samsung.com, broonie@kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, rob.herring@calxeda.com,
-        grant.likely@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Tang <dt.tangr@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: Re: [PATCH 2/2] Fix a build warning in scripts/mod/file2alias.c
+References: <1370745235-12951-1-git-send-email-dt.tangr@gmail.com> <1370745235-12951-2-git-send-email-dt.tangr@gmail.com>
+In-Reply-To: <1370745235-12951-2-git-send-email-dt.tangr@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 5:25 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> On 24 June 2013 16:50, Yadwinder Singh Brar <yadi.brar@samsung.com> wrote:
->> Currently driver uses local struct s2mps11_info to store ramp rate for bucks
->> whic its getting through platform data, so instead of using regulator
->> constraints it should use s2mps11_info to calculate ramp delay.
->>
->> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-> [snip]
->> +
->> +       switch (rdev->desc->id) {
->> +       case S2MPS11_BUCK2:
->> +               if (!s2mps11->buck2_ramp)
->> +                       return 0;
->> +               ramp_delay = s2mps11->ramp_delay2;
->> +               break;
->> +       case S2MPS11_BUCK3:
->> +               if (!s2mps11->buck3_ramp)
->> +                       return 0;
->> +               ramp_delay = s2mps11->ramp_delay34;
->> +               break;
->> +       case S2MPS11_BUCK4:
->> +               if (!s2mps11->buck4_ramp)
->> +                       return 0;
->> +               ramp_delay = s2mps11->ramp_delay34;
->> +               break;
->> +       case S2MPS11_BUCK5:
->> +               ramp_delay = s2mps11->ramp_delay5;
->> +               break;
->> +       case S2MPS11_BUCK6:
->> +               if (!s2mps11->buck6_ramp)
->> +                       return 0;
->> +       case S2MPS11_BUCK1:
->
-> nit: Why not have this at the beginning?
->
+On 9.6.2013 04:33, Daniel Tang wrote:
+> On some systems, __used is already defined in sys/cdefs.h and causes
+> a build warning:
+> 
+> scripts/mod/file2alias.c:85:1: warning: "__used" redefined
+> In file included from /usr/include/stdio.h:64,
+>                  from scripts/mod/modpost.h:1,
+> 		                  from scripts/mod/file2alias.c:13:
+> 				  /usr/include/sys/cdefs.h:146:1: warning: this is the location of the previous definition
+> 
+> This adds an extra check before defining the __used macro to see if
+> the macro was already defined elsewhere.
+> 
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
 
-Nothing special. Instead of putting "case S2MPS11_BUCK6" at beginning,
-I preferred to put S2MPS11_BUCK1 here.
+Applied to kbuild.git#kbuild.
 
->> +               ramp_delay = s2mps11->ramp_delay16;
->> +               break;
->> +       case S2MPS11_BUCK7:
->> +       case S2MPS11_BUCK8:
->> +       case S2MPS11_BUCK10:
->> +               ramp_delay = s2mps11->ramp_delay7810;
->> +               break;
->> +       case S2MPS11_BUCK9:
->> +               ramp_delay = s2mps11->ramp_delay9;
->> +       }
->
-> How about adding a break statement above?
->
+Michal
 
-hmm .. I can't see any worth of it.
-Is it required according to linux coding convention ?
-
-
-Regards,
-Yadwinder
-
---
-> With warm regards,
-> Sachin
