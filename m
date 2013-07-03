@@ -1,81 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab3GCIpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 04:45:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33834 "EHLO arroyo.ext.ti.com"
+	id S932637Ab3GCIqs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 04:46:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1827 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932142Ab3GCIo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 04:44:59 -0400
-From: Hebbar Gururaja <gururaja.hebbar@ti.com>
-To: <khilman@linaro.org>, <tony@atomide.com>, <benoit.cousson@gmail.com>
-CC: <linux-omap@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <vaibhav.bedia@ti.com>, <sudhakar.raj@ti.com>,
-        <gururaja.hebbar@ti.com>
-Subject: [Patch V2 0/4] rtc: omap: handle rtc wakeup support in driver
-Date: Wed, 3 Jul 2013 14:17:01 +0530
-Message-ID: <1372841225-18813-1-git-send-email-gururaja.hebbar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755768Ab3GCIpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 04:45:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,987,1363158000"; 
+   d="scan'208";a="364059221"
+Message-ID: <51D3E494.50206@linux.intel.com>
+Date: Wed, 03 Jul 2013 11:45:08 +0300
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (net-next
+ tree related)
+References: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
+In-Reply-To: <20130703174822.d06500db5cbd5191c39e3f08@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtc-omap driver modules is used both by OMAP1/2, Davinci SoC platforms.
 
-However, rtc wake support on OMAP1 is broken. Hence the
-device_init_wakeup() was removed from rtc-omap driver and moved to
-platform board files that supported it (DA850/OMAP-L138). [1]
+On 03/07/2013 10:48, Stephen Rothwell wrote:
+> Hi all,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) failed like this:
+>
+> fs/select.c: In function 'do_select':
+> fs/select.c:408:2: error: implicit declaration of function 'll_start_time' [-Werror=implicit-function-declaration]
+>    u64 ll_start = ll_start_time(ll_flag);
+[..]
+> Caused by commit 1bc2774d8664 ("net: convert lls to use time_in_range()")
+> from the net-next tree.
+>
+> I cherry-picked the commit 419076f59fc5 ("net: lls fix build with
+> allnoconfig") out of tomorrow's net-next tree.  (I am feeling generous
+> and noticed that patch being applied :-))
 
-However, recently [2] it was suggested that driver should always do a
-device_init_wakeup(dev, true). Platforms that don't want/need
-wakeup support can disable it from userspace via:
+Yes, my bad.
+Thank you.
 
-    echo disabled > /sys/devices/.../power/wakeup
+I knew lots of people could get this so I sent out a fix ASAP (at 6AM
+my time).
 
-Also, with the new DT boot-up, board file doesn't exist and hence there
-is no way to have device wakeup support rtc.
+If it's not too much trouble we should add:
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 
-The fix for above issues, is to hard code device_init_wakeup() inside
-driver and let platforms that don't need this, handle it through the
-sysfs power entry.
-
-
-Also, update Davinci & AM335x files to above changes.
-
-[1]
-https://patchwork.kernel.org/patch/136731/
-
-[2]
-http://www.mail-archive.com/davinci-linux-open-source@linux.
-davincidsp.com/msg26077.html
-
-Changes in V2:
-	- Coding style corrections (remove extra space, use lower case
-	  for hex numbers
-	- use prefix ARM: for commit subject keeping with arch/arm
-	  convention)
-	- use "[AM/am]3352" instead of "[AM/am]335x" to keep the all
-	  usages in sync.
-	- Use index defined for struct members so they remain in sync
-	- Add new compatible to existing one so that when driver
-	  supports enhanced features of hardware, they are available
-	  to the user else the basic functionality still works
-
-Hebbar Gururaja (4):
-  rtc: omap: restore back (hard-code) wakeup support
-  ARM: Davinci: da8xx/omap-l1: Remove hard coding of rtc device wakeup
-  rtc: omap: add rtc wakeup support to alarm events
-  ARM: dts: AM33XX: update rtc node compatibility
-
- Documentation/devicetree/bindings/rtc/rtc-omap.txt |    6 +-
- arch/arm/boot/dts/am33xx.dtsi                      |    2 +-
- arch/arm/mach-davinci/devices-da8xx.c              |    9 +--
- drivers/rtc/rtc-omap.c                             |   62 +++++++++++++++++---
- 4 files changed, 61 insertions(+), 18 deletions(-)
-
--- 
-1.7.9.5
-
+-Eliezer
