@@ -1,52 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab3GCAyd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 20:54:33 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:54743 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab3GCAyb (ORCPT
+	id S1755070Ab3GCAzU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 20:55:20 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:60909 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752289Ab3GCAzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 20:54:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130701082221.GA14112@gmail.com>
-References: <20130701082221.GA14112@gmail.com>
-Date: Tue, 2 Jul 2013 17:54:30 -0700
-X-Google-Sender-Auth: pmTa-1KYiW6V8VCwcAwYO-F5W4Y
-Message-ID: <CA+55aFwfsz6e5oQAdZw-YyYzwJXCPjKJKiLEXxn7ujU7KWX97Q@mail.gmail.com>
-Subject: Re: [GIT PULL] core/mutexes changes for v3.11: W/W mutex support
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	Tue, 2 Jul 2013 20:55:18 -0400
+Date: Tue, 2 Jul 2013 20:55:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Rob van der Heij <rvdheij@gmail.com>, Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        Yannick Brosseau <yannick.brosseau@gmail.com>, stable@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>
+Subject: Re: [-stable 3.8.1 performance regression] madvise
+	POSIX_FADV_DONTNEED
+Message-ID: <20130703005514.GA17149@Krystal>
+References: <51BE1828.3060206@gmail.com> <20130617141357.GA6034@Krystal> <20130617142459.1d563072231ba269cdac8f11@linux-foundation.org> <20130618092925.GI1875@suse.de> <20130618101147.GA7436@suse.de> <20130619192508.GA666@Krystal> <CAJCc=kijujORhPUmPvzHj-MMdyVbf-iHEK0Jx-VHbTO8q4ESFA@mail.gmail.com> <20130620122016.GA12700@Krystal> <20130625015648.GO29376@dastard> <20130702135858.GA30837@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130702135858.GA30837@Krystal>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 1:22 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> Please pull the latest core-mutexes-for-linus git tree from:
->
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-mutexes-for-linus
->
->    HEAD: 166989e366ffa66108b2f37b870e66b85b2185ad locking-selftests: Handle unexpected failures more strictly
->
-> This tree adds support for wound/wait style locks, which the graphics guys
-> would like to make use of in the TTM graphics subsystem.
+* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
+> * Dave Chinner (david@fromorbit.com) wrote:
+> > On Thu, Jun 20, 2013 at 08:20:16AM -0400, Mathieu Desnoyers wrote:
+> > > * Rob van der Heij (rvdheij@gmail.com) wrote:
+> > > > Wouldn't you batch the calls to drop the pages from cache rather than drop
+> > > > one packet at a time?
+> > > 
+> > > By default for kernel tracing, lttng's trace packets are 1MB, so I
+> > > consider the call to fadvise to be already batched by applying it to 1MB
+> > > packets rather than indivitual pages. Even there, it seems that the
+> > > extra overhead added by the lru drain on each CPU is noticeable.
+> > > 
+> > > Another reason for not batching this in larger chunks is to limit the
+> > > impact of the tracer on the kernel page cache. LTTng limits itself to
+> > > its own set of buffers, and use the page cache for what is absolutely
+> > > needed to perform I/O, but no more.
+> > 
+> > I think you are doing it wrong. This is a poster child case for
+> > using Direct IO and completely avoiding the page cache altogether....
+> 
+> I just tried replacing my sync_file_range()+fadvise() calls and instead
+> pass the O_DIRECT flag to open(). Unfortunately, I must be doing
+> something very wrong, because I get only 1/3rd of the throughput, and
+> the page cache fills up. Any idea why ?
 
-So I pulled this, but I'm not particularly happy with how this (very
-unusual) lock pollutes <linux/mutex.h> that pretty much every single
-file ends up including.
+Since O_DIRECT does not seem to provide acceptable throughput, it may be
+interesting to investigate other ways to lessen the latency impact of
+the fadvise DONTNEED hint.
 
-So I'd really prefer to see the ww_mutex() support split up into
-<linux/ww_mutex.h>, rather than making the compiler have to parse and
-remember that stuff when 99.99% of all files do not care about it or
-need it.
+Given it is just a hint, we should be allowed to perform page
+deactivation lazily. Is there any fundamental reason to wait for worker
+threads on each CPU to complete their lru drain before returning from
+fadvise() to user-space ?
 
-Hmm?
+Thanks,
 
-                   Linus
+Mathieu
+
+> 
+> Here are my results:
+> 
+> heavy-syscall.c: 30M sigaction() syscall with bad parameters (returns
+> immediately). Used as high-throughput stress-test for the tracer.
+> Tracing to disk with LTTng, all kernel tracepoints activated, including
+> system calls.
+> 
+> Tracer configuration: per-core buffers split into 4 sub-buffers of
+> 262kB. splice() is used to transfer data from buffers to disk. Runs on a
+> 8-core Intel machine.
+> 
+> Writing to a software raid-1 ext3 partition.
+> ext3 mount options: rw,errors=remount-ro
+> 
+> * sync_file_range+fadvise 3.9.8
+>   - with lru drain on fadvise
+> 
+> Kernel cache usage:
+> Before tracing: 56272k cached
+> After tracing:  56388k cached
+> 
+> 939M	/root/lttng-traces/auto-20130702-090430
+> time ./heavy-syscall 
+> real	0m21.910s
+> throughput: 42MB/s
+> 
+> 
+> * sync_file_range+fadvise 3.9.8
+>   - without lru drain on fadvise: manually reverted
+> 
+> Kernel cache usage:
+> Before tracing: 67968k cached
+> After tracing:  67984k cached
+> 
+> 945M	/root/lttng-traces/auto-20130702-092505
+> time ./heavy-syscall 
+> real	0m21.872s
+> throughput: 43MB/s
+> 
+> 
+> * O_DIRECT 3.9.8
+>   - O_DIRECT flag on open(), removed fadvise and sync_file_range calls
+> 
+> Kernel cache usage:
+> Before tracing:  99480k cached
+> After tracing:  360132k cached
+> 
+> 258M	/root/lttng-traces/auto-20130702-090603
+> time ./heavy-syscall 
+> real	0m19.627s
+> throughput: 13MB/s
+> 
+> 
+> * No cache hints 3.9.8
+>   - only removed fadvise and sync_file_range calls
+> 
+> Kernel cache usage:
+> Before tracing: 103556k cached
+> After tracing:  363712k cached
+> 
+> 945M	/root/lttng-traces/auto-20130702-092505
+> time ./heavy-syscall 
+> real	0m19.672s
+> throughput: 48MB/s
+> 
+> Thoughts ?
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> -- 
+> Mathieu Desnoyers
+> EfficiOS Inc.
+> http://www.efficios.com
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
