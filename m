@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932959Ab3GCOSJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:18:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51761 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932425Ab3GCOSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:18:05 -0400
-Date: Wed, 3 Jul 2013 17:16:59 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Luciano Coelho <coelho@ti.com>
+	id S932990Ab3GCOTP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:19:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:32843 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab3GCOTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:19:12 -0400
+Message-ID: <1372861094.21065.118.camel@cumari.coelho.fi>
+Subject: Re: [PATCH v3 2/8] wlcore: set irq_flags in the board files instead
+ of hiding behind a quirk
+From: Luciano Coelho <coelho@ti.com>
+To: <balbi@ti.com>
 CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
-        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
+        <mturquette@linaro.org>, <mark.rutland@arm.com>,
         <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
         <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <nm@ti.com>
-Subject: Re: [PATCH v3 4/8] wl12xx: use frequency instead of enumerations for
- pdata clocks
-Message-ID: <20130703141659.GQ15056@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
+Date: Wed, 3 Jul 2013 17:18:14 +0300
+In-Reply-To: <20130703141332.GO15056@arwen.pp.htv.fi>
 References: <1372860209-3504-1-git-send-email-coelho@ti.com>
- <1372860209-3504-5-git-send-email-coelho@ti.com>
+	 <1372860209-3504-3-git-send-email-coelho@ti.com>
+	 <20130703141332.GO15056@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OrT4iOlIQZp3kw4S"
-Content-Disposition: inline
-In-Reply-To: <1372860209-3504-5-git-send-email-coelho@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---OrT4iOlIQZp3kw4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2013-07-03 at 17:13 +0300, Felipe Balbi wrote:
+> Hi,
+> 
+> On Wed, Jul 03, 2013 at 05:03:23PM +0300, Luciano Coelho wrote:
+> > diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
+> > index 56a9a4f..953f620 100644
+> > --- a/arch/arm/mach-omap2/board-4430sdp.c
+> > +++ b/arch/arm/mach-omap2/board-4430sdp.c
+> > @@ -703,12 +703,30 @@ static void __init omap4_sdp4430_wifi_init(void)
+> >  
+> >  	omap4_sdp4430_wifi_mux_init();
+> >  	omap4_sdp4430_wlan_data.irq = gpio_to_irq(GPIO_WIFI_IRQ);
+> > +
+> > +	ret = gpio_request_one(GPIO_WIFI_IRQ, GPIOF_IN, "GPIO_WIFI_IRQ");
+> > +	if (ret) {
+> > +		pr_err("error requesting wl12xx gpio: %d\n", ret);
+> > +		goto out;
+> > +	}
+> > +
+> > +	ret = irq_set_irq_type(gpio_to_irq(GPIO_WIFI_IRQ), IRQ_TYPE_LEVEL_HIGH);
+> > +	if (ret) {
+> > +		pr_err("error setting wl12xx irq type: %d\n", ret);
+> > +		goto free;
+> > +	}
+> > +
+> >  	ret = wl12xx_set_platform_data(&omap4_sdp4430_wlan_data);
+> >  	if (ret)
+> >  		pr_err("Error setting wl12xx data: %d\n", ret);
+> > +
+> >  	ret = platform_device_register(&omap_vwlan_device);
+> >  	if (ret)
+> >  		pr_err("Error registering wl12xx device: %d\n", ret);
+> > +out:
+> > +	return;
+> > +free:
+> > +	gpio_free(GPIO_WIFI_IRQ);
+> 
+> actually, you should leave this GPIO requested in order to use it as
+> IRQ.
+> 
+> ditto for all others
 
-On Wed, Jul 03, 2013 at 05:03:25PM +0300, Luciano Coelho wrote:
-> Instead of defining an enumeration with the FW specific values for the
-> different clock rates, use the actual frequency instead.  Also add a
-> boolean to specify whether the clock is XTAL or not.
->=20
-> Change all board files to reflect this.
->=20
-> Cc: Tony Lindgren <tony@atomide.com>
-> Cc: Sekhar Nori <nsekhar@ti.com>
-> Signed-off-by: Luciano Coelho <coelho@ti.com>
+Actually, I don't need to use the GPIO if something goes wrong (ie.
+setting the IRQ type or setting the platform data).  Notice that in the
+normal cases (ie. without errors), I return before the gpio_free() is
+called.
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+This is not really needed, but it's a bit cleaner and we can probably
+release some resources.
 
---=20
-balbi
+--
+Luca.
 
---OrT4iOlIQZp3kw4S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR1DJbAAoJEIaOsuA1yqRER88P/i1Fbl2whPLiblQ/ycn8nTTs
-YZM0bfxn7SXd9KRpR85jCB95iLdArWQAJRlCulgjGoGtRXbup1rGxbOVP7XqmbUl
-Fr16lrVqAL+65JO8uh9p6Hkv59qFwytrHeOFNzHcR27W/JxKMgS6oZyu5lfOD1q2
-ED0T0B4A0ONCn6v4+xIv6P7XCeuZgVTMFsTreGuMfeQpc4HSvcgp+SGwNGzKkl78
-xn0It10iWyCna0gHYti700TfpX/Qv2qZoSpx8KqASgg+Y+6MvXDmv7KFaa+10xM8
-iwMgwE2cwBv6TXcAKr+N4RdnAx25vAI/feqnds16Avcy+8tIqaLq2vOy0sj2AWol
-XRJTCJob//oZrHG05GOiTQwfW44NxwMwAtmWQ28+hhVGt2UjkIT15VYI8PUDPrGT
-sni4/pL78hndm+370PNCJT2KMuC5P6M5vqmNq/RI2+stBuHTUXqWCviQuiDJfTC3
-wnLhxE4J04NNRjjFIRyulCj7iv84sQWUM2A4JsPxCYLTxNdy3A9bxJnujBZ6pYmH
-hoZKo94ozIZIgT5cGUM2N9Ukw6u0VV5o8kEg8plgJMkdVXKlBEtDE/WKzvdWHim3
-d3HXhVLHwGn1oDpWpTf/+/BMK/cmHdUWV4KzloO1niXhZk6SCiyfuOi5/D1JeYGp
-uVCyQ5aJeVjqHE4eUKJ/
-=z0st
------END PGP SIGNATURE-----
-
---OrT4iOlIQZp3kw4S--
