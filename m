@@ -1,195 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999Ab3GCOIW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:08:22 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:56787 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932471Ab3GCOIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:08:19 -0400
-Date: Wed, 3 Jul 2013 18:08:13 +0400
-From: Glauber Costa <glommer@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130703140812.GA13660@localhost.localdomain>
-References: <20130627145411.GA24206@dhcp22.suse.cz>
- <20130629025509.GG9047@dastard>
- <20130630183349.GA23731@dhcp22.suse.cz>
- <20130701012558.GB27780@dastard>
- <20130701075005.GA28765@dhcp22.suse.cz>
- <20130701081056.GA4072@dastard>
- <20130702092200.GB16815@dhcp22.suse.cz>
- <20130702121947.GE14996@dastard>
- <20130702124427.GG16815@dhcp22.suse.cz>
- <20130703112403.GP14996@dastard>
+	id S932355Ab3GCOLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:11:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51381 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751438Ab3GCOLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:11:45 -0400
+Date: Wed, 3 Jul 2013 17:11:10 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Luciano Coelho <coelho@ti.com>
+CC: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>,
+        <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <nm@ti.com>
+Subject: Re: [PATCH v3 1/8] wl1251: split wl251 platform data to a separate
+ structure
+Message-ID: <20130703141110.GN15056@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1372860209-3504-1-git-send-email-coelho@ti.com>
+ <1372860209-3504-2-git-send-email-coelho@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WoqaC9TUMqqIOlla"
 Content-Disposition: inline
-In-Reply-To: <20130703112403.GP14996@dastard>
+In-Reply-To: <1372860209-3504-2-git-send-email-coelho@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 09:24:03PM +1000, Dave Chinner wrote:
-> On Tue, Jul 02, 2013 at 02:44:27PM +0200, Michal Hocko wrote:
-> > On Tue 02-07-13 22:19:47, Dave Chinner wrote:
-> > [...]
-> > > Ok, so it's been leaked from a dispose list somehow. Thanks for the
-> > > info, Michal, it's time to go look at the code....
-> > 
-> > OK, just in case we will need it, I am keeping the machine in this state
-> > for now. So we still can play with crash and check all the juicy
-> > internals.
-> 
-> My current suspect is the LRU_RETRY code. I don't think what it is
-> doing is at all valid - list_for_each_safe() is not safe if you drop
-> the lock that protects the list. i.e. there is nothing that protects
-> the stored next pointer from being removed from the list by someone
-> else. Hence what I think is occurring is this:
-> 
-> 
-> thread 1			thread 2
-> lock(lru)
-> list_for_each_safe(lru)		lock(lru)
->   isolate			......
->     lock(i_lock)
->     has buffers
->       __iget
->       unlock(i_lock)
->       unlock(lru)
->       .....			(gets lru lock)
->       				list_for_each_safe(lru)
-> 				  walks all the inodes
-> 				  finds inode being isolated by other thread
-> 				  isolate
-> 				    i_count > 0
-> 				      list_del_init(i_lru)
-> 				      return LRU_REMOVED;
-> 				   moves to next inode, inode that
-> 				   other thread has stored as next
-> 				   isolate
-> 				     i_state |= I_FREEING
-> 				     list_move(dispose_list)
-> 				     return LRU_REMOVED
-> 				 ....
-> 				 unlock(lru)
->       lock(lru)
->       return LRU_RETRY;
->   if (!first_pass)
->     ....
->   --nr_to_scan
->   (loop again using next, which has already been removed from the
->   LRU by the other thread!)
->   isolate
->     lock(i_lock)
->     if (i_state & ~I_REFERENCED)
->       list_del_init(i_lru)	<<<<< inode is on dispose list!
-> 				<<<<< inode is now isolated, with I_FREEING set
->       return LRU_REMOVED;
-> 
-> That fits the corpse left on your machine, Michal. One thread has
-> moved the inode to a dispose list, the other thread thinks it is
-> still on the LRU and should be removed, and removes it.
-> 
-> This also explains the lru item count going negative - the same item
-> is being removed from the lru twice. So it seems like all the
-> problems you've been seeing are caused by this one problem....
-> 
-> Patch below that should fix this.
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> 
-> list_lru: fix broken LRU_RETRY behaviour
-> 
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> The LRU_RETRY code assumes that the list traversal status after we
-> have dropped and regained the list lock. Unfortunately, this is not
-> a valid assumption, and that can lead to racing traversals isolating
-> objects that the other traversal expects to be the next item on the
-> list.
-> 
-> This is causing problems with the inode cache shrinker isolation,
-> with races resulting in an inode on a dispose list being "isolated"
-> because a racing traversal still thinks it is on the LRU. The inode
-> is then never reclaimed and that causes hangs if a subsequent lookup
-> on that inode occurs.
-> 
-> Fix it by always restarting the list walk on a LRU_RETRY return from
-> the isolate callback. Avoid the possibility of livelocks the current
-> code was trying to aavoid by always decrementing the nr_to_walk
-> counter on retries so that even if we keep hitting the same item on
-> the list we'll eventually stop trying to walk and exit out of the
-> situation causing the problem.
-> 
-> Reported-by: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  mm/list_lru.c |   29 ++++++++++++-----------------
->  1 file changed, 12 insertions(+), 17 deletions(-)
-> 
-> diff --git a/mm/list_lru.c b/mm/list_lru.c
-> index dc71659..7246791 100644
-> --- a/mm/list_lru.c
-> +++ b/mm/list_lru.c
-> @@ -71,19 +71,19 @@ list_lru_walk_node(struct list_lru *lru, int nid, list_lru_walk_cb isolate,
->  	struct list_lru_node	*nlru = &lru->node[nid];
->  	struct list_head *item, *n;
->  	unsigned long isolated = 0;
-> -	/*
-> -	 * If we don't keep state of at which pass we are, we can loop at
-> -	 * LRU_RETRY, since we have no guarantees that the caller will be able
-> -	 * to do something other than retry on the next pass. We handle this by
-> -	 * allowing at most one retry per object. This should not be altered
-> -	 * by any condition other than LRU_RETRY.
-> -	 */
-> -	bool first_pass = true;
->  
->  	spin_lock(&nlru->lock);
->  restart:
->  	list_for_each_safe(item, n, &nlru->list) {
->  		enum lru_status ret;
-> +
-> +		/*
-> +		 * decrement nr_to_walk first so that we don't livelock if we
-> +		 * get stuck on large numbesr of LRU_RETRY items
-> +		 */
-> +		if (--(*nr_to_walk) == 0)
-> +			break;
-> +
->  		ret = isolate(item, &nlru->lock, cb_arg);
->  		switch (ret) {
->  		case LRU_REMOVED:
-> @@ -98,19 +98,14 @@ restart:
->  		case LRU_SKIP:
->  			break;
->  		case LRU_RETRY:
-> -			if (!first_pass) {
-> -				first_pass = true;
-> -				break;
-> -			}
-> -			first_pass = false;
-> +			/*
-> +			 * The lru lock has been dropped, our list traversal is
-> +			 * now invalid and so we have to restart from scratch.
-> +			 */
->  			goto restart;
->  		default:
->  			BUG();
->  		}
-> -
-> -		if ((*nr_to_walk)-- == 0)
-> -			break;
-> -
->  	}
+--WoqaC9TUMqqIOlla
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch makes perfect sense to me, along with your description.
+On Wed, Jul 03, 2013 at 05:03:22PM +0300, Luciano Coelho wrote:
+> Move the wl1251 part of the wl12xx platform data structure into a new
+> structure specifically for wl1251.  Change the platform data built-in
+> block and board files accordingly.
+>=20
+> Cc: Tony Lindgren <tony@atomide.com>
+> Signed-off-by: Luciano Coelho <coelho@ti.com>
+> Acked-by: Tony Lindgren <tony@atomide.com>
 
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--WoqaC9TUMqqIOlla
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1DD+AAoJEIaOsuA1yqREIJMP/RA0CfQRUhy5hOI3QpiRmPI2
+nWFFZNqVf0VCQvU87FrTXinUS0/XBUYRLSwDMMo6fFB+jfLsLHfi+hfIbElvhBNM
+D01clGzn93P6jxSTqyFKJ8IUsKsP7hTZA5zENbcxVzyB/I4SF062REgAFm2+tnrm
+vDZm7BbmmnsUO6WoH5wy2ZQYz5HWyk9wzTKNQ2VQOlGc25PReR9NFzK7IH+dhjyB
+sZX4B0PJybY3zlIOJSN2AlcXhsXMz4FtocyE5Dk8kfIV2mFut8JQalNHeq8e2NYx
+xdJY2BkSd8qREQwm7Wwcjj1Z0+MDTu21+VjYltWPJxaf7SKedjgr6GXGv8dZ0wVW
+2ddwxxJfsI4KnFA6BCeFXjAEkFUrV6IOp0NvyZPEZvNfvrMdxqxlvMoumzdUThyL
+9I41PSbnNxk8GU8972Sn7SuKpk6Y0WNc8KjCpVOa3TxQYi/zBaGqTueTv8unp1LY
+EC6AJup95nhRBieqq7iEC4olwsUw3bBUfhvIDiX62mh5YLvTc6PYApriOpKo+lW8
+7lTkmNgE5p0uF6afXowiRgy5gyz7UptQm+irO9afVgCD27UEwL06oZwkOLt9TFOP
+BkfdQnVn0/LdWYbM2EOe60ttKBXNuzPasTHvoCYHEuXEVMRuufoVxgxGz72h9cyV
+8zcbVlMiUaPMeQxdOtzP
+=nSuo
+-----END PGP SIGNATURE-----
+
+--WoqaC9TUMqqIOlla--
