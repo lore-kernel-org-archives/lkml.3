@@ -1,157 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab3GCUTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 16:19:36 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:20195 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932841Ab3GCUTe (ORCPT
+	id S933142Ab3GCUeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 16:34:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19868 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab3GCUeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 16:19:34 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v3 00/25] Lockless update of reference count protected by spinlock
-Date: Wed,  3 Jul 2013 16:18:58 -0400
-Message-Id: <1372882741-22563-1-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
+	Wed, 3 Jul 2013 16:34:06 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ys9SgDZjGkgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_7JHcU0X-nEA:10 a=UG8OMjjE1b24vJNOs9MA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372883643.22688.118.camel@gandalf.local.home>
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Date: Wed, 03 Jul 2013 16:34:03 -0400
+In-Reply-To: <20130703191748.GA2884@redhat.com>
+References: <51D16E1D.5040904@hitachi.com>
+	 <20130702190037.GA6289@redhat.com> <20130702193425.GA8813@redhat.com>
+	 <1372799087.22688.58.camel@gandalf.local.home>
+	 <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com>
+	 <51D38F8D.3010708@hitachi.com> <20130703172029.GA14309@redhat.com>
+	 <20130703175420.GA25668@redhat.com>
+	 <1372874547.22688.111.camel@gandalf.local.home>
+	 <20130703191748.GA2884@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-v2->v3:
- - Completely revamp the packaging by adding a new lockref data
-   structure that combines the spinlock with the reference
-   count. Helper functions are also added to manipulate the new data
-   structure. That results in modifying over 50 files, but the changes
-   were trivial in most of them.
- - Change initial spinlock wait to use a timeout.
- - Force 64-bit alignment of the spinlock & reference count structure.
- - Add a new way to use the combo by using a new union and helper
-   functions.
+On Wed, 2013-07-03 at 21:17 +0200, Oleg Nesterov wrote:
+> On 07/03, Steven Rostedt wrote:
+> >
+> > On Wed, 2013-07-03 at 19:54 +0200, Oleg Nesterov wrote:
+> > > On 07/03, Oleg Nesterov wrote:
+> > > >
+> > > > IOW. So far _I think_ we just need the additional changes in
+> > > > trace_remove_event_call() if it succeeds (with the patch I sent)
+> > > > to prevent the races like above, but I didn't even try to think
+> > > > about this problem.
+> > >
+> > > And I guess greatly underestimated the problem(s). When I look at
+> > > this code now, it seems that, say, event_enable_write() will use
+> > > the already freed ftrace_event_file in this case.
+> > >
+> > > Still I think this is another (although closely related) problem.
+> >
+> > Correct, and I think if we fix that problem, it will encapsulate fixing
+> > the kprobe race too.
+> 
+> I do not think so, but I can be easily wrong. Again, we shouldn't
+> destroy the event if there is a perf_event attached to this tp_event.
+> And we can't (afaics!) rely on TRACE_REG_UNREGISTER from event_remove()
+> paths, FTRACE_EVENT_FL_SOFT_MODE can nack it.
+> 
+> So I still think that we also need something like the patch I sent.
+> But please forget about this for the moment.
+> 
+> Can't we do something like below? Just in case, of course this change
+> is incomplete, just to explain what I mean... And of course I how no
+> idea if the change in debugfs is safe, I never looked into fs/debugfs
+> before. But, perhaps, somehow we can clear i_private under event_mutex
+> and kernel/trace can use file_inode() instead of filp->private_data ?
+> 
+> Oleg.
+> 
+> 
+> diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+> index 4888cb3..c23d41e 100644
+> --- a/fs/debugfs/inode.c
+> +++ b/fs/debugfs/inode.c
+> @@ -475,6 +475,7 @@ static int __debugfs_remove(struct dentry *dentry, struct dentry *parent)
+>  				kfree(dentry->d_inode->i_private);
+>  				/* fall through */
+>  			default:
+> +				dentry->d_inode->i_private = NULL;
+>  				simple_unlink(parent->d_inode, dentry);
+>  				break;
+>  			}
 
-v1->v2:
- - Add one more layer of indirection to LOCK_WITH_REFCOUNT macro.
- - Add __LINUX_SPINLOCK_REFCOUNT_H protection to spinlock_refcount.h.
- - Add some generic get/put macros into spinlock_refcount.h.
+No, I would avoid any changes to the debugfs infrastructure.
 
-This patchset supports a generic mechanism to atomically update
-a reference count that is protected by a spinlock without actually
-acquiring the lock itself. If the update doesn't succeeed, the caller
-will have to acquire the lock and update the reference count in the
-the old way.  This will help in situation where there is a lot of
-spinlock contention because of frequent reference count update.
+OK, what about the below patch, followed by an updated version of your
+patch. I'll send that as a reply to this one.
 
-The d_lock and d_count fields of the struct dentry in dcache.h was
-modified to use the new lockref data structure and the associated
-helper functions to access the spinlock and the reference count. This
-change cause significant performance improvement in the short workload
-of the AIM7 benchmark on a 8-socket x86-64 machine with 80 cores.
+-- Steve
 
-patch 1: Introduce the new lockref data structure
-patch 2: Enable x86 architecture to use the feature
-patch 3: Change the dentry structure to use lockref to improve
-	 performance for high contention situation
-patches 4-25: Use new helper functions to access the d_lock and
-	      d_count fields of the original dentry structure.
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4372658..72ff2c6 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -195,6 +195,7 @@ extern int ftrace_event_reg(struct ftrace_event_call *event,
+ 			    enum trace_reg type, void *data);
+ 
+ enum {
++	TRACE_EVENT_FL_REF_MAX_BIT = 20,
+ 	TRACE_EVENT_FL_FILTERED_BIT,
+ 	TRACE_EVENT_FL_CAP_ANY_BIT,
+ 	TRACE_EVENT_FL_NO_SET_FILTER_BIT,
+@@ -203,6 +204,8 @@ enum {
+ };
+ 
+ /*
++ * Event ref count uses the first 20 bits of the flags field.
++ *
+  * Event flags:
+  *  FILTERED	  - The event has a filter attached
+  *  CAP_ANY	  - Any user can enable for perf
+@@ -213,6 +216,7 @@ enum {
+  *                     it is best to clear the buffers that used it).
+  */
+ enum {
++	TRACE_EVENT_FL_REF_MAX		= (1 << TRACE_EVENT_FL_REF_MAX_BIT),
+ 	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
+ 	TRACE_EVENT_FL_CAP_ANY		= (1 << TRACE_EVENT_FL_CAP_ANY_BIT),
+ 	TRACE_EVENT_FL_NO_SET_FILTER	= (1 << TRACE_EVENT_FL_NO_SET_FILTER_BIT),
+@@ -220,6 +224,8 @@ enum {
+ 	TRACE_EVENT_FL_WAS_ENABLED	= (1 << TRACE_EVENT_FL_WAS_ENABLED_BIT),
+ };
+ 
++#define TRACE_EVENT_FL_REF_MASK	(TRACE_EVENT_FL_REF_MAX - 1)
++
+ struct ftrace_event_call {
+ 	struct list_head	list;
+ 	struct ftrace_event_class *class;
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 7d85429..16f3236 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -391,6 +391,23 @@ static void __get_system_dir(struct ftrace_subsystem_dir *dir)
+ 	__get_system(dir->subsystem);
+ }
+ 
++static int ftrace_event_call_get(struct ftrace_event_call *call)
++{
++	if ((call->flags & TRACE_EVENT_FL_REF_MASK) == TRACE_EVENT_FL_REF_MAX - 1)
++		return -EBUSY;
++
++	call->flags++;
++	return 0;
++}
++
++static void ftrace_event_call_put(struct ftrace_event_call *call)
++{
++	if (WARN_ON_ONCE(!(call->flags & TRACE_EVENT_FL_REF_MASK)))
++		return;
++
++	call->flags--;
++}
++
+ static void __put_system_dir(struct ftrace_subsystem_dir *dir)
+ {
+ 	WARN_ON_ONCE(dir->ref_count == 0);
+@@ -424,7 +441,15 @@ static int tracing_open_generic_file(struct inode *inode, struct file *filp)
+ 
+ 	ret = tracing_open_generic(inode, filp);
+ 	if (ret < 0)
+-		trace_array_put(tr);
++		goto fail;
++
++	ret = ftrace_event_call_get(file->event_call);
++	if (ret < 0)
++		goto fail;
++
++	return 0;
++ fail:
++	trace_array_put(tr);
+ 	return ret;
+ }
+ 
+@@ -433,12 +458,40 @@ static int tracing_release_generic_file(struct inode *inode, struct file *filp)
+ 	struct ftrace_event_file *file = inode->i_private;
+ 	struct trace_array *tr = file->tr;
+ 
++	ftrace_event_call_put(file->event_call);
+ 	trace_array_put(tr);
+ 
+ 	return 0;
+ }
+ 
+ /*
++ * Open and update call ref count.
++ * Must have ftrace_event_call passed in.
++ */
++static int tracing_open_generic_call(struct inode *inode, struct file *filp)
++{
++	struct ftrace_event_call *call = inode->i_private;
++
++	return ftrace_event_call_get(call);
++}
++
++static int tracing_release_generic_call(struct inode *inode, struct file *filp)
++{
++	struct ftrace_event_call *call = inode->i_private;
++
++	ftrace_event_call_put(call);
++	return 0;
++}
++
++static int tracing_seq_release_call(struct inode *inode, struct file *filp)
++{
++	struct ftrace_event_call *call = inode->i_private;
++
++	ftrace_event_call_put(call);
++	return seq_release(inode, filp);
++}
++
++/*
+  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
+  */
+ static int
+@@ -949,10 +1002,16 @@ static int trace_format_open(struct inode *inode, struct file *file)
+ 	struct seq_file *m;
+ 	int ret;
+ 
+-	ret = seq_open(file, &trace_format_seq_ops);
++	ret = ftrace_event_call_get(call);
+ 	if (ret < 0)
+ 		return ret;
+ 
++	ret = seq_open(file, &trace_format_seq_ops);
++	if (ret < 0) {
++		ftrace_event_call_put(call);
++		return ret;
++	}
++
+ 	m = file->private_data;
+ 	m->private = call;
+ 
+@@ -1260,20 +1319,22 @@ static const struct file_operations ftrace_event_format_fops = {
+ 	.open = trace_format_open,
+ 	.read = seq_read,
+ 	.llseek = seq_lseek,
+-	.release = seq_release,
++	.release = tracing_seq_release_call,
+ };
+ 
+ static const struct file_operations ftrace_event_id_fops = {
+-	.open = tracing_open_generic,
++	.open = tracing_open_generic_call,
+ 	.read = event_id_read,
+ 	.llseek = default_llseek,
++	.release = tracing_release_generic_call,
+ };
+ 
+ static const struct file_operations ftrace_event_filter_fops = {
+-	.open = tracing_open_generic,
++	.open = tracing_open_generic_call,
+ 	.read = event_filter_read,
+ 	.write = event_filter_write,
+ 	.llseek = default_llseek,
++	.release = tracing_release_generic_call,
+ };
+ 
+ static const struct file_operations ftrace_subsystem_filter_fops = {
 
-Thank to Thomas Gleixner, Andi Kleen and Linus for their valuable
-input in shaping this patchset.
-
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-
-Waiman Long (25):
-  spinlock: A new lockref structure for lockless update of refcount
-  spinlock: Enable x86 architecture to do lockless refcount update
-  dcache: Enable lockless update of d_count in dentry structure
-  powerpc: Change how dentry's d_lock field is accessed
-  infiniband: Change how dentry's d_lock field is accessed
-  9p-fs: Change how dentry's d_lock field is accessed
-  afs-fs: Change how dentry's d_lock field is accessed
-  auto-fs: Change how dentry's d_lock and d_count fields are accessed
-  ceph-fs: Change how dentry's d_lock and d_count fields are accessed
-  cifs: Change how dentry's d_lock field is accessed
-  coda-fs: Change how dentry's d_lock and d_count fields are accessed
-  config-fs: Change how dentry's d_lock and d_count fields are accessed
-  vfs: Change how dentry's d_lock and d_count fields are accessed
-  ecrypt-fs: Change how dentry's d_count field is accessed
-  export-fs: Change how dentry's d_lock field is accessed
-  vfat: Change how dentry's d_lock field is accessed
-  file locking: Change how dentry's d_lock and d_count fields are
-    accessed
-  ncp-fs: Change how dentry's d_lock field is accessed
-  nfs: Change how dentry's d_lock and d_count fields are accessed
-  nilfs2: Change how dentry's d_count field is accessed
-  fsnotify: Change how dentry's d_lock field is accessed
-  ocfs2: Change how dentry's d_lock field is accessed
-  cgroup: Change how dentry's d_lock field is accessed
-  sunrpc: Change how dentry's d_lock field is accessed
-  selinux: Change how dentry's d_lock field is accessed
-
- arch/powerpc/platforms/cell/spufs/inode.c |    6 +-
- arch/x86/Kconfig                          |    3 +
- arch/x86/include/asm/spinlock_refcount.h  |    1 +
- drivers/infiniband/hw/ipath/ipath_fs.c    |    6 +-
- drivers/infiniband/hw/qib/qib_fs.c        |    6 +-
- fs/9p/fid.c                               |   14 +-
- fs/afs/dir.c                              |    4 +-
- fs/autofs4/autofs_i.h                     |   24 +-
- fs/autofs4/expire.c                       |   48 ++--
- fs/autofs4/root.c                         |   14 +-
- fs/ceph/caps.c                            |    8 +-
- fs/ceph/debugfs.c                         |    8 +-
- fs/ceph/dir.c                             |   34 ++--
- fs/ceph/export.c                          |    4 +-
- fs/ceph/inode.c                           |   24 +-
- fs/ceph/mds_client.c                      |   22 +-
- fs/cifs/dir.c                             |   10 +-
- fs/coda/cache.c                           |    4 +-
- fs/coda/dir.c                             |    4 +-
- fs/configfs/configfs_internal.h           |    4 +-
- fs/configfs/dir.c                         |    2 +-
- fs/configfs/inode.c                       |    6 +-
- fs/dcache.c                               |  324 +++++++++++++++--------------
- fs/dcookies.c                             |    8 +-
- fs/ecryptfs/inode.c                       |    2 +-
- fs/exportfs/expfs.c                       |    8 +-
- fs/fat/namei_vfat.c                       |    4 +-
- fs/fs-writeback.c                         |    4 +-
- fs/libfs.c                                |   36 ++--
- fs/locks.c                                |    2 +-
- fs/namei.c                                |   28 ++--
- fs/namespace.c                            |   10 +-
- fs/ncpfs/dir.c                            |    6 +-
- fs/ncpfs/ncplib_kernel.h                  |    8 +-
- fs/nfs/dir.c                              |   14 +-
- fs/nfs/getroot.c                          |    8 +-
- fs/nfs/namespace.c                        |   16 +-
- fs/nfs/unlink.c                           |   22 +-
- fs/nilfs2/super.c                         |    2 +-
- fs/notify/fsnotify.c                      |    8 +-
- fs/notify/vfsmount_mark.c                 |   24 +-
- fs/ocfs2/dcache.c                         |    6 +-
- include/asm-generic/spinlock_refcount.h   |   98 +++++++++
- include/linux/dcache.h                    |   52 ++++--
- include/linux/fs.h                        |    4 +-
- include/linux/fsnotify_backend.h          |    6 +-
- include/linux/spinlock_refcount.h         |  159 ++++++++++++++
- kernel/Kconfig.locks                      |    5 +
- kernel/cgroup.c                           |   10 +-
- lib/Makefile                              |    2 +
- lib/spinlock_refcount.c                   |  229 ++++++++++++++++++++
- net/sunrpc/rpc_pipe.c                     |    6 +-
- security/selinux/selinuxfs.c              |   14 +-
- 53 files changed, 958 insertions(+), 423 deletions(-)
- create mode 100644 arch/x86/include/asm/spinlock_refcount.h
- create mode 100644 include/asm-generic/spinlock_refcount.h
- create mode 100644 include/linux/spinlock_refcount.h
- create mode 100644 lib/spinlock_refcount.c
 
