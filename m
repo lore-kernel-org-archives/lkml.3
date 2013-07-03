@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab3GCOXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:23:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35703 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933085Ab3GCOW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933092Ab3GCOW1 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 3 Jul 2013 10:22:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35651 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932915Ab3GCOWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:22:22 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 13/13] sched: Account for the number of preferred tasks running on a node when selecting a preferred node
-Date: Wed,  3 Jul 2013 15:21:40 +0100
-Message-Id: <1372861300-9973-14-git-send-email-mgorman@suse.de>
+Subject: [PATCH 07/13] sched: Split accounting of NUMA hinting faults that pass two-stage filter
+Date: Wed,  3 Jul 2013 15:21:34 +0100
+Message-Id: <1372861300-9973-8-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1372861300-9973-1-git-send-email-mgorman@suse.de>
 References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
@@ -22,133 +22,229 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is preferred that tasks always run local to their memory but it is
-not optimal if that node is compute overloaded and failing to get
-access to a CPU. This would compete with the load balancer trying to
-move tasks off and NUMA balancing moving it back.
+Ideally it would be possible to distinguish between NUMA hinting faults
+that are private to a task and those that are shared. This would require
+that the last task that accessed a page for a hinting fault would be
+recorded which would increase the size of struct page. Instead this patch
+approximates private pages by assuming that faults that pass the two-stage
+filter are private pages and all others are shared. The preferred NUMA
+node is then selected based on where the maximum number of approximately
+private faults were measured. Shared faults are not taken into
+consideration for a few reasons.
 
-Ultimately, it will be required that the compute load be calculated
-of each node and minimise that as well as minimising the number of
-remote accesses until the optimal balance point is reached. Begin
-this process by simply accounting for the number of tasks that are
-running on their preferred node. When deciding what node to place
-a task on, do not place a task on a node that has more preferred
-placement tasks than there are CPUs.
+First, if there are many tasks sharing the page then they'll all move
+towards the same node. The node will be compute overloaded and then
+scheduled away later only to bounce back again. Alternatively the shared
+tasks would just bounce around nodes because the fault information is
+effectively noise. Either way accounting for shared faults the same as
+private faults may result in lower performance overall.
+
+The second reason is based on a hypothetical workload that has a small
+number of very important, heavily accessed private pages but a large shared
+array. The shared array would dominate the number of faults and be selected
+as a preferred node even though it's the wrong decision.
+
+The third reason is that multiple threads in a process will race each
+other to fault the shared page making the fault information unreliable.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c  | 45 ++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched/sched.h |  4 ++++
- 2 files changed, 46 insertions(+), 3 deletions(-)
+ include/linux/sched.h |  4 ++--
+ kernel/sched/fair.c   | 30 +++++++++++++++++++++---------
+ mm/huge_memory.c      |  7 ++++---
+ mm/memory.c           |  9 ++++++---
+ 4 files changed, 33 insertions(+), 17 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 82a6136..a41edea 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1600,10 +1600,10 @@ struct task_struct {
+ #define tsk_cpus_allowed(tsk) (&(tsk)->cpus_allowed)
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+-extern void task_numa_fault(int node, int pages, bool migrated);
++extern void task_numa_fault(int last_node, int node, int pages, bool migrated);
+ extern void set_numabalancing_state(bool enabled);
+ #else
+-static inline void task_numa_fault(int node, int pages, bool migrated)
++static inline void task_numa_fault(int last_node, int node, int pages, bool migrated)
+ {
+ }
+ static inline void set_numabalancing_state(bool enabled)
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 3c796b0..9ffdff3 100644
+index b9139be..a66f2bb 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -777,6 +777,18 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
-  * Scheduling class queueing methods:
-  */
- 
-+static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
-+{
-+	rq->nr_preferred_running +=
-+			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
-+}
-+
-+static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
-+{
-+	rq->nr_preferred_running -=
-+			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
-+}
-+
- #ifdef CONFIG_NUMA_BALANCING
- /*
-  * Approximate time to scan a full NUMA task in ms. The task scan period is
-@@ -865,6 +877,21 @@ static inline int task_faults_idx(int nid, int priv)
- 	return 2 * nid + priv;
+@@ -831,6 +831,11 @@ find_idlest_cpu_node(int this_cpu, int nid)
+ 	return idlest_cpu;
  }
  
-+/* Returns true if the given node is compute overloaded */
-+static bool sched_numa_overloaded(int nid)
++static inline int task_faults_idx(int nid, int priv)
 +{
-+	int nr_cpus = 0;
-+	int nr_preferred = 0;
-+	int i;
-+
-+	for_each_cpu(i, cpumask_of_node(nid)) {
-+		nr_cpus++;
-+		nr_preferred += cpu_rq(i)->nr_preferred_running;
-+	}
-+
-+	return nr_preferred >= nr_cpus << 1;
++	return 2 * nid + priv;
 +}
 +
  static void task_numa_placement(struct task_struct *p)
  {
  	int seq, nid, max_nid = 0;
-@@ -892,7 +919,7 @@ static void task_numa_placement(struct task_struct *p)
+@@ -847,13 +852,19 @@ static void task_numa_placement(struct task_struct *p)
+ 	/* Find the node with the highest number of faults */
+ 	for (nid = 0; nid < nr_node_ids; nid++) {
+ 		unsigned long faults;
++		int priv, i;
  
- 		/* Find maximum private faults */
- 		faults = p->numa_faults[task_faults_idx(nid, 1)];
--		if (faults > max_faults) {
-+		if (faults > max_faults && !sched_numa_overloaded(nid)) {
+-		/* Decay existing window and copy faults since last scan */
+-		p->numa_faults[nid] >>= 1;
+-		p->numa_faults[nid] += p->numa_faults_buffer[nid];
+-		p->numa_faults_buffer[nid] = 0;
++		for (priv = 0; priv < 2; priv++) {
++			i = task_faults_idx(nid, priv);
++
++			/* Decay existing window and copy faults since last scan */
++			p->numa_faults[i] >>= 1;
++			p->numa_faults[i] += p->numa_faults_buffer[i];
++			p->numa_faults_buffer[i] = 0;
++		}
+ 
+-		faults = p->numa_faults[nid];
++		/* Find maximum private faults */
++		faults = p->numa_faults[task_faults_idx(nid, 1)];
+ 		if (faults > max_faults) {
  			max_faults = faults;
  			max_nid = nid;
- 		}
-@@ -1144,6 +1171,14 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- static void task_tick_numa(struct rq *rq, struct task_struct *curr)
+@@ -886,16 +897,17 @@ static void task_numa_placement(struct task_struct *p)
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+-void task_numa_fault(int node, int pages, bool migrated)
++void task_numa_fault(int last_nid, int node, int pages, bool migrated)
  {
- }
-+
-+static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)
-+{
-+}
-+
-+static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)
-+{
-+}
- #endif /* CONFIG_NUMA_BALANCING */
+ 	struct task_struct *p = current;
++	int priv = (cpu_to_node(task_cpu(p)) == last_nid);
  
- static void
-@@ -1153,8 +1188,10 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 	if (!parent_entity(se))
- 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
- #ifdef CONFIG_SMP
--	if (entity_is_task(se))
-+	if (entity_is_task(se)) {
-+		account_numa_enqueue(rq_of(cfs_rq), task_of(se));
- 		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
-+	}
- #endif
- 	cfs_rq->nr_running++;
- }
-@@ -1165,8 +1202,10 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
- 	update_load_sub(&cfs_rq->load, se->load.weight);
- 	if (!parent_entity(se))
- 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
--	if (entity_is_task(se))
-+	if (entity_is_task(se)) {
-+		account_numa_dequeue(rq_of(cfs_rq), task_of(se));
- 		list_del_init(&se->group_node);
-+	}
- 	cfs_rq->nr_running--;
+ 	if (!sched_feat_numa(NUMA))
+ 		return;
+ 
+ 	/* Allocate buffer to track faults on a per-node basis */
+ 	if (unlikely(!p->numa_faults)) {
+-		int size = sizeof(*p->numa_faults) * nr_node_ids;
++		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
+ 
+ 		/* numa_faults and numa_faults_buffer share the allocation */
+ 		p->numa_faults = kzalloc(size * 2, GFP_KERNEL);
+@@ -903,7 +915,7 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 			return;
+ 
+ 		BUG_ON(p->numa_faults_buffer);
+-		p->numa_faults_buffer = p->numa_faults + nr_node_ids;
++		p->numa_faults_buffer = p->numa_faults + (2 * nr_node_ids);
+ 	}
+ 
+ 	/*
+@@ -917,7 +929,7 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 	task_numa_placement(p);
+ 
+ 	/* Record the fault, double the weight if pages were migrated */
+-	p->numa_faults_buffer[node] += pages << migrated;
++	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages << migrated;
  }
  
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 64c37a3..f05b31b 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -433,6 +433,10 @@ struct rq {
+ static void reset_ptenuma_scan(struct task_struct *p)
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index e2f7f5aa..7cd7114 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1292,7 +1292,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	struct page *page;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
+-	int target_nid;
++	int target_nid, last_nid;
+ 	int current_nid = -1;
+ 	bool migrated;
  
- 	struct list_head cfs_tasks;
+@@ -1307,6 +1307,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (current_nid == numa_node_id())
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
  
-+#ifdef CONFIG_NUMA_BALANCING
-+	unsigned long nr_preferred_running;
-+#endif
-+
- 	u64 rt_avg;
- 	u64 age_stamp;
- 	u64 idle_stamp;
++	last_nid = page_nid_last(page);
+ 	target_nid = mpol_misplaced(page, vma, haddr);
+ 	if (target_nid == -1) {
+ 		put_page(page);
+@@ -1332,7 +1333,7 @@ int do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (!migrated)
+ 		goto check_same;
+ 
+-	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
++	task_numa_fault(last_nid, target_nid, HPAGE_PMD_NR, true);
+ 	return 0;
+ 
+ check_same:
+@@ -1347,7 +1348,7 @@ clear_pmdnuma:
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
+ 	if (current_nid != -1)
+-		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
++		task_numa_fault(last_nid, current_nid, HPAGE_PMD_NR, false);
+ 	return 0;
+ }
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index ba94dec..c28bf52 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3536,7 +3536,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ {
+ 	struct page *page = NULL;
+ 	spinlock_t *ptl;
+-	int current_nid = -1;
++	int current_nid = -1, last_nid;
+ 	int target_nid;
+ 	bool migrated = false;
+ 
+@@ -3566,6 +3566,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		return 0;
+ 	}
+ 
++	last_nid = page_nid_last(page);
+ 	current_nid = page_to_nid(page);
+ 	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+@@ -3586,7 +3587,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ out:
+ 	if (current_nid != -1)
+-		task_numa_fault(current_nid, 1, migrated);
++		task_numa_fault(last_nid, current_nid, 1, migrated);
+ 	return 0;
+ }
+ 
+@@ -3602,6 +3603,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	spinlock_t *ptl;
+ 	bool numa = false;
+ 	int local_nid = numa_node_id();
++	int last_nid;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = *pmdp;
+@@ -3654,6 +3656,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		 * migrated to.
+ 		 */
+ 		curr_nid = local_nid;
++		last_nid = page_nid_last(page);
+ 		target_nid = numa_migrate_prep(page, vma, addr,
+ 					       page_to_nid(page));
+ 		if (target_nid == -1) {
+@@ -3666,7 +3669,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		migrated = migrate_misplaced_page(page, target_nid);
+ 		if (migrated)
+ 			curr_nid = target_nid;
+-		task_numa_fault(curr_nid, 1, migrated);
++		task_numa_fault(last_nid, curr_nid, 1, migrated);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
 -- 
 1.8.1.4
 
