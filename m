@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab3GCSpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:45:06 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56678 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932919Ab3GCSpB (ORCPT
+	id S933365Ab3GCSoa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:44:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5725 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933305Ab3GCSlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:45:01 -0400
-Date: Wed, 3 Jul 2013 19:44:34 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 0/8] Thunderbolt workarounds
-Message-ID: <20130703184434.GA29587@srcf.ucam.org>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
- <20130703182900.GA29079@srcf.ucam.org>
- <20130703183311.GA17340@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703183311.GA17340@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 3 Jul 2013 14:41:10 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=L4Hd8AoES0QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=KU5Rxz9A1qQA:10 a=1nSz6Ew-AAAA:8 a=KSb9T-wMAAAA:8 a=VwQbUJbxAAAA:8 a=fBeKd2HRWbP4T1pgm1MA:9 a=0kPLrQdw3YYA:10 a=dQ-OxBcGOlMA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130703184056.983685952@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 03 Jul 2013 14:40:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Takashi Iwai <tiwai@suse.de>
+Subject: [074/141] ALSA: usb-audio - Fix invalid volume resolution on Logitech HD
+ webcam c270
+References: <20130703183857.307196999@goodmis.org>
+Content-Disposition: inline; filename=0074-ALSA-usb-audio-Fix-invalid-volume-resolution-on-Logi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 11:33:11AM -0700, Greg Kroah-Hartman wrote:
-> On Wed, Jul 03, 2013 at 07:29:00PM +0100, Matthew Garrett wrote:
-> > Are there any plans to provide native support for the Thunderbolt 
-> > controller, rather than relying on system management mode?
-> 
-> For what specific hardware platform?  For the ones that this patchset
-> controls, the OS doesn't have access to the Thunderbolt controller as
-> far as I can tell, it all happens through the ACPI and PCI hotplug
-> interface.
+3.6.11.6 stable review patch.
+If anyone has any objections, please let me know.
 
-Given that there exist platforms without the SMM implementation, there's 
-presumably either a controller or chipset register that controls whether 
-SMIs are generated in response to Thunderbolt events.
+------------------
 
+From: Takashi Iwai <tiwai@suse.de>
+
+[ Upstream commit 11e7064f35bb87da8f427d1aa4bbd8b7473a3993 ]
+
+USB audio driver spews an error message when probing Logitech HD
+webcam c270:
+  ALSA mixer.c:1300 usb_audio: Warning! Unlikely big volume range (=6144), cval->res is probably wrong.
+  ALSA mixer.c:1304 usb_audio: [5] FU [Mic Capture Volume] ch = 1, val = 1536/7680/1
+
+Obviously the device needs a fixed volume resolution (cval->res = 384)
+like other Logitech devices.
+
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=821735
+
+Reported-and-tested-by: Cristian Rodríguez <crrodriguez@opensuse.org>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ sound/usb/mixer.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
+index 900bf42..9a9da0a 100644
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -842,6 +842,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
++	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+ 	case USB_ID(0x046d, 0x0991):
+ 	/* Most audio usb devices lie about volume resolution.
+ 	 * Most Logitech webcams have res = 384.
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.10.4
+
+
