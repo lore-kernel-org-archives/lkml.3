@@ -1,77 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab3GCLzz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:55:55 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:39189 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503Ab3GCLzy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:55:54 -0400
+	id S1756029Ab3GCMGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 08:06:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58287 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755129Ab3GCMGx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 08:06:53 -0400
+Message-ID: <51D413D9.8040604@suse.cz>
+Date: Wed, 03 Jul 2013 14:06:49 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1372072858-6559-3-git-send-email-yadi.brar@samsung.com>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-	<1372072858-6559-3-git-send-email-yadi.brar@samsung.com>
-Date: Wed, 3 Jul 2013 17:25:54 +0530
-Message-ID: <CAK9yfHy1fFdU1zGcxMsoeYnz8tb-JktSYBScc+Soqge8Q-++Rw@mail.gmail.com>
-Subject: Re: [PATCH 2/4] regulator: s2mps11: Implement set_voltage_time_sel()
- ops for bucks
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Cc: linux-kernel@vger.kernel.org, yadi.brar01@gmail.com, sbkim73@samsung.com,
-        broonie@kernel.org, lgirdwood@gmail.com, sameo@linux.intel.com,
-        rob.herring@calxeda.com, grant.likely@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Tang <dt.tangr@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org
+Subject: Re: [PATCH 1/2] Fix a build warning in scripts/sortextable.h
+References: <1370745235-12951-1-git-send-email-dt.tangr@gmail.com>
+In-Reply-To: <1370745235-12951-1-git-send-email-dt.tangr@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 June 2013 16:50, Yadwinder Singh Brar <yadi.brar@samsung.com> wrote:
-> Currently driver uses local struct s2mps11_info to store ramp rate for bucks
-> whic its getting through platform data, so instead of using regulator
-> constraints it should use s2mps11_info to calculate ramp delay.
->
-> Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-[snip]
-> +
-> +       switch (rdev->desc->id) {
-> +       case S2MPS11_BUCK2:
-> +               if (!s2mps11->buck2_ramp)
-> +                       return 0;
-> +               ramp_delay = s2mps11->ramp_delay2;
-> +               break;
-> +       case S2MPS11_BUCK3:
-> +               if (!s2mps11->buck3_ramp)
-> +                       return 0;
-> +               ramp_delay = s2mps11->ramp_delay34;
-> +               break;
-> +       case S2MPS11_BUCK4:
-> +               if (!s2mps11->buck4_ramp)
-> +                       return 0;
-> +               ramp_delay = s2mps11->ramp_delay34;
-> +               break;
-> +       case S2MPS11_BUCK5:
-> +               ramp_delay = s2mps11->ramp_delay5;
-> +               break;
-> +       case S2MPS11_BUCK6:
-> +               if (!s2mps11->buck6_ramp)
-> +                       return 0;
-> +       case S2MPS11_BUCK1:
+Added David Daney to CC.
 
-nit: Why not have this at the beginning?
+On 9.6.2013 04:33, Daniel Tang wrote:
+> The pointer passed to the _r() macro does not always match the type
+> of the function that it is aliasing and raises several of the following
+> warnings at compile time:
+> 
+> warning: passing argument 1 of ‘r8’ from incompatible pointer type
 
-> +               ramp_delay = s2mps11->ramp_delay16;
-> +               break;
-> +       case S2MPS11_BUCK7:
-> +       case S2MPS11_BUCK8:
-> +       case S2MPS11_BUCK10:
-> +               ramp_delay = s2mps11->ramp_delay7810;
-> +               break;
-> +       case S2MPS11_BUCK9:
-> +               ramp_delay = s2mps11->ramp_delay9;
-> +       }
+In what environment (arch, compiler, glibc) are you seeing this?
 
-How about adding a break statement above?
+Michal
 
--- 
-With warm regards,
-Sachin
+> Fixed by casting the pointers to (void *) so they work with both the
+> 32bit and 64bit code.
+> 
+> Signed-off-by: Daniel Tang <dt.tangr@gmail.com>
+> ---
+>  scripts/sortextable.h | 29 +++++++++++++++--------------
+>  1 file changed, 15 insertions(+), 14 deletions(-)
+> 
+> diff --git a/scripts/sortextable.h b/scripts/sortextable.h
+> index f5eb43d..0a38fbd 100644
+> --- a/scripts/sortextable.h
+> +++ b/scripts/sortextable.h
+> @@ -110,9 +110,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+>  	int i;
+>  	int idx;
+>  
+> -	shdr = (Elf_Shdr *)((char *)ehdr + _r(&ehdr->e_shoff));
+> +	shdr = (Elf_Shdr *)((char *)ehdr + _r((void *)&ehdr->e_shoff));
+>  	shstrtab_sec = shdr + r2(&ehdr->e_shstrndx);
+> -	secstrtab = (const char *)ehdr + _r(&shstrtab_sec->sh_offset);
+> +	secstrtab = (const char *)ehdr + _r((void *)&shstrtab_sec->sh_offset);
+>  	for (i = 0; i < r2(&ehdr->e_shnum); i++) {
+>  		idx = r(&shdr[i].sh_name);
+>  		if (strcmp(secstrtab + idx, "__ex_table") == 0) {
+> @@ -122,8 +122,8 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+>  		if ((r(&shdr[i].sh_type) == SHT_REL ||
+>  		     r(&shdr[i].sh_type) == SHT_RELA) &&
+>  		    r(&shdr[i].sh_info) == extab_index) {
+> -			relocs = (void *)ehdr + _r(&shdr[i].sh_offset);
+> -			relocs_size = _r(&shdr[i].sh_size);
+> +			relocs = (void *)ehdr + _r((void *)&shdr[i].sh_offset);
+> +			relocs_size = _r((void *)&shdr[i].sh_size);
+>  		}
+>  		if (strcmp(secstrtab + idx, ".symtab") == 0)
+>  			symtab_sec = shdr + i;
+> @@ -142,14 +142,14 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+>  		fprintf(stderr,	"no __ex_table in  file: %s\n", fname);
+>  		fail_file();
+>  	}
+> -	strtab = (const char *)ehdr + _r(&strtab_sec->sh_offset);
+> +	strtab = (const char *)ehdr + _r((void *)&strtab_sec->sh_offset);
+>  
+> -	extab_image = (void *)ehdr + _r(&extab_sec->sh_offset);
+> +	extab_image = (void *)ehdr + _r((void *)&extab_sec->sh_offset);
+>  
+>  	if (custom_sort) {
+> -		custom_sort(extab_image, _r(&extab_sec->sh_size));
+> +		custom_sort(extab_image, _r((void *)&extab_sec->sh_size));
+>  	} else {
+> -		int num_entries = _r(&extab_sec->sh_size) / extable_ent_size;
+> +		int num_entries = _r((void *)&extab_sec->sh_size) / extable_ent_size;
+>  		qsort(extab_image, num_entries,
+>  		      extable_ent_size, compare_extable);
+>  	}
+> @@ -159,12 +159,13 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+>  
+>  	/* find main_extable_sort_needed */
+>  	sort_needed_sym = NULL;
+> -	for (i = 0; i < _r(&symtab_sec->sh_size) / sizeof(Elf_Sym); i++) {
+> -		sym = (void *)ehdr + _r(&symtab_sec->sh_offset);
+> +	for (i = 0; i < _r((void *)&symtab_sec->sh_size) / sizeof(Elf_Sym); i++)
+> +	{
+> +		sym = (void *)ehdr + _r((void *)&symtab_sec->sh_offset);
+>  		sym += i;
+>  		if (ELF_ST_TYPE(sym->st_info) != STT_OBJECT)
+>  			continue;
+> -		idx = r(&sym->st_name);
+> +		idx = r((void *)&sym->st_name);
+>  		if (strcmp(strtab + idx, "main_extable_sort_needed") == 0) {
+>  			sort_needed_sym = sym;
+>  			break;
+> @@ -178,9 +179,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+>  	}
+>  	sort_needed_sec = &shdr[r2(&sort_needed_sym->st_shndx)];
+>  	sort_done_location = (void *)ehdr +
+> -		_r(&sort_needed_sec->sh_offset) +
+> -		_r(&sort_needed_sym->st_value) -
+> -		_r(&sort_needed_sec->sh_addr);
+> +		_r((void *)&sort_needed_sec->sh_offset) +
+> +		_r((void *)&sort_needed_sym->st_value) -
+> +		_r((void *)&sort_needed_sec->sh_addr);
+>  
+>  #if 0
+>  	printf("sort done marker at %lx\n",
+> 
+
