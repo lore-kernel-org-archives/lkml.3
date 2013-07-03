@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965359Ab3GCUVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 16:21:10 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:47438 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964882Ab3GCUVG (ORCPT
+	id S965430Ab3GCUVQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 16:21:16 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:21118 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964853Ab3GCUVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 16:21:06 -0400
+	Wed, 3 Jul 2013 16:21:11 -0400
 From: Waiman Long <Waiman.Long@hp.com>
-Cc: Ian Kent <raven@themaw.net>, autofs@vger.kernel.org,
+Cc: Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org,
         Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
@@ -17,9 +17,9 @@ Cc: Ian Kent <raven@themaw.net>, autofs@vger.kernel.org,
         Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v3 08/25] auto-fs: Change how dentry's d_lock and d_count fields are accessed
-Date: Wed,  3 Jul 2013 16:20:51 -0400
-Message-Id: <1372882851-22781-1-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v3 09/25] ceph-fs: Change how dentry's d_lock and d_count fields are accessed
+Date: Wed,  3 Jul 2013 16:20:57 -0400
+Message-Id: <1372882857-22813-1-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
         Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
@@ -37,286 +37,404 @@ There is no change in logic and everything should just work.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- fs/autofs4/autofs_i.h |   24 ++++++++++++------------
- fs/autofs4/expire.c   |   48 ++++++++++++++++++++++++------------------------
- fs/autofs4/root.c     |   14 +++++++-------
- 3 files changed, 43 insertions(+), 43 deletions(-)
+ fs/ceph/caps.c       |    8 ++++----
+ fs/ceph/debugfs.c    |    8 ++++----
+ fs/ceph/dir.c        |   34 +++++++++++++++++-----------------
+ fs/ceph/export.c     |    4 ++--
+ fs/ceph/inode.c      |   24 ++++++++++++------------
+ fs/ceph/mds_client.c |   22 +++++++++++-----------
+ 6 files changed, 50 insertions(+), 50 deletions(-)
 
-diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 3f1128b..dc7df32 100644
---- a/fs/autofs4/autofs_i.h
-+++ b/fs/autofs4/autofs_i.h
-@@ -198,9 +198,9 @@ static inline void __managed_dentry_set_automount(struct dentry *dentry)
- 
- static inline void managed_dentry_set_automount(struct dentry *dentry)
- {
+diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
+index da0f9b8..4703347 100644
+--- a/fs/ceph/caps.c
++++ b/fs/ceph/caps.c
+@@ -3098,14 +3098,14 @@ int ceph_encode_dentry_release(void **p, struct dentry *dentry,
+ 	 * doesn't have to be perfect; the mds will revoke anything we don't
+ 	 * release.
+ 	 */
 -	spin_lock(&dentry->d_lock);
 +	d_lock(dentry);
- 	__managed_dentry_set_automount(dentry);
+ 	if (di->lease_session && di->lease_session->s_mds == mds)
+ 		force = 1;
 -	spin_unlock(&dentry->d_lock);
 +	d_unlock(dentry);
- }
  
- static inline void __managed_dentry_clear_automount(struct dentry *dentry)
-@@ -210,9 +210,9 @@ static inline void __managed_dentry_clear_automount(struct dentry *dentry)
+ 	ret = ceph_encode_inode_release(p, dir, mds, drop, unless, force);
  
- static inline void managed_dentry_clear_automount(struct dentry *dentry)
- {
 -	spin_lock(&dentry->d_lock);
 +	d_lock(dentry);
- 	__managed_dentry_clear_automount(dentry);
+ 	if (ret && di->lease_session && di->lease_session->s_mds == mds) {
+ 		dout("encode_dentry_release %p mds%d seq %d\n",
+ 		     dentry, mds, (int)di->lease_seq);
+@@ -3115,6 +3115,6 @@ int ceph_encode_dentry_release(void **p, struct dentry *dentry,
+ 		rel->dname_seq = cpu_to_le32(di->lease_seq);
+ 		__ceph_mdsc_drop_dentry_lease(dentry);
+ 	}
 -	spin_unlock(&dentry->d_lock);
 +	d_unlock(dentry);
+ 	return ret;
  }
+diff --git a/fs/ceph/debugfs.c b/fs/ceph/debugfs.c
+index 6d59006..3575341 100644
+--- a/fs/ceph/debugfs.c
++++ b/fs/ceph/debugfs.c
+@@ -82,13 +82,13 @@ static int mdsc_show(struct seq_file *s, void *p)
+ 						    &pathbase, 0);
+ 			if (IS_ERR(path))
+ 				path = NULL;
+-			spin_lock(&req->r_dentry->d_lock);
++			d_lock(req->r_dentry);
+ 			seq_printf(s, " #%llx/%.*s (%s)",
+ 				   ceph_ino(req->r_dentry->d_parent->d_inode),
+ 				   req->r_dentry->d_name.len,
+ 				   req->r_dentry->d_name.name,
+ 				   path ? path : "");
+-			spin_unlock(&req->r_dentry->d_lock);
++			d_unlock(req->r_dentry);
+ 			kfree(path);
+ 		} else if (req->r_path1) {
+ 			seq_printf(s, " #%llx/%s", req->r_ino1.ino,
+@@ -100,13 +100,13 @@ static int mdsc_show(struct seq_file *s, void *p)
+ 						    &pathbase, 0);
+ 			if (IS_ERR(path))
+ 				path = NULL;
+-			spin_lock(&req->r_old_dentry->d_lock);
++			d_lock(req->r_old_dentry);
+ 			seq_printf(s, " #%llx/%.*s (%s)",
+ 			   ceph_ino(req->r_old_dentry_dir),
+ 				   req->r_old_dentry->d_name.len,
+ 				   req->r_old_dentry->d_name.name,
+ 				   path ? path : "");
+-			spin_unlock(&req->r_old_dentry->d_lock);
++			d_unlock(req->r_old_dentry);
+ 			kfree(path);
+ 		} else if (req->r_path2) {
+ 			if (req->r_ino2.ino)
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index f02d82b..91c420d 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -44,7 +44,7 @@ int ceph_init_dentry(struct dentry *dentry)
+ 	if (!di)
+ 		return -ENOMEM;          /* oh well */
  
- static inline void __managed_dentry_set_transit(struct dentry *dentry)
-@@ -222,9 +222,9 @@ static inline void __managed_dentry_set_transit(struct dentry *dentry)
- 
- static inline void managed_dentry_set_transit(struct dentry *dentry)
- {
 -	spin_lock(&dentry->d_lock);
 +	d_lock(dentry);
- 	__managed_dentry_set_transit(dentry);
+ 	if (dentry->d_fsdata) {
+ 		/* lost a race */
+ 		kmem_cache_free(ceph_dentry_cachep, di);
+@@ -66,7 +66,7 @@ int ceph_init_dentry(struct dentry *dentry)
+ 	dentry->d_fsdata = di;
+ 	ceph_dentry_lru_add(dentry);
+ out_unlock:
 -	spin_unlock(&dentry->d_lock);
 +	d_unlock(dentry);
+ 	return 0;
  }
  
- static inline void __managed_dentry_clear_transit(struct dentry *dentry)
-@@ -234,9 +234,9 @@ static inline void __managed_dentry_clear_transit(struct dentry *dentry)
- 
- static inline void managed_dentry_clear_transit(struct dentry *dentry)
- {
--	spin_lock(&dentry->d_lock);
-+	d_lock(dentry);
- 	__managed_dentry_clear_transit(dentry);
--	spin_unlock(&dentry->d_lock);
-+	d_unlock(dentry);
- }
- 
- static inline void __managed_dentry_set_managed(struct dentry *dentry)
-@@ -246,9 +246,9 @@ static inline void __managed_dentry_set_managed(struct dentry *dentry)
- 
- static inline void managed_dentry_set_managed(struct dentry *dentry)
- {
--	spin_lock(&dentry->d_lock);
-+	d_lock(dentry);
- 	__managed_dentry_set_managed(dentry);
--	spin_unlock(&dentry->d_lock);
-+	d_unlock(dentry);
- }
- 
- static inline void __managed_dentry_clear_managed(struct dentry *dentry)
-@@ -258,9 +258,9 @@ static inline void __managed_dentry_clear_managed(struct dentry *dentry)
- 
- static inline void managed_dentry_clear_managed(struct dentry *dentry)
- {
--	spin_lock(&dentry->d_lock);
-+	d_lock(dentry);
- 	__managed_dentry_clear_managed(dentry);
--	spin_unlock(&dentry->d_lock);
-+	d_unlock(dentry);
- }
- 
- /* Initializing function */
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index 13ddec9..0a7287c 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -88,7 +88,7 @@ static struct dentry *get_next_positive_subdir(struct dentry *prev,
- 	struct dentry *q;
- 
- 	spin_lock(&sbi->lookup_lock);
--	spin_lock(&root->d_lock);
-+	d_lock(root);
- 
- 	if (prev)
- 		next = prev->d_u.d_child.next;
-@@ -99,7 +99,7 @@ static struct dentry *get_next_positive_subdir(struct dentry *prev,
- 
- cont:
- 	if (next == &root->d_subdirs) {
--		spin_unlock(&root->d_lock);
-+		d_unlock(root);
- 		spin_unlock(&sbi->lookup_lock);
- 		dput(prev);
+@@ -77,12 +77,12 @@ struct inode *ceph_get_dentry_parent_inode(struct dentry *dentry)
+ 	if (!dentry)
  		return NULL;
-@@ -107,16 +107,16 @@ cont:
  
- 	q = list_entry(next, struct dentry, d_u.d_child);
- 
--	spin_lock_nested(&q->d_lock, DENTRY_D_LOCK_NESTED);
-+	d_lock_nested(q, DENTRY_D_LOCK_NESTED);
- 	/* Already gone or negative dentry (under construction) - try next */
--	if (q->d_count == 0 || !simple_positive(q)) {
--		spin_unlock(&q->d_lock);
-+	if (d_ret_count(q) == 0 || !simple_positive(q)) {
-+		d_unlock(q);
- 		next = q->d_u.d_child.next;
- 		goto cont;
+-	spin_lock(&dentry->d_lock);
++	d_lock(dentry);
+ 	if (!IS_ROOT(dentry)) {
+ 		inode = dentry->d_parent->d_inode;
+ 		ihold(inode);
  	}
- 	dget_dlock(q);
--	spin_unlock(&q->d_lock);
--	spin_unlock(&root->d_lock);
-+	d_unlock(q);
-+	d_unlock(root);
- 	spin_unlock(&sbi->lookup_lock);
- 
- 	dput(prev);
-@@ -140,7 +140,7 @@ static struct dentry *get_next_positive_dentry(struct dentry *prev,
- 	spin_lock(&sbi->lookup_lock);
- relock:
- 	p = prev;
--	spin_lock(&p->d_lock);
-+	d_lock(p);
- again:
- 	next = p->d_subdirs.next;
- 	if (next == &p->d_subdirs) {
-@@ -148,19 +148,19 @@ again:
- 			struct dentry *parent;
- 
- 			if (p == root) {
--				spin_unlock(&p->d_lock);
-+				d_unlock(p);
- 				spin_unlock(&sbi->lookup_lock);
- 				dput(prev);
- 				return NULL;
- 			}
- 
- 			parent = p->d_parent;
--			if (!spin_trylock(&parent->d_lock)) {
--				spin_unlock(&p->d_lock);
-+			if (!d_trylock(parent)) {
-+				d_unlock(p);
- 				cpu_relax();
- 				goto relock;
- 			}
--			spin_unlock(&p->d_lock);
-+			d_unlock(p);
- 			next = p->d_u.d_child.next;
- 			p = parent;
- 			if (next != &parent->d_subdirs)
-@@ -169,17 +169,17 @@ again:
- 	}
- 	ret = list_entry(next, struct dentry, d_u.d_child);
- 
--	spin_lock_nested(&ret->d_lock, DENTRY_D_LOCK_NESTED);
-+	d_lock_nested(ret, DENTRY_D_LOCK_NESTED);
- 	/* Negative dentry - try next */
- 	if (!simple_positive(ret)) {
--		spin_unlock(&p->d_lock);
--		lock_set_subclass(&ret->d_lock.dep_map, 0, _RET_IP_);
-+		d_unlock(p);
-+		lock_set_subclass(&d_ret_lock(ret).dep_map, 0, _RET_IP_);
- 		p = ret;
- 		goto again;
- 	}
- 	dget_dlock(ret);
--	spin_unlock(&ret->d_lock);
--	spin_unlock(&p->d_lock);
-+	d_unlock(ret);
-+	d_unlock(p);
- 	spin_unlock(&sbi->lookup_lock);
- 
- 	dput(prev);
-@@ -267,7 +267,7 @@ static int autofs4_tree_busy(struct vfsmount *mnt,
- 			else
- 				ino_count++;
- 
--			if (p->d_count > ino_count) {
-+			if (d_ret_count(p) > ino_count) {
- 				top_ino->last_used = jiffies;
- 				dput(p);
- 				return 1;
-@@ -409,7 +409,7 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
- 		if (!exp_leaves) {
- 			/* Path walk currently on this dentry? */
- 			ino_count = atomic_read(&ino->count) + 1;
--			if (dentry->d_count > ino_count)
-+			if (d_ret_count(dentry) > ino_count)
- 				goto next;
- 
- 			if (!autofs4_tree_busy(mnt, dentry, timeout, do_now)) {
-@@ -423,7 +423,7 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
- 		} else {
- 			/* Path walk currently on this dentry? */
- 			ino_count = atomic_read(&ino->count) + 1;
--			if (dentry->d_count > ino_count)
-+			if (d_ret_count(dentry) > ino_count)
- 				goto next;
- 
- 			expired = autofs4_check_leaves(mnt, dentry, timeout, do_now);
-@@ -445,11 +445,11 @@ found:
- 	init_completion(&ino->expire_complete);
- 	spin_unlock(&sbi->fs_lock);
- 	spin_lock(&sbi->lookup_lock);
--	spin_lock(&expired->d_parent->d_lock);
--	spin_lock_nested(&expired->d_lock, DENTRY_D_LOCK_NESTED);
-+	d_lock(expired->d_parent);
-+	d_lock_nested(expired, DENTRY_D_LOCK_NESTED);
- 	list_move(&expired->d_parent->d_subdirs, &expired->d_u.d_child);
--	spin_unlock(&expired->d_lock);
--	spin_unlock(&expired->d_parent->d_lock);
-+	d_unlock(expired);
-+	d_unlock(expired->d_parent);
- 	spin_unlock(&sbi->lookup_lock);
- 	return expired;
+-	spin_unlock(&dentry->d_lock);
++	d_unlock(dentry);
+ 	return inode;
  }
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 085da86..e33a0f6 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -176,10 +176,10 @@ static struct dentry *autofs4_lookup_active(struct dentry *dentry)
- 		ino = list_entry(p, struct autofs_info, active);
- 		active = ino->dentry;
  
--		spin_lock(&active->d_lock);
-+		d_lock(active);
+@@ -129,7 +129,7 @@ static int __dcache_readdir(struct file *filp,
+ 	dout("__dcache_readdir %p at %llu (last %p)\n", dir, filp->f_pos,
+ 	     last);
  
- 		/* Already gone? */
--		if (active->d_count == 0)
-+		if (d_ret_count(active) == 0)
- 			goto next;
+-	spin_lock(&parent->d_lock);
++	d_lock(parent);
  
- 		qstr = &active->d_name;
-@@ -196,12 +196,12 @@ static struct dentry *autofs4_lookup_active(struct dentry *dentry)
- 
- 		if (d_unhashed(active)) {
- 			dget_dlock(active);
--			spin_unlock(&active->d_lock);
-+			d_unlock(active);
- 			spin_unlock(&sbi->lookup_lock);
- 			return active;
+ 	/* start at beginning? */
+ 	if (filp->f_pos == 2 || last == NULL ||
+@@ -153,7 +153,7 @@ more:
+ 			fi->flags |= CEPH_F_ATEND;
+ 			goto out_unlock;
  		}
- next:
--		spin_unlock(&active->d_lock);
-+		d_unlock(active);
+-		spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
++		d_lock_nested(dentry, DENTRY_D_LOCK_NESTED);
+ 		if (!d_unhashed(dentry) && dentry->d_inode &&
+ 		    ceph_snap(dentry->d_inode) != CEPH_SNAPDIR &&
+ 		    ceph_ino(dentry->d_inode) != CEPH_INO_CEPH &&
+@@ -163,15 +163,15 @@ more:
+ 		     dentry->d_name.len, dentry->d_name.name, di->offset,
+ 		     filp->f_pos, d_unhashed(dentry) ? " unhashed" : "",
+ 		     !dentry->d_inode ? " null" : "");
+-		spin_unlock(&dentry->d_lock);
++		d_unlock(dentry);
+ 		p = p->prev;
+ 		dentry = list_entry(p, struct dentry, d_u.d_child);
+ 		di = ceph_dentry(dentry);
  	}
- 	spin_unlock(&sbi->lookup_lock);
  
-@@ -228,7 +228,7 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
- 		ino = list_entry(p, struct autofs_info, expiring);
- 		expiring = ino->dentry;
+ 	dget_dlock(dentry);
+-	spin_unlock(&dentry->d_lock);
+-	spin_unlock(&parent->d_lock);
++	d_unlock(dentry);
++	d_unlock(parent);
  
--		spin_lock(&expiring->d_lock);
-+		d_lock(expiring);
+ 	dout(" %llu (%llu) dentry %p %.*s %p\n", di->offset, filp->f_pos,
+ 	     dentry, dentry->d_name.len, dentry->d_name.name, dentry->d_inode);
+@@ -204,12 +204,12 @@ more:
+ 		goto out;
+ 	}
  
- 		/* Bad luck, we've already been dentry_iput */
- 		if (!expiring->d_inode)
-@@ -248,12 +248,12 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
+-	spin_lock(&parent->d_lock);
++	d_lock(parent);
+ 	p = p->prev;	/* advance to next dentry */
+ 	goto more;
  
- 		if (d_unhashed(expiring)) {
- 			dget_dlock(expiring);
--			spin_unlock(&expiring->d_lock);
-+			d_unlock(expiring);
- 			spin_unlock(&sbi->lookup_lock);
- 			return expiring;
+ out_unlock:
+-	spin_unlock(&parent->d_lock);
++	d_unlock(parent);
+ out:
+ 	if (last)
+ 		dput(last);
+@@ -927,10 +927,10 @@ static int ceph_rename(struct inode *old_dir, struct dentry *old_dentry,
+  */
+ void ceph_invalidate_dentry_lease(struct dentry *dentry)
+ {
+-	spin_lock(&dentry->d_lock);
++	d_lock(dentry);
+ 	dentry->d_time = jiffies;
+ 	ceph_dentry(dentry)->lease_shared_gen = 0;
+-	spin_unlock(&dentry->d_lock);
++	d_unlock(dentry);
+ }
+ 
+ /*
+@@ -948,7 +948,7 @@ static int dentry_lease_is_valid(struct dentry *dentry)
+ 	struct inode *dir = NULL;
+ 	u32 seq = 0;
+ 
+-	spin_lock(&dentry->d_lock);
++	d_lock(dentry);
+ 	di = ceph_dentry(dentry);
+ 	if (di->lease_session) {
+ 		s = di->lease_session;
+@@ -972,7 +972,7 @@ static int dentry_lease_is_valid(struct dentry *dentry)
+ 			}
  		}
- next:
--		spin_unlock(&expiring->d_lock);
-+		d_unlock(expiring);
  	}
- 	spin_unlock(&sbi->lookup_lock);
+-	spin_unlock(&dentry->d_lock);
++	d_unlock(dentry);
  
+ 	if (session) {
+ 		ceph_mdsc_lease_send_msg(session, dir, dentry,
+@@ -1070,7 +1070,7 @@ static int ceph_snapdir_d_revalidate(struct dentry *dentry,
+  * When the VFS prunes a dentry from the cache, we need to clear the
+  * complete flag on the parent directory.
+  *
+- * Called under dentry->d_lock.
++ * Called under d_ret_lock(dentry)
+  */
+ static void ceph_d_prune(struct dentry *dentry)
+ {
+@@ -1085,7 +1085,7 @@ static void ceph_d_prune(struct dentry *dentry)
+ 		return;
+ 
+ 	/*
+-	 * we hold d_lock, so d_parent is stable, and d_fsdata is never
++	 * we hold d_ret_lock(), so d_parent is stable, and d_fsdata is never
+ 	 * cleared until d_release
+ 	 */
+ 	ceph_dir_clear_complete(dentry->d_parent->d_inode);
+diff --git a/fs/ceph/export.c b/fs/ceph/export.c
+index 16796be..18c4e04 100644
+--- a/fs/ceph/export.c
++++ b/fs/ceph/export.c
+@@ -68,7 +68,7 @@ static int ceph_encode_fh(struct inode *inode, u32 *rawfh, int *max_len,
+ 	/* if we found an alias, generate a connectable fh */
+ 	if (*max_len >= connected_handle_length && dentry) {
+ 		dout("encode_fh %p connectable\n", dentry);
+-		spin_lock(&dentry->d_lock);
++		d_lock(dentry);
+ 		parent = dentry->d_parent;
+ 		cfh->ino = ceph_ino(inode);
+ 		cfh->parent_ino = ceph_ino(parent->d_inode);
+@@ -76,7 +76,7 @@ static int ceph_encode_fh(struct inode *inode, u32 *rawfh, int *max_len,
+ 							 dentry);
+ 		*max_len = connected_handle_length;
+ 		type = 2;
+-		spin_unlock(&dentry->d_lock);
++		d_unlock(dentry);
+ 	} else if (*max_len >= handle_length) {
+ 		if (parent_inode) {
+ 			/* nfsd wants connectable */
+diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
+index be0f7e2..a704972 100644
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -807,7 +807,7 @@ static void update_dentry_lease(struct dentry *dentry,
+ 	if (dentry->d_op != &ceph_dentry_ops)
+ 		return;
+ 
+-	spin_lock(&dentry->d_lock);
++	d_lock(dentry);
+ 	dout("update_dentry_lease %p duration %lu ms ttl %lu\n",
+ 	     dentry, duration, ttl);
+ 
+@@ -835,7 +835,7 @@ static void update_dentry_lease(struct dentry *dentry,
+ 	di->lease_renew_from = 0;
+ 	dentry->d_time = ttl;
+ out_unlock:
+-	spin_unlock(&dentry->d_lock);
++	d_unlock(dentry);
+ 	return;
+ }
+ 
+@@ -865,13 +865,13 @@ static void ceph_set_dentry_offset(struct dentry *dn)
+ 	di->offset = ceph_inode(inode)->i_max_offset++;
+ 	spin_unlock(&ci->i_ceph_lock);
+ 
+-	spin_lock(&dir->d_lock);
+-	spin_lock_nested(&dn->d_lock, DENTRY_D_LOCK_NESTED);
++	d_lock(dir);
++	d_lock_nested(dn, DENTRY_D_LOCK_NESTED);
+ 	list_move(&dn->d_u.d_child, &dir->d_subdirs);
+ 	dout("set_dentry_offset %p %lld (%p %p)\n", dn, di->offset,
+ 	     dn->d_u.d_child.prev, dn->d_u.d_child.next);
+-	spin_unlock(&dn->d_lock);
+-	spin_unlock(&dir->d_lock);
++	d_unlock(dn);
++	d_unlock(dir);
+ }
+ 
+ /*
+@@ -903,8 +903,8 @@ static struct dentry *splice_dentry(struct dentry *dn, struct inode *in,
+ 	} else if (realdn) {
+ 		dout("dn %p (%d) spliced with %p (%d) "
+ 		     "inode %p ino %llx.%llx\n",
+-		     dn, dn->d_count,
+-		     realdn, realdn->d_count,
++		     dn, d_ret_count(dn),
++		     realdn, d_ret_count(realdn),
+ 		     realdn->d_inode, ceph_vinop(realdn->d_inode));
+ 		dput(dn);
+ 		dn = realdn;
+@@ -1294,11 +1294,11 @@ retry_lookup:
+ 			goto retry_lookup;
+ 		} else {
+ 			/* reorder parent's d_subdirs */
+-			spin_lock(&parent->d_lock);
+-			spin_lock_nested(&dn->d_lock, DENTRY_D_LOCK_NESTED);
++			d_lock(parent);
++			d_lock_nested(dn, DENTRY_D_LOCK_NESTED);
+ 			list_move(&dn->d_u.d_child, &parent->d_subdirs);
+-			spin_unlock(&dn->d_lock);
+-			spin_unlock(&parent->d_lock);
++			d_unlock(dn);
++			d_unlock(parent);
+ 		}
+ 
+ 		di = dn->d_fsdata;
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 4d29203..24ac9c5 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -1515,25 +1515,25 @@ retry:
+ 	for (temp = dentry; !IS_ROOT(temp) && pos != 0; ) {
+ 		struct inode *inode;
+ 
+-		spin_lock(&temp->d_lock);
++		d_lock(temp);
+ 		inode = temp->d_inode;
+ 		if (inode && ceph_snap(inode) == CEPH_SNAPDIR) {
+ 			dout("build_path path+%d: %p SNAPDIR\n",
+ 			     pos, temp);
+ 		} else if (stop_on_nosnap && inode &&
+ 			   ceph_snap(inode) == CEPH_NOSNAP) {
+-			spin_unlock(&temp->d_lock);
++			d_unlock(temp);
+ 			break;
+ 		} else {
+ 			pos -= temp->d_name.len;
+ 			if (pos < 0) {
+-				spin_unlock(&temp->d_lock);
++				d_unlock(temp);
+ 				break;
+ 			}
+ 			strncpy(path + pos, temp->d_name.name,
+ 				temp->d_name.len);
+ 		}
+-		spin_unlock(&temp->d_lock);
++		d_unlock(temp);
+ 		if (pos)
+ 			path[--pos] = '/';
+ 		temp = temp->d_parent;
+@@ -1553,7 +1553,7 @@ retry:
+ 	*base = ceph_ino(temp->d_inode);
+ 	*plen = len;
+ 	dout("build_path on %p %d built %llx '%.*s'\n",
+-	     dentry, dentry->d_count, *base, len, path);
++	     dentry, d_ret_count(dentry), *base, len, path);
+ 	return path;
+ }
+ 
+@@ -2742,7 +2742,7 @@ static void check_new_map(struct ceph_mds_client *mdsc,
+  */
+ 
+ /*
+- * caller must hold session s_mutex, dentry->d_lock
++ * caller must hold session s_mutex, d_ret_lock(dentry)
+  */
+ void __ceph_mdsc_drop_dentry_lease(struct dentry *dentry)
+ {
+@@ -2806,7 +2806,7 @@ static void handle_lease(struct ceph_mds_client *mdsc,
+ 	if (!dentry)
+ 		goto release;
+ 
+-	spin_lock(&dentry->d_lock);
++	d_lock(dentry);
+ 	di = ceph_dentry(dentry);
+ 	switch (h->action) {
+ 	case CEPH_MDS_LEASE_REVOKE:
+@@ -2834,7 +2834,7 @@ static void handle_lease(struct ceph_mds_client *mdsc,
+ 		}
+ 		break;
+ 	}
+-	spin_unlock(&dentry->d_lock);
++	d_unlock(dentry);
+ 	dput(dentry);
+ 
+ 	if (!release)
+@@ -2907,7 +2907,7 @@ void ceph_mdsc_lease_release(struct ceph_mds_client *mdsc, struct inode *inode,
+ 	BUG_ON(dentry == NULL);
+ 
+ 	/* is dentry lease valid? */
+-	spin_lock(&dentry->d_lock);
++	d_lock(dentry);
+ 	di = ceph_dentry(dentry);
+ 	if (!di || !di->lease_session ||
+ 	    di->lease_session->s_mds < 0 ||
+@@ -2916,7 +2916,7 @@ void ceph_mdsc_lease_release(struct ceph_mds_client *mdsc, struct inode *inode,
+ 		dout("lease_release inode %p dentry %p -- "
+ 		     "no lease\n",
+ 		     inode, dentry);
+-		spin_unlock(&dentry->d_lock);
++		d_unlock(dentry);
+ 		return;
+ 	}
+ 
+@@ -2924,7 +2924,7 @@ void ceph_mdsc_lease_release(struct ceph_mds_client *mdsc, struct inode *inode,
+ 	session = ceph_get_mds_session(di->lease_session);
+ 	seq = di->lease_seq;
+ 	__ceph_mdsc_drop_dentry_lease(dentry);
+-	spin_unlock(&dentry->d_lock);
++	d_unlock(dentry);
+ 
+ 	dout("lease_release inode %p dentry %p to mds%d\n",
+ 	     inode, dentry, session->s_mds);
 -- 
 1.7.1
 
