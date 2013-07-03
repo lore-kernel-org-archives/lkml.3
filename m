@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab3GCBeW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 21:34:22 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:1599 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab3GCBeV (ORCPT
+	id S1752772Ab3GCBuH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 21:50:07 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:35856 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab3GCBuG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 21:34:21 -0400
-Message-ID: <51D37F87.2010008@atmel.com>
-Date: Wed, 3 Jul 2013 09:33:59 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
-        <richard.genoud@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-sound@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: atmel-pcm: use generic dmaengine
- framework
-References: <1372755849-19546-1-git-send-email-voice.shen@atmel.com> <1372755849-19546-3-git-send-email-voice.shen@atmel.com> <51D2F306.7040603@metafoo.de>
-In-Reply-To: <51D2F306.7040603@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+	Tue, 2 Jul 2013 21:50:06 -0400
+Date: Wed, 3 Jul 2013 11:49:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-cachefs@redhat.com,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        milosz@adfin.com
+Subject: Re: [GIT PULL] Fix assorted FS-Cache issues
+Message-Id: <20130703114956.53b40a7374fe007df84548dd@canb.auug.org.au>
+In-Reply-To: <4578.1372810333@warthog.procyon.org.uk>
+References: <20130703093815.006437fd5f18210b7729b060@canb.auug.org.au>
+	<6302.1372775256@warthog.procyon.org.uk>
+	<4578.1372810333@warthog.procyon.org.uk>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__3_Jul_2013_11_49_56_+1000_.e7GQ/cuongKgNPS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars-Peter,
+--Signature=_Wed__3_Jul_2013_11_49_56_+1000_.e7GQ/cuongKgNPS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 7/2/2013 23:34, Lars-Peter Clausen wrote:
-> On 07/02/2013 11:04 AM, Bo Shen wrote:
-> [...]
->> -/*--------------------------------------------------------------------------*\
->> - * DMAENGINE operations
->> -\*--------------------------------------------------------------------------*/
->> -static bool filter(struct dma_chan *chan, void *slave)
->> -{
->> -	struct at_dma_slave *sl = slave;
->> -
->> -	if (sl->dma_dev == chan->device->dev) {
->> -		chan->private = sl;
->> -		return true;
->> -	} else {
->> -		return false;
->> -	}
->> -}
+On Wed, 03 Jul 2013 01:12:13 +0100 David Howells <dhowells@redhat.com> wrot=
+e:
 >
-> I'm wondering why is filtering no longer required?
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>=20
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/dhowells/linux-fs.git=
+ tags/fscache-20130702
+> >=20
+> > /me wonders where this has been hiding for the last month and a half ...
+>=20
+> I asked you to pull my fscache branch on the 23rd May, and you replied on=
+ the
+> 27th May saying you'd done so.
 
-Now this is handled by at_dma_filter in at_hdmac driver. More 
-information, you can reference: <driver/dma/at_hdmac.c> file
+And in linux-next, I keep fetching the same branch every day to get
+updates.  It is polite (in fact necessary) for you to keep that branch up
+to date if you change things.  You did not update that branch until today
+which is what confused me.  The *commits* you sent Linus have never been
+in linux-next even though the *patches* have.
 
-> [...]
->> +		slave_config->dst_addr = (dma_addr_t)ssc->phybase + SSC_THR;
-> [...]
->> +		slave_config->src_addr = (dma_addr_t)ssc->phybase + SSC_RHR;
->
-> Change the type of phybase to dma_addr_t
+Not a biggie, just makes it a bit hard to keep track.
 
-It should be:
-slave_config->dst_addr = (dma_addr_t)(ssc->phybase + SSC_THR);
-slave_config->src_addr = (dma_addr_t)(ssc->phybase + SSC_RHR);
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> [...]
->>   }
->>
->> -static int atmel_pcm_dma_prepare(struct snd_pcm_substream *substream)
->> -{
->> -	struct snd_soc_pcm_runtime *rtd = substream->private_data;
->> -	struct atmel_pcm_dma_params *prtd;
->> -
->> -	prtd = snd_soc_dai_get_dma_data(rtd->cpu_dai, substream);
->> -
->> -	ssc_writex(prtd->ssc->regs, SSC_IER, prtd->mask->ssc_error);
->> -	ssc_writex(prtd->ssc->regs, SSC_CR, prtd->mask->ssc_enable);
->
-> These writes are also completely lost
+--Signature=_Wed__3_Jul_2013_11_49_56_+1000_.e7GQ/cuongKgNPS
+Content-Type: application/pgp-signature
 
-This will be moved to DAI driver startup callback function.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
->> -
->> -	return 0;
->> -}
->
-> I think it would also be good to get rid of any references to the ssc struct
-> from the DMA driver and move them over to the DAI driver.
+iQIcBAEBCAAGBQJR04NJAAoJEECxmPOUX5FERZ0P/2CW2652LfurQvLc+vnNMaEN
+3L7yWQ0yJYQeH5xnPZSARgOu17cPEX7q5rd5fUM9004UBuDzsOdUAkjvZhRoIZVK
+aLmcKPFRpdc1MQAaabOiuZEZ4b4OBCjsYcCWFVILgBMHJeCM3GJ2l2Who/k5S/a1
+liMmY0SRuPbS0dd5d/LXBtjVG81Btl92AA1p3OkxoIngGV8USGlpTd0l/FEhk4AA
++nA0qU/0LqRbVrxlMbvEALRh2c8MtSEvyb5cERP4DUXB07rXdYkhkZKPje5sTtzQ
+OUubQW66jKAnyBTBPLPP3PuhENzrrZ+0MAqpOQYmkbaFwOwDaxiwf/cj3VZT9+5F
+jt8CXEgSCOziNHpqlPzM/7zRY0ytSkxXXhSBWrdJXL2RJU0vjw1VWj4Tubkc7c1C
+0PhCtNwYm2oXZ6ss6bhLRIkRFYPwsGd9f8M++WK8eHYKDLvlMyPdcquutzZfP+kI
+fsIxq2MJxlPQLWVgrRV/Ca5jjWeaResPA5nyklzS4fLkDDmmYTDNVcXlGA1jJATl
+py7iu6rndczt4Ye0tAmx2na1+DWkGUpU8OSvKdrvuVE+uO8raJ8EXLCpfk3pTFXt
+8atOo2Ldo4qZ6DVKJYqxp5cFztBpjZNBuaF5z3kYfb+w6hLN/j+7TJMCBNuxP8DG
+7LY9CeCFOGoP/tmAyOg2
+=qSIv
+-----END PGP SIGNATURE-----
 
-I will try to implement this in next version patch.
-
-Thanks.
-
-> - Lars
->
-
-Best Regards,
-Bo Shen
-
+--Signature=_Wed__3_Jul_2013_11_49_56_+1000_.e7GQ/cuongKgNPS--
