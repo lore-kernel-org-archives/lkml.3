@@ -1,180 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab3GCEu1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 00:50:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47652 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab3GCEuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 00:50:25 -0400
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: linux-kernel@vger.kernel.org
-Cc: platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: [PATCH] Add trivial driver to disable Intel Smart Connect
-Date: Wed,  3 Jul 2013 00:50:13 -0400
-Message-Id: <1372827013-7301-1-git-send-email-mjg59@srcf.ucam.org>
-X-Mailer: git-send-email 1.8.3.1
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 2001:470:1f07:1371:422c:f4ff:fe92:dff9
-X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1752527Ab3GCFEG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 01:04:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51779 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751348Ab3GCFEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 01:04:04 -0400
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+CC: "khilman@linaro.org" <khilman@linaro.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "Cousson, Benoit" <b-cousson@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>,
+        "Rajashekhara, Sudhakar" <sudhakar.raj@ti.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, "Rob Landley" <rob@landley.net>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH 3/4] rtc: omap: add rtc wakeup support to alarm events
+Thread-Topic: [PATCH 3/4] rtc: omap: add rtc wakeup support to alarm events
+Thread-Index: AQHOc+J3RdUEBUL1FkS6xaDIitR2t5lQZZwAgACGXFD//3uRAIAAhkcA//97yACAAf8lYIAABG6Q
+Date: Wed, 3 Jul 2013 05:03:05 +0000
+Message-ID: <1BAFE6F6C881BF42822005164F1491C33EC4F8CA@DBDE04.ent.ti.com>
+References: <1372412109-986-1-git-send-email-gururaja.hebbar@ti.com>
+ <1372412109-986-4-git-send-email-gururaja.hebbar@ti.com>
+ <51D26CFA.5090500@ti.com>
+ <1BAFE6F6C881BF42822005164F1491C33EC4E7AB@DBDE04.ent.ti.com>
+ <51D26E98.9040303@ti.com>
+ <1BAFE6F6C881BF42822005164F1491C33EC4E7CC@DBDE04.ent.ti.com>
+ <51D27052.6080303@ti.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6354Lkw012288
 
-Intel Smart Connect is an Intel-specific ACPI interface for configuring
-devices to wake up at regular intervals so they can pull down mail or other
-internet updates, and then go to sleep again. If a user enables this in
-Windows and then reboots into Linux, the device may wake up if it's put to
-sleep. Since there's no Linux userland support for any of this, the machine
-will then remain awake until something else puts it back to sleep.
+Hi all,
 
-I haven't figured out all that much about how this works (there's a bunch
-of different ACPI calls available on the device), but this seems to be
-enough to turn it off. We can add more features to this driver if anyone
-ever cares about figuring out what the rest of the calls do or writing some
-Linux userspace to implement the rest of it.
+Kindly ignore this message. It was sent in wrong format.
 
-Signed-off-by: Matthew Garrett <mjg59@srcf.ucam.org>
----
- drivers/platform/x86/Kconfig              | 14 +++++
- drivers/platform/x86/Makefile             |  1 +
- drivers/platform/x86/intel-smartconnect.c | 90 +++++++++++++++++++++++++++++++
- 3 files changed, 105 insertions(+)
- create mode 100644 drivers/platform/x86/intel-smartconnect.c
+Sorry for the noise
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 2365d08..db14408 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -793,6 +793,20 @@ config INTEL_RST
- 	  firmware will copy the memory contents back to RAM and resume the OS
- 	  as usual.
- 
-+config INTEL_SMARTCONNECT
-+        tristate "Intel Smart Connect disabling driver"
-+	depends on ACPI
-+	---help---
-+	  Intel Smart Connect is a technology intended to permit devices to
-+	  update state by resuming for a short period of time at regular
-+	  intervals. If a user enables this functionality under Windows and
-+	  then reboots into Linux, the system may remain configured to resume
-+	  on suspend. In the absence of any userspace to support it, the system
-+	  will then remain awake until something triggers another suspend.
-+
-+	  This driver checks to determine whether the device has Intel Smart
-+	  Connect enabled, and if so disables it.
-+
- config PVPANIC
- 	tristate "pvpanic device support"
- 	depends on ACPI
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index 5c669ce..5dbe193 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -52,5 +52,6 @@ obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
- obj-$(CONFIG_APPLE_GMUX)	+= apple-gmux.o
- obj-$(CONFIG_CHROMEOS_LAPTOP)	+= chromeos_laptop.o
- obj-$(CONFIG_INTEL_RST)		+= intel-rst.o
-+obj-$(CONFIG_INTEL_SMARTCONNECT)	+= intel-smartconnect.o
- 
- obj-$(CONFIG_PVPANIC)           += pvpanic.o
-diff --git a/drivers/platform/x86/intel-smartconnect.c b/drivers/platform/x86/intel-smartconnect.c
-new file mode 100644
-index 0000000..f74e93d
---- /dev/null
-+++ b/drivers/platform/x86/intel-smartconnect.c
-@@ -0,0 +1,90 @@
-+/*
-+ *  Copyright 2013 Matthew Garrett <mjg59@srcf.ucam.org>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ *  You should have received a copy of the GNU General Public License along
-+ *  with this program; if not, write to the Free Software Foundation, Inc.,
-+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <acpi/acpi_drivers.h>
-+
-+MODULE_LICENSE("GPL");
-+
-+static int smartconnect_acpi_init(struct acpi_device *acpi)
-+{
-+	struct acpi_object_list input;
-+	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-+	union acpi_object *result;
-+	union acpi_object param;
-+	acpi_status status;
-+
-+	status = acpi_evaluate_object(acpi->handle, "GAOS", NULL, &output);
-+	if (!ACPI_SUCCESS(status))
-+		return -EINVAL;
-+
-+	result = output.pointer;
-+
-+	if (result->type != ACPI_TYPE_INTEGER) {
-+		kfree(result);
-+		return -EINVAL;
-+	}
-+
-+	if (result->integer.value & 0x1) {
-+		param.type = ACPI_TYPE_INTEGER;
-+		param.integer.value = 0;
-+
-+		input.count = 1;
-+		input.pointer = &param;
-+
-+		dev_info(&acpi->dev, "Disabling Intel Smart Connect\n");
-+		status = acpi_evaluate_object(acpi->handle, "SAOS", &input,
-+					      NULL);
-+	}
-+
-+	kfree(result);
-+
-+	return 0;
-+}
-+
-+static const struct acpi_device_id smartconnect_ids[] = {
-+	{"INT33A0", 0},
-+	{"", 0}
-+};
-+
-+static struct acpi_driver smartconnect_driver = {
-+	.owner = THIS_MODULE,
-+	.name = "intel_smart_connect",
-+	.class = "intel_smart_connect",
-+	.ids = smartconnect_ids,
-+	.ops = {
-+		.add = smartconnect_acpi_init,
-+	},
-+};
-+
-+static int smartconnect_init(void)
-+{
-+	return acpi_bus_register_driver(&smartconnect_driver);
-+}
-+
-+static void smartconnect_exit(void)
-+{
-+	acpi_bus_unregister_driver(&smartconnect_driver);
-+}
-+
-+module_init(smartconnect_init);
-+module_exit(smartconnect_exit);
-+
-+MODULE_DEVICE_TABLE(acpi, smartconnect_ids);
--- 
-1.8.3.1
+Regards, 
+Gururaja
 
+On Wed, Jul 03, 2013 at 10:26:57, Hebbar, Gururaja wrote:
+> Below is the code snippet I was referring to
+>  
+>  
+> From drivers/rtc/rtc-omap.c
+>  
+> static struct platform_device_id omap_rtc_devtype[] = {
+>       {
+>             .name = DRIVER_NAME,
+>       },
+>       [OMAP_RTC_DATA_AM3352_IDX] = {
+>             .name = "am3352-rtc",
+>             .driver_data = OMAP_RTC_HAS_KICKER | OMAP_RTC_HAS_IRQWAKEEN,
+>       },
+>       [OMAP_RTC_DATA_DA830_IDX] = {
+>             .name = "da830-rtc",
+>             .driver_data = OMAP_RTC_HAS_KICKER,
+>      },
+>       {},
+> };
+> MODULE_DEVICE_TABLE(platform, omap_rtc_devtype);
+>  
+> static const struct of_device_id omap_rtc_of_match[] = {
+>       {     .compatible = "ti,da830-rtc",
+>             .data       = &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
+>       },
+>       {     .compatible = "ti,am3352-rtc",
+>             .data       = &omap_rtc_devtype[OMAP_RTC_DATA_AM3352_IDX],
+>       },
+>       {},
+> };
+> MODULE_DEVICE_TABLE(of, omap_rtc_of_match);
+>  
+>  
+> From arch/arm/boot/dts/am33xx.dtsi
+>  
+>             rtc@44e3e000 {
+>                   compatible = "ti,da830-rtc", "ti,am3352-rtc";
+>                   reg = <0x44e3e000 0x1000>;
+>                   interrupts = <75
+>                               76>;
+>                   ti,hwmods = "rtc";
+>             };
+>  
+>  
+> As seen from above snippet, 2 compatible items are specified for
+> compatible dt property (ti,da830-rtc" & "ti,am3352-rtc‚Äù)
+> These are the same compatibles that are mentioned in the of_device_id
+> structure inside rtc-omap driver.
+>  
+> What I observed is, if we mention both compatible in the .dtsi file that
+> are under one single of_device_id structure, the first match from the
+> of_device_id structure is considered (ti,da830-rtc in above case)
+>  
+> To confirm, I switched the 2 compatible inside of_device_id structure as
+> below
+>  
+>  
+> static const struct of_device_id omap_rtc_of_match[] = {
+>       {     .compatible = "ti,am3352-rtc",
+>             .data       = &omap_rtc_devtype[OMAP_RTC_DATA_AM3352_IDX],
+>       },
+>       {     .compatible = "ti,da830-rtc",
+>             .data       = &omap_rtc_devtype[OMAP_RTC_DATA_DA830_IDX],
+>       },
+>       {},
+> };
+>  
+> In this case, the first match from compatible field was chosen
+> (ti,am3352-rtc now).
+>  
+>  
+> Hope this is clear.
+>  
+> Kindly let me know when you are free to discuss.
+>  
+>  
+> Regards
+> Gururaja
+>  
+> > -----Original Message-----
+> > From: Nori, Sekhar
+> > Sent: Tuesday, July 02, 2013 11:47 AM
+> > To: Hebbar, Gururaja
+> > Cc: khilman@linaro.org; tony@atomide.com; Cousson, Benoit; linux-
+> > omap@vger.kernel.org; devicetree-discuss@lists.ozlabs.org; linux-
+> > kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> > davinci-linux-open-source@linux.davincidsp.com; Bedia, Vaibhav;
+> > Rajashekhara, Sudhakar; Grant Likely; Rob Herring; Rob Landley;
+> > Alessandro Zummo; rtc-linux@googlegroups.com; linux-
+> > doc@vger.kernel.org
+> > Subject: Re: [PATCH 3/4] rtc: omap: add rtc wakeup support to
+> > alarm events
+> > 
+> > 
+> > 
+> > On 7/2/2013 11:41 AM, Hebbar, Gururaja wrote:
+> > > On Tue, Jul 02, 2013 at 11:39:28, Nori, Sekhar wrote:
+> > >> On 7/2/2013 11:34 AM, Hebbar, Gururaja wrote:
+> > >>> On Tue, Jul 02, 2013 at 11:32:34, Nori, Sekhar wrote:
+> > >>>> On 6/28/2013 3:05 PM, Hebbar Gururaja wrote:
+> > >>>>> On some platforms (like AM33xx), a special register
+> > (RTC_IRQWAKEEN)
+> > >>>>> is available to enable Alarm Wakeup feature. This register
+> > needs to be
+> > >>>>> properly handled for the rtcwake to work properly.
+> > >>>>>
+> > >>>>> Platforms using such IP should set "ti,am3352-rtc" in rtc
+> > device dt
+> > >>>>> compatibility node.
+> > >>>>>
+> > >>>>> Signed-off-by: Hebbar Gururaja <gururaja.hebbar@ti.com
+> <mailto:gururaja.hebbar@ti.com> >
+> > >>>>> Cc: Grant Likely <grant.likely@linaro.org
+> <mailto:grant.likely@linaro.org> >
+> > >>>>> Cc: Rob Herring <rob.herring@calxeda.com
+> <mailto:rob.herring@calxeda.com> >
+> > >>>>> Cc: Rob Landley <rob@landley.net <mailto:rob@landley.net> >
+> > >>>>> Cc: Sekhar Nori <nsekhar@ti.com <mailto:nsekhar@ti.com> >
+> > >>>>> Cc: Kevin Hilman <khilman@linaro.org <mailto:khilman@linaro.org>
+> >
+> > >>>>> Cc: Alessandro Zummo <a.zummo@towertech.it
+> <mailto:a.zummo@towertech.it> >
+> > >>>>> Cc: rtc-linux@googlegroups.com
+> <mailto:rtc-linux@googlegroups.com> 
+> > >>>>> Cc: devicetree-discuss@lists.ozlabs.org
+> <mailto:devicetree-discuss@lists.ozlabs.org> 
+> > >>>>> Cc: linux-doc@vger.kernel.org <mailto:linux-doc@vger.kernel.org>
+> > >>>>> ---
+> > >>>>
+> > >>>> [...]
+> > >>>>
+> > >>>>> -#define  OMAP_RTC_DATA_DA830_IDX 1
+> > >>>>> +#define  OMAP_RTC_DATA_DA830_IDX       1
+> > >>>>> +#define  OMAP_RTC_DATA_AM335X_IDX      2
+> > >>>>>
+> > >>>>>  static struct platform_device_id omap_rtc_devtype[] = {
+> > >>>>>     {
+> > >>>>> @@ -309,6 +321,9 @@ static struct platform_device_id
+> > omap_rtc_devtype[] = {
+> > >>>>>     }, {
+> > >>>>>           .name = "da830-rtc",
+> > >>>>>           .driver_data = OMAP_RTC_HAS_KICKER,
+> > >>>>> +   }, {
+> > >>>>> +         .name = "am335x-rtc",
+> > >>>>
+> > >>>> may be use am3352-rtc here just to keep the platform device
+> > name and of
+> > >>>> compatible in sync.
+> > >>>
+> > >>> Correct. I will update the same in v2.
+> > >>>
+> > >>>>
+> > >>>>> +         .driver_data = OMAP_RTC_HAS_KICKER |
+> > OMAP_RTC_HAS_IRQWAKEEN,
+> > >>>>>     },
+> > >>>>>     {},
+> > >>>>
+> > >>>> It is better to use the index defined above in the static
+> > initialization
+> > >>>> so they remain in sync.
+> > >>>
+> > >>> Sorry. I didn‚Äôt get this.
+> > >>>
+> > >>
+> > >> See example below I provided. If its still not clear, let me
+> > know what
+> > >> is not clear.
+> > >>
+> > >>>>      ...
+> > >>>>      [OMAP_RTC_DATA_DA830_IDX] = {
+> > >>>>            .name = "da830-rtc",
+> > >>>>            .driver_data = OMAP_RTC_HAS_KICKER,
+> > >>>>      },
+> > >
+> > > Thanks for the clarification. In this case will it ok if I
+> > update the previous
+> > > member also.
+> > 
+> > You dont really reference [0] in omap_rtc_of_match[] so even if
+> > you
+> > leave it as-is, that's fine with me. I am mostly concerned with
+> > the
+> > index definitions and initialization order being out of sync and
+> > that's
+> > really not an issue with [0].
+> > 
+> > Thanks,
+> > Sekhar
+> 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
