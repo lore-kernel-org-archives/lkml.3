@@ -1,130 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab3GCKrc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 06:47:32 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:33220 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755322Ab3GCKra (ORCPT
+	id S1755912Ab3GCK6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 06:58:52 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:60721 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab3GCK6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 06:47:30 -0400
+	Wed, 3 Jul 2013 06:58:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1306271513180.3538@pobox.suse.cz>
-References: <1315638713-3731-1-git-send-email-benjamin.tissoires@gmail.com>
- <20110910072826.GA1611@x4.trippels.de> <CAN+gG=H2jfT2zdn5H19hyn9JtDU7U1ensX_aUDgv0jk4d81jXg@mail.gmail.com>
- <CAN+gG=E90-y--6C-Ok8TibcFZGAaL2X-KxnchquDLCUUniip1Q@mail.gmail.com> <alpine.LNX.2.00.1306271513180.3538@pobox.suse.cz>
-From: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Date: Wed, 3 Jul 2013 12:46:58 +0200
-Message-ID: <CAE7qMrosUkhF3Yak11Mh81NcGhYduUKRoHiUwH4RbTN1KXqi8A@mail.gmail.com>
-Subject: Re: Logitech M705: Thumb button (was Re: [PATCH v4] HID: Add full
- support for Logitech Unifying receivers)
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Richard Titmuss <rtitmuss@logitech.com>,
-        Olivier Gay <ogay@logitech.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Daniel Zanone <jzanone@logitech.com>,
-        =?UTF-8?Q?Franti=C5=A1ek_Fuka?= <fuka@fuxoft.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUUWGa0f1pKM4Vegmk3Ns8cMbQcQTR6i=XGUtpr8CkvLYA@mail.gmail.com>
+References: <CA+icZUUWGa0f1pKM4Vegmk3Ns8cMbQcQTR6i=XGUtpr8CkvLYA@mail.gmail.com>
+Date: Wed, 3 Jul 2013 12:58:49 +0200
+Message-ID: <CA+icZUWtvuq=KP2YsoUfWAZTzZWQymcXk72UbMquYGPCFkpnjg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 3 [ BROKEN: memcontrol.c:(.text+0x5caa6):
+ undefined reference to `mem_cgroup_sockets_destroy' ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Li Zefan <lizefan@huawei.com>
+Content-Type: multipart/mixed; boundary=f46d044402d6b2005d04e0995800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+--f46d044402d6b2005d04e0995800
+Content-Type: text/plain; charset=UTF-8
 
-Sorry it took me some time to answer.
-
-I extended the Logitech HIDPP10 specification here:
-https://drive.google.com/folderview?id=0BxbRzx7vEV7eWmgwazJ3NUFfQ28&usp=sharing
-
-The document "Logitech_hidpp10_specification_draft_Unifying_devices_receivers.doc"
-now contains most of the relevant hidpp10 registers and notifications
-needed to interact with older Logitech devices that support hidpp10 as
-well as the Unifying receiver.
-
-In particular I added the specifications for the registers that enable
-retrieving the FW version information for devices/receivers. This will
-become relevant below.
-
-Cheers,
-Nestor
-
-
-On Thu, Jun 27, 2013 at 3:16 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+On Wed, Jul 3, 2013 at 11:29 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Jul 3, 2013 at 10:06 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi all,
+>>
+>> Changes since 20130702:
+>>
+>> The powerpc tree lost its build failure.
+>>
+>> The device-mapper tree gained a conflict against the md tree.
+>>
+>> The net-next tree gained a build failure for which I cherry-picked an
+>> upcoming fix.
+>>
+>> The trivial tree gained conflicts against the btrfs and Linus' trees.
+>>
+>> The xen-two tree gained a conflict against the tip tree.
+>>
+>> The akpm tree lost some patches that turned up elsewhere.
+>>
+>> The cpuinit tree lost a patch that turned up elsewhere.
+>>
+>> ----------------------------------------------------------------------------
+>>
 >
+> From my build-log:
+> ...
+>  CC      mm/memcontrol.o
+> ...
+>   MODPOST vmlinux.o
+> WARNING: modpost: Found 1 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>   GEN     .version
+>   CHK     include/generated/compile.h
+>   UPD     include/generated/compile.h
+>   CC      init/version.o
+>   LD      init/built-in.o
+> mm/built-in.o: In function `mem_cgroup_css_free':
+> memcontrol.c:(.text+0x5caa6): undefined reference to
+> `mem_cgroup_sockets_destroy'
+> make[2]: *** [vmlinux] Error 1
+> make[1]: *** [deb-pkg] Error 2
+> make: *** [deb-pkg] Error 2
 >
-> [ Frantisek Fuka added to CC ]
+> My kernel-config is attached.
 >
-> On Wed, 14 Sep 2011, Benjamin Tissoires wrote:
->
-> > >> Nice. Does this mean I will be able to use the thumb-button of my M705
-> > >> mouse in the near future?
-> > >>
-> > >> (Someone asked the same question 1.5 years ago, but nothing happened
-> > >> till then: http://thread.gmane.org/gmane.linux.kernel.input/11791 )
-> > >
-> > > This is quite weird. I was going to say that it will work, but with
-> > > the M705 I've got at home,this thumb button doesn't work at all
-> > > (anything is emitted from the usb, even with this driver).
-> > > But I'm pretty sure I made it work with the one I got at work.
-> > >
-> > > I'll give a try on Monday unless people at Logitech gave us the solution.
->
-> > I got some information for you. Apparently, it won't be possible to
-> > enable this thumb button right now.
-> > To enable it, the Windows driver put the mouse in a kind of debug mode
-> > that need to be handled properly, which is not the case as of today.
-> >
-> > I was able to make it work at home because there were different series
-> > of M705, the latest sending the thumb button by default.
->
-> Let me resurrect this 2 years old thread, as I have received multiple
-> reports since then, stating that some revisions of M705 don't have working
-> thumb button.
->
-> Question mostly to the Logitech guys: Nestor, Olivier, could you please
-> provide us with the sequence that needs to be sent to (certain revisisons
-> of) M705 to let enter the debug mode, making the thumb button actually
-> emit a USB message?
+
+[ CC linux-mm and Li Zefan ]
+
+Trying with the attached patch... Building...
+
+- Sedat -
 
 
-There are two versions of FW in the field:
+> - Sedat -
 
-1) Version 17.01.Build 0017.
-This version reports the thumb button by default as HID button 6.
+--f46d044402d6b2005d04e0995800
+Content-Type: application/octet-stream; 
+	name="0001-memcg-Fix-build-failure-in-mem_cgroup_css_free.patch"
+Content-Disposition: attachment; 
+	filename="0001-memcg-Fix-build-failure-in-mem_cgroup_css_free.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hioewc7l1
 
-2) Version 17.00.Build 0015
-This version does not report the thumb button by default.
-
-It is possible to enable the M705 with FW 17.00.Build 0015 to send the
-thumb button as HID button 6 via HIDPP10 command. But this will have a
-(undesirable ?) side effect.
-Once the button 6 is enabled, the buttons aside to the wheel (tilt
-buttons) will no longer be reported as AC pan HID usage, they will be
-reported as buttons 7 & 8. This might disrupt some users that rely on
-the mouse AC pan feature.
-
-To enable HID button 6 reporting from thumb button we need to clear
-the bit 1 (Special button function) in register 0x01 on the M705
-READ register: 10 IDX 81 01 r0 r1 r2
-Clear Bit1: r0 &= 0xFD;
-Write back register: 10 IDX 80 01 r0 r1 r2
-
-IDX is the device index on the Unifying receiver.
-
-Note that if the command is sent to all M705 devices, users that have
-the  17.01.Build 0017 will lose the Ac pan and will gain nothing.
-
-
->
-> Thanks,
->
-> --
-> Jiri Kosina
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+RnJvbSAzZTc4NTkyMDZjODI5OGI1ODc3OWE2ZTIwMDc0N2FlNDhhMDIxNDljIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
+YXRlOiBXZWQsIDMgSnVsIDIwMTMgMTI6NDU6NDAgKzAyMDAKU3ViamVjdDogW1BBVENIIG5leHQt
+MjAxMzA3MDNdIG1lbWNnOiBGaXggYnVpbGQgZmFpbHVyZSBpbgogbWVtX2Nncm91cF9jc3NfZnJl
+ZSgpCgpGcm9tIG15IGJ1aWxkLWxvZyBmb3IgbmV4dC0yMDEzMDcwMzoKLi4uCm1tL2J1aWx0LWlu
+Lm86IEluIGZ1bmN0aW9uIGBtZW1fY2dyb3VwX2Nzc19mcmVlJzoKbWVtY29udHJvbC5jOigudGV4
+dCsweDVjYWE2KTogdW5kZWZpbmVkIHJlZmVyZW5jZSB0byBgbWVtX2Nncm91cF9zb2NrZXRzX2Rl
+c3Ryb3knCm1ha2VbMl06ICoqKiBbdm1saW51eF0gRXJyb3IKCmNvbW1pdCA0OWYyYjZiZWI0Mjgg
+KCJtZW1jZzogdXNlIGNzc19nZXQvcHV0IHdoZW4gY2hhcmdpbmcvdW5jaGFyZ2luZyBrbWVtIikK
+cmVuYW1lZCBrbWVtX2Nncm91cF9kZXN0cm95KCkgdG8ga21lbV9jZ3JvdXBfY3NzX29mZmxpbmUo
+KS4KCi1zdGF0aWMgdm9pZCBrbWVtX2Nncm91cF9kZXN0cm95KHN0cnVjdCBtZW1fY2dyb3VwICpt
+ZW1jZykKK3N0YXRpYyB2b2lkIGttZW1fY2dyb3VwX2Nzc19vZmZsaW5lKHN0cnVjdCBtZW1fY2dy
+b3VwICptZW1jZykKCldoZXJlYXMgaW4gbWVtX2Nncm91cF9jc3NfZnJlZSgpIEkgc2VlIHRoaXM6
+CgotIGttZW1fY2dyb3VwX2Rlc3Ryb3kobWVtY2cpOworIG1lbV9jZ3JvdXBfc29ja2V0c19kZXN0
+cm95KG1lbWNnKTsKClRoaXMgc2hvdWxkIGJlIElNSE86CgorIGttZW1fY2dyb3VwX2Nzc19vZmZs
+aW5lbWVtY2cpOwoKSSBhbSBub3Qgc3VyZSBpZiB0aGlzIHdhcyBpbnRlbmRlZCBhbmQgc3BlY3Vs
+YXRlIHRoaXMgaXMgYSB0eXBvLgoKVGhpcyBwYXRjaCB0cmllcyB0byBmaXggdGhlIGlzc3VlLgoK
+U2lnbmVkLW9mZi1ieTogU2VkYXQgRGlsZWsgPHNlZGF0LmRpbGVrQGdtYWlsLmNvbT4KLS0tCiBt
+bS9tZW1jb250cm9sLmMgfCAyICstCiAxIGZpbGUgY2hhbmdlZCwgMSBpbnNlcnRpb24oKyksIDEg
+ZGVsZXRpb24oLSkKCmRpZmYgLS1naXQgYS9tbS9tZW1jb250cm9sLmMgYi9tbS9tZW1jb250cm9s
+LmMKaW5kZXggZDZhM2U1Ni4uY2E4ZDk4NSAxMDA2NDQKLS0tIGEvbW0vbWVtY29udHJvbC5jCisr
+KyBiL21tL21lbWNvbnRyb2wuYwpAQCAtNjMzMiw3ICs2MzMyLDcgQEAgc3RhdGljIHZvaWQgbWVt
+X2Nncm91cF9jc3NfZnJlZShzdHJ1Y3QgY2dyb3VwICpjb250KQogewogCXN0cnVjdCBtZW1fY2dy
+b3VwICptZW1jZyA9IG1lbV9jZ3JvdXBfZnJvbV9jb250KGNvbnQpOwogCi0JbWVtX2Nncm91cF9z
+b2NrZXRzX2Rlc3Ryb3kobWVtY2cpOworCW1lbV9jZ3JvdXBfY3NzX29mZmxpbmUobWVtY2cpOwog
+CiAJX19tZW1fY2dyb3VwX2ZyZWUobWVtY2cpOwogfQotLSAKMS44LjMuMgoK
+--f46d044402d6b2005d04e0995800--
