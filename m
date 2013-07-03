@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933785Ab3GCXTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 19:19:36 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:57738 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933393Ab3GCXSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 19:18:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        "Alexander E. Patrakov" <patrakov@gmail.com>
-Subject: [PATCH 1/4] ACPI / dock: Actually define acpi_dock_init() as void
-Date: Thu, 04 Jul 2013 01:25:16 +0200
-Message-ID: <13622907.v865rbM3rp@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2759309.GsYqNLU1ac@vostro.rjw.lan>
-References: <1640211.P0jyS5muX2@vostro.rjw.lan> <1515394.L46AJCfCTt@vostro.rjw.lan> <2759309.GsYqNLU1ac@vostro.rjw.lan>
+	id S964856Ab3GCXYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 19:24:45 -0400
+Received: from cm-84.215.157.11.getinternet.no ([84.215.157.11]:54224 "EHLO
+	server.arpanet.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933051Ab3GCXYm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 19:24:42 -0400
+From: =?UTF-8?q?Jon=20Arne=20J=C3=B8rgensen?= <jonarne@jonarne.no>
+To: linux-media@vger.kernel.org
+Cc: jonarne@jonarne.no, linux-kernel@vger.kernel.org, mchehab@redhat.com,
+        hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
+        laurent.pinchart@ideasonboard.com, andriy.shevchenko@linux.intel.com
+Subject: [RFC v3 1/3] saa7115: Fix saa711x_set_v4lstd for gm7113c
+Date: Thu,  4 Jul 2013 01:27:18 +0200
+Message-Id: <1372894040-23922-2-git-send-email-jonarne@jonarne.no>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1372894040-23922-1-git-send-email-jonarne@jonarne.no>
+References: <1372894040-23922-1-git-send-email-jonarne@jonarne.no>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+saa711x_set_v4lstd would toggle several bits that should not be touched
+when changing std.
+This could potentially override configurations set in platform_data.
+This patch should fix that problem.
 
-Commit 94add0f (ACPI / dock: Initialize ACPI dock subsystem upfront)
-changed the header of acpi_dock_init() in internal.h so that it is
-supposed to be a void function now, but it forgot to update its
-actual definition in dock.c according to which it still is supposed
-to return int.
-
-Although that didn't cause any visible breakage or even a compiler
-warning to be thrown, which is odd enough, fix it.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: 3.10+ <stable@vger.kernel.org>
+Signed-off-by: Jon Arne Jørgensen <jonarne@jonarne.no>
 ---
- drivers/acpi/dock.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/media/i2c/saa7115.c      | 37 +++++++++++++------------------------
+ drivers/media/i2c/saa711x_regs.h |  4 ++++
+ 2 files changed, 17 insertions(+), 24 deletions(-)
 
-Index: linux-pm/drivers/acpi/dock.c
-===================================================================
---- linux-pm.orig/drivers/acpi/dock.c
-+++ linux-pm/drivers/acpi/dock.c
-@@ -931,10 +931,10 @@ find_dock_and_bay(acpi_handle handle, u3
- 	return AE_OK;
- }
+diff --git a/drivers/media/i2c/saa7115.c b/drivers/media/i2c/saa7115.c
+index 7fd766e..41408dd 100644
+--- a/drivers/media/i2c/saa7115.c
++++ b/drivers/media/i2c/saa7115.c
+@@ -462,24 +462,6 @@ static const unsigned char saa7115_cfg_50hz_video[] = {
  
--int __init acpi_dock_init(void)
-+void __init acpi_dock_init(void)
- {
- 	if (acpi_disabled)
--		return 0;
-+		return;
+ /* ============== SAA7715 VIDEO templates (end) =======  */
  
- 	/* look for dock stations and bays */
- 	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-@@ -942,11 +942,10 @@ int __init acpi_dock_init(void)
- 
- 	if (!dock_station_count) {
- 		pr_info(PREFIX "No dock devices found.\n");
--		return 0;
-+		return;
+-/* ============== GM7113C VIDEO templates =============  */
+-static const unsigned char gm7113c_cfg_60hz_video[] = {
+-	R_08_SYNC_CNTL, 0x68,			/* 0xBO: auto detection, 0x68 = NTSC */
+-	R_0E_CHROMA_CNTL_1, 0x07,		/* video autodetection is on */
+-
+-	0x00, 0x00
+-};
+-
+-static const unsigned char gm7113c_cfg_50hz_video[] = {
+-	R_08_SYNC_CNTL, 0x28,			/* 0x28 = PAL */
+-	R_0E_CHROMA_CNTL_1, 0x07,
+-
+-	0x00, 0x00
+-};
+-
+-/* ============== GM7113C VIDEO templates (end) =======  */
+-
+-
+ static const unsigned char saa7115_cfg_vbi_on[] = {
+ 	R_80_GLOBAL_CNTL_1, 0x00,			/* reset tasks */
+ 	R_88_POWER_SAVE_ADC_PORT_CNTL, 0xd0,		/* reset scaler */
+@@ -964,17 +946,24 @@ static void saa711x_set_v4lstd(struct v4l2_subdev *sd, v4l2_std_id std)
+ 	// This works for NTSC-M, SECAM-L and the 50Hz PAL variants.
+ 	if (std & V4L2_STD_525_60) {
+ 		v4l2_dbg(1, debug, sd, "decoder set standard 60 Hz\n");
+-		if (state->ident == GM7113C)
+-			saa711x_writeregs(sd, gm7113c_cfg_60hz_video);
+-		else
++		if (state->ident == GM7113C) {
++			u8 reg = saa711x_read(sd, R_08_SYNC_CNTL);
++			reg &= ~(SAA7113_R_08_FSEL | SAA7113_R_08_AUFD);
++			reg |= SAA7113_R_08_FSEL;
++			saa711x_write(sd, R_08_SYNC_CNTL, reg);
++		} else {
+ 			saa711x_writeregs(sd, saa7115_cfg_60hz_video);
++		}
+ 		saa711x_set_size(sd, 720, 480);
+ 	} else {
+ 		v4l2_dbg(1, debug, sd, "decoder set standard 50 Hz\n");
+-		if (state->ident == GM7113C)
+-			saa711x_writeregs(sd, gm7113c_cfg_50hz_video);
+-		else
++		if (state->ident == GM7113C) {
++			u8 reg = saa711x_read(sd, R_08_SYNC_CNTL);
++			reg &= ~(SAA7113_R_08_FSEL | SAA7113_R_08_AUFD);
++			saa711x_write(sd, R_08_SYNC_CNTL, reg);
++		} else {
+ 			saa711x_writeregs(sd, saa7115_cfg_50hz_video);
++		}
+ 		saa711x_set_size(sd, 720, 576);
  	}
  
- 	ATOMIC_INIT_NOTIFIER_HEAD(&dock_notifier_list);
- 	pr_info(PREFIX "%s: %d docks/bays found\n",
- 		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
--	return 0;
- }
+diff --git a/drivers/media/i2c/saa711x_regs.h b/drivers/media/i2c/saa711x_regs.h
+index 4e5f2eb..70c56d1 100644
+--- a/drivers/media/i2c/saa711x_regs.h
++++ b/drivers/media/i2c/saa711x_regs.h
+@@ -201,6 +201,10 @@
+ #define R_FB_PULSE_C_POS_MSB                          0xfb
+ #define R_FF_S_PLL_MAX_PHASE_ERR_THRESH_NUM_LINES     0xff
+ 
++/* SAA7113 bit-masks */
++#define SAA7113_R_08_FSEL 0x40
++#define SAA7113_R_08_AUFD 0x80
++
+ #if 0
+ /* Those structs will be used in the future for debug purposes */
+ struct saa711x_reg_descr {
+-- 
+1.8.3.1
 
