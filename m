@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051Ab3GCOVs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:21:48 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35580 "EHLO mx2.suse.de"
+	id S964810Ab3GCOWM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:22:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35605 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932813Ab3GCOVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:21:45 -0400
+	id S932915Ab3GCOVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:21:46 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 01/13] mm: numa: Document automatic NUMA balancing sysctls
-Date: Wed,  3 Jul 2013 15:21:28 +0100
-Message-Id: <1372861300-9973-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 04/13] sched: Update NUMA hinting faults once per scan
+Date: Wed,  3 Jul 2013 15:21:31 +0100
+Message-Id: <1372861300-9973-5-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1372861300-9973-1-git-send-email-mgorman@suse.de>
 References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
@@ -22,88 +22,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+NUMA hinting faults counts and placement decisions are both recorded in the
+same array which distorts the samples in an unpredictable fashion. The values
+linearly accumulate during the scan and then decay creating a sawtooth-like
+pattern in the per-node counts. It also means that placement decisions are
+time sensitive. At best it means that it is very difficult to state that
+the buffer holds a decaying average of past faulting behaviour. At worst,
+it can confuse the load balancer if it sees one node with an artifically high
+count due to very recent faulting activity and may create a bouncing effect.
+
+This patch adds a second array. numa_faults stores the historical data
+which is used for placement decisions. numa_faults_buffer holds the
+fault activity during the current scan window. When the scan completes,
+numa_faults decays and the values from numa_faults_buffer are copied
+across.
+
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- Documentation/sysctl/kernel.txt | 66 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 66 insertions(+)
+ include/linux/sched.h | 13 +++++++++++++
+ kernel/sched/core.c   |  1 +
+ kernel/sched/fair.c   | 16 +++++++++++++---
+ 3 files changed, 27 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index ccd4258..0fe678c 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -354,6 +354,72 @@ utilize.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index ba46a64..42f9818 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1506,7 +1506,20 @@ struct task_struct {
+ 	u64 node_stamp;			/* migration stamp  */
+ 	struct callback_head numa_work;
  
- ==============================================================
++	/*
++	 * Exponential decaying average of faults on a per-node basis.
++	 * Scheduling placement decisions are made based on the these counts.
++	 * The values remain static for the duration of a PTE scan
++	 */
+ 	unsigned long *numa_faults;
++
++	/*
++	 * numa_faults_buffer records faults per node during the current
++	 * scan window. When the scan completes, the counts in numa_faults
++	 * decay and these values are copied.
++	 */
++	unsigned long *numa_faults_buffer;
++
+ 	int numa_preferred_nid;
+ #endif /* CONFIG_NUMA_BALANCING */
  
-+numa_balancing
-+
-+Enables/disables automatic page fault based NUMA memory
-+balancing. Memory is moved automatically to nodes
-+that access it often.
-+
-+Enables/disables automatic NUMA memory balancing. On NUMA machines, there
-+is a performance penalty if remote memory is accessed by a CPU. When this
-+feature is enabled the kernel samples what task thread is accessing memory
-+by periodically unmapping pages and later trapping a page fault. At the
-+time of the page fault, it is determined if the data being accessed should
-+be migrated to a local memory node.
-+
-+The unmapping of pages and trapping faults incur additional overhead that
-+ideally is offset by improved memory locality but there is no universal
-+guarantee. If the target workload is already bound to NUMA nodes then this
-+feature should be disabled. Otherwise, if the system overhead from the
-+feature is too high then the rate the kernel samples for NUMA hinting
-+faults may be controlled by the numa_balancing_scan_period_min_ms,
-+numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
-+
-+==============================================================
-+
-+numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
-+numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
-+numa_balancing_scan_size_mb
-+
-+Automatic NUMA balancing scans tasks address space and unmaps pages to
-+detect if pages are properly placed or if the data should be migrated to a
-+memory node local to where the task is running.  Every "scan delay" the task
-+scans the next "scan size" number of pages in its address space. When the
-+end of the address space is reached the scanner restarts from the beginning.
-+
-+In combination, the "scan delay" and "scan size" determine the scan rate.
-+When "scan delay" decreases, the scan rate increases.  The scan delay and
-+hence the scan rate of every task is adaptive and depends on historical
-+behaviour. If pages are properly placed then the scan delay increases,
-+otherwise the scan delay decreases.  The "scan size" is not adaptive but
-+the higher the "scan size", the higher the scan rate.
-+
-+Higher scan rates incur higher system overhead as page faults must be
-+trapped and potentially data must be migrated. However, the higher the scan
-+rate, the more quickly a tasks memory is migrated to a local node if the
-+workload pattern changes and minimises performance impact due to remote
-+memory accesses. These sysctls control the thresholds for scan delays and
-+the number of pages scanned.
-+
-+numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
-+between scans. It effectively controls the maximum scanning rate for
-+each task.
-+
-+numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
-+when it initially forks.
-+
-+numa_balancing_scan_period_max_ms is the maximum delay between scans. It
-+effectively controls the minimum scanning rate for each task.
-+
-+numa_balancing_scan_size_mb is how many megabytes worth of pages are
-+scanned for a given scan.
-+
-+numa_balancing_scan_period_reset is a blunt instrument that controls how
-+often a tasks scan delay is reset to detect sudden changes in task behaviour.
-+
-+==============================================================
-+
- osrelease, ostype & version:
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 019baae..b00b81a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1596,6 +1596,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_preferred_nid = -1;
+ 	p->numa_work.next = &p->numa_work;
+ 	p->numa_faults = NULL;
++	p->numa_faults_buffer = NULL;
+ #endif /* CONFIG_NUMA_BALANCING */
+ }
  
- # cat osrelease
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index f8c3f61..5893399 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -805,8 +805,14 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for (nid = 0; nid < nr_node_ids; nid++) {
+-		unsigned long faults = p->numa_faults[nid];
++		unsigned long faults;
++
++		/* Decay existing window and copy faults since last scan */
+ 		p->numa_faults[nid] >>= 1;
++		p->numa_faults[nid] += p->numa_faults_buffer[nid];
++		p->numa_faults_buffer[nid] = 0;
++
++		faults = p->numa_faults[nid];
+ 		if (faults > max_faults) {
+ 			max_faults = faults;
+ 			max_nid = nid;
+@@ -831,9 +837,13 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 	if (unlikely(!p->numa_faults)) {
+ 		int size = sizeof(*p->numa_faults) * nr_node_ids;
+ 
+-		p->numa_faults = kzalloc(size, GFP_KERNEL);
++		/* numa_faults and numa_faults_buffer share the allocation */
++		p->numa_faults = kzalloc(size * 2, GFP_KERNEL);
+ 		if (!p->numa_faults)
+ 			return;
++
++		BUG_ON(p->numa_faults_buffer);
++		p->numa_faults_buffer = p->numa_faults + nr_node_ids;
+ 	}
+ 
+ 	/*
+@@ -847,7 +857,7 @@ void task_numa_fault(int node, int pages, bool migrated)
+ 	task_numa_placement(p);
+ 
+ 	/* Record the fault, double the weight if pages were migrated */
+-	p->numa_faults[node] += pages << migrated;
++	p->numa_faults_buffer[node] += pages << migrated;
+ }
+ 
+ static void reset_ptenuma_scan(struct task_struct *p)
 -- 
 1.8.1.4
 
