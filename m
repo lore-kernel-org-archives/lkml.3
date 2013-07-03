@@ -1,121 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab3GCXjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 19:39:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52725 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753935Ab3GCXjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 19:39:11 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] checkpatch: Make the CamelCase cache work for non-git trees too
-Date: Wed,  3 Jul 2013 16:39:07 -0700
-Message-Id: <c6ec3afb475da240dfdcb2b918e8b048e7c9cdfa.1372894341.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	id S933311Ab3GCXzI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 19:55:08 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:36524 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932206Ab3GCXzH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 19:55:07 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmINAG+51FF5LNm+/2dsb2JhbABagwmDGrhwhSgEAYEIF3SCIwEBBTocIxAIAxgJJQ8FJQMhExSHero0Fo44gR0HgwRpA5dIkUaDIyo
+Date: Thu, 4 Jul 2013 09:54:44 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Dilger, Andreas" <andreas.dilger@intel.com>
+Cc: Greg KH <greg@kroah.com>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Drokin, Oleg" <oleg.drokin@intel.com>
+Subject: Re: [GIT PULL] ext4 updates for 3.11
+Message-ID: <20130703235444.GF4072@dastard>
+References: <20130703181249.GA21797@kroah.com>
+ <CDF9C6B7.51285%andreas.dilger@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CDF9C6B7.51285%andreas.dilger@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Might as well check include timestamps and cache the
-include file CamelCase uses for the non-git case too.
+On Wed, Jul 03, 2013 at 06:40:40PM +0000, Dilger, Andreas wrote:
+> On 2013/03/07 12:12 PM, "Greg KH" <greg@kroah.com> wrote:
+> >On Wed, Jul 03, 2013 at 01:29:41PM +1000, Dave Chinner wrote:
+> >> On Tue, Jul 02, 2013 at 06:01:11PM -0700, Greg KH wrote:
+> >> > For this filesystem, it seems that they don't have any
+> >> > resources to do this work and are relying on the community to
+> >> > help out.  Which is odd, but big companies are strange some
+> >> > times...
+> >> 
+> >> Didn't we learn this lesson already with POHMELFS? i.e. that
+> >> dumping filesystem code in staging on the assumption "the
+> >> community" will fix it up when nobody in "the community" uses
+> >> or can even test that filesystem is a broken development
+> >> model....
+> >
+> >They (Intel) has said that they will continue to clean up this
+> >code in the tree, until it is in good enough shape to be merged
+> >into fs/ properly.  If they ever stop helping out, I will end up
+> >dropping it from the tree, just like I did for pohmelfs, so don't
+> >worry about it lingering around abandoned.
+> 
+> Right, we are going to continue working on cleaning the code at a
+> steady pace until it is ready to move to fs/.  I don't expect Al
+> or Dave or Christoph to spend their time (or make their eyes
+> bleed) with the current state of the code.  It has already
+> undergone some significant cleanup, but needs a bunch more still.
 
-The camelcase cache file is now named:
+The issue I'm more concerned about is more to do with what happens
+when we do something that affects all filesystems, such as API
+changes. Then we are forced to look at it and to try to work out
+what the hell is going on. This was the real problem with pomelhfs
+being in staging - it had an unreasonably high maintenance overhead
+compared to other filesystems.
 
-for git:	.checkpatch-camelcase.git.<commit_id>
-for non-git:	.checkpatch-camelcase.date.<YYYYMMDDhhmm>
+This was mainly because pohelmfs was effectively dumped in staging
+and then left unmaintained - if there's consistent effort put into
+the Lustre code to clean it up, maintain it and help with API
+transitions, then I have nothing to object to and I'll just crawl
+back into my box. ;)
 
-All .checkpatch-camelcase* files are deleted if not current.
+Cheers,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 54 +++++++++++++++++++++++++++++++++------------------
- 1 file changed, 35 insertions(+), 19 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 5cf6608..a220104 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -6,6 +6,7 @@
- # Licensed under the terms of the GNU GPL License version 2
- 
- use strict;
-+use POSIX;
- 
- my $P = $0;
- $P =~ s@.*/@@g;
-@@ -399,37 +400,52 @@ sub seed_camelcase_includes {
- 	return if ($camelcase_seeded);
- 
- 	my $files;
--	my $camelcase_git_file = "";
-+	my $camelcase_cache = "";
-+	my @include_files = ();
-+
-+	$camelcase_seeded = 1;
- 
- 	if (-d ".git") {
- 		my $git_last_include_commit = `git log --no-merges --pretty=format:"%h%n" -1 -- include`;
- 		chomp $git_last_include_commit;
--		$camelcase_git_file = ".checkpatch-camelcase.$git_last_include_commit";
--		if (-f $camelcase_git_file) {
--			open(my $camelcase_file, '<', "$camelcase_git_file")
--			    or warn "$P: Can't read '$camelcase_git_file' $!\n";
--			while (<$camelcase_file>) {
--				chomp;
--				$camelcase{$_} = 1;
--			}
--			close($camelcase_file);
--
--			return;
--		}
--		$files = `git ls-files include`;
-+		$camelcase_cache = ".checkpatch-camelcase.git.$git_last_include_commit";
- 	} else {
-+		my $last_mod_date = 0;
- 		$files = `find $root/include -name "*.h"`;
-+		@include_files = split('\n', $files);
-+		foreach my $file (@include_files) {
-+			my $date = POSIX::strftime("%Y%m%d%H%M",
-+						   localtime((stat $file)[9]));
-+			$last_mod_date = $date if ($last_mod_date < $date);
-+		}
-+		$camelcase_cache = ".checkpatch-camelcase.date.$last_mod_date";
-+	}
-+
-+	if ($camelcase_cache ne "" && -f $camelcase_cache) {
-+		open(my $camelcase_file, '<', "$camelcase_cache")
-+		    or warn "$P: Can't read '$camelcase_cache' $!\n";
-+		while (<$camelcase_file>) {
-+			chomp;
-+			$camelcase{$_} = 1;
-+		}
-+		close($camelcase_file);
-+
-+		return;
-+	}
-+
-+	if (-d ".git") {
-+		$files = `git ls-files "include/*.h"`;
-+		@include_files = split('\n', $files);
- 	}
--	my @include_files = split('\n', $files);
-+
- 	foreach my $file (@include_files) {
- 		seed_camelcase_file($file);
- 	}
--	$camelcase_seeded = 1;
- 
--	if ($camelcase_git_file ne "") {
-+	if ($camelcase_cache ne "") {
- 		unlink glob ".checkpatch-camelcase.*";
--		open(my $camelcase_file, '>', "$camelcase_git_file")
--		    or warn "$P: Can't write '$camelcase_git_file' $!\n";
-+		open(my $camelcase_file, '>', "$camelcase_cache")
-+		    or warn "$P: Can't write '$camelcase_cache' $!\n";
- 		foreach (sort { lc($a) cmp lc($b) } keys(%camelcase)) {
- 			print $camelcase_file ("$_\n");
- 		}
+Dave.
 -- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Dave Chinner
+david@fromorbit.com
