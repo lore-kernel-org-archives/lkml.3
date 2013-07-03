@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab3GCHhp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 03:37:45 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59297 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab3GCHhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 03:37:43 -0400
-Date: Wed, 3 Jul 2013 09:37:40 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Kay Sievers <kay@vrfy.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Lennart Poettering <lpoetter@redhat.com>,
-        Tim Hockin <thockin@hockin.org>, Michal Hocko <mhocko@suse.cz>,
-        Tejun Heo <tj@kernel.org>, Mike Galbraith <bitbucket@online.de>,
-        Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-Message-ID: <20130703073740.GA14096@pd.tnic>
-References: <20130628040930.GC2500@htj.dyndns.org>
- <1372394950.5989.128.camel@marge.simpson.net>
- <20130628050138.GD2500@htj.dyndns.org>
- <20130628150513.GD5125@dhcp22.suse.cz>
- <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com>
- <51CE3CE0.9010506@redhat.com>
- <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com>
- <51D08976.6040005@redhat.com>
- <alpine.DEB.2.02.1307030021480.4013@ionos.tec.linutronix.de>
- <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
+	id S1754701Ab3GCHoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 03:44:38 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:39338 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab3GCHog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 03:44:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130702223405.AF5BB5A4016@corp2gmr1-2.hot.corp.google.com>
+References: <20130702223405.AF5BB5A4016@corp2gmr1-2.hot.corp.google.com>
+Date: Wed, 3 Jul 2013 09:44:34 +0200
+Message-ID: <CA+icZUWX761O5tAfdYfgR0_QA8zMiZOqBBjzbWVeEcZPL+M_pQ@mail.gmail.com>
+Subject: Re: mmotm 2013-07-02-15-32 uploaded
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 02:44:31AM +0200, Kay Sievers wrote:
-> I don't think anybody needs your money.
-> 
-> But it's sure an improvement over last time when you wanted to use a
-> "Kantholz" to make your statement.
+On Wed, Jul 3, 2013 at 12:34 AM,  <akpm@linux-foundation.org> wrote:
+> The mm-of-the-moment snapshot 2013-07-02-15-32 has been uploaded to
+>
+>    http://www.ozlabs.org/~akpm/mmotm/
+>
+> mmotm-readme.txt says
+>
+> README for mm-of-the-moment:
+>
+> http://www.ozlabs.org/~akpm/mmotm/
+>
+> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> more than once a week.
+>
+> You will need quilt to apply these patches to the latest Linus release (3.x
+> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+> http://ozlabs.org/~akpm/mmotm/series
+>
+> The file broken-out.tar.gz contains two datestamp files: .DATE and
+> .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
+> followed by the base kernel version against which this patch series is to
+> be applied.
+>
+> This tree is partially included in linux-next.  To see which patches are
+> included in linux-next, consult the `series' file.  Only the patches
+> within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
+> linux-next.
+>
 
-Kantholz, frozen sharks, whatever helps get the real point across. Hint:
-this is not at all about the money.
+Hi Andrew,
 
--- 
-Regards/Gruss,
-    Boris.
+1st, I would like to see a diff to previous mmotm release.
+Is that possible - with the announce.
+For example, I like to diff series file of mmot*m* and mmot*s*.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+AFAICS, you wanted to fold the fix into the real patch?
+
+ipcmsg-shorten-critical-region-in-msgctl_down.patch
+ipcmsg-shorten-critical-region-in-msgrcv-fix-race-in-msgrcv2.patch
+
+3rd, is the "sysv-ipc-shm-optimizations" patchset from Davidlohr included here?
+( I had no closer look. )
+
+Thanks for maintaining -mm stuff!
+
+Regards,
+- Sedat -
