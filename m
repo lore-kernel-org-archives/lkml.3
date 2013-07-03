@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab3GCAAp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 20:00:45 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:38106 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab3GCAAo (ORCPT
+	id S1754902Ab3GCACX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 20:02:23 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:35220 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab3GCACW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 20:00:44 -0400
+	Tue, 2 Jul 2013 20:02:22 -0400
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CA+55aFzV12kJgNOax7B1rM8capK2uYLH66wHnQRNn4k5wa1LMQ@mail.gmail.com>
-References: <201307022055.50717.arnd@arndb.de>
-	<201307022104.01826.arnd@arndb.de>
-	<20130702231706.GF24642@n2100.arm.linux.org.uk>
-	<CA+55aFzV12kJgNOax7B1rM8capK2uYLH66wHnQRNn4k5wa1LMQ@mail.gmail.com>
-Date: Tue, 2 Jul 2013 17:00:43 -0700
-Message-ID: <CAOesGMifPRVr=TVWJfEOm83tMVE0aXFCBVNvAKLV8mvqbDEJmQ@mail.gmail.com>
-Subject: Re: [GIT PULL 3/7] ARM SoC specific changes
-From: Olof Johansson <olof@lixom.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+In-Reply-To: <20130703094529.99444050e676467d281a3b51@canb.auug.org.au>
+References: <nsxbo6mxu38.fsf@lambda.thunk.org>
+	<20130703094529.99444050e676467d281a3b51@canb.auug.org.au>
+Date: Tue, 2 Jul 2013 17:02:21 -0700
+X-Google-Sender-Auth: 4SYXbSF7bl4VMrgDaG0pIWKlCtc
+Message-ID: <CA+55aFxdAHqEhnV-zKwExVfBAvw=k8+GprTGniNz=TpJM6obtQ@mail.gmail.com>
+Subject: Re: [GIT PULL] ext4 updates for 3.11
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ARM SoC <arm@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 2, 2013 at 4:51 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jul 2, 2013 at 4:17 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> Please don't merge this yet.
+On Tue, Jul 2, 2013 at 4:45 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 >
-> Oops, too late. The ARM SoC pull requests got merged a couple of hours ago..
+> The merge of the ext4 tree and the staging tree needs the following fixup
+> (at least).  It is not a biggie, as that code in staging is actually
+> disabled at the moment.
 
-It should hopefully not be a big problem, you'll see a merge conflict
-(so will sfr) when merging from Russell due to add/add conflicts been
-resolved by ordering them in opposite order in
-arch/arm/include/asm/glue-proc.h.
+Argh. I merged both of these before this email came in, so now my
+merge doesn't have this.
 
-Feel free to flip them back to Russell's preferred ordering at that
-time, of course.
+That said, as you mention, lustre is currently disabled due to bigger
+build issues, so I guess it's not a big deal.
 
+Who is going to be the main Lustre maintainer? I'm assuming (based on
+the commits I see) it's Andreas Dilger?
 
--Olof
+I'm really not convinced this whole Lustre thing was correctly
+handled. Merging it into stable and yet being in such bad shape that
+it isn't enabled even there? I just dunno. But I have the turd in my
+tree now, let's hope it gets fixed up.
+
+               Linus
