@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755Ab3GCM7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 08:59:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32807 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753721Ab3GCM7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 08:59:12 -0400
-Date: Wed, 3 Jul 2013 14:59:09 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Robert Richter <rric@kernel.org>
-Cc: "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Makefile: Fix install error with make -j option
-Message-ID: <20130703125909.GA30955@sepie.suse.cz>
-References: <1367499037-8350-1-git-send-email-rric@kernel.org>
- <20130612101347.GP3886@rric.localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130612101347.GP3886@rric.localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756279Ab3GCNCL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 09:02:11 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:41397 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753053Ab3GCNCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 09:02:08 -0400
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [RFC][PATCH 0/2] s390/kvm: add kvm support for guest page hinting
+Date: Wed,  3 Jul 2013 15:01:50 +0200
+Message-Id: <1372856512-25710-1-git-send-email-schwidefsky@de.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070312-2966-0000-0000-0000080A81E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 12, 2013 at 12:13:47PM +0200, Robert Richter wrote:
-> Michal,
-> 
-> please apply this fix, ideally for v3.10 if possible.
+Linux on s390 as a guest under z/VM has been using the guest page
+hinting interface (alias collaborative memory management) for a long
+time. The full version with volatile states has been deemed to be too
+complicated (see the old discussion about guest page hinting e.g. on
+http://marc.info/?l=linux-mm&m=123816662017742&w=2).
+What is currently implemented for the guest is the unused and stable
+states to mark unallocated pages as freely available to the host.
+This works just fine with z/VM as the host.
 
-I applied it to kbuild.git#kbuild now, with Cc:
-<stable@vger.kernel.org>.
+The two patches in this series implement the guest page hinting
+interface for the unused and stable states in the KVM host.
+Most of the code specific to s390 but there is a common memory
+management part as well, see patch #1.
 
-Michal
-> 
-> Thanks,
-> 
-> -Robert
-> 
-> 
-> On 02.05.13 08:50:37, Robert Richter wrote:
-> > From: Robert Richter <robert.richter@calxeda.com>
-> > 
-> > Make modules_install fails with -j option:
-> > 
-> >    DEPMOD
-> >  Usage: .../.source/linux/scripts/depmod.sh /sbin/depmod <kernelrelease>
-> >  make[1]: *** [_modinst_post] Error 1
-> > 
-> > Adding kernelrelease dependency to fix this.
-> > 
-> > Signed-off-by: Robert Richter <robert.richter@calxeda.com>
-> > ---
-> >  Makefile | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/Makefile b/Makefile
-> > index 46263d8..0205e79 100644
-> > --- a/Makefile
-> > +++ b/Makefile
-> > @@ -979,7 +979,7 @@ _modinst_:
-> >  # boot a modules.dep even before / is mounted read-write.  However the
-> >  # boot script depmod is the master version.
-> >  PHONY += _modinst_post
-> > -_modinst_post: _modinst_
-> > +_modinst_post: include/config/kernel.release _modinst_
-> >  	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.fwinst obj=firmware __fw_modinst
-> >  	$(call cmd,depmod)
-> >  
-> > -- 
-> > 1.8.1.1
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The circus is back ;-)
+
+Konstantin Weitz (2):
+  mm: add support for discard of unused ptes
+  s390/kvm: support collaborative memory management
+
+ arch/s390/include/asm/kvm_host.h |    8 +++-
+ arch/s390/include/asm/pgtable.h  |   24 ++++++++++++
+ arch/s390/kvm/kvm-s390.c         |   24 ++++++++++++
+ arch/s390/kvm/kvm-s390.h         |    2 +
+ arch/s390/kvm/priv.c             |   37 ++++++++++++++++++
+ arch/s390/mm/pgtable.c           |   77 ++++++++++++++++++++++++++++++++++++++
+ include/asm-generic/pgtable.h    |   13 +++++++
+ include/linux/rmap.h             |    1 +
+ mm/rmap.c                        |   28 +++++++++++++-
+ mm/vmscan.c                      |    3 ++
+ 10 files changed, 214 insertions(+), 3 deletions(-)
+
+-- 
+1.7.9.5
+
