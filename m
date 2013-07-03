@@ -1,113 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592Ab3GCTlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:41:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47864 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933249Ab3GCTjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 15:39:07 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] Change SIGPIPE's siginfo.si_code from SI_USER to SI_KERNEL.
-Date: Wed,  3 Jul 2013 21:38:55 +0200
-Message-Id: <1372880335-23755-1-git-send-email-dvlasenk@redhat.com>
+	id S965547Ab3GCTnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:43:06 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:35593 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933041Ab3GCTnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 15:43:04 -0400
+Message-ID: <51D47EC3.5080305@kernel.org>
+Date: Wed, 03 Jul 2013 20:42:59 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>, stable@vger.kernel.org
+Subject: Re: [PATCH] iio: inkern: fix iio_convert_raw_to_processed_unlocked
+References: <1372696809-14661-1-git-send-email-alexandre.belloni@free-electrons.com> <20130701152004.cfddc36e7b3d9d63e1960514@linux-foundation.org>
+In-Reply-To: <20130701152004.cfddc36e7b3d9d63e1960514@linux-foundation.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SI_USER means that this signal is sent by another process
-via kill(2) et al.
+On 07/01/2013 11:20 PM, Andrew Morton wrote:
+> On Mon,  1 Jul 2013 18:40:09 +0200 Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
+> 
+>> When reading IIO_CHAN_INFO_OFFSET, the return value of iio_channel_read() for
+>> success will be IIO_VAL*, checking for 0 is not correct.
+> 
+> I have a canned response:
+> 
+> When writing a changelog, please describe the end-user-visible effects
+> of the bug, so that others can more easily decide which kernel
+> version(s) should be fixed, and so that downstream kernel maintainers
+> can more easily work out whether this patch will fix a problem which
+> they or their customers are observing.
+> 
+>> Cc: <stable@vger.kernel.org> # 3.10.x
+> 
+> Especially when cc'ing -stable.
+> 
+As Andrew suggested I have added a few more details and applied the patch
+to the fixes-togreg branch of iio.git.
 
-Other cases when kernel sends signals, such as ^C,
-SIGHUP on tty close, SIGXCPU when time limit is up,
-SIGALRM from alarm(2) etc, we set si_code to SI_KERNEL.
+Thanks,
 
-SIGPIPE seems to be inconsistent here.
-
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>
----
- fs/fuse/dev.c | 2 +-
- fs/pipe.c     | 4 ++--
- fs/splice.c   | 8 ++++----
- 3 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-index 1d55f94..de55774 100644
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -1340,7 +1340,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
- 	pipe_lock(pipe);
- 
- 	if (!pipe->readers) {
--		send_sig(SIGPIPE, current, 0);
-+		send_sig(SIGPIPE, current, 1);
- 		if (!ret)
- 			ret = -EPIPE;
- 		goto out_unlock;
-diff --git a/fs/pipe.c b/fs/pipe.c
-index d2c45e1..ddd777e 100644
---- a/fs/pipe.c
-+++ b/fs/pipe.c
-@@ -514,7 +514,7 @@ pipe_write(struct kiocb *iocb, const struct iovec *_iov,
- 	__pipe_lock(pipe);
- 
- 	if (!pipe->readers) {
--		send_sig(SIGPIPE, current, 0);
-+		send_sig(SIGPIPE, current, 1);
- 		ret = -EPIPE;
- 		goto out;
- 	}
-@@ -563,7 +563,7 @@ redo1:
- 		int bufs;
- 
- 		if (!pipe->readers) {
--			send_sig(SIGPIPE, current, 0);
-+			send_sig(SIGPIPE, current, 1);
- 			if (!ret)
- 				ret = -EPIPE;
- 			break;
-diff --git a/fs/splice.c b/fs/splice.c
-index 3b7ee65..1eb18da 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -197,7 +197,7 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
- 
- 	for (;;) {
- 		if (!pipe->readers) {
--			send_sig(SIGPIPE, current, 0);
-+			send_sig(SIGPIPE, current, 1);
- 			if (!ret)
- 				ret = -EPIPE;
- 			break;
-@@ -1812,7 +1812,7 @@ static int opipe_prep(struct pipe_inode_info *pipe, unsigned int flags)
- 
- 	while (pipe->nrbufs >= pipe->buffers) {
- 		if (!pipe->readers) {
--			send_sig(SIGPIPE, current, 0);
-+			send_sig(SIGPIPE, current, 1);
- 			ret = -EPIPE;
- 			break;
- 		}
-@@ -1863,7 +1863,7 @@ retry:
- 
- 	do {
- 		if (!opipe->readers) {
--			send_sig(SIGPIPE, current, 0);
-+			send_sig(SIGPIPE, current, 1);
- 			if (!ret)
- 				ret = -EPIPE;
- 			break;
-@@ -1967,7 +1967,7 @@ static int link_pipe(struct pipe_inode_info *ipipe,
- 
- 	do {
- 		if (!opipe->readers) {
--			send_sig(SIGPIPE, current, 0);
-+			send_sig(SIGPIPE, current, 1);
- 			if (!ret)
- 				ret = -EPIPE;
- 			break;
--- 
-1.8.1.4
-
+Jonathan
