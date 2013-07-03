@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab3GCJSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 05:18:18 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40215 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab3GCJSR (ORCPT
+	id S1755886Ab3GCJYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 05:24:14 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:38214 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754515Ab3GCJYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 05:18:17 -0400
-Date: Wed, 3 Jul 2013 10:18:12 +0100
-From: Mark Brown <broonie@sirena.org.uk>
-To: Milo Kim <woogyom.kim@gmail.com>
-Cc: Milo Kim <milo.kim@ti.com>, linux-kernel@vger.kernel.org
-Message-ID: <20130703091812.GC27646@sirena.org.uk>
-References: <1372815057-16631-1-git-send-email-milo.kim@ti.com>
+	Wed, 3 Jul 2013 05:24:12 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmErAF3s01F5LNm+/2dsb2JhbABagwkyrHwCjk6FIQQEAX4XdIIjAQEFMgEjIxAIAw4KCSUPBSUDIROIDrpzFo4ygR0Hg20Dl0mRRoMjKg
+Date: Wed, 3 Jul 2013 19:24:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] MAINTAINERS: xfs@oss.sgi.com is a list
+Message-ID: <20130703092406.GM14996@dastard>
+References: <1372777248-4114-1-git-send-email-ydroneaud@opteya.com>
+ <20130703064026.GL14996@dastard>
+ <c229feab100a72240128ef81297680a1@meuh.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ylzTCAJcNegswXN2"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1372815057-16631-1-git-send-email-milo.kim@ti.com>
-X-Cookie: You will contract a rare disease.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <c229feab100a72240128ef81297680a1@meuh.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: lp872x: fix a build waring and coding styles
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 03, 2013 at 10:14:41AM +0200, Yann Droneaud wrote:
+> Hi,
+> 
+> Le 03.07.2013 08:40, Dave Chinner a écrit :
+> >On Tue, Jul 02, 2013 at 05:00:47PM +0200, Yann Droneaud wrote:
+> >>This patch changes type of xfs@oss.sgi.com
+> >>
+> >>The output of ./scripts/get_maintainer.pl is
+> >>modified to report xfs@oss.sgi.com as a list:
+> >
+> >What's the problem with that? All XFS patches and problem
+> >reports should be sent to the xfs@oss.sgi.com list. There are far
+> >more people than just the maintainer that can triage problems,
+> >answer questions and review patches...
+> >
+> 
+> It was just disturbing: I was looking for a list for XFS
+> and found only maintainers.
 
---ylzTCAJcNegswXN2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+That's what the:
 
-On Wed, Jul 03, 2013 at 10:30:57AM +0900, Milo Kim wrote:
-> From: Milo Kim <milo.kim@ti.com>
->=20
-> Fix a warning below.
->=20
->   drivers/regulator/lp872x.c:910:33: warning: cast from pointer to intege=
-r of
->                                      different size [-Wpointer-to-int-cas=
-t]
->=20
-> And checkpatch warnings are fixed.
->=20
->   WARNING: space prohibited before semicolon
+L:      xfs@oss.sgi.com
 
-Applied, thanks.  This should really have been two separate patches
-since it fixes two different issues in unrelated parts of the code.
+entry is, yes?
 
---ylzTCAJcNegswXN2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cheers,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR0+xRAAoJELSic+t+oim9jYsP/1aYjirp3Xh2TDUwW8VcwWcm
-W9mzpQRBbKn2imkIDwsU/kd3CvUX4qs3IJYvtcRFpMtRWM81L3VuTUOUkF67B0Km
-H3Vhsl3qIT+2RPm2TSjXhkAoOFUs2iS3+mp10fHz1OJh3obUgFNuM3ckIRSynSB7
-nqM7GyjrOae8nmx14kkYl6KSmjB97rxUsTweCPFizeBNioZFEEcsIyqEdQ75PwLl
-pMxeB6V8PBFLOXKINxH2h2YPNjR7wCiYdfH6t6txuPpaq7V0Rl0KH3mwk45I9cb4
-nAbXUoYeHjmtST+eXkFZFz37hc/NnnAf7lLr8OK8Ney4kggW3qo+GZ1sWT+G/uOR
-4DgON5j24BH6YqeigZB980kArnJG38sHeqbTrOExEREhQjiWDY1kbfeujXtz8zK4
-909d8oYx66Xsa7eaEfDYLR5jM9EogENGldOY6eGorXRG3NyhfniJko8pA1DSG/6E
-J5cTBXs4xD1ibfCQPvN0I6Poxo0/ggf0nJiTGfDya2lipsLlvNhEGIDC6KBPtxwo
-REilkmxEMEMt95zqctsi+++XLv0zbce2uqR6PerYLuTb1KzD/LOMl2OVJS+l06MA
-Aji+aLwdjGjNdC/U13lqH9DgzjjVN+jmdQCJKiOJEgOJrdznMchdAzy2gsmqqgLe
-f2VKGXYTk0CaITOzpb3O
-=qQh8
------END PGP SIGNATURE-----
-
---ylzTCAJcNegswXN2--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
