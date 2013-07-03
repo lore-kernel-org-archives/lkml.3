@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369Ab3GCXFB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 19:05:01 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:41343 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932988Ab3GCXE7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 19:04:59 -0400
-Message-ID: <1372892697.8728.22.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: mmotm 2013-07-02-15-32 uploaded
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: sedat.dilek@gmail.com
-Cc: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Date: Wed, 03 Jul 2013 16:04:57 -0700
-In-Reply-To: <CA+icZUWX761O5tAfdYfgR0_QA8zMiZOqBBjzbWVeEcZPL+M_pQ@mail.gmail.com>
-References: <20130702223405.AF5BB5A4016@corp2gmr1-2.hot.corp.google.com>
-	 <CA+icZUWX761O5tAfdYfgR0_QA8zMiZOqBBjzbWVeEcZPL+M_pQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933790Ab3GCXQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 19:16:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43566 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933679Ab3GCXQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 19:16:06 -0400
+Date: Thu, 4 Jul 2013 01:11:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+Message-ID: <20130703231114.GA18261@redhat.com>
+References: <1372799087.22688.58.camel@gandalf.local.home> <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com> <51D38F8D.3010708@hitachi.com> <20130703172029.GA14309@redhat.com> <20130703175420.GA25668@redhat.com> <1372874547.22688.111.camel@gandalf.local.home> <20130703191748.GA2884@redhat.com> <1372883643.22688.118.camel@gandalf.local.home> <1372883787.22688.120.camel@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372883787.22688.120.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-03 at 09:44 +0200, Sedat Dilek wrote:
-> On Wed, Jul 3, 2013 at 12:34 AM,  <akpm@linux-foundation.org> wrote:
-> > The mm-of-the-moment snapshot 2013-07-02-15-32 has been uploaded to
-> >
-> >    http://www.ozlabs.org/~akpm/mmotm/
-> >
-> > mmotm-readme.txt says
-> >
-> > README for mm-of-the-moment:
-> >
-> > http://www.ozlabs.org/~akpm/mmotm/
-> >
-> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> > more than once a week.
-> >
-> > You will need quilt to apply these patches to the latest Linus release (3.x
-> > or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> > http://ozlabs.org/~akpm/mmotm/series
-> >
-> > The file broken-out.tar.gz contains two datestamp files: .DATE and
-> > .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-> > followed by the base kernel version against which this patch series is to
-> > be applied.
-> >
-> > This tree is partially included in linux-next.  To see which patches are
-> > included in linux-next, consult the `series' file.  Only the patches
-> > within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-> > linux-next.
-> >
-> 
-> Hi Andrew,
-> 
-> 1st, I would like to see a diff to previous mmotm release.
-> Is that possible - with the announce.
-> For example, I like to diff series file of mmot*m* and mmot*s*.
-> 
-> AFAICS, you wanted to fold the fix into the real patch?
-> 
-> ipcmsg-shorten-critical-region-in-msgctl_down.patch
-> ipcmsg-shorten-critical-region-in-msgrcv-fix-race-in-msgrcv2.patch
+On 07/03, Steven Rostedt wrote:
+>
+> On Wed, 2013-07-03 at 16:34 -0400, Steven Rostedt wrote:
+> > OK, what about the below patch, followed by an updated version of your
+> > patch. I'll send that as a reply to this one.
+>
+> This is a modification of your patch:
 
-IIRC, it will be folded in once it reaches Linus.
+Thanks.
 
-> 
-> 3rd, is the "sysv-ipc-shm-optimizations" patchset from Davidlohr included here?
-> ( I had no closer look. )
+> If you like it, please add a proper change log and SOB tag. Oh, and we
+> need to still update trace_kprobes.c
 
-Those are being considered for 3.12 now, I'll resend the patchset once
-3.11-rc1 is out.
+and trace_uprobes.c. Please find the changelog below.
 
-Thanks,
-Davidlohr
+
+tracing: trace_remove_event_call() should fail if call/file is in use
+
+Change trace_remove_event_call(call) to return the error if this
+call is active. This is what the callers assume but can't verify
+outside of the tracing locks. Both trace_kprobe.c/trace_uprobe.c
+need the additional changes, unregister_trace_probe() should abort
+if trace_remove_event_call() fails.
+
+We also check TRACE_EVENT_FL_REF_MASK to ensure that nobody opened
+the files we are going to remove, these means that nobody can access
+the soon-to-be-freed ftrace_event_file/call via filp->private_data.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
