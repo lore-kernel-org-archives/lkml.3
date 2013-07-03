@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933347Ab3GCVAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:00:22 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:64602 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933209Ab3GCVAS convert rfc822-to-8bit (ORCPT
+	id S964864Ab3GCVCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 17:02:05 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:46527 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933044Ab3GCVCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:00:18 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Guenter Roeck'" <linux@roeck-us.net>
-Cc: <linux-kernel@vger.kernel.org>, <lm-sensors@lm-sensors.org>
-References: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com> <20130703144201.GA10323@roeck-us.net> <007101ce7807$88cfb160$9a6f1420$@lucidpixels.com> <20130703163311.GB12506@roeck-us.net> <008001ce780d$0d1a79f0$274f6dd0$@lucidpixels.com> <20130703171713.GA26555@roeck-us.net> <008e01ce7811$b50c9180$1f25b480$@lucidpixels.com> <20130703205654.GA30588@roeck-us.net> <00ad01ce7830$3b135890$b13a09b0$@lucidpixels.com>
-In-Reply-To: <00ad01ce7830$3b135890$b13a09b0$@lucidpixels.com>
-Subject: RE: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro X9SRL-F motherboard
-Date: Wed, 3 Jul 2013 17:00:16 -0400
-Message-ID: <00b501ce7830$527362a0$f75a27e0$@lucidpixels.com>
+	Wed, 3 Jul 2013 17:02:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQIBG1i38eH5ocpI2BHQpKIJ/u+ELQK02s2OAOyqsYwB45ZSoAJZuzqdAnnKLoQBSqfGJgHzZUS+AhkxagqYcKrlIA==
-Content-language: en-us
+In-Reply-To: <51D3D9AD.9070800@samsung.com>
+References: <1372754108-21075-1-git-send-email-m.szyprowski@samsung.com>
+	<20130703100903.81ab08c6db864c20498b558d@canb.auug.org.au>
+	<51D3D9AD.9070800@samsung.com>
+Date: Wed, 3 Jul 2013 14:02:01 -0700
+X-Google-Sender-Auth: fNz-y-5CQRmdMaKr8bxVa2n3nlk
+Message-ID: <CA+55aFww7SG3BVDs5jUTwX9pjARG3XQXA2g_9XQJf6agq=fD9g@mail.gmail.com>
+Subject: Re: [GIT PULL] DMA-mapping updates for v3.11
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re-sending as text.
+On Wed, Jul 3, 2013 at 12:58 AM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+>
+> Right, I dropped one commit, which I found in other 'for_next' kernel tree
+> (the one from Russell King) before sending the pull request. What's wrong with
+> this approach?
 
-From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com] 
-Sent: Wednesday, July 03, 2013 5:00 PM
-To: 'Guenter Roeck'
-Cc: linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
-Subject: RE: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
-X9SRL-F motherboard
+What did dropping the commit fix? Anything?
 
+DO NOT REBASE UNLESS YOU HAVE SERIOUSLY PRESSING REASONS!
 
+Why does this keep on coming up EVERY SINGLE RELEASE? Does nobody read my rants?
 
------Original Message-----
-From: Guenter Roeck [mailto:linux@roeck-us.net] 
-Sent: Wednesday, July 03, 2013 4:57 PM
-To: Justin Piszcz
-Cc: linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
-X9SRL-F motherboard
+A duplicate commit not a "seriously pressing reason". It may be reason
+for some introspection ("why did I and Russell end up applying the
+same patch and stepping on each others toes?") but it is not in itself
+at all a reason for rebasing.
 
-[ .. ]
+Reasons for rebasing include:
 
-> 09: 0a 00 00 00 00 0a 0a 0a 0a aa ef 80 ff 40 46 c4 
-> 0a: 0e 01 00 00 ff 00 00 ff 00 00 80 66 66 06 01 01 
-                                                ^^
-This shows that PECI Agent 0 is supposed to be enabled.
+ - "I am a complete moron, and I have terminally messed up my history
+with merges from random places to the point where it is completely
+unpullable"
 
-> Bank 2:
->     00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-> 00: 8c 32 00 01 01 33 01 3c ff 33 ff ff 00 ff ff ff 
-      ^^
-This value suggests that the second temperature sensor (the one creating
-the alarm) is supposed to be the PECI source (which reports the CPU
-temperature
-to the NCT6776), and that it is supposed to be used to control the speed
-of the CPU fan.
-            ^^
-Fan control is in manual mode. Did you set this ?
-It is quite unusual.
+ - "There are commits that are so horribly broken in the history that
+I can't even revert them, because seeing them mentioned one more time
+will make me go blind"
 
-Setting:                
-Current FAN Mode is Optimal.
-Set Fan to Standard Speed
-Set Fan to Full Speed
-Set Fan to Optimal Speed
+and the best one:
 
-> Bank 7:
->     00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 
-> 00: ff 95 02 10 00 00 00 00 00 64 00 00 00 00 00 00 
-> 01: 00 00 00 00 00 00 00 f8 80 f8 80 f8 80 f8 80 00 
-                                                   ^^
-00 here shows that the PECI source is not active, ie the CPU does not
-deliver
-PECI data to the NCT6776. This explains the alarm.
+ - "I never made my patches public in the first place, and I'll clean
+my ugly series up before posting them publicly for the first time".
 
-Practical impact is probably limited as fan control is configured to be
-manual
-anyway, but I wonder why PECI doesn't work on your board. PECI configuration
-is identical to my Supermicro board.
+but that last one shouldn't happen just before sending it to me, it
+should happen a few weeks before sending to me so that linux-next has
+time to digest the beauty of the rebased series.
 
-Guenter
+The fact is, rebasing is a perfectly fine operation, but it's a fine
+operation that causes lots of problems if those commits have ever been
+public before. It means that linux-next cannot easily be compared to
+what I pull (which is why Stephen complains), but it also results in
+other developers not being able to trust your tree, and in the commits
+randomly changing and the testing base thus not being reliable any
+more (which is why I complain).
 
-
+                   Linus
