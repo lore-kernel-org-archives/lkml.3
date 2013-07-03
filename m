@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965188Ab3GCTDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:03:16 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28068 "EHLO
+	id S965162Ab3GCTDO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:03:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6261 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965042Ab3GCTAc (ORCPT
+	with ESMTP id S965046Ab3GCTAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 15:00:32 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=wByEn6SnafoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=su-O6YEmCVUA:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=Y3nRCmVAlQJ2w_xPpkcA:9 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=nVMMZ_pgoL8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=GbiZm08Ugi0A:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=e0gVtgZ23HrhdBXb4dMA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=jxpA4z8-BymiTEoP:21 a=mjPeQBnAFBoidjM9:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184056.411073580@goodmis.org>
+Message-Id: <20130703184058.489317277@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:40:08 -0400
+Date: Wed, 03 Jul 2013 14:40:19 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Huang Ying <ying.huang@intel.com>
-Subject: [071/141] xhci: Disable D3cold for buggy TI redrivers.
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [082/141] USB: mos7840: fix DMA to stack
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0071-xhci-Disable-D3cold-for-buggy-TI-redrivers.patch
+Content-Disposition: inline; filename=0082-USB-mos7840-fix-DMA-to-stack.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,109 +30,96 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[ Upstream commit c3897aa5386faba77e5bbdf94902a1658d3a5b11 ]
+[ Upstream commit 15ee89c3347fbf58a4361011eda5ac2731e45126 ]
 
-Some xHCI hosts contain a "redriver" from TI that silently drops port
-status connect changes if the port slips into Compliance Mode.  If the
-port slips into compliance mode while the host is in D0, there will not
-be a port status change event.  If the port slips into compliance mode
-while the host is in D3, the host will not send a PME.  This includes
-when the system is suspended (S3) or hibernated (S4).
+Fix regression introduced by commit 0eafe4de1a ("USB: serial: mos7840:
+add support for MCS7810 devices") which used stack-allocated buffers for
+control messages.
 
-If this happens when the system is in S3/S4, there is nothing software
-can do.  Other port status change events that would normally cause the
-host to wake the system from S3/S4 may also be lost.  This includes
-remote wakeup, disconnects and connects on other ports, and overrcurrent
-events.  A decision was made to _NOT_ disable system suspend/hibernate
-on these systems, since users are unlikely to enable wakeup from S3/S4
-for the xHCI host.
-
-Software can deal with this issue when the system is in S0.  A work
-around was put in to poll the port status registers for Compliance Mode.
-The xHCI driver will continue to poll the registers while the host is
-runtime suspended.  Unfortunately, that means we can't allow the PCI
-device to go into D3cold, because power will be removed from the host,
-and the config space will read as all Fs.
-
-Disable D3cold in the xHCI PCI runtime suspend function.
-
-This patch should be backported to kernels as old as 3.2, that
-contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
-xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Huang Ying <ying.huang@intel.com>
 Cc: stable@vger.kernel.org
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/host/xhci-pci.c |   10 ++++++++++
- drivers/usb/host/xhci.c     |    4 ++--
- drivers/usb/host/xhci.h     |    3 +++
- 3 files changed, 15 insertions(+), 2 deletions(-)
+ drivers/usb/serial/mos7840.c |   35 +++++++++++++++++++++++++++--------
+ 1 file changed, 27 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index dcb72f7..cd0fc48 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -221,12 +221,22 @@ static void xhci_pci_remove(struct pci_dev *dev)
- static int xhci_pci_suspend(struct usb_hcd *hcd, bool do_wakeup)
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index 8654df0..3193d25 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -2341,13 +2341,21 @@ static int mos7840_ioctl(struct tty_struct *tty,
+ static int mos7810_check(struct usb_serial *serial)
  {
- 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
-+	struct pci_dev		*pdev;
- 	int	retval = 0;
- 
- 	if (hcd->state != HC_STATE_SUSPENDED ||
- 			xhci->shared_hcd->state != HC_STATE_SUSPENDED)
- 		return -EINVAL;
- 
-+	pdev = to_pci_dev(hcd->self.controller);
+ 	int i, pass_count = 0;
++	u8 *buf;
+ 	__u16 data = 0, mcr_data = 0;
+ 	__u16 test_pattern = 0x55AA;
++	int res;
 +
-+	/*
-+	 * Systems with the TI redriver that loses port status change events
-+	 * need to have the registers polled during D3, so avoid D3cold.
-+	 */
-+	if (xhci_compliance_mode_recovery_timer_quirk_check())
-+		pdev->no_d3cold = true;
-+
- 	retval = xhci_suspend(xhci);
++	buf = kmalloc(VENDOR_READ_LENGTH, GFP_KERNEL);
++	if (!buf)
++		return 0;	/* failed to identify 7810 */
  
- 	return retval;
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 6ee481a..2c117ec 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -466,7 +466,7 @@ static void compliance_mode_recovery_timer_init(struct xhci_hcd *xhci)
-  * Systems:
-  * Vendor: Hewlett-Packard -> System Models: Z420, Z620 and Z820
-  */
--static bool compliance_mode_recovery_timer_quirk_check(void)
-+bool xhci_compliance_mode_recovery_timer_quirk_check(void)
+ 	/* Store MCR setting */
+-	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++	res = usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+ 		MCS_RDREQ, MCS_RD_RTYPE, 0x0300, MODEM_CONTROL_REGISTER,
+-		&mcr_data, VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++		buf, VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++	if (res == VENDOR_READ_LENGTH)
++		mcr_data = *buf;
+ 
+ 	for (i = 0; i < 16; i++) {
+ 		/* Send the 1-bit test pattern out to MCS7810 test pin */
+@@ -2357,9 +2365,12 @@ static int mos7810_check(struct usb_serial *serial)
+ 			MODEM_CONTROL_REGISTER, NULL, 0, MOS_WDR_TIMEOUT);
+ 
+ 		/* Read the test pattern back */
+-		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+-			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &data,
+-			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++		res = usb_control_msg(serial->dev,
++				usb_rcvctrlpipe(serial->dev, 0), MCS_RDREQ,
++				MCS_RD_RTYPE, 0, GPIO_REGISTER, buf,
++				VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++		if (res == VENDOR_READ_LENGTH)
++			data = *buf;
+ 
+ 		/* If this is a MCS7810 device, both test patterns must match */
+ 		if (((test_pattern >> i) ^ (~data >> 1)) & 0x0001)
+@@ -2373,6 +2384,8 @@ static int mos7810_check(struct usb_serial *serial)
+ 		MCS_WR_RTYPE, 0x0300 | mcr_data, MODEM_CONTROL_REGISTER, NULL,
+ 		0, MOS_WDR_TIMEOUT);
+ 
++	kfree(buf);
++
+ 	if (pass_count == 16)
+ 		return 1;
+ 
+@@ -2382,11 +2395,17 @@ static int mos7810_check(struct usb_serial *serial)
+ static int mos7840_calc_num_ports(struct usb_serial *serial)
  {
- 	const char *dmi_product_name, *dmi_sys_vendor;
+ 	__u16 data = 0x00;
++	u8 *buf;
+ 	int mos7840_num_ports;
  
-@@ -517,7 +517,7 @@ int xhci_init(struct usb_hcd *hcd)
- 	xhci_dbg(xhci, "Finished xhci_init\n");
+-	usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
+-		MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, &data,
+-		VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++	buf = kzalloc(VENDOR_READ_LENGTH, GFP_KERNEL);
++	if (buf) {
++		usb_control_msg(serial->dev, usb_rcvctrlpipe(serial->dev, 0),
++			MCS_RDREQ, MCS_RD_RTYPE, 0, GPIO_REGISTER, buf,
++			VENDOR_READ_LENGTH, MOS_WDR_TIMEOUT);
++		data = *buf;
++		kfree(buf);
++	}
  
- 	/* Initializing Compliance Mode Recovery Data If Needed */
--	if (compliance_mode_recovery_timer_quirk_check()) {
-+	if (xhci_compliance_mode_recovery_timer_quirk_check()) {
- 		xhci->quirks |= XHCI_COMP_MODE_QUIRK;
- 		compliance_mode_recovery_timer_init(xhci);
- 	}
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 212d408..f056e9f 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1852,4 +1852,7 @@ struct xhci_input_control_ctx *xhci_get_input_control_ctx(struct xhci_hcd *xhci,
- struct xhci_slot_ctx *xhci_get_slot_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx);
- struct xhci_ep_ctx *xhci_get_ep_ctx(struct xhci_hcd *xhci, struct xhci_container_ctx *ctx, unsigned int ep_index);
- 
-+/* xHCI quirks */
-+bool xhci_compliance_mode_recovery_timer_quirk_check(void);
-+
- #endif /* __LINUX_XHCI_HCD_H */
+ 	if (serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7810 ||
+ 		serial->dev->descriptor.idProduct == MOSCHIP_DEVICE_ID_7820) {
 -- 
 1.7.10.4
 
