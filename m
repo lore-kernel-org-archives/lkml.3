@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932988Ab3GCSXP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:23:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:45168 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932660Ab3GCSXM (ORCPT
+	id S1756179Ab3GCS1O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:27:14 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:49380 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754184Ab3GCS1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:23:12 -0400
-Date: Wed, 3 Jul 2013 19:22:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net,
-        Ryan Mallon <rmallon@gmail.com>, mika.westerberg@iki.fi,
-        grant.likely@linaro.org, hsweeten@visionengravers.com
-Message-ID: <20130703182254.GE27646@sirena.org.uk>
-References: <201307021009.30230.hartleys@visionengravers.com>
+	Wed, 3 Jul 2013 14:27:13 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4vXjQNnSxf1+t97G"
-Content-Disposition: inline
-In-Reply-To: <201307021009.30230.hartleys@visionengravers.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 07/11] spi: spi-ep93xx: remove 'dss' from per chip
- private data
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <20130627094650.GC4283@n2100.arm.linux.org.uk>
+References: <51C97F40.5030101@arm.com>
+	<20130625184539.GB2718@n2100.arm.linux.org.uk>
+	<20130626044842.GR23141@intel.com>
+	<20130626081909.GD2718@n2100.arm.linux.org.uk>
+	<20130626103930.GS23141@intel.com>
+	<20130627094650.GC4283@n2100.arm.linux.org.uk>
+Date: Wed, 3 Jul 2013 11:27:12 -0700
+Message-ID: <CAOesGMgSPNggnBm=E3B774m7Ad_QMXdqvcGqRMxhap6dtpNtCg@mail.gmail.com>
+Subject: Re: amba-pl08x and 'get_signal' namespace collision/build error
+From: Olof Johansson <olof@lixom.net>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Mark Brown <broonie@kernel.org>, Jonathan Austin <jonathan.austin@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steve Capper <Steve.Capper@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        LinusW <linus.walleij@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---4vXjQNnSxf1+t97G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Tue, Jul 02, 2013 at 10:09:29AM -0700, H Hartley Sweeten wrote:
-> This value is only needed to set the bits per word for each transfer
-> of a message. There is no reason to set the value in ep93xx_spi_enable()
-> because ep93xx_spi_process_transfer() sets it again for each transfer.
+On Thu, Jun 27, 2013 at 2:46 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Jun 26, 2013 at 04:09:30PM +0530, Vinod Koul wrote:
+>> On Wed, Jun 26, 2013 at 09:19:09AM +0100, Russell King - ARM Linux wrote:
+>> > On Wed, Jun 26, 2013 at 10:18:42AM +0530, Vinod Koul wrote:
+>> > > Yup. This is fixed in slave-dma tree by a patch from mark by renaming it.
+>> > >
+>> > > This should not show in the -next tree
+>> >
+>> > Except, that change probably is probably responsible for this new error:
+>> >
+>> > drivers/dma/amba-pl08x.c: In function 'pl08x_request_mux':
+>> > drivers/dma/amba-pl08x.c:304:13: error: expected identifier before '(' token
+>> This was pushed four days ago and havent seen any error report expect this.
+>>
+>> Anyway I rebuild my -next and looks fine for me
+>>
+>>   CC      drivers/dma/dmaengine.o
+>>   CC      drivers/dma/virt-dma.o
+>>   CC      drivers/dma/iovlock.o
+>>   CC [M]  drivers/dma/dmatest.o
+>>   CC      drivers/dma/amba-pl08x.o
+>>   LD      drivers/dma/built-in.o
+>>
+>> Can you share your config which failed for you?
+>>
+>> Mark, I believe you are testing for this, have you seen above error?
+>
+> Right, what's going on is that I have a commit in my tree which adds an
+> include to asm/pgtable.h which introduces a #define for get_signal.
+> This becomes visible to amba-pl08x.c.
+>
+> However, my build test tree fails *every* time because what I'm building
+> is Linus' tree, my tree plus arm-soc, and it doesn't include your tree.
+> This makes my build testing for the next merge window impossible.
+>
+> So, I need the fix to pl08x.c merged into my tree.
 
-Applied, thanks.
+This has now hit the mainline kernel, and several defconfigs (nhk815,
+lpc32xx and the spear ones) are broken there.
 
---4vXjQNnSxf1+t97G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Vinod, when are you sending up your pull request with the fix? It'd be
+good to see it go in soon.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR1Gv7AAoJELSic+t+oim9Kk4P/1TK1/teZ5P2ZhfHQ/NDXtfK
-Os53h2qwVfjYNZwosaJDaIulUToRDdUSVck4nPQX4YwkWo+1Fdpk6SU+cAoe4IQg
-gnb8TLieMyBoh9VECTLLzvowbI7VY1Rtmlqx4I7nRHm2JfNVudh/3JnYA+GfcSLn
-RmeoFFe6fW/zLWOsWHhinemn+Bvvjs2EM2f03256qggSRGht1on4LE/nR1hRbXfS
-0mjNFqGSARrtVlLTl3kDmqkdtTiDmHJSw6i4jGVnFV/XozXxBuzFS7Z3qwZ7OJy1
-KjJFbYVl+MPKduw/YDAQdRSkKCVEPgkdE2VLaUpNx3mJ3twh5WrgskV+MdKl4lj2
-4wcYuHz0mTixFjyQ1XnD4xWnCMx4GLA6CAMKyt2fWMINCvQvPNlVBm4H8okYfDwL
-ym2sX/jVr6mBQIuqtjBOw6WwIeJ2GmsLQHDJjtHm2mReptXjZcuuCnzmVxjm6gx/
-qZwcr3PEAsD0gsKe2yxYQnPIGaT3JzNEY2BVRHLQRJ69lsvmNooE322Sx0KlkI8y
-J/P6eZbFg/Uw3WJCd+b+QRfIjsjonCIWAtD34s7c9LPoCUoPnrPsJJKGDQotyl7+
-dLXPaWek7UGYH1HB/ocNYt4iHCSF0OeotsLx1O11fkaMD1rbuZOuGnxskt96Iccs
-vh8iDOgGy4eFg6ffSW24
-=2v6/
------END PGP SIGNATURE-----
-
---4vXjQNnSxf1+t97G--
+-Olof
