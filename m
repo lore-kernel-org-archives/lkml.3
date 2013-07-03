@@ -1,79 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab3GCJu5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 05:50:57 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:7844 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab3GCJu4 (ORCPT
+	id S932660Ab3GCJvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 05:51:15 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35155 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932065Ab3GCJvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 05:50:56 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlorAGbz01F5LNm+/2dsb2JhbABagwkyrHwCjk6FJQQBfhd0giMBAQUyASMjEAgDDgoJJQ8FJQMhE4gOunIWjjKBHQeDbQOXSZFGgyMq
-Date: Wed, 3 Jul 2013 19:50:50 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] MAINTAINERS: xfs@oss.sgi.com is a list
-Message-ID: <20130703095050.GN14996@dastard>
-References: <1372777248-4114-1-git-send-email-ydroneaud@opteya.com>
- <20130703064026.GL14996@dastard>
- <c229feab100a72240128ef81297680a1@meuh.org>
- <20130703092406.GM14996@dastard>
- <5e9d66217e0fa968863177d73dd492b1@meuh.org>
+	Wed, 3 Jul 2013 05:51:12 -0400
+Date: Wed, 3 Jul 2013 11:50:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8] sched: Reschedule task on preferred NUMA node once
+ selected
+Message-ID: <20130703095059.GH23916@twins.programming.kicks-ass.net>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-7-git-send-email-mgorman@suse.de>
+ <20130702181522.GC23916@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5e9d66217e0fa968863177d73dd492b1@meuh.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130702181522.GC23916@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 11:36:39AM +0200, Yann Droneaud wrote:
-> Le 03.07.2013 11:24, Dave Chinner a écrit :
-> >On Wed, Jul 03, 2013 at 10:14:41AM +0200, Yann Droneaud wrote:
-> >>Le 03.07.2013 08:40, Dave Chinner a écrit :
-> >>>On Tue, Jul 02, 2013 at 05:00:47PM +0200, Yann Droneaud wrote:
-> >>>>This patch changes type of xfs@oss.sgi.com
-> >>>>
-> >>>>The output of ./scripts/get_maintainer.pl is
-> >>>>modified to report xfs@oss.sgi.com as a list:
-> >>>
-> >>>What's the problem with that? All XFS patches and problem
-> >>>reports should be sent to the xfs@oss.sgi.com list. There are far
-> >>>more people than just the maintainer that can triage problems,
-> >>>answer questions and review patches...
-> >>>
-> >>
-> >>It was just disturbing: I was looking for a list for XFS
-> >>and found only maintainers.
-> >
-> >That's what the:
-> >
-> >L:      xfs@oss.sgi.com
-> >
-> >entry is, yes?
-> >
+On Tue, Jul 02, 2013 at 08:15:22PM +0200, Peter Zijlstra wrote:
 > 
-> In the output of ./scripts/get_maintainer.pl:
 > 
-> Ben Myers <bpm@sgi.com> (supporter:XFS FILESYSTEM)
-> Alex Elder <elder@kernel.org> (supporter:XFS FILESYSTEM)
-> xfs@oss.sgi.com (supporter:XFS FILESYSTEM)
-> linux-kernel@vger.kernel.org (open list)
+> Something like this should avoid tasks being lumped back onto one node..
+> 
+> Compile tested only, need food.
 
-You're smarter than a dumb script. If the information that the
-script parses is correct and the dumb script doesn't give you the
-right information, then what needs fixing?
+OK, this one actually ran on my system and showed no negative effects on
+numa02 -- then again, I didn't have the problem to begin with :/
 
-Seriously, all you are proving is the old adage that
-scripts/get_maintainer.pl should be considered harmful because
-people use it without first engaging their brain.
+Srikar, could you see what your 8-node does with this?
 
-Cheers,
+I'll go dig around to see where I left my SpecJBB.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+---
+Subject: sched, numa: Rework direct migration code to take load levels into account
+
+Srikar mentioned he saw the direct migration code bounce all tasks
+back to the first node only to be spread out by the regular balancer.
+
+Rewrite the direct migration code to take load balance into account
+such that we will not migrate to a cpu if the result is in direct
+conflict with the load balance goals.
+
+I removed the clause where we would not migrate towards a cpu that is
+already running a task on the right node. If balance allows its
+perfectly fine to run two tasks per cpu -- think overloaded scenarios.
+
+There's a few XXXs in there that want consideration, but the code
+compiles and runs.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/core.c  |   41 +++++++-----------
+ kernel/sched/fair.c  |  115 ++++++++++++++++++++++++++++++++++-----------------
+ kernel/sched/sched.h |    2 
+ 3 files changed, 95 insertions(+), 63 deletions(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1037,6 +1037,23 @@ struct migration_arg {
+ 
+ static int migration_cpu_stop(void *data);
+ 
++#ifdef CONFIG_NUMA_BALANCING
++int migrate_curr_to(int cpu)
++{
++	struct task_struct *p = current;
++	struct migration_arg arg = { p, cpu };
++	int curr_cpu = task_cpu(p);
++
++	if (!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)))
++		return -EINVAL;
++
++	if (curr_cpu == cpu)
++		return 0;
++
++	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
++}
++#endif
++
+ /*
+  * wait_task_inactive - wait for a thread to unschedule.
+  *
+@@ -5188,30 +5205,6 @@ enum s_alloc {
+ 
+ struct sched_domain_topology_level;
+ 
+-#ifdef CONFIG_NUMA_BALANCING
+-
+-/* Set a tasks preferred NUMA node and reschedule to it */
+-void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu)
+-{
+-	int curr_cpu = task_cpu(p);
+-	struct migration_arg arg = { p, idlest_cpu };
+-
+-	p->numa_preferred_nid = nid;
+-	p->numa_migrate_seq = 0;
+-
+-	/* Do not reschedule if already running on the target CPU */
+-	if (idlest_cpu == curr_cpu)
+-		return;
+-
+-	/* Ensure the target CPU is eligible */
+-	if (!cpumask_test_cpu(idlest_cpu, tsk_cpus_allowed(p)))
+-		return;
+-
+-	/* Move current running task to idlest CPU on preferred node */
+-	stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
+-}
+-#endif /* CONFIG_NUMA_BALANCING */
+-
+ typedef struct sched_domain *(*sched_domain_init_f)(struct sched_domain_topology_level *tl, int cpu);
+ typedef const struct cpumask *(*sched_domain_mask_f)(int cpu);
+ 
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -838,34 +838,71 @@ unsigned int sysctl_numa_balancing_scan_
+  */
+ unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
+ 
+-static unsigned long weighted_cpuload(const int cpu);
+ 
+-static int find_idlest_cpu_node(int this_cpu, int nid)
+-{
+-	unsigned long load, min_load = ULONG_MAX;
+-	int i, idlest_cpu = this_cpu;
++static unsigned long source_load(int cpu, int type);
++static unsigned long target_load(int cpu, int type);
++static unsigned long power_of(int cpu);
++static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
++
++static int task_numa_find_cpu(struct task_struct *p)
++{
++	int nid = p->numa_preferred_nid;
++	int node_cpu = cpumask_first(cpumask_of_node(nid));
++	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
++	unsigned long src_load, dst_load, min_load = ULONG_MAX;
++	struct task_group *tg = task_group(p);
++	s64 src_eff_load, dst_eff_load;
++	struct sched_domain *sd;
++	unsigned long weight;
++	bool balanced;
++	int idx = 0, imbalance_pct = 125;
+ 
+-	BUG_ON(cpu_to_node(this_cpu) == nid);
++	rcu_read_lock();
++	for_each_domain(src_cpu, sd) {
++		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
++			idx = sd->busy_idx; /* XXX another idx? */
++			imbalance_pct = sd->imbalance_pct;
++			break;
++		}
++	}
++	rcu_read_unlock();
+ 
+-	for_each_cpu(i, cpumask_of_node(nid)) {
+-		load = weighted_cpuload(i);
++	/*
++	 * XXX the below is mostly nicked from wake_affine(); we should
++	 * see about sharing a bit if at all possible; also it might want
++	 * some per entity weight love.
++	 */
+ 
+-		if (load < min_load) {
+-			struct task_struct *p;
+-			struct rq *rq = cpu_rq(i);
++	weight = p->se.load.weight;
+ 
+-			/* Do not preempt a task running on its preferred node */
+-			raw_spin_lock_irq(&rq->lock);
+-			p = rq->curr;
+-			if (p->numa_preferred_nid != nid) {
+-				min_load = load;
+-				idlest_cpu = i;
+-			}
+-			raw_spin_unlock_irq(&rq->lock);
++	src_load = source_load(src_cpu, idx);
++
++	src_eff_load = 100 + (imbalance_pct - 100) / 2;
++	src_eff_load *= power_of(src_cpu);
++	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
++
++	for_each_cpu(cpu, cpumask_of_node(nid)) {
++		dst_load = target_load(cpu, idx);
++
++		dst_eff_load = 100;
++		dst_eff_load *= power_of(cpu);
++		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
++
++		balanced = (dst_eff_load <= src_eff_load);
++
++		/*
++		 * If the dst cpu wasn't idle; don't allow imbalances
++		 */
++		if (dst_load && !balanced)
++			continue;
++
++		if (dst_load < min_load) {
++			min_load = dst_load;
++			dst_cpu = cpu;
+ 		}
+ 	}
+ 
+-	return idlest_cpu;
++	return dst_cpu;
+ }
+ 
+ static inline int task_faults_idx(int nid, int priv)
+@@ -915,29 +952,31 @@ static void task_numa_placement(struct t
+ 	 * the working set placement.
+ 	 */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
+-		int preferred_cpu;
+ 		int old_migrate_seq = p->numa_migrate_seq;
+ 
+-		/*
+-		 * If the task is not on the preferred node then find the most
+-		 * idle CPU to migrate to.
+-		 */
+-		preferred_cpu = task_cpu(p);
+-		if (cpu_to_node(preferred_cpu) != max_nid)
+-			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
+-							     max_nid);
+-
+-		sched_setnuma(p, max_nid, preferred_cpu);
++		p->numa_preferred_nid = max_nid;
++		p->numa_migrate_seq = 0;
+ 
+ 		/*
+ 		 * If preferred nodes changes frequently then the scan rate
+ 		 * will be continually high. Mitigate this by increaseing the
+ 		 * scan rate only if the task was settled.
+ 		 */
+-		if (old_migrate_seq >= sysctl_numa_balancing_settle_count)
+-			p->numa_scan_period = max(p->numa_scan_period >> 1,
+-					sysctl_numa_balancing_scan_period_min);
++		if (old_migrate_seq >= sysctl_numa_balancing_settle_count) {
++			p->numa_scan_period =
++				max(p->numa_scan_period >> 1,
++				    sysctl_numa_balancing_scan_period_min);
++		}
+ 	}
++
++	if (p->numa_preferred_nid == numa_node_id())
++		return;
++
++	/*
++	 * If the task is not on the preferred node then find the most
++	 * idle CPU to migrate to.
++	 */
++	migrate_curr_to(task_numa_find_cpu(p));
+ }
+ 
+ /*
+@@ -956,7 +995,7 @@ void task_numa_fault(int last_nid, int n
+ 		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
+ 
+ 		/* numa_faults and numa_faults_buffer share the allocation */
+-		p->numa_faults = kzalloc(size * 4, GFP_KERNEL);
++		p->numa_faults = kzalloc(size * 2, GFP_KERNEL);
+ 		if (!p->numa_faults)
+ 			return;
+ 
+@@ -968,9 +1007,10 @@ void task_numa_fault(int last_nid, int n
+ 	 * If pages are properly placed (did not migrate) then scan slower.
+ 	 * This is reset periodically in case of phase changes
+ 	 */
+-        if (!migrated)
++        if (!migrated) {
+ 		p->numa_scan_period = min(sysctl_numa_balancing_scan_period_max,
+ 			p->numa_scan_period + jiffies_to_msecs(10));
++	}
+ 
+ 	task_numa_placement(p);
+ 
+@@ -3263,8 +3303,7 @@ static long effective_load(struct task_g
+ }
+ #else
+ 
+-static inline unsigned long effective_load(struct task_group *tg, int cpu,
+-		unsigned long wl, unsigned long wg)
++static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ {
+ 	return wl;
+ }
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -555,7 +555,7 @@ static inline u64 rq_clock_task(struct r
+ }
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+-extern void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu);
++extern int migrate_curr_to(int cpu);
+ static inline void task_numa_free(struct task_struct *p)
+ {
+ 	kfree(p->numa_faults);
+
