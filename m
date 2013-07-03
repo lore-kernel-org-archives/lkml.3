@@ -1,73 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab3GCLZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:25:51 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:57077 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab3GCLZt (ORCPT
+	id S932241Ab3GCL1P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:27:15 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:65354 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab3GCL1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:25:49 -0400
-Date: Wed, 3 Jul 2013 12:25:41 +0100
-From: Steve Capper <steve.capper@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Joern Engel <joern@logfs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for Jul 3
-Message-ID: <20130703112539.GA32584@linaro.org>
-References: <20130703180620.6919bf7d7f13f7ed21046c68@canb.auug.org.au>
+	Wed, 3 Jul 2013 07:27:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703180620.6919bf7d7f13f7ed21046c68@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUWtvuq=KP2YsoUfWAZTzZWQymcXk72UbMquYGPCFkpnjg@mail.gmail.com>
+References: <CA+icZUUWGa0f1pKM4Vegmk3Ns8cMbQcQTR6i=XGUtpr8CkvLYA@mail.gmail.com>
+	<CA+icZUWtvuq=KP2YsoUfWAZTzZWQymcXk72UbMquYGPCFkpnjg@mail.gmail.com>
+Date: Wed, 3 Jul 2013 13:27:12 +0200
+Message-ID: <CA+icZUXPFYJAFedfq29pArsr7Wo-iAdu9NeYnr8ADYkpC6D21w@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 3 [ BROKEN: memcontrol.c:(.text+0x5caa6):
+ undefined reference to `mem_cgroup_sockets_destroy' ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm <linux-mm@kvack.org>, Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 06:06:20PM +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130702:
-> 
-> The powerpc tree lost its build failure.
-> 
-> The device-mapper tree gained a conflict against the md tree.
-> 
-> The net-next tree gained a build failure for which I cherry-picked an
-> upcoming fix.
-> 
-> The trivial tree gained conflicts against the btrfs and Linus' trees.
-> 
-> The xen-two tree gained a conflict against the tip tree.
-> 
-> The akpm tree lost some patches that turned up elsewhere.
-> 
-> The cpuinit tree lost a patch that turned up elsewhere.
-> 
-> ----------------------------------------------------------------------------
-> 
+On Wed, Jul 3, 2013 at 12:58 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Wed, Jul 3, 2013 at 11:29 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> On Wed, Jul 3, 2013 at 10:06 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> Hi all,
+>>>
+>>> Changes since 20130702:
+>>>
+>>> The powerpc tree lost its build failure.
+>>>
+>>> The device-mapper tree gained a conflict against the md tree.
+>>>
+>>> The net-next tree gained a build failure for which I cherry-picked an
+>>> upcoming fix.
+>>>
+>>> The trivial tree gained conflicts against the btrfs and Linus' trees.
+>>>
+>>> The xen-two tree gained a conflict against the tip tree.
+>>>
+>>> The akpm tree lost some patches that turned up elsewhere.
+>>>
+>>> The cpuinit tree lost a patch that turned up elsewhere.
+>>>
+>>> ----------------------------------------------------------------------------
+>>>
+>>
+>> From my build-log:
+>> ...
+>>  CC      mm/memcontrol.o
+>> ...
+>>   MODPOST vmlinux.o
+>> WARNING: modpost: Found 1 section mismatch(es).
+>> To see full details build your kernel with:
+>> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>>   GEN     .version
+>>   CHK     include/generated/compile.h
+>>   UPD     include/generated/compile.h
+>>   CC      init/version.o
+>>   LD      init/built-in.o
+>> mm/built-in.o: In function `mem_cgroup_css_free':
+>> memcontrol.c:(.text+0x5caa6): undefined reference to
+>> `mem_cgroup_sockets_destroy'
+>> make[2]: *** [vmlinux] Error 1
+>> make[1]: *** [deb-pkg] Error 2
+>> make: *** [deb-pkg] Error 2
+>>
+>> My kernel-config is attached.
+>>
+>
+> [ CC linux-mm and Li Zefan ]
+>
+> Trying with the attached patch... Building...
+>
 
-Hi,
-Today's linux-next appears to introduce some BUGs when running the libhugetlbfs
-testsuite (under both ARM64 and x86_64):
+Looks like this was not a good idea:
+...
+  CC      mm/memcontrol.o
+mm/memcontrol.c: In function 'mem_cgroup_css_free':
+mm/memcontrol.c:6335:2: warning: passing argument 1 of
+'mem_cgroup_css_offline' from incompatible pointer type [enabled by
+default]
+mm/memcontrol.c:6320:13: note: expected 'struct cgroup *' but argument
+is of type 'struct mem_cgroup *'
 
-[   94.320661] BUG: Bad rss-counter state mm:ffff880119461040 idx:1 val:-512
-[   94.330346] BUG: Bad rss-counter state mm:ffff880119460680 idx:1 val:-2560
-[   94.341746] BUG: Bad rss-counter state mm:ffff880119460d00 idx:1 val:-512
-[   94.347518] BUG: Bad rss-counter state mm:ffff880119460d00 idx:1 val:-512
-[   94.415203] BUG: Bad rss-counter state mm:ffff8801194f9040 idx:1 val:-1024
+I see I have in my kernel-config...:
 
-I've bisected this to commit:
-commit 446313e3e4e7274c4d1e449d107fab6c041ec59c
-hugetlb: properly account rss
+# CONFIG_MEMCG_KMEM is not set
 
-The bad counter values I get are all negative.
+...inspired by:
 
-To reproduce this, just run through the latest libhugetlbfs test suite, these
-warnings appear pretty much immediately. (I set aside 200 huge pages first):
-http://libhugetlbfs.sourceforge.net/
+[ net/core/sock.c ]
+...
+#ifdef CONFIG_MEMCG_KMEM
+int mem_cgroup_sockets_init()
+...
+void mem_cgroup_sockets_destroy()
+...
+#endif
 
-Reverting this commit allows the test suite to run without problems.
+Not sure if...
 
-Cheers,
--- 
-Steve
+[ include/net/sock.h ]
+...
+struct cgroup;
+struct cgroup_subsys;
+#ifdef CONFIG_NET
+int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss);
+void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg);
+#else
+static inline
+int mem_cgroup_sockets_init(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
+{
+        return 0;
+}
+static inline
+void mem_cgroup_sockets_destroy(struct mem_cgroup *memcg)
+{
+}
+#endif
+...
+
+...needs some massage.
+
+- Sedat -
+
+> - Sedat -
+>
+>
+>> - Sedat -
