@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420Ab3GCOD6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:03:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:16372 "EHLO mga03.intel.com"
+	id S932869Ab3GCOEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:04:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:49910 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932075Ab3GCOCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:02:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,988,1363158000"; 
-   d="scan'208";a="263621132"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, Yinghai Lu <yinghai@kernel.org>,
-        john.ronciak@intel.com, miles.j.penner@intel.com,
-        bruce.w.allan@intel.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Subject: [PATCH v2 1/8] x86/PCI: prevent re-allocation of already existing bridge and ROM resources
-Date: Wed,  3 Jul 2013 17:04:48 +0300
-Message-Id: <1372860295-8306-2-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S932075Ab3GCOEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:04:15 -0400
+From: Luciano Coelho <coelho@ti.com>
+To: <linux-wireless@vger.kernel.org>, <tony@atomide.com>, <nsekhar@ti.com>
+CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <coelho@ti.com>, <nm@ti.com>
+Subject: [PATCH v3 0/8] wilink: add device tree support
+Date: Wed, 3 Jul 2013 17:03:21 +0300
+Message-ID: <1372860209-3504-1-git-send-email-coelho@ti.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In hotplug case (especially with Thunderbolt enabled systems) we might need
-to call pcibios_resource_survey_bus() several times for a bus. The function
-ends up calling pci_claim_resource() for each bridge resource that then
-fails claiming that the resource exists already (which it does). Once this
-happens the resource is invalidated thus preventing devices behind the
-bridge to allocate their resources.
+Hi,
 
-To fix this we do what has been done in pcibios_allocate_dev_resources()
-and check 'parent' of the given resource. If it is non-NULL it means that
-the resource has been allocated already and we can skip it. We do the same
-for ROM resources as well.
+This patch series adds device tree support to the wlcore_sdio driver,
+which is used by WiLink6, WiLink7 and WiLink8.
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- arch/x86/pci/i386.c | 4 ++++
- 1 file changed, 4 insertions(+)
+The first patches do some clean-up to make the data needed in the
+wilink device tree node smaller.  The remaining patches implement the
+actual device tree node parsing in wlcore_sdio.
 
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index 94919e3..db6b1ab 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -210,6 +210,8 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
- 		r = &dev->resource[idx];
- 		if (!r->flags)
- 			continue;
-+		if (r->parent)	/* Already allocated */
-+			continue;
- 		if (!r->start || pci_claim_resource(dev, idx) < 0) {
- 			/*
- 			 * Something is wrong with the region.
-@@ -318,6 +320,8 @@ static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
- 	r = &dev->resource[PCI_ROM_RESOURCE];
- 	if (!r->flags || !r->start)
- 		return;
-+	if (r->parent) /* Already allocated */
-+		return;
- 
- 	if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
- 		r->end -= r->start;
+I still need to figure out how to add the information about whether
+the clocks are XTAL or not.  I'll send it in a separate patche set.
+
+The DTS file changes will be sent separately, since they need to go
+via different trees.
+
+The bindings documentation patch will also be updated and sent
+separately, once the XTAL issue is solved.
+
+
+Changes in v3:
+
+* Remove irq_flags from pdata and handle them in the board files.
+  This caused the "wlcore: use irq_flags in pdata instead of hiding it
+  behind a quirk" (now 2/8) to be changed considerably, so I removed
+  the Acked-by from Tony.  I also added calls to gpio_request_one()
+  for the WiLink IRQ GPIO that were missing in the board files (thanks
+  Felipe);
+
+* Added "const" to the frequency tables in patch 4/8 (thanks Felipe);
+
+* Squashed patch 5/9 into the new 2/8;
+
+* Added comment about the sdio_set_drvdata() call move in 7/8 (thanks
+  Felipe);
+
+* I'm still modifying the panda and 4430sdp board files that are going
+  to be removed in 3.11.  Please ignore the changes I made there, I
+  just wanted to make sure they still work with my current tree.  Once
+  the 3.11 merge window close, I'll do the relevant merges before I
+  send pull requests (thanks Tony and Nishant).
+
+Please review.
+
+--
+Cheers,
+Luca.
+
+Luciano Coelho (8):
+  wl1251: split wl251 platform data to a separate structure
+  wlcore: set irq_flags in the board files instead of hiding behind a
+    quirk
+  wlcore: remove pwr_in_suspend from platform data
+  wl12xx: use frequency instead of enumerations for pdata clocks
+  wlcore: add initial device tree support to the sdio module
+  wlcore: sdio: add wilink clock providers
+  wlcore: sdio: get clocks from device tree
+  wlcore/wl12xx: check if we got correct clock data from DT
+
+ arch/arm/mach-davinci/board-da850-evm.c        |   11 ++-
+ arch/arm/mach-omap2/board-4430sdp.c            |   23 ++++-
+ arch/arm/mach-omap2/board-omap3evm.c           |   22 ++++-
+ arch/arm/mach-omap2/board-omap3pandora.c       |    4 +-
+ arch/arm/mach-omap2/board-omap4panda.c         |   39 +++++++--
+ arch/arm/mach-omap2/board-rx51-peripherals.c   |    2 +-
+ arch/arm/mach-omap2/board-zoom-peripherals.c   |   33 ++++++-
+ drivers/net/wireless/ti/wilink_platform_data.c |   37 ++++++--
+ drivers/net/wireless/ti/wl1251/sdio.c          |   12 +--
+ drivers/net/wireless/ti/wl1251/spi.c           |    2 +-
+ drivers/net/wireless/ti/wl12xx/main.c          |   77 ++++++++++++++--
+ drivers/net/wireless/ti/wl12xx/wl12xx.h        |   28 ++++++
+ drivers/net/wireless/ti/wlcore/debugfs.c       |    2 +-
+ drivers/net/wireless/ti/wlcore/main.c          |   26 +++---
+ drivers/net/wireless/ti/wlcore/sdio.c          |  112 ++++++++++++++++++++++--
+ drivers/net/wireless/ti/wlcore/wlcore.h        |    5 +-
+ drivers/net/wireless/ti/wlcore/wlcore_i.h      |    1 +
+ include/linux/wl12xx.h                         |   52 +++++------
+ 18 files changed, 398 insertions(+), 90 deletions(-)
+
 -- 
-1.8.3.2
+1.7.10.4
 
