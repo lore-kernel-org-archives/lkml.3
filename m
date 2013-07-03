@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab3GCMpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 08:45:40 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:58167 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab3GCMpj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 08:45:39 -0400
+	id S1756215Ab3GCMpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 08:45:53 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:34805 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753725Ab3GCMpv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 08:45:51 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: linux-kernel@vger.kernel.org
+Subject: 2013 Kernel Summit: Call for Topics/Proposals
+Date: Wed, 03 Jul 2013 08:45:49 -0400
+Message-ID: <nsxa9m3ke0y.fsf@lambda.thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHyo7Qd_BQzEmViNJmLfd2bUk9dd8ud7GGrRxRkHm+UPXg@mail.gmail.com>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-	<1372072858-6559-5-git-send-email-yadi.brar@samsung.com>
-	<CAK9yfHyo7Qd_BQzEmViNJmLfd2bUk9dd8ud7GGrRxRkHm+UPXg@mail.gmail.com>
-Date: Wed, 3 Jul 2013 18:15:38 +0530
-Message-ID: <CAKew6eWTm+YiRWz-d8=3CHN7MsVde3d8u-KFLSGmzF8XkHGzZw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] regulator: s2mps11: Add device tree support
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
-        sbkim73@samsung.com, broonie@kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, rob.herring@calxeda.com,
-        grant.likely@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 5:23 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
->> +static void s2mps11_pmic_set_buck_ramp(struct regulator_init_data *init_data,
->> +                                       struct s2mps11_info *s2mps11, int id)
->> +{
->> +       unsigned int ramp_rate;
->> +
->> +       if (!init_data)
->> +               return;
->> +
->> +       ramp_rate = init_data->constraints.ramp_delay;
->> +
->> +       switch (id) {
->> +       case S2MPS11_BUCK2:
->> +               s2mps11->ramp_delay2 = ramp_rate;
->> +               break;
->> +       case S2MPS11_BUCK3:
->> +       case S2MPS11_BUCK4:
->> +               if (ramp_rate > s2mps11->ramp_delay34)
->> +                       s2mps11->ramp_delay34 = ramp_rate;
->> +               break;
->> +       case S2MPS11_BUCK5:
->> +               s2mps11->ramp_delay5 = ramp_rate;
->> +               break;
->> +       case S2MPS11_BUCK1:
->> +       case S2MPS11_BUCK6:
->> +               if (ramp_rate > s2mps11->ramp_delay16)
->> +                       s2mps11->ramp_delay16 = ramp_rate;
->> +               break;
->> +       case S2MPS11_BUCK7:
->> +       case S2MPS11_BUCK8:
->> +       case S2MPS11_BUCK10:
->> +               if (ramp_rate > s2mps11->ramp_delay7810)
->> +                       s2mps11->ramp_delay7810 = ramp_rate;
->> +               break;
->> +       case S2MPS11_BUCK9:
->> +               s2mps11->ramp_delay9 = ramp_rate;
->
-> How about adding a 'break' here for completeness.
->
-> [snip]
->
->>  static int s2mps11_pmic_probe(struct platform_device *pdev)
->>  {
->>         struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
->>         struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
->> +       struct of_regulator_match rdata[S2MPS11_REGULATOR_MAX];
->> +       struct device_node *reg_np = NULL;
->>         struct regulator_config config = { };
->>         struct s2mps11_info *s2mps11;
->> -       int i, ret;
->> +       int i, id, ret;
->>         unsigned char ramp_enable, ramp_reg = 0;
->>
->> -       if (!pdata) {
->> -               dev_err(pdev->dev.parent, "Platform data not supplied\n");
->> -               return -ENODEV;
->> -       }
->> -
->>         s2mps11 = devm_kzalloc(&pdev->dev, sizeof(struct s2mps11_info),
->
-> sizeof(*s2mps11) is preferred.
->
 
-Will fix this and spellings in documentation in next version after
-waiting some time for review comments from others also.
+The annual Kernel Summit for 2013 will be held October 23rd through
+the 25th in Edinburgh, overlapping with LinuxCon Europe (which will be
+held October 21th through the 23rd) at the Edinburgh International
+Conference Centre in the United Kingdom.
+
+The format of the Kernel Summit will be:
+
+* Wednesday: Break out sessions/workshops in parallel with LinuxCon Europe
+* Thursday: Core plenary sessions
+* Friday: Dual-track technical sessions
 
 
-Regards,
-Yadwinder
+As we did last year, we are issuing this general call for proposals
+to attend from which we'll select most of the Kernel Summit attendees.
+We will be trying to cap the attendance at around 80-100 for the last
+two days of the session, so please get your request in early!
 
-> --
-> With warm regards,
-> Sachin
+Suggestions for topics should be sent before July 19th, 2013.  Please
+send them to
+
+	ksummit-2013-discuss@lists.linuxfoundation.org
+
+Please summarize what expertise you will bring to the meeting, and
+what you'd like to discuss.  If there are people whom you believe
+would be important to have for your proposed topic, please include
+them.  Please also tag your e-mail with [ATTEND] so we can easily pick
+them out, and use separate e-mail messages for each proposed topic, so
+that mail threads for each topic can be kept separate.  Sending one or
+more [ATTEND] messages will be considered a request to attend the
+kernel summit.
+
+Requests to attend will be looked upon more favorably if you also
+participate in the discussion of topics at:
+
+	ksummit-2013-discuss@lists.linuxfoundation.org
+
+You can subscribe to the list using mailman:
+
+   https://lists.linuxfoundation.org/mailman/listinfo/ksummit-2013-discuss
+
+
+The best topics for the kernel summit tend to focus on topics which
+are not appropriate for any of the subsystem-specific workshops or
+minisummits, and which can not be easily resolved using the normal
+e-mail and IRC channels.  These include issues about our overall
+development process, and topics which span multiple subsystems.
+
+
+For reference, previous years' kernel summit agendas can be found here:
+
+https://sites.google.com/site/kernelsummit2012/agenda
+https://sites.google.com/site/kernelsummit2011/agenda
+
