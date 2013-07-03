@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933558Ab3GCS5C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:57:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14917 "EHLO
+	id S933420Ab3GCS47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:56:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4440 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933194Ab3GCSkx (ORCPT
+	with ESMTP id S933197Ab3GCSkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 14:40:53 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=cMWYNx1J1fQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=IC8opf4DBakA:10 a=pGLkceISAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=jmnQbHQ6KQc7VKrGF4sA:9 a=MSl-tDqOz04A:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=0Yyf6_LS1vQA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=sxlsJjnNaUIA:10 a=2C6YHBdLAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=mzh53m0_jfWhFDBG4rEA:9 a=mJMriH8CDpcA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184046.617599280@goodmis.org>
+Message-Id: <20130703184047.292996366@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:09 -0400
+Date: Wed, 03 Jul 2013 14:39:13 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [012/141] USB: xHCI: override bogus bulk wMaxPacketSize values
+Cc: Jiri Kosina <jkosina@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [016/141] random: fix accounting race condition with lockless irq
+ entropy_count update
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0012-USB-xHCI-override-bogus-bulk-wMaxPacketSize-values.patch
+Content-Disposition: inline; filename=0016-random-fix-accounting-race-condition-with-lockless-i.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,83 +31,75 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Jiri Kosina <jkosina@suse.cz>
 
-[ Upstream commit e4f47e3675e6f1f40906b785b934ce963e9f2eb3 ]
+[ Upstream commit 10b3a32d292c21ea5b3ad5ca5975e88bb20b8d68 ]
 
-This patch shortens the logic in xhci_endpoint_init() by moving common
-calculations involving max_packet and max_burst outside the switch
-statement, rather than repeating the same code in multiple
-case-specific statements.  It also replaces two usages of max_packet
-which were clearly intended to be max_burst all along.
+Commit 902c098a3663 ("random: use lockless techniques in the interrupt
+path") turned IRQ path from being spinlock protected into lockless
+cmpxchg-retry update.
 
-More importantly, it compensates for a common bug in high-speed bulk
-endpoint descriptors.  In many devices there is a bulk endpoint having
-a wMaxPacketSize value smaller than 512, which is forbidden by the USB
-spec.  Some xHCI controllers can't handle this and refuse to accept
-the endpoint.  This patch changes the max_packet value to 512, which
-allows the controller to use the endpoint properly.
+That commit removed r->lock serialization between crediting entropy bits
+from IRQ context and accounting when extracting entropy on userspace
+read path, but didn't turn the r->entropy_count reads/updates in
+account() to use cmpxchg as well.
 
-In practice the bogus maxpacket size doesn't matter, because none of
-the transfers sent via these endpoints are longer than the maxpacket
-value anyway.
+It has been observed, that under certain circumstances this leads to
+read() on /dev/urandom to return 0 (EOF), as r->entropy_count gets
+corrupted and becomes negative, which in turn results in propagating 0
+all the way from account() to the actual read() call.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: "Aurélien Leblond" <blablack@gmail.com>
-CC: <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Convert the accounting code to be the proper lockless counterpart of
+what has been partially done by 902c098a3663.
+
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Greg KH <greg@kroah.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/host/xhci-mem.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ drivers/char/random.c |   24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 487bc08..70db718 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -1436,15 +1436,17 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
- 	ep_ctx->ep_info2 |= cpu_to_le32(xhci_get_endpoint_type(udev, ep));
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index b86eae9..35cfbb0 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -867,16 +867,24 @@ static size_t account(struct entropy_store *r, size_t nbytes, int min,
+ 	if (r->entropy_count / 8 < min + reserved) {
+ 		nbytes = 0;
+ 	} else {
++		int entropy_count, orig;
++retry:
++		entropy_count = orig = ACCESS_ONCE(r->entropy_count);
+ 		/* If limited, never pull more than available */
+-		if (r->limit && nbytes + reserved >= r->entropy_count / 8)
+-			nbytes = r->entropy_count/8 - reserved;
+-
+-		if (r->entropy_count / 8 >= nbytes + reserved)
+-			r->entropy_count -= nbytes*8;
+-		else
+-			r->entropy_count = reserved;
++		if (r->limit && nbytes + reserved >= entropy_count / 8)
++			nbytes = entropy_count/8 - reserved;
++
++		if (entropy_count / 8 >= nbytes + reserved) {
++			entropy_count -= nbytes*8;
++			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++				goto retry;
++		} else {
++			entropy_count = reserved;
++			if (cmpxchg(&r->entropy_count, orig, entropy_count) != orig)
++				goto retry;
++		}
  
- 	/* Set the max packet size and max burst */
-+	max_packet = GET_MAX_PACKET(usb_endpoint_maxp(&ep->desc));
-+	max_burst = 0;
- 	switch (udev->speed) {
- 	case USB_SPEED_SUPER:
--		max_packet = usb_endpoint_maxp(&ep->desc);
--		ep_ctx->ep_info2 |= cpu_to_le32(MAX_PACKET(max_packet));
- 		/* dig out max burst from ep companion desc */
--		max_packet = ep->ss_ep_comp.bMaxBurst;
--		ep_ctx->ep_info2 |= cpu_to_le32(MAX_BURST(max_packet));
-+		max_burst = ep->ss_ep_comp.bMaxBurst;
- 		break;
- 	case USB_SPEED_HIGH:
-+		/* Some devices get this wrong */
-+		if (usb_endpoint_xfer_bulk(&ep->desc))
-+			max_packet = 512;
- 		/* bits 11:12 specify the number of additional transaction
- 		 * opportunities per microframe (USB 2.0, section 9.6.6)
- 		 */
-@@ -1452,17 +1454,16 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
- 				usb_endpoint_xfer_int(&ep->desc)) {
- 			max_burst = (usb_endpoint_maxp(&ep->desc)
- 				     & 0x1800) >> 11;
--			ep_ctx->ep_info2 |= cpu_to_le32(MAX_BURST(max_burst));
+-		if (r->entropy_count < random_write_wakeup_thresh) {
++		if (entropy_count < random_write_wakeup_thresh) {
+ 			wake_up_interruptible(&random_write_wait);
+ 			kill_fasync(&fasync, SIGIO, POLL_OUT);
  		}
--		/* Fall through */
-+		break;
- 	case USB_SPEED_FULL:
- 	case USB_SPEED_LOW:
--		max_packet = GET_MAX_PACKET(usb_endpoint_maxp(&ep->desc));
--		ep_ctx->ep_info2 |= cpu_to_le32(MAX_PACKET(max_packet));
- 		break;
- 	default:
- 		BUG();
- 	}
-+	ep_ctx->ep_info2 |= cpu_to_le32(MAX_PACKET(max_packet) |
-+			MAX_BURST(max_burst));
- 	max_esit_payload = xhci_get_max_esit_payload(xhci, udev, ep);
- 	ep_ctx->tx_info = cpu_to_le32(MAX_ESIT_PAYLOAD_FOR_EP(max_esit_payload));
- 
 -- 
 1.7.10.4
 
