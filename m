@@ -1,161 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab3GCDOd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 23:14:33 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:51672 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755615Ab3GCDOb (ORCPT
+	id S1755533Ab3GCDWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 23:22:38 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:50116 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab3GCDWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 23:14:31 -0400
-Date: Tue, 2 Jul 2013 20:14:26 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: [GIT PULL] libata changes for v3.11-rc1
-Message-ID: <20130703031426.GA21116@mtj.dyndns.org>
+	Tue, 2 Jul 2013 23:22:37 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: bintian.wang@linaro.org
+Cc: linux-kernel@vger.kernel.org, Mike Lockwood <lockwood@android.com>,
+        dmitry pervushin <dpervushin@gmail.com>,
+        Colin Cross <ccross@android.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <john.stultz@linaro.org>, Sean McNeil <sean@mcneil.com>
+Subject: Re: [PATCH RFC] Add FAT_IOCTL_GET_VOLUME_ID
+References: <1372817982-3917-1-git-send-email-bintian.wang@linaro.org>
+Date: Wed, 03 Jul 2013 12:22:33 +0900
+In-Reply-To: <1372817982-3917-1-git-send-email-bintian.wang@linaro.org>
+	(bintian wang's message of "Wed, 3 Jul 2013 10:19:42 +0800")
+Message-ID: <8738rwqqdi.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+bintian.wang@linaro.org writes:
 
-Nothing too interesting; however, the top commit is merging
-for-3.10-fixes into for-3.11.  The severity of patches which were
-collecting for-3.10-fixes didn't seem to justify new -fixes pull
-request, but, in retrospect, I think I sat on them for too long and
-will probably push out quicker from now on.  The merge creates three
-conflicts in sata_rcar.c but all are trivial and the resoultions are
-identical to what have been published through for-next for quite some
-time.
+> From: Mike Lockwood <lockwood@android.com>
+>
+> This patch, originally from Android kernel, adds vfat ioctl command
+> FAT_IOCTL_GET_VOLUME_ID, with this command we can get the vfat volume ID using
+> following code:
+>
+> 	ioctl(fd, FAT_IOCTL_GET_VOLUME_ID, &volume_ID)
+>
+> This patch is a modified version of the patch by Mike Lockwood, with changes
+> from Dmitry Pervushin, who noticed the original patch makes some volume IDs
+> abiguous with error returns: for example, if volume id is 0xFFFFFDAD, that
+> matches -ENOIOCTLCMD, we get "FFFFFFFF" from the user space.
+>
+> So add a parameter to ioctl to get the correct volume ID.
+>
+> Android uses vfat volume ID to identify different sd card, when a new sd card
+> is inserted to device, android can scan the media on it and pop up new contents.
 
-Overview of changes:
-
-* The rest of maintainer email address updates.
-
-* Some core updates - more robust default behavior for port
-  multipliers, better error reporting for SG_IO commands, and a way to
-  better work around now ancient and probably pretty rare PATA -> SATA
-  bridges with ATAPI devices.
-
-* sata_rcar stabilization.
-
-* Some hardware PCI ID additions and one-off low level driver updates.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.11
-
-for you to fetch changes up to 5a0a6a4f17a3606289f96356383db695a555bdbd:
-
-  Merge branch 'libata/for-3.10-fixes' into libata/for-3.11 (2013-07-02 19:54:16 -0700)
-
-----------------------------------------------------------------
-
-Alexander Gordeev (1):
-      AHCI: Make distinct names for ports in /proc/interrupts
-
-David Milburn (1):
-      libata: export ata_port port_no attribute via /sys
-
-Girish K S (1):
-      ahci: sata: add support for exynos5440 sata
-
-Gwendal Grignou (1):
-      libata: cleanup SAT error translation
-
-Jingoo Han (2):
-      ata: use platform_{get,set}_drvdata()
-      ata: use pci_get_drvdata()
-
-Mark Langsdorf (3):
-      sata_highbank: increase retry count but shorten duration for Calxeda controller
-      ahci: make ahci_transmit_led_message into a function pointer
-      sata highbank: add bit-banged SGPIO driver support
-
-Sergei Shtylyov (7):
-      sata_rcar: kill superfluous code in sata_rcar_bmdma_fill_sg()
-      sata_rcar: correct 'sata_rcar_sht'
-      sata_rcar: add 'base' local variable to some functions
-      ipr: qc_fill_rtf() method should not store alternate status register
-      sata_rcar: fix compilation warning in sata_rcar_thaw()
-      libata-zpodd: must use ata_tf_init()
-      AHCI: use ATA_BUSY
-
-Seth Heasley (2):
-      ata_piix: IDE-mode SATA patch for Intel Coleto Creek DeviceIDs
-      ahci: AHCI-mode SATA patch for Intel Coleto Creek DeviceIDs
-
-Shane Huang (1):
-      ahci: remove pmp link online check in FBS EH
-
-Simon Horman (1):
-      libata: do not limit R-Car SATA driver to shmobile
-
-Tejun Heo (2):
-      libata: skip SRST for all SIMG [34]7x port-multipliers
-      Merge branch 'libata/for-3.10-fixes' into libata/for-3.11
-
-Vincent Pelletier (1):
-      libata: Add atapi_dmadir force flag
-
- .../devicetree/bindings/ata/ahci-platform.txt      |   5 +
- Documentation/kernel-parameters.txt                |   2 +
- arch/arm/boot/dts/ecx-common.dtsi                  |   2 +
- drivers/ata/Kconfig                                |   1 -
- drivers/ata/acard-ahci.c                           |   4 +-
- drivers/ata/ahci.c                                 |  11 +-
- drivers/ata/ahci.h                                 |   2 +
- drivers/ata/ahci_platform.c                        |   1 +
- drivers/ata/ata_piix.c                             |   8 +-
- drivers/ata/libahci.c                              |  26 ++-
- drivers/ata/libata-core.c                          |   9 +-
- drivers/ata/libata-pmp.c                           |  33 ++--
- drivers/ata/libata-scsi.c                          |  37 ++---
- drivers/ata/libata-transport.c                     |   4 +-
- drivers/ata/libata-zpodd.c                         |   7 +-
- drivers/ata/pata_ali.c                             |   2 +-
- drivers/ata/pata_amd.c                             |   2 +-
- drivers/ata/pata_arasan_cf.c                       |   2 +-
- drivers/ata/pata_artop.c                           |   2 +-
- drivers/ata/pata_at91.c                            |   2 +-
- drivers/ata/pata_atp867x.c                         |   2 +-
- drivers/ata/pata_bf54x.c                           |  10 +-
- drivers/ata/pata_cmd640.c                          |   2 +-
- drivers/ata/pata_cmd64x.c                          |   2 +-
- drivers/ata/pata_cs5520.c                          |   4 +-
- drivers/ata/pata_cs5530.c                          |   2 +-
- drivers/ata/pata_hpt366.c                          |   2 +-
- drivers/ata/pata_hpt3x3.c                          |   2 +-
- drivers/ata/pata_imx.c                             |   2 +-
- drivers/ata/pata_it821x.c                          |   2 +-
- drivers/ata/pata_macio.c                           |   6 +-
- drivers/ata/pata_mpc52xx.c                         |   4 +-
- drivers/ata/pata_ninja32.c                         |   2 +-
- drivers/ata/pata_ns87415.c                         |   2 +-
- drivers/ata/pata_pdc2027x.c                        |   2 +-
- drivers/ata/pata_pxa.c                             |   2 +-
- drivers/ata/pata_rdc.c                             |   2 +-
- drivers/ata/pata_rz1000.c                          |   2 +-
- drivers/ata/pata_serverworks.c                     |   2 +-
- drivers/ata/pata_sil680.c                          |   2 +-
- drivers/ata/pata_sis.c                             |   2 +-
- drivers/ata/pata_sl82c105.c                        |   2 +-
- drivers/ata/pata_triflex.c                         |   2 +-
- drivers/ata/pata_via.c                             |   2 +-
- drivers/ata/sata_fsl.c                             |  14 +-
- drivers/ata/sata_highbank.c                        | 181 ++++++++++++++++++++-
- drivers/ata/sata_inic162x.c                        |   2 +-
- drivers/ata/sata_nv.c                              |   2 +-
- drivers/ata/sata_rcar.c                            | 138 ++++++++--------
- drivers/ata/sata_sil.c                             |   2 +-
- drivers/ata/sata_sil24.c                           |   2 +-
- drivers/scsi/ipr.c                                 |   1 -
- include/linux/libata.h                             |   5 +
- 53 files changed, 388 insertions(+), 185 deletions(-)
+Acked-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
 
 Thanks.
 
+> Cc: dmitry pervushin <dpervushin@gmail.com>
+> Cc: Mike Lockwood <lockwood@android.com>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Sean McNeil <sean@mcneil.com>
+>
+> Signed-off-by: Bintian Wang <bintian.wang@linaro.org>
+> ---
+>  fs/fat/fat.h                  |    1 +
+>  fs/fat/file.c                 |    8 ++++++++
+>  fs/fat/inode.c                |   12 ++++++++++++
+>  include/uapi/linux/msdos_fs.h |   10 ++++++++++
+>  4 files changed, 31 insertions(+)
+>
+> diff --git a/fs/fat/fat.h b/fs/fat/fat.h
+> index 21664fc..4241e6f 100644
+> --- a/fs/fat/fat.h
+> +++ b/fs/fat/fat.h
+> @@ -86,6 +86,7 @@ struct msdos_sb_info {
+>  	const void *dir_ops;	      /* Opaque; default directory operations */
+>  	int dir_per_block;	      /* dir entries per block */
+>  	int dir_per_block_bits;	      /* log2(dir_per_block) */
+> +	unsigned int vol_id;		/*volume ID*/
+>  
+>  	int fatent_shift;
+>  	struct fatent_operations *fatent_ops;
+> diff --git a/fs/fat/file.c b/fs/fat/file.c
+> index b0b632e..9b104f5 100644
+> --- a/fs/fat/file.c
+> +++ b/fs/fat/file.c
+> @@ -114,6 +114,12 @@ out:
+>  	return err;
+>  }
+>  
+> +static int fat_ioctl_get_volume_id(struct inode *inode, u32 __user *user_attr)
+> +{
+> +	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
+> +	return put_user(sbi->vol_id, user_attr);
+> +}
+> +
+>  long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  {
+>  	struct inode *inode = file_inode(filp);
+> @@ -124,6 +130,8 @@ long fat_generic_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  		return fat_ioctl_get_attributes(inode, user_attr);
+>  	case FAT_IOCTL_SET_ATTRIBUTES:
+>  		return fat_ioctl_set_attributes(filp, user_attr);
+> +	case FAT_IOCTL_GET_VOLUME_ID:
+> +		return fat_ioctl_get_volume_id(inode, user_attr);
+>  	default:
+>  		return -ENOTTY;	/* Inappropriate ioctl for device */
+>  	}
+> diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+> index 5d4513c..11b51bb 100644
+> --- a/fs/fat/inode.c
+> +++ b/fs/fat/inode.c
+> @@ -1415,6 +1415,18 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+>  		brelse(fsinfo_bh);
+>  	}
+>  
+> +	/* interpret volume ID as a little endian 32 bit integer */
+> +	if (sbi->fat_bits == 32)
+> +		sbi->vol_id = (((u32)b->fat32.vol_id[0]) |
+> +					((u32)b->fat32.vol_id[1] << 8) |
+> +					((u32)b->fat32.vol_id[2] << 16) |
+> +					((u32)b->fat32.vol_id[3] << 24));
+> +	else /* fat 16 or 12 */
+> +		sbi->vol_id = (((u32)b->fat16.vol_id[0]) |
+> +					((u32)b->fat16.vol_id[1] << 8) |
+> +					((u32)b->fat16.vol_id[2] << 16) |
+> +					((u32)b->fat16.vol_id[3] << 24));
+> +
+>  	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
+>  	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
+>  
+> diff --git a/include/uapi/linux/msdos_fs.h b/include/uapi/linux/msdos_fs.h
+> index f055e58..e284ff9 100644
+> --- a/include/uapi/linux/msdos_fs.h
+> +++ b/include/uapi/linux/msdos_fs.h
+> @@ -104,6 +104,8 @@ struct __fat_dirent {
+>  /* <linux/videotext.h> has used 0x72 ('r') in collision, so skip a few */
+>  #define FAT_IOCTL_GET_ATTRIBUTES	_IOR('r', 0x10, __u32)
+>  #define FAT_IOCTL_SET_ATTRIBUTES	_IOW('r', 0x11, __u32)
+> +/*Android kernel has used 0x12, so we use 0x13*/
+> +#define FAT_IOCTL_GET_VOLUME_ID		_IOR('r', 0x13, __u32)
+>  
+>  struct fat_boot_sector {
+>  	__u8	ignored[3];	/* Boot strap short or near jump */
+> @@ -128,6 +130,10 @@ struct fat_boot_sector {
+>  			__u8	drive_number;	/* Physical drive number */
+>  			__u8	state;		/* undocumented, but used
+>  						   for mount state. */
+> +			__u8	signature;  /* extended boot signature */
+> +			__u8	vol_id[4];	/* volume ID */
+> +			__u8	vol_label[11];	/* volume label */
+> +			__u8	fs_type[8];		/* file system type */
+>  			/* other fiealds are not added here */
+>  		} fat16;
+>  
+> @@ -147,6 +153,10 @@ struct fat_boot_sector {
+>  			__u8	drive_number;   /* Physical drive number */
+>  			__u8    state;       	/* undocumented, but used
+>  						   for mount state. */
+> +			__u8	signature;  /* extended boot signature */
+> +			__u8	vol_id[4];	/* volume ID */
+> +			__u8	vol_label[11];	/* volume label */
+> +			__u8	fs_type[8];		/* file system type */
+>  			/* other fiealds are not added here */
+>  		} fat32;
+>  	};
+
 -- 
-tejun
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
