@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864Ab3GCVCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:02:05 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:46527 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933044Ab3GCVCE (ORCPT
+	id S933387Ab3GCVCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 17:02:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25174 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933054Ab3GCVCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:02:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <51D3D9AD.9070800@samsung.com>
-References: <1372754108-21075-1-git-send-email-m.szyprowski@samsung.com>
-	<20130703100903.81ab08c6db864c20498b558d@canb.auug.org.au>
-	<51D3D9AD.9070800@samsung.com>
-Date: Wed, 3 Jul 2013 14:02:01 -0700
-X-Google-Sender-Auth: fNz-y-5CQRmdMaKr8bxVa2n3nlk
-Message-ID: <CA+55aFww7SG3BVDs5jUTwX9pjARG3XQXA2g_9XQJf6agq=fD9g@mail.gmail.com>
-Subject: Re: [GIT PULL] DMA-mapping updates for v3.11
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Jul 2013 17:02:48 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ys9SgDZjGkgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_7JHcU0X-nEA:10 a=ybDC0pOYkY2W5h7lZHsA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1372885365.22688.126.camel@gandalf.local.home>
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Date: Wed, 03 Jul 2013 17:02:45 -0400
+In-Reply-To: <20130703191748.GA2884@redhat.com>
+References: <51D16E1D.5040904@hitachi.com>
+	 <20130702190037.GA6289@redhat.com> <20130702193425.GA8813@redhat.com>
+	 <1372799087.22688.58.camel@gandalf.local.home>
+	 <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com>
+	 <51D38F8D.3010708@hitachi.com> <20130703172029.GA14309@redhat.com>
+	 <20130703175420.GA25668@redhat.com>
+	 <1372874547.22688.111.camel@gandalf.local.home>
+	 <20130703191748.GA2884@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 12:58 AM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
->
-> Right, I dropped one commit, which I found in other 'for_next' kernel tree
-> (the one from Russell King) before sending the pull request. What's wrong with
-> this approach?
+On Wed, 2013-07-03 at 21:17 +0200, Oleg Nesterov wrote:
 
-What did dropping the commit fix? Anything?
+> diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+> index 4888cb3..c23d41e 100644
+> --- a/fs/debugfs/inode.c
+> +++ b/fs/debugfs/inode.c
+> @@ -475,6 +475,7 @@ static int __debugfs_remove(struct dentry *dentry, struct dentry *parent)
+>  				kfree(dentry->d_inode->i_private);
+>  				/* fall through */
+>  			default:
+> +				dentry->d_inode->i_private = NULL;
+>  				simple_unlink(parent->d_inode, dentry);
+>  				break;
+>  			}
 
-DO NOT REBASE UNLESS YOU HAVE SERIOUSLY PRESSING REASONS!
+Ah, I see what you are saying. If the file is being opened just as it is
+being deleted, it can up the dentry refcount and prevent it from
+actually being deleted at that point. :-p
 
-Why does this keep on coming up EVERY SINGLE RELEASE? Does nobody read my rants?
+There's a slight race that we can get to the open call when the dentry
+was deleted. But can it? Seems that there would be other places that
+have issues as I would think it would be common to do something like:
 
-A duplicate commit not a "seriously pressing reason". It may be reason
-for some introspection ("why did I and Russell end up applying the
-same patch and stepping on each others toes?") but it is not in itself
-at all a reason for rebasing.
+	data = kmalloc(size, GFP_KERNEL);
+	dentry = debugfs_create_file("file", 0644, parent, data, &ops);
 
-Reasons for rebasing include:
+[...]
 
- - "I am a complete moron, and I have terminally messed up my history
-with merges from random places to the point where it is completely
-unpullable"
+	debugfs_remove(dentry);
+	kfree(data);
 
- - "There are commits that are so horribly broken in the history that
-I can't even revert them, because seeing them mentioned one more time
-will make me go blind"
+Any thing like this would have issues if the open referenced the data.
 
-and the best one:
+-- Steve
 
- - "I never made my patches public in the first place, and I'll clean
-my ugly series up before posting them publicly for the first time".
 
-but that last one shouldn't happen just before sending it to me, it
-should happen a few weeks before sending to me so that linux-next has
-time to digest the beauty of the rebased series.
-
-The fact is, rebasing is a perfectly fine operation, but it's a fine
-operation that causes lots of problems if those commits have ever been
-public before. It means that linux-next cannot easily be compared to
-what I pull (which is why Stephen complains), but it also results in
-other developers not being able to trust your tree, and in the commits
-randomly changing and the testing base thus not being reliable any
-more (which is why I complain).
-
-                   Linus
