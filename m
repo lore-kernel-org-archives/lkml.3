@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab3GCIgi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 04:36:38 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51762 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab3GCIfY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 04:35:24 -0400
-X-AuditID: 9c93016f-b7b26ae000002351-e5-51d3e244f428
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [RFC PATCH 2/5] mm, page_alloc: introduce alloc_pages_exact_node_multiple()
-Date: Wed,  3 Jul 2013 17:34:17 +0900
-Message-Id: <1372840460-5571-3-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1755132Ab3GCIoh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 04:44:37 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:39143 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754501Ab3GCIod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 04:44:33 -0400
+Message-ID: <51D3E464.9050707@imgtec.com>
+Date: Wed, 3 Jul 2013 09:44:20 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: <linux-kernel@vger.kernel.org>, linux-arch <linux-arch@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH] metag: move EXPORT_SYMBOLs in libs to metag_ksyms.c
+References: <1372774074-18553-1-git-send-email-james.hogan@imgtec.com> <87bo6kfp32.fsf@rustcorp.com.au>
+In-Reply-To: <87bo6kfp32.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_07_03_09_44_30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+(cc'ing linux-arch and linux-kbuild)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 8bfa87b..f8cde28 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -327,6 +327,16 @@ static inline struct page *alloc_pages_exact_node(int nid, gfp_t gfp_mask,
- 	return __alloc_pages(gfp_mask, order, node_zonelist(nid, gfp_mask));
- }
- 
-+static inline struct page *alloc_pages_exact_node_multiple(int nid,
-+		gfp_t gfp_mask, unsigned long *nr_pages, struct page **pages)
-+{
-+	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES || !node_online(nid));
-+
-+	return __alloc_pages_nodemask(gfp_mask, 0,
-+				node_zonelist(nid, gfp_mask), NULL,
-+				nr_pages, pages);
-+}
-+
- #ifdef CONFIG_NUMA
- extern struct page *alloc_pages_current(gfp_t gfp_mask, unsigned order);
- 
--- 
-1.7.9.5
+On 03/07/13 01:45, Rusty Russell wrote:
+> James Hogan <james.hogan@imgtec.com> writes:
+>> Move all EXPORT_SYMBOLs in libs-y directories (arch/metag/{lib,tbx})
+>> into metag_ksyms.c so that they don't get omitted by the static linker
+>> if they're not used by any other statically linked code, which can
+>> result in undefined symbols when building modules.
+>>
+>> For example a randconfig caused the following error:
+>> ERROR: "csum_partial" [fs/reiserfs/reiserfs.ko] undefined!
+>>
+>> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>> ---
+>> Unless there are any objections I'll apply this patch for v3.11. I'm
+>> assuming *_ksyms.c is the way that this problem is normally worked
+>> around.
+> 
+> Actually, normally those files are obj-y not lib-y.  See the top-level
+> lib/.
+> 
+> Subtle, I know.
+
+Hmm, subtle indeed, I hadn't noticed that.
+
+grepping for EXPORT_SYMBOL(csum_partial) gives:
+
+./arch/avr32/kernel/avr32_ksyms.c
+./arch/sparc/lib/ksyms.c
+./arch/sh/kernel/sh_ksyms_32.c
+./arch/powerpc/kernel/ppc_ksyms.c
+./arch/unicore32/kernel/ksyms.c
+./arch/x86/um/ksyms.c
+./arch/x86/kernel/x8664_ksyms_64.c
+./arch/x86/kernel/i386_ksyms_32.c
+./arch/cris/kernel/crisksyms.c
+./arch/mips/kernel/mips_ksyms.c
+./arch/xtensa/kernel/xtensa_ksyms.c
+./arch/arm/kernel/armksyms.c
+
+./arch/ia64/lib/checksum.c
+./arch/alpha/lib/checksum.c
+./arch/c6x/lib/checksum.c
+./arch/mn10300/lib/checksum.c
+./arch/cris/arch-v10/lib/old_checksum.c
+./arch/h8300/lib/checksum.c
+./arch/parisc/lib/checksum.c
+./arch/m32r/lib/csum_partial_copy.c
+./arch/m68k/lib/checksum.c
+./arch/metag/lib/checksum.c
+./arch/frv/lib/checksum.c
+
+./lib/checksum.c
+
+All of the above arches have *c*sum.o in lib-y. Should they all be
+switched to obj-y or the remaining EXPORT_SYMBOLs moved to *ksyms.c if
+this problem is noticed?
+
+Thanks
+James
 
