@@ -1,342 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755663Ab3GCDWp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 23:22:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:36089 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab3GCDWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 23:22:41 -0400
-X-IronPort-AV: E=Sophos;i="4.87,984,1363104000"; 
-   d="scan'208";a="7767472"
-Message-ID: <51D398FE.7060700@cn.fujitsu.com>
-Date: Wed, 03 Jul 2013 11:22:38 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755570Ab3GCD2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 23:28:45 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:62755 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab3GCD2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 23:28:44 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@alien8.de>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        Jacob Shin <jacob.shin@amd.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [RESEND][PATCH] x86, relocs: move ELF relocation handling to
- C
-References: <20130702182206.GA4055@www.outflux.net>
-In-Reply-To: <20130702182206.GA4055@www.outflux.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/03 11:21:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/03 11:21:11,
-	Serialize complete at 2013/07/03 11:21:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130703030759.GG14996@dastard>
+References: <20130628102819.GA4725@quack.suse.cz>
+	<20130629033924.GK32195@dastard>
+	<20130701120037.GA6196@quack.suse.cz>
+	<20130702062954.GA14996@dastard>
+	<20130702081937.GA31770@quack.suse.cz>
+	<20130702123835.GF14996@dastard>
+	<20130702140508.GB31770@quack.suse.cz>
+	<CA+55aFwZHOUCYvojbP9q3D5MDgCH7GttkUGiJerra9uyduFLKw@mail.gmail.com>
+	<20130702165752.GA12179@quack.suse.cz>
+	<CA+55aFxSY76aWEC04yREjFObPF3ZJFMHdczoT=yGmSpsg5hhyg@mail.gmail.com>
+	<20130703030759.GG14996@dastard>
+Date: Tue, 2 Jul 2013 20:28:42 -0700
+X-Google-Sender-Auth: X0HLycIzfUnwOrgRnSK3UgNo6AY
+Message-ID: <CA+55aFxN2-qZwBywE3b+RYyPLg1-ru5ZwJLHLohy0KJ0fD0vqA@mail.gmail.com>
+Subject: Re: frequent softlockups with 3.10rc6.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kees,
+On Tue, Jul 2, 2013 at 8:07 PM, Dave Chinner <david@fromorbit.com> wrote:
+>>
+>> Then that test would become
+>>
+>>         if (wbc->sync_mode == WB_SYNC_SINGLE) {
+>>
+>> instead, and now "sync_mode" would actually describe what mode of
+>> syncing the caller wants, without that hacky special "we know what the
+>> caller _really_ meant by looking at *which* caller it is".
+>
+> The problem is that all the code that currently looks for
+> WB_SYNC_ALL for it's behavioural cue during writeback now has
+> multiple different modes they have to handle.  IOWs, it's not a
+> straight forward conversion process. WB_SYNC_ALL reaches right down
+> into filesystem ->writepages implementations and they all need to be
+> changed if we make up a new sync_mode behaviour.
 
-On 07/03/2013 02:22 AM, Kees Cook wrote:
-> Moves the relocation handling into C, after decompression. This requires
-> that the decompressed size is passed to the decompression routine as
-> well so that relocations can be found. Only kernels that need relocation
-> support will use the code (currently just x86_32), but this is laying
-> the ground work for 64-bit support in support of KASLR.
-> 
-> Based on work by Neill Clift and Michael Davidson.
-> 
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> ---
->  arch/x86/Kconfig                     |    4 +-
->  arch/x86/Makefile                    |    8 ++--
->  arch/x86/boot/compressed/head_32.S   |   31 ++------------
->  arch/x86/boot/compressed/head_64.S   |    1 +
->  arch/x86/boot/compressed/misc.c      |   77 +++++++++++++++++++++++++++++++++-
->  arch/x86/include/asm/page_32_types.h |    2 +
->  arch/x86/include/asm/page_64_types.h |    5 ---
->  arch/x86/include/asm/page_types.h    |    6 +++
->  8 files changed, 94 insertions(+), 40 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index fe120da..f11ad6f 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -1695,13 +1695,13 @@ config RELOCATABLE
->  	  it has been loaded at and the compile time physical address
->  	  (CONFIG_PHYSICAL_START) is ignored.
->  
-> -# Relocation on x86-32 needs some additional build support
-> +# Relocation on x86 needs some additional build support
->  config X86_NEED_RELOCS
->  	def_bool y
->  	depends on X86_32 && RELOCATABLE
+I have to admit that I absolutely detest our current "sync_mode" to
+begin with, so I'd personally be happy to see some major surgery in
+this area.
 
-Here it still actually depends on x86_32, so why change the comment?
+For example, maybe we'd be much better off with something that has
+various behavioral flags rather than distinct "mode values".  So
+instead of being an enum of different reasons for syncing, it would be
+a set of bitmasks for specific sync behavior. We have a much better
+sync model in our sync_file_range() model, where we have flags like
+SYNC_FILE_RANGE_WAIT_xxx (where xxx is BEFORE, WRITE, AFTER to
+describe whether you should wait for old writes, start new writes, or
+wait after the newly started writes).
 
->  
->  config PHYSICAL_ALIGN
-> -	hex "Alignment value to which kernel should be aligned" if X86_32
-> +	hex "Alignment value to which kernel should be aligned"
->  	default "0x1000000"
->  	range 0x2000 0x1000000
+That's a very powerful model, and it's also much more easy to think
+about. So the above test could become
 
-If you open this option for x86_64, the range should be modified a bit
-to indicate the fact that on x86_64, the alignment of the kernel should
-be at least 2M and the alignment itself should be 2M aligned.
+        if (wbc->sync_mode & WB_SYNC_AFTER) {
+                int err = filemap_fdatawait(mapping);
+                ....
 
-otherwise, someone specifies an incorrect value here, say 0x300000,
-which will cause the error:
+in that kind of model, and the code actually looks sensible. It reads
+like "if the caller asked us to synchronize after writing, then we do
+an fdatawait on the mapping".
 
-#error "Invalid value for CONFIG_PHYSICAL_ALIGN"
+So I think something like that might make sense. And there aren't
+_that_ many users of WB_SYNC_xxx, and the patch should be pretty
+straightforward. WB_SYNC_NONE semantics would presumably be "just
+start writeout" (so it would become WB_SYNC_WRITE), while WB_SYNC_ALL
+would become (WB_SYNC_BEFORE | WB_SYNC_WRITE | WB_SYNC_AFTER), but
+then the "for_sync" case would remove WB_SYNC_AFTER, because it does
+its own waiting after.
 
-when compiling the kernel.
+Sounds fairly sensible and straightforward to me. Much more
+self-explanatory than the current "WB_SYNC_NONE/ALL" distinction,
+methinks (well, you'd still have to explain what the point of
+BEFORE/AFTER is, and how it interacts with starting writeout, but
+especially since we already have that concept for file_sync_range(), I
+think that's not too bad).
 
->  	---help---
-> diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-> index 5c47726..43f8cef 100644
-> --- a/arch/x86/Makefile
-> +++ b/arch/x86/Makefile
-> @@ -16,6 +16,10 @@ endif
->  # e.g.: obj-y += foo_$(BITS).o
->  export BITS
->  
-> +ifdef CONFIG_X86_NEED_RELOCS
-> +        LDFLAGS_vmlinux := --emit-relocs
-> +endif
-> +
->  ifeq ($(CONFIG_X86_32),y)
->          BITS := 32
->          UTS_MACHINE := i386
-> @@ -25,10 +29,6 @@ ifeq ($(CONFIG_X86_32),y)
->          KBUILD_AFLAGS += $(biarch)
->          KBUILD_CFLAGS += $(biarch)
->  
-> -        ifdef CONFIG_RELOCATABLE
-> -                LDFLAGS_vmlinux := --emit-relocs
-> -        endif
-> -
->          KBUILD_CFLAGS += -msoft-float -mregparm=3 -freg-struct-return
->  
->          # Never want PIC in a 32-bit kernel, prevent breakage with GCC built
-> diff --git a/arch/x86/boot/compressed/head_32.S b/arch/x86/boot/compressed/head_32.S
-> index 1e3184f..5d6f689 100644
-> --- a/arch/x86/boot/compressed/head_32.S
-> +++ b/arch/x86/boot/compressed/head_32.S
-> @@ -181,8 +181,9 @@ relocated:
->  /*
->   * Do the decompression, and jump to the new kernel..
->   */
-> -	leal	z_extract_offset_negative(%ebx), %ebp
->  				/* push arguments for decompress_kernel: */
-> +	pushl	$z_output_len	/* decompressed length */
-> +	leal	z_extract_offset_negative(%ebx), %ebp
->  	pushl	%ebp		/* output address */
->  	pushl	$z_input_len	/* input_len */
->  	leal	input_data(%ebx), %eax
-> @@ -191,33 +192,7 @@ relocated:
->  	pushl	%eax		/* heap area */
->  	pushl	%esi		/* real mode pointer */
->  	call	decompress_kernel
-> -	addl	$20, %esp
-> -
-> -#if CONFIG_RELOCATABLE
-> -/*
-> - * Find the address of the relocations.
-> - */
-> -	leal	z_output_len(%ebp), %edi
-> -
-> -/*
-> - * Calculate the delta between where vmlinux was compiled to run
-> - * and where it was actually loaded.
-> - */
-> -	movl	%ebp, %ebx
-> -	subl	$LOAD_PHYSICAL_ADDR, %ebx
-> -	jz	2f	/* Nothing to be done if loaded at compiled addr. */
-> -/*
-> - * Process relocations.
-> - */
-> -
-> -1:	subl	$4, %edi
-> -	movl	(%edi), %ecx
-> -	testl	%ecx, %ecx
-> -	jz	2f
-> -	addl	%ebx, -__PAGE_OFFSET(%ebx, %ecx)
-> -	jmp	1b
-> -2:
-> -#endif
-> +	addl	$24, %esp
->  
->  /*
->   * Jump to the decompressed kernel.
-> diff --git a/arch/x86/boot/compressed/head_64.S b/arch/x86/boot/compressed/head_64.S
-> index 16f24e6..6632693 100644
-> --- a/arch/x86/boot/compressed/head_64.S
-> +++ b/arch/x86/boot/compressed/head_64.S
-> @@ -340,6 +340,7 @@ relocated:
->  	leaq	input_data(%rip), %rdx  /* input_data */
->  	movl	$z_input_len, %ecx	/* input_len */
->  	movq	%rbp, %r8		/* output target address */
-> +	movq	$z_output_len, %r9	/* decompressed length */
->  	call	decompress_kernel
->  	popq	%rsi
->  
-> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-> index 7cb56c6..b756a04 100644
-> --- a/arch/x86/boot/compressed/misc.c
-> +++ b/arch/x86/boot/compressed/misc.c
-> @@ -267,6 +267,79 @@ static void error(char *x)
->  		asm("hlt");
->  }
->  
-> +#if CONFIG_X86_NEED_RELOCS
-> +static void handle_relocations(void *output, unsigned long output_len)
-> +{
-> +	int *reloc;
-> +	unsigned long delta, map, ptr;
-> +	unsigned long min_addr = (unsigned long)output;
-> +	unsigned long max_addr = min_addr + output_len;
-> +
-> +	/*
-> +	 * Calculate the delta between where vmlinux was linked to load
-> +	 * and where it was actually loaded.
-> +	 */
-> +	delta = min_addr - LOAD_PHYSICAL_ADDR;
-> +	if (!delta) {
-> +		debug_putstr("No relocation needed... ");
-> +		return;
-> +	}
-> +	debug_putstr("Performing relocations... ");
-> +
-> +	/*
-> +	 * The kernel contains a table of relocation addresses. Those
-> +	 * addresses have the final load address of the kernel in virtual
-> +	 * memory. We are currently working in the self map. So we need to
-> +	 * create an adjustment for kernel memory addresses to the self map.
-> +	 * This will involve subtracting out the base address of the kernel.
-> +	 */
-> +	map = delta - __START_KERNEL_map;
-> +
-> +	/*
-> +	 * Process relocations: 32 bit relocations first then 64 bit after.
-> +	 * Two sets of binary relocations are added to the end of the kernel
-> +	 * before compression. Each relocation table entry is the kernel
-> +	 * address of the location which needs to be updated stored as a
-> +	 * 32-bit value which is sign extended to 64 bits.
-> +	 *
-> +	 * Format is:
-> +	 *
-> +	 * kernel bits...
-> +	 * 0 - zero terminator for 64 bit relocations
-> +	 * 64 bit relocation repeated
-> +	 * 0 - zero terminator for 32 bit relocations
-> +	 * 32 bit relocation repeated
-> +	 *
-> +	 * So we work backwards from the end of the decompressed image.
-> +	 */
-> +	for (reloc = output + output_len - sizeof(*reloc); *reloc; reloc--) {
-> +		int extended = *reloc;
-> +		extended += map;
-> +
-> +		ptr = (unsigned long)extended;
-> +		if (ptr < min_addr || ptr > max_addr)
-> +			error("32-bit relocation outside of kernel!\n");
-> +
-> +		*(uint32_t *)ptr += delta;
-> +	}
-> +#ifdef CONFIG_X86_64
-> +	for (reloc--; *reloc; reloc--) {
-> +		long extended = *reloc;
-> +		extended += map;
-> +
-> +		ptr = (unsigned long)extended;
-> +		if (ptr < min_addr || ptr > max_addr)
-> +			error("64-bit relocation outside of kernel!\n");
-> +
-> +		*(uint64_t *)ptr += delta;
-> +	}
-> +#endif
-> +}
-> +#else
-> +static inline void handle_relocations(void *output, unsigned long output_len)
-> +{ }
-> +#endif
-> +
->  static void parse_elf(void *output)
->  {
->  #ifdef CONFIG_X86_64
-> @@ -321,7 +394,8 @@ static void parse_elf(void *output)
->  asmlinkage void decompress_kernel(void *rmode, memptr heap,
->  				  unsigned char *input_data,
->  				  unsigned long input_len,
-> -				  unsigned char *output)
-> +				  unsigned char *output,
-> +				  unsigned long output_len)
->  {
->  	real_mode = rmode;
->  
-> @@ -361,6 +435,7 @@ asmlinkage void decompress_kernel(void *rmode, memptr heap,
->  	debug_putstr("\nDecompressing Linux... ");
->  	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
->  	parse_elf(output);
-> +	handle_relocations(output, output_len);
->  	debug_putstr("done.\nBooting the kernel.\n");
->  	return;
->  }
-> diff --git a/arch/x86/include/asm/page_32_types.h b/arch/x86/include/asm/page_32_types.h
-> index ef17af0..f48b17d 100644
-> --- a/arch/x86/include/asm/page_32_types.h
-> +++ b/arch/x86/include/asm/page_32_types.h
-> @@ -15,6 +15,8 @@
->   */
->  #define __PAGE_OFFSET		_AC(CONFIG_PAGE_OFFSET, UL)
->  
-> +#define __START_KERNEL_map	__PAGE_OFFSET
-> +
->  #define THREAD_SIZE_ORDER	1
->  #define THREAD_SIZE		(PAGE_SIZE << THREAD_SIZE_ORDER)
->  
-> diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-> index 6c896fb..43dcd80 100644
-> --- a/arch/x86/include/asm/page_64_types.h
-> +++ b/arch/x86/include/asm/page_64_types.h
-> @@ -32,11 +32,6 @@
->   */
->  #define __PAGE_OFFSET           _AC(0xffff880000000000, UL)
->  
-> -#define __PHYSICAL_START	((CONFIG_PHYSICAL_START +	 	\
-> -				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
-> -				 ~(CONFIG_PHYSICAL_ALIGN - 1))
-> -
-> -#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
->  #define __START_KERNEL_map	_AC(0xffffffff80000000, UL)
->  
->  /* See Documentation/x86/x86_64/mm.txt for a description of the memory map. */
-> diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-> index 54c9787..086c2fa 100644
-> --- a/arch/x86/include/asm/page_types.h
-> +++ b/arch/x86/include/asm/page_types.h
-> @@ -33,6 +33,12 @@
->  	(((current->personality & READ_IMPLIES_EXEC) ? VM_EXEC : 0 ) | \
->  	 VM_READ | VM_WRITE | VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
->  
-> +#define __PHYSICAL_START	((CONFIG_PHYSICAL_START +		\
-> +				  (CONFIG_PHYSICAL_ALIGN - 1)) &	\
-> +				 ~(CONFIG_PHYSICAL_ALIGN - 1))
-
-I know you just moved the code. Could this macro be like this:
-
-#define __PHYSICAL_START ALIGN(CONFIG_PHYSICAL_START, CONFIG_PHYSICAL_ALIGN)
-
-> +
-> +#define __START_KERNEL		(__START_KERNEL_map + __PHYSICAL_START)
-> +
->  #ifdef CONFIG_X86_64
->  #include <asm/page_64_types.h>
->  #else
-> 
-
-
--- 
-Thanks.
-Zhang Yanfei
+                          Linus
