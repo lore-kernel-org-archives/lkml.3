@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965340Ab3GCTP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:15:58 -0400
+	id S965384Ab3GCTQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:16:39 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6261 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933586Ab3GCTAP (ORCPT
+	with ESMTP id S933590Ab3GCTAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 15:00:15 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=J2PZ5pSPc3kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=5i5m-4ZMNSAA:10 a=cH6R9-kdAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=bRQBf3FelYaKDuBU-sEA:9 a=bt0zGP92IBIA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 3 Jul 2013 15:00:14 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=sbf8MFaj2Z8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=HAb6J9uHviEA:10 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=UoAF1NFOBYuNlcyhXvwA:9 a=0kPLrQdw3YYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=yN2z2FX-Bw-xYyB3:21 a=VMk5PsTzsxMw3sTX:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184107.464420196@goodmis.org>
+Message-Id: <20130703184108.105162710@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:41:02 -0400
+Date: Wed, 03 Jul 2013 14:41:06 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Jens Axboe <axboe@kernel.dk>, Mike Miller <mike.miller@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [125/141] cciss: fix broken mutex usage in ioctl
+Cc: Alexander Lyakas <alex.bolshoy@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [129/141] md/raid1,raid10: use freeze_array in place of raise_barrier in
+ various places.
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0125-cciss-fix-broken-mutex-usage-in-ioctl.patch
+Content-Disposition: inline; filename=0129-md-raid1-raid10-use-freeze_array-in-place-of-raise_b.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,182 +30,181 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+From: NeilBrown <neilb@suse.de>
 
-[ Upstream commit 03f47e888daf56c8e9046c674719a0bcc644eed5 ]
+[ Upstream commit e2d59925221cd562e07fee38ec8839f7209ae603 ]
 
-If a new logical drive is added and the CCISS_REGNEWD ioctl is invoked
-(as is normal with the Array Configuration Utility) the process will
-hang as below.  It attempts to acquire the same mutex twice, once in
-do_ioctl() and once in cciss_unlocked_open().  The BKL was recursive,
-the mutex isn't.
+Various places in raid1 and raid10 are calling raise_barrier when they
+really should call freeze_array.
+The former is only intended to be called from "make_request".
+The later has extra checks for 'nr_queued' and makes a call to
+flush_pending_writes(), so it is safe to call it from within the
+management thread.
 
-  Linux version 3.10.0-rc2 (scameron@localhost.localdomain) (gcc version 4.4.7 20120313 (Red Hat 4.4.7-3) (GCC) ) #1 SMP Fri May 24 14:32:12 CDT 2013
-  [...]
-  acu             D 0000000000000001     0  3246   3191 0x00000080
-  Call Trace:
-    schedule+0x29/0x70
-    schedule_preempt_disabled+0xe/0x10
-    __mutex_lock_slowpath+0x17b/0x220
-    mutex_lock+0x2b/0x50
-    cciss_unlocked_open+0x2f/0x110 [cciss]
-    __blkdev_get+0xd3/0x470
-    blkdev_get+0x5c/0x1e0
-    register_disk+0x182/0x1a0
-    add_disk+0x17c/0x310
-    cciss_add_disk+0x13a/0x170 [cciss]
-    cciss_update_drive_info+0x39b/0x480 [cciss]
-    rebuild_lun_table+0x258/0x370 [cciss]
-    cciss_ioctl+0x34f/0x470 [cciss]
-    do_ioctl+0x49/0x70 [cciss]
-    __blkdev_driver_ioctl+0x28/0x30
-    blkdev_ioctl+0x200/0x7b0
-    block_ioctl+0x3c/0x40
-    do_vfs_ioctl+0x89/0x350
-    SyS_ioctl+0xa1/0xb0
-    system_call_fastpath+0x16/0x1b
+Using raise_barrier will sometimes deadlock.  Using freeze_array
+should not.
 
-This mutex usage was added into the ioctl path when the big kernel lock
-was removed.  As it turns out, these paths are all thread safe anyway
-(or can easily be made so) and we don't want ioctl() to be single
-threaded in any case.
+As 'freeze_array' currently expects one request to be pending (in
+handle_read_error - the only previous caller), we need to pass
+it the number of pending requests (extra) to ignore.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Mike Miller <mike.miller@hp.com>
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The deadlock was made particularly noticeable by commits
+050b66152f87c7 (raid10) and 6b740b8d79252f13 (raid1) which
+appeared in 3.4, so the fix is appropriate for any -stable
+kernel since then.
+
+This patch probably won't apply directly to some early kernels and
+will need to be applied by hand.
+
+Cc: stable@vger.kernel.org
+Reported-by: Alexander Lyakas <alex.bolshoy@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/block/cciss.c |   32 ++++++++++++++++----------------
- 1 file changed, 16 insertions(+), 16 deletions(-)
+ drivers/md/raid1.c  |   22 +++++++++++-----------
+ drivers/md/raid10.c |   14 +++++++-------
+ 2 files changed, 18 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index b0f553b..d3446f6 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -161,8 +161,6 @@ static irqreturn_t do_cciss_msix_intr(int irq, void *dev_id);
- static int cciss_open(struct block_device *bdev, fmode_t mode);
- static int cciss_unlocked_open(struct block_device *bdev, fmode_t mode);
- static int cciss_release(struct gendisk *disk, fmode_t mode);
--static int do_ioctl(struct block_device *bdev, fmode_t mode,
--		    unsigned int cmd, unsigned long arg);
- static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 		       unsigned int cmd, unsigned long arg);
- static int cciss_getgeo(struct block_device *bdev, struct hd_geometry *geo);
-@@ -229,7 +227,7 @@ static const struct block_device_operations cciss_fops = {
- 	.owner = THIS_MODULE,
- 	.open = cciss_unlocked_open,
- 	.release = cciss_release,
--	.ioctl = do_ioctl,
-+	.ioctl = cciss_ioctl,
- 	.getgeo = cciss_getgeo,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl = cciss_compat_ioctl,
-@@ -1140,16 +1138,6 @@ static int cciss_release(struct gendisk *disk, fmode_t mode)
- 	return 0;
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index cda27cb..4347a70 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -886,17 +886,17 @@ static void allow_barrier(struct r1conf *conf)
+ 	wake_up(&conf->wait_barrier);
  }
  
--static int do_ioctl(struct block_device *bdev, fmode_t mode,
--		    unsigned cmd, unsigned long arg)
--{
--	int ret;
--	mutex_lock(&cciss_mutex);
--	ret = cciss_ioctl(bdev, mode, cmd, arg);
--	mutex_unlock(&cciss_mutex);
--	return ret;
--}
--
- #ifdef CONFIG_COMPAT
- 
- static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
-@@ -1176,7 +1164,7 @@ static int cciss_compat_ioctl(struct block_device *bdev, fmode_t mode,
- 	case CCISS_REGNEWD:
- 	case CCISS_RESCANDISK:
- 	case CCISS_GETLUNINFO:
--		return do_ioctl(bdev, mode, cmd, arg);
-+		return cciss_ioctl(bdev, mode, cmd, arg);
- 
- 	case CCISS_PASSTHRU32:
- 		return cciss_ioctl32_passthru(bdev, mode, cmd, arg);
-@@ -1216,7 +1204,7 @@ static int cciss_ioctl32_passthru(struct block_device *bdev, fmode_t mode,
- 	if (err)
- 		return -EFAULT;
- 
--	err = do_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
-+	err = cciss_ioctl(bdev, mode, CCISS_PASSTHRU, (unsigned long)p);
- 	if (err)
- 		return err;
- 	err |=
-@@ -1258,7 +1246,7 @@ static int cciss_ioctl32_big_passthru(struct block_device *bdev, fmode_t mode,
- 	if (err)
- 		return -EFAULT;
- 
--	err = do_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
-+	err = cciss_ioctl(bdev, mode, CCISS_BIG_PASSTHRU, (unsigned long)p);
- 	if (err)
- 		return err;
- 	err |=
-@@ -1308,11 +1296,14 @@ static int cciss_getpciinfo(ctlr_info_t *h, void __user *argp)
- static int cciss_getintinfo(ctlr_info_t *h, void __user *argp)
+-static void freeze_array(struct r1conf *conf)
++static void freeze_array(struct r1conf *conf, int extra)
  {
- 	cciss_coalint_struct intinfo;
-+	unsigned long flags;
+ 	/* stop syncio and normal IO and wait for everything to
+ 	 * go quite.
+ 	 * We increment barrier and nr_waiting, and then
+-	 * wait until nr_pending match nr_queued+1
++	 * wait until nr_pending match nr_queued+extra
+ 	 * This is called in the context of one normal IO request
+ 	 * that has failed. Thus any sync request that might be pending
+ 	 * will be blocked by nr_pending, and we need to wait for
+ 	 * pending IO requests to complete or be queued for re-try.
+-	 * Thus the number queued (nr_queued) plus this request (1)
++	 * Thus the number queued (nr_queued) plus this request (extra)
+ 	 * must match the number of pending IOs (nr_pending) before
+ 	 * we continue.
+ 	 */
+@@ -904,7 +904,7 @@ static void freeze_array(struct r1conf *conf)
+ 	conf->barrier++;
+ 	conf->nr_waiting++;
+ 	wait_event_lock_irq(conf->wait_barrier,
+-			    conf->nr_pending == conf->nr_queued+1,
++			    conf->nr_pending == conf->nr_queued+extra,
+ 			    conf->resync_lock,
+ 			    flush_pending_writes(conf));
+ 	spin_unlock_irq(&conf->resync_lock);
+@@ -1559,8 +1559,8 @@ static int raid1_add_disk(struct mddev *mddev, struct md_rdev *rdev)
+ 		 * we wait for all outstanding requests to complete.
+ 		 */
+ 		synchronize_sched();
+-		raise_barrier(conf);
+-		lower_barrier(conf);
++		freeze_array(conf, 0);
++		unfreeze_array(conf);
+ 		clear_bit(Unmerged, &rdev->flags);
+ 	}
+ 	md_integrity_add_rdev(rdev, mddev);
+@@ -1608,11 +1608,11 @@ static int raid1_remove_disk(struct mddev *mddev, struct md_rdev *rdev)
+ 			 */
+ 			struct md_rdev *repl =
+ 				conf->mirrors[conf->raid_disks + number].rdev;
+-			raise_barrier(conf);
++			freeze_array(conf, 0);
+ 			clear_bit(Replacement, &repl->flags);
+ 			p->rdev = repl;
+ 			conf->mirrors[conf->raid_disks + number].rdev = NULL;
+-			lower_barrier(conf);
++			unfreeze_array(conf);
+ 			clear_bit(WantReplacement, &rdev->flags);
+ 		} else
+ 			clear_bit(WantReplacement, &rdev->flags);
+@@ -2229,7 +2229,7 @@ static void handle_read_error(struct r1conf *conf, struct r1bio *r1_bio)
+ 	 * frozen
+ 	 */
+ 	if (mddev->ro == 0) {
+-		freeze_array(conf);
++		freeze_array(conf, 1);
+ 		fix_read_error(conf, r1_bio->read_disk,
+ 			       r1_bio->sector, r1_bio->sectors);
+ 		unfreeze_array(conf);
+@@ -2993,7 +2993,7 @@ static int raid1_reshape(struct mddev *mddev)
+ 		return -ENOMEM;
+ 	}
  
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	intinfo.delay = readl(&h->cfgtable->HostWrite.CoalIntDelay);
- 	intinfo.count = readl(&h->cfgtable->HostWrite.CoalIntCount);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user
- 	    (argp, &intinfo, sizeof(cciss_coalint_struct)))
- 		return -EFAULT;
-@@ -1353,12 +1344,15 @@ static int cciss_setintinfo(ctlr_info_t *h, void __user *argp)
- static int cciss_getnodename(ctlr_info_t *h, void __user *argp)
+-	raise_barrier(conf);
++	freeze_array(conf, 0);
+ 
+ 	/* ok, everything is stopped */
+ 	oldpool = conf->r1bio_pool;
+@@ -3024,7 +3024,7 @@ static int raid1_reshape(struct mddev *mddev)
+ 	conf->raid_disks = mddev->raid_disks = raid_disks;
+ 	mddev->delta_disks = 0;
+ 
+-	lower_barrier(conf);
++	unfreeze_array(conf);
+ 
+ 	set_bit(MD_RECOVERY_NEEDED, &mddev->recovery);
+ 	md_wakeup_thread(mddev->thread);
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 5c3fb0b..cd7394b 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1021,17 +1021,17 @@ static void allow_barrier(struct r10conf *conf)
+ 	wake_up(&conf->wait_barrier);
+ }
+ 
+-static void freeze_array(struct r10conf *conf)
++static void freeze_array(struct r10conf *conf, int extra)
  {
- 	NodeName_type NodeName;
-+	unsigned long flags;
- 	int i;
+ 	/* stop syncio and normal IO and wait for everything to
+ 	 * go quiet.
+ 	 * We increment barrier and nr_waiting, and then
+-	 * wait until nr_pending match nr_queued+1
++	 * wait until nr_pending match nr_queued+extra
+ 	 * This is called in the context of one normal IO request
+ 	 * that has failed. Thus any sync request that might be pending
+ 	 * will be blocked by nr_pending, and we need to wait for
+ 	 * pending IO requests to complete or be queued for re-try.
+-	 * Thus the number queued (nr_queued) plus this request (1)
++	 * Thus the number queued (nr_queued) plus this request (extra)
+ 	 * must match the number of pending IOs (nr_pending) before
+ 	 * we continue.
+ 	 */
+@@ -1039,7 +1039,7 @@ static void freeze_array(struct r10conf *conf)
+ 	conf->barrier++;
+ 	conf->nr_waiting++;
+ 	wait_event_lock_irq(conf->wait_barrier,
+-			    conf->nr_pending == conf->nr_queued+1,
++			    conf->nr_pending == conf->nr_queued+extra,
+ 			    conf->resync_lock,
+ 			    flush_pending_writes(conf));
  
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	for (i = 0; i < 16; i++)
- 		NodeName[i] = readb(&h->cfgtable->ServerName[i]);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, NodeName, sizeof(NodeName_type)))
- 		return -EFAULT;
- 	return 0;
-@@ -1395,10 +1389,13 @@ static int cciss_setnodename(ctlr_info_t *h, void __user *argp)
- static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
- {
- 	Heartbeat_type heartbeat;
-+	unsigned long flags;
+@@ -1740,8 +1740,8 @@ static int raid10_add_disk(struct mddev *mddev, struct md_rdev *rdev)
+ 		 * we wait for all outstanding requests to complete.
+ 		 */
+ 		synchronize_sched();
+-		raise_barrier(conf, 0);
+-		lower_barrier(conf);
++		freeze_array(conf, 0);
++		unfreeze_array(conf);
+ 		clear_bit(Unmerged, &rdev->flags);
+ 	}
+ 	md_integrity_add_rdev(rdev, mddev);
+@@ -2534,7 +2534,7 @@ static void handle_read_error(struct mddev *mddev, struct r10bio *r10_bio)
+ 	r10_bio->devs[slot].bio = NULL;
  
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	heartbeat = readl(&h->cfgtable->HeartBeat);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, &heartbeat, sizeof(Heartbeat_type)))
- 		return -EFAULT;
- 	return 0;
-@@ -1407,10 +1404,13 @@ static int cciss_getheartbeat(ctlr_info_t *h, void __user *argp)
- static int cciss_getbustypes(ctlr_info_t *h, void __user *argp)
- {
- 	BusTypes_type BusTypes;
-+	unsigned long flags;
- 
- 	if (!argp)
- 		return -EINVAL;
-+	spin_lock_irqsave(&h->lock, flags);
- 	BusTypes = readl(&h->cfgtable->BusTypes);
-+	spin_unlock_irqrestore(&h->lock, flags);
- 	if (copy_to_user(argp, &BusTypes, sizeof(BusTypes_type)))
- 		return -EFAULT;
- 	return 0;
+ 	if (mddev->ro == 0) {
+-		freeze_array(conf);
++		freeze_array(conf, 1);
+ 		fix_read_error(conf, mddev, r10_bio);
+ 		unfreeze_array(conf);
+ 	} else
 -- 
 1.7.10.4
 
