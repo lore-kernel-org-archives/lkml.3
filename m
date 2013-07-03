@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab3GCSgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:36:46 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:50782 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755366Ab3GCSgp (ORCPT
+	id S933096Ab3GCSg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:36:56 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:57462 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933059Ab3GCSgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:36:45 -0400
+	Wed, 3 Jul 2013 14:36:53 -0400
 From: Kevin Hilman <khilman@linaro.org>
 To: Frederic Weisbecker <fweisbec@gmail.com>,
         Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Paul McKenney <paulmck@linux.vnet.ibm.com>,
         linaro-kernel@lists.linaro.org
-Subject: [PATCH 0/3] nohz/full: final Kconfig bits for ARM support
-Date: Wed,  3 Jul 2013 11:36:38 -0700
-Message-Id: <1372876601-23881-1-git-send-email-khilman@linaro.org>
+Subject: [PATCH 3/3] ARM: Kconfig: allow virt CPU accounting
+Date: Wed,  3 Jul 2013 11:36:41 -0700
+Message-Id: <1372876601-23881-4-git-send-email-khilman@linaro.org>
 X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1372876601-23881-1-git-send-email-khilman@linaro.org>
+References: <1372876601-23881-1-git-send-email-khilman@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of v3.10, the core ARM support is in mainline for NO_HZ_FULL.  The
-only remaining part is the removal of the hard-coded Kconfig
-requirement on 64-bit platforms, which I believe can now be removed
-after the nsec granularity cputime was made to work on non 64_BIT
-(c.f. commit 8c23b80e, cputime_nsecs: use math64.h for nsec
-resolution conversion helpers.)
+With the 64-bit requirement removed from virt CPU accounting,
+allow ARM platforms to enable it.
 
-This series makes the final Kconfig changes to bring NO_HZ_FULL
-support to ARM.
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+---
+ arch/arm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Series applies to v3.10.
-
-I will queue up the arch/arm patch for Russell separately once the
-generic changes are accepted.
-
-Kevin
-
- arch/arm/Kconfig    | 1 +
- init/Kconfig        | 2 +-
- kernel/time/Kconfig | 2 --
- 3 files changed, 2 insertions(+), 3 deletions(-)
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 136f263..7850612 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -61,6 +61,7 @@ config ARM
+ 	select OLD_SIGSUSPEND3
+ 	select OLD_SIGACTION
+ 	select HAVE_CONTEXT_TRACKING
++	select HAVE_VIRT_CPU_ACCOUNTING
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
 -- 
 1.8.3
 
