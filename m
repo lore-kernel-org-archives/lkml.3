@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446Ab3GCVhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 17:37:11 -0400
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:56043 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933279Ab3GCVhJ (ORCPT
+	id S1755123Ab3GCVqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 17:46:13 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:63576 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab3GCVqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 17:37:09 -0400
+	Wed, 3 Jul 2013 17:46:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAMOw1v6gUt1AwrVLK4dAYb6_VHTQ4M2gv3eC1E3Rx=pT2P2_8Q@mail.gmail.com>
-References: <b6b1676fd5bcd6b0ef47b0e0a1c26b1c05684135.1363291511.git.luto@amacapital.net>
- <87ehfhtftn.fsf@rustcorp.com.au> <CALCETrU+rehQzy4vVg589CGi561X_s73Xgsfp43pYZOoKvNDXQ@mail.gmail.com>
- <87sj3tsawh.fsf@rustcorp.com.au> <CALCETrUK54KViGex=V2pG8kAttsxOiDkeJUL48pk1NAhH-SdAA@mail.gmail.com>
- <87hak8qfu5.fsf@rustcorp.com.au> <CAMOw1v5AOmy38KNVfxj6OO-U0UCXST50vD0g0W5fEpNfKCpGvg@mail.gmail.com>
- <87sj3qpwdz.fsf@rustcorp.com.au> <87a9m6sri3.fsf@rustcorp.com.au>
- <9F26321B-7088-4D16-80D5-72EB388F8E49@redhat.com> <51D491AD.7050008@suse.cz>
- <CALCETrWOUE=2fX1k+igfNizUfxRaZCc9NDgMzy7SM6fAjZMZuA@mail.gmail.com>
- <51D49655.8030206@suse.cz> <CAMOw1v6gUt1AwrVLK4dAYb6_VHTQ4M2gv3eC1E3Rx=pT2P2_8Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 3 Jul 2013 14:36:48 -0700
-Message-ID: <CALCETrWK7qAN_zzoK0ojOHqh7Rtrno1DhZb+jtVJMCuXMUfOuw@mail.gmail.com>
-Subject: Re: [RFC PATCH] Allow optional module parameters
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Michal Marek <mmarek@suse.cz>, Jonathan Masters <jcm@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
+In-Reply-To: <1372860295-8306-7-git-send-email-mika.westerberg@linux.intel.com>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com> <1372860295-8306-7-git-send-email-mika.westerberg@linux.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 3 Jul 2013 15:45:50 -0600
+Message-ID: <CAErSpo5QQym0b828gq9sAjvh0SdbNhXo0mo8_dU1_52dTVO+GA@mail.gmail.com>
+Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer
+ Aspire S5
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 2:31 PM, Lucas De Marchi
-<lucas.demarchi@profusion.mobi> wrote:
-> On Wed, Jul 3, 2013 at 6:23 PM, Michal Marek <mmarek@suse.cz> wrote:
->> Dne 3.7.2013 23:17, Andy Lutomirski napsal(a):
->>> On Wed, Jul 3, 2013 at 2:03 PM, Michal Marek <mmarek@suse.cz> wrote:
->>>> Dne 1.7.2013 18:33, Jonathan Masters napsal(a):
->>>>> One caveat. Sometimes we have manufactured parameters intentionally
->>>>> to cause a module to fail. We should standardize that piece.
->>>>
->>>> You have:
->>>>
->>>>   blacklist foo
->>>>
->>>> to prevent udev from loading a module and
->>>>
->>>>   install foo /bin/true
->>>>
->>>> to prevent modprobe from loading the module at all. What is the
->>>> motivation for inventing a third way, through adding invalid parameters?
->>>>
->>>
->>> FWIW, I've occasionally booted with modulename.garbage=1 to prevent
->>> modulename from loading at boot.  It may be worth adding a more
->>> intentional way to do that.
->>
->> Hm, right, there seems to be no clean way to achieve this via a
->> commandline argument. Maybe define a magic module option to tell the
->> module loader not to load a module?
+On Wed, Jul 3, 2013 at 8:04 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
 >
-> modprobe.blacklist=modname1,modname2,... is already there, though all
-> the silliness of blacklist applies unless "-b" is passed (that's the
-> equivalent behavior of udev)
+> Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+> PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+> deeper in hierarchy:
+>
+> Device (RP05)
+> {
+>    // ...
+>    Device (HRUP)
+>    {
+>        // ...
+>        Device (HRDN)
+>        {
+>            // ...
+>            Device (EPUP)
+>            {
+>                // ...
+>                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+>                {
+>                    Return (One)
+>                }
+>            }
+>        }
+>    }
+> }
+>
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> index 2a47e82..d92ebfb 100644
+> --- a/drivers/pci/hotplug/acpi_pcihp.c
+> +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+>         status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+>         if (ACPI_SUCCESS(status) && removable)
+>                 return 1;
+> +
+> +       /*
+> +        * Workaround for Thunderbolt implementation on Acer Aspire S5.
+> +        *
+> +        * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+> +        * slot (device under pci bridge). In Acer Aspire S5 case we have it
+> +        * deeper in hierarchy.
 
-That would probably be good enough for me.
+s/imeplementation/implementation/
 
-It would be neat if this worked for built-in "modules" as well, but
-that would probably be quite intrusive.
+If you're casting aspersions on Acer for having an incorrect ACPI
+implementation, you should probably provide a spec reference.  I think
+it's likely that the Acer implementation is actually correct per the
+spec, but Linux just isn't smart enough to handle it.
 
---Andy
+> +        */
+> +       status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+> +                       &removable);
+> +       if (ACPI_SUCCESS(status) && removable)
+> +               return 1;
+> +
+>         return 0;
+>  }
+>
+> --
+> 1.8.3.2
+>
