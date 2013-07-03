@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933460Ab3GCS7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:59:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5725 "EHLO
+	id S933568Ab3GCS7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:59:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15217 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933130Ab3GCSks (ORCPT
+	with ESMTP id S933124Ab3GCSkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:40:48 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=M2X0cg7vQ44A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=8F504AwDmlIA:10 a=cH6R9-kdAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=fBeKd2HRWbP4T1pgm1MA:9 a=bt0zGP92IBIA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=FpPCvutuz0mlo6cx:21 a=NJ616faCBnhfs8Wk:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 3 Jul 2013 14:40:47 -0400
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=W3loo9tk4lEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6wqioghDu_0A:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=fBeKd2HRWbP4T1pgm1MA:9 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184046.777672478@goodmis.org>
+Message-Id: <20130703184045.269379596@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:10 -0400
+Date: Wed, 03 Jul 2013 14:39:01 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [013/141] USB: UHCI: fix for suspend of virtual HP controller
+Cc: Jouni Malinen <j@w1.fi>, Johannes Berg <johannes.berg@intel.com>
+Subject: [004/141] mac80211: fix AP-mode frame matching
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0013-USB-UHCI-fix-for-suspend-of-virtual-HP-controller.patch
+Content-Disposition: inline; filename=0004-mac80211-fix-AP-mode-frame-matching.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,43 +29,37 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Johannes Berg <johannes.berg@intel.com>
 
-[ Upstream commit 997ff893603c6455da4c5e26ba1d0f81adfecdfc ]
+[ Upstream commit 2b9ccd4e4308272e5aec614b77c5385e7ec2ec90 ]
 
-HP's virtual UHCI host controller takes a long time to suspend
-(several hundred microseconds), even when no devices are attached.
-This provokes a warning message from uhci-hcd in the auto-stop case.
+In AP mode, ignore frames with mis-matched BSSID that aren't
+multicast or sent to the correct destination. This fixes
+reporting public action frames to userspace multiple times
+on multiple virtual AP interfaces.
 
-To prevent this from happening, this patch adds a test to avoid
-performing an auto-stop when the wait_for_hp quirk flag is set.  The
-controller will still suspend through the normal runtime PM mechanism.
-And since that pathway includes a 1-ms delay, the slowness of the
-virtual hardware won't matter.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: ZhenHua <zhen-hual@hp.com>
-CC: <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: stable@vger.kernel.org
+Reported-by: Jouni Malinen <j@w1.fi>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/usb/host/uhci-hub.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/mac80211/rx.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/usb/host/uhci-hub.c b/drivers/usb/host/uhci-hub.c
-index 768d542..c994655 100644
---- a/drivers/usb/host/uhci-hub.c
-+++ b/drivers/usb/host/uhci-hub.c
-@@ -222,7 +222,8 @@ static int uhci_hub_status_data(struct usb_hcd *hcd, char *buf)
- 		/* auto-stop if nothing connected for 1 second */
- 		if (any_ports_active(uhci))
- 			uhci->rh_state = UHCI_RH_RUNNING;
--		else if (time_after_eq(jiffies, uhci->auto_stop_time))
-+		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
-+				!uhci->wait_for_hp)
- 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
- 		break;
- 
+diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
+index 37fe5ce..bd11c1c 100644
+--- a/net/mac80211/rx.c
++++ b/net/mac80211/rx.c
+@@ -2813,6 +2813,9 @@ static int prepare_for_handlers(struct ieee80211_rx_data *rx,
+ 			 * and location updates. Note that mac80211
+ 			 * itself never looks at these frames.
+ 			 */
++			if (!multicast &&
++			    !ether_addr_equal(sdata->vif.addr, hdr->addr1))
++				return 0;
+ 			if (ieee80211_is_public_action(hdr, skb->len))
+ 				return 1;
+ 			if (!ieee80211_is_beacon(hdr->frame_control))
 -- 
 1.7.10.4
 
