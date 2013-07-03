@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564Ab3GCS6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:58:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19740 "EHLO
+	id S933506Ab3GCS57 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:57:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33750 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933183Ab3GCSkv (ORCPT
+	with ESMTP id S933191Ab3GCSkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:40:51 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=kXCziQ0v94QA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=moTEe2FfZVUA:10 a=VZE4gLrUAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=XuoIeGlZvS0XHmn7ZBsA:9 a=3rEIPAstt5gA:10 a=FprxmC2WWiEA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 3 Jul 2013 14:40:52 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=vEu6x0szfNcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jiCc1kl0oEEA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=eJfxgxciAAAA:8 a=pQFG53Joc4AfjvbZiugA:9 a=jEp0ucaQiEUA:10 a=W39ifWXXhksA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184045.786021344@goodmis.org>
+Message-Id: <20130703184050.051420878@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:04 -0400
+Date: Wed, 03 Jul 2013 14:39:30 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Andrew Gomella <andrew.gomella@nih.gov>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [007/141] USB: ftdi_sio: Add support for Newport CONEX motor drivers
+Cc: Dave Chinner <dchinner@redhat.com>, Brian Foster <bfoster@redhat.com>,
+        Ben Myers <bpm@sgi.com>
+Subject: [033/141] xfs: kill suid/sgid through the truncate path.
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0007-USB-ftdi_sio-Add-support-for-Newport-CONEX-motor-dri.patch
+Content-Disposition: inline; filename=0033-xfs-kill-suid-sgid-through-the-truncate-path.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,63 +30,106 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Gomella, Andrew (NIH/NHLBI) [F]" <andrew.gomella@nih.gov>
+From: Dave Chinner <dchinner@redhat.com>
 
-[ Upstream commit 7138143972b7c293267c783fc99a194f0ceff7f2 ]
+[ Upstream commit 2962f5a5dcc56f69cbf62121a7be67cc15d6940b ]
 
-Here are two more devices that use FTDI USB-to-serial chips with new product ID's.
+XFS has failed to kill suid/sgid bits correctly when truncating
+files of non-zero size since commit c4ed4243 ("xfs: split
+xfs_setattr") introduced in the 3.1 kernel. Fix it.
 
-The devices are the Newport Conex-AGP and Conex-CC motor controllers.
-(http://www.newport.com/CONEX-AGP-Integrated-Piezo-Motor-Rotation-Stages-/987623/1033/info.aspx)
-(http://www.newport.com/CONEX-CC-DC-Servo-Controller-Actuators/934114/1033/info.aspx)
+Fix it.
 
-usb-devices command yields:
-
-P:  Vendor=104d ProdID=3002 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-CC
-
-as well as
-
-P:  Vendor=104d ProdID=3006 Rev=06.00
-S:  Manufacturer=Newport
-S:  Product=CONEX-AGP
-
-Signed-off-by: Andrew Gomella <andrew.gomella@nih.gov>
-Cc: stable <stable@vger.kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+cc: stable kernel <stable@vger.kernel.org>
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- drivers/usb/serial/ftdi_sio.c     |    2 ++
- drivers/usb/serial/ftdi_sio_ids.h |    2 ++
- 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 5843cc8..5c3e249 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -197,6 +197,8 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_BOOST_PID) },
- 	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_CC_PID) },
-+	{ USB_DEVICE(NEWPORT_VID, NEWPORT_CONEX_AGP_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 5c84306..1e4bff5 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -765,6 +765,8 @@
-  */
- #define NEWPORT_VID			0x104D
- #define NEWPORT_AGILIS_PID		0x3000
-+#define NEWPORT_CONEX_CC_PID		0x3002
-+#define NEWPORT_CONEX_AGP_PID		0x3006
+(cherry picked from commit 56c19e89b38618390addfc743d822f99519055c6)
+---
+ fs/xfs/xfs_iops.c |   47 ++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 32 insertions(+), 15 deletions(-)
+
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index 4e00cf0..53c2145 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -454,6 +454,28 @@ xfs_vn_getattr(
+ 	return 0;
+ }
  
- /* Interbiometrics USB I/O Board */
- /* Developed for Interbiometrics by Rudolf Gugler */
++static void
++xfs_setattr_mode(
++	struct xfs_trans	*tp,
++	struct xfs_inode	*ip,
++	struct iattr		*iattr)
++{
++	struct inode	*inode = VFS_I(ip);
++	umode_t		mode = iattr->ia_mode;
++
++	ASSERT(tp);
++	ASSERT(xfs_isilocked(ip, XFS_ILOCK_EXCL));
++
++	if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
++		mode &= ~S_ISGID;
++
++	ip->i_d.di_mode &= S_IFMT;
++	ip->i_d.di_mode |= mode & ~S_IFMT;
++
++	inode->i_mode &= S_IFMT;
++	inode->i_mode |= mode & ~S_IFMT;
++}
++
+ int
+ xfs_setattr_nonsize(
+ 	struct xfs_inode	*ip,
+@@ -605,18 +627,8 @@ xfs_setattr_nonsize(
+ 	/*
+ 	 * Change file access modes.
+ 	 */
+-	if (mask & ATTR_MODE) {
+-		umode_t mode = iattr->ia_mode;
+-
+-		if (!in_group_p(inode->i_gid) && !capable(CAP_FSETID))
+-			mode &= ~S_ISGID;
+-
+-		ip->i_d.di_mode &= S_IFMT;
+-		ip->i_d.di_mode |= mode & ~S_IFMT;
+-
+-		inode->i_mode &= S_IFMT;
+-		inode->i_mode |= mode & ~S_IFMT;
+-	}
++	if (mask & ATTR_MODE)
++		xfs_setattr_mode(tp, ip, iattr);
+ 
+ 	/*
+ 	 * Change file access or modified times.
+@@ -713,9 +725,8 @@ xfs_setattr_size(
+ 		return XFS_ERROR(error);
+ 
+ 	ASSERT(S_ISREG(ip->i_d.di_mode));
+-	ASSERT((mask & (ATTR_MODE|ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
+-			ATTR_MTIME_SET|ATTR_KILL_SUID|ATTR_KILL_SGID|
+-			ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
++	ASSERT((mask & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
++			ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
+ 
+ 	if (!(flags & XFS_ATTR_NOLOCK)) {
+ 		lock_flags |= XFS_IOLOCK_EXCL;
+@@ -856,6 +867,12 @@ xfs_setattr_size(
+ 		xfs_iflags_set(ip, XFS_ITRUNCATED);
+ 	}
+ 
++	/*
++	 * Change file access modes.
++	 */
++	if (mask & ATTR_MODE)
++		xfs_setattr_mode(tp, ip, iattr);
++
+ 	if (mask & ATTR_CTIME) {
+ 		inode->i_ctime = iattr->ia_ctime;
+ 		ip->i_d.di_ctime.t_sec = iattr->ia_ctime.tv_sec;
 -- 
 1.7.10.4
 
