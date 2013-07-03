@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab3GCBBO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 21:01:14 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:40097 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752373Ab3GCBBN (ORCPT
+	id S1753349Ab3GCBKm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 21:10:42 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:37266 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751767Ab3GCBKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 21:01:13 -0400
-X-Sasl-enc: zmE6j5YC9HY/f17WU9yVgtj69TIYCrO+eu+3Mahrk0Ho 1372813272
-Date: Tue, 2 Jul 2013 18:01:11 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.11
-Message-ID: <20130703010111.GA7986@kroah.com>
-References: <nsxbo6mxu38.fsf@lambda.thunk.org>
- <20130703094529.99444050e676467d281a3b51@canb.auug.org.au>
- <CA+55aFxdAHqEhnV-zKwExVfBAvw=k8+GprTGniNz=TpJM6obtQ@mail.gmail.com>
- <20130703005419.GA7744@kroah.com>
- <CA+55aFxdNVX9koH=GViv1Haj3kU07PD-CTKCNuWrm-c-BF3mQw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxdNVX9koH=GViv1Haj3kU07PD-CTKCNuWrm-c-BF3mQw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 2 Jul 2013 21:10:41 -0400
+Date: Wed, 3 Jul 2013 11:10:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the xilinx tree
+Message-Id: <20130703111030.c0df2a231fc3e4ba6cb566cd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__3_Jul_2013_11_10_30_+1000_/u_cb/6Z9IfA1T3y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 05:58:15PM -0700, Linus Torvalds wrote:
-> On Tue, Jul 2, 2013 at 5:54 PM, Greg KH <greg@kroah.com> wrote:
-> > On Tue, Jul 02, 2013 at 05:02:21PM -0700, Linus Torvalds wrote:
-> >>
-> >> I'm really not convinced this whole Lustre thing was correctly
-> >> handled. Merging it into stable and yet being in such bad shape that
-> >> it isn't enabled even there? I just dunno. But I have the turd in my
-> >> tree now, let's hope it gets fixed up.
-> >
-> > It's in "staging", not "stable" :)
-> 
-> Yes. But what was the reason to actually merge it even there? And once
-> it gets merged, disabling it again rather than fixing the problems it
-> has?
+--Signature=_Wed__3_Jul_2013_11_10_30_+1000_/u_cb/6Z9IfA1T3y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The problems turned out to be too big, too late in the merge cycle for
-me to be able to take them (they still aren't even done, as I don't have
-a working set of patches yet.)  So I just disabled it from the build to
-give Andreas and team time to get it working properly.
+Hi Michal,
 
-I could have just removed it, but I thought I would give them a chance.
+Today's linux-next merge of the xilinx tree got conflicts in several files.
 
-> This is a filesystem that Intel apparently wants to push. I think it
-> would have been a better idea to push back a bit and say "at least
-> clean it up a bit first". It's not like Intel is one of the clueless
-> companies that couldn't have done so and need help from the community.
+These conflicts are caused by a set of old patches in the xilinx tree
+other copies of which have been merged upstream a while ago.  I fact the
+xilinx tree currently adds no changes to linux-next at all.   Could you
+please clean up this tree?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-For this filesystem, it seems that they don't have any resources to do
-this work and are relying on the community to help out.  Which is odd,
-but big companies are strange some times...
+--Signature=_Wed__3_Jul_2013_11_10_30_+1000_/u_cb/6Z9IfA1T3y
+Content-Type: application/pgp-signature
 
-thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-greg k-h
+iQIcBAEBCAAGBQJR03oLAAoJEECxmPOUX5FEpHcQAIxEmgfsHoLjPHE/8yiVyI7J
+Gd8mDrBtdQSfFoOujb22bxWLA52ZpdNTyZ3WDbQKcNApgHl2yIqSzlCFWLvqh/Oi
+HzUzbcwfzdcv4EUcrTUS1khvz3+JPpGyf3Wlvxfa6YqrrtGnU/QEx4ZSLb5iBcV1
+fDbR85tht/K2fmCEwa+dxZ47Zn3F4F00rYMZgdBKFBy6X4wGhiWtZLeh6WtPPPoT
+7EtXLh9uvJD50PqUE9tKGJV88nqup38vUrqmLE6BtDJ/eYDM109mIUa3YIXmw6Pa
+nOPoQNBXiIVwknTPfWGKzpsQdxJzxtgt4cTNVmquQrPXdSczQl/SaSIVl9eoV8JQ
+UBRqn61V5D6M/e1x2CYk7ItD6XTM5ksMpqF8E6zauT2f2eqN0X12tMF0Os2ydq1W
+EMnaGZQjTl7v/KAE7YkTJ5sKHEbqQRWEGH4cVw6WBNAP99GARqmEzzU5TKSQnj30
+BYaz18pbY/O7uvf7gGvd7v0eVgHauUR7JaSMvS4m9PY1gmmO0Dy/il6Zmmvy8DFP
+ndEmsY/S2atGy0BWU1LpCwR/CdRQY5SjfA7eYOSUSUuew2ENox0MCBZ87beqsqZg
+7X9k1ViKH9MFw9WmPllqwI0UVl5TrZNKhRoWjjGHTdhGaeAeHlnoSeb9AYie+18B
+1OvXq0ySCKcCkP8yn9kP
+=XU/Y
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__3_Jul_2013_11_10_30_+1000_/u_cb/6Z9IfA1T3y--
