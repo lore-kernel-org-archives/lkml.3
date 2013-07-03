@@ -1,88 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135Ab3GCOoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:44:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51749 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932926Ab3GCOoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:44:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Subject: Re: [PATCH v10] i2c-designware: make SDA hold time configurable
-Date: Wed, 3 Jul 2013 16:44:09 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: vincent.stehle@freescale.com, Wolfram Sang <wsa@the-dreams.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-i2c@vger.kernel.org,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>
-References: <20130625163902.GA2973@katana> <20130703143835.GD3929@ab42.lan> <201307031642.30380.arnd@arndb.de>
-In-Reply-To: <201307031642.30380.arnd@arndb.de>
+	id S933153Ab3GCOoy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:44:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:42727 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932714Ab3GCOow (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:44:52 -0400
+Date: Wed, 3 Jul 2013 16:44:48 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: tony.luck@intel.com, ananth@in.ibm.com, masbock@linux.vnet.ibm.com,
+        lcm@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, ying.huang@intel.com
+Subject: Re: [PATCH v3 3/3] mce, acpi/apei: Soft-offline a page on firmware
+ GHES notification
+Message-ID: <20130703144447.GB13951@pd.tnic>
+References: <20130701230800.GO23515@pd.tnic>
+ <20130702112424.6401.11586.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307031644.09669.arnd@arndb.de>
-X-Provags-ID: V02:K0:tgpQroqkzdhCT29S/w3v67tGpYOIQj1YE7vh0In5XO3
- KeLNf9X6hyEAcNcy8dsAZmNvtlmys6PbOND9EoV64H4HOufN9d
- H1IX2Sdq/FDMTkamRzJFOv8R+1e/1N/FHUY3fM0l4HfqHytpwi
- DdvNK3lNDDoz9SNKct2WjdILw5cmb1JxBbYFDjzCUTDVAPcNi2
- PDod4cSOLogAfC2Ldu8885hZQJDsvLggVbdkxW5HUAVkPq0oK4
- UNBZ8reVGyhWiCMR44Ig5mlTTcFOiKMMyl6mdWmgQ7Ygdb4a9q
- RAxXhnQGgle6eRMfrp6obl23YoNIib6xAQ0bnHu9j9SXiOlfRt
- UMSFaFxAYVJ9H0zbHiQw=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130702112424.6401.11586.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 03 July 2013, Christian Ruppert wrote:
-> On Wed, Jul 03, 2013 at 04:20:03PM +0200, Arnd Bergmann wrote:
-> > On Wednesday 03 July 2013, Christian Ruppert wrote:
-> > > On Wed, Jul 03, 2013 at 01:43:11PM +0200, Arnd Bergmann wrote:
-> > > > On Wednesday 26 June 2013, Wolfram Sang wrote:
-> > > > >   On Wed, Jun 26, 2013 at 10:55:06AM +0200, Christian Ruppert wrote:
-> > > > > > This patch makes the SDA hold time configurable through device tree.
-> > > > > > 
-> > > > > > Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
-> > > > > > Signed-off-by: Pierrick Hascoet <pierrick.hascoet@abilis.com>
-> > > > > 
-> > > > > Applied to for-next, thanks for keeping at it and providing lots of
-> > > > > useful information. Much appreciated!
-> > > > 
-> > > > Sorry, but I got a regression that I didn't find reported elsewhere
-> > > > so far, even though it breaks a lot of the ARM defconfig builds:
-> > > > 
-> > > > drivers/built-in.o: In function `dw_i2c_probe':
-> > > > /git/arm-soc/drivers/i2c/busses/i2c-designware-platdrv.c:125: undefined reference to `__udivdi3'
-> > > > 
-> > > > I suspect you want something like the change below.
-> > > 
-> > > This looks similar to a patch Vincent Stehle submitted yesterday, see
-> > > https://lkml.org/lkml/2013/7/2/145
-> > 
-> > Thanks for the link. Actually his patch looks wrong to me, because
-> > 
-> >  dev->sda_hold_time = div_u64((u64)ic_clk * ht + 500000, 1000000); 
-> > 
-> > assigns the division remainder to sda_hold_time, not the quotient.
+On Tue, Jul 02, 2013 at 05:02:48PM +0530, Naveen N. Rao wrote:
+> Here is the updated patch. I also added printk_ratelimit() in line with the
+> rest of the GHES code.
 > 
-> Hrmmm... At least when I tested it this morning on an ARC architecture
-> it worked as intended and returned the quotient. Does that mean we have
-> an issue with this function on ARC? Can anyone who knows these functions
-> better than I comment?
+> Thanks,
+> Naveen
+> 
+> --
+> If the firmware indicates in GHES error data entry that the error threshold
+> has exceeded for a corrected error event, then we try to soft-offline the
+> page. This could be called in interrupt context, so we queue this up similar
+> to how we handle memory failure scenarios.
+> 
+> 
+> Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+> ---
+>  drivers/acpi/apei/ghes.c |   38 +++++++++++++++++++++++++++++---------
+>  include/linux/mm.h       |    1 +
+>  mm/memory-failure.c      |    5 ++++-
+>  3 files changed, 34 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+> index fcd7d91..74ef688 100644
+> --- a/drivers/acpi/apei/ghes.c
+> +++ b/drivers/acpi/apei/ghes.c
+> @@ -409,6 +409,34 @@ static void ghes_clear_estatus(struct ghes *ghes)
+>  	ghes->flags &= ~GHES_TO_CLEAR;
+>  }
+>  
+> +static void ghes_handle_memory_failure(struct acpi_hest_generic_data *gdata, int sev)
+> +{
+> +#ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
+> +	int sec_sev = ghes_severity(gdata->error_severity);
+> +	struct cper_sec_mem_err *mem_err;
+> +	mem_err = (struct cper_sec_mem_err *)(gdata+1);
 
-ARC just uses the generic version of div_u64, which is defined in lib/div64.c.
+A newline here please. Also, spaces around '+'.
 
-I suspect that the division remainder just happens to work well enough for
-you to not cause any run-time error. You could try adding a printk
-in that function to show the values you get on ARC.
+> +	if (sec_sev == GHES_SEV_CORRECTED &&
+> +	    (gdata->flags & CPER_SEC_ERROR_THRESHOLD_EXCEEDED) &&
+> +	    (mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS)) {
+> +		unsigned long pfn;
 
-	Arnd
- 
+This pfn is defined twice, move it up to the beginning of the function.
 
+> +		pfn = mem_err->physical_addr >> PAGE_SHIFT;
+> +		if (pfn_valid(pfn))
+> +			memory_failure_queue(pfn, 0, MF_SOFT_OFFLINE);
+> +		else if (printk_ratelimit())
+> +			pr_warning(FW_WARN GHES_PFX
+
+WARNING: Prefer printk_ratelimited or pr_<level>_ratelimited to printk_ratelimit
+#35: FILE: drivers/acpi/apei/ghes.c:425:
++               else if (printk_ratelimit())
+
+Please run your patches through checkpatch.pl first.
+
+This requested change will even simplify the code (ontop of your patch):
+
+diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
+index 74ef6882bca9..87e11d468f6b 100644
+--- a/drivers/acpi/apei/ghes.c
++++ b/drivers/acpi/apei/ghes.c
+@@ -422,10 +422,10 @@ static void ghes_handle_memory_failure(struct acpi_hest_generic_data *gdata, int
+ 		pfn = mem_err->physical_addr >> PAGE_SHIFT;
+ 		if (pfn_valid(pfn))
+ 			memory_failure_queue(pfn, 0, MF_SOFT_OFFLINE);
+-		else if (printk_ratelimit())
+-			pr_warning(FW_WARN GHES_PFX
+-			"Invalid address in generic error data: %#llx\n",
+-			mem_err->physical_addr);
++		else
++			pr_warn_ratelimited(FW_WARN GHES_PFX
++					    "Invalid address in generic error data: %#llx\n",
++					    mem_err->physical_addr);
+ 	}
+ 	if (sev == GHES_SEV_RECOVERABLE &&
+ 	    sec_sev == GHES_SEV_RECOVERABLE &&
+---
+
+
+
+> +			"Invalid address in generic error data: %#llx\n",
+> +			mem_err->physical_addr);
+> +	}
+> +	if (sev == GHES_SEV_RECOVERABLE &&
+> +	    sec_sev == GHES_SEV_RECOVERABLE &&
+> +	    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
+> +		unsigned long pfn;
+> +		pfn = mem_err->physical_addr >> PAGE_SHIFT;
+> +		memory_failure_queue(pfn, 0, 0);
+> +	}
+> +#endif
+> +}
+> +
+>  static void ghes_do_proc(struct ghes *ghes,
+>  			 const struct acpi_hest_generic_status *estatus)
+>  {
+> @@ -428,15 +456,7 @@ static void ghes_do_proc(struct ghes *ghes,
+>  			apei_mce_report_mem_error(sev == GHES_SEV_CORRECTED,
+>  						  mem_err);
+>  #endif
+> -#ifdef CONFIG_ACPI_APEI_MEMORY_FAILURE
+> -			if (sev == GHES_SEV_RECOVERABLE &&
+> -			    sec_sev == GHES_SEV_RECOVERABLE &&
+> -			    mem_err->validation_bits & CPER_MEM_VALID_PHYSICAL_ADDRESS) {
+> -				unsigned long pfn;
+> -				pfn = mem_err->physical_addr >> PAGE_SHIFT;
+> -				memory_failure_queue(pfn, 0, 0);
+> -			}
+> -#endif
+> +			ghes_handle_memory_failure(gdata, sev);
+>  		}
+>  #ifdef CONFIG_ACPI_APEI_PCIEAER
+>  		else if (!uuid_le_cmp(*(uuid_le *)gdata->section_type,
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index e0c8528..958e9efd 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1784,6 +1784,7 @@ enum mf_flags {
+>  	MF_COUNT_INCREASED = 1 << 0,
+>  	MF_ACTION_REQUIRED = 1 << 1,
+>  	MF_MUST_KILL = 1 << 2,
+> +	MF_SOFT_OFFLINE = 1 << 3,
+>  };
+>  extern int memory_failure(unsigned long pfn, int trapno, int flags);
+>  extern void memory_failure_queue(unsigned long pfn, int trapno, int flags);
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index ceb0c7f..0d6717e 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1286,7 +1286,10 @@ static void memory_failure_work_func(struct work_struct *work)
+>  		spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+>  		if (!gotten)
+>  			break;
+> -		memory_failure(entry.pfn, entry.trapno, entry.flags);
+> +		if (entry.flags & MF_SOFT_OFFLINE)
+> +			soft_offline_page(pfn_to_page(entry.pfn), entry.flags);
+> +		else
+> +			memory_failure(entry.pfn, entry.trapno, entry.flags);
+
+The rest looks ok to me.
+
+I'm guessing this has been tested by injecting errors...?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
