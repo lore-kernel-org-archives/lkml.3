@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932767Ab3GCRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 13:23:27 -0400
-Received: from nm14-vm9.access.bullet.mail.gq1.yahoo.com ([216.39.63.252]:22153
-	"EHLO nm14-vm9.access.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932143Ab3GCRX0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 13:23:26 -0400
-X-Greylist: delayed 374 seconds by postgrey-1.27 at vger.kernel.org; Wed, 03 Jul 2013 13:23:26 EDT
-X-Yahoo-Newman-Id: 77265.65258.bm@smtp115.sbc.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: LIIHhHcVM1nKHMD9ZuzAX35vyVX9dYYY6hImCTZHfGnCY8X
- sDEbjIKyy.PxpNWAdLVs99Ua3u7a5TumNnwyWzhWGIlmmJwgtc2MV7ihVp00
- Fh7zBDWbWb3UJYbxL1NLSprrWJzPQic9CQE.s9q_RnB4nwL9P9SwepNJ5AfV
- 8RXo19aTb5ZGvR99hGgVfxBtneoPkZ1IDvKsl_YlxcU5CuW0lV1z5SaeGOFs
- iEF55b6RzLP.VhKk13_EgCUh9.j2PYcQWMxQGwZp3fkjlV9BOlzYd.1gxxcP
- y220Sma2n75hdBoyb0xR5oFZS1AqOABpMzteZxYuFTJLClH7gcWquA5Nn.MS
- n42c_WiIzkmZsITuOAREBClYKt2e7d7ycA8VHJWMOGI9qDUhrLlFOPQK1hWA
- 9WoqQ.vnazoKhn.a9yLpLT7VBv9Fm3QOf0SioKb88rVZ9g3FjnxQ3HJW9y0w
- wpVUhdgE.jCNSNJ8piFH8V7TgxkxpLObzVhrPQBLQXnk3VRUplUc..nq7Fws
- AF1T6Y5CA9vP8Vu6r3OMLCGyv4MkInWVb_D9NUfmIVRmj69MZ3kIAUb.aZGk
- 4
-X-Yahoo-SMTP: zfeO.4KswBCc_PdwTE8HfYDCQ1aNmIcSvQHkDP4uSDBNBSXeKQ--
-X-Rocket-Received: from localhost (linux@108.223.40.66 with plain)
-        by smtp115.sbc.mail.ne1.yahoo.com with SMTP; 03 Jul 2013 10:17:11 -0700 PDT
-Date: Wed, 3 Jul 2013 10:17:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
- X9SRL-F motherboard
-Message-ID: <20130703171713.GA26555@roeck-us.net>
-References: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com>
- <20130703144201.GA10323@roeck-us.net>
- <007101ce7807$88cfb160$9a6f1420$@lucidpixels.com>
- <20130703163311.GB12506@roeck-us.net>
- <008001ce780d$0d1a79f0$274f6dd0$@lucidpixels.com>
+	id S932798Ab3GCRZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 13:25:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932143Ab3GCRZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 13:25:23 -0400
+Date: Wed, 3 Jul 2013 19:20:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
+Message-ID: <20130703172029.GA14309@redhat.com>
+References: <20130627161716.GA17889@redhat.com> <51CCF8BA.4030601@hitachi.com> <20130628180946.GA30838@redhat.com> <51D16E1D.5040904@hitachi.com> <20130702190037.GA6289@redhat.com> <20130702193425.GA8813@redhat.com> <1372799087.22688.58.camel@gandalf.local.home> <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com> <51D38F8D.3010708@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <008001ce780d$0d1a79f0$274f6dd0$@lucidpixels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51D38F8D.3010708@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 12:47:47PM -0400, Justin Piszcz wrote:
-> 
-> 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:linux@roeck-us.net] 
-> Sent: Wednesday, July 03, 2013 12:33 PM
-> To: Justin Piszcz
-> Cc: linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
-> Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
-> X9SRL-F motherboard
-> 
-> [ .. ]
-> > 
-> Can you install superiotool and run "sudo superiotool -V -e" ?
-> I would like to see raw data from the superio chip.
-> 
-> # superiotool -V -e
-> superiotool r6637
-> ..
-> Probing for Nuvoton Super I/O (sid=0xfc) at 0x164e...
-> Found Nuvoton WPCM450 (id=0x1a11, rev=0x00) at 0x164e
-> Probing for Nuvoton Super I/O at 0x2e...
-> Found Nuvoton NCT6776F (C) (id=0xc333) at 0x2e
-> 
-Version is too old :(.
+Masami,
 
-Can you try http://roeck-us.net/linux/bin/superiotool ?
+I am not sure I understand. And please do not forget I am not
+familiar with this code ;)
 
-> [ .. ]
-> 
-> You have to specify the raw attribute names, not the symbolic ones.
-> You see the raw attribute names with "sensors -u".
-> 
-> # sensors -u
-> PCH_CHIP_TEMP:
->   temp8_input: 0.000
-> PCH_CPU_TEMP:
->   temp9_input: 0.000
-> PCH_MCH_TEMP:
->   temp10_input: 0.000
-> 
-> Tried:
->     ignore PCH_CHIP_TEMP
->     ignore temp8_input
-> 
-> For some reason still can't get rid of it appearing:
-> PCH_CHIP_TEMP:   +0.0 C  
-> (..as well as the others)
-> 
-It has to be
-	ignore temp8
-	ignore temp9
-	ignore temp10
+In short: do you think that the patch I sent "can't help" or
+"not enough" ?
 
-Thanks,
-Guenter
+If "not enough" then I fully agree.
+
+On 07/03, Masami Hiramatsu wrote:
+>
+> (2013/07/03 7:23), Oleg Nesterov wrote:
+> > On 07/02, Oleg Nesterov wrote:
+> >>
+> >> So please ignore modules ;)
+> >
+> > Or lets discuss the change above.
+>
+> No, I think this still doesn't ensure that we can remove dynamic
+> event safely. Since the event is related to several files under
+> events/ dir and buffer instances, someone can just stay open the
+> files while the event is removed and read/write it.
+
+So, for example, event_enable_write() can happily play with
+ftrace_event_file after unregister_trace_probe/free_trace_probe.
+
+Did you mean this?
+
+Sure, but this is another problem? And we already discussed it a
+bit, an application can keep the file we need to remove opened.
+
+As for event_enable_write() in particular, we can probably mark
+file/call as dead somewhere in trace_remove_event_call(). But
+I simply do not understand this code enough, I do not know what
+else we should do.
+
+IOW. So far _I think_ we just need the additional changes in
+trace_remove_event_call() if it succeeds (with the patch I sent)
+to prevent the races like above, but I didn't even try to think
+about this problem.
+
+Or I missed your point completely?
+
+Oleg.
+
