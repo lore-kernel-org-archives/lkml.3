@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965326Ab3GCTQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:16:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20493 "EHLO
+	id S933585Ab3GCTAN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:00:13 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6261 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933591Ab3GCTAO (ORCPT
+	with ESMTP id S933121Ab3GCTAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 15:00:14 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=3secFIVIplEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=qDHKUpw6SRIA:10 a=20KFwNOVAAAA:8 a=ufHFDILaAAAA:8 a=omOdbC7AAAAA:8 a=1XWaLZrsAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=pQFG53Joc4AfjvbZiugA:9 a=jEp0ucaQiEUA:10 a=l7ZknGph1ugA:10 a=UTB_XpHje0EA:10 a=LI9Vle30uBYA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 3 Jul 2013 15:00:07 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=wA3p18IoxX8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=MNfxkdJI3hwA:10 a=nrACCIEEAAAA:8 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=WfulkdPnAAAA:8 a=omOdbC7AAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=pIFDgr2qhqgKfBQciQ8A:9 a=jEp0ucaQiEUA:10 a=0kPLrQdw3YYA:10 a=l29vjEC0CZ8A:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=DiBiMfAEcvgbPAQL:21 a=9_At1m2AYK_ELxKB:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184107.792578937@goodmis.org>
+Message-Id: <20130703184108.274834070@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:41:04 -0400
+Date: Wed, 03 Jul 2013 14:41:07 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Rafael Aquini <aquini@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Rik van Riel <riel@redhat.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Andi Kleen <andi@firstfloor.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>, Shaohua Li <shli@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [127/141] swap: avoid read_swap_cache_async() race to deadlock while waiting
- on discard I/O completion
+Subject: [130/141] mm: migration: add migrate_entry_wait_huge()
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0127-swap-avoid-read_swap_cache_async-race-to-deadlock-wh.patch
+Content-Disposition: inline; filename=0130-mm-migration-add-migrate_entry_wait_huge.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,69 +34,116 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Rafael Aquini <aquini@redhat.com>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-[ Upstream commit cbab0e4eec299e9059199ebe6daf48730be46d2b ]
+[ Upstream commit 30dad30922ccc733cfdbfe232090cf674dc374dc ]
 
-read_swap_cache_async() can race against get_swap_page(), and stumble
-across a SWAP_HAS_CACHE entry in the swap map whose page wasn't brought
-into the swapcache yet.
+When we have a page fault for the address which is backed by a hugepage
+under migration, the kernel can't wait correctly and do busy looping on
+hugepage fault until the migration finishes.  As a result, users who try
+to kick hugepage migration (via soft offlining, for example) occasionally
+experience long delay or soft lockup.
 
-This transient swap_map state is expected to be transitory, but the
-actual placement of discard at scan_swap_map() inserts a wait for I/O
-completion thus making the thread at read_swap_cache_async() to loop
-around its -EEXIST case, while the other end at get_swap_page() is
-scheduled away at scan_swap_map().  This can leave the system deadlocked
-if the I/O completion happens to be waiting on the CPU waitqueue where
-read_swap_cache_async() is busy looping and !CONFIG_PREEMPT.
+This is because pte_offset_map_lock() can't get a correct migration entry
+or a correct page table lock for hugepage.  This patch introduces
+migration_entry_wait_huge() to solve this.
 
-This patch introduces a cond_resched() call to make the aforementioned
-read_swap_cache_async() busy loop condition to bail out when necessary,
-thus avoiding the subtle race window.
-
-Signed-off-by: Rafael Aquini <aquini@redhat.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Cc: Shaohua Li <shli@kernel.org>
-Cc: <stable@vger.kernel.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: <stable@vger.kernel.org>	[2.6.35+]
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- mm/swap_state.c |   18 +++++++++++++++++-
- 1 file changed, 17 insertions(+), 1 deletion(-)
+ include/linux/swapops.h |    3 +++
+ mm/hugetlb.c            |    2 +-
+ mm/migrate.c            |   23 ++++++++++++++++++-----
+ 3 files changed, 22 insertions(+), 6 deletions(-)
 
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index 0cb36fb..f854fbd 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -314,8 +314,24 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- 		 * Swap entry may have been freed since our caller observed it.
- 		 */
- 		err = swapcache_prepare(entry);
--		if (err == -EEXIST) {	/* seems racy */
-+		if (err == -EEXIST) {
- 			radix_tree_preload_end();
-+			/*
-+			 * We might race against get_swap_page() and stumble
-+			 * across a SWAP_HAS_CACHE swap_map entry whose page
-+			 * has not been brought into the swapcache yet, while
-+			 * the other end is scheduled away waiting on discard
-+			 * I/O completion at scan_swap_map().
-+			 *
-+			 * In order to avoid turning this transitory state
-+			 * into a permanent loop around this -EEXIST case
-+			 * if !CONFIG_PREEMPT and the I/O completion happens
-+			 * to be waiting on the CPU waitqueue where we are now
-+			 * busy looping, we just conditionally invoke the
-+			 * scheduler here, if there are some more important
-+			 * tasks to run.
-+			 */
-+			cond_resched();
- 			continue;
- 		}
- 		if (err) {		/* swp entry is obsolete ? */
+diff --git a/include/linux/swapops.h b/include/linux/swapops.h
+index 47ead51..c5fd30d 100644
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -137,6 +137,7 @@ static inline void make_migration_entry_read(swp_entry_t *entry)
+ 
+ extern void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					unsigned long address);
++extern void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte);
+ #else
+ 
+ #define make_migration_entry(page, write) swp_entry(0, 0)
+@@ -148,6 +149,8 @@ static inline int is_migration_entry(swp_entry_t swp)
+ static inline void make_migration_entry_read(swp_entry_t *entryp) { }
+ static inline void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+ 					 unsigned long address) { }
++static inline void migration_entry_wait_huge(struct mm_struct *mm,
++					pte_t *pte) { }
+ static inline int is_write_migration_entry(swp_entry_t entry)
+ {
+ 	return 0;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 0bf06e9..7e5ff99 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -2825,7 +2825,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	if (ptep) {
+ 		entry = huge_ptep_get(ptep);
+ 		if (unlikely(is_hugetlb_entry_migration(entry))) {
+-			migration_entry_wait(mm, (pmd_t *)ptep, address);
++			migration_entry_wait_huge(mm, ptep);
+ 			return 0;
+ 		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+ 			return VM_FAULT_HWPOISON_LARGE |
+diff --git a/mm/migrate.c b/mm/migrate.c
+index a303524..733aa9f 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -181,15 +181,14 @@ static void remove_migration_ptes(struct page *old, struct page *new)
+  * get to the page and wait until migration is finished.
+  * When we return from this function the fault will be retried.
+  */
+-void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
+-				unsigned long address)
++static void __migration_entry_wait(struct mm_struct *mm, pte_t *ptep,
++				spinlock_t *ptl)
+ {
+-	pte_t *ptep, pte;
+-	spinlock_t *ptl;
++	pte_t pte;
+ 	swp_entry_t entry;
+ 	struct page *page;
+ 
+-	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
++	spin_lock(ptl);
+ 	pte = *ptep;
+ 	if (!is_swap_pte(pte))
+ 		goto out;
+@@ -217,6 +216,20 @@ out:
+ 	pte_unmap_unlock(ptep, ptl);
+ }
+ 
++void migration_entry_wait(struct mm_struct *mm, pmd_t *pmd,
++				unsigned long address)
++{
++	spinlock_t *ptl = pte_lockptr(mm, pmd);
++	pte_t *ptep = pte_offset_map(pmd, address);
++	__migration_entry_wait(mm, ptep, ptl);
++}
++
++void migration_entry_wait_huge(struct mm_struct *mm, pte_t *pte)
++{
++	spinlock_t *ptl = &(mm)->page_table_lock;
++	__migration_entry_wait(mm, pte, ptl);
++}
++
+ #ifdef CONFIG_BLOCK
+ /* Returns true if all buffers are successfully locked */
+ static bool buffer_migrate_lock_buffers(struct buffer_head *head,
 -- 
 1.7.10.4
 
