@@ -1,50 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822Ab3GCOWe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:22:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32565 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932872Ab3GCOWc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:22:32 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Z-sbhV1dxbwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jYh7I2NL5QsA:10 a=K0sgm6-e3fnVZ9nkPdsA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372861350.22688.101.camel@gandalf.local.home>
-Subject: Re: [PATCHSET 00/12] tracing/uprobes: Add support for more fetch
- methods
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Hyeoncheol Lee <cheol.lee@lge.com>, LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Date: Wed, 03 Jul 2013 10:22:30 -0400
-In-Reply-To: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
-References: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933117Ab3GCOW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:22:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35667 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756286Ab3GCOWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 10:22:23 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 09/13] sched: Favour moving tasks towards nodes that incurred more faults
+Date: Wed,  3 Jul 2013 15:21:36 +0100
+Message-Id: <1372861300-9973-10-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-03 at 21:35 +0900, Namhyung Kim wrote:
-> Hello,
-> 
-> This patchset implements memory (address), stack[N], deference,
-> bitfield and retval (it needs uretprobe tho) fetch methods for
-> uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
+The scheduler already favours moving tasks towards its preferred node but
+does nothing special if the destination node is anything else. This patch
+favours moving tasks towards a destination node if more NUMA hinting faults
+were recorded on it. Similarly if migrating to a destination node would
+degrade locality based on NUMA hinting faults then it will be resisted.
 
-Sending out new code in the middle of a merge window isn't the best
-timing. You may want to ping us again after the merge window closes, as
-focus currently is on getting 3.11 changes in and working. This patchset
-might get forgotten.
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ kernel/sched/fair.c | 54 +++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 48 insertions(+), 6 deletions(-)
 
-Thanks,
-
--- Steve
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index e8d9b3e..e451859 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3967,22 +3967,54 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
+ }
+ 
+ #ifdef CONFIG_NUMA_BALANCING
++
++static bool migrate_locality_prepare(struct task_struct *p, struct lb_env *env,
++				int *src_nid, int *dst_nid)
++{
++	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
++		return false;
++
++	*src_nid = cpu_to_node(env->src_cpu);
++	*dst_nid = cpu_to_node(env->dst_cpu);
++
++	if (*src_nid == *dst_nid ||
++	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
++		return false;
++
++	return true;
++}
++
+ /* Returns true if the destination node has incurred more faults */
+ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ {
+ 	int src_nid, dst_nid;
+ 
+-	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
++	if (!migrate_locality_prepare(p, env, &src_nid, &dst_nid))
+ 		return false;
+ 
+-	src_nid = cpu_to_node(env->src_cpu);
+-	dst_nid = cpu_to_node(env->dst_cpu);
++	/* Move towards node if it is the preferred node */
++	if (p->numa_preferred_nid == dst_nid)
++		return true;
+ 
+-	if (src_nid == dst_nid ||
+-	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
++	/*
++	 * Move towards node if there were a higher number of private
++	 * NUMA hinting faults recorded on it
++	 */
++	if (p->numa_faults[task_faults_idx(dst_nid, 1)] >
++	    p->numa_faults[task_faults_idx(src_nid, 1)])
++		return true;
++
++	return false;
++}
++
++static bool migrate_degrades_locality(struct task_struct *p, struct lb_env *env)
++{
++	int src_nid, dst_nid;
++
++	if (!migrate_locality_prepare(p, env, &src_nid, &dst_nid))
+ 		return false;
+ 
+-	if (p->numa_preferred_nid == dst_nid)
++	if (p->numa_faults[src_nid] > p->numa_faults[dst_nid])
+ 		return true;
+ 
+ 	return false;
+@@ -3993,6 +4025,14 @@ static inline bool migrate_improves_locality(struct task_struct *p,
+ {
+ 	return false;
+ }
++
++
++static inline bool migrate_degrades_locality(struct task_struct *p,
++					     struct lb_env *env)
++{
++	return false;
++}
++
+ #endif
+ 
+ /*
+@@ -4048,6 +4088,8 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	 * 3) too many balance attempts have failed.
+ 	 */
+ 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
++	if (!tsk_cache_hot)
++		tsk_cache_hot = migrate_degrades_locality(p, env);
+ 
+ 	if (migrate_improves_locality(p, env)) {
+ #ifdef CONFIG_SCHEDSTATS
+-- 
+1.8.1.4
 
