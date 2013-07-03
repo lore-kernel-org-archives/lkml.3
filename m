@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3GCD2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 23:28:45 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:62755 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab3GCD2o (ORCPT
+	id S1755658Ab3GCD3q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 23:29:46 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:6269 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755398Ab3GCD3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 23:28:44 -0400
+	Tue, 2 Jul 2013 23:29:45 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqQMAOGZ01F5LCeA/2dsb2JhbABagwm7bIUlBAGBAhd0giMBAQU6HCMQCAMYCSUPBSUDIRMUh3q7TRaOMoEdB4NtA5dJkUaDIyo
+Date: Wed, 3 Jul 2013 13:29:41 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Greg KH <greg@kroah.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.11
+Message-ID: <20130703032941.GH14996@dastard>
+References: <nsxbo6mxu38.fsf@lambda.thunk.org>
+ <20130703094529.99444050e676467d281a3b51@canb.auug.org.au>
+ <CA+55aFxdAHqEhnV-zKwExVfBAvw=k8+GprTGniNz=TpJM6obtQ@mail.gmail.com>
+ <20130703005419.GA7744@kroah.com>
+ <CA+55aFxdNVX9koH=GViv1Haj3kU07PD-CTKCNuWrm-c-BF3mQw@mail.gmail.com>
+ <20130703010111.GA7986@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130703030759.GG14996@dastard>
-References: <20130628102819.GA4725@quack.suse.cz>
-	<20130629033924.GK32195@dastard>
-	<20130701120037.GA6196@quack.suse.cz>
-	<20130702062954.GA14996@dastard>
-	<20130702081937.GA31770@quack.suse.cz>
-	<20130702123835.GF14996@dastard>
-	<20130702140508.GB31770@quack.suse.cz>
-	<CA+55aFwZHOUCYvojbP9q3D5MDgCH7GttkUGiJerra9uyduFLKw@mail.gmail.com>
-	<20130702165752.GA12179@quack.suse.cz>
-	<CA+55aFxSY76aWEC04yREjFObPF3ZJFMHdczoT=yGmSpsg5hhyg@mail.gmail.com>
-	<20130703030759.GG14996@dastard>
-Date: Tue, 2 Jul 2013 20:28:42 -0700
-X-Google-Sender-Auth: X0HLycIzfUnwOrgRnSK3UgNo6AY
-Message-ID: <CA+55aFxN2-qZwBywE3b+RYyPLg1-ru5ZwJLHLohy0KJ0fD0vqA@mail.gmail.com>
-Subject: Re: frequent softlockups with 3.10rc6.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, Dave Jones <davej@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>, Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130703010111.GA7986@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 2, 2013 at 8:07 PM, Dave Chinner <david@fromorbit.com> wrote:
->>
->> Then that test would become
->>
->>         if (wbc->sync_mode == WB_SYNC_SINGLE) {
->>
->> instead, and now "sync_mode" would actually describe what mode of
->> syncing the caller wants, without that hacky special "we know what the
->> caller _really_ meant by looking at *which* caller it is".
->
-> The problem is that all the code that currently looks for
-> WB_SYNC_ALL for it's behavioural cue during writeback now has
-> multiple different modes they have to handle.  IOWs, it's not a
-> straight forward conversion process. WB_SYNC_ALL reaches right down
-> into filesystem ->writepages implementations and they all need to be
-> changed if we make up a new sync_mode behaviour.
+On Tue, Jul 02, 2013 at 06:01:11PM -0700, Greg KH wrote:
+> On Tue, Jul 02, 2013 at 05:58:15PM -0700, Linus Torvalds wrote:
+> > On Tue, Jul 2, 2013 at 5:54 PM, Greg KH <greg@kroah.com> wrote:
+> > > On Tue, Jul 02, 2013 at 05:02:21PM -0700, Linus Torvalds wrote:
+> > >>
+> > >> I'm really not convinced this whole Lustre thing was correctly
+> > >> handled. Merging it into stable and yet being in such bad shape that
+> > >> it isn't enabled even there? I just dunno. But I have the turd in my
+> > >> tree now, let's hope it gets fixed up.
+> > >
+> > > It's in "staging", not "stable" :)
+> > 
+> > Yes. But what was the reason to actually merge it even there? And once
+> > it gets merged, disabling it again rather than fixing the problems it
+> > has?
+> 
+> The problems turned out to be too big, too late in the merge cycle for
+> me to be able to take them (they still aren't even done, as I don't have
+> a working set of patches yet.)  So I just disabled it from the build to
+> give Andreas and team time to get it working properly.
+> 
+> I could have just removed it, but I thought I would give them a chance.
+> 
+> > This is a filesystem that Intel apparently wants to push. I think it
+> > would have been a better idea to push back a bit and say "at least
+> > clean it up a bit first". It's not like Intel is one of the clueless
+> > companies that couldn't have done so and need help from the community.
+> 
+> For this filesystem, it seems that they don't have any resources to do
+> this work and are relying on the community to help out.  Which is odd,
+> but big companies are strange some times...
 
-I have to admit that I absolutely detest our current "sync_mode" to
-begin with, so I'd personally be happy to see some major surgery in
-this area.
+Didn't we learn this lesson already with POHMELFS? i.e. that dumping
+filesystem code in staging on the assumption "the community" will
+fix it up when nobody in "the community" uses or can even test that
+filesystem is a broken development model....
 
-For example, maybe we'd be much better off with something that has
-various behavioral flags rather than distinct "mode values".  So
-instead of being an enum of different reasons for syncing, it would be
-a set of bitmasks for specific sync behavior. We have a much better
-sync model in our sync_file_range() model, where we have flags like
-SYNC_FILE_RANGE_WAIT_xxx (where xxx is BEFORE, WRITE, AFTER to
-describe whether you should wait for old writes, start new writes, or
-wait after the newly started writes).
+Cheers,
 
-That's a very powerful model, and it's also much more easy to think
-about. So the above test could become
-
-        if (wbc->sync_mode & WB_SYNC_AFTER) {
-                int err = filemap_fdatawait(mapping);
-                ....
-
-in that kind of model, and the code actually looks sensible. It reads
-like "if the caller asked us to synchronize after writing, then we do
-an fdatawait on the mapping".
-
-So I think something like that might make sense. And there aren't
-_that_ many users of WB_SYNC_xxx, and the patch should be pretty
-straightforward. WB_SYNC_NONE semantics would presumably be "just
-start writeout" (so it would become WB_SYNC_WRITE), while WB_SYNC_ALL
-would become (WB_SYNC_BEFORE | WB_SYNC_WRITE | WB_SYNC_AFTER), but
-then the "for_sync" case would remove WB_SYNC_AFTER, because it does
-its own waiting after.
-
-Sounds fairly sensible and straightforward to me. Much more
-self-explanatory than the current "WB_SYNC_NONE/ALL" distinction,
-methinks (well, you'd still have to explain what the point of
-BEFORE/AFTER is, and how it interacts with starting writeout, but
-especially since we already have that concept for file_sync_range(), I
-think that's not too bad).
-
-                          Linus
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
