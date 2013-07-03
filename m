@@ -1,71 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab3GCGo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 02:44:27 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:35751 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751767Ab3GCGo0 (ORCPT
+	id S1754317Ab3GCGxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 02:53:16 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57794 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab3GCGxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 02:44:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <51D27CC6.1050209@intel.com>
-References: <1372319707-13892-1-git-send-email-adrian.hunter@intel.com>
-	<1372319707-13892-13-git-send-email-adrian.hunter@intel.com>
-	<51CC6AAF.4030404@gmail.com>
-	<51D14CB6.206@intel.com>
-	<51D1D043.5030509@gmail.com>
-	<51D27CC6.1050209@intel.com>
-Date: Wed, 3 Jul 2013 08:44:25 +0200
-Message-ID: <CABPqkBQar4SKq_A+=ShdjJgYfxW90yuD=M=WQ2HjFwR_bKxKkg@mail.gmail.com>
-Subject: Re: [PATCH V2 12/15] perf tools: allow non-matching sample types
-From: Stephane Eranian <eranian@google.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 3 Jul 2013 02:53:15 -0400
+Date: Tue, 02 Jul 2013 23:53:12 -0700 (PDT)
+Message-Id: <20130702.235312.1962706449684547854.davem@davemloft.net>
+To: eliezer.tamir@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, willemb@google.com,
+        erdnetdev@gmail.com, andi@firstfloor.org, hpa@zytor.com,
+        eliezer@tamir.org.il
+Subject: Re: [PATCH net-next] net: lls fix build with allnoconfig
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130703034124.28666.55448.stgit@ladj378.jer.intel.com>
+References: <20130703034124.28666.55448.stgit@ladj378.jer.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 2, 2013 at 9:09 AM, Adrian Hunter <adrian.hunter@intel.com> wrote:
-> On 01/07/13 21:53, David Ahern wrote:
->> On 7/1/13 3:32 AM, Adrian Hunter wrote:
->>> Snip
->>>
->>>>
->>>> While this works for a combined S/W and tracepoint events session, I do not
->>>> like promoting sample types to the minimum compatible level for all events
->>>> in the session. perf needs to allow each event to have its own sample_type
->>>> and not force a minimal compatibility.
->>>
->>> Why?  The impact is small. The kernel API is completely unchanged.
->>
->> I'd like to see libperf become a stable, usable library - usable by more
->> than the perf binary and its builtin commands. I have already done this once
->> for a daemon, and it was a PITA to get the specific use functional without
->> memory leaks/growth in the libperf part.
->>
->> With respect to this specific patch it means appropriate flexibility in the
->> data collected for events. ie., each event can have its own sample_type. For
->> example if the tracepoint already contains task information TID is not
->> needed - and IP may not be wanted either. The code processing the samples
->> should not require all events to have some minimum data format - that just
->> wastes buffer space.
->
-> It would be more compelling to provide a use-case where that "waste"
-> actually makes any difference.
->
-In my opinion, it's not so much of the "wasted" space than on the ease of use
-for tools. With your change, tools would have to know something about the order
-in which sample_type is laid out. And it just happens that it is not
-as trivial as
-expected. It is NOT the bit position order in sample_type. So this is more error
-prone.
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Date: Wed, 03 Jul 2013 06:41:24 +0300
 
-I prefer your IDENTIFIER solution better, yet it also implies that this flag is
-special. It provides the event ID at the first position in the sample's body.
+> correct placeholder declarations to prevent build breakage when
+> !CONFIG_NET_LL_RX_POLL
+> 
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+
+Applied, thanks.
