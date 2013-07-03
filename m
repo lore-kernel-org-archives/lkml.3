@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932699Ab3GCLdm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 07:33:42 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:50140 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab3GCLdk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 07:33:40 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+KSAvLCRgfpqhqqAH3I3gE
-Date: Wed, 3 Jul 2013 04:33:34 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Luciano Coelho <coelho@ti.com>
-Cc: Nishanth Menon <nm@ti.com>, linux-wireless@vger.kernel.org, nsekhar@ti.com,
-        mturquette@linaro.org, mark.rutland@arm.com, balbi@ti.com,
-        grant.likely@linaro.org, rob.herring@calxeda.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/9] wl12xx: use frequency instead of enumerations
- for pdata clocks
-Message-ID: <20130703113334.GY5523@atomide.com>
-References: <1372776948-24840-1-git-send-email-coelho@ti.com>
- <1372776948-24840-5-git-send-email-coelho@ti.com>
- <20130702150208.GA4233@kahuna>
- <1372796850.21065.93.camel@cumari.coelho.fi>
+	id S1756101Ab3GCLfY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 07:35:24 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:34793 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755129Ab3GCLfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 07:35:23 -0400
+Date: Wed, 3 Jul 2013 07:35:20 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jan Kara <jack@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ext4 updates for 3.11
+Message-ID: <20130703113520.GA21189@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <nsxbo6mxu38.fsf@lambda.thunk.org>
+ <CA+55aFyRLc81s03ULLZ26N0qwRqxS-9+6XpyhxVH62qx2b5o2A@mail.gmail.com>
+ <20130702180447.GB16282@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372796850.21065.93.camel@cumari.coelho.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130702180447.GB16282@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Luciano Coelho <coelho@ti.com> [130702 13:33]:
-> On Tue, 2013-07-02 at 10:02 -0500, Nishanth Menon wrote:
-> > On 17:55-20130702, Luciano Coelho wrote:
-> > > Instead of defining an enumeration with the FW specific values for the
-> > > different clock rates, use the actual frequency instead.  Also add a
-> > > boolean to specify whether the clock is XTAL or not.
-> > > 
-> > > Change all board files to reflect this.
-> > > 
-> > > Cc: Tony Lindgren <tony@atomide.com>
-> > > Cc: Sekhar Nori <nsekhar@ti.com>
-> > > Signed-off-by: Luciano Coelho <coelho@ti.com>
-> > > ---
-> > >  arch/arm/mach-davinci/board-da850-evm.c      |    3 +-
-> > >  arch/arm/mach-omap2/board-4430sdp.c          |    5 ++-
-> > ^^
-> > >  arch/arm/mach-omap2/board-omap3evm.c         |    3 +-
-> > >  arch/arm/mach-omap2/board-omap4panda.c       |    3 +-
-> > ^^
-> > Please do not add more platform data to platforms that are DT only.
-> 
-> Ah, I hadn't realized that board_omap4panda.c and board-4430sdp.c had
-> been removed in linux-next.  I base my tree on wireless-next and it
-> doesn't contain these changes yet.  I would only have noticed this when
-> I rebased my tree once the merge window is closed. ;)
-> 
-> Thanks for pointing out, I'll make sure these changes will not be there
-> when I send the pull request.
+On Tue, Jul 02, 2013 at 08:04:47PM +0200, Jan Kara wrote:
+>   That's caused by my patches (only for certain gcc versions). map->m_len
+> is guaranteed to be > 0 in the first iteration (the function is called from
+> under if (map->m_len > 0)). I though Ted silenced that warning but
+> apparently he did not. The cleanest fix is likely to make a do-while loop
+> from that one. I'll send Ted a patch for that.
 
-Please separate out the minimal pdata and arch/arm/mach-omap2 changes int
-a immutable branch on v3.11-rc1 that I can also pull in. For v3.12, we're
-going to be making more boards device tree only, so these changes may
-otherwise cause pointless merge conflicts.
+Sorry, I fixed it with a code simplification (I thought the while loop
+wasn't needed at all), but when you explained why in fact we still
+needed it, I dropped my commit, and forgot that this also dropped the
+fix which silenced the warning.  I'll grab your patch and included
+with any other fixes that we might need for this merge window.
 
-Regards,
+Linus, are you in a hurry to get this fixed up?  It's a false warning
+on gcc's part, so it's not actually causing any actual problems.  If
+not, I can wait until a week or so to see if there are any other bug
+fixes that are required and push the fix to you towards the end of the
+merge window.
 
-Tony
+							- Ted
