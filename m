@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab3GCOae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 10:30:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49923 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752578Ab3GCOac (ORCPT
+	id S1756141Ab3GCOdY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 10:33:24 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:12940 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752410Ab3GCOdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 10:30:32 -0400
-Date: Wed, 3 Jul 2013 10:30:30 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
- bus suspend
-In-Reply-To: <20130703131513.GH15056@arwen.pp.htv.fi>
-Message-ID: <Pine.LNX.4.44L0.1307031023060.1241-100000@iolanthe.rowland.org>
+	Wed, 3 Jul 2013 10:33:22 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18E+hDMWDJP3DZmnNDzoGd+crWvs63OIcY=
+Date: Wed, 3 Jul 2013 10:33:04 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Arnaud Ebalard <arno@natisbad.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 5/7] ARM: kirkwood: remove redundant DT board files
+Message-ID: <20130703143304.GI17110@titan.lakedaemon.net>
+References: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1372762824-12202-6-git-send-email-sebastian.hesselbarth@gmail.com>
+ <87k3l8v9s1.fsf@natisbad.org>
+ <51D40BA3.6000603@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D40BA3.6000603@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Jul 2013, Felipe Balbi wrote:
-
-> On Wed, Jul 03, 2013 at 04:06:04PM +0300, Roger Quadros wrote:
-> > On 07/03/2013 03:57 PM, Felipe Balbi wrote:
-> > > Hi,
-> > > 
-> > > On Tue, Jul 02, 2013 at 01:17:58PM -0400, Alan Stern wrote:
-> > >> A PCI-based EHCI controller has two power sources: the core well (which
-> > >> is turned off during suspend) and the auxiliary well (which remains
-> > >> powered).  That's how remote wakeup works; it uses the auxiliary well.
-> > > 
-> > > This, kinda, matches what OMAP tries to do with pad wakeup. Just that
-> > > pad wakeup sits outside of the device itself. Perhaps we could look into
-> > > how PCI handles the aux well and take some inspiration from there.
-> > > 
-> > > Any pointers under drivers/pci/ would be great :-)
-> > > 
-> > From what I understood, auxiliary well is just a power source, and it keeps
-> > the EHCI controller powered even during suspend.
-> > 
-> > If that is true then it is different from our situation as we power down the
-> > EHCI controller completely.
+On Wed, Jul 03, 2013 at 01:31:47PM +0200, Sebastian Hesselbarth wrote:
+> On 07/03/13 01:09, Arnaud Ebalard wrote:
+> >Hi Sebastian,
+> >
+> >Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> writes:
+> >
+> >>With DT support for mv643xx_eth board specific init for some boards now
+> >>is unneccessary. Remove those board files, Kconfig entries, and
+> >>corresponding entries in kirkwood_defconfig.
+> >
+> >Applying above your set an old quilt cleaning patch Jason asked at some
+> >point, it became empty except for arch/arm/mach_kirkwood/common.h in
+> >which some declarations were left behind. If this is correct, can you
+> >just merge the hunks below in your 5/7 in next round?
+> >
+> >AFAICT, only dnskw_init() remains, which matches the list of board-*.c
+> >files in arch/arm/mach_kirkwood/ (i.e. board-dt.c and board-dnskw.c).
 > 
-> right but our "auxiliary well" keeps PRCM powered which can wake EHCI up
-> ;-)
+> While updating the patch with yours, I stumbled upon MACH_TS219_DT that
+> also remains because it includes tsx1x-common.c.
 > 
-> What I'm saying is that from ehci-omap's perspective, there's very
-> little difference, specially since we route the wakeup through the same
-> IRQ line anyway. Perhaps we could take some inspiration from the PCI
-> land to make our hwmod/omap_device a little easier from driver
-> perspective.
-> 
-> Or maybe it doesn't make sense ;-)
+> I cannot recall if Jason or Andrew said something about removing it..
 
-This idea probably won't lead anywhere.  To the best of my knowledge 
-(and I'm not an expert on PCI), these different power wells are simply 
-part of the PCI bus.  The bus controller knows to turn off one of them 
-when the device (or maybe when all the devices on a bus segment) goes 
-into D3.
+board-ts219.c can be removed as well.  It needed a check for running on
+the 6282 variant in order to set the phy address properly.  This can now
+be handled in kirkwood-ts219-628[12].dts.
 
-One big difference with respect to OMAP is the way PCI handles wakeup
-messages.  There's a separate bus signal, PME# (which stands for Power
-Management Event), that a device asserts when it wants to send a wakeup
-request.  When the ACPI driver sees the PME# signal, it searches
-through the entire PCI tree to find the device or devices which need to
-be resumed.  Or maybe when ACPI sees the signal, it tells the PCI core 
-to do this -- I'm not sure of the details.
+thx,
 
-Alan Stern
-
+Jason.
