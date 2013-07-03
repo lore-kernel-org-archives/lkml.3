@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab3GCHzu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 03:55:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:32798 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab3GCHzt (ORCPT
+	id S1754712Ab3GCH6W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 03:58:22 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:46253 "EHLO
+	nasmtp02.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab3GCH6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 03:55:49 -0400
-Date: Wed, 3 Jul 2013 09:55:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.11
-Message-ID: <20130703075542.GF23916@twins.programming.kicks-ass.net>
-References: <20130701090356.GA14912@gmail.com>
- <CA+55aFwJwYRbPBBN1ma8TBHuomo_AJjajxT6YDmdGXJdE4EgrQ@mail.gmail.com>
+	Wed, 3 Jul 2013 03:58:21 -0400
+Message-ID: <51D3D969.1060308@atmel.com>
+Date: Wed, 3 Jul 2013 15:57:29 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwJwYRbPBBN1ma8TBHuomo_AJjajxT6YDmdGXJdE4EgrQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
+        <richard.genoud@gmail.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-sound@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] [PATCH 2/2] ASoC: atmel-pcm: use generic dmaengine
+ framework
+References: <1372755849-19546-1-git-send-email-voice.shen@atmel.com> <1372755849-19546-3-git-send-email-voice.shen@atmel.com> <51D2F306.7040603@metafoo.de> <51D37F87.2010008@atmel.com> <51D3D482.1050100@metafoo.de>
+In-Reply-To: <51D3D482.1050100@metafoo.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 05:50:29PM -0700, Linus Torvalds wrote:
-> On Mon, Jul 1, 2013 at 2:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-core-for-linus
-> >
-> > Kernel improvements:
-> >
-> >  * AMD IOMMU uncore PMU support by Suravee Suthikulpanit001a
-> 
-> This one prints a really annoying error message if you're not on an
-> AMD platform:
-> 
-> +       if (!amd_iommu_pc_supported()) {
-> +               pr_err("perf: amd_iommu PMU not installed. No support!\n");
-> +               return -ENODEV;
-> +       }
-> 
-> and you know what? That's not acceptable. It damn well is *not* an
-> error to not have an AMD IOMMU.
-> 
-> It should - at most - be a pr_info(). Maybe nothing at all. "pr_err()"
-> is just totally out of line.
+Hi Lars,
 
-Quite; it prints enough stuff when it does find one so I'm all for
-scrapping that one print when it doesn't find it.
+On 7/3/2013 15:36, Lars-Peter Clausen wrote:
+>>>> +        slave_config->dst_addr = (dma_addr_t)ssc->phybase + SSC_THR;
+>>> >>[...]
+>>>> >>>+        slave_config->src_addr = (dma_addr_t)ssc->phybase + SSC_RHR;
+>>> >>
+>>> >>Change the type of phybase to dma_addr_t
+>> >
+>> >It should be:
+>> >slave_config->dst_addr = (dma_addr_t)(ssc->phybase + SSC_THR);
+>> >slave_config->src_addr = (dma_addr_t)(ssc->phybase + SSC_RHR);
+> The type of phybase in the ssc_device struct should be changed from
+> resource_size_t to dma_addr_t.
 
-Sorry for not seeing that; when I initially read that code I thought it was for
-the case where the hardware was expected to have the device but we couldn't
-find it for some weird reason.
+Actually, the phybase in ssc_device structure is resource_size_t which 
+used to access the ssc device register.
+Here, we use ssc register as dma source address or destination address, 
+so we convert it to dma_addr_t type. So, not need to change, am I right?
 
----
-Subject: perf, amd: Do not print an error when the device is not present
-
-As Linus said its not an error to not have an AMD IOMMU; esp. when you're not
-even running on an AMD platform.
-
-Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/kernel/cpu/perf_event_amd_iommu.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.c b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-index 0db655e..639d128 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-@@ -491,10 +491,8 @@ static struct perf_amd_iommu __perf_iommu = {
- static __init int amd_iommu_pc_init(void)
- {
- 	/* Make sure the IOMMU PC resource is available */
--	if (!amd_iommu_pc_supported()) {
--		pr_err("perf: amd_iommu PMU not installed. No support!\n");
-+	if (!amd_iommu_pc_supported())
- 		return -ENODEV;
--	}
- 
- 	_init_perf_amd_iommu(&__perf_iommu, "amd_iommu");
- 
-
+Best Regards,
+Bo Shen
