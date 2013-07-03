@@ -1,126 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab3GCS7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:59:13 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:50183 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933131Ab3GCS7K (ORCPT
+	id S933460Ab3GCS7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:59:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5725 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933130Ab3GCSks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 14:59:10 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-sh@vger.kernel.org, linus.walleij@linaro.org,
-        linux-kernel@vger.kernel.org, horms@verge.net.au,
-        grant.likely@linaro.org
-Subject: Re: [PATCH] gpio: em: Add pinctrl support
-Date: Wed, 03 Jul 2013 20:59:39 +0200
-Message-ID: <2134291.KQ1KkPOaiZ@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130703041432.7351.45970.sendpatchset@w520>
-References: <20130703041432.7351.45970.sendpatchset@w520>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 3 Jul 2013 14:40:48 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=M2X0cg7vQ44A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=8F504AwDmlIA:10 a=cH6R9-kdAAAA:8 a=VwQbUJbxAAAA:8 a=ag1SF4gXAAAA:8 a=fBeKd2HRWbP4T1pgm1MA:9 a=bt0zGP92IBIA:10 a=1TSTQ8KKaH4A:10 a=jeBq3FmKZ4MA:10 a=FpPCvutuz0mlo6cx:21 a=NJ616faCBnhfs8Wk:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130703184046.777672478@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 03 Jul 2013 14:39:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [013/141] USB: UHCI: fix for suspend of virtual HP controller
+References: <20130703183857.307196999@goodmis.org>
+Content-Disposition: inline; filename=0013-USB-UHCI-fix-for-suspend-of-virtual-HP-controller.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Magnus,
+3.6.11.6 stable review patch.
+If anyone has any objections, please let me know.
 
-Thank you for the patch.
+------------------
 
-On Wednesday 03 July 2013 13:14:32 Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
-> 
-> Register the GPIO pin range, and request and free GPIO pins using the
-> pinctrl API. The pctl_name platform data member should be used by
-> platform devices to point out which pinctrl device to use.
-> 
-> Follows same style as "dc3465a gpio-rcar: Add pinctrl support",
-> by Laurent Pinchart, thanks to him.
-> 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+[ Upstream commit 997ff893603c6455da4c5e26ba1d0f81adfecdfc ]
 
-Linus, now that the v3.12 development cycle will begin, would you like to take 
-the patch through your tree ? If so, how should we handle cross-dependencies 
-between the pinctrl/gpio tree and the Renesas ARM tree ?
+HP's virtual UHCI host controller takes a long time to suspend
+(several hundred microseconds), even when no devices are attached.
+This provokes a warning message from uhci-hcd in the auto-stop case.
 
-> ---
-> 
->  drivers/gpio/gpio-em.c                |   25 +++++++++++++++++++++++++
->  include/linux/platform_data/gpio-em.h |    1 +
->  2 files changed, 26 insertions(+)
-> 
-> --- 0001/drivers/gpio/gpio-em.c
-> +++ work/drivers/gpio/gpio-em.c	2013-07-03 12:49:55.000000000 +0900
-> @@ -30,6 +30,7 @@
->  #include <linux/gpio.h>
->  #include <linux/slab.h>
->  #include <linux/module.h>
-> +#include <linux/pinctrl/consumer.h>
->  #include <linux/platform_data/gpio-em.h>
-> 
->  struct em_gio_priv {
-> @@ -216,6 +217,21 @@ static int em_gio_to_irq(struct gpio_chi
->  	return irq_create_mapping(gpio_to_priv(chip)->irq_domain, offset);
->  }
-> 
-> +static int em_gio_request(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	return pinctrl_request_gpio(chip->base + offset);
-> +}
-> +
-> +static void em_gio_free(struct gpio_chip *chip, unsigned offset)
-> +{
-> +	pinctrl_free_gpio(chip->base + offset);
-> +
-> +	/* Set the GPIO as an input to ensure that the next GPIO request won't
-> +	* drive the GPIO pin as an output.
-> +	*/
-> +	em_gio_direction_input(chip, offset);
-> +}
-> +
->  static int em_gio_irq_domain_map(struct irq_domain *h, unsigned int virq,
->  				 irq_hw_number_t hw)
->  {
-> @@ -308,6 +324,8 @@ static int em_gio_probe(struct platform_
->  	gpio_chip->direction_output = em_gio_direction_output;
->  	gpio_chip->set = em_gio_set;
->  	gpio_chip->to_irq = em_gio_to_irq;
-> +	gpio_chip->request = em_gio_request;
-> +	gpio_chip->free = em_gio_free;
->  	gpio_chip->label = name;
->  	gpio_chip->owner = THIS_MODULE;
->  	gpio_chip->base = pdata->gpio_base;
-> @@ -351,6 +369,13 @@ static int em_gio_probe(struct platform_
->  		dev_err(&pdev->dev, "failed to add GPIO controller\n");
->  		goto err1;
->  	}
-> +
-> +	if (pdata->pctl_name) {
-> +		ret = gpiochip_add_pin_range(gpio_chip, pdata->pctl_name, 0,
-> +					     gpio_chip->base, gpio_chip->ngpio);
-> +		if (ret < 0)
-> +			dev_warn(&pdev->dev, "failed to add pin range\n");
-> +	}
->  	return 0;
-> 
->  err1:
-> --- 0001/include/linux/platform_data/gpio-em.h
-> +++ work/include/linux/platform_data/gpio-em.h	2013-07-03 
-12:45:27.000000000
-> +0900 @@ -5,6 +5,7 @@ struct gpio_em_config {
->  	unsigned int gpio_base;
->  	unsigned int irq_base;
->  	unsigned int number_of_pins;
-> +	const char *pctl_name;
->  };
-> 
->  #endif /* __GPIO_EM_H__ */
+To prevent this from happening, this patch adds a test to avoid
+performing an auto-stop when the wait_for_hp quirk flag is set.  The
+controller will still suspend through the normal runtime PM mechanism.
+And since that pathway includes a 1-ms delay, the slowness of the
+virtual hardware won't matter.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: ZhenHua <zhen-hual@hp.com>
+CC: <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ drivers/usb/host/uhci-hub.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/uhci-hub.c b/drivers/usb/host/uhci-hub.c
+index 768d542..c994655 100644
+--- a/drivers/usb/host/uhci-hub.c
++++ b/drivers/usb/host/uhci-hub.c
+@@ -222,7 +222,8 @@ static int uhci_hub_status_data(struct usb_hcd *hcd, char *buf)
+ 		/* auto-stop if nothing connected for 1 second */
+ 		if (any_ports_active(uhci))
+ 			uhci->rh_state = UHCI_RH_RUNNING;
+-		else if (time_after_eq(jiffies, uhci->auto_stop_time))
++		else if (time_after_eq(jiffies, uhci->auto_stop_time) &&
++				!uhci->wait_for_hp)
+ 			suspend_rh(uhci, UHCI_RH_AUTO_STOPPED);
+ 		break;
+ 
 -- 
-Regards,
+1.7.10.4
 
-Laurent Pinchart
 
