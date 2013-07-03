@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933348Ab3GCSxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 14:53:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9805 "EHLO
+	id S933258Ab3GCSxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 14:53:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8187 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933215Ab3GCSk5 (ORCPT
+	with ESMTP id S933217Ab3GCSk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 14:40:57 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=ZwVFSnKUrQkA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=UgjPNI60-J4A:10 a=pGLkceISAAAA:8 a=gu6fZOg2AAAA:8 a=VwQbUJbxAAAA:8 a=qe3HlFfuWWptGTGL5CgA:9 a=MSl-tDqOz04A:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=GC8p-B92FUEA:10 a=NWVoK91CQyQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=uFjbtOkMytYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=hU3z_etLCN4A:10 a=QyXUC8HyAAAA:8 a=e5mUnYsNAAAA:8 a=20KFwNOVAAAA:8 a=VnNF1IyMAAAA:8 a=VwQbUJbxAAAA:8 a=Z4Rwk6OoAAAA:8 a=e0gVtgZ23HrhdBXb4dMA:9 a=dGJ0OcVc7YAA:10 a=jEp0ucaQiEUA:10 a=jbrJJM5MRmoA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184051.222155763@goodmis.org>
+Message-Id: <20130703184049.028871665@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:39:37 -0400
+Date: Wed, 03 Jul 2013 14:39:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Vincent Pelletier <plr.vincent@gmail.com>, Tejun Heo <tj@kernel.org>
-Subject: [040/141] libata: make ata_exec_internal_sg honor DMADIR
+Cc: Imre Deak <imre.deak@intel.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Howells <dhowells@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [027/141] wait: fix false timeouts when using wait_event_timeout()
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0040-libata-make-ata_exec_internal_sg-honor-DMADIR.patch
+Content-Disposition: inline; filename=0027-wait-fix-false-timeouts-when-using-wait_event_timeou.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,93 +33,94 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vincent Pelletier <plr.vincent@gmail.com>
+From: Imre Deak <imre.deak@intel.com>
 
-[ Upstream commit e771451c0a831d96a7c14b0ca8a8ec671d98567b ]
+[ Upstream commit 4c663cfc523a88d97a8309b04a089c27dc57fd7e ]
 
-libata honors DMADIR for regular commands, but not for internal commands
-used (among other) during device initialisation.
+Many callers of the wait_event_timeout() and
+wait_event_interruptible_timeout() expect that the return value will be
+positive if the specified condition becomes true before the timeout
+elapses.  However, at the moment this isn't guaranteed.  If the wake-up
+handler is delayed enough, the time remaining until timeout will be
+calculated as 0 - and passed back as a return value - even if the
+condition became true before the timeout has passed.
 
-This makes SATA-host-to-PATA-device bridges based on Silicon Image SiL3611
-(such as "Abit Serillel 2") end up disabled when used with an ATAPI device
-after a few tries.
+Fix this by returning at least 1 if the condition becomes true.  This
+semantic is in line with what wait_for_condition_timeout() does; see
+commit bb10ed09 ("sched: fix wait_for_completion_timeout() spurious
+failure under heavy load").
 
-Log output of the bridge being hot-plugged with an ATAPI drive:
+Daniel said "We have 3 instances of this bug in drm/i915.  One case even
+where we switch between the interruptible and not interruptible
+wait_event_timeout variants, foolishly presuming they have the same
+semantics.  I very much like this."
 
-  [ 9631.212901] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9631.212913] ata1: irq_stat 0x00000040, connection status changed
-  [ 9631.212923] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9631.212939] ata1: hard resetting link
-  [ 9632.104962] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9632.106393] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33
-  [ 9632.106407] ata1.00: applying bridge limits
-  [ 9632.108151] ata1.00: configured for UDMA/33
-  [ 9637.105303] ata1.00: qc timeout (cmd 0xa0)
-  [ 9637.105324] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9637.105335] ata1: hard resetting link
-  [ 9638.044599] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9638.047878] ata1.00: configured for UDMA/33
-  [ 9643.044933] ata1.00: qc timeout (cmd 0xa0)
-  [ 9643.044953] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9643.044963] ata1: limiting SATA link speed to 1.5 Gbps
-  [ 9643.044971] ata1.00: limiting speed to UDMA/33:PIO3
-  [ 9643.044979] ata1: hard resetting link
-  [ 9643.984225] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9643.987471] ata1.00: configured for UDMA/33
-  [ 9648.984591] ata1.00: qc timeout (cmd 0xa0)
-  [ 9648.984612] ata1.00: failed to clear UNIT ATTENTION (err_mask=0x5)
-  [ 9648.984619] ata1.00: disabled
-  [ 9649.000593] ata1: hard resetting link
-  [ 9649.939902] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
-  [ 9649.955864] ata1: EH complete
+One such bug is reported at
+  https://bugs.freedesktop.org/show_bug.cgi?id=64133
 
-With this patch, the drive enumerates correctly when libata is loaded with
-atapi_dmadir=1:
-
-  [ 9891.810863] ata1: exception Emask 0x10 SAct 0x0 SErr 0x40c0000 action 0xe frozen
-  [ 9891.810874] ata1: irq_stat 0x00000040, connection status changed
-  [ 9891.810884] ata1: SError: { CommWake 10B8B DevExch }
-  [ 9891.810900] ata1: hard resetting link
-  [ 9892.762105] ata1: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
-  [ 9892.763544] ata1.00: ATAPI: PIONEER DVD-RW  DVR-115, 1.06, max UDMA/33, DMADIR
-  [ 9892.763558] ata1.00: applying bridge limits
-  [ 9892.765393] ata1.00: configured for UDMA/33
-  [ 9892.786063] ata1: EH complete
-  [ 9892.792062] scsi 0:0:0:0: CD-ROM            PIONEER  DVD-RW  DVR-115  1.06 PQ: 0 ANSI: 5
-  [ 9892.798455] sr2: scsi3-mmc drive: 12x/12x writer dvd-ram cd/rw xa/form2 cdda tray
-  [ 9892.798837] sr 0:0:0:0: Attached scsi CD-ROM sr2
-  [ 9892.799109] sr 0:0:0:0: Attached scsi generic sg6 type 5
-
-Based on a patch by Csaba Halász <csaba.halasz@gmail.com> on linux-ide:
-http://marc.info/?l=linux-ide&m=136121147832295&w=2
-
-tj: minor formatting changes.
-
-Signed-off-by: Vincent Pelletier <plr.vincent@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: stable@vger.kernel.org
+Signed-off-by: Imre Deak <imre.deak@intel.com>
+Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Acked-by: David Howells <dhowells@redhat.com>
+Acked-by: Jens Axboe <axboe@kernel.dk>
+Cc: "Paul E.  McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Lukas Czerner <lczerner@redhat.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/ata/libata-core.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ include/linux/wait.h |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 3e351e7..b76e6ea 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -1601,6 +1601,12 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
- 	qc->tf = *tf;
- 	if (cdb)
- 		memcpy(qc->cdb, cdb, ATAPI_CDB_LEN);
-+
-+	/* some SATA bridges need us to indicate data xfer direction */
-+	if (tf->protocol == ATAPI_PROT_DMA && (dev->flags & ATA_DFLAG_DMADIR) &&
-+	    dma_dir == DMA_FROM_DEVICE)
-+		qc->tf.feature |= ATAPI_DMADIR;
-+
- 	qc->flags |= ATA_QCFLAG_RESULT_TF;
- 	qc->dma_dir = dma_dir;
- 	if (dma_dir != DMA_NONE) {
+diff --git a/include/linux/wait.h b/include/linux/wait.h
+index 1dee81c..6c6c20e 100644
+--- a/include/linux/wait.h
++++ b/include/linux/wait.h
+@@ -233,6 +233,8 @@ do {									\
+ 		if (!ret)						\
+ 			break;						\
+ 	}								\
++	if (!ret && (condition))					\
++		ret = 1;						\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
+ 
+@@ -249,8 +251,9 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  *
+- * The function returns 0 if the @timeout elapsed, and the remaining
+- * jiffies if the condition evaluated to true before the timeout elapsed.
++ * The function returns 0 if the @timeout elapsed, or the remaining
++ * jiffies (at least 1) if the @condition evaluated to %true before
++ * the @timeout elapsed.
+  */
+ #define wait_event_timeout(wq, condition, timeout)			\
+ ({									\
+@@ -318,6 +321,8 @@ do {									\
+ 		ret = -ERESTARTSYS;					\
+ 		break;							\
+ 	}								\
++	if (!ret && (condition))					\
++		ret = 1;						\
+ 	finish_wait(&wq, &__wait);					\
+ } while (0)
+ 
+@@ -334,9 +339,10 @@ do {									\
+  * wake_up() has to be called after changing any variable that could
+  * change the result of the wait condition.
+  *
+- * The function returns 0 if the @timeout elapsed, -ERESTARTSYS if it
+- * was interrupted by a signal, and the remaining jiffies otherwise
+- * if the condition evaluated to true before the timeout elapsed.
++ * Returns:
++ * 0 if the @timeout elapsed, -%ERESTARTSYS if it was interrupted by
++ * a signal, or the remaining jiffies (at least 1) if the @condition
++ * evaluated to %true before the @timeout elapsed.
+  */
+ #define wait_event_interruptible_timeout(wq, condition, timeout)	\
+ ({									\
 -- 
 1.7.10.4
 
