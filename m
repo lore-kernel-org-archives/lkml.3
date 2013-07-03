@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965212Ab3GCTGe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 15:06:34 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33255 "EHLO
+	id S965171Ab3GCTGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 15:06:32 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6261 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965008Ab3GCTA3 (ORCPT
+	with ESMTP id S965012Ab3GCTA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 15:00:29 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=IIKEg64ng5wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=GxtWwKIUbDQA:10 a=zd2uoN0lAAAA:8 a=VwQbUJbxAAAA:8 a=WKrTr6Ylr8kd5KpFOEwA:9 a=wu_e27o_rKQA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=iEzd6U16YrgA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=jEMl0_Aq3XwA:10 a=THCAyMpEAAAA:8 a=KKAkSRfTAAAA:8 a=VwQbUJbxAAAA:8 a=QyXUC8HyAAAA:8 a=fBeKd2HRWbP4T1pgm1MA:9 a=FCIOWvmKq0cA:10 a=WwgC8nHKvroA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130703184100.876804138@goodmis.org>
+Message-Id: <20130703184100.302588080@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 14:40:30 -0400
+Date: Wed, 03 Jul 2013 14:40:28 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Alex Deucher <alexander.deucher@amd.com>
-Subject: [093/141] drm/radeon: dont allow audio on DCE6
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [091/141] dmaengine: ste_dma40: fix pm runtime ref counting
 References: <20130703183857.307196999@goodmis.org>
-Content-Disposition: inline; filename=0093-drm-radeon-don-t-allow-audio-on-DCE6.patch
+Content-Disposition: inline; filename=0091-dmaengine-ste_dma40-fix-pm-runtime-ref-counting.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,63 +31,43 @@ If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-[ Upstream commit 1cbcca302a318499f20a512847c5d6a510c08c35 ]
+[ Upstream commit 9ecb41bd8cf002fd8f3e063db4df81647ddd623c ]
 
-It's not supported yet.  Fixes display issues when
-users force it on.
+The pm runtime reference counting of the driver is broken for the case
+when there is more than one transfer queued, leading to the device being
+runtime suspend while active.  Fix it.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Cc: stable@vger.kernel.org
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/dma/ste_dma40.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 2eb418e..f14ce9a 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -396,6 +396,8 @@ atombios_digital_setup(struct drm_encoder *encoder, int action)
- int
- atombios_get_encoder_mode(struct drm_encoder *encoder)
- {
-+	struct drm_device *dev = encoder->dev;
-+	struct radeon_device *rdev = dev->dev_private;
- 	struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
- 	struct drm_connector *connector;
- 	struct radeon_connector *radeon_connector;
-@@ -421,7 +423,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
- 	case DRM_MODE_CONNECTOR_DVII:
- 	case DRM_MODE_CONNECTOR_HDMIB: /* HDMI-B is basically DL-DVI; analog works fine */
- 		if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
--		    radeon_audio)
-+		    radeon_audio &&
-+		    !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
- 			return ATOM_ENCODER_MODE_HDMI;
- 		else if (radeon_connector->use_digital)
- 			return ATOM_ENCODER_MODE_DVI;
-@@ -432,7 +435,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
- 	case DRM_MODE_CONNECTOR_HDMIA:
- 	default:
- 		if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
--		    radeon_audio)
-+		    radeon_audio &&
-+		    !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
- 			return ATOM_ENCODER_MODE_HDMI;
- 		else
- 			return ATOM_ENCODER_MODE_DVI;
-@@ -446,7 +450,8 @@ atombios_get_encoder_mode(struct drm_encoder *encoder)
- 		    (dig_connector->dp_sink_type == CONNECTOR_OBJECT_ID_eDP))
- 			return ATOM_ENCODER_MODE_DP;
- 		else if (drm_detect_hdmi_monitor(radeon_connector->edid) &&
--			 radeon_audio)
-+			 radeon_audio &&
-+			 !ASIC_IS_DCE6(rdev)) /* remove once we support DCE6 */
- 			return ATOM_ENCODER_MODE_HDMI;
- 		else
- 			return ATOM_ENCODER_MODE_DVI;
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 000d309..6a68d5a 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1393,10 +1393,12 @@ static void dma_tc_handle(struct d40_chan *d40c)
+ 			return;
+ 		}
+ 
+-		if (d40_queue_start(d40c) == NULL)
++		if (d40_queue_start(d40c) == NULL) {
+ 			d40c->busy = false;
+-		pm_runtime_mark_last_busy(d40c->base->dev);
+-		pm_runtime_put_autosuspend(d40c->base->dev);
++
++			pm_runtime_mark_last_busy(d40c->base->dev);
++			pm_runtime_put_autosuspend(d40c->base->dev);
++		}
+ 	}
+ 
+ 	d40c->pending_tx++;
 -- 
 1.7.10.4
 
