@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933085Ab3GCQed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 12:34:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40647 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751521Ab3GCQeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 12:34:31 -0400
-Date: Wed, 3 Jul 2013 18:34:29 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Li Zefan <lizefan@huawei.com>, akpm@linux-foundation.org,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-mm@kvack.org
-Subject: Re: [PATCH next-20130703] net: sock: Add ifdef CONFIG_MEMCG_KMEM for
- mem_cgroup_sockets_{init,destroy}
-Message-ID: <20130703163429.GD5153@dhcp22.suse.cz>
-References: <1372853998-15353-1-git-send-email-sedat.dilek@gmail.com>
- <51D41E34.5010802@huawei.com>
- <20130703152058.GA30267@dhcp22.suse.cz>
- <CA+icZUX+mB2v9ghdhaLvpncCu+yxP4xJzzbFxXisFsB2tDM7TA@mail.gmail.com>
- <20130703155958.GC5153@dhcp22.suse.cz>
- <CA+icZUWiXr=wFoXHA_V3jy0Bkg1Pc5b79LX5j1fnfgmOkYhKCg@mail.gmail.com>
+	id S933174Ab3GCQe6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 12:34:58 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45960 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932776Ab3GCQe5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 12:34:57 -0400
+Message-ID: <51D452BC.8060905@arm.com>
+Date: Wed, 03 Jul 2013 17:35:08 +0100
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUWiXr=wFoXHA_V3jy0Bkg1Pc5b79LX5j1fnfgmOkYhKCg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kernel-team@android.com" <kernel-team@android.com>,
+        "arve@android.com" <arve@android.com>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>
+Subject: Re: [PATCH v5 0/6] Android Binder IPC Fixes
+References: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
+In-Reply-To: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com>
+X-OriginalArrivalTime: 03 Jul 2013 16:34:54.0422 (UTC) FILETIME=[3F6A2F60:01CE780B]
+X-MC-Unique: 113070317345501701
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-07-13 18:11:28, Sedat Dilek wrote:
-> On Wed, Jul 3, 2013 at 5:59 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Wed 03-07-13 17:53:21, Sedat Dilek wrote:
-> >> On Wed, Jul 3, 2013 at 5:20 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> >> > On Wed 03-07-13 20:51:00, Li Zefan wrote:
-> >> > [...]
-> >> >> [PATCH] memcg: fix build error if CONFIG_MEMCG_KMEM=n
-> >> >>
-> >> >> Fix this build error:
-> >> >>
-> >> >> mm/built-in.o: In function `mem_cgroup_css_free':
-> >> >> memcontrol.c:(.text+0x5caa6): undefined reference to
-> >> >> 'mem_cgroup_sockets_destroy'
-> >> >>
-> >> >> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> >> >> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> >> >> Signed-off-by: Li Zefan <lizefan@huawei.com>
-> >> >
-> >> > I am seeing the same thing I just didn't get to reporting it.
-> >> > The other approach is not bad as well but I find this tiny better
-> >> > because mem_cgroup_css_free should care only about a single cleanup
-> >> > function for whole kmem. If that one needs to do tcp kmem specific
-> >> > cleanup then it should be done inside kmem_cgroup_css_offline.
-> >> >
-> >>
-> >> As said in my other mail, for me this makes sense as it is a followup.
-> >>
-> >> But, still I don't know why sock.c has is own mem_cgroup_sockets_{init,destroy}.
-> >
-> > That is the only definition AFAICS (except for !CONFIG_NET where it
-> > expands to NOOP). Please note that memcg_init_kmem is a common kmem
-> > initializator and it needs to be prepared for !CONFIG_NET.
-> >
-> > The same applies to _destroy.
-> > Makes more sense now?
-> >
-> 
-> So, that stuff comes originally from the net-tree.
+Hi all,
 
-No, it all came from tcp kmem accounting. It is a memcg thingy and I
-guess it was placed into sock.c because it depends on some static
-symbols there (e.g. proto_list_mutex).
+Any feedback or comments on this patch set?
 
-> I understand the !CONFIG_NET case, but lack the understanding why
-> memcontrol.c needs _destroy.
+Thanks,
+Serban
 
-Because it is memcg specific and it has to be called when a group is
-destroyed.
+On 19/06/13 18:12, Serban Constantinescu wrote:
+> Hi all,
+>
+> This set of patches will clean-up and fix some of the issues that arise
+> with the current binder interface when moving to a 64bit kernel. All these
+> changes will not affect the existing 32bit Android interface and are meant
+> to stand as the base for the 64bit binder compat layer(kernel or userpsace).
+>
+> The patch set has been successfully tested with a 64bit Linux userspace and
+> 64bit binder unit-tests.
+>
+> This patch set has been successfully tested on 32bit platforms(ARMv7 VExpress)
+> and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an in
+> kernel binder compat layer.
+>
+> Changes for v5:
+> 1 6/6: Moved patch to the end of the series; changed handle to use __u32 type
+> 2 4/6: Removed some of the alignment/buffer changes introduced in previous
+>         versions of the patch.
+>
+> Changes for v4:
+> 1: 5/6: Fix the offset buffer alignment such that it will work for cases where
+> buffer start + buffer size are not aligned to (void *)
+>
+> Changes for v3:
+> 1:  Dropped the patch that was replacing uint32_t types with unsigned int
+> 2:  Dropped the patch fixing the IOCTL types(since it has been added to Greg's
+>      staging tree)
+> 3:  Split one patch into two: 'modify binder_write_read' and '64bit changes'
+> 4:  Modified BINDER_SET_MAX_THREADS ioctl definition accordint to Arve's review
+> 5:  Modified the binder command IOCTL declarations according to Arve's review
+>
+> Changes for v2:
+> 1: 1/7: Modified the commit message according to Greg's feedback;
+> 2: 3/7: Merged with the patch fixing the printk format specifiers.
+>
+> Serban Constantinescu (6):
+>    staging: android: binder: modify struct binder_write_read to use
+>      size_t
+>    staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
+>    staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
+>    staging: android: binder: fix alignment issues
+>    staging: android: binder: replace types with portable ones
+>    staging: android: binder: fix binder interface for 64bit compat layer
+>
+>   drivers/staging/android/binder.c |   32 ++++++++++++-------------
+>   drivers/staging/android/binder.h |   48 +++++++++++++++++++-------------------
+>   2 files changed, 40 insertions(+), 40 deletions(-)
+>
 
-> Can you explain that (sorry /me is no mm-geek)?
-> 
-> - Sedat -
-> 
-> [1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/net/core/sock.c?id=next-20130703#n147
-> [2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/include/net/sock.h?id=next-20130703#n73
-> 
-> > [...]
-> > --
-> > Michal Hocko
-> > SUSE Labs
 
 -- 
-Michal Hocko
-SUSE Labs
+Best Regards,
+
+Serban Constantinescu
+PDSW Engineer ARM Ltd.
+
