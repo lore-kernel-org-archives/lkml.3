@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab3GCD3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 2 Jul 2013 23:29:46 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:6269 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755398Ab3GCD3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 2 Jul 2013 23:29:45 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqQMAOGZ01F5LCeA/2dsb2JhbABagwm7bIUlBAGBAhd0giMBAQU6HCMQCAMYCSUPBSUDIRMUh3q7TRaOMoEdB4NtA5dJkUaDIyo
-Date: Wed, 3 Jul 2013 13:29:41 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Greg KH <greg@kroah.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] ext4 updates for 3.11
-Message-ID: <20130703032941.GH14996@dastard>
-References: <nsxbo6mxu38.fsf@lambda.thunk.org>
- <20130703094529.99444050e676467d281a3b51@canb.auug.org.au>
- <CA+55aFxdAHqEhnV-zKwExVfBAvw=k8+GprTGniNz=TpJM6obtQ@mail.gmail.com>
- <20130703005419.GA7744@kroah.com>
- <CA+55aFxdNVX9koH=GViv1Haj3kU07PD-CTKCNuWrm-c-BF3mQw@mail.gmail.com>
- <20130703010111.GA7986@kroah.com>
+	id S1755195Ab3GCDl3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 2 Jul 2013 23:41:29 -0400
+Received: from mga01.intel.com ([192.55.52.88]:11930 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753143Ab3GCDl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 2 Jul 2013 23:41:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,985,1363158000"; 
+   d="scan'208";a="364505845"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH net-next] net: lls fix build with allnoconfig
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Willem de Bruijn <willemb@google.com>,
+        Eric Dumazet <erdnetdev@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        HPA <hpa@zytor.com>, Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 03 Jul 2013 06:41:24 +0300
+Message-ID: <20130703034124.28666.55448.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703010111.GA7986@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 06:01:11PM -0700, Greg KH wrote:
-> On Tue, Jul 02, 2013 at 05:58:15PM -0700, Linus Torvalds wrote:
-> > On Tue, Jul 2, 2013 at 5:54 PM, Greg KH <greg@kroah.com> wrote:
-> > > On Tue, Jul 02, 2013 at 05:02:21PM -0700, Linus Torvalds wrote:
-> > >>
-> > >> I'm really not convinced this whole Lustre thing was correctly
-> > >> handled. Merging it into stable and yet being in such bad shape that
-> > >> it isn't enabled even there? I just dunno. But I have the turd in my
-> > >> tree now, let's hope it gets fixed up.
-> > >
-> > > It's in "staging", not "stable" :)
-> > 
-> > Yes. But what was the reason to actually merge it even there? And once
-> > it gets merged, disabling it again rather than fixing the problems it
-> > has?
-> 
-> The problems turned out to be too big, too late in the merge cycle for
-> me to be able to take them (they still aren't even done, as I don't have
-> a working set of patches yet.)  So I just disabled it from the build to
-> give Andreas and team time to get it working properly.
-> 
-> I could have just removed it, but I thought I would give them a chance.
-> 
-> > This is a filesystem that Intel apparently wants to push. I think it
-> > would have been a better idea to push back a bit and say "at least
-> > clean it up a bit first". It's not like Intel is one of the clueless
-> > companies that couldn't have done so and need help from the community.
-> 
-> For this filesystem, it seems that they don't have any resources to do
-> this work and are relying on the community to help out.  Which is odd,
-> but big companies are strange some times...
+correct placeholder declarations to prevent build breakage when
+!CONFIG_NET_LL_RX_POLL
 
-Didn't we learn this lesson already with POHMELFS? i.e. that dumping
-filesystem code in staging on the assumption "the community" will
-fix it up when nobody in "the community" uses or can even test that
-filesystem is a broken development model....
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+---
 
-Cheers,
+ include/net/ll_poll.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
+index b76f004..0d620ba 100644
+--- a/include/net/ll_poll.h
++++ b/include/net/ll_poll.h
+@@ -163,12 +163,12 @@ static inline unsigned long ll_get_flag(void)
+ 	return 0;
+ }
+ 
+-static inline u64 sk_ll_end_time(struct sock *sk)
++static inline u64 ll_start_time(unsigned int flag)
+ {
+ 	return 0;
+ }
+ 
+-static inline u64 ll_end_time(void)
++static inline u64 ll_run_time(void)
+ {
+ 	return 0;
+ }
+@@ -191,7 +191,7 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
+ {
+ }
+ 
+-static inline bool can_poll_ll(u64 end_time)
++static inline bool can_poll_ll(u64 start_time, u64 run_time)
+ {
+ 	return false;
+ }
+
