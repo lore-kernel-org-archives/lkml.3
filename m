@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964993Ab3GDIvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:51:55 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:16827 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933714Ab3GDIv3 (ORCPT
+	id S964972Ab3GDIvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:51:53 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:34883 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933708Ab3GDIvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:51:29 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-fd-51d5378f0abb
+	Thu, 4 Jul 2013 04:51:21 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-9c-51d537835683
 From: Lukasz Majewski <l.majewski@samsung.com>
 To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Zhang Rui <rui.zhang@intel.com>,
@@ -21,92 +21,123 @@ Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         Daniel Lezcano <daniel.lezcano@linaro.org>,
         Kukjin Kim <kgene.kim@samsung.com>,
         Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v5 7/7] Documentation:cpufreq:boost: Update BOOST documentation
-Date: Thu, 04 Jul 2013 10:50:30 +0200
-Message-id: <1372927830-2949-8-git-send-email-l.majewski@samsung.com>
+Subject: [PATCH v5 5/7] thermal:boost: Automatic enable/disable of BOOST feature
+Date: Thu, 04 Jul 2013 10:50:28 +0200
+Message-id: <1372927830-2949-6-git-send-email-l.majewski@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
 References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
  <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t9jAd0J5lcDDX6cZ7L483Y5q8XTph/s
-	FvM+y1qs2f+TyaLz7BNmi94FV9ks3jzitnjzcDOjxeVdc9gsPvceYbS43biCzaJ/YS+TxZOH
-	fWwWG796OPB5LN7zksnjzrU9bB7rpr1l9ujbsorR49HiFkaP4ze2M3l83iQXwB7FZZOSmpNZ
-	llqkb5fAldH/eh5bwT/xim//F7M2MD4U7mLk5JAQMJH4frGfDcIWk7hwbz2QzcUhJLCIUeLn
-	l9MsEE4Xk8T1g2tZQKrYBPQkPt99ygRiiwjMYZS4c9QdxGYWWMkscaLREcQWFvCXeNV6khXE
-	ZhFQlZjxeyVjFyMHB6+Aq8SyO4IQy+Qlnt7vA1vMKeAmcflCDxPErkZGiQ0dH1gmMPIuYGRY
-	xSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcqs+kdzCuarA4xCjAwajEwythdSVQiDWxrLgy
-	9xCjBAezkgivE8fVQCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8B1utA4UE0hNLUrNTUwtSi2Cy
-	TBycUg2MVi2xYYXPF1/f92D5fcUIr9JK26A1C6ZUTrYXty7eo5Bb1ts2b6vf47io2sR/t49K
-	rdZ8LpJQcDfo/voFYszpWWt6Di/wOZlrbf+tvPRL8qz+roN3G78J3UuVYpyvtV80fXW+Z1LF
-	9QaueLk1X/nfr5pRp7W1V36Gu9SCqgdcc2Wn8qmuOzJFiaU4I9FQi7moOBEAhqS2VVECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHLMWRmVeSWpSXmKPExsVy+t9jAd1m86uBBjunK1r8ebuc1eJp0w92
+	i3mfZS3W7P/JZNF59gmzRe+Cq2wWbx5xW7x5uJnR4vKuOWwWn3uPMFrcblzBZtG/sJfJ4snD
+	PjaLjV89HPg8Fu95yeRx59oeNo91094ye/RtWcXo8WhxC6PH8RvbmTw+b5ILYI/isklJzcks
+	Sy3St0vgyrj2+SFrwUGJireNrewNjL+Euxg5OCQETCS6r4p3MXICmWISF+6tZ+ti5OIQEljE
+	KNE1dR4zhNPFJLF73XdGkCo2AT2Jz3efMoHYIgJzGCXuHHUHsZkFVjJLnGh0BLGFBQIken6u
+	ZgWxWQRUJVrfbWIHsXkFXCV2zd3AArFNXuLp/T42EJtTwE3i8oUeJohljYwSGzo+sExg5F3A
+	yLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzhUn0ntYFzZYHGIUYCDUYmHV8LqSqAQa2JZ
+	cWXuIUYJDmYlEV4njquBQrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoHCgmkJ5akZqemFqQW
+	wWSZODilGhjz80rWmoUXL57SqzBrwsW1BU2hkTenKMqurpvv4rdJ6pL/R56dLhIqG26tuT1R
+	qUDI8lrB/MM7qy0eb/p07Tif86mQljPnZMRqJthf+fTqazIL38wJKSmx5xoWTT72qXlawdld
+	6RGbr6nwZBbfY/c5tOvh7RaJqOmLrS6/ZStr2XKS9yy7wGUVJZbijERDLeai4kQAJA4gNFEC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the support for software and hardware controlled boosting has been
-added, the corresponding Documentation entry had been updated.
+This patch provides auto disable/enable operation for boost. When any
+defined trip point is passed, the boost is disabled.
+In that moment thermal monitor workqueue is woken up and it monitors
+if the device temperature drops below 75% of the smallest trip point.
+When device cools down, the boost is enabled again.
 
 Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 
 ---
 Changes for v5:
+- Move boost disable code from cpu_cooling.c to thermal_core.c
+  (to handle_non_critical_trips)
+- Extent struct thermal_zone_device by adding overheated bool flag
+- Implement auto enable of boost after device cools down
+- Introduce boost_polling flag, which indicates if thermal uses it's predefined
+  pool delay or has woken up thermal workqueue only to wait until device
+  cools down.
+
+Changes for v4:
 - New patch
 
- Documentation/cpu-freq/boost.txt |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+ drivers/thermal/thermal_core.c |   31 +++++++++++++++++++++++++++++++
+ include/linux/thermal.h        |    2 ++
+ 2 files changed, 33 insertions(+)
 
-diff --git a/Documentation/cpu-freq/boost.txt b/Documentation/cpu-freq/boost.txt
-index 9b4edfc..dd62e13 100644
---- a/Documentation/cpu-freq/boost.txt
-+++ b/Documentation/cpu-freq/boost.txt
-@@ -17,8 +17,8 @@ Introduction
- Some CPUs support a functionality to raise the operating frequency of
- some cores in a multi-core package if certain conditions apply, mostly
- if the whole chip is not fully utilized and below it's intended thermal
--budget. This is done without operating system control by a combination
--of hardware and firmware.
-+budget. The decision about boost disable/enable is made either at hardware
-+(e.g. x86) or software (e.g ARM).
- On Intel CPUs this is called "Turbo Boost", AMD calls it "Turbo-Core",
- in technical documentation "Core performance boost". In Linux we use
- the term "boost" for convenience.
-@@ -48,24 +48,24 @@ be desirable:
- User controlled switch
- ----------------------
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index d755440..12adbad 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -33,6 +33,7 @@
+ #include <linux/idr.h>
+ #include <linux/thermal.h>
+ #include <linux/reboot.h>
++#include <linux/cpufreq.h>
+ #include <net/netlink.h>
+ #include <net/genetlink.h>
  
--To allow the user to toggle the boosting functionality, the acpi-cpufreq
--driver exports a sysfs knob to disable it. There is a file:
-+To allow the user to toggle the boosting functionality, the cpufreq core
-+driver exports a sysfs knob to enable or disable it. There is a file:
- /sys/devices/system/cpu/cpufreq/boost
- which can either read "0" (boosting disabled) or "1" (boosting enabled).
--Reading the file is always supported, even if the processor does not
--support boosting. In this case the file will be read-only and always
--reads as "0". Explicitly changing the permissions and writing to that
--file anyway will return EINVAL.
-+The file is exported only when cpufreq driver supports boosting.
-+Explicitly changing the permissions and writing to that file anyway will
-+return EINVAL.
+@@ -326,6 +327,15 @@ static void monitor_thermal_zone(struct thermal_zone_device *tz)
+ static void handle_non_critical_trips(struct thermal_zone_device *tz,
+ 			int trip, enum thermal_trip_type trip_type)
+ {
++	if (cpufreq_boost_supported()) {
++		tz->overheated = true;
++		cpufreq_boost_trigger_state(0);
++		if (!tz->polling_delay) {
++			tz->boost_polling = true;
++			tz->polling_delay = 1000;
++		}
++	}
++
+ 	if (tz->governor)
+ 		tz->governor->throttle(tz, trip);
+ }
+@@ -453,6 +463,27 @@ static void thermal_zone_device_check(struct work_struct *work)
+ 	struct thermal_zone_device *tz = container_of(work, struct
+ 						      thermal_zone_device,
+ 						      poll_queue.work);
++	long trip_temp;
++
++	if (cpufreq_boost_supported() && tz->overheated) {
++		tz->ops->get_trip_temp(tz, 0, &trip_temp);
++		/*
++		 * Enable boost again only when current temperature is less
++		 * than 75% of trip_temp[0]
++		 */
++		if ((tz->temperature + (trip_temp >> 2)) < trip_temp) {
++			tz->overheated = false;
++			if (tz->boost_polling) {
++				tz->boost_polling = false;
++				tz->polling_delay = 0;
++				monitor_thermal_zone(tz);
++			}
++
++			cpufreq_boost_trigger_state(1);
++			return;
++		}
++	}
++
+ 	thermal_zone_device_update(tz);
+ }
  
- On supported CPUs one can write either a "0" or a "1" into this file.
- This will either disable the boost functionality on all cores in the
--whole system (0) or will allow the hardware to boost at will (1).
-+whole system (0) or will allow the software or hardware to boost at will
-+(1).
- 
- Writing a "1" does not explicitly boost the system, but just allows the
--CPU (and the firmware) to boost at their discretion. Some implementations
--take external factors like the chip's temperature into account, so
--boosting once does not necessarily mean that it will occur every time
--even using the exact same software setup.
-+CPU to boost at their discretion. Some implementations take external
-+factors like the chip's temperature into account, so boosting once does
-+not necessarily mean that it will occur every time even using the exact
-+same software setup.
- 
- 
- AMD legacy cpb switch
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index a386a1c..f1aa3c2 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -172,6 +172,8 @@ struct thermal_zone_device {
+ 	int emul_temperature;
+ 	int passive;
+ 	unsigned int forced_passive;
++	bool overheated;
++	bool boost_polling;
+ 	const struct thermal_zone_device_ops *ops;
+ 	const struct thermal_zone_params *tzp;
+ 	struct thermal_governor *governor;
 -- 
 1.7.10.4
 
