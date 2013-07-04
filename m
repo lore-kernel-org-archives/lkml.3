@@ -1,127 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab3GDJzM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:55:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49467 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755335Ab3GDJyl (ORCPT
+	id S932453Ab3GDJ5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:57:40 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40247 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab3GDJ5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:54:41 -0400
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
-        Dave.Butcher@arm.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH v6 5/6] staging: android: binder: replace types with portable ones
-Date: Thu,  4 Jul 2013 10:54:47 +0100
-Message-Id: <1372931688-18553-6-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372931688-18553-1-git-send-email-serban.constantinescu@arm.com>
-References: <1372931688-18553-1-git-send-email-serban.constantinescu@arm.com>
+	Thu, 4 Jul 2013 05:57:39 -0400
+Date: Thu, 4 Jul 2013 11:57:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alex Shi <alex.shi@intel.com>
+cc: hpa@linux.intel.com, tim.c.chen@linux.intel.com,
+        linux-kernel@vger.kernel.org, andi.kleen@intel.com,
+        a.p.zijlstra@chello.nl, mingo@elte.hu
+Subject: Re: [PATCH 1/3] clocksource: clean up clocksource_select
+In-Reply-To: <1372916056-24301-2-git-send-email-alex.shi@intel.com>
+Message-ID: <alpine.DEB.2.02.1307041151170.11637@ionos.tec.linutronix.de>
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <1372916056-24301-2-git-send-email-alex.shi@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since this driver is meant to be used on different types of processors
-and a portable driver should specify the size a variable expects to be
-this patch changes the types used throughout the binder interface.
+On Thu, 4 Jul 2013, Alex Shi wrote:
 
-We use "userspace" types since this header will be exported and used by
-the Android filesystem.
+> After clocksource_find_best() introduced, it is impossible to get into
+> some code path. so clean them up.
 
-The patch does not change in any way the functionality of the binder driver.
+That's wrong.
+ 
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  kernel/time/clocksource.c | 16 +---------------
+>  1 file changed, 1 insertion(+), 15 deletions(-)
+> 
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index e713ef7..021c159 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -582,26 +582,12 @@ static void __clocksource_select(bool skipcur)
+>  	if (!best)
+>  		return;
+>  
+> -	/* Check for the override clocksource. */
+>  	list_for_each_entry(cs, &clocksource_list, list) {
+>  		if (skipcur && cs == curr_clocksource)
+>  			continue;
+>  		if (strcmp(cs->name, override_name) != 0)
+>  			continue;
 
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
-Acked-by: Arve Hjønnevåg <arve@android.com>
----
- drivers/staging/android/binder.h |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+We need this check and it is completely unrelated to the problem
+you're trying to solve.
 
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index b55bba9..dadfce0 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -123,10 +123,10 @@ struct binder_transaction_data {
- 		void	*ptr;	/* target descriptor of return transaction */
- 	} target;
- 	void		*cookie;	/* target object cookie */
--	unsigned int	code;		/* transaction command */
-+	__u32		code;		/* transaction command */
- 
- 	/* General information about the transaction. */
--	unsigned int	flags;
-+	__u32	        flags;
- 	pid_t		sender_pid;
- 	uid_t		sender_euid;
- 	size_t		data_size;	/* number of bytes of data */
-@@ -143,7 +143,7 @@ struct binder_transaction_data {
- 			/* offsets from buffer to flat_binder_object structs */
- 			const void __user	*offsets;
- 		} ptr;
--		uint8_t	buf[8];
-+		__u8	buf[8];
- 	} data;
- };
- 
-@@ -153,18 +153,18 @@ struct binder_ptr_cookie {
- };
- 
- struct binder_pri_desc {
--	int priority;
--	int desc;
-+	__s32 priority;
-+	__s32 desc;
- };
- 
- struct binder_pri_ptr_cookie {
--	int priority;
-+	__s32 priority;
- 	void *ptr;
- 	void *cookie;
- };
- 
- enum binder_driver_return_protocol {
--	BR_ERROR = _IOR('r', 0, int),
-+	BR_ERROR = _IOR('r', 0, __s32),
- 	/*
- 	 * int: error code
- 	 */
-@@ -178,7 +178,7 @@ enum binder_driver_return_protocol {
- 	 * binder_transaction_data: the received command.
- 	 */
- 
--	BR_ACQUIRE_RESULT = _IOR('r', 4, int),
-+	BR_ACQUIRE_RESULT = _IOR('r', 4, __s32),
- 	/*
- 	 * not currently supported
- 	 * int: 0 if the last bcATTEMPT_ACQUIRE was not successful.
-@@ -258,7 +258,7 @@ enum binder_driver_command_protocol {
- 	 * binder_transaction_data: the sent command.
- 	 */
- 
--	BC_ACQUIRE_RESULT = _IOW('c', 2, int),
-+	BC_ACQUIRE_RESULT = _IOW('c', 2, __s32),
- 	/*
- 	 * not currently supported
- 	 * int:  0 if the last BR_ATTEMPT_ACQUIRE was not successful.
-@@ -270,10 +270,10 @@ enum binder_driver_command_protocol {
- 	 * void *: ptr to transaction data received on a read
- 	 */
- 
--	BC_INCREFS = _IOW('c', 4, int),
--	BC_ACQUIRE = _IOW('c', 5, int),
--	BC_RELEASE = _IOW('c', 6, int),
--	BC_DECREFS = _IOW('c', 7, int),
-+	BC_INCREFS = _IOW('c', 4, __u32),
-+	BC_ACQUIRE = _IOW('c', 5, __u32),
-+	BC_RELEASE = _IOW('c', 6, __u32),
-+	BC_DECREFS = _IOW('c', 7, __u32),
- 	/*
- 	 * int:	descriptor
- 	 */
--- 
-1.7.9.5
+Assume the following:
 
+       System boots with clocksource A and switches into highres mode.
+       Now clocksource B gets registered and B is not highres capable.
+
+       clocksource_find_best() selects again A, but we have
+       clocksource=B on the kernel command line to override the kernel
+       decision.
+
+By removing the check, you install he non highres capable clocksource
+B and kill the machine.
+
+> -		/*
+> -		 * Check to make sure we don't switch to a non-highres
+> -		 * capable clocksource if the tick code is in oneshot
+> -		 * mode (highres or nohz)
+> -		 */
+> -		if (!(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES) && oneshot) {
+> -			/* Override clocksource cannot be used. */
+> -			printk(KERN_WARNING "Override clocksource %s is not "
+> -			       "HRT compatible. Cannot switch while in "
+> -			       "HRT/NOHZ mode\n", cs->name);
+> -			override_name[0] = 0;
+> -		} else
+> -			/* Override clocksource can be used. */
+> -			best = cs;
+> +		best = cs;
+>  		break;
+>  	}
+
+Thanks,
+
+	tglx
