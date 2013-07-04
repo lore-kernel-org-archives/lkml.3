@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab3GDQ1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 12:27:16 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51142 "EHLO
+	id S1756886Ab3GDQ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 12:28:24 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56703 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab3GDQ1O (ORCPT
+	with ESMTP id S1756525Ab3GDQ2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 12:27:14 -0400
-Date: Thu, 4 Jul 2013 17:26:41 +0100
+	Thu, 4 Jul 2013 12:28:23 -0400
 From: Mark Brown <broonie@kernel.org>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        danders <danders@circuitco.com>,
-        "vishal.l.verma" <vishal.l.verma@intel.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>,
-        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
-Message-ID: <20130704162641.GG27646@sirena.org.uk>
-References: <cover.1372211451.git.dvhart@linux.intel.com>
- <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
- <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
- <1372398218.9243.29.camel@envy.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4vGmjSrOD7pGiAie"
-Content-Disposition: inline
-In-Reply-To: <1372398218.9243.29.camel@envy.home>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        Mark Brown <broonie@linaro.org>
+Date: Thu,  4 Jul 2013 17:27:59 +0100
+Message-Id: <1372955279-24640-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.3.2
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the
- MinnowBoard
+Subject: [PATCH] regulator: core: Make set_voltage_tol() try for mid-range first
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mark Brown <broonie@linaro.org>
 
---4vGmjSrOD7pGiAie
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The expected semantic for something expressed as a tolerance is that it
+should deliver the specified value with some deviation allowed but this
+is not what set_voltage_tol() currently does. Instead it just passes
+the maximum possible range to set_voltage() which will typically result
+in a voltage aimed at lower than the target voltage.
 
-On Thu, Jun 27, 2013 at 10:43:38PM -0700, Darren Hart wrote:
+Instead first try to set a voltage between the target voltage and the
+upper limit, then fall back on the full range. This will be much more
+robust against physical variation in systems and makes the API behave
+more like users would expect.
 
-> minnow_hwid() just returns an int that the minnowboard platform driver
-> read from the GPIO. This seems like a proper abstraction to me. Do you
-> object to this one as well?
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ include/linux/regulator/consumer.h | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-We should really have a subsystem for this too - the general idea idea
-of identifying boards, fit options and so on by looking at things like
-GPIOs or numbers in flash is really common.
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index 3a76389..3610df8 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -369,8 +369,11 @@ static inline int regulator_count_voltages(struct regulator *regulator)
+ static inline int regulator_set_voltage_tol(struct regulator *regulator,
+ 					    int new_uV, int tol_uV)
+ {
+-	return regulator_set_voltage(regulator,
+-				     new_uV - tol_uV, new_uV + tol_uV);
++	if (regulator_set_voltage(regulator, new_uV, new_uV + tol_uV) == 0)
++		return 0;
++	else
++		return regulator_set_voltage(regulator,
++					     new_uV - tol_uV, new_uV + tol_uV);
+ }
+ 
+ static inline int regulator_is_supported_voltage_tol(struct regulator *regulator,
+-- 
+1.8.3.2
 
---4vGmjSrOD7pGiAie
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR1aI+AAoJELSic+t+oim9Gi8P/irPpX97W+QL99brauSPPkJo
-5M0mgyUN3SYDKTcDBCUKgr/aQ/gjvyYFQLjyGwI7910u05EF/OIF4AFUMiECmiWN
-yFVbycYchEhYSet++fHL85WxNTi+G4Dxn13/F2RkX4SQo22JSSIbt7ZA52FacYfT
-QLkRuVmUwKWRDhbNJDit2pfOW/VNnakfaSlcTJuEZn2h5DgBW8Mwti9KpPmENsGP
-vG6YhTWh2jdHJrFpNyCfdO8mtEyO3MxBdBBdRgqDr1mltJU/f7RvXjNwXRMkXcAG
-ERI3+GUpV+rS4FQx5YjJCvWC2KKvhuvNsO3uxCiFjBsoRq9S4z9RiP7Ltbqd3At5
-BPF1ZBD6I/6XMCQxxmQDjVsxcPPXRFnEWu3MVQogZx1qObP7lZQ7hfSOnKE0i4q2
-gDKPj79YrDhit69zKw6gmLggB1WzB/3ZmEk4a2w4l95oVdP4R5MYsiZfP1tWLDSZ
-sQ6FB3OVMXww05+UEIBaX6Ilai3MzEuBUvCVrWYfvQoAQNnVQ45y2j/V9LBZMeid
-LtkLsCkBVW/RysPlOZ0nPPvGK+tMWMnkLLNEHzf01Rc8BHj5A0NNPvhgLLS3QBJu
-xtSL+MXNX+bApY8q+L2rIwxfAq7rW2QPcjhvbXcWUnaGpSKlACVXYcjsre3de/vr
-ARVp5escNrEyh7W8YCRh
-=YmUE
------END PGP SIGNATURE-----
-
---4vGmjSrOD7pGiAie--
