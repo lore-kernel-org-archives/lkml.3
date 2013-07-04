@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933708Ab3GDJNu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:13:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54419 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933532Ab3GDJNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:13:48 -0400
-Date: Thu, 4 Jul 2013 12:13:46 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [PATCH] x86/kvm/emulate.c: simplify NOP (opcode 0x90) check
-Message-ID: <20130704091345.GB5113@redhat.com>
-References: <1372928309-16488-1-git-send-email-dvlasenk@redhat.com>
+	id S933726Ab3GDJOV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:14:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35126 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933532Ab3GDJOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 05:14:20 -0400
+Date: Thu, 4 Jul 2013 11:13:39 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: smart wake-affine
+Message-ID: <20130704091339.GK18898@dyad.programming.kicks-ass.net>
+References: <51A43B16.9080801@linux.vnet.ibm.com>
+ <51D25A80.8090406@linux.vnet.ibm.com>
+ <20130702085202.GA23916@twins.programming.kicks-ass.net>
+ <51D29EE5.8080307@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372928309-16488-1-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <51D29EE5.8080307@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 10:58:29AM +0200, Denys Vlasenko wrote:
-> The check sits in switch() statement which itself can check
-> for opcode 0x90 far more efficiently.
+On Tue, Jul 02, 2013 at 05:35:33PM +0800, Michael Wang wrote:
+> >> +	if (jiffies > current->last_switch_decay + HZ) {
+> >> +		current->nr_wakee_switch = 0;
+> >> +		current->last_switch_decay = jiffies;
+> >> +	}
+> > 
+> > This isn't so much a decay as it is wiping state. Did you try an actual
+> > decay -- something like: current->nr_wakee_switch >>= 1; ?
+> > 
+> > I suppose you wanted to avoid something like:
+> > 
+> >   now = jiffies;
+> >   while (now > current->last_switch_decay + HZ) {
+> >   	current->nr_wakee_switch >>= 1;
+> > 	current->last_switch_decay += HZ;
+> >   }
 > 
-> On assembler level, this change simply eliminates the following
-> bit of code:
+> Right, actually I have though about the decay problem with some testing,
+> including some similar implementations like this, but one issue I could
+> not solve is:
 > 
-> 4c 8b a3 d8 00 00 00    mov    0xd8(%rbx),%r12
-> 31 f6                   xor    %esi,%esi
-> 48 89 df                mov    %rbx,%rdi
-> e8 32 8c ff ff          callq  490 <reg_read>
-> 48 8d 83 78 01 00 00    lea    0x178(%rbx),%rax
-> 83 8b 70 01 00 00 01    orl    $0x1,0x170(%rbx)
-> 83 8b 74 01 00 00 01    orl    $0x1,0x174(%rbx)
-> 49 39 c4                cmp    %rax,%r12
-> 0f 84 88 fa ff ff       je     7304 <x86_emulate_insn+0x204>
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Paolo Bonzini <pbonzini@redhat.com>
-> CC: Avi Kivity <avi.kivity@gmail.com>
-> ---
->  arch/x86/kvm/emulate.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 2bc1e81..7e6e74a 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -4544,9 +4544,9 @@ special_insn:
->  	case 0x8d: /* lea r16/r32, m */
->  		ctxt->dst.val = ctxt->src.addr.mem.ea;
->  		break;
-> -	case 0x90 ... 0x97: /* nop / xchg reg, rax */
-> -		if (ctxt->dst.addr.reg == reg_rmw(ctxt, VCPU_REGS_RAX))
-> -			break;
-> +	case 0x90: /* nop */
-> +		break;
-This does not work on 64bit and REX prefix.
+> 	the task waken up after dequeue 10secs and the task waken up
+> 	after dequeue 1sec will suffer the same decay.
+>
+> Thus, in order to keep fair, we have to do some calculation here to make
+> the decay correct, but that means cost...
 
-> +	case 0x91 ... 0x97: /* xchg reg, rax */
->  		rc = em_xchg(ctxt);
->  		break;
->  	case 0x98: /* cbw/cwde/cdqe */
-> -- 
-> 1.8.1.4
+Right, but something like the below is limited in cost to at most 32/64 (I
+forgot the type) shifts. Now its probably not worth doing, but it shows
+things like that can be done in 'constant' time.
 
---
-			Gleb.
+  now = jiffies;
+  if (now - p->last_switch_decay > 8*sizeof(p->nr_wakee_switch)*HZ) {
+	p->nr_wakee_switch = 0;
+	p->last_switch_decay = now;
+  } else while (now > p->last_switch_decay + HZ) {
+	p->nr_wakee_switch >>= 1;
+	p->last_switch_decay += HZ;
+  }
+
+
