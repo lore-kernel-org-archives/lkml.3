@@ -1,106 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab3GDQ0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 12:26:12 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:49725 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657Ab3GDQ0K (ORCPT
+	id S1756879Ab3GDQ1Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 12:27:16 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51142 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525Ab3GDQ1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 12:26:10 -0400
-Message-ID: <51D5A074.9040906@gmail.com>
-Date: Thu, 04 Jul 2013 18:19:00 +0200
-From: Gmail <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 4 Jul 2013 12:27:14 -0400
+Date: Thu, 4 Jul 2013 17:26:41 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        danders <danders@circuitco.com>,
+        "vishal.l.verma" <vishal.l.verma@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+Message-ID: <20130704162641.GG27646@sirena.org.uk>
+References: <cover.1372211451.git.dvhart@linux.intel.com>
+ <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
+ <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
+ <1372398218.9243.29.camel@envy.home>
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] fsfreeze: return EINTR from mnt_want_write and mnt_want_write_file
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4vGmjSrOD7pGiAie"
+Content-Disposition: inline
+In-Reply-To: <1372398218.9243.29.camel@envy.home>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the
+ MinnowBoard
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced sb_start_write with sb_start_write_killable inside
-mnt_want_write and mnt_want_write_file.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
-Reviewed-by: Jan Kara <jack@suse.cz>
----
- fs/namei.c     |    6 ++++++
- fs/namespace.c |    8 ++++++--
- ipc/mqueue.c   |    6 +++++-
- 3 files changed, 17 insertions(+), 3 deletions(-)
+--4vGmjSrOD7pGiAie
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 9ed9361..d8e3eab 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2750,6 +2750,8 @@ static int do_last(struct nameidata *nd, struct path *path,
- retry_lookup:
- 	if (op->open_flag & (O_CREAT | O_TRUNC | O_WRONLY | O_RDWR)) {
- 		error = mnt_want_write(nd->path.mnt);
-+		if (error == -EINTR)
-+			goto out;
- 		if (!error)
- 			got_write = true;
- 		/*
-@@ -3053,6 +3055,10 @@ struct dentry *kern_path_create(int dfd, const char *pathname,
- 
- 	/* don't fail immediately if it's r/o, at least try to report other errors */
- 	err2 = mnt_want_write(nd.path.mnt);
-+	if (err2 == -EINTR) {
-+		dentry = ERR_PTR(-EINTR);
-+		goto out;
-+	}
- 	/*
- 	 * Do the final lookup.
- 	 */
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 7b1ca9b..7a7bc97 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -345,7 +345,9 @@ int mnt_want_write(struct vfsmount *m)
- {
- 	int ret;
- 
--	sb_start_write(m->mnt_sb);
-+	ret = sb_start_write_killable(m->mnt_sb);
-+	if (ret < 0)
-+		return ret;
- 	ret = __mnt_want_write(m);
- 	if (ret)
- 		sb_end_write(m->mnt_sb);
-@@ -405,7 +407,9 @@ int mnt_want_write_file(struct file *file)
- {
- 	int ret;
- 
--	sb_start_write(file->f_path.mnt->mnt_sb);
-+	ret = sb_start_write_killable(file->f_path.mnt->mnt_sb);
-+	if (ret < 0)
-+		return ret;
- 	ret = __mnt_want_write_file(file);
- 	if (ret)
- 		sb_end_write(file->f_path.mnt->mnt_sb);
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index e4e47f6..e8fdc03 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -800,7 +800,11 @@ SYSCALL_DEFINE4(mq_open, const char __user *, u_name, int, oflag, umode_t, mode,
- 	if (fd < 0)
- 		goto out_putname;
- 
--	ro = mnt_want_write(mnt);	/* we'll drop it in any case */
-+	ro = mnt_want_write(mnt);
-+	if (ro == -EINTR) {
-+		fd = ro;
-+		goto out_putname;
-+	}
- 	error = 0;
- 	mutex_lock(&root->d_inode->i_mutex);
- 	path.dentry = lookup_one_len(name->name, root, strlen(name->name));
--- 
-1.7.3.4
+On Thu, Jun 27, 2013 at 10:43:38PM -0700, Darren Hart wrote:
+
+> minnow_hwid() just returns an int that the minnowboard platform driver
+> read from the GPIO. This seems like a proper abstraction to me. Do you
+> object to this one as well?
+
+We should really have a subsystem for this too - the general idea idea
+of identifying boards, fit options and so on by looking at things like
+GPIOs or numbers in flash is really common.
+
+--4vGmjSrOD7pGiAie
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1aI+AAoJELSic+t+oim9Gi8P/irPpX97W+QL99brauSPPkJo
+5M0mgyUN3SYDKTcDBCUKgr/aQ/gjvyYFQLjyGwI7910u05EF/OIF4AFUMiECmiWN
+yFVbycYchEhYSet++fHL85WxNTi+G4Dxn13/F2RkX4SQo22JSSIbt7ZA52FacYfT
+QLkRuVmUwKWRDhbNJDit2pfOW/VNnakfaSlcTJuEZn2h5DgBW8Mwti9KpPmENsGP
+vG6YhTWh2jdHJrFpNyCfdO8mtEyO3MxBdBBdRgqDr1mltJU/f7RvXjNwXRMkXcAG
+ERI3+GUpV+rS4FQx5YjJCvWC2KKvhuvNsO3uxCiFjBsoRq9S4z9RiP7Ltbqd3At5
+BPF1ZBD6I/6XMCQxxmQDjVsxcPPXRFnEWu3MVQogZx1qObP7lZQ7hfSOnKE0i4q2
+gDKPj79YrDhit69zKw6gmLggB1WzB/3ZmEk4a2w4l95oVdP4R5MYsiZfP1tWLDSZ
+sQ6FB3OVMXww05+UEIBaX6Ilai3MzEuBUvCVrWYfvQoAQNnVQ45y2j/V9LBZMeid
+LtkLsCkBVW/RysPlOZ0nPPvGK+tMWMnkLLNEHzf01Rc8BHj5A0NNPvhgLLS3QBJu
+xtSL+MXNX+bApY8q+L2rIwxfAq7rW2QPcjhvbXcWUnaGpSKlACVXYcjsre3de/vr
+ARVp5escNrEyh7W8YCRh
+=YmUE
+-----END PGP SIGNATURE-----
+
+--4vGmjSrOD7pGiAie--
