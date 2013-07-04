@@ -1,90 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933191Ab3GDCtV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 22:49:21 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:40032 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab3GDCtT convert rfc822-to-8bit (ORCPT
+	id S933332Ab3GDC4g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 22:56:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60419 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932633Ab3GDC4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 22:49:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130704015525.GA8486@redhat.com>
-References: <20130704015525.GA8486@redhat.com>
-Date: Wed, 3 Jul 2013 19:49:18 -0700
-X-Google-Sender-Auth: aWI28m7NiTvdZrGqZQEqtbdgCig
-Message-ID: <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
-Subject: Re: scheduling while atomic & hang.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Anvin <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 3 Jul 2013 22:56:35 -0400
+Message-ID: <1372906583.22888.66.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 1/1] linux-firmware: Add AMD microcode patch firmware
+ files
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Sherry Hurwitz <sherry.hurwitz@amd.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
+        amd64-microcode@amd64.org
+Date: Thu, 04 Jul 2013 03:56:23 +0100
+In-Reply-To: <1372447651-10290-1-git-send-email-sherry.hurwitz@amd.com>
+References: <1372447651-10290-1-git-send-email-sherry.hurwitz@amd.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-9QKAUJ3QR4MHIltcJ60C"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 6:55 PM, Dave Jones <davej@redhat.com> wrote:
-> This is a pretty context free trace. What the hell happened here?
 
-That lack of call trace looks like it happened at the final stage of
-an interrupt or page fault or other trap that is about to return to
-user space.
+--=-9QKAUJ3QR4MHIltcJ60C
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-My guess would be that the trap/irq/whatever handler for some odd
-reason ended up with an unbalanced spinlock or something. But since
-there is no trace of it, I can't even begin to guess what it would be.
+On Fri, 2013-06-28 at 14:27 -0500, Sherry Hurwitz wrote:
+> For AMD Families 10h ~ 14h Processors
+> file:   amd-ucode/microcode_amd.bin
+> md5sum: 55ae79b82cbfddcf7142058be3c9ec2d
+>=20
+> For AMD Family 15h Processors
+> file:   amd-ucode/microcode_amd_fam15h.bin
+> md5sum: 122ac7e56442c2b7c28eb26978b2d57c
+>=20
+> Signed-off-by: Sherry Hurwitz <sherry.hurwitz@amd.com>
+> ---
+>  LICENSE.amd-ucode                  |   64 ++++++++++++++++++++++++++++++=
+++++++
+>  WHENCE                             |    9 +++++
+>  amd-ucode/microcode_amd.bin        |  Bin 0 -> 12684 bytes
+>  amd-ucode/microcode_amd_fam15h.bin |  Bin 0 -> 7876 bytes
+>  4 files changed, 73 insertions(+)
+>  create mode 100644 LICENSE.amd-ucode
+>  create mode 100644 amd-ucode/microcode_amd.bin
+>  create mode 100644 amd-ucode/microcode_amd_fam15h.bin
+[...]
+> --- a/WHENCE
+> +++ b/WHENCE
+> @@ -2169,3 +2169,12 @@ File: go7007/wis-startrek.fw
+>  Licence: Redistributable. See LICENCE.go7007_firmware for details
+> =20
+>  ------------------------------------------------------------------------=
+--
+> +
+> +Driver: microcode_amd - AMD CPU Microcode Update Driver for Linux
+> +
+> +File: amd-ucode/microcode_amd.bin
+> +File: amd-ucode/microcode_amd_fam15h.bin
+> +
+> +License: Redistributable. See LICENSE.amd-ucode for details
+[...]
 
-Does trinity save enough pseudo-random state that it can be
-repeatable, because if it's something repeatable it might be
-interesting to see what the last few system calls and traps were...
+Please include the version number.
 
-> Box is wedged, and I won't be able to get to it until Friday to poke it.
+I notice that the download page on amd64.org also has GPG signatures.
+Perhaps those should be included too?
 
-Oh well. Adding the x86 people to the cc, since the whole
-"retint_careful" does seem imply that it's not a system call entry,
-and more likely to be something like a page fault or debug trap or
-something. Any ideas, guys?
+(Actually, I would like to see verifiable signatures on all binary
+firmware, but I don't think that can be made a requirement any time
+soon.  Key 9F94BC90 isn't signed by another published key, so I still
+have no reason to trust its identity.)
 
->From the " 3.10.0+" I assume this is from the merge window, and
-possibly a new failure. Do you have an actual git ID? I can heartily
-recommend CONFIG_LOCALVERSION_AUTO=y as a way to get commit ID's
-encoded in the version string (which is obviously more useful if you
-end up running mainly kernels without extra commits of your own on top
-of them - if you have your own local commits you'd still need to
-translate it into "your kernel XYZ with commits of mine on top")
+Ben.
 
-              Linus
+--=20
+Ben Hutchings
+Tomorrow will be cancelled due to lack of interest.
 
----
-> BUG: scheduling while atomic: trinity-child0/13280/0xefffffff
-> INFO: lockdep is turned off.
-> Modules linked in: dlci dccp_ipv6 dccp_ipv4 dccp sctp bridge 8021q garp stp snd_seq_dummy tun fuse hidp rfcomm bnep can_raw can_bcm nfnetlink phonet llc2 pppoe pppox ppp_generic slhc appletalk af_rxrpc ipt_ULOG irda af_key
->  can atm scsi_transport_iscsi rds rose x25 af_802154 caif_socket ipx caif p8023 psnap crc_ccitt p8022 llc bluetooth nfc rfkill netrom ax25 snd_hda_codec_realtek microcode snd_hda_codec_hdmi pcspkr snd_hda_intel snd_hda_codec snd_hwdep sn
-> d_seq snd_seq_device usb_debug snd_pcm e1000e snd_page_alloc snd_timer ptp snd pps_core soundcore xfs libcrc32c
-> CPU: 0 PID: 13280 Comm: trinity-child0 Not tainted 3.10.0+ #40
->  0000000000000000 ffff880228533ee0 ffffffff816ec1a2 ffff880228533ef8
->  ffffffff816e782e 0000000000000db5 ffff880228533f60 ffffffff816f42bf
->  ffff88023bdeca40 ffff880228533fd8 ffff880228533fd8 ffff880228533fd8
-> Call Trace:
->  [<ffffffff816ec1a2>] dump_stack+0x19/0x1b
->  [<ffffffff816e782e>] __schedule_bug+0x61/0x70
->  [<ffffffff816f42bf>] __schedule+0x94f/0x9c0
->  [<ffffffff816f487e>] schedule_user+0x2e/0x70
->  [<ffffffff816f6de4>] retint_careful+0x12/0x2e
-> BUG: scheduling while atomic: trinity-child0/13280/0xefffffff
-> INFO: lockdep is turned off.
-> Modules linked in: dlci dccp_ipv6 dccp_ipv4 dccp sctp bridge 8021q garp stp snd_seq_dummy tun fuse hidp rfcomm bnep can_raw can_bcm nfnetlink phonet llc2 pppoe pppox ppp_generic slhc appletalk af_rxrpc ipt_ULOG irda af_key can atm scsi_transport_iscsi rds rose x25 af_802154 caif_socket ipx caif p8023 psnap crc_ccitt p8022 llc bluetooth nfc rfkill netrom ax25 snd_hda_codec_realtek microcode snd_hda_codec_hdmi pcspkr snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e snd_page_alloc snd_timer ptp snd pps_core soundcore xfs libcrc32c
-> CPU: 0 PID: 13280 Comm: trinity-child0 Tainted: G        W    3.10.0+ #40
->  0000000000000000 ffff880228533e80 ffffffff816ec1a2 ffff880228533e98
->  ffffffff816e782e ffff880228533fd8 ffff880228533f00 ffffffff816f42bf
->  ffff88023bdeca40 ffff880228533fd8 ffff880228533fd8 ffff880228533fd8
-> Call Trace:
->  [<ffffffff816ec1a2>] dump_stack+0x19/0x1b
->  [<ffffffff816e782e>] __schedule_bug+0x61/0x70
->  [<ffffffff816f42bf>] __schedule+0x94f/0x9c0
->  [<ffffffff816f487e>] schedule_user+0x2e/0x70
->  [<ffffffff816ff169>] int_careful+0x12/0x1e
->  [<ffffffff816f487e>] ? schedule_user+0x2e/0x70
->  [<ffffffff816f6de4>] ? retint_careful+0x12/0x2e
-> Kernel panic - not syncing: Aiee, killing interrupt handler!
+--=-9QKAUJ3QR4MHIltcJ60C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUdTkV+e/yOyVhhEJAQqiYw//X9mwGFVp8KONeIACCA+uznU4dDGbITEL
+d9acczBXAkyknt5VTi5TOPjOwZhD+j+PhrhVOVWIDjEFpytEDUjjkcR5wGecVytr
+Kc4xsnVkhAKFaYEIedW0/V+8WVmcyGATDSy6Hp8O3RJA445za6Qc/zmvTpaaX/lO
+GTSm4ZKhf/fCF5WzI1z+J3Op1fRdPjOEw6yfYmuHEZGT0jqIzOtTSvad/ONBD6BV
+Sp5B3UnmoIjC6h50WGeO81XjvqLATiRw/ueRj9QXAZBefnCuutFz7FF/9Yjz8+hh
+xuoaUBSa4Fob5RTxESTXTrx/CLdVsWAbuiKVXbFRs7DQWeZBZluQSpi6E3GZ0zk3
+g5VLMnywe2QxWBVCYtRqpD2Kn0VRoYfCcS4TiTkV3/6EhNzeWj/gC2xT7TejKzcA
+xcDwNkhFS2HCK8765568QJxoiPknCpRxkh+XtxjRATOzfiCJ1MKPFnTdQcoVuUsD
+wa/Q1CKVno6spLRP82RbUBHwnIxTv31dvPOd1iirNqqokEKFFOJ4ldiu3lch87xn
+LcNxMiqj3Ryr+y4d10xkVeh6f9B2LsyRE+zS6OYp+PlNBsukyOiZ5udNVg9hrz/7
+cUVtiEJqxJahVVkBxfSZsYUxJcnhsUujgFMcAg/FzWxzAJK7wx2AJQ6khwDTyakC
+HgXWNdx3ZYo=
+=TCNw
+-----END PGP SIGNATURE-----
+
+--=-9QKAUJ3QR4MHIltcJ60C--
