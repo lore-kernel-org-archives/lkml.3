@@ -1,281 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3GDN2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 09:28:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36587 "EHLO mga09.intel.com"
+	id S1754991Ab3GDN3o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:29:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46905 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab3GDN2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 09:28:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,995,1363158000"; 
-   d="scan'208";a="364783529"
-Date: Thu, 4 Jul 2013 16:33:14 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer
- Aspire S5
-Message-ID: <20130704133314.GO4898@intel.com>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
- <6828518.UobQ5xLxzT@vostro.rjw.lan>
- <20130704125337.GN4898@intel.com>
- <5332719.huZ9ItKWz0@vostro.rjw.lan>
+	id S1752082Ab3GDN3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 09:29:43 -0400
+Date: Thu, 4 Jul 2013 14:29:39 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/13] sched: Reschedule task on preferred NUMA node once
+ selected
+Message-ID: <20130704132939.GQ1875@suse.de>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-7-git-send-email-mgorman@suse.de>
+ <20130704122644.GA29916@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <5332719.huZ9ItKWz0@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <20130704122644.GA29916@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 03:14:58PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, July 04, 2013 03:53:38 PM Mika Westerberg wrote:
-> > On Thu, Jul 04, 2013 at 02:36:00PM +0200, Rafael J. Wysocki wrote:
-> > > On Thursday, July 04, 2013 11:58:44 AM Mika Westerberg wrote:
-> > > > On Wed, Jul 03, 2013 at 11:40:42PM +0200, Rafael J. Wysocki wrote:
-> > > > > On Wednesday, July 03, 2013 05:04:53 PM Mika Westerberg wrote:
-> > > > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > > > > > 
-> > > > > > Correct ACPI PCI hotplug imeplementation should have _RMV method in a
-> > > > > > PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
-> > > > > > deeper in hierarchy:
-> > > > > > 
-> > > > > > Device (RP05)
-> > > > > > {
-> > > > > >    // ...
-> > > > > >    Device (HRUP)
-> > > > > >    {
-> > > > > >        // ...
-> > > > > >        Device (HRDN)
-> > > > > >        {
-> > > > > >            // ...
-> > > > > >            Device (EPUP)
-> > > > > >            {
-> > > > > >                // ...
-> > > > > >                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
-> > > > > >                {
-> > > > > >                    Return (One)
-> > > > > >                }
-> > > > > >            }
-> > > > > >        }
-> > > > > >    }
-> > > > > > }
-> > > > > > 
-> > > > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > > > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > > > ---
-> > > > > >  drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
-> > > > > >  1 file changed, 13 insertions(+)
-> > > > > > 
-> > > > > > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
-> > > > > > index 2a47e82..d92ebfb 100644
-> > > > > > --- a/drivers/pci/hotplug/acpi_pcihp.c
-> > > > > > +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> > > > > > @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
-> > > > > >  	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
-> > > > > >  	if (ACPI_SUCCESS(status) && removable)
-> > > > > >  		return 1;
-> > > > > > +
-> > > > > > +	/*
-> > > > > > +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
-> > > > > > +	 *
-> > > > > > +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
-> > > > > > +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
-> > > > > > +	 * deeper in hierarchy.
-> > > > > > +	 */
-> > > > > > +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
-> > > > > > +			&removable);
-> > > > > 
-> > > > > Well, calling stuff like this directly from a general function is kind of ugly.
-> > > > > 
-> > > > > Can we use something like a quirk instead?  A DMI check or something?
-> > > > 
-> > > > Sure we can. How about something like the patch below?
-> > > 
-> > > Well, it goes into the right (to me) direction. :-)
-> > > 
-> > > Some comments below.
-> > > 
-> > > > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > Subject: [PATCH] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
-> > > > 
-> > > > The acpiphp driver finds out whether the device is removable by checking
-> > > > whether it has _RMV method directly behind it (and if it returns 1).
-> > > > However, at least on Acer Aspire S5 with Thunderbolt host router has this
-> > > > method placed behind a device called EPUP (endpoint upstream port?) and not
-> > > > in the usual place expected by the acpiphp driver. The ASL code below shows
-> > > > how this is done on that machine:
-> > > > 
-> > > > Device (RP05)
-> > > > {
-> > > > 	...
-> > > > 	Device (HRUP)
-> > > > 	{
-> > > > 		Name (_ADR, Zero)
-> > > > 		Name (_PRW, Package (0x02)
-> > > > 		{
-> > > > 			0x09,
-> > > > 			0x04
-> > > > 		})
-> > > > 		Device (HRDN)
-> > > > 		{
-> > > > 			Name (_ADR, 0x00040000)
-> > > > 			Name (_PRW, Package (0x02)
-> > > > 			{
-> > > > 				0x09,
-> > > > 				0x04
-> > > > 			})
-> > > > 			Device (EPUP)
-> > > > 			{
-> > > > 				Name (_ADR, Zero)
-> > > > 				Method (_RMV, 0, NotSerialized)
-> > > > 				{
-> > > > 					Return (One)
-> > > > 				}
-> > > > 			}
-> > > > 		}
-> > > > 	}
-> > > > 	...
-> > > > 
-> > > > Fix this by adding a DMI quirk for the Acer Aspire S5 machine that gives an
-> > > > alternative path to the _RMV method.
-> > > > 
-> > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > ---
-> > > >  drivers/pci/hotplug/acpi_pcihp.c | 57 ++++++++++++++++++++++++++++++++++++----
-> > > >  1 file changed, 52 insertions(+), 5 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
-> > > > index 2a47e82..99fccf3 100644
-> > > > --- a/drivers/pci/hotplug/acpi_pcihp.c
-> > > > +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> > > > @@ -33,6 +33,7 @@
-> > > >  #include <linux/acpi.h>
-> > > >  #include <linux/pci-acpi.h>
-> > > >  #include <linux/slab.h>
-> > > > +#include <linux/dmi.h>
-> > > >  
-> > > >  #define MY_NAME	"acpi_pcihp"
-> > > >  
-> > > > @@ -408,21 +409,67 @@ got_one:
-> > > >  }
-> > > >  EXPORT_SYMBOL(acpi_get_hp_hw_control_from_firmware);
-> > > >  
-> > > > +/**
-> > > > + * pcihp_is_removable - is the given ACPI device removable
-> > > > + * @handle: ACPI handle of the device
-> > > > + *
-> > > > + * Try to find out whether the given ACPI device is removable by evaluating
-> > > > + * its _RMV and returning the result. If we can't find the _RMV directly
-> > > > + * under the device use system specific quirks to locate it.
-> > > > + */
-> > > > +static bool pcihp_is_removable(acpi_handle handle)
-> > > > +{
-> > > 
-> > > People are generally used to seeing DMI lists outside of functions.
+On Thu, Jul 04, 2013 at 05:56:44PM +0530, Srikar Dronamraju wrote:
+> * Mel Gorman <mgorman@suse.de> [2013-07-03 15:21:33]:
+> 
 > > 
-> > OK.
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 2a0bbc2..b9139be 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -800,6 +800,37 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
+> >   */
+> >  unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
 > > 
-> > > > +	static const struct dmi_system_id rmv_paths[] = {
-> > > > +		{
-> > > > +			/*
-> > > > +			 * On Acer Aspire S5 the _RMV method for the
-> > > > +			 * Thunderbolt host router upstream port is not
-> > > > +			 * located directly under the device but it is
-> > > > +			 * instead placed a bit deeper in the hierarchy.
-> > > > +			 */
-> > > > +			.ident = "Acer Aspire S5",
-> > > > +			.matches = {
-> > > > +				DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> > > > +				DMI_MATCH(DMI_PRODUCT_NAME, "Aspire S5-391"),
-> > > > +			},
-> > > > +			.driver_data = "HRDN.EPUP._RMV",
-> > > 
-> > > Use .callback instead? ->
-> > > 
-> > > > +		},
-> > > > +		{ }
-> > > > +	};
-> > > > +	const struct dmi_system_id *id;
-> > > > +	unsigned long long removable;
-> > > > +	acpi_status status;
-> > > > +
-> > > > +	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
-> > > > +	if (ACPI_SUCCESS(status))
-> > > > +		return !!removable;
-> > > > +
-> > > > +	/* Try system specific quirks */
-> > > > +	id = dmi_first_match(rmv_paths);
-> > > > +	if (id && id->driver_data) {
-> > > 
-> > > -> And here do
-> > > 
-> > > 	if (id && id->callback)
-> > > 		return id->callback(id);
-> > 
-> > There is a problem with the above that we can't pass an ACPI handle to the
-> > callback function.
+> > +static unsigned long weighted_cpuload(const int cpu);
+> > +
+> > +static int
+> > +find_idlest_cpu_node(int this_cpu, int nid)
+> > +{
+> > +	unsigned long load, min_load = ULONG_MAX;
+> > +	int i, idlest_cpu = this_cpu;
+> > +
+> > +	BUG_ON(cpu_to_node(this_cpu) == nid);
+> > +
+> > +	for_each_cpu(i, cpumask_of_node(nid)) {
+> > +		load = weighted_cpuload(i);
+> > +
+> > +		if (load < min_load) {
+> > +			struct task_struct *p;
+> > +
+> > +			/* Do not preempt a task running on its preferred node */
+> > +			struct rq *rq = cpu_rq(i);
+> > +			raw_spin_lock_irq(&rq->lock);
 > 
-> Ah, right.
+> Not sure why we need this spin_lock? Cant this be done in a rcu block
+> instead?
 > 
-> Well, you can do
-> 
-> 	if (id && id->driver_data) {
-> 		bool (*callback)(acpi_handle) = id->driver_data;
-> 
-> 		return callback(handle);
-> 	}
-> 
-> although it's a bit hackish.
 
-I'm thinking that passing just the path from driver_data might be simpler
-in this case ;-) But I'm fine with changing it to be a callback as well.
+Judging by how find_idlest_cpu works it would appear you are correct.
+Thanks very much, I'm still pretty much a scheduler wuss. I know what I
+want but not always how to get it :)
 
-> > > 
-> > > > +		char path[64];
-> > > > +
-> > > > +		strlcpy(path, id->driver_data, sizeof(path));
-> 
-> BTW, why didn't you want to pass id->driver_data directly here?
-
-acpi_evaluate_integer() takes acpi_string as parameter which is 'char *',
-not 'const char *'.
-
-Doing:
-
-	.driver_data = "HRDN.EPUP._RMV",
-
-might place that string to a read-only area (as it is constant), if I
-understand C correctly. So even though I know that acpi_evaluate_interger()
-doesn't change the parameter, there's no guarantee that it doesn't do that
-in the future.
-
-> 
-> > > > +		status = acpi_evaluate_integer(handle, path, NULL, &removable);
-> > > > +		if (ACPI_SUCCESS(status))
-> > > > +			return !!removable;
-> > > > +	}
-> > > > +
-> > > > +	return false;
-> > > > +}
-> > > > +
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> -- 
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+-- 
+Mel Gorman
+SUSE Labs
