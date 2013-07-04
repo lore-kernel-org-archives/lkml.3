@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756379Ab3GDM1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:27:14 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:61079 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab3GDM0q (ORCPT
+	id S1756723Ab3GDM1L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:27:11 -0400
+Received: from mail-ea0-f172.google.com ([209.85.215.172]:56450 "EHLO
+	mail-ea0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab3GDM01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:26:46 -0400
+	Thu, 4 Jul 2013 08:26:27 -0400
 From: David Herrmann <dh.herrmann@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH v2 11/14] drm: add helpers to kick out firmware drivers
-Date: Thu,  4 Jul 2013 14:25:11 +0200
-Message-Id: <1372940714-12470-12-git-send-email-dh.herrmann@gmail.com>
+        David Herrmann <dh.herrmann@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH v2 01/14] fbdev: simplefb: add init through platform_data
+Date: Thu,  4 Jul 2013 14:25:01 +0200
+Message-Id: <1372940714-12470-2-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1372940714-12470-1-git-send-email-dh.herrmann@gmail.com>
 References: <1372940714-12470-1-git-send-email-dh.herrmann@gmail.com>
@@ -21,367 +22,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we load a real hardware DRM driver, we want all firmware drivers to be
-unloaded. Historically, this was done via
-remove_conflicting_framebuffers(), but for DRM drivers (like SimpleDRM) we
-need a new way.
+If we create proper platform-devices in x86 boot-code, we can use simplefb
+for VBE or EFI framebuffers, too. However, there is normally no OF support
+so we introduce a platform_data object so x86 boot-code can pass the
+parameters via plain old platform-data.
 
-This patch introduces DRIVER_FIRMWARE and DRM apertures to provide a quite
-similar way to kick out firmware DRM drivers. Additionally, unlike the
-fbdev equivalent, DRM firmware drivers can now query the system whether a
-real hardware driver is already loaded and prevent loading themselves.
+This also removes the OF dependency as it is not needed. The headers
+provide proper dummies for the case OF is disabled.
 
-Whenever a real hardware DRM driver is loaded which claims to provide the
-boot fw FB, we invalidate the firmware framebuffer. Otherwise, simpledrm
-could be loaded again, after a real hw-driver was unloaded (which is
-very unlikely to work, except if hw-drivers reset fw FBs during unload).
-Note that fbdev doesn't provide such protection against late driver
-probing.
+Furthermore, we move the FORMAT-definitions to the common platform header
+so initialization code can use it to transform "struct screen_info" to
+the right format-name.
 
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 ---
- drivers/gpu/drm/drm_pci.c                  |   1 +
- drivers/gpu/drm/drm_platform.c             |   1 +
- drivers/gpu/drm/drm_stub.c                 | 118 +++++++++++++++++++++++++++++
- drivers/gpu/drm/drm_usb.c                  |   1 +
- drivers/gpu/drm/simpledrm/simpledrm.h      |   1 +
- drivers/gpu/drm/simpledrm/simpledrm_drv.c  |   3 +-
- drivers/gpu/drm/simpledrm/simpledrm_main.c |  33 ++++++++
- include/drm/drmP.h                         |  26 +++++++
- 8 files changed, 183 insertions(+), 1 deletion(-)
+ drivers/video/Kconfig                  |  5 ++-
+ drivers/video/simplefb.c               | 48 +++++++++++++++++++++--------
+ include/linux/platform_data/simplefb.h | 56 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 93 insertions(+), 16 deletions(-)
+ create mode 100644 include/linux/platform_data/simplefb.h
 
-diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
-index 14194b6..4dcb2a4 100644
---- a/drivers/gpu/drm/drm_pci.c
-+++ b/drivers/gpu/drm/drm_pci.c
-@@ -366,6 +366,7 @@ int drm_get_pci_dev(struct pci_dev *pdev, const struct pci_device_id *ent,
- 	}
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 2e937bd..22586ee 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2455,7 +2455,7 @@ config FB_HYPERV
  
- 	list_add_tail(&dev->driver_item, &driver->device_list);
-+	list_add_tail(&dev->global_item, &drm_devlist);
+ config FB_SIMPLE
+ 	bool "Simple framebuffer support"
+-	depends on (FB = y) && OF
++	depends on (FB = y)
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
+@@ -2467,8 +2467,7 @@ config FB_SIMPLE
+ 	  pre-allocated frame buffer surface.
  
- 	DRM_INFO("Initialized %s %d.%d.%d %s for %s on minor %d\n",
- 		 driver->name, driver->major, driver->minor, driver->patchlevel,
-diff --git a/drivers/gpu/drm/drm_platform.c b/drivers/gpu/drm/drm_platform.c
-index b8a282e..94923c8 100644
---- a/drivers/gpu/drm/drm_platform.c
-+++ b/drivers/gpu/drm/drm_platform.c
-@@ -88,6 +88,7 @@ int drm_get_platform_dev(struct platform_device *platdev,
- 	}
+ 	  Configuration re: surface address, size, and format must be provided
+-	  through device tree, or potentially plain old platform data in the
+-	  future.
++	  through device tree, or plain old platform data.
  
- 	list_add_tail(&dev->driver_item, &driver->device_list);
-+	list_add_tail(&dev->global_item, &drm_devlist);
+ source "drivers/video/omap/Kconfig"
+ source "drivers/video/omap2/Kconfig"
+diff --git a/drivers/video/simplefb.c b/drivers/video/simplefb.c
+index e2e9e3e..5886989 100644
+--- a/drivers/video/simplefb.c
++++ b/drivers/video/simplefb.c
+@@ -24,6 +24,7 @@
+ #include <linux/fb.h>
+ #include <linux/io.h>
+ #include <linux/module.h>
++#include <linux/platform_data/simplefb.h>
+ #include <linux/platform_device.h>
  
- 	mutex_unlock(&drm_global_mutex);
- 
-diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
-index 16f3ec5..9b7557e 100644
---- a/drivers/gpu/drm/drm_stub.c
-+++ b/drivers/gpu/drm/drm_stub.c
-@@ -46,6 +46,10 @@ EXPORT_SYMBOL(drm_vblank_offdelay);
- unsigned int drm_timestamp_precision = 20;  /* Default to 20 usecs. */
- EXPORT_SYMBOL(drm_timestamp_precision);
- 
-+static bool drm_fw_invalid;	/* true if fw FBs have been destroyed */
-+LIST_HEAD(drm_devlist);		/* device list; protected by global lock */
-+EXPORT_SYMBOL(drm_devlist);
-+
- /*
-  * Default to use monotonic timestamps for wait-for-vblank and page-flip
-  * complete events.
-@@ -484,7 +488,9 @@ void drm_put_dev(struct drm_device *dev)
- 
- 	drm_put_minor(&dev->primary);
- 
-+	list_del(&dev->global_item);
- 	list_del(&dev->driver_item);
-+	kfree(dev->apertures);
- 	kfree(dev->devname);
- 	kfree(dev);
- }
-@@ -507,3 +513,115 @@ void drm_unplug_dev(struct drm_device *dev)
- 	mutex_unlock(&drm_global_mutex);
- }
- EXPORT_SYMBOL(drm_unplug_dev);
-+
-+void drm_unplug_dev_locked(struct drm_device *dev)
-+{
-+	/* for a USB device */
-+	if (drm_core_check_feature(dev, DRIVER_MODESET))
-+		drm_unplug_minor(dev->control);
-+	drm_unplug_minor(dev->primary);
-+
-+	drm_device_set_unplugged(dev);
-+
-+	/* TODO: schedule drm_put_dev if open_count == 0 */
-+}
-+EXPORT_SYMBOL(drm_unplug_dev_locked);
-+
-+#define VGA_FB_PHYS 0xa0000
-+
-+static bool apertures_overlap(struct drm_device *dev,
-+			      struct apertures_struct *ap,
-+			      bool boot)
-+{
-+	unsigned int i, j;
-+	struct aperture *a, *b;
-+
-+	if (!dev->apertures)
-+		return false;
-+
-+	for (i = 0; i < dev->apertures->count; ++i) {
-+		a = &dev->apertures->ranges[i];
-+
-+		if (boot && a->base == VGA_FB_PHYS)
-+			return true;
-+
-+		for (j = 0; ap && j < ap->count; ++j) {
-+			b = &ap->ranges[j];
-+			if (a->base <= b->base && a->base + a->size > b->base)
-+				return true;
-+			if (b->base <= a->base && b->base + b->size > a->base)
-+				return true;
-+		}
-+	}
-+
-+	return false;
-+}
-+
-+/**
-+ * Kick out firmware
-+ *
-+ * Virtually unplug any firmware graphics devices which overlap the given
-+ * region. This must be called with the global-drm-mutex locked.
-+ * This calls the kick_out_firmware() callback on any firmware DRM driver and
-+ * after that remove_conflicting_framebuffers() to remove legacy fbdev
-+ * framebuffers.
-+ */
-+void drm_kick_out_firmware(struct apertures_struct *ap, bool boot)
-+{
-+	struct drm_device *dev;
-+
-+	if (boot)
-+		drm_fw_invalid = true;
-+
-+	list_for_each_entry(dev, &drm_devlist, global_item) {
-+		if (!drm_core_check_feature(dev, DRIVER_FIRMWARE))
-+			continue;
-+		if (apertures_overlap(dev, ap, boot)) {
-+			DRM_INFO("kicking out firmware %s\n",
-+				 dev->devname);
-+			dev->driver->kick_out_firmware(dev);
-+		}
-+	}
-+
-+#ifdef CONFIG_FB
-+	remove_conflicting_framebuffers(ap, "DRM", boot);
-+#endif
-+}
-+EXPORT_SYMBOL(drm_kick_out_firmware);
-+
-+/**
-+ * Verify that no driver uses firmware FBs
-+ *
-+ * Whenever you register a firmware framebuffer driver, you should store the
-+ * apertures in @ap and test whether any other registered driver already
-+ * claimed this area. Hence, if this function returns true, you should _not_
-+ * register your driver!
-+ */
-+bool drm_is_firmware_used(struct apertures_struct *ap)
-+{
-+	struct drm_device *dev;
-+	unsigned int i;
-+	bool boot = false;
-+
-+	/* If a real DRM driver was loaded once, we cannot assume that the
-+	 * firmware framebuffers are still valid. */
-+	if (drm_fw_invalid)
-+		return true;
-+
-+	for (i = 0; ap && i < ap->count; ++i) {
-+		if (ap->ranges[i].base == VGA_FB_PHYS) {
-+			boot = true;
-+			break;
-+		}
-+	}
-+
-+	list_for_each_entry(dev, &drm_devlist, global_item) {
-+		if (dev->apert_boot && boot)
-+			return true;
-+		if (apertures_overlap(dev, ap, false))
-+			return true;
-+	}
-+
-+	return false;
-+}
-+EXPORT_SYMBOL(drm_is_firmware_used);
-diff --git a/drivers/gpu/drm/drm_usb.c b/drivers/gpu/drm/drm_usb.c
-index 34a156f..5ad8dba 100644
---- a/drivers/gpu/drm/drm_usb.c
-+++ b/drivers/gpu/drm/drm_usb.c
-@@ -50,6 +50,7 @@ int drm_get_usb_dev(struct usb_interface *interface,
- 		goto err_g3;
- 
- 	list_add_tail(&dev->driver_item, &driver->device_list);
-+	list_add_tail(&dev->global_item, &drm_devlist);
- 
- 	mutex_unlock(&drm_global_mutex);
- 
-diff --git a/drivers/gpu/drm/simpledrm/simpledrm.h b/drivers/gpu/drm/simpledrm/simpledrm.h
-index b854981..c093ad5 100644
---- a/drivers/gpu/drm/simpledrm/simpledrm.h
-+++ b/drivers/gpu/drm/simpledrm/simpledrm.h
-@@ -53,6 +53,7 @@ struct sdrm_device {
- 
- int sdrm_drm_load(struct drm_device *ddev, unsigned long flags);
- int sdrm_drm_unload(struct drm_device *ddev);
-+void sdrm_drm_kick_out_firmware(struct drm_device *ddev);
- int sdrm_drm_mmap(struct file *filp, struct vm_area_struct *vma);
- int sdrm_pdev_init(struct sdrm_device *sdrm);
- void sdrm_pdev_destroy(struct sdrm_device *sdrm);
-diff --git a/drivers/gpu/drm/simpledrm/simpledrm_drv.c b/drivers/gpu/drm/simpledrm/simpledrm_drv.c
-index b774d5c..08f2286 100644
---- a/drivers/gpu/drm/simpledrm/simpledrm_drv.c
-+++ b/drivers/gpu/drm/simpledrm/simpledrm_drv.c
-@@ -34,9 +34,10 @@ static const struct file_operations sdrm_drm_fops = {
+ static struct fb_fix_screeninfo simplefb_fix = {
+@@ -73,18 +74,7 @@ static struct fb_ops simplefb_ops = {
+ 	.fb_imageblit	= cfb_imageblit,
  };
  
- static struct drm_driver sdrm_drm_driver = {
--	.driver_features = DRIVER_MODESET | DRIVER_GEM,
-+	.driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_FIRMWARE,
- 	.load = sdrm_drm_load,
- 	.unload = sdrm_drm_unload,
-+	.kick_out_firmware = sdrm_drm_kick_out_firmware,
- 	.fops = &sdrm_drm_fops,
+-struct simplefb_format {
+-	const char *name;
+-	u32 bits_per_pixel;
+-	struct fb_bitfield red;
+-	struct fb_bitfield green;
+-	struct fb_bitfield blue;
+-	struct fb_bitfield transp;
+-};
+-
+-static struct simplefb_format simplefb_formats[] = {
+-	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0} },
+-};
++static struct simplefb_format simplefb_formats[] = SIMPLEFB_FORMATS;
  
- 	.gem_init_object = sdrm_gem_init_object,
-diff --git a/drivers/gpu/drm/simpledrm/simpledrm_main.c b/drivers/gpu/drm/simpledrm/simpledrm_main.c
-index 497542d..38571c2 100644
---- a/drivers/gpu/drm/simpledrm/simpledrm_main.c
-+++ b/drivers/gpu/drm/simpledrm/simpledrm_main.c
-@@ -267,6 +267,21 @@ int sdrm_drm_load(struct drm_device *ddev, unsigned long flags)
- 	if (ret)
- 		goto err_name;
- 
-+	ddev->apertures = alloc_apertures(1);
-+	if (!ddev->apertures) {
-+		ret = -ENOMEM;
-+		goto err_pdev;
-+	}
-+
-+	ddev->apertures->ranges[0].base = sdrm->fb_base;
-+	ddev->apertures->ranges[0].size = sdrm->fb_size;
-+
-+	if (drm_is_firmware_used(ddev->apertures)) {
-+		dev_info(ddev->dev, "firmware framebuffer is already in use\n");
-+		ret = -EBUSY;
-+		goto err_apert;
-+	}
-+
- 	drm_mode_config_init(ddev);
- 	ddev->mode_config.min_width = 0;
- 	ddev->mode_config.min_height = 0;
-@@ -308,6 +323,9 @@ int sdrm_drm_load(struct drm_device *ddev, unsigned long flags)
- 
- err_cleanup:
- 	drm_mode_config_cleanup(ddev);
-+err_apert:
-+	kfree(ddev->apertures);
-+err_pdev:
- 	sdrm_pdev_destroy(sdrm);
- err_name:
- 	kfree(ddev->devname);
-@@ -328,3 +346,18 @@ int sdrm_drm_unload(struct drm_device *ddev)
- 
+ struct simplefb_params {
+ 	u32 width;
+@@ -139,6 +129,33 @@ static int simplefb_parse_dt(struct platform_device *pdev,
  	return 0;
  }
-+
-+void sdrm_drm_kick_out_firmware(struct drm_device *ddev)
+ 
++static int simplefb_parse_pd(struct platform_device *pdev,
++			     struct simplefb_params *params)
 +{
-+	struct sdrm_device *sdrm = ddev->dev_private;
++	struct simplefb_platform_data *pd = pdev->dev.platform_data;
++	int i;
 +
-+	mutex_lock(&ddev->struct_mutex);
++	params->width = pd->width;
++	params->height = pd->height;
++	params->stride = pd->stride;
 +
-+	sdrm_fbdev_cleanup(sdrm);
-+	drm_unplug_dev_locked(ddev);
-+	if (sdrm->fb_obj)
-+		sdrm_gem_unmap_object(sdrm->fb_obj);
-+	sdrm_pdev_destroy(sdrm);
++	params->format = NULL;
++	for (i = 0; i < ARRAY_SIZE(simplefb_formats); i++) {
++		if (strcmp(pd->format, simplefb_formats[i].name))
++			continue;
 +
-+	mutex_unlock(&ddev->struct_mutex);
++		params->format = &simplefb_formats[i];
++		break;
++	}
++
++	if (!params->format) {
++		dev_err(&pdev->dev, "Invalid format value\n");
++		return -EINVAL;
++	}
++
++	return 0;
 +}
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index 63d17ee..a19e710 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -47,6 +47,7 @@
- #include <linux/fs.h>
- #include <linux/proc_fs.h>
- #include <linux/init.h>
-+#include <linux/fb.h>
- #include <linux/file.h>
- #include <linux/platform_device.h>
- #include <linux/pci.h>
-@@ -156,6 +157,7 @@ int drm_err(const char *func, const char *format, ...);
- #define DRIVER_GEM         0x1000
- #define DRIVER_MODESET     0x2000
- #define DRIVER_PRIME       0x4000
-+#define DRIVER_FIRMWARE    0x8000
- 
- #define DRIVER_BUS_PCI 0x1
- #define DRIVER_BUS_PLATFORM 0x2
-@@ -954,6 +956,23 @@ struct drm_driver {
- 			    struct drm_device *dev,
- 			    uint32_t handle);
- 
-+	/**
-+	 * kick_out_firmware - kick out firmware driver
-+	 * @dev: DRM device
-+	 *
-+	 * Iff this driver has DRIVER_FIRMWARE set, this function is called
-+	 * when a real hw-driver is loaded and claims the framebuffer memory
-+	 * that is mapped by the firmware driver. This is called with the
-+	 * global drm mutex held.
-+	 * Drivers should unmap any memory-mappings, disable the device and
-+	 * schedule a driver removal.
-+	 *
-+	 * Note that a driver setting DRIVER_FIRMWARE is supposed to also set
-+	 * the "apertures" information on @dev. It is used to match the memory
-+	 * regions that are used by firmware drivers.
-+	 */
-+	void (*kick_out_firmware) (struct drm_device *dev);
 +
- 	/* Driver private ops for this object */
- 	const struct vm_operations_struct *gem_vm_ops;
+ static int simplefb_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+@@ -149,7 +166,12 @@ static int simplefb_probe(struct platform_device *pdev)
+ 	if (fb_get_options("simplefb", NULL))
+ 		return -ENODEV;
  
-@@ -1077,6 +1096,7 @@ struct drm_pending_vblank_event {
-  */
- struct drm_device {
- 	struct list_head driver_item;	/**< list of devices per driver */
-+	struct list_head global_item;	/**< global list of devices */
- 	char *devname;			/**< For /proc/interrupts */
- 	int if_version;			/**< Highest interface version set */
+-	ret = simplefb_parse_dt(pdev, &params);
++	ret = -ENODEV;
++	if (pdev->dev.platform_data)
++		ret = simplefb_parse_pd(pdev, &params);
++	else if (pdev->dev.of_node)
++		ret = simplefb_parse_dt(pdev, &params);
++
+ 	if (ret)
+ 		return ret;
  
-@@ -1218,6 +1238,8 @@ struct drm_device {
- 	int switch_power_state;
- 
- 	atomic_t unplugged; /* device has been unplugged or gone away */
-+	struct apertures_struct *apertures;	/**< fbmem apertures */
-+	bool apert_boot;			/**< true if mapped as boot fb */
- };
- 
- #define DRM_SWITCH_POWER_ON 0
-@@ -1532,6 +1554,10 @@ extern void drm_master_put(struct drm_master **master);
- extern void drm_put_dev(struct drm_device *dev);
- extern int drm_put_minor(struct drm_minor **minor);
- extern void drm_unplug_dev(struct drm_device *dev);
-+extern void drm_unplug_dev_locked(struct drm_device *dev);
-+extern void drm_kick_out_firmware(struct apertures_struct *ap, bool boot);
-+extern bool drm_is_firmware_used(struct apertures_struct *ap);
-+extern struct list_head drm_devlist;
- extern unsigned int drm_debug;
- 
- extern unsigned int drm_vblank_offdelay;
+diff --git a/include/linux/platform_data/simplefb.h b/include/linux/platform_data/simplefb.h
+new file mode 100644
+index 0000000..5fa2c5e
+--- /dev/null
++++ b/include/linux/platform_data/simplefb.h
+@@ -0,0 +1,56 @@
++/*
++ * simplefb.h - Simple Framebuffer Device
++ *
++ * Copyright (C) 2013 David Herrmann <dh.herrmann@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#ifndef __PLATFORM_DATA_SIMPLEFB_H__
++#define __PLATFORM_DATA_SIMPLEFB_H__
++
++#include <drm/drm_fourcc.h>
++#include <linux/fb.h>
++#include <linux/kernel.h>
++
++/* format array, use it to initialize a "struct simplefb_format" array */
++#define SIMPLEFB_FORMATS \
++{ \
++	{ "r5g6b5", 16, {11, 5}, {5, 6}, {0, 5}, {0, 0}, DRM_FORMAT_RGB565 }, \
++}
++
++/*
++ * Data-Format for Simple-Framebuffers
++ * @name: unique 0-terminated name that can be used to identify the mode
++ * @red,green,blue: Offsets and sizes of the single RGB parts
++ * @transp: Offset and size of the alpha bits. length=0 means no alpha
++ * @fourcc: 32bit DRM four-CC code (see drm_fourcc.h)
++ */
++struct simplefb_format {
++	const char *name;
++	u32 bits_per_pixel;
++	struct fb_bitfield red;
++	struct fb_bitfield green;
++	struct fb_bitfield blue;
++	struct fb_bitfield transp;
++	u32 fourcc;
++};
++
++/*
++ * Simple-Framebuffer description
++ * If the arch-boot code creates simple-framebuffers without DT support, it
++ * can pass the width, height, stride and format via this platform-data object.
++ * The framebuffer location must be given as IORESOURCE_MEM resource.
++ * @format must be a format as described in "struct simplefb_format" above.
++ */
++struct simplefb_platform_data {
++	u32 width;
++	u32 height;
++	u32 stride;
++	const char *format;
++};
++
++#endif /* __PLATFORM_DATA_SIMPLEFB_H__ */
 -- 
 1.8.3.2
 
