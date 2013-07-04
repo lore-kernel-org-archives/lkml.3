@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756496Ab3GDM1E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:27:04 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:62227 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755347Ab3GDM0e (ORCPT
+	id S932532Ab3GDM07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:26:59 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:56310 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249Ab3GDM0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:26:34 -0400
+	Thu, 4 Jul 2013 08:26:33 -0400
 From: David Herrmann <dh.herrmann@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Peter Jones <pjones@redhat.com>
-Subject: [PATCH v2 07/14] fbdev: efifb: bind to efi-framebuffer
-Date: Thu,  4 Jul 2013 14:25:07 +0200
-Message-Id: <1372940714-12470-8-git-send-email-dh.herrmann@gmail.com>
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH v2 06/14] fbdev: vesafb: bind to platform-framebuffer device
+Date: Thu,  4 Jul 2013 14:25:06 +0200
+Message-Id: <1372940714-12470-7-git-send-email-dh.herrmann@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1372940714-12470-1-git-send-email-dh.herrmann@gmail.com>
 References: <1372940714-12470-1-git-send-email-dh.herrmann@gmail.com>
@@ -22,113 +21,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of creating a dummy device, we now bind to the efi-fb device
-which is provided by x86 initialization code.
+x86 creates platform-framebuffer platform devices for every system
+framebuffer. Use these instead of creating a dummy device.
+
+This requires us to remove the __init annotations as hotplugging may occur
+during runtime.
 
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 ---
- drivers/video/efifb.c | 68 +++++++++++++++++----------------------------------
- 1 file changed, 22 insertions(+), 46 deletions(-)
+ drivers/video/vesafb.c | 55 +++++++++++++++-----------------------------------
+ 1 file changed, 16 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
-index e493bcb..2a8286e 100644
---- a/drivers/video/efifb.c
-+++ b/drivers/video/efifb.c
-@@ -96,7 +96,7 @@ void vga_set_default_device(struct pci_dev *pdev)
- 	default_vga = pdev;
- }
+diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
+index 501b340..bd83233 100644
+--- a/drivers/video/vesafb.c
++++ b/drivers/video/vesafb.c
+@@ -29,7 +29,7 @@
  
--static int __init efifb_setup(char *options)
-+static int efifb_setup(char *options)
+ /* --------------------------------------------------------------------- */
+ 
+-static struct fb_var_screeninfo vesafb_defined __initdata = {
++static struct fb_var_screeninfo vesafb_defined = {
+ 	.activate	= FB_ACTIVATE_NOW,
+ 	.height		= -1,
+ 	.width		= -1,
+@@ -40,7 +40,7 @@ static struct fb_var_screeninfo vesafb_defined __initdata = {
+ 	.vmode		= FB_VMODE_NONINTERLACED,
+ };
+ 
+-static struct fb_fix_screeninfo vesafb_fix __initdata = {
++static struct fb_fix_screeninfo vesafb_fix = {
+ 	.id	= "VESA VGA",
+ 	.type	= FB_TYPE_PACKED_PIXELS,
+ 	.accel	= FB_ACCEL_NONE,
+@@ -48,8 +48,8 @@ static struct fb_fix_screeninfo vesafb_fix __initdata = {
+ 
+ static int   inverse    __read_mostly;
+ static int   mtrr       __read_mostly;		/* disable mtrr */
+-static int   vram_remap __initdata;		/* Set amount of memory to be used */
+-static int   vram_total __initdata;		/* Set total amount of memory */
++static int   vram_remap;			/* Set amount of memory to be used */
++static int   vram_total;			/* Set total amount of memory */
+ static int   pmi_setpal __read_mostly = 1;	/* pmi for palette changes ??? */
+ static int   ypan       __read_mostly;		/* 0..nothing, 1..ypan, 2..ywrap */
+ static void  (*pmi_start)(void) __read_mostly;
+@@ -192,7 +192,7 @@ static struct fb_ops vesafb_ops = {
+ 	.fb_imageblit	= cfb_imageblit,
+ };
+ 
+-static int __init vesafb_setup(char *options)
++static int vesafb_setup(char *options)
  {
  	char *this_opt;
- 	int i;
-@@ -153,13 +153,28 @@ static int __init efifb_setup(char *options)
+ 	
+@@ -226,13 +226,18 @@ static int __init vesafb_setup(char *options)
  	return 0;
  }
  
--static int __init efifb_probe(struct platform_device *dev)
-+static int efifb_probe(struct platform_device *dev)
+-static int __init vesafb_probe(struct platform_device *dev)
++static int vesafb_probe(struct platform_device *dev)
  {
  	struct fb_info *info;
- 	int err;
+ 	int i, err;
  	unsigned int size_vmode;
  	unsigned int size_remap;
  	unsigned int size_total;
 +	char *option = NULL;
 +
-+	if (screen_info.orig_video_isVGA != VIDEO_TYPE_EFI)
-+		return -ENODEV;
-+
-+	if (fb_get_options("efifb", &option))
-+		return -ENODEV;
-+	efifb_setup(option);
-+
-+	/* We don't get linelength from UGA Draw Protocol, only from
-+	 * EFI Graphics Protocol.  So if it's not in DMI, and it's not
-+	 * passed in from the user, we really can't use the framebuffer.
-+	 */
-+	if (!screen_info.lfb_linelength)
-+		return -ENODEV;
++	/* ignore error return of fb_get_options */
++	fb_get_options("vesafb", &option);
++	vesafb_setup(option);
  
- 	if (!screen_info.lfb_depth)
- 		screen_info.lfb_depth = 32;
-@@ -323,51 +338,12 @@ err_release_mem:
+ 	if (screen_info.orig_video_isVGA != VIDEO_TYPE_VLFB)
+ 		return -ENODEV;
+@@ -496,40 +501,12 @@ err:
  }
  
- static struct platform_driver efifb_driver = {
+ static struct platform_driver vesafb_driver = {
 -	.driver	= {
--		.name	= "efifb",
+-		.name	= "vesafb",
 +	.driver = {
-+		.name = "efi-framebuffer",
++		.name = "vesa-framebuffer",
 +		.owner = THIS_MODULE,
  	},
-+	.probe = efifb_probe,
++	.probe = vesafb_probe,
  };
  
--static struct platform_device efifb_device = {
--	.name	= "efifb",
--};
+-static struct platform_device *vesafb_device;
 -
--static int __init efifb_init(void)
+-static int __init vesafb_init(void)
 -{
 -	int ret;
 -	char *option = NULL;
 -
--	if (screen_info.orig_video_isVGA != VIDEO_TYPE_EFI)
--		return -ENODEV;
+-	/* ignore error return of fb_get_options */
+-	fb_get_options("vesafb", &option);
+-	vesafb_setup(option);
 -
--	if (fb_get_options("efifb", &option))
--		return -ENODEV;
--	efifb_setup(option);
+-	vesafb_device = platform_device_alloc("vesafb", 0);
+-	if (!vesafb_device)
+-		return -ENOMEM;
 -
--	/* We don't get linelength from UGA Draw Protocol, only from
--	 * EFI Graphics Protocol.  So if it's not in DMI, and it's not
--	 * passed in from the user, we really can't use the framebuffer.
--	 */
--	if (!screen_info.lfb_linelength)
--		return -ENODEV;
+-	ret = platform_device_add(vesafb_device);
+-	if (!ret) {
+-		ret = platform_driver_probe(&vesafb_driver, vesafb_probe);
+-		if (ret)
+-			platform_device_del(vesafb_device);
+-	}
 -
--	ret = platform_device_register(&efifb_device);
--	if (ret)
--		return ret;
--
--	/*
--	 * This is not just an optimization.  We will interfere
--	 * with a real driver if we get reprobed, so don't allow
--	 * it.
--	 */
--	ret = platform_driver_probe(&efifb_driver, efifb_probe);
 -	if (ret) {
--		platform_device_unregister(&efifb_device);
--		return ret;
+-		platform_device_put(vesafb_device);
+-		vesafb_device = NULL;
 -	}
 -
 -	return ret;
 -}
--module_init(efifb_init);
+-module_init(vesafb_init);
 -
-+module_platform_driver(efifb_driver);
++module_platform_driver(vesafb_driver);
  MODULE_LICENSE("GPL");
 -- 
 1.8.3.2
