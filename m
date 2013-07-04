@@ -1,279 +1,509 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933634Ab3GDGya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 02:54:30 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:21027 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933607Ab3GDGy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 02:54:27 -0400
-Message-ID: <51D51BF7.1000602@huawei.com>
-Date: Thu, 4 Jul 2013 14:53:43 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S964818Ab3GDGyp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 02:54:45 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:3575 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932805Ab3GDGyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 02:54:41 -0400
+X-IronPort-AV: E=Sophos;i="4.87,992,1363104000"; 
+   d="scan'208";a="7780569"
+Message-ID: <51D51B66.3000301@cn.fujitsu.com>
+Date: Thu, 04 Jul 2013 14:51:18 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2 v5] tracing/uprobes: Support ftrace_event_file base multibuffer
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Benjamin LaHaise <bcrl@kvack.org>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm:
+ hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
+References: <20130515132453.GB11497@suse.de> <5194748A.5070700@cn.fujitsu.com> <20130517002349.GI1008@kvack.org> <5195A3F4.70803@cn.fujitsu.com> <20130517143718.GK1008@kvack.org> <519AD6F8.2070504@cn.fujitsu.com> <20130521022733.GT1008@kvack.org> <51B6F107.80501@cn.fujitsu.com> <20130611144525.GB14404@kvack.org> <51D12E7B.6080301@cn.fujitsu.com> <20130702180008.GQ16399@kvack.org>
+In-Reply-To: <20130702180008.GQ16399@kvack.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/04 14:53:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/04 14:53:08,
+	Serialize complete at 2013/07/04 14:53:08
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support multi-buffer on uprobe-based dynamic events by
-using ftrace_event_file.
+On 07/03/2013 02:00 AM, Benjamin LaHaise wrote:
 
-This patch is based kprobe-based dynamic events multibuffer
-support work initially, commited by Masami(commit 41a7dd420c),
-but revised as below:
+> On Mon, Jul 01, 2013 at 03:23:39PM +0800, Gu Zheng wrote:
+>> Hi Ben,
+>> Are you still working on this patch?
+>> As you know, using the current anon inode will lead to more than one instance of
+>> aio can not work. Have you found a way to fix this issue? Or can we use some
+>> other ones to replace the anon inode?
+> 
+> This patch hasn't been a high priority for me.  I would really appreciate 
+> it if someone could confirm that this patch does indeed fix the hotplug 
+> page migration issue by testing it in a system that hits the bug.  Removing 
+> the anon_inode bits isn't too much work, but I'd just like to have some 
+> confirmation that this fix is considered to be "good enough" for the 
+> problem at hand before spending any further time on it.  There was talk of 
+> using another approach, but it's not clear if there was any progress.
 
-Oleg changed the kprobe-based multibuffer design from
-array-pointers of ftrace_event_file into simple list,
-so this patch also change to the list design.
+Hi Ben,
+      When I test your patch on kernel 3.10, the kernel panic when aio job
+complete or exit, exactly in aio_free_ring(), the following is a part of dmesg.
 
-rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
-to synchronize with ftrace_event_file list add and delete.
+Thanks,
+Gu
 
-Even though we allow multi-uprobes instances now,
-but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
-in probe_event_enable currently, this means we cannot allow
-one user is using uprobe-tracer, and another user is using
-perf-probe on same uprobe concurrently.
-(Perhaps this will be fix in future, kprobe dont't have this
-limitation now)
+kernel BUG at mm/swap.c:163!
 
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
----
- kernel/trace/trace_uprobe.c |  119 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 100 insertions(+), 19 deletions(-)
+invalid opcode: 0000 [#1] SMP
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 32494fb0..2fc9931 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -53,6 +53,7 @@ struct trace_uprobe {
- 	struct list_head		list;
- 	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
-+	struct list_head		files;
- 	struct trace_uprobe_filter	filter;
- 	struct uprobe_consumer		consumer;
- 	struct inode			*inode;
-@@ -65,6 +66,11 @@ struct trace_uprobe {
- 	struct probe_arg		args[];
- };
+Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat_ipv4
+nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand
+ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip6t_REJECT
+nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
+ip6_tables ipv6 vfat fat dm_mirror dm_region_hash dm_log dm_mod vhost_net
+macvtap macvlan tun uinput iTCO_wdt iTCO_vendor_support acpi_cpufreq freq_table
+mperf coretemp kvm_intel kvm crc32c_intel microcode pcspkr sg i2c_i801 lpc_ich
+mfd_core ioatdma i7core_edac edac_core e1000e igb dca i2c_algo_bit i2c_core ptp
+pps_core ext4(F) jbd2(F) mbcache(F) sd_mod(F) crc_t10dif(F) megaraid_sas(F)
+mptsas(F) mptscsih(F) mptbase(F) scsi_transport_sas(F)
 
-+struct event_file_link {
-+	struct ftrace_event_file	*file;
-+	struct list_head		list;
-+};
-+
- #define SIZEOF_TRACE_UPROBE(n)			\
- 	(offsetof(struct trace_uprobe, args) +	\
- 	(sizeof(struct probe_arg) * (n)))
-@@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
- 		goto error;
+CPU: 4 PID: 100 Comm: kworker/4:1 Tainted: GF            3.10.0-aio-migrate+
+#107
+Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS
+Version 89.32 DP Proto 08/16/2012
+Workqueue: events kill_ioctx_work
 
- 	INIT_LIST_HEAD(&tu->list);
-+	INIT_LIST_HEAD(&tu->files);
- 	tu->consumer.handler = uprobe_dispatcher;
- 	if (is_ret)
- 		tu->consumer.ret_handler = uretprobe_dispatcher;
-@@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
- };
+task: ffff8807dda974e0 ti: ffff8807dda98000 task.ti: ffff8807dda98000
 
- static void uprobe_trace_print(struct trace_uprobe *tu,
--				unsigned long func, struct pt_regs *regs)
-+				unsigned long func, struct pt_regs *regs,
-+				struct ftrace_event_file *ftrace_file)
- {
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
-@@ -520,9 +528,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 	int size, i;
- 	struct ftrace_event_call *call = &tu->call;
+RIP: 0010:[<ffffffff8111a9a8>]  [<ffffffff8111a9a8>] put_page+0x48/0x60
 
-+	WARN_ON(call != ftrace_file->event_call);
-+
- 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
--	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
--						  size + tu->size, 0, 0);
-+	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-+						call->event.type,
-+						size + tu->size, 0, 0);
- 	if (!event)
- 		return;
+RSP: 0018:ffff8807dda99cd8  EFLAGS: 00010246
 
-@@ -546,15 +557,28 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- /* uprobe handler */
- static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- {
--	if (!is_ret_probe(tu))
--		uprobe_trace_print(tu, 0, regs);
-+	struct event_file_link *link;
-+
-+	if (is_ret_probe(tu))
-+		return 0;
-+
-+	rcu_read_lock();
-+	list_for_each_entry(link, &tu->files, list)
-+		uprobe_trace_print(tu, 0, regs, link->file);
-+	rcu_read_unlock();
-+
- 	return 0;
- }
+RAX: 0000000000000000 RBX: ffff8807be1f1e00 RCX: 0000000000000001
 
- static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
- 				struct pt_regs *regs)
- {
--	uprobe_trace_print(tu, func, regs);
-+	struct event_file_link *link;
-+
-+	rcu_read_lock();
-+	list_for_each_entry(link, &tu->files, list)
-+		uprobe_trace_print(tu, func, regs, link->file);
-+	rcu_read_unlock();
- }
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffffea001b196c80
 
- /* Event entry printers */
-@@ -605,33 +629,89 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
- 				struct mm_struct *mm);
+RBP: ffff8807dda99cd8 R08: 0000000000000000 R09: 0000000000000000
 
- static int
--probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
-+probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
-+		   filter_func_t filter)
- {
--	int ret = 0;
-+	bool enabled = is_trace_uprobe_enabled(tu);
-+	struct event_file_link *link;
-+	int ret;
-+
-+	if (file) {
-+		if (tu->flags & TP_FLAG_PROFILE)
-+			return -EINTR;
+R10: ffff8807ffbb5f00 R11: 000000000000005a R12: 0000000000000001
 
--	if (is_trace_uprobe_enabled(tu))
--		return -EINTR;
-+		link = kmalloc(sizeof(*link), GFP_KERNEL);
-+		if (!link)
-+			return -ENOMEM;
-+
-+		link->file = file;
-+		list_add_tail_rcu(&link->list, &tu->files);
-+
-+		tu->flags |= TP_FLAG_TRACE;
-+	} else {
-+		if (tu->flags & TP_FLAG_TRACE)
-+			return -EINTR;
-+
-+		tu->flags |= TP_FLAG_PROFILE;
-+	}
+R13: 0000000000000000 R14: ffff8807dda974e0 R15: ffff8807be1f1ec8
 
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+FS:  0000000000000000(0000) GS:ffff8807fd680000(0000) knlGS:0000000000000000
 
--	tu->flags |= flag;
-+	if (enabled)
-+		return;
-+
- 	tu->consumer.filter = filter;
- 	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
--	if (ret)
--		tu->flags &= ~flag;
-+	if (ret) {
-+		if (file) {
-+			list_del(&link->list);
-+			kfree(link);
-+			tu->flags &= ~TP_FLAG_TRACE;
-+		} else
-+			tu->flags &= ~TP_FLAG_PROFILE;
-+	}
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
 
- 	return ret;
- }
+CR2: 0000003b826dc7d0 CR3: 0000000001a0b000 CR4: 00000000000007e0
 
--static void probe_event_disable(struct trace_uprobe *tu, int flag)
-+static struct event_file_link *
-+find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
-+{
-+	struct event_file_link *link;
-+
-+	list_for_each_entry(link, &tu->files, list)
-+		if (link->file == file)
-+			return link;
-+
-+	return NULL;
-+}
-+
-+static void
-+probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
- {
- 	if (!is_trace_uprobe_enabled(tu))
- 		return;
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
 
-+	if (file) {
-+		struct event_file_link *link;
-+
-+		link = find_event_file_link(tu, file);
-+		if (!link)
-+			return;
-+
-+		list_del_rcu(&link->list);
-+		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
-+		synchronize_sched();
-+		kfree(link);
-+
-+		if (!list_empty(&tu->files))
-+			return;
-+	}
-+
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
 
- 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
--	tu->flags &= ~flag;
-+	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
- }
+Stack:
 
- static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
-@@ -867,21 +947,22 @@ static
- int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
- {
- 	struct trace_uprobe *tu = event->data;
-+	struct ftrace_event_file *file = data;
+ ffff8807dda99d18 ffffffff811b11f6 0000000000000000 0000000200000000
 
- 	switch (type) {
- 	case TRACE_REG_REGISTER:
--		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
-+		return probe_event_enable(tu, file, NULL);
+ ffff8807be1f1e00 ffff8807be1f1e80 000000000000000c 0000000000000000
 
- 	case TRACE_REG_UNREGISTER:
--		probe_event_disable(tu, TP_FLAG_TRACE);
-+		probe_event_disable(tu, file);
- 		return 0;
+ ffff8807dda99dc8 ffffffff811b21a2 00000001000438ec ffff8807fd692d00
 
- #ifdef CONFIG_PERF_EVENTS
- 	case TRACE_REG_PERF_REGISTER:
--		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
-+		return probe_event_enable(tu, NULL, uprobe_perf_filter);
+Call Trace:
 
- 	case TRACE_REG_PERF_UNREGISTER:
--		probe_event_disable(tu, TP_FLAG_PROFILE);
-+		probe_event_disable(tu, NULL);
- 		return 0;
+ [<ffffffff811b11f6>] aio_free_ring+0x96/0x1c0
 
- 	case TRACE_REG_PERF_OPEN:
--- 
-1.7.9.7
+ [<ffffffff811b21a2>] free_ioctx+0x1f2/0x250
+
+ [<ffffffff81081a5d>] ? idle_balance+0xed/0x140
+
+ [<ffffffff811b221a>] put_ioctx+0x1a/0x30
+
+ [<ffffffff811b24af>] kill_ioctx_work+0x2f/0x40
+
+ [<ffffffff81060933>] process_one_work+0x183/0x490
+
+ [<ffffffff81061ac0>] worker_thread+0x120/0x3a0
+
+ [<ffffffff810619a0>] ? manage_workers+0x160/0x160
+
+ [<ffffffff8106786e>] kthread+0xce/0xe0
+
+ [<ffffffff810677a0>] ? kthread_freezable_should_stop+0x70/0x70
+
+ [<ffffffff8154b79c>] ret_from_fork+0x7c/0xb0
+
+ [<ffffffff810677a0>] ? kthread_freezable_should_stop+0x70/0x70
+
+Code: 07 00 c0 75 1f f0 ff 4f 1c 0f 94 c0 84 c0 75 0b c9 66 90 c3 0f 1f 80 00 00
+00 00 e8 53 fe ff ff c9 66 90 c3 e8 7a fe ff ff c9 c3 <0f> 0b 66 0f 1f 44 00 00
+eb f8 48 8b 47 30 eb bc 0f 1f 84 00 00
+RIP  [<ffffffff8111a9a8>] put_page+0x48/0x60
+
+ RSP <ffff8807dda99cd8>
+
+---[ end trace b5e2c17407c840d8 ]---
+
+Jul  4 15:49:50 BUG: unable to handle kernel paging request at ffffffffffffffd8
+
+IP: [<ffffffff81067140>] kthread_data+0x10/0x20
+
+PGD 1a0c067 PUD 1a0e067 PMD 0
+
+Oops: 0000 [#2] SMP
+
+Modules linked in: ebtable_nat ebtables ipt_MASQUERADE iptable_nat nf_nat_ipv4
+nf_nat xt_CHECKSUM iptable_mangle bridge stp llc autofs4 sunrpc cpufreq_ondemand
+ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 iptable_filter ip6t_REJECT
+nf_conntrack_ipv6 nf_defrag_ipv6 xt_state nf_conntrack ip6table_filter
+ip6_tables ipv6 vfat fat dm_mirror dm_region_hash dm_log dm_mod vhost_net
+macvtap macvlan tun uinput iTCO_wdt iTCO_vendor_support acpi_cpufreq freq_table
+mperf coretemp kvm_intel kvm crc32c_intel microcode pcspkr sg i2c_i801 lpc_ich
+mfd_core ioatdma i7core_edac edac_core e1000e igb dca i2c_algo_bit i2c_core ptp
+pps_core ext4(F) jbd2(F) mbcache(F) sd_mod(F) crc_t10dif(F) megaraid_sas(F)
+mptsas(F) mptscsih(F) mptbase(F) scsi_transport_sas(F)
+
+CPU: 4 PID: 100 Comm: kworker/4:1 Tainted: GF     D      3.10.0-aio-migrate+
+#107
+Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS
+Version 89.32 DP Proto 08/16/2012
+task: ffff8807dda974e0 ti: ffff8807dda98000 task.ti: ffff8807dda98000
+
+RIP: 0010:[<ffffffff81067140>]  [<ffffffff81067140>] kthread_data+0x10/0x20
+
+RSP: 0018:ffff8807dda999b8  EFLAGS: 00010092
+
+RAX: 0000000000000000 RBX: 0000000000000004 RCX: ffffffff81da3ea0
+
+RDX: 0000000000000000 RSI: 0000000000000004 RDI: ffff8807dda974e0
+
+RBP: ffff8807dda999b8 R08: ffff8807dda97550 R09: 0000000000000006
+
+R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000004
+
+R13: ffff8807dda97ab8 R14: 0000000000000001 R15: 0000000000000006
+
+FS:  0000000000000000(0000) GS:ffff8807fd680000(0000) knlGS:0000000000000000
+
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+
+CR2: 0000000000000028 CR3: 0000000001a0b000 CR4: 00000000000007e0
+
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+
+Stack:
+
+ ffff8807dda999d8 ffffffff8105e155 ffff8807dda999d8 ffff8807fd692d00
+
+ ffff8807dda99a68 ffffffff8154168b ffff8807dda99fd8 0000000000012d00
+
+ ffff8807dda98010 0000000000012d00 0000000000012d00 0000000000012d00
+
+Call Trace:
+
+ [<ffffffff8105e155>] wq_worker_sleeping+0x15/0xa0
+
+ [<ffffffff8154168b>] __schedule+0x5ab/0x6f0
+
+ [<ffffffff81239992>] ? put_io_context_active+0xc2/0xf0
+
+ [<ffffffff815419a9>] schedule+0x29/0x70
+
+ [<ffffffff81047795>] do_exit+0x2d5/0x480
+
+ [<ffffffff81544029>] oops_end+0xa9/0xf0
+
+ [<ffffffff810058eb>] die+0x5b/0x90
+
+ [<ffffffff81543b8b>] do_trap+0xcb/0x170
+
+ [<ffffffff81546e22>] ? __atomic_notifier_call_chain+0x12/0x20
+
+ [<ffffffff81003565>] do_invalid_op+0x95/0xb0
+
+ [<ffffffff8111a9a8>] ? put_page+0x48/0x60
+
+ [<ffffffff8111c411>] ? truncate_inode_pages_range+0x201/0x500
+
+ [<ffffffff8154c8e8>] invalid_op+0x18/0x20
+
+ [<ffffffff8111a9a8>] ? put_page+0x48/0x60
+
+ [<ffffffff8111c829>] ? truncate_setsize+0x19/0x20
+
+ [<ffffffff811b11f6>] aio_free_ring+0x96/0x1c0
+
+ [<ffffffff811b21a2>] free_ioctx+0x1f2/0x250
+
+ [<ffffffff81081a5d>] ? idle_balance+0xed/0x140
+
+ [<ffffffff811b221a>] put_ioctx+0x1a/0x30
+
+ [<ffffffff811b24af>] kill_ioctx_work+0x2f/0x40
+
+ [<ffffffff81060933>] process_one_work+0x183/0x490
+
+ [<ffffffff81061ac0>] worker_thread+0x120/0x3a0
+
+ [<ffffffff810619a0>] ? manage_workers+0x160/0x160
+
+ [<ffffffff8106786e>] kthread+0xce/0xe0
+
+ [<ffffffff810677a0>] ? kthread_freezable_should_stop+0x70/0x70
+
+ [<ffffffff8154b79c>] ret_from_fork+0x7c/0xb0
+
+ [<ffffffff810677a0>] ? kthread_freezable_should_stop+0x70/0x70
+
+Code: 80 05 00 00 48 8b 40 c8 c9 48 c1 e8 02 83 e0 01 c3 66 2e 0f 1f 84 00 00 00
+00 00 55 48 89 e5 66 66 66 66 90 48 8b 87 80 05 00 00 <48> 8b 40 d8 c9 c3 66 2e
+0f 1f 84 00 00 00 00 00 55 48 89 e5 66
+RIP  [<ffffffff81067140>] kthread_data+0x10/0x20
+
+ RSP <ffff8807dda999b8>
+
+CR2: ffffffffffffffd8
+
+---[ end trace b5e2c17407c840d9 ]---
+
+DP kernel: -----Fixing recursive fault but reboot is needed!
+
+-------[ cut here ]------------
+
+Jul  4 15:49:50 DP kernel: kernel BUG at mm/swap.c:163!
+
+Jul  4 15:49:50 DP kernel: invalid opcode: 0000 [#1] SMP
+
+Jul  4 15:49:50 DP kernel: Modules linked in: ebtable_nat ebtables
+ipt_MASQUERADE iptable_nat nf_nat_ipv4 nf_nat xt_CHECKSUM iptable_mangle bridge
+stp llc autofs4 sunrpc cpufreq_ondemand ipt_REJECT nf_conntrack_ipv4
+nf_defrag_ipv4 iptable_filter ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6
+xt_state nf_conntrack ip6table_filter ip6_tables ipv6 vfat fat dm_mirror
+dm_region_hash dm_log dm_mod vhost_net macvtap macvlan tun uinput iTCO_wdt
+iTCO_vendor_support acpi_cpufreq freq_table mperf coretemp kvm_intel kvm
+crc32c_intel microcode pcspkr sg i2c_i801 lpc_ich mfd_core ioatdma i7core_edac
+edac_core e1000e igb dca i2c_algo_bit i2c_core ptp pps_core ext4(F) jbd2(F)
+mbcache(F) sd_mod(F) crc_t10dif(F) megaraid_sas(F) mptsas(F) mptscsih(F)
+mptbase(F) scsi_transport_sas(F)
+Jul  4 15:49:50 DP kernel: CPU: 4 PID: 100 Comm: kworker/4:1 Tainted: GF
+    3.10.0-aio-migrate+ #107
+Jul  4 15:49:50 DP kernel: Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS
+PRIMEQUEST 1000 Series BIOS Version 89.32 DP Proto 08/16/2012
+
+Jul  4 15:49:50 DP kernel: Workqueue: events kill_ioctx_work
+
+Jul  4 15:49:50 DP kernel: task: ffff8807dda974e0 ti: ffff8807dda98000 task.ti:
+ffff8807dda98000
+Jul  4 15:49:50 DP kernel: RIP: 0010:[<ffffffff8111a9a8>]  [<ffffffff8111a9a8>]
+put_page+0x48/0x60
+Jul  4 15:49:50 DP kernel: RSP: 0018:ffff8807dda99cd8  EFLAGS: 00010246
+
+Jul  4 15:49:50 DP kernel: RAX: 0000000000000000 RBX: ffff8807be1f1e00 RCX:
+0000000000000001
+Jul  4 15:49:50 DP kernel: RDX: 0000000000000000 RSI: 0000000000000000 RDI:
+ffffea001b196c80
+Jul  4 15:49:50 DP kernel: RBP: ffff8807dda99cd8 R08: 0000000000000000 R09:
+0000000000000000
+Jul  4 15:49:50 DP kernel: R10: ffff8807ffbb5f00 R11: 000000000000005a R12:
+0000000000000001
+Jul  4 15:49:50 DP kernel: R13: 0000000000000000 R14: ffff8807dda974e0 R15:
+ffff8807be1f1ec8
+Jul  4 15:49:50 DP kernel: FS:  0000000000000000(0000) GS:ffff8807fd680000(0000)
+knlGS:0000000000000000
+Jul  4 15:49:50 DP kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+
+Jul  4 15:49:50 DP kernel: CR2: 0000003b826dc7d0 CR3: 0000000001a0b000 CR4:
+00000000000007e0
+Jul  4 15:49:50 DP kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2:
+0000000000000000
+Jul  4 15:49:50 DP kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
+0000000000000400
+Jul  4 15:49:50 DP kernel: Stack:
+
+Jul  4 15:49:50 DP kernel: ffff8807dda99d18 ffffffff811b11f6 0000000000000000
+0000000200000000
+Jul  4 15:49:50 DP kernel: ffff8807be1f1e00 ffff8807be1f1e80 000000000000000c
+0000000000000000
+Jul  4 15:49:50 DP kernel: ffff8807dda99dc8 ffffffff811b21a2 00000001000438ec
+ffff8807fd692d00
+Jul  4 15:49:50 DP kernel: Call Trace:
+
+Jul  4 15:49:50 DP kernel: [<ffffffff811b11f6>] aio_free_ring+0x96/0x1c0
+
+Jul  4 15:49:50 DP kernel: [<ffffffff811b21a2>] free_ioctx+0x1f2/0x250
+
+Jul  4 15:49:50 DP kernel: [<ffffffff81081a5d>] ? idle_balance+0xed/0x140
+
+Jul  4 15:49:50 DP kernel: [<ffffffff811b221a>] put_ioctx+0x1a/0x30
+
+Jul  4 15:49:50 DP kernel: [<ffffffff811b24af>] kill_ioctx_work+0x2f/0x40
+
+Jul  4 15:49:50 DP kernel: [<ffffffff81060933>] process_one_work+0x183/0x490
+
+Jul  4 15:49:50 DP kernel: [<ffffffff81061ac0>] worker_thread+0x120/0x3a0
+
+Jul  4 15:49:50 DP kernel: [<ffffffff810619a0>] ? manage_workers+0x160/0x160
+
+Jul  4 15:49:50 DP kernel: [<ffffffff8106786e>] kthread+0xce/0xe0
+
+Jul  4 15:49:50 DP kernel: [<ffffffff810677a0>] ?
+kthread_freezable_should_stop+0x70/0x70
+Jul  4 15:49:50 DP kernel: [<ffffffff8154b79c>] ret_from_fork+0x7c/0xb0
+
+Jul  4 15:49:50 DP kernel: [<ffffffff810677a0>] ?
+kthread_freezable_should_stop+0x70/0x70
+Jul  4 15:49:50 DP kernel: Code: 07 00 c0 75 1f f0 ff 4f 1c 0f 94 c0 84 c0 75 0b
+c9 66 90 c3 0f 1f 80 00 00 00 00 e8 53 fe ff ff c9 66 90 c3 e8 7a fe ff ff c9 c3
+<0f> 0b 66 0f 1f 44 00 00 eb f8 48 8b 47 30 eb bc 0f 1f 84 00 00
+Jul  4 15:49:50 DP kernel: RIP  [<ffffffff8111a9a8>] put_page+0x48/0x60
+
+Jul  4 15:49:50 DP kernel: RSP <ffff8807dda99cd8>
+
+Jul  4 15:49:50 DP kernel: ---[ end trace b5e2c17407c840d8 ]---
+
+INFO: rcu_sched detected stalls on CPUs/tasks: { 4} (detected by 9, t=21056
+jiffies, g=4158, c=4157, q=1040)
+sending NMI to all CPUs:
+
+NMI backtrace for cpu 4
+
+CPU: 4 PID: 100 Comm: kworker/4:1 Tainted: GF     D      3.10.0-aio-migrate+
+#107
+Hardware name: FUJITSU-SV PRIMEQUEST 1800E/SB, BIOS PRIMEQUEST 1000 Series BIOS
+Version 89.32 DP Proto 08/16/2012
+task: ffff8807dda974e0 ti: ffff8807dda98000 task.ti: ffff8807dda98000
+
+RIP: 0010:[<ffffffff81542cd2>]  [<ffffffff81542cd2>]
+_raw_spin_lock_irq+0x22/0x30
+RSP: 0018:ffff8807dda99618  EFLAGS: 00000002
+
+RAX: 000000000000497c RBX: ffff8807fd692d00 RCX: ffff8807dda98010
+
+RDX: 000000000000497e RSI: ffffffff815419a9 RDI: ffff8807fd692d00
+
+RBP: ffff8807dda99618 R08: 0000000000000004 R09: 0000000000000100
+
+R10: 00000000000009fe R11: 00000000000009fe R12: 0000000000000004
+
+R13: 0000000000000009 R14: 0000000000000009 R15: 0000000000000000
+
+FS:  0000000000000000(0000) GS:ffff8807fd680000(0000) knlGS:0000000000000000
+
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+
+CR2: 0000000000000028 CR3: 0000000001a0b000 CR4: 00000000000007e0
+
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+
+Stack:
+
+ ffff8807dda996a8 ffffffff815411b6 ffff8807dda99fd8 0000000000012d00
+
+ ffff8807dda98010 0000000000012d00 0000000000012d00 0000000000012d00
+
+ ffff8807dda99fd8 0000000000012d00 ffff8807dda974e0 ffff8807dda996c8
+
+Call Trace:
+
+ [<ffffffff815411b6>] __schedule+0xd6/0x6f0
+
+ [<ffffffff815419a9>] schedule+0x29/0x70
+
+ [<ffffffff810478ea>] do_exit+0x42a/0x480
+
+ [<ffffffff81544029>] oops_end+0xa9/0xf0
+
+ [<ffffffff81035c3e>] no_context+0x11e/0x1f0
+
+ [<ffffffff81035e2d>] __bad_area_nosemaphore+0x11d/0x220
+
+ [<ffffffff81035f43>] bad_area_nosemaphore+0x13/0x20
+
+ [<ffffffff815469b5>] __do_page_fault+0xc5/0x490
+
+ [<ffffffff810d4a97>] ? call_rcu_sched+0x17/0x20
+
+ [<ffffffff8125d3da>] ? strlcpy+0x4a/0x60
+
+ [<ffffffff81546d8e>] do_page_fault+0xe/0x10
+
+ [<ffffffff815434f2>] page_fault+0x22/0x30
+
+ [<ffffffff81067140>] ? kthread_data+0x10/0x20
+
+ [<ffffffff8105e155>] wq_worker_sleeping+0x15/0xa0
+
+ [<ffffffff8154168b>] __schedule+0x5ab/0x6f0
+
+ [<ffffffff81239992>] ? put_io_context_active+0xc2/0xf0
+
+ [<ffffffff815419a9>] schedule+0x29/0x70
+
+ [<ffffffff81047795>] do_exit+0x2d5/0x480
+
+ [<ffffffff81544029>] oops_end+0xa9/0xf0
+
+ [<ffffffff810058eb>] die+0x5b/0x90
+
+ [<ffffffff81543b8b>] do_trap+0xcb/0x170
+
+ [<ffffffff81546e22>] ? __atomic_notifier_call_chain+0x12/0x20
+
+ [<ffffffff81003565>] do_invalid_op+0x95/0xb0
+
+ [<ffffffff8111a9a8>] ? put_page+0x48/0x60
+
+ [<ffffffff8111c411>] ? truncate_inode_pages_range+0x201/0x500
+
+ [<ffffffff8154c8e8>] invalid_op+0x18/0x20
+
+ [<ffffffff8111a9a8>] ? put_page+0x48/0x60
+
+ [<ffffffff8111c829>] ? truncate_setsize+0x19/0x20
+
+ [<ffffffff811b11f6>] aio_free_ring+0x96/0x1c0
+
+ [<ffffffff811b21a2>] free_ioctx+0x1f2/0x250
+
+ [<ffffffff81081a5d>] ? idle_balance+0xed/0x140
+
+ [<ffffffff811b221a>] put_ioctx+0x1a/0x30
+
+ [<ffffffff811b24af>] kill_ioctx_work+0x2f/0x40
+
+ [<ffffffff81060933>] process_one_work+0x183/0x490
+
+ [<ffffffff81061ac0>] worker_thread+0x120/0x3a0
+
+ [<ffffffff810619a0>] ? manage_workers+0x160/0x160
+
+ [<ffffffff8106786e>] kthread+0xce/0xe0
+
+ [<ffffffff810677a0>] ? kthread_freezable_should_stop+0x70/0x70
+
+ [<ffffffff8154b79c>] ret_from_fork+0x7c/0xb0
+
+ [<ffffffff810677a0>] ? kthread_freezable_should_stop+0x70/0x70
+
+Code: 66 0f 1f 84 00 00 00 00 00 55 48 89 e5 66 66 66 66 90 fa b8 00 00 01 00 f0
+0f c1 07 89 c2 c1 ea 10 66 39 c2 74 0d 0f 1f 00 f3 90 <0f> b7 07 66 39 c2 75 f6
+c9 c3 0f 1f 40 00 55 48 89 e5 66 66 66
+NMI backtrace for cpu 1
+
+
+> 
+> 		-ben
 
 
