@@ -1,56 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab3GDBXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 21:23:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24132 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264Ab3GDBX3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932805Ab3GDBXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 21:23:53 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19752 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755493Ab3GDBX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 21:23:29 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=6tI4O6vlircA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=S9odRq4Da1AA:10 a=06uRaroS7CWvDZJWTCIA:9 a=QEXdDO2ut3YA:10 a=6TGYxpvbIyEA:10 a=6rbT038PrLMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372901004.22688.137.camel@gandalf.local.home>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
- 'COMPILE_TEST' in 'asm-generic'.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Chen Gang <gang.chen@asianux.com>, Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,992,1363158000"; 
+   d="scan'208";a="326557486"
+Message-ID: <51D4CEB3.5080709@intel.com>
+Date: Thu, 04 Jul 2013 09:24:03 +0800
+From: Aaron Lu <aaron.lu@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Matthew Garrett <matthew.garrett@nebula.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Date: Wed, 03 Jul 2013 21:23:24 -0400
-In-Reply-To: <20130704011221.GA11230@kroah.com>
-References: <51CA8AB8.7080504@asianux.com>
-	 <CAMuHMdW58CZ0m-10ibs2Vyh8exqP1nSH+-ZOr5J58tx=uorM+Q@mail.gmail.com>
-	 <51D375AA.5060300@asianux.com> <201307031014.12583.arnd@arndb.de>
-	 <51D3E440.7090105@asianux.com> <51D4C87E.5070605@asianux.com>
-	 <20130704011221.GA11230@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "seth.forshee@canonical.com" <seth.forshee@canonical.com>,
+        "joeyli.kernel@gmail.com" <joeyli.kernel@gmail.com>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        Bob Moore <robert.moore@intel.com>
+Subject: [PATCH 2/2] ACPI / OSL: add a wrapper function to return OSI version
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <51D2DC1D.60101@intel.com> <51D2DD37.2040000@intel.com> <3141401.j726us1HYg@vostro.rjw.lan>
+In-Reply-To: <3141401.j726us1HYg@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-03 at 18:12 -0700, Greg KH wrote:
+On 07/04/2013 05:57 AM, Rafael J. Wysocki wrote:
+> On Tuesday, July 02, 2013 10:01:27 PM Aaron Lu wrote:
+>> Drivers may need to make policy decisions based on the OS that the firmware
+>> believes it's interacting with. ACPI firmware will make a series of _OSI
+>> calls, starting from the oldest OS version they support and ending with the
+>> most recent. This patchset adds a function in ACPI OSL layer to return the
+>> last successful call so that drivers know what the firmware's expecting.
+>>
+>> Based on a patch by Matthew Garrett <matthew.garrett@nebula.com>, which
+>> is again based on a patch by Seth Forshee <seth.forshee@canonical.com>.
+>>
+>> Changelog-by: Matthew Garrett <matthew.garrett@nebula.com>
+>> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+>> Cc: Matthew Garrett <matthew.garrett@nebula.com>
+>> Cc: Seth Forshee <seth.forshee@canonical.com>
+>> ---
+>>  drivers/acpi/osl.c   | 6 ++++++
+>>  include/linux/acpi.h | 6 ++++++
+>>  2 files changed, 12 insertions(+)
+>>
+>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+>> index 6ab2c35..7ebf07d 100644
+>> --- a/drivers/acpi/osl.c
+>> +++ b/drivers/acpi/osl.c
+>> @@ -1799,3 +1799,9 @@ void alloc_acpi_hp_work(acpi_handle handle, u32 type, void *context,
+>>  		kfree(hp_work);
+>>  }
+>>  EXPORT_SYMBOL_GPL(alloc_acpi_hp_work);
+>> +
+>> +u8 acpi_osi_version(void)
+>> +{
+>> +	return acpi_gbl_osi_data;
+>> +}
+> 
+> Actually, is there a reason not to make this static inline and put it into
+> the header?
 
-> confused,
+Ah right, thanks for the suggestion.
+Patch updated:
 
-Good. I thought I was the only one. Confusion loves company, that way we
-can follow each other around in endless circles.
+From: Aaron Lu <aaron.lu@intel.com>
+Subject: [PATCH updated 2/2] ACPI / OSL: add a wrapper function to return OSI version
 
--- Steve
+Drivers may need to make policy decisions based on the OS that the firmware
+believes it's interacting with. ACPI firmware will make a series of _OSI
+calls, starting from the oldest OS version they support and ending with the
+most recent. This patchset adds a function in ACPI OSL layer to return the
+last successful call so that drivers know what the firmware's expecting.
 
+Based on a patch by Matthew Garrett <matthew.garrett@nebula.com>, which
+is again based on a patch by Seth Forshee <seth.forshee@canonical.com>.
 
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+---
+ include/linux/acpi.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 353ba25..7969bf8 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -578,4 +578,10 @@ acpi_handle_printk(const char *level, void *handle, const char *fmt, ...) {}
+ })
+ #endif
+ 
++#ifdef CONFIG_ACPI
++static inline u8 acpi_osi_version(void) { return acpi_gbl_osi_data; }
++#else
++static inline u8 acpi_osi_version(void) { return 0; }
++#endif
++
+ #endif	/*_LINUX_ACPI_H*/
+-- 
+1.8.3.2.10.g43d11f4
