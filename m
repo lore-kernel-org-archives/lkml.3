@@ -1,226 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab3GDNOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 09:14:42 -0400
-Received: from mga14.intel.com ([143.182.124.37]:61212 "EHLO mga14.intel.com"
+	id S1755320Ab3GDN05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:26:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46844 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756710Ab3GDNOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 09:14:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,995,1363158000"; 
-   d="scan'208";a="264087787"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V4 02/21] perf tools: fix missing tool parameter
-Date: Thu,  4 Jul 2013 16:20:21 +0300
-Message-Id: <1372944040-32690-3-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1372944040-32690-1-git-send-email-adrian.hunter@intel.com>
-References: <1372944040-32690-1-git-send-email-adrian.hunter@intel.com>
+	id S1752996Ab3GDN0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 09:26:55 -0400
+Date: Thu, 4 Jul 2013 15:26:51 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] trivial
+Message-ID: <alpine.LNX.2.00.1307041506510.26857@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf inject expects to get a reference to 'struct perf_inject'
-from its 'tool' member.  For that to work, 'tool' needs to be
-a parameter of all tool callbacks.  Make it so.
+Linus,
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/builtin-inject.c | 26 +++++++++++---------------
- tools/perf/util/header.c    |  6 ++++--
- tools/perf/util/header.h    |  6 ++++--
- tools/perf/util/session.c   | 11 +++++++----
- tools/perf/util/tool.h      |  9 ++++-----
- 5 files changed, 30 insertions(+), 28 deletions(-)
+please pull from
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index f299ddf..c943513 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -73,22 +73,17 @@ static int perf_event__repipe_event_type_synth(struct perf_tool *tool,
- 	return perf_event__repipe_synth(tool, event);
- }
- 
--static int perf_event__repipe_tracing_data_synth(union perf_event *event,
--						 struct perf_session *session
--						 __maybe_unused)
--{
--	return perf_event__repipe_synth(NULL, event);
--}
--
--static int perf_event__repipe_attr(union perf_event *event,
--				   struct perf_evlist **pevlist __maybe_unused)
-+static int perf_event__repipe_attr(struct perf_tool *tool,
-+				   union perf_event *event,
-+				   struct perf_evlist **pevlist)
- {
- 	int ret;
--	ret = perf_event__process_attr(event, pevlist);
-+
-+	ret = perf_event__process_attr(tool, event, pevlist);
- 	if (ret)
- 		return ret;
- 
--	return perf_event__repipe_synth(NULL, event);
-+	return perf_event__repipe_synth(tool, event);
- }
- 
- static int perf_event__repipe(struct perf_tool *tool,
-@@ -147,13 +142,14 @@ static int perf_event__repipe_fork(struct perf_tool *tool,
- 	return err;
- }
- 
--static int perf_event__repipe_tracing_data(union perf_event *event,
-+static int perf_event__repipe_tracing_data(struct perf_tool *tool,
-+					   union perf_event *event,
- 					   struct perf_session *session)
- {
- 	int err;
- 
--	perf_event__repipe_synth(NULL, event);
--	err = perf_event__process_tracing_data(event, session);
-+	perf_event__repipe_synth(tool, event);
-+	err = perf_event__process_tracing_data(tool, event, session);
- 
- 	return err;
- }
-@@ -407,7 +403,7 @@ int cmd_inject(int argc, const char **argv, const char *prefix __maybe_unused)
- 			.unthrottle	= perf_event__repipe,
- 			.attr		= perf_event__repipe_attr,
- 			.event_type	= perf_event__repipe_event_type_synth,
--			.tracing_data	= perf_event__repipe_tracing_data_synth,
-+			.tracing_data	= perf_event__repipe_op2_synth,
- 			.build_id	= perf_event__repipe_op2_synth,
- 		},
- 		.input_name  = "-",
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 93dd315..855f056 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2922,7 +2922,8 @@ int perf_event__synthesize_attrs(struct perf_tool *tool,
- 	return err;
- }
- 
--int perf_event__process_attr(union perf_event *event,
-+int perf_event__process_attr(struct perf_tool *tool __maybe_unused,
-+			     union perf_event *event,
- 			     struct perf_evlist **pevlist)
- {
- 	u32 i, ids, n_ids;
-@@ -3063,7 +3064,8 @@ int perf_event__synthesize_tracing_data(struct perf_tool *tool, int fd,
- 	return aligned_size;
- }
- 
--int perf_event__process_tracing_data(union perf_event *event,
-+int perf_event__process_tracing_data(struct perf_tool *tool __maybe_unused,
-+				     union perf_event *event,
- 				     struct perf_session *session)
- {
- 	ssize_t size_read, padding, size = event->tracing_data.size;
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 16a3e83..2d1ca7d 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -130,7 +130,8 @@ int perf_event__synthesize_attr(struct perf_tool *tool,
- int perf_event__synthesize_attrs(struct perf_tool *tool,
- 				 struct perf_session *session,
- 				 perf_event__handler_t process);
--int perf_event__process_attr(union perf_event *event, struct perf_evlist **pevlist);
-+int perf_event__process_attr(struct perf_tool *tool, union perf_event *event,
-+			     struct perf_evlist **pevlist);
- 
- int perf_event__synthesize_event_type(struct perf_tool *tool,
- 				      u64 event_id, char *name,
-@@ -145,7 +146,8 @@ int perf_event__process_event_type(struct perf_tool *tool,
- int perf_event__synthesize_tracing_data(struct perf_tool *tool,
- 					int fd, struct perf_evlist *evlist,
- 					perf_event__handler_t process);
--int perf_event__process_tracing_data(union perf_event *event,
-+int perf_event__process_tracing_data(struct perf_tool *tool,
-+				     union perf_event *event,
- 				     struct perf_session *session);
- 
- int perf_event__synthesize_build_id(struct perf_tool *tool,
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index ad47fb9..6b71b88 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -193,7 +193,9 @@ void perf_session__delete(struct perf_session *self)
- 	vdso__exit();
- }
- 
--static int process_event_synth_tracing_data_stub(union perf_event *event
-+static int process_event_synth_tracing_data_stub(struct perf_tool *tool
-+						 __maybe_unused,
-+						 union perf_event *event
- 						 __maybe_unused,
- 						 struct perf_session *session
- 						__maybe_unused)
-@@ -202,7 +204,8 @@ static int process_event_synth_tracing_data_stub(union perf_event *event
- 	return 0;
- }
- 
--static int process_event_synth_attr_stub(union perf_event *event __maybe_unused,
-+static int process_event_synth_attr_stub(struct perf_tool *tool __maybe_unused,
-+					 union perf_event *event __maybe_unused,
- 					 struct perf_evlist **pevlist
- 					 __maybe_unused)
- {
-@@ -921,7 +924,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
- 	/* These events are processed right away */
- 	switch (event->header.type) {
- 	case PERF_RECORD_HEADER_ATTR:
--		err = tool->attr(event, &session->evlist);
-+		err = tool->attr(tool, event, &session->evlist);
- 		if (err == 0)
- 			perf_session__set_id_hdr_size(session);
- 		return err;
-@@ -930,7 +933,7 @@ static int perf_session__process_user_event(struct perf_session *session, union
- 	case PERF_RECORD_HEADER_TRACING_DATA:
- 		/* setup for reading amidst mmap */
- 		lseek(session->fd, file_offset, SEEK_SET);
--		return tool->tracing_data(event, session);
-+		return tool->tracing_data(tool, event, session);
- 	case PERF_RECORD_HEADER_BUILD_ID:
- 		return tool->build_id(tool, event, session);
- 	case PERF_RECORD_FINISHED_ROUND:
-diff --git a/tools/perf/util/tool.h b/tools/perf/util/tool.h
-index b0e1aad..88f8cbd 100644
---- a/tools/perf/util/tool.h
-+++ b/tools/perf/util/tool.h
-@@ -18,12 +18,11 @@ typedef int (*event_sample)(struct perf_tool *tool, union perf_event *event,
- typedef int (*event_op)(struct perf_tool *tool, union perf_event *event,
- 			struct perf_sample *sample, struct machine *machine);
- 
--typedef int (*event_attr_op)(union perf_event *event,
-+typedef int (*event_attr_op)(struct perf_tool *tool,
-+			     union perf_event *event,
- 			     struct perf_evlist **pevlist);
--typedef int (*event_simple_op)(struct perf_tool *tool, union perf_event *event);
- 
--typedef int (*event_synth_op)(union perf_event *event,
--			      struct perf_session *session);
-+typedef int (*event_simple_op)(struct perf_tool *tool, union perf_event *event);
- 
- typedef int (*event_op2)(struct perf_tool *tool, union perf_event *event,
- 			 struct perf_session *session);
-@@ -39,7 +38,7 @@ struct perf_tool {
- 			throttle,
- 			unthrottle;
- 	event_attr_op	attr;
--	event_synth_op	tracing_data;
-+	event_op2	tracing_data;
- 	event_simple_op	event_type;
- 	event_op2	finished_round,
- 			build_id;
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git for-linus
+
+to receive usual stuff from trivial tree.
+
+You are going to get trivial conflict in kerneldoc comment in 
+kernel/irq/generic-chip.c (with ccc414f8 from your tree). Suggested 
+resolution is just taking the version from your tree, discarding what 
+comes from trivial.git.
+
+Thanks.
+
+Aaro Koskinen (1):
+      Documentation/cgroups/memory.txt: fix stat file documentation
+
+Anatol Pomozov (1):
+      doc: fix misspellings with 'codespell' tool
+
+Chen Gang (1):
+      spinlock_api_smp.h: fix preprocessor comments
+
+Geert Uytterhoeven (2):
+      scsi: Spelling hsot -> host
+      treewide: relase -> release
+
+Joe Perches (2):
+      sgi: xpc: Convert use of typedef ctl_table to struct ctl_table
+      frv: Convert use of typedef ctl_table to struct ctl_table
+
+Masanari Iida (2):
+      treewide: Fix typo in printk
+      treewide: Fix typo in printk
+
+Paul Bolle (4):
+      rcu: Fix Documentation typo 'CONFIG_RCU_NOCB_CPUS'
+      exynos4-is: Fix Kconfig comment
+      Fix warning typo "CONFIG_RELCOATABLE"
+      lguest: fix CONFIG_PAE -> CONFIG_x86_PAE in comment
+
+Paul Gortmaker (1):
+      sysctl/net.txt: delete reference to obsolete 2.4.x kernel
+
+Phil Viana (1):
+      md: bcache: Fixed a typo with the word 'arithmetic'
+
+Robert P. J. Day (4):
+      kernel-doc: Update references to SGML to refs to XML instead.
+      include/linux/cpu.h: Update comments to reflect reality
+      open firmware: "/aliasas" -> "/aliases"
+      doc: device tree: clarify stuff in usage-model.txt.
+
+Sachin Kamat (1):
+      doc: clk: Fix incorrect wording
+
+Stefan Behrens (1):
+      btrfs: fix btrfs_extend_item() comment
+
+Stefan Huber (7):
+      Documentation/video4linux/soc-camera.txt fix a typo
+      Documentation/early-userspace/README fix a typo
+      Documentation/virtual/kvm/api.txt fix a typo
+      Documentation/video4linux/si476x.txt fix a typo
+      Documentation/DocBook/media/v4l fix a typo
+      Documentation/networking/ieee802154 fix a typo
+      Documentation/arm/IXP4xx fix a typo
+
+Steven Rostedt (2):
+      tracing: Put trace_puts() comment above trace_puts() macro for kernel doc
+      sprintf: hex_string(): fix comment
+
+Thorsten Glaser (1):
+      update AMD powerflags comments
+
+Uwe Kleine-König (1):
+      irq/generic-chip: fix a few kernel-doc entries
+
+Zhang Yanfei (2):
+      mm/sparse: Remove unused ret in sparse_index_init
+      Documentation/kdump: Remove TODO in this document
+
+ Documentation/DocBook/drm.tmpl                     |    6 +++---
+ Documentation/DocBook/media/dvb/frontend.xml       |    2 +-
+ Documentation/DocBook/media/v4l/controls.xml       |    2 +-
+ Documentation/DocBook/media/v4l/pixfmt-nv12mt.xml  |    2 +-
+ Documentation/DocBook/writing_usb_driver.tmpl      |    2 +-
+ Documentation/arm/IXP4xx                           |    2 +-
+ Documentation/bcache.txt                           |   10 +++++-----
+ Documentation/block/queue-sysfs.txt                |    2 +-
+ Documentation/cgroups/memory.txt                   |    6 +++---
+ Documentation/clk.txt                              |    2 +-
+ Documentation/device-mapper/cache.txt              |    2 +-
+ .../bindings/arm/samsung/interrupt-combiner.txt    |    6 +++---
+ .../devicetree/bindings/arm/spear/shirq.txt        |    2 +-
+ .../devicetree/bindings/clock/silabs,si5351.txt    |    2 +-
+ .../devicetree/bindings/mmc/synopsis-dw-mshc.txt   |    2 +-
+ .../devicetree/bindings/powerpc/4xx/emac.txt       |    2 +-
+ .../devicetree/bindings/spi/brcm,bcm2835-spi.txt   |    2 +-
+ .../bindings/timer/samsung,exynos4210-mct.txt      |    2 +-
+ .../devicetree/bindings/usb/am33xx-usb.txt         |    2 +-
+ Documentation/devicetree/bindings/usb/omap-usb.txt |    2 +-
+ Documentation/devicetree/usage-model.txt           |   11 ++++++-----
+ Documentation/dynamic-debug-howto.txt              |    2 +-
+ Documentation/early-userspace/README               |    2 +-
+ Documentation/fb/cirrusfb.txt                      |    2 +-
+ Documentation/filesystems/jfs.txt                  |    2 +-
+ Documentation/filesystems/qnx6.txt                 |    2 +-
+ Documentation/filesystems/vfat.txt                 |    2 +-
+ Documentation/kdump/kdump.txt                      |    8 --------
+ Documentation/kernel-doc-nano-HOWTO.txt            |   11 ++++++-----
+ Documentation/kernel-per-CPU-kthreads.txt          |    2 +-
+ Documentation/laptops/dslm.c                       |    2 +-
+ Documentation/media-framework.txt                  |    2 +-
+ Documentation/metag/kernel-ABI.txt                 |    2 +-
+ Documentation/misc-devices/mei/mei.txt             |    2 +-
+ Documentation/networking/ieee802154.txt            |    2 +-
+ Documentation/networking/ip-sysctl.txt             |    2 +-
+ Documentation/networking/netlink_mmap.txt          |   12 ++++++------
+ Documentation/pinctrl.txt                          |    2 +-
+ Documentation/sysctl/net.txt                       |    6 +++---
+ Documentation/thermal/exynos_thermal_emulation     |    2 +-
+ Documentation/video4linux/si476x.txt               |    2 +-
+ Documentation/video4linux/soc-camera.txt           |    2 +-
+ Documentation/virtual/kvm/api.txt                  |    8 ++++----
+ Documentation/vm/pagemap.txt                       |    2 +-
+ Documentation/w1/slaves/w1_ds28e04                 |    2 +-
+ Makefile                                           |    2 +-
+ arch/frv/kernel/pm.c                               |    8 ++++----
+ arch/frv/kernel/sysctl.c                           |    4 ++--
+ arch/powerpc/relocs_check.pl                       |   10 +++++-----
+ arch/x86/kernel/cpu/powerflags.c                   |    8 ++++----
+ drivers/cpufreq/s3c2416-cpufreq.c                  |    2 +-
+ drivers/gpu/drm/drm_fb_cma_helper.c                |    4 ++--
+ drivers/gpu/drm/radeon/radeon_fb.c                 |    2 +-
+ drivers/infiniband/ulp/isert/ib_isert.c            |    2 +-
+ drivers/input/misc/da9055_onkey.c                  |    2 +-
+ drivers/lguest/page_tables.c                       |    2 +-
+ drivers/md/bcache/bset.c                           |    4 ++--
+ drivers/media/dvb-frontends/stv0367.c              |    2 +-
+ drivers/media/platform/exynos4-is/Kconfig          |    2 +-
+ drivers/media/platform/s5p-mfc/s5p_mfc_dec.c       |    2 +-
+ drivers/misc/dummy-irq.c                           |    2 +-
+ drivers/misc/lattice-ecp3-config.c                 |    2 +-
+ drivers/misc/mei/hbm.c                             |    2 +-
+ drivers/misc/mei/init.c                            |    2 +-
+ drivers/misc/sgi-xp/xpc_main.c                     |    6 +++---
+ drivers/net/ethernet/intel/igb/e1000_phy.c         |    2 +-
+ drivers/net/ethernet/mellanox/mlx4/main.c          |    2 +-
+ drivers/net/ethernet/neterion/vxge/vxge-main.c     |    2 +-
+ .../ethernet/qlogic/qlcnic/qlcnic_sriov_common.c   |    2 +-
+ drivers/net/wireless/ath/ath9k/Kconfig             |    2 +-
+ drivers/nfc/pn533.c                                |    2 +-
+ drivers/of/fdt.c                                   |    2 +-
+ drivers/of/pdt.c                                   |    2 +-
+ drivers/s390/char/vmur.c                           |    2 +-
+ drivers/scsi/aic7xxx_old/aic7xxx.seq               |    2 +-
+ drivers/scsi/libfc/fc_fcp.c                        |    2 +-
+ drivers/scsi/libiscsi_tcp.c                        |    2 +-
+ drivers/scsi/pm8001/pm80xx_hwi.c                   |    2 +-
+ drivers/scsi/pmcraid.c                             |    2 +-
+ drivers/scsi/scsi_error.c                          |    2 +-
+ drivers/tty/serial/serial-tegra.c                  |    2 +-
+ drivers/usb/musb/musb_dsps.c                       |    2 +-
+ drivers/usb/musb/omap2430.c                        |    2 +-
+ drivers/video/omap2/displays/panel-n8x0.c          |    2 +-
+ fs/btrfs/ctree.c                                   |    2 +-
+ fs/btrfs/free-space-cache.c                        |    2 +-
+ include/linux/cpu.h                                |    3 +--
+ include/linux/kernel.h                             |    5 ++---
+ include/linux/spinlock_api_smp.h                   |    2 +-
+ kernel/irq/generic-chip.c                          |    6 +++---
+ lib/Kconfig.kgdb                                   |    4 ++--
+ lib/vsprintf.c                                     |    2 +-
+ mm/mmu_notifier.c                                  |    2 +-
+ mm/sparse.c                                        |    3 +--
+ sound/pci/hda/hda_codec.c                          |    2 +-
+ tools/testing/ktest/ktest.pl                       |    2 +-
+ 96 files changed, 144 insertions(+), 153 deletions(-)
+
 -- 
-1.7.11.7
-
+Jiri Kosina
+SUSE Labs
