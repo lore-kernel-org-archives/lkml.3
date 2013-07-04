@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756525Ab3GDOBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 10:01:47 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40526 "EHLO
+	id S932975Ab3GDOG5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 10:06:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40611 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab3GDOBq (ORCPT
+	with ESMTP id S1754032Ab3GDOG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 10:01:46 -0400
-Date: Thu, 4 Jul 2013 16:00:57 +0200
+	Thu, 4 Jul 2013 10:06:56 -0400
+Date: Thu, 4 Jul 2013 16:06:13 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, eranian@google.com
-Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
- switch
-Message-ID: <20130704140057.GN18898@dyad.programming.kicks-ass.net>
-References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
- <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com>
- <20130704095735.GL18898@dyad.programming.kicks-ass.net>
- <20130704134457.GS6123@two.firstfloor.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/13] sched: Account for the number of preferred tasks
+ running on a node when selecting a preferred node
+Message-ID: <20130704140612.GO18898@dyad.programming.kicks-ass.net>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-14-git-send-email-mgorman@suse.de>
+ <20130703183243.GB18898@dyad.programming.kicks-ass.net>
+ <20130704093716.GO1875@suse.de>
+ <20130704130719.GC29916@linux.vnet.ibm.com>
+ <20130704135415.GR1875@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130704134457.GS6123@two.firstfloor.org>
+In-Reply-To: <20130704135415.GR1875@suse.de>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 03:44:57PM +0200, Andi Kleen wrote:
-> Evidently it's not read-only on Haswell at least.
+On Thu, Jul 04, 2013 at 02:54:15PM +0100, Mel Gorman wrote:
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 9247345..387f28d 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -863,9 +863,13 @@ find_idlest_cpu_node(int this_cpu, int nid)
+>  		load = weighted_cpuload(i);
+>  
+>  		if (load < min_load) {
+> -			/* Do not preempt a task running on a preferred node */
+> +			/*
+> +			 * Do not preempt a task running on a preferred node or
+> +			 * tasks are are pinned to their current CPU
+> +			 */
+>  			struct task_struct *p = cpu_rq(i)->curr;
+> -			if (p->numa_preferred_nid != nid) {
+> +			if (p->numa_preferred_nid != nid &&
+> +			    cpumask_weight(tsk_cpus_allowed(p)) > 1) {
 
-It would be ever so good if you could at least test run such patches against
-semi-current chips, not only the very latest.
+We have p->nr_cpus_allowed for that.
 
-> And if we don't restore the TOS it can be completely wrong, and
-> the stack state would corrupt.
-
-How so? You could simply write into idx := (tos + i) % nr_lbr ?
-
-> The LBR stack is quite sensitive to any corruption of the state,
-> that is different from other LBR uses.
-> 
-> I suppose the wrmsr could be made checking to catch any potential
-> failure. But normally Intel CPUs are quite consistent in things
-> like that.
-
-Please verify with the appropriate hardware teams and update the SDM
-accordingly. This code is used with all Intel CPUs that have LBR support, which
-is pretty much all of them except Yonah.
-
-Using a checking wmsr isn't really a nice option; esp as this is in a somewhat
-time critical path.
-
+>  				min_load = load;
+>  				idlest_cpu = i;
+>  			}
