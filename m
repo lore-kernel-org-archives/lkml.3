@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab3GDE7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 00:59:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:50437 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab3GDE7J (ORCPT
+	id S1755041Ab3GDFAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 01:00:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47342 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751439Ab3GDFAG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 00:59:09 -0400
-Date: Thu, 4 Jul 2013 14:58:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Roland Dreier <roland@purestorage.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tatyana Nikolova <Tatyana.E.Nikolova@intel.com>
-Subject: linux-next: build warnings in Linus' tree
-Message-Id: <20130704145852.44975d5801f592d00807d1c0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__4_Jul_2013_14_58_52_+1000_y/PfMes75x=ATTjR"
+	Thu, 4 Jul 2013 01:00:06 -0400
+Date: Thu, 4 Jul 2013 05:59:56 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Waiman Long <Waiman.Long@hp.com>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ian Kent <raven@themaw.net>,
+        autofs mailing list <autofs@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v4 04/12] auto-fs: rename d_count field of dentry to
+ d_refcount
+Message-ID: <20130704045956.GO4165@ZenIV.linux.org.uk>
+References: <1372908808-33304-1-git-send-email-Waiman.Long@hp.com>
+ <CA+55aFzKfPG=CH+vZBUQMNd32qsuxPF1D3c3DB2Dm8w1QCb1+w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzKfPG=CH+vZBUQMNd32qsuxPF1D3c3DB2Dm8w1QCb1+w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__4_Jul_2013_14_58_52_+1000_y/PfMes75x=ATTjR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 03, 2013 at 08:50:07PM -0700, Linus Torvalds wrote:
+> On Wed, Jul 3, 2013 at 8:33 PM, Waiman Long <Waiman.Long@hp.com> wrote:
+> > Because of the d_count name change made in dcache.h, all references
+> > to d_count have to be changed to d_refcount.  There is no change in
+> > logic and everything should just work.
+> 
+> These filesystem patches need to be just joined into the same patch
+> that does the d_count -> d_refcount change.
+> 
+> Otherwise the kernel won't build in lots of configurations for some
+> commits, which makes things like bisecting much more painful than it
+> should be.
+> 
+> So we can't do piece-meal changes that break the build for parts of the tree.
 
-Hi all,
-
-Building Linus' tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning (these have been around for a while):
-
-drivers/infiniband/hw/nes/nes_hw.c:81:23: warning: 'nes_iwarp_state_str' de=
-fined but not used [-Wunused-variable]
- static unsigned char *nes_iwarp_state_str[] =3D {
-                       ^
-drivers/infiniband/hw/nes/nes_hw.c:92:23: warning: 'nes_tcp_state_str' defi=
-ned but not used [-Wunused-variable]
- static unsigned char *nes_tcp_state_str[] =3D {
-                       ^
-
-Introduced by commit bca1935ccdec ("RDMA/nes: Fix compilation error when
-nes_debug is enabled").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__4_Jul_2013_14_58_52_+1000_y/PfMes75x=ATTjR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR1QERAAoJEECxmPOUX5FEwDwP/3VEhP235gXs/Re1EMPhRGsF
-nkVxYtX+RHZ3DeE0Bcy5cNDLDBqhNtyRd0XN8N68sT5JzJtB7lEr4K1zOKhzZAoj
-y3BAPL0QlpVy60rGBIVsT7oAryptY831eQXMY2MZhFqPtczjaQdz7XmWVf3evMuN
-MX1C14L+eIWK/UwUAIkKQ3WIOe/2GujEZCqIfP0zKBXr5a9Ze9Xu5xryW4Pz6Kvy
-Uk/FHA66/hkr/UpLs0/+pJJGHiYKD098Nfn5pRJhnV0h2Q6/KASKWDUbOEqEkijM
-H91B7gFP+amum+gqjFvfFv9Z5c0eueYNfosXFqXqb/q95ZDof7xdtCINQc1THOlD
-5ENI3DfhLGuOg6SVExyf7iQ4UxspnflzZcYWjzguRHPW6TSUW5pXON4hMPMisSBZ
-AAu2nvnXi0Tk4P90SeD0Cbr2C/tUagEqXjCovQfVHKSrHum25/n6oz+nWnjDEBsd
-Z0q9U1CSbvSf1a7sS9aizkOAXtY4FkJ0Mtva3rH0ynQSVc0JuEqHO8d1F7cWy90b
-fFxRVbRcmIZvdEBlIyyfWgsPcH8XNv4Z/2vlQiEBW4iqr3taWLVGAZRqfiL/cr+8
-qPzlSGZC+rlOulyCdBP86E4exwzlELirSb9bOm1Q/Xw9s1rI8Qii8y0HHzKgoZSN
-BWTlvv9RRi8RDJCkt7ew
-=WV3k
------END PGP SIGNATURE-----
-
---Signature=_Thu__4_Jul_2013_14_58_52_+1000_y/PfMes75x=ATTjR--
+Frankly, my preference here would be to add static inline unsigned d_count(...)
+and convert the uses of ->d_count outside of fs/{dcache.c,namei.c} and
+include/linux/dcache.c to it as the first commit.  All users outside those
+are readers, so there's no point playing with macros in this case...
