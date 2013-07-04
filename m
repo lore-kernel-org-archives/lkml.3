@@ -1,132 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab3GDJtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:49:46 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:60886 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab3GDJtp convert rfc822-to-8bit (ORCPT
+	id S1755355Ab3GDJwv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:52:51 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:49027 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab3GDJwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:49:45 -0400
-Message-ID: <51D54544.1040602@arm.com>
-Date: Thu, 04 Jul 2013 10:49:56 +0100
-From: Serban Constantinescu <Serban.Constantinescu@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 4 Jul 2013 05:52:49 -0400
+X-IronPort-AV: E=Sophos;i="4.87,994,1363132800"; 
+   d="scan'208";a="6374631"
+Message-ID: <1372931565.7184.32.camel@kazak.uk.xensource.com>
+Subject: Re: kernel panic in skb_copy_bits
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Joe Jin <joe.jin@oracle.com>, Alex Bligh <alex@alex.org.uk>,
+        "Frank Blaschka" <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <zheng.x.li@oracle.com>, Xen Devel <xen-devel@lists.xen.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 4 Jul 2013 10:52:45 +0100
+In-Reply-To: <1372930465.4979.82.camel@edumazet-glaptop>
+References: <51CBAA48.3080802@oracle.com>
+	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
+	 <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>
+	 <1372666283.14691.8.camel@zakaz.uk.xensource.com>
+	 <51D53896.1060405@oracle.com>
+	 <1372928382.7184.16.camel@kazak.uk.xensource.com>
+	 <1372930465.4979.82.camel@edumazet-glaptop>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: =?windows-1252?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "kernel-team@android.com" <kernel-team@android.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        Dave Butcher <Dave.Butcher@arm.com>
-Subject: Re: [PATCH v5 0/6] Android Binder IPC Fixes
-References: <1371661956-10894-1-git-send-email-serban.constantinescu@arm.com> <51D452BC.8060905@arm.com> <CAMP5Xgcyov5OUgcGq9AmFvtdRMJ8+fJ1a6Dna-zeDLSZexk=_A@mail.gmail.com>
-In-Reply-To: <CAMP5Xgcyov5OUgcGq9AmFvtdRMJ8+fJ1a6Dna-zeDLSZexk=_A@mail.gmail.com>
-X-OriginalArrivalTime: 04 Jul 2013 09:49:41.0061 (UTC) FILETIME=[CDEF7750:01CE789B]
-X-MC-Unique: 113070410494204501
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/13 23:32, Arve Hjønnevåg wrote:
-> On Wed, Jul 3, 2013 at 9:35 AM, Serban Constantinescu
-> <Serban.Constantinescu@arm.com> wrote:
->> Hi all,
->>
->> Any feedback or comments on this patch set?
->>
->> Thanks,
->> Serban
->>
->
-> The new patches look OK, but I would like to also see the patches that
-> add support for 32 bit user-space on a 64 bit kernel.
+On Thu, 2013-07-04 at 02:34 -0700, Eric Dumazet wrote:
+> On Thu, 2013-07-04 at 09:59 +0100, Ian Campbell wrote:
+> > On Thu, 2013-07-04 at 16:55 +0800, Joe Jin wrote:
+> > > 
+> > > Another way is add new page flag like PG_send, when sendpage() be called,
+> > > set the bit, when page be put, clear the bit. Then xen-blkback can wait
+> > > on the pagequeue.
+> > 
+> > These schemes don't work when you have multiple simultaneous I/Os
+> > referencing the same underlying page.
+> 
+> So this is a page property, still the patches I saw tried to address
+> this problem adding networking stuff (destructors) in the skbs.
+> 
+> Given that a page refcount can be transfered between entities, say using
+> splice() system call, I do not really understand why the fix would imply
+> networking only.
+> 
+> Let's try to fix it properly, or else we must disable zero copies
+> because they are not reliable.
+> 
+> Why sendfile() doesn't have the problem, but vmsplice()+splice() do have
+> this issue ?
 
-I have added the last change to v6 and kept Arve's ack.
+Might just be that no one has observed it with vmsplice()+splice()? Most
+of the time this happens silently and you'll probably never notice, it's
+just the behaviour of Xen which escalates the issue into one you can
+see.
 
-I will rebase my binder kernel compat on this latest version and polish 
-the patch set such that is ready for upstream. I should have something 
-ready for your review soon.
+> As soon as a page fragment reference is taken somewhere, the only way to
+> properly reuse the page is to rely on put_page() and page being freed.
 
-Thanks for your help,
-Serban Constantinescu
+Xen's out of tree netback used to fix this by a destructor call back on
+page free, but that was a core mm patch in the hot memory free path
+which wasn't popular, and it doesn't solve anything for the non-Xen
+instances of this issue.
 
->
->>
->> On 19/06/13 18:12, Serban Constantinescu wrote:
->>>
->>> Hi all,
->>>
->>> This set of patches will clean-up and fix some of the issues that arise
->>> with the current binder interface when moving to a 64bit kernel. All these
->>> changes will not affect the existing 32bit Android interface and are meant
->>> to stand as the base for the 64bit binder compat layer(kernel or
->>> userpsace).
->>>
->>> The patch set has been successfully tested with a 64bit Linux userspace
->>> and
->>> 64bit binder unit-tests.
->>>
->>> This patch set has been successfully tested on 32bit platforms(ARMv7
->>> VExpress)
->>> and 64bit platforms(ARMv8 RTSM) running a 32bit Android userspace and an
->>> in
->>> kernel binder compat layer.
->>>
->>> Changes for v5:
->>> 1 6/6: Moved patch to the end of the series; changed handle to use __u32
->>> type
->>> 2 4/6: Removed some of the alignment/buffer changes introduced in previous
->>>          versions of the patch.
->>>
->>> Changes for v4:
->>> 1: 5/6: Fix the offset buffer alignment such that it will work for cases
->>> where
->>> buffer start + buffer size are not aligned to (void *)
->>>
->>> Changes for v3:
->>> 1:  Dropped the patch that was replacing uint32_t types with unsigned int
->>> 2:  Dropped the patch fixing the IOCTL types(since it has been added to
->>> Greg's
->>>       staging tree)
->>> 3:  Split one patch into two: 'modify binder_write_read' and '64bit
->>> changes'
->>> 4:  Modified BINDER_SET_MAX_THREADS ioctl definition accordint to Arve's
->>> review
->>> 5:  Modified the binder command IOCTL declarations according to Arve's
->>> review
->>>
->>> Changes for v2:
->>> 1: 1/7: Modified the commit message according to Greg's feedback;
->>> 2: 3/7: Merged with the patch fixing the printk format specifiers.
->>>
->>> Serban Constantinescu (6):
->>>     staging: android: binder: modify struct binder_write_read to use
->>>       size_t
->>>     staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
->>>     staging: android: binder: fix BC_FREE_BUFFER ioctl declaration
->>>     staging: android: binder: fix alignment issues
->>>     staging: android: binder: replace types with portable ones
->>>     staging: android: binder: fix binder interface for 64bit compat layer
->>>
->>>    drivers/staging/android/binder.c |   32 ++++++++++++-------------
->>>    drivers/staging/android/binder.h |   48
->>> +++++++++++++++++++-------------------
->>>    2 files changed, 40 insertions(+), 40 deletions(-)
->>>
->>
->>
->> --
->> Best Regards,
->>
->> Serban Constantinescu
->> PDSW Engineer ARM Ltd.
->>
->
->
->
-> --
-> Arve Hjønnevåg
->
+> Adding workarounds in TCP stack to always copy the page fragments in
+> case of a retransmit is partial solution, as the remote peer could be
+> malicious and send ACK _before_ page content is actually read by the
+> NIC.
+> 
+> So if we rely on networking stacks to give the signal for page reuse, we
+> can have major security issue.
+
+If you ignore the Xen case and consider just the native case then the
+issue isn't page reuse in the sense of getting mapped into another
+process, it's the same page in the same process but the process has
+written something new to the buffer, e.g.
+	memset(buf, 0xaa, 4096);
+	write(fd, buf, 4096)
+	memset(buf, 0x55, 4096);
+(where fd is O_DIRECT on NFS) Can result in 0x55 being seen on the wire
+in the TCP retransmit.
+
+If the retransmit is at the RPC layer then you get a resend of the NFS
+write RPC, but the XDR sequence stuff catches that case (I think, memory
+is fuzzy).
+
+If the retransmit is at the TCP level then the TCP sequence/ack will
+cause the receiver to ignore the corrupt version, but if you replace the
+second memset with write_critical_secret_key(buf), then you have an
+information leak.
+
+Ian.
 
