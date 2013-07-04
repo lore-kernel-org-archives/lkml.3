@@ -1,68 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933746Ab3GDIz0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:55:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51234 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab3GDIzW (ORCPT
+	id S1756464Ab3GDI42 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:56:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51143 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147Ab3GDI4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:55:22 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH 4/4] checkpatch: only allow COMPILE_TEST in Kconfig dependency lines
-Date: Thu, 4 Jul 2013 10:55:06 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-References: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com> <1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
+	Thu, 4 Jul 2013 04:56:23 -0400
+Message-ID: <51D53896.1060405@oracle.com>
+Date: Thu, 04 Jul 2013 16:55:50 +0800
+From: Joe Jin <joe.jin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Alex Bligh <alex@alex.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, zheng.x.li@oracle.com,
+        Xen Devel <xen-devel@lists.xen.org>, Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: kernel panic in skb_copy_bits
+References: <51CBAA48.3080802@oracle.com> <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com> <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com> <1372666283.14691.8.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1372666283.14691.8.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307041055.06561.arnd@arndb.de>
-X-Provags-ID: V02:K0:MpMUqFdbI1SKqYoB/Gk3CBO8Y7NxvshLO5oxHLnVHzL
- oG2/DuCJ9uTLlQX4J3oSpxQ93et/B3YUfkMtORrMtZZ+/eTIRa
- Br8Chif7A0tjKHaotb/2kBGdq1JxcExbkFZBq6tvHkGkwAzxt8
- Yv95qKermqYrk9E9gqYkjjIGVqJkwRBv0Z20W9l4n9bsoX7u1b
- vbdK0SWxtQWao1pVNsY8B0/T+eSuAuMHKsTTOm65VeZZmEHWoY
- r7Ln1wXj9L5BhkQaZMxI8BFRmPFl5fU1zbCkEr3zES7y+1hn96
- V/+tHb7D1ORrU6zEaWajsfic338QSU16rNOQO1JRb9BJrAIQHn
- QZ/pz2gnQbuZouB5O4T8=
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 04 July 2013, Paul Gortmaker wrote:
-> The option CONFIG_COMPILE_TEST, added in commit 4bb1667255a
-> ("build some drivers only when compile-testing") is meant to
-> give a middle ground[1] between those who want the widest compile
-> coverage possible (e.g. building sparc drivers for mips) and
-> those who want dependencies to represent real world systems
-> (e.g. don't allow me to see OMAP options when building x86).
+On 07/01/13 16:11, Ian Campbell wrote:
+> On Mon, 2013-07-01 at 11:18 +0800, Joe Jin wrote:
+>>> A workaround is to turn off O_DIRECT use by Xen as that ensures
+>>> the pages are copied. Xen 4.3 does this by default.
+>>>
+>>> I believe fixes for this are in 4.3 and 4.2.2 if using the
+>>> qemu upstream DM. Note these aren't real fixes, just a workaround
+>>> of a kernel bug.
+>>
+>> The guest is pvm, and disk model is xvbd, guest config file as below:
 > 
-> As such, this addition is meant to be used in dependency lines,
-> properly or'd in with the real world hardware dependency.  Those
-> who select it, get wide compile coverage.  Those who do not, get
-> real world dependencies that match where the hardware is available
-> and/or where the driver is useful.
+> Do you know which disk backend? The workaround Alex refers to went into
+> qdisk but I think blkback could still suffer from a variant of the
+> retransmit issue if you run it over iSCSI.
 > 
-> With that in mind, it is clear that this is _not_ to be used in
-> any C code with "#ifdef CONFIG_COMPILE_TEST" etc.  However there
-> will (and already has been) instances of people thinking this is
-> an OK practice[2].  So teach checkpatch to spot them as an error.
+>>> To fix on a local build of xen you will need something like this:
+>>> https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
+>>> and something like this (NB: obviously insert your own git
+>>> repo and commit numbers)
+>>> https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
+>>>
+>>
+>> I think this only for pvhvm/hvm?
 > 
-> [1] https://lkml.org/lkml/2013/3/7/456
-> [2] https://lkml.org/lkml/2013/7/1/641
+> No, the underlying issue affects any PV device which is run over a
+> network protocol (NFS, iSCSI etc). In effect a delayed retransmit can
+> cross over the deayed ack and cause I/O to be completed while
+> retransmits are pending, such as is described in
+> http://www.spinics.net/lists/linux-nfs/msg34913.html (the original NFS
+> variant). The problem is that because Xen PV drivers often unmap the
+> page on I/O completion you get a crash (page fault) on the retransmit.
 > 
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Andy Whitcroft <apw@canonical.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Can we do it by remember grant page refcount when mapping, and when unmap
+check if page refcount as same as mapping?  This change will limited in
+xen-blkback.
+
+Another way is add new page flag like PG_send, when sendpage() be called,
+set the bit, when page be put, clear the bit. Then xen-blkback can wait
+on the pagequeue.
+
+Thanks,
+Joe
+
+> The issue also affects native but in that case the symptom is "just" a
+> corrupt packet on the wire. I tried to address this with my "skb
+> destructor" series but unfortunately I got bogged down on the details,
+> then I had to take time out to look into some other stuff and never
+> managed to get back into it. I'd be very grateful if there was someone
+> who could pick up that work (Alex gave some useful references in another
+> reply to this thread)
+> 
+> Some PV disk backends (e.g. blktap2) have worked around this by using
+> grant copy instead of grant map, others (e.g. qdisk) have disabled
+> O_DIRECT so that the pages are copied into the dom0 page cache and
+> transmitted from there.
+> 
+> We were discussing recently the possibility of mapping all ballooned out
+> pages to a single read-only scratch page instead of leaving them empty
+> in the page tables, this would cause the Xen case to revert to the
+> native case. I think Thanos was going to take a look into this.
+> 
+> Ian.
+> 
+
+
+-- 
+Oracle <http://www.oracle.com>
+Joe Jin | Software Development Senior Manager | +8610.6106.5624
+ORACLE | Linux and Virtualization
+No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
