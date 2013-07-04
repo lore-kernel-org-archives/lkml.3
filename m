@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933176Ab3GDVHL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 17:07:11 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44354 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752932Ab3GDVHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 17:07:10 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3] Get defconfig to work with ARCH=um
-Date: Fri,  5 Jul 2013 02:33:14 +0530
-Message-Id: <1372971797-23518-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.3.1.643.gebeea52.dirty
+	id S933251Ab3GDVPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 17:15:10 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752932Ab3GDVPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 17:15:08 -0400
+Message-ID: <51D5E5D2.8020202@nod.at>
+Date: Thu, 04 Jul 2013 23:14:58 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 1/3] arch/um/Makefile: remove dead code
+References: <1372971797-23518-1-git-send-email-artagnon@gmail.com> <1372971797-23518-2-git-send-email-artagnon@gmail.com>
+In-Reply-To: <1372971797-23518-2-git-send-email-artagnon@gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Am 04.07.2013 23:03, schrieb Ramkumar Ramachandra:
+> arch/um/Makefile is included in the toplevel Makefile:495.  Well before
+> that, it unconditionally sets $SUBARCH (in Makefile:168) as follows:
+> 
+>   SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
+> 				    -e s/sun4u/sparc64/ \
+> 				    -e s/arm.*/arm/ -e s/sa110/arm/ \
+> 				    -e s/s390x/s390/ -e s/parisc64/parisc/ \
+> 				    -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+> 				    -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
+> 
+> It is clearly impossible for $SUBARCH to be set as i386 or x86_64.
+> Therefore, any code that checks $SUBARCH against these values is dead
+> code.
 
-  $ ARCH=um make defconfig
-  $ ARCH=um make
+No.
+If you build UML for x86_64 you override SUBARCH.
+i.e. make linux ARCH=um SUBARCH=x86_64
 
-does not work on 64-bit hosts, because the build-infrastructure is
-hard-wired to pick a 32-bit defconfig when ARCH=um.  This series fixes
-the problem.
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Richard Weinberger <richard@nod.at>
+> Cc: Jeff Dike <jdike@addtoit.com>
+> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 
-[1/3] is somewhat unrelated to the series, and I happened to notice it
-while reading.  12783aa07 (um: Switch to large mcmodel on x86_64,
-2012-01-24) indicates that I did something stupid, but I don't know
-what.
+NAK.
 
-Thanks.
-
-Ramkumar Ramachandra (3):
-  arch/um/Makefile: remove dead code
-  arch/um/configs: add defconfig for i386, x86_64
-  arch/um: migrate to using defconfig in configs/
-
- arch/um/Kconfig.common                          |   5 -
- arch/um/Makefile                                |  20 +-
- arch/um/{defconfig => configs/i386_defconfig}   | 209 +++++++++++++-------
- arch/um/{defconfig => configs/x86_64_defconfig} | 250 +++++++++++++++---------
- arch/x86/um/Kconfig                             |   5 +
- 5 files changed, 306 insertions(+), 183 deletions(-)
- copy arch/um/{defconfig => configs/i386_defconfig} (86%)
- rename arch/um/{defconfig => configs/x86_64_defconfig} (83%)
-
--- 
-1.8.3.1.643.gebeea52.dirty
+Thanks,
+//richard
 
