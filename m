@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756663Ab3GDOpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 10:45:13 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:36070 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610Ab3GDOpL (ORCPT
+	id S1756791Ab3GDOp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 10:45:29 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:36350 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab3GDOp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 10:45:11 -0400
+	Thu, 4 Jul 2013 10:45:27 -0400
 From: Jonas Jensen <jonas.jensen@gmail.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
         devicetree-discuss@lists.ozlabs.org, arm@kernel.org, arnd@arndb.de,
         olof@lixom.net, Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v3 1/4] ARM: mach-moxart: add MOXA ART SoC files
-Date: Thu,  4 Jul 2013 16:44:38 +0200
-Message-Id: <1372949078-8154-1-git-send-email-jonas.jensen@gmail.com>
+Subject: [PATCH v3 2/4] ARM: mach-moxart: add MOXA ART device tree files
+Date: Thu,  4 Jul 2013 16:45:15 +0200
+Message-Id: <1372949115-8190-1-git-send-email-jonas.jensen@gmail.com>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
-References: <1371040448-28742-2-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1371040448-28742-3-git-send-email-jonas.jensen@gmail.com>
+References: <1371040448-28742-3-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add MOXA ART SoC support.
-
-The MOXA ART SoC is based on a Faraday FA526 ARMv4 32-bit 192 MHz CPU
-with MMU and 16KB/8KB D/I-cache (UC-7112-LX).
+Add generic SoC include and UC-7112-LX platform device tree files
+and documentation.
 
 Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 ---
@@ -35,261 +33,459 @@ Notes:
     
     Changes since v2:
     
-    1. add CLKSRC_MMIO and GENERIC_CLOCKEVENTS to ARCH_MOXART
-    2. call of_clk_init(NULL) from .init_time hook
+    1. add and update documentation, new drivers: mmc, mac, rtc,
+       watchdog, gpio, core-clock, apb-clock
 
- arch/arm/Kconfig                  |   2 +
- arch/arm/Makefile                 |   1 +
- arch/arm/configs/moxart_defconfig | 116 ++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-moxart/Kconfig      |  29 ++++++++++
- arch/arm/mach-moxart/Makefile     |   3 +
- arch/arm/mach-moxart/moxart.c     |  43 ++++++++++++++
- 6 files changed, 194 insertions(+)
- create mode 100644 arch/arm/configs/moxart_defconfig
- create mode 100644 arch/arm/mach-moxart/Kconfig
- create mode 100644 arch/arm/mach-moxart/Makefile
- create mode 100644 arch/arm/mach-moxart/moxart.c
+ .../bindings/arm/moxart/moxa,moxart-apb-clock.txt  | 18 +++++
+ .../devicetree/bindings/arm/moxart/moxart.txt      | 12 ++++
+ .../bindings/clock/moxa,moxart-core-clock          | 19 +++++
+ .../devicetree/bindings/gpio/moxa,moxart-gpio.txt  | 16 +++++
+ .../interrupt-controller/moxa,moxart-ic.txt        | 28 ++++++++
+ .../devicetree/bindings/mmc/moxa,moxart-mmc.txt    | 17 +++++
+ .../devicetree/bindings/net/moxa,moxart-mac.txt    | 25 +++++++
+ .../devicetree/bindings/rtc/moxa,moxart-rtc.txt    | 11 +++
+ .../bindings/timer/moxa,moxart-timer.txt           | 17 +++++
+ .../bindings/watchdog/moxa,moxart-watchdog.txt     | 15 ++++
+ arch/arm/boot/dts/Makefile                         |  1 +
+ arch/arm/boot/dts/moxart-uc7112lx.dts              | 82 ++++++++++++++++++++++
+ arch/arm/boot/dts/moxart.dtsi                      | 79 +++++++++++++++++++++
+ 13 files changed, 340 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/moxart/moxa,moxart-apb-clock.txt
+ create mode 100644 Documentation/devicetree/bindings/arm/moxart/moxart.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-core-clock
+ create mode 100644 Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt
+ create mode 100644 Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt
+ create mode 100644 Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
+ create mode 100644 Documentation/devicetree/bindings/rtc/moxa,moxart-rtc.txt
+ create mode 100644 Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt
+ create mode 100644 Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+ create mode 100644 arch/arm/boot/dts/moxart-uc7112lx.dts
+ create mode 100644 arch/arm/boot/dts/moxart.dtsi
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 0ac9be6..d84161c 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -964,6 +964,8 @@ source "arch/arm/mach-ks8695/Kconfig"
- 
- source "arch/arm/mach-msm/Kconfig"
- 
-+source "arch/arm/mach-moxart/Kconfig"
-+
- source "arch/arm/mach-mv78xx0/Kconfig"
- 
- source "arch/arm/mach-imx/Kconfig"
-diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index 72caf82..17907c8 100644
---- a/arch/arm/Makefile
-+++ b/arch/arm/Makefile
-@@ -158,6 +158,7 @@ machine-$(CONFIG_ARCH_KIRKWOOD)		+= kirkwood
- machine-$(CONFIG_ARCH_KS8695)		+= ks8695
- machine-$(CONFIG_ARCH_LPC32XX)		+= lpc32xx
- machine-$(CONFIG_ARCH_MMP)		+= mmp
-+machine-$(CONFIG_ARCH_MOXART)		+= moxart
- machine-$(CONFIG_ARCH_MSM)		+= msm
- machine-$(CONFIG_ARCH_MV78XX0)		+= mv78xx0
- machine-$(CONFIG_ARCH_MXC)		+= imx
-diff --git a/arch/arm/configs/moxart_defconfig b/arch/arm/configs/moxart_defconfig
+diff --git a/Documentation/devicetree/bindings/arm/moxart/moxa,moxart-apb-clock.txt b/Documentation/devicetree/bindings/arm/moxart/moxa,moxart-apb-clock.txt
 new file mode 100644
-index 0000000..9977d33
+index 0000000..f6e88fc
 --- /dev/null
-+++ b/arch/arm/configs/moxart_defconfig
-@@ -0,0 +1,116 @@
-+# CONFIG_LOCALVERSION_AUTO is not set
-+# CONFIG_SWAP is not set
-+CONFIG_SYSVIPC=y
-+CONFIG_NO_HZ=y
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_SYSCTL_SYSCALL=y
-+# CONFIG_ELF_CORE is not set
-+# CONFIG_BASE_FULL is not set
-+# CONFIG_SIGNALFD is not set
-+# CONFIG_TIMERFD is not set
-+# CONFIG_EVENTFD is not set
-+# CONFIG_AIO is not set
-+CONFIG_EMBEDDED=y
-+# CONFIG_VM_EVENT_COUNTERS is not set
-+# CONFIG_SLUB_DEBUG is not set
-+# CONFIG_COMPAT_BRK is not set
-+# CONFIG_LBDAF is not set
-+# CONFIG_BLK_DEV_BSG is not set
-+# CONFIG_IOSCHED_DEADLINE is not set
-+CONFIG_ARCH_MULTI_V4=y
-+# CONFIG_ARCH_MULTI_V7 is not set
-+CONFIG_ARCH_MOXART=y
-+CONFIG_MACH_UC7112LX=y
-+CONFIG_PREEMPT=y
-+CONFIG_AEABI=y
-+# CONFIG_OABI_COMPAT is not set
-+# CONFIG_ATAGS is not set
-+CONFIG_ARM_APPENDED_DTB=y
-+# CONFIG_SUSPEND is not set
-+CONFIG_NET=y
-+CONFIG_UNIX=y
-+CONFIG_INET=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
-+# CONFIG_INET_XFRM_MODE_TUNNEL is not set
-+# CONFIG_INET_XFRM_MODE_BEET is not set
-+# CONFIG_INET_LRO is not set
-+# CONFIG_INET_DIAG is not set
-+# CONFIG_IPV6 is not set
-+# CONFIG_WIRELESS is not set
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+# CONFIG_PREVENT_FIRMWARE_BUILD is not set
-+# CONFIG_FW_LOADER is not set
-+CONFIG_MTD=y
-+CONFIG_MTD_BLOCK=y
-+CONFIG_MTD_CFI=y
-+CONFIG_MTD_CFI_ADV_OPTIONS=y
-+CONFIG_MTD_CFI_GEOMETRY=y
-+CONFIG_MTD_CFI_INTELEXT=y
-+CONFIG_MTD_COMPLEX_MAPPINGS=y
-+CONFIG_MTD_PHYSMAP=y
-+CONFIG_MTD_PHYSMAP_OF=y
-+CONFIG_PROC_DEVICETREE=y
-+CONFIG_NETDEVICES=y
-+# CONFIG_NET_VENDOR_ARC is not set
-+# CONFIG_NET_CADENCE is not set
-+# CONFIG_NET_VENDOR_BROADCOM is not set
-+# CONFIG_NET_VENDOR_CIRRUS is not set
-+# CONFIG_NET_VENDOR_FARADAY is not set
-+# CONFIG_NET_VENDOR_INTEL is not set
-+# CONFIG_NET_VENDOR_MARVELL is not set
-+# CONFIG_NET_VENDOR_MICREL is not set
-+# CONFIG_NET_VENDOR_NATSEMI is not set
-+# CONFIG_NET_VENDOR_SEEQ is not set
-+# CONFIG_NET_VENDOR_SMSC is not set
-+# CONFIG_NET_VENDOR_STMICRO is not set
-+# CONFIG_NET_VENDOR_VIA is not set
-+# CONFIG_NET_VENDOR_WIZNET is not set
-+CONFIG_ARM_MOXART_ETHER=y
-+# CONFIG_WLAN is not set
-+# CONFIG_INPUT is not set
-+# CONFIG_SERIO is not set
-+# CONFIG_VT is not set
-+# CONFIG_LEGACY_PTYS is not set
-+# CONFIG_DEVKMEM is not set
-+CONFIG_SERIAL_8250=y
-+CONFIG_SERIAL_8250_CONSOLE=y
-+CONFIG_SERIAL_8250_NR_UARTS=1
-+CONFIG_SERIAL_8250_RUNTIME_UARTS=1
-+CONFIG_SERIAL_8250_EXTENDED=y
-+CONFIG_SERIAL_8250_SHARE_IRQ=y
-+CONFIG_SERIAL_OF_PLATFORM=y
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_GPIO_MOXART=y
-+# CONFIG_HWMON is not set
-+CONFIG_WATCHDOG=y
-+CONFIG_MOXART_WDT=y
-+# CONFIG_USB_SUPPORT is not set
-+CONFIG_MMC=y
-+CONFIG_MMC_SDHCI_MOXART=y
-+CONFIG_RTC_CLASS=y
-+CONFIG_RTC_DRV_MOXART=y
-+CONFIG_DMADEVICES=y
-+# CONFIG_IOMMU_SUPPORT is not set
-+CONFIG_EXT3_FS=y
-+CONFIG_TMPFS=y
-+CONFIG_JFFS2_FS=y
-+CONFIG_PRINTK_TIME=y
-+# CONFIG_ENABLE_WARN_DEPRECATED is not set
-+# CONFIG_ENABLE_MUST_CHECK is not set
-+CONFIG_MAGIC_SYSRQ=y
-+CONFIG_DEBUG_SHIRQ=y
-+CONFIG_DETECT_HUNG_TASK=y
-+# CONFIG_SCHED_DEBUG is not set
-+# CONFIG_DEBUG_PREEMPT is not set
-+CONFIG_PROVE_LOCKING=y
-+CONFIG_DEBUG_INFO=y
-+CONFIG_DEBUG_MEMORY_INIT=y
-+# CONFIG_FTRACE is not set
-+CONFIG_DEBUG_LL=y
-+CONFIG_EARLY_PRINTK=y
-+CONFIG_KEYS=y
-diff --git a/arch/arm/mach-moxart/Kconfig b/arch/arm/mach-moxart/Kconfig
++++ b/Documentation/devicetree/bindings/arm/moxart/moxa,moxart-apb-clock.txt
+@@ -0,0 +1,18 @@
++MOXA ART APB clock
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-apb-clock"
++- #clock-cells : Should be 0
++
++Example:
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		clkapb: clkapb {
++			compatible = "moxa,moxart-apb-clock";
++			#clock-cells = <0>;
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/arm/moxart/moxart.txt b/Documentation/devicetree/bindings/arm/moxart/moxart.txt
 new file mode 100644
-index 0000000..a6ad825
+index 0000000..11087ed
 --- /dev/null
-+++ b/arch/arm/mach-moxart/Kconfig
-@@ -0,0 +1,29 @@
-+config ARCH_MOXART
-+	bool "MOXA ART SoC" if ARCH_MULTI_V4
-+	select CPU_FA526
-+	select ARM_DMA_MEM_BUFFERABLE
-+	select USE_OF
-+	select CLKSRC_OF
-+	select CLKSRC_MMIO
-+	select HAVE_CLK
-+	select COMMON_CLK
-+	select GENERIC_IRQ_CHIP
-+	select ARCH_REQUIRE_GPIOLIB
-+	select GENERIC_CLOCKEVENTS
-+	help
-+	  Say Y here if you want to run your kernel on hardware with a
-+	  MOXA ART SoC.
-+	  The MOXA ART SoC is based on a Faraday FA526 ARMv4 32-bit
-+	  192 MHz CPU with MMU and 16KB/8KB D/I-cache (UC-7112-LX).
-+	  Used on models UC-7101, UC-7112/UC-7110, IA240/IA241, IA3341.
++++ b/Documentation/devicetree/bindings/arm/moxart/moxart.txt
+@@ -0,0 +1,12 @@
++MOXA ART device tree bindings
 +
-+if ARCH_MOXART
++Boards with the MOXA ART SoC shall have the following properties:
 +
-+config MACH_UC7112LX
-+	bool "MOXA UC-7112-LX"
-+	depends on ARCH_MOXART
-+	help
-+	  Say Y here if you intend to run this kernel on a MOXA
-+	  UC-7112-LX embedded computer.
++Required root node property:
 +
-+endif
-diff --git a/arch/arm/mach-moxart/Makefile b/arch/arm/mach-moxart/Makefile
++compatible = "moxa,moxart";
++
++Boards:
++
++- UC-7112-LX: embedded computer
++  compatible = "moxa,moxart-uc-7112-lx", "moxa,moxart"
+diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock
 new file mode 100644
-index 0000000..fa022eb
+index 0000000..cf69361
 --- /dev/null
-+++ b/arch/arm/mach-moxart/Makefile
-@@ -0,0 +1,3 @@
-+# Object file lists.
++++ b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock
+@@ -0,0 +1,19 @@
++Device Tree Clock bindings for arch-moxart
 +
-+obj-$(CONFIG_MACH_UC7112LX)	+= moxart.o
-diff --git a/arch/arm/mach-moxart/moxart.c b/arch/arm/mach-moxart/moxart.c
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++MOXA ART SoCs allow to determine core clock frequencies by reading
++a register.
++
++Required properties:
++- compatible : Should be "moxa,moxart-core-clock"
++- reg : Should contain registers location and length
++
++For example:
++
++	clk: core-clock@98100000 {
++		compatible = "moxa,moxart-core-clock";
++		reg = <0x98100000 0x34>;
++	};
+diff --git a/Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt b/Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt
 new file mode 100644
-index 0000000..86b4e49
+index 0000000..1be5875
 --- /dev/null
-+++ b/arch/arm/mach-moxart/moxart.c
-@@ -0,0 +1,43 @@
-+/*
-+ * arch/arm/mach-moxart/moxart.c
++++ b/Documentation/devicetree/bindings/gpio/moxa,moxart-gpio.txt
+@@ -0,0 +1,16 @@
++MOXA ART GPIO Controller
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-gpio"
++- reg : Should contain registers location and length
++	index 0 : input, output, and direction control
++	index 1 : enable/disable individual pins, pin 0-31
++
++Example:
++
++	gpio: gpio@98700000 {
++		compatible = "moxa,moxart-gpio";
++		reg =	<0x98700000 0xC>,
++			<0x98100100 0x4>;
++	};
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt b/Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt
+new file mode 100644
+index 0000000..58f1fe1
+--- /dev/null
++++ b/Documentation/devicetree/bindings/interrupt-controller/moxa,moxart-ic.txt
+@@ -0,0 +1,28 @@
++* MOXA ART Interrupt Controller
++
++MOXA ART Interrupt Controller (moxart-ic) is used on MOXA ART SoCs
++and supports 32 non-configurable number of interrupts
++
++Main node required properties:
++
++- compatible : "moxa,moxart-ic"
++- interrupt-controller : Identifies the node as an interrupt controller
++- #interrupt-cells : Specifies the number of cells needed to encode an
++  interrupt source. The type shall be a <u32> and the value shall be 2.
++
++  The first cell contains the interrupt number in the range [0-31].
++  The second cell contains the interrupt type
++
++- reg: physical base address and size of the intc registers map.
++- interrupt-mask: Specifies if the interrupt is edge or level-triggered
++  each bit represent an interrupt 0-31 where 1 signify edge
++
++Example:
++
++	intc: interrupt-controller@98800000 {
++		compatible = "moxa,moxart-ic";
++		reg = <0x98800000 0x38>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		interrupt-mask = <0x00080000>;
++	};
+diff --git a/Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt b/Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt
+new file mode 100644
+index 0000000..7cd7bd6
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt
+@@ -0,0 +1,17 @@
++MOXA ART SD Host Controller Interface
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-mmc"
++- reg : Should contain registers location and length
++- interrupts : Should contain the interrupt number
++- clocks : Should contain phandle for the internal bus clock "tclk"
++
++Example:
++
++	mmc: mmc@98e00000 {
++		compatible = "moxa,moxart-mmc";
++		reg = <0x98e00000 0x0000005C>;
++		interrupts = <5 0>;
++		clocks = <&tclk>;
++	};
+diff --git a/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt b/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
+new file mode 100644
+index 0000000..8be75cd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/moxa,moxart-mac.txt
+@@ -0,0 +1,25 @@
++MOXA ART Ethernet Controller
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-mac"
++- reg : Should contain registers location and length
++  index 0 : main register
++  index 1 : mac address (stored on flash)
++- interrupts : Should contain the mac interrupt number
++
++Example:
++
++	mac0: mac@90900000 {
++		compatible = "moxa,moxart-mac";
++		reg =	<0x90900000 0x1000>,
++			<0x80000050 0x6>;
++		interrupts = <25 0>;
++	};
++
++	mac1: mac@92000000 {
++		compatible = "moxa,moxart-mac";
++		reg =	<0x92000000 0x1000>,
++			<0x80000056 0x6>;
++		interrupts = <27 0>;
++	};
+diff --git a/Documentation/devicetree/bindings/rtc/moxa,moxart-rtc.txt b/Documentation/devicetree/bindings/rtc/moxa,moxart-rtc.txt
+new file mode 100644
+index 0000000..65f632c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/rtc/moxa,moxart-rtc.txt
+@@ -0,0 +1,11 @@
++MOXA ART real-time clock
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-rtc"
++
++Example:
++
++	rtc: rtc {
++		compatible = "moxa,moxart-rtc";
++	};
+diff --git a/Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt b/Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt
+new file mode 100644
+index 0000000..9015b88
+--- /dev/null
++++ b/Documentation/devicetree/bindings/timer/moxa,moxart-timer.txt
+@@ -0,0 +1,17 @@
++MOXA ART timer
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-timer"
++- reg : Should contain registers location and length
++- interrupts : Should contain the timer interrupt number
++- clocks : Should contain phandle for the internal bus clock "tclk"
++
++Example:
++
++	timer: timer@98400000 {
++		compatible = "moxa,moxart-timer";
++		reg = <0x98400000 0x10>;
++		interrupts = <19 1>;
++		clocks = <&tclk>;
++	};
+diff --git a/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+new file mode 100644
+index 0000000..00a23b9
+--- /dev/null
++++ b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+@@ -0,0 +1,15 @@
++MOXA ART Watchdog timer
++
++Required properties:
++
++- compatible : Should be "moxa,moxart-watchdog"
++- reg : Should contain registers location and length
++- clocks : Should contain phandle for the internal bus clock "tclk"
++
++Example:
++
++	watchdog: watchdog@98500000 {
++		compatible = "moxa,moxart-watchdog";
++		reg = <0x98500000 0x10>;
++		clocks = <&tclk>;
++	};
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 2cec2ff..66d4d73 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -96,6 +96,7 @@ dtb-$(CONFIG_ARCH_KIRKWOOD) += kirkwood-cloudbox.dtb \
+ 	kirkwood-ts219-6282.dtb \
+ 	kirkwood-openblocks_a6.dtb
+ dtb-$(CONFIG_ARCH_MARCO) += marco-evb.dtb
++dtb-$(CONFIG_ARCH_MOXART) += moxart-uc7112lx.dtb
+ dtb-$(CONFIG_ARCH_MSM) += msm8660-surf.dtb \
+ 	msm8960-cdp.dtb
+ dtb-$(CONFIG_ARCH_MVEBU) += armada-370-db.dtb \
+diff --git a/arch/arm/boot/dts/moxart-uc7112lx.dts b/arch/arm/boot/dts/moxart-uc7112lx.dts
+new file mode 100644
+index 0000000..db65575
+--- /dev/null
++++ b/arch/arm/boot/dts/moxart-uc7112lx.dts
+@@ -0,0 +1,82 @@
++/* moxart-uc7112lx.dts - Device Tree file for MOXA UC-7112-LX
 + *
-+ * (C) Copyright 2013, Jonas Jensen <jonas.jensen@gmail.com>
++ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
-+ * MA 02111-1307 USA
++ * Licensed under GPLv2 or later.
 + */
 +
-+#include <linux/init.h>
-+#include <linux/clocksource.h>
-+#include <linux/of_platform.h>
-+#include <linux/clk-provider.h>
++/dts-v1/;
++/include/ "moxart.dtsi"
 +
-+#include <asm/mach/arch.h>
++/ {
++	model = "MOXA UC-7112-LX";
++	compatible = "moxa,moxart-uc-7112-lx", "moxa,moxart";
 +
-+static const char * const moxart_dt_compat[] = {
-+	"moxa,moxart",
-+	NULL,
++	memory {
++		/* SAMSUNG K4S561632J-UC75 */
++		device_type = "memory";
++		reg = <0x0 0x2000000>;
++	};
++
++	flash@80000000,0 {
++		/* JS28F128 J3D75 A9087684
++		 * Numonyx Embedded Flash Memory (J3 v. D)
++		 */
++		compatible = "numonyx,js28f128", "cfi-flash";
++		reg = <0x80000000 0x1000000>;
++		bank-width = <2>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++		partition@0 {
++			label = "bootloader";
++			reg = <0x0 0x40000>;
++		};
++		partition@40000 {
++			label = "linux kernel";
++			reg = <0x40000 0x1C0000>;
++		};
++		partition@200000 {
++			label = "root filesystem";
++			reg = <0x200000 0x800000>;
++		};
++		partition@a00000 {
++			label = "user filesystem";
++			reg = <0xa00000 0x600000>;
++		};
++	};
++
++	mmc: mmc@98e00000 {
++		compatible = "moxa,moxart-mmc";
++		reg = <0x98e00000 0x5C>;
++		interrupts = <5 0>;
++		clocks = <&clkapb>;
++	};
++
++	mac0: mac@90900000 {
++		compatible = "moxa,moxart-mac";
++		reg =   <0x90900000 0x100>,
++			<0x80000050 0x6>;
++		interrupts = <25 0>;
++	};
++
++	mac1: mac@92000000 {
++		compatible = "moxa,moxart-mac";
++		reg =	<0x92000000 0x100>,
++			<0x80000056 0x6>;
++		interrupts = <27 0>;
++	};
++
++	uart0: uart@98200000 {
++		compatible = "ns16550a";
++		reg = <0x98200000 0x20>;
++		interrupts = <31 8>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++		clock-frequency = <14745600>;
++		status = "okay";
++	};
++
++	chosen {
++		bootargs = "console=ttyS0,115200n8 root=/dev/mtdblock2 rootfstype=jffs2 rw";
++	};
 +};
+diff --git a/arch/arm/boot/dts/moxart.dtsi b/arch/arm/boot/dts/moxart.dtsi
+new file mode 100644
+index 0000000..40f20f3
+--- /dev/null
++++ b/arch/arm/boot/dts/moxart.dtsi
+@@ -0,0 +1,79 @@
++/* moxart.dtsi - Device Tree Include file for MOXA ART family SoC
++ *
++ * Copyright (C) 2013 Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * Licensed under GPLv2 or later.
++ */
 +
-+static void __init moxart_init_time(void)
-+{
-+	of_clk_init(NULL);
-+	clocksource_of_init();
-+}
++/include/ "skeleton.dtsi"
 +
-+DT_MACHINE_START(MOXART, "MOXA UC-7112-LX")
-+	.init_time		= moxart_init_time,
-+	.dt_compat		= moxart_dt_compat,
-+MACHINE_END
++/ {
++	compatible = "moxa,moxart";
++	model = "MOXART";
++	interrupt-parent = <&intc>;
++
++	cpus {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		cpu@0 {
++			device_type = "cpu";
++			compatible = "faraday,fa526";
++			reg = <0>;
++		};
++	};
++
++	clocks {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		clkapb: clkapb {
++			compatible = "moxa,moxart-apb-clock";
++			#clock-cells = <0>;
++		};
++	};
++
++	soc {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		reg = <0x90000000 0x10000000>;
++		ranges;
++
++		intc: interrupt-controller@98800000 {
++			compatible = "moxa,moxart-ic";
++			reg = <0x98800000 0x38>;
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			interrupt-mask = <0x00080000>;
++		};
++
++		clk: core-clock@98100000 {
++			compatible = "moxa,moxart-core-clock";
++			reg = <0x98100000 0x34>;
++		};
++
++		timer: timer@98400000 {
++			compatible = "moxa,moxart-timer";
++			reg = <0x98400000 0x42>;
++			interrupts = <19 1>;
++			clocks = <&clkapb>;
++		};
++
++		gpio: gpio@98700000 {
++			compatible = "moxa,moxart-gpio";
++			reg =	<0x98700000 0xC>,
++				<0x98100100 0x4>;
++		};
++
++		rtc: rtc {
++			compatible = "moxa,moxart-rtc";
++		};
++
++		watchdog: watchdog@98500000 {
++			compatible = "moxa,moxart-watchdog";
++			reg = <0x98500000 0x10>;
++			clocks = <&clkapb>;
++		};
++	};
++};
 -- 
 1.8.2.1
 
