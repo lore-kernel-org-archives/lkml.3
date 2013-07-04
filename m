@@ -1,56 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab3GDMlO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:41:14 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58237 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752167Ab3GDMlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:41:13 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Haicheng Li <haicheng.li@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Haicheng Li <haicheng.lee@gmail.com>
-Subject: Re: [PATCH] acpi: remove unused LIST_HEAD(acpi_device_list)
-Date: Thu, 04 Jul 2013 14:50:53 +0200
-Message-ID: <41636089.XPqKizzent@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1372910831-19721-1-git-send-email-haicheng.li@linux.intel.com>
-References: <20130704022730.GB3244@hli22-desktop> <1372910831-19721-1-git-send-email-haicheng.li@linux.intel.com>
+	id S1756652Ab3GDMmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:42:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38846 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756491Ab3GDMmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 08:42:05 -0400
+Date: Thu, 4 Jul 2013 14:41:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH v2 3/7] perf, x86: Introduce x86 special perf event
+ context
+Message-ID: <20130704124148.GI23916@twins.programming.kicks-ass.net>
+References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
+ <1372663387-11754-4-git-send-email-zheng.z.yan@intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372663387-11754-4-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 04, 2013 12:07:11 PM Haicheng Li wrote:
-> acpi_device_list is not used by acpi code anymore, could be removed.
+On Mon, Jul 01, 2013 at 03:23:03PM +0800, Yan, Zheng wrote:
+> From: "Yan, Zheng" <zheng.z.yan@intel.com>
 > 
-> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+> The x86 special perf event context is named x86_perf_event_context,
+> We can enlarge it later to store PMU special data.
 
-OK, applied.
+This changelog is completely inadequate. It fails to state what and why
+we do things.
 
-Thanks,
-Rafael
+I hate doing this; but I can't see another way around it either. That
+said:
 
+> @@ -274,6 +274,11 @@ struct pmu {
+>  	 * flush branch stack on context-switches (needed in cpu-wide mode)
+>  	 */
+>  	void (*flush_branch_stack)	(void);
+> +
+> +	/*
+> +	 * Allocate PMU special perf event context
+> +	 */
+> +	void *(*event_context_alloc)	(struct perf_event_context *parent_ctx);
+>  };
 
-> ---
->  drivers/acpi/scan.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 27da630..fcc0cdc 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -29,7 +29,6 @@ extern struct acpi_device *acpi_root;
+It should be *optional*, also wtf is that parent_ctx thing for?
+
+> +++ b/kernel/events/core.c
+> @@ -2961,13 +2961,20 @@ static void __perf_event_init_context(struct perf_event_context *ctx)
+>  }
 >  
->  static const char *dummy_hid = "device";
+>  static struct perf_event_context *
+> -alloc_perf_context(struct pmu *pmu, struct task_struct *task)
+> +alloc_perf_context(struct pmu *pmu, struct task_struct *task,
+> +		   struct perf_event_context *parent_ctx)
+>  {
+>  	struct perf_event_context *ctx;
 >  
-> -static LIST_HEAD(acpi_device_list);
->  static LIST_HEAD(acpi_bus_id_list);
->  static DEFINE_MUTEX(acpi_scan_lock);
->  static LIST_HEAD(acpi_scan_handlers_list);
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> -	ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
+> -	if (!ctx)
+> -		return NULL;
+> +	if (pmu->event_context_alloc) {
+> +		ctx = pmu->event_context_alloc(parent_ctx);
+> +		if (IS_ERR(ctx))
+> +			return ctx;
+> +	} else {
+> +		ctx = kzalloc(sizeof(struct perf_event_context), GFP_KERNEL);
+> +		if (!ctx)
+> +			return ERR_PTR(-ENOMEM);
+> +	}
+>  
+>  	__perf_event_init_context(ctx);
+>  	if (task) {
+
+I'm not at all sure we want to do it like this; why not simply query the
+size. Something like:
+
+  alloc_perf_context(struct pmu *pmu, struct task_struct *task)
+  {
+    size_t ctx_size = sizeof(struct perf_event_context);
+
+    if (pmu->task_context_size)
+      size = pmu->task_context_size();
+
+    ctx = kzalloc(size, GFP_KERNEL);
+    if (!ctx)
+      return ERR_PTR(-ENOMEM);
+
+    ...
+
+  }
+
+
