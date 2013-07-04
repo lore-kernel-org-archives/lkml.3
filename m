@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756850Ab3GDRWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 13:22:13 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:51655 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756626Ab3GDRWL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 13:22:11 -0400
+	id S1756835Ab3GDRnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 13:43:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56078 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756593Ab3GDRnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 13:43:08 -0400
+Date: Thu, 4 Jul 2013 19:43:04 +0200
+From: Jan Kara <jack@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Rebased for_next branch in my linux-fs git tree
+Message-ID: <20130704174304.GA30265@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20130704074902.GA32211@redhat.com>
-References: <20130704015525.GA8486@redhat.com>
-	<CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
-	<20130704074902.GA32211@redhat.com>
-Date: Thu, 4 Jul 2013 10:22:09 -0700
-X-Google-Sender-Auth: FzCrCc0MN5MuS6D8CSFiS8rx7l4
-Message-ID: <CA+55aFz+Bo+MGMmUsuxb2uHRNBUvKEdQqR7nZTTQdHOtgnVkDw@mail.gmail.com>
-Subject: Re: scheduling while atomic & hang.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Anvin <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 4, 2013 at 12:49 AM, Dave Jones <davej@redhat.com> wrote:
->
-> top of tree was 0b0585c3e192967cb2ef0ac0816eb8a8c8d99840 I think.
-> (That's what it is on my local box that I pull all my test trees from,
-> and I don't think it changed after I started that run, but I'll
-> double check on Friday)
+  Hello Stephen,
 
-Ok. So that has all the scheduler changes, and all the x86 changes
-(and all the cgroup workqueue changes too - but without any call chain
-at all, I'm disinclined to blame those yet).
+  I'm just writing this to let you know that I had to rebase for_next
+branch in my linux-fs git tree because I've messed up my tree and for_linus
+& for_next branches contained the same patches but with different commit
+IDs (fast track fixes). When I pulled for_next into for_linus branch,
+the changelog had commit logs for those patches twice which was rather
+confusing. The only solution I found was to rebase for_next on top of
+for_linus to get rid of the duplicate patches. If there's a cleaner
+solution of the situation, I'm happy to learn it for future...
 
-> I don't use the auto config, because I end up filling up /boot
-> unless I go through and clean them out by hand every time I install
-> a new one (which I do probably a dozen or so times a day).
-> Is there some easy way to prune old builds I'm missing ?
+This is just that you know what's going on when you are doing your merge
+window statistics :).
 
-I'm sure it could be done automatically some way, but yeah, I just do
-it by hand. I often *compile* dozens of kernels a day, but I seldom
-install more than one or two even during the merge window..
-
-              Linus
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
