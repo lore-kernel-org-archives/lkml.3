@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab3GDOvp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 10:51:45 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:36159 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756590Ab3GDOvn (ORCPT
+	id S1756824Ab3GDOvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 10:51:54 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49656 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab3GDOvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 10:51:43 -0400
-Message-ID: <51D58BF1.1050202@hp.com>
-Date: Thu, 04 Jul 2013 10:51:29 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 4 Jul 2013 10:51:51 -0400
+Date: Thu, 4 Jul 2013 15:51:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
+Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
+        sbkim73@samsung.com, Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>
+Message-ID: <20130704145126.GB27646@sirena.org.uk>
+References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
+ <1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
+ <20130703180511.GA374@sirena.org.uk>
+ <CAKew6eVs+D4Yf+9=e+0fj0UaZQ98gJ-1=CX30_H0p-xnF75gaw@mail.gmail.com>
+ <20130704092249.GK27646@sirena.org.uk>
+ <CAKew6eVWt==t3NZTwvULTBmWSHkAf6jNuPcj8p711st_7ZmRAw@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Layton <jlayton@redhat.com>, Miklos Szeredi <mszeredi@suse.cz>,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ian Kent <raven@themaw.net>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v4 04/12] auto-fs: rename d_count field of dentry to d_refcount
-References: <1372908808-33304-1-git-send-email-Waiman.Long@hp.com> <CA+55aFzKfPG=CH+vZBUQMNd32qsuxPF1D3c3DB2Dm8w1QCb1+w@mail.gmail.com> <20130704045956.GO4165@ZenIV.linux.org.uk>
-In-Reply-To: <20130704045956.GO4165@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Fn2ULVzEyi3v7cW"
+Content-Disposition: inline
+In-Reply-To: <CAKew6eVWt==t3NZTwvULTBmWSHkAf6jNuPcj8p711st_7ZmRAw@mail.gmail.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/4] mfd: s2mps11: Add device tree support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2013 12:59 AM, Al Viro wrote:
-> On Wed, Jul 03, 2013 at 08:50:07PM -0700, Linus Torvalds wrote:
->> On Wed, Jul 3, 2013 at 8:33 PM, Waiman Long<Waiman.Long@hp.com>  wrote:
->>> Because of the d_count name change made in dcache.h, all references
->>> to d_count have to be changed to d_refcount.  There is no change in
->>> logic and everything should just work.
->> These filesystem patches need to be just joined into the same patch
->> that does the d_count ->  d_refcount change.
->>
->> Otherwise the kernel won't build in lots of configurations for some
->> commits, which makes things like bisecting much more painful than it
->> should be.
->>
->> So we can't do piece-meal changes that break the build for parts of the tree.
-> Frankly, my preference here would be to add static inline unsigned d_count(...)
-> and convert the uses of ->d_count outside of fs/{dcache.c,namei.c} and
-> include/linux/dcache.c to it as the first commit.  All users outside those
-> are readers, so there's no point playing with macros in this case...
 
-Yes, I could do that.
+--4Fn2ULVzEyi3v7cW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Regards,
-Longman
+On Thu, Jul 04, 2013 at 05:13:46PM +0530, Yadwinder Singh Brar wrote:
+> On Thu, Jul 4, 2013 at 2:52 PM, Mark Brown <broonie@kernel.org> wrote:
 
+> > That's just an issue in the code if that is the case, you can test for
+> > the presence of a property independently of getting its value.
 
+> Yes, for that we will need an extra flag (ramp_disable) in
+> constraints, to figure out whether
+> ramp-rate is actually set to zero or its left (by default) zero if we
+> do it in common code as
+> now we have locally in driver.
+
+Yes, I agree that makes sense for the constraints.
+
+> I think its matter of assumption, so to conclude our discussion,
+> please let me know that which approach we should use:
+> - assume "regulator-ramp-delay = <0>" as ramp_disable.
+> or
+> - parsing "regulator_ramp_disable" from DT.
+
+I prefer the first option.
+
+--4Fn2ULVzEyi3v7cW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1YvrAAoJELSic+t+oim9p+oQAJCBZZPMrTzKMlLx2b33IPPP
+xbI0XIJxvbPzaC+Z7r5ks0oVfWQrxW5It8iEO5kreQADRFxqdoczGaS0BY0Yo0+Z
+slggDK9NFi726ksE+M5FF8axRLFGfdS11b8JsYvvwfR3V59c19ZDbdtHRSEHogh2
+P47oPB18OX+Bv6B53aPcOfpx/+5Ddc0Dq+8qXv93EV/jcxE/6dBroGkGVqOoXM/T
+onAx8x+SAIgvB+PHpfWjp7rbPVOOPcU1UUMSCuAjVqq99unfrtMM/FhhK+vGYJUG
+NDXNoFBaO4c+rPYBzwuGV3dh+2Cu+LxecVs1A28geLJOMLdFQB2J3qyzzGkzRzFS
+IvIqtZhP0rKR3Drm/k3P6gWKHQ3+LIvQhcNu/dn3BUmwjJBwNSj8nxDLGC65IVcZ
+Pp44G7i2Rco8u6/e0tNhhV0SMo1sV3afY2iPNzEOK0ivJnaB1yCTFT6DEahdZx/O
+ImKdzTlfj8XrMWvhIzNS421upGgK2ow1mnNnmgtDad67moMKoobE+w/VhmJVbRYl
+9JVtHfXFCEmHQMT3wicgg1sDYgizB3yk3qaSHfWq8fQdQLHZrYVVLOCuDeV12PQA
+XZhavN4gsYg/XmfUgvL8/vVehC2k2a0wY2II65sRwAM/JKlaVGIBAtj4R8+3ZkXW
+oMc/e8MUtBijaao3AuFI
+=xZJa
+-----END PGP SIGNATURE-----
+
+--4Fn2ULVzEyi3v7cW--
