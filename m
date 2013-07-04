@@ -1,80 +1,297 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab3GDMwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:52:23 -0400
-Received: from ozlabs.org ([203.10.76.45]:51345 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab3GDMwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:52:21 -0400
-Date: Thu, 4 Jul 2013 22:52:18 +1000
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Vince Weaver <vince@deater.net>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        vincent.weaver@maine.edu, Stephane Eranian <eranian@google.com>,
-        sukadev@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for perf
-Message-ID: <20130704125218.GA21134@concordia>
-References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
- <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy>
+	id S1754991Ab3GDMzO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:55:14 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34492 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab3GDMzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 08:55:12 -0400
+Message-ID: <51D570A5.4070407@hitachi.com>
+Date: Thu, 04 Jul 2013 21:55:01 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>
+Subject: Re: [PATCH 1/2 v6] tracing/uprobes: Support ftrace_event_file base
+ multibuffer
+References: <51D556B1.6010402@huawei.com>
+In-Reply-To: <51D556B1.6010402@huawei.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 12:46:42PM -0400, Vince Weaver wrote:
-> On Tue, 25 Jun 2013, Runzhen Wang wrote:
+(2013/07/04 20:04), zhangwei(Jovi) wrote:
+> Support multi-buffer on uprobe-based dynamic events by
+> using ftrace_event_file.
 > 
-> > This patch makes all the POWER7 events available in sysfs.
-> > 
-> > ...
-> >
-> > $ size arch/powerpc/perf/power7-pmu.o
-> >    text	   data	    bss	    dec	    hex	filename
-> >    3073	   2720	      0	   5793	   16a1	arch/powerpc/perf/power7-pmu.o
-> > 
-> > and after the patch is applied, it is:
-> > 
-> > $ size arch/powerpc/perf/power7-pmu.o
-> >    text	   data	    bss	    dec	    hex	filename
-> >   15950	  31112	      0	  47062	   b7d6	arch/powerpc/perf/power7-pmu.o
+> This patch is based kprobe-based dynamic events multibuffer
+> support work initially, commited by Masami(commit 41a7dd420c),
+> but revised as below:
 > 
-> So if I'm reading this right, there's 45k of overhead for just one cpu 
-> type?
-
-I think there's another ~56K at runtime too, at least on my system where
-each sysfs_dirent is 112 bytes.
- 
-> What happens if we do this on x86?
+> Oleg changed the kprobe-based multibuffer design from
+> array-pointers of ftrace_event_file into simple list,
+> so this patch also change to the list design.
 > 
-> If we have similar for p6/p4/core2/nehalem/ivb/snb/amd10h/amd15h/amd16h/knb
-> that's 450k of event defintions in the kernel.  And may I remind everyone 
-> that you can't compile perf_event support as a module, nor can you 
-> unconfigure it on x86 (it's always built in, no option to disable).
+> rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
+> to synchronize with ftrace_event_file list add and delete.
+> 
+> Even though we allow multi-uprobes instances now,
+> but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
+> in probe_event_enable currently, this means we cannot allow
+> one user is using uprobe-tracer, and another user is using
+> perf-probe on same uprobe concurrently.
+> (Perhaps this will be fix in future, kprobe don't have this
+> limitation now)
+> 
+> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 
-To be honest on Power7 systems we're not really bothered about ~100K,
-that's less than two pages. But I agree with your point that it's
-getting a bit silly.
+Looks good for me :)
 
-Various folks have tried over the years to get alternative approaches
-adopted (as I'm sure you know), and this has just ended up as the path
-of least resistance.
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-> I'd like to repeat my unpopular position that we just link perf against 
-> libpfm4 and keep event tables in userspace where they belong.
+Thank you!
 
-I don't think it even needs libpfm4, just some csv files in tools/perf
-would do the trick.
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> CC: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/trace_uprobe.c |  119 ++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 100 insertions(+), 19 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 32494fb0..2fc9931 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -53,6 +53,7 @@ struct trace_uprobe {
+>  	struct list_head		list;
+>  	struct ftrace_event_class	class;
+>  	struct ftrace_event_call	call;
+> +	struct list_head		files;
+>  	struct trace_uprobe_filter	filter;
+>  	struct uprobe_consumer		consumer;
+>  	struct inode			*inode;
+> @@ -65,6 +66,11 @@ struct trace_uprobe {
+>  	struct probe_arg		args[];
+>  };
+> 
+> +struct event_file_link {
+> +	struct ftrace_event_file	*file;
+> +	struct list_head		list;
+> +};
+> +
+>  #define SIZEOF_TRACE_UPROBE(n)			\
+>  	(offsetof(struct trace_uprobe, args) +	\
+>  	(sizeof(struct probe_arg) * (n)))
+> @@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
+>  		goto error;
+> 
+>  	INIT_LIST_HEAD(&tu->list);
+> +	INIT_LIST_HEAD(&tu->files);
+>  	tu->consumer.handler = uprobe_dispatcher;
+>  	if (is_ret)
+>  		tu->consumer.ret_handler = uretprobe_dispatcher;
+> @@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
+>  };
+> 
+>  static void uprobe_trace_print(struct trace_uprobe *tu,
+> -				unsigned long func, struct pt_regs *regs)
+> +				unsigned long func, struct pt_regs *regs,
+> +				struct ftrace_event_file *ftrace_file)
+>  {
+>  	struct uprobe_trace_entry_head *entry;
+>  	struct ring_buffer_event *event;
+> @@ -520,9 +528,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  	int size, i;
+>  	struct ftrace_event_call *call = &tu->call;
+> 
+> +	WARN_ON(call != ftrace_file->event_call);
+> +
+>  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+> -	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+> -						  size + tu->size, 0, 0);
+> +	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
+> +						call->event.type,
+> +						size + tu->size, 0, 0);
+>  	if (!event)
+>  		return;
+> 
+> @@ -546,15 +557,28 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+>  /* uprobe handler */
+>  static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  {
+> -	if (!is_ret_probe(tu))
+> -		uprobe_trace_print(tu, 0, regs);
+> +	struct event_file_link *link;
+> +
+> +	if (is_ret_probe(tu))
+> +		return 0;
+> +
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(link, &tu->files, list)
+> +		uprobe_trace_print(tu, 0, regs, link->file);
+> +	rcu_read_unlock();
+> +
+>  	return 0;
+>  }
+> 
+>  static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
+>  				struct pt_regs *regs)
+>  {
+> -	uprobe_trace_print(tu, func, regs);
+> +	struct event_file_link *link;
+> +
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(link, &tu->files, list)
+> +		uprobe_trace_print(tu, func, regs, link->file);
+> +	rcu_read_unlock();
+>  }
+> 
+>  /* Event entry printers */
+> @@ -605,33 +629,89 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+>  				struct mm_struct *mm);
+> 
+>  static int
+> -probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
+> +probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
+> +		   filter_func_t filter)
+>  {
+> -	int ret = 0;
+> +	bool enabled = is_trace_uprobe_enabled(tu);
+> +	struct event_file_link *link;
+> +	int ret;
+> +
+> +	if (file) {
+> +		if (tu->flags & TP_FLAG_PROFILE)
+> +			return -EINTR;
+> 
+> -	if (is_trace_uprobe_enabled(tu))
+> -		return -EINTR;
+> +		link = kmalloc(sizeof(*link), GFP_KERNEL);
+> +		if (!link)
+> +			return -ENOMEM;
+> +
+> +		link->file = file;
+> +		list_add_tail_rcu(&link->list, &tu->files);
+> +
+> +		tu->flags |= TP_FLAG_TRACE;
+> +	} else {
+> +		if (tu->flags & TP_FLAG_TRACE)
+> +			return -EINTR;
+> +
+> +		tu->flags |= TP_FLAG_PROFILE;
+> +	}
+> 
+>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+> 
+> -	tu->flags |= flag;
+> +	if (enabled)
+> +		return 0;
+> +
+>  	tu->consumer.filter = filter;
+>  	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+> -	if (ret)
+> -		tu->flags &= ~flag;
+> +	if (ret) {
+> +		if (file) {
+> +			list_del(&link->list);
+> +			kfree(link);
+> +			tu->flags &= ~TP_FLAG_TRACE;
+> +		} else
+> +			tu->flags &= ~TP_FLAG_PROFILE;
+> +	}
+> 
+>  	return ret;
+>  }
+> 
+> -static void probe_event_disable(struct trace_uprobe *tu, int flag)
+> +static struct event_file_link *
+> +find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
+> +{
+> +	struct event_file_link *link;
+> +
+> +	list_for_each_entry(link, &tu->files, list)
+> +		if (link->file == file)
+> +			return link;
+> +
+> +	return NULL;
+> +}
+> +
+> +static void
+> +probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
+>  {
+>  	if (!is_trace_uprobe_enabled(tu))
+>  		return;
+> 
+> +	if (file) {
+> +		struct event_file_link *link;
+> +
+> +		link = find_event_file_link(tu, file);
+> +		if (!link)
+> +			return;
+> +
+> +		list_del_rcu(&link->list);
+> +		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
+> +		synchronize_sched();
+> +		kfree(link);
+> +
+> +		if (!list_empty(&tu->files))
+> +			return;
+> +	}
+> +
+>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+> 
+>  	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+> -	tu->flags &= ~flag;
+> +	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
+>  }
+> 
+>  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+> @@ -867,21 +947,22 @@ static
+>  int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
+>  {
+>  	struct trace_uprobe *tu = event->data;
+> +	struct ftrace_event_file *file = data;
+> 
+>  	switch (type) {
+>  	case TRACE_REG_REGISTER:
+> -		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
+> +		return probe_event_enable(tu, file, NULL);
+> 
+>  	case TRACE_REG_UNREGISTER:
+> -		probe_event_disable(tu, TP_FLAG_TRACE);
+> +		probe_event_disable(tu, file);
+>  		return 0;
+> 
+>  #ifdef CONFIG_PERF_EVENTS
+>  	case TRACE_REG_PERF_REGISTER:
+> -		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
+> +		return probe_event_enable(tu, NULL, uprobe_perf_filter);
+> 
+>  	case TRACE_REG_PERF_UNREGISTER:
+> -		probe_event_disable(tu, TP_FLAG_PROFILE);
+> +		probe_event_disable(tu, NULL);
+>  		return 0;
+> 
+>  	case TRACE_REG_PERF_OPEN:
+> 
 
-Instead we have Google using gooda, which provides event decoding on top
-of perf (via libpfm4). Andi Kleen at Intel has a tool that provides
-event decoding on top of perf. Presumably Facebook do too? And at IBM
-most folks still use oprofile, because it provides event decoding. 
 
-cheers
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
