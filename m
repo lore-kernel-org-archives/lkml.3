@@ -1,183 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab3GDMjp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:39:45 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:42139 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab3GDMjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:39:43 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, tglx@linutronix.de,
-        grant.likely@secretlab.ca, thomas.petazzoni@free-electrons.com,
-        arnd@arndb.de, u.kleine-koenig@pengutronix.de, linux@arm.linux.org.uk,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v5] ARM: irqchip: add support for MOXA ART SoCs
-Date: Thu,  4 Jul 2013 14:38:51 +0200
-Message-Id: <1372941531-6393-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1372689241-18758-1-git-send-email-jonas.jensen@gmail.com>
-References: <1372689241-18758-1-git-send-email-jonas.jensen@gmail.com>
+	id S1756620Ab3GDMkh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:40:37 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58233 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752167Ab3GDMke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 08:40:34 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lukasz Majewski <l.majewski@samsung.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [PATCH v4 5/7] cpufreq: Calculate number of busy CPUs
+Date: Thu, 04 Jul 2013 14:50:13 +0200
+Message-ID: <2394846.9qggnDATev@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAKohponiy3ebnt0_Cdaan5=DkAfA3U4g=m4NnYGLA-a+tPJJQg@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com> <20130701101516.7945e387@amdc308.digital.local> <CAKohponiy3ebnt0_Cdaan5=DkAfA3U4g=m4NnYGLA-a+tPJJQg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an irqchip driver for the main interrupt controller found
-on MOXA ART SoCs.
+On Thursday, July 04, 2013 10:36:53 AM Viresh Kumar wrote:
+> Hi Lukasz,
+> 
+> Sorry for being late. Actually I didn't had an answer to your mail
+> and wanted to go through it with some fresh mind. This is my
+> first mail this morning, lets see if I can bring something good
+> into the discussion.
+> 
+> On 1 July 2013 13:45, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > Does anybody have any idea here? As written above, thermal is suitable
+> > to disable boost.
+> 
+> See, one thing is very clear. User space applications aren't responsible
+> for enabling boost again and again. There has to be a internal mechanism
+> inside kernel for that.
+> 
+> > I'd like to bring those three options under discussion:
+> >
+> > 1. boost attr is always exported -> do not enable boost automatically
+> >    when disabled by thermal (as it was proposed at v4).
+> 
+> So, that's a problem. I see one more solution to that.
+> - Create another Macro in cpufreq.c which would contain the time
+> after which we will autoenable boost.
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+Well, how can we tell what time is correct here?  It may depend on factors not
+under our control or even variable, like the ambient temperature, so surely
+it might not be a hard coded value.
 
-Notes:
-    Applies to next-20130703
-    
-    Changes since v4:
-    
-    1. shorten DT compatible value to "moxart-ic"
-    2. use alphabetic ordering in Makefile
+> - So, suppose thermal disabled it due to high temperature (Lets not
+> change value of sysfs variable boost_enable, but create another
+> variable like: skip_boost: which means skip boost temporarily).
 
- drivers/irqchip/Makefile     |   1 +
- drivers/irqchip/irq-moxart.c | 118 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 119 insertions(+)
- create mode 100644 drivers/irqchip/irq-moxart.c
+What about "block_boost"?  Other than that, this particular item is a good idea
+I think.
 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 2065ef6..e65c41a 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_ARCH_MXS)			+= irq-mxs.o
- obj-$(CONFIG_ARCH_S3C24XX)		+= irq-s3c24xx.o
- obj-$(CONFIG_METAG)			+= irq-metag-ext.o
- obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
-+obj-$(CONFIG_ARCH_MOXART)		+= irq-moxart.o
- obj-$(CONFIG_ORION_IRQCHIP)		+= irq-orion.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
-diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
-new file mode 100644
-index 0000000..a9d9f36
---- /dev/null
-+++ b/drivers/irqchip/irq-moxart.c
-@@ -0,0 +1,118 @@
-+/*
-+ * MOXA ART SoCs IRQ chip driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/irqdomain.h>
-+
-+#include <asm/exception.h>
-+
-+#include "irqchip.h"
-+
-+#define IRQ_SOURCE_REG		0
-+#define IRQ_MASK_REG		0x04
-+#define IRQ_CLEAR_REG		0x08
-+#define IRQ_MODE_REG		0x0c
-+#define IRQ_LEVEL_REG		0x10
-+#define IRQ_STATUS_REG		0x14
-+
-+#define FIQ_SOURCE_REG		0x20
-+#define FIQ_MASK_REG		0x24
-+#define FIQ_CLEAR_REG		0x28
-+#define FIQ_MODE_REG		0x2c
-+#define FIQ_LEVEL_REG		0x30
-+#define FIQ_STATUS_REG		0x34
-+
-+
-+struct moxart_irq_data {
-+	void __iomem *base;
-+	struct irq_domain *domain;
-+	unsigned int interrupt_mask;
-+};
-+
-+static struct moxart_irq_data intc;
-+
-+static asmlinkage void __exception_irq_entry handle_irq(struct pt_regs *regs)
-+{
-+	u32 irqstat;
-+	int hwirq;
-+
-+	irqstat = readl(intc.base + IRQ_STATUS_REG);
-+
-+	while (irqstat) {
-+		hwirq = ffs(irqstat) - 1;
-+		handle_IRQ(irq_linear_revmap(intc.domain, hwirq), regs);
-+		irqstat &= ~(1 << hwirq);
-+	}
-+}
-+
-+static int __init moxart_of_intc_init(struct device_node *node,
-+				      struct device_node *parent)
-+{
-+	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-+	int ret;
-+	struct irq_chip_generic *gc;
-+
-+	intc.base = of_iomap(node, 0);
-+	if (!intc.base) {
-+		pr_err("%s: unable to map IC registers\n",
-+		       node->full_name);
-+		return -EINVAL;
-+	}
-+
-+	intc.domain = irq_domain_add_linear(node, 32, &irq_generic_chip_ops,
-+					    intc.base);
-+	if (!intc.domain) {
-+		pr_err("%s: unable to create IRQ domain\n", node->full_name);
-+		return -EINVAL;
-+	}
-+
-+	ret = irq_alloc_domain_generic_chips(intc.domain, 32, 1,
-+					     "MOXARTINTC", handle_edge_irq,
-+					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+	if (ret) {
-+		pr_err("%s: could not allocate generic chip\n",
-+		       node->full_name);
-+		irq_domain_remove(intc.domain);
-+		return -EINVAL;
-+	}
-+
-+	ret = of_property_read_u32(node, "interrupt-mask",
-+				   &intc.interrupt_mask);
-+	if (ret)
-+		pr_err("%s: could not read interrupt-mask DT property\n",
-+		       node->full_name);
-+
-+	gc = irq_get_domain_generic_chip(intc.domain, 0);
-+
-+	gc->reg_base = intc.base;
-+	gc->chip_types[0].regs.mask = IRQ_MASK_REG;
-+	gc->chip_types[0].regs.ack = IRQ_CLEAR_REG;
-+	gc->chip_types[0].chip.irq_ack = irq_gc_ack_set_bit;
-+	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
-+	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
-+
-+	writel(0, intc.base + IRQ_MASK_REG);
-+	writel(0xffffffff, intc.base + IRQ_CLEAR_REG);
-+
-+	writel(intc.interrupt_mask, intc.base + IRQ_MODE_REG);
-+	writel(intc.interrupt_mask, intc.base + IRQ_LEVEL_REG);
-+
-+	set_handle_irq(handle_irq);
-+
-+	return 0;
-+}
-+IRQCHIP_DECLARE(moxa_moxart_ic, "moxa,moxart-ic",
-+		moxart_of_intc_init);
+> - Thermal would enable this variable skip_boost.
+> - Then we will continue to get requests for next frequency and will
+> check eveytime if we have exceeded time for autoenabling boost.
+> - If yes, then we disable this variable and start boosting again..
+
+I wonder if we could use thermal watermarks instead?  Such that a high
+watermark would cause block_boost to be set and a low watermark would cause
+it to be reset?  And the thermal layer would be in control of both watermarks?
+
+> - Then thermal can disable it again later.
+
+Thanks,
+Rafael
+
+
 -- 
-1.8.2.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
