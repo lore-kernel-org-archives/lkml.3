@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933669Ab3GDDkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 23:40:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13525 "EHLO
+	id S933652Ab3GDDko (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 23:40:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3357 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933440Ab3GDDkk (ORCPT
+	with ESMTP id S933456Ab3GDDkk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 3 Jul 2013 23:40:40 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=kwCRlE8uItcA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=e-0I92L2Hf8A:10 a=ngVV-1ifIcZ1sTZkOpAA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=N292umeCppEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=XYSkxpo84ZsA:10 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=UG8OMjjE1b24vJNOs9MA:9 a=jeBq3FmKZ4MA:10 a=EvKJbDF4Ut8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130704034038.991525256@goodmis.org>
+Message-Id: <20130704034038.501144114@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 03 Jul 2013 23:33:51 -0400
+Date: Wed, 03 Jul 2013 23:33:48 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Oleg Nesterov <oleg@redhat.com>,
@@ -25,9 +25,9 @@ Cc: Oleg Nesterov <oleg@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC][PATCH 4/4] tracing/uprobes: Fail to unregister if probe event files are open
+Subject: [RFC][PATCH 1/4] tracing: Add ref count to ftrace_event_call
 References: <20130704033347.807661713@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-uprobes-Fail-to-unregister-if-probe-event-fi.patch
+Content-Disposition: inline; filename=0001-tracing-Add-ref-count-to-ftrace_event_call.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -42,140 +42,216 @@ that big of a deal, as they only reference the event calls which
 still exist when an instance disappears). But kprobes and uprobes
 do not have any protection.
 
-Have the unregister probe fail when the event files are open, in use
-are used by perf.
+ # cd /sys/kernel/debug/tracing
+ # echo 'p:sigprocmask sigprocmask' > kprobe_events || exit -1
+ # enable_probe() {
+	sleep 10
+	echo 1
+ }
+ # file=events/kprobes/sigprocmask/enable
+ # enable_probe > $file &
+ > kprobe_events
 
+The above will corrupt the kprobe system, as the write to the enable
+file will happen after the kprobe was deleted.
+
+Trying to create the probe again fails:
+
+ # echo 'p:sigprocmask sigprocmask' > kprobe_events
+ # cat kprobe_events
+p:kprobes/sigprocmask sigprocmask
+ # ls events/kprobes/
+enable  filter
+
+Notice that the sigprocmask does not exist.
+
+The first step to fix this is by adding ref counts to the ftrace_event_calls.
+Using the flags field, and protecting the updates with the event_mutex
+the ref count will be use the first 20 bits of the flags field, and the
+current flags will be shifted 20 bits.
+
+Link: http://lkml.kernel.org/r/1372883643.22688.118.camel@gandalf.local.home
+
+Suggested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_uprobe.c |   48 ++++++++++++++++++++++++++++++++-----------
- 1 file changed, 36 insertions(+), 12 deletions(-)
+ include/linux/ftrace_event.h |    6 ++++
+ kernel/trace/trace_events.c  |   76 +++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 77 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index d5d0cd3..4916da5 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -70,7 +70,7 @@ struct trace_uprobe {
- 	(sizeof(struct probe_arg) * (n)))
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4372658..72ff2c6 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -195,6 +195,7 @@ extern int ftrace_event_reg(struct ftrace_event_call *event,
+ 			    enum trace_reg type, void *data);
  
- static int register_uprobe_event(struct trace_uprobe *tu);
--static void unregister_uprobe_event(struct trace_uprobe *tu);
-+static int unregister_uprobe_event(struct trace_uprobe *tu);
+ enum {
++	TRACE_EVENT_FL_REF_MAX_BIT = 20,
+ 	TRACE_EVENT_FL_FILTERED_BIT,
+ 	TRACE_EVENT_FL_CAP_ANY_BIT,
+ 	TRACE_EVENT_FL_NO_SET_FILTER_BIT,
+@@ -203,6 +204,8 @@ enum {
+ };
  
- static DEFINE_MUTEX(uprobe_lock);
- static LIST_HEAD(uprobe_list);
-@@ -164,11 +164,17 @@ static struct trace_uprobe *find_probe_event(const char *event, const char *grou
+ /*
++ * Event ref count uses the first 20 bits of the flags field.
++ *
+  * Event flags:
+  *  FILTERED	  - The event has a filter attached
+  *  CAP_ANY	  - Any user can enable for perf
+@@ -213,6 +216,7 @@ enum {
+  *                     it is best to clear the buffers that used it).
+  */
+ enum {
++	TRACE_EVENT_FL_REF_MAX		= (1 << TRACE_EVENT_FL_REF_MAX_BIT),
+ 	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
+ 	TRACE_EVENT_FL_CAP_ANY		= (1 << TRACE_EVENT_FL_CAP_ANY_BIT),
+ 	TRACE_EVENT_FL_NO_SET_FILTER	= (1 << TRACE_EVENT_FL_NO_SET_FILTER_BIT),
+@@ -220,6 +224,8 @@ enum {
+ 	TRACE_EVENT_FL_WAS_ENABLED	= (1 << TRACE_EVENT_FL_WAS_ENABLED_BIT),
+ };
+ 
++#define TRACE_EVENT_FL_REF_MASK	(TRACE_EVENT_FL_REF_MAX - 1)
++
+ struct ftrace_event_call {
+ 	struct list_head	list;
+ 	struct ftrace_event_class *class;
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 7d85429..90cf243 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -391,6 +391,28 @@ static void __get_system_dir(struct ftrace_subsystem_dir *dir)
+ 	__get_system(dir->subsystem);
  }
  
- /* Unregister a trace_uprobe and probe_event: call with locking uprobe_lock */
--static void unregister_trace_uprobe(struct trace_uprobe *tu)
-+static int unregister_trace_uprobe(struct trace_uprobe *tu)
- {
-+	int ret;
-+
-+	ret = unregister_uprobe_event(tu);
-+	if (ret)
-+		return ret;
-+
- 	list_del(&tu->list);
--	unregister_uprobe_event(tu);
- 	free_trace_uprobe(tu);
-+	return 0;
- }
- 
- /* Register a trace_uprobe and probe_event */
-@@ -181,9 +187,12 @@ static int register_trace_uprobe(struct trace_uprobe *tu)
- 
- 	/* register as an event */
- 	old_tp = find_probe_event(tu->call.name, tu->call.class->system);
--	if (old_tp)
-+	if (old_tp) {
- 		/* delete old event */
--		unregister_trace_uprobe(old_tp);
-+		ret = unregister_trace_uprobe(old_tp);
-+		if (ret)
-+			goto end;
-+	}
- 
- 	ret = register_uprobe_event(tu);
- 	if (ret) {
-@@ -256,6 +265,8 @@ static int create_trace_uprobe(int argc, char **argv)
- 		group = UPROBE_EVENT_SYSTEM;
- 
- 	if (is_delete) {
-+		int ret;
-+
- 		if (!event) {
- 			pr_info("Delete command needs an event name.\n");
- 			return -EINVAL;
-@@ -269,9 +280,9 @@ static int create_trace_uprobe(int argc, char **argv)
- 			return -ENOENT;
- 		}
- 		/* delete an event */
--		unregister_trace_uprobe(tu);
-+		ret = unregister_trace_uprobe(tu);
- 		mutex_unlock(&uprobe_lock);
--		return 0;
-+		return ret;
- 	}
- 
- 	if (argc < 2) {
-@@ -408,16 +419,20 @@ fail_address_parse:
- 	return ret;
- }
- 
--static void cleanup_all_probes(void)
-+static int cleanup_all_probes(void)
- {
- 	struct trace_uprobe *tu;
++static int ftrace_event_call_get(struct ftrace_event_call *call)
++{
 +	int ret = 0;
- 
- 	mutex_lock(&uprobe_lock);
- 	while (!list_empty(&uprobe_list)) {
- 		tu = list_entry(uprobe_list.next, struct trace_uprobe, list);
--		unregister_trace_uprobe(tu);
-+		ret = unregister_trace_uprobe(tu);
-+		if (ret)
-+			break;
- 	}
- 	mutex_unlock(&uprobe_lock);
++
++	mutex_lock(&event_mutex);
++	if ((call->flags & TRACE_EVENT_FL_REF_MASK) == TRACE_EVENT_FL_REF_MAX - 1)
++		ret = -EBUSY;
++	else
++		call->flags++;
++	mutex_unlock(&event_mutex);
++
 +	return ret;
- }
- 
- /* Probes listing interfaces */
-@@ -462,8 +477,12 @@ static const struct seq_operations probes_seq_op = {
- 
- static int probes_open(struct inode *inode, struct file *file)
- {
-+	int ret = 0;
++}
 +
- 	if ((file->f_mode & FMODE_WRITE) && (file->f_flags & O_TRUNC))
--		cleanup_all_probes();
-+		ret = cleanup_all_probes();
-+	if (ret)
-+		return ret;
++static void ftrace_event_call_put(struct ftrace_event_call *call)
++{
++	mutex_lock(&event_mutex);
++	if (!WARN_ON_ONCE(!(call->flags & TRACE_EVENT_FL_REF_MASK)))
++		call->flags--;
++	mutex_unlock(&event_mutex);
++}
++
+ static void __put_system_dir(struct ftrace_subsystem_dir *dir)
+ {
+ 	WARN_ON_ONCE(dir->ref_count == 0);
+@@ -424,7 +446,15 @@ static int tracing_open_generic_file(struct inode *inode, struct file *filp)
  
- 	return seq_open(file, &probes_seq_op);
- }
-@@ -970,12 +989,17 @@ static int register_uprobe_event(struct trace_uprobe *tu)
+ 	ret = tracing_open_generic(inode, filp);
+ 	if (ret < 0)
+-		trace_array_put(tr);
++		goto fail;
++
++	ret = ftrace_event_call_get(file->event_call);
++	if (ret < 0)
++		goto fail;
++
++	return 0;
++ fail:
++	trace_array_put(tr);
  	return ret;
  }
  
--static void unregister_uprobe_event(struct trace_uprobe *tu)
-+static int unregister_uprobe_event(struct trace_uprobe *tu)
- {
-+	int ret;
-+
- 	/* tu->event is unregistered in trace_remove_event_call() */
--	trace_remove_event_call(&tu->call);
-+	ret = trace_remove_event_call(&tu->call);
-+	if (ret)
-+		return ret;
- 	kfree(tu->call.print_fmt);
- 	tu->call.print_fmt = NULL;
-+	return 0;
+@@ -433,12 +463,40 @@ static int tracing_release_generic_file(struct inode *inode, struct file *filp)
+ 	struct ftrace_event_file *file = inode->i_private;
+ 	struct trace_array *tr = file->tr;
+ 
++	ftrace_event_call_put(file->event_call);
+ 	trace_array_put(tr);
+ 
+ 	return 0;
  }
  
- /* Make a trace interface for controling probe points */
+ /*
++ * Open and update call ref count.
++ * Must have ftrace_event_call passed in.
++ */
++static int tracing_open_generic_call(struct inode *inode, struct file *filp)
++{
++	struct ftrace_event_call *call = inode->i_private;
++
++	return ftrace_event_call_get(call);
++}
++
++static int tracing_release_generic_call(struct inode *inode, struct file *filp)
++{
++	struct ftrace_event_call *call = inode->i_private;
++
++	ftrace_event_call_put(call);
++	return 0;
++}
++
++static int tracing_seq_release_call(struct inode *inode, struct file *filp)
++{
++	struct ftrace_event_call *call = inode->i_private;
++
++	ftrace_event_call_put(call);
++	return seq_release(inode, filp);
++}
++
++/*
+  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
+  */
+ static int
+@@ -949,10 +1007,16 @@ static int trace_format_open(struct inode *inode, struct file *file)
+ 	struct seq_file *m;
+ 	int ret;
+ 
+-	ret = seq_open(file, &trace_format_seq_ops);
++	ret = ftrace_event_call_get(call);
+ 	if (ret < 0)
+ 		return ret;
+ 
++	ret = seq_open(file, &trace_format_seq_ops);
++	if (ret < 0) {
++		ftrace_event_call_put(call);
++		return ret;
++	}
++
+ 	m = file->private_data;
+ 	m->private = call;
+ 
+@@ -1260,20 +1324,22 @@ static const struct file_operations ftrace_event_format_fops = {
+ 	.open = trace_format_open,
+ 	.read = seq_read,
+ 	.llseek = seq_lseek,
+-	.release = seq_release,
++	.release = tracing_seq_release_call,
+ };
+ 
+ static const struct file_operations ftrace_event_id_fops = {
+-	.open = tracing_open_generic,
++	.open = tracing_open_generic_call,
+ 	.read = event_id_read,
+ 	.llseek = default_llseek,
++	.release = tracing_release_generic_call,
+ };
+ 
+ static const struct file_operations ftrace_event_filter_fops = {
+-	.open = tracing_open_generic,
++	.open = tracing_open_generic_call,
+ 	.read = event_filter_read,
+ 	.write = event_filter_write,
+ 	.llseek = default_llseek,
++	.release = tracing_release_generic_call,
+ };
+ 
+ static const struct file_operations ftrace_subsystem_filter_fops = {
 -- 
 1.7.10.4
 
