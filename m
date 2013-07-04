@@ -1,97 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab3GDEBC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 00:01:02 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:48981 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705Ab3GDEBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 00:01:00 -0400
-Message-ID: <51D4F377.6080002@hitachi.com>
-Date: Thu, 04 Jul 2013 13:00:55 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/4] tracing/kprobes/uprobes: Fix race between
- opening probe event files and deleting probe
-References: <20130704033347.807661713@goodmis.org>
-In-Reply-To: <20130704033347.807661713@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1753604Ab3GDEHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 00:07:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7517 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750705Ab3GDEHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 00:07:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,992,1363158000"; 
+   d="scan'208";a="360295981"
+From: Haicheng Li <haicheng.li@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Haicheng Li <haicheng.lee@gmail.com>,
+        Haicheng Li <haicheng.li@linux.intel.com>
+Subject: [PATCH] acpi: remove unused LIST_HEAD(acpi_device_list)
+Date: Thu,  4 Jul 2013 12:07:11 +0800
+Message-Id: <1372910831-19721-1-git-send-email-haicheng.li@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130704022730.GB3244@hli22-desktop>
+References: <20130704022730.GB3244@hli22-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/04 12:33), Steven Rostedt wrote:
-> Currently there exists a race with deleting a kprobe or uprobe and
-> a user opening the probe event file or using perf events.
-> 
-> The problem stems from not being able to take the probe_lock from the
-> unregister code because we may have the event_mutex at the time, and
-> the event mutex may be taken with the probe_lock held.
-> 
-> To solve this, the events get a ref count (using the flags field), where
-> when an event file is opened, the ftrace_event_call ref count increments.
-> Then this is checked under event_mutex and if set, the unregistering
-> of the probe will fail.
-> 
-> Here's a test that shows how things break:
-> 
->      # cd /sys/kernel/debug/tracing
->      # echo 'p:sigprocmask sigprocmask' > kprobe_events || exit -1
->      # enable_probe() {
->         sleep 10
->         echo 1
->      }
->      # file=events/kprobes/sigprocmask/enable
->      # enable_probe > $file &
->      > kprobe_events
->     
->     The above will corrupt the kprobe system, as the write to the enable
->     file will happen after the kprobe was deleted.
->     
->     Trying to create the probe again fails:
->     
->      # echo 'p:sigprocmask sigprocmask' > kprobe_events
->      # cat kprobe_events
->     p:kprobes/sigprocmask sigprocmask
->      # ls events/kprobes/
->     enable  filter
-> 
-> After applying these patches, the "> kprobe_events" fails due to the
-> event being busy.
-> 
-> Masami, please review these patches and give your ack.
+acpi_device_list is not used by acpi code anymore, could be removed.
 
-Thanks Steven!
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+---
+ drivers/acpi/scan.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-> Oleg Nesterov (1):
->       tracing: trace_remove_event_call() should fail if call/file is in use
-> 
-> Steven Rostedt (Red Hat) (3):
->       tracing: Add ref count to ftrace_event_call
->       tracing/kprobes: Fail to unregister if probe event files are open
->       tracing/uprobes: Fail to unregister if probe event files are open
-
-I just started to look into the series, but the 3/4 and 4/4 seems same...
-Which one is good to go?
-
-Thank you,
-
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 27da630..fcc0cdc 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -29,7 +29,6 @@ extern struct acpi_device *acpi_root;
+ 
+ static const char *dummy_hid = "device";
+ 
+-static LIST_HEAD(acpi_device_list);
+ static LIST_HEAD(acpi_bus_id_list);
+ static DEFINE_MUTEX(acpi_scan_lock);
+ static LIST_HEAD(acpi_scan_handlers_list);
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.9.5
 
