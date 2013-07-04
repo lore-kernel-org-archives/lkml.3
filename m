@@ -1,192 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756443Ab3GDIDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:03:15 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:14352 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420Ab3GDIDM (ORCPT
+	id S933622Ab3GDIJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:09:19 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:43732 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab3GDIJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:03:12 -0400
-Message-ID: <51D52BFA.9030600@huawei.com>
-Date: Thu, 4 Jul 2013 16:02:02 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 4 Jul 2013 04:09:15 -0400
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 v5 typo updated] tracing/uprobes: Support ftrace_event_file
- base multibuffer
-References: <51D51BF7.1000602@huawei.com> <51D51DB6.6020701@huawei.com> <87ppuyzs9x.fsf@sejong.aot.lge.com>
-In-Reply-To: <87ppuyzs9x.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130704061204.GA12148@kroah.com>
+References: <20130704011221.GA11230@kroah.com>
+	<51D4D4A0.6080401@asianux.com>
+	<1372903390.22688.139.camel@gandalf.local.home>
+	<51D4D9A4.3020402@gmail.com>
+	<1372904975.22688.142.camel@gandalf.local.home>
+	<51D4E133.2010201@gmail.com>
+	<1372907201.22688.147.camel@gandalf.local.home>
+	<51D4EB7D.2020809@gmail.com>
+	<20130704040859.GA2869@kroah.com>
+	<51D4FF17.4040503@asianux.com>
+	<20130704061204.GA12148@kroah.com>
+Date: Thu, 4 Jul 2013 10:09:14 +0200
+X-Google-Sender-Auth: mT1PyxqXV3vBd6hQmawJl6e46y4
+Message-ID: <CAMuHMdXyb3SySosNn00dzqMnZ86-cPULqvhUWhUQ2aJy9bRBqQ@mail.gmail.com>
+Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
+ 'COMPILE_TEST' in 'asm-generic'.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Chen Gang <gang.chen@asianux.com>,
+        Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Arnd Bergmann <arnd@arndb.de>,
+        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
+        David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/4 15:41, Namhyung Kim wrote:
-> Hi Jovi,
-> 
-> Just a few of dummy questions..
-> 
-> 
-> On Thu, 4 Jul 2013 15:01:10 +0800, zhangwei wrote:
->> Support multi-buffer on uprobe-based dynamic events by
->> using ftrace_event_file.
+On Thu, Jul 4, 2013 at 8:12 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Jul 04, 2013 at 12:50:31PM +0800, Chen Gang wrote:
+>> On 07/04/2013 12:08 PM, Greg KH wrote:
+>> >> > config COMPILE_TEST
+>> >> >        bool "Compile also drivers which will not load"
+>> >> >        default n
+>> > This has _nothing_ to do with asm-generic, sorry.  Please don't confuse
+>> > the issue.
 >>
->> This patch is based kprobe-based dynamic events multibuffer
->> support work initially, commited by Masami(commit 41a7dd420c),
->> but revised as below:
+>> But when I choose allmodconfig, then "COMPILE_TEST=y". this may allow a
+>> module to compile under the architectures which no related HW support.
 >>
->> Oleg changed the kprobe-based multibuffer design from
->> array-pointers of ftrace_event_file into simple list,
->> so this patch also change to the list design.
+>> When cause compiling issue (HW not support), it is not module's issue,
+>> we can not 'fix' module by force, and it is not architecture's issue,
+>> either.
 >>
->> rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
->> to synchronize with ftrace_event_file list add and delete.
->>
->> Even though we allow multi-uprobes instances now,
->> but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
->> in probe_event_enable currently, this means we cannot allow
->> one user is using uprobe-tracer, and another user is using
->> perf-probe on same uprobe concurrently.
->> (Perhaps this will be fix in future, kprobe dont't have this
->> limitation now)
-> 
-> So why does this limitation exist?  Didn't we support this kind of thing
-> in the original code?
-> 
-Yes, it existed(maybe not exist before uprobe pre-filter work), because uprobe filter
-is associated with trace_uprobe tightly at present, so we cannot assign
-TP_FLAG_PROFILE/TP_FLAG_TRACE for same trace_uprobe with different filter.
+>> So we have to look for who has duty for this issue. At least now, it
+>> seems only 'asm-generic' can be qualified to play this unlucky role.
+>
+> You seem to not understand what asm-generic is, or does, or I still do
+> not understand what you are proposing.
+>
+> Please send a patch showing what you are trying to do here, so that we
+> can properly understand.
 
-Perhaps we need to remove the limitation in future.
+The patch is in the first email of this thread:
+https://lkml.org/lkml/2013/7/1/641
 
->>
->> Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
->> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Oleg Nesterov <oleg@redhat.com>
->> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->> ---
-> [SNIP]
->> +	rcu_read_lock();
->> +	list_for_each_entry(link, &tu->files, list)
-> 
-> list_for_each_entry_rcu() ?
-> 
-I haven't noticed this, thanks, I will update it.
-> 
->> +		uprobe_trace_print(tu, 0, regs, link->file);
->> +	rcu_read_unlock();
->> +
->>  	return 0;
->>  }
->>
->>  static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
->>  				struct pt_regs *regs)
->>  {
->> -	uprobe_trace_print(tu, func, regs);
->> +	struct event_file_link *link;
->> +
->> +	rcu_read_lock();
->> +	list_for_each_entry(link, &tu->files, list)
-> 
-> Ditto.
-> 
-> 
->> +		uprobe_trace_print(tu, func, regs, link->file);
->> +	rcu_read_unlock();
->>  }
-> [SNIP]
->> -static void probe_event_disable(struct trace_uprobe *tu, int flag)
->> +static struct event_file_link *
->> +find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
->> +{
->> +	struct event_file_link *link;
->> +
->> +	list_for_each_entry(link, &tu->files, list)
-> 
-> Not sure of this case. ;)
-> 
-Yes, _rcu is not needed in here, it's only called in event disable serialized case.
+Gr{oetje,eeting}s,
 
-> Thanks,
-> Namhyung
-> 
->> +		if (link->file == file)
->> +			return link;
->> +
->> +	return NULL;
->> +}
->> +
->> +static void
->> +probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
->>  {
->>  	if (!is_trace_uprobe_enabled(tu))
->>  		return;
->>
->> +	if (file) {
->> +		struct event_file_link *link;
->> +
->> +		link = find_event_file_link(tu, file);
->> +		if (!link)
->> +			return;
->> +
->> +		list_del_rcu(&link->list);
->> +		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
->> +		synchronize_sched();
->> +		kfree(link);
->> +
->> +		if (!list_empty(&tu->files))
->> +			return;
->> +	}
->> +
->>  	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
->>
->>  	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
->> -	tu->flags &= ~flag;
->> +	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
->>  }
->>
->>  static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
->> @@ -867,21 +947,22 @@ static
->>  int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
->>  {
->>  	struct trace_uprobe *tu = event->data;
->> +	struct ftrace_event_file *file = data;
->>
->>  	switch (type) {
->>  	case TRACE_REG_REGISTER:
->> -		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
->> +		return probe_event_enable(tu, file, NULL);
->>
->>  	case TRACE_REG_UNREGISTER:
->> -		probe_event_disable(tu, TP_FLAG_TRACE);
->> +		probe_event_disable(tu, file);
->>  		return 0;
->>
->>  #ifdef CONFIG_PERF_EVENTS
->>  	case TRACE_REG_PERF_REGISTER:
->> -		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
->> +		return probe_event_enable(tu, NULL, uprobe_perf_filter);
->>
->>  	case TRACE_REG_PERF_UNREGISTER:
->> -		probe_event_disable(tu, TP_FLAG_PROFILE);
->> +		probe_event_disable(tu, NULL);
->>  		return 0;
->>
->>  	case TRACE_REG_PERF_OPEN:
->> -- 1.7.9.7
-> 
-> .
-> 
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
