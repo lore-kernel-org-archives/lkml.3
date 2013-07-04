@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3GDK1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 06:27:35 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4990 "EHLO mga02.intel.com"
+	id S1754351Ab3GDKdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 06:33:44 -0400
+Received: from mout.gmx.net ([212.227.17.22]:62834 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755186Ab3GDK1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 06:27:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,994,1363158000"; 
-   d="scan'208";a="340407254"
-From: Qiaowei Ren <qiaowei.ren@intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Gang Wei <gang.wei@intel.com>,
-        Qiaowei Ren <qiaowei.ren@intel.com>
-Subject: [PATCH] x86, tboot: iomem fixes
-Date: Thu,  4 Jul 2013 18:16:55 +0800
-Message-Id: <1372933015-26584-1-git-send-email-qiaowei.ren@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1750769Ab3GDKdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 06:33:43 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+u3F4iM1Cu/OCJGmk1ALxw01hvW7WnEglTDeo3HZ
+	OHA4qPwLOEupBb
+Message-ID: <1372934013.9046.16.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: smart wake-affine
+From: Mike Galbraith <efault@gmx.de>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Thu, 04 Jul 2013 12:33:33 +0200
+In-Reply-To: <51D5428D.7080805@linux.vnet.ibm.com>
+References: <51A43B16.9080801@linux.vnet.ibm.com>
+	 <51D25A80.8090406@linux.vnet.ibm.com>
+	 <20130702085202.GA23916@twins.programming.kicks-ass.net>
+	 <51D29EE5.8080307@linux.vnet.ibm.com>
+	 <20130704091339.GK18898@dyad.programming.kicks-ass.net>
+	 <51D5428D.7080805@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes for iomem annotations in arch/x86/kernel/tboot.c
+On Thu, 2013-07-04 at 17:38 +0800, Michael Wang wrote: 
+> On 07/04/2013 05:13 PM, Peter Zijlstra wrote:
+> [snip]
+> > 
+> > Right, but something like the below is limited in cost to at most 32/64 (I
+> > forgot the type) shifts. Now its probably not worth doing, but it shows
+> > things like that can be done in 'constant' time.
+> > 
+> >   now = jiffies;
+> >   if (now - p->last_switch_decay > 8*sizeof(p->nr_wakee_switch)*HZ) {
+> > 	p->nr_wakee_switch = 0;
+> > 	p->last_switch_decay = now;
+> >   } else while (now > p->last_switch_decay + HZ) {
+> > 	p->nr_wakee_switch >>= 1;
+> > 	p->last_switch_decay += HZ;
+> >   }
+> 
+> Hmm...interesting, some kind of cataclysm decay, not sure how it works
+> but yes, the cost was capped.
+> 
+> Well, seems like we still have many follow-up research works after fix
+> the issue ;-)
 
-Signed-off-by: Qiaowei Ren <qiaowei.ren@intel.com>
----
- arch/x86/kernel/tboot.c |   43 +++++++++++--------------------------------
- 1 file changed, 11 insertions(+), 32 deletions(-)
+Yeah.  Like how to how to exterminate the plus sign, they munch cache
+lines, and have a general tendency to negatively impact benchmarks.
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index 3ff42d2..d06574c 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -442,33 +442,12 @@ late_initcall(tboot_late_init);
- #define TXTCR_HEAP_BASE             0x0300
- #define TXTCR_HEAP_SIZE             0x0308
- 
--#define SHA1_SIZE      20
--
--struct sha1_hash {
--	u8 hash[SHA1_SIZE];
--};
--
--struct sinit_mle_data {
--	u32               version;             /* currently 6 */
--	struct sha1_hash  bios_acm_id;
--	u32               edx_senter_flags;
--	u64               mseg_valid;
--	struct sha1_hash  sinit_hash;
--	struct sha1_hash  mle_hash;
--	struct sha1_hash  stm_hash;
--	struct sha1_hash  lcp_policy_hash;
--	u32               lcp_policy_control;
--	u32               rlp_wakeup_addr;
--	u32               reserved;
--	u32               num_mdrs;
--	u32               mdrs_off;
--	u32               num_vtd_dmars;
--	u32               vtd_dmars_off;
--} __packed;
-+#define SINIT_MLE_DATA_VTD_DMAR_OFF	140
- 
- struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tbl)
- {
--	void *heap_base, *heap_ptr, *config;
-+	void __iomem *heap_base, *heap_ptr, *config;
-+	u32 dmar_tbl_off;
- 
- 	if (!tboot_enabled())
- 		return dmar_tbl;
-@@ -485,25 +464,25 @@ struct acpi_table_header *tboot_get_dmar_table(struct acpi_table_header *dmar_tb
- 		return NULL;
- 
- 	/* now map TXT heap */
--	heap_base = ioremap(*(u64 *)(config + TXTCR_HEAP_BASE),
--			    *(u64 *)(config + TXTCR_HEAP_SIZE));
-+	heap_base = ioremap(readl(config + TXTCR_HEAP_BASE),
-+			    readl(config + TXTCR_HEAP_SIZE));
- 	iounmap(config);
- 	if (!heap_base)
- 		return NULL;
- 
- 	/* walk heap to SinitMleData */
- 	/* skip BiosData */
--	heap_ptr = heap_base + *(u64 *)heap_base;
-+	heap_ptr = heap_base + readq(heap_base);
- 	/* skip OsMleData */
--	heap_ptr += *(u64 *)heap_ptr;
-+	heap_ptr += readq(heap_ptr);
- 	/* skip OsSinitData */
--	heap_ptr += *(u64 *)heap_ptr;
-+	heap_ptr += readq(heap_ptr);
- 	/* now points to SinitMleDataSize; set to SinitMleData */
- 	heap_ptr += sizeof(u64);
- 	/* get addr of DMAR table */
--	dmar_tbl = (struct acpi_table_header *)(heap_ptr +
--		   ((struct sinit_mle_data *)heap_ptr)->vtd_dmars_off -
--		   sizeof(u64));
-+	dmar_tbl_off = readl(heap_ptr + SINIT_MLE_DATA_VTD_DMAR_OFF);
-+	memcpy_fromio(dmar_tbl, heap_ptr + dmar_tbl_off - sizeof(u64),
-+			sizeof(struct acpi_table_header));
- 
- 	/* don't unmap heap because dmar.c needs access to this */
- 
--- 
-1.7.9.5
+Q6600 box, hackbench -l 1000
+                                                                       avg
+3.10.0-regress     2.293     2.297     2.313     2.291     2.295     2.297     1.000
+3.10.0-regressx    2.560     2.524     2.427     2.599     2.602     2.542     1.106
+
+pahole said...
+
+marge:/usr/local/src/kernel/linux-3.x.git # tail virgin
+        long unsigned int          timer_slack_ns;       /*  1512     8 */
+        long unsigned int          default_timer_slack_ns; /*  1520     8 */
+        atomic_t                   ptrace_bp_refcnt;     /*  1528     4 */
+
+        /* size: 1536, cachelines: 24, members: 125 */
+        /* sum members: 1509, holes: 6, sum holes: 23 */
+        /* bit holes: 1, sum bit holes: 26 bits */
+        /* padding: 4 */
+        /* paddings: 1, sum paddings: 4 */
+};
+
+marge:/usr/local/src/kernel/linux-3.x.git # tail michael
+        long unsigned int          default_timer_slack_ns; /*  1552     8 */
+        atomic_t                   ptrace_bp_refcnt;     /*  1560     4 */
+
+        /* size: 1568, cachelines: 25, members: 128 */
+        /* sum members: 1533, holes: 8, sum holes: 31 */
+        /* bit holes: 1, sum bit holes: 26 bits */
+        /* padding: 4 */
+        /* paddings: 1, sum paddings: 4 */
+        /* last cacheline: 32 bytes */
+};
+
+..but plugging holes, didn't help, moving this/that around neither, nor
+did letting pahole go wild to get the line back.  It's plus signs I tell
+ya, the evil things must die ;-)
+
+-Mike
 
