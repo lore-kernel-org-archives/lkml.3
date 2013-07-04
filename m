@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab3GDFgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 01:36:47 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24897 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754731Ab3GDFgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 01:36:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,992,1363158000"; 
-   d="scan'208";a="360319196"
-From: Alex Shi <alex.shi@intel.com>
-To: tglx@linutronix.de, hpa@linux.intel.com, tim.c.chen@linux.intel.com
-Cc: linux-kernel@vger.kernel.org, andi.kleen@intel.com, a.p.zijlstra@chello.nl,
-        mingo@elte.hu
-Subject: [PATCH 1/3] clocksource: clean up clocksource_select
-Date: Thu,  4 Jul 2013 13:34:14 +0800
-Message-Id: <1372916056-24301-2-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1372916056-24301-1-git-send-email-alex.shi@intel.com>
-References: <1372916056-24301-1-git-send-email-alex.shi@intel.com>
+	id S1755324Ab3GDFk7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 01:40:59 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:39975 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754621Ab3GDFk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 01:40:58 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: <linux-kernel@vger.kernel.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Subject: [PATCH 3/4] video: make goldfish video depend on GOLDFISH || COMPILE_TEST
+Date: Thu, 4 Jul 2013 01:39:12 -0400
+Message-ID: <1372916353-24050-4-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After clocksource_find_best() introduced, it is impossible to get into
-some code path. so clean them up.
+Nearly all the other goldfish peripherals (mtd, keyboard, etc)
+have a dependency on the main platform's GOLDFISH Kconfig item,
+but this one got skipped.  It was suggested to add it earlier[1],
+but that never got responded to or picked up -- presumably because
+some developers desired the extra compile coverage at the cost of
+exposing unusable options to end users.
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
+With CONFIG_COMPILE_TEST, we can have the best of both worlds.
+Add the GOLDFISH dependency, in conjunction with COMPILE_TEST.
+
+[1] https://lkml.org/lkml/2013/2/27/169
+
+Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/time/clocksource.c | 16 +---------------
- 1 file changed, 1 insertion(+), 15 deletions(-)
+ drivers/video/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index e713ef7..021c159 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -582,26 +582,12 @@ static void __clocksource_select(bool skipcur)
- 	if (!best)
- 		return;
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 2e937bd..630b637 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2199,7 +2199,7 @@ config FB_XILINX
  
--	/* Check for the override clocksource. */
- 	list_for_each_entry(cs, &clocksource_list, list) {
- 		if (skipcur && cs == curr_clocksource)
- 			continue;
- 		if (strcmp(cs->name, override_name) != 0)
- 			continue;
--		/*
--		 * Check to make sure we don't switch to a non-highres
--		 * capable clocksource if the tick code is in oneshot
--		 * mode (highres or nohz)
--		 */
--		if (!(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES) && oneshot) {
--			/* Override clocksource cannot be used. */
--			printk(KERN_WARNING "Override clocksource %s is not "
--			       "HRT compatible. Cannot switch while in "
--			       "HRT/NOHZ mode\n", cs->name);
--			override_name[0] = 0;
--		} else
--			/* Override clocksource can be used. */
--			best = cs;
-+		best = cs;
- 		break;
- 	}
- 
+ config FB_GOLDFISH
+ 	tristate "Goldfish Framebuffer"
+-	depends on FB && HAS_DMA
++	depends on FB && HAS_DMA && (GOLDFISH || COMPILE_TEST)
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
 -- 
-1.7.12
+1.8.1.2
 
