@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933689Ab3GDIjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:39:15 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51306 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756127Ab3GDIjK (ORCPT
+	id S933702Ab3GDIji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:39:38 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48128 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933599Ab3GDIjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:39:10 -0400
-X-AuditID: 9c93016f-b7b26ae000002351-38-51d534ab9884
+	Thu, 4 Jul 2013 04:39:36 -0400
+X-AuditID: 9c930179-b7b7fae000002142-89-51d534c6f8ae
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCHSET 00/16] perf tools: Cleanups on tracepoint handling
-References: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
-Date: Thu, 04 Jul 2013 17:39:06 +0900
-In-Reply-To: <1370323231-14022-1-git-send-email-namhyung@kernel.org> (Namhyung
-	Kim's message of "Tue, 4 Jun 2013 14:20:15 +0900")
-Message-ID: <87hagazplh.fsf@sejong.aot.lge.com>
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 0/6] perf report: Add support for callchains on GTK browser (v2)
+References: <1370337737-30812-1-git-send-email-namhyung@kernel.org>
+Date: Thu, 04 Jul 2013 17:39:34 +0900
+In-Reply-To: <1370337737-30812-1-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Tue, 4 Jun 2013 18:22:11 +0900")
+Message-ID: <87d2qyzpkp.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -32,51 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Ping!
 
-On Tue,  4 Jun 2013 14:20:15 +0900, Namhyung Kim wrote:
-> Hello,
+On Tue,  4 Jun 2013 18:22:11 +0900, Namhyung Kim wrote:
+> Hi,
 >
-> This patchset is a resend version of previous work and basis of
-> upcoming perf ftrace patchset.  Although I saw no issue on this series
-> when I posted earlier, it'd be great if Steve or others take a look at
-> it again and give comments.
+> This patchset implements callchain support in GTK report browser as
+> Pekka requested.  Please take a look and give me comments.
 >
-> I also updated 'perf/cleanup' branch on my tree at:
+> v2 changes)
+>  * fix a bug on percent calculation of children nodes
+>  * show topmost symbol only when multiple paths exist for a node
+>  * add alternating background colors (Ingo)
+>  * put callchain info into existing overhead and symbol column (Arnaldo)
 >
->   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> You can get it from 'perf/callchain-gtk-v2' branch on my tree at
 >
-> Thanks,
+>  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+>
+>
+> Any comments are welcome, thanks!
 > Namhyung
 >
+> Namhyung Kim (6):
+>   perf gtk/hists: Use GtkTreeStore instead of GtkListStore
+>   perf gtk/hists: Add support for callchains
+>   perf gtk/hists: Display callchain overhead also
+>   perf gtk/hists: Make column headers resizable
+>   perf gtk/hists: Add a double-click handler for callchains
+>   perf gtk/hists: Set rules hint for the hist browser
 >
-> Namhyung Kim (16):
->   tools lib traceevent: Remove unused install targets
->   tools lib traceevent: Get rid of unused gui target
->   tools lib traceevent: Add const qualifier to string arguments
->   tools lib traceevent: Add trace_seq_reset()
->   tools lib traceevent: Add page_size field to pevent
->   tools lib traceevent: Port kbuffer parser routines
->   perf util: Save page size in a trace file to pevent
->   perf util: Save long size of traced system
->   perf util: Make file/host_bigendian variable local
->   perf util: Skip reading header_event file
->   perf util: Parse header_page to get proper long size
->   perf util: Get rid of unused header_page_* variables
->   perf util: Move latency_format variable to builtin-script.c
->   perf util: Rename read_*() functions in trace-event-info.c
->   perf util: No need to call read_trace_init() in tracing_data_header()
->   perf util: Remove unused enum and macro in trace-event.h
->
->  tools/lib/traceevent/Makefile        |  18 +-
->  tools/lib/traceevent/event-parse.c   |   7 +-
->  tools/lib/traceevent/event-parse.h   |  15 +-
->  tools/lib/traceevent/kbuffer-parse.c | 732 +++++++++++++++++++++++++++++++++++
->  tools/lib/traceevent/kbuffer.h       |  67 ++++
->  tools/lib/traceevent/trace-seq.c     |  13 +
->  tools/perf/builtin-script.c          |   1 +
->  tools/perf/util/trace-event-info.c   |  22 +-
->  tools/perf/util/trace-event-parse.c  |   6 -
->  tools/perf/util/trace-event-read.c   |  52 ++-
->  tools/perf/util/trace-event.h        |  15 -
->  11 files changed, 875 insertions(+), 73 deletions(-)
->  create mode 100644 tools/lib/traceevent/kbuffer-parse.c
->  create mode 100644 tools/lib/traceevent/kbuffer.h
+>  tools/perf/ui/gtk/hists.c | 117 ++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 112 insertions(+), 5 deletions(-)
