@@ -1,135 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab3GDNEV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 09:04:21 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40981 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082Ab3GDNEU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 09:04:20 -0400
-Date: Thu, 4 Jul 2013 15:04:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alex Shi <alex.shi@intel.com>
-cc: hpa@linux.intel.com, tim.c.chen@linux.intel.com,
-        linux-kernel@vger.kernel.org, andi.kleen@intel.com,
-        a.p.zijlstra@chello.nl, mingo@elte.hu
-Subject: Re: [PATCH 3/3] clocksource: fix can not set tsc as clocksource
- bug
-In-Reply-To: <alpine.DEB.2.02.1307041227470.11637@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1307041419560.11637@ionos.tec.linutronix.de>
-References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <1372916056-24301-4-git-send-email-alex.shi@intel.com> <alpine.DEB.2.02.1307041227470.11637@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756555Ab3GDNFX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:05:23 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58261 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751781Ab3GDNFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 09:05:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
+Date: Thu, 04 Jul 2013 15:14:58 +0200
+Message-ID: <5332719.huZ9ItKWz0@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130704125337.GN4898@intel.com>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com> <6828518.UobQ5xLxzT@vostro.rjw.lan> <20130704125337.GN4898@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Jul 2013, Thomas Gleixner wrote:
-> On Thu, 4 Jul 2013, Alex Shi wrote:
-> > commit 5d33b883aed81c6fbcd09c6f7c3619eee850a7e2
-> >     clocksource: Always verify highres capability
+On Thursday, July 04, 2013 03:53:38 PM Mika Westerberg wrote:
+> On Thu, Jul 04, 2013 at 02:36:00PM +0200, Rafael J. Wysocki wrote:
+> > On Thursday, July 04, 2013 11:58:44 AM Mika Westerberg wrote:
+> > > On Wed, Jul 03, 2013 at 11:40:42PM +0200, Rafael J. Wysocki wrote:
+> > > > On Wednesday, July 03, 2013 05:04:53 PM Mika Westerberg wrote:
+> > > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > > > > 
+> > > > > Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+> > > > > PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+> > > > > deeper in hierarchy:
+> > > > > 
+> > > > > Device (RP05)
+> > > > > {
+> > > > >    // ...
+> > > > >    Device (HRUP)
+> > > > >    {
+> > > > >        // ...
+> > > > >        Device (HRDN)
+> > > > >        {
+> > > > >            // ...
+> > > > >            Device (EPUP)
+> > > > >            {
+> > > > >                // ...
+> > > > >                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+> > > > >                {
+> > > > >                    Return (One)
+> > > > >                }
+> > > > >            }
+> > > > >        }
+> > > > >    }
+> > > > > }
+> > > > > 
+> > > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > > > ---
+> > > > >  drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
+> > > > >  1 file changed, 13 insertions(+)
+> > > > > 
+> > > > > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> > > > > index 2a47e82..d92ebfb 100644
+> > > > > --- a/drivers/pci/hotplug/acpi_pcihp.c
+> > > > > +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> > > > > @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+> > > > >  	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+> > > > >  	if (ACPI_SUCCESS(status) && removable)
+> > > > >  		return 1;
+> > > > > +
+> > > > > +	/*
+> > > > > +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
+> > > > > +	 *
+> > > > > +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+> > > > > +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
+> > > > > +	 * deeper in hierarchy.
+> > > > > +	 */
+> > > > > +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+> > > > > +			&removable);
+> > > > 
+> > > > Well, calling stuff like this directly from a general function is kind of ugly.
+> > > > 
+> > > > Can we use something like a quirk instead?  A DMI check or something?
+> > > 
+> > > Sure we can. How about something like the patch below?
 > > 
-> > This commit will reject a clock to be system clocksource if it has no
-> > CLOCK_SOURCE_VALID_FOR_HRES flags. Then the tsc to be rejected as
+> > Well, it goes into the right (to me) direction. :-)
+> > 
+> > Some comments below.
+> > 
+> > > From: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > Subject: [PATCH] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
+> > > 
+> > > The acpiphp driver finds out whether the device is removable by checking
+> > > whether it has _RMV method directly behind it (and if it returns 1).
+> > > However, at least on Acer Aspire S5 with Thunderbolt host router has this
+> > > method placed behind a device called EPUP (endpoint upstream port?) and not
+> > > in the usual place expected by the acpiphp driver. The ASL code below shows
+> > > how this is done on that machine:
+> > > 
+> > > Device (RP05)
+> > > {
+> > > 	...
+> > > 	Device (HRUP)
+> > > 	{
+> > > 		Name (_ADR, Zero)
+> > > 		Name (_PRW, Package (0x02)
+> > > 		{
+> > > 			0x09,
+> > > 			0x04
+> > > 		})
+> > > 		Device (HRDN)
+> > > 		{
+> > > 			Name (_ADR, 0x00040000)
+> > > 			Name (_PRW, Package (0x02)
+> > > 			{
+> > > 				0x09,
+> > > 				0x04
+> > > 			})
+> > > 			Device (EPUP)
+> > > 			{
+> > > 				Name (_ADR, Zero)
+> > > 				Method (_RMV, 0, NotSerialized)
+> > > 				{
+> > > 					Return (One)
+> > > 				}
+> > > 			}
+> > > 		}
+> > > 	}
+> > > 	...
+> > > 
+> > > Fix this by adding a DMI quirk for the Acer Aspire S5 machine that gives an
+> > > alternative path to the _RMV method.
+> > > 
+> > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > > ---
+> > >  drivers/pci/hotplug/acpi_pcihp.c | 57 ++++++++++++++++++++++++++++++++++++----
+> > >  1 file changed, 52 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> > > index 2a47e82..99fccf3 100644
+> > > --- a/drivers/pci/hotplug/acpi_pcihp.c
+> > > +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> > > @@ -33,6 +33,7 @@
+> > >  #include <linux/acpi.h>
+> > >  #include <linux/pci-acpi.h>
+> > >  #include <linux/slab.h>
+> > > +#include <linux/dmi.h>
+> > >  
+> > >  #define MY_NAME	"acpi_pcihp"
+> > >  
+> > > @@ -408,21 +409,67 @@ got_one:
+> > >  }
+> > >  EXPORT_SYMBOL(acpi_get_hp_hw_control_from_firmware);
+> > >  
+> > > +/**
+> > > + * pcihp_is_removable - is the given ACPI device removable
+> > > + * @handle: ACPI handle of the device
+> > > + *
+> > > + * Try to find out whether the given ACPI device is removable by evaluating
+> > > + * its _RMV and returning the result. If we can't find the _RMV directly
+> > > + * under the device use system specific quirks to locate it.
+> > > + */
+> > > +static bool pcihp_is_removable(acpi_handle handle)
+> > > +{
+> > 
+> > People are generally used to seeing DMI lists outside of functions.
 > 
-> No. It rejects the clocksource if the system is in oneshot mode and
-> the clocksource does not support HIGHRES.
+> OK.
 > 
-> So at boot time, the tick device mode is PERIODIC and the clocksource
-> is set to jiffies.
+> > > +	static const struct dmi_system_id rmv_paths[] = {
+> > > +		{
+> > > +			/*
+> > > +			 * On Acer Aspire S5 the _RMV method for the
+> > > +			 * Thunderbolt host router upstream port is not
+> > > +			 * located directly under the device but it is
+> > > +			 * instead placed a bit deeper in the hierarchy.
+> > > +			 */
+> > > +			.ident = "Acer Aspire S5",
+> > > +			.matches = {
+> > > +				DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+> > > +				DMI_MATCH(DMI_PRODUCT_NAME, "Aspire S5-391"),
+> > > +			},
+> > > +			.driver_data = "HRDN.EPUP._RMV",
+> > 
+> > Use .callback instead? ->
+> > 
+> > > +		},
+> > > +		{ }
+> > > +	};
+> > > +	const struct dmi_system_id *id;
+> > > +	unsigned long long removable;
+> > > +	acpi_status status;
+> > > +
+> > > +	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+> > > +	if (ACPI_SUCCESS(status))
+> > > +		return !!removable;
+> > > +
+> > > +	/* Try system specific quirks */
+> > > +	id = dmi_first_match(rmv_paths);
+> > > +	if (id && id->driver_data) {
+> > 
+> > -> And here do
+> > 
+> > 	if (id && id->callback)
+> > 		return id->callback(id);
 > 
-> In clocksource_done_booting() we select the best clocksource from the
-> registered list. We are still in PERIODIC mode, so the selection in
-> clocksource_find_best() should grab TSC whether the HIGHRES_VALID flag
-> is set or not. The relevant check in find_best() is:
-> 
->         if (oneshot && !(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES))
->                  continue;                                         
-> 
-> And oneshot should be definitely false at that point. So we don't care
-> about the HRES flag at all.
-> 
-> So if we select TSC from clocksource_done_booting() that prevents the
-> system from switching into highres mode as long as the VALID_FOR_HRES
-> flag is not set by the watchdog. If it gets set then
-> tick_clock_notify() tells the tick code to reevaluate.
-> 
-> So now the question is why you are observing that HPET is selected in
-> the first place.
-> 
-> Can you add instrumentation to the code and provide the data please? I
-> try to reproduce myself. What's the environment you're using?
+> There is a problem with the above that we can't pass an ACPI handle to the
+> callback function.
 
-Ok. Figured it out.
+Ah, right.
 
-Boot.
-start tsc revalidation()
-register(hpet)
-register(pmtimer);
+Well, you can do
 
-clocksource_done_booting()
-	select HPET
+	if (id && id->driver_data) {
+		bool (*callback)(acpi_handle) = id->driver_data;
 
-switch to oneshot
+		return callback(handle);
+	}
 
-tsc_revalidation()
-	register(TSC)
-	clocksource_select()
-		keep HPET because TSC is not yet validated by the watchdog
+although it's a bit hackish.
 
-watchdog validates TSC, but that does not make TSC the system
-clocksource.
+> > 
+> > > +		char path[64];
+> > > +
+> > > +		strlcpy(path, id->driver_data, sizeof(path));
 
-So, the old code was actually installing TSC over HPET even when TSC
-was not yet qualified for HRES. Kinda worked :)
+BTW, why didn't you want to pass id->driver_data directly here?
 
-So yes, we need somthing like your patch to fix that. 
-
-> > diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> > index 9d6c333..3ad9f29 100644
-> > --- a/kernel/time/clocksource.c
-> > +++ b/kernel/time/clocksource.c
-> > @@ -308,6 +308,8 @@ static void clocksource_watchdog(unsigned long data)
-> >  			 * transition into high-res mode:
-> >  			 */
-> >  			tick_clock_notify();
-> > +			if (finished_booting)
-> > +				schedule_work(&watchdog_work);
-> 
-> This only makes sense, when the clocksource which gets the FLAG set
-> has the highest rating, but was not selected because the system was in
-> ONESHOT mode already.
-> 
-> And I can't see why that should suddenly happen.
-
-Now I can :)
-
-> >  static int clocksource_watchdog_kthread(void *data)
-> >  {
-> >  	struct clocksource *cs, *tmp;
-> > @@ -412,11 +415,14 @@ static int clocksource_watchdog_kthread(void *data)
-> >  
-> >  	mutex_lock(&clocksource_mutex);
-> >  	spin_lock_irqsave(&watchdog_lock, flags);
-> > -	list_for_each_entry_safe(cs, tmp, &watchdog_list, wd_list)
-> > +	list_for_each_entry_safe(cs, tmp, &watchdog_list, wd_list) {
-> >  		if (cs->flags & CLOCK_SOURCE_UNSTABLE) {
-> >  			list_del_init(&cs->wd_list);
-> >  			list_add(&cs->wd_list, &unstable);
-> >  		}
-> > +		if (cs->flags & CLOCK_SOURCE_VALID_FOR_HRES)
-> > +			clocksource_select();
-> 
-> Unlikely, but if we have 3 watched clocksources which have the HRES
-> bit set, you'd call 3 times clocksource_select().
-
-Also the reselect must be called outside the watchdog_lock region.
+> > > +		status = acpi_evaluate_integer(handle, path, NULL, &removable);
+> > > +		if (ACPI_SUCCESS(status))
+> > > +			return !!removable;
+> > > +	}
+> > > +
+> > > +	return false;
+> > > +}
+> > > +
 
 Thanks,
+Rafael
 
-	tglx
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
