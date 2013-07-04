@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3GDOvy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 10:51:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49656 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610Ab3GDOvv (ORCPT
+	id S1756781Ab3GDPR6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 11:17:58 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:8410 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752839Ab3GDPR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 10:51:51 -0400
-Date: Thu, 4 Jul 2013 15:51:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
-        sbkim73@samsung.com, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-Message-ID: <20130704145126.GB27646@sirena.org.uk>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
- <1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
- <20130703180511.GA374@sirena.org.uk>
- <CAKew6eVs+D4Yf+9=e+0fj0UaZQ98gJ-1=CX30_H0p-xnF75gaw@mail.gmail.com>
- <20130704092249.GK27646@sirena.org.uk>
- <CAKew6eVWt==t3NZTwvULTBmWSHkAf6jNuPcj8p711st_7ZmRAw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4Fn2ULVzEyi3v7cW"
-Content-Disposition: inline
-In-Reply-To: <CAKew6eVWt==t3NZTwvULTBmWSHkAf6jNuPcj8p711st_7ZmRAw@mail.gmail.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/4] mfd: s2mps11: Add device tree support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Thu, 4 Jul 2013 11:17:56 -0400
+X-AuditID: cbfec7f5-b7f376d000001ec6-f4-51d5922214d8
+From: Konstantin Krivyakin <k.krivyakin@samsung.com>
+To: k.krivyakin@samsung.com, i.zhbanov@samsung.com, e.voevodin@samsung.com,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+Subject: [PATCH RFC 0/3] Per-process power consumption measurement facility
+Date: Thu, 04 Jul 2013 19:17:16 +0400
+Message-id: <1372951039-10375-1-git-send-email-k.krivyakin@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOJMWRmVeSWpSXmKPExsVy+t/xa7pKk64GGnxcr2ux9lw7k8WKq0cY
+	LaYuPMxucbbpDbvF5V1z2BxYPfq2rGL0+LxJLoApissmJTUnsyy1SN8ugSvjSZdjwRreiu6W
+	RrYGxt+cXYycHBICJhKzvqxigbDFJC7cW8/WxcjFISSwlFFi6oNvrBBON5PE5j1XmECq2IA6
+	du+9yAySEBFoZZRofdUF1MLBISzgLdE3OQ+khkVAVWLijBuMIDavgLvErG8N7CAlEgIKEnMm
+	2Uxg5FrAyLCKUTS1NLmgOCk910ivODG3uDQvXS85P3cTI8SzX3cwLj1mdYhRgINRiYf3Yf3V
+	QCHWxLLiytxDjBIczEoivKeagUK8KYmVValF+fFFpTmpxYcYmTg4pRoYGWes3nVV2CR5Tsah
+	7YWb1s89VrK6RueE49F3z77kKkTvrfmq1vXPyadxnc2aHc3eX9yy2M97HTzmxrj5VWHn23kB
+	6p//uennzzy7+rRK+nTVmRfP9XCabGGb9Htzi4OoLUPEFOUYG02X2+dMT//84Bx2bkLDf9UI
+	9vNZxv+Y7wdftpCf0fDXV4mlOCPRUIu5qDgRABZHfRbKAQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset adds per-process power consumption measurement facility.
+Power consumption is very important on mobile platforms. This code
+allows to measure consumed power in Watts*Hours. The consumed power
+for process is updated on scheduler switch and depends on current
+CPU voltage and frequency.
 
---4Fn2ULVzEyi3v7cW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The formula for computation is: P = C * V^2 * f, where C is a constant
+that reflects capacity of the system, V is the current voltage and
+f is the current frequency.
+(Taken from: http://en.wikipedia.org/wiki/CPU_power_dissipation).
 
-On Thu, Jul 04, 2013 at 05:13:46PM +0530, Yadwinder Singh Brar wrote:
-> On Thu, Jul 4, 2013 at 2:52 PM, Mark Brown <broonie@kernel.org> wrote:
+In this patchset was added implementation for Exynos platform
+to demonstrate how it works.
 
-> > That's just an issue in the code if that is the case, you can test for
-> > the presence of a property independently of getting its value.
+To minimize scheduler impact for each CPU P-state the value of (V^2 *f)
+was precomputed at the time of platform initialization.
 
-> Yes, for that we will need an extra flag (ramp_disable) in
-> constraints, to figure out whether
-> ramp-rate is actually set to zero or its left (by default) zero if we
-> do it in common code as
-> now we have locally in driver.
+And to reduce performance impact furthermore, the C constant is multiplied
+in userspace.
 
-Yes, I agree that makes sense for the constraints.
+Konstantin Krivyakin (3):
+  Add interface to receive current cpu power
+  Add power consumption counter in task_struct.
+  Update current cpu power when cpu freq change for exynos.
 
-> I think its matter of assumption, so to conclude our discussion,
-> please let me know that which approach we should use:
-> - assume "regulator-ramp-delay = <0>" as ramp_disable.
-> or
-> - parsing "regulator_ramp_disable" from DT.
+ drivers/cpufreq/cpufreq.c            |   17 +++++++++++++++++
+ drivers/cpufreq/exynos-cpufreq.c     |    2 ++
+ drivers/cpufreq/exynos-cpufreq.h     |    1 +
+ drivers/cpufreq/exynos4x12-cpufreq.c |   19 ++++++++++++++++++-
+ include/linux/cpufreq.h              |    6 ++++++
+ include/linux/sched.h                |    2 ++
+ include/uapi/linux/taskstats.h       |    2 ++
+ kernel/fork.c                        |    1 +
+ kernel/sched/core.c                  |    8 ++++++++
+ kernel/sched/cputime.c               |   11 +++++++++++
+ kernel/tsacct.c                      |    3 +++
+ 11 files changed, 71 insertions(+), 1 deletion(-)
 
-I prefer the first option.
+-- 
+1.7.9.5
 
---4Fn2ULVzEyi3v7cW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR1YvrAAoJELSic+t+oim9p+oQAJCBZZPMrTzKMlLx2b33IPPP
-xbI0XIJxvbPzaC+Z7r5ks0oVfWQrxW5It8iEO5kreQADRFxqdoczGaS0BY0Yo0+Z
-slggDK9NFi726ksE+M5FF8axRLFGfdS11b8JsYvvwfR3V59c19ZDbdtHRSEHogh2
-P47oPB18OX+Bv6B53aPcOfpx/+5Ddc0Dq+8qXv93EV/jcxE/6dBroGkGVqOoXM/T
-onAx8x+SAIgvB+PHpfWjp7rbPVOOPcU1UUMSCuAjVqq99unfrtMM/FhhK+vGYJUG
-NDXNoFBaO4c+rPYBzwuGV3dh+2Cu+LxecVs1A28geLJOMLdFQB2J3qyzzGkzRzFS
-IvIqtZhP0rKR3Drm/k3P6gWKHQ3+LIvQhcNu/dn3BUmwjJBwNSj8nxDLGC65IVcZ
-Pp44G7i2Rco8u6/e0tNhhV0SMo1sV3afY2iPNzEOK0ivJnaB1yCTFT6DEahdZx/O
-ImKdzTlfj8XrMWvhIzNS421upGgK2ow1mnNnmgtDad67moMKoobE+w/VhmJVbRYl
-9JVtHfXFCEmHQMT3wicgg1sDYgizB3yk3qaSHfWq8fQdQLHZrYVVLOCuDeV12PQA
-XZhavN4gsYg/XmfUgvL8/vVehC2k2a0wY2II65sRwAM/JKlaVGIBAtj4R8+3ZkXW
-oMc/e8MUtBijaao3AuFI
-=xZJa
------END PGP SIGNATURE-----
-
---4Fn2ULVzEyi3v7cW--
