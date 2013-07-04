@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab3GDDGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 23:06:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7185 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932633Ab3GDDGq (ORCPT
+	id S933487Ab3GDDPE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 23:15:04 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:59992 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932805Ab3GDDPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 23:06:46 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=6tI4O6vlircA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=S9odRq4Da1AA:10 a=SKJaEs8bBnoayXaqYEEA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372907201.22688.147.camel@gandalf.local.home>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
- 'COMPILE_TEST' in 'asm-generic'.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-Cc: Chen Gang <gang.chen@asianux.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Date: Wed, 03 Jul 2013 23:06:41 -0400
-In-Reply-To: <51D4E133.2010201@gmail.com>
-References: <51CA8AB8.7080504@asianux.com>
-	   <CAMuHMdW58CZ0m-10ibs2Vyh8exqP1nSH+-ZOr5J58tx=uorM+Q@mail.gmail.com>
-	   <51D375AA.5060300@asianux.com> <201307031014.12583.arnd@arndb.de>
-	   <51D3E440.7090105@asianux.com> <51D4C87E.5070605@asianux.com>
-	   <20130704011221.GA11230@kroah.com> <51D4D4A0.6080401@asianux.com>
-	  <1372903390.22688.139.camel@gandalf.local.home>
-	  <51D4D9A4.3020402@gmail.com>
-	 <1372904975.22688.142.camel@gandalf.local.home>
-	 <51D4E133.2010201@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Jul 2013 23:15:02 -0400
+Date: Wed, 3 Jul 2013 23:14:40 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: perf/Documentation/ABI -- add some documentation for perf_event
+ sysfs usage
+In-Reply-To: <alpine.DEB.2.10.1307031527390.12584@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1307032308040.13409@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1307031527390.12584@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-04 at 10:42 +0800, Chen Gang F T wrote:
-
-> Hmm..., I think maybe also has another way: get rid of 'COMPILE_TEST'
-> (regress the related patch, which is only existent in next-* tree).
-
-I'm not working on linux-next at the moment. Hmm, I'm not even working
-on mainline at the moment, the kernel I have is still 3.10-rc5.
+On Wed, 3 Jul 2013, Vince Weaver wrote:
 
 > 
-> Or could you provide your suggestions or completions about it ?
-> 
-> Thanks.
-> 
-> > I'm still confused by what you are trying to accomplish.
-> 
-> Currently, I am trying to compile all architectures with allmodconfig in
-> next-* tree (which will have "COMPILE_TEST=y").
-> 
-> So I can find and solve the related issues (I am one of contributors).
-> 
+> Add some documentation for the perf_event related
+>   /sys/bus/event_source/bus/devices/
+> files, since in theory it's a stable interface and the only
+> current documentation is some lex and yacc files in the
+> perf tools directory.
 
-So, you want all archs to pass an allmodconfig?
+OK, don't I feel silly, these values were already documented in 
+   Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+rather than ABI/stable
 
-Well, one thing is, if a module doesn't build for an arch, then why not
-keep that module from building for that arch.
+To be fair I missed it because the documentation seemed to come from the 
+Power developers and not through perf_event
 
-If module foo.ko doesn't build for arch bazinga, then just add in the
-Kconfig for the module foo:
+anyway, that documentation says the values will be hex only, which was 
+broken by
 
-config FOO
-  depends on !BAZINGA
+commit f9134f36aed59ab55c0ab1a4618dd455f15aef5f
+Author: Andi Kleen <ak@linux.intel.com>
+Date:   Mon Jun 17 17:36:52 2013 -0700
 
-Then that module wont build for the specific arch, and all are happy. If
-someone someday wants to support module foo for arch bazinga, then they
-can fix module foo for that arch.
-
--- Steve
+    perf/x86/intel: Add mem-loads/stores support for Haswell
 
 
+which added:
+EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
+
+(note ldlat is not in hex).
+
+This broke the trinity fuzzer (which scans to look for events to use)
+as well as some of my personal tools.
+
+Should the ldlat value be fixed to be hex?  Or should we ammend the ABI
+document to allow decimal?
+
+Vince
