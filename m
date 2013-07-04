@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756593Ab3GDM4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:56:49 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34598 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3GDM4s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:56:48 -0400
-Message-ID: <51D57106.4070207@hitachi.com>
-Date: Thu, 04 Jul 2013 21:56:38 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S932842Ab3GDM5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:57:34 -0400
+Received: from mail.avalus.com ([89.16.176.221]:45561 "EHLO mail.avalus.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752186Ab3GDM5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 08:57:32 -0400
+Date: Thu, 04 Jul 2013 13:57:16 +0100
+From: Alex Bligh <alex@alex.org.uk>
+Reply-To: Alex Bligh <alex@alex.org.uk>
+To: Eric Dumazet <eric.dumazet@gmail.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+cc: Joe Jin <joe.jin@oracle.com>, Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, zheng.x.li@oracle.com,
+        Xen Devel <xen-devel@lists.xen.org>, Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Alex Bligh <alex@alex.org.uk>
+Subject: Re: kernel panic in skb_copy_bits
+Message-ID: <06F8DA5DD1D9E277F2AF6F1E@Ximines.local>
+In-Reply-To: <1372932730.4979.96.camel@edumazet-glaptop>
+References: <51CBAA48.3080802@oracle.com>	
+ <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>	
+ <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>	
+ <1372666283.14691.8.camel@zakaz.uk.xensource.com>	
+ <51D53896.1060405@oracle.com>	
+ <1372928382.7184.16.camel@kazak.uk.xensource.com>	
+ <1372930465.4979.82.camel@edumazet-glaptop>	
+ <1372931565.7184.32.camel@kazak.uk.xensource.com>
+ <1372932730.4979.96.camel@edumazet-glaptop>
+X-Mailer: Mulberry/4.0.8 (Mac OS X)
 MIME-Version: 1.0
-To: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2 v6] tracing/uprobes: Support soft-mode disabling
-References: <51D556BB.50400@huawei.com>
-In-Reply-To: <51D556BB.50400@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/04 20:04), zhangwei(Jovi) wrote:
-> Support soft-mode disabling on uprobe-based dynamic events.
-> Soft-disabling is just ignoring recording if the soft disabled
-> flag is set.
-> 
-> Signed-off-by: zhangwei(Jovi) <jovi.zhangwe@huawei.com>
 
-looks good for me too.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+--On 4 July 2013 03:12:10 -0700 Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Thanks!
+> It looks like a typical COW issue to me.
+>
+> If the page content is written while there is still a reference on this
+> page, we should allocate a new page and copy the previous content.
+>
+> And this has little to do with networking.
 
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
->  kernel/trace/trace_uprobe.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 2fc9931..94f180d 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -530,6 +530,9 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
-> 
->  	WARN_ON(call != ftrace_file->event_call);
-> 
-> +	if (test_bit(FTRACE_EVENT_FL_SOFT_DISABLED_BIT, &ftrace_file->flags))
-> +		return;
-> +
->  	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
->  	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
->  						call->event.type,
-> 
+I suspect this would get more attention if we could make Ian's case
+below trigger (a) outside Xen, (b) outside networking.
 
+> 	memset(buf, 0xaa, 4096);
+> 	write(fd, buf, 4096)
+> 	memset(buf, 0x55, 4096);
+> (where fd is O_DIRECT on NFS) Can result in 0x55 being seen on the wire
+> in the TCP retransmit.
+
+We know this should fail using O_DIRECT+NFS. We've had reports suggesting
+it fails in O_DIRECT+iSCSI. However, that's been with a kernel panic
+(under Xen) rather than data corruption as per the above.
+
+Historical trawling suggests this is an issue with DRDB (see Ian's
+original thread from the mists of time).
+
+I don't quite understand why we aren't seeing corruption with standard
+ATA devices + O_DIRECT and no Xen involved at all.
+
+My memory is a bit misty on this but I had thought the reason why
+this would NOT be solved simply by O_DIRECT taking a reference to
+the page was that the O_DIRECT I/O completed (and thus the reference
+would be freed up) before the networking stack had actually finished
+with the page. If the O_DIRECT I/O did not complete until the
+page was actually finished with, we wouldn't see the problem in the
+first place. I may be completely off base here.
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Alex Bligh
