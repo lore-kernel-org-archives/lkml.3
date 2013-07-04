@@ -1,101 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab3GDX0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 19:26:53 -0400
-Received: from hapkido.dreamhost.com ([66.33.216.122]:39422 "EHLO
-	hapkido.dreamhost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933159Ab3GDX0s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 19:26:48 -0400
-From: Kyle Manna <kyle@kylemanna.com>
-To: linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Kyle Manna <kyle@kylemanna.com>
-Subject: [PATCH 2/2] bluetooth: Add l2cap sockopt for LE conn params
-Date: Thu,  4 Jul 2013 16:25:03 -0700
-Message-Id: <1372980303-3007-3-git-send-email-kyle@kylemanna.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1372980303-3007-1-git-send-email-kyle@kylemanna.com>
-References: <1372980303-3007-1-git-send-email-kyle@kylemanna.com>
+	id S933645Ab3GDXi0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 19:38:26 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:58861 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756909Ab3GDXiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 19:38:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2.1 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
+Date: Fri, 05 Jul 2013 01:48:01 +0200
+Message-ID: <2539126.i7GjLNiDjm@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1372948192-17913-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1656567.0oqS7xVYJ8@vostro.rjw.lan> <1372948192-17913-1-git-send-email-mika.westerberg@linux.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Userspace can now specify connection parameters to override the
-  defaults prior to connecting to the device.
-* The intention is that setsockopt() will be called before connect() is
-  called in userspace apps and BlueZ libraries.
-* It is critical to set these parameters prior to connect() to avoid
-  issues with hardware that must arbitrate the antenna access between
-  Bluetooth LE and things like WiFi.  Aggressive connect (and scan)
-  window and interval values result in significant WiFi degradation.
-* Reduces the need to call the hci LE Connection Update Command to
-  override the "defaults" when the desired values are known ahead of
-  time.
-* Add BT_LE_CONN_PARAM socket option.
+On Thursday, July 04, 2013 05:29:51 PM Mika Westerberg wrote:
+> The acpiphp driver finds out whether the device is removable by checking
+> whether it has _RMV method directly behind it (and if it returns 1).
+> However, at least on Acer Aspire S5 with Thunderbolt host router has this
+> method placed behind a device called EPUP (endpoint upstream port?) and not
+> in the usual place expected by the acpiphp driver. The ASL code below shows
+> how this is done on that machine:
+> 
+> Device (RP05)
+> {
+> 	...
+> 	Device (HRUP)
+> 	{
+> 		Name (_ADR, Zero)
+> 		Name (_PRW, Package (0x02)
+> 		{
+> 			0x09,
+> 			0x04
+> 		})
+> 		Device (HRDN)
+> 		{
+> 			Name (_ADR, 0x00040000)
+> 			Name (_PRW, Package (0x02)
+> 			{
+> 				0x09,
+> 				0x04
+> 			})
+> 			Device (EPUP)
+> 			{
+> 				Name (_ADR, Zero)
+> 				Method (_RMV, 0, NotSerialized)
+> 				{
+> 					Return (One)
+> 				}
+> 			}
+> 		}
+> 	}
+> 	...
+> 
+> Fix this by adding a DMI quirk for the Acer Aspire S5 machine that gives an
+> alternative path to the _RMV method.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Signed-off-by: Kyle Manna <kyle@kylemanna.com>
----
- include/net/bluetooth/bluetooth.h |  2 ++
- net/bluetooth/l2cap_sock.c        | 23 +++++++++++++++++++++++
- 2 files changed, 25 insertions(+)
+This is fine by me and same for the other patches in the series.
 
-diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-index 10eb9b3..36e9242 100644
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@ -82,6 +82,8 @@ struct bt_power {
- 
- #define BT_CHANNEL_POLICY	10
- 
-+#define BT_LE_CONN_PARAM	11
-+
- /* BR/EDR only (default policy)
-  *   AMP controllers cannot be used.
-  *   Channel move requests from the remote device are denied.
-diff --git a/net/bluetooth/l2cap_sock.c b/net/bluetooth/l2cap_sock.c
-index 2c7917e..17b6e2b 100644
---- a/net/bluetooth/l2cap_sock.c
-+++ b/net/bluetooth/l2cap_sock.c
-@@ -454,6 +454,15 @@ static int l2cap_sock_getsockopt(struct socket *sock, int level, int optname,
- 			err = -EFAULT;
- 		break;
- 
-+	case BT_LE_CONN_PARAM:
-+
-+		len = min_t(unsigned int, len,
-+			    sizeof(struct hci_cp_le_create_conn));
-+		if (copy_to_user(optval, (char *) &chan->cp_le, len))
-+			err = -EFAULT;
-+
-+		break;
-+
- 	default:
- 		err = -ENOPROTOOPT;
- 		break;
-@@ -749,6 +758,20 @@ static int l2cap_sock_setsockopt(struct socket *sock, int level, int optname,
- 
- 		break;
- 
-+	case BT_LE_CONN_PARAM:
-+
-+		if (sizeof(struct hci_cp_le_create_conn) != optlen) {
-+			err = -EINVAL;
-+			break;
-+		}
-+
-+		if (copy_from_user((char *) &chan->cp_le, optval, optlen)) {
-+			err = -EFAULT;
-+			break;
-+		}
-+
-+		break;
-+
- 	default:
- 		err = -ENOPROTOOPT;
- 		break;
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+
+> ---
+>  drivers/pci/hotplug/acpi_pcihp.c | 34 ++++++++++++++++++++++++++++++++++
+>  1 file changed, 34 insertions(+)
+> 
+> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> index 2a47e82..eae1511 100644
+> --- a/drivers/pci/hotplug/acpi_pcihp.c
+> +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> @@ -33,6 +33,7 @@
+>  #include <linux/acpi.h>
+>  #include <linux/pci-acpi.h>
+>  #include <linux/slab.h>
+> +#include <linux/dmi.h>
+>  
+>  #define MY_NAME	"acpi_pcihp"
+>  
+> @@ -408,11 +409,31 @@ got_one:
+>  }
+>  EXPORT_SYMBOL(acpi_get_hp_hw_control_from_firmware);
+>  
+> +static const struct dmi_system_id pcihp_platform_quirks[] = {
+> +	{
+> +		/*
+> +		 * On Acer Aspire S5 the _RMV method for the
+> +		 * Thunderbolt host router upstream port is not
+> +		 * located directly under the device but it is
+> +		 * instead placed a bit deeper in the hierarchy.
+> +		 */
+> +		.ident = "Acer Aspire S5",
+> +		.matches = {
+> +			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire S5-391"),
+> +		},
+> +		.driver_data = "HRDN.EPUP._RMV",
+> +	},
+> +	{ }
+> +};
+> +
+>  static int pcihp_is_ejectable(acpi_handle handle)
+>  {
+>  	acpi_status status;
+>  	acpi_handle tmp;
+>  	unsigned long long removable;
+> +	const struct dmi_system_id *id;
+> +
+>  	status = acpi_get_handle(handle, "_ADR", &tmp);
+>  	if (ACPI_FAILURE(status))
+>  		return 0;
+> @@ -422,6 +443,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+>  	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+>  	if (ACPI_SUCCESS(status) && removable)
+>  		return 1;
+> +
+> +	/*
+> +	 * Try to look if there is a platform specific method that we can
+> +	 * use to determine if the device is removable or not.
+> +	 */
+> +	id = dmi_first_match(pcihp_platform_quirks);
+> +	if (id && id->driver_data) {
+> +		status = acpi_evaluate_integer(handle, id->driver_data, NULL,
+> +					       &removable);
+> +		if (ACPI_SUCCESS(status) && removable)
+> +			return 1;
+> +	}
+> +
+>  	return 0;
+>  }
+>  
+> 
 -- 
-1.8.1.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
