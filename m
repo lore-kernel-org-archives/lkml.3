@@ -1,72 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab3GDJea (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:34:30 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:37585 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab3GDJe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:34:28 -0400
-Message-ID: <1372930465.4979.82.camel@edumazet-glaptop>
-Subject: Re: kernel panic in skb_copy_bits
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Joe Jin <joe.jin@oracle.com>, Alex Bligh <alex@alex.org.uk>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, zheng.x.li@oracle.com,
-        Xen Devel <xen-devel@lists.xen.org>, Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 04 Jul 2013 02:34:25 -0700
-In-Reply-To: <1372928382.7184.16.camel@kazak.uk.xensource.com>
-References: <51CBAA48.3080802@oracle.com>
-	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
-	 <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>
-	 <1372666283.14691.8.camel@zakaz.uk.xensource.com>
-	 <51D53896.1060405@oracle.com>
-	 <1372928382.7184.16.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752598Ab3GDJhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:37:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39748 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381Ab3GDJhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 05:37:21 -0400
+Date: Thu, 4 Jul 2013 10:37:17 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/13] sched: Account for the number of preferred tasks
+ running on a node when selecting a preferred node
+Message-ID: <20130704093716.GO1875@suse.de>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-14-git-send-email-mgorman@suse.de>
+ <20130703183243.GB18898@dyad.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130703183243.GB18898@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-04 at 09:59 +0100, Ian Campbell wrote:
-> On Thu, 2013-07-04 at 16:55 +0800, Joe Jin wrote:
+On Wed, Jul 03, 2013 at 08:32:43PM +0200, Peter Zijlstra wrote:
+> On Wed, Jul 03, 2013 at 03:21:40PM +0100, Mel Gorman wrote:
+> > ---
+> >  kernel/sched/fair.c  | 45 ++++++++++++++++++++++++++++++++++++++++++---
+> >  kernel/sched/sched.h |  4 ++++
+> >  2 files changed, 46 insertions(+), 3 deletions(-)
 > > 
-> > Another way is add new page flag like PG_send, when sendpage() be called,
-> > set the bit, when page be put, clear the bit. Then xen-blkback can wait
-> > on the pagequeue.
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 3c796b0..9ffdff3 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -777,6 +777,18 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+> >   * Scheduling class queueing methods:
+> >   */
+> >  
+> > +static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
+> > +{
+> > +	rq->nr_preferred_running +=
+> > +			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
+> > +}
+> > +
+> > +static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
+> > +{
+> > +	rq->nr_preferred_running -=
+> > +			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
+> > +}
 > 
-> These schemes don't work when you have multiple simultaneous I/Os
-> referencing the same underlying page.
+> Ah doing this requires you dequeue before changing ->numa_preferred_nid. I
+> don't remember seeing that change in this series.
 
-So this is a page property, still the patches I saw tried to address
-this problem adding networking stuff (destructors) in the skbs.
+That's because it never happened. This is what the patch currently looks
+like after the shuffling
 
-Given that a page refcount can be transfered between entities, say using
-splice() system call, I do not really understand why the fix would imply
-networking only.
+---8<---
 
-Let's try to fix it properly, or else we must disable zero copies
-because they are not reliable.
+sched: Account for the number of preferred tasks running on a node when selecting a preferred node
 
-Why sendfile() doesn't have the problem, but vmsplice()+splice() do have
-this issue ?
+It is preferred that tasks always run local to their memory but it is
+not optimal if that node is compute overloaded and failing to get
+access to a CPU. This would compete with the load balancer trying to
+move tasks off and NUMA balancing moving it back.
 
-As soon as a page fragment reference is taken somewhere, the only way to
-properly reuse the page is to rely on put_page() and page being freed.
+Ultimately, it will be required that the compute load be calculated
+of each node and minimise that as well as minimising the number of
+remote accesses until the optimal balance point is reached. Begin
+this process by simply accounting for the number of tasks that are
+running on their preferred node. When deciding what node to place
+a task on, do not place a task on a node that has more preferred
+placement tasks than there are CPUs.
 
-Adding workarounds in TCP stack to always copy the page fragments in
-case of a retransmit is partial solution, as the remote peer could be
-malicious and send ACK _before_ page content is actually read by the
-NIC.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ kernel/sched/core.c  | 34 ++++++++++++++++++++++++++++++++++
+ kernel/sched/fair.c  | 49 +++++++++++++++++++++++++++++++++++++++++++------
+ kernel/sched/sched.h |  5 +++++
+ 3 files changed, 82 insertions(+), 6 deletions(-)
 
-So if we rely on networking stacks to give the signal for page reuse, we
-can have major security issue.
-
-
-
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 02db92a..13b9068 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6112,6 +6112,40 @@ static struct sched_domain_topology_level default_topology[] = {
+ 
+ static struct sched_domain_topology_level *sched_domain_topology = default_topology;
+ 
++#ifdef CONFIG_NUMA_BALANCING
++void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu)
++{
++	struct rq *rq;
++	unsigned long flags;
++	bool on_rq, running;
++
++	/*
++	 * Dequeue task before updating preferred_nid so
++	 * rq->nr_preferred_running is accurate
++	 */
++	rq = task_rq_lock(p, &flags);
++	on_rq = p->on_rq;
++	running = task_current(rq, p);
++
++	if (on_rq)
++		dequeue_task(rq, p, 0);
++	if (running)
++		p->sched_class->put_prev_task(rq, p);
++
++	/* Update the preferred nid and migrate task if possible */
++	p->numa_preferred_nid = nid;
++	p->numa_migrate_seq = 0;
++
++	/* Requeue task if necessary */
++	if (running)
++		p->sched_class->set_curr_task(rq);
++	if (on_rq)
++		enqueue_task(rq, p, 0);
++	task_rq_unlock(rq, p, &flags);
++}
++
++#endif
++
+ #ifdef CONFIG_NUMA
+ 
+ static int sched_domains_numa_levels;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 921265b..99f3cad 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -777,6 +777,18 @@ update_stats_curr_start(struct cfs_rq *cfs_rq, struct sched_entity *se)
+  * Scheduling class queueing methods:
+  */
+ 
++static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
++{
++	rq->nr_preferred_running +=
++			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
++}
++
++static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++	rq->nr_preferred_running -=
++			(cpu_to_node(task_cpu(p)) == p->numa_preferred_nid);
++}
++
+ #ifdef CONFIG_NUMA_BALANCING
+ /*
+  * Approximate time to scan a full NUMA task in ms. The task scan period is
+@@ -870,6 +882,21 @@ static inline int task_faults_idx(int nid, int priv)
+ 	return 2 * nid + priv;
+ }
+ 
++/* Returns true if the given node is compute overloaded */
++static bool sched_numa_overloaded(int nid)
++{
++	int nr_cpus = 0;
++	int nr_preferred = 0;
++	int i;
++
++	for_each_cpu(i, cpumask_of_node(nid)) {
++		nr_cpus++;
++		nr_preferred += cpu_rq(i)->nr_preferred_running;
++	}
++
++	return nr_preferred >= nr_cpus << 1;
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = 0;
+@@ -897,7 +924,7 @@ static void task_numa_placement(struct task_struct *p)
+ 
+ 		/* Find maximum private faults */
+ 		faults = p->numa_faults[task_faults_idx(nid, 1)];
+-		if (faults > max_faults) {
++		if (faults > max_faults && !sched_numa_overloaded(nid)) {
+ 			max_faults = faults;
+ 			max_nid = nid;
+ 		}
+@@ -923,9 +950,7 @@ static void task_numa_placement(struct task_struct *p)
+ 							     max_nid);
+ 		}
+ 
+-		/* Update the preferred nid and migrate task if possible */
+-		p->numa_preferred_nid = max_nid;
+-		p->numa_migrate_seq = 0;
++		sched_setnuma(p, max_nid, preferred_cpu);
+ 		migrate_task_to(p, preferred_cpu);
+ 
+ 		/*
+@@ -1148,6 +1173,14 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ static void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ {
+ }
++
++static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)
++{
++}
++
++static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)
++{
++}
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ static void
+@@ -1157,8 +1190,10 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	if (!parent_entity(se))
+ 		update_load_add(&rq_of(cfs_rq)->load, se->load.weight);
+ #ifdef CONFIG_SMP
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		account_numa_enqueue(rq_of(cfs_rq), task_of(se));
+ 		list_add(&se->group_node, &rq_of(cfs_rq)->cfs_tasks);
++	}
+ #endif
+ 	cfs_rq->nr_running++;
+ }
+@@ -1169,8 +1204,10 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+ 	if (!parent_entity(se))
+ 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
+-	if (entity_is_task(se))
++	if (entity_is_task(se)) {
++		account_numa_dequeue(rq_of(cfs_rq), task_of(se));
+ 		list_del_init(&se->group_node);
++	}
+ 	cfs_rq->nr_running--;
+ }
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 795346d..1d7c0fb 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -433,6 +433,10 @@ struct rq {
+ 
+ 	struct list_head cfs_tasks;
+ 
++#ifdef CONFIG_NUMA_BALANCING
++	unsigned long nr_preferred_running;
++#endif
++
+ 	u64 rt_avg;
+ 	u64 age_stamp;
+ 	u64 idle_stamp;
+@@ -504,6 +508,7 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
+ #ifdef CONFIG_NUMA_BALANCING
++extern void sched_setnuma(struct task_struct *p, int nid, int idlest_cpu);
+ extern int migrate_task_to(struct task_struct *p, int cpu);
+ static inline void task_numa_free(struct task_struct *p)
+ {
