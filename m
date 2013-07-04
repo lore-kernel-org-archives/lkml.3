@@ -1,57 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab3GDJMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:12:09 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8382 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751895Ab3GDJMH (ORCPT
+	id S933697Ab3GDJMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:12:48 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:64953 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933532Ab3GDJMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:12:07 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 04 Jul 2013 02:10:17 -0700
-From: Wei Ni <wni@nvidia.com>
-To: <swarren@wwwdotorg.org>, <acourbot@nvidia.com>, <linux@arm.linux.org.uk>
-CC: <MLongnecker@nvidia.com>, <linux-arm-kernel@lists.infradead.org>,
-        <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Wei Ni <wni@nvidia.com>
-Subject: [PATCH 2/2] ARM: dt: t114 dalmore: add dt entry for lm90
-Date: Thu, 4 Jul 2013 17:09:39 +0800
-Message-ID: <1372928979-26938-3-git-send-email-wni@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372928979-26938-1-git-send-email-wni@nvidia.com>
-References: <1372928979-26938-1-git-send-email-wni@nvidia.com>
-X-NVConfidentiality: public
+	Thu, 4 Jul 2013 05:12:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130704014544.bce5cdb6.akpm@linux-foundation.org>
+References: <20130704160652.4f76f0ee43877a6e726d6c8b@canb.auug.org.au>
+	<CA+icZUXchb2H=ZZ0Zv+vA43x0CNVSbLvPptawnBR+OUpOzqP6A@mail.gmail.com>
+	<CA+icZUV8Nw2eY7aJg0qSCmg+Pk_EdRT2joUqxiL8y77rUsBGHg@mail.gmail.com>
+	<20130704014544.bce5cdb6.akpm@linux-foundation.org>
+Date: Thu, 4 Jul 2013 11:12:43 +0200
+Message-ID: <CA+icZUW7uQUHp9eVFKvTvdP+W3CLvfiuaPMieWh-81B8n94iqg@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jul 4
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable thermal sensor lm90 for t114 dalmore.
+On Thu, Jul 4, 2013 at 10:45 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 4 Jul 2013 10:21:09 +0200 Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>
+>> I have compared both mm/memcontrol.c files from
+>> next-20130703/next-20130704 - they are identical.
+>>
+>> These hunks...
+>>
+>> [ From Li Zefan ]
+>> @@ -6332,8 +6341,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+>>  {
+>>         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>>
+>> -       mem_cgroup_sockets_destroy(memcg);
+>> -
+>> +       memcg_destroy_kmem(memcg);
+>>         __mem_cgroup_free(memcg);
+>>  }
+>>
+>> [ From mmots ]
+>> @@ -6399,8 +6408,7 @@ static void mem_cgroup_css_free(struct c
+>>  {
+>>         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>>
+>> -       mem_cgroup_sockets_destroy(memcg);
+>> -
+>> +       memcg_destroy_kmem(memcg);
+>>         mem_cgroup_put(memcg);
+>>  }
+>>
+>> ...seems to differ.
+>>
+>> In both mentioned -next releases there exist no mem_cgroup_put() in
+>> mm/memcontrol.c.
+>> So the hunk in mmots seems to be wrong in my eyes.
+>
+> Seems right - thanks for catching that.
+>
+> --- a/mm/memcontrol.c~memcg-use-css_get-put-when-charging-uncharging-kmem-fix-fix-fix
+> +++ a/mm/memcontrol.c
+> @@ -6409,7 +6409,7 @@ static void mem_cgroup_css_free(struct c
+>         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>
+>         memcg_destroy_kmem(memcg);
+> -       mem_cgroup_put(memcg);
+> +       __mem_cgroup_free(memcg);
+>  }
+>
+>  #ifdef CONFIG_MMU
+> _
+>
 
-Signed-off-by: Wei Ni <wni@nvidia.com>
----
- arch/arm/boot/dts/tegra114-dalmore.dts |    7 +++++++
- 1 file changed, 7 insertions(+)
+Hmm, if...
 
-diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index cb640eb..8325797 100644
---- a/arch/arm/boot/dts/tegra114-dalmore.dts
-+++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -738,6 +738,13 @@
- 			realtek,ldo1-en-gpios =
- 				<&gpio TEGRA_GPIO(V, 3) GPIO_ACTIVE_HIGH>;
- 		};
-+
-+		nct1008: nct1008 {
-+			compatible = "lm90,nct1008";
-+			reg = <0x4c>;
-+			interrupt-parent = <&gpio>;
-+			interrupts = <TEGRA_GPIO(O, 4) IRQ_TYPE_LEVEL_LOW>;
-+		};
- 	};
- 
- 	i2c@7000d000 {
--- 
-1.7.9.5
+     memcg-use-css_get-put-when-charging-uncharging-kmem-fix-fix.patch
 
+...does not apply here, a follow-up makes not really sense to me...
+
+     memcg-use-css_get-put-when-charging-uncharging-kmem-fix-fix-fix.patch
+
+Maybe, I am wrong seeing it from -next side than -mm.
+( Might be you want to keep the chronology. )
+Anyway, dunno, will fold that into -fix-fix.
+
+- Sedat
