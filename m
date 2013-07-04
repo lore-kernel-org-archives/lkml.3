@@ -1,43 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab3GDQSV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 12:18:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47907 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab3GDQSU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 12:18:20 -0400
-Date: Thu, 4 Jul 2013 09:19:11 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        jic23@cam.ac.uk
-Subject: Re: Issue with porting i2c driver to k3.10 (iio)
-Message-ID: <20130704161911.GC20907@kroah.com>
-References: <CAGH3droX_J9JJ60EP6d62Sh6MK6T5WvYTq+uwcmJkwb0c1Yurg@mail.gmail.com>
+	id S1756817Ab3GDQUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 12:20:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52873 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756525Ab3GDQUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 12:20:07 -0400
+Date: Thu, 4 Jul 2013 18:20:05 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] mm: Honor min_free_kbytes set by user
+Message-ID: <20130704162005.GE7833@dhcp22.suse.cz>
+References: <1372954036-16988-1-git-send-email-mhocko@suse.cz>
+ <1372954239.1886.40.camel@joe-AO722>
+ <20130704161641.GD7833@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGH3droX_J9JJ60EP6d62Sh6MK6T5WvYTq+uwcmJkwb0c1Yurg@mail.gmail.com>
+In-Reply-To: <20130704161641.GD7833@dhcp22.suse.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 04:16:43PM +0300, Oleksandr Kravchenko wrote:
-> Hi All,
+On Thu 04-07-13 18:16:41, Michal Hocko wrote:
+> On Thu 04-07-13 09:10:39, Joe Perches wrote:
+> > On Thu, 2013-07-04 at 18:07 +0200, Michal Hocko wrote:
+> > > A warning is printed when the new value is ignored.
+> > 
+> > []
+> > 
+> > > +		printk(KERN_WARNING "min_free_kbytes is not updated to %d"
+> > > +				"because user defined value %d is preferred\n",
+> > > +				new_min_free_kbytes, user_min_free_kbytes);
+> > 
+> > Please use pr_warn and coalesce the format.
 > 
-> I wrote i2c driver for APDS-9300 light sensor in drivers/misc, but I have some
-> questions regarding upstreaming of it.
-> 1. It works properly in kernel-3.4, but it works very slow in kernel-3.10 (on
-> mutex and i2c operations, particulary on mutex_lock() and i2c_smbus_read_data
-> ()). Does anyone know why this issue may be occurred?
+> Sure can do that. mm/page_alloc.c doesn't seem to be unified in that
+> regards (44 printks and only 4 pr_<foo>) so I used printk.
+> 
+> > You'd've noticed a missing space between %d and because.
+> 
+> True
+> 
 
-What is "slow"?  Have you run 'perf' on the driver to see where it is
-spending time?
+Checkpatch fixes
+---
+>From 5f089c0b2a57ff6c08710ac9698d65aede06079f Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 4 Jul 2013 17:15:54 +0200
+Subject: [PATCH] mm: Honor min_free_kbytes set by user
 
-> 2. Can I send this driver without using Industrial I/O framework?
+min_free_kbytes is updated during memory hotplug (by init_per_zone_wmark_min)
+currently which is right thing to do in most cases but this could be
+unexpected if admin increased the value to prevent from allocation
+failures and the new min_free_kbytes would be decreased as a result of
+memory hotadd.
 
-No, why would you even want to?
+This patch saves the user defined value and allows updating
+min_free_kbytes only if it is higher than the saved one.
 
-greg k-h
+A warning is printed when the new value is ignored.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/page_alloc.c | 24 +++++++++++++++++-------
+ 1 file changed, 17 insertions(+), 7 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 22c528e..9c011fc 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -204,6 +204,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
+ };
+ 
+ int min_free_kbytes = 1024;
++int user_min_free_kbytes;
+ 
+ static unsigned long __meminitdata nr_kernel_pages;
+ static unsigned long __meminitdata nr_all_pages;
+@@ -5592,14 +5593,21 @@ static void __meminit setup_per_zone_inactive_ratio(void)
+ int __meminit init_per_zone_wmark_min(void)
+ {
+ 	unsigned long lowmem_kbytes;
++	int new_min_free_kbytes;
+ 
+ 	lowmem_kbytes = nr_free_buffer_pages() * (PAGE_SIZE >> 10);
+-
+-	min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
+-	if (min_free_kbytes < 128)
+-		min_free_kbytes = 128;
+-	if (min_free_kbytes > 65536)
+-		min_free_kbytes = 65536;
++	new_min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
++
++	if (new_min_free_kbytes > user_min_free_kbytes) {
++		min_free_kbytes = new_min_free_kbytes;
++		if (min_free_kbytes < 128)
++			min_free_kbytes = 128;
++		if (min_free_kbytes > 65536)
++			min_free_kbytes = 65536;
++	} else {
++		pr_warn("min_free_kbytes is not updated to %d because user defined value %d is preferred\n",
++				new_min_free_kbytes, user_min_free_kbytes);
++	}
+ 	setup_per_zone_wmarks();
+ 	refresh_zone_stat_thresholds();
+ 	setup_per_zone_lowmem_reserve();
+@@ -5617,8 +5625,10 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	proc_dointvec(table, write, buffer, length, ppos);
+-	if (write)
++	if (write) {
++		user_min_free_kbytes = min_free_kbytes;
+ 		setup_per_zone_wmarks();
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.1
+
+-- 
+Michal Hocko
+SUSE Labs
