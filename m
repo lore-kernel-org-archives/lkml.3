@@ -1,92 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab3GDNyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 09:54:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47633 "EHLO mx2.suse.de"
+	id S932789Ab3GDN7P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:59:15 -0400
+Received: from mail4.uef.fi ([193.167.228.228]:34425 "EHLO mail4.uef.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756495Ab3GDNyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 09:54:23 -0400
-Date: Thu, 4 Jul 2013 14:54:15 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 13/13] sched: Account for the number of preferred tasks
- running on a node when selecting a preferred node
-Message-ID: <20130704135415.GR1875@suse.de>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-14-git-send-email-mgorman@suse.de>
- <20130703183243.GB18898@dyad.programming.kicks-ass.net>
- <20130704093716.GO1875@suse.de>
- <20130704130719.GC29916@linux.vnet.ibm.com>
+	id S1752153Ab3GDN7N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 09:59:13 -0400
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Jul 2013 09:59:13 EDT
+From: Juhani Laurinkari <juhani.laurinkari@uef.fi>
+Date: Thu, 4 Jul 2013 16:35:31 +0300
+Subject: Attention
+Thread-Topic: Attention
+Thread-Index: AQHOeLtadK97QXw17kOJs3n9JgkWZA==
+Message-ID: <5A9F85948C3992498080C6D99D372C7E2ACF95CCCA@EXCVS1.uefad.uef.fi>
+Accept-Language: fi-FI
+Content-Language: fi-FI
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: fi-FI
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130704130719.GC29916@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 06:37:19PM +0530, Srikar Dronamraju wrote:
-> >  static void task_numa_placement(struct task_struct *p)
-> >  {
-> >  	int seq, nid, max_nid = 0;
-> > @@ -897,7 +924,7 @@ static void task_numa_placement(struct task_struct *p)
-> > 
-> >  		/* Find maximum private faults */
-> >  		faults = p->numa_faults[task_faults_idx(nid, 1)];
-> > -		if (faults > max_faults) {
-> > +		if (faults > max_faults && !sched_numa_overloaded(nid)) {
-> 
-> Should we take the other approach of setting the preferred nid but not 
-> moving the task to the node?
-> 
 
-Why would that be better?
 
-> So if some task moves out of the preferred node, then we should still be
-> able to move this task there. 
-> 
 
-I think if we were to do that then I'd revisit the "task swap" logic from
-autonuma (numacore had something similar) and search for pairs of tasks
-that both benefit from a swap. I prototyped something basic alont this
-lines but it was premature. It's a more directed approach but one that
-should be done only when the private/shared and load logic is solidified.
-
-> However your current approach has an advantage that it atleast runs on
-> second preferred choice if not the first.
-> 
-
-That was the intention.
-
-> Also should sched_numa_overloaded() also consider pinned tasks?
-> 
-
-I don't think sched_numa_overloaded() needs to as such, least I don't see how
-it would do it sensibly right now. However, you still make an important point
-in that find_idlest_cpu_node should take it into account. How about this?
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9247345..387f28d 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -863,9 +863,13 @@ find_idlest_cpu_node(int this_cpu, int nid)
- 		load = weighted_cpuload(i);
- 
- 		if (load < min_load) {
--			/* Do not preempt a task running on a preferred node */
-+			/*
-+			 * Do not preempt a task running on a preferred node or
-+			 * tasks are are pinned to their current CPU
-+			 */
- 			struct task_struct *p = cpu_rq(i)->curr;
--			if (p->numa_preferred_nid != nid) {
-+			if (p->numa_preferred_nid != nid &&
-+			    cpumask_weight(tsk_cpus_allowed(p)) > 1) {
- 				min_load = load;
- 				idlest_cpu = i;
- 			}
+Attention,
+Important message from ADMIN- Please confirm your email address by
+clicking this link:
+http://webbup.jimdo.com/
+Webmaster
