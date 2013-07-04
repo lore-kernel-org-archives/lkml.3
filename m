@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab3GDA2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 20:28:06 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60813 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754432Ab3GDA2E (ORCPT
+	id S933426Ab3GDAbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 20:31:09 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:33626 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755123Ab3GDAbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 20:28:04 -0400
-X-Sasl-enc: GenNBP+3QM5jmItJdTrtjW3hu9eqVnWhiwzXDxhU5OI4 1372897682
-Date: Wed, 3 Jul 2013 17:28:41 -0700
-From: Greg KH <greg@kroah.com>
+	Wed, 3 Jul 2013 20:31:08 -0400
+Date: Wed, 3 Jul 2013 20:31:03 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Dave Chinner <david@fromorbit.com>
-Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Drokin, Oleg" <oleg.drokin@intel.com>
-Subject: Re: [GIT PULL] ext4 updates for 3.11
-Message-ID: <20130704002841.GA8962@kroah.com>
-References: <20130703181249.GA21797@kroah.com>
- <CDF9C6B7.51285%andreas.dilger@intel.com>
- <20130703235444.GF4072@dastard>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Rob van der Heij <rvdheij@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yannick Brosseau <yannick.brosseau@gmail.com>, stable@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>
+Subject: Re: [-stable 3.8.1 performance regression] madvise
+	POSIX_FADV_DONTNEED
+Message-ID: <20130704003103.GA13899@Krystal>
+References: <20130618101147.GA7436@suse.de> <20130619192508.GA666@Krystal> <CAJCc=kijujORhPUmPvzHj-MMdyVbf-iHEK0Jx-VHbTO8q4ESFA@mail.gmail.com> <20130620122016.GA12700@Krystal> <20130625015648.GO29376@dastard> <20130702135858.GA30837@Krystal> <20130703005514.GA17149@Krystal> <20130703084715.GF1875@suse.de> <x49wqp7puej.fsf@segfault.boston.devel.redhat.com> <20130704000344.GG4072@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130703235444.GF4072@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130704000344.GG4072@dastard>
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 09:54:44AM +1000, Dave Chinner wrote:
-> On Wed, Jul 03, 2013 at 06:40:40PM +0000, Dilger, Andreas wrote:
-> > On 2013/03/07 12:12 PM, "Greg KH" <greg@kroah.com> wrote:
-> > >On Wed, Jul 03, 2013 at 01:29:41PM +1000, Dave Chinner wrote:
-> > >> On Tue, Jul 02, 2013 at 06:01:11PM -0700, Greg KH wrote:
-> > >> > For this filesystem, it seems that they don't have any
-> > >> > resources to do this work and are relying on the community to
-> > >> > help out.  Which is odd, but big companies are strange some
-> > >> > times...
-> > >> 
-> > >> Didn't we learn this lesson already with POHMELFS? i.e. that
-> > >> dumping filesystem code in staging on the assumption "the
-> > >> community" will fix it up when nobody in "the community" uses
-> > >> or can even test that filesystem is a broken development
-> > >> model....
-> > >
-> > >They (Intel) has said that they will continue to clean up this
-> > >code in the tree, until it is in good enough shape to be merged
-> > >into fs/ properly.  If they ever stop helping out, I will end up
-> > >dropping it from the tree, just like I did for pohmelfs, so don't
-> > >worry about it lingering around abandoned.
+* Dave Chinner (david@fromorbit.com) wrote:
+> On Wed, Jul 03, 2013 at 10:53:08AM -0400, Jeff Moyer wrote:
+> > Mel Gorman <mgorman@suse.de> writes:
 > > 
-> > Right, we are going to continue working on cleaning the code at a
-> > steady pace until it is ready to move to fs/.  I don't expect Al
-> > or Dave or Christoph to spend their time (or make their eyes
-> > bleed) with the current state of the code.  It has already
-> > undergone some significant cleanup, but needs a bunch more still.
+> > >> > I just tried replacing my sync_file_range()+fadvise() calls and instead
+> > >> > pass the O_DIRECT flag to open(). Unfortunately, I must be doing
+> > >> > something very wrong, because I get only 1/3rd of the throughput, and
+> > >> > the page cache fills up. Any idea why ?
+> > >> 
+> > >> Since O_DIRECT does not seem to provide acceptable throughput, it may be
+> > >> interesting to investigate other ways to lessen the latency impact of
+> > >> the fadvise DONTNEED hint.
+> > >> 
+> > >
+> > > There are cases where O_DIRECT falls back to buffered IO which is why you
+> > > might have found that page cache was still filling up. There are a few
+> > > reasons why this can happen but I would guess the common cause is that
+> > > the range of pages being written was in the page cache already and could
+> > > not be invalidated for some reason. I'm guessing this is the common case
+> > > for page cache filling even with O_DIRECT but would not bet money on it
+> > > as it's not a problem I investigated before.
+> > 
+> > Even when O_DIRECT falls back to buffered I/O for writes, it will
+> > invalidate the page cache range described by the buffered I/O once it
+> > completes.  For reads, the range is written out synchronously before the
+> > direct I/O is issued.  Either way, you shouldn't see the page cache
+> > filling up.
 > 
-> The issue I'm more concerned about is more to do with what happens
-> when we do something that affects all filesystems, such as API
-> changes. Then we are forced to look at it and to try to work out
-> what the hell is going on. This was the real problem with pomelhfs
-> being in staging - it had an unreasonably high maintenance overhead
-> compared to other filesystems.
+> <sigh>
 > 
-> This was mainly because pohelmfs was effectively dumped in staging
-> and then left unmaintained - if there's consistent effort put into
-> the Lustre code to clean it up, maintain it and help with API
-> transitions, then I have nothing to object to and I'll just crawl
-> back into my box. ;)
+> I keep forgetting that filesystems other than XFS have sub-optimal
+> direct IO implementations. I wish that "silent fallback to buffered
+> IO" idea had never seen the light of day, and that filesystems
+> implemented direct IO properly.
+> 
+> > Switching to O_DIRECT often incurs a performance hit, especially if the
+> > application does not submit more than one I/O at a time.  Remember,
+> > you're not getting readahead, and you're not getting the benefit of the
+> > writeback code submitting batches of I/O.
+> 
+> With the way IO is being done, there won't be any readahead (write
+> only workload) and they are directly controlling writeback one chunk
+> at a time, so there's not writeback caching to do batching, either.
+> There's no obvious reason that direct IO should be any slower
+> assuming that the application is actually doing 1MB sized and
+> aligned IOs like was mentioned, because both methods are directly
+> dispatching and then waiting for IO completion.
 
-Again, as with all code in the drivers/staging/ area, if you change any
-kernel apis, you are not responsible for fixing up the staging drivers,
-that's my job.  A heads-up is always nice, but again, not required.  You
-should be able to just safely ignore them if you don't want to ever look
-at them.
+As a clarification, I use 256kB "chunks" (sub-buffers) in my tests, not
+1MB. Also, please note that since I'm using splice(), each individual
+splice call is internally limited to 16 pages worth of data transfer
+(64kB).
 
-thanks,
+> What filesystem is in use here?
 
-greg k-h
+My test was performed on ext3 filesystem, that was itself sitting on
+raid-1 software raid.
+
+Thanks,
+
+Mathieu
+
+> 
+> Cheers,
+> 
+> Dave.
+> -- 
+> Dave Chinner
+> david@fromorbit.com
+
+-- 
+Mathieu Desnoyers
+EfficiOS Inc.
+http://www.efficios.com
