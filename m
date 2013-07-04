@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599Ab3GDIK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:10:58 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:41840 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab3GDIKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:10:55 -0400
+	id S933647Ab3GDIOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:14:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18443 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202Ab3GDIOX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 04:14:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,993,1363158000"; 
+   d="scan'208";a="364663957"
+Message-ID: <51D52E9A.4030107@intel.com>
+Date: Thu, 04 Jul 2013 16:13:14 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
-References: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
-	<1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
-Date: Thu, 4 Jul 2013 10:10:55 +0200
-X-Google-Sender-Auth: ZJSqCjn1rn0gIH6H-iEy-ya613g
-Message-ID: <CAMuHMdWu9j5BC-boVkUfVPUnVZdbaA=UnSJ=5xm3Q8d1JOsbGw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] checkpatch: only allow COMPILE_TEST in Kconfig
- dependency lines
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: tglx@linutronix.de, hpa@linux.intel.com, tim.c.chen@linux.intel.com,
+        linux-kernel@vger.kernel.org, andi.kleen@intel.com, mingo@elte.hu
+Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <20130704075840.GH18898@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130704075840.GH18898@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 4, 2013 at 7:39 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> With that in mind, it is clear that this is _not_ to be used in
-> any C code with "#ifdef CONFIG_COMPILE_TEST" etc.  However there
-> will (and already has been) instances of people thinking this is
-> an OK practice[2].  So teach checkpatch to spot them as an error.
+On 07/04/2013 03:58 PM, Peter Zijlstra wrote:
+> On Thu, Jul 04, 2013 at 01:34:13PM +0800, Alex Shi wrote:
+> 
+>> If the tsc is marked as constant and nonstop, could we set it as system
+>> clocksource when do tsc register? w/o checking it on clocksource_watchdog?
+> 
+> I'd not do that; the BIOS can still screw you over, we need some validation.
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+I see. thanks!
+> 
+> That said; we do need means to disable the clocksource watchdog -- although I
+> suppose Frederic might already have provided this for this NOHZ efforts when I
+> wasn't looking.
+> 
 
-Gr{oetje,eeting}s,
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Thanks
+    Alex
