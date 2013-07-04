@@ -1,74 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab3GDWDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 18:03:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902Ab3GDWDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 18:03:23 -0400
-Date: Fri, 5 Jul 2013 00:02:33 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: perf/Documentation/ABI -- add some documentation for perf_event
- sysfs usage
-Message-ID: <20130704220233.GA11319@krava.redhat.com>
-References: <alpine.DEB.2.10.1307031527390.12584@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1307032308040.13409@vincent-weaver-1.um.maine.edu>
- <20130704090253.GJ18898@dyad.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704090253.GJ18898@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756988Ab3GDWSR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 18:18:17 -0400
+Received: from 6.mo5.mail-out.ovh.net ([178.32.119.138]:51076 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756950Ab3GDWSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 18:18:16 -0400
+Date: Thu, 4 Jul 2013 22:58:06 +0200
+From: Lukasz Majewski <l.majewski@majess.pl>
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+Cc: Lukasz Majewski <l.majewski@samsung.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, "Zhang, Rui" <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v5 5/7] thermal:boost: Automatic enable/disable of BOOST
+ feature
+Message-ID: <20130704225806.6d08b0a9@jawa>
+In-Reply-To: <4D68720C2E767A4AA6A8796D42C8EB59CCF152@BGSMSX101.gar.corp.intel.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
+ <1372927830-2949-6-git-send-email-l.majewski@samsung.com>
+ <4D68720C2E767A4AA6A8796D42C8EB59CCF152@BGSMSX101.gar.corp.intel.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 16139493690551091862
+X-Ovh-Remote: 178.235.168.2 (178235168002.warszawa.vectranet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrtdefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 11:02:53AM +0200, Peter Zijlstra wrote:
-> On Wed, Jul 03, 2013 at 11:14:40PM -0400, Vince Weaver wrote:
-> > On Wed, 3 Jul 2013, Vince Weaver wrote:
+On Thu, 4 Jul 2013 17:19:04 +0000
+"R, Durgadoss" <durgadoss.r@intel.com> wrote:
+Hi,
+
+> Hi Lukasz,
 > 
-> > OK, don't I feel silly, these values were already documented in 
-> >    Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-> > rather than ABI/stable
+> > -----Original Message-----
+> > From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-
+> > owner@vger.kernel.org] On Behalf Of Lukasz Majewski
+> > Sent: Thursday, July 04, 2013 2:20 PM
+> > To: Viresh Kumar; Rafael J. Wysocki; Zhang, Rui; Eduardo Valentin
+> > Cc: cpufreq@vger.kernel.org; Linux PM list; Jonghwa Lee; Lukasz
+> > Majewski; l.majewski@majess.pl; linux-kernel; Andre Przywara;
+> > Daniel Lezcano; Kukjin Kim; Myungjoo Ham
+> > Subject: [PATCH v5 5/7] thermal:boost: Automatic enable/disable of
+> > BOOST feature
 > > 
-> > To be fair I missed it because the documentation seemed to come from the 
-> > Power developers and not through perf_event
-> >
-> > anyway, that documentation says the values will be hex only, which was 
-> > broken by
+> > This patch provides auto disable/enable operation for boost. When
+> > any defined trip point is passed, the boost is disabled.
+> > In that moment thermal monitor workqueue is woken up and it monitors
+> > if the device temperature drops below 75% of the smallest trip
+> > point. When device cools down, the boost is enabled again.
 > > 
-> > commit f9134f36aed59ab55c0ab1a4618dd455f15aef5f
-> > Author: Andi Kleen <ak@linux.intel.com>
-> > Date:   Mon Jun 17 17:36:52 2013 -0700
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 > > 
-> >     perf/x86/intel: Add mem-loads/stores support for Haswell
+> > ---
+> > Changes for v5:
+> > - Move boost disable code from cpu_cooling.c to thermal_core.c
+> >   (to handle_non_critical_trips)
+> > - Extent struct thermal_zone_device by adding overheated bool flag
+> > - Implement auto enable of boost after device cools down
+> > - Introduce boost_polling flag, which indicates if thermal uses
+> > it's predefined pool delay or has woken up thermal workqueue only
+> > to wait until device cools down.
 > > 
+> > Changes for v4:
+> > - New patch
 > > 
-> > which added:
-> > EVENT_ATTR_STR(mem-loads,      mem_ld_hsw,     "event=0xcd,umask=0x1,ldlat=3");
+> >  drivers/thermal/thermal_core.c |   31
+> > +++++++++++++++++++++++++++++++ include/linux/thermal.h        |
+> > 2 ++ 2 files changed, 33 insertions(+)
 > > 
-> > (note ldlat is not in hex).
+> > diff --git a/drivers/thermal/thermal_core.c
+> > b/drivers/thermal/thermal_core.c index d755440..12adbad 100644
+> > --- a/drivers/thermal/thermal_core.c
+> > +++ b/drivers/thermal/thermal_core.c
+> > @@ -33,6 +33,7 @@
+> >  #include <linux/idr.h>
+> >  #include <linux/thermal.h>
+> >  #include <linux/reboot.h>
+> > +#include <linux/cpufreq.h>
+> >  #include <net/netlink.h>
+> >  #include <net/genetlink.h>
 > > 
-> > This broke the trinity fuzzer (which scans to look for events to use)
-> > as well as some of my personal tools.
-> > 
-> > Should the ldlat value be fixed to be hex?  Or should we ammend the ABI
-> > document to allow decimal?
+> > @@ -326,6 +327,15 @@ static void monitor_thermal_zone(struct
+> > thermal_zone_device *tz)
+> >  static void handle_non_critical_trips(struct thermal_zone_device
+> > *tz, int trip, enum thermal_trip_type trip_type)
+> >  {
+> > +	if (cpufreq_boost_supported()) {
+> > +		tz->overheated = true;
+> > +		cpufreq_boost_trigger_state(0);
+> > +		if (!tz->polling_delay) {
+> > +			tz->boost_polling = true;
+> > +			tz->polling_delay = 1000;
+> > +		}
+> > +	}
+> > +
+> >  	if (tz->governor)
+> >  		tz->governor->throttle(tz, trip);
+> >  }
+> > @@ -453,6 +463,27 @@ static void thermal_zone_device_check(struct
+> > work_struct *work)
+> >  	struct thermal_zone_device *tz = container_of(work, struct
+> >  						      thermal_zone_device,
+> >  						      poll_queue.work);
+> > +	long trip_temp;
+> > +
+> > +	if (cpufreq_boost_supported() && tz->overheated) {
 > 
-> I don't see a good reason not to allow decimal as well. Jolsa?
+> Not all thermal drivers support trip points. So, we first need a
+> if (tz->ops->get_trip_temp) check here.
 
-yep, no technical problem with decimal
+Ok, thanks for tip. Bluntly speaking, I thought, that all SoCs supported
+by thermal set trip points.
 
-hum, the doc mentions 'event' term only, which IS hex only AFAICS ;-)
+> 
+> > +		tz->ops->get_trip_temp(tz, 0, &trip_temp);
+> > +		/*
+> > +		 * Enable boost again only when current
+> > temperature is less
+> > +		 * than 75% of trip_temp[0]
+> > +		 */
+> > +		if ((tz->temperature + (trip_temp >> 2)) <
+> > trip_temp) {
+> 
+> Another way would be to use the get_trend APIs for this thermal zone.
+> If the trend is cooling we can re-enable boost otherwise not.
 
-I think this docs should be updated and either describe all
-allowed terms or be generic enough to cover all of them.
+Trend evaluation seems like a good complementary idea.
 
-jirka
+However, I would also like to have the relative temperature drop
+measurement (if possible) like above (to 75% of the first trip point).
+
+Then I would be more confident, that everything cooled down and that I
+can start boost again.
+
+> 
+> > +			tz->overheated = false;
+> > +			if (tz->boost_polling) {
+> > +				tz->boost_polling = false;
+> > +				tz->polling_delay = 0;
+> > +				monitor_thermal_zone(tz);
+> > +			}
+> 
+> Overall, I believe this will work well only if the thermal zone is
+> CPU.
+
+My assumption:
+
+When I enable boost at CPU, then I also shall cool down the CPU. And
+the CPU zone seemed a natural choice. 
+
+However I might be missing something, so hints are welcome.
+
+> 
+> Another suggestion is: We tried hard to remove all throttling logic
+> from thermal_core.c.
+
+By throttling logic you mean:
+if ((tz->temperature + (trip_temp >> 2)) and other conditions (like
+trend measurement)?
+
+> May be we should include this kind of logic in
+> step_wise.c ?  
+
+It sounds interesting (since ->throttle at thermal_core.c is called
+always when needed), but I'm afraid of a code duplication when one
+use Boost with fair_share or other thermal governor.
+
+> Rui/Eduardo: Any thoughts on this ?
+> 
+> Thanks,
+> Durga
+> > +
+> > +			cpufreq_boost_trigger_state(1);
+> > +			return;
+> > +		}
+> > +	}
+> > +
+> >  	thermal_zone_device_update(tz);
+> >  }
+> > 
+> > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> > index a386a1c..f1aa3c2 100644
+> > --- a/include/linux/thermal.h
+> > +++ b/include/linux/thermal.h
+> > @@ -172,6 +172,8 @@ struct thermal_zone_device {
+> >  	int emul_temperature;
+> >  	int passive;
+> >  	unsigned int forced_passive;
+> > +	bool overheated;
+> > +	bool boost_polling;
+> >  	const struct thermal_zone_device_ops *ops;
+> >  	const struct thermal_zone_params *tzp;
+> >  	struct thermal_governor *governor;
+> > --
+> > 1.7.10.4
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-pm"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
