@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755694Ab3GDLAv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 07:00:51 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40434 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3GDLAu (ORCPT
+	id S1756510Ab3GDLBa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 07:01:30 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:39259 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753488Ab3GDLB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 07:00:50 -0400
-Date: Thu, 4 Jul 2013 13:00:52 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alex Shi <alex.shi@intel.com>
-cc: hpa@linux.intel.com, tim.c.chen@linux.intel.com,
-        linux-kernel@vger.kernel.org, andi.kleen@intel.com,
-        a.p.zijlstra@chello.nl, mingo@elte.hu
-Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
-In-Reply-To: <1372916056-24301-1-git-send-email-alex.shi@intel.com>
-Message-ID: <alpine.DEB.2.02.1307041300020.11637@ionos.tec.linutronix.de>
-References: <1372916056-24301-1-git-send-email-alex.shi@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 4 Jul 2013 07:01:28 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <20130704102056.GQ27646@sirena.org.uk>
+References: <1372919930-513-1-git-send-email-sachin.kamat@linaro.org>
+	<20130704102056.GQ27646@sirena.org.uk>
+Date: Thu, 4 Jul 2013 16:31:28 +0530
+Message-ID: <CAK9yfHz0iKecg4JBQLTd1id1g5Y136=4y_twEHtpHBHtgioCEA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] MAINTAINERS: Upgate git repo for voltage & current
+ regulator f/w entry
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        patches@linaro.org, Liam Girdwood <lgirdwood@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Jul 2013, Alex Shi wrote:
+On 4 July 2013 15:50, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Jul 04, 2013 at 12:08:50PM +0530, Sachin Kamat wrote:
+>> The current git repository hasn't been updated since quite a long time.
+>> Update it with Mark's git repo which is the currently maintained one.
+>
+> Applied with a redone commit message due to all the typos.
 
-> We find some benchmarks drop a lot on tip/sched/core on many Intel boxes,
-> like oltp, tbench, hackbench etc. and bisected the commit 5d33b883ae
-> cause this regression. Due to this commit, the clocksource was changed
-> to hpet from tsc even tsc will be set CLOCK_SOURCE_VALID_FOR_HRES later
-> in clocksource_watchdog. 
+Thanks
 
-5d33b883ae is not in tip/sched/core. So what are you testing and
-bisecting?
- 
-Thanks,
+>
+>> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+>> Cc: Liam Girdwood <lgirdwood@gmail.com>
+>> Cc: Mark Brown <broonie@kernel.org>
+>
+> It's better not to include things like the CCs in the body of
+> submissions since they end up as noise when applied.  This is
+> particularly important when sending a lot of small cleanup patches as
+> effort to apply things is more important here.
 
-	tglx
+OK.
+
+-- 
+With warm regards,
+Sachin
