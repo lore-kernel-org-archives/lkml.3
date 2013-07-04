@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933697Ab3GDJMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:12:48 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:64953 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933532Ab3GDJMq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:12:46 -0400
+	id S933708Ab3GDJNu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:13:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54419 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933532Ab3GDJNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 05:13:48 -0400
+Date: Thu, 4 Jul 2013 12:13:46 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>
+Subject: Re: [PATCH] x86/kvm/emulate.c: simplify NOP (opcode 0x90) check
+Message-ID: <20130704091345.GB5113@redhat.com>
+References: <1372928309-16488-1-git-send-email-dvlasenk@redhat.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130704014544.bce5cdb6.akpm@linux-foundation.org>
-References: <20130704160652.4f76f0ee43877a6e726d6c8b@canb.auug.org.au>
-	<CA+icZUXchb2H=ZZ0Zv+vA43x0CNVSbLvPptawnBR+OUpOzqP6A@mail.gmail.com>
-	<CA+icZUV8Nw2eY7aJg0qSCmg+Pk_EdRT2joUqxiL8y77rUsBGHg@mail.gmail.com>
-	<20130704014544.bce5cdb6.akpm@linux-foundation.org>
-Date: Thu, 4 Jul 2013 11:12:43 +0200
-Message-ID: <CA+icZUW7uQUHp9eVFKvTvdP+W3CLvfiuaPMieWh-81B8n94iqg@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jul 4
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372928309-16488-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 4, 2013 at 10:45 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 4 Jul 2013 10:21:09 +0200 Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
->> I have compared both mm/memcontrol.c files from
->> next-20130703/next-20130704 - they are identical.
->>
->> These hunks...
->>
->> [ From Li Zefan ]
->> @@ -6332,8 +6341,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
->>  {
->>         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->>
->> -       mem_cgroup_sockets_destroy(memcg);
->> -
->> +       memcg_destroy_kmem(memcg);
->>         __mem_cgroup_free(memcg);
->>  }
->>
->> [ From mmots ]
->> @@ -6399,8 +6408,7 @@ static void mem_cgroup_css_free(struct c
->>  {
->>         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->>
->> -       mem_cgroup_sockets_destroy(memcg);
->> -
->> +       memcg_destroy_kmem(memcg);
->>         mem_cgroup_put(memcg);
->>  }
->>
->> ...seems to differ.
->>
->> In both mentioned -next releases there exist no mem_cgroup_put() in
->> mm/memcontrol.c.
->> So the hunk in mmots seems to be wrong in my eyes.
->
-> Seems right - thanks for catching that.
->
-> --- a/mm/memcontrol.c~memcg-use-css_get-put-when-charging-uncharging-kmem-fix-fix-fix
-> +++ a/mm/memcontrol.c
-> @@ -6409,7 +6409,7 @@ static void mem_cgroup_css_free(struct c
->         struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
->
->         memcg_destroy_kmem(memcg);
-> -       mem_cgroup_put(memcg);
-> +       __mem_cgroup_free(memcg);
->  }
->
->  #ifdef CONFIG_MMU
-> _
->
+On Thu, Jul 04, 2013 at 10:58:29AM +0200, Denys Vlasenko wrote:
+> The check sits in switch() statement which itself can check
+> for opcode 0x90 far more efficiently.
+> 
+> On assembler level, this change simply eliminates the following
+> bit of code:
+> 
+> 4c 8b a3 d8 00 00 00    mov    0xd8(%rbx),%r12
+> 31 f6                   xor    %esi,%esi
+> 48 89 df                mov    %rbx,%rdi
+> e8 32 8c ff ff          callq  490 <reg_read>
+> 48 8d 83 78 01 00 00    lea    0x178(%rbx),%rax
+> 83 8b 70 01 00 00 01    orl    $0x1,0x170(%rbx)
+> 83 8b 74 01 00 00 01    orl    $0x1,0x174(%rbx)
+> 49 39 c4                cmp    %rax,%r12
+> 0f 84 88 fa ff ff       je     7304 <x86_emulate_insn+0x204>
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> CC: Paolo Bonzini <pbonzini@redhat.com>
+> CC: Avi Kivity <avi.kivity@gmail.com>
+> ---
+>  arch/x86/kvm/emulate.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> index 2bc1e81..7e6e74a 100644
+> --- a/arch/x86/kvm/emulate.c
+> +++ b/arch/x86/kvm/emulate.c
+> @@ -4544,9 +4544,9 @@ special_insn:
+>  	case 0x8d: /* lea r16/r32, m */
+>  		ctxt->dst.val = ctxt->src.addr.mem.ea;
+>  		break;
+> -	case 0x90 ... 0x97: /* nop / xchg reg, rax */
+> -		if (ctxt->dst.addr.reg == reg_rmw(ctxt, VCPU_REGS_RAX))
+> -			break;
+> +	case 0x90: /* nop */
+> +		break;
+This does not work on 64bit and REX prefix.
 
-Hmm, if...
+> +	case 0x91 ... 0x97: /* xchg reg, rax */
+>  		rc = em_xchg(ctxt);
+>  		break;
+>  	case 0x98: /* cbw/cwde/cdqe */
+> -- 
+> 1.8.1.4
 
-     memcg-use-css_get-put-when-charging-uncharging-kmem-fix-fix.patch
-
-...does not apply here, a follow-up makes not really sense to me...
-
-     memcg-use-css_get-put-when-charging-uncharging-kmem-fix-fix-fix.patch
-
-Maybe, I am wrong seeing it from -next side than -mm.
-( Might be you want to keep the chronology. )
-Anyway, dunno, will fold that into -fix-fix.
-
-- Sedat
+--
+			Gleb.
