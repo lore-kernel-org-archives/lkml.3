@@ -1,87 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483Ab3GDKpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 06:45:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33200 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755186Ab3GDKpm (ORCPT
+	id S1756441Ab3GDKzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 06:55:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40405 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab3GDKzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 06:45:42 -0400
-Date: Thu, 4 Jul 2013 11:45:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org
-Message-ID: <20130704104511.GU27646@sirena.org.uk>
-References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de>
- <1370950268-7224-2-git-send-email-bigeasy@linutronix.de>
- <20130611142336.GE29135@zurbaran>
- <51B7358D.7000605@linutronix.de>
- <20130614135358.GR1403@sirena.org.uk>
- <51BEF5F4.4090600@linutronix.de>
- <20130617160326.GE1403@sirena.org.uk>
- <51D53A31.3080704@linutronix.de>
+	Thu, 4 Jul 2013 06:55:10 -0400
+Date: Thu, 4 Jul 2013 12:55:10 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alex Shi <alex.shi@intel.com>
+cc: hpa@linux.intel.com, tim.c.chen@linux.intel.com,
+        linux-kernel@vger.kernel.org, andi.kleen@intel.com,
+        a.p.zijlstra@chello.nl, mingo@elte.hu
+Subject: Re: [PATCH 3/3] clocksource: fix can not set tsc as clocksource
+ bug
+In-Reply-To: <1372916056-24301-4-git-send-email-alex.shi@intel.com>
+Message-ID: <alpine.DEB.2.02.1307041227470.11637@ionos.tec.linutronix.de>
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <1372916056-24301-4-git-send-email-alex.shi@intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f8TtFscsztEXiewY"
-Content-Disposition: inline
-In-Reply-To: <51D53A31.3080704@linutronix.de>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 01/22] mfd/ti_am335x_tscadc: remove regmap
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 4 Jul 2013, Alex Shi wrote:
+> commit 5d33b883aed81c6fbcd09c6f7c3619eee850a7e2
+>     clocksource: Always verify highres capability
+> 
+> This commit will reject a clock to be system clocksource if it has no
+> CLOCK_SOURCE_VALID_FOR_HRES flags. Then the tsc to be rejected as
 
---f8TtFscsztEXiewY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+No. It rejects the clocksource if the system is in oneshot mode and
+the clocksource does not support HIGHRES.
 
-On Thu, Jul 04, 2013 at 11:02:41AM +0200, Sebastian Andrzej Siewior wrote:
+So at boot time, the tick device mode is PERIODIC and the clocksource
+is set to jiffies.
 
-> The driver here does not use atomic updates but read followed by write
-> so your locking here is futile. So the API/regmap alone does not make
+In clocksource_done_booting() we select the best clocksource from the
+registered list. We are still in PERIODIC mode, so the selection in
+clocksource_find_best() should grab TSC whether the HIGHRES_VALID flag
+is set or not. The relevant check in find_best() is:
 
-Doesn't that sound like the driver ought to be using a r/m/w primitive
-though?
+        if (oneshot && !(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES))
+                 continue;                                         
 
-> it right. And look: the MFD part uses regmap. Its children (IIO &
-> input) do not use it. After I told this Samuel he said that it is okay.
+And oneshot should be definitely false at that point. So we don't care
+about the HRES flag at all.
 
-Again I think the point here was that they probably ought to do so.
+So if we select TSC from clocksource_done_booting() that prevents the
+system from switching into highres mode as long as the VALID_FOR_HRES
+flag is not set by the watchdog. If it gets set then
+tick_clock_notify() tells the tick code to reevaluate.
 
-But I guess if you're saying there's no problem that's fine...
+So now the question is why you are observing that HPET is selected in
+the first place.
 
---f8TtFscsztEXiewY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Can you add instrumentation to the code and provide the data please? I
+try to reproduce myself. What's the environment you're using?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index 9d6c333..3ad9f29 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -308,6 +308,8 @@ static void clocksource_watchdog(unsigned long data)
+>  			 * transition into high-res mode:
+>  			 */
+>  			tick_clock_notify();
+> +			if (finished_booting)
+> +				schedule_work(&watchdog_work);
 
-iQIcBAEBAgAGBQJR1VI0AAoJELSic+t+oim9i3UP/2C4EKEaIPUsV24E4/cF+ZwI
-XeWYH6nVk9JBWSbTpXCtGTb51adOzeIp/ANLKs6dVXjL9EQlJZ5o4AK1nVvh2dbn
-tEnwhUepfWKx4yrRvkocYsBjg/79fVFY3pCN3O5Jl5TMME6VemHlGwXcxNAvz96H
-vQi2yyIAr+2iRWwDXpq4tnO9GniU/Oxs6jg7jKsif8Rwo/e3UJBuxgqANjgMgmAL
-fL/SDUquMb5MPaALN44OOI3ke2GtOYJKgkH7ESnowzK5V5JIlUBUHDjJ4PzBvhN5
-pliQEyfKZxrb73PawnU+AX+/npl1YPSfb19x+MnA6l9cmM3M93EE9d92O2x2wW6Q
-fy2WWmaId120B75HaPfknKr+LaXLE8coH9/L835dN3mP3xOddyQtz5QjJdQuABLZ
-VGL8UI8YfSRIGWwc9PAJIxXwezjoXYIIAcPW3CXryPfB15dgpJOeBS7g6EVwaTvM
-IcOVnw+Jgdi1S26BkyPMR/iWJ0wAQzy91xrkX21JDeZxno4zCmgk2yreK+orM9Vp
-Aa//qL6F41qhhHdmazFFBFl07lxUtj7oz36yha/K5C7AeD3gdvRhvlHwTLAq+CoF
-RqRcHy9ZpVs+T1CODCHo2fJ/XnNEOz5gDuKcn2KEYc03JiiEk0knQ2mZMFv5URMd
-x0T5doL6EW19k29hsJ7L
-=l7ao
------END PGP SIGNATURE-----
+This only makes sense, when the clocksource which gets the FLAG set
+has the highest rating, but was not selected because the system was in
+ONESHOT mode already.
 
---f8TtFscsztEXiewY--
+And I can't see why that should suddenly happen.
+
+>  static int clocksource_watchdog_kthread(void *data)
+>  {
+>  	struct clocksource *cs, *tmp;
+> @@ -412,11 +415,14 @@ static int clocksource_watchdog_kthread(void *data)
+>  
+>  	mutex_lock(&clocksource_mutex);
+>  	spin_lock_irqsave(&watchdog_lock, flags);
+> -	list_for_each_entry_safe(cs, tmp, &watchdog_list, wd_list)
+> +	list_for_each_entry_safe(cs, tmp, &watchdog_list, wd_list) {
+>  		if (cs->flags & CLOCK_SOURCE_UNSTABLE) {
+>  			list_del_init(&cs->wd_list);
+>  			list_add(&cs->wd_list, &unstable);
+>  		}
+> +		if (cs->flags & CLOCK_SOURCE_VALID_FOR_HRES)
+> +			clocksource_select();
+
+Unlikely, but if we have 3 watched clocksources which have the HRES
+bit set, you'd call 3 times clocksource_select().
+
+Thanks,
+
+	tglx
+
