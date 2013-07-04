@@ -1,86 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab3GDGto (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 02:49:44 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:27968 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab3GDGtm (ORCPT
+	id S933332Ab3GDGv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 02:51:59 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:57061 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab3GDGv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 02:49:42 -0400
-X-AuditID: cbfee61b-b7f8e6d00000524c-df-51d51b042425
-Date: Thu, 04 Jul 2013 08:49:32 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Subject: Re: [PATCH v4 5/7] cpufreq: Calculate number of busy CPUs
-Message-id: <20130704084932.2ce698c7@amdc308.digital.local>
-In-reply-to: <CAKohpomcaDS93zka0FK5_JMGY96sW0tLhGzMbr_FFM6wQYPh1A@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
- <1371661969-7660-6-git-send-email-l.majewski@samsung.com>
- <CAKohpo=EwapTp8epok30=_ZYLPeCR8_LhpBF5H724dE=+SwMLg@mail.gmail.com>
- <20130627125819.5c90da30@amdc308.digital.local>
- <CAKohpo=JKg17YWjTrOh25hHW=sXn8-TW=D8rhrovonwZBDarBg@mail.gmail.com>
- <20130627164204.370dc4a6@amdc308.digital.local>
- <CAKohpomrPP9Lzk+fMn+Ba+J+2N740LR5NurVMomx8zww3AWLww@mail.gmail.com>
- <20130628085457.05d64878@amdc308.digital.local>
- <20130701101516.7945e387@amdc308.digital.local>
- <CAKohponiy3ebnt0_Cdaan5=DkAfA3U4g=m4NnYGLA-a+tPJJQg@mail.gmail.com>
- <20130704074307.282a53dc@amdc308.digital.local>
- <CAKohpomcaDS93zka0FK5_JMGY96sW0tLhGzMbr_FFM6wQYPh1A@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jAV0W6auBBptWi1j8ebuc1eJp0w92
-	i3mfZS3W7P/JZNF59gmzRe+Cq2wWbx5xW1zeNYfN4nPvEUaL240r2Cz6F/YyWTx52Mdm0XHk
-	G7PFxq8eDnwei/e8ZPK4c20Pm8e6aW+ZPfq2rGL0eLS4hdHj+I3tTB6fN8kFsEdx2aSk5mSW
-	pRbp2yVwZWy6Mpml4CRrxesL39kbGJexdDFyckgImEi8efoKyhaTuHBvPVsXIxeHkMAiRome
-	pesYQRJCAu1MEksmuILYLAKqEtPO7GIGsdkE9CQ+333K1MXIwSEioCXx8mYqSC+zwHYWiUtN
-	s9hAaoQFnCS+3vnFDlLDK2At8eGVG0iYUyBYYtemqewQu2axSRw/uRVsJr+ApET7vx/MEAfZ
-	SZz7tIEdxOYVEJT4Mfke2KHMQLs2b2tihbDlJTavecs8gVFwFpKyWUjKZiEpW8DIvIpRNLUg
-	uaA4KT3XSK84Mbe4NC9dLzk/dxMjOKKeSe9gXNVgcYhRgINRiYdXwupKoBBrYllxZe4hRgkO
-	ZiURXieOq4FCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUa
-	GLuCo+vitxmnel1QuPj68A67na2at1Y/vDJt8vEHdQxuh31jc7scD056d5ClMGH+U/+WdxqC
-	Tky9rGISKsVa1g4bzGxrE7bW97u5uvJLtjnYndb9aiYg1Me8WkVfRvPLSZOm698Wa9SdTr3v
-	lWfYHNT67a7WaYEzUfcSRbMveh5cY5t6cOstJZbijERDLeai4kQA/FK9saQCAAA=
+	Thu, 4 Jul 2013 02:51:58 -0400
+Message-ID: <51D51B88.5000406@hitachi.com>
+Date: Thu, 04 Jul 2013 15:51:52 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Hyeoncheol Lee <cheol.lee@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/12] tracing/uprobes: Add support for more fetch
+ methods
+References: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 04 Jul 2013 11:58:53 +0530, Viresh Kumar wrote:
-
-> On 4 July 2013 11:13, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > This is a possible solution, but I've already modified thermal code
-> > a bit and found a solution for the problem.
-> >
-> > I use thermal workqueue (which is already in place anyway) to
-> > enable the boost again.
-> > Due to that I can provide behaviour similar to HW controlled boost.
-> >
-> > Patches with this solution are already prepared. I will post them
-> > in a few hours. Ok?
+(2013/07/03 21:35), Namhyung Kim wrote:
+> Hello,
 > 
-> I don't see any harm in checking them out :)
-> Please send them.
+> This patchset implements memory (address), stack[N], deference,
+> bitfield and retval (it needs uretprobe tho) fetch methods for
+> uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
+> 
+> Now kprobes and uprobes have their own fetch_type_tables and, in turn,
+> memory and stack access methods.  Other fetch methods are shared.
+> 
+> For the dereference method, I added a new argument to fetch functions.
+> It's because for uprobes it needs to know whether the given address is
+> a file offset or a virtual address in an user process.  For instance,
+> in case of fetching from a memory directly (like @offset) it should
+> convert the address (offset) to a virtual address of the process, but
+> if it's a dereferencing, the given address already has the virtual
+> address.
 
-:-)
+Thanks Namhyung,
+I agree that uprobe requires a special (file-relative) dereference
+code. I'll look into the basic implementation after fixing current
+dynamic-event related bugs. :)
+(I see, this one should be updated to the latest tree, after
+ merge window is closed)
+
+Thank you,
+
+> 
+> To determine this in a fetch function, I passed a pointer to
+> trace_uprobe for direct fetch, and passed NULL for dereference.
+> 
+> 
+> [1] https://lkml.org/lkml/2012/11/14/84
+> 
+> Simple example:
+> 
+>   # cat foo.c
+>   int glob = -1;
+>   char str[] = "hello uprobe.";
+> 
+>   struct foo {
+>     unsigned int unused: 2;
+>     unsigned int foo: 20;
+>     unsigned int bar: 10;
+>   } foo = {
+>     .foo = 5,
+>   };
+> 
+>   int main(int argc, char *argv[])
+>   {
+>     long local = 0x1234;
+> 
+>     return 127;
+>   }
+> 
+>   # gcc -o foo -g foo.c
+> 
+>   # objdump -d foo | grep -A9 -F '<main>'
+>   00000000004004b0 <main>:
+>     4004b0:	55                   	push   %rbp
+>     4004b1:	48 89 e5             	mov    %rsp,%rbp
+>     4004b4:	89 7d ec             	mov    %edi,-0x14(%rbp)
+>     4004b7:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
+>     4004bb:	48 c7 45 f8 34 12 00 	movq   $0x1234,-0x8(%rbp)
+>     4004c2:	00 
+>     4004c3:	b8 7f 00 00 00       	mov    $0x7f,%eax
+>     4004c8:	5d                   	pop    %rbp
+>     4004c9:	c3                   	retq   
+> 
+>   # nm foo | grep -e glob$ -e str -e foo
+>   00000000006008bc D foo
+>   00000000006008a8 D glob
+>   00000000006008ac D str
+> 
+>   # perf probe -x /home/namhyung/tmp/foo -a 'foo=main+0x13 glob=@0x8a8:s32 \
+>   > str=@0x8ac:string bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp)'
+>   Added new event:
+>     probe_foo:foo      (on 0x4c3 with glob=@0x8a8:s32 str=@0x8ac:string 
+>                                  bit=@0x8bc:b10@2/32 argc=%di local=-0x8(%bp))
+> 
+>   You can now use it in all perf tools, such as:
+> 
+>           perf record -e probe_foo:foo -aR sleep 1
+> 
+>   # perf record -e probe_foo:foo ./foo
+>   [ perf record: Woken up 1 times to write data ]
+>   [ perf record: Captured and wrote 0.001 MB perf.data (~33 samples) ]
+> 
+>   # perf script | grep -v ^#
+>                foo  2008 [002  2199.867154: probe_foo:foo (4004c3)
+>                    glob=4294967295 str="hello uprobe." bit=5 argc=1 local=1234
+> 
+> Note that 4294967295 is 0xffffffff.
+> 
+> Obviously, the perf tools also need to be improved.  I'll work on that
+> later.
+> 
+> This patchset is based on the current tip/perf/core.  I also put this
+> on my 'uprobe/fetch-v1' branch in my tree:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> 
+> Any comments are welcome, thanks.
+> Namhyung
+> 
+> 
+> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> 
+> Hyeoncheol Lee (2):
+>   tracing/kprobes: Move fetch functions to trace_kprobe.c
+>   tracing/kprobes: Add fetch{,_size} member into symbol and deref fetch
+>     method
+> 
+> Namhyung Kim (10):
+>   tracing/kprobes: Make stack and memory fetch functions static
+>   tracing/kprobes: Factor out struct trace_probe
+>   tracing/uprobes: Convert to struct trace_probe
+>   tracing/kprobes: Move common functions to trace_probe.c
+>   tracing/kprobes: Remove duplicate set_print_fmt()
+>   tracing/uprobes: Fetch args before reserving a ring buffer
+>   tracing/uprobes: Fix a comment for uprobe registration syntax
+>   tracing/kprobes: Add priv argument to fetch functions
+>   tracing/uprobes: Add more fetch functions
+>   tracing/uprobes: Add support for full argument access methods
+> 
+>  kernel/trace/trace_kprobe.c | 529 ++++++++++++++++++++++----------------------
+>  kernel/trace/trace_probe.c  | 451 ++++++++++++++++++-------------------
+>  kernel/trace/trace_probe.h  | 154 ++++++++++++-
+>  kernel/trace/trace_uprobe.c | 429 ++++++++++++++++++++++++-----------
+>  4 files changed, 926 insertions(+), 637 deletions(-)
+> 
+
 
 -- 
-Best regards,
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Lukasz Majewski
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
