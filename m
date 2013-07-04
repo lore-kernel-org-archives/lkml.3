@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab3GDNxV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 09:53:21 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:35872
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756495Ab3GDNxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 09:53:19 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Thomas Renninger <trenn@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "ibm-acpi-devel@lists.sourceforge.net" 
-	<ibm-acpi-devel@lists.sourceforge.net>,
-        "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "Henrique de Moraes Holschuh" <hmh@hmh.eng.br>
-Subject: Re: [PATCH 2/3] ACPI: Remove old /proc/acpi/event interface
-Thread-Topic: [PATCH 2/3] ACPI: Remove old /proc/acpi/event interface
-Thread-Index: AQHOd+urXRaWA6jli0+Bn0MdcJIHmplTgH6AgAClkACAAFCvAIAAFP4A
-Date: Thu, 4 Jul 2013 13:52:56 +0000
-Message-ID: <1372945976.24233.2.camel@x230.lan>
-References: <1372855719-34315-1-git-send-email-trenn@suse.de>
-	 <1545278.bq6oSR27Gq@vostro.rjw.lan>
-	 <1513052.oSjeLTGJqb@skinner.arch.suse.de>
-	 <1935997.TsJ39x11ul@vostro.rjw.lan>
-In-Reply-To: <1935997.TsJ39x11ul@vostro.rjw.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-x-forefront-prvs: 08978A8F5C
-x-forefront-antispam-report: SFV:NSPM;SFS:(199002)(377424004)(24454002)(189002)(77982001)(65816001)(80022001)(63696002)(46102001)(4396001)(53806001)(50986001)(47976001)(76482001)(69226001)(56776001)(59766001)(74366001)(74876001)(47736001)(31966008)(33646001)(76786001)(81342001)(54356001)(74706001)(51856001)(79102001)(81542001)(558084003)(74662001)(36756003)(74502001)(47446002)(56816003)(83072001)(16406001)(49866001)(54316002)(76796001)(77096001)(15477505002);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB224;H:BY2PR05MB222.namprd05.prod.outlook.com;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <C09BD3426420BF44B25E63202D8EE310@namprd05.prod.outlook.com>
+	id S1756730Ab3GDNyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:54:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47633 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756495Ab3GDNyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 09:54:23 -0400
+Date: Thu, 4 Jul 2013 14:54:15 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 13/13] sched: Account for the number of preferred tasks
+ running on a node when selecting a preferred node
+Message-ID: <20130704135415.GR1875@suse.de>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-14-git-send-email-mgorman@suse.de>
+ <20130703183243.GB18898@dyad.programming.kicks-ass.net>
+ <20130704093716.GO1875@suse.de>
+ <20130704130719.GC29916@linux.vnet.ibm.com>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130704130719.GC29916@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r64DrURQ022459
 
-On Thu, 2013-07-04 at 14:37 +0200, Rafael J. Wysocki wrote:
+On Thu, Jul 04, 2013 at 06:37:19PM +0530, Srikar Dronamraju wrote:
+> >  static void task_numa_placement(struct task_struct *p)
+> >  {
+> >  	int seq, nid, max_nid = 0;
+> > @@ -897,7 +924,7 @@ static void task_numa_placement(struct task_struct *p)
+> > 
+> >  		/* Find maximum private faults */
+> >  		faults = p->numa_faults[task_faults_idx(nid, 1)];
+> > -		if (faults > max_faults) {
+> > +		if (faults > max_faults && !sched_numa_overloaded(nid)) {
+> 
+> Should we take the other approach of setting the preferred nid but not 
+> moving the task to the node?
+> 
 
-> I can take [2/3] and [3/3] for 3.12 if Matthew has no objections.  Matthew?
+Why would that be better?
 
-ACK.
+> So if some task moves out of the preferred node, then we should still be
+> able to move this task there. 
+> 
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I think if we were to do that then I'd revisit the "task swap" logic from
+autonuma (numacore had something similar) and search for pairs of tasks
+that both benefit from a swap. I prototyped something basic alont this
+lines but it was premature. It's a more directed approach but one that
+should be done only when the private/shared and load logic is solidified.
+
+> However your current approach has an advantage that it atleast runs on
+> second preferred choice if not the first.
+> 
+
+That was the intention.
+
+> Also should sched_numa_overloaded() also consider pinned tasks?
+> 
+
+I don't think sched_numa_overloaded() needs to as such, least I don't see how
+it would do it sensibly right now. However, you still make an important point
+in that find_idlest_cpu_node should take it into account. How about this?
+
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9247345..387f28d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -863,9 +863,13 @@ find_idlest_cpu_node(int this_cpu, int nid)
+ 		load = weighted_cpuload(i);
+ 
+ 		if (load < min_load) {
+-			/* Do not preempt a task running on a preferred node */
++			/*
++			 * Do not preempt a task running on a preferred node or
++			 * tasks are are pinned to their current CPU
++			 */
+ 			struct task_struct *p = cpu_rq(i)->curr;
+-			if (p->numa_preferred_nid != nid) {
++			if (p->numa_preferred_nid != nid &&
++			    cpumask_weight(tsk_cpus_allowed(p)) > 1) {
+ 				min_load = load;
+ 				idlest_cpu = i;
+ 			}
