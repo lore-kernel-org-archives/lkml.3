@@ -1,281 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526Ab3GDLHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 07:07:09 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:60166 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756152Ab3GDLHH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 07:07:07 -0400
-Message-ID: <51D556B1.6010402@huawei.com>
-Date: Thu, 4 Jul 2013 19:04:17 +0800
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756536Ab3GDLHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 07:07:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1795 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756152Ab3GDLHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 07:07:50 -0400
+Date: Thu, 4 Jul 2013 14:07:47 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>
+Subject: Re: [PATCH] x86/kvm/emulate.c: simplify NOP (opcode 0x90) check
+Message-ID: <20130704110747.GH5113@redhat.com>
+References: <1372928309-16488-1-git-send-email-dvlasenk@redhat.com>
+ <20130704091345.GB5113@redhat.com>
+ <51D55728.4060909@redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 1/2 v6] tracing/uprobes: Support ftrace_event_file base multibuffer
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.58.241]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D55728.4060909@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support multi-buffer on uprobe-based dynamic events by
-using ftrace_event_file.
+On Thu, Jul 04, 2013 at 01:06:16PM +0200, Denys Vlasenko wrote:
+> On 07/04/2013 11:13 AM, Gleb Natapov wrote:
+> > On Thu, Jul 04, 2013 at 10:58:29AM +0200, Denys Vlasenko wrote:
+> >> The check sits in switch() statement which itself can check
+> >> for opcode 0x90 far more efficiently.
+> >>
+> >> On assembler level, this change simply eliminates the following
+> >> bit of code:
+> >>
+> >> 4c 8b a3 d8 00 00 00    mov    0xd8(%rbx),%r12
+> >> 31 f6                   xor    %esi,%esi
+> >> 48 89 df                mov    %rbx,%rdi
+> >> e8 32 8c ff ff          callq  490 <reg_read>
+> >> 48 8d 83 78 01 00 00    lea    0x178(%rbx),%rax
+> >> 83 8b 70 01 00 00 01    orl    $0x1,0x170(%rbx)
+> >> 83 8b 74 01 00 00 01    orl    $0x1,0x174(%rbx)
+> >> 49 39 c4                cmp    %rax,%r12
+> >> 0f 84 88 fa ff ff       je     7304 <x86_emulate_insn+0x204>
+> >>
+> >> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> >> CC: Paolo Bonzini <pbonzini@redhat.com>
+> >> CC: Avi Kivity <avi.kivity@gmail.com>
+> >> ---
+> >>  arch/x86/kvm/emulate.c | 6 +++---
+> >>  1 file changed, 3 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> >> index 2bc1e81..7e6e74a 100644
+> >> --- a/arch/x86/kvm/emulate.c
+> >> +++ b/arch/x86/kvm/emulate.c
+> >> @@ -4544,9 +4544,9 @@ special_insn:
+> >>  	case 0x8d: /* lea r16/r32, m */
+> >>  		ctxt->dst.val = ctxt->src.addr.mem.ea;
+> >>  		break;
+> >> -	case 0x90 ... 0x97: /* nop / xchg reg, rax */
+> >> -		if (ctxt->dst.addr.reg == reg_rmw(ctxt, VCPU_REGS_RAX))
+> >> -			break;
+> >> +	case 0x90: /* nop */
+> >> +		break;
+> > This does not work on 64bit and REX prefix.
+> 
+> Can you elaborate?
+> 
+> 0x90 is special-cased in CPU to be a NOP regardless of bit width.
+> IOW, xchg %eax,%eax ordinarily would clear upper 32 bits of %rax,
+> but 0x90 doesn't do that.
+> 
+> Do you mean that with REX.R==1, 0x90 will refer to R8?
+Yes.
 
-This patch is based kprobe-based dynamic events multibuffer
-support work initially, commited by Masami(commit 41a7dd420c),
-but revised as below:
-
-Oleg changed the kprobe-based multibuffer design from
-array-pointers of ftrace_event_file into simple list,
-so this patch also change to the list design.
-
-rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
-to synchronize with ftrace_event_file list add and delete.
-
-Even though we allow multi-uprobes instances now,
-but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
-in probe_event_enable currently, this means we cannot allow
-one user is using uprobe-tracer, and another user is using
-perf-probe on same uprobe concurrently.
-(Perhaps this will be fix in future, kprobe don't have this
-limitation now)
-
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Namhyung Kim <namhyung@kernel.org>
----
- kernel/trace/trace_uprobe.c |  119 ++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 100 insertions(+), 19 deletions(-)
-
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 32494fb0..2fc9931 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -53,6 +53,7 @@ struct trace_uprobe {
- 	struct list_head		list;
- 	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
-+	struct list_head		files;
- 	struct trace_uprobe_filter	filter;
- 	struct uprobe_consumer		consumer;
- 	struct inode			*inode;
-@@ -65,6 +66,11 @@ struct trace_uprobe {
- 	struct probe_arg		args[];
- };
-
-+struct event_file_link {
-+	struct ftrace_event_file	*file;
-+	struct list_head		list;
-+};
-+
- #define SIZEOF_TRACE_UPROBE(n)			\
- 	(offsetof(struct trace_uprobe, args) +	\
- 	(sizeof(struct probe_arg) * (n)))
-@@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
- 		goto error;
-
- 	INIT_LIST_HEAD(&tu->list);
-+	INIT_LIST_HEAD(&tu->files);
- 	tu->consumer.handler = uprobe_dispatcher;
- 	if (is_ret)
- 		tu->consumer.ret_handler = uretprobe_dispatcher;
-@@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
- };
-
- static void uprobe_trace_print(struct trace_uprobe *tu,
--				unsigned long func, struct pt_regs *regs)
-+				unsigned long func, struct pt_regs *regs,
-+				struct ftrace_event_file *ftrace_file)
- {
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
-@@ -520,9 +528,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- 	int size, i;
- 	struct ftrace_event_call *call = &tu->call;
-
-+	WARN_ON(call != ftrace_file->event_call);
-+
- 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
--	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
--						  size + tu->size, 0, 0);
-+	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
-+						call->event.type,
-+						size + tu->size, 0, 0);
- 	if (!event)
- 		return;
-
-@@ -546,15 +557,28 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
- /* uprobe handler */
- static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- {
--	if (!is_ret_probe(tu))
--		uprobe_trace_print(tu, 0, regs);
-+	struct event_file_link *link;
-+
-+	if (is_ret_probe(tu))
-+		return 0;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(link, &tu->files, list)
-+		uprobe_trace_print(tu, 0, regs, link->file);
-+	rcu_read_unlock();
-+
- 	return 0;
- }
-
- static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
- 				struct pt_regs *regs)
- {
--	uprobe_trace_print(tu, func, regs);
-+	struct event_file_link *link;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(link, &tu->files, list)
-+		uprobe_trace_print(tu, func, regs, link->file);
-+	rcu_read_unlock();
- }
-
- /* Event entry printers */
-@@ -605,33 +629,89 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
- 				struct mm_struct *mm);
-
- static int
--probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
-+probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
-+		   filter_func_t filter)
- {
--	int ret = 0;
-+	bool enabled = is_trace_uprobe_enabled(tu);
-+	struct event_file_link *link;
-+	int ret;
-+
-+	if (file) {
-+		if (tu->flags & TP_FLAG_PROFILE)
-+			return -EINTR;
-
--	if (is_trace_uprobe_enabled(tu))
--		return -EINTR;
-+		link = kmalloc(sizeof(*link), GFP_KERNEL);
-+		if (!link)
-+			return -ENOMEM;
-+
-+		link->file = file;
-+		list_add_tail_rcu(&link->list, &tu->files);
-+
-+		tu->flags |= TP_FLAG_TRACE;
-+	} else {
-+		if (tu->flags & TP_FLAG_TRACE)
-+			return -EINTR;
-+
-+		tu->flags |= TP_FLAG_PROFILE;
-+	}
-
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-
--	tu->flags |= flag;
-+	if (enabled)
-+		return 0;
-+
- 	tu->consumer.filter = filter;
- 	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
--	if (ret)
--		tu->flags &= ~flag;
-+	if (ret) {
-+		if (file) {
-+			list_del(&link->list);
-+			kfree(link);
-+			tu->flags &= ~TP_FLAG_TRACE;
-+		} else
-+			tu->flags &= ~TP_FLAG_PROFILE;
-+	}
-
- 	return ret;
- }
-
--static void probe_event_disable(struct trace_uprobe *tu, int flag)
-+static struct event_file_link *
-+find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
-+{
-+	struct event_file_link *link;
-+
-+	list_for_each_entry(link, &tu->files, list)
-+		if (link->file == file)
-+			return link;
-+
-+	return NULL;
-+}
-+
-+static void
-+probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
- {
- 	if (!is_trace_uprobe_enabled(tu))
- 		return;
-
-+	if (file) {
-+		struct event_file_link *link;
-+
-+		link = find_event_file_link(tu, file);
-+		if (!link)
-+			return;
-+
-+		list_del_rcu(&link->list);
-+		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
-+		synchronize_sched();
-+		kfree(link);
-+
-+		if (!list_empty(&tu->files))
-+			return;
-+	}
-+
- 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
-
- 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
--	tu->flags &= ~flag;
-+	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
- }
-
- static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
-@@ -867,21 +947,22 @@ static
- int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
- {
- 	struct trace_uprobe *tu = event->data;
-+	struct ftrace_event_file *file = data;
-
- 	switch (type) {
- 	case TRACE_REG_REGISTER:
--		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
-+		return probe_event_enable(tu, file, NULL);
-
- 	case TRACE_REG_UNREGISTER:
--		probe_event_disable(tu, TP_FLAG_TRACE);
-+		probe_event_disable(tu, file);
- 		return 0;
-
- #ifdef CONFIG_PERF_EVENTS
- 	case TRACE_REG_PERF_REGISTER:
--		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
-+		return probe_event_enable(tu, NULL, uprobe_perf_filter);
-
- 	case TRACE_REG_PERF_UNREGISTER:
--		probe_event_disable(tu, TP_FLAG_PROFILE);
-+		probe_event_disable(tu, NULL);
- 		return 0;
-
- 	case TRACE_REG_PERF_OPEN:
--- 
-1.7.9.7
-
-
+--
+			Gleb.
