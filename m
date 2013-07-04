@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab3GDBNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 21:13:13 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:41079 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754093Ab3GDBNM (ORCPT
+	id S1756311Ab3GDBPM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 21:15:12 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:13383 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754093Ab3GDBPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 21:13:12 -0400
-Date: Thu, 4 Jul 2013 09:13:01 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-nvme@lists.infradead.org, linux-scsi@vger.kernel.org
-Subject: Re: RFC: Allow block drivers to poll for I/O instead of sleeping
-Message-ID: <20130704011301.GA16906@kernel.org>
-References: <20130620201713.GV8211@linux.intel.com>
+	Wed, 3 Jul 2013 21:15:11 -0400
+Message-ID: <51D4CC94.3020908@atmel.com>
+Date: Thu, 4 Jul 2013 09:15:00 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130620201713.GV8211@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: <devicetree-discuss@lists.ozlabs.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [RFC PATCH 01/13] misc: atmel_ssc: add device tree DMA support
+References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com> <1372667978-4718-2-git-send-email-richard.genoud@gmail.com> <51D24299.9050209@atmel.com> <CACQ1gAgcc=j3kmcpjp8bbdHhxr_k=h8jJs6R_paJbPUMv74uGg@mail.gmail.com> <51D29927.80900@atmel.com> <CACQ1gAhnDk-qSt_5xrsMakXqGGDO5pEbA-9UDWCJG=AABDc+zg@mail.gmail.com> <CACQ1gAgPaRm3gxxJNgfj9bR565Q0+SNY3+EcjA_mrh1N+yPzSA@mail.gmail.com>
+In-Reply-To: <CACQ1gAgPaRm3gxxJNgfj9bR565Q0+SNY3+EcjA_mrh1N+yPzSA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 20, 2013 at 04:17:13PM -0400, Matthew Wilcox wrote:
-> 
-> A paper at FAST2012
-> (http://static.usenix.org/events/fast12/tech/full_papers/Yang.pdf) pointed
-> out the performance overhead of taking interrupts for low-latency block
-> I/Os.  The solution the author investigated was to spin waiting for each
-> I/O to complete.  This is inefficient as Linux submits many I/Os which
-> are not latency-sensitive, and even when we do submit latency-sensitive
-> I/Os (eg swap-in), we frequently submit several I/Os before waiting.
-> 
-> This RFC takes a different approach, only spinning when we would
-> otherwise sleep.  To implement this, I add an 'io_poll' function pointer
-> to backing_dev_info.  I include a sample implementation for the NVMe
-> driver.  Next, I add an io_wait() function which will call io_poll()
-> if it is set.  It falls back to calling io_schedule() if anything goes
-> wrong with io_poll() or the task exceeds its timeslice.  Finally, all
-> that is left is to judiciously replace calls to io_schedule() with
-> calls to io_wait().  I think I've covered the main contenders with
-> sleep_on_page(), sleep_on_buffer() and the DIO path.
-> 
-> I've measured the performance benefits of this with a Chatham NVMe
-> prototype device and a simple
-> # dd if=/dev/nvme0n1 of=/dev/null iflag=direct bs=512 count=1000000
-> The latency of each I/O reduces by about 2.5us (from around 8.0us to
-> around 5.5us).  This matches up quite well with the performance numbers
-> shown in the FAST2012 paper (which used a similar device).
+Hi Richard,
 
-Hi Matthew,
-I'm wondering where the 2.5us latency cut comes from. I did a simple test. In
-my xeon 3.4G CPU, one cpu can do about 2M/s context switch of applications.
-Assuming switching to idle is faster, so switching to idle and back should take
-less than 1us. Does the 2.5us latency cut mostly come from deep idle state
-latency? if so, maybe set a lower pm_qos value or have a better idle governer
-to prevent cpu entering deep idle state can help too.
+On 7/3/2013 23:51, Richard Genoud wrote:
+>> >but there's a violent hang (kernel stops, no trace) when I try the record :
+>> >arecord -v -V stereo -Dplug:default -f cd -t wav -c 2 /tmp/toto.wav
+>> >last thing I see is :
+>> >dma dma0chan3: atc_control (3)
 
-Thanks,
-Shaohua
+I don't meet this issue. Playback and recording works well on my side on 
+at91sam9g35ek board.
+
+>> >I'll try to trace that.
+> I think it's DMA related.
+> the last thing done by the kernel is:
+>   i2c i2c-0: i2c_outb: 0x34 A
+>   i2c i2c-0: i2c_outb: 0x0c A
+>   i2c i2c-0: i2c_outb: 0x5a A
+> meaning: enable power on, LINE IN, ADC, OSC, on the WM8731
+> so, after that, data is comming from the codec to the SSC and then is
+> handled by the DMA.
+> there must be something nasty on the DMA bus to hang everything like that...
+
+Will you try i2c without DMA support to test this issue?
+
+> Richard.
+
+Best Regards,
+Bo Shen
+
