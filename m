@@ -1,103 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab3GDI42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:56:28 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51143 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147Ab3GDI4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:56:23 -0400
-Message-ID: <51D53896.1060405@oracle.com>
-Date: Thu, 04 Jul 2013 16:55:50 +0800
-From: Joe Jin <joe.jin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: Alex Bligh <alex@alex.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, zheng.x.li@oracle.com,
-        Xen Devel <xen-devel@lists.xen.org>, Jan Beulich <JBeulich@suse.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: kernel panic in skb_copy_bits
-References: <51CBAA48.3080802@oracle.com> <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com> <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com> <1372666283.14691.8.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1372666283.14691.8.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1756409Ab3GDI6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:58:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3311 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381Ab3GDI6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 04:58:39 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Avi Kivity <avi.kivity@gmail.com>
+Subject: [PATCH] x86/kvm/emulate.c: simplify NOP (opcode 0x90) check
+Date: Thu,  4 Jul 2013 10:58:29 +0200
+Message-Id: <1372928309-16488-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/13 16:11, Ian Campbell wrote:
-> On Mon, 2013-07-01 at 11:18 +0800, Joe Jin wrote:
->>> A workaround is to turn off O_DIRECT use by Xen as that ensures
->>> the pages are copied. Xen 4.3 does this by default.
->>>
->>> I believe fixes for this are in 4.3 and 4.2.2 if using the
->>> qemu upstream DM. Note these aren't real fixes, just a workaround
->>> of a kernel bug.
->>
->> The guest is pvm, and disk model is xvbd, guest config file as below:
-> 
-> Do you know which disk backend? The workaround Alex refers to went into
-> qdisk but I think blkback could still suffer from a variant of the
-> retransmit issue if you run it over iSCSI.
-> 
->>> To fix on a local build of xen you will need something like this:
->>> https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
->>> and something like this (NB: obviously insert your own git
->>> repo and commit numbers)
->>> https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
->>>
->>
->> I think this only for pvhvm/hvm?
-> 
-> No, the underlying issue affects any PV device which is run over a
-> network protocol (NFS, iSCSI etc). In effect a delayed retransmit can
-> cross over the deayed ack and cause I/O to be completed while
-> retransmits are pending, such as is described in
-> http://www.spinics.net/lists/linux-nfs/msg34913.html (the original NFS
-> variant). The problem is that because Xen PV drivers often unmap the
-> page on I/O completion you get a crash (page fault) on the retransmit.
-> 
+The check sits in switch() statement which itself can check
+for opcode 0x90 far more efficiently.
 
-Can we do it by remember grant page refcount when mapping, and when unmap
-check if page refcount as same as mapping?  This change will limited in
-xen-blkback.
+On assembler level, this change simply eliminates the following
+bit of code:
 
-Another way is add new page flag like PG_send, when sendpage() be called,
-set the bit, when page be put, clear the bit. Then xen-blkback can wait
-on the pagequeue.
+4c 8b a3 d8 00 00 00    mov    0xd8(%rbx),%r12
+31 f6                   xor    %esi,%esi
+48 89 df                mov    %rbx,%rdi
+e8 32 8c ff ff          callq  490 <reg_read>
+48 8d 83 78 01 00 00    lea    0x178(%rbx),%rax
+83 8b 70 01 00 00 01    orl    $0x1,0x170(%rbx)
+83 8b 74 01 00 00 01    orl    $0x1,0x174(%rbx)
+49 39 c4                cmp    %rax,%r12
+0f 84 88 fa ff ff       je     7304 <x86_emulate_insn+0x204>
 
-Thanks,
-Joe
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>
+CC: Avi Kivity <avi.kivity@gmail.com>
+---
+ arch/x86/kvm/emulate.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> The issue also affects native but in that case the symptom is "just" a
-> corrupt packet on the wire. I tried to address this with my "skb
-> destructor" series but unfortunately I got bogged down on the details,
-> then I had to take time out to look into some other stuff and never
-> managed to get back into it. I'd be very grateful if there was someone
-> who could pick up that work (Alex gave some useful references in another
-> reply to this thread)
-> 
-> Some PV disk backends (e.g. blktap2) have worked around this by using
-> grant copy instead of grant map, others (e.g. qdisk) have disabled
-> O_DIRECT so that the pages are copied into the dom0 page cache and
-> transmitted from there.
-> 
-> We were discussing recently the possibility of mapping all ballooned out
-> pages to a single read-only scratch page instead of leaving them empty
-> in the page tables, this would cause the Xen case to revert to the
-> native case. I think Thanos was going to take a look into this.
-> 
-> Ian.
-> 
-
-
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 2bc1e81..7e6e74a 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -4544,9 +4544,9 @@ special_insn:
+ 	case 0x8d: /* lea r16/r32, m */
+ 		ctxt->dst.val = ctxt->src.addr.mem.ea;
+ 		break;
+-	case 0x90 ... 0x97: /* nop / xchg reg, rax */
+-		if (ctxt->dst.addr.reg == reg_rmw(ctxt, VCPU_REGS_RAX))
+-			break;
++	case 0x90: /* nop */
++		break;
++	case 0x91 ... 0x97: /* xchg reg, rax */
+ 		rc = em_xchg(ctxt);
+ 		break;
+ 	case 0x98: /* cbw/cwde/cdqe */
 -- 
-Oracle <http://www.oracle.com>
-Joe Jin | Software Development Senior Manager | +8610.6106.5624
-ORACLE | Linux and Virtualization
-No. 24 Zhongguancun Software Park, Haidian District | 100193 Beijing 
+1.8.1.4
+
