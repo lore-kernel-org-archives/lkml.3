@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3GDLf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 07:35:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35693 "EHLO mx1.redhat.com"
+	id S1756562Ab3GDLjI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 07:39:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49007 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752279Ab3GDLf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 07:35:56 -0400
-Date: Thu, 4 Jul 2013 14:35:54 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Avi Kivity <avi.kivity@gmail.com>
-Subject: Re: [PATCH v2] x86/kvm/emulate.c: simplify NOP (opcode 0x90) check
-Message-ID: <20130704113554.GK5113@redhat.com>
-References: <1372937220-27856-1-git-send-email-dvlasenk@redhat.com>
+	id S1752996Ab3GDLjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 07:39:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,994,1363158000"; 
+   d="scan'208";a="364742178"
+Message-ID: <51D55ED4.5030405@intel.com>
+Date: Thu, 04 Jul 2013 19:39:00 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372937220-27856-1-git-send-email-dvlasenk@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
+ switch
+References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com> <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com> <20130704095735.GL18898@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130704095735.GL18898@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please send kvm patches to kvm@vger.kernel.org too.
-
-On Thu, Jul 04, 2013 at 01:27:00PM +0200, Denys Vlasenko wrote:
-> We do not need to check for reg == RAX for opcodes 0x91...0x97.
+On 07/04/2013 05:57 PM, Peter Zijlstra wrote:
+> On Mon, Jul 01, 2013 at 03:23:04PM +0800, Yan, Zheng wrote:
+>> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+>> @@ -185,6 +185,13 @@ void intel_pmu_lbr_reset(void)
+>>  		intel_pmu_lbr_reset_32();
+>>  	else
+>>  		intel_pmu_lbr_reset_64();
+>> +
+>> +	wrmsrl(x86_pmu.lbr_tos, 0);
+>> +}
 > 
-The is no reason to optimize here. This is not performance sensitive
-path, far from it. If not for "clear high bits" behaviour of em_xchg() we
-would just call it to emulate nop.
-
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Paolo Bonzini <pbonzini@redhat.com>
-> CC: Avi Kivity <avi.kivity@gmail.com>
+> I double checked; my SDM Jun 2013, Vol 3C 35-93 very explicitly states that
+> MSR_LASTBRANCH_TOS is a read-only MSR. And afaicr all previous times I checked
+> this it did say this too.
 > 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> CC: Paolo Bonzini <pbonzini@redhat.com>
-> CC: Avi Kivity <avi.kivity@gmail.com>
-> ---
->  arch/x86/kvm/emulate.c | 7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-> index 2bc1e81..2dc48a1 100644
-> --- a/arch/x86/kvm/emulate.c
-> +++ b/arch/x86/kvm/emulate.c
-> @@ -4544,9 +4544,14 @@ special_insn:
->  	case 0x8d: /* lea r16/r32, m */
->  		ctxt->dst.val = ctxt->src.addr.mem.ea;
->  		break;
-> -	case 0x90 ... 0x97: /* nop / xchg reg, rax */
-> +	case 0x90: /* nop / xchg reg, rax */
-> +		/* Not all opcodes 90 are NOPs, only ones which refer to RAX */
-> +		/* For example, 49 90 is xchg %rax,%r8 */
-> +		/* Bare 90 and 40 90 (redundant REX prefix) are nop */
->  		if (ctxt->dst.addr.reg == reg_rmw(ctxt, VCPU_REGS_RAX))
->  			break;
-> +		/* Fall through */
-> +	case 0x91 ... 0x97: /* xchg reg, rax */
->  		rc = em_xchg(ctxt);
->  		break;
->  	case 0x98: /* cbw/cwde/cdqe */
-> -- 
-> 1.8.1.4
 
---
-			Gleb.
+thank you for point out this. I will update the patch
+
+Yan, Zheng
