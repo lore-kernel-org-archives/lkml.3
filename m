@@ -1,230 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932941Ab3GDMhU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:37:20 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:18686 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320Ab3GDMfv (ORCPT
+	id S932660Ab3GDMjp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:39:45 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:42139 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab3GDMjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:35:51 -0400
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-To: <joe@perches.com>, <devel@linuxdriverproject.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 1/5] staging: ozwpan: Remove extra debug logs.
-Date: Thu, 4 Jul 2013 13:35:27 +0100
-Message-ID: <1372941331-9586-2-git-send-email-rupesh.gujare@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1372255013.2076.4.camel@joe-AO722>
-References: <1372255013.2076.4.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.161.30.18]
+	Thu, 4 Jul 2013 08:39:43 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, tglx@linutronix.de,
+        grant.likely@secretlab.ca, thomas.petazzoni@free-electrons.com,
+        arnd@arndb.de, u.kleine-koenig@pengutronix.de, linux@arm.linux.org.uk,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v5] ARM: irqchip: add support for MOXA ART SoCs
+Date: Thu,  4 Jul 2013 14:38:51 +0200
+Message-Id: <1372941531-6393-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1372689241-18758-1-git-send-email-jonas.jensen@gmail.com>
+References: <1372689241-18758-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+This patch adds an irqchip driver for the main interrupt controller found
+on MOXA ART SoCs.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 ---
- drivers/staging/ozwpan/ozcdev.c |    2 --
- drivers/staging/ozwpan/ozhcd.c  |   28 ++++++++--------------------
- 2 files changed, 8 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
-index 374fdc3..284c26d 100644
---- a/drivers/staging/ozwpan/ozcdev.c
-+++ b/drivers/staging/ozwpan/ozcdev.c
-@@ -73,7 +73,6 @@ static void oz_cdev_release_ctx(struct oz_serial_ctx *ctx)
- static int oz_cdev_open(struct inode *inode, struct file *filp)
- {
- 	struct oz_cdev *dev;
--	oz_trace("oz_cdev_open()\n");
- 	oz_trace("major = %d minor = %d\n", imajor(inode), iminor(inode));
- 	dev = container_of(inode->i_cdev, struct oz_cdev, cdev);
- 	filp->private_data = dev;
-@@ -84,7 +83,6 @@ static int oz_cdev_open(struct inode *inode, struct file *filp)
-  */
- static int oz_cdev_release(struct inode *inode, struct file *filp)
- {
--	oz_trace("oz_cdev_release()\n");
- 	return 0;
- }
- /*------------------------------------------------------------------------------
-diff --git a/drivers/staging/ozwpan/ozhcd.c b/drivers/staging/ozwpan/ozhcd.c
-index d68d63a..9d1bd44 100644
---- a/drivers/staging/ozwpan/ozhcd.c
-+++ b/drivers/staging/ozwpan/ozhcd.c
-@@ -394,7 +394,6 @@ static void oz_complete_urb(struct usb_hcd *hcd, struct urb *urb,
-  */
- static void oz_ep_free(struct oz_port *port, struct oz_endpoint *ep)
- {
--	oz_trace("oz_ep_free()\n");
- 	if (port) {
- 		struct list_head list;
- 		struct oz_hcd *ozhcd = port->ozhcd;
-@@ -631,7 +630,6 @@ void *oz_hcd_pd_arrived(void *hpd)
- 	void *hport = NULL;
- 	struct oz_hcd *ozhcd = NULL;
- 	struct oz_endpoint *ep;
--	oz_trace("oz_hcd_pd_arrived()\n");
- 	ozhcd = oz_hcd_claim();
- 	if (ozhcd == NULL)
- 		return NULL;
-@@ -691,7 +689,6 @@ void oz_hcd_pd_departed(void *hport)
- 	void *hpd;
- 	struct oz_endpoint *ep = NULL;
- 
--	oz_trace("oz_hcd_pd_departed()\n");
- 	if (port == NULL) {
- 		oz_trace("oz_hcd_pd_departed() port = 0\n");
- 		return;
-@@ -1696,7 +1693,6 @@ static void oz_hcd_clear_orphanage(struct oz_hcd *ozhcd, int status)
-  */
- static int oz_hcd_start(struct usb_hcd *hcd)
- {
--	oz_trace("oz_hcd_start()\n");
- 	hcd->power_budget = 200;
- 	hcd->state = HC_STATE_RUNNING;
- 	hcd->uses_new_polling = 1;
-@@ -1707,14 +1703,12 @@ static int oz_hcd_start(struct usb_hcd *hcd)
-  */
- static void oz_hcd_stop(struct usb_hcd *hcd)
- {
--	oz_trace("oz_hcd_stop()\n");
- }
- /*------------------------------------------------------------------------------
-  * Context: unknown
-  */
- static void oz_hcd_shutdown(struct usb_hcd *hcd)
- {
--	oz_trace("oz_hcd_shutdown()\n");
- }
- /*------------------------------------------------------------------------------
-  * Called to queue an urb for the device.
-@@ -1844,7 +1838,6 @@ static int oz_hcd_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
- static void oz_hcd_endpoint_disable(struct usb_hcd *hcd,
- 				struct usb_host_endpoint *ep)
- {
--	oz_trace("oz_hcd_endpoint_disable\n");
- }
- /*------------------------------------------------------------------------------
-  * Context: unknown
-@@ -1852,7 +1845,6 @@ static void oz_hcd_endpoint_disable(struct usb_hcd *hcd,
- static void oz_hcd_endpoint_reset(struct usb_hcd *hcd,
- 				struct usb_host_endpoint *ep)
- {
--	oz_trace("oz_hcd_endpoint_reset\n");
- }
- /*------------------------------------------------------------------------------
-  * Context: unknown
-@@ -1872,7 +1864,6 @@ static int oz_hcd_hub_status_data(struct usb_hcd *hcd, char *buf)
- 	struct oz_hcd *ozhcd = oz_hcd_private(hcd);
- 	int i;
- 
--	oz_trace2(OZ_TRACE_HUB, "oz_hcd_hub_status_data()\n");
- 	buf[0] = 0;
- 
- 	spin_lock_bh(&ozhcd->hcd_lock);
-@@ -1892,7 +1883,6 @@ static int oz_hcd_hub_status_data(struct usb_hcd *hcd, char *buf)
- static void oz_get_hub_descriptor(struct usb_hcd *hcd,
- 				struct usb_hub_descriptor *desc)
- {
--	oz_trace2(OZ_TRACE_HUB, "GetHubDescriptor\n");
- 	memset(desc, 0, sizeof(*desc));
- 	desc->bDescriptorType = 0x29;
- 	desc->bDescLength = 9;
-@@ -1911,7 +1901,7 @@ static int oz_set_port_feature(struct usb_hcd *hcd, u16 wvalue, u16 windex)
- 	struct oz_hcd *ozhcd = oz_hcd_private(hcd);
- 	unsigned set_bits = 0;
- 	unsigned clear_bits = 0;
--	oz_trace2(OZ_TRACE_HUB, "SetPortFeature\n");
+Notes:
+    Applies to next-20130703
+    
+    Changes since v4:
+    
+    1. shorten DT compatible value to "moxart-ic"
+    2. use alphabetic ordering in Makefile
+
+ drivers/irqchip/Makefile     |   1 +
+ drivers/irqchip/irq-moxart.c | 118 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 119 insertions(+)
+ create mode 100644 drivers/irqchip/irq-moxart.c
+
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index 2065ef6..e65c41a 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -7,6 +7,7 @@ obj-$(CONFIG_ARCH_MXS)			+= irq-mxs.o
+ obj-$(CONFIG_ARCH_S3C24XX)		+= irq-s3c24xx.o
+ obj-$(CONFIG_METAG)			+= irq-metag-ext.o
+ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
++obj-$(CONFIG_ARCH_MOXART)		+= irq-moxart.o
+ obj-$(CONFIG_ORION_IRQCHIP)		+= irq-orion.o
+ obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
+ obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
+diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
+new file mode 100644
+index 0000000..a9d9f36
+--- /dev/null
++++ b/drivers/irqchip/irq-moxart.c
+@@ -0,0 +1,118 @@
++/*
++ * MOXA ART SoCs IRQ chip driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
 +
- 	if ((port_id < 1) || (port_id > OZ_NB_PORTS))
- 		return -EPIPE;
- 	port = &ozhcd->ports[port_id-1];
-@@ -1986,7 +1976,7 @@ static int oz_clear_port_feature(struct usb_hcd *hcd, u16 wvalue, u16 windex)
- 	u8 port_id = (u8)windex;
- 	struct oz_hcd *ozhcd = oz_hcd_private(hcd);
- 	unsigned clear_bits = 0;
--	oz_trace2(OZ_TRACE_HUB, "ClearPortFeature\n");
++#include <linux/io.h>
++#include <linux/irq.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/irqdomain.h>
 +
- 	if ((port_id < 1) || (port_id > OZ_NB_PORTS))
- 		return -EPIPE;
- 	port = &ozhcd->ports[port_id-1];
-@@ -2074,7 +2064,7 @@ static int oz_hcd_hub_control(struct usb_hcd *hcd, u16 req_type, u16 wvalue,
- 				u16 windex, char *buf, u16 wlength)
- {
- 	int err = 0;
--	oz_trace2(OZ_TRACE_HUB, "oz_hcd_hub_control()\n");
++#include <asm/exception.h>
 +
- 	switch (req_type) {
- 	case ClearHubFeature:
- 		oz_trace2(OZ_TRACE_HUB, "ClearHubFeature: %d\n", req_type);
-@@ -2111,7 +2101,7 @@ static int oz_hcd_hub_control(struct usb_hcd *hcd, u16 req_type, u16 wvalue,
- static int oz_hcd_bus_suspend(struct usb_hcd *hcd)
- {
- 	struct oz_hcd *ozhcd;
--	oz_trace2(OZ_TRACE_HUB, "oz_hcd_hub_suspend()\n");
++#include "irqchip.h"
 +
- 	ozhcd = oz_hcd_private(hcd);
- 	spin_lock_bh(&ozhcd->hcd_lock);
- 	hcd->state = HC_STATE_SUSPENDED;
-@@ -2125,7 +2115,7 @@ static int oz_hcd_bus_suspend(struct usb_hcd *hcd)
- static int oz_hcd_bus_resume(struct usb_hcd *hcd)
- {
- 	struct oz_hcd *ozhcd;
--	oz_trace2(OZ_TRACE_HUB, "oz_hcd_hub_resume()\n");
++#define IRQ_SOURCE_REG		0
++#define IRQ_MASK_REG		0x04
++#define IRQ_CLEAR_REG		0x08
++#define IRQ_MODE_REG		0x0c
++#define IRQ_LEVEL_REG		0x10
++#define IRQ_STATUS_REG		0x14
 +
- 	ozhcd = oz_hcd_private(hcd);
- 	spin_lock_bh(&ozhcd->hcd_lock);
- 	ozhcd->flags &= ~OZ_HDC_F_SUSPENDED;
-@@ -2137,8 +2127,8 @@ static int oz_hcd_bus_resume(struct usb_hcd *hcd)
-  */
- static void oz_plat_shutdown(struct platform_device *dev)
- {
--	oz_trace("oz_plat_shutdown()\n");
- }
++#define FIQ_SOURCE_REG		0x20
++#define FIQ_MASK_REG		0x24
++#define FIQ_CLEAR_REG		0x28
++#define FIQ_MODE_REG		0x2c
++#define FIQ_LEVEL_REG		0x30
++#define FIQ_STATUS_REG		0x34
 +
- /*------------------------------------------------------------------------------
-  * Context: process
-  */
-@@ -2148,7 +2138,7 @@ static int oz_plat_probe(struct platform_device *dev)
- 	int err;
- 	struct usb_hcd *hcd;
- 	struct oz_hcd *ozhcd;
--	oz_trace("oz_plat_probe()\n");
 +
- 	hcd = usb_create_hcd(&g_oz_hc_drv, &dev->dev, dev_name(&dev->dev));
- 	if (hcd == NULL) {
- 		oz_trace("Failed to created hcd object OK\n");
-@@ -2188,7 +2178,7 @@ static int oz_plat_remove(struct platform_device *dev)
- {
- 	struct usb_hcd *hcd = platform_get_drvdata(dev);
- 	struct oz_hcd *ozhcd;
--	oz_trace("oz_plat_remove()\n");
++struct moxart_irq_data {
++	void __iomem *base;
++	struct irq_domain *domain;
++	unsigned int interrupt_mask;
++};
 +
- 	if (hcd == NULL)
- 		return -1;
- 	ozhcd = oz_hcd_private(hcd);
-@@ -2209,7 +2199,6 @@ static int oz_plat_remove(struct platform_device *dev)
-  */
- static int oz_plat_suspend(struct platform_device *dev, pm_message_t msg)
- {
--	oz_trace("oz_plat_suspend()\n");
- 	return 0;
- }
- /*------------------------------------------------------------------------------
-@@ -2217,7 +2206,6 @@ static int oz_plat_suspend(struct platform_device *dev, pm_message_t msg)
-  */
- static int oz_plat_resume(struct platform_device *dev)
- {
--	oz_trace("oz_plat_resume()\n");
- 	return 0;
- }
- /*------------------------------------------------------------------------------
++static struct moxart_irq_data intc;
++
++static asmlinkage void __exception_irq_entry handle_irq(struct pt_regs *regs)
++{
++	u32 irqstat;
++	int hwirq;
++
++	irqstat = readl(intc.base + IRQ_STATUS_REG);
++
++	while (irqstat) {
++		hwirq = ffs(irqstat) - 1;
++		handle_IRQ(irq_linear_revmap(intc.domain, hwirq), regs);
++		irqstat &= ~(1 << hwirq);
++	}
++}
++
++static int __init moxart_of_intc_init(struct device_node *node,
++				      struct device_node *parent)
++{
++	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
++	int ret;
++	struct irq_chip_generic *gc;
++
++	intc.base = of_iomap(node, 0);
++	if (!intc.base) {
++		pr_err("%s: unable to map IC registers\n",
++		       node->full_name);
++		return -EINVAL;
++	}
++
++	intc.domain = irq_domain_add_linear(node, 32, &irq_generic_chip_ops,
++					    intc.base);
++	if (!intc.domain) {
++		pr_err("%s: unable to create IRQ domain\n", node->full_name);
++		return -EINVAL;
++	}
++
++	ret = irq_alloc_domain_generic_chips(intc.domain, 32, 1,
++					     "MOXARTINTC", handle_edge_irq,
++					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
++	if (ret) {
++		pr_err("%s: could not allocate generic chip\n",
++		       node->full_name);
++		irq_domain_remove(intc.domain);
++		return -EINVAL;
++	}
++
++	ret = of_property_read_u32(node, "interrupt-mask",
++				   &intc.interrupt_mask);
++	if (ret)
++		pr_err("%s: could not read interrupt-mask DT property\n",
++		       node->full_name);
++
++	gc = irq_get_domain_generic_chip(intc.domain, 0);
++
++	gc->reg_base = intc.base;
++	gc->chip_types[0].regs.mask = IRQ_MASK_REG;
++	gc->chip_types[0].regs.ack = IRQ_CLEAR_REG;
++	gc->chip_types[0].chip.irq_ack = irq_gc_ack_set_bit;
++	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
++	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
++
++	writel(0, intc.base + IRQ_MASK_REG);
++	writel(0xffffffff, intc.base + IRQ_CLEAR_REG);
++
++	writel(intc.interrupt_mask, intc.base + IRQ_MODE_REG);
++	writel(intc.interrupt_mask, intc.base + IRQ_LEVEL_REG);
++
++	set_handle_irq(handle_irq);
++
++	return 0;
++}
++IRQCHIP_DECLARE(moxa_moxart_ic, "moxa,moxart-ic",
++		moxart_of_intc_init);
 -- 
-1.7.9.5
+1.8.2.1
 
