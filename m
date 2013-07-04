@@ -1,158 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933531Ab3GDGgQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 02:36:16 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:36883 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab3GDGgN (ORCPT
+	id S1755420Ab3GDGto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 02:49:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:27968 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab3GDGtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 02:36:13 -0400
-X-Spam-Score: -100.8
-Message-ID: <51D517A7.6030908@asianux.com>
-Date: Thu, 04 Jul 2013 14:35:19 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Steven Rostedt <rostedt@goodmis.org>, Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
- 'COMPILE_TEST' in 'asm-generic'.
-References: <20130704011221.GA11230@kroah.com> <51D4D4A0.6080401@asianux.com> <1372903390.22688.139.camel@gandalf.local.home> <51D4D9A4.3020402@gmail.com> <1372904975.22688.142.camel@gandalf.local.home> <51D4E133.2010201@gmail.com> <1372907201.22688.147.camel@gandalf.local.home> <51D4EB7D.2020809@gmail.com> <20130704040859.GA2869@kroah.com> <51D4FF17.4040503@asianux.com> <20130704061204.GA12148@kroah.com>
-In-Reply-To: <20130704061204.GA12148@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Jul 2013 02:49:42 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-df-51d51b042425
+Date: Thu, 04 Jul 2013 08:49:32 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocky" <rjw@sisk.pl>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        Andre Przywara <andre.przywara@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [PATCH v4 5/7] cpufreq: Calculate number of busy CPUs
+Message-id: <20130704084932.2ce698c7@amdc308.digital.local>
+In-reply-to: <CAKohpomcaDS93zka0FK5_JMGY96sW0tLhGzMbr_FFM6wQYPh1A@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1371661969-7660-1-git-send-email-l.majewski@samsung.com>
+ <1371661969-7660-6-git-send-email-l.majewski@samsung.com>
+ <CAKohpo=EwapTp8epok30=_ZYLPeCR8_LhpBF5H724dE=+SwMLg@mail.gmail.com>
+ <20130627125819.5c90da30@amdc308.digital.local>
+ <CAKohpo=JKg17YWjTrOh25hHW=sXn8-TW=D8rhrovonwZBDarBg@mail.gmail.com>
+ <20130627164204.370dc4a6@amdc308.digital.local>
+ <CAKohpomrPP9Lzk+fMn+Ba+J+2N740LR5NurVMomx8zww3AWLww@mail.gmail.com>
+ <20130628085457.05d64878@amdc308.digital.local>
+ <20130701101516.7945e387@amdc308.digital.local>
+ <CAKohponiy3ebnt0_Cdaan5=DkAfA3U4g=m4NnYGLA-a+tPJJQg@mail.gmail.com>
+ <20130704074307.282a53dc@amdc308.digital.local>
+ <CAKohpomcaDS93zka0FK5_JMGY96sW0tLhGzMbr_FFM6wQYPh1A@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jAV0W6auBBptWi1j8ebuc1eJp0w92
+	i3mfZS3W7P/JZNF59gmzRe+Cq2wWbx5xW1zeNYfN4nPvEUaL240r2Cz6F/YyWTx52Mdm0XHk
+	G7PFxq8eDnwei/e8ZPK4c20Pm8e6aW+ZPfq2rGL0eLS4hdHj+I3tTB6fN8kFsEdx2aSk5mSW
+	pRbp2yVwZWy6Mpml4CRrxesL39kbGJexdDFyckgImEi8efoKyhaTuHBvPVsXIxeHkMAiRome
+	pesYQRJCAu1MEksmuILYLAKqEtPO7GIGsdkE9CQ+333K1MXIwSEioCXx8mYqSC+zwHYWiUtN
+	s9hAaoQFnCS+3vnFDlLDK2At8eGVG0iYUyBYYtemqewQu2axSRw/uRVsJr+ApET7vx/MEAfZ
+	SZz7tIEdxOYVEJT4Mfke2KHMQLs2b2tihbDlJTavecs8gVFwFpKyWUjKZiEpW8DIvIpRNLUg
+	uaA4KT3XSK84Mbe4NC9dLzk/dxMjOKKeSe9gXNVgcYhRgINRiYdXwupKoBBrYllxZe4hRgkO
+	ZiURXieOq4FCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcKCaQnlqRmp6YWpBbBZJk4OKUa
+	GLuCo+vitxmnel1QuPj68A67na2at1Y/vDJt8vEHdQxuh31jc7scD056d5ClMGH+U/+WdxqC
+	Tky9rGISKsVa1g4bzGxrE7bW97u5uvJLtjnYndb9aiYg1Me8WkVfRvPLSZOm698Wa9SdTr3v
+	lWfYHNT67a7WaYEzUfcSRbMveh5cY5t6cOstJZbijERDLeai4kQA/FK9saQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2013 02:12 PM, Greg KH wrote:
-> On Thu, Jul 04, 2013 at 12:50:31PM +0800, Chen Gang wrote:
->> On 07/04/2013 12:08 PM, Greg KH wrote:
->>>>> config COMPILE_TEST
->>>>>        bool "Compile also drivers which will not load"
->>>>>        default n
->>> This has _nothing_ to do with asm-generic, sorry.  Please don't confuse
->>> the issue.
->>
->> But when I choose allmodconfig, then "COMPILE_TEST=y". this may allow a
->> module to compile under the architectures which no related HW support.
->>
->> When cause compiling issue (HW not support), it is not module's issue,
->> we can not 'fix' module by force, and it is not architecture's issue,
->> either.
->>
->> So we have to look for who has duty for this issue. At least now, it
->> seems only 'asm-generic' can be qualified to play this unlucky role.
+On Thu, 04 Jul 2013 11:58:53 +0530, Viresh Kumar wrote:
+
+> On 4 July 2013 11:13, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > This is a possible solution, but I've already modified thermal code
+> > a bit and found a solution for the problem.
+> >
+> > I use thermal workqueue (which is already in place anyway) to
+> > enable the boost again.
+> > Due to that I can provide behaviour similar to HW controlled boost.
+> >
+> > Patches with this solution are already prepared. I will post them
+> > in a few hours. Ok?
 > 
-> You seem to not understand what asm-generic is, or does, or I still do
-> not understand what you are proposing.
-> 
+> I don't see any harm in checking them out :)
+> Please send them.
 
-Maybe both/neither of us.  :-)
-
-> Please send a patch showing what you are trying to do here, so that we
-> can properly understand.
-> 
-
-Please help to check the patch below, thanks.
-
---------------------------patch begin----------------------------------
-
-'asm-generic' need provide necessary configuration checking, if can't
-pass checking, 'asm-generic' shouldn't implement it.
-
-For 'COMPILE_TEST', according to its help contents, 'asm-generic' need
-let it pass configuration checking, and provide related dummy contents
-for it.
-
-Part of 'COMPLE_TEST' help contents in "init/Kconfig":
-
-  "...Despite they cannot be loaded there (or even when they load they cannot be used due to missing HW support)..."
-
-One sample for using 'COMPILE_TEST':
-
-  'PTP_1588_CLOCK_PCH' in drivers/ptp/Kconfig, which need depend on 'HAS_IOMEM'.
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- include/asm-generic/io.h |   22 ++++++++++++++++++----
- 1 files changed, 18 insertions(+), 4 deletions(-)
-
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index d5afe96..301ce80 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -303,13 +303,18 @@ static inline void *phys_to_virt(unsigned long address)
- /*
-  * Change "struct page" to physical address.
-  *
-- * This implementation is for the no-MMU case only... if you have an MMU
-- * you'll need to provide your own definitions.
-+ * This for the no-MMU, or no-IOMEM but still try to COMPILE_TEST cases.
-+ * if you have an MMU and IOMEM, you'll need to provide your own definitions.
-  */
--#ifndef CONFIG_MMU
-+#if !defined(CONFIG_MMU) || \
-+	(!defined(CONFIG_HAS_IOMEM) && defined(CONFIG_COMPILE_TEST))
- static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- {
-+#if !defined(CONFIG_MMU)
- 	return (void __iomem*) (unsigned long)offset;
-+#else
-+	return NULL;
-+#endif
- }
- 
- #define __ioremap(offset, size, flags)	ioremap(offset, size)
-@@ -325,7 +330,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- static inline void iounmap(void __iomem *addr)
- {
- }
--#endif /* CONFIG_MMU */
-+#endif /* !CONFIG_MMU || (!CONFIG_HAS_IOMEM && CONFIG_COMPILE_TEST) */
- 
- #ifdef CONFIG_HAS_IOPORT
- #ifndef CONFIG_GENERIC_IOMAP
-@@ -341,6 +346,15 @@ static inline void ioport_unmap(void __iomem *p)
- extern void __iomem *ioport_map(unsigned long port, unsigned int nr);
- extern void ioport_unmap(void __iomem *p);
- #endif /* CONFIG_GENERIC_IOMAP */
-+#elif defined(CONFIG_COMPILE_TEST) /* CONFIG_HAS_IOPORT */
-+static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
-+{
-+	return NULL;
-+}
-+
-+static inline void ioport_unmap(void __iomem *p)
-+{
-+}
- #endif /* CONFIG_HAS_IOPORT */
- 
- #ifndef xlate_dev_kmem_ptr
--- 
-1.7.7.6
-
-
-
---------------------------patch end------------------------------------
-
-
-Thanks.
--- 
-Chen Gang
+:-)
 
 -- 
-Chen Gang
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
