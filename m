@@ -1,76 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab3GDJXa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:23:30 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:55344 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab3GDJX1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:23:27 -0400
-Date: Thu, 4 Jul 2013 10:23:24 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
-        sbkim73@samsung.com, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-Message-ID: <20130704092324.GL27646@sirena.org.uk>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
- <1372072858-6559-5-git-send-email-yadi.brar@samsung.com>
- <20130703180033.GX27646@sirena.org.uk>
- <CAKew6eUGK+g1__m8QHFiz_miNPLwaMc0CG5ViwNGr2qQX5ESoQ@mail.gmail.com>
+	id S1752550Ab3GDJYE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:24:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39263 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961Ab3GDJYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 05:24:01 -0400
+Date: Thu, 4 Jul 2013 10:23:56 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/13] sched: Split accounting of NUMA hinting faults
+ that pass two-stage filter
+Message-ID: <20130704092356.GK1875@suse.de>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-8-git-send-email-mgorman@suse.de>
+ <20130703215654.GN17812@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VDo88IHMZzDSr6Ba"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CAKew6eUGK+g1__m8QHFiz_miNPLwaMc0CG5ViwNGr2qQX5ESoQ@mail.gmail.com>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <20130703215654.GN17812@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/4] regulator: s2mps11: Add device tree support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 03, 2013 at 05:56:54PM -0400, Johannes Weiner wrote:
+> On Wed, Jul 03, 2013 at 03:21:34PM +0100, Mel Gorman wrote:
+> > Ideally it would be possible to distinguish between NUMA hinting faults
+> > that are private to a task and those that are shared. This would require
+> > that the last task that accessed a page for a hinting fault would be
+> > recorded which would increase the size of struct page. Instead this patch
+> > approximates private pages by assuming that faults that pass the two-stage
+> > filter are private pages and all others are shared. The preferred NUMA
+> > node is then selected based on where the maximum number of approximately
+> > private faults were measured. Shared faults are not taken into
+> > consideration for a few reasons.
+> 
+> Ingo had a patch that would just encode a few bits of the PID along
+> with the last_nid (last_cpu in his case) member of struct page.  No
+> extra space required and should be accurate enough.
+> 
 
---VDo88IHMZzDSr6Ba
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, I'm aware of it. I noted in the changelog that ideally we'd record
+the task both to remind myself and so that the patch that introduces it
+could refer to this changelog so there is some sort of logical progression
+for reviewers.
 
-On Thu, Jul 04, 2013 at 10:44:36AM +0530, Yadwinder Singh Brar wrote:
+I was not keen on the use of last_cpu because I felt there was an implicit
+assumption that scanning would always be fast enough to record hinting
+faults before a task got moved to another CPU for any reason. I feared this
+would be worse as memory and task sizes increased. That's why I stayed
+with tracking the nid for the two-stage filter until it could be proven
+it was insufficient for some reason.
 
-> Yes, it seems incorrect but in existing code based on pdata, its name like that.
-> If you insist, I can rename it ? as It seems sensible to put
-> "regulator-ramp-disable" as our intension is to do that(by default its
-> always enable).
+The lack of anything resembling pid tracking now is that the series is
+already a bit of a mouthful and I thought the other parts were more
+important for now.
 
-It seems sensible to rename yes, otherwise this code just looks totally
-wrong.
+> Otherwise this is blind to sharedness within the node the task is
+> currently running on, right?
+> 
 
---VDo88IHMZzDSr6Ba
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yes, it is.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> > First, if there are many tasks sharing the page then they'll all move
+> > towards the same node. The node will be compute overloaded and then
+> > scheduled away later only to bounce back again. Alternatively the shared
+> > tasks would just bounce around nodes because the fault information is
+> > effectively noise. Either way accounting for shared faults the same as
+> > private faults may result in lower performance overall.
+> 
+> When the node with many shared pages is compute overloaded then there
+> is arguably not an optimal node for the tasks and moving them off is
+> inevitable. 
 
-iQIcBAEBAgAGBQJR1T8JAAoJELSic+t+oim9u8QP/3ihxMD3lhE/JU5kWqpoTxHl
-+7uN7Y52/kXzYdFADYsHgxIY/8ouJCSFnE1GByTXq0lFREvUXX8zH2/tGu1CFrUY
-bW59A5Ivp60OIiy7Vc008PJmB7vBKYYACErH0BFggH87crhOzMEMCWTi1u5y8u9n
-67+e4Nlp3zijUtX2LjEcnWpY3MHXpQ2BorkwzLd7V8sWBMcuQbjZqi5EPTg/gt6t
-y4gFn9Lqh6ryC5Tal4Z9hZpaikbBiOFWnHRSG+ceQnO8xwd79it/YiEHkbKhVOZj
-X6GG+JOBQumAnjrqH4HyO9UZqlYA1V2SOLdExwqTN/mdFSR8PTmQsvERhC1iMFe9
-JLyX8XGeWHs9phDuZRg0iM66OWqUlt1HrPW5TfJVOCu9zk05qnhv8bu+YYSDflGM
-tyITJJX6qENd7lKh9zbNkfewO3J5gpX/wTWV5feA5nKN1QhnyMd21QjxnRM1tWsa
-7kofVHnADEGjBx7Mf3FogK8cDDBd5o+c1FIeBh1luazMFbtBvuXkiaIxDckP0iaC
-ntDG+UP8AfYxWYp4xkZn9cpmHp+EzXnpWmxsUIQFXWw9Evsankvjc2QRKIWIWpjx
-Whdkw9bKPQvXaKBYwEgWwxxHeD/QWlBn9zIzhxb/UhroeOLahev+zT8Z6EPPf7Qv
-tbdo1/flmARl1hX79zJQ
-=V809
------END PGP SIGNATURE-----
+Yes. If such an event occurs then the ideal is that the task interleaves
+between a subset of nodes. The situation could be partially detected by
+tracking if the number of historical faults is approximately larger than
+the preferred node and then interleave between the top N nodes most faulted
+nodes until the working set fits. Starting the interleave should just be
+a matter of coding. The difficulty is correctly backing off that if there
+is a phase change.
 
---VDo88IHMZzDSr6Ba--
+> However, the node with the most page accesses, private or
+> shared, is still the preferred node from a memory stand point.
+> Compute load being equal, the task should go to the node with 2GB of
+> shared memory and not to the one with 2 private pages.
+> 
+
+Agreed. The level of shared vs private needs to be detected. The problem
+here is that detecting private dominated workloads is not straight-forward,
+particularly as the scan rate slows as we've already discussed.
+
+> If the load balancer moves the task off due to cpu load reasons,
+> wouldn't the settle count mechanism prevent it from bouncing back?
+> 
+> Likewise, if the cpu load situation changes, the balancer could move
+> the task back to its truly preferred node.
+> 
+> > The second reason is based on a hypothetical workload that has a small
+> > number of very important, heavily accessed private pages but a large shared
+> > array. The shared array would dominate the number of faults and be selected
+> > as a preferred node even though it's the wrong decision.
+> 
+> That's a scan granularity problem and I can't see how you solve it
+> with ignoring the shared pages. 
+
+I acknowledge it's a problem and basically I'm making a big assumption
+that private-dominated workloads are going to be the common case. Threaded
+application on UMA with heavy amounts of shared data (within cache lines)
+already suck in terms of performance so I'm expecting programmers already
+try and avoid this sort of sharing. Obviously we are at a page granularity
+here so the assumption will depend entirely on alignments and buffer sizes
+so it might still fall apart.
+
+I think that dealing with this specific problem is a series all on its
+own and treating it on its own in isolation would be best.
+
+-- 
+Mel Gorman
+SUSE Labs
