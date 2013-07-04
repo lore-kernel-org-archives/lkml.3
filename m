@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933729Ab3GDHUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 03:20:20 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:64912 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933686Ab3GDHUS (ORCPT
+	id S933664Ab3GDHTd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 03:19:33 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:53514 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933645Ab3GDHTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 03:20:18 -0400
-X-AuditID: 9c93017e-b7c04ae00000295f-38-51d522304cd0
-From: Namhyung Kim <namhyung@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Hyeoncheol Lee <cheol.lee@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/12] tracing/uprobes: Add support for more fetch methods
-References: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
-	<51D51B88.5000406@hitachi.com>
-Date: Thu, 04 Jul 2013 16:20:15 +0900
-In-Reply-To: <51D51B88.5000406@hitachi.com> (Masami Hiramatsu's message of
-	"Thu, 04 Jul 2013 15:51:52 +0900")
-Message-ID: <87txkazt8w.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 4 Jul 2013 03:19:30 -0400
+From: Bo Shen <voice.shen@atmel.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH 3/4] arm: atmel: sama5: enable kernel uncompress info output
+Date: Thu,  4 Jul 2013 15:16:41 +0800
+Message-Id: <1372922202-28606-4-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372922202-28606-1-git-send-email-voice.shen@atmel.com>
+References: <1372922202-28606-1-git-send-email-voice.shen@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami,
+enable kernel uncompress info output, which will show as following:
+---8>---
+Uncompressing Linux... done, booting the kernel.
+---<8---
 
-On Thu, 04 Jul 2013 15:51:52 +0900, Masami Hiramatsu wrote:
-> (2013/07/03 21:35), Namhyung Kim wrote:
->> Hello,
->> 
->> This patchset implements memory (address), stack[N], deference,
->> bitfield and retval (it needs uretprobe tho) fetch methods for
->> uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
->> 
->> Now kprobes and uprobes have their own fetch_type_tables and, in turn,
->> memory and stack access methods.  Other fetch methods are shared.
->> 
->> For the dereference method, I added a new argument to fetch functions.
->> It's because for uprobes it needs to know whether the given address is
->> a file offset or a virtual address in an user process.  For instance,
->> in case of fetching from a memory directly (like @offset) it should
->> convert the address (offset) to a virtual address of the process, but
->> if it's a dereferencing, the given address already has the virtual
->> address.
->
-> Thanks Namhyung,
-> I agree that uprobe requires a special (file-relative) dereference
-> code. I'll look into the basic implementation after fixing current
-> dynamic-event related bugs. :)
-> (I see, this one should be updated to the latest tree, after
->  merge window is closed)
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+---
+ arch/arm/mach-at91/include/mach/uncompress.h |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Yes, I'm catching up the changes.  I'll resend v2 after -rc1 released.
+diff --git a/arch/arm/mach-at91/include/mach/uncompress.h b/arch/arm/mach-at91/include/mach/uncompress.h
+index 5659f7c..fe097e6 100644
+--- a/arch/arm/mach-at91/include/mach/uncompress.h
++++ b/arch/arm/mach-at91/include/mach/uncompress.h
+@@ -94,6 +94,15 @@ static const u32 uarts_sam9x5[] = {
+ 	0,
+ };
+ 
++static const u32 uarts_sama5[] = {
++	AT91_BASE_DBGU1,
++	SAMA5D3_BASE_USART0,
++	SAMA5D3_BASE_USART1,
++	SAMA5D3_BASE_USART2,
++	SAMA5D3_BASE_USART3,
++	0,
++};
++
+ static inline const u32* decomp_soc_detect(void __iomem *dbgu_base)
+ {
+ 	u32 cidr, socid;
+@@ -123,6 +132,9 @@ static inline const u32* decomp_soc_detect(void __iomem *dbgu_base)
+ 
+ 	case ARCH_ID_AT91SAM9X5:
+ 		return uarts_sam9x5;
++
++	case ARCH_ID_SAMA5D3:
++		return uarts_sama5;
+ 	}
+ 
+ 	/* at91sam9g10 */
+-- 
+1.7.9.5
 
-Thanks,
-Namhyung
