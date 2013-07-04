@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3GDLjI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 07:39:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49007 "EHLO mga09.intel.com"
+	id S1756573Ab3GDLl5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 07:41:57 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:51070 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752996Ab3GDLjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 07:39:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,994,1363158000"; 
-   d="scan'208";a="364742178"
-Message-ID: <51D55ED4.5030405@intel.com>
-Date: Thu, 04 Jul 2013 19:39:00 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        andi@firstfloor.org
-Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
- switch
-References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com> <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com> <20130704095735.GL18898@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130704095735.GL18898@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752996Ab3GDLlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 07:41:55 -0400
+Date: Thu, 4 Jul 2013 07:41:53 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, khlebnikov@openvz.org, walken@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, riel@redhat.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, jiang.liu@huawei.com, zab@redhat.com,
+        jmoyer@redhat.com, linux-mm@kvack.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [WiP]: aio support for migrating pages (Re: [PATCH V2 1/2] mm: hotplug: implement non-movable version of get_user_pages() called get_user_pages_non_movable())
+Message-ID: <20130704114153.GD11006@kvack.org>
+References: <20130517002349.GI1008@kvack.org> <5195A3F4.70803@cn.fujitsu.com> <20130517143718.GK1008@kvack.org> <519AD6F8.2070504@cn.fujitsu.com> <20130521022733.GT1008@kvack.org> <51B6F107.80501@cn.fujitsu.com> <20130611144525.GB14404@kvack.org> <51D12E7B.6080301@cn.fujitsu.com> <20130702180008.GQ16399@kvack.org> <51D51B66.3000301@cn.fujitsu.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D51B66.3000301@cn.fujitsu.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2013 05:57 PM, Peter Zijlstra wrote:
-> On Mon, Jul 01, 2013 at 03:23:04PM +0800, Yan, Zheng wrote:
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
->> @@ -185,6 +185,13 @@ void intel_pmu_lbr_reset(void)
->>  		intel_pmu_lbr_reset_32();
->>  	else
->>  		intel_pmu_lbr_reset_64();
->> +
->> +	wrmsrl(x86_pmu.lbr_tos, 0);
->> +}
-> 
-> I double checked; my SDM Jun 2013, Vol 3C 35-93 very explicitly states that
-> MSR_LASTBRANCH_TOS is a read-only MSR. And afaicr all previous times I checked
-> this it did say this too.
-> 
+On Thu, Jul 04, 2013 at 02:51:18PM +0800, Gu Zheng wrote:
+> Hi Ben,
+>       When I test your patch on kernel 3.10, the kernel panic when aio job
+> complete or exit, exactly in aio_free_ring(), the following is a part of dmesg.
 
-thank you for point out this. I will update the patch
+What is your test case?
 
-Yan, Zheng
+		-ben
