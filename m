@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964951Ab3GDMpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:45:52 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:63114 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964901Ab3GDMpq (ORCPT
+	id S964999Ab3GDMqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:46:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:38255 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964934Ab3GDMpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:45:46 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 7/7] perf completion: use more comp words
-Date: Thu,  4 Jul 2013 18:11:31 +0530
-Message-Id: <1372941691-14684-8-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.3.1.643.gebeea52.dirty
-In-Reply-To: <1372941691-14684-1-git-send-email-artagnon@gmail.com>
-References: <1372941691-14684-1-git-send-email-artagnon@gmail.com>
+	Thu, 4 Jul 2013 08:45:50 -0400
+Message-ID: <51D56E74.3090404@hitachi.com>
+Date: Thu, 04 Jul 2013 21:45:40 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
+ event files are open
+References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org>
+In-Reply-To: <20130704034038.819592356@goodmis.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The completion words $words and $cword are available, so we might as
-well use them instead of directly accessing COMP_WORDS.
+(2013/07/04 12:33), Steven Rostedt wrote:
+> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+> index 7ed6976..ffcaf42 100644
+> --- a/kernel/trace/trace_kprobe.c
+> +++ b/kernel/trace/trace_kprobe.c
+> @@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
+>  }
+>  
+>  static int register_probe_event(struct trace_probe *tp);
+> -static void unregister_probe_event(struct trace_probe *tp);
+> +static int unregister_probe_event(struct trace_probe *tp);
+>  
+>  static DEFINE_MUTEX(probe_lock);
+>  static LIST_HEAD(probe_list);
+> @@ -340,9 +340,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
+>  	if (trace_probe_is_enabled(tp))
+>  		return -EBUSY;
+>  
+> +	/* Will fail if probe is being used by ftrace or perf */
+> +	if (unregister_probe_event(tp))
+> +		return -EBUSY;
+> +
+>  	__unregister_trace_probe(tp);
+>  	list_del(&tp->list);
+> -	unregister_probe_event(tp);
+>  
+>  	return 0;
+>  }
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- tools/perf/bash_completion | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+This may cause an unexpected access violation at kprobe handler because
+unregister_probe_event frees event_call/event_files and it will be
+accessed until kprobe is *completely* disabled.
+Actually disable_kprobe() doesn't ensure to finish the current running
+kprobe handlers. Thus, even if trace_probe_is_enabled() returns false,
+we must do synchronize_sched() for waiting, before unregister_probe_event().
+OTOH, unregister_kprobe() waits for that. That's why I do
+__unregister_trace_probe(tp) first here.
 
-diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
-index 765fb2f..9bb5f4d 100644
---- a/tools/perf/bash_completion
-+++ b/tools/perf/bash_completion
-@@ -92,15 +92,15 @@ __ltrim_colon_completions ()
- type perf &>/dev/null &&
- _perf ()
- {
--	local cur prev cmd
-+	local cur words cword prev cmd
- 
- 	COMPREPLY=()
--	_get_comp_words_by_ref -n : cur prev
-+	_get_comp_words_by_ref -n =: cur words cword prev
- 
--	cmd=${COMP_WORDS[0]}
-+	cmd=${words[0]}
- 
- 	# List perf subcommands or long options
--	if [ $COMP_CWORD -eq 1 ]; then
-+	if [ $cword -eq 1 ]; then
- 		if [[ $cur == --* ]]; then
- 			COMPREPLY=( $( compgen -W '--help --version \
- 			--exec-path --html-path --paginate --no-pager \
-@@ -110,13 +110,13 @@ _perf ()
- 			COMPREPLY=( $( compgen -W '$cmds' -- "$cur" ) )
- 		fi
- 	# List possible events for -e option
--	elif [[ $prev == "-e" && "${COMP_WORDS[1]}" == @(record|stat|top) ]]; then
-+	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
- 		evts=$($cmd list --raw-dump)
- 		COMPREPLY=( $( compgen -W '$evts' -- "$cur" ) )
- 		__ltrim_colon_completions $cur
- 	# List long option names
- 	elif [[ $cur == --* ]];  then
--		subcmd=${COMP_WORDS[1]}
-+		subcmd=${words[1]}
- 		opts=$($cmd $subcmd --list-opts)
- 		COMPREPLY=( $( compgen -W '$opts' -- "$cur" ) )
- 	fi
+I think there are 2 solutions, one is adding a wait after disable_k*probe
+at disable_trace_probe(), another is adding a wait before unregister_probe_event()
+at unregister_trace_probe().
+
+Thank you,
+
 -- 
-1.8.3.1.643.gebeea52.dirty
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
