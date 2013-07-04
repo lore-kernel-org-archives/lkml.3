@@ -1,41 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab3GDM5u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:57:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39196 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756523Ab3GDM5r (ORCPT
+	id S1756694Ab3GDNEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:04:21 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40981 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082Ab3GDNEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:57:47 -0400
-Date: Thu, 4 Jul 2013 14:57:00 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: Vince Weaver <vince@deater.net>, Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com, mingo@kernel.org,
-        vincent.weaver@maine.edu, Stephane Eranian <eranian@google.com>,
-        sukadev@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for perf
-Message-ID: <20130704125700.GM18898@dyad.programming.kicks-ass.net>
-References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
- <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
- <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy>
- <20130704125218.GA21134@concordia>
+	Thu, 4 Jul 2013 09:04:20 -0400
+Date: Thu, 4 Jul 2013 15:04:20 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alex Shi <alex.shi@intel.com>
+cc: hpa@linux.intel.com, tim.c.chen@linux.intel.com,
+        linux-kernel@vger.kernel.org, andi.kleen@intel.com,
+        a.p.zijlstra@chello.nl, mingo@elte.hu
+Subject: Re: [PATCH 3/3] clocksource: fix can not set tsc as clocksource
+ bug
+In-Reply-To: <alpine.DEB.2.02.1307041227470.11637@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1307041419560.11637@ionos.tec.linutronix.de>
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <1372916056-24301-4-git-send-email-alex.shi@intel.com> <alpine.DEB.2.02.1307041227470.11637@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704125218.GA21134@concordia>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 10:52:18PM +1000, Michael Ellerman wrote:
-> I don't think it even needs libpfm4, just some csv files in tools/perf
-> would do the trick.
+On Thu, 4 Jul 2013, Thomas Gleixner wrote:
+> On Thu, 4 Jul 2013, Alex Shi wrote:
+> > commit 5d33b883aed81c6fbcd09c6f7c3619eee850a7e2
+> >     clocksource: Always verify highres capability
+> > 
+> > This commit will reject a clock to be system clocksource if it has no
+> > CLOCK_SOURCE_VALID_FOR_HRES flags. Then the tsc to be rejected as
+> 
+> No. It rejects the clocksource if the system is in oneshot mode and
+> the clocksource does not support HIGHRES.
+> 
+> So at boot time, the tick device mode is PERIODIC and the clocksource
+> is set to jiffies.
+> 
+> In clocksource_done_booting() we select the best clocksource from the
+> registered list. We are still in PERIODIC mode, so the selection in
+> clocksource_find_best() should grab TSC whether the HIGHRES_VALID flag
+> is set or not. The relevant check in find_best() is:
+> 
+>         if (oneshot && !(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES))
+>                  continue;                                         
+> 
+> And oneshot should be definitely false at that point. So we don't care
+> about the HRES flag at all.
+> 
+> So if we select TSC from clocksource_done_booting() that prevents the
+> system from switching into highres mode as long as the VALID_FOR_HRES
+> flag is not set by the watchdog. If it gets set then
+> tick_clock_notify() tells the tick code to reevaluate.
+> 
+> So now the question is why you are observing that HPET is selected in
+> the first place.
+> 
+> Can you add instrumentation to the code and provide the data please? I
+> try to reproduce myself. What's the environment you're using?
 
-Right; I think Stephane and Jiri are in favour of creating a 'new' project that
-includes just the event definitions in a plain text format and a little library
-with parser to be used by all interested parties.
+Ok. Figured it out.
 
-Its just not something that's moving along at any pace at all atm :/
+Boot.
+start tsc revalidation()
+register(hpet)
+register(pmtimer);
+
+clocksource_done_booting()
+	select HPET
+
+switch to oneshot
+
+tsc_revalidation()
+	register(TSC)
+	clocksource_select()
+		keep HPET because TSC is not yet validated by the watchdog
+
+watchdog validates TSC, but that does not make TSC the system
+clocksource.
+
+So, the old code was actually installing TSC over HPET even when TSC
+was not yet qualified for HRES. Kinda worked :)
+
+So yes, we need somthing like your patch to fix that. 
+
+> > diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> > index 9d6c333..3ad9f29 100644
+> > --- a/kernel/time/clocksource.c
+> > +++ b/kernel/time/clocksource.c
+> > @@ -308,6 +308,8 @@ static void clocksource_watchdog(unsigned long data)
+> >  			 * transition into high-res mode:
+> >  			 */
+> >  			tick_clock_notify();
+> > +			if (finished_booting)
+> > +				schedule_work(&watchdog_work);
+> 
+> This only makes sense, when the clocksource which gets the FLAG set
+> has the highest rating, but was not selected because the system was in
+> ONESHOT mode already.
+> 
+> And I can't see why that should suddenly happen.
+
+Now I can :)
+
+> >  static int clocksource_watchdog_kthread(void *data)
+> >  {
+> >  	struct clocksource *cs, *tmp;
+> > @@ -412,11 +415,14 @@ static int clocksource_watchdog_kthread(void *data)
+> >  
+> >  	mutex_lock(&clocksource_mutex);
+> >  	spin_lock_irqsave(&watchdog_lock, flags);
+> > -	list_for_each_entry_safe(cs, tmp, &watchdog_list, wd_list)
+> > +	list_for_each_entry_safe(cs, tmp, &watchdog_list, wd_list) {
+> >  		if (cs->flags & CLOCK_SOURCE_UNSTABLE) {
+> >  			list_del_init(&cs->wd_list);
+> >  			list_add(&cs->wd_list, &unstable);
+> >  		}
+> > +		if (cs->flags & CLOCK_SOURCE_VALID_FOR_HRES)
+> > +			clocksource_select();
+> 
+> Unlikely, but if we have 3 watched clocksources which have the HRES
+> bit set, you'd call 3 times clocksource_select().
+
+Also the reselect must be called outside the watchdog_lock region.
+
+Thanks,
+
+	tglx
+
