@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab3GDWaE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 18:30:04 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:43045 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756909Ab3GDWaB (ORCPT
+	id S1756984Ab3GDWiN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 18:38:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58651 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab3GDWiM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 18:30:01 -0400
-Date: Fri, 5 Jul 2013 00:30:11 +0200
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, dave.hansen@linux.intel.com,
-        ak@linux.intel.com, jolsa@redhat.com
-Subject: [PATCH] perf: fix interrupt handler timing harness
-Message-ID: <20130704223010.GA30625@quad>
+	Thu, 4 Jul 2013 18:38:12 -0400
+Message-ID: <1372977465.21065.136.camel@cumari.coelho.fi>
+Subject: Re: [RFC] clk: add flags to distinguish xtal clocks
+From: Luciano Coelho <coelho@ti.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>
+Date: Fri, 5 Jul 2013 01:37:45 +0300
+In-Reply-To: <20130704222538.10823.2559@quantum>
+References: <1372971912-10877-1-git-send-email-coelho@ti.com>
+	 <20130704222538.10823.2559@quantum>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-07-04 at 15:25 -0700, Mike Turquette wrote:
+> Quoting Luciano Coelho (2013-07-04 14:05:12)
+> > Add a flag that indicate whether the clock is a crystal or not.  Since
+> > no clocks set this flag right now, include an additional flag that
+> > indicates whether the type is set or not.  If the CLK_IS_TYPE_DEFINED
+> > flag is not set, the value of the CLK_IS_TYPE_XTAL flag is undefined.
+> > This ensures backwards compatibility.
+> > 
+> > Additionally, parse a new device tree binding in clk-fixed-rate to set
+> > this flag.
+> > 
+> > Signed-off-by: Luciano Coelho <coelho@ti.com>
+> > ---
+> > 
+> > I'm not  familiar with the common clock framework and I'm not
+> > entirely sure the flags can be used in such a way, but to me it looks
+> > reasonable, since some clock consumers may need to know what type of
+> > clock is being provided.
+> > 
+> > Specifically, the wl12xx firmware needs to know if the clock is XTAL
+> > or not to handle the stabilization and boosts properly.
+> 
+> Hi Luciano,
 
-This patch fixes a serious bug in:
+Hi Mike,
 
-commit 14c63f17b1fde5a575a28e96547a22b451c71fb5
-Author: Dave Hansen <dave.hansen@linux.intel.com>
-Date:   Fri Jun 21 08:51:36 2013 -0700
+> I'd like clarification on one point. Is the same clock input signal used
+> on the wifi chip? What I mean is, are there multiple clock inputs and
+> XTAL is one, and not-XTAL is another?
 
-    perf: Drop sample rate when sampling is too slow
-    
+This wifi chip can work with a few different clocks and some of them are
+XTAL and others are not.  What the chip's firmware can use is one of
+these:
 
-There was an misunderstanding on the API of the do_div()
-macro. It returns the remainder of the division and this
-was not what the function expected leading to disabling the
-interrupt latency watchdog.
+19.2MHz (not XTAL)
+26.0MHz (not XTAL)
+26.0MHz (XTAL)
+38.4MHz (not XTAL)
+38.4MHz (XTAL)
+52.0MHz (not XTAL)
 
-This patch also remove a duplicate assignment in
-perf_sample_event_took().
+It treats the XTAL clocks differently (but I don't really understand
+enough of the details), so the driver needs to configure the firmware
+according to these values.
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 1db3af9..1833bc5 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -182,7 +182,7 @@ void update_perf_cpu_limits(void)
- 	u64 tmp = perf_sample_period_ns;
- 
- 	tmp *= sysctl_perf_cpu_time_max_percent;
--	tmp = do_div(tmp, 100);
-+	do_div(tmp, 100);
- 	atomic_set(&perf_sample_allowed_ns, tmp);
- }
- 
-@@ -232,7 +232,7 @@ DEFINE_PER_CPU(u64, running_sample_length);
- void perf_sample_event_took(u64 sample_len_ns)
- {
- 	u64 avg_local_sample_len;
--	u64 local_samples_len = __get_cpu_var(running_sample_length);
-+	u64 local_samples_len;
- 
- 	if (atomic_read(&perf_sample_allowed_ns) == 0)
- 		return;
+> Or is it the same clock input and basically the problem is that you need
+> to know what kind of waveform to expect (e.g. square versus sine)?
+
+It's the same clock input in the chip's perspective.  One clock input
+that can be any of the combinations I mentioned above.  Again, I'm not
+familiar with clocks, so I guess the square vs. sine explanation is
+plausible.  What I could see in the firmware is that it handles the
+clocks differently if they're xtal or not.
+
+--
+Luca.
+
