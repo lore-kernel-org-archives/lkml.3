@@ -1,113 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756355Ab3GDAXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 20:23:32 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36141 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933428Ab3GDAX0 (ORCPT
+	id S1756406Ab3GDA2G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 20:28:06 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:60813 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754432Ab3GDA2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 20:23:26 -0400
-Date: Wed, 3 Jul 2013 20:22:35 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        <linux-kernel@vger.kernel.org>, Joseph Lo <josephl@nvidia.com>,
-        <linux-tegra@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
-Message-ID: <20130704002235.GL22702@windriver.com>
-References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
- <20130702232259.GH11625@codeaurora.org>
- <51D39004.9000907@wwwdotorg.org>
- <20130703051907.GA22702@windriver.com>
- <20130703100044.GG24642@n2100.arm.linux.org.uk>
- <20130703153012.GK22702@windriver.com>
- <20130703172001.GH24642@n2100.arm.linux.org.uk>
+	Wed, 3 Jul 2013 20:28:04 -0400
+X-Sasl-enc: GenNBP+3QM5jmItJdTrtjW3hu9eqVnWhiwzXDxhU5OI4 1372897682
+Date: Wed, 3 Jul 2013 17:28:41 -0700
+From: Greg KH <greg@kroah.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Drokin, Oleg" <oleg.drokin@intel.com>
+Subject: Re: [GIT PULL] ext4 updates for 3.11
+Message-ID: <20130704002841.GA8962@kroah.com>
+References: <20130703181249.GA21797@kroah.com>
+ <CDF9C6B7.51285%andreas.dilger@intel.com>
+ <20130703235444.GF4072@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130703172001.GH24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130703235444.GF4072@dastard>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 18:20) Russell King - ARM Linux wrote:
-
-> On Wed, Jul 03, 2013 at 11:30:12AM -0400, Paul Gortmaker wrote:
-> > [Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 11:00) Russell King - ARM Linux wrote:
+On Thu, Jul 04, 2013 at 09:54:44AM +1000, Dave Chinner wrote:
+> On Wed, Jul 03, 2013 at 06:40:40PM +0000, Dilger, Andreas wrote:
+> > On 2013/03/07 12:12 PM, "Greg KH" <greg@kroah.com> wrote:
+> > >On Wed, Jul 03, 2013 at 01:29:41PM +1000, Dave Chinner wrote:
+> > >> On Tue, Jul 02, 2013 at 06:01:11PM -0700, Greg KH wrote:
+> > >> > For this filesystem, it seems that they don't have any
+> > >> > resources to do this work and are relying on the community to
+> > >> > help out.  Which is odd, but big companies are strange some
+> > >> > times...
+> > >> 
+> > >> Didn't we learn this lesson already with POHMELFS? i.e. that
+> > >> dumping filesystem code in staging on the assumption "the
+> > >> community" will fix it up when nobody in "the community" uses
+> > >> or can even test that filesystem is a broken development
+> > >> model....
+> > >
+> > >They (Intel) has said that they will continue to clean up this
+> > >code in the tree, until it is in good enough shape to be merged
+> > >into fs/ properly.  If they ever stop helping out, I will end up
+> > >dropping it from the tree, just like I did for pohmelfs, so don't
+> > >worry about it lingering around abandoned.
 > > 
-> > > On Wed, Jul 03, 2013 at 01:19:07AM -0400, Paul Gortmaker wrote:
-> > > > As an aside, I'm now thinking any __INIT that implicitly rely on EOF for
-> > > > closure are nasty traps waiting to happen and it might be worthwhile to
-> > > > audit and explicitly __FINIT them before someone appends to the file...
-> > > 
-> > > That hides a different kind of bug though - I hate __FINIT for exactly
-> > > that reason.  Consider this:
-> > 
-> > Agreed - perhaps masking that it is a ".previous" just hides the fact
-> > that it is more like a pop operation vs. an on/off operation, or per
-> > function as we have in C.
+> > Right, we are going to continue working on cleaning the code at a
+> > steady pace until it is ready to move to fs/.  I don't expect Al
+> > or Dave or Christoph to spend their time (or make their eyes
+> > bleed) with the current state of the code.  It has already
+> > undergone some significant cleanup, but needs a bunch more still.
 > 
-> I read the info pages, because I thought it was a pop operation too.
-> I was concerned that .section didn't push the previous section onto the
-> stack.
+> The issue I'm more concerned about is more to do with what happens
+> when we do something that affects all filesystems, such as API
+> changes. Then we are forced to look at it and to try to work out
+> what the hell is going on. This was the real problem with pomelhfs
+> being in staging - it had an unreasonably high maintenance overhead
+> compared to other filesystems.
 > 
-> However, .popsection is the pseudio-op which pops.  .previous just toggles
-> the current section with the section immediately before it.
-> 
-> So:
-> 
-> 	.text
-> 	.data
-> 	.previous
-> 	/* this is .text */
-> 	.previous
-> 	/* this is .data */
-> 	.previous
-> 	/* this is .text */
-> 	.previous
-> 	/* this is .data */
+> This was mainly because pohelmfs was effectively dumped in staging
+> and then left unmaintained - if there's consistent effort put into
+> the Lustre code to clean it up, maintain it and help with API
+> transitions, then I have nothing to object to and I'll just crawl
+> back into my box. ;)
 
-Cool -- I bet we weren't the only ones thinking it was a pop.  Thanks.
+Again, as with all code in the drivers/staging/ area, if you change any
+kernel apis, you are not responsible for fixing up the staging drivers,
+that's my job.  A heads-up is always nice, but again, not required.  You
+should be able to just safely ignore them if you don't want to ever look
+at them.
 
-Does that make __FINIT less evil than we previously assumed?  I think
-your example was the following pseudo-patch:
+thanks,
 
-
-	.text
-	<some text>
-+	.data
-+ 	<some data>
-	__INIT
-	<big hunk of init>
-	__FINIT
-	/* this below used to be text */
-	<more stuff that was originally meant for text>
-
-Even if it is a toggle (vs. pop), the end text will now become data,
-so the no-op __FINIT with an explicit section called out just below
-it may still be the most unambiguous way to indicate what is going on.
-
-> 
-> > That seems reasonable to me.  I can't think of any self auditing that is
-> > reasonably simple to implement.  One downside of __FINIT as a no-op vs.
-> > what it is today, is that a dangling __FINIT in a file with no other
-> > previous sections will emit a warning.  But that is a small low value
-> > corner case I think.
-> 
-> That warning from __FINIT will only happen if there has been no section
-> or .text or .data statement in the file at all.  As soon as you have any
-> statement setting any kind of section, .previous doesn't warn.
-> 
-> So:
-> 
-> 	.text
-> 	...
-> 	__FINIT
-> 
-> produces no warning.o
-
-Yep -- we are both saying the same thing here - hence why I called it a
-small low value corner case.
+greg k-h
