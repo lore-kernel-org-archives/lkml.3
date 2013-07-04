@@ -1,54 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756884Ab3GDRBo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 13:01:44 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:41766 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756593Ab3GDRBl (ORCPT
+	id S1756798Ab3GDRKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 13:10:16 -0400
+Received: from mail.windriver.com ([147.11.1.11]:51941 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756558Ab3GDRKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 13:01:41 -0400
-Date: Thu, 4 Jul 2013 10:01:35 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v3 23/25] cgroup: Change how dentry's d_lock field is
- accessed
-Message-ID: <20130704170135.GB23904@htj.dyndns.org>
-References: <1372882926-23239-1-git-send-email-Waiman.Long@hp.com>
+	Thu, 4 Jul 2013 13:10:14 -0400
+Date: Thu, 4 Jul 2013 13:09:58 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Joe Perches <joe@perches.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>, Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 4/4] checkpatch: only allow COMPILE_TEST in Kconfig
+ dependency lines
+Message-ID: <20130704170958.GM22702@windriver.com>
+References: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
+ <1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
+ <1372952486.1886.37.camel@joe-AO722>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1372882926-23239-1-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1372952486.1886.37.camel@joe-AO722>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 04:22:06PM -0400, Waiman Long wrote:
-> Because of the changes made in dcache.h header file, files that
-> use the d_lock field of the dentry structure need to be changed
-> accordingly. All the d_lock's spin_lock() and spin_unlock() calls
-> are replaced by the corresponding d_lock() and d_unlock() calls.
-> There is no change in logic and everything should just work.
+[Re: [PATCH 4/4] checkpatch: only allow COMPILE_TEST in Kconfig dependency lines] On 04/07/2013 (Thu 08:41) Joe Perches wrote:
+
+> On Thu, 2013-07-04 at 01:39 -0400, Paul Gortmaker wrote:
+> > The option CONFIG_COMPILE_TEST, added in commit 4bb1667255a
+> > ("build some drivers only when compile-testing") is meant to
+> > give a middle ground[1] between those who want the widest compile
+> > coverage possible (e.g. building sparc drivers for mips) and
+> > those who want dependencies to represent real world systems
+> > (e.g. don't allow me to see OMAP options when building x86).
+> > 
+> > As such, this addition is meant to be used in dependency lines,
+> > properly or'd in with the real world hardware dependency.  Those
+> > who select it, get wide compile coverage.  Those who do not, get
+> > real world dependencies that match where the hardware is available
+> > and/or where the driver is useful.
+> > 
+> > With that in mind, it is clear that this is _not_ to be used in
+> > any C code with "#ifdef CONFIG_COMPILE_TEST" etc.  However there
+> > will (and already has been) instances of people thinking this is
+> > an OK practice[2].  So teach checkpatch to spot them as an error.
+> > 
+> > [1] https://lkml.org/lkml/2013/3/7/456
+> > [2] https://lkml.org/lkml/2013/7/1/641
+> > 
+> > Cc: Joe Perches <joe@perches.com>
+> > Cc: Andy Whitcroft <apw@canonical.com>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > Cc: Jiri Slaby <jslaby@suse.cz>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> > ---
+> >  scripts/checkpatch.pl | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> > 
+> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> > index b954de5..c0871a3 100755
+> > --- a/scripts/checkpatch.pl
+> > +++ b/scripts/checkpatch.pl
+> > @@ -1922,6 +1922,12 @@ sub process {
+> >  			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see https://lkml.org/lkml/2012/10/23/580\n");
+> >  		}
+> >  
+> > +# disallow the addition of CONFIG_COMPILE_TEST in #if(def).
+> > +		if ($line =~ /^\+\s*\#\s*if.*\bCONFIG_COMPILE_TEST\b/) {
+> > +			ERROR("CONFIG_COMPILE_TEST",
+> > +			     "Use of COMPILE_TEST is only allowed in Kconfig dependency lines.\n");
 > 
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Why not just look for \bCONFIG_COMPILE_TEST\b?
+> 
+> I see it's the same style as the CONFIG_EXPERIMENTAL above it,
+> but perhaps code could be written like
 
-Acked-by: Tejun Heo <tj@kernel.org>
+That is exactly why.  I valued consistency and the fact that this was
+already a tested and working check, vs. me reinventing my own and then
+having a "Oh crap, I never thought of that false positive" moment.
 
-Please feel free to route the patch as you see fit.
+I'd suggest leaving it consistent with the existing solution as lowest
+risk and then later (post 3.11) you could come along and recode all
+similar instances to increase their scope if you really wanted to.
 
-Thanks.
+P.
+--
 
--- 
-tejun
+> 
+> #if defined CONFIG_FOO || \
+>     defined CONFIG_BAR
+> 
+> and this wouldn't trigger.
+> 
+> 
