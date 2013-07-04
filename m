@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab3GDPli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 11:41:38 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:53712 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756729Ab3GDPl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 11:41:27 -0400
-Message-ID: <1372952486.1886.37.camel@joe-AO722>
-Subject: Re: [PATCH 4/4] checkpatch: only allow COMPILE_TEST in Kconfig
- dependency lines
-From: Joe Perches <joe@perches.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>, Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Thu, 04 Jul 2013 08:41:26 -0700
-In-Reply-To: <1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
-References: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1756739Ab3GDPmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 11:42:35 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55881 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755408Ab3GDPme (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 11:42:34 -0400
+Message-ID: <1372952511.3974.38.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v2 1/6] misc: sram: fix error path in sram_probe
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Date: Thu, 04 Jul 2013 17:41:51 +0200
+In-Reply-To: <201307041634.11248.heiko@sntech.de>
+References: <201306251046.04873.heiko@sntech.de>
+	 <201306251046.38993.heiko@sntech.de>
+	 <1372151074.3981.21.camel@pizza.hi.pengutronix.de>
+	 <201307041634.11248.heiko@sntech.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-04 at 01:39 -0400, Paul Gortmaker wrote:
-> The option CONFIG_COMPILE_TEST, added in commit 4bb1667255a
-> ("build some drivers only when compile-testing") is meant to
-> give a middle ground[1] between those who want the widest compile
-> coverage possible (e.g. building sparc drivers for mips) and
-> those who want dependencies to represent real world systems
-> (e.g. don't allow me to see OMAP options when building x86).
-> 
-> As such, this addition is meant to be used in dependency lines,
-> properly or'd in with the real world hardware dependency.  Those
-> who select it, get wide compile coverage.  Those who do not, get
-> real world dependencies that match where the hardware is available
-> and/or where the driver is useful.
-> 
-> With that in mind, it is clear that this is _not_ to be used in
-> any C code with "#ifdef CONFIG_COMPILE_TEST" etc.  However there
-> will (and already has been) instances of people thinking this is
-> an OK practice[2].  So teach checkpatch to spot them as an error.
-> 
-> [1] https://lkml.org/lkml/2013/3/7/456
-> [2] https://lkml.org/lkml/2013/7/1/641
-> 
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Andy Whitcroft <apw@canonical.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> ---
->  scripts/checkpatch.pl | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index b954de5..c0871a3 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -1922,6 +1922,12 @@ sub process {
->  			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see https://lkml.org/lkml/2012/10/23/580\n");
->  		}
->  
-> +# disallow the addition of CONFIG_COMPILE_TEST in #if(def).
-> +		if ($line =~ /^\+\s*\#\s*if.*\bCONFIG_COMPILE_TEST\b/) {
-> +			ERROR("CONFIG_COMPILE_TEST",
-> +			     "Use of COMPILE_TEST is only allowed in Kconfig dependency lines.\n");
+Hi Heiko,
 
-Why not just look for \bCONFIG_COMPILE_TEST\b?
+Am Donnerstag, den 04.07.2013, 16:34 +0200 schrieb Heiko Stübner:
+> Hi Philipp,
+> 
+> Am Dienstag, 25. Juni 2013, 11:04:34 schrieb Philipp Zabel:
+> > Hi Heiko,
+> > 
+> > Am Dienstag, den 25.06.2013, 10:46 +0200 schrieb Heiko Stübner:
+> > > The pool is created thru devm_gen_pool_create, so the call to
+> > > gen_pool_destroy is not necessary.
+> > > Instead the sram-clock must be turned off again if it exists.
+> > > 
+> > > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > > ---
+> > > 
+> > >  drivers/misc/sram.c |    3 ++-
+> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+> > > index d87cc91..afe66571 100644
+> > > --- a/drivers/misc/sram.c
+> > > +++ b/drivers/misc/sram.c
+> > > @@ -68,7 +68,8 @@ static int sram_probe(struct platform_device *pdev)
+> > > 
+> > >  	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
+> > >  	
+> > >  				res->start, size, -1);
+> > >  	
+> > >  	if (ret < 0) {
+> > > 
+> > > -		gen_pool_destroy(sram->pool);
+> > 
+> > Right, thanks.
+> > 
+> > > +		if (sram->clk)
+> > > +			clk_disable_unprepare(sram->clk);
+> > > 
+> > >  		return ret;
+> > >  	
+> > >  	}
+> > 
+> > In light of the following patch, I'd rather move the
+> > clk_prepare_enable() call after gen_pool_add_virt() and its error path.
+> 
+> I'm not sure, but isn't moving the clock enablement below the pool allocation 
+> producing a race condition?
 
-I see it's the same style as the CONFIG_EXPERIMENTAL above it,
-but perhaps code could be written like
+since this is a platform device, and the driver is not allowed to be
+compiled as a module, it is probed at the time platform_driver_register
+is called from postcore_initcall.
+You'd have to go to quite some lengths to make this race by probing your
+driver before mmio-sram and then asynchronously trying to allocate
+memory from the pool some time later, without having made sure that the
+pool exists during probe.
 
-#if defined CONFIG_FOO || \
-    defined CONFIG_BAR
+It would be nice to have callbacks from gen_pool_alloc/free to
+enable/disable the clock.
+For the time being, maybe it's the safest bet to just enable the clock
+before, especially if you reorder the loop so there is only one
+gen_pool_add_virt and corresponding error path.
 
-and this wouldn't trigger.
+> I.e. can the case happen that some other part wants to allocate part of the 
+> newly generated pool already, while the subsequent gen_pool_add_virt calls 
+> from the following patch are still running? ... And what will happen in this 
+> case, when the sram clock is still disabled?
 
+On i.MX6, the system will hang.
+
+regards
+Philipp
 
