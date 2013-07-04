@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab3GDJwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:52:51 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:49027 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab3GDJwt (ORCPT
+	id S1756441Ab3GDJyo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:54:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49466 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754995Ab3GDJyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:52:49 -0400
-X-IronPort-AV: E=Sophos;i="4.87,994,1363132800"; 
-   d="scan'208";a="6374631"
-Message-ID: <1372931565.7184.32.camel@kazak.uk.xensource.com>
-Subject: Re: kernel panic in skb_copy_bits
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Joe Jin <joe.jin@oracle.com>, Alex Bligh <alex@alex.org.uk>,
-        "Frank Blaschka" <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <zheng.x.li@oracle.com>, Xen Devel <xen-devel@lists.xen.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 4 Jul 2013 10:52:45 +0100
-In-Reply-To: <1372930465.4979.82.camel@edumazet-glaptop>
-References: <51CBAA48.3080802@oracle.com>
-	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
-	 <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>
-	 <1372666283.14691.8.camel@zakaz.uk.xensource.com>
-	 <51D53896.1060405@oracle.com>
-	 <1372928382.7184.16.camel@kazak.uk.xensource.com>
-	 <1372930465.4979.82.camel@edumazet-glaptop>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Thu, 4 Jul 2013 05:54:41 -0400
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH v6 1/6] staging: android: binder: modify struct binder_write_read to use size_t
+Date: Thu,  4 Jul 2013 10:54:43 +0100
+Message-Id: <1372931688-18553-2-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372931688-18553-1-git-send-email-serban.constantinescu@arm.com>
+References: <1372931688-18553-1-git-send-email-serban.constantinescu@arm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-04 at 02:34 -0700, Eric Dumazet wrote:
-> On Thu, 2013-07-04 at 09:59 +0100, Ian Campbell wrote:
-> > On Thu, 2013-07-04 at 16:55 +0800, Joe Jin wrote:
-> > > 
-> > > Another way is add new page flag like PG_send, when sendpage() be called,
-> > > set the bit, when page be put, clear the bit. Then xen-blkback can wait
-> > > on the pagequeue.
-> > 
-> > These schemes don't work when you have multiple simultaneous I/Os
-> > referencing the same underlying page.
-> 
-> So this is a page property, still the patches I saw tried to address
-> this problem adding networking stuff (destructors) in the skbs.
-> 
-> Given that a page refcount can be transfered between entities, say using
-> splice() system call, I do not really understand why the fix would imply
-> networking only.
-> 
-> Let's try to fix it properly, or else we must disable zero copies
-> because they are not reliable.
-> 
-> Why sendfile() doesn't have the problem, but vmsplice()+splice() do have
-> this issue ?
+This change mirrors the userspace operation where struct binder_write_read
+members that specify the buffer size and consumed size are size_t elements.
 
-Might just be that no one has observed it with vmsplice()+splice()? Most
-of the time this happens silently and you'll probably never notice, it's
-just the behaviour of Xen which escalates the issue into one you can
-see.
+The patch also fixes the binder_thread_write() and binder_thread_read()
+functions prototypes to conform with the definition of binder_write_read.
 
-> As soon as a page fragment reference is taken somewhere, the only way to
-> properly reuse the page is to rely on put_page() and page being freed.
+The changes do not affect existing 32bit ABI.
 
-Xen's out of tree netback used to fix this by a destructor call back on
-page free, but that was a core mm patch in the hot memory free path
-which wasn't popular, and it doesn't solve anything for the non-Xen
-instances of this issue.
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+Acked-by: Arve Hjønnevåg <arve@android.com>
+---
+ drivers/staging/android/binder.c |   10 +++++-----
+ drivers/staging/android/binder.h |    8 ++++----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-> Adding workarounds in TCP stack to always copy the page fragments in
-> case of a retransmit is partial solution, as the remote peer could be
-> malicious and send ACK _before_ page content is actually read by the
-> NIC.
-> 
-> So if we rely on networking stacks to give the signal for page reuse, we
-> can have major security issue.
-
-If you ignore the Xen case and consider just the native case then the
-issue isn't page reuse in the sense of getting mapped into another
-process, it's the same page in the same process but the process has
-written something new to the buffer, e.g.
-	memset(buf, 0xaa, 4096);
-	write(fd, buf, 4096)
-	memset(buf, 0x55, 4096);
-(where fd is O_DIRECT on NFS) Can result in 0x55 being seen on the wire
-in the TCP retransmit.
-
-If the retransmit is at the RPC layer then you get a resend of the NFS
-write RPC, but the XDR sequence stuff catches that case (I think, memory
-is fuzzy).
-
-If the retransmit is at the TCP level then the TCP sequence/ack will
-cause the receiver to ignore the corrupt version, but if you replace the
-second memset with write_critical_secret_key(buf), then you have an
-information leak.
-
-Ian.
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 1567ac2..ce70909 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -1700,7 +1700,7 @@ err_no_context_mgr_node:
+ }
+ 
+ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
+-			void __user *buffer, int size, signed long *consumed)
++			void __user *buffer, size_t size, size_t *consumed)
+ {
+ 	uint32_t cmd;
+ 	void __user *ptr = buffer + *consumed;
+@@ -2080,8 +2080,8 @@ static int binder_has_thread_work(struct binder_thread *thread)
+ 
+ static int binder_thread_read(struct binder_proc *proc,
+ 			      struct binder_thread *thread,
+-			      void  __user *buffer, int size,
+-			      signed long *consumed, int non_block)
++			      void  __user *buffer, size_t size,
++			      size_t *consumed, int non_block)
+ {
+ 	void __user *ptr = buffer + *consumed;
+ 	void __user *end = buffer + size;
+@@ -2578,7 +2578,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 			goto err;
+ 		}
+ 		binder_debug(BINDER_DEBUG_READ_WRITE,
+-			     "%d:%d write %ld at %08lx, read %ld at %08lx\n",
++			     "%d:%d write %zd at %08lx, read %zd at %08lx\n",
+ 			     proc->pid, thread->pid, bwr.write_size,
+ 			     bwr.write_buffer, bwr.read_size, bwr.read_buffer);
+ 
+@@ -2604,7 +2604,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 			}
+ 		}
+ 		binder_debug(BINDER_DEBUG_READ_WRITE,
+-			     "%d:%d wrote %ld of %ld, read return %ld of %ld\n",
++			     "%d:%d wrote %zd of %zd, read return %zd of %zd\n",
+ 			     proc->pid, thread->pid, bwr.write_consumed, bwr.write_size,
+ 			     bwr.read_consumed, bwr.read_size);
+ 		if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index dbe81ce..edab249 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -67,11 +67,11 @@ struct flat_binder_object {
+  */
+ 
+ struct binder_write_read {
+-	signed long	write_size;	/* bytes to write */
+-	signed long	write_consumed;	/* bytes consumed by driver */
++	size_t write_size;	/* bytes to write */
++	size_t write_consumed;	/* bytes consumed by driver */
+ 	unsigned long	write_buffer;
+-	signed long	read_size;	/* bytes to read */
+-	signed long	read_consumed;	/* bytes consumed by driver */
++	size_t read_size;	/* bytes to read */
++	size_t read_consumed;	/* bytes consumed by driver */
+ 	unsigned long	read_buffer;
+ };
+ 
+-- 
+1.7.9.5
 
