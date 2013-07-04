@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3GDFeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 01:34:20 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51304 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3GDFeT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 01:34:19 -0400
-X-AuditID: 9c930197-b7c79ae000003295-8d-51d50959c24b
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Hyeoncheol Lee <cheol.lee@lge.com>, LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: Re: [PATCHSET 00/12] tracing/uprobes: Add support for more fetch methods
-References: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
-	<1372861350.22688.101.camel@gandalf.local.home>
-Date: Thu, 04 Jul 2013 14:34:17 +0900
-In-Reply-To: <1372861350.22688.101.camel@gandalf.local.home> (Steven Rostedt's
-	message of "Wed, 03 Jul 2013 10:22:30 -0400")
-Message-ID: <87y59mzy5i.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1755295Ab3GDFgC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 01:36:02 -0400
+Received: from mga01.intel.com ([192.55.52.88]:24897 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754680Ab3GDFgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 01:36:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,992,1363158000"; 
+   d="scan'208";a="360319187"
+From: Alex Shi <alex.shi@intel.com>
+To: tglx@linutronix.de, hpa@linux.intel.com, tim.c.chen@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, andi.kleen@intel.com, a.p.zijlstra@chello.nl,
+        mingo@elte.hu
+Subject: [URGENT rfc patch 0/3] tsc clocksource bug fix
+Date: Thu,  4 Jul 2013 13:34:13 +0800
+Message-Id: <1372916056-24301-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+We find some benchmarks drop a lot on tip/sched/core on many Intel boxes,
+like oltp, tbench, hackbench etc. and bisected the commit 5d33b883ae
+cause this regression. Due to this commit, the clocksource was changed
+to hpet from tsc even tsc will be set CLOCK_SOURCE_VALID_FOR_HRES later
+in clocksource_watchdog. 
 
-On Wed, 03 Jul 2013 10:22:30 -0400, Steven Rostedt wrote:
-> On Wed, 2013-07-03 at 21:35 +0900, Namhyung Kim wrote:
->> Hello,
->> 
->> This patchset implements memory (address), stack[N], deference,
->> bitfield and retval (it needs uretprobe tho) fetch methods for
->> uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
->
-> Sending out new code in the middle of a merge window isn't the best
-> timing. You may want to ping us again after the merge window closes, as
-> focus currently is on getting 3.11 changes in and working. This patchset
-> might get forgotten.
+Tim Chen said the hpet reading cost much. That cause this regression.
 
-Okay, I'll send a ping to you after the merge window closed.
+This patchset fixed this bug by re-select clocksource after this flag set
+on tsc.
 
-Thanks,
-Namhyung
+BTW,
+If the tsc is marked as constant and nonstop, could we set it as system
+clocksource when do tsc register? w/o checking it on clocksource_watchdog?
+
+regards!
+Alex
+
