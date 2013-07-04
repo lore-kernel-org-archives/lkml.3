@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab3GDVPK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 17:15:10 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752932Ab3GDVPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 17:15:08 -0400
-Message-ID: <51D5E5D2.8020202@nod.at>
-Date: Thu, 04 Jul 2013 23:14:58 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH 1/3] arch/um/Makefile: remove dead code
-References: <1372971797-23518-1-git-send-email-artagnon@gmail.com> <1372971797-23518-2-git-send-email-artagnon@gmail.com>
-In-Reply-To: <1372971797-23518-2-git-send-email-artagnon@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1756950Ab3GDVS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 17:18:57 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:48295 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab3GDVSz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 17:18:55 -0400
+From: Sam Bristow <sam.bristow@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sam Bristow <sam.bristow@gmail.com>
+Subject: [PATCH] include: net: Add parameter desc to fix warning when generating docs
+Date: Fri,  5 Jul 2013 09:18:21 +1200
+Message-Id: <1372972701-18323-1-git-send-email-sam.bristow@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 04.07.2013 23:03, schrieb Ramkumar Ramachandra:
-> arch/um/Makefile is included in the toplevel Makefile:495.  Well before
-> that, it unconditionally sets $SUBARCH (in Makefile:168) as follows:
-> 
->   SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
-> 				    -e s/sun4u/sparc64/ \
-> 				    -e s/arm.*/arm/ -e s/sa110/arm/ \
-> 				    -e s/s390x/s390/ -e s/parisc64/parisc/ \
-> 				    -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-> 				    -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
-> 
-> It is clearly impossible for $SUBARCH to be set as i386 or x86_64.
-> Therefore, any code that checks $SUBARCH against these values is dead
-> code.
+'make htmldocs' was generating a warning about a missing parameter description
+for gfp.
+---
+ include/net/cfg80211.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-No.
-If you build UML for x86_64 you override SUBARCH.
-i.e. make linux ARCH=um SUBARCH=x86_64
-
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: Richard Weinberger <richard@nod.at>
-> Cc: Jeff Dike <jdike@addtoit.com>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-
-NAK.
-
-Thanks,
-//richard
+diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
+index 26b5b69..159e070 100644
+--- a/include/net/cfg80211.h
++++ b/include/net/cfg80211.h
+@@ -4153,6 +4153,7 @@ void cfg80211_report_wowlan_wakeup(struct wireless_dev *wdev,
+  * cfg80211_crit_proto_stopped() - indicate critical protocol stopped by driver.
+  *
+  * @wdev: the wireless device for which critical protocol is stopped.
++ * @gfp: allocation flags
+  *
+  * This function can be called by the driver to indicate it has reverted
+  * operation back to normal. One reason could be that the duration given
+-- 
+1.8.3.1
 
