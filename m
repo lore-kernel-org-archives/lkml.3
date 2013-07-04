@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab3GDHQJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 03:16:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25083 "EHLO mx1.redhat.com"
+	id S1756387Ab3GDHTX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 03:19:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168Ab3GDHQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 03:16:07 -0400
-Message-ID: <51D52134.8080601@redhat.com>
-Date: Thu, 04 Jul 2013 09:16:04 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1755168Ab3GDHTW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 03:19:22 -0400
+Date: Thu, 4 Jul 2013 10:20:23 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Hans J. Koch" <hjk@hansjkoch.de>, Rob Landley <rob@landley.net>,
+        linux-doc@vger.kernel.org
+Subject: Re: [RFC PATCH] uio: uio_pci_generic: Add support for MSI interrupts
+Message-ID: <20130704072023.GA2095@redhat.com>
+References: <1372285823-6293-1-git-send-email-linux@roeck-us.net>
+ <20130627074501.GC5489@redhat.com>
+ <20130627170052.GA9646@roeck-us.net>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Change SIGPIPE's siginfo.si_code from SI_USER to SI_KERNEL.
-References: <1372880335-23755-1-git-send-email-dvlasenk@redhat.com> <20130703195452.GA6930@redhat.com>
-In-Reply-To: <20130703195452.GA6930@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130627170052.GA9646@roeck-us.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2013 09:54 PM, Oleg Nesterov wrote:
-> On 07/03, Denys Vlasenko wrote:
->>
->> @@ -514,7 +514,7 @@ pipe_write(struct kiocb *iocb, const struct iovec *_iov,
->>  	__pipe_lock(pipe);
->>
->>  	if (!pipe->readers) {
->> -		send_sig(SIGPIPE, current, 0);
->> +		send_sig(SIGPIPE, current, 1);
+On Thu, Jun 27, 2013 at 10:00:52AM -0700, Guenter Roeck wrote:
+> On Thu, Jun 27, 2013 at 10:45:01AM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 26, 2013 at 03:30:23PM -0700, Guenter Roeck wrote:
+> > > Enable support for MSI interrupts if the device supports it.
+> > > Since MSI interrupts are edge triggered, it is no longer necessary to
+> > > disable interrupts in the kernel and re-enable them from user-space.
+> > > Instead, clearing the interrupt condition in the user space application
+> > > automatically re-enables the interrupt.
+> > > 
+> > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > > ---
+> > > An open question is if we can just do this unconditionally
+> > > or if there should be some flag to enable it. A module parameter, maybe ?
+> > 
+> > NACK
+> > 
+> > UIO is for devices that don't do memory writes.
+> > Anything that can do writes must be protected by an IOMMU
+> > and/or have a secure kernel driver, not a UIO stub.
+> > 
+> > MSI is done by memory writes so if userspace
+> > controls the device it can trick it to write
+> > anywhere in memory.
+> > 
+> Just out of curiosity: Since MSI support is mandatory for all PCIE devices,
+> isn't that possible anyway, even if MSI is not enabled by the kernel ?
+> All one would need to do is to enable MSI from user space; after all,
+> the chip configuration space is writable.
 > 
-> Honestly, I simply have no idea what makes more sense in this case...
+> Thanks,
+> Guenter
 
-I guess I should have explained what prompted me to send this patch.
-
-I am coding up a gdb extension which looks at a process which received
-a signal and tries some heuristics on it which sya whether the observed
-signal is a crash, and if it is, how likely it to be exploitable.
-For example, a SIGSEGV due to smashed stack is more likely to be
-a result of exploitable bug than a division by zero.
-
-I want to quickly filter out cases where signal is clearly not a result
-of program bug. Say, if program dies from SIGSEGV (or SIGBUS,
-or SIGSYS...) which was *sent by the user via kill(2)*,
-then it is not a bug in the program.
-
-Naively, it looks like "if (siginfo.si_code <= 0) not_a_bug()"
-is what would do that. In particular, si_code == 0 (SI_USER)
-is set by kill(2).
-
-But then I discovered that SI_USER is also set by signals
-from other sources. SIGPIPE from write(2) is one of them.
-
-This basically makes "si_code == SI_USER" condition non-informative:
-userspace can't really draw any useful conclusion from seeing that.
-"Maybe it was a kill(2), maybe it was from kernel". Not good.
-
-Note that other similar signals, say, a SIGTTIN received
-when backgrounded read(2) attempts to read from a tty,
-use SI_KERNEL code. There is no consistency already.
+If a device has capability to do writes, sure. So don't do this then :)
 
 -- 
-vda
-
-
-
+MST
