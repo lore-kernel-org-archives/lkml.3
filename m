@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756962Ab3GDVFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 17:05:40 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52264 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751295Ab3GDVFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 17:05:39 -0400
-From: Luciano Coelho <coelho@ti.com>
-To: <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <coelho@ti.com>
-Subject: [RFC] clk: add flags to distinguish xtal clocks
-Date: Fri, 5 Jul 2013 00:05:12 +0300
-Message-ID: <1372971912-10877-1-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1756970Ab3GDVHO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 17:07:14 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:37482 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab3GDVHM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 17:07:12 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Richard Weinberger <richard@nod.at>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: [PATCH 1/3] arch/um/Makefile: remove dead code
+Date: Fri,  5 Jul 2013 02:33:15 +0530
+Message-Id: <1372971797-23518-2-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.3.1.643.gebeea52.dirty
+In-Reply-To: <1372971797-23518-1-git-send-email-artagnon@gmail.com>
+References: <1372971797-23518-1-git-send-email-artagnon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a flag that indicate whether the clock is a crystal or not.  Since
-no clocks set this flag right now, include an additional flag that
-indicates whether the type is set or not.  If the CLK_IS_TYPE_DEFINED
-flag is not set, the value of the CLK_IS_TYPE_XTAL flag is undefined.
-This ensures backwards compatibility.
+arch/um/Makefile is included in the toplevel Makefile:495.  Well before
+that, it unconditionally sets $SUBARCH (in Makefile:168) as follows:
 
-Additionally, parse a new device tree binding in clk-fixed-rate to set
-this flag.
+  SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
+				    -e s/sun4u/sparc64/ \
+				    -e s/arm.*/arm/ -e s/sa110/arm/ \
+				    -e s/s390x/s390/ -e s/parisc64/parisc/ \
+				    -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+				    -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
+It is clearly impossible for $SUBARCH to be set as i386 or x86_64.
+Therefore, any code that checks $SUBARCH against these values is dead
+code.
+
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
+ arch/um/Makefile | 9 ---------
+ 1 file changed, 9 deletions(-)
 
-I'm not  familiar with the common clock framework and I'm not
-entirely sure the flags can be used in such a way, but to me it looks
-reasonable, since some clock consumers may need to know what type of
-clock is being provided.
-
-Specifically, the wl12xx firmware needs to know if the clock is XTAL
-or not to handle the stabilization and boosts properly.
-
-My main idea is that I need to pass this information in the device
-tree definition of the clocks, so that the driver can pass this
-information on to the firmware.
-
-Please let me know if this looks ok or not.  If not, please let me
-know if you have any other ideas on how to solve my problem (of
-knowing whether the clock attached to the WiLink chip is XTAL or not).
-
-
-
-
- drivers/clk/clk-fixed-rate.c |    6 +++++-
- include/linux/clk-provider.h |    2 ++
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-index dc58fbd..4003a82 100644
---- a/drivers/clk/clk-fixed-rate.c
-+++ b/drivers/clk/clk-fixed-rate.c
-@@ -90,13 +90,17 @@ void of_fixed_clk_setup(struct device_node *node)
- 	struct clk *clk;
- 	const char *clk_name = node->name;
- 	u32 rate;
-+	unsigned long flags = CLK_IS_ROOT;
+diff --git a/arch/um/Makefile b/arch/um/Makefile
+index 133f7de..cf09cbf 100644
+--- a/arch/um/Makefile
++++ b/arch/um/Makefile
+@@ -22,15 +22,6 @@ MODE_INCLUDE	+= -I$(srctree)/$(ARCH_DIR)/include/shared/skas
  
- 	if (of_property_read_u32(node, "clock-frequency", &rate))
- 		return;
+ HEADER_ARCH 	:= $(SUBARCH)
  
-+	if (of_property_read_bool(node, "clock-xtal"))
-+		flags |= CLK_IS_TYPE_DEFINED | CLK_IS_TYPE_XTAL;
-+
- 	of_property_read_string(node, "clock-output-names", &clk_name);
+-# Additional ARCH settings for x86
+-ifeq ($(SUBARCH),i386)
+-        HEADER_ARCH := x86
+-endif
+-ifeq ($(SUBARCH),x86_64)
+-        HEADER_ARCH := x86
+-	KBUILD_CFLAGS += -mcmodel=large
+-endif
+-
+ HOST_DIR := arch/$(HEADER_ARCH)
  
--	clk = clk_register_fixed_rate(NULL, clk_name, NULL, CLK_IS_ROOT, rate);
-+	clk = clk_register_fixed_rate(NULL, clk_name, NULL, flags, rate);
- 	if (!IS_ERR(clk))
- 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
- }
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 1186098..034320b 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -27,6 +27,8 @@
- #define CLK_IS_ROOT		BIT(4) /* root clk, has no parent */
- #define CLK_IS_BASIC		BIT(5) /* Basic clk, can't do a to_clk_foo() */
- #define CLK_GET_RATE_NOCACHE	BIT(6) /* do not use the cached clk rate */
-+#define CLK_IS_TYPE_DEFINED	BIT(7) /* the clock type is defined */
-+#define CLK_IS_TYPE_XTAL	BIT(8) /* this is a crystal clock */
- 
- struct clk_hw;
- 
+ include $(srctree)/$(ARCH_DIR)/Makefile-skas
 -- 
-1.7.10.4
+1.8.3.1.643.gebeea52.dirty
 
