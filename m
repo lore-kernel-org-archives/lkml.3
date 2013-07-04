@@ -1,154 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933645Ab3GDXi0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 19:38:26 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58861 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756909Ab3GDXiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 19:38:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2.1 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
-Date: Fri, 05 Jul 2013 01:48:01 +0200
-Message-ID: <2539126.i7GjLNiDjm@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0-rc5+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1372948192-17913-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1656567.0oqS7xVYJ8@vostro.rjw.lan> <1372948192-17913-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S933809Ab3GDXxS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 19:53:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48792 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933159Ab3GDXxR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 19:53:17 -0400
+Date: Fri, 5 Jul 2013 00:53:13 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Richard Weinberger <richard@nod.at>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 1/3] arch/um/Makefile: remove dead code
+Message-ID: <20130704235313.GP4165@ZenIV.linux.org.uk>
+References: <1372971797-23518-1-git-send-email-artagnon@gmail.com>
+ <1372971797-23518-2-git-send-email-artagnon@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372971797-23518-2-git-send-email-artagnon@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 04, 2013 05:29:51 PM Mika Westerberg wrote:
-> The acpiphp driver finds out whether the device is removable by checking
-> whether it has _RMV method directly behind it (and if it returns 1).
-> However, at least on Acer Aspire S5 with Thunderbolt host router has this
-> method placed behind a device called EPUP (endpoint upstream port?) and not
-> in the usual place expected by the acpiphp driver. The ASL code below shows
-> how this is done on that machine:
+On Fri, Jul 05, 2013 at 02:33:15AM +0530, Ramkumar Ramachandra wrote:
+> arch/um/Makefile is included in the toplevel Makefile:495.  Well before
+> that, it unconditionally sets $SUBARCH (in Makefile:168) as follows:
 > 
-> Device (RP05)
-> {
-> 	...
-> 	Device (HRUP)
-> 	{
-> 		Name (_ADR, Zero)
-> 		Name (_PRW, Package (0x02)
-> 		{
-> 			0x09,
-> 			0x04
-> 		})
-> 		Device (HRDN)
-> 		{
-> 			Name (_ADR, 0x00040000)
-> 			Name (_PRW, Package (0x02)
-> 			{
-> 				0x09,
-> 				0x04
-> 			})
-> 			Device (EPUP)
-> 			{
-> 				Name (_ADR, Zero)
-> 				Method (_RMV, 0, NotSerialized)
-> 				{
-> 					Return (One)
-> 				}
-> 			}
-> 		}
-> 	}
-> 	...
+>   SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
+> 				    -e s/sun4u/sparc64/ \
+> 				    -e s/arm.*/arm/ -e s/sa110/arm/ \
+> 				    -e s/s390x/s390/ -e s/parisc64/parisc/ \
+> 				    -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+> 				    -e s/sh[234].*/sh/ -e s/aarch64.*/arm64/ )
 > 
-> Fix this by adding a DMI quirk for the Acer Aspire S5 machine that gives an
-> alternative path to the _RMV method.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> It is clearly impossible for $SUBARCH to be set as i386 or x86_64.
 
-This is fine by me and same for the other patches in the series.
+RTFM(make); section 9.5 in GNU make info, or the following from POSIX:
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[quote]
 
-> ---
->  drivers/pci/hotplug/acpi_pcihp.c | 34 ++++++++++++++++++++++++++++++++++
->  1 file changed, 34 insertions(+)
-> 
-> diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
-> index 2a47e82..eae1511 100644
-> --- a/drivers/pci/hotplug/acpi_pcihp.c
-> +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> @@ -33,6 +33,7 @@
->  #include <linux/acpi.h>
->  #include <linux/pci-acpi.h>
->  #include <linux/slab.h>
-> +#include <linux/dmi.h>
->  
->  #define MY_NAME	"acpi_pcihp"
->  
-> @@ -408,11 +409,31 @@ got_one:
->  }
->  EXPORT_SYMBOL(acpi_get_hp_hw_control_from_firmware);
->  
-> +static const struct dmi_system_id pcihp_platform_quirks[] = {
-> +	{
-> +		/*
-> +		 * On Acer Aspire S5 the _RMV method for the
-> +		 * Thunderbolt host router upstream port is not
-> +		 * located directly under the device but it is
-> +		 * instead placed a bit deeper in the hierarchy.
-> +		 */
-> +		.ident = "Acer Aspire S5",
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> +			DMI_MATCH(DMI_PRODUCT_NAME, "Aspire S5-391"),
-> +		},
-> +		.driver_data = "HRDN.EPUP._RMV",
-> +	},
-> +	{ }
-> +};
-> +
->  static int pcihp_is_ejectable(acpi_handle handle)
->  {
->  	acpi_status status;
->  	acpi_handle tmp;
->  	unsigned long long removable;
-> +	const struct dmi_system_id *id;
-> +
->  	status = acpi_get_handle(handle, "_ADR", &tmp);
->  	if (ACPI_FAILURE(status))
->  		return 0;
-> @@ -422,6 +443,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
->  	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
->  	if (ACPI_SUCCESS(status) && removable)
->  		return 1;
-> +
-> +	/*
-> +	 * Try to look if there is a platform specific method that we can
-> +	 * use to determine if the device is removable or not.
-> +	 */
-> +	id = dmi_first_match(pcihp_platform_quirks);
-> +	if (id && id->driver_data) {
-> +		status = acpi_evaluate_integer(handle, id->driver_data, NULL,
-> +					       &removable);
-> +		if (ACPI_SUCCESS(status) && removable)
-> +			return 1;
-> +	}
-> +
->  	return 0;
->  }
->  
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Macro definitions shall be taken from the following sources, in the following
+logical order, before the makefile(s) are read.
+
+   1.  Macros specified on the make utility command line, in the order
+specified on the command line. It is unspecified whether the internal macros
+defined in Internal Macros are accepted from this source.
+   2.  Macros defined by the MAKEFLAGS environment variable, in the order
+specified in the environment variable. It is unspecified whether the internal
+macros defined in Internal Macros are accepted from this source.
+   3.  The contents of the environment, excluding the MAKEFLAGS and SHELL
+variables and including the variables with null values.
+   4.  Macros defined in the inference rules built into make.
+
+Macro definitions from these sources shall not override macro definitions from
+a lower-numbered source. Macro definitions from a single source (for example,
+the make utility command line, the MAKEFLAGS environment variable, or the
+other environment variables) shall override previous macro definitions from
+the same source.
+
+Macros defined in the makefile(s) shall override macro definitions that occur
+before them in the makefile(s) and macro definitions from source 4. If the -e
+option is not specified, macros defined in the makefile(s) shall override
+macro definitions from source 3. Macros defined in the makefile(s) shall not
+override macro definitions from source 1 or source 2.
+
+[end quote]
+
+IOW, any make variable (== macro in POSIX quote above) can be explicitly
+set in make(1) command line in form name=value and in that case nothing in
+makefile(s) can change its value.  It's true for GNU make, it's true for
+BSD make and it's been true for historical Unix make since its introduction
+in v7.
