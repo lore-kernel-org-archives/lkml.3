@@ -1,259 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab3GDMsS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:48:18 -0400
-Received: from mga14.intel.com ([143.182.124.37]:22939 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab3GDMsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:48:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,995,1363158000"; 
-   d="scan'208";a="264079557"
-Date: Thu, 4 Jul 2013 15:53:38 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer
- Aspire S5
-Message-ID: <20130704125337.GN4898@intel.com>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
- <1444243.g9GbxN3NM0@vostro.rjw.lan>
- <20130704085844.GF4898@intel.com>
- <6828518.UobQ5xLxzT@vostro.rjw.lan>
+	id S1756665Ab3GDMsh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:48:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54598 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab3GDMsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 08:48:33 -0400
+Date: Thu, 4 Jul 2013 18:18:23 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/13] sched: Check current->mm before allocating NUMA
+ faults
+Message-ID: <20130704124823.GB29916@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-12-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <6828518.UobQ5xLxzT@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+In-Reply-To: <1372861300-9973-12-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070412-3620-0000-0000-00000365075F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 02:36:00PM +0200, Rafael J. Wysocki wrote:
-> On Thursday, July 04, 2013 11:58:44 AM Mika Westerberg wrote:
-> > On Wed, Jul 03, 2013 at 11:40:42PM +0200, Rafael J. Wysocki wrote:
-> > > On Wednesday, July 03, 2013 05:04:53 PM Mika Westerberg wrote:
-> > > > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-> > > > 
-> > > > Correct ACPI PCI hotplug imeplementation should have _RMV method in a
-> > > > PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
-> > > > deeper in hierarchy:
-> > > > 
-> > > > Device (RP05)
-> > > > {
-> > > >    // ...
-> > > >    Device (HRUP)
-> > > >    {
-> > > >        // ...
-> > > >        Device (HRDN)
-> > > >        {
-> > > >            // ...
-> > > >            Device (EPUP)
-> > > >            {
-> > > >                // ...
-> > > >                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
-> > > >                {
-> > > >                    Return (One)
-> > > >                }
-> > > >            }
-> > > >        }
-> > > >    }
-> > > > }
-> > > > 
-> > > > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > > > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > > > ---
-> > > >  drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
-> > > >  1 file changed, 13 insertions(+)
-> > > > 
-> > > > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
-> > > > index 2a47e82..d92ebfb 100644
-> > > > --- a/drivers/pci/hotplug/acpi_pcihp.c
-> > > > +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> > > > @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
-> > > >  	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
-> > > >  	if (ACPI_SUCCESS(status) && removable)
-> > > >  		return 1;
-> > > > +
-> > > > +	/*
-> > > > +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
-> > > > +	 *
-> > > > +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
-> > > > +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
-> > > > +	 * deeper in hierarchy.
-> > > > +	 */
-> > > > +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
-> > > > +			&removable);
-> > > 
-> > > Well, calling stuff like this directly from a general function is kind of ugly.
-> > > 
-> > > Can we use something like a quirk instead?  A DMI check or something?
-> > 
-> > Sure we can. How about something like the patch below?
-> 
-> Well, it goes into the right (to me) direction. :-)
-> 
-> Some comments below.
-> 
-> > From: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > Subject: [PATCH] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
-> > 
-> > The acpiphp driver finds out whether the device is removable by checking
-> > whether it has _RMV method directly behind it (and if it returns 1).
-> > However, at least on Acer Aspire S5 with Thunderbolt host router has this
-> > method placed behind a device called EPUP (endpoint upstream port?) and not
-> > in the usual place expected by the acpiphp driver. The ASL code below shows
-> > how this is done on that machine:
-> > 
-> > Device (RP05)
-> > {
-> > 	...
-> > 	Device (HRUP)
-> > 	{
-> > 		Name (_ADR, Zero)
-> > 		Name (_PRW, Package (0x02)
-> > 		{
-> > 			0x09,
-> > 			0x04
-> > 		})
-> > 		Device (HRDN)
-> > 		{
-> > 			Name (_ADR, 0x00040000)
-> > 			Name (_PRW, Package (0x02)
-> > 			{
-> > 				0x09,
-> > 				0x04
-> > 			})
-> > 			Device (EPUP)
-> > 			{
-> > 				Name (_ADR, Zero)
-> > 				Method (_RMV, 0, NotSerialized)
-> > 				{
-> > 					Return (One)
-> > 				}
-> > 			}
-> > 		}
-> > 	}
-> > 	...
-> > 
-> > Fix this by adding a DMI quirk for the Acer Aspire S5 machine that gives an
-> > alternative path to the _RMV method.
-> > 
-> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/pci/hotplug/acpi_pcihp.c | 57 ++++++++++++++++++++++++++++++++++++----
-> >  1 file changed, 52 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
-> > index 2a47e82..99fccf3 100644
-> > --- a/drivers/pci/hotplug/acpi_pcihp.c
-> > +++ b/drivers/pci/hotplug/acpi_pcihp.c
-> > @@ -33,6 +33,7 @@
-> >  #include <linux/acpi.h>
-> >  #include <linux/pci-acpi.h>
-> >  #include <linux/slab.h>
-> > +#include <linux/dmi.h>
-> >  
-> >  #define MY_NAME	"acpi_pcihp"
-> >  
-> > @@ -408,21 +409,67 @@ got_one:
-> >  }
-> >  EXPORT_SYMBOL(acpi_get_hp_hw_control_from_firmware);
-> >  
-> > +/**
-> > + * pcihp_is_removable - is the given ACPI device removable
-> > + * @handle: ACPI handle of the device
-> > + *
-> > + * Try to find out whether the given ACPI device is removable by evaluating
-> > + * its _RMV and returning the result. If we can't find the _RMV directly
-> > + * under the device use system specific quirks to locate it.
-> > + */
-> > +static bool pcihp_is_removable(acpi_handle handle)
-> > +{
-> 
-> People are generally used to seeing DMI lists outside of functions.
+* Mel Gorman <mgorman@suse.de> [2013-07-03 15:21:38]:
 
-OK.
+> task_numa_placement checks current->mm but after buffers for faults
+> have already been uselessly allocated. Move the check earlier.
+> 
+> [peterz@infradead.org: Identified the problem]
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  kernel/sched/fair.c | 22 ++++++++++++++--------
+>  1 file changed, 14 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 336074f..3c796b0 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -870,8 +870,6 @@ static void task_numa_placement(struct task_struct *p)
+>  	int seq, nid, max_nid = 0;
+>  	unsigned long max_faults = 0;
+> 
+> -	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
+> -		return;
+>  	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+>  	if (p->numa_scan_seq == seq)
+>  		return;
+> @@ -945,6 +943,12 @@ void task_numa_fault(int last_nid, int node, int pages, bool migrated)
+>  	if (!sched_feat_numa(NUMA))
+>  		return;
+> 
+> +	/* for example, ksmd faulting in a user's mm */
+> +	if (!p->mm) {
+> +		p->numa_scan_period = sysctl_numa_balancing_scan_period_max;
 
-> > +	static const struct dmi_system_id rmv_paths[] = {
-> > +		{
-> > +			/*
-> > +			 * On Acer Aspire S5 the _RMV method for the
-> > +			 * Thunderbolt host router upstream port is not
-> > +			 * located directly under the device but it is
-> > +			 * instead placed a bit deeper in the hierarchy.
-> > +			 */
-> > +			.ident = "Acer Aspire S5",
-> > +			.matches = {
-> > +				DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
-> > +				DMI_MATCH(DMI_PRODUCT_NAME, "Aspire S5-391"),
-> > +			},
-> > +			.driver_data = "HRDN.EPUP._RMV",
-> 
-> Use .callback instead? ->
-> 
-> > +		},
-> > +		{ }
-> > +	};
-> > +	const struct dmi_system_id *id;
-> > +	unsigned long long removable;
-> > +	acpi_status status;
-> > +
-> > +	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
-> > +	if (ACPI_SUCCESS(status))
-> > +		return !!removable;
-> > +
-> > +	/* Try system specific quirks */
-> > +	id = dmi_first_match(rmv_paths);
-> > +	if (id && id->driver_data) {
-> 
-> -> And here do
-> 
-> 	if (id && id->callback)
-> 		return id->callback(id);
+Naive question:
+Why are we resetting the scan_period?
 
-There is a problem with the above that we can't pass an ACPI handle to the
-callback function.
-
+> +		return;
+> +	}
+> +
+>  	/* Allocate buffer to track faults on a per-node basis */
+>  	if (unlikely(!p->numa_faults)) {
+>  		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
+> @@ -1072,16 +1076,18 @@ void task_numa_work(struct callback_head *work)
+>  			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
+>  			end = min(end, vma->vm_end);
+>  			nr_pte_updates += change_prot_numa(vma, start, end);
+> -			pages -= (end - start) >> PAGE_SHIFT;
+> -
+> -			start = end;
 > 
-> > +		char path[64];
-> > +
-> > +		strlcpy(path, id->driver_data, sizeof(path));
-> > +		status = acpi_evaluate_integer(handle, path, NULL, &removable);
-> > +		if (ACPI_SUCCESS(status))
-> > +			return !!removable;
-> > +	}
-> > +
-> > +	return false;
-> > +}
-> > +
-> >  static int pcihp_is_ejectable(acpi_handle handle)
-> >  {
-> >  	acpi_status status;
-> >  	acpi_handle tmp;
-> > -	unsigned long long removable;
-> > +
-> >  	status = acpi_get_handle(handle, "_ADR", &tmp);
-> >  	if (ACPI_FAILURE(status))
-> >  		return 0;
-> >  	status = acpi_get_handle(handle, "_EJ0", &tmp);
-> >  	if (ACPI_SUCCESS(status))
-> >  		return 1;
-> > -	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
-> > -	if (ACPI_SUCCESS(status) && removable)
-> > -		return 1;
+>  			/*
+>  			 * Scan sysctl_numa_balancing_scan_size but ensure that
+> -			 * least one PTE is updated so that unused virtual
+> -			 * address space is quickly skipped
+> +			 * at least one PTE is updated so that unused virtual
+> +			 * address space is quickly skipped.
+>  			 */
+> -			if (pages <= 0 && nr_pte_updates)
+> +			if (nr_pte_updates)
+> +				pages -= (end - start) >> PAGE_SHIFT;
+> +
+> +			start = end;
+> +
+> +			if (pages <= 0)
+>  				goto out;
+>  		} while (end != vma->vm_end);
+>  	}
+> -- 
+> 1.8.1.4
 > 
-> I'd keep the above unchanged and simply add a "platform check" function.
 
-OK, thanks.
+-- 
+Thanks and Regards
+Srikar Dronamraju
+
