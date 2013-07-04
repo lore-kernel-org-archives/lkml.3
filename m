@@ -1,56 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab3GDE31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 00:29:27 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58980 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751015Ab3GDE30 (ORCPT
+	id S1754323Ab3GDEeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 00:34:09 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:59648 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab3GDEeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 00:29:26 -0400
-X-AuditID: 9c930197-b7c79ae000003295-61-51d4fa25ae11
-Date: Thu, 4 Jul 2013 13:29:25 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] mm, page_alloc: support multiple pages allocation
-Message-ID: <20130704042925.GB7132@lge.com>
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
- <0000013fa540f411-a89dd4a2-0fc9-428d-ad1e-5fa032413911-000000@email.amazonses.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0000013fa540f411-a89dd4a2-0fc9-428d-ad1e-5fa032413911-000000@email.amazonses.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 4 Jul 2013 00:34:07 -0400
+Date: Thu, 4 Jul 2013 14:33:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yaakov Selkowitz <yselkowitz@users.sourceforge.net>,
+        Michal Marek <mmarek@suse.cz>, Daniel Tang <dt.tangr@gmail.com>
+Subject: linux-next: manual merge of the akpm tree with the kbuild tree
+Message-Id: <20130704143353.e695ca64b17705c842676870@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__4_Jul_2013_14_33_54_+1000_G+i6BIy1htjNcN6t"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 03:57:45PM +0000, Christoph Lameter wrote:
-> On Wed, 3 Jul 2013, Joonsoo Kim wrote:
-> 
-> > @@ -298,13 +298,15 @@ static inline void arch_alloc_page(struct page *page, int order) { }
-> >
-> >  struct page *
-> >  __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
-> > -		       struct zonelist *zonelist, nodemask_t *nodemask);
-> > +		       struct zonelist *zonelist, nodemask_t *nodemask,
-> > +		       unsigned long *nr_pages, struct page **pages);
-> >
-> 
-> Add a separate function for the allocation of multiple pages instead?
+--Signature=_Thu__4_Jul_2013_14_33_54_+1000_G+i6BIy1htjNcN6t
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hello.
+Hi Andrew,
 
-I will try it, but, I don't like to implement a separate function.
-Please reference my reply to [0/5].
+Today's linux-next merge of the akpm tree got conflicts in
+tools/include/tools/be_byteshift.h and tools/include/tools/le_byteshift.h
+between commit b35310627f39 ("tools/include: use stdint types for
+user-space byteshift headers") from the kbuild tree and commit
+"scripts/sortextable.c: fix building on non-Linux systems" from the
+akpm tree.
 
-Thanks.
+As fas as I can tell, these patches do the same thing except one uses
+stdint.h and the other inttypes.h.  I just dropped the akpm tree patch.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__4_Jul_2013_14_33_54_+1000_G+i6BIy1htjNcN6t
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR1Ps2AAoJEECxmPOUX5FE2psP/3Cioz6hc9zioxcWjEOepagY
+JasyLmAYvR3XfFHf5GYobs57uJtJ1c1s3vQ9j+Ana9bFEU4PRjayVHto757lxhzS
+a7ilcru7pTWB7KuFfXU4Hyz+VXCUJ+nAlMQ8SAqbnRhxrAvU7zwl5gNwP0xWRLOz
+7XQC8hlM+WA7jOgLO8K8WPKTR6IqJ8brGLMGib5ZpambQyn5QPwbz9gVJnIYWN0d
+Ej+opxA4VViPZt1OxCukFHH85LEM7dXbQPqIb/TrL6Ti33g+F8rDLsgg68AJbx2R
+7kHCAQ8ljvMvHaLe3IDRIa9Ey4rB7HY3x5DiGUHDZhBQKuDJ6y27tGIjrFYmIS/A
+/h7/mkMPXvaF1a8KXDk0a6mKg6zk9BscjNUUpemoNpDWU8i+joVOHd5T8bMkSLms
+MU+Wap4Zhqth1FH/0rMyQlaMf4iaI1xTdhW5rJqoCUs7vfMRmvNgXRth2uCk6EEt
+3XTUxa5QsW7F3h1Gjx3ToQNPCbct3PGxZ6ge4JmguhxzRQ2JWAAsqjhUjJb4yM8L
+nmkjHcxkOH2u3wRe3Ar54xf0fgRT4syYYfYtGUxY51HT3eCojoIreywlATnFXl09
+hVpjnZBaRV5KWqHQfA8lZ4e18KIF4lf0XdUQP5/uQRF49gnacuy1pUPK8Q9DQ0tx
+H2OdM7Qxb3JbjyXX/N3e
+=DTQV
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__4_Jul_2013_14_33_54_+1000_G+i6BIy1htjNcN6t--
