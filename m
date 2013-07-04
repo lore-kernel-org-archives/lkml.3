@@ -1,122 +1,281 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab3GDG7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 02:59:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33319 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755148Ab3GDG7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 02:59:01 -0400
-Date: Thu, 4 Jul 2013 16:58:45 +1000
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Martin Wilck <mwilck@arcor.de>,
-        Jonathan Brassow <jbrassow@redhat.com>,
-        Jingoo Han <jg1.han@samsung.com>, Hannes Reinecke <hare@suse.de>
-Subject: [PULL REQUEST] md updates for 3.10
-Message-ID: <20130704165845.3f58171d@notabene.brown>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/jRxdVMw02St99Ty+MAn6GPV"; protocol="application/pgp-signature"
+	id S933573Ab3GDHDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 03:03:52 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:64515 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755148Ab3GDHDv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 03:03:51 -0400
+Message-ID: <51D51DB6.6020701@huawei.com>
+Date: Thu, 4 Jul 2013 15:01:10 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>, Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2 v5 typo updated] tracing/uprobes: Support ftrace_event_file
+ base multibuffer
+References: <51D51BF7.1000602@huawei.com>
+In-Reply-To: <51D51BF7.1000602@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jRxdVMw02St99Ty+MAn6GPV
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Support multi-buffer on uprobe-based dynamic events by
+using ftrace_event_file.
+
+This patch is based kprobe-based dynamic events multibuffer
+support work initially, commited by Masami(commit 41a7dd420c),
+but revised as below:
+
+Oleg changed the kprobe-based multibuffer design from
+array-pointers of ftrace_event_file into simple list,
+so this patch also change to the list design.
+
+rcu_read_lock/unlock added into uprobe_trace_func/uretprobe_trace_func,
+to synchronize with ftrace_event_file list add and delete.
+
+Even though we allow multi-uprobes instances now,
+but TP_FLAG_PROFILE/TP_FLAG_TRACE are still mutually exclusive
+in probe_event_enable currently, this means we cannot allow
+one user is using uprobe-tracer, and another user is using
+perf-probe on same uprobe concurrently.
+(Perhaps this will be fix in future, kprobe dont't have this
+limitation now)
+
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ kernel/trace/trace_uprobe.c |  119 ++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 100 insertions(+), 19 deletions(-)
+
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 32494fb0..2fc9931 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -53,6 +53,7 @@ struct trace_uprobe {
+ 	struct list_head		list;
+ 	struct ftrace_event_class	class;
+ 	struct ftrace_event_call	call;
++	struct list_head		files;
+ 	struct trace_uprobe_filter	filter;
+ 	struct uprobe_consumer		consumer;
+ 	struct inode			*inode;
+@@ -65,6 +66,11 @@ struct trace_uprobe {
+ 	struct probe_arg		args[];
+ };
+
++struct event_file_link {
++	struct ftrace_event_file	*file;
++	struct list_head		list;
++};
++
+ #define SIZEOF_TRACE_UPROBE(n)			\
+ 	(offsetof(struct trace_uprobe, args) +	\
+ 	(sizeof(struct probe_arg) * (n)))
+@@ -124,6 +130,7 @@ alloc_trace_uprobe(const char *group, const char *event, int nargs, bool is_ret)
+ 		goto error;
+
+ 	INIT_LIST_HEAD(&tu->list);
++	INIT_LIST_HEAD(&tu->files);
+ 	tu->consumer.handler = uprobe_dispatcher;
+ 	if (is_ret)
+ 		tu->consumer.ret_handler = uretprobe_dispatcher;
+@@ -511,7 +518,8 @@ static const struct file_operations uprobe_profile_ops = {
+ };
+
+ static void uprobe_trace_print(struct trace_uprobe *tu,
+-				unsigned long func, struct pt_regs *regs)
++				unsigned long func, struct pt_regs *regs,
++				struct ftrace_event_file *ftrace_file)
+ {
+ 	struct uprobe_trace_entry_head *entry;
+ 	struct ring_buffer_event *event;
+@@ -520,9 +528,12 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ 	int size, i;
+ 	struct ftrace_event_call *call = &tu->call;
+
++	WARN_ON(call != ftrace_file->event_call);
++
+ 	size = SIZEOF_TRACE_ENTRY(is_ret_probe(tu));
+-	event = trace_current_buffer_lock_reserve(&buffer, call->event.type,
+-						  size + tu->size, 0, 0);
++	event = trace_event_buffer_lock_reserve(&buffer, ftrace_file,
++						call->event.type,
++						size + tu->size, 0, 0);
+ 	if (!event)
+ 		return;
+
+@@ -546,15 +557,28 @@ static void uprobe_trace_print(struct trace_uprobe *tu,
+ /* uprobe handler */
+ static int uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ {
+-	if (!is_ret_probe(tu))
+-		uprobe_trace_print(tu, 0, regs);
++	struct event_file_link *link;
++
++	if (is_ret_probe(tu))
++		return 0;
++
++	rcu_read_lock();
++	list_for_each_entry(link, &tu->files, list)
++		uprobe_trace_print(tu, 0, regs, link->file);
++	rcu_read_unlock();
++
+ 	return 0;
+ }
+
+ static void uretprobe_trace_func(struct trace_uprobe *tu, unsigned long func,
+ 				struct pt_regs *regs)
+ {
+-	uprobe_trace_print(tu, func, regs);
++	struct event_file_link *link;
++
++	rcu_read_lock();
++	list_for_each_entry(link, &tu->files, list)
++		uprobe_trace_print(tu, func, regs, link->file);
++	rcu_read_unlock();
+ }
+
+ /* Event entry printers */
+@@ -605,33 +629,89 @@ typedef bool (*filter_func_t)(struct uprobe_consumer *self,
+ 				struct mm_struct *mm);
+
+ static int
+-probe_event_enable(struct trace_uprobe *tu, int flag, filter_func_t filter)
++probe_event_enable(struct trace_uprobe *tu, struct ftrace_event_file *file,
++		   filter_func_t filter)
+ {
+-	int ret = 0;
++	bool enabled = is_trace_uprobe_enabled(tu);
++	struct event_file_link *link;
++	int ret;
++
++	if (file) {
++		if (tu->flags & TP_FLAG_PROFILE)
++			return -EINTR;
+
+-	if (is_trace_uprobe_enabled(tu))
+-		return -EINTR;
++		link = kmalloc(sizeof(*link), GFP_KERNEL);
++		if (!link)
++			return -ENOMEM;
++
++		link->file = file;
++		list_add_tail_rcu(&link->list, &tu->files);
++
++		tu->flags |= TP_FLAG_TRACE;
++	} else {
++		if (tu->flags & TP_FLAG_TRACE)
++			return -EINTR;
++
++		tu->flags |= TP_FLAG_PROFILE;
++	}
+
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+
+-	tu->flags |= flag;
++	if (enabled)
++		return 0;
++
+ 	tu->consumer.filter = filter;
+ 	ret = uprobe_register(tu->inode, tu->offset, &tu->consumer);
+-	if (ret)
+-		tu->flags &= ~flag;
++	if (ret) {
++		if (file) {
++			list_del(&link->list);
++			kfree(link);
++			tu->flags &= ~TP_FLAG_TRACE;
++		} else
++			tu->flags &= ~TP_FLAG_PROFILE;
++	}
+
+ 	return ret;
+ }
+
+-static void probe_event_disable(struct trace_uprobe *tu, int flag)
++static struct event_file_link *
++find_event_file_link(struct trace_uprobe *tu, struct ftrace_event_file *file)
++{
++	struct event_file_link *link;
++
++	list_for_each_entry(link, &tu->files, list)
++		if (link->file == file)
++			return link;
++
++	return NULL;
++}
++
++static void
++probe_event_disable(struct trace_uprobe *tu, struct ftrace_event_file *file)
+ {
+ 	if (!is_trace_uprobe_enabled(tu))
+ 		return;
+
++	if (file) {
++		struct event_file_link *link;
++
++		link = find_event_file_link(tu, file);
++		if (!link)
++			return;
++
++		list_del_rcu(&link->list);
++		/* synchronize with uprobe_trace_func/uretprobe_trace_func */
++		synchronize_sched();
++		kfree(link);
++
++		if (!list_empty(&tu->files))
++			return;
++	}
++
+ 	WARN_ON(!uprobe_filter_is_empty(&tu->filter));
+
+ 	uprobe_unregister(tu->inode, tu->offset, &tu->consumer);
+-	tu->flags &= ~flag;
++	tu->flags &= file ? ~TP_FLAG_TRACE : ~TP_FLAG_PROFILE;
+ }
+
+ static int uprobe_event_define_fields(struct ftrace_event_call *event_call)
+@@ -867,21 +947,22 @@ static
+ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type, void *data)
+ {
+ 	struct trace_uprobe *tu = event->data;
++	struct ftrace_event_file *file = data;
+
+ 	switch (type) {
+ 	case TRACE_REG_REGISTER:
+-		return probe_event_enable(tu, TP_FLAG_TRACE, NULL);
++		return probe_event_enable(tu, file, NULL);
+
+ 	case TRACE_REG_UNREGISTER:
+-		probe_event_disable(tu, TP_FLAG_TRACE);
++		probe_event_disable(tu, file);
+ 		return 0;
+
+ #ifdef CONFIG_PERF_EVENTS
+ 	case TRACE_REG_PERF_REGISTER:
+-		return probe_event_enable(tu, TP_FLAG_PROFILE, uprobe_perf_filter);
++		return probe_event_enable(tu, NULL, uprobe_perf_filter);
+
+ 	case TRACE_REG_PERF_UNREGISTER:
+-		probe_event_disable(tu, TP_FLAG_PROFILE);
++		probe_event_disable(tu, NULL);
+ 		return 0;
+
+ 	case TRACE_REG_PERF_OPEN:
+-- 1.7.9.7
 
 
-Mostly just bug fixes.
-A couple marked for -stable including one recent bug which causes a RAID10
-reshape to complete without moving any data :-(
-
-A couple more bugfixes (at least) to come, but haven't confirmed the right
-solution yet.
-
-NeilBrown
-
-
-The following changes since commit 25e33ed9c711c8d64c403a17d4a2cdeac213800b:
-
-  Merge tag 'acpi-3.10-rc6' of git://git.kernel.org/pub/scm/linux/kernel/gi=
-t/rafael/linux-pm (2013-06-13 13:09:50 -0700)
-
-are available in the git repository at:
-
-
-  git://neil.brown.name/md/ tags/md-3.11
-
-for you to fetch changes up to 1376512065b23f39d5f9a160948f313397dde972:
-
-  md/raid10: fix bug which causes all RAID10 reshapes to move no data. (201=
-3-07-04 16:42:57 +1000)
-
-----------------------------------------------------------------
-md updates for 3.11
-
-Mostly fixes with a few minor features (e.g. "last_sync_action" sysfs file).
-
-----------------------------------------------------------------
-CoolCold (1):
-      md: remove doubled description for sync_max, merging it within sync_m=
-in/sync_max
-
-Hannes Reinecke (1):
-      md: Wait for md_check_recovery before attempting device removal.
-
-Jingoo Han (1):
-      md: replace strict_strto*() with kstrto*()
-
-Jonathan Brassow (4):
-      DM RAID: Add ability to restore transiently failed devices on resume
-      DM RAID: Break-up untidy function
-      DM RAID: Fix raid_resume not reviving failed devices in all cases
-      MD: Remember the last sync operation that was performed
-
-NeilBrown (7):
-      dm-raid: silence compiler warning on rebuilds_per_group.
-      md/raid10: locking changes for 'enough()'.
-      md/raid10: check In_sync flag in 'enough()'.
-      md: fix buglet in RAID5 -> RAID0 conversion.
-      md/raid10: fix two bugs affecting RAID10 reshape.
-      md/raid5: allow 5-device RAID6 to be reshaped to 4-device.
-      md/raid10: fix bug which causes all RAID10 reshapes to move no data.
-
- Documentation/device-mapper/dm-raid.txt |  2 +
- Documentation/md.txt                    | 13 +++---
- drivers/md/bitmap.c                     |  8 ++--
- drivers/md/dm-raid.c                    | 76 +++++++++++++++++++++++++++---
- drivers/md/md.c                         | 53 ++++++++++++++-------
- drivers/md/md.h                         |  8 ++++
- drivers/md/raid0.c                      |  1 +
- drivers/md/raid1.c                      |  7 +--
- drivers/md/raid10.c                     | 83 +++++++++++++++++++++--------=
-----
- drivers/md/raid5.c                      |  6 +--
- 10 files changed, 187 insertions(+), 70 deletions(-)
-
---Sig_/jRxdVMw02St99Ty+MAn6GPV
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUdUdJTnsnt1WYoG5AQJXiRAApRwUMWhMVBdiarvpIiMArEDFT847nnIO
-uigRgBDPbUmxpcXIbAhiU4oIss/4nO7krue7RoRaF45pHijWbHtvNkMhrHfsvDtq
-5y5mjlDFCddwLfF11+BUottCor4vM6JNRmMWYv7LX1jXWRjuXm6fxgS1Wfoqo65N
-HMBrb6KUGD/XUjpamJnrsse8Bw8h+VcKWdMO7ChxndMjb88qe38wg2YgIQt8kgKb
-FA64Y7CZ+Jg6f7HfM7XklmsYD+oPKU4UO/XwBemeUde8mwVLa4LB2midDE64zxEi
-TSBakwWg9C4hkpLZc/0QEWgvFm6QNrUI6QMtKXXrK/Ah7y0BwibxbcW2j6X6HmEx
-kwrmvQK5ZERQfiEGAt9GaqAYGGHGskLdUSlMp8EG4jXuAHhIocHtBPa8wIDkSVuw
-1H4j1YC5irryLN0DYVxjAV/Fs6aB64EEoRxMP7039UBormh6N/YsM7vBFQaCz1uS
-DUWmCyHoJyovI3rY1sm0OaSTtiqwyUumaBkKfaTdUEo40hYu8s/Bz0BNrfxJvh5B
-ubNxi76JbIcMcmaSVNM/7qV7wOWowhFroyMfcfhx/Gnp6/49qA84ki6afRl6WmTa
-JZWT6ZLHaYUGNeaQCa0kNDnAeo7R+8cCsERMLB/QefiBRJ7WXRQMGDwF9FqUYeAK
-UIn8ptFZ0jI=
-=uBFc
------END PGP SIGNATURE-----
-
---Sig_/jRxdVMw02St99Ty+MAn6GPV--
