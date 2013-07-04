@@ -1,146 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab3GDNI1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 09:08:27 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:49599 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab3GDNIZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 09:08:25 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v2] clk: add MOXA ART SoCs clock driver
-Date: Thu,  4 Jul 2013 15:08:12 +0200
-Message-Id: <1372943292-6960-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1372341834-6557-1-git-send-email-jonas.jensen@gmail.com>
-References: <1372341834-6557-1-git-send-email-jonas.jensen@gmail.com>
+	id S1755321Ab3GDNOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:14:33 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61212 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752156Ab3GDNOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 09:14:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,995,1363158000"; 
+   d="scan'208";a="264087758"
+From: Adrian Hunter <adrian.hunter@intel.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: [PATCH V4 00/15] perf tools: some fixes and tweaks
+Date: Thu,  4 Jul 2013 16:20:19 +0300
+Message-Id: <1372944040-32690-1-git-send-email-adrian.hunter@intel.com>
+X-Mailer: git-send-email 1.7.11.7
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MOXA ART SoCs clock driver support.
+Hi
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
+Here are some fixes and tweaks to perf tools (version 4).
 
-Notes:
-    of_clk_init(NULL) is now called from moxart machine descriptor
-    .init_time hook. clocksource now depend on this to be loaded first.
-    
-    Applies to next-20130703
-    
-    Changes since v1:
-    1. rewritten to register one fixed rate clock "clkapb"
-    2. use CLK_OF_DECLARE
+I have added kernel support for matching sample types via
+PERF_SAMPLE_IDENTIFIER.  perf tools support for that required
+first fixing some other things.
 
- drivers/clk/Makefile     |  1 +
- drivers/clk/clk-moxart.c | 82 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 83 insertions(+)
- create mode 100644 drivers/clk/clk-moxart.c
+Changes in V4:
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Dropped - covered by David Ahern
+	perf tools: struct thread has a tid not a pid
+		Added ack by David Ahern
+	perf tools: add pid to struct thread
+		Remove unused function
+	perf tools: fix missing increment in sample parsing
+		New patch
+	perf tools: tidy up sample parsing overflow checking
+		New patch
+	perf tools: remove unnecessary callchain validation
+		New patch
+	perf tools: remove references to struct ip_event
+		New patch
+	perf tools: move struct ip_event
+		New patch
+	perf: make events stream always parsable
+		New patch
+	perf tools: add support for PERF_SAMPLE_IDENTFIER
+		New patch
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 4038c2b..933622f 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
- 
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
-+obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
- obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
-diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-new file mode 100644
-index 0000000..d61e305
---- /dev/null
-+++ b/drivers/clk/clk-moxart.c
-@@ -0,0 +1,82 @@
-+/*
-+ * MOXA ART SoCs clock driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/clk-provider.h>
-+#include <linux/slab.h>
-+#include <linux/delay.h>
-+#include <linux/module.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+
-+static const struct of_device_id moxart_tclk_match[] = {
-+	{ .compatible = "moxa,moxart-apb-clock" },
-+	{ }
-+};
-+
-+void __init moxart_of_clk_init(struct device_node *node)
-+{
-+	static void __iomem *base;
-+	struct device_node *clk_node;
-+	struct clk *clk;
-+	unsigned long rate;
-+	unsigned int mul, val, div;
-+
-+	base = of_iomap(node, 0);
-+	if (IS_ERR(base))
-+		panic("%s: of_iomap failed\n", node->full_name);
-+
-+	clk_node = of_find_matching_node(NULL, moxart_tclk_match);
-+	if (!clk_node)
-+		panic("%s: can't find clock DT node\n", node->full_name);
-+
-+	mul = (readl(base + 0x30) >> 3) & 0x1ff;
-+	val = (readl(base + 0x0c) >> 4) & 0x7;
-+
-+	switch (val) {
-+	case 1:
-+		div = 3;
-+		break;
-+	case 2:
-+		div = 4;
-+		break;
-+	case 3:
-+		div = 6;
-+		break;
-+	case 4:
-+		div = 8;
-+		break;
-+	default:
-+		div = 2;
-+		break;
-+	}
-+
-+	/*
-+	 * the rate calculation below is only tested and proven
-+	 * to be true for UC-7112-LX
-+	 *
-+	 * UC-7112-LX: mul=80 val=0
-+	 *
-+	 * to support other moxart SoC hardware, this may need
-+	 * a change, though it's possible it works there too
-+	 */
-+	rate = (mul * 1200000 / div);
-+
-+	clk = clk_register_fixed_rate(NULL, "clkapb", NULL, CLK_IS_ROOT, rate);
-+	clk_register_clkdev(clk, NULL, "clkapb");
-+	of_clk_add_provider(clk_node, of_clk_src_simple_get, clk);
-+
-+	iounmap(base);
-+}
-+CLK_OF_DECLARE(moxart_core_clock, "moxa,moxart-core-clock", moxart_of_clk_init);
--- 
-1.8.2.1
+Changes in V3:
+	perf tools: add pid to struct thread
+		Split into 2 patches
+	perf tools: fix ppid in thread__fork()
+		Dropped for now
 
+Changes in V2:
+	perf tools: fix missing tool parameter
+		Fixed one extra occurrence
+	perf tools: fix parse_events_terms() freeing local variable on error path
+		Made "freeing" code into a new function
+	perf tools: validate perf event header size
+		Corrected byte-swapping
+	perf tools: allow non-matching sample types
+		Added comments
+		Fixed id_pos calculation
+		id_pos/is_pos updated whenever sample_type changes
+		Removed perf_evlist__sample_type()
+		Added __perf_evlist__combined_sample_type()
+		Added perf_evlist__combined_sample_type()
+		Added perf_evlist__make_sample_types_compatible()
+	Added ack's to patches acked by Jiri Olsa
+
+
+Adrian Hunter (21):
+      perf tools: remove unused parameter
+      perf tools: fix missing tool parameter
+      perf tools: fix missing 'finished_round'
+      perf tools: fix parse_events_terms() segfault on error path
+      perf tools: fix new_term() missing free on error path
+      perf tools: add const specifier to perf_pmu__find name parameter
+      perf tools: tidy duplicated munmap code
+      perf tools: validate perf event header size
+      perf tools: add debug prints
+      perf tools: fix symbol_conf.nr_events
+      perf tools: allow non-matching sample types
+      perf tools: struct thread has a tid not a pid
+      perf tools: add pid to struct thread
+      perf tools: change "machine" functions to set thread pid
+      perf tools: fix missing increment in sample parsing
+      perf tools: tidy up sample parsing overflow checking
+      perf tools: remove unnecessary callchain validation
+      perf tools: remove references to struct ip_event
+      perf tools: move struct ip_event
+      perf: make events stream always parsable
+      perf tools: add support for PERF_SAMPLE_IDENTFIER
+
+ include/uapi/linux/perf_event.h |   3 +-
+ kernel/events/core.c            |  11 +-
+ tools/perf/builtin-inject.c     |  44 ++++---
+ tools/perf/builtin-kmem.c       |   4 +-
+ tools/perf/builtin-mem.c        |   2 +-
+ tools/perf/builtin-report.c     |   2 +-
+ tools/perf/builtin-sched.c      |  12 +-
+ tools/perf/builtin-script.c     |   2 +-
+ tools/perf/builtin-top.c        |  10 +-
+ tools/perf/builtin-trace.c      |   4 +-
+ tools/perf/tests/hists_link.c   |  27 ++++-
+ tools/perf/tests/mmap-basic.c   |   2 +-
+ tools/perf/ui/browsers/hists.c  |   6 +-
+ tools/perf/util/build-id.c      |   6 +-
+ tools/perf/util/callchain.c     |   8 --
+ tools/perf/util/callchain.h     |   5 -
+ tools/perf/util/event.c         |   6 +-
+ tools/perf/util/event.h         |  30 +++--
+ tools/perf/util/evlist.c        | 251 +++++++++++++++++++++++++++++++++++----
+ tools/perf/util/evlist.h        |   9 +-
+ tools/perf/util/evsel.c         | 256 +++++++++++++++++++++++++++++++++-------
+ tools/perf/util/evsel.h         |  13 +-
+ tools/perf/util/header.c        |   8 +-
+ tools/perf/util/header.h        |   6 +-
+ tools/perf/util/machine.c       |  47 +++++---
+ tools/perf/util/machine.h       |   6 +-
+ tools/perf/util/parse-events.c  |   4 +-
+ tools/perf/util/pmu.c           |  14 +--
+ tools/perf/util/pmu.h           |   2 +-
+ tools/perf/util/session.c       |  58 ++++-----
+ tools/perf/util/sort.c          |   6 +-
+ tools/perf/util/thread.c        |  11 +-
+ tools/perf/util/thread.h        |   5 +-
+ tools/perf/util/tool.h          |   9 +-
+ 34 files changed, 658 insertions(+), 231 deletions(-)
+
+
+Regards
+Adrian
