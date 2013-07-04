@@ -1,227 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964880Ab3GDIvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:51:43 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:34848 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933705Ab3GDIvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:51:13 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-74-51d537791cb9
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>, l.majewski@majess.pl,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v5 3/7] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to
- work with common boost solution
-Date: Thu, 04 Jul 2013 10:50:26 +0200
-Message-id: <1372927830-2949-4-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPLMWRmVeSWpSXmKPExsVy+t9jAd1K86uBBg2zxCz+vF3OavG06Qe7
-	xbzPshZr9v9ksug8+4TZonfBVTaLN4+4Ld483MxocXnXHDaLz71HGC1uN65gs+hf2Mtk8eRh
-	H5vFxq8eDnwei/e8ZPK4c20Pm8e6aW+ZPfq2rGL0eLS4hdHj+I3tTB6fN8kFsEdx2aSk5mSW
-	pRbp2yVwZVx9O42poEGrYseE9UwNjHuUuhg5OSQETCSapjUyQdhiEhfurWfrYuTiEBJYxCix
-	5ekpZgini0mi9c0XdpAqNgE9ic93n4J1iAjMYZS4c9QdxGYWWMkscaLREcQWFsiV6L2zlBnE
-	ZhFQlZh0byJYPa+Aq8S9KY2sENvkJZ7e72MDsTkF3CQuX+hhgljWyCixoeMDywRG3gWMDKsY
-	RVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgoP1mdQOxpUNFocYBTgYlXh4JayuBAqxJpYVV+Ye
-	YpTgYFYS4XXiuBooxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJ
-	g1OqgdFS5e/bV18qZ4Z/y/u9V/RvfdT8ifdqrP0vqX4N4uGYEL1fXOC5zcJFN1hVDnQtmvnH
-	MW1yk/3Tb2pCs0K2tLx7Garae6VjVVZbyZ59Wm3Hbdg5OB5VrOG7HCuuKbemxTvh1rvzKsy5
-	haVaf9clnLr9cF7h7vSzniLFpyqFDl++cu5/h8N99nQlluKMREMt5qLiRAAJCm0zUgIAAA==
+	id S933711Ab3GDIxr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:53:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:19969 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933661Ab3GDIxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 04:53:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,993,1363158000"; 
+   d="scan'208";a="264010180"
+Date: Thu, 4 Jul 2013 11:58:44 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
+        miles.j.penner@intel.com, bruce.w.allan@intel.com,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH v2 6/8] PCI: acpiphp: workaround for Thunderbolt on Acer
+ Aspire S5
+Message-ID: <20130704085844.GF4898@intel.com>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1372860295-8306-7-git-send-email-mika.westerberg@linux.intel.com>
+ <1444243.g9GbxN3NM0@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1444243.g9GbxN3NM0@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel's hardware based boost solution driver has been changed to cooperate with
-common cpufreq boost framework.
+On Wed, Jul 03, 2013 at 11:40:42PM +0200, Rafael J. Wysocki wrote:
+> On Wednesday, July 03, 2013 05:04:53 PM Mika Westerberg wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> > 
+> > Correct ACPI PCI hotplug imeplementation should have _RMV method in a
+> > PCI slot (device under pci bridge). In Acer Aspire S5 case we have it
+> > deeper in hierarchy:
+> > 
+> > Device (RP05)
+> > {
+> >    // ...
+> >    Device (HRUP)
+> >    {
+> >        // ...
+> >        Device (HRDN)
+> >        {
+> >            // ...
+> >            Device (EPUP)
+> >            {
+> >                // ...
+> >                Method (_RMV, 0, NotSerialized)  // _RMV: Removal Status
+> >                {
+> >                    Return (One)
+> >                }
+> >            }
+> >        }
+> >    }
+> > }
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> > ---
+> >  drivers/pci/hotplug/acpi_pcihp.c | 13 +++++++++++++
+> >  1 file changed, 13 insertions(+)
+> > 
+> > diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+> > index 2a47e82..d92ebfb 100644
+> > --- a/drivers/pci/hotplug/acpi_pcihp.c
+> > +++ b/drivers/pci/hotplug/acpi_pcihp.c
+> > @@ -422,6 +422,19 @@ static int pcihp_is_ejectable(acpi_handle handle)
+> >  	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+> >  	if (ACPI_SUCCESS(status) && removable)
+> >  		return 1;
+> > +
+> > +	/*
+> > +	 * Workaround for Thunderbolt implementation on Acer Aspire S5.
+> > +	 *
+> > +	 * Correct ACPI PCI hotplug imeplementation has _RMV method in a PCI
+> > +	 * slot (device under pci bridge). In Acer Aspire S5 case we have it
+> > +	 * deeper in hierarchy.
+> > +	 */
+> > +	status = acpi_evaluate_integer(handle, "HRDN.EPUP._RMV", NULL,
+> > +			&removable);
+> 
+> Well, calling stuff like this directly from a general function is kind of ugly.
+> 
+> Can we use something like a quirk instead?  A DMI check or something?
 
-The global sysfs boost attribute entry code (/sys/devices/system/cpu/cpufreq/boost)
-has been moved to a core cpufreq code. This attribute is now only visible,
-when cpufreq driver supports it.
+Sure we can. How about something like the patch below?
 
-The _store_boost() function has been redesigned to be used as set_boost_freq
-callback.
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] PCI: acpiphp: workaround for Thunderbolt on Acer Aspire S5
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+The acpiphp driver finds out whether the device is removable by checking
+whether it has _RMV method directly behind it (and if it returns 1).
+However, at least on Acer Aspire S5 with Thunderbolt host router has this
+method placed behind a device called EPUP (endpoint upstream port?) and not
+in the usual place expected by the acpiphp driver. The ASL code below shows
+how this is done on that machine:
 
+Device (RP05)
+{
+	...
+	Device (HRUP)
+	{
+		Name (_ADR, Zero)
+		Name (_PRW, Package (0x02)
+		{
+			0x09,
+			0x04
+		})
+		Device (HRDN)
+		{
+			Name (_ADR, 0x00040000)
+			Name (_PRW, Package (0x02)
+			{
+				0x09,
+				0x04
+			})
+			Device (EPUP)
+			{
+				Name (_ADR, Zero)
+				Method (_RMV, 0, NotSerialized)
+				{
+					Return (One)
+				}
+			}
+		}
+	}
+	...
+
+Fix this by adding a DMI quirk for the Acer Aspire S5 machine that gives an
+alternative path to the _RMV method.
+
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
-Changes for v5:
-- Remove acpi-cpufreq's boost_enabled global flag and reuse one defined at
-  cpufreq core
+ drivers/pci/hotplug/acpi_pcihp.c | 57 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 52 insertions(+), 5 deletions(-)
 
-Changes for v4:
-- add _store_boost to acpi_cpufreq_driver structure
-
-Changes for v3:
-- Bring back boost_enabled as a global flag
-- Move boost_supported to cpufreq_driver structure
-
-Changes for v2:
-- Replace boost_enabled and boost_supported global flags with proper entries
-  at struct cpufreq_driver.
-- Removal of struct cpufreq_boost
-
- drivers/cpufreq/acpi-cpufreq.c |   69 ++++++++++++----------------------------
- 1 file changed, 21 insertions(+), 48 deletions(-)
-
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index 3926402..113a928 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -81,7 +81,6 @@ static struct acpi_processor_performance __percpu *acpi_perf_data;
- static struct cpufreq_driver acpi_cpufreq_driver;
+diff --git a/drivers/pci/hotplug/acpi_pcihp.c b/drivers/pci/hotplug/acpi_pcihp.c
+index 2a47e82..99fccf3 100644
+--- a/drivers/pci/hotplug/acpi_pcihp.c
++++ b/drivers/pci/hotplug/acpi_pcihp.c
+@@ -33,6 +33,7 @@
+ #include <linux/acpi.h>
+ #include <linux/pci-acpi.h>
+ #include <linux/slab.h>
++#include <linux/dmi.h>
  
- static unsigned int acpi_pstate_strict;
--static bool boost_enabled, boost_supported;
- static struct msr __percpu *msrs;
+ #define MY_NAME	"acpi_pcihp"
  
- static bool boost_state(unsigned int cpu)
-@@ -134,49 +133,33 @@ static void boost_set_msrs(bool enable, const struct cpumask *cpumask)
- 	wrmsr_on_cpus(cpumask, msr_addr, msrs);
+@@ -408,21 +409,67 @@ got_one:
  }
+ EXPORT_SYMBOL(acpi_get_hp_hw_control_from_firmware);
  
--static ssize_t _store_boost(const char *buf, size_t count)
-+static int _store_boost(int val)
++/**
++ * pcihp_is_removable - is the given ACPI device removable
++ * @handle: ACPI handle of the device
++ *
++ * Try to find out whether the given ACPI device is removable by evaluating
++ * its _RMV and returning the result. If we can't find the _RMV directly
++ * under the device use system specific quirks to locate it.
++ */
++static bool pcihp_is_removable(acpi_handle handle)
 +{
-+	get_online_cpus();
-+	boost_set_msrs(val, cpu_online_mask);
-+	put_online_cpus();
-+	pr_debug("Core Boosting %sabled.\n", val ? "en" : "dis");
++	static const struct dmi_system_id rmv_paths[] = {
++		{
++			/*
++			 * On Acer Aspire S5 the _RMV method for the
++			 * Thunderbolt host router upstream port is not
++			 * located directly under the device but it is
++			 * instead placed a bit deeper in the hierarchy.
++			 */
++			.ident = "Acer Aspire S5",
++			.matches = {
++				DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++				DMI_MATCH(DMI_PRODUCT_NAME, "Aspire S5-391"),
++			},
++			.driver_data = "HRDN.EPUP._RMV",
++		},
++		{ }
++	};
++	const struct dmi_system_id *id;
++	unsigned long long removable;
++	acpi_status status;
 +
-+	return 0;
++	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
++	if (ACPI_SUCCESS(status))
++		return !!removable;
++
++	/* Try system specific quirks */
++	id = dmi_first_match(rmv_paths);
++	if (id && id->driver_data) {
++		char path[64];
++
++		strlcpy(path, id->driver_data, sizeof(path));
++		status = acpi_evaluate_integer(handle, path, NULL, &removable);
++		if (ACPI_SUCCESS(status))
++			return !!removable;
++	}
++
++	return false;
 +}
 +
-+static ssize_t store_boost(const char *buf, size_t count)
+ static int pcihp_is_ejectable(acpi_handle handle)
  {
- 	int ret;
- 	unsigned long val = 0;
- 
--	if (!boost_supported)
-+	if (!acpi_cpufreq_driver.boost_supported)
- 		return -EINVAL;
- 
- 	ret = kstrtoul(buf, 10, &val);
- 	if (ret || (val > 1))
- 		return -EINVAL;
- 
--	if ((val && boost_enabled) || (!val && !boost_enabled))
--		return count;
--
--	get_online_cpus();
--
--	boost_set_msrs(val, cpu_online_mask);
--
--	put_online_cpus();
--
--	boost_enabled = val;
--	pr_debug("Core Boosting %sabled.\n", val ? "en" : "dis");
-+	_store_boost((int) val);
- 
- 	return count;
+ 	acpi_status status;
+ 	acpi_handle tmp;
+-	unsigned long long removable;
++
+ 	status = acpi_get_handle(handle, "_ADR", &tmp);
+ 	if (ACPI_FAILURE(status))
+ 		return 0;
+ 	status = acpi_get_handle(handle, "_EJ0", &tmp);
+ 	if (ACPI_SUCCESS(status))
+ 		return 1;
+-	status = acpi_evaluate_integer(handle, "_RMV", NULL, &removable);
+-	if (ACPI_SUCCESS(status) && removable)
+-		return 1;
+-	return 0;
++	return pcihp_is_removable(handle);
  }
  
--static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
--				  const char *buf, size_t count)
--{
--	return _store_boost(buf, count);
--}
--
--static ssize_t show_global_boost(struct kobject *kobj,
--				 struct attribute *attr, char *buf)
--{
--	return sprintf(buf, "%u\n", boost_enabled);
--}
--
--static struct global_attr global_boost = __ATTR(boost, 0644,
--						show_global_boost,
--						store_global_boost);
--
- static ssize_t show_freqdomain_cpus(struct cpufreq_policy *policy, char *buf)
- {
- 	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, policy->cpu);
-@@ -190,12 +173,12 @@ cpufreq_freq_attr_ro(freqdomain_cpus);
- static ssize_t store_cpb(struct cpufreq_policy *policy, const char *buf,
- 			 size_t count)
- {
--	return _store_boost(buf, count);
-+	return store_boost(buf, count);
- }
- 
- static ssize_t show_cpb(struct cpufreq_policy *policy, char *buf)
- {
--	return sprintf(buf, "%u\n", boost_enabled);
-+	return sprintf(buf, "%u\n", cpufreq_boost_enabled());
- }
- 
- static struct freq_attr cpb = __ATTR(cpb, 0644, show_cpb, store_cpb);
-@@ -583,7 +566,7 @@ static int boost_notify(struct notifier_block *nb, unsigned long action,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		boost_set_msrs(boost_enabled, cpumask);
-+		boost_set_msrs(cpufreq_boost_enabled(), cpumask);
- 		break;
- 
- 	case CPU_DOWN_PREPARE:
-@@ -943,6 +926,7 @@ static struct cpufreq_driver acpi_cpufreq_driver = {
- 	.name		= "acpi-cpufreq",
- 	.owner		= THIS_MODULE,
- 	.attr		= acpi_cpufreq_attr,
-+	.enable_boost   = _store_boost,
- };
- 
- static void __init acpi_cpufreq_boost_init(void)
-@@ -953,33 +937,22 @@ static void __init acpi_cpufreq_boost_init(void)
- 		if (!msrs)
- 			return;
- 
--		boost_supported = true;
--		boost_enabled = boost_state(0);
-+		cpufreq_set_boost_enabled(boost_state(0));
-+		acpi_cpufreq_driver.boost_supported = true;
- 
- 		get_online_cpus();
- 
- 		/* Force all MSRs to the same value */
--		boost_set_msrs(boost_enabled, cpu_online_mask);
-+		boost_set_msrs(cpufreq_boost_enabled(), cpu_online_mask);
- 
- 		register_cpu_notifier(&boost_nb);
- 
- 		put_online_cpus();
--	} else
--		global_boost.attr.mode = 0444;
--
--	/* We create the boost file in any case, though for systems without
--	 * hardware support it will be read-only and hardwired to return 0.
--	 */
--	if (cpufreq_sysfs_create_file(&(global_boost.attr)))
--		pr_warn(PFX "could not register global boost sysfs file\n");
--	else
--		pr_debug("registered global boost sysfs file\n");
-+	}
- }
- 
- static void __exit acpi_cpufreq_boost_exit(void)
- {
--	cpufreq_sysfs_remove_file(&(global_boost.attr));
--
- 	if (msrs) {
- 		unregister_cpu_notifier(&boost_nb);
- 
+ /**
 -- 
-1.7.10.4
+1.8.3.2
 
