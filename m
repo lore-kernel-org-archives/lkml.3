@@ -1,37 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965034Ab3GDMrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:47:12 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:19623 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964877Ab3GDMpk (ORCPT
+	id S965042Ab3GDMrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:47:35 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:39513 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964852Ab3GDMpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:45:40 -0400
-Message-ID: <51D56E6B.1000605@atmel.com>
-Date: Thu, 4 Jul 2013 13:45:31 +0100
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: <joe@perches.com>, <devel@linuxdriverproject.org>
-CC: <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] staging: ozwpan: Rename Kbuild to Makefile
-References: <1372255013.2076.4.camel@joe-AO722> <1372941331-9586-6-git-send-email-rupesh.gujare@atmel.com>
-In-Reply-To: <1372941331-9586-6-git-send-email-rupesh.gujare@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Thu, 4 Jul 2013 08:45:39 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 5/7] perf completion: strip function_exists ()
+Date: Thu,  4 Jul 2013 18:11:29 +0530
+Message-Id: <1372941691-14684-6-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.3.1.643.gebeea52.dirty
+In-Reply-To: <1372941691-14684-1-git-send-email-artagnon@gmail.com>
+References: <1372941691-14684-1-git-send-email-artagnon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/13 13:35, Rupesh Gujare wrote:
-> From: Joe Perches <joe@perches.com>
->
+Use "type" to check existence consistently.
 
-Pardon my ignorance, above error occurred while creating patch series.
-I should had been careful about it.
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ tools/perf/bash_completion | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
---
-Regards,
-Rupesh Gujare
+diff --git a/tools/perf/bash_completion b/tools/perf/bash_completion
+index 8c04f5d..852d444 100644
+--- a/tools/perf/bash_completion
++++ b/tools/perf/bash_completion
+@@ -1,12 +1,6 @@
+ # perf completion
+ 
+-function_exists()
+-{
+-	declare -F $1 > /dev/null
+-	return $?
+-}
+-
+-function_exists __ltrim_colon_completions ||
++type __ltrim_colon_completions &>/dev/null ||
+ __ltrim_colon_completions ()
+ {
+ 	if [[ "$1" == *:* && "$COMP_WORDBREAKS" == *:* ]]; then
+-- 
+1.8.3.1.643.gebeea52.dirty
+
