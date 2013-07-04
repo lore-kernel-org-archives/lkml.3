@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab3GDE4C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 00:56:02 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49970 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222Ab3GDE4A (ORCPT
+	id S1754946Ab3GDE46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 00:56:58 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:58731 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab3GDE45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 00:56:00 -0400
-Message-ID: <51D50057.9000809@linux.vnet.ibm.com>
-Date: Thu, 04 Jul 2013 12:55:51 +0800
+	Thu, 4 Jul 2013 00:56:57 -0400
+Message-ID: <51D5008E.6030102@linux.vnet.ibm.com>
+Date: Thu, 04 Jul 2013 12:56:46 +0800
 From: Michael Wang <wangyun@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
@@ -19,195 +19,125 @@ CC: Mike Galbraith <efault@gmx.de>, Alex Shi <alex.shi@intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
         Ram Pai <linuxram@us.ibm.com>
-Subject: [PATCH v3 1/2] sched: smart wake-affine foundation
+Subject: [PATCH v3 2/2] sched: reduce the overhead of obtain factor
 References: <51D50024.10902@linux.vnet.ibm.com>
 In-Reply-To: <51D50024.10902@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070404-5816-0000-0000-000008C1A5C0
+x-cbid: 13070404-5564-0000-0000-000008A5DED3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wake-affine stuff is always trying to pull wakee close to waker, by theory,
-this will bring benefit if waker's cpu cached hot data for wakee, or the
-extreme ping-pong case.
+From: Peter Zijlstra <peterz@infradead.org>
 
-And testing show it could benefit hackbench 15% at most.
+Smart wake-affine is using node-size as the factor, but the overhead of
+mask operation is high.
 
-However, the whole stuff is somewhat blindly and time-consuming, some
-workload therefore suffer.
+Thus, this patch introduce the 'sd_llc_size', which will record the highest
+cache-share domain size, and make it to be the new factor, in order to
+reduce the overhead and make more reasonable.
 
-And testing show it could damage pgbench 50% at most.
-
-Thus, wake-affine stuff should be more smart, and realise when to stop
-it's thankless effort.
-
-This patch introduced 'nr_wakee_switch', which will be increased each
-time the task switch it's wakee.
-
-So a high 'nr_wakee_switch' means the task has more than one wakee, and
-bigger the number, higher the wakeup frequency.
-
-Now when making the decision on whether to pull or not, pay attention on
-the wakee with a high 'nr_wakee_switch', pull such task may benefit wakee,
-but also imply that waker will face cruel competition later, it could be
-very cruel or very fast depends on the story behind 'nr_wakee_switch',
-whatever, waker therefore suffer.
-
-Furthermore, if waker also has a high 'nr_wakee_switch', imply that multiple
-tasks rely on it, then waker's higher latency will damage all of them, pull
-wakee seems to be a bad deal.
-
-Thus, when 'waker->nr_wakee_switch / wakee->nr_wakee_switch' become higher
-and higher, the deal seems to be worse and worse.
-
-The patch therefore help wake-affine stuff to stop it's work when:
-
-	wakee->nr_wakee_switch > factor &&
-	waker->nr_wakee_switch > (factor * wakee->nr_wakee_switch)
-
-The factor here is the node-size of current-cpu, so bigger node will lead
-to more pull since the trial become more severe.
-
-After applied the patch, pgbench show 40% improvement at most.
+And we suppose it will benefit a lot when facing a huge platform.
 
 Test:
 	Tested with 12 cpu X86 server and tip 3.10.0-rc7.
 
-	pgbench		    base	smart
+	pgbench		    base	smart + optimization
 
 	| db_size | clients |  tps  |	|  tps  |
 	+---------+---------+-------+   +-------+
-	| 22 MB   |       1 | 10598 |   | 10796 |
-	| 22 MB   |       2 | 21257 |   | 21336 |
+	| 22 MB   |       1 | 10598 |   | 10781 |
+	| 22 MB   |       2 | 21257 |   | 21328 |
 	| 22 MB   |       4 | 41386 |   | 41622 |
-	| 22 MB   |       8 | 51253 |   | 57932 |
-	| 22 MB   |      12 | 48570 |   | 54000 |
-	| 22 MB   |      16 | 46748 |   | 55982 | +19.75%
-	| 22 MB   |      24 | 44346 |   | 55847 | +25.93%
-	| 22 MB   |      32 | 43460 |   | 54614 | +25.66%
-	| 7484 MB |       1 |  8951 |   |  9193 |
-	| 7484 MB |       2 | 19233 |   | 19240 |
-	| 7484 MB |       4 | 37239 |   | 37302 |
-	| 7484 MB |       8 | 46087 |   | 50018 |
-	| 7484 MB |      12 | 42054 |   | 48763 |
-	| 7484 MB |      16 | 40765 |   | 51633 | +26.66%
-	| 7484 MB |      24 | 37651 |   | 52377 | +39.11%
-	| 7484 MB |      32 | 37056 |   | 51108 | +37.92%
-	| 15 GB   |       1 |  8845 |   |  9104 |
-	| 15 GB   |       2 | 19094 |   | 19162 |
-	| 15 GB   |       4 | 36979 |   | 36983 |
-	| 15 GB   |       8 | 46087 |   | 49977 |
-	| 15 GB   |      12 | 41901 |   | 48591 |
-	| 15 GB   |      16 | 40147 |   | 50651 | +26.16%
-	| 15 GB   |      24 | 37250 |   | 52365 | +40.58%
-	| 15 GB   |      32 | 36470 |   | 50015 | +37.14%
+	| 22 MB   |       8 | 51253 |   | 60351 |
+	| 22 MB   |      12 | 48570 |   | 54255 |
+	| 22 MB   |      16 | 46748 |   | 55534 | +18.79%
+	| 22 MB   |      24 | 44346 |   | 55976 | +26.23%
+	| 22 MB   |      32 | 43460 |   | 55279 | +27.20%
+	| 7484 MB |       1 |  8951 |   |  9054 |
+	| 7484 MB |       2 | 19233 |   | 19252 |
+	| 7484 MB |       4 | 37239 |   | 37354 |
+	| 7484 MB |       8 | 46087 |   | 51218 |
+	| 7484 MB |      12 | 42054 |   | 49510 |
+	| 7484 MB |      16 | 40765 |   | 52151 | +27.93%
+	| 7484 MB |      24 | 37651 |   | 52720 | +40.02%
+	| 7484 MB |      32 | 37056 |   | 51094 | +37.88%
+	| 15 GB   |       1 |  8845 |   |  9139 |
+	| 15 GB   |       2 | 19094 |   | 19379 |
+	| 15 GB   |       4 | 36979 |   | 37077 |
+	| 15 GB   |       8 | 46087 |   | 50490 |
+	| 15 GB   |      12 | 41901 |   | 48235 |
+	| 15 GB   |      16 | 40147 |   | 51878 | +29.22%
+	| 15 GB   |      24 | 37250 |   | 52676 | +41.41%
+	| 15 GB   |      32 | 36470 |   | 50198 | +37.64%
 
 CC: Ingo Molnar <mingo@kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>
 CC: Mike Galbraith <efault@gmx.de>
 Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 ---
- include/linux/sched.h |    3 +++
- kernel/sched/fair.c   |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+), 0 deletions(-)
+ kernel/sched/core.c  |    7 ++++++-
+ kernel/sched/fair.c  |    2 +-
+ kernel/sched/sched.h |    1 +
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 178a8d9..1c996c7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1041,6 +1041,9 @@ struct task_struct {
- #ifdef CONFIG_SMP
- 	struct llist_node wake_entry;
- 	int on_cpu;
-+	struct task_struct *last_wakee;
-+	unsigned long nr_wakee_switch;
-+	unsigned long last_switch_decay;
- #endif
- 	int on_rq;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e8b3350..8fcca57 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5648,18 +5648,23 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
+  * two cpus are in the same cache domain, see cpus_share_cache().
+  */
+ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
++DEFINE_PER_CPU(int, sd_llc_size);
+ DEFINE_PER_CPU(int, sd_llc_id);
+ 
+ static void update_top_cache_domain(int cpu)
+ {
+ 	struct sched_domain *sd;
+ 	int id = cpu;
++	int size = 1;
+ 
+ 	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
+-	if (sd)
++	if (sd) {
+ 		id = cpumask_first(sched_domain_span(sd));
++		size = cpumask_weight(sched_domain_span(sd));
++	}
+ 
+ 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
++	per_cpu(sd_llc_size, cpu) = size;
+ 	per_cpu(sd_llc_id, cpu) = id;
+ }
  
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index c61a614..a4ddbf5 100644
+index a4ddbf5..86c4b86 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2971,6 +2971,23 @@ static unsigned long cpu_avg_load_per_task(int cpu)
- 	return 0;
+@@ -3129,7 +3129,7 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+ 
+ static int wake_wide(struct task_struct *p)
+ {
+-	int factor = nr_cpus_node(cpu_to_node(smp_processor_id()));
++	int factor = this_cpu_read(sd_llc_size);
+ 
+ 	/*
+ 	 * Yeah, it's the switching-frequency, could means many wakee or
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ce39224..3227948 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -582,6 +582,7 @@ static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
  }
  
-+static void record_wakee(struct task_struct *p)
-+{
-+	/*
-+	 * Rough decay(wiping) for cost saving, don't worry
-+	 * about the boundary, really active task won't care
-+	 * the loose.
-+	 */
-+	if (jiffies > current->last_switch_decay + HZ) {
-+		current->nr_wakee_switch = 0;
-+		current->last_switch_decay = jiffies;
-+	}
-+
-+	if (current->last_wakee != p) {
-+		current->last_wakee = p;
-+		current->nr_wakee_switch++;
-+	}
-+}
+ DECLARE_PER_CPU(struct sched_domain *, sd_llc);
++DECLARE_PER_CPU(int, sd_llc_size);
+ DECLARE_PER_CPU(int, sd_llc_id);
  
- static void task_waking_fair(struct task_struct *p)
- {
-@@ -2991,6 +3008,7 @@ static void task_waking_fair(struct task_struct *p)
- #endif
- 
- 	se->vruntime -= min_vruntime;
-+	record_wakee(p);
- }
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-@@ -3109,6 +3127,28 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
- 
- #endif
- 
-+static int wake_wide(struct task_struct *p)
-+{
-+	int factor = nr_cpus_node(cpu_to_node(smp_processor_id()));
-+
-+	/*
-+	 * Yeah, it's the switching-frequency, could means many wakee or
-+	 * rapidly switch, use factor here will just help to automatically
-+	 * adjust the loose-degree, so bigger node will lead to more pull.
-+	 */
-+	if (p->nr_wakee_switch > factor) {
-+		/*
-+		 * wakee is somewhat hot, it needs certain amount of cpu
-+		 * resource, so if waker is far more hot, prefer to leave
-+		 * it alone.
-+		 */
-+		if (current->nr_wakee_switch > (factor * p->nr_wakee_switch))
-+			return 1;
-+	}
-+
-+	return 0;
-+}
-+
- static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- {
- 	s64 this_load, load;
-@@ -3118,6 +3158,13 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	unsigned long weight;
- 	int balanced;
- 
-+	/*
-+	 * If we wake multiple tasks be careful to not bounce
-+	 * ourselves around too much.
-+	 */
-+	if (wake_wide(p))
-+		return 0;
-+
- 	idx	  = sd->wake_idx;
- 	this_cpu  = smp_processor_id();
- 	prev_cpu  = task_cpu(p);
+ struct sched_group_power {
 -- 
 1.7.4.1
 
