@@ -1,187 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab3GDI71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:59:27 -0400
-Received: from smtp-out-093.synserver.de ([212.40.185.93]:1074 "EHLO
-	smtp-out-093.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636Ab3GDI7W (ORCPT
+	id S933687Ab3GDI7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 04:59:50 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:51676 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933435Ab3GDI7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:59:22 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 29668
-Message-ID: <51D53988.7040808@metafoo.de>
-Date: Thu, 04 Jul 2013 10:59:52 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	Thu, 4 Jul 2013 04:59:45 -0400
+X-IronPort-AV: E=Sophos;i="4.87,993,1363132800"; 
+   d="scan'208";a="6371837"
+Message-ID: <1372928382.7184.16.camel@kazak.uk.xensource.com>
+Subject: Re: kernel panic in skb_copy_bits
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Joe Jin <joe.jin@oracle.com>
+CC: Alex Bligh <alex@alex.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <zheng.x.li@oracle.com>, Xen Devel <xen-devel@lists.xen.org>,
+        Jan Beulich <JBeulich@suse.com>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 4 Jul 2013 09:59:42 +0100
+In-Reply-To: <51D53896.1060405@oracle.com>
+References: <51CBAA48.3080802@oracle.com>
+	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
+	 <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>
+	 <1372666283.14691.8.camel@zakaz.uk.xensource.com>
+	 <51D53896.1060405@oracle.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-To: Kevin Tsai <ktsai@capellamicro.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/1] Added Capella CM3218 Ambient Light Sensor IIO Driver.
-References: <1372894271-2592-1-git-send-email-ktsai@capellamicro.com>
-In-Reply-To: <1372894271-2592-1-git-send-email-ktsai@capellamicro.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2013 01:31 AM, Kevin Tsai wrote:
-
-Maybe write at least a short commit message which states the features of the
-chip.
-
-> Signed-off-by: Kevin Tsai <ktsai@capellamicro.com>
-> ---
->  drivers/staging/iio/light/Kconfig  |   10 +
->  drivers/staging/iio/light/Makefile |    1 +
->  drivers/staging/iio/light/cm3218.c |  581 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 592 insertions(+)
->  create mode 100644 drivers/staging/iio/light/cm3218.c
+On Thu, 2013-07-04 at 16:55 +0800, Joe Jin wrote:
+> On 07/01/13 16:11, Ian Campbell wrote:
+> > On Mon, 2013-07-01 at 11:18 +0800, Joe Jin wrote:
+> >>> A workaround is to turn off O_DIRECT use by Xen as that ensures
+> >>> the pages are copied. Xen 4.3 does this by default.
+> >>>
+> >>> I believe fixes for this are in 4.3 and 4.2.2 if using the
+> >>> qemu upstream DM. Note these aren't real fixes, just a workaround
+> >>> of a kernel bug.
+> >>
+> >> The guest is pvm, and disk model is xvbd, guest config file as below:
+> > 
+> > Do you know which disk backend? The workaround Alex refers to went into
+> > qdisk but I think blkback could still suffer from a variant of the
+> > retransmit issue if you run it over iSCSI.
+> > 
+> >>> To fix on a local build of xen you will need something like this:
+> >>> https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
+> >>> and something like this (NB: obviously insert your own git
+> >>> repo and commit numbers)
+> >>> https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
+> >>>
+> >>
+> >> I think this only for pvhvm/hvm?
+> > 
+> > No, the underlying issue affects any PV device which is run over a
+> > network protocol (NFS, iSCSI etc). In effect a delayed retransmit can
+> > cross over the deayed ack and cause I/O to be completed while
+> > retransmits are pending, such as is described in
+> > http://www.spinics.net/lists/linux-nfs/msg34913.html (the original NFS
+> > variant). The problem is that because Xen PV drivers often unmap the
+> > page on I/O completion you get a crash (page fault) on the retransmit.
+> > 
 > 
-> diff --git a/drivers/staging/iio/light/Kconfig b/drivers/staging/iio/light/Kconfig
-> index ca8d6e6..647af0c 100644
-> --- a/drivers/staging/iio/light/Kconfig
-> +++ b/drivers/staging/iio/light/Kconfig
-> @@ -40,4 +40,14 @@ config TSL2x7x
->  	 tmd2672, tsl2772, tmd2772 devices.
->  	 Provides iio_events and direct access via sysfs.
->  
-> +config SENSORS_CM3218
-> +        tristate "CM3218 Ambient Light Sensor"
-> +        depends on I2C
-> +        help
-> +         Say Y here if you have a Capella Micro CM3218 Ambient Light Sensor.
-> +
-> +         To compile this driver as a module, choose M here.  This module
-> +         will be called to 'cm3218'.  It will access ALS data via iio sysfs.
-> +         This is recommended.
-> +
+> Can we do it by remember grant page refcount when mapping, and when unmap
+> check if page refcount as same as mapping?  This change will limited in
+> xen-blkback.
+> 
+> Another way is add new page flag like PG_send, when sendpage() be called,
+> set the bit, when page be put, clear the bit. Then xen-blkback can wait
+> on the pagequeue.
 
-Keep the entries in alphabetical order.
+These schemes don't work when you have multiple simultaneous I/Os
+referencing the same underlying page.
 
->  endmenu
-> diff --git a/drivers/staging/iio/light/Makefile b/drivers/staging/iio/light/Makefile
-> index 9960fdf..63020ab 100644
-> --- a/drivers/staging/iio/light/Makefile
-> +++ b/drivers/staging/iio/light/Makefile
-> @@ -6,3 +6,4 @@ obj-$(CONFIG_SENSORS_ISL29018)	+= isl29018.o
->  obj-$(CONFIG_SENSORS_ISL29028)	+= isl29028.o
->  obj-$(CONFIG_TSL2583)	+= tsl2583.o
->  obj-$(CONFIG_TSL2x7x)	+= tsl2x7x_core.o
-> +obj-$(CONFIG_SENSORS_CM3218)    += cm3218.o
+> 
+> Thanks,
+> Joe
+> 
+> > The issue also affects native but in that case the symptom is "just" a
+> > corrupt packet on the wire. I tried to address this with my "skb
+> > destructor" series but unfortunately I got bogged down on the details,
+> > then I had to take time out to look into some other stuff and never
+> > managed to get back into it. I'd be very grateful if there was someone
+> > who could pick up that work (Alex gave some useful references in another
+> > reply to this thread)
+> > 
+> > Some PV disk backends (e.g. blktap2) have worked around this by using
+> > grant copy instead of grant map, others (e.g. qdisk) have disabled
+> > O_DIRECT so that the pages are copied into the dom0 page cache and
+> > transmitted from there.
+> > 
+> > We were discussing recently the possibility of mapping all ballooned out
+> > pages to a single read-only scratch page instead of leaving them empty
+> > in the page tables, this would cause the Xen case to revert to the
+> > native case. I think Thanos was going to take a look into this.
+> > 
+> > Ian.
+> > 
+> 
+> 
 
-Same here
 
-> diff --git a/drivers/staging/iio/light/cm3218.c b/drivers/staging/iio/light/cm3218.c
-> new file mode 100644
-> index 0000000..9c2584d
-> --- /dev/null
-> +++ b/drivers/staging/iio/light/cm3218.c
-> @@ -0,0 +1,581 @@
-[...]
-> +#include <linux/module.h>
-> +#include <linux/i2c.h>
-> +#include <linux/err.h>
-> +#include <linux/mutex.h>
-> +#include <linux/delay.h>
-
-delay.h seems to be unused
-
-> +#include <linux/slab.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/sysfs.h>
-[...]
-> +
-> +static int cm3218_write(struct i2c_client *client, u8 reg, u16 value)
-> +{
-> +	u16 regval;
-> +	int ret;
-> +	struct cm3218_chip *chip = iio_priv(i2c_get_clientdata(client));
-> +
-> +#ifdef	CM3218_DEBUG
-> +	dev_err(&client->dev,
-> +		"Write to device register 0x%02X with 0x%04X\n", reg, value);
-> +#endif	/* CM3218_DEBUG */
-> +	regval = cpu_to_le16(value);
-> +	ret = i2c_smbus_write_word_data(client, reg, regval);
-
-This looks wrong, with this code the on-wire byteorder will differ between
-big endian and little endian systems. Maybe you want
-i2c_smbus_write_word_swapped?
-
-But as Peter said, just use regmap for all IO.
-
-> +	if (ret) {
-> +		dev_err(&client->dev, "Write to device fails: 0x%x\n", ret);
-> +	} else {
-> +		/* Update cache */
-> +		if (reg < CM3218_MAX_CACHE_REGS)
-> +			chip->reg_cache[reg] = value;
-> +	}
-> +
-> +	return ret;
-[...]
-> +
-> +static int cm3218_detect(struct i2c_client *client,
-> +				   struct i2c_board_info *info)
-> +{
-> +	struct i2c_adapter *adapter = client->adapter;
-> +	const char *name = NULL;
-> +
-> +	cm3218_read_ara(client);
-> +
-> +	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-> +		return -ENODEV;
-> +
-> +	name = "cm3218";
-> +	strlcpy(info->type, name, I2C_NAME_SIZE);
-> +
-
-Always returning zero means the chip will bind to any I2C devices which
-happen to use the same address. I don't think you actually need detection,
-so just remove it.
-
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_device_id cm3218_id[] = {
-> +	{"cm3218", 0},
-> +	{}
-> +};
-> +
-
-Nitpick: no need for the newline
-
-> +MODULE_DEVICE_TABLE(i2c, cm3218_id);
-> +
-> +static const struct of_device_id cm3218_of_match[] = {
-> +	{ .compatible = "invn,cm3218", },
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(of, cm3218_of_match);
-> +
-> +static struct i2c_driver cm3218_driver = {
-> +	.class	= I2C_CLASS_HWMON,
-> +	.driver	 = {
-> +			.name = "cm3218",
-> +			.pm = CM3218_PM_OPS,
-> +			.owner = THIS_MODULE,
-> +			.of_match_table = cm3218_of_match,
-> +		    },
-
-Indention looks a bit strange here. Please use one tab per level.
-
-> +	.probe		= cm3218_probe,
-> +	.remove		= cm3218_remove,
-> +	.id_table       = cm3218_id,
-> +	.detect	 = cm3218_detect,
-> +	.address_list   = normal_i2c,
-> +};
-> +module_i2c_driver(cm3218_driver);
