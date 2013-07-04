@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933659Ab3GDDeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 23:34:31 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:19297 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933599Ab3GDDe3 (ORCPT
+	id S933670Ab3GDDek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 23:34:40 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:37419 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933576Ab3GDDeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 23:34:29 -0400
+	Wed, 3 Jul 2013 23:34:37 -0400
 From: Waiman Long <Waiman.Long@hp.com>
-Cc: Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org,
-        Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+Cc: Matthew Wilcox <matthew@wil.cx>, Waiman Long <Waiman.Long@hp.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v4 08/12] ecrypt-fs: rename d_count field of dentry to d_refcount
-Date: Wed,  3 Jul 2013 23:34:14 -0400
-Message-Id: <1372908854-33447-1-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v4 09/12] file locking: rename d_count field of dentry to d_refcount
+Date: Wed,  3 Jul 2013 23:34:23 -0400
+Message-Id: <1372908863-33480-1-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
         Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
@@ -34,22 +34,22 @@ logic and everything should just work.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- fs/ecryptfs/inode.c |    2 +-
+ fs/locks.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
-index 5eab400..e35d0fa 100644
---- a/fs/ecryptfs/inode.c
-+++ b/fs/ecryptfs/inode.c
-@@ -358,7 +358,7 @@ static int ecryptfs_lookup_interpose(struct dentry *dentry,
+diff --git a/fs/locks.c b/fs/locks.c
+index cb424a4..85ac6b7 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1351,7 +1351,7 @@ int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
+ 	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+ 		goto out;
+ 	if ((arg == F_WRLCK)
+-	    && ((dentry->d_count > 1)
++	    && ((dentry->d_refcount > 1)
+ 		|| (atomic_read(&inode->i_count) > 1)))
+ 		goto out;
  
- 	lower_mnt = mntget(ecryptfs_dentry_to_lower_mnt(dentry->d_parent));
- 	fsstack_copy_attr_atime(dir_inode, lower_dentry->d_parent->d_inode);
--	BUG_ON(!lower_dentry->d_count);
-+	BUG_ON(!lower_dentry->d_refcount);
- 
- 	ecryptfs_set_dentry_private(dentry, dentry_info);
- 	ecryptfs_set_dentry_lower(dentry, lower_dentry);
 -- 
 1.7.1
 
