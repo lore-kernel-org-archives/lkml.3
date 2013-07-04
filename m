@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933248Ab3GDBwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 21:52:24 -0400
-Received: from vps1.hno.se ([31.192.227.87]:59451 "EHLO vps1.hno.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755493Ab3GDBwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 21:52:23 -0400
-Message-ID: <1372902699.12955.6.camel@localhost>
-Subject: [PATCH] tty/8250_early: Don't truncate last character of options
-From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 04 Jul 2013 03:51:39 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933359Ab3GDBwt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 21:52:49 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:2865 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab3GDBws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 3 Jul 2013 21:52:48 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH 0/4] seqlock: Add new blocking reader type & use rwlock
+Date: Wed,  3 Jul 2013 21:52:14 -0400
+Message-Id: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 8b278828cb439b3b9b723a1de28ae10ce3e0cc44 Mon Sep 17 00:00:00 2001
-From: Henrik Nordstrom <henrik@henriknordstrom.net>
-Date: Thu, 4 Jul 2013 03:24:41 +0200
-Subject: [PATCH] tty/8250_early: Don't truncate last character of options
+During some perf-record sessions of the kernel running the high_systime
+workload of the AIM7 benchmark, it was found that quite a large portion
+of the spinlock contention was due to the perf_event_mmap_event()
+function itself. This perf kernel function calls d_path() which,
+in turn, call path_get() and dput() indirectly. These 3 functions
+were the hottest functions shown in the perf-report output of
+the _raw_spin_lock() function in an 8-socket system with 80 cores
+(hyperthreading off) with a 3.10-rc1 kernel:
 
-the 3,9 change to use strlcpy to save options uncovered a bug in the
-options argument length calculation causing last character of the
-string to be truncated by strlcpy. This caused the actual console
-to be configured with bad parameters when specifying the console
-using console=uart,... syntax.
+-  13.91%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+   - _raw_spin_lock
+      + 35.54% path_get
+      + 34.85% dput
+      + 19.49% d_path
 
-Example:
+In fact, the output of the "perf record -s -a" (without call-graph)
+showed:
 
-Kernel command line: console=uart,mmio,0x90000000,115200
-Early serial console at MMIO 0x90000000 (options '11520')
+ 13.37%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+  7.61%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
+  3.54%            true  [kernel.kallsyms]     [k] _raw_spin_lock
 
-Signed-off-by: Henrik Nordstrom <henrik@henriknordstrom.net>
----
- drivers/tty/serial/8250/8250_early.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Without using the perf monitoring tool, the actual execution profile
+will be quite different. In fact, with this patch set and my other
+lockless reference count update patch applied, the output of the same
+"perf record -s -a" command became:
 
-diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
-index 721904f..946ddd2 100644
---- a/drivers/tty/serial/8250/8250_early.c
-+++ b/drivers/tty/serial/8250/8250_early.c
-@@ -193,7 +193,8 @@ static int __init parse_options(struct early_serial8250_device *device,
- 	if (options) {
- 		options++;
- 		device->baud = simple_strtoul(options, NULL, 0);
--		length = min(strcspn(options, " "), sizeof(device->options));
-+		length = min(strcspn(options, " ") + 1,
-+			     sizeof(device->options));
- 		strlcpy(device->options, options, length);
- 	} else {
- 		device->baud = probe_baud(port);
--- 
-1.8.3.1
+  2.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
+  1.11%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
+  0.26%            true  [kernel.kallsyms]     [k] _raw_spin_lock
 
+So the time spent on _raw_spin_lock() function went down from 24.52%
+to 4.19%. It can be seen that the performance data collected by the
+perf-record command can be heavily skewed in some cases on a system
+with a large number of CPUs. This set of patches enables the perf
+command to give a more accurate and reliable picture of what is really
+happening in the system. At the same time, they can also improve the
+general performance of systems especially those with a large number
+of CPUs.
 
+The d_path() function takes the following two locks:
+
+1. dentry->d_lock [spinlock] from dget()/dget_parent()/dput()
+2. rename_lock    [seqlock]  from d_path()
+
+This set of patches address the rename_lock bottleneck by changing the
+way seqlock is implemented so that we can optionally use a read/write
+lock as the underlying implementation instead of the default spinlock.
+
+Incidentally, this patch also provides slight 5% performance boost
+over just the the lockless reference count update patch in the short
+workload of the AIM7 benchmark running on a 8-socket 80-core DL980
+machine on a 3.10-based kernel. There were still a few percentage
+points of contention in d_path() and getcwd syscall left due to their
+use of the rename_lock.
+
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+
+Waiman Long (4):
+  seqlock: Add a new blocking reader type
+  dcache: Use blocking reader seqlock when protected data are not
+    changed
+  seqlock: Allow the use of rwlock in seqlock
+  dcache: Use rwlock as the underlying lock in rename_lock
+
+ fs/dcache.c             |   28 ++++----
+ include/linux/seqlock.h |  167 ++++++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 158 insertions(+), 37 deletions(-)
 
