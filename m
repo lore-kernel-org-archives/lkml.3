@@ -1,48 +1,40 @@
-Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab3HADw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 31 Jul 2013 23:52:56 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:39428 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278Ab3HADwz (ORCPT
+	id S1755527Ab3GDKiR (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 4 Jul 2013 06:38:17 -0400
+Received: from mail2.supernet.com.bo ([200.58.72.75]:50127 "EHLO
+	correo4.supernet.com.bo" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750769Ab3GDKiQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 31 Jul 2013 23:52:55 -0400
-Message-ID: <51F9DB94.1090906@felipetonello.com>
-Date: Wed, 31 Jul 2013 20:52:52 -0700
-From: Felipe Ferreri Tonello <eu@felipetonello.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 4 Jul 2013 06:38:16 -0400
+X-Greylist: delayed 393 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Jul 2013 06:38:16 EDT
+Date: Thu, 4 Jul 2013 06:28:42 -0400 (BOT)
+From: ROSE MICHEL FINANCIAL COMPANY <juguz@supernet.com.bo>
+Reply-To: ROSE MICHEL FINANCIAL COMPANY 
+	  <rosemichelfinancialinvestment@gmail.com>
+Message-ID: <1594745882.2537697.1372933722170.JavaMail.root@supernet.com.bo>
+Subject: LOAN AVAILABLE
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Wang Xingchao <xingchao.wang@linux.intel.com>,
-        Jaroslav Kysela <perex@perex.cz>
-Subject: Re: [PATCH v2 1/3] ALSA: Added jack detection kcontrol support
-References: <1374878713-11922-1-git-send-email-eu@felipetonello.com> <1374878713-11922-2-git-send-email-eu@felipetonello.com> <s5hli4pe9ds.wl%tiwai@suse.de>
-In-Reply-To: <s5hli4pe9ds.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.71.189.121]
+X-Mailer: Zimbra 7.2.0_GA_2669 (zclient/7.2.0_GA_2669)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 07:19 AM, Takashi Iwai wrote:
-> At Fri, 26 Jul 2013 15:45:11 -0700,
-> Felipe F. Tonello wrote:
->>
->> From: "Felipe F. Tonello" <eu@felipetonello.com>
->>
->> This patch adds jack support for alsa kcontrol.
->>
->> This support is necessary since the new kcontrol is used by user-space
->> daemons, such as PulseAudio(>=2.0), to do jack detection.)
->>
->> Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
->
-> This patch breaks the build.
 
-I'm planing to send a v3 in few days.
 
-Felipe Tonello
 
+Hello
+
+We offer the following types of loans; * Loans * Business * loans * home loan consolidation personal loan. With affordable interest 
+
+rates our loan process are fast and simple.
+
+Contact us if you’re in need of a loan or interested in becoming a loan consultant, broker agent for us (with benefits) we're 
+
+expecting you.
+
+Yours sincerely
+Mrs. Rose Michel
