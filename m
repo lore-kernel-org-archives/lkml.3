@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab3GDI7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 04:59:50 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:51676 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933435Ab3GDI7p (ORCPT
+	id S1756472Ab3GDJCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:02:54 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39978 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab3GDJCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 04:59:45 -0400
-X-IronPort-AV: E=Sophos;i="4.87,993,1363132800"; 
-   d="scan'208";a="6371837"
-Message-ID: <1372928382.7184.16.camel@kazak.uk.xensource.com>
-Subject: Re: kernel panic in skb_copy_bits
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Joe Jin <joe.jin@oracle.com>
-CC: Alex Bligh <alex@alex.org.uk>, Eric Dumazet <eric.dumazet@gmail.com>,
-        Frank Blaschka <frank.blaschka@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <zheng.x.li@oracle.com>, Xen Devel <xen-devel@lists.xen.org>,
-        Jan Beulich <JBeulich@suse.com>,
-        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Thu, 4 Jul 2013 09:59:42 +0100
-In-Reply-To: <51D53896.1060405@oracle.com>
-References: <51CBAA48.3080802@oracle.com>
-	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
-	 <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>
-	 <1372666283.14691.8.camel@zakaz.uk.xensource.com>
-	 <51D53896.1060405@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Thu, 4 Jul 2013 05:02:50 -0400
+Message-ID: <51D53A31.3080704@linutronix.de>
+Date: Thu, 04 Jul 2013 11:02:41 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.203.1]
+To: Mark Brown <broonie@kernel.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        =?windows-1252?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH 01/22] mfd/ti_am335x_tscadc: remove regmap
+References: <1370950268-7224-1-git-send-email-bigeasy@linutronix.de> <1370950268-7224-2-git-send-email-bigeasy@linutronix.de> <20130611142336.GE29135@zurbaran> <51B7358D.7000605@linutronix.de> <20130614135358.GR1403@sirena.org.uk> <51BEF5F4.4090600@linutronix.de> <20130617160326.GE1403@sirena.org.uk>
+In-Reply-To: <20130617160326.GE1403@sirena.org.uk>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-04 at 16:55 +0800, Joe Jin wrote:
-> On 07/01/13 16:11, Ian Campbell wrote:
-> > On Mon, 2013-07-01 at 11:18 +0800, Joe Jin wrote:
-> >>> A workaround is to turn off O_DIRECT use by Xen as that ensures
-> >>> the pages are copied. Xen 4.3 does this by default.
-> >>>
-> >>> I believe fixes for this are in 4.3 and 4.2.2 if using the
-> >>> qemu upstream DM. Note these aren't real fixes, just a workaround
-> >>> of a kernel bug.
-> >>
-> >> The guest is pvm, and disk model is xvbd, guest config file as below:
-> > 
-> > Do you know which disk backend? The workaround Alex refers to went into
-> > qdisk but I think blkback could still suffer from a variant of the
-> > retransmit issue if you run it over iSCSI.
-> > 
-> >>> To fix on a local build of xen you will need something like this:
-> >>> https://github.com/abligh/qemu-upstream-4.2-testing/commit/9a97c011e1a682eed9bc7195a25349eaf23ff3f9
-> >>> and something like this (NB: obviously insert your own git
-> >>> repo and commit numbers)
-> >>> https://github.com/abligh/xen/commit/f5c344afac96ced8b980b9659fb3e81c4a0db5ca
-> >>>
-> >>
-> >> I think this only for pvhvm/hvm?
-> > 
-> > No, the underlying issue affects any PV device which is run over a
-> > network protocol (NFS, iSCSI etc). In effect a delayed retransmit can
-> > cross over the deayed ack and cause I/O to be completed while
-> > retransmits are pending, such as is described in
-> > http://www.spinics.net/lists/linux-nfs/msg34913.html (the original NFS
-> > variant). The problem is that because Xen PV drivers often unmap the
-> > page on I/O completion you get a crash (page fault) on the retransmit.
-> > 
-> 
-> Can we do it by remember grant page refcount when mapping, and when unmap
-> check if page refcount as same as mapping?  This change will limited in
-> xen-blkback.
-> 
-> Another way is add new page flag like PG_send, when sendpage() be called,
-> set the bit, when page be put, clear the bit. Then xen-blkback can wait
-> on the pagequeue.
+Sorry for the long pause…
 
-These schemes don't work when you have multiple simultaneous I/Os
-referencing the same underlying page.
+On 06/17/2013 06:03 PM, Mark Brown wrote:
+>> This is a lot of for a simple mmio access. In terms of
+>> performance: If I add a trace point to my read and write I have
+>> still less code which is called and it can be disabled. This
+>> regmap overhead is always there chasing pointers.
+> 
+> Equally well what you're implementing here is support for
+> something that's typically implemented with an I2C or SPI control
+> interface so you're already going to be quite a way ahead of the
+> norm.  This is part of what's confusing me, usually for this
+> application things aren't that bad performance wise even on a
+> massively slower bus.
+> 
+> If all you're saying here is that there's some overhead that's fine
+> if a bit surprising, but the way you're talking made it sound like
+> there was some issue that made the API actually unusable.
 
-> 
-> Thanks,
-> Joe
-> 
-> > The issue also affects native but in that case the symptom is "just" a
-> > corrupt packet on the wire. I tried to address this with my "skb
-> > destructor" series but unfortunately I got bogged down on the details,
-> > then I had to take time out to look into some other stuff and never
-> > managed to get back into it. I'd be very grateful if there was someone
-> > who could pick up that work (Alex gave some useful references in another
-> > reply to this thread)
-> > 
-> > Some PV disk backends (e.g. blktap2) have worked around this by using
-> > grant copy instead of grant map, others (e.g. qdisk) have disabled
-> > O_DIRECT so that the pages are copied into the dom0 page cache and
-> > transmitted from there.
-> > 
-> > We were discussing recently the possibility of mapping all ballooned out
-> > pages to a single read-only scratch page instead of leaving them empty
-> > in the page tables, this would cause the Xen case to revert to the
-> > native case. I think Thanos was going to take a look into this.
-> > 
-> > Ian.
-> > 
-> 
-> 
+No, sorry for that confusion. I had a problem with the locking in irq
+context, changed the driver & pointed out the problem, been told that
+there is a fix, applied it, never complained again.
 
+This is simply about I am forced to use regmap and I don't agree with
+it.
 
+>> As I said before: I doubt that you get this regmap access in an
+>> one GiB network driver and in turn remove their trace points to
+>> register access.
+> 
+> Well, of course for that sort of thing the general trick is not to
+> talk to the hardware at all and do as much as possible with memory
+> that the hardware can DMA - there's actually still non-trivial
+> costs in talking over the buses.
+
+That is true but even while doing DMA you have enough handshake with
+the HW to trigger the transfer and if you are lucky your DMA
+descriptors are in cached memory.
+
+>> Please don't get me wrong: It is still nice for slow buses and
+>> this ADC driver isn't anything close to high performance like a
+>> 1GiB network driver but it adds a lot of unwanted overhead which
+>> I prefer not to have.
+> 
+> OK, but equally well remember that from a subsystem maintainer
+> point of view having things factored out is a win in itself; for
+> example with the MFDs locking on the register I/O has been a
+> persistent issue in the past.
+
+I agree with that. But:
+
+The driver here does not use atomic updates but read followed by write
+so your locking here is futile. So the API/regmap alone does not make
+it right. And look: the MFD part uses regmap. Its children (IIO &
+input) do not use it. After I told this Samuel he said that it is okay.
+So here I am. Using regmap in MFD which is only used once on init and
+never again. It has regmap.
+
+The register access in both child driver is split making sure they do
+not use the same ones. I added one function which writes a common
+register. That one is reset after an operation and needs to be written
+by the currently active child so the HW continues to work. Haven't seen
+anything close to it in regmap.
+
+I ask, politely I hope, to get this patch in and remove regmap since
+none of its features are used in this driver.
+
+Sebastian
