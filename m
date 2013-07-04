@@ -1,104 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab3GDHpp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 03:45:45 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:52333 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab3GDHpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 03:45:44 -0400
-X-AuditID: 9c930179-b7b7fae000002142-0d-51d528261ae0
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH v2 1/4] perf util: Add parse_nsec_time() function
-References: <1370234653-31582-1-git-send-email-namhyung@kernel.org>
-Date: Thu, 04 Jul 2013 16:45:42 +0900
-In-Reply-To: <1370234653-31582-1-git-send-email-namhyung@kernel.org> (Namhyung
-	Kim's message of "Mon, 3 Jun 2013 13:44:10 +0900")
-Message-ID: <87li5mzs2h.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1756461Ab3GDHtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 03:49:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34938 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756157Ab3GDHtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 03:49:11 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net, rui.zhang@intel.com,
+        lenb@kernel.org, Matthew Garrett <matthew.garrett@nebula.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: Re: [PATCH 2/3] ACPI: Remove old /proc/acpi/event interface
+Date: Thu, 04 Jul 2013 09:49:02 +0200
+Message-ID: <1513052.oSjeLTGJqb@skinner.arch.suse.de>
+Organization: SUSE Products GmbH
+User-Agent: KMail/4.10.5 (Linux/3.7.10-1.16-desktop; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1545278.bq6oSR27Gq@vostro.rjw.lan>
+References: <1372855719-34315-1-git-send-email-trenn@suse.de> <1372855719-34315-3-git-send-email-trenn@suse.de> <1545278.bq6oSR27Gq@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
+On Wednesday, July 03, 2013 11:56:27 PM Rafael J. Wysocki wrote:
+> On Wednesday, July 03, 2013 02:48:38 PM Thomas Renninger wrote:
+> > It is quite some time that this one is deprecated.
+> > Get rid of it.
+> > 
+> > If there should really some important user be overseen it could get
+> > reverted and worked on the userspace program first. But it is time to do
+> > something to get rid of this old stuff...
+> 
+> Does this patch depend on the other patches in this series?
 
-Could you pick these up or give a comment?
+I should have split this up in two submit requests...:
 
-Thanks,
-Namhyung
+[PATCH 1/3] x86 microcode: Remove old MICROCODE_OLD_INTERFACE
+is independent from the other two, but
 
+[PATCH 2/3] ACPI: Remove old /proc/acpi/event interface
+and
+[PATCH 3/3] platform thinkpad: Remove deprecated hotkey_report_mode parameter
+should go in together.
 
-On Mon,  3 Jun 2013 13:44:10 +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
->
-> The parse_nsec_time() function is for parsing a string of time into
-> 64-bit nsec value.  It's a preparation of time filtering in some of
-> perf commands.
->
-> Cc: David Ahern <dsahern@gmail.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/util.c | 30 ++++++++++++++++++++++++++++++
->  tools/perf/util/util.h |  2 ++
->  2 files changed, 32 insertions(+)
->
-> diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-> index 59d868add275..4a207c40d7bc 100644
-> --- a/tools/perf/util/util.c
-> +++ b/tools/perf/util/util.c
-> @@ -269,3 +269,33 @@ void perf_debugfs_set_path(const char *mntpt)
->  	snprintf(debugfs_mountpoint, strlen(debugfs_mountpoint), "%s", mntpt);
->  	set_tracing_events_path(mntpt);
->  }
-> +
-> +int parse_nsec_time(const char *str, u64 *ptime)
-> +{
-> +	u64 time_sec, time_nsec;
-> +	char *end;
-> +
-> +	time_sec = strtoul(str, &end, 10);
-> +	if (*end != '.' && *end != '\0')
-> +		return -1;
-> +
-> +	if (*end == '.') {
-> +		int i;
-> +		char nsec_buf[10];
-> +
-> +		strncpy(nsec_buf, end + 1, 9);
-> +		nsec_buf[9] = '\0';
-> +
-> +		/* make it nsec precision */
-> +		for (i = strlen(nsec_buf); i < 9; i++)
-> +			nsec_buf[i] = '0';
-> +
-> +		time_nsec = strtoul(nsec_buf, &end, 10);
-> +		if (*end != '\0')
-> +			return -1;
-> +	} else
-> +		time_nsec = 0;
-> +
-> +	*ptime = time_sec * NSEC_PER_SEC + time_nsec;
-> +	return 0;
-> +}
-> diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-> index 7a484c97e500..6c8baf312c8a 100644
-> --- a/tools/perf/util/util.h
-> +++ b/tools/perf/util/util.h
-> @@ -204,6 +204,8 @@ static inline int has_extension(const char *filename, const char *ext)
->  #define NSEC_PER_MSEC	1000000L
->  #endif
->  
-> +int parse_nsec_time(const char *str, u64 *ptime);
-> +
->  extern unsigned char sane_ctype[256];
->  #define GIT_SPACE		0x01
->  #define GIT_DIGIT		0x02
+        Thomas
