@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab3GDFlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 01:41:01 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:39978 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755172Ab3GDFk7 (ORCPT
+	id S1755591Ab3GDFlL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 01:41:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:54357 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755172Ab3GDFlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 01:40:59 -0400
+	Thu, 4 Jul 2013 01:41:08 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Jiri Slaby <jslaby@suse.cz>
 CC: <linux-kernel@vger.kernel.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Felipe Balbi <balbi@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Moiz Sonasath <m-sonasath@ti.com>
-Subject: [PATCH 1/4] usb: limit OMAP related USB options to OMAP2PLUS platforms
-Date: Thu, 4 Jul 2013 01:39:10 -0400
-Message-ID: <1372916353-24050-2-git-send-email-paul.gortmaker@windriver.com>
+        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 4/4] checkpatch: only allow COMPILE_TEST in Kconfig dependency lines
+Date: Thu, 4 Jul 2013 01:39:13 -0400
+Message-ID: <1372916353-24050-5-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1372916353-24050-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,70 +27,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 57f6ce072e35770a63be0c5d5e82f90d8da7d665 ("usb: phy:
-add a new driver for usb3 phy") added the new Kconfig option
-OMAP_USB3, but it had no dependencies whatsoever, and hence
-became available across all arch/platforms.
+The option CONFIG_COMPILE_TEST, added in commit 4bb1667255a
+("build some drivers only when compile-testing") is meant to
+give a middle ground[1] between those who want the widest compile
+coverage possible (e.g. building sparc drivers for mips) and
+those who want dependencies to represent real world systems
+(e.g. don't allow me to see OMAP options when building x86).
 
-Which presumably caused this to show up in x86 randconfig:
+As such, this addition is meant to be used in dependency lines,
+properly or'd in with the real world hardware dependency.  Those
+who select it, get wide compile coverage.  Those who do not, get
+real world dependencies that match where the hardware is available
+and/or where the driver is useful.
 
-    warning: (USB_MUSB_HDRC && OMAP_USB3) selects \
-        OMAP_CONTROL_USB which has unmet direct \
-        dependencies (USB_SUPPORT && ARCH_OMAP2PLUS)
+With that in mind, it is clear that this is _not_ to be used in
+any C code with "#ifdef CONFIG_COMPILE_TEST" etc.  However there
+will (and already has been) instances of people thinking this is
+an OK practice[2].  So teach checkpatch to spot them as an error.
 
-Then commit 6992819feb39cb9adac72170555d957d07f869f2 ("usb: phy:
-fix Kconfig warning") was added.  However, this just deleted the
-ARCH_OMAP2PLUS dependency from OMAP_CONTROL_USB, further
-compounding the problem by opening up OMAP_CONTROL_USB to
-all arch/platforms as well.
+[1] https://lkml.org/lkml/2013/3/7/456
+[2] https://lkml.org/lkml/2013/7/1/641
 
-Earlier it was suggested[1] that we revert the change of 6992819feb
-to restore the dependency, and add a same ARCH_OMAP2PLUS dependency
-to the new OMAP_USB3 entry.  However that was discouraged on the
-grounds of people wanting the extra sanity compile testing on x86,
-even though the driver could probably never be used there.
-
-Now we have CONFIG_COMPILE_TEST, so developers who value the ability
-to compile drivers on an architecture that it never can be used for
-can have that, and people who want dependencies to shield them from
-seeing options that aren't relevant to their platform get what they
-want too.
-
-Here we restore the dependency but couple it with COMPILE_TEST, in
-order to achieve both of the above goals.
-
-[1] https://patchwork.kernel.org/patch/2194511/
-
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Moiz Sonasath <m-sonasath@ti.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Jiri Slaby <jslaby@suse.cz>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/phy/Kconfig | 2 ++
- 1 file changed, 2 insertions(+)
+ scripts/checkpatch.pl | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-index a5a9552..f061f28 100644
---- a/drivers/usb/phy/Kconfig
-+++ b/drivers/usb/phy/Kconfig
-@@ -65,6 +65,7 @@ config NOP_USB_XCEIV
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b954de5..c0871a3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1922,6 +1922,12 @@ sub process {
+ 			     "Use of CONFIG_EXPERIMENTAL is deprecated. For alternatives, see https://lkml.org/lkml/2012/10/23/580\n");
+ 		}
  
- config OMAP_CONTROL_USB
- 	tristate "OMAP CONTROL USB Driver"
-+	depends on ARCH_OMAP2PLUS || COMPILE_TEST
- 	help
- 	  Enable this to add support for the USB part present in the control
- 	  module. This driver has API to power on the USB2 PHY and to write to
-@@ -84,6 +85,7 @@ config OMAP_USB2
- 
- config OMAP_USB3
- 	tristate "OMAP USB3 PHY Driver"
-+	depends on ARCH_OMAP2PLUS || COMPILE_TEST
- 	select OMAP_CONTROL_USB
- 	help
- 	  Enable this to support the USB3 PHY that is part of SOC. This
++# disallow the addition of CONFIG_COMPILE_TEST in #if(def).
++		if ($line =~ /^\+\s*\#\s*if.*\bCONFIG_COMPILE_TEST\b/) {
++			ERROR("CONFIG_COMPILE_TEST",
++			     "Use of COMPILE_TEST is only allowed in Kconfig dependency lines.\n");
++		}
++
+ # check for RCS/CVS revision markers
+ 		if ($rawline =~ /^\+.*\$(Revision|Log|Id)(?:\$|)/) {
+ 			WARN("CVS_KEYWORD",
 -- 
 1.8.1.2
 
