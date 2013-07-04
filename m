@@ -1,86 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933600Ab3GDATl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 20:19:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8201 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933570Ab3GDATi (ORCPT
+	id S1756355Ab3GDAXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 20:23:32 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36141 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933428Ab3GDAX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 20:19:38 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ys9SgDZjGkgA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=_7JHcU0X-nEA:10 a=VwQbUJbxAAAA:8 a=DgIrJZqeKAH2_VcHJvIA:9 a=QEXdDO2ut3YA:10 a=U62fhAwekXMA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1372897175.22688.135.camel@gandalf.local.home>
-Subject: Re: PATCH? trace_remove_event_call() should fail if call is active
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Date: Wed, 03 Jul 2013 20:19:35 -0400
-In-Reply-To: <20130703221847.GA15566@redhat.com>
-References: <20130702193425.GA8813@redhat.com>
-	 <1372799087.22688.58.camel@gandalf.local.home>
-	 <20130702213808.GA24757@redhat.com> <20130702222359.GA27629@redhat.com>
-	 <51D38F8D.3010708@hitachi.com> <20130703172029.GA14309@redhat.com>
-	 <20130703175420.GA25668@redhat.com>
-	 <1372874547.22688.111.camel@gandalf.local.home>
-	 <20130703191748.GA2884@redhat.com>
-	 <1372883643.22688.118.camel@gandalf.local.home>
-	 <20130703221847.GA15566@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 3 Jul 2013 20:23:26 -0400
+Date: Wed, 3 Jul 2013 20:22:35 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        <linux-kernel@vger.kernel.org>, Joseph Lo <josephl@nvidia.com>,
+        <linux-tegra@vger.kernel.org>, Stephen Warren <swarren@nvidia.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
+Message-ID: <20130704002235.GL22702@windriver.com>
+References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
+ <20130702232259.GH11625@codeaurora.org>
+ <51D39004.9000907@wwwdotorg.org>
+ <20130703051907.GA22702@windriver.com>
+ <20130703100044.GG24642@n2100.arm.linux.org.uk>
+ <20130703153012.GK22702@windriver.com>
+ <20130703172001.GH24642@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130703172001.GH24642@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-04 at 00:18 +0200, Oleg Nesterov wrote:
-> On 07/03, Steven Rostedt wrote:
-> >
-> > No, I would avoid any changes to the debugfs infrastructure.
+[Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 18:20) Russell King - ARM Linux wrote:
+
+> On Wed, Jul 03, 2013 at 11:30:12AM -0400, Paul Gortmaker wrote:
+> > [Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 11:00) Russell King - ARM Linux wrote:
+> > 
+> > > On Wed, Jul 03, 2013 at 01:19:07AM -0400, Paul Gortmaker wrote:
+> > > > As an aside, I'm now thinking any __INIT that implicitly rely on EOF for
+> > > > closure are nasty traps waiting to happen and it might be worthwhile to
+> > > > audit and explicitly __FINIT them before someone appends to the file...
+> > > 
+> > > That hides a different kind of bug though - I hate __FINIT for exactly
+> > > that reason.  Consider this:
+> > 
+> > Agreed - perhaps masking that it is a ".previous" just hides the fact
+> > that it is more like a pop operation vs. an on/off operation, or per
+> > function as we have in C.
 > 
-> YEs, agreed.
+> I read the info pages, because I thought it was a pop operation too.
+> I was concerned that .section didn't push the previous section onto the
+> stack.
 > 
-> > OK, what about the below patch, followed by an updated version of your
-> > patch. I'll send that as a reply to this one.
+> However, .popsection is the pseudio-op which pops.  .previous just toggles
+> the current section with the section immediately before it.
 > 
-> Steven, you do understand that I can't review the changes in this area.
+> So:
+> 
+> 	.text
+> 	.data
+> 	.previous
+> 	/* this is .text */
+> 	.previous
+> 	/* this is .data */
+> 	.previous
+> 	/* this is .text */
+> 	.previous
+> 	/* this is .data */
 
-I have more faith in you than you do ;-)
+Cool -- I bet we weren't the only ones thinking it was a pop.  Thanks.
+
+Does that make __FINIT less evil than we previously assumed?  I think
+your example was the following pseudo-patch:
+
+
+	.text
+	<some text>
++	.data
++ 	<some data>
+	__INIT
+	<big hunk of init>
+	__FINIT
+	/* this below used to be text */
+	<more stuff that was originally meant for text>
+
+Even if it is a toggle (vs. pop), the end text will now become data,
+so the no-op __FINIT with an explicit section called out just below
+it may still be the most unambiguous way to indicate what is going on.
 
 > 
-> But at first glance, _I think_ this should work. And this is much simpler,
-> ->open() blocks trace_remove_event_call() (you added TRACE_EVENT_FL_REF_MASK
-> check into the next patch).
-
-Yep.
-
+> > That seems reasonable to me.  I can't think of any self auditing that is
+> > reasonably simple to implement.  One downside of __FINIT as a no-op vs.
+> > what it is today, is that a dangling __FINIT in a file with no other
+> > previous sections will emit a warning.  But that is a small low value
+> > corner case I think.
 > 
-> Which tree this patch is based on? I have pulled linux-trace.git#for-next
-> and I do not see tracing_open_generic_file/etc in trace_events.c.
-
-Ug! Thanks! I posted my [for-next] series but never pushed it to my git
-tree. I just pushed it now. I'm glad you told me this because I was
-under the assumption that the code was already in my kernel.org repo,
-and I would have pushed to Linus thinking it was already in linux-next
-and would have been embarrassed if something went wrong.
-
+> That warning from __FINIT will only happen if there has been no section
+> or .text or .data statement in the file at all.  As soon as you have any
+> statement setting any kind of section, .previous doesn't warn.
 > 
-> I do not understand what protects call->flags, I guess there is another
-> lock which I do not see in my tree?
+> So:
+> 
+> 	.text
+> 	...
+> 	__FINIT
+> 
+> produces no warning.o
 
-Those flags should only be set under the event_mutex lock. But I see I
-didn't do that :-)   Yeah, I need to add locks for that.
-
-See, you can review my patch and provide valuable feedback!
-
--- Steve
-
-
+Yep -- we are both saying the same thing here - hence why I called it a
+small low value corner case.
