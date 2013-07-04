@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932868Ab3GDNor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 09:44:47 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:38574 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754335Ab3GDNon (ORCPT
+	id S1756688Ab3GDNpC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 09:45:02 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:41660 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab3GDNo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 09:44:43 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Michael Witten <mfwitten@gmail.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 1/2] perf/Makefile: do not open-code shell-sq
-Date: Thu,  4 Jul 2013 19:10:45 +0530
-Message-Id: <1372945246-21605-2-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.8.3.1.643.gebeea52.dirty
-In-Reply-To: <1372945246-21605-1-git-send-email-artagnon@gmail.com>
-References: <1372945246-21605-1-git-send-email-artagnon@gmail.com>
+	Thu, 4 Jul 2013 09:44:59 -0400
+Date: Thu, 4 Jul 2013 15:44:57 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during
+ context switch
+Message-ID: <20130704134457.GS6123@two.firstfloor.org>
+References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
+ <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com>
+ <20130704095735.GL18898@dyad.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130704095735.GL18898@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-d24e473e (perf_counter: copy in Git's top Makefile, 2009-04-20) started
-by determining *_SQ variables (shell-quoted equivalents) by calling
-subst by hand, with the rationale that $(call) must be avoided to
-accommodate ancient setups.  That reasoning does not hold true anymore,
-as our Makefiles are filled with $(call) invocations now.  So, use the
-shell-sq function introduced in ced465c4 (perf tools: Makefile:
-PYTHON{,_CONFIG} to bandage Python 3 incompatibility, 2011-04-02) in
-place of open-coding.
+On Thu, Jul 04, 2013 at 11:57:35AM +0200, Peter Zijlstra wrote:
+> On Mon, Jul 01, 2013 at 03:23:04PM +0800, Yan, Zheng wrote:
+> > +++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+> > @@ -185,6 +185,13 @@ void intel_pmu_lbr_reset(void)
+> >  		intel_pmu_lbr_reset_32();
+> >  	else
+> >  		intel_pmu_lbr_reset_64();
+> > +
+> > +	wrmsrl(x86_pmu.lbr_tos, 0);
+> > +}
+> 
+> I double checked; my SDM Jun 2013, Vol 3C 35-93 very explicitly states that
+> MSR_LASTBRANCH_TOS is a read-only MSR. And afaicr all previous times I checked
+> this it did say this too.
 
-Cc: Michael Witten <mfwitten@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- tools/perf/Makefile        |  2 +-
- tools/perf/config/Makefile | 23 +++++++++++------------
- 2 files changed, 12 insertions(+), 13 deletions(-)
+Evidently it's not read-only on Haswell at least.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 203cb0e..ace1784 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -731,7 +731,7 @@ cscope:
- 	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
- 
- ### Detect prefix changes
--TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
-+TRACK_CFLAGS = $(call escape-for-shell-sq,$(CFLAGS)):\
-              $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
- 
- $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index f139dcd..3025d87 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -457,21 +457,20 @@ ETC_PERFCONFIG = etc/perfconfig
- endif
- lib = lib
- 
--# Shell quote (do not use $(call) to accommodate ancient setups);
--ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
--DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
--bindir_SQ = $(subst ','\'',$(bindir))
--mandir_SQ = $(subst ','\'',$(mandir))
--infodir_SQ = $(subst ','\'',$(infodir))
--perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
--template_dir_SQ = $(subst ','\'',$(template_dir))
--htmldir_SQ = $(subst ','\'',$(htmldir))
--prefix_SQ = $(subst ','\'',$(prefix))
--sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
-+ETC_PERFCONFIG_SQ = $(call shell-sq,$(ETC_PERFCONFIG))
-+DESTDIR_SQ = $(call shell-sq,$(DESTDIR))
-+bindir_SQ = $(call shell-sq,$(bindir))
-+mandir_SQ = $(call shell-sq,$(mandir))
-+infodir_SQ = $(call shell-sq,$(infodir))
-+perfexecdir_SQ = $(call shell-sq,$(perfexecdir))
-+template_dir_SQ = $(call shell-sq,$(template_dir))
-+htmldir_SQ = $(call shell-sq,$(htmldir))
-+prefix_SQ = $(call shell-sq,$(prefix))
-+sysconfdir_SQ = $(call shell-sq,$(sysconfdir))
- 
- ifneq ($(filter /%,$(firstword $(perfexecdir))),)
- perfexec_instdir = $(perfexecdir)
- else
- perfexec_instdir = $(prefix)/$(perfexecdir)
- endif
--perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
-+perfexec_instdir_SQ = $(call shell-sq,$(perfexec_instdir))
+And if we don't restore the TOS it can be completely wrong, and
+the stack state would corrupt.
+
+The LBR stack is quite sensitive to any corruption of the state,
+that is different from other LBR uses.
+
+I suppose the wrmsr could be made checking to catch any potential
+failure. But normally Intel CPUs are quite consistent in things
+like that.
+
+-Andi
+
 -- 
-1.8.3.1.643.gebeea52.dirty
-
+ak@linux.intel.com -- Speaking for myself only.
