@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab3GDJcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:32:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39581 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750769Ab3GDJcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:32:14 -0400
-Date: Thu, 4 Jul 2013 10:32:11 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/13] mm: numa: Scan pages with elevated page_mapcount
-Message-ID: <20130704093211.GN1875@suse.de>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-13-git-send-email-mgorman@suse.de>
- <20130703184124.GD18898@dyad.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130703184124.GD18898@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752610Ab3GDJea (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:34:30 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:37585 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3GDJe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 05:34:28 -0400
+Message-ID: <1372930465.4979.82.camel@edumazet-glaptop>
+Subject: Re: kernel panic in skb_copy_bits
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Joe Jin <joe.jin@oracle.com>, Alex Bligh <alex@alex.org.uk>,
+        Frank Blaschka <frank.blaschka@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, zheng.x.li@oracle.com,
+        Xen Devel <xen-devel@lists.xen.org>, Jan Beulich <JBeulich@suse.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Thu, 04 Jul 2013 02:34:25 -0700
+In-Reply-To: <1372928382.7184.16.camel@kazak.uk.xensource.com>
+References: <51CBAA48.3080802@oracle.com>
+	 <1372311118.3301.214.camel@edumazet-glaptop> <51CD0E67.4000008@oracle.com>
+	 <6BFD5AF235F72F13CE646A0D@nimrod.local> <51D0F514.3070309@oracle.com>
+	 <1372666283.14691.8.camel@zakaz.uk.xensource.com>
+	 <51D53896.1060405@oracle.com>
+	 <1372928382.7184.16.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 08:41:24PM +0200, Peter Zijlstra wrote:
-> On Wed, Jul 03, 2013 at 03:21:39PM +0100, Mel Gorman wrote:
+On Thu, 2013-07-04 at 09:59 +0100, Ian Campbell wrote:
+> On Thu, 2013-07-04 at 16:55 +0800, Joe Jin wrote:
+> > 
+> > Another way is add new page flag like PG_send, when sendpage() be called,
+> > set the bit, when page be put, clear the bit. Then xen-blkback can wait
+> > on the pagequeue.
 > 
-> > Note that the patch still leaves shared, file-backed in VM_EXEC vmas in
-> > place guessing that these are shared library pages. Migrating them are
-> > likely to be of major benefit as generally the expectation would be that
-> > these are read-shared between caches and that iTLB and iCache pressure is
-> > generally low.
-> 
-> I'm failing to grasp.. we don't migrate them because migrating them would
-> likely be beneficial?
-> 
-> Missing a negative somewhere?
+> These schemes don't work when you have multiple simultaneous I/Os
+> referencing the same underlying page.
 
-Yes.
+So this is a page property, still the patches I saw tried to address
+this problem adding networking stuff (destructors) in the skbs.
 
-Note that the patch does not migrate shared, file-backed within vmas marked
-VM_EXEC as these are generally shared library pages. Migrating such pages
-is not beneficial as there is an expectation they are read-shared between
-caches and iTLB and iCache pressure is generally low.
+Given that a page refcount can be transfered between entities, say using
+splice() system call, I do not really understand why the fix would imply
+networking only.
 
--- 
-Mel Gorman
-SUSE Labs
+Let's try to fix it properly, or else we must disable zero copies
+because they are not reliable.
+
+Why sendfile() doesn't have the problem, but vmsplice()+splice() do have
+this issue ?
+
+As soon as a page fragment reference is taken somewhere, the only way to
+properly reuse the page is to rely on put_page() and page being freed.
+
+Adding workarounds in TCP stack to always copy the page fragments in
+case of a retransmit is partial solution, as the remote peer could be
+malicious and send ACK _before_ page content is actually read by the
+NIC.
+
+So if we rely on networking stacks to give the signal for page reuse, we
+can have major security issue.
+
+
+
