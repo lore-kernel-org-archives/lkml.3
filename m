@@ -1,93 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab3GDBwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 3 Jul 2013 21:52:49 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:2865 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493Ab3GDBws (ORCPT
+	id S933477Ab3GDBwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 3 Jul 2013 21:52:55 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:44168 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933393Ab3GDBww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 3 Jul 2013 21:52:48 -0400
+	Wed, 3 Jul 2013 21:52:52 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH 0/4] seqlock: Add new blocking reader type & use rwlock
-Date: Wed,  3 Jul 2013 21:52:14 -0400
-Message-Id: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH 1/4] seqlock: Add a new blocking reader type
+Date: Wed,  3 Jul 2013 21:52:15 -0400
+Message-Id: <1372902738-30693-2-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
+References: <1372902738-30693-1-git-send-email-Waiman.Long@hp.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>,
         Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During some perf-record sessions of the kernel running the high_systime
-workload of the AIM7 benchmark, it was found that quite a large portion
-of the spinlock contention was due to the perf_event_mmap_event()
-function itself. This perf kernel function calls d_path() which,
-in turn, call path_get() and dput() indirectly. These 3 functions
-were the hottest functions shown in the perf-report output of
-the _raw_spin_lock() function in an 8-socket system with 80 cores
-(hyperthreading off) with a 3.10-rc1 kernel:
+The sequence lock (seqlock) was originally designed for the cases
+where the readers do not need to block the writers by making the
+readers retry the read operation when the data change.
 
--  13.91%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-   - _raw_spin_lock
-      + 35.54% path_get
-      + 34.85% dput
-      + 19.49% d_path
+Since then, the use cases have been expanded to include situations
+where a thread does not need to change the data (effectively a reader)
+but have to take the writer lock because it can't tolerate changes
+to the underlying structure. Some examples are the d_path() function
+and the getcwd() syscall in fs/dcache.c where the functions take
+the writer lock on rename_lock even though they don't need to change
+anything in the protected data structure at all. This is inefficient
+as a reader is now blocking other non-blocking readers by pretending
+to be a writer.
 
-In fact, the output of the "perf record -s -a" (without call-graph)
-showed:
-
- 13.37%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-  7.61%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
-  3.54%            true  [kernel.kallsyms]     [k] _raw_spin_lock
-
-Without using the perf monitoring tool, the actual execution profile
-will be quite different. In fact, with this patch set and my other
-lockless reference count update patch applied, the output of the same
-"perf record -s -a" command became:
-
-  2.82%           reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-  1.11%              ls  [kernel.kallsyms]     [k] _raw_spin_lock
-  0.26%            true  [kernel.kallsyms]     [k] _raw_spin_lock
-
-So the time spent on _raw_spin_lock() function went down from 24.52%
-to 4.19%. It can be seen that the performance data collected by the
-perf-record command can be heavily skewed in some cases on a system
-with a large number of CPUs. This set of patches enables the perf
-command to give a more accurate and reliable picture of what is really
-happening in the system. At the same time, they can also improve the
-general performance of systems especially those with a large number
-of CPUs.
-
-The d_path() function takes the following two locks:
-
-1. dentry->d_lock [spinlock] from dget()/dget_parent()/dput()
-2. rename_lock    [seqlock]  from d_path()
-
-This set of patches address the rename_lock bottleneck by changing the
-way seqlock is implemented so that we can optionally use a read/write
-lock as the underlying implementation instead of the default spinlock.
-
-Incidentally, this patch also provides slight 5% performance boost
-over just the the lockless reference count update patch in the short
-workload of the AIM7 benchmark running on a 8-socket 80-core DL980
-machine on a 3.10-based kernel. There were still a few percentage
-points of contention in d_path() and getcwd syscall left due to their
-use of the rename_lock.
+This patch tries to eliminate this efficiency by introducing a new
+type of blocking reader to the seqlock locking mechanism. This new
+blocking reader will not block other non-blocking readers, but will
+block other blocking readers and writers.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ include/linux/seqlock.h |   65 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 60 insertions(+), 5 deletions(-)
 
-Waiman Long (4):
-  seqlock: Add a new blocking reader type
-  dcache: Use blocking reader seqlock when protected data are not
-    changed
-  seqlock: Allow the use of rwlock in seqlock
-  dcache: Use rwlock as the underlying lock in rename_lock
-
- fs/dcache.c             |   28 ++++----
- include/linux/seqlock.h |  167 ++++++++++++++++++++++++++++++++++++++++-------
- 2 files changed, 158 insertions(+), 37 deletions(-)
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 1829905..26be0d9 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -3,15 +3,18 @@
+ /*
+  * Reader/writer consistent mechanism without starving writers. This type of
+  * lock for data where the reader wants a consistent set of information
+- * and is willing to retry if the information changes.  Readers never
+- * block but they may have to retry if a writer is in
+- * progress. Writers do not wait for readers. 
++ * and is willing to retry if the information changes. There are two types
++ * of readers:
++ * 1. Non-blocking readers which never block but they may have to retry if
++ *    a writer is in progress. Writers do not wait for non-blocking readers.
++ * 2. Blocking readers which will block if a writer is in progress. A
++ *    blocking reader in progress will also block a writer.
+  *
+- * This is not as cache friendly as brlock. Also, this will not work
++ * This is not as cache friendly as brlock. Also, this may not work well
+  * for data that contains pointers, because any writer could
+  * invalidate a pointer that a reader was following.
+  *
+- * Expected reader usage:
++ * Expected non-blocking reader usage:
+  * 	do {
+  *	    seq = read_seqbegin(&foo);
+  * 	...
+@@ -268,4 +271,56 @@ write_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
+ 	spin_unlock_irqrestore(&sl->lock, flags);
+ }
+ 
++/*
++ * The blocking reader lock out other writers, but doesn't update the count.
++ * Acts like a normal spin_lock/unlock.
++ * Don't need preempt_disable() because that is in the spin_lock already.
++ */
++static inline void read_seqlock(seqlock_t *sl)
++{
++	spin_lock(&sl->lock);
++}
++
++static inline void read_sequnlock(seqlock_t *sl)
++{
++	spin_unlock(&sl->lock);
++}
++
++static inline void read_seqlock_bh(seqlock_t *sl)
++{
++	spin_lock_bh(&sl->lock);
++}
++
++static inline void read_sequnlock_bh(seqlock_t *sl)
++{
++	spin_unlock_bh(&sl->lock);
++}
++
++static inline void read_seqlock_irq(seqlock_t *sl)
++{
++	spin_lock_irq(&sl->lock);
++}
++
++static inline void read_sequnlock_irq(seqlock_t *sl)
++{
++	spin_unlock_irq(&sl->lock);
++}
++
++static inline unsigned long __read_seqlock_irqsave(seqlock_t *sl)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&sl->lock, flags);
++	return flags;
++}
++
++#define read_seqlock_irqsave(lock, flags)				\
++	do { flags = __read_seqlock_irqsave(lock); } while (0)
++
++static inline void
++read_sequnlock_irqrestore(seqlock_t *sl, unsigned long flags)
++{
++	spin_unlock_irqrestore(&sl->lock, flags);
++}
++
+ #endif /* __LINUX_SEQLOCK_H */
+-- 
+1.7.1
 
