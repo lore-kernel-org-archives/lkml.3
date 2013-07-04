@@ -1,68 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab3GDLns (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 07:43:48 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:53688 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996Ab3GDLnr (ORCPT
+	id S1756602Ab3GDLoF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 07:44:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50061 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab3GDLoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 07:43:47 -0400
+	Thu, 4 Jul 2013 07:44:02 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: stable <stable@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH stable 2.6.33+ ] tracing: Use current_uid() for critical time tracing
+References: <1372875744.22688.114.camel@gandalf.local.home>
+Date: Thu, 04 Jul 2013 12:43:57 +0100
+In-Reply-To: <1372875744.22688.114.camel@gandalf.local.home> (Steven Rostedt's
+	message of "Wed, 03 Jul 2013 14:22:24 -0400")
+Message-ID: <87k3l65z42.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20130704092249.GK27646@sirena.org.uk>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-	<1372072858-6559-4-git-send-email-yadi.brar@samsung.com>
-	<20130703180511.GA374@sirena.org.uk>
-	<CAKew6eVs+D4Yf+9=e+0fj0UaZQ98gJ-1=CX30_H0p-xnF75gaw@mail.gmail.com>
-	<20130704092249.GK27646@sirena.org.uk>
-Date: Thu, 4 Jul 2013 17:13:46 +0530
-Message-ID: <CAKew6eVWt==t3NZTwvULTBmWSHkAf6jNuPcj8p711st_7ZmRAw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] mfd: s2mps11: Add device tree support
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
-        sbkim73@samsung.com, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 4, 2013 at 2:52 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Jul 04, 2013 at 10:37:30AM +0530, Yadwinder Singh Brar wrote:
+Steven Rostedt <rostedt@goodmis.org> writes:
+
+> upstream commit f17a5194859a82afe4164e938b92035b86c55794
+
+Thanks Steven, I'm queuing this for the 3.5 kernel.
+
+Cheers,
+-- 
+Luis
+
+
 >
->> -  Currently ramp-delay (= 0) if not defined in DT, leaves the
->> hardware with default
+> The irqsoff tracer records the max time that interrupts are
+>disabled.
+> There are hooks in the assembly code that calls back into the tracer when
+> interrupts are disabled or enabled.
 >
-> That's just an issue in the code if that is the case, you can test for
-> the presence of a property independently of getting its value.
+> When they are enabled, the tracer checks if the amount of time they
+> were disabled is larger than the previous recorded max interrupts off
+> time. If it is, it creates a snapshot of the currently running trace
+> to store where the last largest interrupts off time was held and how
+> it happened.
 >
-
-Yes, for that we will need an extra flag (ramp_disable) in
-constraints, to figure out whether
-ramp-rate is actually set to zero or its left (by default) zero if we
-do it in common code as
-now we have locally in driver.
-
->> - As ramp time is inversely propositional to ramp-rate(i.e. ramp-delay ,
->> its wrongly named, my mistake :( ) so it may look weired to use ramp-rate =0
->> as no ramp(ramp_time = 0).
+> During testing, this RCU lockdep dump appeared:
 >
-> I think it's fairly obvious what's going on there, it fits in with the
-> general pattern that a lower number is faster too.
+> [ 1257.829021] ===============================
+> [ 1257.829021] [ INFO: suspicious RCU usage. ]
+> [ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
+> [ 1257.829021] -------------------------------
+> [ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
+> [ 1257.829021]
+> [ 1257.829021] other info that might help us debug this:
+> [ 1257.829021]
+> [ 1257.829021]
+> [ 1257.829021] RCU used illegally from idle CPU!
+> [ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
+> [ 1257.829021] RCU used illegally from extended quiescent state!
+> [ 1257.829021] 2 locks held by trace-cmd/4831:
+> [ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
+> [ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
+> [ 1257.829021]
+> [ 1257.829021] stack backtrace:
+> [ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
+> [ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+> [ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
+> [ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
+> [ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
+> [ 1257.829021] Call Trace:
+> [ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
+> [ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
+> [ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
+> [ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
+> [ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+> [ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
+> [ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+> [ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
+> [ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
+> [ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+> [ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
+> [ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+> [ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
+> [ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
+> [ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
+> [ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
+> [ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
 >
-
-yes, lower number(ramp_time) is faster, but I meant to say that lower
-ramp-rate means higher ramp_time.
-
-I think its matter of assumption, so to conclude our discussion,
-please let me know that which approach we should use:
-- assume "regulator-ramp-delay = <0>" as ramp_disable.
-or
-- parsing "regulator_ramp_disable" from DT.
-
-
-
-Regards,
-Yadwinder
+> What happened was entering into the user code, the interrupts were enabled
+> and a max interrupts off was recorded. The trace buffer was saved along with
+> various information about the task: comm, pid, uid, priority, etc.
+>
+> The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
+> to retrieve the data, and this happened to happen where RCU is blind (user_enter).
+>
+> As only the preempt and irqs off tracers can have this happen, and they both
+> only have the tsk == current, if tsk == current, use current_uid() instead of
+> task_uid(), as current_uid() does not use RCU as only current can change its uid.
+>
+> This fixes the RCU suspicious splat.
+>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/trace/trace.c |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+>
+> Index: stable-rt.git/kernel/trace/trace.c
+> ===================================================================
+> --- stable-rt.git.orig/kernel/trace/trace.c	2013-07-03 14:00:56.713028912 -0400
+> +++ stable-rt.git/kernel/trace/trace.c	2013-07-03 14:00:56.685028248 -0400
+> @@ -672,7 +672,15 @@ __update_max_tr(struct trace_array *tr,
+>  
+>  	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
+>  	max_data->pid = tsk->pid;
+> -	max_data->uid = task_uid(tsk);
+> +	/*
+> +	 * If tsk == current, then use current_uid(), as that does not use
+> +	 * RCU. The irq tracer can be called out of RCU scope.
+> +	 */
+> +	if (tsk == current)
+> +		max_data->uid = current_uid();
+> +	else
+> +		max_data->uid = task_uid(tsk);
+> +
+>  	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+>  	max_data->policy = tsk->policy;
+>  	max_data->rt_priority = tsk->rt_priority;
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
