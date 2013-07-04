@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab3GDFOh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 01:14:37 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:55020 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754207Ab3GDFOg (ORCPT
+	id S1754991Ab3GDFeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 01:34:20 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51304 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab3GDFeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 01:14:36 -0400
+	Thu, 4 Jul 2013 01:34:19 -0400
+X-AuditID: 9c930197-b7c79ae000003295-8d-51d50959c24b
+From: Namhyung Kim <namhyung@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Hyeoncheol Lee <cheol.lee@lge.com>, LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCHSET 00/12] tracing/uprobes: Add support for more fetch methods
+References: <1372854946-17074-1-git-send-email-namhyung@kernel.org>
+	<1372861350.22688.101.camel@gandalf.local.home>
+Date: Thu, 04 Jul 2013 14:34:17 +0900
+In-Reply-To: <1372861350.22688.101.camel@gandalf.local.home> (Steven Rostedt's
+	message of "Wed, 03 Jul 2013 10:22:30 -0400")
+Message-ID: <87y59mzy5i.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20130703180033.GX27646@sirena.org.uk>
-References: <1372072858-6559-1-git-send-email-yadi.brar@samsung.com>
-	<1372072858-6559-5-git-send-email-yadi.brar@samsung.com>
-	<20130703180033.GX27646@sirena.org.uk>
-Date: Thu, 4 Jul 2013 10:44:36 +0530
-Message-ID: <CAKew6eUGK+g1__m8QHFiz_miNPLwaMc0CG5ViwNGr2qQX5ESoQ@mail.gmail.com>
-Subject: Re: [PATCH 4/4] regulator: s2mps11: Add device tree support
-From: Yadwinder Singh Brar <yadi.brar01@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Yadwinder Singh Brar <yadi.brar@samsung.com>, linux-kernel@vger.kernel.org,
-        sbkim73@samsung.com, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 11:30 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Jun 24, 2013 at 04:50:58PM +0530, Yadwinder Singh Brar wrote:
->
->> +static void s2mps11_pmic_parse_dt(struct of_regulator_match *rdata,
->> +                                     struct s2mps11_info *s2mps11)
->> +{
->> +     if (!of_find_property(rdata[S2MPS11_BUCK2].of_node,
->> +                             "regulator-ramp-disable", NULL))
->> +             s2mps11->buck2_ramp = true;
->
-> This property should be specific to this binding rather than named as a
-> generic regulator property.  It's also a bit odd that setting a property
-> called "regulator-ramp-disable" causes the flag buckN_ramp to be set to
-> true - if the ramp is being disabled I'd expect a flag with that name to
-> be false not true.  Seems something isn't named right.
+Hi Steve,
 
-Yes, it seems incorrect but in existing code based on pdata, its name like that.
-If you insist, I can rename it ? as It seems sensible to put
-"regulator-ramp-disable" as our intension is to do that(by default its
-always enable).
+On Wed, 03 Jul 2013 10:22:30 -0400, Steven Rostedt wrote:
+> On Wed, 2013-07-03 at 21:35 +0900, Namhyung Kim wrote:
+>> Hello,
+>> 
+>> This patchset implements memory (address), stack[N], deference,
+>> bitfield and retval (it needs uretprobe tho) fetch methods for
+>> uprobes.  It's based on the previous work [1] done by Hyeoncheol Lee.
+>
+> Sending out new code in the middle of a merge window isn't the best
+> timing. You may want to ping us again after the merge window closes, as
+> focus currently is on getting 3.11 changes in and working. This patchset
+> might get forgotten.
 
+Okay, I'll send a ping to you after the merge window closed.
 
 Thanks,
-Yadwinder
+Namhyung
