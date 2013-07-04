@@ -1,103 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859Ab3GDQfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 12:35:03 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:59392 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657Ab3GDQfA (ORCPT
+	id S1756856Ab3GDQft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 12:35:49 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:44127 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756518Ab3GDQfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 12:35:00 -0400
-Date: Thu, 4 Jul 2013 09:35:00 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Hans J. Koch" <hjk@hansjkoch.de>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org
-Subject: Re: [RFC PATCH] uio: uio_pci_generic: Add support for MSI interrupts
-Message-ID: <20130704163500.GA24375@roeck-us.net>
-References: <1372285823-6293-1-git-send-email-linux@roeck-us.net>
- <20130627074501.GC5489@redhat.com>
- <20130627170052.GA9646@roeck-us.net>
- <20130704072023.GA2095@redhat.com>
- <20130704142523.GA22081@roeck-us.net>
- <20130704143412.GA23126@redhat.com>
+	Thu, 4 Jul 2013 12:35:48 -0400
+Message-ID: <51D5A458.7000105@gmail.com>
+Date: Fri, 05 Jul 2013 00:35:36 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704143412.GA23126@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] mm: Honor min_free_kbytes set by user
+References: <1372954036-16988-1-git-send-email-mhocko@suse.cz> <1372954239.1886.40.camel@joe-AO722> <20130704161641.GD7833@dhcp22.suse.cz> <20130704162005.GE7833@dhcp22.suse.cz>
+In-Reply-To: <20130704162005.GE7833@dhcp22.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 05:34:12PM +0300, Michael S. Tsirkin wrote:
-> On Thu, Jul 04, 2013 at 07:25:23AM -0700, Guenter Roeck wrote:
-> > On Thu, Jul 04, 2013 at 10:20:23AM +0300, Michael S. Tsirkin wrote:
-> > > On Thu, Jun 27, 2013 at 10:00:52AM -0700, Guenter Roeck wrote:
-> > > > On Thu, Jun 27, 2013 at 10:45:01AM +0300, Michael S. Tsirkin wrote:
-> > > > > On Wed, Jun 26, 2013 at 03:30:23PM -0700, Guenter Roeck wrote:
-> > > > > > Enable support for MSI interrupts if the device supports it.
-> > > > > > Since MSI interrupts are edge triggered, it is no longer necessary to
-> > > > > > disable interrupts in the kernel and re-enable them from user-space.
-> > > > > > Instead, clearing the interrupt condition in the user space application
-> > > > > > automatically re-enables the interrupt.
-> > > > > > 
-> > > > > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > > > > > ---
-> > > > > > An open question is if we can just do this unconditionally
-> > > > > > or if there should be some flag to enable it. A module parameter, maybe ?
-> > > > > 
-> > > > > NACK
-> > > > > 
-> > > > > UIO is for devices that don't do memory writes.
-> > > > > Anything that can do writes must be protected by an IOMMU
-> > > > > and/or have a secure kernel driver, not a UIO stub.
-> > > > > 
-> > > > > MSI is done by memory writes so if userspace
-> > > > > controls the device it can trick it to write
-> > > > > anywhere in memory.
-> > > > > 
-> > > > Just out of curiosity: Since MSI support is mandatory for all PCIE devices,
-> > > > isn't that possible anyway, even if MSI is not enabled by the kernel ?
-> > > > All one would need to do is to enable MSI from user space; after all,
-> > > > the chip configuration space is writable.
-> > > > 
-> > > > Thanks,
-> > > > Guenter
-> > > 
-> > > If a device has capability to do writes, sure. So don't do this then :)
-> > > 
-> > Not an option. I need to use MSI.
-> > 
-> > Not that it matters anymore - turns out it was better writing a specific driver
-> > for my devices anyway; I needed to be able to disable chip interrupts before
-> > unloading the driver. But why is it then a reason to NACK this patch ?
-> 
-> There seem to be two cases - either you can't access the device -
-> and the uio driver is not useful - or you can, and it's not safe.
-> In both cases the patch does not seem to bring about anything
-> except user confusion ...
-> 
-Sounds like claiming that supporting MSI would cause some kind of confusion.
-Not sure if I can follow that logic.
+On 07/05/2013 12:20 AM, Michal Hocko wrote:
 
-Actually, it simplifies the user space code a lot. Since MSI interrupts are edge
-triggered and queued, it is not necessary to disable the interrupts, and all
-user space has to do is to remove the interrupt reason. Works quite nicely for
-our devices.
+[snip]
 
-As I said, I don't really care too much anymore if this patch is rejected, but
-the reasons for the rejection are kind of weak.
-
-> > Besides, doesn't one have to be root anyway to perform such activities,
-> > which could then be more easily accomplished by writing into /dev/mem ?
-> > 
-> > Thanks,
-> > Guenter
+> ---
+> From 5f089c0b2a57ff6c08710ac9698d65aede06079f Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 4 Jul 2013 17:15:54 +0200
+> Subject: [PATCH] mm: Honor min_free_kbytes set by user
 > 
-> root might not be able to write into /dev/mem.
+> min_free_kbytes is updated during memory hotplug (by init_per_zone_wmark_min)
+> currently which is right thing to do in most cases but this could be
+> unexpected if admin increased the value to prevent from allocation
+> failures and the new min_free_kbytes would be decreased as a result of
+> memory hotadd.
 > 
-I don't really want to try, but at least it is marked rw for root.
+> This patch saves the user defined value and allows updating
+> min_free_kbytes only if it is higher than the saved one.
+> 
+> A warning is printed when the new value is ignored.
 
-Guenter
+Looks reasonable.
+
+Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  mm/page_alloc.c | 24 +++++++++++++++++-------
+>  1 file changed, 17 insertions(+), 7 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 22c528e..9c011fc 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -204,6 +204,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
+>  };
+>  
+>  int min_free_kbytes = 1024;
+> +int user_min_free_kbytes;
+>  
+>  static unsigned long __meminitdata nr_kernel_pages;
+>  static unsigned long __meminitdata nr_all_pages;
+> @@ -5592,14 +5593,21 @@ static void __meminit setup_per_zone_inactive_ratio(void)
+>  int __meminit init_per_zone_wmark_min(void)
+>  {
+>  	unsigned long lowmem_kbytes;
+> +	int new_min_free_kbytes;
+>  
+>  	lowmem_kbytes = nr_free_buffer_pages() * (PAGE_SIZE >> 10);
+> -
+> -	min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
+> -	if (min_free_kbytes < 128)
+> -		min_free_kbytes = 128;
+> -	if (min_free_kbytes > 65536)
+> -		min_free_kbytes = 65536;
+> +	new_min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
+> +
+> +	if (new_min_free_kbytes > user_min_free_kbytes) {
+> +		min_free_kbytes = new_min_free_kbytes;
+> +		if (min_free_kbytes < 128)
+> +			min_free_kbytes = 128;
+> +		if (min_free_kbytes > 65536)
+> +			min_free_kbytes = 65536;
+> +	} else {
+> +		pr_warn("min_free_kbytes is not updated to %d because user defined value %d is preferred\n",
+> +				new_min_free_kbytes, user_min_free_kbytes);
+> +	}
+>  	setup_per_zone_wmarks();
+>  	refresh_zone_stat_thresholds();
+>  	setup_per_zone_lowmem_reserve();
+> @@ -5617,8 +5625,10 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
+>  	void __user *buffer, size_t *length, loff_t *ppos)
+>  {
+>  	proc_dointvec(table, write, buffer, length, ppos);
+> -	if (write)
+> +	if (write) {
+> +		user_min_free_kbytes = min_free_kbytes;
+>  		setup_per_zone_wmarks();
+> +	}
+>  	return 0;
+>  }
+>  
+
+
+-- 
+Thanks.
+Zhang Yanfei
