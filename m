@@ -1,130 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab3GDQUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 12:20:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52873 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756525Ab3GDQUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 12:20:07 -0400
-Date: Thu, 4 Jul 2013 18:20:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] mm: Honor min_free_kbytes set by user
-Message-ID: <20130704162005.GE7833@dhcp22.suse.cz>
-References: <1372954036-16988-1-git-send-email-mhocko@suse.cz>
- <1372954239.1886.40.camel@joe-AO722>
- <20130704161641.GD7833@dhcp22.suse.cz>
+	id S1756841Ab3GDQWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 12:22:49 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:55325 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756520Ab3GDQWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 12:22:47 -0400
+Message-ID: <51D59FA8.3050102@gmail.com>
+Date: Thu, 04 Jul 2013 18:15:36 +0200
+From: Gmail <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704161641.GD7833@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-fsdevel@vger.kernel.org
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] fsfreeze: wait in killable state in __sb_start_write
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 04-07-13 18:16:41, Michal Hocko wrote:
-> On Thu 04-07-13 09:10:39, Joe Perches wrote:
-> > On Thu, 2013-07-04 at 18:07 +0200, Michal Hocko wrote:
-> > > A warning is printed when the new value is ignored.
-> > 
-> > []
-> > 
-> > > +		printk(KERN_WARNING "min_free_kbytes is not updated to %d"
-> > > +				"because user defined value %d is preferred\n",
-> > > +				new_min_free_kbytes, user_min_free_kbytes);
-> > 
-> > Please use pr_warn and coalesce the format.
-> 
-> Sure can do that. mm/page_alloc.c doesn't seem to be unified in that
-> regards (44 printks and only 4 pr_<foo>) so I used printk.
-> 
-> > You'd've noticed a missing space between %d and because.
-> 
-> True
-> 
+Added a new enum to decide if we want to sleep in uninterruptible or
+killable state or we want simply to return immediately.
 
-Checkpatch fixes
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
 ---
->From 5f089c0b2a57ff6c08710ac9698d65aede06079f Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 4 Jul 2013 17:15:54 +0200
-Subject: [PATCH] mm: Honor min_free_kbytes set by user
+ fs/super.c         |   24 ++++++++++++++++++------
+ include/linux/fs.h |   21 ++++++++++++++-------
+ 2 files changed, 32 insertions(+), 13 deletions(-)
 
-min_free_kbytes is updated during memory hotplug (by init_per_zone_wmark_min)
-currently which is right thing to do in most cases but this could be
-unexpected if admin increased the value to prevent from allocation
-failures and the new min_free_kbytes would be decreased as a result of
-memory hotadd.
-
-This patch saves the user defined value and allows updating
-min_free_kbytes only if it is higher than the saved one.
-
-A warning is printed when the new value is ignored.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/page_alloc.c | 24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 22c528e..9c011fc 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -204,6 +204,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
- };
- 
- int min_free_kbytes = 1024;
-+int user_min_free_kbytes;
- 
- static unsigned long __meminitdata nr_kernel_pages;
- static unsigned long __meminitdata nr_all_pages;
-@@ -5592,14 +5593,21 @@ static void __meminit setup_per_zone_inactive_ratio(void)
- int __meminit init_per_zone_wmark_min(void)
+diff --git a/fs/super.c b/fs/super.c
+index 7465d43..6b70c7f 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1190,14 +1190,25 @@ static void acquire_freeze_lock(struct super_block *sb, int level, bool trylock,
+  * This is an internal function, please use sb_start_{write,pagefault,intwrite}
+  * instead.
+  */
+-int __sb_start_write(struct super_block *sb, int level, bool wait)
++int __sb_start_write(struct super_block *sb, int level, int wait)
  {
- 	unsigned long lowmem_kbytes;
-+	int new_min_free_kbytes;
++	int ret = 0;
+ retry:
+ 	if (unlikely(sb->s_writers.frozen >= level)) {
+-		if (!wait)
+-			return 0;
+-		wait_event(sb->s_writers.wait_unfrozen,
+-			   sb->s_writers.frozen < level);
++		switch (wait) {
++		case FREEZE_NOWAIT:
++			return ret;
++		case FREEZE_WAIT:
++			wait_event(sb->s_writers.wait_unfrozen,
++				   sb->s_writers.frozen < level);
++			break;
++		case FREEZE_WAIT_KILLABLE:
++			ret = wait_event_killable(sb->s_writers.wait_unfrozen,
++				   sb->s_writers.frozen < level);
++			if (ret)
++				return -EINTR;
++			break;
++		}
+ 	}
  
- 	lowmem_kbytes = nr_free_buffer_pages() * (PAGE_SIZE >> 10);
--
--	min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
--	if (min_free_kbytes < 128)
--		min_free_kbytes = 128;
--	if (min_free_kbytes > 65536)
--		min_free_kbytes = 65536;
-+	new_min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
+ #ifdef CONFIG_LOCKDEP
+@@ -1213,7 +1224,8 @@ retry:
+ 		__sb_end_write(sb, level);
+ 		goto retry;
+ 	}
+-	return 1;
++	ret = 1;
++	return ret;
+ }
+ EXPORT_SYMBOL(__sb_start_write);
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 43db02e..1c75053 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1220,6 +1220,13 @@ enum {
+ 
+ #define SB_FREEZE_LEVELS (SB_FREEZE_COMPLETE - 1)
+ 
++/* Possible waiting modes */
++enum {
++	FREEZE_NOWAIT = 0,		/* no blocking call */
++	FREEZE_WAIT	= 1,		/* wait in uninterruptible state */
++	FREEZE_WAIT_KILLABLE = 2,	/* wait in killable state */
++};
 +
-+	if (new_min_free_kbytes > user_min_free_kbytes) {
-+		min_free_kbytes = new_min_free_kbytes;
-+		if (min_free_kbytes < 128)
-+			min_free_kbytes = 128;
-+		if (min_free_kbytes > 65536)
-+			min_free_kbytes = 65536;
-+	} else {
-+		pr_warn("min_free_kbytes is not updated to %d because user defined value %d is preferred\n",
-+				new_min_free_kbytes, user_min_free_kbytes);
-+	}
- 	setup_per_zone_wmarks();
- 	refresh_zone_stat_thresholds();
- 	setup_per_zone_lowmem_reserve();
-@@ -5617,8 +5625,10 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
- 	void __user *buffer, size_t *length, loff_t *ppos)
+ struct sb_writers {
+ 	/* Counters for counting writers at each level */
+ 	struct percpu_counter	counter[SB_FREEZE_LEVELS];
+@@ -1335,7 +1342,7 @@ extern struct timespec current_fs_time(struct super_block *sb);
+  */
+ 
+ void __sb_end_write(struct super_block *sb, int level);
+-int __sb_start_write(struct super_block *sb, int level, bool wait);
++int __sb_start_write(struct super_block *sb, int level, int wait);
+ 
+ /**
+  * sb_end_write - drop write access to a superblock
+@@ -1394,12 +1401,12 @@ static inline void sb_end_intwrite(struct super_block *sb)
+  */
+ static inline void sb_start_write(struct super_block *sb)
  {
- 	proc_dointvec(table, write, buffer, length, ppos);
--	if (write)
-+	if (write) {
-+		user_min_free_kbytes = min_free_kbytes;
- 		setup_per_zone_wmarks();
-+	}
- 	return 0;
+-	__sb_start_write(sb, SB_FREEZE_WRITE, true);
++	__sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_WAIT);
  }
  
+ static inline int sb_start_write_trylock(struct super_block *sb)
+ {
+-	return __sb_start_write(sb, SB_FREEZE_WRITE, false);
++	return __sb_start_write(sb, SB_FREEZE_WRITE, FREEZE_NOWAIT);
+ }
+ 
+ /**
+@@ -1423,7 +1430,7 @@ static inline int sb_start_write_trylock(struct super_block *sb)
+  */
+ static inline void sb_start_pagefault(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, true);
++	__sb_start_write(sb, SB_FREEZE_PAGEFAULT, FREEZE_WAIT);
+ }
+ 
+ /*
+@@ -1441,7 +1448,7 @@ static inline void sb_start_pagefault(struct super_block *sb)
+  */
+ static inline void sb_start_intwrite(struct super_block *sb)
+ {
+-	__sb_start_write(sb, SB_FREEZE_FS, true);
++	__sb_start_write(sb, SB_FREEZE_FS, FREEZE_WAIT);
+ }
+ 
+ 
+@@ -2224,14 +2231,14 @@ static inline void file_start_write(struct file *file)
+ {
+ 	if (!S_ISREG(file_inode(file)->i_mode))
+ 		return;
+-	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, true);
++	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, FREEZE_WAIT);
+ }
+ 
+ static inline bool file_start_write_trylock(struct file *file)
+ {
+ 	if (!S_ISREG(file_inode(file)->i_mode))
+ 		return true;
+-	return __sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, false);
++	return __sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, FREEZE_NOWAIT);
+ }
+ 
+ static inline void file_end_write(struct file *file)
 -- 
-1.8.3.1
-
--- 
-Michal Hocko
-SUSE Labs
+1.7.3.4
