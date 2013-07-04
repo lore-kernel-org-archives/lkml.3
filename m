@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab3GDJ4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 05:56:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40681 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab3GDJ4K (ORCPT
+	id S932767Ab3GDJzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 05:55:13 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49461 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755321Ab3GDJyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 05:56:10 -0400
-Date: Thu, 4 Jul 2013 10:56:06 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, patches@linaro.org
-Message-ID: <20130704095606.GP27646@sirena.org.uk>
-References: <1372918719-20260-1-git-send-email-sachin.kamat@linaro.org>
- <1372918719-20260-2-git-send-email-sachin.kamat@linaro.org>
+	Thu, 4 Jul 2013 05:54:41 -0400
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        kernel-team@android.com, arve@android.com, john.stultz@linaro.org,
+        Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH v6 2/6] staging: android: binder: fix BINDER_SET_MAX_THREADS declaration
+Date: Thu,  4 Jul 2013 10:54:44 +0100
+Message-Id: <1372931688-18553-3-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372931688-18553-1-git-send-email-serban.constantinescu@arm.com>
+References: <1372931688-18553-1-git-send-email-serban.constantinescu@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="P33LUqzLXAslwFyJ"
-Content-Disposition: inline
-In-Reply-To: <1372918719-20260-2-git-send-email-sachin.kamat@linaro.org>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: max8997: Fix a trivial typo in
- documentation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This change will fix the BINDER_SET_MAX_THREADS ioctl to use __u32
+instead of size_t for setting the max threads. Thus using the same
+handler for 32 and 64bit kernels.
 
---P33LUqzLXAslwFyJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This value is stored internally in struct binder_proc and set to 15
+on open_binder() in the libbinder API(thus no need for a 64bit size_t
+on 64bit platforms).
 
-On Thu, Jul 04, 2013 at 11:48:39AM +0530, Sachin Kamat wrote:
-> Changed volatage to voltage.
+The change does not affect existing 32bit ABI.
 
-Applied, thanks.
+Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
+Acked-by: Arve Hjønnevåg <arve@android.com>
+---
+ drivers/staging/android/binder.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---P33LUqzLXAslwFyJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
+index edab249..6515dd2 100644
+--- a/drivers/staging/android/binder.h
++++ b/drivers/staging/android/binder.h
+@@ -86,7 +86,7 @@ struct binder_version {
+ 
+ #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
+ #define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, __s64)
+-#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
++#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, __u32)
+ #define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, __s32)
+ #define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, __s32)
+ #define	BINDER_THREAD_EXIT		_IOW('b', 8, __s32)
+-- 
+1.7.9.5
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR1UayAAoJELSic+t+oim9QzYP/3mpVLUY4BkzUvW4K+uzbZ8S
-r1VKM3Z2PQPrWghQ3JWqmo5pOwsfXCqN0/QJhdPy4gwKvV04vAxptlCB5YLMgWyx
-QZw7N8Lyp5fmJZRPNyf2qJGVAlF24xqbY1A3XTNHOTNiPFOPP/aBZvdxhLwiJPtE
-6LwMBI/7Oj88jh8g2F2zy7yPWNHJ/v6V6sxnJNNO5Wz04DhjiQ1v9yo5NGmKAgAX
-S4/wpbZ2B5bZKq8PgWpsEZGnsCBa0N4i3doZ1gH/yk7S8j3qGZEstmJkGWLiPsmg
-1fgrHY3QGdCppkKGa/y8lAM2KSxfJql7RJgJJJlgGsOuB+9fpMhUqMTI/Cygmdv3
-19zfF2UmhoW6siDG10PaeDA6mBr6RRTmwUuAoAOhsgcjkoW4xQTgRY+VbIoYVZ9C
-87aufnZIlp2SARS/F0ZEv0a79pg12NWIecWVjbS6XwNucSGP3FluYy6jIlAS7SKS
-Hxv6od0ZK0DY14BXZOvHQwaxUARtb+qMwTUvb9j1P3ti49+lQXDyA8cJ293qSIC8
-Drid0VtAUGxctO+7232sanxBqCM/kytABk4nv+aAXEGYFH1V9Y3o6Vuy0Og2vzoG
-HcfQ5YT9+7aXLaagr5grDK+soDnygJ7H+WlIMBdKoeLMPstibuA/7IoFPIssUvgt
-RdP/xYEAZ4rJwTzAP0mQ
-=m5bq
------END PGP SIGNATURE-----
-
---P33LUqzLXAslwFyJ--
