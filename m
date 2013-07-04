@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964999Ab3GDMqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 08:46:37 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:38255 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964934Ab3GDMpu (ORCPT
+	id S965012Ab3GDMqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 08:46:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38957 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964883Ab3GDMpl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 08:45:50 -0400
-Message-ID: <51D56E74.3090404@hitachi.com>
-Date: Thu, 04 Jul 2013 21:45:40 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 4 Jul 2013 08:45:41 -0400
+Date: Thu, 4 Jul 2013 14:45:36 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
+ switch
+Message-ID: <20130704124536.GK23916@twins.programming.kicks-ass.net>
+References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
+ <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
- event files are open
-References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org>
-In-Reply-To: <20130704034038.819592356@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/04 12:33), Steven Rostedt wrote:
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 7ed6976..ffcaf42 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
->  }
+On Mon, Jul 01, 2013 at 03:23:04PM +0800, Yan, Zheng wrote:
+
+> @@ -2488,25 +2508,31 @@ static void perf_branch_stack_sched_in(struct task_struct *prev,
 >  
->  static int register_probe_event(struct trace_probe *tp);
-> -static void unregister_probe_event(struct trace_probe *tp);
-> +static int unregister_probe_event(struct trace_probe *tp);
+>  	list_for_each_entry_rcu(pmu, &pmus, entry) {
+>  		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+> +		task_ctx = cpuctx->task_ctx;
 >  
->  static DEFINE_MUTEX(probe_lock);
->  static LIST_HEAD(probe_list);
-> @@ -340,9 +340,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
->  	if (trace_probe_is_enabled(tp))
->  		return -EBUSY;
+>  		/*
+> -		 * check if the context has at least one
+> -		 * event using PERF_SAMPLE_BRANCH_STACK
+> +		 * force flush the branch stack if there are cpu-wide events
+> +		 * using PERF_SAMPLE_BRANCH_STACK
+> +		 *
+> +		 * save/restore the branch stack if the task context has
+> +		 * at least one event using PERF_SAMPLE_BRANCH_STACK
+>  		 */
+> -		if (cpuctx->ctx.nr_branch_stack > 0
+> -		    && pmu->flush_branch_stack) {
+> -
+> +		bool force_flush = cpuctx->ctx.nr_branch_stack > 0;
+> +		if (pmu->branch_stack_sched &&
+> +		    (force_flush ||
+> +		     (task_ctx && task_ctx->nr_branch_stack > 0))) {
+>  			pmu = cpuctx->ctx.pmu;
 >  
-> +	/* Will fail if probe is being used by ftrace or perf */
-> +	if (unregister_probe_event(tp))
-> +		return -EBUSY;
-> +
->  	__unregister_trace_probe(tp);
->  	list_del(&tp->list);
-> -	unregister_probe_event(tp);
+> -			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+> +			perf_ctx_lock(cpuctx, task_ctx);
 >  
->  	return 0;
->  }
+>  			perf_pmu_disable(pmu);
+>  
+> -			pmu->flush_branch_stack();
+> +			pmu->branch_stack_sched(task_ctx,
+> +						sched_in, force_flush);
+>  
+>  			perf_pmu_enable(pmu);
+>  
+> -			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+> +			perf_ctx_unlock(cpuctx, task_ctx);
+>  		}
+>  	}
+>  
 
-This may cause an unexpected access violation at kprobe handler because
-unregister_probe_event frees event_call/event_files and it will be
-accessed until kprobe is *completely* disabled.
-Actually disable_kprobe() doesn't ensure to finish the current running
-kprobe handlers. Thus, even if trace_probe_is_enabled() returns false,
-we must do synchronize_sched() for waiting, before unregister_probe_event().
-OTOH, unregister_kprobe() waits for that. That's why I do
-__unregister_trace_probe(tp) first here.
+I never really like this; and yes I know I wrote part of that. Is there
+any way we can get rid of this and to it 'properly' through the events
+that get scheduled?
 
-I think there are 2 solutions, one is adding a wait after disable_k*probe
-at disable_trace_probe(), another is adding a wait before unregister_probe_event()
-at unregister_trace_probe().
+After all; the LBR usage is through the events, so scheduling the events
+should also manage the LBR state.
 
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+What is missing for that to work?
