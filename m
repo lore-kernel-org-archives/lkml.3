@@ -1,117 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab3GDULF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 16:11:05 -0400
-Received: from nat-warsl417-01.aon.at ([195.3.96.119]:16234 "EHLO email.aon.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756593Ab3GDULD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 16:11:03 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 04 Jul 2013 16:11:03 EDT
-X-A1Mail-Track-Id: 1372968258:2419:smarthub80:194.166.7.189:1
-From: Melchior FRANZ <melchior.franz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: serial terminal script
-Date: Thu, 04 Jul 2013 22:04:17 +0200
-Message-ID: <3019401.xtf1feCBY9@rk-nord.at>
-User-Agent: KMail/4.10.3 (Linux/3.7.10-1.16-desktop; KDE/4.10.3; x86_64; ; )
+	id S1756913Ab3GDUVt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 16:21:49 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59957 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab3GDUVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 16:21:48 -0400
+Date: Thu, 4 Jul 2013 22:21:45 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Tony Lindgren <tony@atomide.com>, b-cousson@ti.com, pali.rohar@gmail.com,
+        kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] N900: add device tree
+Message-ID: <20130704202145.GB10752@amd.pavel.ucw.cz>
+References: <20130613142809.GA3775@amd.pavel.ucw.cz>
+ <20130613145724.GH8164@atomide.com>
+ <20130613155240.GB3775@amd.pavel.ucw.cz>
+ <20130613161418.GJ8164@atomide.com>
+ <20130613230808.GA14876@amd.pavel.ucw.cz>
+ <20130614055629.GM8164@atomide.com>
+ <20130614212816.GA31768@atrey.karlin.mff.cuni.cz>
+ <20130617111031.GQ20992@atomide.com>
+ <20130701211753.GC15318@amd.pavel.ucw.cz>
+ <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="nextPart6539833.02Mxvc4PZo"
-Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130704171939.GA27374@blackmetal.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
+Hi!
 
---nextPart6539833.02Mxvc4PZo
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+> > This adds device tree with neccessary support to boot with functional
+> > video (on both emulator and real N900 device).
+> 
+> Is this really correct? You have commented out the USB, so there is no
+> way for a developer to interact with the device.
 
-Hey,
+Well... I do not have USB & SDcard set up, so my testing was "does it
+show failed to mount root message on screen". 
 
-maybe someone's interested in a little serial terminal script
-that pretty much replaces minicom for communicating with the
-embedded Linux boards in our company. It's less than 50 lines
-of bash, so I attached it here. Usage:
+Now, if I do quick test of enabling it on 3.9, I get:
 
-  terminal [<serial-device> [<transfer-rate> [<stty-arguments ...>]]]
+  DTC     arch/arm/boot/dts/omap3-n900.dtb
+Error: arch/arm/boot/dts/omap3-n900.dts:92.2-3 label or path,
+'usb_otg_hs', not found
+FATAL ERROR: Syntax error parsing input tree
+make[1]: *** [arch/arm/boot/dts/omap3-n900.dtb] Error 1
+make: *** [dtbs] Error 2
 
-e.g.
+. If you could test the patches with the USB support uncommented, that
+would be very good...
 
-  $ terminal /dev/ttyUSB0 115200
+Thanks,
 
-or
-
-  $ terminal /dev/ttyUSB0 |& tee -a /var/tmp/terminal.log
-
-Quit by typing Ctrl-A followed by x within 0.5 s.
-
-m.
-
-
-
+									Pavel
 -- 
-Ginzinger electronic systems GmbH
-Gewerbegebiet Pirath 16
-A-4952 Weng im Innkreis
-www.ginzinger.com
---nextPart6539833.02Mxvc4PZo
-Content-Disposition: attachment; filename="terminal"
-Content-Transfer-Encoding: 7Bit
-Content-Type: application/x-shellscript; name="terminal"
-
-#!/bin/bash
-# Melchior FRANZ <melchior.franz@ginzinger.com>, Public Domain
-#
-# Usage: terminal [<serial-device> [<transfer-rate> [<stty-arguments ...>]]]
-#        quit by typing Ctrl-A followed by x within 0.5 s
-
-dev=${1:-/dev/ttyS0} && shift
-baud=${1:-115200} && shift
-
-restore_serial=$(stty -F $dev -g) || exit
-restore_console=$(stty -g)
-[ -t 1 ] && [ "$TERM" != "dumb" ] && begin="\e[90m" && end="\e[m"
-
-terminate() {
-	echo -e "$end"
-	exec &>/dev/null
-	kill %cat
-	stty -F $dev $restore_serial
-	stty $restore_console
-	exit 0
-}
-trap terminate EXIT HUP INT QUIT PIPE TERM
-
-stty -F $dev $baud min 1 time 0 nl0 cr0 tab0 bs0 vt0 ff0 \
-	-parenb -parodd cs8 -hupcl -cstopb cread clocal -crtscts \
-	-ignbrk -brkint -ignpar -parmrk -inpck -istrip -inlcr -igncr \
-	-icrnl -ixon -ixoff -iuclc -ixany -imaxbel -iutf8 -opost -olcuc \
-	-ocrnl -onlcr -onocr -onlret -ofill -ofdel -isig -icanon -iexten \
-	-echo -echoe -echok -echonl -noflsh -xcase -tostop -echoprt \
-	-echoctl -echoke "$@"
-
-stty -echo intr ^- quit ^- erase ^- kill ^- eof ^- eol ^- eol2 ^- swtch ^- \
-	start ^- stop ^- susp ^- rprnt ^- werase ^- lnext ^- flush ^-
-
-echo -e "$begin{${0##*/} -- $(date +"%Y/%m/%d %H:%M:%S") -- ^A-x to quit}$end\n"
-cat $dev&
-
-while IFS= read -n1 c; do
-	case "$c" in
-	"")
-		echo >$dev -ne "\r"
-		;;
-	)
-		read -N1 -t0.5 key
-		[ "$key" == 'x' ] && break
-		echo >$dev -ne "$key"
-		;;
-	*)
-		echo >$dev -ne "$c"
-		;;
-	esac
-done
-
---nextPart6539833.02Mxvc4PZo--
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
