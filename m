@@ -1,207 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756869Ab3GDQgt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 12:36:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53425 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756729Ab3GDQgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 12:36:46 -0400
-Date: Thu, 4 Jul 2013 18:36:43 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Glauber Costa <glommer@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
-Message-ID: <20130704163643.GF7833@dhcp22.suse.cz>
-References: <20130627145411.GA24206@dhcp22.suse.cz>
- <20130629025509.GG9047@dastard>
- <20130630183349.GA23731@dhcp22.suse.cz>
- <20130701012558.GB27780@dastard>
- <20130701075005.GA28765@dhcp22.suse.cz>
- <20130701081056.GA4072@dastard>
- <20130702092200.GB16815@dhcp22.suse.cz>
- <20130702121947.GE14996@dastard>
- <20130702124427.GG16815@dhcp22.suse.cz>
- <20130703112403.GP14996@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703112403.GP14996@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756896Ab3GDQqi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 12:46:38 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:55602 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756848Ab3GDQqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 12:46:35 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Olivier Langlois <olivier@trillion01.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/7] posix_cpu_timers: consolidate timer list cleanups
+Date: Thu,  4 Jul 2013 18:46:20 +0200
+Message-Id: <1372956385-25396-3-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1372956385-25396-1-git-send-email-fweisbec@gmail.com>
+References: <1372956385-25396-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 03-07-13 21:24:03, Dave Chinner wrote:
-> On Tue, Jul 02, 2013 at 02:44:27PM +0200, Michal Hocko wrote:
-> > On Tue 02-07-13 22:19:47, Dave Chinner wrote:
-> > [...]
-> > > Ok, so it's been leaked from a dispose list somehow. Thanks for the
-> > > info, Michal, it's time to go look at the code....
-> > 
-> > OK, just in case we will need it, I am keeping the machine in this state
-> > for now. So we still can play with crash and check all the juicy
-> > internals.
-> 
-> My current suspect is the LRU_RETRY code. I don't think what it is
-> doing is at all valid - list_for_each_safe() is not safe if you drop
-> the lock that protects the list. i.e. there is nothing that protects
-> the stored next pointer from being removed from the list by someone
-> else. Hence what I think is occurring is this:
-> 
-> 
-> thread 1			thread 2
-> lock(lru)
-> list_for_each_safe(lru)		lock(lru)
->   isolate			......
->     lock(i_lock)
->     has buffers
->       __iget
->       unlock(i_lock)
->       unlock(lru)
->       .....			(gets lru lock)
->       				list_for_each_safe(lru)
-> 				  walks all the inodes
-> 				  finds inode being isolated by other thread
-> 				  isolate
-> 				    i_count > 0
-> 				      list_del_init(i_lru)
-> 				      return LRU_REMOVED;
-> 				   moves to next inode, inode that
-> 				   other thread has stored as next
-> 				   isolate
-> 				     i_state |= I_FREEING
-> 				     list_move(dispose_list)
-> 				     return LRU_REMOVED
-> 				 ....
-> 				 unlock(lru)
->       lock(lru)
->       return LRU_RETRY;
->   if (!first_pass)
->     ....
->   --nr_to_scan
->   (loop again using next, which has already been removed from the
->   LRU by the other thread!)
->   isolate
->     lock(i_lock)
->     if (i_state & ~I_REFERENCED)
->       list_del_init(i_lru)	<<<<< inode is on dispose list!
-> 				<<<<< inode is now isolated, with I_FREEING set
->       return LRU_REMOVED;
-> 
-> That fits the corpse left on your machine, Michal. One thread has
-> moved the inode to a dispose list, the other thread thinks it is
-> still on the LRU and should be removed, and removes it.
-> 
-> This also explains the lru item count going negative - the same item
-> is being removed from the lru twice. So it seems like all the
-> problems you've been seeing are caused by this one problem....
-> 
-> Patch below that should fix this.
+Cleaning up the posix cpu timers on task exit shares some common code
+among timer list types, most notably the list traversal and expiry time
+update.
 
-Good news! The test was running since morning and it didn't hang nor
-crashed. So this really looks like the right fix. It will run also
-during weekend to be 100% sure. But I guess it is safe to say
+Unify this in a common helper.
 
-Tested-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Olivier Langlois <olivier@trillion01.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/posix-cpu-timers.c |   48 +++++++++++++++++---------------------------
+ 1 files changed, 19 insertions(+), 29 deletions(-)
 
-Thanks a lot Dave!
-
-> 
-> Cheers,
-> 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
-> 
-> list_lru: fix broken LRU_RETRY behaviour
-> 
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> The LRU_RETRY code assumes that the list traversal status after we
-> have dropped and regained the list lock. Unfortunately, this is not
-> a valid assumption, and that can lead to racing traversals isolating
-> objects that the other traversal expects to be the next item on the
-> list.
-> 
-> This is causing problems with the inode cache shrinker isolation,
-> with races resulting in an inode on a dispose list being "isolated"
-> because a racing traversal still thinks it is on the LRU. The inode
-> is then never reclaimed and that causes hangs if a subsequent lookup
-> on that inode occurs.
-> 
-> Fix it by always restarting the list walk on a LRU_RETRY return from
-> the isolate callback. Avoid the possibility of livelocks the current
-> code was trying to aavoid by always decrementing the nr_to_walk
-> counter on retries so that even if we keep hitting the same item on
-> the list we'll eventually stop trying to walk and exit out of the
-> situation causing the problem.
-> 
-> Reported-by: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  mm/list_lru.c |   29 ++++++++++++-----------------
->  1 file changed, 12 insertions(+), 17 deletions(-)
-> 
-> diff --git a/mm/list_lru.c b/mm/list_lru.c
-> index dc71659..7246791 100644
-> --- a/mm/list_lru.c
-> +++ b/mm/list_lru.c
-> @@ -71,19 +71,19 @@ list_lru_walk_node(struct list_lru *lru, int nid, list_lru_walk_cb isolate,
->  	struct list_lru_node	*nlru = &lru->node[nid];
->  	struct list_head *item, *n;
->  	unsigned long isolated = 0;
-> -	/*
-> -	 * If we don't keep state of at which pass we are, we can loop at
-> -	 * LRU_RETRY, since we have no guarantees that the caller will be able
-> -	 * to do something other than retry on the next pass. We handle this by
-> -	 * allowing at most one retry per object. This should not be altered
-> -	 * by any condition other than LRU_RETRY.
-> -	 */
-> -	bool first_pass = true;
->  
->  	spin_lock(&nlru->lock);
->  restart:
->  	list_for_each_safe(item, n, &nlru->list) {
->  		enum lru_status ret;
-> +
-> +		/*
-> +		 * decrement nr_to_walk first so that we don't livelock if we
-> +		 * get stuck on large numbesr of LRU_RETRY items
-> +		 */
-> +		if (--(*nr_to_walk) == 0)
-> +			break;
-> +
->  		ret = isolate(item, &nlru->lock, cb_arg);
->  		switch (ret) {
->  		case LRU_REMOVED:
-> @@ -98,19 +98,14 @@ restart:
->  		case LRU_SKIP:
->  			break;
->  		case LRU_RETRY:
-> -			if (!first_pass) {
-> -				first_pass = true;
-> -				break;
-> -			}
-> -			first_pass = false;
-> +			/*
-> +			 * The lru lock has been dropped, our list traversal is
-> +			 * now invalid and so we have to restart from scratch.
-> +			 */
->  			goto restart;
->  		default:
->  			BUG();
->  		}
-> -
-> -		if ((*nr_to_walk)-- == 0)
-> -			break;
-> -
->  	}
->  
->  	spin_unlock(&nlru->lock);
-
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index c3c4ea1..b1450ce 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -399,6 +399,21 @@ static int posix_cpu_timer_del(struct k_itimer *timer)
+ 	return ret;
+ }
+ 
++static void cleanup_timers_list(struct list_head *head,
++				unsigned long long curr)
++{
++	struct cpu_timer_list *timer, *next;
++
++	list_for_each_entry_safe(timer, next, head, entry) {
++		list_del_init(&timer->entry);
++		if (timer->expires < curr) {
++			timer->expires = 0;
++		} else {
++			timer->expires -= curr;
++		}
++	}
++}
++
+ /*
+  * Clean out CPU timers still ticking when a thread exited.  The task
+  * pointer is cleared, and the expiry time is replaced with the residual
+@@ -409,37 +424,12 @@ static void cleanup_timers(struct list_head *head,
+ 			   cputime_t utime, cputime_t stime,
+ 			   unsigned long long sum_exec_runtime)
+ {
+-	struct cpu_timer_list *timer, *next;
+-	cputime_t ptime = utime + stime;
+ 
+-	list_for_each_entry_safe(timer, next, head, entry) {
+-		list_del_init(&timer->entry);
+-		if (timer->expires < cputime_to_expires(ptime)) {
+-			timer->expires = 0;
+-		} else {
+-			timer->expires -= cputime_to_expires(ptime);
+-		}
+-	}
+-
+-	++head;
+-	list_for_each_entry_safe(timer, next, head, entry) {
+-		list_del_init(&timer->entry);
+-		if (timer->expires < cputime_to_expires(utime)) {
+-			timer->expires = 0;
+-		} else {
+-			timer->expires -= cputime_to_expires(utime);
+-		}
+-	}
++	cputime_t ptime = utime + stime;
+ 
+-	++head;
+-	list_for_each_entry_safe(timer, next, head, entry) {
+-		list_del_init(&timer->entry);
+-		if (timer->expires < sum_exec_runtime) {
+-			timer->expires = 0;
+-		} else {
+-			timer->expires -= sum_exec_runtime;
+-		}
+-	}
++	cleanup_timers_list(head, cputime_to_expires(ptime));
++	cleanup_timers_list(++head, cputime_to_expires(utime));
++	cleanup_timers_list(++head, sum_exec_runtime);
+ }
+ 
+ /*
 -- 
-Michal Hocko
-SUSE Labs
+1.7.5.4
+
