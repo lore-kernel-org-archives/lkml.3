@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab3GEHyx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 03:54:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39517 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757089Ab3GEHyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 03:54:52 -0400
-Message-ID: <1373010853.21065.159.camel@cumari.coelho.fi>
-Subject: Re: [RFC] clk: add flags to distinguish xtal clocks
-From: Luciano Coelho <coelho@ti.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>
-Date: Fri, 5 Jul 2013 10:54:13 +0300
-In-Reply-To: <20130704231953.10823.94331@quantum>
-References: <1372971912-10877-1-git-send-email-coelho@ti.com>
-	 <20130704222538.10823.2559@quantum>
-	 <1372977465.21065.136.camel@cumari.coelho.fi>
-	 <20130704231953.10823.94331@quantum>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S932201Ab3GEIDR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 04:03:17 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:55094 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757088Ab3GEIDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 04:03:12 -0400
+Message-ID: <51D67D6C.4080603@gmail.com>
+Date: Fri, 05 Jul 2013 16:01:48 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
+To: Chen Gang <gang.chen@asianux.com>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
+        David Sharp <dhsharp@google.com>, Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
+ 'COMPILE_TEST' in 'asm-generic'.
+References: <20130704011221.GA11230@kroah.com> <20130704061204.GA12148@kroah.com> <51D517A7.6030908@asianux.com> <201307041125.15083.arnd@arndb.de> <51D60D53.7050405@gmail.com> <20130705101446.48deb2694f5fcdb060f41e5b@canb.auug.org.au> <51D617E9.8080907@gmail.com>
+In-Reply-To: <51D617E9.8080907@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-04 at 16:19 -0700, Mike Turquette wrote:
-> Quoting Luciano Coelho (2013-07-04 15:37:45)
-> > On Thu, 2013-07-04 at 15:25 -0700, Mike Turquette wrote:
-> > > Or is it the same clock input and basically the problem is that you need
-> > > to know what kind of waveform to expect (e.g. square versus sine)?
-> > 
-> > It's the same clock input in the chip's perspective.  One clock input
-> > that can be any of the combinations I mentioned above.  Again, I'm not
-> > familiar with clocks, so I guess the square vs. sine explanation is
-> > plausible.  What I could see in the firmware is that it handles the
-> > clocks differently if they're xtal or not.
+Hello All:
+
+It seems 'asm-generic' dislikes 'mad users' (e.g allmodconfig,
+randconfig, and me).
+
+I guess the main reason is: 'asm-generic' thinks what mad users talk
+about is useless in real world, so it is just noisy.
+
+I can understand, at least what I talk about is not for urgent things.
+(maybe 'asm-generic' also thinks it not important either, every members
+have their own opinions).
+
+Next, I still use allmodconfig/randconfig for some architectures which I
+am interested in (and also for learning compilers), but I will skip all
+things which are related with 'asm-generic', since it dislikes me (a mad
+user).
+
+At last, I make an apologize to 'asm-generic' for my mad discussing.
+
+Bye !!
+
+
+On 07/05/2013 08:48 AM, Chen Gang F T wrote:
+> On 07/05/2013 08:14 AM, Stephen Rothwell wrote:
+>> On Fri, 05 Jul 2013 08:03:31 +0800 Chen Gang F T <chen.gang.flying.transformer@gmail.com> wrote:
+>>>>
+>>>> When a module select "COMPILE_TEST=y" (e.g with allmodconfig), it has
+>>>> right to compile under the architecture which no related HW support.
+>>>>
+>>>> If it can not pass compiling, at least it is not the module's issue,
+>>>> neither the architecture's issue.
+>>>>
+>>>> We have to look for who has duty on it. At least now, it seems only
+>>>> 'asm-generic' can be qualified to play this unlucky role.
+>> You keep saying this, but others have told you that this is not the
+>> problem.
+>>
 > 
-> OMAP has a similar thing where sys_clkin (the fast reference clock for
-> the chip) can be 19.2, 26, 38.4, etc. This is easy to handle since only
-> the rates matter.
+> In real world, it is not the problem.
+> 
+> But for 'mad users' (e.g. allmodconfig, randconfig, and me too), they
+> have not provided enough reason for it (prove that is not a problem for
+> 'mad users').
+> 
+> 
+>>>> Could you provide your suggestions or completions for this issue ?
+>> If something doesn't build for a particular config, then either it needs
+>> to be fixed or excluded from building in that particular config.
+> 
+> I agree with you, if get rid of 'COMPILE_TEST'.
+> 
+> Thanks.
+> 
 
-Right, this part is easy and I already have the code for that.  What I'm
-missing is a way to pass this XTAL flag to the chip.
 
-
-> In your case you need some extra metadata to know what to do. I'm really
-> not sure if CLK_IS_TYPE_XTAL is the most useful form this metadata can
-> take. It would be best to know if the waveform is what you really need
-> to know, or perhaps something else. For instance you might be affected
-> by some clock signal stabilization time. Can you talk to your hardware
-> guys and figure it out? I'd rather model the actual needs instead of
-> just tossing a flag in there.
-
-I get your point.  I have tried to investigate how this flag is used by
-the firmware and I could see that it is used to set different "buffer
-gains" and "delays" when waking up (I guess this means when the clock is
-starting, so probably related to stabilization time).  They specify two
-"modes", "boost" and "normal" and use different delay values for each.
-
-As I said, I don't know almost anything about clocks, so all this
-doesn't make much sense to me.  But maybe you can get an idea?
-
---
-Cheers,
-Luca.
-
+-- 
+Chen Gang
