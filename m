@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab3GEG5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 02:57:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20903 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab3GEG5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 02:57:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1000,1363158000"; 
-   d="scan'208";a="360819111"
-Date: Fri, 5 Jul 2013 11:48:02 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Mark Brown <broonie@kernel.org>, Jonathan Austin <jonathan.austin@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steve Capper <Steve.Capper@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        LinusW <linus.walleij@linaro.org>, Will Deacon <will.deacon@arm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: amba-pl08x and 'get_signal' namespace collision/build error
-Message-ID: <20130705061802.GB10947@intel.com>
-References: <51C97F40.5030101@arm.com>
- <20130625184539.GB2718@n2100.arm.linux.org.uk>
- <20130626044842.GR23141@intel.com>
- <20130626081909.GD2718@n2100.arm.linux.org.uk>
- <20130626103930.GS23141@intel.com>
- <20130627094650.GC4283@n2100.arm.linux.org.uk>
- <CAOesGMgSPNggnBm=E3B774m7Ad_QMXdqvcGqRMxhap6dtpNtCg@mail.gmail.com>
+	id S1757083Ab3GEHGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 03:06:21 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:42008 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab3GEHGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 03:06:20 -0400
+Message-ID: <51D67066.9070105@gmail.com>
+Date: Fri, 05 Jul 2013 17:06:14 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMgSPNggnBm=E3B774m7Ad_QMXdqvcGqRMxhap6dtpNtCg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Matt Porter <mporter@kernel.crashing.org>,
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] rapidio: use after free in unregister function
+References: <20130705060231.GA14443@elgon.mountain>
+In-Reply-To: <20130705060231.GA14443@elgon.mountain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 11:27:12AM -0700, Olof Johansson wrote:
-> This has now hit the mainline kernel, and several defconfigs (nhk815,
-> lpc32xx and the spear ones) are broken there.
+On 05/07/13 16:02, Dan Carpenter wrote:
+> We need to use the _safe version of list_for_each_entry() because we
+> are freeing the iterator.
 > 
-> Vinod, when are you sending up your pull request with the fix? It'd be
-> good to see it go in soon.
-It should be on its way by the weekend
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
+> index f4f30af..84ac64a 100644
+> --- a/drivers/rapidio/rio.c
+> +++ b/drivers/rapidio/rio.c
+> @@ -1701,7 +1701,7 @@ EXPORT_SYMBOL_GPL(rio_register_scan);
+>  int rio_unregister_scan(int mport_id, struct rio_scan *scan_ops)
+>  {
+>  	struct rio_mport *port;
+> -	struct rio_scan_node *scan;
+> +	struct rio_scan_node *scan, *tmp;
+>  
+>  	pr_debug("RIO: %s for mport_id=%d\n", __func__, mport_id);
+>  
+> @@ -1715,7 +1715,7 @@ int rio_unregister_scan(int mport_id, struct rio_scan *scan_ops)
+>  		    (mport_id == RIO_MPORT_ANY && port->nscan == scan_ops))
+>  			port->nscan = NULL;
+>  
+> -	list_for_each_entry(scan, &rio_scans, node)
+> +	list_for_each_entry_safe(scan, tmp, &rio_scans, node)
+>  		if (scan->mport_id == mport_id) {
+>  			list_del(&scan->node);
+>  			kfree(scan);
 
-Thanks
-~Vinod
+It looks like an mport_id can only be assigned to one scan entry (see
+rio_register_scan), so you can use list_for_each_entry and break; after
+the kfree(scan); instead.
+
+~Ryan
+
