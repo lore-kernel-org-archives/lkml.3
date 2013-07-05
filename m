@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab3GEGXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 02:23:51 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:43656 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3GEGXu (ORCPT
+	id S1753465Ab3GEGZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 02:25:44 -0400
+Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:38883
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751220Ab3GEGZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 02:23:50 -0400
-Date: Fri, 5 Jul 2013 08:23:45 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Airlie <airlied@gmail.com>
-Subject: Re: [GIT PULL] core/mutexes changes for v3.11: W/W mutex support
-Message-ID: <20130705062345.GA29487@gmail.com>
-References: <20130701082221.GA14112@gmail.com>
- <CA+55aFwfsz6e5oQAdZw-YyYzwJXCPjKJKiLEXxn7ujU7KWX97Q@mail.gmail.com>
- <51D3C4C8.8060701@canonical.com>
+	Fri, 5 Jul 2013 02:25:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -7
+X-BigFish: VS-7(zzbb2dI98dI9371I103dK1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Message-ID: <51D66430.60209@freescale.com>
+Date: Fri, 5 Jul 2013 11:44:08 +0530
+From: pankaj chauhan <pankaj.chauhan@freescale.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51D3C4C8.8060701@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        "Getz, Robin" <robin.getz@analog.com>
+CC: Goyal Akhil-B35197 <B35197@freescale.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chauhan Pankaj-B32944 <B32944@freescale.com>,
+        "Hennerich, Michael" <Michael.Hennerich@analog.com>,
+        Lars-Peter Clausen <lars-peter.clausen@analog.com>
+Subject: Re: [PATCH 3/5] drivers/misc: rf/ad9361: AD9361 device driver for
+ Radio phy
+References: <1371456566-4934-1-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-2-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-3-git-send-email-akhil.goyal@freescale.com> <1371456566-4934-4-git-send-email-akhil.goyal@freescale.com> <51C1AAC4.3010605@metafoo.de> <51C2DAE8.2040100@freescale.com> <20130703193640.GF27646@sirena.org.uk>
+In-Reply-To: <20130703193640.GF27646@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
-
-> Hey,
+On 7/4/2013 1:06 AM, Mark Brown wrote:
+> On Thu, Jun 20, 2013 at 04:05:20PM +0530, pankaj chauhan wrote:
 > 
-> Op 03-07-13 02:54, Linus Torvalds schreef:
-> > On Mon, Jul 1, 2013 at 1:22 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >> Please pull the latest core-mutexes-for-linus git tree from:
-> >>
-> >>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-mutexes-for-linus
-> >>
-> >>    HEAD: 166989e366ffa66108b2f37b870e66b85b2185ad locking-selftests: Handle unexpected failures more strictly
-> >>
-> >> This tree adds support for wound/wait style locks, which the graphics guys
-> >> would like to make use of in the TTM graphics subsystem.
-> > So I pulled this, but I'm not particularly happy with how this (very
-> > unusual) lock pollutes <linux/mutex.h> that pretty much every single
-> > file ends up including.
-> >
-> > So I'd really prefer to see the ww_mutex() support split up into
-> > <linux/ww_mutex.h>, rather than making the compiler have to parse and
-> > remember that stuff when 99.99% of all files do not care about it or
-> > need it.
+>> Yes modifying registers from user space is part of the patch set and
+>> register read/write interface is aimed only for two purposes:
+>>
+>> 1. Debugging : taking register dumps etc.
 > 
-> Sounds good to me, but can it wait until with the drm pull is done?
+> Use regmap, it should have the infrastructure you need here.
+> 
+Thanks! I looked into regmap, and it is exactly what we want. We'll
+remove reg read/write from our patch and use regmap.
+>> 2. Initializing AD9361 using Low level script generated by ADI GUI tool.
+> 
+> This sounds like generating a firmmware blob that the driver can load.
+> You may have to cook the GUI output to be more amenable to loading in
+> the kernel (or persuade the GUI guys to generate something useful here).
+> 
+Yes it is kind of generating firmware blob from GUI tool. They reason
+why we choose to initialize AD9361 using script generated by GUI tool
+was lack of our insight in AD9361, and script is the quickest way to
+bring-up AD9361. This GUI is developed by analog devices, so we don't
+have much control on it. Lars and Robin are developing full fledged
+driver for Ad9661, We intend to use that driver only, that's why in next
+version of patch we'll remove AD9361 driver from our patchset, and
+integrate with Lars' driver once it is available.
 
-The ordering should not matter much as the combination will be tested in 
-linux-next anyway.
 
-> Preliminary diff below.
-
-Looks good to me at first sight. Please send a tested, changelogged, 
-signed off version.
-
-Thanks,
-
-	Ingo
