@@ -1,107 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab3GERJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 13:09:30 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:27952 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755658Ab3GERJ3 (ORCPT
+	id S1757487Ab3GERKr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 13:10:47 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:22650 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab3GERKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 13:09:29 -0400
-Message-ID: <51D6FDBD.6010606@hp.com>
-Date: Fri, 05 Jul 2013 13:09:17 -0400
+	Fri, 5 Jul 2013 13:10:46 -0400
+Message-ID: <51D6FE08.8030904@hp.com>
+Date: Fri, 05 Jul 2013 13:10:32 -0400
 From: Waiman Long <waiman.long@hp.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org,
+To: Stephen Smalley <sds@tycho.nsa.gov>
+CC: James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v2] perf record: fix symbol processing bug and greatly
- improve performance
-References: <1368110568-64714-1-git-send-email-Waiman.Long@hp.com> <20130510081214.GA6848@gmail.com>
-In-Reply-To: <20130510081214.GA6848@gmail.com>
+Subject: Re: [PATCH 1/2 v5] SELinux: Reduce overhead of mls_level_isvalid()
+ function call
+References: <1370886908-65256-1-git-send-email-Waiman.Long@hp.com> <51B70EE4.5030209@tycho.nsa.gov>
+In-Reply-To: <51B70EE4.5030209@tycho.nsa.gov>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/10/2013 04:12 AM, Ingo Molnar wrote:
-> * Waiman Long<Waiman.Long@hp.com>  wrote:
+On 06/11/2013 07:49 AM, Stephen Smalley wrote:
+> On 06/10/2013 01:55 PM, Waiman Long wrote:
+>> v4->v5:
+>>    - Fix scripts/checkpatch.pl warning.
+>>
+>> v3->v4:
+>>    - Merge the 2 separate while loops in ebitmap_contains() into
+>>      a single one.
+>>
+>> v2->v3:
+>>    - Remove unused local variables i, node from mls_level_isvalid().
+>>
+>> v1->v2:
+>>   - Move the new ebitmap comparison logic from mls_level_isvalid()
+>>     into the ebitmap_contains() helper function.
+>>   - Rerun perf and performance tests on the latest v3.10-rc4 kernel.
+>>
+>> While running the high_systime workload of the AIM7 benchmark on
+>> a 2-socket 12-core Westmere x86-64 machine running 3.10-rc4 kernel
+>> (with HT on), it was found that a pretty sizable amount of time was
+>> spent in the SELinux code. Below was the perf trace of the "perf
+>> record -a -s" of a test run at 1500 users:
+>>
+>>    5.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+>>    1.96%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+>>    1.95%            ls  [kernel.kallsyms]     [k] find_next_bit
+>>
+>> The ebitmap_get_bit() was the hottest function in the perf-report
+>> output.  Both the ebitmap_get_bit() and find_next_bit() functions
+>> were, in fact, called by mls_level_isvalid(). As a result, the
+>> mls_level_isvalid() call consumed 8.95% of the total CPU time of
+>> all the 24 virtual CPUs which is quite a lot. The majority of the
+>> mls_level_isvalid() function invocations come from the socket creation
+>> system call.
+>>
+>> Looking at the mls_level_isvalid() function, it is checking to see
+>> if all the bits set in one of the ebitmap structure are also set in
+>> another one as well as the highest set bit is no bigger than the one
+>> specified by the given policydb data structure. It is doing it in
+>> a bit-by-bit manner. So if the ebitmap structure has many bits set,
+>> the iteration loop will be done many times.
+>>
+>> The current code can be rewritten to use a similar algorithm as the
+>> ebitmap_contains() function with an additional check for the
+>> highest set bit. The ebitmap_contains() function was extended to
+>> cover an optional additional check for the highest set bit, and the
+>> mls_level_isvalid() function was modified to call ebitmap_contains().
+>>
+>> With that change, the perf trace showed that the used CPU time drop
+>> down to just 0.08% (ebitmap_contains + mls_level_isvalid) of the
+>> total which is about 100X less than before.
+>>
+>>    0.07%            ls  [kernel.kallsyms]     [k] ebitmap_contains
+>>    0.05%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+>>    0.01%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+>>    0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
+>>
+>> The remaining ebitmap_get_bit() and find_next_bit() functions calls
+>> are made by other kernel routines as the new mls_level_isvalid()
+>> function will not call them anymore.
+>>
+>> This patch also improves the high_systime AIM7 benchmark result,
+>> though the improvement is not as impressive as is suggested by the
+>> reduction in CPU time spent in the ebitmap functions. The table below
+>> shows the performance change on the 2-socket x86-64 system (with HT
+>> on) mentioned above.
+>>
+>> +--------------+---------------+----------------+-----------------+
+>> |   Workload   | mean % change | mean % change  | mean % change   |
+>> |              | 10-100 users  | 200-1000 users | 1100-2000 users |
+>> +--------------+---------------+----------------+-----------------+
+>> | high_systime |     +0.1%     |     +0.9%      |     +2.6%       |
+>> +--------------+---------------+----------------+-----------------+
+>>
+>> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 >
->> When "perf record" was used on a large machine with a lot of CPUs,
->> the perf post-processing time (the time after the workload was done
->> until the perf command itself exited) could take a lot of minutes
->> and even hours depending on how large the resulting perf.data file was.
->>
->> While running AIM7 1500-user high_systime workload on a 80-core
->> x86-64 system with a 3.9 kernel (with only the -s -a options used),
->> the workload itself took about 2 minutes to run and the perf.data
->> file had a size of 1108.746 MB. However, the post-processing step
->> took more than 10 minutes.
->>
->> With a gprof-profiled perf binary, the time spent by perf was as
->> follows:
->>
->>    %   cumulative   self              self     total
->>   time   seconds   seconds    calls   s/call   s/call  name
->>   96.90    822.10   822.10   192156     0.00     0.00  dsos__find
->>    0.81    828.96     6.86 172089958     0.00     0.00  rb_next
->>    0.41    832.44     3.48 48539289     0.00     0.00  rb_erase
->>
->> So 97% (822 seconds) of the time was spent in a single dsos_find()
->> function. After analyzing the call-graph data below:
->>
->> -----------------------------------------------
->>                  0.00  822.12  192156/192156      map__new [6]
->> [7]     96.9    0.00  822.12  192156         vdso__dso_findnew [7]
->>                822.10    0.00  192156/192156      dsos__find [8]
->>                  0.01    0.00  192156/192156      dsos__add [62]
->>                  0.01    0.00  192156/192366      dso__new [61]
->>                  0.00    0.00       1/45282525     memdup [31]
->>                  0.00    0.00  192156/192230      dso__set_long_name [91]
->> -----------------------------------------------
->>                822.10    0.00  192156/192156      vdso__dso_findnew [7]
->> [8]     96.9  822.10    0.00  192156         dsos__find [8]
->> -----------------------------------------------
->>
->> It was found that the vdso__dso_findnew() function failed to locate
->> VDSO__MAP_NAME ("[vdso]") in the dso list and have to insert a new
->> entry at the end for 192156 times. This problem is due to the fact that
->> there are 2 types of name in the dso entry - short name and long name.
->> The initial dso__new() adds "[vdso]" to both the short and long names.
->> After that, vdso__dso_findnew() modifies the long name to something
->> like /tmp/perf-vdso.so-NoXkDj. The dsos__find() function only compares
->> the long name. As a result, the same vdso entry is duplicated many
->> time in the dso list. This bug increases memory consumption as well
->> as slows the symbol processing time to a crawl.
->>
->> To resolve this problem, the dsos__find() function interface was
->> modified to enable searching either the long name or the short
->> name. The vdso__dso_findnew() will now search only the short name
->> while the other call sites search for the long name as before.
->>
->> With this change, the cpu time of perf was reduced from 848.38s to
->> 15.77s and dsos__find() only accounted for 0.06% of the total time.
->>
->>    0.06     15.73     0.01   192151     0.00     0.00  dsos__find
->>
->> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->> ---
->>   tools/perf/util/dso.c  |   10 ++++++++--
->>   tools/perf/util/dso.h  |    3 ++-
->>   tools/perf/util/vdso.c |    2 +-
->>   3 files changed, 11 insertions(+), 4 deletions(-)
-> Acked-by: Ingo Molnar<mingo@kernel.org>
+> Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
 >
-> Thanks,
->
-> 	Ingo
 
 Thank for the Ack. Will that patch go into v3.11?
 
