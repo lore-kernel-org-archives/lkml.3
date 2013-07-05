@@ -1,94 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab3GEIDR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 04:03:17 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:55094 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757088Ab3GEIDM (ORCPT
+	id S1757189Ab3GEIQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 04:16:07 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35187 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757162Ab3GEIQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 04:03:12 -0400
-Message-ID: <51D67D6C.4080603@gmail.com>
-Date: Fri, 05 Jul 2013 16:01:48 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Fri, 5 Jul 2013 04:16:04 -0400
+Date: Fri, 5 Jul 2013 10:15:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
+ switch
+Message-ID: <20130705081516.GP18898@dyad.programming.kicks-ass.net>
+References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
+ <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com>
+ <20130704124536.GK23916@twins.programming.kicks-ass.net>
+ <51D65B58.1050201@intel.com>
 MIME-Version: 1.0
-To: Chen Gang <gang.chen@asianux.com>, Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
- 'COMPILE_TEST' in 'asm-generic'.
-References: <20130704011221.GA11230@kroah.com> <20130704061204.GA12148@kroah.com> <51D517A7.6030908@asianux.com> <201307041125.15083.arnd@arndb.de> <51D60D53.7050405@gmail.com> <20130705101446.48deb2694f5fcdb060f41e5b@canb.auug.org.au> <51D617E9.8080907@gmail.com>
-In-Reply-To: <51D617E9.8080907@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51D65B58.1050201@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello All:
-
-It seems 'asm-generic' dislikes 'mad users' (e.g allmodconfig,
-randconfig, and me).
-
-I guess the main reason is: 'asm-generic' thinks what mad users talk
-about is useless in real world, so it is just noisy.
-
-I can understand, at least what I talk about is not for urgent things.
-(maybe 'asm-generic' also thinks it not important either, every members
-have their own opinions).
-
-Next, I still use allmodconfig/randconfig for some architectures which I
-am interested in (and also for learning compilers), but I will skip all
-things which are related with 'asm-generic', since it dislikes me (a mad
-user).
-
-At last, I make an apologize to 'asm-generic' for my mad discussing.
-
-Bye !!
-
-
-On 07/05/2013 08:48 AM, Chen Gang F T wrote:
-> On 07/05/2013 08:14 AM, Stephen Rothwell wrote:
->> On Fri, 05 Jul 2013 08:03:31 +0800 Chen Gang F T <chen.gang.flying.transformer@gmail.com> wrote:
->>>>
->>>> When a module select "COMPILE_TEST=y" (e.g with allmodconfig), it has
->>>> right to compile under the architecture which no related HW support.
->>>>
->>>> If it can not pass compiling, at least it is not the module's issue,
->>>> neither the architecture's issue.
->>>>
->>>> We have to look for who has duty on it. At least now, it seems only
->>>> 'asm-generic' can be qualified to play this unlucky role.
->> You keep saying this, but others have told you that this is not the
->> problem.
->>
+On Fri, Jul 05, 2013 at 01:36:24PM +0800, Yan, Zheng wrote:
+> On 07/04/2013 08:45 PM, Peter Zijlstra wrote:
+> > On Mon, Jul 01, 2013 at 03:23:04PM +0800, Yan, Zheng wrote:
+> > 
+> >> @@ -2488,25 +2508,31 @@ static void perf_branch_stack_sched_in(struct task_struct *prev,
+> >>  
+> >>  	list_for_each_entry_rcu(pmu, &pmus, entry) {
+> >>  		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+> >> +		task_ctx = cpuctx->task_ctx;
+> >>  
+> >>  		/*
+> >> -		 * check if the context has at least one
+> >> -		 * event using PERF_SAMPLE_BRANCH_STACK
+> >> +		 * force flush the branch stack if there are cpu-wide events
+> >> +		 * using PERF_SAMPLE_BRANCH_STACK
+> >> +		 *
+> >> +		 * save/restore the branch stack if the task context has
+> >> +		 * at least one event using PERF_SAMPLE_BRANCH_STACK
+> >>  		 */
+> >> -		if (cpuctx->ctx.nr_branch_stack > 0
+> >> -		    && pmu->flush_branch_stack) {
+> >> -
+> >> +		bool force_flush = cpuctx->ctx.nr_branch_stack > 0;
+> >> +		if (pmu->branch_stack_sched &&
+> >> +		    (force_flush ||
+> >> +		     (task_ctx && task_ctx->nr_branch_stack > 0))) {
+> >>  			pmu = cpuctx->ctx.pmu;
+> >>  
+> >> -			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+> >> +			perf_ctx_lock(cpuctx, task_ctx);
+> >>  
+> >>  			perf_pmu_disable(pmu);
+> >>  
+> >> -			pmu->flush_branch_stack();
+> >> +			pmu->branch_stack_sched(task_ctx,
+> >> +						sched_in, force_flush);
+> >>  
+> >>  			perf_pmu_enable(pmu);
+> >>  
+> >> -			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+> >> +			perf_ctx_unlock(cpuctx, task_ctx);
+> >>  		}
+> >>  	}
+> >>  
+> > 
+> > I never really like this; and yes I know I wrote part of that. Is there
+> > any way we can get rid of this and to it 'properly' through the events
+> > that get scheduled?
+> > 
+> > After all; the LBR usage is through the events, so scheduling the events
+> > should also manage the LBR state.
+> > 
+> > What is missing for that to work?
+> > 
 > 
-> In real world, it is not the problem.
-> 
-> But for 'mad users' (e.g. allmodconfig, randconfig, and me too), they
-> have not provided enough reason for it (prove that is not a problem for
-> 'mad users').
-> 
-> 
->>>> Could you provide your suggestions or completions for this issue ?
->> If something doesn't build for a particular config, then either it needs
->> to be fixed or excluded from building in that particular config.
-> 
-> I agree with you, if get rid of 'COMPILE_TEST'.
-> 
-> Thanks.
-> 
+> the LBR is shared resource, can be used by multiple events at the same time.
 
+Yeah so? There's tons of shared resources in the PMU already.
 
--- 
-Chen Gang
+> Strictly speaking，LBR is associated with task, not event.
+
+Wrong!, it _is_ associated with events. Events is all there is. Event can be
+associated with tasks, but that's completely irrelevant.
+
+> One example is
+> there are 5 events using the LBR stack feature, but there are only 4 counters.
+> So these events need schedule. Saving/restoring LBR on the basis of event is
+> clearly wrong.
+
+Different scheduling and you're wrong. Look at perf_rotate_context(), we'd
+disable everything at perf_pmu_disable() and enable the entire thing at
+perf_pmu_enable(), on both sides we'd have the LBR running.
+
