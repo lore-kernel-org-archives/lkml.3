@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab3GELsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 07:48:46 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:49890 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055Ab3GELsp (ORCPT
+	id S1757340Ab3GELu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 07:50:28 -0400
+Received: from relmlor3.renesas.com ([210.160.252.173]:49455 "EHLO
+	relmlor3.renesas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757055Ab3GELu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 07:48:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1307051213080.11637@ionos.tec.linutronix.de>
-References: <1372687359-18235-1-git-send-email-jonas.jensen@gmail.com>
-	<1372940383-5957-1-git-send-email-jonas.jensen@gmail.com>
-	<alpine.DEB.2.02.1307042211420.11637@ionos.tec.linutronix.de>
-	<CACmBeS03Xfo7DyyYUbpBaO8TeR3g8BTPzcoOzQayk40k1soFzA@mail.gmail.com>
-	<alpine.DEB.2.02.1307051213080.11637@ionos.tec.linutronix.de>
-Date: Fri, 5 Jul 2013 13:48:44 +0200
-Message-ID: <CACmBeS1djCBWeXwCQROtvyodCfunusr-3=CKOk294P+FF-h6wA@mail.gmail.com>
-Subject: Re: [PATCH v5] ARM: clocksource: add support for MOXA ART SoCs
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, john.stultz@linaro.org, u.kleine-koenig@pengutronix.de,
-        tomasz.figa@gmail.com, linus.walleij@linaro.org,
-        thomas.petazzoni@free-electrons.com, arnd@arndb.de
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Jul 2013 07:50:27 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1001,1363100400";   d="scan'208";a="133092951"
+Message-id: <51D6B300.20804@renesas.com>
+Date: Fri, 05 Jul 2013 20:50:24 +0900
+From: Shinya Kuribayashi <shinya.kuribayashi.px@renesas.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620
+ Thunderbird/17.0.7
+MIME-version: 1.0
+To: tglx@linutronix.de
+Cc: prarit@redhat.com, john.stultz@linaro.org,
+        hiroyuki.yokoyama.vx@renesas.com, takashi.yoshii.zj@renesas.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: hrtimer: one more expiry time overflow check in hrtimer_interrupt
+References: <51B6D4C4.9080400@renesas.com>
+ <alpine.DEB.2.02.1306281416080.4013@ionos.tec.linutronix.de>
+In-reply-to: <alpine.DEB.2.02.1306281416080.4013@ionos.tec.linutronix.de>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the replies Thomas.
+On 6/28/2013 9:22 PM, Thomas Gleixner wrote:
+>> On the other hand, we have another call site of tick_program_event() at
+>> the bottom of hrtimer_interrupt().  The warning this time is triggered
+>> there, so we need to apply the same fix to it.
+> 
+> Well, the problem is that you are just papering over the underlying
+> issue of 32bit systems not being prepared for the year 2038 issue.
+> 
+> Just blindly silencing the warning is not going to make the system
+> survive 2038 in any sane way. All timespec/val related time functions
+> dealing with the clock realtime domain are simply broken in 2038 on
+> 32bit, so it does not matter whether a warning triggers or not.
 
-On 5 July 2013 12:21, Thomas Gleixner <tglx@linutronix.de> wrote:
-> Because you need to preserve the CR2 enable bit so your clocksource
-> does not get switched off.
+You're right.  With this patch applied, the hrtimer_interrupt /looks/
+back to normal, but /proc/timer_list still show that "expires at [in
+negative range]":
 
-Yes, that was my main concern. The possibility of more flags being added.
-I was experimenting with TIMEREG_CR_COUNT_UP but could never get REG_MATCH1
-to work right for oneshot mode.
+    active timers:
+     #0: tick_cpu_sched, tick_sched_timer, S:01
+     # expires at 50812500000-50812500000 nsecs [in -165398341280 to -165398341280 nsecs]
 
-Please take a look at v7.
+This shouldn't happen and something weird is still going on.
 
-Best regards,
-Jonas
+> We really need to tackle the underlying problem and not bandaiding a
+> known to be broken system.
+
+Agreed, but a little bit hard task for me.  This is 100% reproducible,
+so I can help debug / verification.  Please let me know, if necessary.
+
+Thanks for your comments,
+--
+Shinya Kuribayashi
+Renesas Electronics
