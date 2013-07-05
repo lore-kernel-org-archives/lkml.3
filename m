@@ -1,110 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab3GEAvQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 20:51:16 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:37767 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab3GEAvP (ORCPT
+	id S1756499Ab3GEAxf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 20:53:35 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:41646 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab3GEAxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 20:51:15 -0400
+	Thu, 4 Jul 2013 20:53:31 -0400
+Message-ID: <51D618C9.4080103@gmail.com>
+Date: Fri, 05 Jul 2013 08:52:25 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-In-Reply-To: <1372951039-10375-4-git-send-email-k.krivyakin@samsung.com>
-References: <1372951039-10375-1-git-send-email-k.krivyakin@samsung.com>
-	<1372951039-10375-4-git-send-email-k.krivyakin@samsung.com>
-Date: Fri, 5 Jul 2013 09:51:14 +0900
-X-Google-Sender-Auth: GVuVnYMuKM3dpDh_IfBYKCzhIy4
-Message-ID: <CAH9JG2XwWC03vR7Obg_PLBFJ5vEz19vaCjROpfGtTNsGP2Cj-w@mail.gmail.com>
-Subject: Re: [PATCH RFC 3/3] Update current cpu power when cpu freq change for exynos.
-From: Kyungmin Park <kmpark@infradead.org>
-To: Konstantin Krivyakin <k.krivyakin@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, viresh.kumar@linaro.org,
-        mingo@redhat.com, Peter Zijlstra <peterz@infradead.org>
-Cc: i.zhbanov@samsung.com, e.voevodin@samsung.com,
-        linux-kernel@vger.kernel.org
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Chen Gang <gang.chen@asianux.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
+        David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
+ 'COMPILE_TEST' in 'asm-generic'.
+References: <20130704011221.GA11230@kroah.com> <20130704061204.GA12148@kroah.com> <51D517A7.6030908@asianux.com> <201307041125.15083.arnd@arndb.de> <51D60D53.7050405@gmail.com> <20130705001239.GA20869@kroah.com>
+In-Reply-To: <20130705001239.GA20869@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ cpufreq maintainers
+On 07/05/2013 08:12 AM, Greg KH wrote:
+> I'm done with this thread, it's madness..
 
-On Fri, Jul 5, 2013 at 12:17 AM, Konstantin Krivyakin
-<k.krivyakin@samsung.com> wrote:
-> Signed-off-by: Konstantin Krivyakin <k.krivyakin@samsung.com>
-> ---
->  drivers/cpufreq/exynos-cpufreq.c     |    2 ++
->  drivers/cpufreq/exynos-cpufreq.h     |    1 +
->  drivers/cpufreq/exynos4x12-cpufreq.c |   19 ++++++++++++++++++-
->  3 files changed, 21 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-> index 0d32f02..02f17bc 100644
-> --- a/drivers/cpufreq/exynos-cpufreq.c
-> +++ b/drivers/cpufreq/exynos-cpufreq.c
-> @@ -178,6 +178,8 @@ static int exynos_target(struct cpufreq_policy *policy,
->         }
->
->         new_freq = freq_table[index].frequency;
-> +       if (exynos_info->power_table)
-> +               policy->current_power = exynos_info->power_table[index];
->
->         ret = exynos_cpufreq_scale(new_freq);
->
-> diff --git a/drivers/cpufreq/exynos-cpufreq.h b/drivers/cpufreq/exynos-cpufreq.h
-> index 92b852e..64f964f 100644
-> --- a/drivers/cpufreq/exynos-cpufreq.h
-> +++ b/drivers/cpufreq/exynos-cpufreq.h
-> @@ -38,6 +38,7 @@ struct exynos_dvfs_info {
->         unsigned int    pll_safe_idx;
->         struct clk      *cpu_clk;
->         unsigned int    *volt_table;
-> +       u64             *power_table;
->         struct cpufreq_frequency_table  *freq_table;
->         void (*set_freq)(unsigned int, unsigned int);
->         bool (*need_apll_change)(unsigned int, unsigned int);
-> diff --git a/drivers/cpufreq/exynos4x12-cpufreq.c b/drivers/cpufreq/exynos4x12-cpufreq.c
-> index 08b7477..8905f9b 100644
-> --- a/drivers/cpufreq/exynos4x12-cpufreq.c
-> +++ b/drivers/cpufreq/exynos4x12-cpufreq.c
-> @@ -219,6 +219,7 @@ static void exynos4x12_set_frequency(unsigned int old_index,
->  int exynos4x12_cpufreq_init(struct exynos_dvfs_info *info)
->  {
->         unsigned long rate;
-> +       int freq_count;
->
->         cpu_clk = clk_get(NULL, "armclk");
->         if (IS_ERR(cpu_clk))
-> @@ -252,8 +253,24 @@ int exynos4x12_cpufreq_init(struct exynos_dvfs_info *info)
->         info->set_freq = exynos4x12_set_frequency;
->         info->need_apll_change = exynos4x12_pms_change;
->
-> -       return 0;
-> +       freq_count = sizeof(exynos4x12_freq_table) /
-> +               sizeof(struct cpufreq_frequency_table);
-> +       info->power_table = kzalloc(sizeof(u64) * freq_count, GFP_KERNEL);
-> +       if (!info->power_table)
-> +               goto err_power_table;
-> +
-> +       for (i = 0; i <= freq_count; ++i) {
-> +               u64 freq = info->freq_table[i].frequency;
-> +               u64 volt = info->volt_table[i];
->
-> +               do_div(freq, 1000);
-> +               do_div(volt, 1000);
-> +               info->power_table[i] = freq * volt * volt;
-> +       }
-> +
-> +       return 0;
-> +err_power_table:
-> +       clk_put(mout_appl);
->  err_mout_apll:
->         clk_put(mout_mpll);
->  err_mout_mpll:
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Yeah, especially discussing with 'mad users' (e.g. allmodconfig,
+randconfig, and me too).  ;-)
+
+
+Thanks.
+-- 
+Chen Gang
