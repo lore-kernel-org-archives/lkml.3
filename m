@@ -1,185 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab3GEU4N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 16:56:13 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:47711 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756470Ab3GEU4I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 16:56:08 -0400
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Alexander Graf <agraf@suse.de>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH 2/4] PF: Move architecture specifics to the backends
-Date: Fri,  5 Jul 2013 22:55:52 +0200
-Message-Id: <1373057754-59225-3-git-send-email-dingel@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1373057754-59225-1-git-send-email-dingel@linux.vnet.ibm.com>
-References: <1373057754-59225-1-git-send-email-dingel@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070520-6892-0000-0000-0000059C5AC7
+	id S965055Ab3GEU4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 16:56:37 -0400
+Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:23009
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757181Ab3GEU4e convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 16:56:34 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
+Date: Fri, 5 Jul 2013 13:56:22 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Baruch Siach <baruch@tkos.co.il>, John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Michal Simek <michal.simek@xilinx.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] clocksource/cadence_ttc: Reuse clocksource as sched_clock
+References: <1372888216-10726-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20130704033026.GX4288@tarshish>
+ <0030b826-0eb1-4bb8-a0de-1d8dc68bd81a@TX2EHSMHS017.ehs.local>
+ <alpine.DEB.2.02.1307052238170.32106@ionos.tec.linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1307052238170.32106@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <4fab6223-45c5-453e-9972-1c12aa79a312@CO1EHSMHS008.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current common codes uses PAGE_OFFSET to indicate a bad host virtual address.
-As this check won't work on architectures that don't map kernel and user memory
-into the same address space (e.g. s390), it is moved into architcture specific
-code.
+On Fri, Jul 05, 2013 at 10:42:03PM +0200, Thomas Gleixner wrote:
+> On Fri, 5 Jul 2013, Sören Brinkmann wrote:
+> > On Thu, Jul 04, 2013 at 06:30:26AM +0300, Baruch Siach wrote:
+> > > Hi Soren,
+> > > 
+> > > On Wed, Jul 03, 2013 at 02:50:16PM -0700, Soren Brinkmann wrote:
+> > > > Reuse the TTC clocksource timer as sched clock, too. Since only a single
+> > > > sched clock is supported in Linux, this feature optional and can be
+> > > > selected through Kconfig.
+> > > > 
+> > > > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > > > ---
+> > > 
+> > > [...]
+> > > 
+> > > > diff --git a/drivers/clocksource/cadence_ttc_timer.c 
+> > > > b/drivers/clocksource/cadence_ttc_timer.c
+> > > > index 4cbe28c..ef0f52b 100644
+> > > > --- a/drivers/clocksource/cadence_ttc_timer.c
+> > > > +++ b/drivers/clocksource/cadence_ttc_timer.c
+> > > > @@ -22,6 +22,7 @@
+> > > >  #include <linux/of_irq.h>
+> > > >  #include <linux/slab.h>
+> > > >  #include <linux/clk-provider.h>
+> > > > +#include <asm/sched_clock.h>
+> > > 
+> > > This has changed to linux/sched_clock.h in the tip tree. See 
+> > > https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers/core&id=38ff87f77af0b5a93fc8581cff1d6e5692ab8970.
+> > Is that change going into Linus' tree during the 3.11 merge window? The
+> > tip tree is missing some changes to the TTC which went in through the
+> > armsoc tree.
+> 
+> Yes, this is about to be sent Linuswards. Can we please coordinate
+> that stuff. drivers/clocksource depend on tip timers/* branches and
+> any modification in some other tree is going to be doomed.
+> 
+> We have a mechanism for that in place, if stuff goes cross trees. One
+> of the trees provides a set of commit for the other tree to pull, so
+> we do not end up with merge dependencies and conflicts.
+> 
+> Why is clocksource stuff going through armsoc unless it contains
+> related modifications in arch/arm/
+We overhauled Zynq's common clock code and migrated all Zynq drivers to
+it - the TTC being one. I'm pretty sure you were on the CC list for that
+change.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=30e1e28598c2674c133148d8aec6d431d7acd314
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
----
- arch/arm/include/asm/kvm_host.h     |  8 ++++++++
- arch/ia64/include/asm/kvm_host.h    |  3 +++
- arch/mips/include/asm/kvm_host.h    |  6 ++++++
- arch/powerpc/include/asm/kvm_host.h |  8 ++++++++
- arch/s390/include/asm/kvm_host.h    | 12 ++++++++++++
- arch/x86/include/asm/kvm_host.h     |  8 ++++++++
- include/linux/kvm_host.h            |  8 --------
- 7 files changed, 45 insertions(+), 8 deletions(-)
+	Sören
 
-diff --git a/arch/arm/include/asm/kvm_host.h b/arch/arm/include/asm/kvm_host.h
-index 7d22517..557c2a1 100644
---- a/arch/arm/include/asm/kvm_host.h
-+++ b/arch/arm/include/asm/kvm_host.h
-@@ -74,6 +74,14 @@ struct kvm_arch {
- 	struct vgic_dist	vgic;
- };
- 
-+#define KVM_HVA_ERR_BAD		(PAGE_OFFSET)
-+#define KVM_HVA_ERR_RO_BAD	(PAGE_OFFSET + PAGE_SIZE)
-+
-+static inline bool kvm_is_error_hva(unsigned long addr)
-+{
-+	return addr >= PAGE_OFFSET;
-+}
-+
- #define KVM_NR_MEM_OBJS     40
- 
- /*
-diff --git a/arch/ia64/include/asm/kvm_host.h b/arch/ia64/include/asm/kvm_host.h
-index 989dd3f..d3afa6f 100644
---- a/arch/ia64/include/asm/kvm_host.h
-+++ b/arch/ia64/include/asm/kvm_host.h
-@@ -486,6 +486,9 @@ struct kvm_arch {
- 	unsigned long irq_states[KVM_IOAPIC_NUM_PINS];
- };
- 
-+#define KVM_HVA_ERR_BAD		(PAGE_OFFSET)
-+#define KVM_HVA_ERR_RO_BAD	(PAGE_OFFSET + PAGE_SIZE)
-+
- union cpuid3_t {
- 	u64 value;
- 	struct {
-diff --git a/arch/mips/include/asm/kvm_host.h b/arch/mips/include/asm/kvm_host.h
-index 4d6fa0b..3a0a3f7 100644
---- a/arch/mips/include/asm/kvm_host.h
-+++ b/arch/mips/include/asm/kvm_host.h
-@@ -34,7 +34,13 @@
- #define KVM_NR_PAGE_SIZES	1
- #define KVM_PAGES_PER_HPAGE(x)	1
- 
-+#define KVM_HVA_ERR_BAD		(PAGE_OFFSET)
-+#define KVM_HVA_ERR_RO_BAD	(PAGE_OFFSET + PAGE_SIZE)
- 
-+static inline bool kvm_is_error_hva(unsigned long addr)
-+{
-+	return addr >= PAGE_OFFSET;
-+}
- 
- /* Special address that contains the comm page, used for reducing # of traps */
- #define KVM_GUEST_COMMPAGE_ADDR     0x0
-diff --git a/arch/powerpc/include/asm/kvm_host.h b/arch/powerpc/include/asm/kvm_host.h
-index af326cd..be5d7f4 100644
---- a/arch/powerpc/include/asm/kvm_host.h
-+++ b/arch/powerpc/include/asm/kvm_host.h
-@@ -273,6 +273,14 @@ struct kvm_arch {
- #endif
- };
- 
-+#define KVM_HVA_ERR_BAD		(PAGE_OFFSET)
-+#define KVM_HVA_ERR_RO_BAD	(PAGE_OFFSET + PAGE_SIZE)
-+
-+static inline bool kvm_is_error_hva(unsigned long addr)
-+{
-+	return addr >= PAGE_OFFSET;
-+}
-+
- /*
-  * Struct for a virtual core.
-  * Note: entry_exit_count combines an entry count in the bottom 8 bits
-diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-index 3238d40..1588882 100644
---- a/arch/s390/include/asm/kvm_host.h
-+++ b/arch/s390/include/asm/kvm_host.h
-@@ -274,6 +274,18 @@ struct kvm_arch{
- 	int css_support;
- };
- 
-+#define KVM_HVA_ERR_BAD		(-1UL)
-+#define KVM_HVA_ERR_RO_BAD	(-1UL)
-+
-+static inline bool kvm_is_error_hva(unsigned long addr)
-+{
-+	/*
-+	 * on s390, this check is not needed as kernel and user memory
-+	 * is not mapped into the same address space
-+	 */
-+	return false;
-+}
-+
- extern int sie64a(struct kvm_s390_sie_block *, u64 *);
- extern char sie_exit;
- #endif
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index f87f7fc..07e8570 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -96,6 +96,14 @@
- 
- #define ASYNC_PF_PER_VCPU 64
- 
-+#define KVM_HVA_ERR_BAD		(PAGE_OFFSET)
-+#define KVM_HVA_ERR_RO_BAD	(PAGE_OFFSET + PAGE_SIZE)
-+
-+static inline bool kvm_is_error_hva(unsigned long addr)
-+{
-+	return addr >= PAGE_OFFSET;
-+}
-+
- struct kvm_vcpu;
- struct kvm;
- struct kvm_async_pf;
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a63d83e..210f493 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -85,14 +85,6 @@ static inline bool is_noslot_pfn(pfn_t pfn)
- 	return pfn == KVM_PFN_NOSLOT;
- }
- 
--#define KVM_HVA_ERR_BAD		(PAGE_OFFSET)
--#define KVM_HVA_ERR_RO_BAD	(PAGE_OFFSET + PAGE_SIZE)
--
--static inline bool kvm_is_error_hva(unsigned long addr)
--{
--	return addr >= PAGE_OFFSET;
--}
--
- #define KVM_ERR_PTR_BAD_PAGE	(ERR_PTR(-ENOENT))
- 
- static inline bool is_error_page(struct page *page)
--- 
-1.8.2.2
 
