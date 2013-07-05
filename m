@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757306Ab3GELRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 07:17:46 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:64072 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757207Ab3GELRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 07:17:45 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1001,1363132800"; 
-   d="scan'208";a="35297208"
-Date: Fri, 5 Jul 2013 12:17:43 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <xen-devel@lists.xensource.com>
-Subject: [GIT PULL] Xen ARM update for 3.11
-Message-ID: <alpine.DEB.2.02.1307041229140.5067@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757314Ab3GELSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 07:18:25 -0400
+Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:53733
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757207Ab3GELSY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 07:18:24 -0400
+X-Forefront-Antispam-Report: CIP:59.163.77.177;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC02.kpit.com;RD:59.163.77.177.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23hbe9i1155h)
+Subject: [patch v1]mfd: update DA9055 i2c device id
+From: Ankur Raina <Ankur.Raina@kpitcummins.com>
+To: <sameo@linux.intel.com>
+CC: <broonie@kernel.org>, <axel.lin@gmail.com>, <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <david.chen@diasemi.com>,
+        "Ashish P. Chavan" <Ashish.Chavan@kpitcummins.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 5 Jul 2013 16:48:14 +0530
+Message-ID: <1373023094.1601.21.camel@ankurr1-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.50.126]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-just one commit this time: the implementation of the tmem hypercall for
-arm and arm64.
+DA9055 is a combination of pmic and codec.
+This patch updates the DA9055 i2c device id to match the standard naming convention followed for such chips.
 
-NOTE: because this change depends on xen support for arm64 that has been
-sent to you by Catalin (we agreed that being the very first xen for arm64
-set of patches, it should go via the arm64 maintainers), I based this
-branch on Catalin's arm64-upstream (see his pull request here
-http://marc.info/?l=linux-arm-kernel&m=137269947606106&w=2).
+Signed-off-by: Ankur Raina <Ankur.Raina@kpitcummins.com>
+---
+ drivers/mfd/da9055-i2c.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-- Stefano
+diff --git a/drivers/mfd/da9055-i2c.c b/drivers/mfd/da9055-i2c.c
+index 607387f..13af7e5 100644
+--- a/drivers/mfd/da9055-i2c.c
++++ b/drivers/mfd/da9055-i2c.c
+@@ -54,7 +54,7 @@ static int da9055_i2c_remove(struct i2c_client *i2c)
+ }
+ 
+ static struct i2c_device_id da9055_i2c_id[] = {
+-	{"da9055-pmic", 0},
++	{"da9055", 0},
+ 	{ }
+ };
+ 
+-- 
+1.7.1
 
 
-
-The following changes since commit aa729dccb5e8dfbc78e2e235b8754d6acccee731:
-
-  Merge branch 'for-next/hugepages' of git://git.linaro.org/people/stevecapper/linux into upstream-hugepages (2013-07-01 11:20:58 +0100)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git xenarm-for-3.11-tag
-
-Stefano Stabellini (1):
-      xen/arm and xen/arm64: implement HYPERVISOR_tmem_op
-
- arch/arm/include/asm/xen/hypercall.h |    1 +
- arch/arm/xen/enlighten.c             |    1 +
- arch/arm/xen/hypercall.S             |    1 +
- arch/arm64/xen/hypercall.S           |    1 +
- 4 files changed, 4 insertions(+), 0 deletions(-)
