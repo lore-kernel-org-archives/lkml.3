@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab3GEWNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 18:13:49 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:59867 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab3GEWNq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 18:13:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <matthew.garrett@nebula.com>
-Cc: daniel.vetter@ffwll.ch, linux-acpi@vger.kernel.org,
-        seth.forshee@canonical.com, joeyli.kernel@gmail.com,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, lenb@kernel.org
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if firmware expects Windows 8
-Date: Sat, 06 Jul 2013 00:23:26 +0200
-Message-ID: <2962350.laXfENfrac@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2888060.4Smt6Tu6bv@vostro.rjw.lan>
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <2759570.WXymCRumvH@vostro.rjw.lan> <2888060.4Smt6Tu6bv@vostro.rjw.lan>
+	id S1751670Ab3GEWSA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 18:18:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46825 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab3GEWR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 18:17:59 -0400
+Date: Sat, 6 Jul 2013 00:17:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Borislav Petkov <bp@alien8.de>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Alex Shi <alex.shi@intel.com>, hpa@linux.intel.com,
+        tim.c.chen@linux.intel.com, linux-kernel@vger.kernel.org,
+        andi.kleen@intel.com, mingo@elte.hu
+Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
+In-Reply-To: <20130705215829.GB29025@pd.tnic>
+Message-ID: <alpine.DEB.2.02.1307060016370.32106@ionos.tec.linutronix.de>
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <20130704075840.GH18898@dyad.programming.kicks-ass.net> <CAFTL4hy24+=2++CN5rBhn9v+pvxR+tTja9Z-wRLSS__LGQBWaQ@mail.gmail.com> <20130705143833.GT23916@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.02.1307051718430.32106@ionos.tec.linutronix.de> <20130705212235.GU23916@twins.programming.kicks-ass.net> <alpine.DEB.2.02.1307052345330.32106@ionos.tec.linutronix.de> <20130705215829.GB29025@pd.tnic>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 05, 2013 11:40:02 PM Rafael J. Wysocki wrote:
-> On Friday, July 05, 2013 10:00:55 PM Rafael J. Wysocki wrote:
-> > On Friday, July 05, 2013 02:20:14 PM Rafael J. Wysocki wrote:
-> > > On Sunday, June 09, 2013 07:01:39 PM Matthew Garrett wrote:
-> > > > Windows 8 leaves backlight control up to individual graphics drivers rather
-> > > > than making ACPI calls itself. There's plenty of evidence to suggest that
-> > > > the Intel driver for Windows doesn't use the ACPI interface, including the
-> > > > fact that it's broken on a bunch of machines when the OS claims to support
-> > > > Windows 8. The simplest thing to do appears to be to disable the ACPI
-> > > > backlight interface on these systems.
-> > > > 
-> > > > Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
-> > > > ---
-> > > >  drivers/gpu/drm/i915/i915_dma.c | 3 +++
-> > > >  1 file changed, 3 insertions(+)
-> > > > 
-> > > > diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-> > > > index 3b315ba..23b6292 100644
-> > > > --- a/drivers/gpu/drm/i915/i915_dma.c
-> > > > +++ b/drivers/gpu/drm/i915/i915_dma.c
-> > > > @@ -1661,6 +1661,9 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
-> > > >  		/* Must be done after probing outputs */
-> > > >  		intel_opregion_init(dev);
-> > > >  		acpi_video_register();
-> > > > +		/* Don't use ACPI backlight functions on Windows 8 platforms */
-> > > > +		if (acpi_osi_version() >= ACPI_OSI_WIN_8)
-> > > > +			acpi_video_backlight_unregister();
-> > > >  	}
-> > > >  
-> > > >  	if (IS_GEN5(dev))
-> > > > 
-> > > 
-> > > Well, this causes build failures to happen when the ACPI video driver is
-> > > modular and the graphics driver is not.
-> > > 
-> > > I'm not sure how to resolve that, so suggestions are welcome.
-> > 
-> > Actually, that happened with the radeon patch.
-> > 
-> > That said, ACPI_OSI_WIN_8 doesn't make much sense for !CONFIG_ACPI, for
-> > example.
-> > 
-> > What about making acpi_video_register() do the quirk instead?  We could add an
-> > argument to it indicating whether or not quirks should be applied.
+On Fri, 5 Jul 2013, Borislav Petkov wrote:
+> On Fri, Jul 05, 2013 at 11:50:05PM +0200, Thomas Gleixner wrote:
+> > Yeah, but our well justified paranoia still prevents us from trusting
+> > these CPU flags. Maybe some day BIOS is going to be replaced by
+> > something useful. You know: Hope springs eternal....
 > 
-> Actually, I wonder what about the appended patch (on top of the Aaron's
-> https://patchwork.kernel.org/patch/2812951/) instead of [1-3/3] from this series.
+> Not in the next 10 yrs at least if one took a look at the
+> overengineered, obese at birth and braindead crap by the name of UEFI.
 
-Or even something as simple as this one.
-
----
- drivers/acpi/video_detect.c |    3 +++
- 1 file changed, 3 insertions(+)
-
-Index: linux-pm/drivers/acpi/video_detect.c
-===================================================================
---- linux-pm.orig/drivers/acpi/video_detect.c
-+++ linux-pm/drivers/acpi/video_detect.c
-@@ -203,6 +203,9 @@ long acpi_video_get_capabilities(acpi_ha
- 		 */
- 
- 		dmi_check_system(video_detect_dmi_table);
-+
-+		if (acpi_gbl_osi_data >= ACPI_OSI_WIN_8)
-+			acpi_video_support |= ACPI_VIDEO_BACKLIGHT_FORCE_VENDOR;
- 	} else {
- 		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
- 		if (ACPI_FAILURE(status)) {
-
+Good news! 10 years is way less than eternity and just before
+retirement :)
