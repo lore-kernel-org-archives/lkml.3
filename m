@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab3GEKsl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 06:48:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38349 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756596Ab3GEKsk (ORCPT
+	id S1757318Ab3GEKwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 06:52:12 -0400
+Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:18952
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757083Ab3GEKwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 06:48:40 -0400
-Date: Fri, 5 Jul 2013 12:48:28 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mgorman@suse.de>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/13] sched: Split accounting of NUMA hinting faults
- that pass two-stage filter
-Message-ID: <20130705104828.GO23916@twins.programming.kicks-ass.net>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-8-git-send-email-mgorman@suse.de>
- <20130703215654.GN17812@cmpxchg.org>
- <20130704092356.GK1875@suse.de>
- <20130704193638.GP17812@cmpxchg.org>
+	Fri, 5 Jul 2013 06:52:10 -0400
+X-Forefront-Antispam-Report: CIP:59.163.77.177;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC02.kpit.com;RD:59.163.77.177.static.vsnl.net.in;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23hbe9i1155h)
+Subject: [patch v1]mfd: update DA9055 i2c device id
+From: Ankur Raina <Ankur.Raina@kpitcummins.com>
+To: <sameo@linux.intel.com>
+CC: <broonie@kernel.org>, <axel.lin@gmail.com>, <linus.walleij@linaro.org>,
+        <linux-kernel@vger.kernel.org>, <david.chen@diasemi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 5 Jul 2013 16:22:00 +0530
+Message-ID: <1373021520.1601.15.camel@ankurr1-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704193638.GP17812@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.50.126]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 03:36:38PM -0400, Johannes Weiner wrote:
+DA9055 is a combination of pmic and codec.
+This patch updates the DA9055 i2c device id to match the standard naming convention followed for such chips.
 
-> I was going for the opposite conclusion: that it does not matter
-> whether memory is accessed privately or in a shared fashion, because
-> there is no obvious connection to its access frequency, not to me at
-> least.  
+Signed-off-by: Ankur <Ankur.Raina@kpitcummins.com>
+---
+ drivers/mfd/da9055-i2c.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-There is a relation to access freq; however due to the low sample rate
-(once every 100ms or so) we obviously miss all high freq data there.
-
-> > I acknowledge it's a problem and basically I'm making a big assumption
-> > that private-dominated workloads are going to be the common case. Threaded
-> > application on UMA with heavy amounts of shared data (within cache lines)
-> > already suck in terms of performance so I'm expecting programmers already
-> > try and avoid this sort of sharing. Obviously we are at a page granularity
-> > here so the assumption will depend entirely on alignments and buffer sizes
-> > so it might still fall apart.
-> 
-> Don't basically all VM-based mulithreaded programs have this usage
-> pattern?  The whole runtime (text, heap) is shared between threads.
-> If some thread-local memory spills over to another node, should the
-> scheduler move this thread off node from a memory standpoint?  I don't
-> think so at all.  I would expect it to always gravitate back towards
-> this node with the VM on it, only get moved off for CPU load reasons,
-> and get moved back as soon as the load situation permits.
-
-All data being allocated on the same heap and being shared in the access
-sense doesn't imply all threads will indeed use all data; even if TLS is
-not used.
-
-For a concurrent program to reach any useful level of concurrency gain
-you need data partitioning. Threads must work on different data sets
-otherwise they'd constantly be waiting on serialization -- which makes
-your concurrency gain tank.
-
-There's two main issues here:
-
-Firstly; the question is if there's much false sharing on page
-granularity. Typically you want the compute time per data fragment to be
-significantly higher than the demux + mux overhead which favours larger
-data units.
-
-Secondly; you want your scan freq to be at least half the compute time
-per data fragment. Otherwise you'll run the risk of not seeing the data
-being local to that thread.
-
-So for optimal benefit you want to minimize sharing pages between data
-fragments and have your data fragment compute time as long as possible.
-Luckily both are also goals for maximizing concurrency gain so we should
-be good there.
-
-This should cover all 'traditional' concurrent stuff; most of the 'new'
-concurrency stuff can be different though -- some of it simply never
-thought/designed for concurrency and just hopes it works. Others most
-notably the multi-core concurrency stuff assumes the demux+mux cost are
-_very_ low and therefore the data fragment and associated compute time
-shrink to useless levels :/
-
+diff --git a/drivers/mfd/da9055-i2c.c b/drivers/mfd/da9055-i2c.c
+index 88f6dca..43d3df5 100644
+--- a/drivers/mfd/da9055-i2c.c
++++ b/drivers/mfd/da9055-i2c.c
+@@ -54,7 +54,7 @@ static int __devexit da9055_i2c_remove(struct i2c_client *i2c)
+ }
+ 
+ static struct i2c_device_id da9055_i2c_id[] = {
+-	{"da9055-pmic", 0},
++	{"da9055", 0},
+ 	{ }
+ };
+ 
+-- 
+1.7.1
 
 
