@@ -1,85 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab3GEPlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 11:41:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:65191 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174Ab3GEPlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 11:41:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Airlie <airlied@redhat.com>
-Subject: [PATCH, re-send] drm: always provide debugfs function prototypes
-Date: Fri, 5 Jul 2013 17:41:38 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        dri-devel@lists.freedesktop.org
+	id S1757457Ab3GEPoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 11:44:21 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:45380
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751174Ab3GEPoU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 11:44:20 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dIc89bh154dI1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
+Date: Fri, 5 Jul 2013 08:43:11 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: John Stultz <john.stultz@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Michal Simek <michal.simek@xilinx.com>
+Subject: Re: [PATCH] clocksource/cadence_ttc: Reuse clocksource as sched_clock
+References: <1372888216-10726-1-git-send-email-soren.brinkmann@xilinx.com>
+ <alpine.DEB.2.02.1307050819000.11637@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307051741.38496.arnd@arndb.de>
-X-Provags-ID: V02:K0:Td43HHcbsOENrP1Ujznqg2nLzSkf58cYDdEcia42chI
- L1ue6tN03PQVEyGcKNc33+57axcxD5SDr4AkqX0mj+55Jmcvfx
- BkI+jkzg6sSiySO8WIuOoATxmv63tCKnSEEoapc7WrSViWx0IZ
- l6xuEBv88D139dZrb6bnfzi7kCqCg0NJ5ZJu7//nYkq3tZpIMv
- 1wWE2pnMP5sNzypKDxBXOqF2RWzVmspM9JfS1ny0Eh3TFlkmJ3
- 4ZyZDGNWmsrZQWxQ9OdOSJ5N4npiq1zmhtp8Py95/0AuoX+HPd
- juPNk4g4KD3pR8VMZbjiIQeDequVCOVUyhDDCXYMo+P82zUMGI
- MoEjR+xDgxC3t27M4ME4=
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1307050819000.11637@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <fbeb6f36-f07a-4518-b6f2-0b8e36028fe9@CH1EHSMHS012.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is generally considered bad style to enclose function prototypes
-in header files in #ifdef. This case illustrates why that is:
-The tegra host1x driver calls into the debugfs functions if
-CONFIG_DEBUG_FS is enabled, but that code is otherwise already
-discarded by the compiler, so leaving the prototype in place
-actually makes everything work.
+On Fri, Jul 05, 2013 at 08:30:47AM +0200, Thomas Gleixner wrote:
+> On Wed, 3 Jul 2013, Soren Brinkmann wrote:
+> 
+> > Reuse the TTC clocksource timer as sched clock, too. Since only a single
+> > sched clock is supported in Linux, this feature optional and can be
+> > selected through Kconfig.
+> 
+> This changelog doesn't make sense.
+> 
+> There can be only one active sched_clock, but that does no mean, that
+> you cannot have different implementations compiled in.
+> 
+> So if you disable this config which sched_clock is your kernel using?
+Jiffies
 
-drivers/gpu/host1x/drm/dc.c: In function 'tegra_dc_debugfs_init':
-drivers/gpu/host1x/drm/dc.c:1004:2: error: implicit declaration of function 'drm_debugfs_create_files' [-Werror=implicit-function-declaration]
-drivers/gpu/host1x/drm/dc.c: In function 'tegra_dc_debugfs_exit': drivers/gpu/host1x/drm/dc.c:1026:2: error: implicit declaration of function 'drm_debugfs_remove_files' [-Werror=implicit-function-declaration]
+> And if you enable it, how is guaranteed that you end up with the ttc
+> sched_clock as the active one? Just due to initcall ordering?
+I assumed so. Is there a different mechanism?
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Reviewed-by: Thierry Reding <thierry.reding@>
-Cc: Ben Gamari <bgamari@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>
+	Sören
 
-diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-index 63d17ee..8bc105e 100644
---- a/include/drm/drmP.h
-+++ b/include/drm/drmP.h
-@@ -1551,7 +1551,7 @@ extern int drm_proc_init(struct drm_minor *minor, struct proc_dir_entry *root);
- extern int drm_proc_cleanup(struct drm_minor *minor, struct proc_dir_entry *root);
- 
- 				/* Debugfs support */
--#if defined(CONFIG_DEBUG_FS)
-+
- extern int drm_debugfs_init(struct drm_minor *minor, int minor_id,
- 			    struct dentry *root);
- extern int drm_debugfs_create_files(struct drm_info_list *files, int count,
-@@ -1559,7 +1559,6 @@ extern int drm_debugfs_create_files(struct drm_info_list *files, int count,
- extern int drm_debugfs_remove_files(struct drm_info_list *files, int count,
-                                     struct drm_minor *minor);
- extern int drm_debugfs_cleanup(struct drm_minor *minor);
--#endif
- 
- 				/* Info file support */
- extern int drm_name_info(struct seq_file *m, void *data);
-diff --git a/include/drm/drm_mm.h b/include/drm/drm_mm.h
-index 88591ef..4a7759a 100644
---- a/include/drm/drm_mm.h
-+++ b/include/drm/drm_mm.h
-@@ -37,9 +37,7 @@
-  * Generic range manager structs
-  */
- #include <linux/list.h>
--#ifdef CONFIG_DEBUG_FS
- #include <linux/seq_file.h>
--#endif
- 
- struct drm_mm_node {
- 	struct list_head node_list;
+
