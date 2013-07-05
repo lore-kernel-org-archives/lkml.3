@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab3GENum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 09:50:42 -0400
-Received: from mail-ye0-f175.google.com ([209.85.213.175]:45883 "EHLO
-	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251Ab3GENuk (ORCPT
+	id S1757434Ab3GENvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 09:51:12 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45384 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3GENvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 09:50:40 -0400
-Date: Fri, 5 Jul 2013 10:16:11 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCHSET 00/16] perf tools: Cleanups on tracepoint handling
-Message-ID: <20130705131611.GA2559@ghostprotocols.net>
-References: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
- <87hagazplh.fsf@sejong.aot.lge.com>
+	Fri, 5 Jul 2013 09:51:10 -0400
+Date: Fri, 5 Jul 2013 15:50:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chuansheng Liu <chuansheng.liu@intel.com>
+cc: mingo@kernel.org, peterz@infradead.org, jbeulich@suse.com,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, jun.zhang@intel.com,
+        fengguang.wu@intel.com
+Subject: Re: [PATCH V2] smp: Give WARN()ing when calling smp_call_function_many()/single()
+ in serving irq
+In-Reply-To: <1361023812.11130.15.camel@cliu38-desktop-build>
+Message-ID: <alpine.DEB.2.02.1307051548430.32106@ionos.tec.linutronix.de>
+References: <1360163901.24670.13.camel@cliu38-desktop-build>  <1361023075.11130.12.camel@cliu38-desktop-build> <1361023812.11130.15.camel@cliu38-desktop-build>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hagazplh.fsf@sejong.aot.lge.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 04, 2013 at 05:39:06PM +0900, Namhyung Kim escreveu:
-> Ping!
+On Sat, 16 Feb 2013, Chuansheng Liu wrote:
+> Currently the functions smp_call_function_many()/single() will
+> give a WARN()ing only in the case of irqs_disabled(), but that
+> check is not enough to guarantee execution of the SMP
+> cross-calls.
+> 
+> In many other cases such as softirq handling/interrupt handling,
+> the two APIs still can not be called, just as the
+> smp_call_function_many() comments say:
+> 
+>   * You must not call this function with disabled interrupts or from a
+>   * hardware interrupt handler or from a bottom half handler. Preemption
+>   * must be disabled when calling this function.
+> 
+> There is a real case for softirq DEADLOCK case:
+> 
+> CPUA                            CPUB
+>                                 spin_lock(&spinlock)
+>                                 Any irq coming, call the irq handler
+>                                 irq_exit()
+> spin_lock_irq(&spinlock)
+> <== Blocking here due to
+> CPUB hold it
+>                                   __do_softirq()
+>                                     run_timer_softirq()
+>                                       timer_cb()
+>                                         call smp_call_function_many()
+>                                           send IPI interrupt to CPUA
+>                                             wait_csd()
+> 
+> Then both CPUA and CPUB will be deadlocked here.
 
-Pong, should be processing these today,
+That's not true if called with wait = 0 as we won't wait for the csd
+in that case. The function will be invoked on cpuA after it reenables
+interrupt. So for callers who don't care about synchronous execution
+it should not warn in softirq context.
 
-- Arnaldo
+Thanks,
+
+	tglx
+
  
-> On Tue,  4 Jun 2013 14:20:15 +0900, Namhyung Kim wrote:
-> > Hello,
-> >
-> > This patchset is a resend version of previous work and basis of
-> > upcoming perf ftrace patchset.  Although I saw no issue on this series
-> > when I posted earlier, it'd be great if Steve or others take a look at
-> > it again and give comments.
-> >
-> > I also updated 'perf/cleanup' branch on my tree at:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-> >
-> > Thanks,
-> > Namhyung
-> >
-> >
-> > Namhyung Kim (16):
-> >   tools lib traceevent: Remove unused install targets
-> >   tools lib traceevent: Get rid of unused gui target
-> >   tools lib traceevent: Add const qualifier to string arguments
-> >   tools lib traceevent: Add trace_seq_reset()
-> >   tools lib traceevent: Add page_size field to pevent
-> >   tools lib traceevent: Port kbuffer parser routines
-> >   perf util: Save page size in a trace file to pevent
-> >   perf util: Save long size of traced system
-> >   perf util: Make file/host_bigendian variable local
-> >   perf util: Skip reading header_event file
-> >   perf util: Parse header_page to get proper long size
-> >   perf util: Get rid of unused header_page_* variables
-> >   perf util: Move latency_format variable to builtin-script.c
-> >   perf util: Rename read_*() functions in trace-event-info.c
-> >   perf util: No need to call read_trace_init() in tracing_data_header()
-> >   perf util: Remove unused enum and macro in trace-event.h
-> >
-> >  tools/lib/traceevent/Makefile        |  18 +-
-> >  tools/lib/traceevent/event-parse.c   |   7 +-
-> >  tools/lib/traceevent/event-parse.h   |  15 +-
-> >  tools/lib/traceevent/kbuffer-parse.c | 732 +++++++++++++++++++++++++++++++++++
-> >  tools/lib/traceevent/kbuffer.h       |  67 ++++
-> >  tools/lib/traceevent/trace-seq.c     |  13 +
-> >  tools/perf/builtin-script.c          |   1 +
-> >  tools/perf/util/trace-event-info.c   |  22 +-
-> >  tools/perf/util/trace-event-parse.c  |   6 -
-> >  tools/perf/util/trace-event-read.c   |  52 ++-
-> >  tools/perf/util/trace-event.h        |  15 -
-> >  11 files changed, 875 insertions(+), 73 deletions(-)
-> >  create mode 100644 tools/lib/traceevent/kbuffer-parse.c
-> >  create mode 100644 tools/lib/traceevent/kbuffer.h
