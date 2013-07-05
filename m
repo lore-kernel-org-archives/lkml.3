@@ -1,101 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599Ab3GEWiF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 18:38:05 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:46783 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977Ab3GEWiD convert rfc822-to-8bit (ORCPT
+	id S1751651Ab3GEWlM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 18:41:12 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:53955 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750977Ab3GEWlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 18:38:03 -0400
-MIME-Version: 1.0
-Reply-To: fdmanana@gmail.com
-In-Reply-To: <20130705204129.GB15943@logfs.org>
-References: <1370280485-10047-1-git-send-email-joern@logfs.org>
-	<20130705204100.GA15943@logfs.org>
-	<20130705204129.GB15943@logfs.org>
-Date: Fri, 5 Jul 2013 23:38:01 +0100
-Message-ID: <CAL3q7H75aO8YvJLppif88P=CumfA8WjHUTfwEcZSvL+MUu8tJw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] list: add list_del_each_entry
-From: Filipe David Manana <fdmanana@gmail.com>
-To: =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>
-Cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Jul 2013 18:41:11 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: linux@arm.linux.org.uk
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH] arm: Convert locomo platform and bus legacy pm_ops to dev_pm_ops
+Date: Fri,  5 Jul 2013 16:41:03 -0600
+Message-Id: <1373064063-13473-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 5, 2013 at 9:41 PM, Jörn Engel <joern@logfs.org> wrote:
-> I have seen a lot of boilerplate code that either follows the pattern of
->         while (!list_empty(head)) {
->                 pos = list_entry(head->next, struct foo, list);
->                 list_del(pos->list);
->                 ...
->         }
-> or some variant thereof.
->
-> With this patch in, people can use
->         list_del_each_entry(pos, head, list) {
->                 ...
->         }
->
-> The patch also adds a list_del_each variant, even though I have
-> only found a single user for that one so far.
->
-> Signed-off-by: Joern Engel <joern@logfs.org>
-> ---
->  include/linux/list.h |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->
-> diff --git a/include/linux/list.h b/include/linux/list.h
-> index 6a1f8df..ab39c7d 100644
-> --- a/include/linux/list.h
-> +++ b/include/linux/list.h
-> @@ -557,6 +557,24 @@ static inline void list_splice_tail_init(struct list_head *list,
->  #define list_safe_reset_next(pos, n, member)                           \
->         n = list_entry(pos->member.next, typeof(*pos), member)
->
-> +/**
-> + * list_del_each - removes an entry from the list until it is empty
-> + * @pos:       the &struct list_head to use as a loop cursor.
-> + * @head:      the head of your list.
-> + */
-> +#define list_del_each(pos, head) \
-> +       while (list_empty(head) ? 0 : (pos = (head)->next, list_del(pos), 1))
-> +
-> +/**
-> + * list_del_each_entry - removes an entry from the list until it is empty
-> + * @pos:       the type * to use as loop cursor.
-> + * @head:      the head of your list.
-> + * @member:    the name of the list_struct within the struct
-> + */
-> +#define list_del_each_entry(pos, head, member) \
-> +       while (list_empty(head) && (pos = list_first_entry((head), \
-> +               typeof(*pos), member), list_del((head)->next), 1))
-> +
+Convert arch/arm/common/locomo platform and bus legacy pm_ops to dev_pm_ops.
+This change also updates the use of COMFIG_PM to CONFIG_PM_SLEEP as this
+platform and bus code implements PM_SLEEP ops and not the PM_RUNTIME ops.
+Compile tested.
 
-Shouldn't it be while (!list_empty(head) ... ?
-(not operator addition)
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ arch/arm/common/locomo.c |   33 ++++++++++++++++++++-------------
+ 1 file changed, 20 insertions(+), 13 deletions(-)
 
-thanks
+diff --git a/arch/arm/common/locomo.c b/arch/arm/common/locomo.c
+index b55c362..4028e41 100644
+--- a/arch/arm/common/locomo.c
++++ b/arch/arm/common/locomo.c
+@@ -262,7 +262,7 @@ locomo_init_one_child(struct locomo *lchip, struct locomo_dev_info *info)
+ 	return ret;
+ }
+ 
+-#ifdef CONFIG_PM
++#ifdef CONFIG_PM_SLEEP
+ 
+ struct locomo_save_data {
+ 	u16	LCM_GPO;
+@@ -272,9 +272,9 @@ struct locomo_save_data {
+ 	u16	LCM_SPIMD;
+ };
+ 
+-static int locomo_suspend(struct platform_device *dev, pm_message_t state)
++static int locomo_suspend(struct device *dev)
+ {
+-	struct locomo *lchip = platform_get_drvdata(dev);
++	struct locomo *lchip = platform_get_drvdata(to_platform_device(dev));
+ 	struct locomo_save_data *save;
+ 	unsigned long flags;
+ 
+@@ -316,9 +316,9 @@ static int locomo_suspend(struct platform_device *dev, pm_message_t state)
+ 	return 0;
+ }
+ 
+-static int locomo_resume(struct platform_device *dev)
++static int locomo_resume(struct device *dev)
+ {
+-	struct locomo *lchip = platform_get_drvdata(dev);
++	struct locomo *lchip = platform_get_drvdata(to_platform_device(dev));
+ 	struct locomo_save_data *save;
+ 	unsigned long r;
+ 	unsigned long flags;
+@@ -351,6 +351,8 @@ static int locomo_resume(struct platform_device *dev)
+ 
+ 	return 0;
+ }
++
++static SIMPLE_DEV_PM_OPS(locomo_dev_pm_ops, locomo_suspend, locomo_resume);
+ #endif
+ 
+ 
+@@ -519,12 +521,11 @@ static int locomo_remove(struct platform_device *dev)
+ static struct platform_driver locomo_device_driver = {
+ 	.probe		= locomo_probe,
+ 	.remove		= locomo_remove,
+-#ifdef CONFIG_PM
+-	.suspend	= locomo_suspend,
+-	.resume		= locomo_resume,
+-#endif
+ 	.driver		= {
+ 		.name	= "locomo",
++#ifdef CONFIG_PM_SLEEP
++		.pm	= &locomo_dev_pm_ops,
++#endif
+ 	},
+ };
+ 
+@@ -826,14 +827,15 @@ static int locomo_match(struct device *_dev, struct device_driver *_drv)
+ 	return dev->devid == drv->devid;
+ }
+ 
+-static int locomo_bus_suspend(struct device *dev, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++static int locomo_bus_suspend(struct device *dev)
+ {
+ 	struct locomo_dev *ldev = LOCOMO_DEV(dev);
+ 	struct locomo_driver *drv = LOCOMO_DRV(dev->driver);
+ 	int ret = 0;
+ 
+ 	if (drv && drv->suspend)
+-		ret = drv->suspend(ldev, state);
++		ret = drv->suspend(ldev, PMSG_SUSPEND);
+ 	return ret;
+ }
+ 
+@@ -848,6 +850,10 @@ static int locomo_bus_resume(struct device *dev)
+ 	return ret;
+ }
+ 
++static SIMPLE_DEV_PM_OPS(locomo_bus_dev_pm_ops, locomo_bus_suspend,
++			 locomo_bus_resume);
++#endif
++
+ static int locomo_bus_probe(struct device *dev)
+ {
+ 	struct locomo_dev *ldev = LOCOMO_DEV(dev);
+@@ -875,8 +881,9 @@ struct bus_type locomo_bus_type = {
+ 	.match		= locomo_match,
+ 	.probe		= locomo_bus_probe,
+ 	.remove		= locomo_bus_remove,
+-	.suspend	= locomo_bus_suspend,
+-	.resume		= locomo_bus_resume,
++#ifdef CONFIG_PM_SLEEP
++	.pm		= &locomo_bus_dev_pm_ops,
++#endif
+ };
+ 
+ int locomo_driver_register(struct locomo_driver *driver)
+-- 
+1.7.10.4
 
->  /*
->   * Double linked lists with a single pointer list head.
->   * Mostly useful for hash tables where the two pointer list head is
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
-
---
-Filipe David Manana,
-
-"Reasonable men adapt themselves to the world.
- Unreasonable men adapt the world to themselves.
- That's why all progress depends on unreasonable men."
