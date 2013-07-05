@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3GEHQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 03:16:53 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:54583 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab3GEHQv (ORCPT
+	id S1757123Ab3GEHTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 03:19:09 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47641 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757067Ab3GEHTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 03:16:51 -0400
+	Fri, 5 Jul 2013 03:19:07 -0400
+Date: Fri, 5 Jul 2013 09:19:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: scheduling while atomic & hang.
+Message-ID: <20130705071901.GB24783@somewhere.redhat.com>
+References: <20130704015525.GA8486@redhat.com>
+ <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
+ <51D5BA25.9060207@zytor.com>
+ <20130705065113.GA6588@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51D62074.9070303@atmel.com>
-References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
- <1372667978-4718-2-git-send-email-richard.genoud@gmail.com>
- <51D24299.9050209@atmel.com> <CACQ1gAgcc=j3kmcpjp8bbdHhxr_k=h8jJs6R_paJbPUMv74uGg@mail.gmail.com>
- <51D29927.80900@atmel.com> <CACQ1gAhnDk-qSt_5xrsMakXqGGDO5pEbA-9UDWCJG=AABDc+zg@mail.gmail.com>
- <CACQ1gAgPaRm3gxxJNgfj9bR565Q0+SNY3+EcjA_mrh1N+yPzSA@mail.gmail.com>
- <51D4CC94.3020908@atmel.com> <CACQ1gAio0ekQMgyfrLjTHmMPGJQoKoe61GreFQDN-iLjxbLQ0w@mail.gmail.com>
- <51D62074.9070303@atmel.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Fri, 5 Jul 2013 09:16:30 +0200
-Message-ID: <CACQ1gAjNGsAWMwyL_9zEobKz=MEzgiA7Gqt=p4anuGhq2dLd_w@mail.gmail.com>
-Subject: Re: [RFC PATCH 01/13] misc: atmel_ssc: add device tree DMA support
-To: Bo Shen <voice.shen@atmel.com>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130705065113.GA6588@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/5 Bo Shen <voice.shen@atmel.com>:
-> Yes, I aware this issue.
-> Actually the system not hang, the resource all are occupied by the
-> interrupt. This because, we enable the interrupt, when once interrupt occur,
-> I try many methods to clear it, however we can not clear it. So, it
-> generates the interrupt all the time. It seems the system hang.
->
-> Temp solution: not enable the interrupt. use the following patch to disable
-> the interrupt.
-> ---8>---
-> diff --git a/sound/soc/atmel/atmel_ssc_dai.c
-> b/sound/soc/atmel/atmel_ssc_dai.c
-> index 0ecf356..bb53dea 100644
-> --- a/sound/soc/atmel/atmel_ssc_dai.c
-> +++ b/sound/soc/atmel/atmel_ssc_dai.c
-> @@ -649,7 +649,7 @@ static int atmel_ssc_prepare(struct snd_pcm_substream
-> *substream,
->         dma_params = ssc_p->dma_params[dir];
->
->         ssc_writel(ssc_p->ssc->regs, CR, dma_params->mask->ssc_enable);
-> -       ssc_writel(ssc_p->ssc->regs, IER, dma_params->mask->ssc_error);
-> +       ssc_writel(ssc_p->ssc->regs, IDR, dma_params->mask->ssc_error);
->
->         pr_debug("%s enabled SSC_SR=0x%08x\n",
->                         dir ? "receive" : "transmit",
-> ---<8---
->
-> BTW, I am checking this with our IP team, if find the real solution, I will
-> fix it.
+On Fri, Jul 05, 2013 at 08:51:13AM +0200, Ingo Molnar wrote:
+> 
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+> 
+> > On 07/03/2013 07:49 PM, Linus Torvalds wrote:
+> > >> [<ffffffff816f42bf>] __schedule+0x94f/0x9c0
+> > >> [<ffffffff816f487e>] schedule_user+0x2e/0x70
+> > >> [<ffffffff816f6de4>] retint_careful+0x12/0x2e
+> > 
+> > This call trace does indeed indicate that we took a hardware
+> > interrupt which caused a reschedule.  It doesn't necessarily have to
+> > be a quantum expiration interrupt, it could just as easily be an I/O
+> > completion interrupt.
+> 
+> Too bad the kernel stack frame at this point is so small [we are just 
+> before return to userspace], so we don't really get our usual trace of 
+> recent activities via the '?' entries ...
+> 
+> It would be nice to have a full-kernel-stack backtrace printout as an 
+> option, which prints entries 'above' the current RSP.
+> 
+> I've Cc:-ed Frederic, maybe he has interest in implementing that?
 
-ok, I'll rebase my patches on that.
+Yeah that sounds interesting. I may give it a try.
 
-Thanks !
-
-Best Regards,
-Richard
+Thanks.
