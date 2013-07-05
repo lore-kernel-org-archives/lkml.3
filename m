@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab3GEJt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 05:49:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59892 "EHLO
+	id S1757228Ab3GEJtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 05:49:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59866 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030Ab3GEJtW (ORCPT
+	with ESMTP id S1757192Ab3GEJs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 05:49:22 -0400
-Date: Fri, 5 Jul 2013 02:49:10 -0700
-From: tip-bot for Jonas Jensen <tipbot@zytor.com>
-Message-ID: <tip-4de563ae821b1935b3c467a4606e5738b0b0df87@git.kernel.org>
+	Fri, 5 Jul 2013 05:48:56 -0400
+Date: Fri, 5 Jul 2013 02:48:39 -0700
+From: tip-bot for Axel Lin <tipbot@zytor.com>
+Message-ID: <tip-baaecfa7249f1d5553a31f8ad0b9c7ffabcaa339@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jonas.jensen@gmail.com, tglx@linutronix.de
+        tglx@linutronix.de, maxime.ripard@free-electrons.com,
+        axel.lin@ingics.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jonas.jensen@gmail.com, tglx@linutronix.de
-In-Reply-To: <1372941531-6393-1-git-send-email-jonas.jensen@gmail.com>
-References: <1372941531-6393-1-git-send-email-jonas.jensen@gmail.com>
+        tglx@linutronix.de, axel.lin@ingics.com,
+        maxime.ripard@free-electrons.com
+In-Reply-To: <1373010070.14756.2.camel@phoenix>
+References: <1373010070.14756.2.camel@phoenix>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irqchip: Add support for MOXA ART SoCs
-Git-Commit-ID: 4de563ae821b1935b3c467a4606e5738b0b0df87
+Subject: [tip:irq/urgent] irqchip: sun4i: Staticize sun4i_irq_ack()
+Git-Commit-ID: baaecfa7249f1d5553a31f8ad0b9c7ffabcaa339
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,169 +29,40 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 05 Jul 2013 02:49:16 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 05 Jul 2013 02:48:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4de563ae821b1935b3c467a4606e5738b0b0df87
-Gitweb:     http://git.kernel.org/tip/4de563ae821b1935b3c467a4606e5738b0b0df87
-Author:     Jonas Jensen <jonas.jensen@gmail.com>
-AuthorDate: Thu, 4 Jul 2013 14:38:51 +0200
+Commit-ID:  baaecfa7249f1d5553a31f8ad0b9c7ffabcaa339
+Gitweb:     http://git.kernel.org/tip/baaecfa7249f1d5553a31f8ad0b9c7ffabcaa339
+Author:     Axel Lin <axel.lin@ingics.com>
+AuthorDate: Fri, 5 Jul 2013 15:41:10 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 5 Jul 2013 11:39:25 +0200
+CommitDate: Fri, 5 Jul 2013 11:39:24 +0200
 
-irqchip: Add support for MOXA ART SoCs
+irqchip: sun4i: Staticize sun4i_irq_ack()
 
-This patch adds an irqchip driver for the main interrupt controller
-found on MOXA ART SoCs.
+sun4i_irq_ack() is only referenced in this file, so make it static.
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-Cc: grant.likely@secretlab.ca
-Cc: thomas.petazzoni@free-electrons.com
-Cc: arnd@arndb.de
-Cc: u.kleine-koenig@pengutronix.de
-Cc: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org
-Link: http://lkml.kernel.org/r/1372941531-6393-1-git-send-email-jonas.jensen@gmail.com
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Link: http://lkml.kernel.org/r/1373010070.14756.2.camel@phoenix
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/irqchip/Makefile     |   1 +
- drivers/irqchip/irq-moxart.c | 117 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 118 insertions(+)
+ drivers/irqchip/irq-sun4i.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 2065ef6..e65c41a 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_ARCH_MXS)			+= irq-mxs.o
- obj-$(CONFIG_ARCH_S3C24XX)		+= irq-s3c24xx.o
- obj-$(CONFIG_METAG)			+= irq-metag-ext.o
- obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
-+obj-$(CONFIG_ARCH_MOXART)		+= irq-moxart.o
- obj-$(CONFIG_ORION_IRQCHIP)		+= irq-orion.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
-diff --git a/drivers/irqchip/irq-moxart.c b/drivers/irqchip/irq-moxart.c
-new file mode 100644
-index 0000000..5552fc2
---- /dev/null
-+++ b/drivers/irqchip/irq-moxart.c
-@@ -0,0 +1,117 @@
-+/*
-+ * MOXA ART SoCs IRQ chip driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/irqdomain.h>
-+
-+#include <asm/exception.h>
-+
-+#include "irqchip.h"
-+
-+#define IRQ_SOURCE_REG		0
-+#define IRQ_MASK_REG		0x04
-+#define IRQ_CLEAR_REG		0x08
-+#define IRQ_MODE_REG		0x0c
-+#define IRQ_LEVEL_REG		0x10
-+#define IRQ_STATUS_REG		0x14
-+
-+#define FIQ_SOURCE_REG		0x20
-+#define FIQ_MASK_REG		0x24
-+#define FIQ_CLEAR_REG		0x28
-+#define FIQ_MODE_REG		0x2c
-+#define FIQ_LEVEL_REG		0x30
-+#define FIQ_STATUS_REG		0x34
-+
-+
-+struct moxart_irq_data {
-+	void __iomem *base;
-+	struct irq_domain *domain;
-+	unsigned int interrupt_mask;
-+};
-+
-+static struct moxart_irq_data intc;
-+
-+static asmlinkage void __exception_irq_entry handle_irq(struct pt_regs *regs)
-+{
-+	u32 irqstat;
-+	int hwirq;
-+
-+	irqstat = readl(intc.base + IRQ_STATUS_REG);
-+
-+	while (irqstat) {
-+		hwirq = ffs(irqstat) - 1;
-+		handle_IRQ(irq_linear_revmap(intc.domain, hwirq), regs);
-+		irqstat &= ~(1 << hwirq);
-+	}
-+}
-+
-+static int __init moxart_of_intc_init(struct device_node *node,
-+				      struct device_node *parent)
-+{
-+	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-+	int ret;
-+	struct irq_chip_generic *gc;
-+
-+	intc.base = of_iomap(node, 0);
-+	if (!intc.base) {
-+		pr_err("%s: unable to map IC registers\n",
-+		       node->full_name);
-+		return -EINVAL;
-+	}
-+
-+	intc.domain = irq_domain_add_linear(node, 32, &irq_generic_chip_ops,
-+					    intc.base);
-+	if (!intc.domain) {
-+		pr_err("%s: unable to create IRQ domain\n", node->full_name);
-+		return -EINVAL;
-+	}
-+
-+	ret = irq_alloc_domain_generic_chips(intc.domain, 32, 1,
-+					     "MOXARTINTC", handle_edge_irq,
-+					     clr, 0, IRQ_GC_INIT_MASK_CACHE);
-+	if (ret) {
-+		pr_err("%s: could not allocate generic chip\n",
-+		       node->full_name);
-+		irq_domain_remove(intc.domain);
-+		return -EINVAL;
-+	}
-+
-+	ret = of_property_read_u32(node, "interrupt-mask",
-+				   &intc.interrupt_mask);
-+	if (ret)
-+		pr_err("%s: could not read interrupt-mask DT property\n",
-+		       node->full_name);
-+
-+	gc = irq_get_domain_generic_chip(intc.domain, 0);
-+
-+	gc->reg_base = intc.base;
-+	gc->chip_types[0].regs.mask = IRQ_MASK_REG;
-+	gc->chip_types[0].regs.ack = IRQ_CLEAR_REG;
-+	gc->chip_types[0].chip.irq_ack = irq_gc_ack_set_bit;
-+	gc->chip_types[0].chip.irq_mask = irq_gc_mask_clr_bit;
-+	gc->chip_types[0].chip.irq_unmask = irq_gc_mask_set_bit;
-+
-+	writel(0, intc.base + IRQ_MASK_REG);
-+	writel(0xffffffff, intc.base + IRQ_CLEAR_REG);
-+
-+	writel(intc.interrupt_mask, intc.base + IRQ_MODE_REG);
-+	writel(intc.interrupt_mask, intc.base + IRQ_LEVEL_REG);
-+
-+	set_handle_irq(handle_irq);
-+
-+	return 0;
-+}
-+IRQCHIP_DECLARE(moxa_moxart_ic, "moxa,moxart-ic", moxart_of_intc_init);
+diff --git a/drivers/irqchip/irq-sun4i.c b/drivers/irqchip/irq-sun4i.c
+index b66d4ae..a5438d8 100644
+--- a/drivers/irqchip/irq-sun4i.c
++++ b/drivers/irqchip/irq-sun4i.c
+@@ -38,7 +38,7 @@ static struct irq_domain *sun4i_irq_domain;
+ 
+ static asmlinkage void __exception_irq_entry sun4i_handle_irq(struct pt_regs *regs);
+ 
+-void sun4i_irq_ack(struct irq_data *irqd)
++static void sun4i_irq_ack(struct irq_data *irqd)
+ {
+ 	unsigned int irq = irqd_to_hwirq(irqd);
+ 	unsigned int irq_off = irq % 32;
