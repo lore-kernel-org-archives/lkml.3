@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757017Ab3GEB1n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 21:27:43 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:58922 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888Ab3GEB1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 21:27:42 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: Re: linux-next: build failure after merge of the pm tree
-Date: Fri, 05 Jul 2013 03:37:21 +0200
-Message-ID: <1883101.ErAYOZUY8P@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130705112458.f7e8297da9ea551c9fca2cb5@canb.auug.org.au>
-References: <20130705112458.f7e8297da9ea551c9fca2cb5@canb.auug.org.au>
+	id S1757034Ab3GEB3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 21:29:33 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:9799 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500Ab3GEB3c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 21:29:32 -0400
+X-Spam-Score: -100.8
+Message-ID: <51D62147.3000900@asianux.com>
+Date: Fri, 05 Jul 2013 09:28:39 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATH v4] itimers: Remove bogus NULL pointer check in sys_getitimer()
+References: <51C2E6F9.80107@asianux.com> <alpine.DEB.2.02.1306201458100.4013@ionos.tec.linutronix.de> <51C3B4B4.90603@asianux.com> <alpine.DEB.2.02.1306242242480.4013@ionos.tec.linutronix.de> <51C8EB41.6060501@asianux.com> <51C8EF6F.4050803@asianux.com>
+In-Reply-To: <51C8EF6F.4050803@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 05, 2013 11:24:58 AM Stephen Rothwell wrote:
-> Hi Rafael,
+Hello Maintainers:
 
-Hi,
+Is this patch under the normal work flow (or I should need a little more
+patience) ?
 
-> After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
+Thanks.
+
+On 06/25/2013 09:16 AM, Chen Gang wrote:
+> People might be tricked into assuming that the return value for a
+> failed NULL pointer check should be -EINVAL instead of -EFAULT.
 > 
-> drivers/gpu/drm/radeon/atombios_encoders.c: In function 'radeon_atom_backlight_init':
-> drivers/gpu/drm/radeon/atombios_encoders.c:230:2: error: implicit declaration of function 'acpi_osi_version' [-Werror=implicit-function-declaration]
->   if (acpi_osi_version() >= ACPI_OSI_WIN_8)
->   ^
-> drivers/gpu/drm/radeon/atombios_encoders.c:230:28: error: 'ACPI_OSI_WIN_8' undeclared (first use in this function)
->   if (acpi_osi_version() >= ACPI_OSI_WIN_8)
->                             ^
-> drivers/gpu/drm/radeon/atombios_encoders.c:231:3: error: implicit declaration of function 'acpi_video_backlight_unregister' [-Werror=implicit-function-declaration]
->    acpi_video_backlight_unregister();
->    ^
+> Remove the misleading NULL pointer check to fix this nuisance.
 > 
-> Caused by commit 1823b2aeccce ("drm/radeon: don't provide ACPI backlight
-> if firmware expects Windows 8").
-
-Dropped that commit for now (along with the whole branch).
-
+> Aside of that this patch fixes the problem of NOMMU kernels, where
+> a NULL pointer dereference is a valid operation. This allows to
+> boot NOMMU kernels without working around the shortcomings of the
+> getitimer() system call, which have been ignored since this NULL
+> pointer check was introduced in Linux 0.96a.
 > 
-> I have used the pm tree from next-20130704 for today.
-
-Sorry for the trouble!
-
-Thanks,
-Rafael
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  kernel/itimer.c |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/itimer.c b/kernel/itimer.c
+> index 8d262b4..3b12271 100644
+> --- a/kernel/itimer.c
+> +++ b/kernel/itimer.c
+> @@ -102,15 +102,14 @@ int do_getitimer(int which, struct itimerval *value)
+>  
+>  SYSCALL_DEFINE2(getitimer, int, which, struct itimerval __user *, value)
+>  {
+> -	int error = -EFAULT;
+> +	int error;
+>  	struct itimerval get_buffer;
+>  
+> -	if (value) {
+> -		error = do_getitimer(which, &get_buffer);
+> -		if (!error &&
+> -		    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
+> -			error = -EFAULT;
+> -	}
+> +	error = do_getitimer(which, &get_buffer);
+> +	if (!error &&
+> +	    copy_to_user(value, &get_buffer, sizeof(get_buffer)))
+> +		error = -EFAULT;
+> +
+>  	return error;
+>  }
+>  
+> 
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Chen Gang
