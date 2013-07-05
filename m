@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965080Ab3GETho (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:37:44 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51527 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757586Ab3GETes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757590Ab3GETes (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Jul 2013 15:34:48 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51502 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab3GETer (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 15:34:47 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 06/10] clocksource: sun4i: Fix the next event code
-Date: Fri,  5 Jul 2013 21:34:33 +0200
-Message-Id: <1373052877-29366-7-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 01/10] clocksource: sun4i: Use the BIT macros where possible
+Date: Fri,  5 Jul 2013 21:34:28 +0200
+Message-Id: <1373052877-29366-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,63 +24,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next_event logic was setting the next interval to fire in the
-current timer value instead of the interval value register, which is
-obviously wrong.
-
-Plus, the logic to set the actual value was wrong as well: the interval
-register can only be modified when the timer is disabled, and then
-enable it back, otherwise, it'll have no effect. Fix this logic as well
-since that code couldn't possibly work.
-
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clocksource/sun4i_timer.c | 25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+ drivers/clocksource/sun4i_timer.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 7c79968..6938cf9 100644
+index d4674e7..bdf34d9 100644
 --- a/drivers/clocksource/sun4i_timer.c
 +++ b/drivers/clocksource/sun4i_timer.c
-@@ -38,6 +38,20 @@
+@@ -24,12 +24,12 @@
+ #include <linux/of_irq.h>
  
- static void __iomem *timer_base;
+ #define TIMER_IRQ_EN_REG	0x00
+-#define TIMER_IRQ_EN(val)		(1 << val)
++#define TIMER_IRQ_EN(val)		BIT(val)
+ #define TIMER_IRQ_ST_REG	0x04
+ #define TIMER_CTL_REG(val)	(0x10 * val + 0x10)
+-#define TIMER_CTL_ENABLE		(1 << 0)
+-#define TIMER_CTL_AUTORELOAD		(1 << 1)
+-#define TIMER_CTL_ONESHOT		(1 << 7)
++#define TIMER_CTL_ENABLE		BIT(0)
++#define TIMER_CTL_AUTORELOAD		BIT(1)
++#define TIMER_CTL_ONESHOT		BIT(7)
+ #define TIMER_INTVAL_REG(val)	(0x10 * val + 0x14)
+ #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
  
-+/*
-+ * When we disable a timer, we need to wait at least for 2 cycles of
-+ * the timer source clock. We will use for that the clocksource timer
-+ * that is already setup and runs at the same frequency than the other
-+ * timers, and we never will be disabled.
-+ */
-+static void sun4i_clkevt_sync(void)
-+{
-+	u32 old = readl(timer_base + TIMER_CNTVAL_REG(1));
-+
-+	while ((old - readl(timer_base + TIMER_CNTVAL_REG(1))) < 3)
-+		cpu_relax();
-+}
-+
- static void sun4i_clkevt_mode(enum clock_event_mode mode,
- 			      struct clock_event_device *clk)
- {
-@@ -63,9 +77,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
- static int sun4i_clkevt_next_event(unsigned long evt,
- 				   struct clock_event_device *unused)
- {
--	u32 u = readl(timer_base + TIMER_CTL_REG(0));
--	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
--	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-+	u32 val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
-+	sun4i_clkevt_sync();
-+
-+	writel(evt, timer_base + TIMER_INTVAL_REG(0));
-+
-+	val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
- 	       timer_base + TIMER_CTL_REG(0));
- 
- 	return 0;
 -- 
 1.8.3.2
 
