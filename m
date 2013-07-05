@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab3GEWSv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 18:18:51 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:52553 "EHLO
+	id S1751891Ab3GEWSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 18:18:50 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:52554 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab3GEWSt (ORCPT
+	with ESMTP id S1751024Ab3GEWSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 5 Jul 2013 18:18:49 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -14,69 +14,42 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv4 00/10] clocksource: sunxi: Timer fixes and cleanup
-Date: Sat,  6 Jul 2013 00:18:35 +0200
-Message-Id: <1373062725-19625-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv4 01/10] clocksource: sun4i: Use the BIT macros where possible
+Date: Sat,  6 Jul 2013 00:18:36 +0200
+Message-Id: <1373062725-19625-2-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373062725-19625-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1373062725-19625-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/clocksource/sun4i_timer.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-The first timer code we merged when adding support for the A13 some
-time back was mostly a clean up from the source drop we had, without
-any documentation.  This happened to work, but the code merged in
-turned out to be far from perfect, and had several flaws.
-
-This patchset hopefully fixes these flaws, and cleanup most of the
-driver as well, to end up in an almost complete rewrite of it (even
-though it's not that long).
-
-It also finally adds a clocksource driver using the second timer as
-our monotonic clock source.
-
-These flaws have all been spotted when trying to add the A31 support,
-work that is still ongoing, but will hopefully benefit from this
-patchset as well.
-
-Thanks,
-Maxime
-
-Changes from v3:
-  - Reintroduce the rate variable to cache the parent clock rate
-  - Remove the interval programming at probe time that was
-    reintroduced in the v3 due to a poor rebase.
-
-Changes from v2:
-  - Use the clocksource timer to get the amount of time we have to
-    wait for when disabling and enabling back a timer
-  - Added patch to add parenthesis around the macros arguments
-  - Renamed the AUTORELOAD register define to the more meaningful
-    RELOAD name
-
-Changes from v1:
-  - Rebased on top of linux-next to benefit from the move to all
-    architectures of the sched_clock functions
-  - Moved the clock source to the second timer instead of the 64 bits
-    free-running counter like suggested by Thomas.
-
-Maxime Ripard (10):
-  clocksource: sun4i: Use the BIT macros where possible
-  clocksource: sun4i: Wrap macros arguments in parenthesis
-  clocksource: sun4i: rename AUTORELOAD define to RELOAD
-  clocksource: sun4i: Add clocksource and sched clock drivers
-  clocksource: sun4i: Don't forget to enable the clock we use
-  clocksource: sun4i: Fix the next event code
-  clocksource: sun4i: Factor out some timer code
-  clocksource: sun4i: Remove TIMER_SCAL variable
-  clocksource: sun4i: Cleanup parent clock setup
-  clocksource: sun4i: Fix bug when switching from periodic to oneshot
-    modes
-
- drivers/clocksource/sun4i_timer.c | 110 +++++++++++++++++++++++++++-----------
- 1 file changed, 78 insertions(+), 32 deletions(-)
-
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index d4674e7..bdf34d9 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -24,12 +24,12 @@
+ #include <linux/of_irq.h>
+ 
+ #define TIMER_IRQ_EN_REG	0x00
+-#define TIMER_IRQ_EN(val)		(1 << val)
++#define TIMER_IRQ_EN(val)		BIT(val)
+ #define TIMER_IRQ_ST_REG	0x04
+ #define TIMER_CTL_REG(val)	(0x10 * val + 0x10)
+-#define TIMER_CTL_ENABLE		(1 << 0)
+-#define TIMER_CTL_AUTORELOAD		(1 << 1)
+-#define TIMER_CTL_ONESHOT		(1 << 7)
++#define TIMER_CTL_ENABLE		BIT(0)
++#define TIMER_CTL_AUTORELOAD		BIT(1)
++#define TIMER_CTL_ONESHOT		BIT(7)
+ #define TIMER_INTVAL_REG(val)	(0x10 * val + 0x14)
+ #define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
+ 
 -- 
 1.8.3.2
 
