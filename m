@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab3GEV6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 17:58:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58919 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab3GEV6i (ORCPT
+	id S1751362Ab3GEWLu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 18:11:50 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59750 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab3GEWLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 17:58:38 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH] ASoC: Allow imx-pcm-{dma,fiq}.c to be modules
-Date: Fri, 5 Jul 2013 23:58:21 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Shawn Guo <shawn.guo@linaro.org>
-References: <201307051745.16140.arnd@arndb.de> <201307052255.10765.arnd@arndb.de> <20130705211920.GK27646@sirena.org.uk>
-In-Reply-To: <20130705211920.GK27646@sirena.org.uk>
+	Fri, 5 Jul 2013 18:11:49 -0400
+Date: Fri, 5 Jul 2013 16:41:00 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: linux-kernel@vger.kernel.org
+Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+Message-ID: <20130705204100.GA15943@logfs.org>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307052358.22068.arnd@arndb.de>
-X-Provags-ID: V02:K0:YSuA2nf39eNxB2tgjVE1mrzBXYJ1K5Z6nDhWNUH9NEf
- XTWa2HMyXw0FzoJMarTS8naL+eAyV+Cev+dfjvXjFnDi8fqee1
- QLQ1WNm9F15R6/zFgE3cJpNYNKGet9qp6OuwNsfgTR5Ohnd3x8
- ng8xMQZ8KKJq9F2UXiu+zElOMwWcFu2Za16Zb6YiZvZREN+qbT
- EUKQDKSFAm39UdAnIknQsUC6LQaPq3WRsBkzEUnzlSyzvupQBr
- Cd9vXED/zeY0n0wKrYTO+Z6YJ+vYRoAG94/ZPchXfdx0iYEAyX
- bztMQeVyQPlEzaNqA0V7hTHuMr0phDdyqClCh78XgaU3aqpeo/
- 7y+wszRR4DTtWDuicH5I=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1370280485-10047-1-git-send-email-joern@logfs.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 05 July 2013, Mark Brown wrote:
-> On Fri, Jul 05, 2013 at 10:55:10PM +0200, Arnd Bergmann wrote:
-> > On Friday 05 July 2013, Mark Brown wrote:
+On Mon, 3 June 2013 13:28:03 -0400, Joern Engel wrote:
 > 
-> > > Is this actually OK with the FIQ APIs?
-> 
-> > I don't know. Why wouldn't it?
-> 
-> It was the only reason I could think of why that'd have been done.
+> A purely janitorial patchset.  A fairly common pattern is to take a
+> list, remove every object from it and do something with this object -
+> usually kfree() some variant.  A stupid grep identified roughly 300
+> instances, with many more hidden behind more complicated patterns to
+> achieve the same end results.
 
-I looked in the log and found this part has been patched a couple
-of times already, going back and forth between "bool" and "tristate",
-always to fix build errors.
+Next version of the same patchset.  Object size is shrinking now, at
+least for the one compiler I tested.  And a few kernel hackers met on
+a frozen lake in hell with pigs flying overhead and could actually
+agree on a name.  While I am sure almost every reader will still
+disagree and have one or two better suggestions, I would like to use
+this historical moment.
 
-Please hold back for now, I'll try to reproduce on the bug on
-the current torvalds tree first. I know it was broken in linux-next
-as of a few weeks ago, but something else may have changed in the
-meantime.
+list_del_each and list_del_each_entry is shall be!
 
-	Arnd
+Jörn
+
+--
+It's just what we asked for, but not what we want!
+-- anonymous
