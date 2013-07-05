@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab3GEGwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 02:52:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58802 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290Ab3GEGwG (ORCPT
+	id S1753718Ab3GEGyk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 02:54:40 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:43384 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab3GEGyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 02:52:06 -0400
-Date: Thu, 4 Jul 2013 23:51:31 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-100ac5331519866afa9b000b10642b00cb6d03dd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        suravee.suthikulpanit@amd.com, acme@infradead.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        suravee.suthikulpanit@amd.com, acme@infradead.org, tglx@linutronix.de
-In-Reply-To: <20130703075542.GF23916@twins.programming.kicks-ass.net>
-References: <20130703075542.GF23916@twins.programming.kicks-ass.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf/x86/amd:
-  Do not print an error when the device is not present
-Git-Commit-ID: 100ac5331519866afa9b000b10642b00cb6d03dd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 5 Jul 2013 02:54:39 -0400
+Date: Fri, 5 Jul 2013 08:54:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        dave.hansen@linux.intel.com, ak@linux.intel.com, jolsa@redhat.com
+Subject: Re: [PATCH] perf: fix interrupt handler timing harness
+Message-ID: <20130705065435.GA6699@gmail.com>
+References: <20130704223010.GA30625@quad>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 04 Jul 2013 23:51:37 -0700 (PDT)
+In-Reply-To: <20130704223010.GA30625@quad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  100ac5331519866afa9b000b10642b00cb6d03dd
-Gitweb:     http://git.kernel.org/tip/100ac5331519866afa9b000b10642b00cb6d03dd
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Wed, 3 Jul 2013 09:55:42 +0200
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 5 Jul 2013 08:27:15 +0200
 
-perf/x86/amd: Do not print an error when the device is not present
+* Stephane Eranian <eranian@google.com> wrote:
 
-As Linus said its not an error to not have an AMD IOMMU; esp.
-when you're not even running on an AMD platform.
+> This patch fixes a serious bug in:
+> 
+> commit 14c63f17b1fde5a575a28e96547a22b451c71fb5
+> Author: Dave Hansen <dave.hansen@linux.intel.com>
+> Date:   Fri Jun 21 08:51:36 2013 -0700
+> 
+>     perf: Drop sample rate when sampling is too slow
+>     
+> 
+> There was an misunderstanding on the API of the do_div()
+> macro. It returns the remainder of the division and this
+> was not what the function expected leading to disabling the
+> interrupt latency watchdog.
+> 
+> This patch also remove a duplicate assignment in
+> perf_sample_event_took().
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Link: http://lkml.kernel.org/r/20130703075542.GF23916@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_amd_iommu.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Thanks Stephane - I've applied this to perf/urgent and will get it to 
+Linus ASAP.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.c b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-index 0db655e..639d128 100644
---- a/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
-@@ -491,10 +491,8 @@ static struct perf_amd_iommu __perf_iommu = {
- static __init int amd_iommu_pc_init(void)
- {
- 	/* Make sure the IOMMU PC resource is available */
--	if (!amd_iommu_pc_supported()) {
--		pr_err("perf: amd_iommu PMU not installed. No support!\n");
-+	if (!amd_iommu_pc_supported())
- 		return -ENODEV;
--	}
- 
- 	_init_perf_amd_iommu(&__perf_iommu, "amd_iommu");
- 
+	Ingo
