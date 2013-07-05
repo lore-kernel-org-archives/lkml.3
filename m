@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599Ab3GEAEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 20:04:39 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35461 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756970Ab3GEAEi (ORCPT
+	id S933731Ab3GEAEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 20:04:49 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53642 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933650Ab3GEAEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 20:04:38 -0400
-Message-ID: <51D60D53.7050405@gmail.com>
-Date: Fri, 05 Jul 2013 08:03:31 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Chen Gang <gang.chen@asianux.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>,
-        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
-        Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
- 'COMPILE_TEST' in 'asm-generic'.
-References: <20130704011221.GA11230@kroah.com> <20130704061204.GA12148@kroah.com> <51D517A7.6030908@asianux.com> <201307041125.15083.arnd@arndb.de>
-In-Reply-To: <201307041125.15083.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 4 Jul 2013 20:04:47 -0400
+Date: Fri, 5 Jul 2013 10:04:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Rebased for_next branch in my linux-fs git tree
+Message-Id: <20130705100437.48810eeeda014ab0fcd87b84@canb.auug.org.au>
+In-Reply-To: <20130704174304.GA30265@quack.suse.cz>
+References: <20130704174304.GA30265@quack.suse.cz>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__5_Jul_2013_10_04_37_+1000_7YF.D5Ik7IaS/49v"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2013 05:25 PM, Arnd Bergmann wrote:
-> On Thursday 04 July 2013, Chen Gang wrote:
-> 
->> > --------------------------patch begin----------------------------------
->> > 
->> > 'asm-generic' need provide necessary configuration checking, if can't
->> > pass checking, 'asm-generic' shouldn't implement it.
->> > 
->> > For 'COMPILE_TEST', according to its help contents, 'asm-generic' need
->> > let it pass configuration checking, and provide related dummy contents
->> > for it.
->> > 
->> > Part of 'COMPLE_TEST' help contents in "init/Kconfig":
->> > 
->> >   "...Despite they cannot be loaded there (or even when they load they cannot be used due to missing HW support)..."
->> > 
->> > One sample for using 'COMPILE_TEST':
->> > 
->> >   'PTP_1588_CLOCK_PCH' in drivers/ptp/Kconfig, which need depend on 'HAS_IOMEM'.
-> Then please submit a patch that adds the 'depends on HAS_IOMEM' line there.
-> That line was clearly left out by accident.
-> 
+--Signature=_Fri__5_Jul_2013_10_04_37_+1000_7YF.D5Ik7IaS/49v
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, I will send the related patch for it (I have sent one, but that
-seems incorrect, I will send patch v2 for that, after this patch
-finishes discussing).
+Hi Jan,
 
-But excluding 'PTP_1588_CLOCK_PCH' own issue, it is as a sample for our
-discussion (If "COMPILE_TEST=y", it should can be compiled under the
-archs which no 'HAS_IOMEM').
+On Thu, 4 Jul 2013 19:43:04 +0200 Jan Kara <jack@suse.cz> wrote:
+>
+>   I'm just writing this to let you know that I had to rebase for_next
+                                                 ^^^
+wrong choice of work, you "chose" to rebase.  :-)
 
+> branch in my linux-fs git tree because I've messed up my tree and for_lin=
+us
+> & for_next branches contained the same patches but with different commit
+> IDs (fast track fixes). When I pulled for_next into for_linus branch,
+> the changelog had commit logs for those patches twice which was rather
+> confusing. The only solution I found was to rebase for_next on top of
+> for_linus to get rid of the duplicate patches. If there's a cleaner
+> solution of the situation, I'm happy to learn it for future...
 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> > ---
->> >  include/asm-generic/io.h |   22 ++++++++++++++++++----
->> >  1 files changed, 18 insertions(+), 4 deletions(-)
->> > 
->> > diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
->> > index d5afe96..301ce80 100644
->> > --- a/include/asm-generic/io.h
->> > +++ b/include/asm-generic/io.h
->> > @@ -303,13 +303,18 @@ static inline void *phys_to_virt(unsigned long address)
->> >  /*
->> >   * Change "struct page" to physical address.
->> >   *
->> > - * This implementation is for the no-MMU case only... if you have an MMU
->> > - * you'll need to provide your own definitions.
->> > + * This for the no-MMU, or no-IOMEM but still try to COMPILE_TEST cases.
->> > + * if you have an MMU and IOMEM, you'll need to provide your own definitions.
->> >   */
->> > -#ifndef CONFIG_MMU
->> > +#if !defined(CONFIG_MMU) || \
->> > +	(!defined(CONFIG_HAS_IOMEM) && defined(CONFIG_COMPILE_TEST))
->> >  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
->> >  {
->> > +#if !defined(CONFIG_MMU)
->> >  	return (void __iomem*) (unsigned long)offset;
->> > +#else
->> > +	return NULL;
->> > +#endif
->> >  }
->> >  
->> >  #define __ioremap(offset, size, flags)	ioremap(offset, size)
-> This is wrong for multiple reasons, all of which have been discussed in
-> this thread before.
+Just leave it.  Linus and I know how to cope with those (maybe explain to
+Linus what happened).  In the future, if you put fixes in your for_linus
+branch and *need* those fixes in your for_next branch, then merge your
+for_linus branch into your for_next branch instead of cherry-picking the
+patches.
 
-Hmm..., COMPILE_TEST has integrated into 3.11 (at least can be found in
-next tree).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-When a module select "COMPILE_TEST=y" (e.g with allmodconfig), it has
-right to compile under the architecture which no related HW support.
+--Signature=_Fri__5_Jul_2013_10_04_37_+1000_7YF.D5Ik7IaS/49v
+Content-Type: application/pgp-signature
 
-If it can not pass compiling, at least it is not the module's issue,
-neither the architecture's issue.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-We have to look for who has duty on it. At least now, it seems only
-'asm-generic' can be qualified to play this unlucky role.
+iQIcBAEBCAAGBQJR1g2aAAoJEECxmPOUX5FE8gYP/0dhb/VVVPJGb7dtON55Cpit
+pfgr2onmx7bQdnbIvQDGBZnTzAjc/w5Yay32hJfmOnDuSQcu3NQeDd3pvyNIbLBo
+xibX8HDfVFDHYSc8bMojAAfnE8sMAzRhY5TECkwoqJKdcGzicnBWLTXwTLYdF3iI
+67K8vSDSpMdaPe9ukC0biLU9KP4jCcrD1PCmYAvz85T1n8BnQL4jwTTy/DxYr0PZ
+osC5jgIQdVSkD7078oHUTIvpEHnkt/K7jiXwsD1AQe7qbTfvZ/PueS9zJ/Jd54K8
+3aIiWZn7Qg+zfWJASrbPzZoNt6b59Kbw6LZ3dG0uvTnj2LZpAEVFaBEHVdcbawnw
+sWDNac7LYgSkzoPB69v/M3FALKZzGtgqU4G1ixUfR7wHz3fGkXIPYuBoudBGkz5L
+75akEu2t3SqxTZNxYHIiYA174l0GCLbs9KqXQ2rFZeu0ae8URiTaYuwrm2IXbq9m
+JVVauS+Tvj3X8yj1SMFVIc1OptGfPLPe0CkJ71wL8TnDHidbcfeWUeUOzUI0hDY6
+JI3DsMfQDCBy6b41kAMQHim4EL2QKdnyAXGY/mfepY2MbKelcXkocT03Bi2mPf1/
+TatSNEv+LcufTefCE4+62Zaa8ENBDP2lV48f/ykvFOfHsquZAC+8PFDHY77F7KQ4
+aupiKoHPamdTTuAbYQNf
+=Gh47
+-----END PGP SIGNATURE-----
 
-
-Could you provide your suggestions or completions for this issue ?
-
-
-Thanks.
--- 
-Chen Gang
+--Signature=_Fri__5_Jul_2013_10_04_37_+1000_7YF.D5Ik7IaS/49v--
