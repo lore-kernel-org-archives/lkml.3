@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab3GEGyk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 02:54:40 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:43384 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3GEGyj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 02:54:39 -0400
-Date: Fri, 5 Jul 2013 08:54:35 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        dave.hansen@linux.intel.com, ak@linux.intel.com, jolsa@redhat.com
-Subject: Re: [PATCH] perf: fix interrupt handler timing harness
-Message-ID: <20130705065435.GA6699@gmail.com>
-References: <20130704223010.GA30625@quad>
+	id S1753940Ab3GEG5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 02:57:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:20903 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751222Ab3GEG5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 02:57:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1000,1363158000"; 
+   d="scan'208";a="360819111"
+Date: Fri, 5 Jul 2013 11:48:02 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Mark Brown <broonie@kernel.org>, Jonathan Austin <jonathan.austin@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Steve Capper <Steve.Capper@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        LinusW <linus.walleij@linaro.org>, Will Deacon <will.deacon@arm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Subject: Re: amba-pl08x and 'get_signal' namespace collision/build error
+Message-ID: <20130705061802.GB10947@intel.com>
+References: <51C97F40.5030101@arm.com>
+ <20130625184539.GB2718@n2100.arm.linux.org.uk>
+ <20130626044842.GR23141@intel.com>
+ <20130626081909.GD2718@n2100.arm.linux.org.uk>
+ <20130626103930.GS23141@intel.com>
+ <20130627094650.GC4283@n2100.arm.linux.org.uk>
+ <CAOesGMgSPNggnBm=E3B774m7Ad_QMXdqvcGqRMxhap6dtpNtCg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130704223010.GA30625@quad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOesGMgSPNggnBm=E3B774m7Ad_QMXdqvcGqRMxhap6dtpNtCg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 03, 2013 at 11:27:12AM -0700, Olof Johansson wrote:
+> This has now hit the mainline kernel, and several defconfigs (nhk815,
+> lpc32xx and the spear ones) are broken there.
+> 
+> Vinod, when are you sending up your pull request with the fix? It'd be
+> good to see it go in soon.
+It should be on its way by the weekend
 
-* Stephane Eranian <eranian@google.com> wrote:
-
-> This patch fixes a serious bug in:
-> 
-> commit 14c63f17b1fde5a575a28e96547a22b451c71fb5
-> Author: Dave Hansen <dave.hansen@linux.intel.com>
-> Date:   Fri Jun 21 08:51:36 2013 -0700
-> 
->     perf: Drop sample rate when sampling is too slow
->     
-> 
-> There was an misunderstanding on the API of the do_div()
-> macro. It returns the remainder of the division and this
-> was not what the function expected leading to disabling the
-> interrupt latency watchdog.
-> 
-> This patch also remove a duplicate assignment in
-> perf_sample_event_took().
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-
-Thanks Stephane - I've applied this to perf/urgent and will get it to 
-Linus ASAP.
-
-	Ingo
+Thanks
+~Vinod
