@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab3GEFmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 01:42:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:54525 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab3GEFmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 01:42:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1000,1363158000"; 
-   d="scan'208";a="360798205"
-Date: Fri, 5 Jul 2013 08:47:38 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, john.ronciak@intel.com,
-        miles.j.penner@intel.com, bruce.w.allan@intel.com,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH v2.1 6/8] PCI: acpiphp: workaround for Thunderbolt on
- Acer Aspire S5
-Message-ID: <20130705054738.GQ4898@intel.com>
-References: <1656567.0oqS7xVYJ8@vostro.rjw.lan>
- <1372948192-17913-1-git-send-email-mika.westerberg@linux.intel.com>
- <2539126.i7GjLNiDjm@vostro.rjw.lan>
+	id S1752362Ab3GEFnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 01:43:12 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:59008 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab3GEFnL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 01:43:11 -0400
+Message-ID: <51D65D4A.1080706@gmail.com>
+Date: Fri, 05 Jul 2013 13:44:42 +0800
+From: Light <sgsdxzy@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2539126.i7GjLNiDjm@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Subject: Re: Intel_pstate: One Core always 100% C0 state and never scale down
+References: <51D4EF6C.9040808@gmail.com>
+In-Reply-To: <51D4EF6C.9040808@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 01:48:01AM +0200, Rafael J. Wysocki wrote:
-> This is fine by me and same for the other patches in the series.
-> 
-> Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-
-Thanks!
+On 07/04/2013 11:43 AM, Light wrote:
+> I am using a laptop with Intel Ivy bridge core i7 3610QM. I updated my 
+> kernel to 3.10 and started to use intel_pstate as scaling driver:
+> #cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_driver
+> intel_pstate
+>
+> However I find that one of my four cores is always in C0 state even 
+> when there is no activities. I monitored it using i7z:
+> Core [core-id]  :Actual Freq (Mult.)      C0%   Halt(C1)%  C3 % C6 %   
+> C7 %  Temp
+>         Core 1 [0]:       3288.24 (32.97x)      99.7       0 0       
+> 0       0    83
+>         Core 2 [1]:       3138.62 (31.47x)         1       0 0       
+> 0    99.7    74
+>         Core 3 [2]:       3175.46 (31.84x)         1    0.891 0       
+> 0      99    76
+>         Core 4 [3]:       3177.34 (31.86x)         1    0.21 0       
+> 0    99.3    71
+>
+> Also cpu frequencies never scale down, resulting in very high temp.
+> #cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
+> powersave
+>
+> It does say powersave, and my cpu is capable of 1.20Ghz to 3.30Ghz
+>
+> I don't know if I misconfigured or misunderstood something. Can 
+> someone tell me why?
+> Thanks!
+Switching to dynticks Idle fixed the problem. But I am still wondering 
+if it were a bug with full dynticks...
