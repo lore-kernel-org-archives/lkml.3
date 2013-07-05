@@ -1,114 +1,343 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab3GEBmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 21:42:22 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:62337 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751781Ab3GEBmU (ORCPT
+	id S1757040Ab3GEB52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 21:57:28 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38179 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab3GEB51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 21:42:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuILAAMk1lF5LNm+/2dsb2JhbABagwmDGr4YBAGBABd0giMBAQQBOhwjEAgDGAklDwUlAyEKCYgJBbkaFo4dG4EdB4NtA5dIih+HJ4MjKoEs
-Date: Fri, 5 Jul 2013 11:42:14 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Rob van der Heij <rvdheij@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yannick Brosseau <yannick.brosseau@gmail.com>, stable@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>
-Subject: Re: [-stable 3.8.1 performance regression] madvise
- POSIX_FADV_DONTNEED
-Message-ID: <20130705014214.GT14996@dastard>
-References: <20130619192508.GA666@Krystal>
- <CAJCc=kijujORhPUmPvzHj-MMdyVbf-iHEK0Jx-VHbTO8q4ESFA@mail.gmail.com>
- <20130620122016.GA12700@Krystal>
- <20130625015648.GO29376@dastard>
- <20130702135858.GA30837@Krystal>
- <20130703005514.GA17149@Krystal>
- <20130703084715.GF1875@suse.de>
- <x49wqp7puej.fsf@segfault.boston.devel.redhat.com>
- <20130704000344.GG4072@dastard>
- <20130704003103.GA13899@Krystal>
+	Thu, 4 Jul 2013 21:57:27 -0400
+Message-ID: <51D62891.7060702@oracle.com>
+Date: Fri, 05 Jul 2013 09:59:45 +0800
+From: vaughan <vaughan.cao@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704003103.GA13899@Krystal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
+CC: dgilbert@interlog.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vaughan.cao@oracle.com
+Subject: Re: [PATCH v2 1/1] [SCSI] sg: fix race condition when do exclusive
+ open
+References: <51AF0269.9070900@oracle.com> <20130605132746.GA1690@logfs.org> <51AF646D.7030903@oracle.com> <20130605154106.GA2737@logfs.org> <51BF0ADD.1080604@oracle.com> <51CA45F7.9020404@oracle.com>
+In-Reply-To: <51CA45F7.9020404@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 08:31:03PM -0400, Mathieu Desnoyers wrote:
-> * Dave Chinner (david@fromorbit.com) wrote:
-> > On Wed, Jul 03, 2013 at 10:53:08AM -0400, Jeff Moyer wrote:
-> > > Mel Gorman <mgorman@suse.de> writes:
-> > > 
-> > > >> > I just tried replacing my sync_file_range()+fadvise() calls and instead
-> > > >> > pass the O_DIRECT flag to open(). Unfortunately, I must be doing
-> > > >> > something very wrong, because I get only 1/3rd of the throughput, and
-> > > >> > the page cache fills up. Any idea why ?
-> > > >> 
-> > > >> Since O_DIRECT does not seem to provide acceptable throughput, it may be
-> > > >> interesting to investigate other ways to lessen the latency impact of
-> > > >> the fadvise DONTNEED hint.
-> > > >> 
-> > > >
-> > > > There are cases where O_DIRECT falls back to buffered IO which is why you
-> > > > might have found that page cache was still filling up. There are a few
-> > > > reasons why this can happen but I would guess the common cause is that
-> > > > the range of pages being written was in the page cache already and could
-> > > > not be invalidated for some reason. I'm guessing this is the common case
-> > > > for page cache filling even with O_DIRECT but would not bet money on it
-> > > > as it's not a problem I investigated before.
-> > > 
-> > > Even when O_DIRECT falls back to buffered I/O for writes, it will
-> > > invalidate the page cache range described by the buffered I/O once it
-> > > completes.  For reads, the range is written out synchronously before the
-> > > direct I/O is issued.  Either way, you shouldn't see the page cache
-> > > filling up.
-> > 
-> > <sigh>
-> > 
-> > I keep forgetting that filesystems other than XFS have sub-optimal
-> > direct IO implementations. I wish that "silent fallback to buffered
-> > IO" idea had never seen the light of day, and that filesystems
-> > implemented direct IO properly.
-> > 
-> > > Switching to O_DIRECT often incurs a performance hit, especially if the
-> > > application does not submit more than one I/O at a time.  Remember,
-> > > you're not getting readahead, and you're not getting the benefit of the
-> > > writeback code submitting batches of I/O.
-> > 
-> > With the way IO is being done, there won't be any readahead (write
-> > only workload) and they are directly controlling writeback one chunk
-> > at a time, so there's not writeback caching to do batching, either.
-> > There's no obvious reason that direct IO should be any slower
-> > assuming that the application is actually doing 1MB sized and
-> > aligned IOs like was mentioned, because both methods are directly
-> > dispatching and then waiting for IO completion.
-> 
-> As a clarification, I use 256kB "chunks" (sub-buffers) in my tests, not
-> 1MB. Also, please note that since I'm using splice(), each individual
-> splice call is internally limited to 16 pages worth of data transfer
-> (64kB).
+On 06/26/2013 09:37 AM, vaughan wrote:
+> Hi Jörn Engel,
+>
+> Ping.
+> How about this one? I found my lat patch hasn't fix the issue, so I
+> modified it a little more. Last thread is:
+> Subject: Re: [PATCH] sg: atomize check and set sdp->exclude in sg_open
+> Message-ID: <20130605154106.GA2737@logfs.org>
+>
+> Regards,
+> Vaughan
+>
+> 于 2013年06月17日 21:10, vaughan 写道:
+>> Rewrite the last patch.
+>> Add a new field 'toopen' in sg_device to count ongoing sg_open's. By checking both 'toopen' and 'exclude' marks when do exclusive open, old race conditions can be avoided.
+>> Replace global sg_open_exclusive_lock with a per device lock - sfd_lock. Since sfds list is now protected by the lock owned by the same sg_device, sg_index_lock becomes a real global lock to only protect sg devices lookup.
+>> Also did some cleanup, such as remove get_exclude() and rename set_exclude() to clear_exclude().
+>>
+>> Signed-off-by: Vaughan Cao <vaughan.cao@oracle.com>
+>> ---
+>>   drivers/scsi/sg.c | 152 ++++++++++++++++++++++++++++++++----------------------
+>>   1 file changed, 90 insertions(+), 62 deletions(-)
+>>
+>> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+>> index 25b5455..b0ea73f 100644
+>> --- a/drivers/scsi/sg.c
+>> +++ b/drivers/scsi/sg.c
+>> @@ -103,11 +103,8 @@ static int scatter_elem_sz_prev = SG_SCATTER_SZ;
+>>   static int sg_add(struct device *, struct class_interface *);
+>>   static void sg_remove(struct device *, struct class_interface *);
+>>
+>> -static DEFINE_SPINLOCK(sg_open_exclusive_lock);
+>> -
+>>   static DEFINE_IDR(sg_index_idr);
+>> -static DEFINE_RWLOCK(sg_index_lock);	/* Also used to lock
+>> -							   file descriptor list for device */
+>> +static DEFINE_RWLOCK(sg_index_lock);	/* protect sg index */
+>>
+>>   static struct class_interface sg_interface = {
+>>   	.add_dev	= sg_add,
+>> @@ -144,7 +141,7 @@ typedef struct sg_request {	/* SG_MAX_QUEUE requests outstanding per file */
+>>   } Sg_request;
+>>
+>>   typedef struct sg_fd {		/* holds the state of a file descriptor */
+>> -	/* sfd_siblings is protected by sg_index_lock */
+>> +	/* sfd_siblings is protected by sfd_lock of sg_device */
+>>   	struct list_head sfd_siblings;
+>>   	struct sg_device *parentdp;	/* owning device */
+>>   	wait_queue_head_t read_wait;	/* queue read until command done */
+>> @@ -171,10 +168,10 @@ typedef struct sg_device { /* holds the state of each scsi generic device */
+>>   	wait_queue_head_t o_excl_wait;	/* queue open() when O_EXCL in use */
+>>   	int sg_tablesize;	/* adapter's max scatter-gather table size */
+>>   	u32 index;		/* device index number */
+>> -	/* sfds is protected by sg_index_lock */
+>> +	spinlock_t sfd_lock;	/* protect sfds, exclude, toopen */
+>>   	struct list_head sfds;
+>> +	int toopen;		/* number of who are ready to open sg */
+>>   	volatile char detached;	/* 0->attached, 1->detached pending removal */
+>> -	/* exclude protected by sg_open_exclusive_lock */
+>>   	char exclude;		/* opened for exclusive access */
+>>   	char sgdebug;		/* 0->off, 1->sense, 9->dump dev, 10-> all devs */
+>>   	struct gendisk *disk;
+>> @@ -224,25 +221,44 @@ static int sg_allow_access(struct file *filp, unsigned char *cmd)
+>>   	return blk_verify_command(q, cmd, filp->f_mode & FMODE_WRITE);
+>>   }
+>>
+>> -static int get_exclude(Sg_device *sdp)
+>> +static void clear_exclude(Sg_device *sdp)
+>>   {
+>>   	unsigned long flags;
+>> -	int ret;
+>>
+>> -	spin_lock_irqsave(&sg_open_exclusive_lock, flags);
+>> -	ret = sdp->exclude;
+>> -	spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
+>> +	spin_lock_irqsave(&sdp->sfd_lock, flags);
+>> +	sdp->exclude = 0;
+>> +	spin_unlock_irqrestore(&sdp->sfd_lock, flags);
+>> +	return;
+>> +}
+>> +
+>> +/* we can add exclusively only when no other addition is going on */
+>> +static int try_add_exclude(Sg_device *sdp)
+>> +{
+>> +	unsigned long flags;
+>> +	int ret = 0;
+>> +
+>> +	spin_lock_irqsave(&sdp->sfd_lock, flags);
+>> +	if (list_empty(&sdp->sfds) && !sdp->toopen) {
+>> +		sdp->exclude = 1;
+>> +		sdp->toopen++;
+>> +		ret = 1;
+>> +	}
+>> +	spin_unlock_irqrestore(&sdp->sfd_lock, flags);
+>>   	return ret;
+>>   }
+>>
+>> -static int set_exclude(Sg_device *sdp, char val)
+>> +static int try_add_shareable(Sg_device *sdp)
+>>   {
+>>   	unsigned long flags;
+>> +	int ret = 0;
+>>
+>> -	spin_lock_irqsave(&sg_open_exclusive_lock, flags);
+>> -	sdp->exclude = val;
+>> -	spin_unlock_irqrestore(&sg_open_exclusive_lock, flags);
+>> -	return val;
+>> +	spin_lock_irqsave(&sdp->sfd_lock, flags);
+>> +	if (!sdp->exclude && sdp->toopen != INT_MAX) {
+>> +		sdp->toopen++;
+>> +		ret = 1;
+>> +	}
+>> +	spin_unlock_irqrestore(&sdp->sfd_lock, flags);
+>> +	return ret;
+>>   }
+>>
+>>   static int sfds_list_empty(Sg_device *sdp)
+>> @@ -250,9 +266,9 @@ static int sfds_list_empty(Sg_device *sdp)
+>>   	unsigned long flags;
+>>   	int ret;
+>>
+>> -	read_lock_irqsave(&sg_index_lock, flags);
+>> +	spin_lock_irqsave(&sdp->sfd_lock, flags);
+>>   	ret = list_empty(&sdp->sfds);
+>> -	read_unlock_irqrestore(&sg_index_lock, flags);
+>> +	spin_unlock_irqrestore(&sdp->sfd_lock, flags);
+>>   	return ret;
+>>   }
+>>
+>> @@ -266,6 +282,7 @@ sg_open(struct inode *inode, struct file *filp)
+>>   	Sg_fd *sfp;
+>>   	int res;
+>>   	int retval;
+>> +	unsigned long iflags;
+>>
+>>   	nonseekable_open(inode, filp);
+>>   	SCSI_LOG_TIMEOUT(3, printk("sg_open: dev=%d, flags=0x%x\n", dev, flags));
+>> @@ -293,27 +310,26 @@ sg_open(struct inode *inode, struct file *filp)
+>>   		goto error_out;
+>>   	}
+>>
+>> -	if (flags & O_EXCL) {
+>> -		if (O_RDONLY == (flags & O_ACCMODE)) {
+>> -			retval = -EPERM; /* Can't lock it with read only access */
+>> -			goto error_out;
+>> -		}
+>> -		if (!sfds_list_empty(sdp) && (flags & O_NONBLOCK)) {
+>> -			retval = -EBUSY;
+>> -			goto error_out;
+>> -		}
+>> -		res = wait_event_interruptible(sdp->o_excl_wait,
+>> -					   ((!sfds_list_empty(sdp) || get_exclude(sdp)) ? 0 : set_exclude(sdp, 1)));
+>> -		if (res) {
+>> -			retval = res;	/* -ERESTARTSYS because signal hit process */
+>> -			goto error_out;
+>> -		}
+>> -	} else if (get_exclude(sdp)) {	/* some other fd has an exclusive lock on dev */
+>> -		if (flags & O_NONBLOCK) {
+>> +	if ((flags & O_EXCL) && (O_RDONLY == (flags & O_ACCMODE))) {
+>> +		retval = -EPERM; /* Can't lock it with read only access */
+>> +		goto error_out;
+>> +	}
+>> +	if (flags & O_NONBLOCK) {
+>> +		if (flags & O_EXCL)
+>> +			res = try_add_exclude(sdp);
+>> +		else
+>> +			res = try_add_shareable(sdp);
+>> +		if (!res) {
+>>   			retval = -EBUSY;
+>>   			goto error_out;
+>>   		}
+>> -		res = wait_event_interruptible(sdp->o_excl_wait, !get_exclude(sdp));
+>> +	} else {
+>> +		if (flags & O_EXCL)
+>> +			res = wait_event_interruptible(sdp->o_excl_wait,
+>> +				try_add_exclude(sdp));
+>> +		else
+>> +			res = wait_event_interruptible(sdp->o_excl_wait,
+>> +				try_add_shareable(sdp));
+>>   		if (res) {
+>>   			retval = res;	/* -ERESTARTSYS because signal hit process */
+>>   			goto error_out;
+>> @@ -331,10 +347,12 @@ sg_open(struct inode *inode, struct file *filp)
+>>   	if ((sfp = sg_add_sfp(sdp, dev)))
+>>   		filp->private_data = sfp;
+>>   	else {
+>> -		if (flags & O_EXCL) {
+>> -			set_exclude(sdp, 0);	/* undo if error */
+>> -			wake_up_interruptible(&sdp->o_excl_wait);
+>> -		}
+>> +		spin_lock_irqsave(&sdp->sfd_lock, iflags);
+>> +		sdp->toopen--;
+>> +		if (flags & O_EXCL)
+>> +			sdp->exclude = 0;	/* undo if error */
+>> +		spin_unlock_irqrestore(&sdp->sfd_lock, iflags);
+>> +		wake_up_interruptible(&sdp->o_excl_wait);
+>>   		retval = -ENOMEM;
+>>   		goto error_out;
+>>   	}
+>> @@ -362,7 +380,7 @@ sg_release(struct inode *inode, struct file *filp)
+>>   		return -ENXIO;
+>>   	SCSI_LOG_TIMEOUT(3, printk("sg_release: %s\n", sdp->disk->disk_name));
+>>
+>> -	set_exclude(sdp, 0);
+>> +	clear_exclude(sdp);
+>>   	wake_up_interruptible(&sdp->o_excl_wait);
+>>
+>>   	scsi_autopm_put_device(sdp->device);
+>> @@ -1414,6 +1432,7 @@ static Sg_device *sg_alloc(struct gendisk *disk, struct scsi_device *scsidp)
+>>   	disk->first_minor = k;
+>>   	sdp->disk = disk;
+>>   	sdp->device = scsidp;
+>> +	spin_lock_init(&sdp->sfd_lock);
+>>   	INIT_LIST_HEAD(&sdp->sfds);
+>>   	init_waitqueue_head(&sdp->o_excl_wait);
+>>   	sdp->sg_tablesize = queue_max_segments(q);
+>> @@ -1557,10 +1576,12 @@ static void sg_remove(struct device *cl_dev, struct class_interface *cl_intf)
+>>   	/* Need a write lock to set sdp->detached. */
+>>   	write_lock_irqsave(&sg_index_lock, iflags);
+>>   	sdp->detached = 1;
+>> +	spin_lock(&sdp->sfd_lock);
+>>   	list_for_each_entry(sfp, &sdp->sfds, sfd_siblings) {
+>>   		wake_up_interruptible(&sfp->read_wait);
+>>   		kill_fasync(&sfp->async_qp, SIGPOLL, POLL_HUP);
+>>   	}
+>> +	spin_unlock(&sdp->sfd_lock);
+>>   	write_unlock_irqrestore(&sg_index_lock, iflags);
+>>
+>>   	sysfs_remove_link(&scsidp->sdev_gendev.kobj, "generic");
+>> @@ -2085,9 +2106,12 @@ sg_add_sfp(Sg_device * sdp, int dev)
+>>   	sfp->cmd_q = SG_DEF_COMMAND_Q;
+>>   	sfp->keep_orphan = SG_DEF_KEEP_ORPHAN;
+>>   	sfp->parentdp = sdp;
+>> -	write_lock_irqsave(&sg_index_lock, iflags);
+>> +	spin_lock_irqsave(&sdp->sfd_lock, iflags);
+>>   	list_add_tail(&sfp->sfd_siblings, &sdp->sfds);
+>> -	write_unlock_irqrestore(&sg_index_lock, iflags);
+>> +	sdp->toopen--; /* ongoing open is complete */
+>> +	if (sdp->toopen == INT_MAX-1)
+>> +		wake_up_interruptible(&sdp->o_excl_wait);
+>> +	spin_unlock_irqrestore(&sdp->sfd_lock, iflags);
+>>   	SCSI_LOG_TIMEOUT(3, printk("sg_add_sfp: sfp=0x%p\n", sfp));
+>>   	if (unlikely(sg_big_buff != def_reserved_size))
+>>   		sg_big_buff = def_reserved_size;
+>> @@ -2137,9 +2161,9 @@ static void sg_remove_sfp(struct kref *kref)
+>>   	struct sg_device *sdp = sfp->parentdp;
+>>   	unsigned long iflags;
+>>
+>> -	write_lock_irqsave(&sg_index_lock, iflags);
+>> +	spin_lock_irqsave(&sdp->sfd_lock, iflags);
+>>   	list_del(&sfp->sfd_siblings);
+>> -	write_unlock_irqrestore(&sg_index_lock, iflags);
+>> +	spin_unlock_irqrestore(&sdp->sfd_lock, iflags);
+>>   	wake_up_interruptible(&sdp->o_excl_wait);
+>>
+>>   	INIT_WORK(&sfp->ew.work, sg_remove_sfp_usercontext);
+>> @@ -2531,7 +2555,7 @@ static int sg_proc_seq_show_devstrs(struct seq_file *s, void *v)
+>>   	return 0;
+>>   }
+>>
+>> -/* must be called while holding sg_index_lock */
+>> +/* must be called while holding sg_index_lock and sfd_lock */
+>>   static void sg_proc_debug_helper(struct seq_file *s, Sg_device * sdp)
+>>   {
+>>   	int k, m, new_interface, blen, usg;
+>> @@ -2616,22 +2640,26 @@ static int sg_proc_seq_show_debug(struct seq_file *s, void *v)
+>>
+>>   	read_lock_irqsave(&sg_index_lock, iflags);
+>>   	sdp = it ? sg_lookup_dev(it->index) : NULL;
+>> -	if (sdp && !list_empty(&sdp->sfds)) {
+>> -		struct scsi_device *scsidp = sdp->device;
+>> +	if (sdp) {
+>> +		spin_lock(&sdp->sfd_lock);
+>> +		if (!list_empty(&sdp->sfds)) {
+>> +			struct scsi_device *scsidp = sdp->device;
+>>
+>> -		seq_printf(s, " >>> device=%s ", sdp->disk->disk_name);
+>> -		if (sdp->detached)
+>> -			seq_printf(s, "detached pending close ");
+>> -		else
+>> -			seq_printf
+>> -			    (s, "scsi%d chan=%d id=%d lun=%d   em=%d",
+>> -			     scsidp->host->host_no,
+>> -			     scsidp->channel, scsidp->id,
+>> -			     scsidp->lun,
+>> -			     scsidp->host->hostt->emulated);
+>> -		seq_printf(s, " sg_tablesize=%d excl=%d\n",
+>> -			   sdp->sg_tablesize, get_exclude(sdp));
+>> -		sg_proc_debug_helper(s, sdp);
+>> +			seq_printf(s, " >>> device=%s ", sdp->disk->disk_name);
+>> +			if (sdp->detached)
+>> +				seq_printf(s, "detached pending close ");
+>> +			else
+>> +				seq_printf
+>> +					(s, "scsi%d chan=%d id=%d lun=%d   em=%d",
+>> +					 scsidp->host->host_no,
+>> +					 scsidp->channel, scsidp->id,
+>> +					 scsidp->lun,
+>> +					 scsidp->host->hostt->emulated);
+>> +			seq_printf(s, " sg_tablesize=%d excl=%d\n",
+>> +					sdp->sg_tablesize, sdp->exclude);
+>> +			sg_proc_debug_helper(s, sdp);
+>> +		}
+>> +		spin_unlock(&sdp->sfd_lock);
+>>   	}
+>>   	read_unlock_irqrestore(&sg_index_lock, iflags);
+>>   	return 0;
+>>
 
-So you are doing 4 write() calls to a single sync_file_range(), not
-1:1?
+Ping. Hope you're back.
+I've tested it with many combinations of exclusive and shared opens.
 
-> > What filesystem is in use here?
-> 
-> My test was performed on ext3 filesystem, that was itself sitting on
-> raid-1 software raid.
-
-Yup, ext3 has limitations on direct IO that requires block
-allocation and will often fall back to buffered IO. ext4  and XFS
-should not have the same problems...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Regards,
+Vaughan
