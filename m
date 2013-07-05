@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab3GEBRZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 21:17:25 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:44748 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab3GEBRX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 21:17:23 -0400
+	id S1756997Ab3GEBYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 21:24:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:54112 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754208Ab3GEBYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 21:24:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,998,1363158000"; 
+   d="scan'208";a="360724178"
+Message-ID: <51D61FF2.8050302@intel.com>
+Date: Fri, 05 Jul 2013 09:22:58 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130704.142951.1908678475285188106.davem@davemloft.net>
-References: <20130704210434.GA6381@Linus-Debian>
-	<20130704.142951.1908678475285188106.davem@davemloft.net>
-Date: Fri, 5 Jul 2013 09:17:22 +0800
-Message-ID: <CAM_iQpWPDH3XGjtHXAjBjtp2bBfqKC6YPK=R_rGDMV0rjrgaxw@mail.gmail.com>
-Subject: Re: 'rmmod -f ipv6': BUG: unable to handle kernel paging request
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: linus.luessing@web.de,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: hpa@linux.intel.com, tim.c.chen@linux.intel.com,
+        linux-kernel@vger.kernel.org, andi.kleen@intel.com,
+        a.p.zijlstra@chello.nl, mingo@elte.hu
+Subject: Re: [PATCH 1/3] clocksource: clean up clocksource_select
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <1372916056-24301-2-git-send-email-alex.shi@intel.com> <alpine.DEB.2.02.1307041151170.11637@ionos.tec.linutronix.de> <51D54CBD.1010400@intel.com> <alpine.DEB.2.02.1307041224000.11637@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307041224000.11637@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 5, 2013 at 5:29 AM, David Miller <davem@davemloft.net> wrote:
-> From: Linus Lüssing <linus.luessing@web.de>
-> Date: Thu, 4 Jul 2013 23:04:34 +0200
->
->> When trying to perform a forceful unload of an ipv6 kernel module
->> on a 3.10 kernel then I'm getting a kernel panic with the attached
->> trace.
->>
->> Is this supposed to happen due to the '-f' option or is this a bug
->> in the ipv6 code?
->
-> The ipv6 module is not capable of being unloaded, sorry.
->
+On 07/04/2013 06:27 PM, Thomas Gleixner wrote:
+>> > BTW, why we allow user override a second best clocksource? I mean user
+>> > can override the tsc with hpet. because undetected unstable tsc?
+> The user can decide to override with clocksource=jiffies if he wants
+> for testing purposes. That wont switch into highres ever if done from
+> the kernel command line. Now we have a sysfs interface, so we need to
+> sanity check the user override against highres.
+> 
+> The override is quite useful to test hpet, pmtimer on a machine which
+> would always select TSC.
 
-If so, we should remove inet6_exit()...
+Got it. thanks a lot for friendly explanation!
+
+-- 
+Thanks
+    Alex
