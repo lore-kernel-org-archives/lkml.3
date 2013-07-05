@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab3GEP0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 11:26:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56977 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757377Ab3GEP0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 11:26:10 -0400
-From: Alexander Savchenko <oleksandr.savchenko@ti.com>
-To: <gregkh@linuxfoundation.org>, <slaby@suse.cz>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>,
-        Kevin Hilman <kevin.hilman@linaro.org>
-Subject: [RESEND][PATCH v2] OMAP2+: UART: enable tx wakeup bit for wer reg
-Date: Fri, 5 Jul 2013 18:25:59 +0300
-Message-ID: <1373037959-22139-1-git-send-email-oleksandr.savchenko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S964830Ab3GEP2Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 11:28:16 -0400
+Received: from mail-gh0-f169.google.com ([209.85.160.169]:47826 "EHLO
+	mail-gh0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757399Ab3GEP2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 11:28:14 -0400
+Date: Fri, 5 Jul 2013 11:28:08 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Jiri Olsa <jolsa@redhat.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: perf/Documentation/ABI -- add some documentation for perf_event
+ sysfs usage
+In-Reply-To: <20130704220233.GA11319@krava.redhat.com>
+Message-ID: <alpine.DEB.2.10.1307051119410.27475@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1307031527390.12584@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1307032308040.13409@vincent-weaver-1.um.maine.edu> <20130704090253.GJ18898@dyad.programming.kicks-ass.net> <20130704220233.GA11319@krava.redhat.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Govindraj.R" <govindraj.raja@ti.com>
+On Fri, 5 Jul 2013, Jiri Olsa wrote:
 
->From omap36xx onwards the module wakeup enable reg
-wer has TX wakeup bit available enable the same
-by populating the necessary tx wakeup flag for the
-applicable module ip blocks and use the same
-while configuaring wer reg.
+> On Thu, Jul 04, 2013 at 11:02:53AM +0200, Peter Zijlstra wrote:
+> > On Wed, Jul 03, 2013 at 11:14:40PM -0400, Vince Weaver wrote:
 
-Also wer is not context restored, restore wer when
-context is lost.
+> > >    Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+> > > 
+> > > Should the ldlat value be fixed to be hex?  Or should we ammend the ABI
+> > > document to allow decimal?
+> > 
+> > I don't see a good reason not to allow decimal as well. Jolsa?
+> 
+> yep, no technical problem with decimal
+> 
+> hum, the doc mentions 'event' term only, which IS hex only AFAICS ;-)
+> 
+> I think this docs should be updated and either describe all
+> allowed terms or be generic enough to cover all of them.
 
-Cc: Paul Walmsley <paul@pwsan.com>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Kevin Hilman <kevin.hilman@linaro.org>
-Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-(for drivers/tty changes)
-Signed-off-by: Govindraj.R <govindraj.raja@ti.com>
----
-[rebased to k3.10]
- drivers/tty/serial/omap-serial.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+So you're saying the official kernel ABI should be "whatever the 
+userspace perf tool happens to accept"?
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index e42b4c9..fa30d0a 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -52,6 +52,11 @@
- #define OMAP_UART_REV_52 0x0502
- #define OMAP_UART_REV_63 0x0603
- 
-+#define OMAP_UART_TX_WAKEUP_EN		BIT(7)
-+
-+/* Feature flags */
-+#define OMAP_UART_WER_HAS_TX_WAKEUP	BIT(0)
-+
- #define UART_ERRATA_i202_MDR1_ACCESS	BIT(0)
- #define UART_ERRATA_i291_DMA_FORCEIDLE	BIT(1)
- 
-@@ -137,6 +142,7 @@ struct uart_omap_port {
- 	unsigned char		dlh;
- 	unsigned char		mdr1;
- 	unsigned char		scr;
-+	unsigned char		wer;
- 
- 	int			use_dma;
- 	/*
-@@ -151,6 +157,7 @@ struct uart_omap_port {
- 	int			context_loss_cnt;
- 	u32			errata;
- 	u8			wakeups_enabled;
-+	u32			features;
- 
- 	int			DTR_gpio;
- 	int			DTR_inverted;
-@@ -683,7 +690,11 @@ static int serial_omap_startup(struct uart_port *port)
- 	serial_out(up, UART_IER, up->ier);
- 
- 	/* Enable module level wake up */
--	serial_out(up, UART_OMAP_WER, OMAP_UART_WER_MOD_WKUP);
-+	up->wer = OMAP_UART_WER_MOD_WKUP;
-+	if (up->features & OMAP_UART_WER_HAS_TX_WAKEUP)
-+		up->wer |= OMAP_UART_TX_WAKEUP_EN;
-+
-+	serial_out(up, UART_OMAP_WER, up->wer);
- 
- 	pm_runtime_mark_last_busy(up->dev);
- 	pm_runtime_put_autosuspend(up->dev);
-@@ -1373,9 +1384,11 @@ static void omap_serial_fill_features_erratas(struct uart_omap_port *up)
- 	case OMAP_UART_REV_52:
- 		up->errata |= (UART_ERRATA_i202_MDR1_ACCESS |
- 				UART_ERRATA_i291_DMA_FORCEIDLE);
-+		up->features |= OMAP_UART_WER_HAS_TX_WAKEUP;
- 		break;
- 	case OMAP_UART_REV_63:
- 		up->errata |= UART_ERRATA_i202_MDR1_ACCESS;
-+		up->features |= OMAP_UART_WER_HAS_TX_WAKEUP;
- 		break;
- 	default:
- 		break;
-@@ -1611,6 +1624,7 @@ static void serial_omap_restore_context(struct uart_omap_port *up)
- 		serial_omap_mdr1_errataset(up, up->mdr1);
- 	else
- 		serial_out(up, UART_OMAP_MDR1, up->mdr1);
-+	serial_out(up, UART_OMAP_WER, up->wer);
- }
- 
- static int serial_omap_runtime_suspend(struct device *dev)
--- 
-1.7.9.5
+That's not really useful, especially as perf doesn't distinguish between
+event strings read from sysfs and those passed on the perf command line.
+The ABI documentation in effect ends up being a pointer to a mostly 
+incomprehensible lex/yacc file.
+
+I think we should just remove the 
+   Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+file as it's misleading.  Userspace broke and no one cares.
+
+It's not even easy to audit all places in the kernel that create the sysfs 
+event files because each architecture does it differently.  And there's no 
+sane way to unit test this on a new kernel release because the values 
+printed depend on the hardware you have, so without a full range of all 
+families of cpus for all architectures you never know when someone has 
+added a decimal value, or started depending on { characters, etc.
+
+This is the problem with perf in the tools directory, any other user of 
+the ABI is eternally second-class.
+
+Vince
+
 
