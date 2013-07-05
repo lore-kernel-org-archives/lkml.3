@@ -1,157 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965034Ab3GEOvL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 10:51:11 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55674 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757444Ab3GEOvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 10:51:07 -0400
-Message-ID: <51D6DD3A.1030002@ti.com>
-Date: Fri, 5 Jul 2013 09:50:34 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Taras Kondratiuk <taras@ti.com>
-Subject: Re: [RFC PATCH V2 1/8] regulator: Introduce OMAP regulator to control
- PMIC over VC/VP
-References: <1371849949-12649-1-git-send-email-nm@ti.com> <1371849949-12649-2-git-send-email-nm@ti.com> <20130704154105.GD27646@sirena.org.uk> <20130705135507.GA17439@kahuna> <20130705140828.GA27646@sirena.org.uk>
-In-Reply-To: <20130705140828.GA27646@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933817Ab3GEOsJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 10:48:09 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:32707 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757475Ab3GEOsF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 10:48:05 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: [PATCH v5 02/12] spinlock: Enable x86 architecture to do lockless refcount update
+Date: Fri,  5 Jul 2013 10:47:35 -0400
+Message-Id: <1373035656-40600-3-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1373035656-40600-1-git-send-email-Waiman.Long@hp.com>
+References: <1373035656-40600-1-git-send-email-Waiman.Long@hp.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
+        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2013 09:08 AM, Mark Brown wrote:
-> On Fri, Jul 05, 2013 at 08:55:07AM -0500, Nishanth Menon wrote:
->
-> Please write in paragraphs, an enormous wall of unbroken text isn't
-> helpful for legibility.
+There are two steps to enable each architecture to do lockless
+reference count update:
+1. Define the ARCH_SPINLOCK_REFCOUNT config parameter in its Kconfig
+   file.
+2. Add a <asm/spinlock_refcount.h> architecture specific header file.
 
-Apologies on the same. Will try to do better.
+This is done for the x86 architecture to use the generic version
+available.
 
->
->> On 16:41-20130704, Mark Brown wrote:
->
->>> So, this still has the thing where all the data about the PMIC is
->>> replicated (but now in this driver).  It should be possible to pull all
->>> the above information except possibly the I2C timeout and perhaps the
->>> I2C address (if there's a separate control interface) from the standard
->>> regulator core data structures for the PMIC.  This would allow the
->>> driver to Just Work with any PMIC without needing to add it in two
->>> places.
->
->> option 1) we just bypass get_voltage/set_voltage to point through to
->> this function. result will be something similar to what we got here[1]
->
-> I don't really know what you mean when you say "bypass get_voltage/set_voltage
-> so it's kind of hard to comment...  the link you posted appears to be a
-> link to the code I'm reviewing so it's not terribly enlightening.
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+---
+ arch/x86/Kconfig                         |    3 +++
+ arch/x86/include/asm/spinlock_refcount.h |    1 +
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/spinlock_refcount.h
 
-:) it is similar, yes. by bypass get/set_voltage, I mean something like [1]
-
->
->> Again, based on this discussion, it is wrong - and we already did implement
->> the *wrong* way in OMAP and the new code is supposed to throw away the
->> old code once all relevant platforms are converted to DT.
->> - now, we could improve this by passing rdev and slurp out required
->>   data from regulator structures, but obviously, as you pointed out, it wont
->>   be sufficient.
->> - In this solution, we will have existing regulator drivers supporting
->> additional data path. *but* that also means that existing regulator
->> drivers will need to be modified to handle multiple data path and "Just
->> Work" wont happen - so not really good other than screw up existing
->> regulator drivers with handling OMAP specific APIs in them.
->
-> What makes you think that the existing regulator drivers need to be
-> modified?
-
-
-data path difference - Almost all standard regulators use i2c (standard 
-i2c APIs) for every other SMPS/LDO except for the ones controlled by 
-OMAP custom i2c path(vc/vp), the set_voltage/get_voltage needs a 
-different implementation when it comes to using the vc/vp path.
-
- > They already have all the data exported to the core (or
- > should do)...
-
-I see that twl-regulator does not indeed do it, but, assuming the 
-regulators have all the data exported to the core, the data is hidden in 
-struct regulator_desc which is private to the device and driver. lets go 
-through these:
-
- > +static const struct omap_pmic_info omap_twl4030_vdd1 = {
- > +	.slave_addr = 0x12,
-Not readily exposed, but we can solve that using reg=<0x12>; in dts - 
-this might not be duplication as the register address will be unique for 
-the bus.
-
- > +	.voltage_reg_addr = 0x00,
-desc->vsel_reg maps fine
-
- > +	.cmd_reg_addr = 0x00,
-command register is used for sending low power state commands - which is 
-not the same as voltage register or vsel_reg as used in depicted in 
-regulator_desc.	
-
- > +	.i2c_timeout_us = 200,
-yep, does not match up.
-
- > +	.slew_rate_uV = 4000,
-desc->ramp_delay maps fine
-
- > +	.step_size_uV = 12500,
-desc->uV_step maps fine.
-
- > +	.min_uV = 600000,
-desc->min_uV maps fine.
-
- > +	.max_uV = 1450000,
-can be used with constraints, but most regulator drivers seem to store 
-this internally.
-
- > +	.voltage_selector_offset = 0,
- > +	.voltage_selector_mask = 0x7F,
- > +	.voltage_selector_setbits = 0x0,
- > +	.voltage_selector_zero = false,
-to an extent we can map these to vsel_mask, linear_min_sel etc. (again 
-assuming the regulator driver has populated it - most that implement 
-custom set_voltage, get_voltage do not do that.
-
-Now, How do you suggest I pick up this data in omap_pmic regulator?
-linux/regulator/consumer.h does not seem appropriate omap_pmic is not 
-really a consumer of the regulator and further all the detailed data is 
-not exposed either.
-
-Other option is to make rdev available to omap_pmic regulator - which 
-again implies change in existing regulator driver?
-
-
-> the only thing that's missing is the timeouts and it's
-> not at all obvious why those need to be tuned per device.
-
-OMAP VC hardware has no idea about how long to wait before giving up on 
-an ongoing i2c transaction. This may depend on PMIC and what it does 
-before acking on i2c.
-
->
->> option 2) make omap_pmic regulator use twl_regulator - regulator
->> chaining.
->
-> Again I don't know what this is.
-Lets ignore this for the moment.
-
-
-[1] 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=63bfff4e20211b464cbea6e79e5fd36df227c154
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index fe120da..649ed4b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -253,6 +253,9 @@ config ARCH_CPU_PROBE_RELEASE
+ config ARCH_SUPPORTS_UPROBES
+ 	def_bool y
+ 
++config ARCH_SPINLOCK_REFCOUNT
++	def_bool y
++
+ source "init/Kconfig"
+ source "kernel/Kconfig.freezer"
+ 
+diff --git a/arch/x86/include/asm/spinlock_refcount.h b/arch/x86/include/asm/spinlock_refcount.h
+new file mode 100644
+index 0000000..ab6224f
+--- /dev/null
++++ b/arch/x86/include/asm/spinlock_refcount.h
+@@ -0,0 +1 @@
++#include <asm-generic/spinlock_refcount.h>
 -- 
-Regards,
-Nishanth Menon
+1.7.1
+
