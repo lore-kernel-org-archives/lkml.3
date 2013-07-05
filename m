@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab3GENiN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 09:38:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:59475 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab3GENiN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 09:38:13 -0400
-Date: Fri, 5 Jul 2013 14:37:52 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "kiran.padwal" <kiran.padwal@kpitcummins.com>
-Message-ID: <20130705133752.GX27646@sirena.org.uk>
-References: <1373024862.3233.63.camel@matrix>
- <20130705114456.GV27646@sirena.org.uk>
- <1373031306.3233.131.camel@matrix>
+	id S1757454Ab3GENqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 09:46:07 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:3151 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757410Ab3GENqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 09:46:05 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1001,1363132800"; 
+   d="scan'208";a="33626665"
+Message-ID: <51D6CE19.1050503@citrix.com>
+Date: Fri, 5 Jul 2013 14:46:01 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B/AgRt1PX8m/BMcI"
-Content-Disposition: inline
-In-Reply-To: <1373031306.3233.131.camel@matrix>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Update driver name to
- fix breakage due to pmic driver with same name
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>,
+        <john.stultz@linaro.org>, <xen-devel@lists.xen.org>,
+        Artem Savkov <artem.savkov@gmail.com>
+Subject: Re: [tip:timers/core] hrtimers: Support resuming with two or more
+ CPUs online (but stopped)
+References: <1372329348-20841-2-git-send-email-david.vrabel@citrix.com> <tip-7c4c3a0f18ba57ea2a2985034532303d2929902a@git.kernel.org> <20130705093003.GA4033@cpv436-motbuntu> <51D69ACF.9020001@citrix.com> <alpine.DEB.2.02.1307051225060.11637@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307051225060.11637@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/07/13 11:25, Thomas Gleixner wrote:
+> On Fri, 5 Jul 2013, David Vrabel wrote:
+> 
+> You failed to CC Artem :(
+> 
+>> On 05/07/13 10:30, Artem Savkov wrote:
+>>> This commit brings up a warning about a potential deadlock in
+>>> smp_call_function_many() discussed previously:
+>>> https://lkml.org/lkml/2013/4/18/546
+>>
+>> Can we just avoid the wait in clock_was_set()?  Something like this?
+>>
+>> 8<------------------------------------------------------
+>> hrtimers: do not wait for other CPUs in clock_was_set()
+>>
+>> Calling on_each_cpu() and waiting in a softirq causes a WARNing about
+>> a potential deadlock.
+>>
+>> Because hrtimers are per-CPU, it is sufficient to ensure that all
+>> other CPUs' timers are reprogrammed as soon as possible and before the
+>> next softirq on that CPU.  There is no need to wait for this to be
+>> complete on all CPUs.
 
---B/AgRt1PX8m/BMcI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Unfortunately this doesn't look sufficient.  on_each_cpu(..., 0) may
+still wait for other calls to complete before queuing the calls due to
+the use of a single set of per-CPU csd data.
 
-On Fri, Jul 05, 2013 at 07:05:06PM +0530, Ashish Chavan wrote:
-> On Fri, 2013-07-05 at 12:44 +0100, Mark Brown wrote:
-
-> > >  static const struct i2c_device_id da9055_i2c_id[] = {
-> > > -	{ "da9055", 0 },
-> > > +	{ "da9055-codec", 0 },
-> > >  	{ }
-> > >  };
-
-> > I can't believe that you've tested this.
-
-> Yes, I have tested this today only. But with 3.6.0-rc4 kernel. That is
-> the newest kernel for which I have board and other required support
-> available.
-
-Your testing seems like it's not very good then - you do undersand that
-the problem that this is supposed to be fixing is that this is a multi
-function device?  Please look at how other MFDs in the kernel work.
-
---B/AgRt1PX8m/BMcI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR1swtAAoJELSic+t+oim9N/4P/3IMvnolEj4OiWOiiT70XUjR
-0n6BnxhW4n+HnTu2RCGMaGrON/DlT/k5hBEyR4UpTBSXROlDm4VWNSYMH5UWpKpi
-eNLg0k2QnDDGSPPiGASsrXReIBHXWvJSWr1bnhuJaQZWV2zkODgSrhhkFw9BI5sR
-++C7iG3czIcpbo2iP9ULQDNai6kSYv4IZ6fS8TfFVJTwCiWJk0+SCoDudFxF0j3O
-VQqYD54uRPkzpS1Qro4s2MFt7LFSkoPFr0SHoKAkTBrixM0OwhUCoXWUwP+OIPzM
-ZUK5vzubDftVG/5YRpD6djCT1vPGLnbZaPQseqD1g/HEefC4svrKrSuTWQTQjw99
-5dTbe/IaazjqZrA9Rx/ShIqFsNcatJPNr7WLhXwRJmiBeRErFj/5As7KIEdw4NGj
-Bd3tS9aBZwE3M9v2lcB3Cpbc+/6aib6gZBVR8hGKruaB0oGAfzhgz+l/nME/SzKg
-0/PM+Q/4MJZbbcMwzU4WebC3OZavuo/IgRyZcbPicBEmuxJ6L6B9GTQ/b5236V1q
-OSqSaJXCVGb/DMajIQ1FDKAofrSAc2NU9J6OXsHE0OaZr8twRzcLGtTtJz22G5un
-NSSwD2byGzeO7IQC5adD5Lc5oQyr5h2Cew3ek8wVC+BRwHfotV39S5OvK/seRWHY
-HxkHHtN8yWWGlgv6pBsV
-=O1d2
------END PGP SIGNATURE-----
-
---B/AgRt1PX8m/BMcI--
+David
