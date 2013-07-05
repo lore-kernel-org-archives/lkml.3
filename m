@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab3GEC6I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 22:58:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:45351 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab3GEC6G (ORCPT
+	id S933778Ab3GEC77 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 22:59:59 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:36408 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932541Ab3GEC75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 22:58:06 -0400
-Date: Fri, 5 Jul 2013 12:57:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jan Kara <jack@suse.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Rebased for_next branch in my linux-fs git tree
-Message-Id: <20130705125749.29b228706758837c13cfc013@canb.auug.org.au>
-In-Reply-To: <20130705100437.48810eeeda014ab0fcd87b84@canb.auug.org.au>
-References: <20130704174304.GA30265@quack.suse.cz>
-	<20130705100437.48810eeeda014ab0fcd87b84@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__5_Jul_2013_12_57_49_+1000_3hkvgZDwDmBB0VWK"
+	Thu, 4 Jul 2013 22:59:57 -0400
+Date: Fri, 5 Jul 2013 10:59:47 +0800
+From: Adam Lee <adam.lee@canonical.com>
+To: Yang Bai <hamo.by@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org,
+        Wen-chien Jesse Sung <jesse.sung@canonical.com>,
+        AceLan Kao <acelan.kao@canonical.com>,
+        Tedd Ho-Jeong An <tedd.an@intel.com>,
+        "Anthony Wong'" <anthony.wong@canonical.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] btusb: fix overflow return values
+Message-ID: <20130705025947.GA10744@adam-laptop>
+Mail-Followup-To: Yang Bai <hamo.by@gmail.com>,
+	linux-bluetooth@vger.kernel.org,
+	Wen-chien Jesse Sung <jesse.sung@canonical.com>,
+	AceLan Kao <acelan.kao@canonical.com>,
+	Tedd Ho-Jeong An <tedd.an@intel.com>,
+	Anthony Wong' <anthony.wong@canonical.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Gustavo Padovan <gustavo@padovan.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	open list <linux-kernel@vger.kernel.org>
+References: <1372941783-30657-1-git-send-email-adam.lee@canonical.com>
+ <CAO_0yfOXfO1ZNTNbYRnuY-CQ44hH+DqoEB5jnCwfhLPTq-RUqQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAO_0yfOXfO1ZNTNbYRnuY-CQ44hH+DqoEB5jnCwfhLPTq-RUqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__5_Jul_2013_12_57_49_+1000_3hkvgZDwDmBB0VWK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jul 05, 2013 at 10:37:07AM +0800, Yang Bai wrote:
+> The return value of btusb_setup_intel is compared with 0. Code as:
+> 
+> drivers/bluetooth/btusb.c:
+> static int btusb_probe(struct usb_interface *intf,
+> const struct usb_device_id *id)
+> if (id->driver_info & BTUSB_INTEL)
+> hdev->setup = btusb_setup_intel;
+> 
+> net/bluetooth/hci_core.c:
+> int hci_dev_open(__u16 dev)
+> if (hdev->setup && test_bit(HCI_SETUP, &hdev->dev_flags))
+> ret = hdev->setup(hdev);
+> 
+> if (!ret) {
 
-On Fri, 5 Jul 2013 10:04:37 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+Yes, for btusb_setup_intel(), the return value is compared with number
+"0", doesn't break the judgement.
+
+But it still overflows stack without this fix.
+
+> On Thu, Jul 4, 2013 at 8:43 PM, Adam Lee <adam.lee@canonical.com> wrote:
+> 
+>     PTR_ERR() returns a long type value, but btusb_setup_intel() and
+>     btusb_setup_intel_patching() should return an int type value.
 >
-> On Thu, 4 Jul 2013 19:43:04 +0200 Jan Kara <jack@suse.cz> wrote:
-> >
-> >   I'm just writing this to let you know that I had to rebase for_next
->                                                  ^^^
-> wrong choice of work, you "chose" to rebase.  :-)
-                  ^^^^
-word
+>     This bug makes the judgement "if (ret < 0)" not working on x86_64
+>     architecture systems, leading to failure as below, even panic.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__5_Jul_2013_12_57_49_+1000_3hkvgZDwDmBB0VWK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR1jY2AAoJEECxmPOUX5FEmTIP/AzFF6hV+mwxMWm0k2mfhPnW
-QbSyJq3rlKHLAXwr+wImVrF0tNPYrv64Uz9HRFFY0+7RWIb+OBDtYtk3b6Q5ONpy
-VLx/MAWknhe7Bp5ZEI3CIcsug5KzQmCOpCMdxlr7qwIh89VsyndZpffKRudOpZhP
-fom4v4JR+NaH7uRQqOIHyiq/FVff6Nd9GmNnTSuiT3OlUycEtIFHQ/0YwV6FO85G
-XylZr4ezH+NQpsPO1XU584LN7+MXHfLBJOEaZ/EWc5pYq6qUfn+Rm2TwI6YvO/Pn
-x20QWDhNnhAb2oGU9bvnfL4UrsAVyUjQJcFVYqcezu+T/z4vhbP/nbDXkztLSpSw
-jnx9ynGvZVGME8WnsHvDYaxs3FsQKASZrCupopWs1p0mCLzb9KFO607XAYFZ2HsO
-rElEj6EFbnj0XtUXNBQf/caj6JcD5yoA3OWiDn61AV/5cMQnag5FaWUk7OLB7Gaq
-qqnAs8L0HK6GQikYsUPeVxtIb0b+qfaQqoDTPWnnkH3fmyBDoVbQTT/G0EfjSoOd
-Q6V4bFIEs/nLPoqXeyYdv9t10cQUNFtdOtzvKyVLZ41fOd1AB3JyHFJuUAqbvvJ8
-a1Boc02aGmM+DUmMD+iX+yJHZYnuJM11NhpRGaz/a1TFPJqUKlZVo8UZzGYKFwJO
-e6T7s0EAlA4EoKN00yUr
-=e9yf
------END PGP SIGNATURE-----
-
---Signature=_Fri__5_Jul_2013_12_57_49_+1000_3hkvgZDwDmBB0VWK--
+-- 
+Regards,
+Adam Lee
+Hardware Enablement
