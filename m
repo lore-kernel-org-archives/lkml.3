@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab3GEVnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 17:43:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56786 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab3GEVnT (ORCPT
+	id S1751476Ab3GEVuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 17:50:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46708 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab3GEVuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 17:43:19 -0400
-Date: Fri, 5 Jul 2013 14:43:18 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: linux-usb@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Why no USB id list in the kernel sources?
-Message-ID: <20130705214318.GA20918@kroah.com>
-References: <51D73BCD.1030401@free-electrons.com>
+	Fri, 5 Jul 2013 17:50:08 -0400
+Date: Fri, 5 Jul 2013 23:50:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@intel.com>,
+        hpa@linux.intel.com, tim.c.chen@linux.intel.com,
+        linux-kernel@vger.kernel.org, andi.kleen@intel.com, mingo@elte.hu
+Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
+In-Reply-To: <20130705212235.GU23916@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1307052345330.32106@ionos.tec.linutronix.de>
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <20130704075840.GH18898@dyad.programming.kicks-ass.net> <CAFTL4hy24+=2++CN5rBhn9v+pvxR+tTja9Z-wRLSS__LGQBWaQ@mail.gmail.com> <20130705143833.GT23916@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.02.1307051718430.32106@ionos.tec.linutronix.de> <20130705212235.GU23916@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51D73BCD.1030401@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 11:34:05PM +0200, Michael Opdenacker wrote:
-> Hi,
+On Fri, 5 Jul 2013, Peter Zijlstra wrote:
+> On Fri, Jul 05, 2013 at 05:24:09PM +0200, Thomas Gleixner wrote:
+> > See arch/x86/kernel/tsc.c
+> > 
+> > We disable the watchdog for the TSC when tsc_clocksource_reliable is
+> > set.
+> > 
+> > tsc_clocksource_reliable is set when:
+> > 
+> >  - you add tsc=reliable to the kernel command line
 > 
-> I'm wondering why there is no include/linux/usb_ids.h (or
-> include/linux/usb/ids.h) file in the same way there is a
-> include/linux/pci_ids.h for PCI.
+> Ah, I didn't know about that one, useful.
+> 
+> >  - boot_cpu_has(X86_FEATURE_TSC_RELIABLE)
+> >  
+> >    X86_FEATURE_TSC_RELIABLE is a software flag, set by vmware and
+> >    moorsetown. So all other machines keep the watchdog enabled.
+> 
+> Right.. I knew it was enabled on my machines even though they normally
+> have usable TSC.
 
-Because that way lies madness, we have learned from our mistakes and do
-not want to repeat them again :)
+Yeah, but our well justified paranoia still prevents us from trusting
+these CPU flags. Maybe some day BIOS is going to be replaced by
+something useful. You know: Hope springs eternal....
 
-It turns out that the pci_ids file isn't a good idea, it's a merge mess,
-and only really works when you have ids that are shared across different
-drivers.  In the end, that is a very small number, and it's just not
-worth the time and effort to do this in a centralized way.
 
-Hope this helps explain things, if you want more details, dig into the
-linux usb mailing list about 10-15 years ago when this decision was
-made.
 
-thanks,
 
-greg k-h
