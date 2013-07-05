@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965082Ab3GEOt7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 10:49:59 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:23987 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965012Ab3GEOs1 (ORCPT
+	id S1757542Ab3GEOud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 10:50:33 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:8406 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964960Ab3GEOsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 10:48:27 -0400
+	Fri, 5 Jul 2013 10:48:16 -0400
 From: Waiman Long <Waiman.Long@hp.com>
-Cc: Joel Becker <jlbec@evilplan.org>, Waiman Long <Waiman.Long@hp.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: Sage Weil <sage@inktank.com>, ceph-devel@vger.kernel.org,
+        Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v5 07/12] config-fs: replace direct access of d_count with the d_count() helper
-Date: Fri,  5 Jul 2013 10:48:14 -0400
-Message-Id: <1373035694-40748-1-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v5 05/12] ceph-fs: replace direct access of d_count with the d_count() helper
+Date: Fri,  5 Jul 2013 10:48:05 -0400
+Message-Id: <1373035685-40678-1-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
         Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
@@ -35,22 +35,38 @@ and everything should just work.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- fs/configfs/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/ceph/inode.c      |    4 ++--
+ fs/ceph/mds_client.c |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
-index 7aabc6a..016d591 100644
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -387,7 +387,7 @@ static void remove_dir(struct dentry * d)
- 	if (d->d_inode)
- 		simple_rmdir(parent->d_inode,d);
- 
--	pr_debug(" o %s removing done (%d)\n",d->d_name.name, d->d_count);
-+	pr_debug(" o %s removing done (%d)\n", d->d_name.name, d_count(d));
- 
- 	dput(parent);
+diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
+index be0f7e2..bd2289a 100644
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -903,8 +903,8 @@ static struct dentry *splice_dentry(struct dentry *dn, struct inode *in,
+ 	} else if (realdn) {
+ 		dout("dn %p (%d) spliced with %p (%d) "
+ 		     "inode %p ino %llx.%llx\n",
+-		     dn, dn->d_count,
+-		     realdn, realdn->d_count,
++		     dn, d_count(dn),
++		     realdn, d_count(realdn),
+ 		     realdn->d_inode, ceph_vinop(realdn->d_inode));
+ 		dput(dn);
+ 		dn = realdn;
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 4d29203..8fd678f 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -1553,7 +1553,7 @@ retry:
+ 	*base = ceph_ino(temp->d_inode);
+ 	*plen = len;
+ 	dout("build_path on %p %d built %llx '%.*s'\n",
+-	     dentry, dentry->d_count, *base, len, path);
++	     dentry, d_count(dentry), *base, len, path);
+ 	return path;
  }
+ 
 -- 
 1.7.1
 
