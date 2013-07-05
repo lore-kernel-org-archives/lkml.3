@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3GEXLB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 19:11:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40648 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab3GEXJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752532Ab3GEXJN (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 5 Jul 2013 19:09:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40626 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227Ab3GEXJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 19:09:11 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 09/15] sched: Check current->mm before allocating NUMA faults
-Date: Sat,  6 Jul 2013 00:08:56 +0100
-Message-Id: <1373065742-9753-10-git-send-email-mgorman@suse.de>
+Subject: [PATCH 06/15] sched: Reschedule task on preferred NUMA node once selected
+Date: Sat,  6 Jul 2013 00:08:53 +0100
+Message-Id: <1373065742-9753-7-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373065742-9753-1-git-send-email-mgorman@suse.de>
 References: <1373065742-9753-1-git-send-email-mgorman@suse.de>
@@ -22,39 +22,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_numa_placement checks current->mm but after buffers for faults
-have already been uselessly allocated. Move the check earlier.
+A preferred node is selected based on the node the most NUMA hinting
+faults was incurred on. There is no guarantee that the task is running
+on that node at the time so this patch rescheules the task to run on
+the most idle CPU of the selected node when selected. This avoids
+waiting for the balancer to make a decision.
 
-[peterz@infradead.org: Identified the problem]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/sched/core.c  | 17 ++++++++++++++++
+ kernel/sched/fair.c  | 55 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/sched.h |  1 +
+ 3 files changed, 72 insertions(+), 1 deletion(-)
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5e02507..e4c1832 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -992,6 +992,23 @@ struct migration_arg {
+ 
+ static int migration_cpu_stop(void *data);
+ 
++#ifdef CONFIG_NUMA_BALANCING
++/* Migrate current task p to target_cpu */
++int migrate_task_to(struct task_struct *p, int target_cpu)
++{
++	struct migration_arg arg = { p, target_cpu };
++	int curr_cpu = task_cpu(p);
++
++	if (curr_cpu == target_cpu)
++		return 0;
++
++	if (!cpumask_test_cpu(target_cpu, tsk_cpus_allowed(p)))
++		return -EINVAL;
++
++	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
++}
++#endif
++
+ /*
+  * wait_task_inactive - wait for a thread to unschedule.
+  *
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 3c69b599..aee3e0b 100644
+index 5055bf9..5a01dcb 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -843,8 +843,6 @@ static void task_numa_placement(struct task_struct *p)
- 	int seq, nid, max_nid = 0;
- 	unsigned long max_faults = 0;
+@@ -800,6 +800,40 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
+  */
+ unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
  
--	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
--		return;
- 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
- 	if (p->numa_scan_seq == seq)
- 		return;
-@@ -921,6 +919,10 @@ void task_numa_fault(int last_nid, int node, int pages, bool migrated)
- 	if (!sched_feat_numa(NUMA))
- 		return;
- 
-+	/* for example, ksmd faulting in a user's mm */
-+	if (!p->mm)
-+		return;
++static unsigned long weighted_cpuload(const int cpu);
 +
- 	/* For now, do not attempt to detect private/shared accesses */
- 	priv = 1;
++
++static int
++find_idlest_cpu_node(int this_cpu, int nid)
++{
++	unsigned long load, min_load = ULONG_MAX;
++	int i, idlest_cpu = this_cpu;
++
++	BUG_ON(cpu_to_node(this_cpu) == nid);
++
++	rcu_read_lock();
++	for_each_cpu(i, cpumask_of_node(nid)) {
++		load = weighted_cpuload(i);
++
++		if (load < min_load) {
++			/*
++			 * Kernel threads can be preempted. For others, do
++			 * not preempt if running on their preferred node
++			 * or pinned.
++			 */
++			struct task_struct *p = cpu_rq(i)->curr;
++			if ((p->flags & PF_KTHREAD) ||
++			    (p->numa_preferred_nid != nid && p->nr_cpus_allowed > 1)) {
++				min_load = load;
++				idlest_cpu = i;
++			}
++		}
++	}
++	rcu_read_unlock();
++
++	return idlest_cpu;
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = 0;
+@@ -829,10 +863,29 @@ static void task_numa_placement(struct task_struct *p)
+ 		}
+ 	}
  
+-	/* Update the tasks preferred node if necessary */
++	/*
++	 * Record the preferred node as the node with the most faults,
++	 * requeue the task to be running on the idlest CPU on the
++	 * preferred node and reset the scanning rate to recheck
++	 * the working set placement.
++	 */
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
++		int preferred_cpu;
++
++		/*
++		 * If the task is not on the preferred node then find the most
++		 * idle CPU to migrate to.
++		 */
++		preferred_cpu = task_cpu(p);
++		if (cpu_to_node(preferred_cpu) != max_nid) {
++			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
++							     max_nid);
++		}
++
++		/* Update the preferred nid and migrate task if possible */
+ 		p->numa_preferred_nid = max_nid;
+ 		p->numa_migrate_seq = 0;
++		migrate_task_to(p, preferred_cpu);
+ 	}
+ }
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c5f773d..795346d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -504,6 +504,7 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
+ #ifdef CONFIG_NUMA_BALANCING
++extern int migrate_task_to(struct task_struct *p, int cpu);
+ static inline void task_numa_free(struct task_struct *p)
+ {
+ 	kfree(p->numa_faults);
 -- 
 1.8.1.4
 
