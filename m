@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933776Ab3GETet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:34:49 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51503 "EHLO
+	id S965080Ab3GETho (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 15:37:44 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51527 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab3GETer (ORCPT
+	with ESMTP id S1757586Ab3GETes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:34:47 -0400
+	Fri, 5 Jul 2013 15:34:48 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,64 +14,73 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 00/10] clocksource: sunxi: Timer fixes and cleanup
-Date: Fri,  5 Jul 2013 21:34:27 +0200
-Message-Id: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 06/10] clocksource: sun4i: Fix the next event code
+Date: Fri,  5 Jul 2013 21:34:33 +0200
+Message-Id: <1373052877-29366-7-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+The next_event logic was setting the next interval to fire in the
+current timer value instead of the interval value register, which is
+obviously wrong.
 
-The first timer code we merged when adding support for the A13 some
-time back was mostly a clean up from the source drop we had, without
-any documentation.  This happened to work, but the code merged in
-turned out to be far from perfect, and had several flaws.
+Plus, the logic to set the actual value was wrong as well: the interval
+register can only be modified when the timer is disabled, and then
+enable it back, otherwise, it'll have no effect. Fix this logic as well
+since that code couldn't possibly work.
 
-This patchset hopefully fixes these flaws, and cleanup most of the
-driver as well, to end up in an almost complete rewrite of it (even
-though it's not that long).
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/clocksource/sun4i_timer.c | 25 ++++++++++++++++++++++---
+ 1 file changed, 22 insertions(+), 3 deletions(-)
 
-It also finally adds a clocksource from the free running counter found
-in the A10/A13 SoCs.
-
-These flaws have all been spotted when trying to add the A31 support,
-work that is still ongoing, but will hopefully benefit from this
-patchset as well.
-
-Thanks,
-Maxime
-
-Changes from v2:
-  - Use the clocksource timer to get the amount of time we have to
-    wait for when disabling and enabling back a timer
-  - Added patch to add parenthesis around the macros arguments
-  - Renamed the AUTORELOAD register define to the more meaningful
-    RELOAD name
-
-Changes from v1:
-  - Rebased on top of linux-next to benefit from the move to all
-    architectures of the sched_clock functions
-  - Moved the clock source to the second timer instead of the 64 bits
-    free-running counter like suggested by Thomas.
-
-Maxime Ripard (10):
-  clocksource: sun4i: Use the BIT macros where possible
-  clocksource: sun4i: Wrap macros arguments in parenthesis
-  clocksource: sun4i: rename AUTORELOAD define to RELOAD
-  clocksource: sun4i: Add clocksource and sched clock drivers
-  clocksource: sun4i: Don't forget to enable the clock we use
-  clocksource: sun4i: Fix the next event code
-  clocksource: sun4i: Factor out some timer code
-  clocksource: sun4i: Remove TIMER_SCAL variable
-  clocksource: sun4i: Cleanup parent clock setup
-  clocksource: sun4i: Fix bug when switching from periodic to oneshot
-    modes
-
- drivers/clocksource/sun4i_timer.c | 113 +++++++++++++++++++++++++++-----------
- 1 file changed, 80 insertions(+), 33 deletions(-)
-
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index 7c79968..6938cf9 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -38,6 +38,20 @@
+ 
+ static void __iomem *timer_base;
+ 
++/*
++ * When we disable a timer, we need to wait at least for 2 cycles of
++ * the timer source clock. We will use for that the clocksource timer
++ * that is already setup and runs at the same frequency than the other
++ * timers, and we never will be disabled.
++ */
++static void sun4i_clkevt_sync(void)
++{
++	u32 old = readl(timer_base + TIMER_CNTVAL_REG(1));
++
++	while ((old - readl(timer_base + TIMER_CNTVAL_REG(1))) < 3)
++		cpu_relax();
++}
++
+ static void sun4i_clkevt_mode(enum clock_event_mode mode,
+ 			      struct clock_event_device *clk)
+ {
+@@ -63,9 +77,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
+ static int sun4i_clkevt_next_event(unsigned long evt,
+ 				   struct clock_event_device *unused)
+ {
+-	u32 u = readl(timer_base + TIMER_CTL_REG(0));
+-	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
+-	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
++	u32 val = readl(timer_base + TIMER_CTL_REG(0));
++	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
++	sun4i_clkevt_sync();
++
++	writel(evt, timer_base + TIMER_INTVAL_REG(0));
++
++	val = readl(timer_base + TIMER_CTL_REG(0));
++	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
+ 	       timer_base + TIMER_CTL_REG(0));
+ 
+ 	return 0;
 -- 
 1.8.3.2
 
