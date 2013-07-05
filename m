@@ -1,74 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3GETzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:55:19 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51494 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab3GETzS (ORCPT
+	id S1757609Ab3GEULW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 16:11:22 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51694 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751704Ab3GEULV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:55:18 -0400
-Date: Fri, 5 Jul 2013 20:55:12 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Bin Gao <bin.gao@linux.intel.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Message-ID: <20130705195512.GJ27646@sirena.org.uk>
-References: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
+	Fri, 5 Jul 2013 16:11:21 -0400
+Date: Fri, 5 Jul 2013 22:11:18 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
+        linux-mtd@lists.infradead.org
+Subject: MTD EEPROM support and driver integration
+Message-ID: <20130705201118.GM2959@lukather>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UFi9av0ukRdmw+ig"
+	protocol="application/pgp-signature"; boundary="Az4VpBrmI9+OyhK/"
 Content-Disposition: inline
-In-Reply-To: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
-X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---UFi9av0ukRdmw+ig
+--Az4VpBrmI9+OyhK/
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jun 06, 2013 at 11:33:46AM -0700, Bin Gao wrote:
+Hi everyone,
 
-> A good example is that an ISP(Imaging Signal Processor) driver needs
-> register i2c camera sensor devices via v4l2, so it has to unregister
-> all i2c clients that were previously registered by calling
-> i2c_register_board_info(), and then re-register. For this case we
-> can use this helper to get i2c_client by passing the client name.
+In the last weeks, we've drivers coming up both about mostly some very
+simple drivers that expose to the userspace a few bytes of memory-mapped
+IO. Both will probably live under drivers/misc/eeprom, where there's
+support already for other kind of what could be assimilated as eeproms
+(AT24, AT25, etc.).
 
-Please look at the work that IIRC Laurent Pichart (CCed) was doing on
-developing generic DT bindings for v4l in embedded systems, it sounds
-like you're working on similar hardware here.  The general ideas should
-apply to any enumeration mechanism, not just DT.
+Now, besides the code duplication every driver has to make to register
+the sysfs attributes, it wouldn't cause much of a problem.
 
---UFi9av0ukRdmw+ig
+Except that these EEPROMs could store values useful for other drivers in
+Linux. For example:
+  - imx28 OCOTP (the latest of the two EEPROM drivers recently submitted)
+    use it most of the time to store its MAC addresses
+  - Allwinner SoCs SID (the other latest driver submitted) use it
+    sometime to store a MAC address, and also the SoC ID, which could be
+    useful to implement a SoC bus driver.
+  - Some Allwinner boards (and presumably others) use an AT24 to store
+    the MAC address in it.
+
+For now, everyone comes up with a different solution:
+  - imx28 has a hook in mach-mxs to patch the device tree at runtime and
+    add the values retrieved from the OCOTP to it.
+  - AT24 seem to have some function exported (at24_macc_(read|write)) so
+    that other part of the kernel can use them to retrieve values from
+    such an EEPROM.
+  - Allwinner SoCs have, well, basically nothing for now, which is why I
+    send this email.
+
+The current way of working has several flaws imho:
+  - The code is heavily duplicated: the sysfs registering is common to
+    every driver, and at the end of the day, every driver should only
+    give a read/write callback, and that's it.
+  - The "consumer" drivers should not have to worry at all about the
+    EEPROM type it should retrieve the needed value from, let alone
+    dealing with the number of instances of such an EEPROM.
+
+To solve this issues, I think I have some solution. Would merging this
+drivers into MTD make some sense? It seems like there is already some
+EEPROM drivers into drivers/mtd (such as an AT25 one, which also have a
+drivers under drivers/misc/eeprom), so I guess it does, but I'd like to
+have your opinion on this.
+
+If so, would some kind of MTD in-kernel API to retrieve values from MTD
+devices would be acceptable to you? I mostly have DT in mind, so I'm
+thinking of having DT bindings to that API such as
+
+  mac-storage =3D <&phandle 0xoffset 0xsize>
+
+to describe which device to get a value from, and where in that device.
+
+That would allow consumer drivers to only have to call a function like
+of_mtd_get_value and let the MTD subsystem do the hard work.
+
+What's your feeling on this?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Az4VpBrmI9+OyhK/
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR1ySdAAoJELSic+t+oim9a6kP/29Q1GxQGBt3MEdD0V1Czybn
-UAxzHzwoXqWae+KcvY0hXMD1G29IYnFE2SsB9VETAgsGJZH+ETTWV8FacCsLZ1EG
-QRquUEoJfAl1hANEbnCyZ9+8wOhdPpctVd3jZTFl58pHdD4YAxXsyD82Ah6TnGxp
-Iy/nuYYNyu6OZfpBXpDR1ofo+AQM7poXrlueITDZosP530LirBQ/JsPbdh8Y1WkX
-lBIqkq6ggfCmTVH0QNhl/puNTp8hPNgcW2kGPwH5oRNrf7rgEkdBmAu6Gfo7byVW
-JvE/flIq/f/YtyoHox990ei04frv9sPgG6EZTp0UdlIact8ucCEolYvoROfw16SI
-AFNn4tQ2TPrutGiz5Y+oQJRzGtOX6W1hKGBlauy4dFZC1LrN/uXO0yheZPfTVSjE
-IT3h2Qk9BRVngrSowcOPshSmUuipV/r0sKu/qNOdbTqKCQ4PWjpjgMmcTpbNhY43
-H+j1QkooRhmsy9eSsGKOHH7/OXk2EZhFUW1JM27htK8o3taPWkR3bTh8g7k81ucy
-rFziwv+ZONrLJ/uOLF2xcHBU2cAXfHXkrN1l0/qXZ+NSRSkeP3v3MQTL5gQWfS37
-KN8WYSJz5WOHn2CsiOH7eoc3G/WirHku2aazx77GH0HrNkpk3LEakBYO9Uc7U9Yz
-00vY3YR7P4M/e5Mtrzvu
-=AER7
+iQIcBAEBAgAGBQJR1yhmAAoJEBx+YmzsjxAglegP/04oesR+DOsS5M+uGusrOOo+
+i36UwpXrMvUWgsI1NERgI/PqlI6n5C9MX45FNM/d2Uhs3v6eQSWhYVlH+iyZe1FH
+tGtyFU+owHxJMUwzAZ2z8WzG3ffdltpeMHPFYqXHgYeO+pZkfUrPDhNFDR8uMy3Z
+8E7+l3QhgacXvFHgVPgNuxgFjGIhfZyFn8Ev6BgVcMoIiZXd1E3KsfLEwXVeQAPN
+bjc9tzZR47xCVAvQ4YmANPvBw80ALfvGsXWiRiuv13Fbe6lg9vneq/7wye3EZpnK
+/RiZuZi1lANGxuhddo7sZgM28uxywOEsdzk1+jqKwBpRGdbWJIu0ClbIxJZP+hgu
+szIWLJSJiu/TkBYEBI7Xd/RhK5JoCZvabZOpVGq3V4n9Wow5r6h4xvWOtHNMgxyI
+/49PgL9EmhWAxflN1RkGcIg+vyBVRMi/gmu1QBkYsbCtJWVxjDeNjKffraY4kmY7
+QE6bH/X7F5zndkx2QOqU0xko4gxtZ+MqeFmL6r5jSAqnZieqcmutyzgu+vxgFQTg
+EXx1gXRBeF5+VtetGz3rljRY3UfSmPJqmVSKuqwNHGICuu5+dI2U6aBDdsiEqVB/
+xmk8R0d7jiImHCjDBVpcN+HwXAGgNUXq608gjJl8w6sQt7lFSp7W9M9VG1m2FkkK
+hrT+slUGdP6hfR1iu68D
+=w64G
 -----END PGP SIGNATURE-----
 
---UFi9av0ukRdmw+ig--
+--Az4VpBrmI9+OyhK/--
