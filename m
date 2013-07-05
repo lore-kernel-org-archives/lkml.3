@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab3GECBi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 22:01:38 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:36718 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353Ab3GECBg (ORCPT
+	id S1757055Ab3GECcv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 22:32:51 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:47223 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755500Ab3GECcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 22:01:36 -0400
-Message-ID: <51D628FD.2010806@igel.co.jp>
-Date: Fri, 05 Jul 2013 11:01:33 +0900
-From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 4 Jul 2013 22:32:50 -0400
+Message-ID: <51D63047.7060409@hitachi.com>
+Date: Fri, 05 Jul 2013 11:32:39 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: lauraa@codeaurora.org
-CC: Marek Szyprowski <m.szyprowski@samsung.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] fs/buffer.c: Revoke LRU when trying to drop buffers
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
+        Jiri Olsa <jolsa@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH] tracing: Atomically get refcounts of event_call and
+ trace_array
+References: <51D4F885.3040105@hitachi.com> <20130704115554.21507.60284.stgit@mhiramat-M0-7522> <20130705003223.GA4981@redhat.com>
+In-Reply-To: <20130705003223.GA4981@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+(2013/07/05 9:32), Oleg Nesterov wrote:
+> On 07/04, Masami Hiramatsu wrote:
+>>
+>> Currently ftrace_open_generic_file gets an event_file from
+>> inode->i_private, and then locks event_mutex and gets refcount.
+>> However, this can cause a race as below scenario;
+>>
+>> CPU0                              CPU1
+>> open(kprobe_events)
+>>   trace_remove_event_call()    open(enable)
+>>     lock event_mutex             get event_file from inode->i_private
+>>       event_remove()             wait for unlock event_mutex
+>>         ...
+>>         free event_file
+>>     unlock event_mutex
+>>                                  lock event_mutex
+>>                                  add refcount of event_file->call (*)
+>>
+>> So, at (*) point, the event_file is already freed and we
+>> may access the corrupted object.
+> 
+> Yes, but the same can happen with event_call, so it seems that
+> this patch is not enough too.
 
-I've come across a problem allocating chunks of CMA memory on a system
-under heavy disk access load which seems very similar to the situation
-described as the rationale for this patch:
+Oops, right!
 
-https://lkml.org/lkml/2012/9/11/335
+> Say, open(id) can take event_mutex when the caller of
+> trace_remove_event_call() has already freed ftrace_event_call.
+> 
+> Or I missed something...
+> 
+> Perhaps we can rely on d_unlinked() ? IOW, the caller of
+> __ftrace_event_call_get() should take event_mutex, check
+> d_unhashed(f_dentry) and only then do _get().
 
-Basically buffer headers sitting on the LRU list preventing them from
-being dropped during page migration.
+It sounds a good idea! :)
 
-I've tried the patch and it seems to solve my problems, so I'm wondering
-if it is worth resubmitting. The discussion on the original thread seems
-to have faded out. Does anyone know if it was continued somewhere else?
+Thank you!
 
-Thank you,
-Damian
+> 
+> Nasty, I agree.
+> 
+> Oleg.
+> 
+> 
+
+
 -- 
-Damian Hobson-Garcia
-IGEL Co.,Ltd
-http://www.igel.co.jp
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
