@@ -1,189 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab3GEU4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 16:56:11 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:49944 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756064Ab3GEU4I (ORCPT
+	id S1756913Ab3GEU7x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 16:59:53 -0400
+Received: from www.linutronix.de ([62.245.132.108]:46509 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3GEU7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 16:56:08 -0400
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Alexander Graf <agraf@suse.de>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH 1/4] PF: Add FAULT_FLAG_RETRY_NOWAIT for guest fault
-Date: Fri,  5 Jul 2013 22:55:51 +0200
-Message-Id: <1373057754-59225-2-git-send-email-dingel@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1373057754-59225-1-git-send-email-dingel@linux.vnet.ibm.com>
-References: <1373057754-59225-1-git-send-email-dingel@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070520-5024-0000-0000-00000683C0EB
+	Fri, 5 Jul 2013 16:59:52 -0400
+Date: Fri, 5 Jul 2013 22:59:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+cc: Baruch Siach <baruch@tkos.co.il>, John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Michal Simek <michal.simek@xilinx.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] clocksource/cadence_ttc: Reuse clocksource as
+ sched_clock
+In-Reply-To: <4fab6223-45c5-453e-9972-1c12aa79a312@CO1EHSMHS008.ehs.local>
+Message-ID: <alpine.DEB.2.02.1307052259090.32106@ionos.tec.linutronix.de>
+References: <1372888216-10726-1-git-send-email-soren.brinkmann@xilinx.com> <20130704033026.GX4288@tarshish> <0030b826-0eb1-4bb8-a0de-1d8dc68bd81a@TX2EHSMHS017.ehs.local> <alpine.DEB.2.02.1307052238170.32106@ionos.tec.linutronix.de>
+ <4fab6223-45c5-453e-9972-1c12aa79a312@CO1EHSMHS008.ehs.local>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-887108065-1373057994=:32106"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of a fault retry exit sie64() with gmap_fault indication for the
-running thread set. This makes it possible to handle async page faults
-without the need for mm notifiers.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Based on a patch from Martin Schwidefsky.
+--8323329-887108065-1373057994=:32106
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
----
- arch/s390/include/asm/pgtable.h   |  2 ++
- arch/s390/include/asm/processor.h |  1 +
- arch/s390/kvm/kvm-s390.c          | 13 +++++++++++++
- arch/s390/mm/fault.c              | 26 ++++++++++++++++++++++----
- 4 files changed, 38 insertions(+), 4 deletions(-)
+On Fri, 5 Jul 2013, Sören Brinkmann wrote:
+> On Fri, Jul 05, 2013 at 10:42:03PM +0200, Thomas Gleixner wrote:
+> > We have a mechanism for that in place, if stuff goes cross trees. One
+> > of the trees provides a set of commit for the other tree to pull, so
+> > we do not end up with merge dependencies and conflicts.
+> > 
+> > Why is clocksource stuff going through armsoc unless it contains
+> > related modifications in arch/arm/
+> We overhauled Zynq's common clock code and migrated all Zynq drivers to
+> it - the TTC being one. I'm pretty sure you were on the CC list for that
+> change.
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=30e1e28598c2674c133148d8aec6d431d7acd314
+> 
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index 0ea4e59..4a4cc64 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -740,6 +740,7 @@ static inline void pgste_set_pte(pte_t *ptep, pte_t entry)
-  * @table: pointer to the page directory
-  * @asce: address space control element for gmap page table
-  * @crst_list: list of all crst tables used in the guest address space
-+ * @pfault_enabled: defines if pfaults are applicable for the guest
-  */
- struct gmap {
- 	struct list_head list;
-@@ -748,6 +749,7 @@ struct gmap {
- 	unsigned long asce;
- 	void *private;
- 	struct list_head crst_list;
-+	unsigned long pfault_enabled;
- };
- 
- /**
-diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
-index 6b49987..4fa96ca 100644
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -77,6 +77,7 @@ struct thread_struct {
-         unsigned long ksp;              /* kernel stack pointer             */
- 	mm_segment_t mm_segment;
- 	unsigned long gmap_addr;	/* address of last gmap fault. */
-+	unsigned int gmap_pfault;	/* signal of a pending guest pfault */
- 	struct per_regs per_user;	/* User specified PER registers */
- 	struct per_event per_event;	/* Cause of the last PER trap */
- 	unsigned long per_flags;	/* Flags to control debug behavior */
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index ba694d2..702daca 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -682,6 +682,15 @@ static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
- 	return 0;
- }
- 
-+static void kvm_arch_fault_in_sync(struct kvm_vcpu *vcpu)
-+{
-+	hva_t fault = gmap_fault(current->thread.gmap_addr, vcpu->arch.gmap);
-+	struct mm_struct *mm = current->mm;
-+	down_read(&mm->mmap_sem);
-+	get_user_pages(current, mm, fault, 1, 1, 0, NULL, NULL);
-+	up_read(&mm->mmap_sem);
-+}
-+
- static int __vcpu_run(struct kvm_vcpu *vcpu)
- {
- 	int rc;
-@@ -715,6 +724,10 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 	if (rc < 0) {
- 		if (kvm_is_ucontrol(vcpu->kvm)) {
- 			rc = SIE_INTERCEPT_UCONTROL;
-+		} else if (current->thread.gmap_pfault) {
-+			kvm_arch_fault_in_sync(vcpu);
-+			current->thread.gmap_pfault = 0;
-+			rc = 0;
- 		} else {
- 			VCPU_EVENT(vcpu, 3, "%s", "fault in sie instruction");
- 			trace_kvm_s390_sie_fault(vcpu);
-diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-index 047c3e4..7d4c4b1 100644
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -50,6 +50,7 @@
- #define VM_FAULT_BADMAP		0x020000
- #define VM_FAULT_BADACCESS	0x040000
- #define VM_FAULT_SIGNAL		0x080000
-+#define VM_FAULT_PFAULT		0x100000
- 
- static unsigned long store_indication __read_mostly;
- 
-@@ -232,6 +233,7 @@ static noinline void do_fault_error(struct pt_regs *regs, int fault)
- 			return;
- 		}
- 	case VM_FAULT_BADCONTEXT:
-+	case VM_FAULT_PFAULT:
- 		do_no_context(regs);
- 		break;
- 	case VM_FAULT_SIGNAL:
-@@ -269,6 +271,9 @@ static noinline void do_fault_error(struct pt_regs *regs, int fault)
-  */
- static inline int do_exception(struct pt_regs *regs, int access)
- {
-+#ifdef CONFIG_PGSTE
-+	struct gmap *gmap;
-+#endif
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
-@@ -307,9 +312,10 @@ static inline int do_exception(struct pt_regs *regs, int access)
- 	down_read(&mm->mmap_sem);
- 
- #ifdef CONFIG_PGSTE
--	if ((current->flags & PF_VCPU) && S390_lowcore.gmap) {
--		address = __gmap_fault(address,
--				     (struct gmap *) S390_lowcore.gmap);
-+	gmap = (struct gmap *)
-+		((current->flags & PF_VCPU) ? S390_lowcore.gmap : 0);
-+	if (gmap) {
-+		address = __gmap_fault(address, gmap);
- 		if (address == -EFAULT) {
- 			fault = VM_FAULT_BADMAP;
- 			goto out_up;
-@@ -318,6 +324,8 @@ static inline int do_exception(struct pt_regs *regs, int access)
- 			fault = VM_FAULT_OOM;
- 			goto out_up;
- 		}
-+		if (test_bit(1, &gmap->pfault_enabled))
-+			flags |= FAULT_FLAG_RETRY_NOWAIT;
- 	}
- #endif
- 
-@@ -374,9 +382,19 @@ retry:
- 				      regs, address);
- 		}
- 		if (fault & VM_FAULT_RETRY) {
-+#ifdef CONFIG_PGSTE
-+			if (gmap && (flags & FAULT_FLAG_RETRY_NOWAIT)) {
-+				/* FAULT_FLAG_RETRY_NOWAIT has been set,
-+				 * mmap_sem has not been released */
-+				current->thread.gmap_pfault = 1;
-+				fault = VM_FAULT_PFAULT;
-+				goto out_up;
-+			}
-+#endif
- 			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
- 			 * of starvation. */
--			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			flags &= ~(FAULT_FLAG_ALLOW_RETRY |
-+				   FAULT_FLAG_RETRY_NOWAIT);
- 			flags |= FAULT_FLAG_TRIED;
- 			down_read(&mm->mmap_sem);
- 			goto retry;
--- 
-1.8.2.2
+That's fine as it has no dependencies on any of the clocksource core
+changes AFAICT.
 
+Thanks,
+
+	tglx
+--8323329-887108065-1373057994=:32106--
