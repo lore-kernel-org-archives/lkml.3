@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab3GEMP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 08:15:28 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:63292 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756596Ab3GEMP1 (ORCPT
+	id S1757313Ab3GEMX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 08:23:56 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49873 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab3GEMXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 08:15:27 -0400
-From: Laurent Navet <laurent.navet@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>,
-        Niu Yawei <yawei.niu@intel.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        Alex Zhuravlev <alexey.zhuravlev@intel.com>,
-        Fan Yong <fan.yong@intel.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Laurent Navet <laurent.navet@gmail.com>
-Subject: [PATCH] staging: lustre: use ERR_CAST() function
-Date: Fri,  5 Jul 2013 14:26:33 +0200
-Message-Id: <1373027193-7565-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 5 Jul 2013 08:23:55 -0400
+Date: Fri, 5 Jul 2013 13:23:52 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Richard Weinberger <richard@nod.at>,
+        Jeff Dike <jdike@addtoit.com>
+Subject: Re: [PATCH 1/3] arch/um/Makefile: remove dead code
+Message-ID: <20130705122352.GR4165@ZenIV.linux.org.uk>
+References: <1372971797-23518-1-git-send-email-artagnon@gmail.com>
+ <1372971797-23518-2-git-send-email-artagnon@gmail.com>
+ <20130704235313.GP4165@ZenIV.linux.org.uk>
+ <CALkWK0mcK13RiVjNCrgwEaaL3nBZ1W0R5+cHAhbqiOmRE4UjAg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALkWK0mcK13RiVjNCrgwEaaL3nBZ1W0R5+cHAhbqiOmRE4UjAg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use ERR_CAST() function instead of ERR_PTR() and PTR_ERR()
-found using coccinelle and err_cast.cocci
+On Fri, Jul 05, 2013 at 04:12:30PM +0530, Ramkumar Ramachandra wrote:
+> Al Viro wrote:
+> > [...]
+> > IOW, any make variable (== macro in POSIX quote above) can be explicitly
+> > set in make(1) command line in form name=value and in that case nothing in
+> > makefile(s) can change its value.  It's true for GNU make, it's true for
+> > BSD make and it's been true for historical Unix make since its introduction
+> > in v7.
+> 
+> Thanks Al, the education is much appreciated.  I always thought =
+> would override it, and ?= was for default value.
 
-Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
----
- drivers/staging/lustre/lustre/llite/llite_nfs.c        |    2 +-
- drivers/staging/lustre/lustre/llite/rw.c               |    2 +-
- drivers/staging/lustre/lustre/obdclass/local_storage.c |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/llite/llite_nfs.c b/drivers/staging/lustre/lustre/llite/llite_nfs.c
-index 28cc41e..d2c459c 100644
---- a/drivers/staging/lustre/lustre/llite/llite_nfs.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_nfs.c
-@@ -131,7 +131,7 @@ ll_iget_for_nfs(struct super_block *sb, struct lu_fid *fid, struct lu_fid *paren
- 
- 	inode = search_inode_for_lustre(sb, fid);
- 	if (IS_ERR(inode))
--		RETURN(ERR_PTR(PTR_ERR(inode)));
-+		RETURN(ERR_CAST(inode));
- 
- 	if (is_bad_inode(inode)) {
- 		/* we didn't find the right inode.. */
-diff --git a/drivers/staging/lustre/lustre/llite/rw.c b/drivers/staging/lustre/lustre/llite/rw.c
-index fac1178..30e98ed 100644
---- a/drivers/staging/lustre/lustre/llite/rw.c
-+++ b/drivers/staging/lustre/lustre/llite/rw.c
-@@ -110,7 +110,7 @@ static struct ll_cl_context *ll_cl_init(struct file *file,
- 
- 	env = cl_env_get(&refcheck);
- 	if (IS_ERR(env))
--		return ERR_PTR(PTR_ERR(env));
-+		return ERR_CAST(env);
- 
- 	lcc = &vvp_env_info(env)->vti_io_ctx;
- 	memset(lcc, 0, sizeof(*lcc));
-diff --git a/drivers/staging/lustre/lustre/obdclass/local_storage.c b/drivers/staging/lustre/lustre/obdclass/local_storage.c
-index 3be35a8..e1db7ab 100644
---- a/drivers/staging/lustre/lustre/obdclass/local_storage.c
-+++ b/drivers/staging/lustre/lustre/obdclass/local_storage.c
-@@ -443,7 +443,7 @@ struct dt_object *local_file_find_or_create_with_fid(const struct lu_env *env,
- 
- 		ls = ls_device_get(dt);
- 		if (IS_ERR(ls)) {
--			dto = ERR_PTR(PTR_ERR(ls));
-+			dto = ERR_CAST(ls);
- 		} else {
- 			/* create the object */
- 			dti->dti_attr.la_valid	= LA_MODE;
-@@ -537,7 +537,7 @@ local_index_find_or_create_with_fid(const struct lu_env *env,
- 
- 		ls = ls_device_get(dt);
- 		if (IS_ERR(ls)) {
--			dto = ERR_PTR(PTR_ERR(ls));
-+			dto = ERR_CAST(ls);
- 		} else {
- 			/* create the object */
- 			dti->dti_attr.la_valid		= LA_MODE;
--- 
-1.7.10.4
-
+?= is a different story - it refuses to override _any_ earlier declarations,
+including ones in makefile itself.  GNU make has added it fairly late, BTW -
+in 3.77 (1998); BSD make has grown it at some point during the rewrite
+Adam de Boor had been doing in late 80s.  NFI whether he'd invented it or
+picked it elsewhere - there had been a lot of cross-pollination between the
+variants of make(1) all along...
