@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab3GEKFg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 06:05:36 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:58613 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757140Ab3GEKFf (ORCPT
+	id S1757273Ab3GEKGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 06:06:01 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:60790 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757204Ab3GEKGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 06:05:35 -0400
-Date: Fri, 5 Jul 2013 12:05:31 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: scheduling while atomic & hang.
-Message-ID: <20130705100531.GA9562@gmail.com>
-References: <20130704015525.GA8486@redhat.com>
- <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
- <51D5BA25.9060207@zytor.com>
- <20130705065113.GA6588@gmail.com>
- <20130705071901.GB24783@somewhere.redhat.com>
+	Fri, 5 Jul 2013 06:06:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130705071901.GB24783@somewhere.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1307042211420.11637@ionos.tec.linutronix.de>
+References: <1372687359-18235-1-git-send-email-jonas.jensen@gmail.com>
+	<1372940383-5957-1-git-send-email-jonas.jensen@gmail.com>
+	<alpine.DEB.2.02.1307042211420.11637@ionos.tec.linutronix.de>
+Date: Fri, 5 Jul 2013 12:05:59 +0200
+Message-ID: <CACmBeS03Xfo7DyyYUbpBaO8TeR3g8BTPzcoOzQayk40k1soFzA@mail.gmail.com>
+Subject: Re: [PATCH v5] ARM: clocksource: add support for MOXA ART SoCs
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, john.stultz@linaro.org, u.kleine-koenig@pengutronix.de,
+        tomasz.figa@gmail.com, linus.walleij@linaro.org,
+        thomas.petazzoni@free-electrons.com, arnd@arndb.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 4 July 2013 23:42, Thomas Gleixner <tglx@linutronix.de> wrote:
+> You just modify bits on the "cache" variable. though you are not
+> caching it. As it seems to work it looks like this register simply can
+> be written with constants.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+I agree, the global "cache" variable wasn't very good. The only good thing, that
+it eliminated all TIMER_CR reads in moxart_clkevt_next_event.
 
-> On Fri, Jul 05, 2013 at 08:51:13AM +0200, Ingo Molnar wrote:
-> > 
-> > * H. Peter Anvin <hpa@zytor.com> wrote:
-> > 
-> > > On 07/03/2013 07:49 PM, Linus Torvalds wrote:
-> > > >> [<ffffffff816f42bf>] __schedule+0x94f/0x9c0
-> > > >> [<ffffffff816f487e>] schedule_user+0x2e/0x70
-> > > >> [<ffffffff816f6de4>] retint_careful+0x12/0x2e
-> > > 
-> > > This call trace does indeed indicate that we took a hardware
-> > > interrupt which caused a reschedule.  It doesn't necessarily have to
-> > > be a quantum expiration interrupt, it could just as easily be an I/O
-> > > completion interrupt.
-> > 
-> > Too bad the kernel stack frame at this point is so small [we are just 
-> > before return to userspace], so we don't really get our usual trace of 
-> > recent activities via the '?' entries ...
-> > 
-> > It would be nice to have a full-kernel-stack backtrace printout as an 
-> > option, which prints entries 'above' the current RSP.
-> > 
-> > I've Cc:-ed Frederic, maybe he has interest in implementing that?
-> 
-> Yeah that sounds interesting. I may give it a try.
+Yes it could be written with constants, and it wouldn't be so bad, because in
+this case so few need to be set. If more constants were set from init
+the benefit
+would be more clear.
 
-Which would be visible clearly in the output, via some clear delineation 
-from the 'real' portion of the stack trace - a separator line or so?
+>> +     timereg_cache = readl(base + TIMER_CR) | TIMEREG_CR_2_ENABLE;
+>
+> Why are you reading that back? You know excactly which of the timers
+> you are using and none of those should be enabled before you reach
+> that code. If it one of them is enabled by the boot loader you better
+> disable it in this init function.
 
-Thanks,
+Removed. All timers except TIMER2 should be disabled in init.
 
-	Ingo
+> Now if you disable all of those timers and just use a known set, then
+> you can do without a pseudo cache variable and just write constants
+> into the control register, right ?
+
+Yes, please take a look at v6.
+
+
+Best regards,
+Jonas
