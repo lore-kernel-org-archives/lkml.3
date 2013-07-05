@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454Ab3GENqH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 09:46:07 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:3151 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757410Ab3GENqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 09:46:05 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1001,1363132800"; 
-   d="scan'208";a="33626665"
-Message-ID: <51D6CE19.1050503@citrix.com>
-Date: Fri, 5 Jul 2013 14:46:01 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20120428 Iceowl/1.0b1 Icedove/3.0.11
+	id S932890Ab3GENto (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 09:49:44 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:45831 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab3GENtm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 09:49:42 -0400
+From: Peter Korsgaard <jacmet@sunsite.dk>
+To: "Joseph Chang" <joseph_chang@davicom.com.tw>
+Cc: "'Joseph CHANG'" <josright123@gmail.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <netdev@vger.kernel.org>, <josright@hotmail.com>
+Subject: Re: [PATCH 1/1] net: add dm9620 net usb driver
+References: <201307030548.r635mxI6027578@mail.davicom.com.tw>
+Date: Fri, 05 Jul 2013 15:49:36 +0200
+In-Reply-To: <201307030548.r635mxI6027578@mail.davicom.com.tw> (Joseph Chang's
+	message of "Wed, 3 Jul 2013 13:49:11 +0800")
+Message-ID: <87bo6hjevj.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>, <konrad.wilk@oracle.com>,
-        <john.stultz@linaro.org>, <xen-devel@lists.xen.org>,
-        Artem Savkov <artem.savkov@gmail.com>
-Subject: Re: [tip:timers/core] hrtimers: Support resuming with two or more
- CPUs online (but stopped)
-References: <1372329348-20841-2-git-send-email-david.vrabel@citrix.com> <tip-7c4c3a0f18ba57ea2a2985034532303d2929902a@git.kernel.org> <20130705093003.GA4033@cpv436-motbuntu> <51D69ACF.9020001@citrix.com> <alpine.DEB.2.02.1307051225060.11637@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307051225060.11637@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/07/13 11:25, Thomas Gleixner wrote:
-> On Fri, 5 Jul 2013, David Vrabel wrote:
-> 
-> You failed to CC Artem :(
-> 
->> On 05/07/13 10:30, Artem Savkov wrote:
->>> This commit brings up a warning about a potential deadlock in
->>> smp_call_function_many() discussed previously:
->>> https://lkml.org/lkml/2013/4/18/546
->>
->> Can we just avoid the wait in clock_was_set()?  Something like this?
->>
->> 8<------------------------------------------------------
->> hrtimers: do not wait for other CPUs in clock_was_set()
->>
->> Calling on_each_cpu() and waiting in a softirq causes a WARNing about
->> a potential deadlock.
->>
->> Because hrtimers are per-CPU, it is sufficient to ensure that all
->> other CPUs' timers are reprogrammed as soon as possible and before the
->> next softirq on that CPU.  There is no need to wait for this to be
->> complete on all CPUs.
+>>>>> "Joseph" == Joseph Chang <joseph_chang@davicom.com.tw> writes:
 
-Unfortunately this doesn't look sufficient.  on_each_cpu(..., 0) may
-still wait for other calls to complete before queuing the calls due to
-the use of a single set of per-CPU csd data.
+Hi,
 
-David
+ Joseph>   This is Joseph CHANG, I am glade to contact and work with
+ Joseph>   you.  I am busy in some affairs else these days, and will
+ Joseph>   like to be back soon.
+
+ Joseph>   For the begin, We copy the source code 'dm9601.c' which was
+ Joseph>   by you, In order to work for our new chips (DM9620, DM9621,
+ Joseph>   DM9621A... series), We did modify to get 'dm9620.c' base on
+ Joseph>   'dm0601.c', Since you are the author and also the owner, so
+ Joseph>   keep MODULE_AUTHOR() as you.
+
+Yes, that's what I learned from a number of bug reports. It would have
+been good if you would have worked with me to get your modifications
+integrated instead.
+
+
+ Joseph>   To generate DM9620.c is a way to distinguish the different
+ Joseph>   generation chips: (as below)
+
+ Joseph>    DM9601: old revision:     USB1.1, Ethernet 10/100,     Phase out
+ Joseph>    DM9620: current revision:  USB2.0, Ethernet 10/100, Mass production state
+ Joseph>    DM9633: next revision: USB3.0, Ethernet 10/100/1000, Will to
+ Joseph> release on 2013/E
+
+dm9620 is basically backwards compatible with dm9601, so I added dm9620
+support to the dm9601 driver earlier this year:
+
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6642f91c92da0736
+
+Is there anything missing from that?
+
+I don't see any dm9633 datasheet on the davicom website, so I cannot say
+if it makes sense to add support for it in the existing driver. Is the
+datasheet available somewhere?
+
+
+ Joseph>   So want to make it from the configuration by "make
+ Joseph>   menuconfig".
+
+ Joseph>   Can you help give further advices, we hope you can go ahead
+ Joseph> be the owner (author) of the 'dm9620.c', And then we make patch
+ Joseph> to it. Would you agree this idea? If so we will be happy
+ Joseph> because we did not ever create such a code.
+
+ Joseph>   * Think about DM9633 driver to be, It will be is total
+ Joseph> different compare to DM9601 & DM9620. And will get the same
+ Joseph> issue.
+
+If you can provide me with a dm9633 datasheet and a sample device then I
+can look into writing a driver for it / extending dm9601.c. Please
+contact me off list for that.
+
+Thanks!
+
+-- 
+Bye, Peter Korsgaard
