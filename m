@@ -1,141 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933721Ab3GEAlE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 20:41:04 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:45878 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933311Ab3GEAlC (ORCPT
+	id S1754208Ab3GEAss (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 20:48:48 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:43506 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab3GEAsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 20:41:02 -0400
+	Thu, 4 Jul 2013 20:48:47 -0400
 MIME-Version: 1.0
-Date: Thu, 4 Jul 2013 20:41:00 -0400
-X-Google-Sender-Auth: W0a5LY8nnPek1jgdwvJEv-G_ics
-Message-ID: <CAMfhd9XWfp420M9wF-ACya9hbQGUSkneRB6sry9=nj1KtB_ygw@mail.gmail.com>
-Subject: ACPI errors from TPM PPI
-From: Adam Langley <agl@imperialviolet.org>
-To: xiaoyan.zhang@intel.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1372951039-10375-1-git-send-email-k.krivyakin@samsung.com>
+References: <1372951039-10375-1-git-send-email-k.krivyakin@samsung.com>
+Date: Fri, 5 Jul 2013 09:48:46 +0900
+X-Google-Sender-Auth: TKHyZq2LpyO2Cb9oRga5Eys2lGs
+Message-ID: <CAH9JG2U-TTb+V-8tLnmSXz8CbYOex3H03GsoEsmeTjXumdAmwQ@mail.gmail.com>
+Subject: Re: [PATCH RFC 0/3] Per-process power consumption measurement facility
+From: Kyungmin Park <kmpark@infradead.org>
+To: Konstantin Krivyakin <k.krivyakin@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, viresh.kumar@linaro.org,
+        mingo@redhat.com, Peter Zijlstra <peterz@infradead.org>
+Cc: i.zhbanov@samsung.com, e.voevodin@samsung.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All TPM PPI calls appear to result in ACPI errors for me:
+Hi Krivyakin,
 
-# cat /sys/devices/pnp0/00:09/ppi/version
-cat: version: Cannot allocate memory
+Please use "./scripts/get_maintainer.pl" and send proper maintainers.
 
-(All the nodes in that directory have the same result for read and write.)
+I added them.
 
-This appears to be coming from acpi_evaluate_object_typed in
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/drivers/char/tpm/tpm_ppi.c#n75,
-so I added a printk to get the actual value of |status| when it fails
-and it's 5 (aka AE_NOT_FOUND I believe).
+Thank you,
+Kyungmin Park
 
-My knowledge of ACPI is almost nil, but here's some disassembly from
-the DSDT table (I don't know if that's the right one), where it
-doesn't seem impossible that it could return the string "1.2".
-
-Scope (_SB.PCI0.LPCB.TPM)
-{
- OperationRegion (TSMI, SystemIO, SMIT, 0x02)
- Field (TSMI, ByteAcc, NoLock, Preserve)
- {
-  INQ,    8,
-  DAT,    8
- }
-
- Method (_DSM, 4, NotSerialized)  // _DSM: Device-Specific Method
- {
-  If (LEqual (Arg0, Buffer (0x10)
-   {
-       /* 0000 */   0xA6, 0xFA, 0xDD, 0x3D, 0x1B, 0x36, 0xB4, 0x4E,
-       /* 0008 */   0xA4, 0x24, 0x8D, 0x10, 0x08, 0x9D, 0x16, 0x53
-   }))
-  {
-   Name (_T_0, Zero)  // _T_x: Emitted by ASL Compiler
-   Store (ToInteger (Arg2), _T_0)
-   If (LEqual (_T_0, Zero))
-   {
-    Return (Buffer (0x02)
-    {
-     0xFF, 0x01
-    })
-   }
-   Else
-   {
-    If (LEqual (_T_0, One))
-    {
-     Return ("1.2")
-    }
-    Else
-    {
-     If (LEqual (_T_0, 0x02))
-     {
-      ToInteger (DerefOf (Index (Arg3, Zero)), TMF2)
-      Store (0x12, TMF1)
-      Store (TMF1, DAT)
-      Store (OFST, INQ)
-      If (LEqual (DAT, 0xFF))
-      {
-       Return (0x02)
-      }
-...
-
-# tpm_version
-  TPM 1.2 Version Info:
-  Chip Version:        1.2.3.69
-  Spec Level:          2
-  Errata Revision:     3
-  TPM Vendor ID:       WEC
-  TPM Version:         01010000
-  Manufacturer Info:   57454300
-
-The motherboard is an Intel DQ77KB.
-
-Any hints would be very helpful because I'm stuck at this point.
-
-Here's how I got here:
-
-1) I want to store 32 bytes of data in a such a way that they can be
-safely erased in the future. With log-structured filesystems and SSDs,
-that seems quite hard these days.
-
-2) Using NVRAM looks like it might be fruitful and the TPM has some
-designed to be written to, as opposed to the RTC NVRAM, which seems
-dangerous.
-
-3) The TPM appears to want a physical presence signal before it'll let
-me create a new NVRAM area:
-
-# tpm_nvdefine -s 32 -i 0x10000002 -p WRITEALL
-Tspi_NV_DefineSpace failed: 0x0000002d - layer=tpm, code=002d (45),
-Bad physical presence value
-
-# sudo tpm_setpresence -z
-Physical Presence Status:
-Command Enable: true
-Hardware Enable: false
-Lifetime Lock: true
-Physical Presence: false
-Lock: true
-
-# sudo tpm_setpresence -z -a
-Tspi_TPM_SetStatus failed: 0x00002006 - layer=tcs, code=0006 (6), Not
-implemented
-
-There's nothing that I can find in the BIOS to assert presence but I'm
-led to understand the the PPI interface allows one to request that the
-BIOS assert physical presence:
-
-http://www.trustedcomputinggroup.org/resources/tcg_physical_presence_interface_specification
-
-4) So I'm trying to get the ppi driver to do something.
-
-
-Cheers
-
-AGL
-
---
-Adam Langley agl@imperialviolet.org http://www.imperialviolet.org
+On Fri, Jul 5, 2013 at 12:17 AM, Konstantin Krivyakin
+<k.krivyakin@samsung.com> wrote:
+> This patchset adds per-process power consumption measurement facility.
+> Power consumption is very important on mobile platforms. This code
+> allows to measure consumed power in Watts*Hours. The consumed power
+> for process is updated on scheduler switch and depends on current
+> CPU voltage and frequency.
+>
+> The formula for computation is: P = C * V^2 * f, where C is a constant
+> that reflects capacity of the system, V is the current voltage and
+> f is the current frequency.
+> (Taken from: http://en.wikipedia.org/wiki/CPU_power_dissipation).
+>
+> In this patchset was added implementation for Exynos platform
+> to demonstrate how it works.
+>
+> To minimize scheduler impact for each CPU P-state the value of (V^2 *f)
+> was precomputed at the time of platform initialization.
+>
+> And to reduce performance impact furthermore, the C constant is multiplied
+> in userspace.
+>
+> Konstantin Krivyakin (3):
+>   Add interface to receive current cpu power
+>   Add power consumption counter in task_struct.
+>   Update current cpu power when cpu freq change for exynos.
+>
+>  drivers/cpufreq/cpufreq.c            |   17 +++++++++++++++++
+>  drivers/cpufreq/exynos-cpufreq.c     |    2 ++
+>  drivers/cpufreq/exynos-cpufreq.h     |    1 +
+>  drivers/cpufreq/exynos4x12-cpufreq.c |   19 ++++++++++++++++++-
+>  include/linux/cpufreq.h              |    6 ++++++
+>  include/linux/sched.h                |    2 ++
+>  include/uapi/linux/taskstats.h       |    2 ++
+>  kernel/fork.c                        |    1 +
+>  kernel/sched/core.c                  |    8 ++++++++
+>  kernel/sched/cputime.c               |   11 +++++++++++
+>  kernel/tsacct.c                      |    3 +++
+>  11 files changed, 71 insertions(+), 1 deletion(-)
+>
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
