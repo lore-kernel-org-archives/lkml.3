@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab3GENvM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 09:51:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45384 "EHLO
+	id S933788Ab3GENv6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 09:51:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45392 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab3GENvK (ORCPT
+	with ESMTP id S1751582Ab3GENv6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 09:51:10 -0400
-Date: Fri, 5 Jul 2013 15:50:57 +0200 (CEST)
+	Fri, 5 Jul 2013 09:51:58 -0400
+Date: Fri, 5 Jul 2013 15:51:57 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-cc: mingo@kernel.org, peterz@infradead.org, jbeulich@suse.com,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        mina86@mina86.org, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, jun.zhang@intel.com,
-        fengguang.wu@intel.com
-Subject: Re: [PATCH V2] smp: Give WARN()ing when calling smp_call_function_many()/single()
- in serving irq
-In-Reply-To: <1361023812.11130.15.camel@cliu38-desktop-build>
-Message-ID: <alpine.DEB.2.02.1307051548430.32106@ionos.tec.linutronix.de>
-References: <1360163901.24670.13.camel@cliu38-desktop-build>  <1361023075.11130.12.camel@cliu38-desktop-build> <1361023812.11130.15.camel@cliu38-desktop-build>
+To: David Vrabel <david.vrabel@citrix.com>
+cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>, konrad.wilk@oracle.com,
+        john.stultz@linaro.org, xen-devel@lists.xen.org,
+        Artem Savkov <artem.savkov@gmail.com>
+Subject: Re: [tip:timers/core] hrtimers: Support resuming with two or more
+ CPUs online (but stopped)
+In-Reply-To: <51D6CE19.1050503@citrix.com>
+Message-ID: <alpine.DEB.2.02.1307051551260.32106@ionos.tec.linutronix.de>
+References: <1372329348-20841-2-git-send-email-david.vrabel@citrix.com> <tip-7c4c3a0f18ba57ea2a2985034532303d2929902a@git.kernel.org> <20130705093003.GA4033@cpv436-motbuntu> <51D69ACF.9020001@citrix.com> <alpine.DEB.2.02.1307051225060.11637@ionos.tec.linutronix.de>
+ <51D6CE19.1050503@citrix.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 16 Feb 2013, Chuansheng Liu wrote:
-> Currently the functions smp_call_function_many()/single() will
-> give a WARN()ing only in the case of irqs_disabled(), but that
-> check is not enough to guarantee execution of the SMP
-> cross-calls.
+On Fri, 5 Jul 2013, David Vrabel wrote:
+> On 05/07/13 11:25, Thomas Gleixner wrote:
+> > On Fri, 5 Jul 2013, David Vrabel wrote:
+> > 
+> > You failed to CC Artem :(
+> > 
+> >> On 05/07/13 10:30, Artem Savkov wrote:
+> >>> This commit brings up a warning about a potential deadlock in
+> >>> smp_call_function_many() discussed previously:
+> >>> https://lkml.org/lkml/2013/4/18/546
+> >>
+> >> Can we just avoid the wait in clock_was_set()?  Something like this?
+> >>
+> >> 8<------------------------------------------------------
+> >> hrtimers: do not wait for other CPUs in clock_was_set()
+> >>
+> >> Calling on_each_cpu() and waiting in a softirq causes a WARNing about
+> >> a potential deadlock.
+> >>
+> >> Because hrtimers are per-CPU, it is sufficient to ensure that all
+> >> other CPUs' timers are reprogrammed as soon as possible and before the
+> >> next softirq on that CPU.  There is no need to wait for this to be
+> >> complete on all CPUs.
 > 
-> In many other cases such as softirq handling/interrupt handling,
-> the two APIs still can not be called, just as the
-> smp_call_function_many() comments say:
-> 
->   * You must not call this function with disabled interrupts or from a
->   * hardware interrupt handler or from a bottom half handler. Preemption
->   * must be disabled when calling this function.
-> 
-> There is a real case for softirq DEADLOCK case:
-> 
-> CPUA                            CPUB
->                                 spin_lock(&spinlock)
->                                 Any irq coming, call the irq handler
->                                 irq_exit()
-> spin_lock_irq(&spinlock)
-> <== Blocking here due to
-> CPUB hold it
->                                   __do_softirq()
->                                     run_timer_softirq()
->                                       timer_cb()
->                                         call smp_call_function_many()
->                                           send IPI interrupt to CPUA
->                                             wait_csd()
-> 
-> Then both CPUA and CPUB will be deadlocked here.
+> Unfortunately this doesn't look sufficient.  on_each_cpu(..., 0) may
+> still wait for other calls to complete before queuing the calls due to
+> the use of a single set of per-CPU csd data.
 
-That's not true if called with wait = 0 as we won't wait for the csd
-in that case. The function will be invoked on cpuA after it reenables
-interrupt. So for callers who don't care about synchronous execution
-it should not warn in softirq context.
+Hrmpf. I'll fix it in the non elegant way :(
 
 Thanks,
 
 	tglx
-
- 
