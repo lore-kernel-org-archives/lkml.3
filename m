@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab3GERSY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 13:18:24 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:53407 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757288Ab3GERSX (ORCPT
+	id S1757485Ab3GER0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 13:26:46 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:34984 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab3GER0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 13:18:23 -0400
-Date: Fri, 5 Jul 2013 10:18:24 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: modalias char-major-10-130
-Message-ID: <20130705171824.GB29175@roeck-us.net>
-References: <1372854803.22042.22.camel@chaos.site>
+	Fri, 5 Jul 2013 13:26:45 -0400
+Date: Fri, 5 Jul 2013 14:26:37 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v2] perf record: fix symbol processing bug and greatly
+ improve performance
+Message-ID: <20130705172637.GA16414@ghostprotocols.net>
+References: <1368110568-64714-1-git-send-email-Waiman.Long@hp.com>
+ <20130510081214.GA6848@gmail.com>
+ <51D6FDBD.6010606@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372854803.22042.22.camel@chaos.site>
+In-Reply-To: <51D6FDBD.6010606@hp.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 02:33:23PM +0200, Jean Delvare wrote:
-> Hi Wim,
-> 
-> All watchdog drivers include:
-> 
-> MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
-> 
-> which causes a modalias char-major-10-130 to be added to every watchdog
-> driver module. As a result, any access to /dev/watchdog on a system with
-> no watchdog driver loaded and working will result in an attempt to load
-> several dozen drivers. At best one or two will actually work, the others
-> will:
-> 
-> * Waste time failing to load.
-> * Waste memory succeeding to load but not finding any device to bind to.
-> * Pollute the kernel log.
-> * Sometimes even load while they should not and break the system. I just
-> had a report about advantechwdt doing that on some systems.
-> 
-> And the attempt order will presumably be random, so it might as well
-> load softdog before a hardware-based watchdog which would have been
-> preferred.
-> 
-> This looks so 90s. Drivers for enumerated devices have hardware-based
-> modaliases, so char-major-10-130 shouldn't be needed. Other drivers
-> should certainly not be loaded randomly if they need to poke the
-> hardware to detect the presence of a supported device.
-> 
-> My opinion is that the char-major-10-130 modalias should ONLY be defined
-> by user-space, when the user knows he/she needs a watchdog driver which
-> doesn't support auto-loading via hardware-based auto-loading.
-> 
-> So, can we please get rid of all these
-> MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR) statements? They do more harm than
-> good as far as I can see.
-> 
-Agreed.
+Em Fri, Jul 05, 2013 at 01:09:17PM -0400, Waiman Long escreveu:
+> On 05/10/2013 04:12 AM, Ingo Molnar wrote:
+> >* Waiman Long<Waiman.Long@hp.com>  wrote:
 
-Can you submit a set of patches ? I'll be happy to add my Reviewed-by: tag
-to it. Of course that won't guarantee acceptance ;).
+> >>  3 files changed, 11 insertions(+), 4 deletions(-)
+> >Acked-by: Ingo Molnar<mingo@kernel.org>
 
-Thanks,
-Guenter
+> Thank for the Ack. Will that patch go into v3.11?
+
+I'm back at processing patches, I'm putting everything on the perf/core
+branch and afterwards will go thru the queue looking for pure bug fixex
+to put on perf/urgent and send to Ingo.
+
+- Arnaldo
