@@ -1,77 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965019Ab3GEPcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 11:32:12 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:47881 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757458Ab3GEPcK (ORCPT
+	id S933788Ab3GEPix (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 11:38:53 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52573 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174Ab3GEPiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 11:32:10 -0400
-X-AuditID: cbfee61a-b7f3b6d000006edd-d7-51d6e6f8bd90
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [GIT PULL] DMA-mapping updates for v3.11
-Date: Fri, 05 Jul 2013 17:31:59 +0200
-Message-id: <1373038319-6935-1-git-send-email-m.szyprowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDJMWRmVeSWpSXmKPExsVy+t9jQd2fz64FGnz5z2xxedccNou1R+6y
-	Wzzqe8vuwOxxYsZvFo++LasYPT5vkgtgjuKySUnNySxLLdK3S+DK+PVkB2NBJ0/F5CufWBsY
-	P3B2MXJySAiYSHxc844dwhaTuHBvPVsXIxeHkMB0RonfDW1QTjuTxPEtN8Cq2AQMJbredrGB
-	2CICRhKfX1xhBbGZBXwl7rxaxQJiCwPVrNlxE8xmEVCV+HJ8B1AvBwevgLvEkedJIKaEgILE
-	nEk2Exi5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQI9vMzqR2MKxssDjEKcDAq8fBm
-	3LgWKMSaWFZcmXuIUYKDWUmE1z4BKMSbklhZlVqUH19UmpNafIhRmoNFSZz3QKt1oJBAemJJ
-	anZqakFqEUyWiYNTqoHR5/Ul2ez4Ld5JzdtzhOZn2GVI+Fxk/PKl7SXnlJhjIumMb7VLDbkW
-	bmDZ+2Z7wMbNBSLBV9d+1dablPjHXlSRR0K++H7lMSczo7In2Xs7q224Vy2x/2g4YSLPp9dL
-	2eMc4xe7X5ts/6fDKkhdSW9PBOvSRTK/Kp8UCqy/+nDivz9WfvIK3rVKLMUZiYZazEXFiQCA
-	DdyZ7wEAAA==
+	Fri, 5 Jul 2013 11:38:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arch@vger.kernel.org
+Subject: [PATCH, re-send] Always trap on BUG()
+Date: Fri, 5 Jul 2013 17:38:35 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Chen Gang <gang.chen@asianux.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307051738.35930.arnd@arndb.de>
+X-Provags-ID: V02:K0:tuGYCYYTwrJ6pelxGd4KQccl8MGUUeeS2OIZ2cynNT+
+ yDQBG8YOROL5jnN6Yoy9fMeApzlWY+7pOoucactN1TSe1X8lRh
+ u9PWs9g7qYBEnN/9FANzzGfvii9qQlkO+62U0AaEEcdE2wU2Gm
+ 1GisdfQ4IrQvpnjXaJKel6aYeQhmn2/rFbQzDQcY8mQZcSG/Eo
+ XkzjhBp1XZPycK/x3iPyWOEuhh8+pRR61c+kl63QHhGQyZDD6k
+ 4k6eZKMUPmlnkUU4TwQClKY6JtvlalhIikX1KkGp76ju8hH58N
+ PreasKhmOA8ctxv8LMfhlZMTjngAhFMwWX/P2mlNFcp4Fw0Zgi
+ hYAUXuCtBtbA/M+RVVgc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+I've run some size analyis using the ARM 'multi_v7_defconfig'
+and gcc-4.8, using various definitions for BUG() and BUG_ON(), to
+see how big the size improvement actually gets
 
-I'm really sorry for the rebased tree last time. I restored the tree
-that was in linux next for a long time till 2nd July. I would like to
-ask You for pulling fixes for ARM dma-mapping subsystem for v3.11.
+1. Baseline: normal bug plus CONFIG_BUG_VERBOSE
+   text    data     bss     dec     hex filename
+3743196  224396  206812 4174404  3fb244 vmlinux-bugverbose
 
+2. disabling CONFIG_BUG_VERBOSE, saving 0.6%
+3716920  224380  206812 4148112  3f4b90 vmlinux-nobugverbose
 
-The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
+3. #define BUG() panic(__func__), #define BUG_ON(c) if(c) BUG(), saving 1.0%
+3701076  224384  206812 4132272  3f0db0 vmlinux-bug-panicfunc
 
-  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
+3. #define BUG() panic(__func__), #define BUG_ON(c) if(c) BUG(), saving 1.5%
+3678884  224400  206812 4110096  3eb710 vmlinux-bug-panic
 
-are available in the git repository at:
+4. #define BUG() unreachable(), saving 2.1%
+3652636  224384  206812 4083832  3e5078 vmlinux-bug-unreachable
 
-  git://git.linaro.org/people/mszyprowski/linux-dma-mapping.git for-v3.11
+5. as 4, plus #define BUG_ON(c) if(c) unreachable(), saving 2.2%
+3651108  224380  206812 4082300  3e4a7c vmlinux-bugon-unreachable
 
-for you to fetch changes up to 5b91a98c61abe914e6a80d7dc15e435c47ea0004:
+6. #define BUG() do{}while(0), saving 2.1%
+3654264  224380  206812 4085456  3e56d0 vmlinux-nobug
 
-  ARM: dma: Drop __GFP_COMP for iommu dma memory allocations (2013-06-28 15:14:29 +0200)
+7. as 6, plus #define BUG_ON if(0 && (c)) unreachable, saving 2.2%
+3648392  223996  206748 4079136  3e3e20 vmlinux-no-bugon
 
-----------------------------------------------------------------
-Ming Lei (1):
-      ARM: DMA-mapping: mark all !DMA_TO_DEVICE pages in unmapping as clean
+8. my patch below, saving 1.8%
+3666532  224380  206812 4097724  3e86bc obj-tmp/vmlinux
 
-Richard Zhao (1):
-      ARM: dma: Drop __GFP_COMP for iommu dma memory allocations
+The gain of doing unreachable and letting the code run off whereever
+is minimal compared to the current state of doing nothing, but it
+avoids the warnings.
 
-Will Deacon (2):
-      ARM: dma-mapping: convert DMA direction into IOMMU protection attributes
-      ARM: dma-mapping: NULLify dev->archdata.mapping pointer on detach
+Same test using x86_defconfig:
 
-YoungJun Cho (1):
-      ARM: dma-mapping: Get pages if the cpu_addr is out of atomic_pool
+1. CONFIG_BUG=y, CONFIG_BUGVERBOSE=n
+10797859        1395648 1175552 13369059         cbfee3 vmlinux-x86-bug
 
- arch/arm/mm/dma-mapping.c |   60 ++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 49 insertions(+), 11 deletions(-)
+2. CONFIG_BUG=n, saves 1.0%
+10658553        1395584 1175552 13229689         c9de79 vmlinux-x86-nobug
 
-----------------------------------------------------------------
+3. with my patch, saves 0.8%
+10684186        1395584 1175552 13255322         ca429a vmlinux-x86-archbug
 
-This pull request contains an important bugfixes and update for IOMMU
-integration support for ARM architecture.
+Getting 1-2% savings in kernel size seems absolutely worth keeping the
+option, but 0.2-0.4% left for getting reproducible behavior also seems
+worthwhile. The result in the patch below.
 
-Thanks!
+This basically loses any of the BUG() reporting, but leaves the
+logic to trap and kill the task in place when CONFIG_BUG is disabled.
 
-Best regards
-Marek Szyprowski
-Samsung Poland R&D Center
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org
+Cc: Chen Gang <gang.chen@asianux.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
+
+diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
+index 7af5c6c..4a5b85d 100644
+--- a/arch/arm/include/asm/bug.h
++++ b/arch/arm/include/asm/bug.h
+@@ -3,8 +3,6 @@
+ 
+ #include <linux/linkage.h>
+ 
+-#ifdef CONFIG_BUG
+-
+ /*
+  * Use a suitable undefined instruction to use for ARM/Thumb2 bug handling.
+  * We need to be careful not to conflict with those used by other modules and
+@@ -54,7 +52,6 @@ do {								\
+ #endif  /* CONFIG_DEBUG_BUGVERBOSE */
+ 
+ #define HAVE_ARCH_BUG
+-#endif  /* CONFIG_BUG */
+ 
+ #include <asm-generic/bug.h>
+ 
+diff --git a/arch/x86/include/asm/bug.h b/arch/x86/include/asm/bug.h
+index 2f03ff0..ba38ebb 100644
+--- a/arch/x86/include/asm/bug.h
++++ b/arch/x86/include/asm/bug.h
+@@ -1,7 +1,6 @@
+ #ifndef _ASM_X86_BUG_H
+ #define _ASM_X86_BUG_H
+ 
+-#ifdef CONFIG_BUG
+ #define HAVE_ARCH_BUG
+ 
+ #ifdef CONFIG_DEBUG_BUGVERBOSE
+@@ -33,8 +32,6 @@ do {								\
+ } while (0)
+ #endif
+ 
+-#endif /* !CONFIG_BUG */
+-
+ #include <asm-generic/bug.h>
+ 
+ #endif /* _ASM_X86_BUG_H */
+diff --git a/include/asm-generic/bug.h b/include/asm-generic/bug.h
+index 7d10f96..bbd2872 100644
+--- a/include/asm-generic/bug.h
++++ b/include/asm-generic/bug.h
+@@ -112,12 +112,13 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #endif
+ 
+ #ifndef HAVE_ARCH_BUG_ON
+-#define BUG_ON(condition) do { if (condition) ; } while(0)
++#define BUG_ON(condition) do { if (unlikely(condition)) BUG(); } while(0)
+ #endif
+ 
+ #ifndef HAVE_ARCH_WARN_ON
+ #define WARN_ON(condition) ({						\
+ 	int __ret_warn_on = !!(condition);				\
++	(void)__ret_warn_on;						\
+ 	unlikely(__ret_warn_on);					\
+ })
+ #endif
+@@ -125,6 +126,8 @@ extern void warn_slowpath_null(const char *file, const int line);
+ #ifndef WARN
+ #define WARN(condition, format...) ({					\
+ 	int __ret_warn_on = !!(condition);				\
++	if (0 && (__ret_warn_on))					\
++		printk(format);						\
+ 	unlikely(__ret_warn_on);					\
+ })
+ #endif
