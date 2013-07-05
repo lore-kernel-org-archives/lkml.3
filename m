@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab3GEGQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 02:16:37 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:47053 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3GEGQg (ORCPT
+	id S1752391Ab3GEGXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 02:23:51 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:43656 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab3GEGXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 02:16:36 -0400
-Message-ID: <51D664B9.7010407@linux.vnet.ibm.com>
-Date: Fri, 05 Jul 2013 14:16:25 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+	Fri, 5 Jul 2013 02:23:50 -0400
+Date: Fri, 5 Jul 2013 08:23:45 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: smart wake-affine
-References: <51A43B16.9080801@linux.vnet.ibm.com> <51D25A80.8090406@linux.vnet.ibm.com> <20130702085202.GA23916@twins.programming.kicks-ass.net> <51D29EE5.8080307@linux.vnet.ibm.com> <20130704091339.GK18898@dyad.programming.kicks-ass.net> <51D5428D.7080805@linux.vnet.ibm.com> <1372934013.9046.16.camel@marge.simpson.net> <51D633DB.5010508@linux.vnet.ibm.com> <1372997318.7315.23.camel@marge.simpson.net> <51D64C84.5080100@linux.vnet.ibm.com> <1373002865.8318.11.camel@marge.simpson.net>
-In-Reply-To: <1373002865.8318.11.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070506-8878-0000-0000-000007D38100
+        Dave Airlie <airlied@gmail.com>
+Subject: Re: [GIT PULL] core/mutexes changes for v3.11: W/W mutex support
+Message-ID: <20130705062345.GA29487@gmail.com>
+References: <20130701082221.GA14112@gmail.com>
+ <CA+55aFwfsz6e5oQAdZw-YyYzwJXCPjKJKiLEXxn7ujU7KWX97Q@mail.gmail.com>
+ <51D3C4C8.8060701@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D3C4C8.8060701@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2013 01:41 PM, Mike Galbraith wrote:
-[snip]
->>
->> Have you tried to use more loops and groups? will that show even bigger
->> regressions?
-> 
-> Nope, less on either side.
-> 
-> hackbench -g 100 -l 1000
->                                                                        avg
-> 3.10.0-regress    21.895    21.564    21.777    21.958    22.093    21.857     1.000
-> 3.10.0-regressx   22.844    23.268    23.056    23.231    22.375    22.954     1.050
-> 
-> hackbench -g 1 -l 100000
->                                                                        avg
-> 3.10.0-regress    29.913    29.711    30.395    30.213    30.236    30.093     1.000
-> 3.10.0-regressx   30.392    31.003    30.728    31.008    30.389    30.704     1.020
 
-Hmm...I'm not expecting to reserve all of the 15%, but this still seems
-a little bit more...
+* Maarten Lankhorst <maarten.lankhorst@canonical.com> wrote:
 
-PeterZ has suggested some optimization which I sent out yesterday, I
-suppose they haven't been included into this test yet, correct?
+> Hey,
+> 
+> Op 03-07-13 02:54, Linus Torvalds schreef:
+> > On Mon, Jul 1, 2013 at 1:22 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >> Please pull the latest core-mutexes-for-linus git tree from:
+> >>
+> >>    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-mutexes-for-linus
+> >>
+> >>    HEAD: 166989e366ffa66108b2f37b870e66b85b2185ad locking-selftests: Handle unexpected failures more strictly
+> >>
+> >> This tree adds support for wound/wait style locks, which the graphics guys
+> >> would like to make use of in the TTM graphics subsystem.
+> > So I pulled this, but I'm not particularly happy with how this (very
+> > unusual) lock pollutes <linux/mutex.h> that pretty much every single
+> > file ends up including.
+> >
+> > So I'd really prefer to see the ww_mutex() support split up into
+> > <linux/ww_mutex.h>, rather than making the compiler have to parse and
+> > remember that stuff when 99.99% of all files do not care about it or
+> > need it.
+> 
+> Sounds good to me, but can it wait until with the drm pull is done?
 
-Since currently I could not reproduce the issue on my box with that
-patch, I suppose it may solved that issue ;-)
+The ordering should not matter much as the combination will be tested in 
+linux-next anyway.
 
-Regards,
-Michael Wang
+> Preliminary diff below.
 
-> 
->> BTW, is this the results of 10 group and 40 sockets == 400 tasks?
-> 
-> Yeah, stock.
-> 
-> Off to do some body/mind tuning.  Bavarian mushrooms don't hide as well
-> as memory access thingies.. and I can still out run 'em.
-> 
-> -Mike 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Looks good to me at first sight. Please send a tested, changelogged, 
+signed off version.
 
+Thanks,
+
+	Ingo
