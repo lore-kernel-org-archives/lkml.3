@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab3GEKHq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 06:07:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49474 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757206Ab3GEKHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 06:07:45 -0400
-Date: Fri, 5 Jul 2013 11:07:41 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 11/13] sched: Check current->mm before allocating NUMA
- faults
-Message-ID: <20130705100741.GV1875@suse.de>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-12-git-send-email-mgorman@suse.de>
- <20130704124823.GB29916@linux.vnet.ibm.com>
+	id S1757251Ab3GEKJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 06:09:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44178 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab3GEKJV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 06:09:21 -0400
+Date: Fri, 5 Jul 2013 12:09:18 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Artem Savkov <artem.savkov@gmail.com>
+cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        konrad.wilk@oracle.com, john.stultz@linaro.org,
+        xen-devel@lists.xen.org, david.vrabel@citrix.com
+Subject: Re: [tip:timers/core] hrtimers: Support resuming with two or more
+ CPUs online (but stopped)
+In-Reply-To: <20130705093003.GA4033@cpv436-motbuntu>
+Message-ID: <alpine.DEB.2.02.1307051204270.11637@ionos.tec.linutronix.de>
+References: <1372329348-20841-2-git-send-email-david.vrabel@citrix.com> <tip-7c4c3a0f18ba57ea2a2985034532303d2929902a@git.kernel.org> <20130705093003.GA4033@cpv436-motbuntu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130704124823.GB29916@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 06:18:23PM +0530, Srikar Dronamraju wrote:
-> * Mel Gorman <mgorman@suse.de> [2013-07-03 15:21:38]:
-> 
-> > task_numa_placement checks current->mm but after buffers for faults
-> > have already been uselessly allocated. Move the check earlier.
-> > 
-> > [peterz@infradead.org: Identified the problem]
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
-> > ---
-> >  kernel/sched/fair.c | 22 ++++++++++++++--------
-> >  1 file changed, 14 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index 336074f..3c796b0 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -870,8 +870,6 @@ static void task_numa_placement(struct task_struct *p)
-> >  	int seq, nid, max_nid = 0;
-> >  	unsigned long max_faults = 0;
-> > 
-> > -	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
-> > -		return;
-> >  	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-> >  	if (p->numa_scan_seq == seq)
-> >  		return;
-> > @@ -945,6 +943,12 @@ void task_numa_fault(int last_nid, int node, int pages, bool migrated)
-> >  	if (!sched_feat_numa(NUMA))
-> >  		return;
-> > 
-> > +	/* for example, ksmd faulting in a user's mm */
-> > +	if (!p->mm) {
-> > +		p->numa_scan_period = sysctl_numa_balancing_scan_period_max;
-> 
-> Naive question:
-> Why are we resetting the scan_period?
-> 
+On Fri, 5 Jul 2013, Artem Savkov wrote:
 
-At the time I wrote it I was thinking of tick times and meant to recheck
-if it's necessary but then it slipped my mind. The reset is unnecessary
-as curr->mm is already checked.
+> This commit brings up a warning about a potential deadlock in
+> smp_call_function_many() discussed previously:
+> https://lkml.org/lkml/2013/4/18/546
 
--- 
-Mel Gorman
-SUSE Labs
+> On Fri, Jun 28, 2013 at 02:18:37PM -0700, tip-bot for David Vrabel wrote:
+> > Commit-ID:  7c4c3a0f18ba57ea2a2985034532303d2929902a
+
+It's not caused by this commit. The problem was there before. We call
+clock_was_set() from softirq context because we cannot call it from
+the timer interrupt.
+
+So that new WARN on in the smp code requires us to move that call out
+from softirq context.
+
+Does the patch below fix it ?
+
+Thanks,
+
+	tglx
+
+---
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index e86827e..24c6f3b 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -721,6 +721,18 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
+ }
+ 
++static void clock_was_set_work(struct work_struct *work)
++{
++	clock_was_set();
++}
++
++static DECLARE_WORK(hrtimer_work, clock_was_set_work);
++
++static void softirq_clock_was_set(void)
++{
++	schedule_work(&hrtimer_work);
++}
++
+ /*
+  * Called from timekeeping code to reprogramm the hrtimer interrupt
+  * device. If called from the timer interrupt context we defer it to
+@@ -748,7 +760,10 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
+ }
+ static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base) { }
+ static inline void retrigger_next_event(void *arg) { }
+-
++static void softirq_clock_was_set(void)
++{
++	clock_was_set();
++}
+ #endif /* CONFIG_HIGH_RES_TIMERS */
+ 
+ /*
+@@ -1445,7 +1460,7 @@ static void run_hrtimer_softirq(struct softirq_action *h)
+ 
+ 	if (cpu_base->clock_was_set) {
+ 		cpu_base->clock_was_set = 0;
+-		clock_was_set();
++		softirq_clock_was_set();
+ 	}
+ 
+ 	hrtimer_peek_ahead_timers();
+
+
