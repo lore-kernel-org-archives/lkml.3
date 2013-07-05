@@ -1,48 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751362Ab3GEWLu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 18:11:50 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59750 "EHLO
+	id S1751623Ab3GEWMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 18:12:22 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59751 "EHLO
 	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab3GEWLt (ORCPT
+	with ESMTP id S1751780Ab3GEWMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 18:11:49 -0400
-Date: Fri, 5 Jul 2013 16:41:00 -0400
+	Fri, 5 Jul 2013 18:12:17 -0400
+Date: Fri, 5 Jul 2013 16:41:29 -0400
 From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
 To: linux-kernel@vger.kernel.org
 Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
-Message-ID: <20130705204100.GA15943@logfs.org>
+Subject: [PATCH 1/2] list: add list_del_each_entry
+Message-ID: <20130705204129.GB15943@logfs.org>
 References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <20130705204100.GA15943@logfs.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1370280485-10047-1-git-send-email-joern@logfs.org>
+In-Reply-To: <20130705204100.GA15943@logfs.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 June 2013 13:28:03 -0400, Joern Engel wrote:
-> 
-> A purely janitorial patchset.  A fairly common pattern is to take a
-> list, remove every object from it and do something with this object -
-> usually kfree() some variant.  A stupid grep identified roughly 300
-> instances, with many more hidden behind more complicated patterns to
-> achieve the same end results.
+I have seen a lot of boilerplate code that either follows the pattern of
+	while (!list_empty(head)) {
+		pos = list_entry(head->next, struct foo, list);
+		list_del(pos->list);
+		...
+	}
+or some variant thereof.
 
-Next version of the same patchset.  Object size is shrinking now, at
-least for the one compiler I tested.  And a few kernel hackers met on
-a frozen lake in hell with pigs flying overhead and could actually
-agree on a name.  While I am sure almost every reader will still
-disagree and have one or two better suggestions, I would like to use
-this historical moment.
+With this patch in, people can use
+	list_del_each_entry(pos, head, list) {
+		...
+	}
 
-list_del_each and list_del_each_entry is shall be!
+The patch also adds a list_del_each variant, even though I have
+only found a single user for that one so far.
 
-Jörn
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ include/linux/list.h |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---
-It's just what we asked for, but not what we want!
--- anonymous
+diff --git a/include/linux/list.h b/include/linux/list.h
+index 6a1f8df..ab39c7d 100644
+--- a/include/linux/list.h
++++ b/include/linux/list.h
+@@ -557,6 +557,24 @@ static inline void list_splice_tail_init(struct list_head *list,
+ #define list_safe_reset_next(pos, n, member)				\
+ 	n = list_entry(pos->member.next, typeof(*pos), member)
+ 
++/**
++ * list_del_each - removes an entry from the list until it is empty
++ * @pos:	the &struct list_head to use as a loop cursor.
++ * @head:	the head of your list.
++ */
++#define list_del_each(pos, head) \
++	while (list_empty(head) ? 0 : (pos = (head)->next, list_del(pos), 1))
++
++/**
++ * list_del_each_entry - removes an entry from the list until it is empty
++ * @pos:	the type * to use as loop cursor.
++ * @head:	the head of your list.
++ * @member:	the name of the list_struct within the struct
++ */
++#define list_del_each_entry(pos, head, member) \
++	while (list_empty(head) && (pos = list_first_entry((head), \
++		typeof(*pos), member), list_del((head)->next), 1))
++
+ /*
+  * Double linked lists with a single pointer list head.
+  * Mostly useful for hash tables where the two pointer list head is
+-- 
+1.7.10.4
+
