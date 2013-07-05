@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933826Ab3GEPYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 11:24:12 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45716 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757373Ab3GEPYL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 11:24:11 -0400
-Date: Fri, 5 Jul 2013 17:24:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@intel.com>,
-        hpa@linux.intel.com, tim.c.chen@linux.intel.com,
-        linux-kernel@vger.kernel.org, andi.kleen@intel.com, mingo@elte.hu
-Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
-In-Reply-To: <20130705143833.GT23916@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1307051718430.32106@ionos.tec.linutronix.de>
-References: <1372916056-24301-1-git-send-email-alex.shi@intel.com> <20130704075840.GH18898@dyad.programming.kicks-ass.net> <CAFTL4hy24+=2++CN5rBhn9v+pvxR+tTja9Z-wRLSS__LGQBWaQ@mail.gmail.com> <20130705143833.GT23916@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757513Ab3GEP0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 11:26:12 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56977 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757377Ab3GEP0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 11:26:10 -0400
+From: Alexander Savchenko <oleksandr.savchenko@ti.com>
+To: <gregkh@linuxfoundation.org>, <slaby@suse.cz>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Paul Walmsley <paul@pwsan.com>, Felipe Balbi <balbi@ti.com>,
+        Kevin Hilman <kevin.hilman@linaro.org>
+Subject: [RESEND][PATCH v2] OMAP2+: UART: enable tx wakeup bit for wer reg
+Date: Fri, 5 Jul 2013 18:25:59 +0300
+Message-ID: <1373037959-22139-1-git-send-email-oleksandr.savchenko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Jul 2013, Peter Zijlstra wrote:
+From: "Govindraj.R" <govindraj.raja@ti.com>
 
-> On Fri, Jul 05, 2013 at 04:23:33PM +0200, Frederic Weisbecker wrote:
-> > Nope, I haven't touched that. I prefer not to fiddle with unstable
-> > clocksource for now :)
-> > 
-> > As for unstable TSCs, if sched_clock_tick() needs to be fed, we simply
-> > don't stop the tick.
-> 
-> Not entirely the same thing; I thought the clocksource watchdog was ran
-> even when we have a 'stable' TSC, just to make sure it stays stable.
-> There's known cases where the BIOS f*cks us over and wrecks TSC sync.
+>From omap36xx onwards the module wakeup enable reg
+wer has TX wakeup bit available enable the same
+by populating the necessary tx wakeup flag for the
+applicable module ip blocks and use the same
+while configuaring wer reg.
 
-See arch/x86/kernel/tsc.c
+Also wer is not context restored, restore wer when
+context is lost.
 
-We disable the watchdog for the TSC when tsc_clocksource_reliable is
-set.
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Kevin Hilman <kevin.hilman@linaro.org>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+(for drivers/tty changes)
+Signed-off-by: Govindraj.R <govindraj.raja@ti.com>
+---
+[rebased to k3.10]
+ drivers/tty/serial/omap-serial.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-tsc_clocksource_reliable is set when:
-
- - you add tsc=reliable to the kernel command line
-
- - boot_cpu_has(X86_FEATURE_TSC_RELIABLE)
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index e42b4c9..fa30d0a 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -52,6 +52,11 @@
+ #define OMAP_UART_REV_52 0x0502
+ #define OMAP_UART_REV_63 0x0603
  
-   X86_FEATURE_TSC_RELIABLE is a software flag, set by vmware and
-   moorsetown. So all other machines keep the watchdog enabled.
++#define OMAP_UART_TX_WAKEUP_EN		BIT(7)
++
++/* Feature flags */
++#define OMAP_UART_WER_HAS_TX_WAKEUP	BIT(0)
++
+ #define UART_ERRATA_i202_MDR1_ACCESS	BIT(0)
+ #define UART_ERRATA_i291_DMA_FORCEIDLE	BIT(1)
+ 
+@@ -137,6 +142,7 @@ struct uart_omap_port {
+ 	unsigned char		dlh;
+ 	unsigned char		mdr1;
+ 	unsigned char		scr;
++	unsigned char		wer;
+ 
+ 	int			use_dma;
+ 	/*
+@@ -151,6 +157,7 @@ struct uart_omap_port {
+ 	int			context_loss_cnt;
+ 	u32			errata;
+ 	u8			wakeups_enabled;
++	u32			features;
+ 
+ 	int			DTR_gpio;
+ 	int			DTR_inverted;
+@@ -683,7 +690,11 @@ static int serial_omap_startup(struct uart_port *port)
+ 	serial_out(up, UART_IER, up->ier);
+ 
+ 	/* Enable module level wake up */
+-	serial_out(up, UART_OMAP_WER, OMAP_UART_WER_MOD_WKUP);
++	up->wer = OMAP_UART_WER_MOD_WKUP;
++	if (up->features & OMAP_UART_WER_HAS_TX_WAKEUP)
++		up->wer |= OMAP_UART_TX_WAKEUP_EN;
++
++	serial_out(up, UART_OMAP_WER, up->wer);
+ 
+ 	pm_runtime_mark_last_busy(up->dev);
+ 	pm_runtime_put_autosuspend(up->dev);
+@@ -1373,9 +1384,11 @@ static void omap_serial_fill_features_erratas(struct uart_omap_port *up)
+ 	case OMAP_UART_REV_52:
+ 		up->errata |= (UART_ERRATA_i202_MDR1_ACCESS |
+ 				UART_ERRATA_i291_DMA_FORCEIDLE);
++		up->features |= OMAP_UART_WER_HAS_TX_WAKEUP;
+ 		break;
+ 	case OMAP_UART_REV_63:
+ 		up->errata |= UART_ERRATA_i202_MDR1_ACCESS;
++		up->features |= OMAP_UART_WER_HAS_TX_WAKEUP;
+ 		break;
+ 	default:
+ 		break;
+@@ -1611,6 +1624,7 @@ static void serial_omap_restore_context(struct uart_omap_port *up)
+ 		serial_omap_mdr1_errataset(up, up->mdr1);
+ 	else
+ 		serial_out(up, UART_OMAP_MDR1, up->mdr1);
++	serial_out(up, UART_OMAP_WER, up->wer);
+ }
+ 
+ static int serial_omap_runtime_suspend(struct device *dev)
+-- 
+1.7.9.5
 
- - On Geode LX (OLPC)
-
-Thanks,
-
-	tglx
