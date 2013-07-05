@@ -1,92 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab3GEWsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 18:48:52 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:50699 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab3GEWsu (ORCPT
+	id S1752103Ab3GEWtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 18:49:25 -0400
+Received: from mailout3.w2.samsung.com ([211.189.100.13]:37364 "EHLO
+	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab3GEWtY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 18:48:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130628095828.GG29209@dyad.programming.kicks-ass.net>
-References: <1371824448-7306-1-git-send-email-eranian@google.com>
-	<20130624084338.GI28407@twins.programming.kicks-ass.net>
-	<CABPqkBRqiNVZnioV_R4sfam1QwHwXZgo36Gixxg5ALPbLbiXfw@mail.gmail.com>
-	<20130625104700.GZ28407@twins.programming.kicks-ass.net>
-	<20130625105123.GA13649@gmail.com>
-	<20130626103303.GB28407@twins.programming.kicks-ass.net>
-	<CABPqkBTETCE7unsE=zvcC5n865ZN-QTW5Y0j-meTO9x-8=BJog@mail.gmail.com>
-	<20130628095828.GG29209@dyad.programming.kicks-ass.net>
-Date: Sat, 6 Jul 2013 00:48:48 +0200
-Message-ID: <CABPqkBSfkg+rPw4A=n8wmPg=iwn1Qf8PdYA4ycxxooOv3GrvmA@mail.gmail.com>
-Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Jul 2013 18:49:24 -0400
+X-AuditID: cbfec37d-b7f036d000004805-d4-51d74d723f6d
+From: Shuah Khan <shuah.kh@samsung.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH] arm: Convert sa1111 platform and bus legacy pm_ops to
+ dev_pm_ops
+Thread-topic: [PATCH] arm: Convert sa1111 platform and bus legacy pm_ops to
+ dev_pm_ops
+Thread-index: AQHOedFX+6nUjqQH7EeziryaTTIsRA==
+Date: Fri, 05 Jul 2013 22:49:21 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E617360A6@sisaex02sj>
+References: <1373064297-13582-1-git-send-email-shuah.kh@samsung.com>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+wr26x7/VAg5P7mSyaF69ns9j0+Bqr
+	xeVdc9gsbl/mtfj608GB1aOluYfNY+esu+we++euYffYvKTe4/MmuQDWKC6blNSczLLUIn27
+	BK6MlsWz2QpucVacv3KfuYGxg6OLkZNDQsBE4uHyJawQtpjEhXvr2boYuTiEBJYxSvxqXcsI
+	4fQySaxZsJAFwpnPKNE5azVYC5uAusTn1zvYQWwRAVWJlquPwdqZBa4xScw9MwssISwQLrH7
+	x0QWiKIIiY3/7jBB2HoS35sXMIPYLEDNDbsWg9XzCthLvNu0ESwuJOAiMWX6FDCbEei+76fW
+	gPUyC4hLNLfeZIG4W0BiyZ7zzBC2qMTLx/+AjuMAshUltq+2gijXkli/8zhUq7bEk3cXWCFW
+	CUr8mHyPZQKj2CwkU2chaZmFpGUWkpYFjCyrGMVKi5MLipPSUytM9IoTc4tL89L1kvNzNzFC
+	Iq92B+P9rzaHGAU4GJV4eBMvXgsUYk0sK67MPcQowcGsJMJrnwAU4k1JrKxKLcqPLyrNSS0+
+	xMjEwSnVwHhN0dBTxeFC+j0PdeHE2+xfEoS3faqMXrX0w9Mjn24tP/lh+ZvNncb2kt8OlPB2
+	NTOtbf1tmar0cb+x3zqV5hdrojZnrez0WaWU/WqSxwPlU22nvAOOnljoZHHARm6S99oPTnyN
+	+Y8O5JbNf1Nem5D4yX6qHhOXRLrkkbz/Lqx7JCckHZ6RFa7EUpyRaKjFXFScCAA2VTW4mgIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
-
-On Fri, Jun 28, 2013 at 11:58 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Jun 26, 2013 at 09:10:50PM +0200, Stephane Eranian wrote:
->> After more investigation with the author of the false sharing
->> detection tool, I think
->> that if the mapping changes, it is okay. The tool can detect this and
->> drop the analysis
->> at that address. So as long as we can flag the mapping change, we are
->> okay. Hopefully,
->> it does not occur frequently. If so, then I think there are bigger
->> issues to fix on the system
->> than false sharing.
+On 07/05/2013 04:45 PM, Shuah Khan wrote:
+> Convert arch/arm/common/sa1111 platform and bus legacy pm_ops to dev_pm_ops.
+> This change also updates the use of COMFIG_PM to CONFIG_PM_SLEEP as this
+> platform and bus code implements PM_SLEEP ops and not the PM_RUNTIME ops.
+> Compile tested.
 >
-> But if you index everything using dev:inode:offset it doesn't matter if the
-> mapping changes; you're invariant to map placement.
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> ---
+>   arch/arm/common/sa1111.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> And the thing is; we already compute most of that anyway in order to find the
-> code in DSOs, except there we use filename instead of dev:inode. However if
-> there were means to open files using dev:inode that might actually be more
-> reliable than using the filename.
+> diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
+> index 2a64c12..95594f0 100644
+> --- a/arch/arm/common/sa1111.c
+> +++ b/arch/arm/common/sa1111.c
+> @@ -1321,7 +1321,7 @@ static int sa1111_bus_resume(struct device *dev)
+>   }
+>   static SIMPLE_DEV_PM_OPS(sa1111_bus_dev_pm_ops, sa1111_bus_suspend,
+>   			 sa1111_bus_resume);
+> -#endif
+> +#endif
+>
+>   static void sa1111_bus_shutdown(struct device *dev)
+>   {
+>
 
-So, I tried on an example using shmat(). I map the same shared segment twice
-in the same process. Then I fork(): I see  this in /proc/PID/maps:
+Please ignore this patch - it is not correct.
 
-7f80fce28000-7f80fce29000 rw-s 00000000 00:04 1376262
-  /SYSV00000000 (deleted)
-7f80fce29000-7f80fce2a000 rw-s 00000000 00:04 1343491
-  /SYSV00000000 (deleted)
-7f80fce2a000-7f80fce2b000 rw-s 00000000 00:04 1343491
-  /SYSV00000000 (deleted)
+-- Shuah
 
-The segment at 1343491 is the one mapped twice. So that number (shmid)
-can be used to identify identical mappings. It appears the same way in both
-processes. The other 1376262 mapping is just to verify that each segment
-gets a different number.
-
-So it looks possible to use this approach across process to identify identical
-physical mappings. However, this is not very practical.
-
-The first reason is that perf_event does not capture shmat() mappings in MMAP
-records.
-
-The second is is that if you rely on /proc/PID/maps, you will have to
-have the tool
-constantly poll that file for new shared mappings. This is not how
-perf works today,
-not even in system-wide mode. /proc/PID/maps is swept only once when perf
-record -a is started.
-
-Ingo is proposing a ioctl() to flush the mappings. But then, when is a
-good time to do this
-from the tool?
-
-So my approach with PERF_SAMPLE_PHYS_ADDR looks easier on the tools which
-if I recall is the philosophy behind perf_events.
-
-Any more comments?
+-- 
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
