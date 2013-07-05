@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636Ab3GETfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:35:38 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51552 "EHLO
+	id S1757628Ab3GETfe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 15:35:34 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51522 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933863Ab3GETeu (ORCPT
+	with ESMTP id S1752256Ab3GETes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:34:50 -0400
+	Fri, 5 Jul 2013 15:34:48 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 09/10] clocksource: sun4i: Cleanup parent clock setup
-Date: Fri,  5 Jul 2013 21:34:36 +0200
-Message-Id: <1373052877-29366-10-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 07/10] clocksource: sun4i: Factor out some timer code
+Date: Fri,  5 Jul 2013 21:34:34 +0200
+Message-Id: <1373052877-29366-8-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,48 +24,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current bring-up code for the timer was overly complicated. The only
-thing we need is actually which clock we want to use as source and
-that's pretty much all. Let's keep it that way.
+The set_next_event and set_mode callbacks share a lot of common code we
+can easily factor to avoid duplication and mistakes.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clocksource/sun4i_timer.c | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ drivers/clocksource/sun4i_timer.c | 48 ++++++++++++++++++++++++++-------------
+ 1 file changed, 32 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 2f84075..581e903 100644
+index 6938cf9..00e17d9 100644
 --- a/drivers/clocksource/sun4i_timer.c
 +++ b/drivers/clocksource/sun4i_timer.c
-@@ -30,6 +30,9 @@
- #define TIMER_CTL_REG(val)	(0x10 * val + 0x10)
- #define TIMER_CTL_ENABLE		BIT(0)
- #define TIMER_CTL_RELOAD		BIT(1)
-+#define TIMER_CTL_CLK_SRC(val)		(((val) & 0x3) << 2)
-+#define TIMER_CTL_CLK_SRC_OSC24M		(1)
-+#define TIMER_CTL_CLK_PRES(val)		(((val) & 0x7) << 4)
- #define TIMER_CTL_ONESHOT		BIT(7)
- #define TIMER_INTVAL_REG(val)	(0x10 * (val) + 0x14)
- #define TIMER_CNTVAL_REG(val)	(0x10 * (val) + 0x18)
-@@ -167,16 +170,8 @@ static void __init sun4i_timer_init(struct device_node *node)
- 	writel(clk_get_rate(clk) / HZ,
- 	       timer_base + TIMER_INTVAL_REG(0));
+@@ -52,24 +52,46 @@ static void sun4i_clkevt_sync(void)
+ 		cpu_relax();
+ }
  
--	/* set clock source to HOSC, 16 pre-division */
--	val = readl(timer_base + TIMER_CTL_REG(0));
--	val &= ~(0x07 << 4);
--	val &= ~(0x03 << 2);
--	val |= (4 << 4) | (1 << 2);
--	writel(val, timer_base + TIMER_CTL_REG(0));
++static void sun4i_clkevt_time_stop(u8 timer)
++{
++	u32 val = readl(timer_base + TIMER_CTL_REG(timer));
++	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(timer));
++	sun4i_clkevt_sync();
++}
++
++static void sun4i_clkevt_time_setup(u8 timer, unsigned long delay)
++{
++	writel(delay, timer_base + TIMER_INTVAL_REG(timer));
++}
++
++static void sun4i_clkevt_time_start(u8 timer, bool periodic)
++{
++	u32 val = readl(timer_base + TIMER_CTL_REG(timer));
++
++	if (periodic)
++		val &= ~TIMER_CTL_ONESHOT;
++	else
++		val |= TIMER_CTL_ONESHOT;
++
++	writel(val | TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(timer));
++}
++
+ static void sun4i_clkevt_mode(enum clock_event_mode mode,
+ 			      struct clock_event_device *clk)
+ {
+-	u32 u = readl(timer_base + TIMER_CTL_REG(0));
 -
--	/* set mode to auto reload */
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
+-		u &= ~(TIMER_CTL_ONESHOT);
+-		writel(u | TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
++		sun4i_clkevt_time_stop(0);
++		sun4i_clkevt_time_start(0, true);
+ 		break;
+-
+ 	case CLOCK_EVT_MODE_ONESHOT:
+-		writel(u | TIMER_CTL_ONESHOT, timer_base + TIMER_CTL_REG(0));
++		sun4i_clkevt_time_stop(0);
++		sun4i_clkevt_time_start(0, false);
+ 		break;
+ 	case CLOCK_EVT_MODE_UNUSED:
+ 	case CLOCK_EVT_MODE_SHUTDOWN:
+ 	default:
+-		writel(u & ~(TIMER_CTL_ENABLE), timer_base + TIMER_CTL_REG(0));
++		sun4i_clkevt_time_stop(0);
+ 		break;
+ 	}
+ }
+@@ -77,15 +99,9 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
+ static int sun4i_clkevt_next_event(unsigned long evt,
+ 				   struct clock_event_device *unused)
+ {
+-	u32 val = readl(timer_base + TIMER_CTL_REG(0));
+-	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
+-	sun4i_clkevt_sync();
+-
+-	writel(evt, timer_base + TIMER_INTVAL_REG(0));
+-
 -	val = readl(timer_base + TIMER_CTL_REG(0));
--	writel(val | TIMER_CTL_RELOAD, timer_base + TIMER_CTL_REG(0));
-+	writel(TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M) | TIMER_CTL_RELOAD,
-+	       timer_base + TIMER_CTL_REG(0));
+-	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
+-	       timer_base + TIMER_CTL_REG(0));
++	sun4i_clkevt_time_stop(0);
++	sun4i_clkevt_time_setup(0, evt);
++	sun4i_clkevt_time_start(0, false);
  
- 	ret = setup_irq(irq, &sun4i_timer_irq);
- 	if (ret)
+ 	return 0;
+ }
 -- 
 1.8.3.2
 
