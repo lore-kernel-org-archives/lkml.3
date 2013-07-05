@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964923Ab3GEOZy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 10:25:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34631 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756937Ab3GEOZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 10:25:18 -0400
-Date: Fri, 5 Jul 2013 07:25:00 -0700
-From: tip-bot for Wang YanQing <tipbot@zytor.com>
-Message-ID: <tip-237d1548543312fcc8c99d302ab68fbf8ef6f97f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de,
-        udknight@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, udknight@gmail.com, bp@suse.de,
-        hpa@linux.intel.com
-In-Reply-To: <20130628144516.GA2177@udknight>
-References: <20130628144516.GA2177@udknight>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86: Fix override new_cpu_data.x86 with 486
-Git-Commit-ID: 237d1548543312fcc8c99d302ab68fbf8ef6f97f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S933844Ab3GEO0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 10:26:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756251Ab3GEO0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 10:26:40 -0400
+Date: Fri, 5 Jul 2013 10:26:29 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: __ftrace_hash_rec_update FTRACE_WARN_ON.
+Message-ID: <20130705142629.GA325@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 05 Jul 2013 07:25:06 -0700 (PDT)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  237d1548543312fcc8c99d302ab68fbf8ef6f97f
-Gitweb:     http://git.kernel.org/tip/237d1548543312fcc8c99d302ab68fbf8ef6f97f
-Author:     Wang YanQing <udknight@gmail.com>
-AuthorDate: Fri, 28 Jun 2013 22:45:16 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 28 Jun 2013 15:27:29 -0700
+WARNING: at kernel/trace/ftrace.c:1605 __ftrace_hash_rec_update.part.37+0x20a/0x240()
+Modules linked in: sctp libcrc32c snd_seq_dummy fuse tun rfcomm bnep scsi_transport_iscsi hidp nfnetlink can_bcm irda caif_socket nfc caif netrom crc_ccitt rose x25 appletalk ipt_ULOG rds bluetooth can_raw ipx phonet can rfkill af_802154 pppoe pppox p8023 llc2 af_key ppp_generic psnap p8022 atm llc slhc ax25 af_rxrpc snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep snd_seq pcspkr snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer snd ptp soundcore pps_core
+CPU: 1 PID: 15820 Comm: trinity-child2 Not tainted 3.10.0+ #21
+ ffffffff81a1f20b ffff8801be9dfc60 ffffffff816f2120 0000000000000000
+ ffff8801be9dfc98 ffffffff8104ca81 0000000000000000 0000000000000001
+ ffff8801be424000 0000000000000000 ffff88022bd25518 ffff8801be9dfca8
+Call Trace:
+ [<ffffffff816f2120>] dump_stack+0x4e/0x82
+ [<ffffffff8104ca81>] warn_slowpath_common+0x61/0x80
+ [<ffffffff8104cb5a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8111489a>] __ftrace_hash_rec_update.part.37+0x20a/0x240
+ [<ffffffff811168a8>] ftrace_shutdown+0xb8/0x170
+ [<ffffffff81116d40>] unregister_ftrace_function+0x30/0x50
+ [<ffffffff81134487>] perf_ftrace_event_register+0x87/0x130
+ [<ffffffff811342ec>] perf_trace_destroy+0x2c/0x50
+ [<ffffffff8113caf9>] tp_perf_event_destroy+0x9/0x10
+ [<ffffffff8113f0f7>] free_event+0xa7/0x310
+ [<ffffffff8113f3c4>] perf_event_release_kernel+0x64/0x90
+ [<ffffffff8113f830>] put_event+0x120/0x1b0
+ [<ffffffff8113f740>] ? put_event+0x30/0x1b0
+ [<ffffffff8113f8d0>] perf_release+0x10/0x20
+ [<ffffffff811b7d15>] __fput+0xf5/0x2d0
+ [<ffffffff811b7fae>] ____fput+0xe/0x10
+ [<ffffffff8107798c>] task_work_run+0xac/0xe0
+ [<ffffffff81051d27>] do_exit+0x2c7/0xcd0
+ [<ffffffff81704b00>] ? ftrace_call+0x5/0x2f
+ [<ffffffff81053afc>] do_group_exit+0x4c/0xc0
+ [<ffffffff81053b84>] SyS_exit_group+0x14/0x20
+ [<ffffffff817050d4>] tracesys+0xdd/0xe2
+---[ end trace df06ab36fcd44d8b ]---
 
-x86: Fix override new_cpu_data.x86 with 486
 
-We should set X86 to 486 before use cpuid to detect the cpu type, if
-we set X86 to 486 after cpuid, then we will get 486 until cpu_detect
-runs.
+1605                         if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
+1606                                 return;
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
-Link: http://lkml.kernel.org/r/20130628144516.GA2177@udknight
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/head_32.S | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index e65ddc6..fe79573 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -410,6 +410,7 @@ enable_paging:
- /*
-  * Check if it is 486
-  */
-+	movb $4,X86			# at least 486
- 	cmpl $-1,X86_CPUID
- 	je is486
- 
-@@ -437,7 +438,6 @@ enable_paging:
- 	movl %edx,X86_CAPABILITY
- 
- is486:
--	movb $4,X86
- 	movl $0x50022,%ecx	# set AM, WP, NE and MP
- 	movl %cr0,%eax
- 	andl $0x80000011,%eax	# Save PG,PE,ET
