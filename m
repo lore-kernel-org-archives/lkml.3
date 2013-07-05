@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab3GEVKU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 17:10:20 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:32817
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752274Ab3GEVKT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 17:10:19 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz98dIc89bh1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275dhz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
-Date: Fri, 5 Jul 2013 14:10:04 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Baruch Siach <baruch@tkos.co.il>, John Stultz <john.stultz@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <michal.simek@xilinx.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] clocksource/cadence_ttc: Reuse clocksource as sched_clock
-References: <1372888216-10726-1-git-send-email-soren.brinkmann@xilinx.com>
- <20130704033026.GX4288@tarshish>
- <0030b826-0eb1-4bb8-a0de-1d8dc68bd81a@TX2EHSMHS017.ehs.local>
- <alpine.DEB.2.02.1307052238170.32106@ionos.tec.linutronix.de>
- <4fab6223-45c5-453e-9972-1c12aa79a312@CO1EHSMHS008.ehs.local>
- <alpine.DEB.2.02.1307052259090.32106@ionos.tec.linutronix.de>
+	id S1755297Ab3GEVTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 17:19:46 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40795 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752274Ab3GEVTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 17:19:45 -0400
+Date: Fri, 5 Jul 2013 22:19:20 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Message-ID: <20130705211920.GK27646@sirena.org.uk>
+References: <201307051745.16140.arnd@arndb.de>
+ <20130705173321.GE27646@sirena.org.uk>
+ <201307052255.10765.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ESod/vG06iFAbj33"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307052259090.32106@ionos.tec.linutronix.de>
+In-Reply-To: <201307052255.10765.arnd@arndb.de>
+X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <db965b9f-740b-4ea6-9219-09ece1fc9220@CO9EHSMHS013.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: Allow imx-pcm-{dma,fiq}.c to be modules
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 10:59:53PM +0200, Thomas Gleixner wrote:
-> On Fri, 5 Jul 2013, Sören Brinkmann wrote:
-> > On Fri, Jul 05, 2013 at 10:42:03PM +0200, Thomas Gleixner wrote:
-> > > We have a mechanism for that in place, if stuff goes cross trees. One
-> > > of the trees provides a set of commit for the other tree to pull, so
-> > > we do not end up with merge dependencies and conflicts.
-> > > 
-> > > Why is clocksource stuff going through armsoc unless it contains
-> > > related modifications in arch/arm/
-> > We overhauled Zynq's common clock code and migrated all Zynq drivers to
-> > it - the TTC being one. I'm pretty sure you were on the CC list for that
-> > change.
-> > https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=30e1e28598c2674c133148d8aec6d431d7acd314
-> > 
-> 
-> That's fine as it has no dependencies on any of the clocksource core
-> changes AFAICT.
-Right, shouldn't be a big deal. Just for this patch, I currently have the
-choice of working with the old TTC but the new clocksource core or the
-other way around. But since everything is going to meet in Linus' tree
-soon, I just wait a bit until tip/timers is merged.
 
-	Sören
+--ESod/vG06iFAbj33
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Fri, Jul 05, 2013 at 10:55:10PM +0200, Arnd Bergmann wrote:
+> On Friday 05 July 2013, Mark Brown wrote:
 
+> > Is this actually OK with the FIQ APIs?
+
+> I don't know. Why wouldn't it?
+
+It was the only reason I could think of why that'd have been done.
+
+> Other users of the same interfaces (mx1_camera, spi-s3c24xx) can also be
+> modules, so I wouldn't expect a fundamental issue.
+
+OK.
+
+--ESod/vG06iFAbj33
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1zhVAAoJELSic+t+oim99/kP/28JYWCNMPVUQP43nBiyAvdT
+BHZX5wESwQHMV0lQ7jfGvYcpN9aLW0NmxDgSbg1W7/rZHvwR20NAS+dFqZ3Pxyeq
+zMX5O+T4OefimcSyr/pv/fujYr+3R7SpVkb03w53UraimtrLfq+ULvWaDVmmylLl
+WT+dDcTuzcFSW3d/3OqSJQSqM/g2fc/9fxGNV8x60MTEx4j3Wq0zv5S8RTnjlEHx
+4TY28EB9e9qbtgiXVHZSJMXA+F4jAACLEprgaiolF6PGxxjslnatX1eIxlZGhENe
+CZYUWgO9kv0P9d5PLgPhJeywRP5EkkMxCHe0XLyI/lvEvzDqBNAeIawDl+E0faC9
+YZJ19vWWxRPiu96MUoTGWFgn9aVqKVU3kDL0uciOyGXv5FVWBh0ubEIYT9kphW0v
+9c8Q118cseNdhfB5FPRVPSQsJYFGjI/SueirdM/S4Z38UfQOlqi3Ap3LOjU3f5zH
+O86z0AFI0v7hQcGHdscJQbkwByRpJOp3+eNvpXKbT2E1ioDfq5ISY9pcec1Njlzn
+weo1Al9KhlOeGoCLDZLoE6D3F8ohj3mKc3PNaFfLcE9ZrFQBM99neVYBBvd+AbFm
+asUPGmrX2QZhufIKj9lJUR3S7srgQ7jVK610qAKt8n++PZThUxkd1QvEhyHw6EAy
+9Q1N8dSK9Em5BZLIHMWO
+=ayce
+-----END PGP SIGNATURE-----
+
+--ESod/vG06iFAbj33--
