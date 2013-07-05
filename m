@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933847Ab3GEQWn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 12:22:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56414 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757517Ab3GEQWI (ORCPT
+	id S1757391Ab3GEQ3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 12:29:32 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:48181 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab3GEQ3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 12:22:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@infradead.org, arm@kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 6/8] ARM: OMAP: omap_common_late_init may be unused
-Date: Fri,  5 Jul 2013 18:23:35 +0200
-Message-Id: <1373041417-217728-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1373041417-217728-1-git-send-email-arnd@arndb.de>
-References: <1373041417-217728-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:hrrojqIGpa4pc9nHhlm8ccm2foCNK99xwU9Ysis/N/b
- 09qyK4fck95WLlJTki9Oqmhf0H4yv3xXRYZT+RAeQSIqIwQE4J
- Yig4iu6FKm/T88a4Hmo7RoIB3c/1xkiMcT2QZSvZGYqvLm53by
- s+0mLDkwHNC4cZz5cteqaq8qP5QprOPRMFxuXO7rGCpIx3mrUw
- ZAPFKEfrnIis9OYNIw1VCHO1/ZnhM/JuyW5oyOsdGUG0n+UUcc
- 2EhXjtvuWGMt3+PMI6hI0e8F6YJ5dZek7gjzAXSb1GIMGXfjKa
- uUq/mVYwWJWrv0e0TBwOfPjLtN044Z7sqXw4i4mVZTvYiku4v9
- pCSUCo3rhmWZotb+3CkIC8FCVu/Hjc9TPrWO83jdl
+	Fri, 5 Jul 2013 12:29:30 -0400
+Subject: [PATCH 0/3] smp/ipi: Minor cleanups in smp_call_function variants
+To: xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: npiggin@suse.de, deepthi@linux.vnet.ibm.com, peterz@infradead.org,
+        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, udknight@gmail.com,
+        rostedt@goodmis.org, miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
+        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, shli@kernel.org, tglx@linutronix.de,
+        lig.fnst@cn.fujitsu.com, anton@samba.org
+Date: Fri, 05 Jul 2013 21:56:52 +0530
+Message-ID: <20130705162548.16888.18957.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.16-38-g167d
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070516-8878-0000-0000-000007D56C08
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some OMAP SoCs use this function while others do not, and that
-causes a warning when building multi_v7_defconfig. Marking the
-function __maybe_unused silences the harmless warning without the
-need to add complex #ifdef logic.
+This patchset removes possible stale code overlooked by previous
+cleanups. It also clarifies ambiguous comments about deadlock scenarios
+while calling smp_call_function variants, as they were not obvious at a first
+glance.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Tony Lindgren <tony@atomide.com>
 ---
- arch/arm/mach-omap2/io.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-omap2/io.c b/arch/arm/mach-omap2/io.c
-index fe3253a..4a3f06f 100644
---- a/arch/arm/mach-omap2/io.c
-+++ b/arch/arm/mach-omap2/io.c
-@@ -394,7 +394,7 @@ static void __init omap_hwmod_init_postsetup(void)
- 	omap_pm_if_early_init();
- }
- 
--static void __init omap_common_late_init(void)
-+static void __init __maybe_unused omap_common_late_init(void)
- {
- 	omap_mux_late_init();
- 	omap2_common_pm_late_init();
+Preeti U Murthy (3):
+      smp/ipi: Remove redundant cfd->cpumask_ipi mask
+      smp/ipi:Clarify ambiguous comments around deadlock scenarios in smp_call_function variants.
+      smp/ipi:Remove check around csd lock in handler for smp_call_function variants
+
+
+ kernel/smp.c |   74 ++++++++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 46 insertions(+), 28 deletions(-)
+
 -- 
-1.8.3.1
+Signature
 
