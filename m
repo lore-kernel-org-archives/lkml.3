@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab3GEG1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 02:27:13 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:52852 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751304Ab3GEG1M (ORCPT
+	id S1753947Ab3GEG2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 02:28:09 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:22767
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751430Ab3GEG2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 02:27:12 -0400
-Date: Fri, 5 Jul 2013 08:27:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.11
-Message-ID: <20130705062708.GB29487@gmail.com>
-References: <20130701090356.GA14912@gmail.com>
- <CA+55aFwJwYRbPBBN1ma8TBHuomo_AJjajxT6YDmdGXJdE4EgrQ@mail.gmail.com>
- <20130703075542.GF23916@twins.programming.kicks-ass.net>
+	Fri, 5 Jul 2013 02:28:07 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
+CC: <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <vakul@freescale.com>, Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH V2 2/2] DMA: Freescale: update driver to support 8-channel DMA engine
+Date: Fri, 5 Jul 2013 14:27:06 +0800
+Message-ID: <1373005626-20726-3-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373005626-20726-1-git-send-email-hongbo.zhang@freescale.com>
+References: <1373005626-20726-1-git-send-email-hongbo.zhang@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703075542.GF23916@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+This patch adds support to 8-channel DMA engine, thus the driver works for both
+the new 8-channel and the legacy 4-channel DMA engines.
 
-> On Tue, Jul 02, 2013 at 05:50:29PM -0700, Linus Torvalds wrote:
-> > On Mon, Jul 1, 2013 at 2:03 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> > >
-> > >    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-core-for-linus
-> > >
-> > > Kernel improvements:
-> > >
-> > >  * AMD IOMMU uncore PMU support by Suravee Suthikulpanit001a
-> > 
-> > This one prints a really annoying error message if you're not on an
-> > AMD platform:
-> > 
-> > +       if (!amd_iommu_pc_supported()) {
-> > +               pr_err("perf: amd_iommu PMU not installed. No support!\n");
-> > +               return -ENODEV;
-> > +       }
-> > 
-> > and you know what? That's not acceptable. It damn well is *not* an
-> > error to not have an AMD IOMMU.
-> > 
-> > It should - at most - be a pr_info(). Maybe nothing at all. "pr_err()"
-> > is just totally out of line.
-> 
-> Quite; it prints enough stuff when it does find one so I'm all for 
-> scrapping that one print when it doesn't find it.
-> 
-> Sorry for not seeing that; when I initially read that code I thought it 
-> was for the case where the hardware was expected to have the device but 
-> we couldn't find it for some weird reason.
-> 
-> ---
-> Subject: perf, amd: Do not print an error when the device is not present
-> 
-> As Linus said its not an error to not have an AMD IOMMU; esp. when you're not
-> even running on an AMD platform.
-> 
-> Requested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+---
+ drivers/dma/fsldma.c |    5 ++++-
+ drivers/dma/fsldma.h |    2 +-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-Applied to perf/urgent, thanks!
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index 4fc2980..7732de2 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -1261,7 +1261,9 @@ static int fsl_dma_chan_probe(struct fsldma_device *fdev,
+ 	WARN_ON(fdev->feature != chan->feature);
+ 
+ 	chan->dev = fdev->dev;
+-	chan->id = ((res.start - 0x100) & 0xfff) >> 7;
++	chan->id = (res.start & 0xfff) < 0x300 ?
++		   ((res.start - 0x100) & 0xfff) >> 7 :
++		   ((res.start - 0x200) & 0xfff) >> 7;
+ 	if (chan->id >= FSL_DMA_MAX_CHANS_PER_DEVICE) {
+ 		dev_err(fdev->dev, "too many channels for device\n");
+ 		err = -EINVAL;
+@@ -1435,6 +1437,7 @@ static int fsldma_of_remove(struct platform_device *op)
+ }
+ 
+ static const struct of_device_id fsldma_of_ids[] = {
++	{ .compatible = "fsl,elo3-dma", },
+ 	{ .compatible = "fsl,eloplus-dma", },
+ 	{ .compatible = "fsl,elo-dma", },
+ 	{}
+diff --git a/drivers/dma/fsldma.h b/drivers/dma/fsldma.h
+index f5c3879..1ffc244 100644
+--- a/drivers/dma/fsldma.h
++++ b/drivers/dma/fsldma.h
+@@ -112,7 +112,7 @@ struct fsldma_chan_regs {
+ };
+ 
+ struct fsldma_chan;
+-#define FSL_DMA_MAX_CHANS_PER_DEVICE 4
++#define FSL_DMA_MAX_CHANS_PER_DEVICE 8
+ 
+ struct fsldma_device {
+ 	void __iomem *regs;	/* DGSR register base */
+-- 
+1.7.9.5
 
-( The pedantic in me changed that tag to Reported-by as we treat console 
-  spam as bugs. )
 
-Thanks,
 
-	Ingo
