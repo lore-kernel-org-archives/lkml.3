@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab3GETfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:35:40 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51522 "EHLO
+	id S1757636Ab3GETfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 15:35:38 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51552 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933875Ab3GETev (ORCPT
+	with ESMTP id S933863Ab3GETeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:34:51 -0400
+	Fri, 5 Jul 2013 15:34:50 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 10/10] clocksource: sun4i: Fix bug when switching from periodic to oneshot modes
-Date: Fri,  5 Jul 2013 21:34:37 +0200
-Message-Id: <1373052877-29366-11-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 09/10] clocksource: sun4i: Cleanup parent clock setup
+Date: Fri,  5 Jul 2013 21:34:36 +0200
+Message-Id: <1373052877-29366-10-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,59 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The interval was firing at was set up at probe time, and only changed in
-the set_next_event, and never changed back, which is not really what is
-expected.
-
-When enabling the periodic mode, now set an interval to tick every
-jiffy.
+The current bring-up code for the timer was overly complicated. The only
+thing we need is actually which clock we want to use as source and
+that's pretty much all. Let's keep it that way.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clocksource/sun4i_timer.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/clocksource/sun4i_timer.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
 diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 581e903..2b7cc31 100644
+index 2f84075..581e903 100644
 --- a/drivers/clocksource/sun4i_timer.c
 +++ b/drivers/clocksource/sun4i_timer.c
-@@ -38,6 +38,7 @@
+@@ -30,6 +30,9 @@
+ #define TIMER_CTL_REG(val)	(0x10 * val + 0x10)
+ #define TIMER_CTL_ENABLE		BIT(0)
+ #define TIMER_CTL_RELOAD		BIT(1)
++#define TIMER_CTL_CLK_SRC(val)		(((val) & 0x3) << 2)
++#define TIMER_CTL_CLK_SRC_OSC24M		(1)
++#define TIMER_CTL_CLK_PRES(val)		(((val) & 0x7) << 4)
+ #define TIMER_CTL_ONESHOT		BIT(7)
+ #define TIMER_INTVAL_REG(val)	(0x10 * (val) + 0x14)
  #define TIMER_CNTVAL_REG(val)	(0x10 * (val) + 0x18)
- 
- static void __iomem *timer_base;
-+static u32 ticks_per_jiffy;
- 
- /*
-  * When we disable a timer, we need to wait at least for 2 cycles of
-@@ -74,7 +75,8 @@ static void sun4i_clkevt_time_start(u8 timer, bool periodic)
- 	else
- 		val |= TIMER_CTL_ONESHOT;
- 
--	writel(val | TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(timer));
-+	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
-+	       timer_base + TIMER_CTL_REG(timer));
- }
- 
- static void sun4i_clkevt_mode(enum clock_event_mode mode,
-@@ -83,6 +85,7 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
- 		sun4i_clkevt_time_stop(0);
-+		sun4i_clkevt_time_setup(0, ticks_per_jiffy);
- 		sun4i_clkevt_time_start(0, true);
- 		break;
- 	case CLOCK_EVT_MODE_ONESHOT:
-@@ -170,7 +173,9 @@ static void __init sun4i_timer_init(struct device_node *node)
+@@ -167,16 +170,8 @@ static void __init sun4i_timer_init(struct device_node *node)
  	writel(clk_get_rate(clk) / HZ,
  	       timer_base + TIMER_INTVAL_REG(0));
  
--	writel(TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M) | TIMER_CTL_RELOAD,
-+	ticks_per_jiffy = DIV_ROUND_UP(clk_get_rate(clk), HZ);
-+
-+	writel(TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M),
- 	       timer_base + TIMER_CTL_REG(0));
+-	/* set clock source to HOSC, 16 pre-division */
+-	val = readl(timer_base + TIMER_CTL_REG(0));
+-	val &= ~(0x07 << 4);
+-	val &= ~(0x03 << 2);
+-	val |= (4 << 4) | (1 << 2);
+-	writel(val, timer_base + TIMER_CTL_REG(0));
+-
+-	/* set mode to auto reload */
+-	val = readl(timer_base + TIMER_CTL_REG(0));
+-	writel(val | TIMER_CTL_RELOAD, timer_base + TIMER_CTL_REG(0));
++	writel(TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M) | TIMER_CTL_RELOAD,
++	       timer_base + TIMER_CTL_REG(0));
  
  	ret = setup_irq(irq, &sun4i_timer_irq);
+ 	if (ret)
 -- 
 1.8.3.2
 
