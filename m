@@ -1,126 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933826Ab3GEOZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 10:25:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34632 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756251Ab3GEOZS (ORCPT
+	id S1757470Ab3GEOZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 10:25:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43329 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756251Ab3GEOZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 10:25:18 -0400
-Date: Fri, 5 Jul 2013 07:24:51 -0700
-From: tip-bot for Borislav Petkov <tipbot@zytor.com>
-Message-ID: <tip-62122fd7dadac09704782d8bc051fb898a0272bd@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, bp@suse.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de, hpa@linux.intel.com
-In-Reply-To: <1372437701-13351-1-git-send-email-bp@alien8.de>
-References: <1372437701-13351-1-git-send-email-bp@alien8.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cpufeature: Use new CC_HAVE_ASM_GOTO
-Git-Commit-ID: 62122fd7dadac09704782d8bc051fb898a0272bd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
+	Fri, 5 Jul 2013 10:25:25 -0400
+Message-ID: <1373034289.3935.33.camel@pizza.hi.pengutronix.de>
+Subject: Re: [PATCH v3 2/6] misc: sram: add ability to mark sram sections as
+ reserved
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ulrich Prinz <ulrich.prinz@googlemail.com>
+Date: Fri, 05 Jul 2013 16:24:49 +0200
+In-Reply-To: <201307051441.27605.heiko@sntech.de>
+References: <201307051440.19428.heiko@sntech.de>
+	 <201307051441.27605.heiko@sntech.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 05 Jul 2013 07:24:58 -0700 (PDT)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  62122fd7dadac09704782d8bc051fb898a0272bd
-Gitweb:     http://git.kernel.org/tip/62122fd7dadac09704782d8bc051fb898a0272bd
-Author:     Borislav Petkov <bp@suse.de>
-AuthorDate: Fri, 28 Jun 2013 18:41:41 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 28 Jun 2013 15:26:48 -0700
+Am Freitag, den 05.07.2013, 14:41 +0200 schrieb Heiko Stübner:
+> Some SoCs need parts of their sram for special purposes. So while being part
+> of the periphal, it should not be part of the genpool controlling the sram.
+> 
+> Threfore add an option mmio-sram-reserved to keep arbitary portions of the
+> sram from being part of the pool.
+> 
+> Suggested-by: Rob Herring <robherring2@gmail.com>
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
 
-x86, cpufeature: Use new CC_HAVE_ASM_GOTO
+Acked-by: Philipp Zabel <p.zabel@pengutronix.de>
 
-... for checking for "asm goto" compiler support. It is more explicit
-this way and we cover the cases where distros have backported that
-support even to gcc versions < 4.5.
+> ---
+>  Documentation/devicetree/bindings/misc/sram.txt |    8 +++
+>  drivers/misc/sram.c                             |   80 +++++++++++++++++++++--
+>  2 files changed, 82 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/misc/sram.txt b/Documentation/devicetree/bindings/misc/sram.txt
+> index 4d0a00e..eae080e 100644
+> --- a/Documentation/devicetree/bindings/misc/sram.txt
+> +++ b/Documentation/devicetree/bindings/misc/sram.txt
+> @@ -8,9 +8,17 @@ Required properties:
+>  
+>  - reg : SRAM iomem address range
+>  
+> +Optional properties:
+> +
+> +- mmio-sram-reserved: ordered list of reserved chunks inside the sram that
+> +  should not become part of the genalloc pool.
+> +  Format is <base size>, <base size>, ...; with base being relative to the
+> +  reg property base.
+> +
+>  Example:
+>  
+>  sram: sram@5c000000 {
+>  	compatible = "mmio-sram";
+>  	reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000 */
+> +	mmio-sram-reserved = <0x0 0x100>; /* reserve 0x5c000000-0x5c000100 */
+>  };
+> diff --git a/drivers/misc/sram.c b/drivers/misc/sram.c
+> index afe66571..9131e4a 100644
+> --- a/drivers/misc/sram.c
+> +++ b/drivers/misc/sram.c
+> @@ -42,6 +42,13 @@ static int sram_probe(struct platform_device *pdev)
+>  	struct sram_dev *sram;
+>  	struct resource *res;
+>  	unsigned long size;
+> +	const __be32 *reserved_list = NULL;
+> +	int reserved_size = 0;
+> +	unsigned int cur_start = 0;
+> +	unsigned int cur_size;
+> +	unsigned int rstart;
+> +	unsigned int rsize;
+> +	int i;
+>  	int ret;
+>  
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> @@ -65,12 +72,73 @@ static int sram_probe(struct platform_device *pdev)
+>  	if (!sram->pool)
+>  		return -ENOMEM;
+>  
+> -	ret = gen_pool_add_virt(sram->pool, (unsigned long)virt_base,
+> -				res->start, size, -1);
+> -	if (ret < 0) {
+> -		if (sram->clk)
+> -			clk_disable_unprepare(sram->clk);
+> -		return ret;
+> +	if (pdev->dev.of_node) {
+> +		reserved_list = of_get_property(pdev->dev.of_node,
+> +						"mmio-sram-reserved",
+> +						&reserved_size);
+> +		if (reserved_list) {
+> +			reserved_size /= sizeof(*reserved_list);
+> +			if (!reserved_size || reserved_size % 2) {
+> +				dev_warn(&pdev->dev, "wrong number of arguments in mmio-sram-reserved\n");
+> +				reserved_list = NULL;
+> +			}
+> +		}
+> +	}
+> +
+> +	if (!reserved_list)
+> +		reserved_size = 0;
+> +
+> +	for (i = 0; i < (reserved_size + 2); i += 2) {
+> +		if (i < reserved_size) {
+> +			/* get the next reserved block */
+> +			rstart = be32_to_cpu(*reserved_list++);
+> +			rsize = be32_to_cpu(*reserved_list++);
+> +
+> +			/* catch unsorted list entries */
+> +			if (rstart < cur_start) {
+> +				dev_err(&pdev->dev,
+> +					"unsorted reserved list (0x%x before current 0x%x)\n",
+> +					rstart, cur_start);
+> +				if (sram->clk)
+> +					clk_disable_unprepare(sram->clk);
+> +				return -EINVAL;
+> +			}
+> +
+> +			dev_dbg(&pdev->dev,
+> +				"found reserved block 0x%x-0x%x\n",
+> +				rstart, rstart + rsize);
+> +		} else {
+> +			/* the last chunk extends to the end of the region */
+> +			rstart = size;
+> +			rsize = 0;
+> +		}
+> +
+> +		/* current start is in a reserved block */
+> +		if (rstart <= cur_start) {
+> +			cur_start = rstart + rsize;
+> +			continue;
+> +		}
+> +
+> +		/*
+> +		 * allocate the space between the current starting
+> +		 * address and the following reserved block, or the
+> +		 * end of the region.
+> +		 */
+> +		cur_size = rstart - cur_start;
+> +
+> +		dev_dbg(&pdev->dev, "adding chunk 0x%x-0x%x\n",
+> +			cur_start, cur_start + cur_size);
+> +		ret = gen_pool_add_virt(sram->pool,
+> +				(unsigned long)virt_base + cur_start,
+> +				res->start + cur_start, cur_size, -1);
+> +		if (ret < 0) {
+> +			if (sram->clk)
+> +				clk_disable_unprepare(sram->clk);
+> +			return ret;
+> +		}
+> +
+> +		/* next allocation after this reserved block */
+> +		cur_start = rstart + rsize;
+>  	}
+>  
+>  	platform_set_drvdata(pdev, sram);
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Link: http://lkml.kernel.org/r/1372437701-13351-1-git-send-email-bp@alien8.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/cpufeature.h | 17 +++++++++++------
- 1 file changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 47538a6..d3f5c63 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -366,9 +366,10 @@ extern bool __static_cpu_has_safe(u16 bit);
-  */
- static __always_inline __pure bool __static_cpu_has(u16 bit)
- {
--#if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
-+#ifdef CC_HAVE_ASM_GOTO
- 
- #ifdef CONFIG_X86_DEBUG_STATIC_CPU_HAS
-+
- 		/*
- 		 * Catch too early usage of this before alternatives
- 		 * have run.
-@@ -384,6 +385,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 			 ".previous\n"
- 			 /* skipping size check since replacement size = 0 */
- 			 : : "i" (X86_FEATURE_ALWAYS) : : t_warn);
-+
- #endif
- 
- 		asm goto("1: jmp %l[t_no]\n"
-@@ -406,7 +408,9 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 		warn_pre_alternatives();
- 		return false;
- #endif
--#else /* GCC_VERSION >= 40500 */
-+
-+#else /* CC_HAVE_ASM_GOTO */
-+
- 		u8 flag;
- 		/* Open-coded due to __stringify() in ALTERNATIVE() */
- 		asm volatile("1: movb $0,%0\n"
-@@ -427,7 +431,8 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 			     ".previous\n"
- 			     : "=qm" (flag) : "i" (bit));
- 		return flag;
--#endif
-+
-+#endif /* CC_HAVE_ASM_GOTO */
- }
- 
- #define static_cpu_has(bit)					\
-@@ -441,7 +446,7 @@ static __always_inline __pure bool __static_cpu_has(u16 bit)
- 
- static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
- {
--#if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
-+#ifdef CC_HAVE_ASM_GOTO
- /*
-  * We need to spell the jumps to the compiler because, depending on the offset,
-  * the replacement jump can be bigger than the original jump, and this we cannot
-@@ -475,7 +480,7 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
- 		return false;
- 	t_dynamic:
- 		return __static_cpu_has_safe(bit);
--#else /* GCC_VERSION >= 40500 */
-+#else
- 		u8 flag;
- 		/* Open-coded due to __stringify() in ALTERNATIVE() */
- 		asm volatile("1: movb $2,%0\n"
-@@ -511,7 +516,7 @@ static __always_inline __pure bool _static_cpu_has_safe(u16 bit)
- 			     : "=qm" (flag)
- 			     : "i" (bit), "i" (X86_FEATURE_ALWAYS));
- 		return (flag == 2 ? __static_cpu_has_safe(bit) : flag);
--#endif
-+#endif /* CC_HAVE_ASM_GOTO */
- }
- 
- #define static_cpu_has_safe(bit)				\
