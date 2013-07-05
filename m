@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab3GEKVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 06:21:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44236 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab3GEKVI (ORCPT
+	id S1757283Ab3GEKUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 06:20:10 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:36196 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757048Ab3GEKUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 06:21:08 -0400
-Date: Fri, 5 Jul 2013 12:21:07 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jonas Jensen <jonas.jensen@gmail.com>
-cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, john.stultz@linaro.org, u.kleine-koenig@pengutronix.de,
-        tomasz.figa@gmail.com, linus.walleij@linaro.org,
-        thomas.petazzoni@free-electrons.com, arnd@arndb.de
-Subject: Re: [PATCH v5] ARM: clocksource: add support for MOXA ART SoCs
-In-Reply-To: <CACmBeS03Xfo7DyyYUbpBaO8TeR3g8BTPzcoOzQayk40k1soFzA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1307051213080.11637@ionos.tec.linutronix.de>
-References: <1372687359-18235-1-git-send-email-jonas.jensen@gmail.com> <1372940383-5957-1-git-send-email-jonas.jensen@gmail.com> <alpine.DEB.2.02.1307042211420.11637@ionos.tec.linutronix.de>
- <CACmBeS03Xfo7DyyYUbpBaO8TeR3g8BTPzcoOzQayk40k1soFzA@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
+	Fri, 5 Jul 2013 06:20:08 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/4] Minor perf build fixes
+Date: Fri,  5 Jul 2013 15:46:13 +0530
+Message-Id: <1373019377-12741-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.3.2.722.g3244e19.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 5 Jul 2013, Jonas Jensen wrote:
+Hi,
 
-> On 4 July 2013 23:42, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > You just modify bits on the "cache" variable. though you are not
-> > caching it. As it seems to work it looks like this register simply can
-> > be written with constants.
-> 
-> I agree, the global "cache" variable wasn't very good. The only good thing, that
-> it eliminated all TIMER_CR reads in moxart_clkevt_next_event.
+After Namhyung's review of the first iteration, I realized that I'd
+made a few mistakes.  This iteration should be much better.
 
-Well, you can use a global cache variable. But that wants to be
-implemented as a real cache, i.e. it always contains the current state
-of the register.
+[1/4] is the same as before.
 
-   cache = 0;
+[2/4] is new, and is used in [4/4].
 
-   cache |= T2_ENABLE;
-   write(cache, CR);
-   ....
- 
-> Yes it could be written with constants, and it wouldn't be so bad, because in
-> this case so few need to be set. If more constants were set from init
-> the benefit
-> would be more clear.
->
-> >> +     timereg_cache = readl(base + TIMER_CR) | TIMEREG_CR_2_ENABLE;
-> >
-> > Why are you reading that back? You know excactly which of the timers
-> > you are using and none of those should be enabled before you reach
-> > that code. If it one of them is enabled by the boot loader you better
-> > disable it in this init function.
-> 
-> Removed. All timers except TIMER2 should be disabled in init.
-> 
-> > Now if you disable all of those timers and just use a known set, then
-> > you can do without a pseudo cache variable and just write constants
-> > into the control register, right ?
-> 
-> Yes, please take a look at v6.
+[3/4] introduces a util/perf-perl.h to include <perl.h> with #pragma
+statements, hence eliminating duplication.  It then updates Context.xs
+and trace-event-perl.c to use this new header.
 
-You are still reading from the control register.
+Also, notice that feature-tests.mak has not been touched in this
+iteration: the Perl check passes without needing the #pragma
+statements (although I'm not sure why exactly).
 
-What's wrong with:
+Thanks.
 
-#define T1_ENABLE	(TIMEREG_CR_2_ENABLE | TIMEREG_CR_1_ENABLE)
-#define T1_DISABLE	(TIMEREG_CR_2_ENABLE)
+Ramkumar Ramachandra (4):
+  perf/Makefile: do not open-code shell-sq
+  perf/Perf-Trace-Util: fix broken include in Context.xs
+  perf: squelch warnings from perl.h to compile-pass
+  perf/Perf-Trace-Util: regenerate Context.c
 
-Because you need to preserve the CR2 enable bit so your clocksource
-does not get switched off.
+ tools/perf/Makefile                                |   2 +-
+ tools/perf/config/Makefile                         |  23 ++-
+ tools/perf/scripts/perl/Perf-Trace-Util/Context.c  | 215 +++++++++++++++++----
+ tools/perf/scripts/perl/Perf-Trace-Util/Context.xs |   6 +-
+ tools/perf/util/perf-perl.h                        |  10 +
+ .../perf/util/scripting-engines/trace-event-perl.c |   2 +-
+ 6 files changed, 199 insertions(+), 59 deletions(-)
+ create mode 100644 tools/perf/util/perf-perl.h
 
-Then the set_mode/next_event functions simply do:
+-- 
+1.8.3.1.643.gebeea52.dirty
 
-     write(T1_DISABLE)
-     write(data)
-     write(T1_ENABLE)
-
-Hmm?
-
-Thanks,
-
-	tglx
