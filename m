@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933809Ab3GEUhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 16:37:52 -0400
-Received: from mail-gh0-f182.google.com ([209.85.160.182]:56205 "EHLO
-	mail-gh0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab3GEUhv (ORCPT
+	id S933837Ab3GEUjp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 16:39:45 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46636 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752374Ab3GEUjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 16:37:51 -0400
-Date: Fri, 5 Jul 2013 17:37:43 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        jolsa@redhat.com, ak@linux.intel.com, zheng.z.yan@intel.com,
-        namhyung.kim@lge.com
-Subject: Re: [PATCH] perf stat: fix per-socket output bug for uncore events
-Message-ID: <20130705203743.GB16414@ghostprotocols.net>
-References: <20130705170645.GA32519@quad>
+	Fri, 5 Jul 2013 16:39:43 -0400
+Date: Fri, 5 Jul 2013 23:39:08 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Matt Porter <mporter@kernel.crashing.org>
+Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
+        Ryan Mallon <rmallon@gmail.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch v2] rapidio: use after free in unregister function
+Message-ID: <20130705203908.GA7594@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130705170645.GA32519@quad>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <51D67066.9070105@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jul 05, 2013 at 07:06:45PM +0200, Stephane Eranian escreveu:
-> 
-> This patch fixes a problem reported by Andi Kleen on perf
-> stat when measuring uncore events:
-> 
->  # perf stat --per-socket -e uncore_pcu/event=0x0/ -I1000  -a sleep 2
-> 
-> It would not report counts for the second socket. That was due to a
-> cpu mapping bug in print_aggr().
-> 
-> This patch also fixes the socket numbering bug for <not counted>
-> events.
-> 
-> Reported-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+We're freeing the list iterator so we can't move to the next entry.
+Since there is only one matching mport_id, we can just break after
+finding it.
 
-Thanks, applied.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: cleaner fix than v1
 
-- Arnaldo
+diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
+index f4f30af..2e8a20c 100644
+--- a/drivers/rapidio/rio.c
++++ b/drivers/rapidio/rio.c
+@@ -1715,11 +1715,13 @@ int rio_unregister_scan(int mport_id, struct rio_scan *scan_ops)
+ 		    (mport_id == RIO_MPORT_ANY && port->nscan == scan_ops))
+ 			port->nscan = NULL;
+ 
+-	list_for_each_entry(scan, &rio_scans, node)
++	list_for_each_entry(scan, &rio_scans, node) {
+ 		if (scan->mport_id == mport_id) {
+ 			list_del(&scan->node);
+ 			kfree(scan);
++			break;
+ 		}
++	}
+ 
+ 	mutex_unlock(&rio_mport_list_lock);
+ 
