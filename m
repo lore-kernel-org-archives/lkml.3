@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932686Ab3GET1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:27:53 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:45828 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054Ab3GET1w (ORCPT
+	id S933892Ab3GETev (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 15:34:51 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51504 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756742Ab3GETer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:27:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130705065113.GA6588@gmail.com>
-References: <20130704015525.GA8486@redhat.com>
-	<CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
-	<51D5BA25.9060207@zytor.com>
-	<20130705065113.GA6588@gmail.com>
-Date: Fri, 5 Jul 2013 12:27:51 -0700
-X-Google-Sender-Auth: ySGBVVHsY6383b5IiQR_MLYNias
-Message-ID: <CA+55aFx57XS4wYeEmukk8hMGxD4sVu0pz_BYppEeOdScJObXxw@mail.gmail.com>
-Subject: Re: scheduling while atomic & hang.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 5 Jul 2013 15:34:47 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 02/10] clocksource: sun4i: Wrap macros arguments in parenthesis
+Date: Fri,  5 Jul 2013 21:34:29 +0200
+Message-Id: <1373052877-29366-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 4, 2013 at 11:51 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> It would be nice to have a full-kernel-stack backtrace printout as an
-> option, which prints entries 'above' the current RSP.
+The macros were not using parenthesis to escape the arguments passed to
+them. It is pretty unsafe, so add those parenthesis.
 
-One problem with that is that it is likely to be mostly overwritten by
-the debug code that is about to print this all out - and any non-debug
-code may well be really old, just with a sufficiently deep stack trace
-to show up. Not to mention missing any irq-stack changes etc anyway.
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/clocksource/sun4i_timer.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-So it can easily be *very* misleading - I'm not sure how useful it
-would be as an idea.
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index bdf34d9..34ab658 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -30,8 +30,8 @@
+ #define TIMER_CTL_ENABLE		BIT(0)
+ #define TIMER_CTL_AUTORELOAD		BIT(1)
+ #define TIMER_CTL_ONESHOT		BIT(7)
+-#define TIMER_INTVAL_REG(val)	(0x10 * val + 0x14)
+-#define TIMER_CNTVAL_REG(val)	(0x10 * val + 0x18)
++#define TIMER_INTVAL_REG(val)	(0x10 * (val) + 0x14)
++#define TIMER_CNTVAL_REG(val)	(0x10 * (val) + 0x18)
+ 
+ #define TIMER_SCAL		16
+ 
+-- 
+1.8.3.2
 
-                Linus
