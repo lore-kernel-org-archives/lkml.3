@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3GETEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:04:12 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:48295 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757523Ab3GETEK convert rfc822-to-8bit (ORCPT
+	id S1757460Ab3GETKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 15:10:50 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59747 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab3GETKs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:04:10 -0400
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>, Ryan Mallon <rmallon@gmail.com>
-CC: Matt Porter <mporter@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: RE: [patch] rapidio: use after free in unregister function
-Thread-Topic: [patch] rapidio: use after free in unregister function
-Thread-Index: AQHOeU4vwIsej/KKHU2Ty5bBmopwsJlWIqEAgABPGZA=
-Date: Fri, 5 Jul 2013 19:04:02 +0000
-Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC3AA91@corpmail1.na.ads.idt.com>
-References: <20130705060231.GA14443@elgon.mountain>
- <51D67066.9070105@gmail.com> <20130705071912.GY5714@mwanda>
-In-Reply-To: <20130705071912.GY5714@mwanda>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.165.140.29]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 5 Jul 2013 15:10:48 -0400
+Date: Fri, 5 Jul 2013 13:39:53 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: vaughan <vaughan.cao@oracle.com>
+Cc: dgilbert@interlog.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vaughan.cao@gmail.com, xitao.cao@gmail.com
+Subject: Re: [PATCH v2 1/1] [SCSI] sg: fix race condition when do exclusive
+ open
+Message-ID: <20130705173953.GA15089@logfs.org>
+References: <51AF0269.9070900@oracle.com>
+ <20130605132746.GA1690@logfs.org>
+ <51AF646D.7030903@oracle.com>
+ <20130605154106.GA2737@logfs.org>
+ <51BF0ADD.1080604@oracle.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51BF0ADD.1080604@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dan Carpenter [mailto:dan.carpenter@oracle.com]
-> Sent: Friday, July 05, 2013 3:19 AM
-> To: Ryan Mallon
-> Cc: Matt Porter; Bounine, Alexandre; linux-kernel@vger.kernel.org;
-> kernel-janitors@vger.kernel.org
-> Subject: Re: [patch] rapidio: use after free in unregister function
-> 
-> On Fri, Jul 05, 2013 at 05:06:14PM +1000, Ryan Mallon wrote:
-> > On 05/07/13 16:02, Dan Carpenter wrote:
-> > It looks like an mport_id can only be assigned to one scan entry (see
-> > rio_register_scan), so you can use list_for_each_entry and break;
-> after
-> > the kfree(scan); instead.
-> 
-> Yeah.  You're right.  I'll resend.
-> 
-> regards,
-> dan carpenter
+Sorry about replying so late.
 
-Thank you for catching it. Missed it because we have only one enumerator so far.
+On Mon, 17 June 2013 21:10:53 +0800, vaughan wrote:
+> 
+> Rewrite the last patch.
+> Add a new field 'toopen' in sg_device to count ongoing sg_open's. By checking both 'toopen' and 'exclude' marks when do exclusive open, old race conditions can be avoided.
+> Replace global sg_open_exclusive_lock with a per device lock - sfd_lock. Since sfds list is now protected by the lock owned by the same sg_device, sg_index_lock becomes a real global lock to only protect sg devices lookup.
+> Also did some cleanup, such as remove get_exclude() and rename set_exclude() to clear_exclude().
+> 
+...
+> @@ -171,10 +168,10 @@ typedef struct sg_device { /* holds the state of each scsi generic device */
+>  	wait_queue_head_t o_excl_wait;	/* queue open() when O_EXCL in use */
+>  	int sg_tablesize;	/* adapter's max scatter-gather table size */
+>  	u32 index;		/* device index number */
+> -	/* sfds is protected by sg_index_lock */
+> +	spinlock_t sfd_lock;	/* protect sfds, exclude, toopen */
+>  	struct list_head sfds;
+> +	int toopen;		/* number of who are ready to open sg */
+                                            ^
+I think the 'toopen' is a bad choice.  I'm having trouble wrapping my
+head around the semantics of this variable, your description feels a
+bit handwavy, the main noun is missing in the command above, I think I
+found one more overflow bug,...
 
-Alex.
+What you ended up doing is reimplement a rw_semaphone.  Why not use
+one instead?  down_write() for exclusive access, down_read() for
+non-exclusive, _trylock variants for nonblocking opens, etc.
+
+Would this work?
+
+Jörn
+
+--
+I've never met a human being who would want to read 17,000 pages of
+documentation, and if there was, I'd kill him to get him out of the
+gene pool.
+-- Joseph Costello
