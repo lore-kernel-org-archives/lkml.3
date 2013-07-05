@@ -1,164 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965045Ab3GERdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 13:33:43 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45690 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964963Ab3GERdl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 13:33:41 -0400
-Message-ID: <51D70356.30707@ti.com>
-Date: Fri, 5 Jul 2013 12:33:10 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S965070Ab3GERgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 13:36:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757517Ab3GERgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 13:36:12 -0400
+Date: Fri, 5 Jul 2013 13:36:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
+Subject: Bad page map / swap_free warnings.
+Message-ID: <20130705173601.GA6898@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Taras Kondratiuk <taras@ti.com>
-Subject: Re: [RFC PATCH V2 1/8] regulator: Introduce OMAP regulator to control
- PMIC over VC/VP
-References: <1371849949-12649-1-git-send-email-nm@ti.com> <1371849949-12649-2-git-send-email-nm@ti.com> <20130704154105.GD27646@sirena.org.uk> <20130705135507.GA17439@kahuna> <20130705140828.GA27646@sirena.org.uk> <51D6DD3A.1030002@ti.com> <20130705165235.GC27646@sirena.org.uk>
-In-Reply-To: <20130705165235.GC27646@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2013 11:52 AM, Mark Brown wrote:
-> On Fri, Jul 05, 2013 at 09:50:34AM -0500, Nishanth Menon wrote:
->> On 07/05/2013 09:08 AM, Mark Brown wrote:
->
->>>> option 1) we just bypass get_voltage/set_voltage to point through to
->>>> this function. result will be something similar to what we got here[1]
->
->>> I don't really know what you mean when you say "bypass get_voltage/set_voltage
->>> so it's kind of hard to comment...  the link you posted appears to be a
->>> link to the code I'm reviewing so it's not terribly enlightening.
->
->> :) it is similar, yes. by bypass get/set_voltage, I mean something like [1]
->
-> No, that's not a good idea.
-
-I agree.
-
->
->>> What makes you think that the existing regulator drivers need to be
->>> modified?
->
->> data path difference - Almost all standard regulators use i2c
->> (standard i2c APIs) for every other SMPS/LDO except for the ones
->> controlled by OMAP custom i2c path(vc/vp), the
->> set_voltage/get_voltage needs a different implementation when it
->> comes to using the vc/vp path.
->
->>> They already have all the data exported to the core (or
->>> should do)...
->
->> I see that twl-regulator does not indeed do it, but, assuming the
->> regulators have all the data exported to the core, the data is
->> hidden in struct regulator_desc which is private to the device and
->> driver. lets go through these:
->
-> That's just a simple matter of programming to fix, and any regulator
-> which can work with this sort of table based stuff you're looking at
-> here must also be able to be converted to work with the equivalent code
-> in the regulator core so open coding is a deficiency in the driver.
-
-OK, conceptually, I am a bit lost here (may be I thinking about "how the 
-heck am I supposed to implement this?") - Hoping for your patience in 
-trying to get through to my thick skull :)
-
-Taking an example of twl-regulator and omap_pmic, are you suggesting 
-omap_pmic to be a user twl-regulator using 
-include/linux/regulator/consumer.h? or are you suggesting that omap_pmic 
-should not be a regulator at all?
-
-Could you suggest what you have in your mind here, I can see how we can 
-make that happen. I am not averse to writing new code ofcourse.
-
->
->>> +	.cmd_reg_addr = 0x00,
->
->> command register is used for sending low power state commands -
->> which is not the same as voltage register or vsel_reg as used in
->> depicted in regulator_desc.	
->
-> There's no information about how to use this register in your
-> bindings...  but anyway, can't be too hard to add this if it's actually
-> used.
-
-Yes it is, and also happens to be how OMAPs achieve maximum power 
-savings - when low power modes are achieved in OMAP(automatic hardware 
-assisted commands are send to the specific command registers in PMIC and 
-viceversa on wakeup) - but this also happens to be very specific to OMAP 
-way of handling things. I can refer to the Reference Manual as to how it 
-actually works, but that'd be an overkill, I will try to expand on the 
-bindings a little more, I guess.
-
->
->>> +	.i2c_timeout_us = 200,
->
->> yep, does not match up.
->
-> Like I say I just don't see why this is even specified per device.
->
->>> +	.max_uV = 1450000,
->
->> can be used with constraints, but most regulator drivers seem to
->> store this internally.
->
-> Or just trivially calculate it as we do currently.
->
->>> +	.voltage_selector_offset = 0,
->>> +	.voltage_selector_mask = 0x7F,
->>> +	.voltage_selector_setbits = 0x0,
->>> +	.voltage_selector_zero = false,
->
->> to an extent we can map these to vsel_mask, linear_min_sel etc.
->> (again assuming the regulator driver has populated it - most that
->> implement custom set_voltage, get_voltage do not do that.
->
-> Anything that implements a custom set_voltage() won't work with your
-> data structure either...
-
-It would not work with OMAP either ;). But that said, drivers do freely 
-implement custom set_voltage/get_voltage primarily because there are 
-ranges in supported voltages that are non-linear and try to be generic 
-to work on non-OMAP platforms as well. However, within the supported 
-range, only the linear ranges are used with OMAP.
-
->
->> Other option is to make rdev available to omap_pmic regulator -
->> which again implies change in existing regulator driver?
->
-> Why would any of the drivers need to change to do this?  They're already
-> exporting the information.
-I am thinking here: two regulator drivers, using same rdev/desc for 
-getting the data. probably makes no sense, I agree.
-
->
->>> the only thing that's missing is the timeouts and it's
->>> not at all obvious why those need to be tuned per device.
->
->> OMAP VC hardware has no idea about how long to wait before giving up
->> on an ongoing i2c transaction. This may depend on PMIC and what it
->> does before acking on i2c.
->
-> So pick a high number (it's only for error cases...)?
->
-from hardware perspective yeah, if it does not lockup (based on erratas 
-on specific devices ;) ). it also controls in part, the latency of 
-response to Voltage processor from Voltage controller also needed for 
-computing SmartReflex latencies (as it should consider worst case 
-conditions)
-
--- 
-Regards,
-Nishanth Menon
+[ 6821.834891] cc (14101) used greatest stack depth: 2256 bytes left
+[ 6838.015259] swap_free: Unused swap offset entry 000ead4c
+[ 6838.015947] BUG: Bad page map in process trinity  pte:1d5a9800 pmd:21e922067
+[ 6838.017491] addr:000000000253a000 vm_flags:00100073 anon_vma:ffff88022fb7c9b0 mapping:          (null) index:253a
+[ 6838.018765] Modules linked in: snd_seq_dummy bnep scsi_transport_iscsi nfnetlink ipt_ULOG rfcomm can_raw af_802154 phonet af_rxrpc af_key llc2 caif_socket caif bluetooth pppoe pppox ppp_generic slhc netrom rose can_bcm can ipx p8023 p8022 irda crc_ccitt x25 nfc rfkill rds ax25 appletalk psnap llc atm snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_intel pcspkr snd_hda_codec snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+[ 6838.027772] CPU: 0 PID: 4486 Comm: trinity Not tainted 3.10.0+ #41 
+[ 6838.030590]  0000000000000000 ffff880225781c90 ffffffff816efaee 000000000253a000
+[ 6838.031532]  ffff880225781cd8 ffffffff811744ac 000000001d5a9800 000000000000253a
+[ 6838.032620]  0000000002600000 ffff88021e9229d0 000000001d5a9800 ffff880225781e00
+[ 6838.033793] Call Trace:
+[ 6838.034156]  [<ffffffff816efaee>] dump_stack+0x4e/0x82
+[ 6838.034861]  [<ffffffff811744ac>] print_bad_pte+0x18c/0x230
+[ 6838.035607]  [<ffffffff81175d25>] unmap_single_vma+0x535/0x890
+[ 6838.036373]  [<ffffffff81177029>] unmap_vmas+0x49/0x90
+[ 6838.037046]  [<ffffffff8117f8c1>] exit_mmap+0xc1/0x170
+[ 6838.037736]  [<ffffffff81049bbf>] mmput+0x6f/0x100
+[ 6838.038377]  [<ffffffff81051c28>] do_exit+0x288/0xcd0
+[ 6838.039067]  [<ffffffff810ba7b5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+[ 6838.039936]  [<ffffffff810ba88d>] ? trace_hardirqs_on+0xd/0x10
+[ 6838.040692]  [<ffffffff810539ec>] do_group_exit+0x4c/0xc0
+[ 6838.041397]  [<ffffffff81053a74>] SyS_exit_group+0x14/0x20
+[ 6838.042257]  [<ffffffff81702a94>] tracesys+0xdd/0xe2
+[ 6838.042861] Disabling lock debugging due to kernel taint
+[ 6838.043508] swap_free: Unused swap offset entry 000ead4e
+[ 6838.045204] BUG: Bad page map in process trinity  pte:1d5a9c00 pmd:21e922067
+[ 6838.048785] addr:000000000253b000 vm_flags:00100073 anon_vma:ffff88022fb7c9b0 mapping:          (null) index:253b
+[ 6838.051054] Modules linked in: snd_seq_dummy bnep scsi_transport_iscsi nfnetlink ipt_ULOG rfcomm can_raw af_802154 phonet af_rxrpc af_key llc2 caif_socket caif bluetooth pppoe pppox ppp_generic slhc netrom rose can_bcm can ipx p8023 p8022 irda crc_ccitt x25 nfc rfkill rds ax25 appletalk psnap llc atm snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_intel pcspkr snd_hda_codec snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+[ 6838.063312] CPU: 0 PID: 4486 Comm: trinity Tainted: G    B        3.10.0+ #41 
+[ 6838.068279]  0000000000000000 ffff880225781c90 ffffffff816efaee 000000000253b000
+[ 6838.070323]  ffff880225781cd8 ffffffff811744ac 000000001d5a9c00 000000000000253b
+[ 6838.072778]  0000000002600000 ffff88021e9229d8 000000001d5a9c00 ffff880225781e00
+[ 6838.075106] Call Trace:
+[ 6838.076537]  [<ffffffff816efaee>] dump_stack+0x4e/0x82
+[ 6838.078269]  [<ffffffff811744ac>] print_bad_pte+0x18c/0x230
+[ 6838.080044]  [<ffffffff81175d25>] unmap_single_vma+0x535/0x890
+[ 6838.081866]  [<ffffffff81177029>] unmap_vmas+0x49/0x90
+[ 6838.083762]  [<ffffffff8117f8c1>] exit_mmap+0xc1/0x170
+[ 6838.085585]  [<ffffffff81049bbf>] mmput+0x6f/0x100
+[ 6838.087284]  [<ffffffff81051c28>] do_exit+0x288/0xcd0
+[ 6838.089013]  [<ffffffff810ba7b5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+[ 6838.090964]  [<ffffffff810ba88d>] ? trace_hardirqs_on+0xd/0x10
+[ 6838.093282]  [<ffffffff810539ec>] do_group_exit+0x4c/0xc0
+[ 6838.095108]  [<ffffffff81053a74>] SyS_exit_group+0x14/0x20
+[ 6838.096867]  [<ffffffff81702a94>] tracesys+0xdd/0xe2
+[ 6838.098540] swap_free: Unused swap offset entry 000ead54
+[ 6838.100232] BUG: Bad page map in process trinity  pte:1d5aa800 pmd:21e922067
+[ 6838.103977] addr:000000000253e000 vm_flags:00100073 anon_vma:ffff88022fb7c9b0 mapping:          (null) index:253e
+[ 6838.106307] Modules linked in: snd_seq_dummy bnep scsi_transport_iscsi nfnetlink ipt_ULOG rfcomm can_raw af_802154 phonet af_rxrpc af_key llc2 caif_socket caif bluetooth pppoe pppox ppp_generic slhc netrom rose can_bcm can ipx p8023 p8022 irda crc_ccitt x25 nfc rfkill rds ax25 appletalk psnap llc atm snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_intel pcspkr snd_hda_codec snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+[ 6838.118518] CPU: 0 PID: 4486 Comm: trinity Tainted: G    B        3.10.0+ #41 
+[ 6838.124135]  0000000000000000 ffff880225781c90 ffffffff816efaee 000000000253e000
+[ 6838.126380]  ffff880225781cd8 ffffffff811744ac 000000001d5aa800 000000000000253e
+[ 6838.128736]  0000000002600000 ffff88021e9229f0 000000001d5aa800 ffff880225781e00
+[ 6838.131153] Call Trace:
+[ 6838.132792]  [<ffffffff816efaee>] dump_stack+0x4e/0x82
+[ 6838.134608]  [<ffffffff811744ac>] print_bad_pte+0x18c/0x230
+[ 6838.136391]  [<ffffffff81175d25>] unmap_single_vma+0x535/0x890
+[ 6838.138183]  [<ffffffff81177029>] unmap_vmas+0x49/0x90
+[ 6838.139877]  [<ffffffff8117f8c1>] exit_mmap+0xc1/0x170
+[ 6838.141546]  [<ffffffff81049bbf>] mmput+0x6f/0x100
+[ 6838.143322]  [<ffffffff81051c28>] do_exit+0x288/0xcd0
+[ 6838.145028]  [<ffffffff810ba7b5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+[ 6838.146841]  [<ffffffff810ba88d>] ? trace_hardirqs_on+0xd/0x10
+[ 6838.148546]  [<ffffffff810539ec>] do_group_exit+0x4c/0xc0
+[ 6838.150195]  [<ffffffff81053a74>] SyS_exit_group+0x14/0x20
+[ 6838.151854]  [<ffffffff81702a94>] tracesys+0xdd/0xe2
+[ 6838.154337] swap_free: Unused swap offset entry 000ead47
+[ 6838.156189] BUG: Bad page map in process trinity  pte:1d5a8e00 pmd:22fa8a067
+[ 6838.159720] addr:00007fffaf3eb000 vm_flags:00100173 anon_vma:ffff88022fb7c7c0 mapping:          (null) index:7fffffff8
+[ 6838.162285] Modules linked in: snd_seq_dummy bnep scsi_transport_iscsi nfnetlink ipt_ULOG rfcomm can_raw af_802154 phonet af_rxrpc af_key llc2 caif_socket caif bluetooth pppoe pppox ppp_generic slhc netrom rose can_bcm can ipx p8023 p8022 irda crc_ccitt x25 nfc rfkill rds ax25 appletalk psnap llc atm snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_intel pcspkr snd_hda_codec snd_hwdep snd_seq snd_seq_device usb_debug snd_pcm e1000e ptp pps_core snd_page_alloc snd_timer snd soundcore xfs libcrc32c
+[ 6838.190667] CPU: 1 PID: 4486 Comm: trinity Tainted: G    B        3.10.0+ #41 
+[ 6838.203589]  0000000000000000 ffff880225781c90 ffffffff816efaee 00007fffaf3eb000
+[ 6838.209187]  ffff880225781cd8 ffffffff811744ac 000000001d5a8e00 00000007fffffff8
+[ 6838.216944]  00007fffaf3f2000 ffff88022fa8af58 000000001d5a8e00 ffff880225781e00
+[ 6838.224284] Call Trace:
+[ 6838.229487]  [<ffffffff816efaee>] dump_stack+0x4e/0x82
+[ 6838.235111]  [<ffffffff811744ac>] print_bad_pte+0x18c/0x230
+[ 6838.240654]  [<ffffffff81175d25>] unmap_single_vma+0x535/0x890
+[ 6838.245940]  [<ffffffff81177029>] unmap_vmas+0x49/0x90
+[ 6838.251230]  [<ffffffff8117f8c1>] exit_mmap+0xc1/0x170
+[ 6838.256808]  [<ffffffff81049bbf>] mmput+0x6f/0x100
+[ 6838.261524]  [<ffffffff81051c28>] do_exit+0x288/0xcd0
+[ 6838.266976]  [<ffffffff810ba7b5>] ? trace_hardirqs_on_caller+0x115/0x1e0
+[ 6838.272154]  [<ffffffff810ba88d>] ? trace_hardirqs_on+0xd/0x10
+[ 6838.277814]  [<ffffffff810539ec>] do_group_exit+0x4c/0xc0
+[ 6838.282580]  [<ffffffff81053a74>] SyS_exit_group+0x14/0x20
+[ 6838.287494]  [<ffffffff81702a94>] tracesys+0xdd/0xe2
