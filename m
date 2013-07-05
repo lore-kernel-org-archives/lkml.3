@@ -1,60 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933844Ab3GEO0l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 10:26:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756251Ab3GEO0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 10:26:40 -0400
-Date: Fri, 5 Jul 2013 10:26:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
+	id S1757425Ab3GEOey (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 10:34:54 -0400
+Received: from mail-qe0-f42.google.com ([209.85.128.42]:45575 "EHLO
+	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754701Ab3GEOex (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 10:34:53 -0400
+Date: Fri, 5 Jul 2013 11:34:46 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: __ftrace_hash_rec_update FTRACE_WARN_ON.
-Message-ID: <20130705142629.GA325@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/6] perf: bug fixes, cleanup of parse events memory
+ allocations
+Message-ID: <20130705143446.GB2559@ghostprotocols.net>
+References: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: at kernel/trace/ftrace.c:1605 __ftrace_hash_rec_update.part.37+0x20a/0x240()
-Modules linked in: sctp libcrc32c snd_seq_dummy fuse tun rfcomm bnep scsi_transport_iscsi hidp nfnetlink can_bcm irda caif_socket nfc caif netrom crc_ccitt rose x25 appletalk ipt_ULOG rds bluetooth can_raw ipx phonet can rfkill af_802154 pppoe pppox p8023 llc2 af_key ppp_generic psnap p8022 atm llc slhc ax25 af_rxrpc snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep snd_seq pcspkr snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer snd ptp soundcore pps_core
-CPU: 1 PID: 15820 Comm: trinity-child2 Not tainted 3.10.0+ #21
- ffffffff81a1f20b ffff8801be9dfc60 ffffffff816f2120 0000000000000000
- ffff8801be9dfc98 ffffffff8104ca81 0000000000000000 0000000000000001
- ffff8801be424000 0000000000000000 ffff88022bd25518 ffff8801be9dfca8
-Call Trace:
- [<ffffffff816f2120>] dump_stack+0x4e/0x82
- [<ffffffff8104ca81>] warn_slowpath_common+0x61/0x80
- [<ffffffff8104cb5a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff8111489a>] __ftrace_hash_rec_update.part.37+0x20a/0x240
- [<ffffffff811168a8>] ftrace_shutdown+0xb8/0x170
- [<ffffffff81116d40>] unregister_ftrace_function+0x30/0x50
- [<ffffffff81134487>] perf_ftrace_event_register+0x87/0x130
- [<ffffffff811342ec>] perf_trace_destroy+0x2c/0x50
- [<ffffffff8113caf9>] tp_perf_event_destroy+0x9/0x10
- [<ffffffff8113f0f7>] free_event+0xa7/0x310
- [<ffffffff8113f3c4>] perf_event_release_kernel+0x64/0x90
- [<ffffffff8113f830>] put_event+0x120/0x1b0
- [<ffffffff8113f740>] ? put_event+0x30/0x1b0
- [<ffffffff8113f8d0>] perf_release+0x10/0x20
- [<ffffffff811b7d15>] __fput+0xf5/0x2d0
- [<ffffffff811b7fae>] ____fput+0xe/0x10
- [<ffffffff8107798c>] task_work_run+0xac/0xe0
- [<ffffffff81051d27>] do_exit+0x2c7/0xcd0
- [<ffffffff81704b00>] ? ftrace_call+0x5/0x2f
- [<ffffffff81053afc>] do_group_exit+0x4c/0xc0
- [<ffffffff81053b84>] SyS_exit_group+0x14/0x20
- [<ffffffff817050d4>] tracesys+0xdd/0xe2
----[ end trace df06ab36fcd44d8b ]---
+Em Tue, Jul 02, 2013 at 01:27:19PM -0600, David Ahern escreveu:
+> David Ahern (6):
+>   perf evsel: fix count parameter to read call in event_format__new
+>   perf evlist: fix use of uninitialized variable
+>   perf event: initialize allocated memory for synthesized events
+>   perf: don't free list head in parse_events__free_terms
+>   perf test: make terms a stack variable in test_term
+>   perf parse events: demystify memory allocations
 
+Thanks, applied,
 
-1605                         if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
-1606                                 return;
-
-
+- Arnaldo
