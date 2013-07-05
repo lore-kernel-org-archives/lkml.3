@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab3GEJsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 05:48:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59861 "EHLO
+	id S932673Ab3GEJtU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 05:49:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59884 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756162Ab3GEJsv (ORCPT
+	with ESMTP id S932307Ab3GEJtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 05:48:51 -0400
-Date: Fri, 5 Jul 2013 02:48:28 -0700
+	Fri, 5 Jul 2013 05:49:15 -0400
+Date: Fri, 5 Jul 2013 02:48:57 -0700
 From: tip-bot for Axel Lin <tipbot@zytor.com>
-Message-ID: <tip-e658718e478fb2591f38afd9643eab06698790fe@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux@prisktech.co.nz, hpa@zytor.com,
-        mingo@kernel.org, olof@lixom.net, tglx@linutronix.de,
+Message-ID: <tip-002fca5df168922103a2bb52748f9984e6de80b2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, grant.likely@linaro.org, hpa@zytor.com,
+        mingo@kernel.org, tony@atomide.com, arnd@arndb.de, tglx@linutronix.de,
         axel.lin@ingics.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux@prisktech.co.nz,
-        linux-kernel@vger.kernel.org, olof@lixom.net, tglx@linutronix.de,
-        axel.lin@ingics.com
-In-Reply-To: <1372995229.4038.1.camel@phoenix>
-References: <1372995229.4038.1.camel@phoenix>
+Reply-To: mingo@kernel.org, hpa@zytor.com, grant.likely@linaro.org,
+        linux-kernel@vger.kernel.org, tony@atomide.com, arnd@arndb.de,
+        tglx@linutronix.de, axel.lin@ingics.com
+In-Reply-To: <1373015592.18252.2.camel@phoenix>
+References: <1373015592.18252.2.camel@phoenix>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irqchip: vt8500: Staticize local symbols
-Git-Commit-ID: e658718e478fb2591f38afd9643eab06698790fe
+Subject: [tip:irq/urgent] genirq: generic chip:
+  Use DIV_ROUND_UP to calculate numchips
+Git-Commit-ID: 002fca5df168922103a2bb52748f9984e6de80b2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,54 +30,47 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 05 Jul 2013 02:48:35 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 05 Jul 2013 02:49:04 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e658718e478fb2591f38afd9643eab06698790fe
-Gitweb:     http://git.kernel.org/tip/e658718e478fb2591f38afd9643eab06698790fe
+Commit-ID:  002fca5df168922103a2bb52748f9984e6de80b2
+Gitweb:     http://git.kernel.org/tip/002fca5df168922103a2bb52748f9984e6de80b2
 Author:     Axel Lin <axel.lin@ingics.com>
-AuthorDate: Fri, 5 Jul 2013 11:33:49 +0800
+AuthorDate: Fri, 5 Jul 2013 17:13:12 +0800
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 5 Jul 2013 11:39:24 +0200
+CommitDate: Fri, 5 Jul 2013 11:39:25 +0200
 
-irqchip: vt8500: Staticize local symbols
+genirq: generic chip: Use DIV_ROUND_UP to calculate numchips
 
-This driver is converted to use IRQCHIP_DECLARE and irqchip_init.
-vt8500_handle_irq() and vt8500_irq_init() are only referenced in this file, so
-make them static.
+The number of interrupts in a domain may be not divisible by the
+number of interrupts each chip handles. Integer division may truncate
+the result, thus use DIV_ROUND_UP to count numchips.
+
+Seems all users of irq_alloc_domain_generic_chips() in current code do
+not have this issue. I just found the issue while reading the code.
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Tony Prisk <linux@prisktech.co.nz>
-Cc: Olof Johansson <olof@lixom.net>
-Link: http://lkml.kernel.org/r/1372995229.4038.1.camel@phoenix
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Link: http://lkml.kernel.org/r/1373015592.18252.2.camel@phoenix
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/irqchip/irq-vt8500.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ kernel/irq/generic-chip.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
-index d970595..1846e7d 100644
---- a/drivers/irqchip/irq-vt8500.c
-+++ b/drivers/irqchip/irq-vt8500.c
-@@ -178,7 +178,8 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
- 	.xlate = irq_domain_xlate_onecell,
- };
+diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
+index 1c39ecc..2f274f3 100644
+--- a/kernel/irq/generic-chip.c
++++ b/kernel/irq/generic-chip.c
+@@ -278,7 +278,7 @@ int irq_alloc_domain_generic_chips(struct irq_domain *d, int irqs_per_chip,
+ 	if (d->revmap_type != IRQ_DOMAIN_MAP_LINEAR)
+ 		return -EINVAL;
  
--asmlinkage void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
-+static asmlinkage
-+void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
- {
- 	u32 stat, i;
- 	int irqnr, virq;
-@@ -203,7 +204,8 @@ asmlinkage void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
- 	}
- }
+-	numchips = d->revmap_data.linear.size / irqs_per_chip;
++	numchips = DIV_ROUND_UP(d->revmap_data.linear.size, irqs_per_chip);
+ 	if (!numchips)
+ 		return -EINVAL;
  
--int __init vt8500_irq_init(struct device_node *node, struct device_node *parent)
-+static int __init vt8500_irq_init(struct device_node *node,
-+				  struct device_node *parent)
- {
- 	int irq, i;
- 	struct device_node *np = node;
