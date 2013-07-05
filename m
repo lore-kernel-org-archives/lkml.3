@@ -1,43 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab3GEOXg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 10:23:36 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:58927 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356Ab3GEOXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 10:23:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130704075840.GH18898@dyad.programming.kicks-ass.net>
-References: <1372916056-24301-1-git-send-email-alex.shi@intel.com>
-	<20130704075840.GH18898@dyad.programming.kicks-ass.net>
+	id S1757430Ab3GEOXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 10:23:47 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:34342 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752356Ab3GEOXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 10:23:44 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Fabio Estevam <festevam@gmail.com>
+Subject: Re: [PATCH v3 2/6] misc: sram: add ability to mark sram sections as reserved
 Date: Fri, 5 Jul 2013 16:23:33 +0200
-Message-ID: <CAFTL4hy24+=2++CN5rBhn9v+pvxR+tTja9Z-wRLSS__LGQBWaQ@mail.gmail.com>
-Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alex Shi <alex.shi@intel.com>, tglx@linutronix.de, hpa@linux.intel.com,
-        tim.c.chen@linux.intel.com, linux-kernel@vger.kernel.org,
-        andi.kleen@intel.com, mingo@elte.hu
-Content-Type: text/plain; charset=ISO-8859-1
+User-Agent: KMail/1.13.7 (Linux/3.2.0-3-686-pae; KDE/4.8.4; i686; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Ulrich Prinz <ulrich.prinz@googlemail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <201307051440.19428.heiko@sntech.de> <201307051441.27605.heiko@sntech.de> <CAOMZO5AHX0UpeKQh+faPT=MfCf53eo=kXigtOZd7iuKrz-sFeA@mail.gmail.com>
+In-Reply-To: <CAOMZO5AHX0UpeKQh+faPT=MfCf53eo=kXigtOZd7iuKrz-sFeA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201307051623.33991.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/4 Peter Zijlstra <peterz@infradead.org>:
-> On Thu, Jul 04, 2013 at 01:34:13PM +0800, Alex Shi wrote:
->
->> If the tsc is marked as constant and nonstop, could we set it as system
->> clocksource when do tsc register? w/o checking it on clocksource_watchdog?
->
-> I'd not do that; the BIOS can still screw you over, we need some validation.
->
-> That said; we do need means to disable the clocksource watchdog -- although I
-> suppose Frederic might already have provided this for this NOHZ efforts when I
-> wasn't looking.
+Am Freitag, 5. Juli 2013, 14:55:40 schrieb Fabio Estevam:
+> On Fri, Jul 5, 2013 at 9:41 AM, Heiko Stübner <heiko@sntech.de> wrote:
+> > Some SoCs need parts of their sram for special purposes. So while being
+> > part of the periphal, it should not be part of the genpool controlling
+> > the sram.
+> > 
+> > Threfore add an option mmio-sram-reserved to keep arbitary portions of
+> > the sram from being part of the pool.
+> > 
+> > Suggested-by: Rob Herring <robherring2@gmail.com>
+> > Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> > Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
+> > ---
+> > 
+> >  Documentation/devicetree/bindings/misc/sram.txt |    8 +++
+> >  drivers/misc/sram.c                             |   80
+> >  +++++++++++++++++++++-- 2 files changed, 82 insertions(+), 6
+> >  deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/misc/sram.txt
+> > b/Documentation/devicetree/bindings/misc/sram.txt index 4d0a00e..eae080e
+> > 100644
+> > --- a/Documentation/devicetree/bindings/misc/sram.txt
+> > +++ b/Documentation/devicetree/bindings/misc/sram.txt
+> > 
+> > @@ -8,9 +8,17 @@ Required properties:
+> >  - reg : SRAM iomem address range
+> > 
+> > +Optional properties:
+> > +
+> > +- mmio-sram-reserved: ordered list of reserved chunks inside the sram
+> > that +  should not become part of the genalloc pool.
+> > +  Format is <base size>, <base size>, ...; with base being relative to
+> > the +  reg property base.
+> 
+> Isn't it a typo?
+> 
+> I think you meant:
+> Format is <base start>, <reserved size>,
 
-Nope, I haven't touched that. I prefer not to fiddle with unstable
-clocksource for now :)
+no, the intended format is like
 
-As for unstable TSCs, if sched_clock_tick() needs to be fed, we simply
-don't stop the tick.
+<0x0 0x100>, <0x1000 0x100>, ...
+
+base + size, base + size, and so on
+
+
+> 
+> > +
+> > 
+> >  Example:
+> >  
+> >  sram: sram@5c000000 {
+> >  
+> >         compatible = "mmio-sram";
+> >         reg = <0x5c000000 0x40000>; /* 256 KiB SRAM at address 0x5c000000
+> >         */
+> > 
+> > +       mmio-sram-reserved = <0x0 0x100>; /* reserve
+> > 0x5c000000-0x5c000100 */
+>
+> > 
+> >  };
+
