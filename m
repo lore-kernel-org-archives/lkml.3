@@ -1,158 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab3GEM3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 08:29:11 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:36057 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3GEM3I (ORCPT
+	id S1757360Ab3GEMcQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 08:32:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39961 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757050Ab3GEMcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 08:29:08 -0400
-X-AuditID: cbfee68e-b7f276d000002279-1a-51d6bc11f53a
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>
-Cc: "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
-        "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Keyyoung Park'" <keyyoung.park@samsung.com>,
-        "'Grant Grundler'" <grundler@chromium.org>
-Subject: [PATCH v7 00/12] iommu/exynos: Fixes and Enhancements of System MMU
- driver with DT
-Date: Fri, 05 Jul 2013 21:29:05 +0900
-Message-id: <002801ce797b$3d2fbc80$b78f3580$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac55dTMuWbEECCyuQc2y6odHq6V9Yw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zY13BPdcCDZZc0rB4deQHk8WC/dYW
-	nbM3sFtsPriOxaJ3wVU2i8Z7E9gsNj2+xmpxedccNosZ5/cxWVxYsZHdYsqiw6wWLdd7mRx4
-	PJ4cnMfkMbvhIovHnWt72Dw2L6n3mHxjOaNH35ZVjB6fN8kFsEdx2aSk5mSWpRbp2yVwZfyZ
-	WlkwR6HixJ+vLA2MCyS7GDk5JARMJLYvb2SHsMUkLtxbz9bFyMUhJLCMUeLmlR/MMEVP27uY
-	IRKLGCUWXXgB5fxllDh6/ClYFZuAlsTquccZQWwRgbuMEi/P84AUMQvcYJLY8KmNBSQhLBAr
-	ce3bXLAiFgFViWc3HzGB2LwClhKT7t1ih7AFJX5MvgdWzww0dP3O40wQtrzE5jVvoU5SkNhx
-	9jXUMj2J1i9z2SFqRCT2vXjHCLJYQuAvu8T93sVsEMsEJL5NPgQ0lAMoISux6QDUHEmJgytu
-	sExgFJuFZPUsJKtnIVk9C8mKBYwsqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzFCYrpvB+PN
-	A9aHGJOB1k9klhJNzgemhLySeENjMyMLUxNTYyNzSzPShJXEedVarAOFBNITS1KzU1MLUovi
-	i0pzUosPMTJxcEo1MG68N+3xUwVftbiEa5+Fbx9QkN+VahN6aX7fsf2PDpcYbVRf4b3ihkGu
-	pInYgk+nPKf+efxqz0zTE3Guz1fvzxFXtEiSVrhcNscgJWtD7bqYB9NfvltzZ+67Txe2OBia
-	XvMvkhVImnygPaCSV5tVNbLlvbTyhOy35S7P8l6y/TDsM36W22lVuUaJpTgj0VCLuag4EQC1
-	tGqb/wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJKsWRmVeSWpSXmKPExsVy+t9jAV3BPdcCDT72KFu8OvKDyWLBfmuL
-	ztkb2C02H1zHYtG74CqbReO9CWwWmx5fY7W4vGsOm8WM8/uYLC6s2MhuMWXRYVaLluu9TA48
-	Hk8OzmPymN1wkcXjzrU9bB6bl9R7TL6xnNGjb8sqRo/Pm+QC2KMaGG0yUhNTUosUUvOS81My
-	89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgA5VUihLzCkFCgUkFhcr6dthmhAa
-	4qZrAdMYoesbEgTXY2SABhLWMWb8mVpZMEeh4sSfrywNjAskuxg5OSQETCSetncxQ9hiEhfu
-	rWfrYuTiEBJYxCix6MILZgjnL6PE0eNPwarYBLQkVs89zghiiwjcZZR4eZ4HpIhZ4AaTxIZP
-	bSwgCWGBWIlr3+aCFbEIqEo8u/mICcTmFbCUmHTvFjuELSjxY/I9sHpmoKHrdx5ngrDlJTav
-	eQt1koLEjrOvoZbpSbR+mcsOUSMise/FO8YJjAKzkIyahWTULCSjZiFpWcDIsopRNLUguaA4
-	KT3XUK84Mbe4NC9dLzk/dxMjOGE8k9rBuLLB4hCjAAejEg+vRdPVQCHWxLLiytxDjBIczEoi
-	vPYJ1wKFeFMSK6tSi/Lji0pzUosPMSYDfTqRWUo0OR+YzPJK4g2NTcyMLI3MLIxMzM1JE1YS
-	5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgVHH6+3LX87R3zyf+CwxjJRU2H8jxHLpMhujcElt
-	19CGzgtv991qktY4elXw/LfK1lV/9zNV/8lgnxjkwLlKUWZDfm5VLce23bYh64ti7k9a3X/Z
-	d6GaeNCvJb1l3IErS6eXLH1m0ylvELmVUSc+6LWkSa5d16+aquWd55xbj7MHrCyJNmN7qMRS
-	nJFoqMVcVJwIAJt0d85cAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 5 Jul 2013 08:32:14 -0400
+Date: Fri, 5 Jul 2013 14:31:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
+ switch
+Message-ID: <20130705123158.GR23916@twins.programming.kicks-ass.net>
+References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
+ <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com>
+ <20130704124536.GK23916@twins.programming.kicks-ass.net>
+ <51D65B58.1050201@intel.com>
+ <20130705081516.GP18898@dyad.programming.kicks-ass.net>
+ <51D68915.7060901@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51D68915.7060901@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current exynos-iommu(System MMU) driver does not work autonomously
-since it is lack of support for power management of peripheral blocks.
-For example, MFC device driver must ensure that its System MMU is disabled
-before MFC block is power-down not to invalidate IOTLB in the System MMU
-when I/O memory mapping is changed. Because A System MMU is resides in the
-same H/W block, access to control registers of System MMU while the H/W
-block is turned off must be prohibited.
+On Fri, Jul 05, 2013 at 04:51:33PM +0800, Yan, Zheng wrote:
+> >> the LBR is shared resource, can be used by multiple events at the same time.
+> > 
+> > Yeah so? There's tons of shared resources in the PMU already.
+> 
+> we should restore the LBR callstack only when task schedule in. restoring the LBR
+> callstack at any other time will make the LBR callstack and actual callchain of program
+> mismatch. this property make the LBR different from counters.
 
-This set of changes solves the above problem with setting each System MMUs
-as the parent of the device which owns the System MMU to recieve the
-information when the device is turned off or turned on.
+But it doesn't change the fact that the LBR is controlled through
+events.
 
-Another big change to the driver is the support for devicetree.
-The bindings for System MMU is described in
-Documentation/devicetree/bindings/arm/samsung/system-mmu.txt
+> yes，on both sides we'd have the LBR running. but there is no need to save/restore
+> the LBR stack in this case. we should save the LBR stack only when task schedule out,
+> and restore the LBR stack when task schedule in. So I think it's more natural to
+> manage the LBR state when switching perf task context.
 
-In addition, this patchset also includes several bug fixes and enhancements
-of the current driver.
+And I never said we shouldn't, I just said we should push it down into the PMU
+driver and not have a hook out into the generic code. The generic code should
+ideally not know anything about LBR, it should only care about events.
 
-Change log:
-v7:
-- Rebased on the stable 3.10
-- Registered PM domains and gate clocks with DT
-- Changed connection method between a System MMU and its master H/W
-   'mmu-master' property in the node of System MMU
-   --> 'iommu' property in the node of master H/W
-- Marking device descriptor of master H/W of a System MMU with bus notifier.
-- Power management (PM_RUNTIME, PM_SLEEP) of System MMUs with gpd_dev_ops
-   of Generic IO Powerdomain. gpd_dev_ops are set to the master H/Ws
-   before they are probed in the bus notifier.
-- Removed additional debugging features like debugfs entries and
-   version names.
-- Removed support for advanced features of System MMU 3.2 and 3.3
-   the current IOMMU API cannot handle the feature
-  (A kind of L2 TLB that fetches several consequence page table entries.
-   It must be initialized by the driver of master H/W whenever it works.)
+Something like the below... although I'm still not entirely happy with that
+either.
 
-v6:
-- Rebased on the branch, next/iommu-exynos of
-  git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+Completely untested, never even seen compiler.
 
-v5:
-- new bugfix: patch 01
-- Reordered patches
-  * patch 01 ~ 05: Bugfix and enhancements of the existing driver
-  * patch 06 ~ 10: Device Tree support and callbacks for power management
-  * patch 11     : System MMU 3.2 and 3.3 support
-  * patch 12 ~ 14: Debugging features
-- Additional code compaction
+---
+ arch/x86/kernel/cpu/perf_event.c           |  5 ++
+ arch/x86/kernel/cpu/perf_event.h           |  8 ++-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c | 24 ++++++--
+ include/linux/perf_event.h                 | 11 +++-
+ kernel/events/core.c                       | 92 +++---------------------------
+ 5 files changed, 47 insertions(+), 93 deletions(-)
 
-v4:
-- Remove Change-Id from v3 patches
-- Change the order of the third and the first patch
-  Thanks to Kukjin Kim.
-- Fix memory leak when allocating and assigning exynos_iommu_owner to client
-  device if the client device has multiple System MMUs.
-  Thanks to Rahul Sharma.
-
-v3:
-- Fix prefetch buffer flag definition for System MMU 3.3 (patch 10/12)
-- Fix incorrect setting for SET_RUNTIME_PM_OPS (patch 09/12)
-  Thanks to Prathyush.
-
-v2:
-- Split the patch to iommu/exynos into 9 patches
-- Support for System MMU 3.3
-- Some code compaction
-
-Patch summary:
-[PATCH v7 1/9] iommu/exynos: do not include removed header
-[PATCH v7 2/9] iommu/exynos: add missing cache flush for removed page table entries
-[PATCH v7 3/9] iommu/exynos: fix page table maintenance
-[PATCH v7 4/9] iommu/exynos: allocate lv2 page table from own slab
-[PATCH v7 5/9] iommu/exynos: change rwlock to spinlock
-[PATCH v7 6/9] clk: exynos5250: add gate clock descriptions of System MMU
-[PATCH v7 7/9] ARM: dts: Add description of System MMU of Exynos SoCs
-[PATCH v7 8/9] iommu/exynos: support for device tree
-[PATCH v7 9/9] iommu/exynos: add bus notifier for registering System MMU
-
-Diffstats:
-.../devicetree/bindings/clock/exynos5250-clock.txt |   28 +-
-.../bindings/iommu/samsung,exynos4210-sysmmu.txt   |  103 ++
-arch/arm/boot/dts/exynos4.dtsi                     |  122 +++
-arch/arm/boot/dts/exynos4210.dtsi                  |   25 +
-arch/arm/boot/dts/exynos4x12.dtsi                  |   76 ++
-arch/arm/boot/dts/exynos5250.dtsi                  |  291 ++++++
-drivers/clk/samsung/clk-exynos5250.c               |   57 +-
-drivers/iommu/Kconfig                              |    5 +-
-drivers/iommu/exynos-iommu.c                       | 1011 +++++++++++++-------
-9 files changed, 1382 insertions(+), 336 deletions(-)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 9e581c5..6516ce0 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -519,6 +519,11 @@ static void x86_pmu_disable(struct pmu *pmu)
+ 	if (!cpuc->enabled)
+ 		return;
+ 
++	if (cpuc->current != current) {
++		cpuc->current = current;
++		cpuc->ctxs_seq++;
++	}
++
+ 	cpuc->n_added = 0;
+ 	cpuc->enabled = 0;
+ 	barrier();
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 97e557b..e1ee365 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -141,6 +141,12 @@ struct cpu_hw_events {
+ 	int			is_fake;
+ 
+ 	/*
++	 * Context switch tracking
++	 */
++	void			*current;
++	u64			ctxs_seq;
++
++	/*
+ 	 * Intel DebugStore bits
+ 	 */
+ 	struct debug_store	*ds;
+@@ -150,11 +156,11 @@ struct cpu_hw_events {
+ 	 * Intel LBR bits
+ 	 */
+ 	int				lbr_users;
+-	void				*lbr_context;
+ 	struct perf_branch_stack	lbr_stack;
+ 	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
+ 	struct er_account		*lbr_sel;
+ 	u64				br_sel;
++	u64				lbr_flush_seq;
+ 
+ 	/*
+ 	 * Intel host/guest exclude bits
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index d5be06a..aa34fa3 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -189,15 +189,20 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ 		return;
+ 
+ 	/*
+-	 * Reset the LBR stack if we changed task context to
+-	 * avoid data leaks.
++	 * If we're a task event and observe a context switch; flush the LBR
++	 * since we don't want to leak LBR entries from the previous task into
++	 * this one.
+ 	 */
+-	if (event->ctx->task && cpuc->lbr_context != event->ctx) {
++	if (event->ctx->task && cpuc->ctxs_seq != cpuc->lbr_flush_seq) {
+ 		intel_pmu_lbr_reset();
+-		cpuc->lbr_context = event->ctx;
++		cpuc->lbr_flush_seq = cpuc->ctxs_seq;
+ 	}
++
+ 	cpuc->br_sel = event->hw.branch_reg.reg;
+ 
++	if (!cpuc->lbr_users)
++		event->ctx->pmu->flags |= PERF_PF_CTXS;
++
+ 	cpuc->lbr_users++;
+ }
+ 
+@@ -209,6 +214,9 @@ void intel_pmu_lbr_disable(struct perf_event *event)
+ 		return;
+ 
+ 	cpuc->lbr_users--;
++	if (!cpuc->lbr_users)
++		event->ctx->pmu->flags &= ~PERF_PF_CTXS;
++
+ 	WARN_ON_ONCE(cpuc->lbr_users < 0);
+ 
+ 	if (cpuc->enabled && !cpuc->lbr_users) {
+@@ -222,8 +230,14 @@ void intel_pmu_lbr_enable_all(void)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+ 
+-	if (cpuc->lbr_users)
++	if (cpuc->lbr_users) {
++		if (cpuc->lbr_flush_seq != cpuc->ctxs_seq) {
++			intel_pmu_lbr_reset();
++			cpuc->lbr_flush_seq = cpuc->ctxs_seq;
++		}
++
+ 		__intel_pmu_lbr_enable();
++	}
+ }
+ 
+ void intel_pmu_lbr_disable_all(void)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 8873f82..837f6e3 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -189,6 +189,11 @@ struct perf_event;
+  */
+ #define PERF_EVENT_TXN 0x1
+ 
++/*
++ * pmu::flags
++ */
++#define PERF_PF_CTXS	0x01 /* require pmu_disable/enable on context_sched_in */
++
+ /**
+  * struct pmu - generic performance monitoring unit
+  */
+@@ -200,10 +205,11 @@ struct pmu {
+ 	const char			*name;
+ 	int				type;
+ 
+-	int * __percpu			pmu_disable_count;
+-	struct perf_cpu_context * __percpu pmu_cpu_context;
++	unsigned int			flags;
+ 	int				task_ctx_nr;
+ 	int				hrtimer_interval_ms;
++	int * __percpu			pmu_disable_count;
++	struct perf_cpu_context * __percpu pmu_cpu_context;
+ 
+ 	/*
+ 	 * Fully disable/enable this PMU, can be used to protect from the PMI
+@@ -492,7 +498,6 @@ struct perf_event_context {
+ 	u64				generation;
+ 	int				pin_count;
+ 	int				nr_cgroups;	 /* cgroup evts */
+-	int				nr_branch_stack; /* branch_stack evt */
+ 	struct rcu_head			rcu_head;
+ };
+ 
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1db3af9..d49b4ea 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -140,7 +140,6 @@ enum event_type_t {
+  */
+ struct static_key_deferred perf_sched_events __read_mostly;
+ static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
+-static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
+ 
+ static atomic_t nr_mmap_events __read_mostly;
+ static atomic_t nr_comm_events __read_mostly;
+@@ -1114,9 +1113,6 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+ 	if (is_cgroup_event(event))
+ 		ctx->nr_cgroups++;
+ 
+-	if (has_branch_stack(event))
+-		ctx->nr_branch_stack++;
+-
+ 	list_add_rcu(&event->event_entry, &ctx->event_list);
+ 	if (!ctx->nr_events)
+ 		perf_pmu_rotate_start(ctx->pmu);
+@@ -1271,9 +1267,6 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
+ 			cpuctx->cgrp = NULL;
+ 	}
+ 
+-	if (has_branch_stack(event))
+-		ctx->nr_branch_stack--;
+-
+ 	ctx->nr_events--;
+ 	if (event->attr.inherit_stat)
+ 		ctx->nr_stat--;
+@@ -2428,8 +2421,13 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+ 	struct perf_cpu_context *cpuctx;
+ 
+ 	cpuctx = __get_cpu_context(ctx);
+-	if (cpuctx->task_ctx == ctx)
++	if (cpuctx->task_ctx == ctx) {
++		if (ctx->pmu->flags & PERF_PF_CTXS) {
++			perf_pmu_disable(ctx->pmu);
++			perf_pmu_enable(ctx->pmu);
++		}
+ 		return;
++	}
+ 
+ 	perf_ctx_lock(cpuctx, ctx);
+ 	perf_pmu_disable(ctx->pmu);
+@@ -2456,66 +2454,6 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+ }
+ 
+ /*
+- * When sampling the branck stack in system-wide, it may be necessary
+- * to flush the stack on context switch. This happens when the branch
+- * stack does not tag its entries with the pid of the current task.
+- * Otherwise it becomes impossible to associate a branch entry with a
+- * task. This ambiguity is more likely to appear when the branch stack
+- * supports priv level filtering and the user sets it to monitor only
+- * at the user level (which could be a useful measurement in system-wide
+- * mode). In that case, the risk is high of having a branch stack with
+- * branch from multiple tasks. Flushing may mean dropping the existing
+- * entries or stashing them somewhere in the PMU specific code layer.
+- *
+- * This function provides the context switch callback to the lower code
+- * layer. It is invoked ONLY when there is at least one system-wide context
+- * with at least one active event using taken branch sampling.
+- */
+-static void perf_branch_stack_sched_in(struct task_struct *prev,
+-				       struct task_struct *task)
+-{
+-	struct perf_cpu_context *cpuctx;
+-	struct pmu *pmu;
+-	unsigned long flags;
+-
+-	/* no need to flush branch stack if not changing task */
+-	if (prev == task)
+-		return;
+-
+-	local_irq_save(flags);
+-
+-	rcu_read_lock();
+-
+-	list_for_each_entry_rcu(pmu, &pmus, entry) {
+-		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+-
+-		/*
+-		 * check if the context has at least one
+-		 * event using PERF_SAMPLE_BRANCH_STACK
+-		 */
+-		if (cpuctx->ctx.nr_branch_stack > 0
+-		    && pmu->flush_branch_stack) {
+-
+-			pmu = cpuctx->ctx.pmu;
+-
+-			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+-
+-			perf_pmu_disable(pmu);
+-
+-			pmu->flush_branch_stack();
+-
+-			perf_pmu_enable(pmu);
+-
+-			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+-		}
+-	}
+-
+-	rcu_read_unlock();
+-
+-	local_irq_restore(flags);
+-}
+-
+-/*
+  * Called from scheduler to add the events of the current task
+  * with interrupts disabled.
+  *
+@@ -2546,10 +2484,6 @@ void __perf_event_task_sched_in(struct task_struct *prev,
+ 	 */
+ 	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
+ 		perf_cgroup_sched_in(prev, task);
+-
+-	/* check for system-wide branch_stack events */
+-	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
+-		perf_branch_stack_sched_in(prev, task);
+ }
+ 
+ static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
+@@ -3126,14 +3060,8 @@ static void free_event(struct perf_event *event)
+ 			static_key_slow_dec_deferred(&perf_sched_events);
+ 		}
+ 
+-		if (has_branch_stack(event)) {
++		if (has_branch_stack(event))
+ 			static_key_slow_dec_deferred(&perf_sched_events);
+-			/* is system-wide event */
+-			if (!(event->attach_state & PERF_ATTACH_TASK)) {
+-				atomic_dec(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-			}
+-		}
+ 	}
+ 
+ 	if (event->rb) {
+@@ -6554,12 +6482,8 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
+ 				return ERR_PTR(err);
+ 			}
+ 		}
+-		if (has_branch_stack(event)) {
++		if (has_branch_stack(event))
+ 			static_key_slow_inc(&perf_sched_events.key);
+-			if (!(event->attach_state & PERF_ATTACH_TASK))
+-				atomic_inc(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-		}
+ 	}
+ 
+ 	return event;
 
