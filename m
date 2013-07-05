@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965029Ab3GEOzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 10:55:38 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15268 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964945Ab3GEOzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 10:55:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1002,1363158000"; 
-   d="scan'208";a="340983172"
-Message-ID: <1373036361.2711.64.camel@sauron.fi.intel.com>
-Subject: Re: [GIT PULL] UBI changes for 3.11-rc1
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mtd <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 05 Jul 2013 17:59:21 +0300
-In-Reply-To: <1373036154.2711.61.camel@sauron.fi.intel.com>
-References: <1373036154.2711.61.camel@sauron.fi.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S964963Ab3GEO5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 10:57:39 -0400
+Received: from mail-gg0-f179.google.com ([209.85.161.179]:61507 "EHLO
+	mail-gg0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757363Ab3GEO5h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 10:57:37 -0400
+Date: Fri, 5 Jul 2013 11:57:30 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 00/16] perf tools: Cleanups on tracepoint handling
+Message-ID: <20130705145730.GC2559@ghostprotocols.net>
+References: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-05 at 14:51 +0000, Bityutskiy, Artem wrote:
-> Hellow Linus!
+Em Tue, Jun 04, 2013 at 02:20:15PM +0900, Namhyung Kim escreveu:
+> Hello,
 > 
-> The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+> This patchset is a resend version of previous work and basis of
+> upcoming perf ftrace patchset.  Although I saw no issue on this series
+> when I posted earlier, it'd be great if Steve or others take a look at
+> it again and give comments.
 
-Apologies, I meant to send this from a different e-mail address, so that
-it would not have all the "confidentiality" disclaimers. I've resent the
-request from my @gmail.com address instead.
+All seems ok, thanks a lot, applied.
 
--- 
-Best Regards,
-Artem Bityutskiy
-
+- Arnaldo
