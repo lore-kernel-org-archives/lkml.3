@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757189Ab3GEIQH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 04:16:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35187 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757162Ab3GEIQE (ORCPT
+	id S932446Ab3GEIQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 04:16:32 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:49167 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757162Ab3GEIQ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 04:16:04 -0400
-Date: Fri, 5 Jul 2013 10:15:16 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
-        andi@firstfloor.org
-Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
- switch
-Message-ID: <20130705081516.GP18898@dyad.programming.kicks-ass.net>
-References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com>
- <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com>
- <20130704124536.GK23916@twins.programming.kicks-ass.net>
- <51D65B58.1050201@intel.com>
+	Fri, 5 Jul 2013 04:16:28 -0400
+Date: Fri, 5 Jul 2013 10:16:24 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] irqchip: sun4i: Staticize sun4i_irq_ack()
+Message-ID: <20130705081624.GI2959@lukather>
+References: <1373010070.14756.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Q8BnQc91gJZX4vDc"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51D65B58.1050201@intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1373010070.14756.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 01:36:24PM +0800, Yan, Zheng wrote:
-> On 07/04/2013 08:45 PM, Peter Zijlstra wrote:
-> > On Mon, Jul 01, 2013 at 03:23:04PM +0800, Yan, Zheng wrote:
-> > 
-> >> @@ -2488,25 +2508,31 @@ static void perf_branch_stack_sched_in(struct task_struct *prev,
-> >>  
-> >>  	list_for_each_entry_rcu(pmu, &pmus, entry) {
-> >>  		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
-> >> +		task_ctx = cpuctx->task_ctx;
-> >>  
-> >>  		/*
-> >> -		 * check if the context has at least one
-> >> -		 * event using PERF_SAMPLE_BRANCH_STACK
-> >> +		 * force flush the branch stack if there are cpu-wide events
-> >> +		 * using PERF_SAMPLE_BRANCH_STACK
-> >> +		 *
-> >> +		 * save/restore the branch stack if the task context has
-> >> +		 * at least one event using PERF_SAMPLE_BRANCH_STACK
-> >>  		 */
-> >> -		if (cpuctx->ctx.nr_branch_stack > 0
-> >> -		    && pmu->flush_branch_stack) {
-> >> -
-> >> +		bool force_flush = cpuctx->ctx.nr_branch_stack > 0;
-> >> +		if (pmu->branch_stack_sched &&
-> >> +		    (force_flush ||
-> >> +		     (task_ctx && task_ctx->nr_branch_stack > 0))) {
-> >>  			pmu = cpuctx->ctx.pmu;
-> >>  
-> >> -			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
-> >> +			perf_ctx_lock(cpuctx, task_ctx);
-> >>  
-> >>  			perf_pmu_disable(pmu);
-> >>  
-> >> -			pmu->flush_branch_stack();
-> >> +			pmu->branch_stack_sched(task_ctx,
-> >> +						sched_in, force_flush);
-> >>  
-> >>  			perf_pmu_enable(pmu);
-> >>  
-> >> -			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
-> >> +			perf_ctx_unlock(cpuctx, task_ctx);
-> >>  		}
-> >>  	}
-> >>  
-> > 
-> > I never really like this; and yes I know I wrote part of that. Is there
-> > any way we can get rid of this and to it 'properly' through the events
-> > that get scheduled?
-> > 
-> > After all; the LBR usage is through the events, so scheduling the events
-> > should also manage the LBR state.
-> > 
-> > What is missing for that to work?
-> > 
-> 
-> the LBR is shared resource, can be used by multiple events at the same time.
 
-Yeah so? There's tons of shared resources in the PMU already.
+--Q8BnQc91gJZX4vDc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Strictly speaking，LBR is associated with task, not event.
+Hi Axel,
 
-Wrong!, it _is_ associated with events. Events is all there is. Event can be
-associated with tasks, but that's completely irrelevant.
+On Fri, Jul 05, 2013 at 03:41:10PM +0800, Axel Lin wrote:
+> sun4i_irq_ack() is only referenced in this file, so make it static.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-> One example is
-> there are 5 events using the LBR stack feature, but there are only 4 counters.
-> So these events need schedule. Saving/restoring LBR on the basis of event is
-> clearly wrong.
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-Different scheduling and you're wrong. Look at perf_rotate_context(), we'd
-disable everything at perf_pmu_disable() and enable the entire thing at
-perf_pmu_enable(), on both sides we'd have the LBR running.
+Thanks!
+Maxime
 
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Q8BnQc91gJZX4vDc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR1oDYAAoJEBx+YmzsjxAgr7AQALZE9Na2cIz4L+yiHpjd5tLR
+yF98d3bswh2etJUwqaozd0T/2g5f7Ji42qrTCDMniyR8bfF4bXPpz5L5sLUdgJgR
+fru+/v3RqOhYIRj1xuXEOWWxzLQ8D0KN8yMp5G8VSjFZ2TUw4EHEzOoPQA6ZuXE0
+LeIfxGEFU2Qo7+G9W5pmBw2rIt59A1msrlD35VfGm3YMHuN3W0hserwXeMnmP6u+
+kIlkGifugB5W/6ExsAeOFtLrZHXPgYDOhuAa9ddFhC8QooSselOShSAPM401BiS0
+j7IohUnGzliFj9oyqOVDG/dpV/zgI6UyQsphnWKAF9wP4OisjGIkRrQenjOvfe1V
+FhGTIm03VFVza0HiWxMebjzdrgDwHM/4trOTo4tI0GDTPYkXeQJMzjZBjpSiNfSK
+zR44h9xV5J8Ac+lLDAwvMWEtGPVywnM4aojbwWZ8ncOm+xxgXvKmuocCk/4Tskle
+WAgfHpI58dwslAD/BYed/pEimfN9CR3dv8rbj3F+ZThXI2X1jOII/x6ssZ9v1WPz
+VQLualzISqNFVaWLmPbIP3ePWnxkUWX062mrZP6tnXhvlefQY9JE+twSEgzKdW+T
+ZrrYSotk3NYMKZS83PKfqtuDyKByea8wDo2LrqFZm0oJhB+zo43237Bt9fJKYIn2
+mj0e2TthQuqS4X7MOV9y
+=7ueX
+-----END PGP SIGNATURE-----
+
+--Q8BnQc91gJZX4vDc--
