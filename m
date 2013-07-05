@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756969Ab3GEBMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 21:12:23 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:56219 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab3GEBMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 21:12:21 -0400
-X-Spam-Score: -100.8
-Message-ID: <51D61D40.9050500@asianux.com>
-Date: Fri, 05 Jul 2013 09:11:28 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1756361Ab3GEBOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 21:14:07 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15793 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888Ab3GEBOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 21:14:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,998,1363158000"; 
+   d="scan'208";a="326977990"
+Message-ID: <51D61D97.8060904@intel.com>
+Date: Fri, 05 Jul 2013 09:12:55 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Mike Frysinger <vapier@gentoo.org>, takata@linux-m32r.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>, realmz paranoid <realmz6@gmail.com>,
-        linux390@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-s390@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
-        Marc Gauthier <Marc.Gauthier@tensilica.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] arch: asm-generic: for atomic_set_mask() 1st param,
- use 'unsigned int' instead of 'unsigned long'
-References: <51B2E262.3030603@asianux.com> <CAErSpo5pg0EvJOR9nn3B0d+q0o6zsdwzM41AQx=AHfynRqX3hQ@mail.gmail.com> <51B4214E.6090007@asianux.com> <20130610092106.GA4697@osiris> <51B91E32.2040502@asianux.com> <51CA4C0E.9050909@asianux.com>
-In-Reply-To: <51CA4C0E.9050909@asianux.com>
-Content-Type: text/plain; charset=GB2312
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>, hpa@linux.intel.com,
+        tim.c.chen@linux.intel.com, linux-kernel@vger.kernel.org,
+        andi.kleen@intel.com, a.p.zijlstra@chello.nl, mingo@elte.hu
+Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
+References: <1372916056-24301-1-git-send-email-alex.shi@intel.com>  <alpine.DEB.2.02.1307041300020.11637@ionos.tec.linutronix.de> <1372961512.8728.32.camel@buesod1.americas.hpqcorp.net> <alpine.DEB.2.02.1307042214090.11637@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307042214090.11637@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Maintainers:
-
-Please help check this patch whether OK, when you have time.
-
-Thanks.
-
-On 06/26/2013 10:03 AM, Chen Gang wrote:
-> Hello Maintainers:
+On 07/05/2013 04:27 AM, Thomas Gleixner wrote:
+>>>> We find some benchmarks drop a lot on tip/sched/core on many Intel boxes,
+> And that branch does NOT have that commit included. So how can you see
+> a regression on a branch caused by a commit NOT included into that
+> branch?
 > 
-> Firstly thank the s390 maintainers again for their 'Acked-by' (in my
-> memory, s390 is the most important business mainframe machine)
+> The offending commit is in tip timers/core and not in tip
+> sched/core. What I'm wanted to say is, that we need a proper
+> description of problems and not some random association.
 > 
-> Could another related maintainers give a glance for it, when you have time.
+> It tricked you to assume, that I'm not able to figure it out myself :)
 > 
-> Thanks.
+> See? These things are complex and subtle, so we need precise
+> descriptions and not some sloppy semi correct data.
 > 
-> On 06/13/2013 09:19 AM, Chen Gang wrote:
->> On 06/10/2013 05:21 PM, Heiko Carstens wrote:
->>> On Sun, Jun 09, 2013 at 02:31:42PM +0800, Chen Gang wrote:
->>>>>
->>>>> atomic_set_mask() and atomic_clear_mask() are the pairs, so the related
->>>>> parameters' type need match with each other.
->>>>>
->>>>> The type of 'addr->counter' is 'int', so use 'unsigned int' instead
->>>>> of 'unsigned long', and let atomic_set_mask() match atomic_clear_mask().
->>>>>
->>>>>
->>>>> For arch sub-system, currently, have 3 types of definition for them:
->>>>> 1st for 'int', 2nd for 'long', 3rd is conflict to use 'int' and 'long'.
->>>>>
->>>>> At least, better to fix 3rd (conflict using 'int' and 'long').
->>>>>
->>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>>>> ---
->>>>>  arch/blackfin/include/asm/atomic.h |    4 ++--
->>>>>  arch/m32r/include/asm/atomic.h     |    8 ++++----
->>>>>  arch/s390/include/asm/atomic.h     |    4 ++--
->>>>>  include/asm-generic/atomic.h       |    2 +-
->>>>>  4 files changed, 9 insertions(+), 9 deletions(-)
->>> For the s390 part:
->>>
->>> Acked-by: Heiko Carstens <heiko.carstens@de.ibm.com>
->>>
->>
->> Thank you very much !!
->>
->>
-> 
+> I'm well aware of the issue and with Peters help I got a reasonable
+> explanation for it. A proper fix is about to be sent out.
 > 
 
+Ingo had merged your branch into sched/core. :)
+
+commit f9bed7021710a3e45c331f7d7781de914cc1b939
+Merge: 7e76057 67dd331
+Author: Ingo Molnar <mingo@kernel.org>
+Date:   Wed May 29 11:21:59 2013 +0200
+
+    Merge branch 'timers/urgent'
+
+...
+
+commit 7d194f78bde64ec813c1ed8291181bdd61515e78
+Merge: 0298bf7 1eaff67
+Author: Ingo Molnar <mingo@kernel.org>
+Date:   Tue May 28 09:53:41 2013 +0200
+
+    Merge branch 'timers/core'
+
+commit 0298bf70644d7334bec16ae47f3aa58f4f883b59
+Merge: cc662fa 2938d27
+Author: Ingo Molnar <mingo@kernel.org>
+Date:   Tue May 28 09:49:51 2013 +0200
+
+    Merge branch 'timers/urgent'
 
 -- 
-Chen Gang
+Thanks
+    Alex
