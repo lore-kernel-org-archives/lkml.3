@@ -1,169 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197Ab3GEImy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 04:42:54 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63007 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757167Ab3GEImw (ORCPT
+	id S1757195Ab3GEIqx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 04:46:53 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:50486 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718Ab3GEIqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 04:42:52 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-f3-51d686fd5e6a
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: add proc entry to monitor current usage of segments
-Date: Fri, 05 Jul 2013 17:42:29 +0900
-Message-id: <1373013749-10370-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zfd2/bdcCDU6+0bC4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2N1/2WmgtvSFUuu
-	L2BpYLwr1sXIySEhYCJxd+ovVghbTOLCvfVsXYxcHEICyxgl5jZeZoMparl2gBEisYhRorNl
-	P1RVG5PErcttLF2MHBxsAtoSm/cbgDSICDBLLJh6HqyBWWACo8T/Re9ZQBLCAl4SL1+3g9ks
-	AqoSp2ZNALN5BdwlfjQdZoHYpiux6MRBVpBmCYH7bBKLtxxlh2gQkPg2+RDYMgkBWYlNB5gh
-	6iUlDq64wTKBUXABI8MqRtHUguSC4qT0IlO94sTc4tK8dL3k/NxNjJAgnLiD8f4B60OMyUDj
-	JjJLiSbnA4M4ryTe0NjMyMLUxNTYyNzSjDRhJXFe9RbrQCGB9MSS1OzU1ILUovii0pzU4kOM
-	TBycUg2M6w7e4pB78/9F+3nVzWfXZh/dvteCbbHn1G1s/n9apyWxvNjWp9gvUjtV8drC5lM9
-	0q+fTytmv126oVzv4zlLuUn20z9KH9u/T3HTx/O+vz5pKl3jWHZoq0y4E2/zk72PzG7P6Zx+
-	4Pq9Jr1P0+s8RCVzZx5cZRI4pcRto3np+7h1d6/5fZnlmqvEUpyRaKjFXFScCADte8idWAIA	AA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEIsWRmVeSWpSXmKPExsVy+t9jAd2/bdcCDS6vUbG4vusvk8WlRe4W
-	e/aeZLG4vGsOmwOLx+4Fn5k8+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON45
-	3tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2ibkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3f
-	kCC4HiMDNJCwjjFjdf9lpoLb0hVLri9gaWC8K9bFyMkhIWAi0XLtACOELSZx4d56ti5GLg4h
-	gUWMEp0t+6GcNiaJW5fbWLoYOTjYBLQlNu83AGkQEWCWWDD1PCNIDbPABEaJ/4ves4AkhAW8
-	JF6+bgezWQRUJU7NmgBm8wq4S/xoOswCsU1XYtGJg6wTGLkXMDKsYhRNLUguKE5KzzXSK07M
-	LS7NS9dLzs/dxAgO8WfSOxhXNVgcYhTgYFTi4X1QfzVQiDWxrLgy9xCjBAezkgivfcK1QCHe
-	lMTKqtSi/Pii0pzU4kOMyUDbJzJLiSbnA+MvryTe0NjEzMjSyMzCyMTcnDRhJXHeg63WgUIC
-	6YklqdmpqQWpRTBbmDg4pRoY9edkKzStZmOM4l8xO09c5aYx6/63Et++ThHO3315v+jcXd/M
-	2cyenN6ePe9csFTgfs66ZQW/nS/+bzcId9LM2sN2rdn4t6kJY4z8yj0Wbdf0Q/O8tedxTLqU
-	v7hUx9WiYrULo/4Mzx9Ll8oHr5gauOPa5JJ1sau3fn1mv6fyutRFd7WuE92cSizFGYmGWsxF
-	xYkAT3hpXbUCAAA=
+	Fri, 5 Jul 2013 04:46:49 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-78-51d687f73286
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: viresh.kumar@linaro.org, rjw@sisk.pl, linux-kernel@vger.kernel.org
+Cc: linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        cw00.choi@samsung.com
+Subject: [PATCH 0/6] cpufreq: Add 'load_table' debugfs file to show colleced
+ CPUs load
+Date: Fri, 05 Jul 2013 17:46:35 +0900
+Message-id: <1373014001-17746-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNLMWRmVeSWpSXmKPExsWyRsSkSPd7+7VAg8sTrC2eNv1gt7j+5Tmr
+	xdmmN+wWl3fNYbP43HuE0eJ24wo2i/6FvUwWG796OHB43Lm2h82jb8sqRo9Hi1sYPT5vkgtg
+	ieKySUnNySxLLdK3S+DK6Pg3laXgjGrFk+kXWRoYZ4p3MXJySAiYSGzu2csKYYtJXLi3nq2L
+	kYtDSGApo8Tui4vZuxg5wIperuABqRESWMQo8WOzF0TNf0aJc/s/MIIk2AS0JPa/uMEGYosI
+	uEmsvfaJEaSIWaCZUeLwp6lADjuHsECExNcIkBIWAVWJ989OMYPYvAKuEp9PzmOCuEFO4sOe
+	R+wgrRIC7ewSvxb2sUE0CEh8m3yIBeIeWYlNB5gh6iUlDq64wTKBUXABI8MqRtHUguSC4qT0
+	IkO94sTc4tK8dL3k/NxNjMCAPf3vWe8OxtsHrA8xJgONm8gsJZqcDwz4vJJ4Q2MzIwtTE1Nj
+	I3NLM9KElcR51VqsA4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwrjQQ15iftYZ5VudFh0MO
+	Jw3Pq70vnT25/PdUwUmby3LN1dbzaayfmJ+cY38x4pFGwe/J+ok1y56euvTk5v/0zz3cH6XX
+	xuscFDtoKnV2aZGp9P3o5adVrsb9yF9z/2vCgr0pSxbKqGv557t3/7v/qrvdXrI8oWa9xUxZ
+	6ZdCm85IT2oMlQsLV2Ipzkg01GIuKk4EAK0aaStuAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jAd3v7dcCDb6/NbR42vSD3eL6l+es
+	Fmeb3rBbXN41h83ic+8RRovbjSvYLPoX9jJZbPzq4cDhcefaHjaPvi2rGD0eLW5h9Pi8SS6A
+	JaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6Awl
+	hbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY0bHv6ksBWdUK55Mv8jSwDhT
+	vIuRg0NCwETi5QqeLkZOIFNM4sK99WwgtpDAIkaJH5u9uhi5gOz/jBLn9n9gBEmwCWhJ7H9x
+	A6xIRMBNYu21T4wgRcwCzYwShz9NBXLYOYQFIiS+RoCUsAioSrx/dooZxOYVcJX4fHIeE8Qu
+	OYkPex6xT2DkXsDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOB6eSe1gXNlgcYhRgINR
+	iYfXoulqoBBrYllxZe4hRgkOZiURXvuEa4FCvCmJlVWpRfnxRaU5qcWHGJOBtk9klhJNzgfG
+	al5JvKGxiZmRpZG5oYWRsTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MF4Mb50RdvCX
+	e8HC1I3BfxJzDVS27HgxLZTtxsnJa8s5Z8WzFOS/+CufJFC+U1j9VEvqnqILUodFBctmld7b
+	FR81z+nVyiPbg7p92D+fkltkctHF48CsL2tP7Uh8HGZw83mLdsmsvtmn4oTCvzgu4qi4/y0q
+	7Lm//cKPzUefcylPnt/McHX+WyUlluKMREMt5qLiRABAmVGbywIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You can monitor valid block counts of whole segments in:
-  /proc/fs/f2fs/sdb1/segment_info.
+This patchset add 'load_table' debugfs file to provide collected CPUs data.
+The load_table debugfs file gives below CPU datas.
+- measured time
+- old CPU frequency
+- new CPU frequency
+- each CPU load
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/f2fs.h  |  1 +
- fs/f2fs/super.c | 46 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 47 insertions(+)
+These data will mean the change of CPU frequency according to CPUs load at
+specific measured time. Also, the user can determine the storage size of colleced
+CPUs data. The range is from 10 to 1000.
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 82e187f..e3a611d 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -365,6 +365,7 @@ enum page_type {
- 
- struct f2fs_sb_info {
- 	struct super_block *sb;			/* pointer to VFS super block */
-+	struct proc_dir_entry *s_proc;		/* proc entry */
- 	struct buffer_head *raw_super_buf;	/* buffer head of raw sb */
- 	struct f2fs_super_block *raw_super;	/* raw super block pointer */
- 	int s_dirty;				/* dirty flag for checkpoint */
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index d48d995..1ed0279 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -18,6 +18,7 @@
- #include <linux/parser.h>
- #include <linux/mount.h>
- #include <linux/seq_file.h>
-+#include <linux/proc_fs.h>
- #include <linux/random.h>
- #include <linux/exportfs.h>
- #include <linux/blkdev.h>
-@@ -31,6 +32,7 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/f2fs.h>
- 
-+static struct proc_dir_entry *f2fs_proc_root;
- static struct kmem_cache *f2fs_inode_cachep;
- 
- enum {
-@@ -404,6 +406,11 @@ static void f2fs_put_super(struct super_block *sb)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
- 
-+	if (sbi->s_proc) {
-+		remove_proc_entry("segment_info", sbi->s_proc);
-+		remove_proc_entry(sb->s_id, f2fs_proc_root);
-+	}
-+
- 	f2fs_destroy_stats(sbi);
- 	stop_gc_thread(sbi);
- 
-@@ -521,6 +528,36 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
- 	return 0;
- }
- 
-+static int segment_info_seq_show(struct seq_file *seq, void *offset)
-+{
-+	struct super_block *sb = seq->private;
-+	struct f2fs_sb_info *sbi = F2FS_SB(sb);
-+	unsigned int total_segs = le32_to_cpu(sbi->raw_super->segment_count_main);
-+	int i;
-+
-+	for (i = 0; i < total_segs; i++) {
-+		seq_printf(seq, "%u", get_valid_blocks(sbi, i, 1));
-+		if (i != 0 && (i % 10) == 0)
-+			seq_puts(seq, "\n");
-+		else
-+			seq_puts(seq, " ");
-+	}
-+	return 0;
-+}
-+
-+static int segment_info_open_fs(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, segment_info_seq_show, PDE_DATA(inode));
-+}
-+
-+static const struct file_operations f2fs_seq_segment_info_fops = {
-+	.owner = THIS_MODULE,
-+	.open = segment_info_open_fs,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
- static int f2fs_remount(struct super_block *sb, int *flags, char *data)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(sb);
-@@ -947,6 +984,13 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 	if (err)
- 		goto fail;
- 
-+	if (f2fs_proc_root)
-+		sbi->s_proc = proc_mkdir(sb->s_id, f2fs_proc_root);
-+
-+	if (sbi->s_proc)
-+		proc_create_data("segment_info", S_IRUGO, sbi->s_proc,
-+				 &f2fs_seq_segment_info_fops, sb);
-+
- 	if (test_opt(sbi, DISCARD)) {
- 		struct request_queue *q = bdev_get_queue(sb->s_bdev);
- 		if (!blk_queue_discard(q))
-@@ -1033,12 +1077,14 @@ static int __init init_f2fs_fs(void)
- 	if (err)
- 		goto fail;
- 	f2fs_create_root_stats();
-+	f2fs_proc_root = proc_mkdir("fs/f2fs", NULL);
- fail:
- 	return err;
- }
- 
- static void __exit exit_f2fs_fs(void)
- {
-+	remove_proc_entry("fs/f2fs", NULL);
- 	f2fs_destroy_root_stats();
- 	unregister_filesystem(&f2fs_fs_type);
- 	destroy_checkpoint_caches();
+Second, previous performance/powersave governor haven't calculated CPUs load
+becuase these governor didn't change CPU frequency according to CPUs load. But,
+load_table debugfs file always should indicate the collected CPUs data regardless
+of the kind of cpufreq governor. So, the patch3/4/5 implement that performance/
+powersave governor will check periodically CPUs load by calling dbs_check_cpu()
+with timer.
+
+Finally, the patch 6 explain the detailed description of load_table debugfs file.
+
+Thanks,
+Chanwoo Choi
+
+[Test Result]
+- the kind of SoC : Samsung EXYNOS4412
+- a range of frequency : 200 ~ 1400MHz
+
+- Ondemand governor and the number of online CPU is 4
+Time(ms)   Old Freq(Hz) New Freq(Hz) CPU0 CPU1 CPU2 CPU3
+23820      500000       500000       53   86   2    73   
+23920      500000       400000       66   40   0    42   
+24020      400000       400000       71   71   10   52   
+24120      400000       300000       33   27   45   65   
+24220      300000       300000       4    37   71   34   
+24320      300000       300000       1    85   38   16   
+24420      300000       200000       6    41   15   51   
+24520      200000       200000       12   62   1    51   
+24620      200000       200000       9    51   0    58   
+24720      200000       200000       32   32   11   27 
+
+- Performance governor and the number of online CPU is 4
+Time(ms)   Old Freq(Hz) New Freq(Hz) CPU0 CPU1 CPU2 CPU3 
+3425930    1400000      1400000      0    0    0    0    
+3425945    1400000      1400000      0    0    0    0    
+3425960    1400000      1400000      0    0    0    0    
+3427105    1400000      1400000      0    0    0    0    
+3427109    1400000      1400000      0    0    33   100  
+3428135    1400000      1400000      0    0    0    0    
+3428425    1400000      1400000      0    0    0    0    
+3429385    1400000      1400000      0    0    0    0    
+3429400    1400000      1400000      0    0    0    0    
+3429415    1400000      1400000      0    0    0    0
+
+- Powersave governor and the number of online CPU is 4
+Time(ms)   Old Freq(Hz) New Freq(Hz) CPU0 CPU1 CPU2 CPU3 
+3451945    200000       200000       3    0    0    2    
+3453930    200000       200000       0    1    0    1    
+3453945    200000       200000       2    2    0    0    
+3453960    200000       200000       1    0    1    0    
+3455065    200000       200000       0    0    0    0    
+3455075    200000       200000       1    5    1    0    
+3455570    200000       200000       0    0    0    0    
+3455605    200000       200000       0    0    0    3    
+3456350    200000       200000       0    0    0    0    
+3456360    200000       200000       41   2    39   43   
+
+- Powersave governor and the number of online CPU is 2 (CPU[1-2] is offline)
+Time(ms)   Old Freq(Hz) New Freq(Hz) CPU0 CPU3 
+3501930    200000       200000       0    0    
+3502040    200000       200000       0    0    
+3502100    200000       200000       75   16   
+3502575    200000       200000       0    0    
+3503025    200000       200000       11   2    
+3503100    200000       200000       62   14   
+3503455    200000       200000       1    0    
+3503930    200000       200000       3    9    
+3504000    200000       200000       65   15   
+3504440    200000       200000       1    0    
+
+Chanwoo Choi (6):
+  cpufreq: Add debugfs directory for cpufreq
+  cpufreq: stats: Add 'load_table' debugfs file to show accumulated data of CPUs
+  cpufreq: Update governor core to support all governors
+  cpufreq: performance: Add support to collect CPUs load periodically
+  cpufreq: powersave: Add support to collect CPUs load periodically
+  Documentation: cpufreq: load_table: Update load_table debugfs file documentation
+
+ Documentation/cpu-freq/cpufreq-stats.txt |  39 ++++-
+ drivers/cpufreq/Kconfig                  |   6 +
+ drivers/cpufreq/cpufreq.c                |  61 ++++++++
+ drivers/cpufreq/cpufreq_governor.c       |  37 ++++-
+ drivers/cpufreq/cpufreq_governor.h       |  11 ++
+ drivers/cpufreq/cpufreq_performance.c    | 156 ++++++++++++++++++-
+ drivers/cpufreq/cpufreq_powersave.c      | 158 ++++++++++++++++++-
+ drivers/cpufreq/cpufreq_stats.c          | 256 ++++++++++++++++++++++++++++---
+ include/linux/cpufreq.h                  |   7 +
+ 9 files changed, 692 insertions(+), 39 deletions(-)
+
 -- 
-1.8.3.1.437.g0dbd812
+1.8.0
 
