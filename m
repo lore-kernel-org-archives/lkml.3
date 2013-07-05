@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933751Ab3GENBz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 09:01:55 -0400
-Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:43680
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757340Ab3GENBx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 09:01:53 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz9371I542I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz17326ah8275dhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
-X-WSS-ID: 0MPGS6Z-01-84D-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, David Airlie <airlied@linux.ie>
-CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: RE: [PATCH -next] drm/radeon/dpm: Add missing #include
- <linux/seq_file.h>
-Thread-Topic: [PATCH -next] drm/radeon/dpm: Add missing #include
- <linux/seq_file.h>
-Thread-Index: AQHOeXJmS222rxy6E0mqGD0hILAZ1ZlWDI5g
-Date: Fri, 5 Jul 2013 13:01:45 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02E500B6B@sausexdag04.amd.com>
-References: <1373023528-3361-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1373023528-3361-1-git-send-email-geert@linux-m68k.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.177.96.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S964846Ab3GENCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 09:02:13 -0400
+Received: from fep23.mx.upcmail.net ([62.179.121.43]:49669 "EHLO
+	fep23.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932749Ab3GENCM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 09:02:12 -0400
+X-SourceIP: 84.112.62.194
+Date: Fri, 5 Jul 2013 15:02:07 +0200
+From: Thomas Zeitlhofer <thomas.zeitlhofer@nt.tuwien.ac.at>
+To: Jason Wang <jasowang@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Fabio Estevam <festevam@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: tuntap regression in v3.9.8 and v3.10
+Message-ID: <20130705130207.GA27485@toau.bambla>
+References: <20130702195910.GA20271@toau.bambla>
+ <CAOMZO5B7Yx7tRy8Q5wi6ngcD0FDJzKXHOEGPXyUo52+f3oUHEg@mail.gmail.com>
+ <20130702220651.GA23097@toau.bambla>
+ <51D39010.5090902@redhat.com>
+ <20130703061104.GA22847@toau.bambla>
+ <51D640E2.1010809@redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D640E2.1010809@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Geert Uytterhoeven [mailto:geert@linux-m68k.org]
-> Sent: Friday, July 05, 2013 7:25 AM
-> To: Deucher, Alexander; David Airlie
-> Cc: dri-devel@lists.freedesktop.org; linux-kernel@vger.kernel.org; linux-
-> next@vger.kernel.org; Geert Uytterhoeven
-> Subject: [PATCH -next] drm/radeon/dpm: Add missing #include
-> <linux/seq_file.h>
+On Fri, Jul 05, 2013 at 11:43:30AM +0800, Jason Wang wrote:
+> On 07/03/2013 02:11 PM, Thomas Zeitlhofer wrote:
+> > Hello Jason,
+> >
+> > On Wed, Jul 03, 2013 at 10:44:32AM +0800, Jason Wang wrote:
+[...]
+> >> Which regression did you see?
+> > a kernel panic on the host machine. The details are in the first message
+> > of this thread: http://lkml.org/lkml/2013/7/2/499
 > 
-> ia64_defconfig:
-> 
-> drivers/gpu/drm/radeon/rv6xx_dpm.c: In function
-> 'rv6xx_dpm_debugfs_print_current_performance_level':
-> drivers/gpu/drm/radeon/rv6xx_dpm.c:2041:3: error: implicit declaration of
-> function 'seq_printf' [-Werror=implicit-function-declaration]
-> 
+> Could you please have a try with the patch in
+> https://lkml.org/lkml/2013/6/25/304.
 
-Already fixed in:
-http://cgit.freedesktop.org/~airlied/linux/commit/?h=drm-next&id=bf0936e196ec21b604106578043d4c14831f99e7
+I can confirm that this patch fixes the problem. Tried it against v3.10
+and there are no issues any more when live migrating virtual machines
+off the host machine that runs v3.10 + this patch.
 
-Alex
+Thanks,
 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
-> http://kisskb.ellerman.id.au/kisskb/buildresult/9068726/
-> 
->  drivers/gpu/drm/radeon/rv6xx_dpm.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/gpu/drm/radeon/rv6xx_dpm.c
-> b/drivers/gpu/drm/radeon/rv6xx_dpm.c
-> index 33705c5..0d09677 100644
-> --- a/drivers/gpu/drm/radeon/rv6xx_dpm.c
-> +++ b/drivers/gpu/drm/radeon/rv6xx_dpm.c
-> @@ -22,6 +22,7 @@
->   * Authors: Alex Deucher
->   */
-> 
-> +#include <linux/seq_file.h>
->  #include "drmP.h"
->  #include "radeon.h"
->  #include "rv6xxd.h"
-> --
-> 1.7.9.5
-> 
-
-
+Thomas
