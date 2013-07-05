@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab3GEThC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:37:02 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51537 "EHLO
+	id S933776Ab3GETet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 15:34:49 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51503 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933825Ab3GETeu (ORCPT
+	with ESMTP id S1752329Ab3GETer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:34:50 -0400
+	Fri, 5 Jul 2013 15:34:47 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -14,75 +14,64 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv3 08/10] clocksource: sun4i: Remove TIMER_SCAL variable
-Date: Fri,  5 Jul 2013 21:34:35 +0200
-Message-Id: <1373052877-29366-9-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv3 00/10] clocksource: sunxi: Timer fixes and cleanup
+Date: Fri,  5 Jul 2013 21:34:27 +0200
+Message-Id: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1373052877-29366-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prescaler is only used when using the internal low frequency
-oscillator (at 32kHz). Since we're using the higher frequency oscillator
-at 24MHz, we can just remove it.
+Hi everyone,
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- drivers/clocksource/sun4i_timer.c | 11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+The first timer code we merged when adding support for the A13 some
+time back was mostly a clean up from the source drop we had, without
+any documentation.  This happened to work, but the code merged in
+turned out to be far from perfect, and had several flaws.
 
-diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 00e17d9..2f84075 100644
---- a/drivers/clocksource/sun4i_timer.c
-+++ b/drivers/clocksource/sun4i_timer.c
-@@ -34,8 +34,6 @@
- #define TIMER_INTVAL_REG(val)	(0x10 * (val) + 0x14)
- #define TIMER_CNTVAL_REG(val)	(0x10 * (val) + 0x18)
- 
--#define TIMER_SCAL		16
--
- static void __iomem *timer_base;
- 
- /*
-@@ -139,7 +137,6 @@ static u32 sun4i_timer_sched_read(void)
- 
- static void __init sun4i_timer_init(struct device_node *node)
- {
--	unsigned long rate = 0;
- 	struct clk *clk;
- 	int ret, irq;
- 	u32 val;
-@@ -157,8 +154,6 @@ static void __init sun4i_timer_init(struct device_node *node)
- 		panic("Can't get timer clock");
- 	clk_prepare_enable(clk);
- 
--	rate = clk_get_rate(clk);
--
- 	writel(~0, timer_base + TIMER_INTVAL_REG(1));
- 	writel(TIMER_CTL_ENABLE | TIMER_CTL_RELOAD |
- 	       TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M),
-@@ -169,7 +164,7 @@ static void __init sun4i_timer_init(struct device_node *node)
- 			      clk_get_rate(clk), 300, 32,
- 			      clocksource_mmio_readl_down);
- 
--	writel(rate / (TIMER_SCAL * HZ),
-+	writel(clk_get_rate(clk) / HZ,
- 	       timer_base + TIMER_INTVAL_REG(0));
- 
- 	/* set clock source to HOSC, 16 pre-division */
-@@ -193,8 +188,8 @@ static void __init sun4i_timer_init(struct device_node *node)
- 
- 	sun4i_clockevent.cpumask = cpumask_of(0);
- 
--	clockevents_config_and_register(&sun4i_clockevent, rate / TIMER_SCAL,
--					0x1, 0xff);
-+	clockevents_config_and_register(&sun4i_clockevent, clk_get_rate(clk),
-+					0x1, 0xffffffff);
- }
- CLOCKSOURCE_OF_DECLARE(sun4i, "allwinner,sun4i-timer",
- 		       sun4i_timer_init);
+This patchset hopefully fixes these flaws, and cleanup most of the
+driver as well, to end up in an almost complete rewrite of it (even
+though it's not that long).
+
+It also finally adds a clocksource from the free running counter found
+in the A10/A13 SoCs.
+
+These flaws have all been spotted when trying to add the A31 support,
+work that is still ongoing, but will hopefully benefit from this
+patchset as well.
+
+Thanks,
+Maxime
+
+Changes from v2:
+  - Use the clocksource timer to get the amount of time we have to
+    wait for when disabling and enabling back a timer
+  - Added patch to add parenthesis around the macros arguments
+  - Renamed the AUTORELOAD register define to the more meaningful
+    RELOAD name
+
+Changes from v1:
+  - Rebased on top of linux-next to benefit from the move to all
+    architectures of the sched_clock functions
+  - Moved the clock source to the second timer instead of the 64 bits
+    free-running counter like suggested by Thomas.
+
+Maxime Ripard (10):
+  clocksource: sun4i: Use the BIT macros where possible
+  clocksource: sun4i: Wrap macros arguments in parenthesis
+  clocksource: sun4i: rename AUTORELOAD define to RELOAD
+  clocksource: sun4i: Add clocksource and sched clock drivers
+  clocksource: sun4i: Don't forget to enable the clock we use
+  clocksource: sun4i: Fix the next event code
+  clocksource: sun4i: Factor out some timer code
+  clocksource: sun4i: Remove TIMER_SCAL variable
+  clocksource: sun4i: Cleanup parent clock setup
+  clocksource: sun4i: Fix bug when switching from periodic to oneshot
+    modes
+
+ drivers/clocksource/sun4i_timer.c | 113 +++++++++++++++++++++++++++-----------
+ 1 file changed, 80 insertions(+), 33 deletions(-)
+
 -- 
 1.8.3.2
 
