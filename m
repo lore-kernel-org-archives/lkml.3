@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab3GEJKe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 05:10:34 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:41919
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753718Ab3GEJKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 05:10:33 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VS3(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-From: Huang Shijie <b32955@freescale.com>
-To: <grant.likely@linaro.org>
-CC: <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <shawn.guo@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: [PATCH] of: match the compatible in the order set by the dts file
-Date: Fri, 5 Jul 2013 16:43:38 +0800
-Message-ID: <1373013818-11365-1-git-send-email-b32955@freescale.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+	id S1757247Ab3GEJND (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 05:13:03 -0400
+Received: from mga14.intel.com ([143.182.124.37]:34382 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753718Ab3GEJNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 05:13:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1000,1363158000"; 
+   d="scan'208";a="360867218"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] ACPI / power: add missing newline to debug messages
+Date: Fri,  5 Jul 2013 12:15:56 +0300
+Message-Id: <1373015756-29635-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we set the uart compatible in the dts file like this:
-   ------------------------------------------------------
-    compatible = "fsl,imx6q-uart", "fsl,imx21-uart";
-   ------------------------------------------------------
+There are few places in power.c where debug messages have no newline at the
+end. Reading such debug messages from dmesg is not fun so fix this by
+adding the missing newlines.
 
-and we set the uart compatible in the uart driver like this:
-   ------------------------------------------------------
-	{ .compatible = "fsl,imx1-uart", ... },
-	{ .compatible = "fsl,imx21-uart", ... },
-	{ .compatible = "fsl,imx6q-uart", ... },
-	{ /* sentinel */ }
-   ------------------------------------------------------
-
-the current code will match the "fsl,imx21-uart" in the end.
-
-Of course, this is not what we want. We want it to match the "fsl,imx6q-uart".
-
-This patch rewrites the match code, and make it to check the compatible
-in the order set by the DTS file.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/of/base.c |   29 +++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 4 deletions(-)
+ drivers/acpi/power.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 0d61fc5..b13846b 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -622,10 +622,14 @@ static
- const struct of_device_id *__of_match_node(const struct of_device_id *matches,
- 					   const struct device_node *node)
- {
-+	struct of_device_id *old = (struct of_device_id *)matches;
-+	const char *cp;
-+	int cplen, l;
-+
- 	if (!matches)
- 		return NULL;
+diff --git a/drivers/acpi/power.c b/drivers/acpi/power.c
+index 288bb27..5c28c89 100644
+--- a/drivers/acpi/power.c
++++ b/drivers/acpi/power.c
+@@ -279,7 +279,7 @@ static int acpi_power_on_unlocked(struct acpi_power_resource *resource)
  
--	while (matches->name[0] || matches->type[0] || matches->compatible[0]) {
-+	while (matches->name[0] || matches->type[0]) {
- 		int match = 1;
- 		if (matches->name[0])
- 			match &= node->name
-@@ -633,13 +637,30 @@ const struct of_device_id *__of_match_node(const struct of_device_id *matches,
- 		if (matches->type[0])
- 			match &= node->type
- 				&& !strcmp(matches->type, node->type);
--		if (matches->compatible[0])
--			match &= __of_device_is_compatible(node,
--							   matches->compatible);
- 		if (match)
- 			return matches;
- 		matches++;
+ 	if (resource->ref_count++) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-				  "Power resource [%s] already on",
++				  "Power resource [%s] already on\n",
+ 				  resource->name));
+ 	} else {
+ 		result = __acpi_power_on(resource);
+@@ -325,7 +325,7 @@ static int acpi_power_off_unlocked(struct acpi_power_resource *resource)
+ 
+ 	if (!resource->ref_count) {
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-				  "Power resource [%s] already off",
++				  "Power resource [%s] already off\n",
+ 				  resource->name));
+ 		return 0;
  	}
-+
-+	/* Check the compatible in the order set by the DTS file. */
-+	cp = __of_get_property(node, "compatible", &cplen);
-+	if (!cp)
-+		return NULL;
-+
-+	while (cplen > 0) {
-+		matches = old;
-+
-+		while (matches->compatible[0]) {
-+			if (!of_compat_cmp(cp, matches->compatible,
-+						strlen(matches->compatible)))
-+				return matches;
-+			matches++;
-+		}
-+
-+		l = strlen(cp) + 1;
-+		cp += l;
-+		cplen -= l;
-+	}
- 	return NULL;
- }
- 
 -- 
-1.7.1
-
+1.8.3.2
 
