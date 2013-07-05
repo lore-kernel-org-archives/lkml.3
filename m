@@ -1,147 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964875Ab3GEPKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 11:10:50 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:46161 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757374Ab3GEPKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 11:10:48 -0400
-Date: Fri, 5 Jul 2013 16:10:02 +0100
-From: Dave P Martin <Dave.Martin@arm.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, Joseph Lo <josephl@nvidia.com>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: move body of head-common.S back to text section
-Message-ID: <20130705151001.GF2932@localhost.localdomain>
-References: <1372805629-18382-1-git-send-email-swarren@wwwdotorg.org>
- <20130702232259.GH11625@codeaurora.org>
- <51D39004.9000907@wwwdotorg.org>
- <20130703051907.GA22702@windriver.com>
- <20130703100044.GG24642@n2100.arm.linux.org.uk>
- <20130703153012.GK22702@windriver.com>
- <20130703172001.GH24642@n2100.arm.linux.org.uk>
- <20130704002235.GL22702@windriver.com>
+	id S933847Ab3GEPL1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 11:11:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757377Ab3GEPL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 11:11:26 -0400
+Date: Fri, 5 Jul 2013 11:11:15 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: __ftrace_hash_rec_update FTRACE_WARN_ON.
+Message-ID: <20130705151115.GE325@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+References: <20130705142629.GA325@redhat.com>
+ <1373036034.22688.155.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130704002235.GL22702@windriver.com>
+In-Reply-To: <1373036034.22688.155.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 08:22:35PM -0400, Paul Gortmaker wrote:
-> [Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 18:20) Russell King - ARM Linux wrote:
-> 
-> > On Wed, Jul 03, 2013 at 11:30:12AM -0400, Paul Gortmaker wrote:
-> > > [Re: [PATCH] ARM: move body of head-common.S back to text section] On 03/07/2013 (Wed 11:00) Russell King - ARM Linux wrote:
-> > > 
-> > > > On Wed, Jul 03, 2013 at 01:19:07AM -0400, Paul Gortmaker wrote:
-> > > > > As an aside, I'm now thinking any __INIT that implicitly rely on EOF for
-> > > > > closure are nasty traps waiting to happen and it might be worthwhile to
-> > > > > audit and explicitly __FINIT them before someone appends to the file...
-> > > > 
-> > > > That hides a different kind of bug though - I hate __FINIT for exactly
-> > > > that reason.  Consider this:
-> > > 
-> > > Agreed - perhaps masking that it is a ".previous" just hides the fact
-> > > that it is more like a pop operation vs. an on/off operation, or per
-> > > function as we have in C.
-> > 
-> > I read the info pages, because I thought it was a pop operation too.
-> > I was concerned that .section didn't push the previous section onto the
-> > stack.
-> > 
-> > However, .popsection is the pseudio-op which pops.  .previous just toggles
-> > the current section with the section immediately before it.
-> > 
-> > So:
-> > 
-> > 	.text
-> > 	.data
-> > 	.previous
-> > 	/* this is .text */
-> > 	.previous
-> > 	/* this is .data */
-> > 	.previous
-> > 	/* this is .text */
-> > 	.previous
-> > 	/* this is .data */
-> 
-> Cool -- I bet we weren't the only ones thinking it was a pop.  Thanks.
-> 
-> Does that make __FINIT less evil than we previously assumed?  I think
-> your example was the following pseudo-patch:
-> 
-> 
-> 	.text
-> 	<some text>
-> +	.data
-> + 	<some data>
-> 	__INIT
-> 	<big hunk of init>
-> 	__FINIT
-> 	/* this below used to be text */
-> 	<more stuff that was originally meant for text>
-> 
-> Even if it is a toggle (vs. pop), the end text will now become data,
-> so the no-op __FINIT with an explicit section called out just below
-> it may still be the most unambiguous way to indicate what is going on.
-> 
-> > 
-> > > That seems reasonable to me.  I can't think of any self auditing that is
-> > > reasonably simple to implement.  One downside of __FINIT as a no-op vs.
-> > > what it is today, is that a dangling __FINIT in a file with no other
-> > > previous sections will emit a warning.  But that is a small low value
-> > > corner case I think.
-> > 
-> > That warning from __FINIT will only happen if there has been no section
-> > or .text or .data statement in the file at all.  As soon as you have any
-> > statement setting any kind of section, .previous doesn't warn.
-> > 
-> > So:
-> > 
-> > 	.text
-> > 	...
-> > 	__FINIT
-> > 
-> > produces no warning.o
-> 
-> Yep -- we are both saying the same thing here - hence why I called it a
-> small low value corner case.
+On Fri, Jul 05, 2013 at 10:53:54AM -0400, Steven Rostedt wrote:
+ > On Fri, 2013-07-05 at 10:26 -0400, Dave Jones wrote:
+ > > WARNING: at kernel/trace/ftrace.c:1605 __ftrace_hash_rec_update.part.37+0x20a/0x240()
+ > > Modules linked in: sctp libcrc32c snd_seq_dummy fuse tun rfcomm bnep scsi_transport_iscsi hidp nfnetlink can_bcm irda caif_socket nfc caif netrom crc_ccitt rose x25 appletalk ipt_ULOG rds bluetooth can_raw ipx phonet can rfkill af_802154 pppoe pppox p8023 llc2 af_key ppp_generic psnap p8022 atm llc slhc ax25 af_rxrpc snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep snd_seq pcspkr snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer snd ptp soundcore pps_core
+ > > CPU: 1 PID: 15820 Comm: trinity-child2 Not tainted 3.10.0+ #21
+ > >  ffffffff81a1f20b ffff8801be9dfc60 ffffffff816f2120 0000000000000000
+ > >  ffff8801be9dfc98 ffffffff8104ca81 0000000000000000 0000000000000001
+ > >  ffff8801be424000 0000000000000000 ffff88022bd25518 ffff8801be9dfca8
+ > > Call Trace:
+ > >  [<ffffffff816f2120>] dump_stack+0x4e/0x82
+ > >  [<ffffffff8104ca81>] warn_slowpath_common+0x61/0x80
+ > >  [<ffffffff8104cb5a>] warn_slowpath_null+0x1a/0x20
+ > >  [<ffffffff8111489a>] __ftrace_hash_rec_update.part.37+0x20a/0x240
+ > >  [<ffffffff811168a8>] ftrace_shutdown+0xb8/0x170
+ > >  [<ffffffff81116d40>] unregister_ftrace_function+0x30/0x50
+ > >  [<ffffffff81134487>] perf_ftrace_event_register+0x87/0x130
+ > >  [<ffffffff811342ec>] perf_trace_destroy+0x2c/0x50
+ > >  [<ffffffff8113caf9>] tp_perf_event_destroy+0x9/0x10
+ > >  [<ffffffff8113f0f7>] free_event+0xa7/0x310
+ > >  [<ffffffff8113f3c4>] perf_event_release_kernel+0x64/0x90
+ > >  [<ffffffff8113f830>] put_event+0x120/0x1b0
+ > >  [<ffffffff8113f740>] ? put_event+0x30/0x1b0
+ > >  [<ffffffff8113f8d0>] perf_release+0x10/0x20
+ > >  [<ffffffff811b7d15>] __fput+0xf5/0x2d0
+ > >  [<ffffffff811b7fae>] ____fput+0xe/0x10
+ > >  [<ffffffff8107798c>] task_work_run+0xac/0xe0
+ > >  [<ffffffff81051d27>] do_exit+0x2c7/0xcd0
+ > >  [<ffffffff81704b00>] ? ftrace_call+0x5/0x2f
+ > >  [<ffffffff81053afc>] do_group_exit+0x4c/0xc0
+ > >  [<ffffffff81053b84>] SyS_exit_group+0x14/0x20
+ > >  [<ffffffff817050d4>] tracesys+0xdd/0xe2
+ > > ---[ end trace df06ab36fcd44d8b ]---
+ > > 
+ > > 
+ > > 1605                         if (FTRACE_WARN_ON((rec->flags & ~FTRACE_FL_MASK) == 0))
+ > > 1606                                 return;
+ > > 
+ > 
+ > Can you find an easy reproducer for this?
 
-Note that .previous has another important gotcha.  Consider:
+To be honest, probably not. Every run, I seem to be hitting new bugs right now.
 
-	__INIT
-	/* now in .text.init */
-	ALT_UP(...)
-	/* now in .text.init */
-	__FINIT
+	Dave
 
-	/* now in .alt.smp.text! */
-
-
-.previous (or macros containing a dangling .previous) shouldn't be used
-unless you're absolutely certain what the previous section was.
-
-In general:
-
-	label:
-		<stuff>
-
-		.previous
-
-restores to the section which was current at label, only if there are
-no section directives in <stuff>, nor anything which could contain a
-section directive after macro expansion.
-
-The same goes for the hidden, dangling .previous embedded in __FINIT
-and friends.
-
-Cheers
----Dave
