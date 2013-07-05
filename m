@@ -1,96 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757022Ab3GEAPA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 20:15:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:36614 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756976Ab3GEAO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 20:14:58 -0400
-Date: Fri, 5 Jul 2013 10:14:46 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Chen Gang <gang.chen@asianux.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
- 'COMPILE_TEST' in 'asm-generic'.
-Message-Id: <20130705101446.48deb2694f5fcdb060f41e5b@canb.auug.org.au>
-In-Reply-To: <51D60D53.7050405@gmail.com>
-References: <20130704011221.GA11230@kroah.com>
-	<20130704061204.GA12148@kroah.com>
-	<51D517A7.6030908@asianux.com>
-	<201307041125.15083.arnd@arndb.de>
-	<51D60D53.7050405@gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__5_Jul_2013_10_14_46_+1000_kB3i6zl_LFiy4QIC"
+	id S1757025Ab3GEATI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 20:19:08 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:35688 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756979Ab3GEATG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 20:19:06 -0400
+From: Mike Pagano <mpagano@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Modification of the diffconfig script to support python 3.x and 2.7
+Date: Thu, 04 Jul 2013 20:19:03 -0400
+Message-ID: <10816010.V3ekNYfWHj@comanche>
+User-Agent: KMail/4.10.4 (Linux/3.10.0-gentoo; KDE/4.10.4; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__5_Jul_2013_10_14_46_+1000_kB3i6zl_LFiy4QIC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Modification of the diffconfig script to support both python 2.7 and 3.2. 
+Added a small change to gracefully exit if the default config files are not 
+present. (.config and .config.old)
 
-Hi,
+Diffconfig is a utility script for comparing kernel configuration files.
 
-On Fri, 05 Jul 2013 08:03:31 +0800 Chen Gang F T <chen.gang.flying.transfor=
-mer@gmail.com> wrote:
->
-> When a module select "COMPILE_TEST=3Dy" (e.g with allmodconfig), it has
-> right to compile under the architecture which no related HW support.
->=20
-> If it can not pass compiling, at least it is not the module's issue,
-> neither the architecture's issue.
->=20
-> We have to look for who has duty on it. At least now, it seems only
-> 'asm-generic' can be qualified to play this unlucky role.
+Signed-off-by: Mike Pagano <mpagano@gentoo.org>
+---
+ scripts/diffconfig | 32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
 
-You keep saying this, but others have told you that this is not the
-problem.
-
-> Could you provide your suggestions or completions for this issue ?
-
-If something doesn't build for a particular config, then either it needs
-to be fixed or excluded from building in that particular config.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__5_Jul_2013_10_14_46_+1000_kB3i6zl_LFiy4QIC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR1g/7AAoJEECxmPOUX5FEIOoP/2upNxgVTxrkcD/WNdhqRgHw
-evMRhm5jZFN5jAfRXzdOkv/Xnvhbxjal/y9LTZ4SGB10t9LaJhllHiKmPvrlcuwr
-oBshZouX0Heco4vBGsjkYWiXFlV9F5h76diD8yqoIsOqVbzF6vG5mVGte7M2k/uk
-kJtwzBiISJcaV7I3ZFPV8Kw9keFB7+4wdzxqsw6qCV5w3UqZLm0mMwfWn1ID7DD/
-U8jaGXkpLNPUFucXG1K4HryntrbrBG+wkzzDvoPFOfcxjGilgmbVvmOA4XShkMkz
-uAB8H5USuxQpqXMQzRazJS5W3wniOj8gPCd5DTynKF64J/OuAH0SDTrM9+YYUS3u
-UdgfDbLSPLtGIrpWTsL/bdwtFdilNUdyp8g/fngpK+Bj1oK2mSYgew36JZqv1AE3
-PSzyHvqc0ky8/y+3p4g/uur4DXGq/ywqL9ZJrNIbcfIw9fO6dC1Uq45Spk99W3O8
-NpVzTKNNnoHyEEGsNKgJBSUX3eb+66sfLdpiRtMT4otS4OhhR2doGPH3rNw+ai2v
-We+hzCTJ+c/gavDVxlKIhTyDjjCHWTP4rhC3O/43O1HWT4vT226hc2WWKz/RRiow
-qYggUPaw9PbxzyT24txM5skGP0R0HKz6I381mZ9NeqOsIX6Q89bCw9krrQK1CGOW
-ErA2Pqmmys9by0p+gAxt
-=fNxR
------END PGP SIGNATURE-----
-
---Signature=_Fri__5_Jul_2013_10_14_46_+1000_kB3i6zl_LFiy4QIC--
+diff --git a/scripts/diffconfig b/scripts/diffconfig
+index b91f3e3..45a4ba4 100755
+--- a/scripts/diffconfig
++++ b/scripts/diffconfig
+@@ -10,7 +10,7 @@
+ import sys, os
+ 
+ def usage():
+-    print """Usage: diffconfig [-h] [-m] [<config1> <config2>]
++    print ("""Usage: diffconfig [-h] [-m] [<config1> <config2>]
+ 
+ Diffconfig is a simple utility for comparing two .config files.
+ Using standard diff to compare .config files often includes extraneous and
+@@ -33,7 +33,7 @@ Example usage:
+  EXT2_FS  y -> n
+  LOG_BUF_SHIFT  14 -> 16
+  PRINTK_TIME  n -> y
+-"""
++""")
+     sys.exit(0)
+ 
+ # returns a dictionary of name/value pairs for config items in the file
+@@ -54,23 +54,26 @@ def print_config(op, config, value, new_value):
+     if merge_style:
+         if new_value:
+             if new_value=="n":
+-                print "# CONFIG_%s is not set" % config
++                print ("# CONFIG_%s is not set" % config)
+             else:
+-                print "CONFIG_%s=%s" % (config, new_value)
++                print ("CONFIG_%s=%s" % (config, new_value))
+     else:
+         if op=="-":
+-            print "-%s %s" % (config, value)
++            print ("-%s %s" % (config, value))
+         elif op=="+":
+-            print "+%s %s" % (config, new_value)
++            print ("+%s %s" % (config, new_value))
+         else:
+-            print " %s %s -> %s" % (config, value, new_value)
++            print (" %s %s -> %s" % (config, value, new_value))
+ 
+ def main():
+     global merge_style
+ 
++    a = {}
++    b = {}
++
+     # parse command line args
+     if ("-h" in sys.argv or "--help" in sys.argv):
+-	usage()
++        usage()
+ 
+     merge_style = 0
+     if "-m" in sys.argv:
+@@ -79,13 +82,13 @@ def main():
+ 
+     argc = len(sys.argv)
+     if not (argc==1 or argc == 3):
+-        print "Error: incorrect number of arguments or unrecognized option"
++        print ("Error: incorrect number of arguments or unrecognized option")
+         usage()
+ 
+     if argc == 1:
+         # if no filenames given, assume .config and .config.old
+         build_dir=""
+-        if os.environ.has_key("KBUILD_OUTPUT"):
++        if "KBUILD_OUTPUT" in os.environ:
+             build_dir = os.environ["KBUILD_OUTPUT"]+"/"
+ 
+         configa_filename = build_dir + ".config.old"
+@@ -94,8 +97,11 @@ def main():
+         configa_filename = sys.argv[1]
+         configb_filename = sys.argv[2]
+ 
+-    a = readconfig(file(configa_filename))
+-    b = readconfig(file(configb_filename))
++    try:
++        a = readconfig(open(configa_filename))
++        b = readconfig(open(configb_filename))
++    except IOError:
++        usage()
+ 
+     # print items in a but not b (accumulate, sort and print)
+     old = []
+@@ -121,7 +127,7 @@ def main():
+ 
+     # now print items in b but not in a
+     # (items from b that were in a were removed above)
+-    new = b.keys()
++    new = list(b.keys())
+     new.sort()
+     for config in new:
+         print_config("+", config, None, b[config])
+-- 
+1.8.1.5
