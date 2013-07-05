@@ -1,90 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757007Ab3GEABa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 20:01:30 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:42764 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756909Ab3GEAB3 (ORCPT
+	id S933599Ab3GEAEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 20:04:39 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:35461 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756970Ab3GEAEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 20:01:29 -0400
-Date: Fri, 5 Jul 2013 09:01:24 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        grant.likely@linaro.org
-Subject: Re: [PATCH] gpio: em: Add pinctrl support
-Message-ID: <20130705000123.GC25112@verge.net.au>
-References: <20130703041432.7351.45970.sendpatchset@w520>
- <2134291.KQ1KkPOaiZ@avalon>
- <20130704011601.GB13029@verge.net.au>
- <2390194.haUC6IOiqJ@avalon>
+	Thu, 4 Jul 2013 20:04:38 -0400
+Message-ID: <51D60D53.7050405@gmail.com>
+Date: Fri, 05 Jul 2013 08:03:31 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2390194.haUC6IOiqJ@avalon>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Chen Gang <gang.chen@asianux.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
+        David Sharp <dhsharp@google.com>,
+        "sfr@canb.auug.org.au" <sfr@canb.auug.org.au>,
+        Ingo Molnar <mingo@kernel.org>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        uml-user <user-mode-linux-user@lists.sourceforge.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
+ 'COMPILE_TEST' in 'asm-generic'.
+References: <20130704011221.GA11230@kroah.com> <20130704061204.GA12148@kroah.com> <51D517A7.6030908@asianux.com> <201307041125.15083.arnd@arndb.de>
+In-Reply-To: <201307041125.15083.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 11:23:33PM +0200, Laurent Pinchart wrote:
-> Hi Simon,
+On 07/04/2013 05:25 PM, Arnd Bergmann wrote:
+> On Thursday 04 July 2013, Chen Gang wrote:
 > 
-> On Thursday 04 July 2013 10:16:02 Simon Horman wrote:
-> > On Wed, Jul 03, 2013 at 08:59:39PM +0200, Laurent Pinchart wrote:
-> > > On Wednesday 03 July 2013 13:14:32 Magnus Damm wrote:
-> > > > From: Magnus Damm <damm@opensource.se>
-> > > > 
-> > > > Register the GPIO pin range, and request and free GPIO pins using the
-> > > > pinctrl API. The pctl_name platform data member should be used by
-> > > > platform devices to point out which pinctrl device to use.
-> > > > 
-> > > > Follows same style as "dc3465a gpio-rcar: Add pinctrl support",
-> > > > by Laurent Pinchart, thanks to him.
-> > > > 
-> > > > Signed-off-by: Magnus Damm <damm@opensource.se>
-> > > 
-> > > Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > > 
-> > > Linus, now that the v3.12 development cycle will begin, would you like to
-> > > take the patch through your tree ? If so, how should we handle
-> > > cross-dependencies between the pinctrl/gpio tree and the Renesas ARM tree
-> > > ?
-> > 
-> > In the case of this patch I believe that any dependencies that are present
-> > in the renesas tree have been merged into the arm-soc tree and thus should
-> > appear in v3.11-rcX, where X most likely equals 2 or 3.
-> > 
-> > That being so v3.11-rcX could be used as a base.
-> > 
-> > Alternatively its likely that one the renesas-*-for-v3.11 tags in my renesas
-> > tree, all of which have been merged into arm-soc and should appear in v3.11-
-> > rcX, could be used as a base.
-> > 
-> > I'm unsure which one as I'm unsure what the dependencies are but I strongly
-> > suspect that renesas-gpio-rcar2-for-v3.11 would be a good choice.
+>> > --------------------------patch begin----------------------------------
+>> > 
+>> > 'asm-generic' need provide necessary configuration checking, if can't
+>> > pass checking, 'asm-generic' shouldn't implement it.
+>> > 
+>> > For 'COMPILE_TEST', according to its help contents, 'asm-generic' need
+>> > let it pass configuration checking, and provide related dummy contents
+>> > for it.
+>> > 
+>> > Part of 'COMPLE_TEST' help contents in "init/Kconfig":
+>> > 
+>> >   "...Despite they cannot be loaded there (or even when they load they cannot be used due to missing HW support)..."
+>> > 
+>> > One sample for using 'COMPILE_TEST':
+>> > 
+>> >   'PTP_1588_CLOCK_PCH' in drivers/ptp/Kconfig, which need depend on 'HAS_IOMEM'.
+> Then please submit a patch that adds the 'depends on HAS_IOMEM' line there.
+> That line was clearly left out by accident.
 > 
-> I haven't expressed myself clearly, sorry about that. This particular patch is 
-> fine. My point was that it adds a new field to the gpio-em platform data 
-> structure. We will thus pretty soon see patches for board code to use that 
-> field, so you will need to merge a stable pinctrl branch that includes this 
-> patch into your tree.
-> 
-> We may also encounter similar situations in the reverse direction (pinctrl 
-> patches that depend on ARM patches) in the future, we should be prepared for 
-> that as well.
 
-Thanks, I now understand.
+Yes, I will send the related patch for it (I have sent one, but that
+seems incorrect, I will send patch v2 for that, after this patch
+finishes discussing).
 
-I think that in general there are two approaches that I am comfortable.
+But excluding 'PTP_1588_CLOCK_PCH' own issue, it is as a sample for our
+discussion (If "COMPILE_TEST=y", it should can be compiled under the
+archs which no 'HAS_IOMEM').
 
-1. For Linus to provide a stable branch or tag for me to use as a base.
 
-2. For me to provide Acks and for Linus to take board patches through
-   his tree.
+>> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>> > ---
+>> >  include/asm-generic/io.h |   22 ++++++++++++++++++----
+>> >  1 files changed, 18 insertions(+), 4 deletions(-)
+>> > 
+>> > diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+>> > index d5afe96..301ce80 100644
+>> > --- a/include/asm-generic/io.h
+>> > +++ b/include/asm-generic/io.h
+>> > @@ -303,13 +303,18 @@ static inline void *phys_to_virt(unsigned long address)
+>> >  /*
+>> >   * Change "struct page" to physical address.
+>> >   *
+>> > - * This implementation is for the no-MMU case only... if you have an MMU
+>> > - * you'll need to provide your own definitions.
+>> > + * This for the no-MMU, or no-IOMEM but still try to COMPILE_TEST cases.
+>> > + * if you have an MMU and IOMEM, you'll need to provide your own definitions.
+>> >   */
+>> > -#ifndef CONFIG_MMU
+>> > +#if !defined(CONFIG_MMU) || \
+>> > +	(!defined(CONFIG_HAS_IOMEM) && defined(CONFIG_COMPILE_TEST))
+>> >  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>> >  {
+>> > +#if !defined(CONFIG_MMU)
+>> >  	return (void __iomem*) (unsigned long)offset;
+>> > +#else
+>> > +	return NULL;
+>> > +#endif
+>> >  }
+>> >  
+>> >  #define __ioremap(offset, size, flags)	ioremap(offset, size)
+> This is wrong for multiple reasons, all of which have been discussed in
+> this thread before.
 
-In the reverse case I am happy with the reverse of either of the two
-options above, though for one of my branches or tags to be stable
-ideally it would need to have been pulled into arm-soc.
+Hmm..., COMPILE_TEST has integrated into 3.11 (at least can be found in
+next tree).
+
+When a module select "COMPILE_TEST=y" (e.g with allmodconfig), it has
+right to compile under the architecture which no related HW support.
+
+If it can not pass compiling, at least it is not the module's issue,
+neither the architecture's issue.
+
+We have to look for who has duty on it. At least now, it seems only
+'asm-generic' can be qualified to play this unlucky role.
+
+
+Could you provide your suggestions or completions for this issue ?
+
+
+Thanks.
+-- 
+Chen Gang
