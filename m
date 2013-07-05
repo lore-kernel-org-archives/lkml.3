@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab3GEIrY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 04:47:24 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:14120 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757047Ab3GEIqz (ORCPT
+	id S1757255Ab3GEIrV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 04:47:21 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:50509 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757115Ab3GEIq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 04:46:55 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-fa-51d687fb037f
+	Fri, 5 Jul 2013 04:46:56 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-dd-51d687fe9647
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: viresh.kumar@linaro.org, rjw@sisk.pl, linux-kernel@vger.kernel.org
 Cc: linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
         kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
         cw00.choi@samsung.com
-Subject: [PATCH 3/6] cpufreq: Update governor core to support all governors
-Date: Fri, 05 Jul 2013 17:46:38 +0900
-Message-id: <1373014001-17746-4-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 6/6] Documentation: cpufreq: load_table: Update load_table
+ debugfs file documentation
+Date: Fri, 05 Jul 2013 17:46:41 +0900
+Message-id: <1373014001-17746-7-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1373014001-17746-1-git-send-email-cw00.choi@samsung.com>
 References: <1373014001-17746-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkWPd3+7VAgyVPZCyeNv1gt7j+5Tmr
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkSPdf+7VAgzUvBS2eNv1gt7j+5Tmr
 	xdmmN+wWl3fNYbP43HuE0eJ24wo2i/6FvUwWG796OHB43Lm2h82jb8sqRo9Hi1sYPT5vkgtg
-	ieKySUnNySxLLdK3S+DKaPw4la2gWbXi4Iq97A2MrfJdjBwcEgImEh2L2LoYOYFMMYkL99YD
-	2VwcQgJLGSVWvW9nhEiYSFw/cw0qsYhR4kXrRxYI5z+jxIr248wgVWwCWhL7X9wAGyUi4Cax
-	9tonRpAiZoFmRonDn6aCjRIW8JZ4+r0JrIhFQFWif/9nJhCbV8BVonv5JiaIdXISH/Y8Ygc5
-	jxNo0JaJxSBhIaCSX3cmgC2WEJjHLvHq4kx2iDkCEt8mH2KBeEdWYtMBZogxkhIHV9xgmcAo
-	vICRYRWjaGpBckFxUnqRqV5xYm5xaV66XnJ+7iZGYJCf/vds4g7G+wesDzEmA42byCwlmpwP
-	jJK8knhDYzMjC1MTU2Mjc0sz0oSVxHnVW6wDhQTSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDK
-	dV/rzmGsXvTx9e11zYLGzyY1Nm3Ujbr4SVd9+Q6RWDHlrUVW3/7uK3jfKsS24YNwx53yd5s5
-	TnBfz2V4kfvK5knGpwk8D1VOH5PjW3Rupudl9Vc2i264F1322ByyLEHn9cadhUUvt05dkOcV
-	cKjteLqUkfGMWzd+rLIsubD24bajx/Md9O5bKrEUZyQaajEXFScCAJEFjXeIAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t9jAd3f7dcCDfYfFLF42vSD3eL6l+es
+	ieKySUnNySxLLdK3S+DKePlhMWvBROWKbbOPszQwrpfuYuTkkBAwkWj8uJ8VwhaTuHBvPVsX
+	IxeHkMBSRon3/+exwxR9/z0BKrGIUeL83b3sEM5/RokHB2ezgVSxCWhJ7H9xA8wWEXCTWHvt
+	EyNIEbNAM6PE4U9TgRwODmGBdIkJVxVBalgEVCV6Vz8AW80r4Crx6PxPRohtchIf9jxiBynn
+	BJqzZWIxSFgIqOTXnQksICMlBOaxSzx8+YAdYo6AxLfJh1hA6iUEZCU2HWCGGCMpcXDFDZYJ
+	jMILGBlWMYqmFiQXFCelFxnqFSfmFpfmpesl5+duYgQG+el/z3p3MN4+YH2IMRlo3ERmKdHk
+	fGCU5JXEGxqbGVmYmpgaG5lbmpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB
+	0XZhaKzffkmucjmVpgZVJa6MuXEvTiStOGlRHP/8qA7PqrPPe4UVsyJ/qbDzX3QIN/i16VKe
+	iHiTRcIDlQkvi96UfhU4vONo94S0vp73Kbrl+VIed7dGGR9Zq5xWMLF3kVDZ7Wj2Oz7ZK+qt
+	vKR1bPV+u2kzPvYLrW/Z6NmrIzm56vXVQCUlluKMREMt5qLiRAB3qPlQiAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEIsWRmVeSWpSXmKPExsVy+t9jAd1/7dcCDR6f4bR42vSD3eL6l+es
 	Fmeb3rBbXN41h83ic+8RRovbjSvYLPoX9jJZbPzq4cDhcefaHjaPvi2rGD0eLW5h9Pi8SS6A
 	JaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6Awl
-	hbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY0bjx6lsBc2qFQdX7GVvYGyV
-	72Lk5JAQMJG4fuYaG4QtJnHh3nogm4tDSGARo8SL1o8sEM5/RokV7ceZQarYBLQk9r+4AdYh
-	IuAmsfbaJ0aQImaBZkaJw5+mMoIkhAW8JZ5+bwIrYhFQlejf/5kJxOYVcJXoXr6JCWKdnMSH
-	PY/Yuxg5ODiBBm2ZWAwSFgIq+XVnAssERt4FjAyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3
-	MYKj6Jn0DsZVDRaHGAU4GJV4eB/UXw0UYk0sK67MPcQowcGsJMJrn3AtUIg3JbGyKrUoP76o
-	NCe1+BBjMtBRE5mlRJPzgRGeVxJvaGxiZmRpZG5oYWRsTpqwkjjvwVbrQCGB9MSS1OzU1ILU
-	IpgtTBycUg2M5pq5uYwPOrO3HvvBI+QTxHHTwOavYf4yXtsQ4Y3Hw0QP6r2MP5pbbxjJYfN4
-	Vv6pqvs3WK+afNXN/8WyRP3alocPA3QWX7CR6tqvZfT+p0KfvtetE7fFXfuuzVe6vW3TAtmz
-	Rjvn1UUc3Jm7V3jxtEVy22b+m6LJwJ1tFuyxIEN+ZuDrpxOPKbEUZyQaajEXFScCAAoWCUDm	AgAA
+	hbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8bLD4tZCyYqV2ybfZylgXG9
+	dBcjJ4eEgInE998T2CBsMYkL99YD2VwcQgKLGCXO393LDuH8Z5R4cHA2WBWbgJbE/hc3wGwR
+	ATeJtdc+MYIUMQs0M0oc/jQVyOHgEBZIl5hwVRGkhkVAVaJ39QNWEJtXwFXi0fmfjBDb5CQ+
+	7HnEDlLOCTRny8RikLAQUMmvOxNYJjDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kR
+	HEPPpHYwrmywOMQowMGoxMNr0XQ1UIg1say4MvcQowQHs5IIr33CtUAh3pTEyqrUovz4otKc
+	1OJDjMlAR01klhJNzgfGd15JvKGxiZmRpZG5oYWRsTlpwkrivAdarQOFBNITS1KzU1MLUotg
+	tjBxcEo1MO5e8NKs1+DSqlmzlO/xpK4s2G07e63fPg9rVb84x34epuwD366I99f4rw01qeZR
+	3aK4xfzf8+oFH4un984u7ll3z1Vos6Sq9RL+wBPm9p937Z9zaaLrabsm11XH2yqSrtUrcm09
+	rHZT1lOWcaLnXv21ucctzXIXLbivJbR22yQ+UeeF88/+klRiKc5INNRiLipOBADKyRVN5QIA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,133 +50,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpufreq_governor.c only support ondemand and conservative governor.
-So, this patch update governor core to support all governors.
+This patch add the detailed description of 'load_table' debugfs file to show
+collected CPUs load and the change of CPU frequency.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 ---
- drivers/cpufreq/cpufreq_governor.c | 24 +++++++++++++++++++-----
- drivers/cpufreq/cpufreq_governor.h |  9 +++++++++
- 2 files changed, 28 insertions(+), 5 deletions(-)
+ Documentation/cpu-freq/cpufreq-stats.txt | 39 ++++++++++++++++++++++++++++----
+ 1 file changed, 35 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index 3e73107..ea282f8 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -86,6 +86,7 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 	struct cpu_dbs_common_info *cdbs = dbs_data->cdata->get_cpu_cdbs(cpu);
- 	struct od_dbs_tuners *od_tuners = dbs_data->tuners;
- 	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
-+	struct cs_dbs_tuners *tuners = dbs_data->tuners;
- 	struct cpufreq_policy *policy;
- #ifdef CONFIG_CPU_FREQ_STAT
- 	struct cpufreq_freqs freq = {0};
-@@ -96,8 +97,10 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
+diff --git a/Documentation/cpu-freq/cpufreq-stats.txt b/Documentation/cpu-freq/cpufreq-stats.txt
+index fc64749..8c2e4f2 100644
+--- a/Documentation/cpu-freq/cpufreq-stats.txt
++++ b/Documentation/cpu-freq/cpufreq-stats.txt
+@@ -18,10 +18,12 @@ Contents
+ 1. Introduction
  
- 	if (dbs_data->cdata->governor == GOV_ONDEMAND)
- 		ignore_nice = od_tuners->ignore_nice;
--	else
-+	else if (dbs_data->cdata->governor == GOV_CONSERVATIVE)
- 		ignore_nice = cs_tuners->ignore_nice;
-+	else
-+		ignore_nice = tuners->ignore_nice;
+ cpufreq-stats is a driver that provides CPU frequency statistics for each CPU.
+-These statistics are provided in /sysfs as a bunch of read_only interfaces. This
+-interface (when configured) will appear in a separate directory under cpufreq
+-in /sysfs (<sysfs root>/devices/system/cpu/cpuX/cpufreq/stats/) for each CPU.
+-Various statistics will form read_only files under this directory.
++These statistics are provided in /sysfs and /debugfs as a bunch of read_only
++interfaces. This interface (when configured) will appear in a separate directory
++under cpufreq in below directory list for each CPU. Various statistics will form
++read_only files under this directory.
++- /sysfs (<sysfs root>/devices/system/cpu/cpuX/cpufreq/stats/)
++- /debugfs (<sysfs root>/kernel/debug/cpufreq/cpuX/)
  
- 	policy = cdbs->cur_policy;
+ This driver is designed to be independent of any particular cpufreq_driver
+ that may be running on your CPU. So, it will work with any cpufreq_driver.
+@@ -33,6 +35,7 @@ cpufreq stats provides following statistics (explained in detail below).
+ -  time_in_state
+ -  total_trans
+ -  trans_table
++-  load_table
  
-@@ -174,7 +177,8 @@ void dbs_check_cpu(struct dbs_data *dbs_data, int cpu)
- 	cpufreq_notify_transition(policy, &freq, CPUFREQ_LOADCHECK);
- #endif
+ All the statistics will be from the time the stats driver has been inserted 
+ to the time when a read of a particular statistic is done. Obviously, stats 
+@@ -95,6 +98,28 @@ contains the actual freq values for each row and column for better readability.
+   2800000:         0         0         0         2         0 
+ --------------------------------------------------------------------------------
  
--	dbs_data->cdata->gov_check_cpu(cpu, max_load);
-+	if (dbs_data->cdata->gov_check_cpu)
-+		dbs_data->cdata->gov_check_cpu(cpu, max_load);
- }
- EXPORT_SYMBOL_GPL(dbs_check_cpu);
- 
-@@ -239,9 +243,12 @@ static void set_sampling_rate(struct dbs_data *dbs_data,
- 	if (dbs_data->cdata->governor == GOV_CONSERVATIVE) {
- 		struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
- 		cs_tuners->sampling_rate = sampling_rate;
--	} else {
-+	} else if (dbs_data->cdata->governor == GOV_ONDEMAND) {
- 		struct od_dbs_tuners *od_tuners = dbs_data->tuners;
- 		od_tuners->sampling_rate = sampling_rate;
-+	} else {
-+		struct dbs_tuners *tuners = dbs_data->tuners;
-+		tuners->sampling_rate = sampling_rate;
- 	}
- }
- 
-@@ -251,9 +258,11 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 	struct dbs_data *dbs_data;
- 	struct od_cpu_dbs_info_s *od_dbs_info = NULL;
- 	struct cs_cpu_dbs_info_s *cs_dbs_info = NULL;
-+	struct cpu_dbs_info_s *dbs_info = NULL;
- 	struct od_ops *od_ops = NULL;
- 	struct od_dbs_tuners *od_tuners = NULL;
- 	struct cs_dbs_tuners *cs_tuners = NULL;
-+	struct dbs_tuners *tuners = NULL;
- 	struct cpu_dbs_common_info *cpu_cdbs;
- 	unsigned int sampling_rate, latency, ignore_nice, j, cpu = policy->cpu;
- 	int io_busy = 0;
-@@ -353,13 +362,18 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 		cs_dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
- 		sampling_rate = cs_tuners->sampling_rate;
- 		ignore_nice = cs_tuners->ignore_nice;
--	} else {
-+	} else if (dbs_data->cdata->governor == GOV_ONDEMAND) {
- 		od_tuners = dbs_data->tuners;
- 		od_dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
- 		sampling_rate = od_tuners->sampling_rate;
- 		ignore_nice = od_tuners->ignore_nice;
- 		od_ops = dbs_data->cdata->gov_ops;
- 		io_busy = od_tuners->io_is_busy;
-+	} else {
-+		tuners = dbs_data->tuners;
-+		dbs_info = dbs_data->cdata->get_cpu_dbs_info_s(cpu);
-+		sampling_rate = tuners->sampling_rate;
-+		ignore_nice = tuners->ignore_nice;
- 	}
- 
- 	switch (event) {
-@@ -394,7 +408,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
- 			cs_dbs_info->down_skip = 0;
- 			cs_dbs_info->enable = 1;
- 			cs_dbs_info->requested_freq = policy->cur;
--		} else {
-+		} else if (dbs_data->cdata->governor == GOV_ONDEMAND) {
- 			od_dbs_info->rate_mult = 1;
- 			od_dbs_info->sample_type = OD_NORMAL_SAMPLE;
- 			od_ops->powersave_bias_init_cpu(cpu);
-diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
-index e16a961..55ef8c6 100644
---- a/drivers/cpufreq/cpufreq_governor.h
-+++ b/drivers/cpufreq/cpufreq_governor.h
-@@ -163,6 +163,10 @@ struct cs_cpu_dbs_info_s {
- 	unsigned int enable:1;
- };
- 
-+struct cpu_dbs_info_s {
-+	struct cpu_dbs_common_info cdbs;
-+};
++-  load_table
++This gives the collected CPUs data which include measured time, old CPU
++frequency, new CPU frequency and each CPU load. The cat output will have
++"<measured time> <old CPU frequency> <new CPU frequency> <CPUs load> ..." pair
++in each line, which will mean the change of CPU frequency according to CPUs load
++at <measured time>.
 +
- /* Per policy Governers sysfs tunables */
- struct od_dbs_tuners {
- 	unsigned int ignore_nice;
-@@ -183,6 +187,11 @@ struct cs_dbs_tuners {
- 	unsigned int freq_step;
- };
- 
-+struct dbs_tuners {
-+	unsigned int ignore_nice;
-+	unsigned int sampling_rate;
-+};
++--------------------------------------------------------------------------------
++<mysystem>:/sys/kernel/debug/cpufreq/cpu0 # cat load_table
++Time(ms)   Old Freq(Hz) New Freq(Hz) CPU0 CPU1 CPU2 CPU3
++23820      500000       500000       53   86   2    73
++23920      500000       400000       66   40   0    42
++24020      400000       400000       71   71   10   52
++24120      400000       300000       33   27   45   65
++24220      300000       300000       4    37   71   34
++24320      300000       300000       1    85   38   16
++24420      300000       200000       6    41   15   51
++24520      200000       200000       12   62   1    51
++24620      200000       200000       9    51   0    58
++24720      200000       200000       32   32   11   27
++--------------------------------------------------------------------------------
 +
- /* Common Governer data across policies */
- struct dbs_data;
- struct common_dbs_data {
+ 
+ 3. Configuring cpufreq-stats
+ 
+@@ -104,6 +129,7 @@ Config Main Menu
+ 		CPU Frequency scaling  --->
+ 			[*] CPU Frequency scaling
+ 			<*>   CPU frequency translation statistics 
++			(10)    Maximum storage size to save CPU load (10-1000)
+ 			[*]     CPU frequency translation statistics details
+ 
+ 
+@@ -113,6 +139,11 @@ cpufreq-stats.
+ "CPU frequency translation statistics" (CONFIG_CPU_FREQ_STAT) provides the
+ basic statistics which includes time_in_state and total_trans.
+ 
++"Maximum storage size to save CPU load (10-1000)" (depends on CONFIG_CPU_FREQ_
++STAT) indicates the total number of load_table data and provides collected data
++which include old cpu frequency, new cpu frequency and CPUs load. The user can
++determine the storage size of collected CPUs data. The range is from 10 to 1000.
++
+ "CPU frequency translation statistics details" (CONFIG_CPU_FREQ_STAT_DETAILS)
+ provides fine grained cpufreq stats by trans_table. The reason for having a
+ separate config option for trans_table is:
 -- 
 1.8.0
 
