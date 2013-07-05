@@ -1,61 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3GEXjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 19:39:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:35466 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab3GEXjf (ORCPT
+	id S1752400Ab3GEXpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 19:45:20 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47311 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab3GEXpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 19:39:35 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Pitre <nico@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if UP system
-Date: Fri,  5 Jul 2013 16:39:33 -0700
-Message-Id: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.2.733.gf8abaeb
+	Fri, 5 Jul 2013 19:45:18 -0400
+Date: Sat, 6 Jul 2013 01:45:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Heiko_St=FCbner?= <heiko@sntech.de>
+cc: John Stultz <john.stultz@linaro.org>, Jamie Iles <jamie@jamieiles.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Ulrich Prinz <ulrich.prinz@googlemail.com>
+Subject: Re: [PATCH 3/9] clocksource: dw_apb_timer: quirk for variants with
+ 64bit counter
+In-Reply-To: <201307060053.10182.heiko@sntech.de>
+Message-ID: <alpine.DEB.2.02.1307060129340.32106@ionos.tec.linutronix.de>
+References: <201307060051.09716.heiko@sntech.de> <201307060053.10182.heiko@sntech.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-2090385007-1373067910=:32106"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In a uniprocessor implementation the interrupt processor targets
-registers are read-as-zero/write-ignored (RAZ/WI). Unfortunately
-gic_get_cpumask() will print a critical message saying
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
- GIC CPU mask not found - kernel will fail to boot.
+--8323329-2090385007-1373067910=:32106
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 
-if these registers all read as zero, but there won't actually be
-a problem on uniprocessor systems and the kernel will boot just
-fine. Skip this check if we're running a UP kernel or if we
-detect that the hardware only supports a single processor.
+On Sat, 6 Jul 2013, Heiko Stübner wrote:
 
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+> This adds a quirk for IP variants containing two load_count and value
+> registers that are used to provide 64bit accuracy on 32bit systems.
+> 
+> The added accuracy is currently not used, the driver is only adapted to
+> handle the different register layout and make it work on affected devices.
+> 
+> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+> ---
+>  drivers/clocksource/dw_apb_timer.c |   27 +++++++++++++++++++++++++++
+>  include/linux/dw_apb_timer.h       |    6 ++++++
+>  2 files changed, 33 insertions(+)
+> 
+> diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
+> index f5e7be8..bd45351 100644
+> --- a/drivers/clocksource/dw_apb_timer.c
+> +++ b/drivers/clocksource/dw_apb_timer.c
+> @@ -56,6 +56,17 @@ static void apbt_init_regs(struct dw_apb_timer *timer, int quirks)
+>  	timer->reg_control = APBTMR_N_CONTROL;
+>  	timer->reg_eoi = APBTMR_N_EOI;
+>  	timer->reg_int_status = APBTMR_N_INT_STATUS;
+> +
+> +	/*
+> +	 * On variants with 64bit counters some registers are
+> +	 * moved further down.
+> +	 */
+> +	if (quirks & APBTMR_QUIRK_64BIT_COUNTER) {
+> +		timer->reg_current_value += 0x4;
+> +		timer->reg_control += 0x8;
+> +		timer->reg_eoi += 0x8;
+> +		timer->reg_int_status += 0x8;
+> +	}
+>  }
 
-Maybe we should just drop the check entirely? It looks like it may
-just be debug code that won't ever trigger in practice, even on the
-11MPCore that caused this code to be introduced.
+Oh, no. this is not how we handle these things.
 
- drivers/irqchip/irq-gic.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+1) We want proper constants for this 64bit IP block 
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 19ceaa6..589c760 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -368,7 +368,7 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
- 			break;
- 	}
- 
--	if (!mask)
-+	if (!mask && num_possible_cpus() > 1)
- 		pr_crit("GIC CPU mask not found - kernel will fail to boot.\n");
- 
- 	return mask;
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+2) This is not a quirk, it's a property of that particular IP block
 
+You already made the register offsets a part of the timer structure,
+so why don't you supply a proper structure filled with that values to
+the init function?
+
+That's what we do all over the place. Either we instantiate those
+structs at compile time or runtime fed by device tree or any other
+configuration mechanism.
+  
+>  static unsigned long apbt_readl(struct dw_apb_timer *timer, unsigned long offs)
+> @@ -145,6 +156,10 @@ static void apbt_set_mode(enum clock_event_mode mode,
+>  		udelay(1);
+>  		pr_debug("Setting clock period %lu for HZ %d\n", period, HZ);
+>  		apbt_writel(timer, period, timer->reg_load_count);
+> +
+> +		if (timer->quirks & APBTMR_QUIRK_64BIT_COUNTER)
+> +			apbt_writel(timer, 0, timer->reg_load_count + 0x4);
+> +
+
+No. We are not adding such conditional constructs when we can deal
+with them just by providing a proper set of function pointers. And
+definitely not with hardcoded magic 0x4 constants involved.
+
+     timer->load_count(timer, value);
+
+Provide a 32 bit and a 64 bit version of that function and be done
+with it.
+
+>  		ctrl |= APBTMR_CONTROL_ENABLE;
+>  		apbt_writel(timer, ctrl, timer->reg_control);
+>  		break;
+> @@ -168,6 +183,10 @@ static void apbt_set_mode(enum clock_event_mode mode,
+>  		 * running mode.
+>  		 */
+>  		apbt_writel(timer, ~0, timer->reg_load_count);
+> +
+> +		if (timer->quirks & APBTMR_QUIRK_64BIT_COUNTER)
+> +			apbt_writel(timer, 0, timer->reg_load_count + 0x4);
+> +
+
+Makes this copy go away.
+
+>  		ctrl &= ~APBTMR_CONTROL_INT;
+>  		ctrl |= APBTMR_CONTROL_ENABLE;
+>  		apbt_writel(timer, ctrl, timer->reg_control);
+> @@ -199,6 +218,10 @@ static int apbt_next_event(unsigned long delta,
+>  	apbt_writel(timer, ctrl, timer->reg_control);
+>  	/* write new count */
+>  	apbt_writel(timer, delta, timer->reg_load_count);
+> +
+> +	if (timer->quirks & APBTMR_QUIRK_64BIT_COUNTER)
+> +		apbt_writel(timer, 0, timer->reg_load_count + 0x4);
+> +
+
+And this one as well.
+
+>  	ctrl |= APBTMR_CONTROL_ENABLE;
+>  	apbt_writel(timer, ctrl, timer->reg_control);
+>  
+> @@ -325,6 +348,10 @@ void dw_apb_clocksource_start(struct dw_apb_clocksource *dw_cs)
+>  	ctrl &= ~APBTMR_CONTROL_ENABLE;
+>  	apbt_writel(timer, ctrl, timer->reg_control);
+>  	apbt_writel(timer, ~0, timer->reg_load_count);
+> +
+> +	if (timer->quirks & APBTMR_QUIRK_64BIT_COUNTER)
+> +		apbt_writel(timer, 0, timer->reg_load_count + 0x4);
+> +
+
+Copy and paste is a conveniant thing, right? It just should have a pop
+up window assigned which asks at the second instance of copying the
+same thing whether you really thought about it.
+
+Thanks,
+
+	tglx
+--8323329-2090385007-1373067910=:32106--
