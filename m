@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab3GEGvS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 02:51:18 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:38210 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab3GEGvR (ORCPT
+	id S1757077Ab3GEGwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 02:52:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58802 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab3GEGwG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 02:51:17 -0400
-Date: Fri, 5 Jul 2013 08:51:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: scheduling while atomic & hang.
-Message-ID: <20130705065113.GA6588@gmail.com>
-References: <20130704015525.GA8486@redhat.com>
- <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
- <51D5BA25.9060207@zytor.com>
+	Fri, 5 Jul 2013 02:52:06 -0400
+Date: Thu, 4 Jul 2013 23:51:31 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-100ac5331519866afa9b000b10642b00cb6d03dd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        suravee.suthikulpanit@amd.com, acme@infradead.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        suravee.suthikulpanit@amd.com, acme@infradead.org, tglx@linutronix.de
+In-Reply-To: <20130703075542.GF23916@twins.programming.kicks-ass.net>
+References: <20130703075542.GF23916@twins.programming.kicks-ass.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf/x86/amd:
+  Do not print an error when the device is not present
+Git-Commit-ID: 100ac5331519866afa9b000b10642b00cb6d03dd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <51D5BA25.9060207@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Thu, 04 Jul 2013 23:51:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  100ac5331519866afa9b000b10642b00cb6d03dd
+Gitweb:     http://git.kernel.org/tip/100ac5331519866afa9b000b10642b00cb6d03dd
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Wed, 3 Jul 2013 09:55:42 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 5 Jul 2013 08:27:15 +0200
 
-* H. Peter Anvin <hpa@zytor.com> wrote:
+perf/x86/amd: Do not print an error when the device is not present
 
-> On 07/03/2013 07:49 PM, Linus Torvalds wrote:
-> >> [<ffffffff816f42bf>] __schedule+0x94f/0x9c0
-> >> [<ffffffff816f487e>] schedule_user+0x2e/0x70
-> >> [<ffffffff816f6de4>] retint_careful+0x12/0x2e
-> 
-> This call trace does indeed indicate that we took a hardware
-> interrupt which caused a reschedule.  It doesn't necessarily have to
-> be a quantum expiration interrupt, it could just as easily be an I/O
-> completion interrupt.
+As Linus said its not an error to not have an AMD IOMMU; esp.
+when you're not even running on an AMD platform.
 
-Too bad the kernel stack frame at this point is so small [we are just 
-before return to userspace], so we don't really get our usual trace of 
-recent activities via the '?' entries ...
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Acked-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Link: http://lkml.kernel.org/r/20130703075542.GF23916@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/kernel/cpu/perf_event_amd_iommu.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-It would be nice to have a full-kernel-stack backtrace printout as an 
-option, which prints entries 'above' the current RSP.
-
-I've Cc:-ed Frederic, maybe he has interest in implementing that?
-
-Thanks,
-
-	Ingo
+diff --git a/arch/x86/kernel/cpu/perf_event_amd_iommu.c b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
+index 0db655e..639d128 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd_iommu.c
++++ b/arch/x86/kernel/cpu/perf_event_amd_iommu.c
+@@ -491,10 +491,8 @@ static struct perf_amd_iommu __perf_iommu = {
+ static __init int amd_iommu_pc_init(void)
+ {
+ 	/* Make sure the IOMMU PC resource is available */
+-	if (!amd_iommu_pc_supported()) {
+-		pr_err("perf: amd_iommu PMU not installed. No support!\n");
++	if (!amd_iommu_pc_supported())
+ 		return -ENODEV;
+-	}
+ 
+ 	_init_perf_amd_iommu(&__perf_iommu, "amd_iommu");
+ 
