@@ -1,262 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab3GEJlm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 05:41:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48794 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab3GEJlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 05:41:39 -0400
-Date: Fri, 5 Jul 2013 10:41:33 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/13] sched: Split accounting of NUMA hinting faults
- that pass two-stage filter
-Message-ID: <20130705094133.GU1875@suse.de>
-References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
- <1372861300-9973-8-git-send-email-mgorman@suse.de>
- <20130703215654.GN17812@cmpxchg.org>
- <20130704092356.GK1875@suse.de>
- <20130704193638.GP17812@cmpxchg.org>
+	id S1757156Ab3GEJsx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 05:48:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59861 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756162Ab3GEJsv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 05:48:51 -0400
+Date: Fri, 5 Jul 2013 02:48:28 -0700
+From: tip-bot for Axel Lin <tipbot@zytor.com>
+Message-ID: <tip-e658718e478fb2591f38afd9643eab06698790fe@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux@prisktech.co.nz, hpa@zytor.com,
+        mingo@kernel.org, olof@lixom.net, tglx@linutronix.de,
+        axel.lin@ingics.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux@prisktech.co.nz,
+        linux-kernel@vger.kernel.org, olof@lixom.net, tglx@linutronix.de,
+        axel.lin@ingics.com
+In-Reply-To: <1372995229.4038.1.camel@phoenix>
+References: <1372995229.4038.1.camel@phoenix>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:irq/urgent] irqchip: vt8500: Staticize local symbols
+Git-Commit-ID: e658718e478fb2591f38afd9643eab06698790fe
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130704193638.GP17812@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 05 Jul 2013 02:48:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 03:36:38PM -0400, Johannes Weiner wrote:
-> On Thu, Jul 04, 2013 at 10:23:56AM +0100, Mel Gorman wrote:
-> > On Wed, Jul 03, 2013 at 05:56:54PM -0400, Johannes Weiner wrote:
-> > > On Wed, Jul 03, 2013 at 03:21:34PM +0100, Mel Gorman wrote:
-> > > > Ideally it would be possible to distinguish between NUMA hinting faults
-> > > > that are private to a task and those that are shared. This would require
-> > > > that the last task that accessed a page for a hinting fault would be
-> > > > recorded which would increase the size of struct page. Instead this patch
-> > > > approximates private pages by assuming that faults that pass the two-stage
-> > > > filter are private pages and all others are shared. The preferred NUMA
-> > > > node is then selected based on where the maximum number of approximately
-> > > > private faults were measured. Shared faults are not taken into
-> > > > consideration for a few reasons.
-> > > 
-> > > Ingo had a patch that would just encode a few bits of the PID along
-> > > with the last_nid (last_cpu in his case) member of struct page.  No
-> > > extra space required and should be accurate enough.
-> > > 
-> > 
-> > Yes, I'm aware of it. I noted in the changelog that ideally we'd record
-> > the task both to remind myself and so that the patch that introduces it
-> > could refer to this changelog so there is some sort of logical progression
-> > for reviewers.
-> > 
-> > I was not keen on the use of last_cpu because I felt there was an implicit
-> > assumption that scanning would always be fast enough to record hinting
-> > faults before a task got moved to another CPU for any reason. I feared this
-> > would be worse as memory and task sizes increased. That's why I stayed
-> > with tracking the nid for the two-stage filter until it could be proven
-> > it was insufficient for some reason.
-> > 
-> > The lack of anything resembling pid tracking now is that the series is
-> > already a bit of a mouthful and I thought the other parts were more
-> > important for now.
-> 
-> Fair enough.
-> 
+Commit-ID:  e658718e478fb2591f38afd9643eab06698790fe
+Gitweb:     http://git.kernel.org/tip/e658718e478fb2591f38afd9643eab06698790fe
+Author:     Axel Lin <axel.lin@ingics.com>
+AuthorDate: Fri, 5 Jul 2013 11:33:49 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 5 Jul 2013 11:39:24 +0200
 
-I prototyped a node/pid tracker where node is used for misplaced
-detection and pid is used for private/shared detection. Tests running.
-I'll include it in the next release if it works out.
+irqchip: vt8500: Staticize local symbols
 
-> > > Otherwise this is blind to sharedness within the node the task is
-> > > currently running on, right?
-> > > 
-> > 
-> > Yes, it is.
-> > 
-> > > > First, if there are many tasks sharing the page then they'll all move
-> > > > towards the same node. The node will be compute overloaded and then
-> > > > scheduled away later only to bounce back again. Alternatively the shared
-> > > > tasks would just bounce around nodes because the fault information is
-> > > > effectively noise. Either way accounting for shared faults the same as
-> > > > private faults may result in lower performance overall.
-> > > 
-> > > When the node with many shared pages is compute overloaded then there
-> > > is arguably not an optimal node for the tasks and moving them off is
-> > > inevitable. 
-> > 
-> > Yes. If such an event occurs then the ideal is that the task interleaves
-> > between a subset of nodes. The situation could be partially detected by
-> > tracking if the number of historical faults is approximately larger than
-> > the preferred node and then interleave between the top N nodes most faulted
-> > nodes until the working set fits. Starting the interleave should just be
-> > a matter of coding. The difficulty is correctly backing off that if there
-> > is a phase change.
-> 
-> Agreed, optimizing second-best placement can be dealt with later.  I'm
-> worried about optimal placement, though.
-> 
-> And I'm worried about skewing memory access statistics in order to
-> steer future situations the CPU load balancer should handle instead.
-> 
+This driver is converted to use IRQCHIP_DECLARE and irqchip_init.
+vt8500_handle_irq() and vt8500_irq_init() are only referenced in this file, so
+make them static.
 
-And I'm worried about shared accesses drowning out any useful data. Ok,
-at the very least I can test this
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Acked-by: Tony Prisk <linux@prisktech.co.nz>
+Cc: Olof Johansson <olof@lixom.net>
+Link: http://lkml.kernel.org/r/1372995229.4038.1.camel@phoenix
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/irqchip/irq-vt8500.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 1647a87..26b57b0 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4092,7 +4092,8 @@ static bool migrate_locality_prepare(struct task_struct *p, struct lb_env *env,
- /* Returns true if the destination node has incurred more faults */
- static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
+index d970595..1846e7d 100644
+--- a/drivers/irqchip/irq-vt8500.c
++++ b/drivers/irqchip/irq-vt8500.c
+@@ -178,7 +178,8 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
+ 	.xlate = irq_domain_xlate_onecell,
+ };
+ 
+-asmlinkage void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
++static asmlinkage
++void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
  {
--	int src_nid, dst_nid;
-+	int src_nid, dst_nid, priv;
-+	unsigned long src_faults = 0, dst_faults = 0;
+ 	u32 stat, i;
+ 	int irqnr, virq;
+@@ -203,7 +204,8 @@ asmlinkage void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
+ 	}
+ }
  
- 	if (!migrate_locality_prepare(p, env, &src_nid, &dst_nid))
- 		return false;
-@@ -4101,12 +4102,13 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
- 	if (p->numa_preferred_nid == dst_nid)
- 		return true;
- 
--	/*
--	 * Move towards node if there were a higher number of private
--	 * NUMA hinting faults recorded on it
--	 */
--	if (p->numa_faults[task_faults_idx(dst_nid, 1)] >
--	    p->numa_faults[task_faults_idx(src_nid, 1)])
-+	/* Move towards node if there were more NUMA hinting faults recorded */
-+	for (priv = 0; priv < 2; priv++) {
-+		src_faults += p->numa_faults[task_faults_idx(src_nid, priv)];
-+		dst_faults += p->numa_faults[task_faults_idx(dst_nid, priv)];
-+	}
-+
-+	if (dst_faults > src_faults)
- 		return true;
- 
- 	return false;
-
-It selects preferred node based on private accesses but if migrating to
-any other node it will take the total number of faults into account.
-
-> > > However, the node with the most page accesses, private or
-> > > shared, is still the preferred node from a memory stand point.
-> > > Compute load being equal, the task should go to the node with 2GB of
-> > > shared memory and not to the one with 2 private pages.
-> > > 
-> > 
-> > Agreed. The level of shared vs private needs to be detected. The problem
-> > here is that detecting private dominated workloads is not straight-forward,
-> > particularly as the scan rate slows as we've already discussed.
-> 
-> I was going for the opposite conclusion: that it does not matter
-> whether memory is accessed privately or in a shared fashion, because
-> there is no obvious connection to its access frequency, not to me at
-> least. 
-
-We cannot accurately detect access frequency because we are limited to
-receiving the hinting faults.
-
-> Short of accurate access frequency sampling and supportive
-> data, the node with most accesses in general should be the preferred
-> node, not the one with the most private accesses because it's the
-> smaller assumption to make.
-> 
-
-Workloads with many shared accesses (numa01 on > 2 node machines) will
-bounce all over the place.
-
-> > > > The second reason is based on a hypothetical workload that has a small
-> > > > number of very important, heavily accessed private pages but a large shared
-> > > > array. The shared array would dominate the number of faults and be selected
-> > > > as a preferred node even though it's the wrong decision.
-> > > 
-> > > That's a scan granularity problem and I can't see how you solve it
-> > > with ignoring the shared pages. 
-> > 
-> > I acknowledge it's a problem and basically I'm making a big assumption
-> > that private-dominated workloads are going to be the common case. Threaded
-> > application on UMA with heavy amounts of shared data (within cache lines)
-> > already suck in terms of performance so I'm expecting programmers already
-> > try and avoid this sort of sharing. Obviously we are at a page granularity
-> > here so the assumption will depend entirely on alignments and buffer sizes
-> > so it might still fall apart.
-> 
-> Don't basically all VM-based mulithreaded programs have this usage
-> pattern?  The whole runtime (text, heap) is shared between threads.
-
-There are allocators with thread-local storage and large allocations in
-glibc are satisified using mmap reducing the opportunity for false sharing
-due to unaligned buffers.
-
-> If some thread-local memory spills over to another node, should the
-> scheduler move this thread off node from a memory standpoint?
-
-If thread local memory spills over to another node, there will be attempts
-to migrate it towards where the task is running. If those migrations fail,
-then what you'd expect is that faults would accumulate on the remote node
-and eventually it becomes the preferred node but that is not what currently
-happens. The tracking in the failed migration case needs revisiting.
-
-> I don't
-> think so at all.  I would expect it to always gravitate back towards
-> this node with the VM on it, only get moved off for CPU load reasons,
-> and get moved back as soon as the load situation permits.
-> 
-> Meanwhile, if there is little shared memory and private memory spills
-> over to other nodes, you still don't know which node's memory is more
-> frequently used beyond scan period granularity. 
-
-That's true whether we account private/shared separately or not.
-
-> Ignoring shared
-> memory accesses would not actually help finding the right node in this
-> case.  You might even make it worse: since private accesses are all
-> treated equally, you assume equal access frequency among them.  Shared
-> accesses could now be the distinguishing data point to tell which node
-> sees more memory accesses.
-> 
-
-Similar points can be made the other way as well. If shared/private is
-ignored then infrequent accesses can dominate continual access due to
-limitations of the scan-based sampling.
-
-> > I think that dealing with this specific problem is a series all on its
-> > own and treating it on its own in isolation would be best.
-> 
-> The scan granularity issue is indeed a separate issue, I'm just really
-> suspicious of the assumption you make to attempt working around it in
-> this patch, because of the risk of moving away from optimal placement
-> prematurely.
-> 
-
-And the crux of the matter is whether the optimal placement is hurt by
-prioritising private accesses or not. Initially I had been testing for
-this but the last data I have on this is now relatively old. It's simple
-enough to test by patching to make priv = 0 in task_numa_fault.
-
-> The null hypothesis is that there is no connection between accesses
-> being shared or private and their actual frequency.  I would be
-> interested if this assumption has had a positive effect in your
-> testing or if this is based on the theoretical cases you mentioned in
-> the changelog, i.e. why you chose to make the bigger assumption.
-> -ENODATA ;-)
-> 
-
-It was tested for in v1 but I did not publish the relevant data or every
-patch series would be a paper. When I was testing for it, there was a
-benefit to the patch but the series has changed too much since to state
-with certainty it's still correct.
-
-I'll see can I rework the series so that the split of private/shared
-happens later so it's easier to measure whether it benefits in isolation.
-
--- 
-Mel Gorman
-SUSE Labs
+-int __init vt8500_irq_init(struct device_node *node, struct device_node *parent)
++static int __init vt8500_irq_init(struct device_node *node,
++				  struct device_node *parent)
+ {
+ 	int irq, i;
+ 	struct device_node *np = node;
