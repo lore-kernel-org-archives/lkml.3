@@ -1,61 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab3GEKqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 06:46:16 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:59194 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757340Ab3GEKqM (ORCPT
+	id S1757327Ab3GEKqH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 06:46:07 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59913 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757207Ab3GEKqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 06:46:12 -0400
-Date: Fri, 5 Jul 2013 14:45:58 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: David Vrabel <david.vrabel@citrix.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-        konrad.wilk@oracle.com, john.stultz@linaro.org,
-        xen-devel@lists.xen.org
-Subject: Re: [tip:timers/core] hrtimers: Support resuming with two or more
- CPUs online (but stopped)
-Message-ID: <20130705104558.GC4033@cpv436-motbuntu>
-Mail-Followup-To: Thomas Gleixner <tglx@linutronix.de>,
-	David Vrabel <david.vrabel@citrix.com>,
-	Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	LKML <linux-kernel@vger.kernel.org>, konrad.wilk@oracle.com,
-	john.stultz@linaro.org, xen-devel@lists.xen.org
-References: <1372329348-20841-2-git-send-email-david.vrabel@citrix.com>
- <tip-7c4c3a0f18ba57ea2a2985034532303d2929902a@git.kernel.org>
- <20130705093003.GA4033@cpv436-motbuntu>
- <51D69ACF.9020001@citrix.com>
- <alpine.DEB.2.02.1307051225060.11637@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1307051229190.32106@ionos.tec.linutronix.de>
+	Fri, 5 Jul 2013 06:46:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jingoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH] pci: exynos: split into two parts such as Synopsys part and Exynos part
+Date: Fri, 5 Jul 2013 12:45:51 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Mohit KUMAR <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        linux-kernel@vger.kernel.org
+References: <000201ce7959$bf0fb150$3d2f13f0$@samsung.com>
+In-Reply-To: <000201ce7959$bf0fb150$3d2f13f0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307051229190.32106@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307051245.52149.arnd@arndb.de>
+X-Provags-ID: V02:K0:Ve7NxrjKHH56HNt524e/IiLZ5yh7GKabnjaL4KEMuFs
+ mMvNVpG0x14/4NXunnzqzDbFMDXKqy+jEMUY08652Tlrctp5cj
+ wa2KPwK5fTLxQDha2SqDYzvCkyB1VhisD7ZfEW5+F3U2CzgLgN
+ g9c6h4LvPw5EjDFCrBm8iFQ0Ek4ueYKxsGdYpMuc8TVJCS7q6t
+ FA2SXIVmc1ilqJco17s9ce66ej6ajvT9JxwqKG/I1S1XLOLDWB
+ /+r2yQdokjgBXB3DNuhwm4ZfQFzgBY5uDPIKlpkrunlZ0+Hi0/
+ 3YFxXxa4ancsAWdaTctTLLUGCj2c7+8FvpfhPzEoUjFVfUsSLG
+ hM8aaSYVFgXKVqk7KYxY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 12:36:50PM +0200, Thomas Gleixner wrote:
-> On Fri, 5 Jul 2013, Thomas Gleixner wrote:
-> > On Fri, 5 Jul 2013, David Vrabel wrote:
-> > You failed to CC Artem :(
-> Second thought.
-> Where is that warning? Can't find it in neither in Linus tree nor in tip
-> > > > [ 4363.083800] WARNING: CPU: 0 PID: 3977 at kernel/smp.c:385 smp_call_function_many+0xbd/0x2c0()
-> All I see there is:
->         WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
->                      && !oops_in_progress && !early_boot_irqs_disabled);
+On Friday 05 July 2013, Jingoo Han wrote:
 
-It's in linux-next.git, not sure where it was merged from
-commit 7f4a1d40a6311b7cb52d0f0061cb904d041c6dbc
-Author: Chuansheng Liu <chuansheng.liu@intel.com>
-Date:   Wed Jul 3 10:20:26 2013 +1000
+> --- /dev/null
+> +++ b/drivers/pci/host/pcie-exynos.c
 
-    smp: Give WARN()ing when calling smp_call_function_many()/single() in serving irq
+> +
+> +/* PCIe ELBI registers */
+> +#define PCIE_IRQ_PULSE			0x000
+> +#define IRQ_INTA_ASSERT			(0x1 << 0)
+> +#define IRQ_INTB_ASSERT			(0x1 << 2)
+> +#define IRQ_INTC_ASSERT			(0x1 << 4)
+> +#define IRQ_INTD_ASSERT			(0x1 << 6)
+> +#define PCIE_IRQ_LEVEL			0x004
+> +#define PCIE_IRQ_SPECIAL		0x008
+> +#define PCIE_IRQ_EN_PULSE		0x00c
+> +#define PCIE_IRQ_EN_LEVEL		0x010
+> +#define PCIE_IRQ_EN_SPECIAL		0x014
+> +#define PCIE_PWR_RESET			0x018
+> +#define PCIE_CORE_RESET			0x01c
+> +#define PCIE_CORE_RESET_ENABLE		(0x1 << 0)
+> +#define PCIE_STICKY_RESET		0x020
+> +#define PCIE_NONSTICKY_RESET		0x024
+> +#define PCIE_APP_INIT_RESET		0x028
+> +#define PCIE_APP_LTSSM_ENABLE		0x02c
+> +#define PCIE_ELBI_RDLH_LINKUP		0x064
+> +#define PCIE_ELBI_LTSSM_ENABLE		0x1
+> +#define PCIE_ELBI_SLV_AWMISC		0x11c
+> +#define PCIE_ELBI_SLV_ARMISC		0x120
+> +#define PCIE_ELBI_SLV_DBI_ENABLE	(0x1 << 21)
+> +
+> +/* PCIe Purple registers */
+> +#define PCIE_PHY_GLOBAL_RESET		0x000
+> +#define PCIE_PHY_COMMON_RESET		0x004
+> +#define PCIE_PHY_CMN_REG		0x008
+> +#define PCIE_PHY_MAC_RESET		0x00c
+> +#define PCIE_PHY_PLL_LOCKED		0x010
+> +#define PCIE_PHY_TRSVREG_RESET		0x020
+> +#define PCIE_PHY_TRSV_RESET		0x024
+> +
+> +/* PCIe PHY registers */
+> +#define PCIE_PHY_IMPEDANCE		0x004
+> +#define PCIE_PHY_PLL_DIV_0		0x008
+> +#define PCIE_PHY_PLL_BIAS		0x00c
+> +#define PCIE_PHY_DCC_FEEDBACK		0x014
+> +#define PCIE_PHY_PLL_DIV_1		0x05c
+> +#define PCIE_PHY_TRSV0_EMP_LVL		0x084
+> +#define PCIE_PHY_TRSV0_DRV_LVL		0x088
+> +#define PCIE_PHY_TRSV0_RXCDR		0x0ac
+> +#define PCIE_PHY_TRSV0_LVCC		0x0dc
+> +#define PCIE_PHY_TRSV1_EMP_LVL		0x144
+> +#define PCIE_PHY_TRSV1_RXCDR		0x16c
+> +#define PCIE_PHY_TRSV1_LVCC		0x19c
+> +#define PCIE_PHY_TRSV2_EMP_LVL		0x204
+> +#define PCIE_PHY_TRSV2_RXCDR		0x22c
+> +#define PCIE_PHY_TRSV2_LVCC		0x25c
+> +#define PCIE_PHY_TRSV3_EMP_LVL		0x2c4
+> +#define PCIE_PHY_TRSV3_RXCDR		0x2ec
+> +#define PCIE_PHY_TRSV3_LVCC		0x31c
 
+Are you sure these are all exynos specific? Maybe they are licensed
+from someone else?
 
--- 
-Regards,
-    Artem
+> +
+> +	pp->dbi_base = devm_ioremap(&pdev->dev, pp->cfg.start,
+> +				resource_size(&pp->cfg));
+> +	if (!pp->dbi_base) {
+> +		dev_err(&pdev->dev, "error with ioremap\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	pp->root_bus_nr = -1;
+> +	pp->ops = &exynos_pcie_host_ops;
+> +
+> +	spin_lock_init(&pp->conf_lock);
+> +	dw_pcie_host_init(pp);
+> +	pp->va_cfg0_base = devm_ioremap(&pdev->dev, pp->cfg0_base,
+> +					pp->config.cfg0_size);
+> +	if (!pp->va_cfg0_base) {
+> +		dev_err(pp->dev, "error with ioremap in function\n");
+> +		return -ENOMEM;
+> +	}
+> +	pp->va_cfg1_base = devm_ioremap(&pdev->dev, pp->cfg1_base,
+> +					pp->config.cfg1_size);
+> +	if (!pp->va_cfg1_base) {
+> +		dev_err(pp->dev, "error with ioremap\n");
+> +		return -ENOMEM;
+> +	}
+
+I think the configuration space handling should go into the
+dw_pcie_host_init function, as that part would be needed by all drivers.
+
+> +static int __init exynos_pcie_probe(struct platform_device *pdev)
+> +{
+> +	struct pcie_port *pp;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	struct of_pci_range range;
+> +	struct of_pci_range_parser parser;
+> +	int ret;
+> +
+> +	pp = devm_kzalloc(&pdev->dev, sizeof(*pp), GFP_KERNEL);
+> +	if (!pp) {
+> +		dev_err(&pdev->dev, "no memory for pcie port\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	pp->dev = &pdev->dev;
+> +
+> +	if (of_pci_range_parser_init(&parser, np)) {
+> +		dev_err(&pdev->dev, "missing ranges property\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* Get the I/O and memory ranges from DT */
+> +	for_each_of_pci_range(&parser, &range) {
+> +		unsigned long restype = range.flags & IORESOURCE_TYPE_BITS;
+> +		if (restype == IORESOURCE_IO) {
+> +			of_pci_range_to_resource(&range, np, &pp->io);
+> +			pp->io.name = "I/O";
+> +			pp->io.start = max_t(resource_size_t,
+> +					     PCIBIOS_MIN_IO,
+> +					     range.pci_addr + global_io_offset);
+> +			pp->io.end = min_t(resource_size_t,
+> +					   IO_SPACE_LIMIT,
+> +					   range.pci_addr + range.size
+> +					   + global_io_offset);
+> +			pp->config.io_size = resource_size(&pp->io);
+> +			pp->config.io_bus_addr = range.pci_addr;
+> +		}
+> +		if (restype == IORESOURCE_MEM) {
+> +			of_pci_range_to_resource(&range, np, &pp->mem);
+> +			pp->mem.name = "MEM";
+> +			pp->config.mem_size = resource_size(&pp->mem);
+> +			pp->config.mem_bus_addr = range.pci_addr;
+> +		}
+> +		if (restype == 0) {
+> +			of_pci_range_to_resource(&range, np, &pp->cfg);
+> +			pp->config.cfg0_size = resource_size(&pp->cfg)/2;
+> +			pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+> +		}
+> +	}
+
+Same for these: it would be better to split up the probe function here
+and move all of the above into the common code.
+
+> +	pp->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
+
+I assume the reset logic would need to remain exynos specific
+
+> +	pp->clk = devm_clk_get(&pdev->dev, "pcie");
+> +	if (IS_ERR(pp->clk)) {
+> +		dev_err(&pdev->dev, "Failed to get pcie rc clock\n");
+> +		return PTR_ERR(pp->clk);
+> +	}
+> +	ret = clk_prepare_enable(pp->clk);
+> +	if (ret)
+> +		return ret;
+> +
+> +	pp->bus_clk = devm_clk_get(&pdev->dev, "pcie_bus");
+> +	if (IS_ERR(pp->bus_clk)) {
+> +		dev_err(&pdev->dev, "Failed to get pcie bus clock\n");
+> +		ret = PTR_ERR(pp->bus_clk);
+> +		goto fail_clk;
+> +	}
+> +	ret = clk_prepare_enable(pp->bus_clk);
+> +	if (ret)
+> +		goto fail_clk;
+
+For the clocks, I think we can keep them in the common code, but
+make them optional, i.e. do not fail the probe function if the clocks
+don't exist, i.e. you get -ENOENT from devm_clk_get. We should however
+still fail here if devm_clk_get returns a different error.
+
+I also noticed an existing bug in your code here: if the clock controller
+is not yet initialized, devm_clk_get() will return -EPROBE_DEFER,
+which is broken in combination with platform_driver_probe. In order
+to fix that, just change the code to use platform_driver_register
+so it has the option to retry the probe after the clock controller
+is initialized.
+That should be a separate patch.
+
+> +static int exynos_pcie_abort(unsigned long addr, unsigned int fsr,
+> +			struct pt_regs *regs)
+> +{
+> +	unsigned long pc = instruction_pointer(regs);
+> +	unsigned long instr = *(unsigned long *)pc;
+> +
+> +	WARN_ONCE(1, "pcie abort\n");
+> +
+> +	/*
+> +	 * If the instruction being executed was a read,
+> +	 * make it look like it read all-ones.
+> +	 */
+> +	if ((instr & 0x0c100000) == 0x04100000) {
+> +		int reg = (instr >> 12) & 15;
+> +		unsigned long val;
+> +
+> +		if (instr & 0x00400000)
+> +			val = 255;
+> +		else
+> +			val = -1;
+> +
+> +		regs->uregs[reg] = val;
+> +		regs->ARM_pc += 4;
+> +		return 0;
+> +	}
+> +
+> +	if ((instr & 0x0e100090) == 0x00100090) {
+> +		int reg = (instr >> 12) & 15;
+> +
+> +		regs->uregs[reg] = -1;
+> +		regs->ARM_pc += 4;
+> +		return 0;
+> +	}
+> +
+> +	return 1;
+> +}
+
+Another observation that is only partially related: the abort handler logic
+is not specific to either exynos nor synopsys. However it is specific
+to ARM and should not be part of a driver that is potentially architecture
+independent. I would recommend moving this to a separate file
+"arm-pci-abort.c" or something like that. I notice that a lot of the other
+ARM PCI implementations have the exact same code but also need to reset
+the abort in the bridge. Can you confirm that a) you don't need to tell
+the root port about the abort and b) the abort handler is actually required
+for exynos? How often do you run into this?
+
+	Arnd
