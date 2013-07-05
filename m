@@ -1,123 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab3GEJiO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 05:38:14 -0400
-Received: from felten-gate.felten-group.com ([217.6.34.2]:1971 "EHLO
-	mail.felten-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753718Ab3GEJiM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 05:38:12 -0400
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Fri, 05 Jul 2013 05:38:12 EDT
-DomainKey-Signature: a=rsa-sha1; s=feltengroup_com; d=felten-group.com;
-	c=simple; q=dns; h=from:message-id;
-	b=L0ykkaCfGy/uoV353/nN0gIVl/LppbDTCjBE9fZjGbUryBS8xBbKv8XE8bs9
-	guafVE25bKvOLH9G0Meu2qDDYxs6aVHXzzSdYYGaiad83JwIZSv+s9GSK
-	4STVb+Ak2dGbVt6WBLmo51Y9ADW1Q5bZVM8HPZCu0xCYDywxrsairw=;
-X-MDAV-Result: clean
-X-MDAV-Processed: mail.felten-group.com, Fri, 05 Jul 2013 11:30:56 +0200
-VBR-Info: md=felten-group.com; mc=all; mv=vbr.emailcertification.org;
-X-Spam-Processed: mail.felten-group.com, Fri, 05 Jul 2013 11:30:55 +0200
-	(not processed: message from trusted or authenticated source)
-X-Authenticated-Sender: feltengmbh.de
-X-HashCash: 1:20:130705:md50000008866::yhlcRwjU4Iy08XKU:00003cPw
-X-Return-Path: prvs=18985f3c27=Stefan.Sabolowitsch@felten-group.com
-X-Envelope-From: Stefan.Sabolowitsch@felten-group.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: Stefan Sabolowitsch <Stefan.Sabolowitsch@felten-group.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: get a kernel crash with kernel 3.10.0-1.el6.elrepo.x86_64
-Thread-Topic: get a kernel crash with kernel 3.10.0-1.el6.elrepo.x86_64
-Thread-Index: AQHOeWJYPLG3BlrerkGP5mAscL4/iA==
-Date: Fri, 5 Jul 2013 09:30:53 +0000
-Message-ID: <CDFC5EEC.A5BF%Stefan.Sabolowitsch@felten-group.com>
-Accept-Language: de-DE, en-US
-Content-Language: de-DE
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.5.130515
-x-originating-ip: [192.168.1.69]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2A103AC432F1F14DA7D6DE98AE5AD918@felten-group.com>
-Content-Transfer-Encoding: 8BIT
+	id S1757089Ab3GEJlm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 05:41:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48794 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753718Ab3GEJlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 05:41:39 -0400
+Date: Fri, 5 Jul 2013 10:41:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/13] sched: Split accounting of NUMA hinting faults
+ that pass two-stage filter
+Message-ID: <20130705094133.GU1875@suse.de>
+References: <1372861300-9973-1-git-send-email-mgorman@suse.de>
+ <1372861300-9973-8-git-send-email-mgorman@suse.de>
+ <20130703215654.GN17812@cmpxchg.org>
+ <20130704092356.GK1875@suse.de>
+ <20130704193638.GP17812@cmpxchg.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130704193638.GP17812@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I get a kernel crash with 3.10.0-1.el6.elrepo.x86_64 (on two machines the
-same problem).
-Never seen on v3.8.x / v3.9x
+On Thu, Jul 04, 2013 at 03:36:38PM -0400, Johannes Weiner wrote:
+> On Thu, Jul 04, 2013 at 10:23:56AM +0100, Mel Gorman wrote:
+> > On Wed, Jul 03, 2013 at 05:56:54PM -0400, Johannes Weiner wrote:
+> > > On Wed, Jul 03, 2013 at 03:21:34PM +0100, Mel Gorman wrote:
+> > > > Ideally it would be possible to distinguish between NUMA hinting faults
+> > > > that are private to a task and those that are shared. This would require
+> > > > that the last task that accessed a page for a hinting fault would be
+> > > > recorded which would increase the size of struct page. Instead this patch
+> > > > approximates private pages by assuming that faults that pass the two-stage
+> > > > filter are private pages and all others are shared. The preferred NUMA
+> > > > node is then selected based on where the maximum number of approximately
+> > > > private faults were measured. Shared faults are not taken into
+> > > > consideration for a few reasons.
+> > > 
+> > > Ingo had a patch that would just encode a few bits of the PID along
+> > > with the last_nid (last_cpu in his case) member of struct page.  No
+> > > extra space required and should be accurate enough.
+> > > 
+> > 
+> > Yes, I'm aware of it. I noted in the changelog that ideally we'd record
+> > the task both to remind myself and so that the patch that introduces it
+> > could refer to this changelog so there is some sort of logical progression
+> > for reviewers.
+> > 
+> > I was not keen on the use of last_cpu because I felt there was an implicit
+> > assumption that scanning would always be fast enough to record hinting
+> > faults before a task got moved to another CPU for any reason. I feared this
+> > would be worse as memory and task sizes increased. That's why I stayed
+> > with tracking the nid for the two-stage filter until it could be proven
+> > it was insufficient for some reason.
+> > 
+> > The lack of anything resembling pid tracking now is that the series is
+> > already a bit of a mouthful and I thought the other parts were more
+> > important for now.
+> 
+> Fair enough.
+> 
 
-Any idea ?
+I prototyped a node/pid tracker where node is used for misplaced
+detection and pid is used for private/shared detection. Tests running.
+I'll include it in the next release if it works out.
 
-Thx
-Stefan
+> > > Otherwise this is blind to sharedness within the node the task is
+> > > currently running on, right?
+> > > 
+> > 
+> > Yes, it is.
+> > 
+> > > > First, if there are many tasks sharing the page then they'll all move
+> > > > towards the same node. The node will be compute overloaded and then
+> > > > scheduled away later only to bounce back again. Alternatively the shared
+> > > > tasks would just bounce around nodes because the fault information is
+> > > > effectively noise. Either way accounting for shared faults the same as
+> > > > private faults may result in lower performance overall.
+> > > 
+> > > When the node with many shared pages is compute overloaded then there
+> > > is arguably not an optimal node for the tasks and moving them off is
+> > > inevitable. 
+> > 
+> > Yes. If such an event occurs then the ideal is that the task interleaves
+> > between a subset of nodes. The situation could be partially detected by
+> > tracking if the number of historical faults is approximately larger than
+> > the preferred node and then interleave between the top N nodes most faulted
+> > nodes until the working set fits. Starting the interleave should just be
+> > a matter of coding. The difficulty is correctly backing off that if there
+> > is a phase change.
+> 
+> Agreed, optimizing second-best placement can be dealt with later.  I'm
+> worried about optimal placement, though.
+> 
+> And I'm worried about skewing memory access statistics in order to
+> steer future situations the CPU load balancer should handle instead.
+> 
 
--#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
+And I'm worried about shared accesses drowning out any useful data. Ok,
+at the very least I can test this
 
-abrt_version:   2.0.8
-cmdline:        ro root=/dev/mapper/vg_ipd2-lv_root rd_NO_LUKS rd_NO_MD
-SYSFONT=latarcyrheb-sun16 crashkernel=auto rd_LVM_LV=vg_ipd2/lv_swap
-rd_NO_DM LANG=de_DE.UTF-8  KEYBOARDTYPE=pc KEYTABLE=de
-rd_LVM_LV=vg_ipd2/lv_root rhgb quiet
-kernel:         3.10.0-1.el6.elrepo.x86_64
-time:           Do 04 Jul 2013 16:18:29 GMT
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 1647a87..26b57b0 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4092,7 +4092,8 @@ static bool migrate_locality_prepare(struct task_struct *p, struct lb_env *env,
+ /* Returns true if the destination node has incurred more faults */
+ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ {
+-	int src_nid, dst_nid;
++	int src_nid, dst_nid, priv;
++	unsigned long src_faults = 0, dst_faults = 0;
+ 
+ 	if (!migrate_locality_prepare(p, env, &src_nid, &dst_nid))
+ 		return false;
+@@ -4101,12 +4102,13 @@ static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
+ 	if (p->numa_preferred_nid == dst_nid)
+ 		return true;
+ 
+-	/*
+-	 * Move towards node if there were a higher number of private
+-	 * NUMA hinting faults recorded on it
+-	 */
+-	if (p->numa_faults[task_faults_idx(dst_nid, 1)] >
+-	    p->numa_faults[task_faults_idx(src_nid, 1)])
++	/* Move towards node if there were more NUMA hinting faults recorded */
++	for (priv = 0; priv < 2; priv++) {
++		src_faults += p->numa_faults[task_faults_idx(src_nid, priv)];
++		dst_faults += p->numa_faults[task_faults_idx(dst_nid, priv)];
++	}
++
++	if (dst_faults > src_faults)
+ 		return true;
+ 
+ 	return false;
 
-sosreport.tar.xz: Binary file, 1665652 bytes
+It selects preferred node based on private accesses but if migrating to
+any other node it will take the total number of faults into account.
 
-backtrace:
-:WARNING: at drivers/dma/ioat/dca.c:697 ioat3_dca_init+0x1f2/0x200
-[ioatdma]()
-:ioatdma 0000:00:16.0: APICID_TAG_MAP set incorrectly by BIOS, disabling
-DCA
-:Modules linked in: ioatdma(+) i7core_edac edac_core igb hwmon dca ptp
-pps_core ext4 jbd2 mbcache sd_mod crc_t10dif ahci libahci dm_mirror
-dm_region_hash dm_log dm_mod
-:CPU: 0 PID: 1943 Comm: modprobe Not tainted 3.10.0-1.el6.elrepo.x86_64 #1
-:Hardware name: NEXCOM NSA7110/NSB7110, BIOS 1.43 11/10/2010
-:ffffffffa016cbfc ffff8802333efa68 ffffffff815f50e8 ffff8802333efaa8
-:ffffffff8105b2f0 ffffffffa016e9c0 ffff8802345da7c0 ffff880234660de0
-:ffff880234679000 0000000000000002 0000000000000100 ffff8802333efb08
-:Call Trace:
-:[<ffffffff815f50e8>] dump_stack+0x19/0x21
-:[<ffffffff8105b2f0>] warn_slowpath_common+0x70/0xa0
-:[<ffffffff8105b37f>] warn_slowpath_fmt_taint+0x3f/0x50
-:[<ffffffffa01139a1>] ? alloc_dca_provider+0x21/0x40 [dca]
-:[<ffffffffa016b142>] ioat3_dca_init+0x1f2/0x200 [ioatdma]
-:[<ffffffffa01673e0>] ioat3_dma_probe+0x310/0x460 [ioatdma]
-:[<ffffffff812ce4cb>] ? __pci_set_master+0x2b/0x90
-:[<ffffffffa0163241>] ioat_pci_probe+0x1b1/0x1d0 [ioatdma]
-:[<ffffffff812d0e0e>] local_pci_probe+0x4e/0x90
-:[<ffffffff812d0f21>] __pci_device_probe+0xd1/0xe0
-:[<ffffffff812d2262>] ? pci_dev_get+0x22/0x30
-:[<ffffffff812d22aa>] pci_device_probe+0x3a/0x60
-:[<ffffffff813cddc1>] really_probe+0x61/0x210
-:[<ffffffff813cdfae>] driver_probe_device+0x3e/0x60
-:[<ffffffff813ce07b>] __driver_attach+0xab/0xb0
-:[<ffffffff813cdfd0>] ? driver_probe_device+0x60/0x60
-:[<ffffffff813cdfd0>] ? driver_probe_device+0x60/0x60
-:[<ffffffff813cc264>] bus_for_each_dev+0x94/0xb0
-:[<ffffffff813cdc0e>] driver_attach+0x1e/0x20
-:[<ffffffff813cd658>] bus_add_driver+0x1e8/0x250
-:[<ffffffffa0157000>] ? 0xffffffffa0156fff
-:[<ffffffff813ce714>] driver_register+0x74/0x160
-:[<ffffffffa0157000>] ? 0xffffffffa0156fff
-:[<ffffffff812d23bc>] __pci_register_driver+0x4c/0x50
-:[<ffffffffa015706d>] ioat_init_module+0x6d/0x1000 [ioatdma]
-:[<ffffffff81002042>] do_one_initcall+0x42/0x170
-:[<ffffffff810c3a30>] do_init_module+0x80/0x1f0
-:[<ffffffff810c5540>] load_module+0x390/0x500
-:[<ffffffff810c3110>] ? mod_sysfs_teardown+0x150/0x150
-:[<ffffffff810c31a7>] ? copy_module_from_user+0x67/0xc0
-:[<ffffffff810c2830>] ? module_sect_show+0x30/0x30
-:[<ffffffff810c57f3>] SyS_init_module+0x93/0xa0
-:[<ffffffff816014d9>] system_call_fastpath+0x16/0x1b
+> > > However, the node with the most page accesses, private or
+> > > shared, is still the preferred node from a memory stand point.
+> > > Compute load being equal, the task should go to the node with 2GB of
+> > > shared memory and not to the one with 2 private pages.
+> > > 
+> > 
+> > Agreed. The level of shared vs private needs to be detected. The problem
+> > here is that detecting private dominated workloads is not straight-forward,
+> > particularly as the scan rate slows as we've already discussed.
+> 
+> I was going for the opposite conclusion: that it does not matter
+> whether memory is accessed privately or in a shared fashion, because
+> there is no obvious connection to its access frequency, not to me at
+> least. 
 
+We cannot accurately detect access frequency because we are limited to
+receiving the hinting faults.
 
+> Short of accurate access frequency sampling and supportive
+> data, the node with most accesses in general should be the preferred
+> node, not the one with the most private accesses because it's the
+> smaller assumption to make.
+> 
 
+Workloads with many shared accesses (numa01 on > 2 node machines) will
+bounce all over the place.
 
+> > > > The second reason is based on a hypothetical workload that has a small
+> > > > number of very important, heavily accessed private pages but a large shared
+> > > > array. The shared array would dominate the number of faults and be selected
+> > > > as a preferred node even though it's the wrong decision.
+> > > 
+> > > That's a scan granularity problem and I can't see how you solve it
+> > > with ignoring the shared pages. 
+> > 
+> > I acknowledge it's a problem and basically I'm making a big assumption
+> > that private-dominated workloads are going to be the common case. Threaded
+> > application on UMA with heavy amounts of shared data (within cache lines)
+> > already suck in terms of performance so I'm expecting programmers already
+> > try and avoid this sort of sharing. Obviously we are at a page granularity
+> > here so the assumption will depend entirely on alignments and buffer sizes
+> > so it might still fall apart.
+> 
+> Don't basically all VM-based mulithreaded programs have this usage
+> pattern?  The whole runtime (text, heap) is shared between threads.
 
+There are allocators with thread-local storage and large allocations in
+glibc are satisified using mmap reducing the opportunity for false sharing
+due to unaligned buffers.
 
+> If some thread-local memory spills over to another node, should the
+> scheduler move this thread off node from a memory standpoint?
 
+If thread local memory spills over to another node, there will be attempts
+to migrate it towards where the task is running. If those migrations fail,
+then what you'd expect is that faults would accumulate on the remote node
+and eventually it becomes the preferred node but that is not what currently
+happens. The tracking in the failed migration case needs revisiting.
 
+> I don't
+> think so at all.  I would expect it to always gravitate back towards
+> this node with the VM on it, only get moved off for CPU load reasons,
+> and get moved back as soon as the load situation permits.
+> 
+> Meanwhile, if there is little shared memory and private memory spills
+> over to other nodes, you still don't know which node's memory is more
+> frequently used beyond scan period granularity. 
+
+That's true whether we account private/shared separately or not.
+
+> Ignoring shared
+> memory accesses would not actually help finding the right node in this
+> case.  You might even make it worse: since private accesses are all
+> treated equally, you assume equal access frequency among them.  Shared
+> accesses could now be the distinguishing data point to tell which node
+> sees more memory accesses.
+> 
+
+Similar points can be made the other way as well. If shared/private is
+ignored then infrequent accesses can dominate continual access due to
+limitations of the scan-based sampling.
+
+> > I think that dealing with this specific problem is a series all on its
+> > own and treating it on its own in isolation would be best.
+> 
+> The scan granularity issue is indeed a separate issue, I'm just really
+> suspicious of the assumption you make to attempt working around it in
+> this patch, because of the risk of moving away from optimal placement
+> prematurely.
+> 
+
+And the crux of the matter is whether the optimal placement is hurt by
+prioritising private accesses or not. Initially I had been testing for
+this but the last data I have on this is now relatively old. It's simple
+enough to test by patching to make priv = 0 in task_numa_fault.
+
+> The null hypothesis is that there is no connection between accesses
+> being shared or private and their actual frequency.  I would be
+> interested if this assumption has had a positive effect in your
+> testing or if this is based on the theoretical cases you mentioned in
+> the changelog, i.e. why you chose to make the bigger assumption.
+> -ENODATA ;-)
+> 
+
+It was tested for in v1 but I did not publish the relevant data or every
+patch series would be a paper. When I was testing for it, there was a
+benefit to the patch but the series has changed too much since to state
+with certainty it's still correct.
+
+I'll see can I rework the series so that the split of private/shared
+happens later so it's easier to measure whether it benefits in isolation.
+
+-- 
+Mel Gorman
+SUSE Labs
