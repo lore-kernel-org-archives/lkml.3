@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933788Ab3GEDd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 4 Jul 2013 23:33:56 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37390 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932249Ab3GEDdz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 4 Jul 2013 23:33:55 -0400
-Message-ID: <1372995229.4038.1.camel@phoenix>
-Subject: [PATCH v2] irqchip: vt8500: Staticize local symbols
-From: Axel Lin <axel.lin@ingics.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Olof Johansson <olof@lixom.net>, Tony Prisk <linux@prisktech.co.nz>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 05 Jul 2013 11:33:49 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S933803Ab3GEDnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 4 Jul 2013 23:43:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28119 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932081Ab3GEDnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 4 Jul 2013 23:43:49 -0400
+Message-ID: <51D640E2.1010809@redhat.com>
+Date: Fri, 05 Jul 2013 11:43:30 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Thomas Zeitlhofer <thomas.zeitlhofer@nt.tuwien.ac.at>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+CC: Fabio Estevam <festevam@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: tuntap regression in v3.9.8 and v3.10
+References: <20130702195910.GA20271@toau.bambla> <CAOMZO5B7Yx7tRy8Q5wi6ngcD0FDJzKXHOEGPXyUo52+f3oUHEg@mail.gmail.com> <20130702220651.GA23097@toau.bambla> <51D39010.5090902@redhat.com> <20130703061104.GA22847@toau.bambla>
+In-Reply-To: <20130703061104.GA22847@toau.bambla>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver is converted to use IRQCHIP_DECLARE and irqchip_init.
-vt8500_handle_irq() and vt8500_irq_init() are only referenced in this file, so
-make them static.
+On 07/03/2013 02:11 PM, Thomas Zeitlhofer wrote:
+> Hello Jason,
+>
+> On Wed, Jul 03, 2013 at 10:44:32AM +0800, Jason Wang wrote:
+>> On 07/03/2013 06:06 AM, Thomas Zeitlhofer wrote:
+>>> On Tue, Jul 02, 2013 at 06:01:12PM -0300, Fabio Estevam wrote:
+>>>> On Tue, Jul 2, 2013 at 4:59 PM, Thomas Zeitlhofer
+>>>> <thomas.zeitlhofer@nt.tuwien.ac.at> wrote:
+>>>>> Commit "tuntap: set SOCK_ZEROCOPY flag during open" introduces a
+>>>>> regression which is observed with live migration of qemu/kvm based
+>>>>> virtual machines that are connected to an openvswitch bridge.
+>>>>>
+>>>>> Reverting this commit (b26c93c46a3dec25ed236d4ba6107eb4ed5d9401 in
+>>>>> v3.9.8 and accordingly 19a6afb23e5d323e1245baa4e62755492b2f1200 in
+>>>>> v3.10) fixes the following problem:
+>>>> Should the sock_set_flag stay in tun_set_iff as it was prior to 54f968d6efd?
+>>>>
+>>>> --- a/drivers/net/tun.c
+>>>> +++ b/drivers/net/tun.c
+>>>> @@ -1652,6 +1652,7 @@ static int tun_set_iff(struct net *net, struct
+>>>> file *file, struct ifreq *ifr)
+>>>>                 tun->txflt.count = 0;
+>>>>                 tun->vnet_hdr_sz = sizeof(struct virtio_net_hdr);
+>>>>
+>>>> +               sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
+>>>>                 tun->filter_attached = false;
+>>>>                 tun->sndbuf = tfile->socket.sk->sk_sndbuf;
+>>>>
+>>>> @@ -2159,8 +2160,6 @@ static int tun_chr_open(struct inode *inode,
+>>>> struct file * file)
+>>>>         set_bit(SOCK_EXTERNALLY_ALLOCATED, &tfile->socket.flags);
+>>>>         INIT_LIST_HEAD(&tfile->next);
+>>>>
+>>>> -       sock_set_flag(&tfile->sk, SOCK_ZEROCOPY);
+>>>> -
+>>>>         return 0;
+>>>>  }
+>>> I guess no, as this also leads to a kernel panic (tested against v3.10).
+>> Yes, commit "tuntap: set SOCK_ZEROCOPY flag during open" just re-enable
+>> the zerocopy capability of tuntap. I believe it just uncover other
+>> zerocopy bugs.
+>>
+>> Which regression did you see?
+> a kernel panic on the host machine. The details are in the first message
+> of this thread: http://lkml.org/lkml/2013/7/2/499
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/irqchip/irq-vt8500.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+Could you please have a try with the patch in
+https://lkml.org/lkml/2013/6/25/304.
 
-diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
-index d970595..8b5176b 100644
---- a/drivers/irqchip/irq-vt8500.c
-+++ b/drivers/irqchip/irq-vt8500.c
-@@ -178,7 +178,8 @@ static struct irq_domain_ops vt8500_irq_domain_ops = {
- 	.xlate = irq_domain_xlate_onecell,
- };
- 
--asmlinkage void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
-+static asmlinkage
-+void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
- {
- 	u32 stat, i;
- 	int irqnr, virq;
-@@ -203,7 +204,8 @@ asmlinkage void __exception_irq_entry vt8500_handle_irq(struct pt_regs *regs)
- 	}
- }
- 
--int __init vt8500_irq_init(struct device_node *node, struct device_node *parent)
-+static int __init vt8500_irq_init(struct device_node *node,
-+					struct device_node *parent)
- {
- 	int irq, i;
- 	struct device_node *np = node;
--- 
-1.8.1.2
+Michael, please resubmit a patch which can applies cleanly.
 
-
+Thanks
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
