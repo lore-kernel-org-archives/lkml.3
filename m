@@ -1,70 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab3GETKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 15:10:50 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59747 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751162Ab3GETKs (ORCPT
+	id S1757193Ab3GETMG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 15:12:06 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:52499 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751162Ab3GETMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 15:10:48 -0400
-Date: Fri, 5 Jul 2013 13:39:53 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: vaughan <vaughan.cao@oracle.com>
-Cc: dgilbert@interlog.com, JBottomley@parallels.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vaughan.cao@gmail.com, xitao.cao@gmail.com
-Subject: Re: [PATCH v2 1/1] [SCSI] sg: fix race condition when do exclusive
- open
-Message-ID: <20130705173953.GA15089@logfs.org>
-References: <51AF0269.9070900@oracle.com>
- <20130605132746.GA1690@logfs.org>
- <51AF646D.7030903@oracle.com>
- <20130605154106.GA2737@logfs.org>
- <51BF0ADD.1080604@oracle.com>
+	Fri, 5 Jul 2013 15:12:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51BF0ADD.1080604@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1373036223.2711.62.camel@sauron.fi.intel.com>
+References: <1373036223.2711.62.camel@sauron.fi.intel.com>
+Date: Fri, 5 Jul 2013 12:12:03 -0700
+X-Google-Sender-Auth: _3u9_f0cLSDl_raHXZ0TQHl1KJk
+Message-ID: <CA+55aFxv2A+4mfhuBUVJnPhDzvLw3ttg6BV3=FPDwRqGTfc2Xg@mail.gmail.com>
+Subject: Re: [GIT PULL] UBI changes for 3.11-rc1
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-mtd <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry about replying so late.
+On Fri, Jul 5, 2013 at 7:57 AM, Artem Bityutskiy <dedekind1@gmail.com> wrote:
+>
+>  drivers/mtd/ubi/build.c     | 59 ++++++++++++++++++++++++++++++++++++++++-------------------
+>  drivers/mtd/ubi/fastmap.c   |  4 +++-
+>  include/uapi/mtd/ubi-user.h |  5 ++++-
 
-On Mon, 17 June 2013 21:10:53 +0800, vaughan wrote:
-> 
-> Rewrite the last patch.
-> Add a new field 'toopen' in sg_device to count ongoing sg_open's. By checking both 'toopen' and 'exclude' marks when do exclusive open, old race conditions can be avoided.
-> Replace global sg_open_exclusive_lock with a per device lock - sfd_lock. Since sfds list is now protected by the lock owned by the same sg_device, sg_index_lock becomes a real global lock to only protect sg devices lookup.
-> Also did some cleanup, such as remove get_exclude() and rename set_exclude() to clear_exclude().
-> 
-...
-> @@ -171,10 +168,10 @@ typedef struct sg_device { /* holds the state of each scsi generic device */
->  	wait_queue_head_t o_excl_wait;	/* queue open() when O_EXCL in use */
->  	int sg_tablesize;	/* adapter's max scatter-gather table size */
->  	u32 index;		/* device index number */
-> -	/* sfds is protected by sg_index_lock */
-> +	spinlock_t sfd_lock;	/* protect sfds, exclude, toopen */
->  	struct list_head sfds;
-> +	int toopen;		/* number of who are ready to open sg */
-                                            ^
-I think the 'toopen' is a bad choice.  I'm having trouble wrapping my
-head around the semantics of this variable, your description feels a
-bit handwavy, the main noun is missing in the command above, I think I
-found one more overflow bug,...
+That's a very strange script you're using. It has somehow cut off the
+last line of the diffstat - the one that actually is the primary one
+to check the overally statistics:
 
-What you ended up doing is reimplement a rw_semaphone.  Why not use
-one instead?  down_write() for exclusive access, down_read() for
-non-exclusive, _trylock variants for nonblocking opens, etc.
+ 3 files changed, 47 insertions(+), 21 deletions(-)
 
-Would this work?
+Please double-check your pull script.
 
-Jörn
+Anyway, pulled, so you don't need to re-send, but please fix this for
+future pulls.
 
---
-I've never met a human being who would want to read 17,000 pages of
-documentation, and if there was, I'd kill him to get him out of the
-gene pool.
--- Joseph Costello
+                Linus
