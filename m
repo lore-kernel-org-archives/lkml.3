@@ -1,60 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab3GEEak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 00:30:40 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:44159 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab3GEEaj (ORCPT
+	id S1751328Ab3GEEdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 00:33:21 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:55771 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab3GEEdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 00:30:39 -0400
-Message-ID: <51D64BEC.7090208@gmail.com>
-Date: Thu, 04 Jul 2013 22:30:36 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Fri, 5 Jul 2013 00:33:19 -0400
+Message-ID: <51D64C84.5080100@linux.vnet.ibm.com>
+Date: Fri, 05 Jul 2013 12:33:08 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: stephen@networkplumber.org, netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: KVM VM shutdown triggers BUG from network bridge code in 3.9.9
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mike Galbraith <efault@gmx.de>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: smart wake-affine
+References: <51A43B16.9080801@linux.vnet.ibm.com> <51D25A80.8090406@linux.vnet.ibm.com> <20130702085202.GA23916@twins.programming.kicks-ass.net> <51D29EE5.8080307@linux.vnet.ibm.com> <20130704091339.GK18898@dyad.programming.kicks-ass.net> <51D5428D.7080805@linux.vnet.ibm.com> <1372934013.9046.16.camel@marge.simpson.net> <51D633DB.5010508@linux.vnet.ibm.com> <1372997318.7315.23.camel@marge.simpson.net>
+In-Reply-To: <1372997318.7315.23.camel@marge.simpson.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070504-9574-0000-0000-00000897525B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've run into a problem after updating to Fedora 19 where if I shut down 
-a Windows 7 KVM virtual machine, the machine hits a kernel panic. There 
-are a few reports of this on 3.9.8 and 3.9.9 kernels here:
+On 07/05/2013 12:08 PM, Mike Galbraith wrote:
+[snip]
+>>
+>> Wow, I used to think such issue is very hard to be tracked by
+>> benchmarks, is this regression stable?
+> 
+> Yeah, seems to be.  I was curious as to why you saw an improvement to
+> hackbench, didn't seem there should be any, so though I'd try it on my
+> little box on the way to a long weekend.  The unexpected happened.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=981437
+Oh, I think I failed to explain things clearly in comments...
 
-The panic is "kernel BUG at kernel/timer.c:729!" and the stack traces 
-all seem basically the same, something like this one (captured with kdump):
+It's not the patch who bring 15% benefit to hackbench, but the
+wake-affine stuff itself.
 
-  #7 [ffff880214d25c10] mod_timer+501 at ffffffff8106d905
-  #8 [ffff880214d25c50] br_multicast_del_pg.isra.20+261 at 
-ffffffffa0731d25 [bridge]
-  #9 [ffff880214d25c80] br_multicast_disable_port+88 at ffffffffa0732948 
-[bridge]
-#10 [ffff880214d25cb0] br_stp_disable_port+154 at ffffffffa072bcca [bridge]
-#11 [ffff880214d25ce8] br_device_event+520 at ffffffffa072a4e8 [bridge]
-#12 [ffff880214d25d18] notifier_call_chain+76 at ffffffff8164aafc
-#13 [ffff880214d25d50] raw_notifier_call_chain+22 at ffffffff810858f6
-#14 [ffff880214d25d60] call_netdevice_notifiers+45 at ffffffff81536aad
-#15 [ffff880214d25d80] dev_close_many+183 at ffffffff81536d17
-#16 [ffff880214d25dc0] rollback_registered_many+168 at ffffffff81537f68
-#17 [ffff880214d25de8] rollback_registered+49 at ffffffff81538101
-#18 [ffff880214d25e10] unregister_netdevice_queue+72 at ffffffff815390d8
-#19 [ffff880214d25e30] __tun_detach+272 at ffffffffa074c2f0 [tun]
-#20 [ffff880214d25e88] tun_chr_close+45 at ffffffffa074c4bd [tun]
-#21 [ffff880214d25ea8] __fput+225 at ffffffff8119b1f1
-#22 [ffff880214d25ef0] ____fput+14 at ffffffff8119b3fe
-#23 [ffff880214d25f00] task_work_run+159 at ffffffff8107cf7f
-#24 [ffff880214d25f30] do_notify_resume+97 at ffffffff810139e1
-#25 [ffff880214d25f50] int_signal+18 at ffffffff8164f292
+In the prev-test, I removed the whole stuff and find that hackbench
+dropped 15%, which means with wake-affine enabled, we will gain 15%
+benefit (and that's actually the reason why we don't kill the stuff).
 
-It seems like the error is being triggered by the virtual network 
-interface being torn down, though I have no idea why (from all reports 
-so far) it only happens when shutting down a Windows 7 VM, or why this 
-didn't happen in Fedora 18 (something to do with older kvm/qemu/libvirt 
-perhaps..)
+And this idea is try to not harm that 15% benefit, and meanwhile regain
+the pgbench lost performance, thus, apply this patch to mainline won't
+improve hackbench performance, but improve pgbench performance.
+
+But this regression is really unexpected... I could hardly believe it's
+just caused by cache issue now, since the number is not small (10% at
+most?).
+
+Have you tried to use more loops and groups? will that show even bigger
+regressions?
+
+BTW, is this the results of 10 group and 40 sockets == 400 tasks?
+
+Regards,
+Michael Wang
+
+> 
+>>> pahole said...
+>>>
+>>> marge:/usr/local/src/kernel/linux-3.x.git # tail virgin
+>>>         long unsigned int          timer_slack_ns;       /*  1512     8 */
+>>>         long unsigned int          default_timer_slack_ns; /*  1520     8 */
+>>>         atomic_t                   ptrace_bp_refcnt;     /*  1528     4 */
+>>>
+>>>         /* size: 1536, cachelines: 24, members: 125 */
+>>>         /* sum members: 1509, holes: 6, sum holes: 23 */
+>>>         /* bit holes: 1, sum bit holes: 26 bits */
+>>>         /* padding: 4 */
+>>>         /* paddings: 1, sum paddings: 4 */
+>>> };
+>>>
+>>> marge:/usr/local/src/kernel/linux-3.x.git # tail michael
+>>>         long unsigned int          default_timer_slack_ns; /*  1552     8 */
+>>>         atomic_t                   ptrace_bp_refcnt;     /*  1560     4 */
+>>>
+>>>         /* size: 1568, cachelines: 25, members: 128 */
+>>>         /* sum members: 1533, holes: 8, sum holes: 31 */
+>>>         /* bit holes: 1, sum bit holes: 26 bits */
+>>>         /* padding: 4 */
+>>>         /* paddings: 1, sum paddings: 4 */
+>>>         /* last cacheline: 32 bytes */
+>>> };
+>>>
+>>> ..but plugging holes, didn't help, moving this/that around neither, nor
+>>> did letting pahole go wild to get the line back.  It's plus signs I tell
+>>> ya, the evil things must die ;-)
+>>
+>> Hmm...so the new members kicked some tail members to a new line...or may
+>> be totally different when compiler take part in...
+>>
+>> It's really hard to estimate the influence, especially when the
+>> task_struct is still keep changing...
+> 
+> Yeah, could be memory layout crud that disappears with the next
+> pull/build.  Wouldn't be the first time.
+> 
+> -Mike
+> 
+
