@@ -1,170 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821Ab3GEFbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 01:31:50 -0400
-Received: from mga14.intel.com ([143.182.124.37]:52321 "EHLO mga14.intel.com"
+	id S1751934Ab3GEFg1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 01:36:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40035 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751062Ab3GEFbs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 01:31:48 -0400
+	id S1751062Ab3GEFg0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 5 Jul 2013 01:36:26 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,1000,1363158000"; 
-   d="scan'208";a="327035836"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Lukasz Majewski <l.majewski@majess.pl>
-CC: Lukasz Majewski <l.majewski@samsung.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, "Zhang, Rui" <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andre Przywara <andre.przywara@linaro.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: RE: [PATCH v5 5/7] thermal:boost: Automatic enable/disable of BOOST
- feature
-Thread-Topic: [PATCH v5 5/7] thermal:boost: Automatic enable/disable of
- BOOST feature
-Thread-Index: AQHOeJQOJN+eWhBOA0aAeNlrBXx/0JlUwftQ///jBgCAAOoOUA==
-Date: Fri, 5 Jul 2013 05:31:42 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB59CCF66C@BGSMSX101.gar.corp.intel.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-1-git-send-email-l.majewski@samsung.com>
- <1372927830-2949-6-git-send-email-l.majewski@samsung.com>
- <4D68720C2E767A4AA6A8796D42C8EB59CCF152@BGSMSX101.gar.corp.intel.com>
- <20130704225806.6d08b0a9@jawa>
-In-Reply-To: <20130704225806.6d08b0a9@jawa>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+   d="scan'208";a="360796163"
+Message-ID: <51D65B58.1050201@intel.com>
+Date: Fri, 05 Jul 2013 13:36:24 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org, mingo@kernel.org, eranian@google.com,
+        andi@firstfloor.org
+Subject: Re: [PATCH v2 4/7] perf, x86: Save/resotre LBR stack during context
+ switch
+References: <1372663387-11754-1-git-send-email-zheng.z.yan@intel.com> <1372663387-11754-5-git-send-email-zheng.z.yan@intel.com> <20130704124536.GK23916@twins.programming.kicks-ass.net>
+In-Reply-To: <20130704124536.GK23916@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lukasz,
+On 07/04/2013 08:45 PM, Peter Zijlstra wrote:
+> On Mon, Jul 01, 2013 at 03:23:04PM +0800, Yan, Zheng wrote:
+> 
+>> @@ -2488,25 +2508,31 @@ static void perf_branch_stack_sched_in(struct task_struct *prev,
+>>  
+>>  	list_for_each_entry_rcu(pmu, &pmus, entry) {
+>>  		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
+>> +		task_ctx = cpuctx->task_ctx;
+>>  
+>>  		/*
+>> -		 * check if the context has at least one
+>> -		 * event using PERF_SAMPLE_BRANCH_STACK
+>> +		 * force flush the branch stack if there are cpu-wide events
+>> +		 * using PERF_SAMPLE_BRANCH_STACK
+>> +		 *
+>> +		 * save/restore the branch stack if the task context has
+>> +		 * at least one event using PERF_SAMPLE_BRANCH_STACK
+>>  		 */
+>> -		if (cpuctx->ctx.nr_branch_stack > 0
+>> -		    && pmu->flush_branch_stack) {
+>> -
+>> +		bool force_flush = cpuctx->ctx.nr_branch_stack > 0;
+>> +		if (pmu->branch_stack_sched &&
+>> +		    (force_flush ||
+>> +		     (task_ctx && task_ctx->nr_branch_stack > 0))) {
+>>  			pmu = cpuctx->ctx.pmu;
+>>  
+>> -			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
+>> +			perf_ctx_lock(cpuctx, task_ctx);
+>>  
+>>  			perf_pmu_disable(pmu);
+>>  
+>> -			pmu->flush_branch_stack();
+>> +			pmu->branch_stack_sched(task_ctx,
+>> +						sched_in, force_flush);
+>>  
+>>  			perf_pmu_enable(pmu);
+>>  
+>> -			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
+>> +			perf_ctx_unlock(cpuctx, task_ctx);
+>>  		}
+>>  	}
+>>  
+> 
+> I never really like this; and yes I know I wrote part of that. Is there
+> any way we can get rid of this and to it 'properly' through the events
+> that get scheduled?
+> 
+> After all; the LBR usage is through the events, so scheduling the events
+> should also manage the LBR state.
+> 
+> What is missing for that to work?
+> 
 
-> -----Original Message-----
-> From: Lukasz Majewski [mailto:l.majewski@majess.pl]
-> Sent: Friday, July 05, 2013 2:28 AM
-> To: R, Durgadoss
-> Cc: Lukasz Majewski; Viresh Kumar; Rafael J. Wysocki; Zhang, Rui; Eduardo
-> Valentin; cpufreq@vger.kernel.org; Linux PM list; Jonghwa Lee; linux-kernel;
-> Andre Przywara; Daniel Lezcano; Kukjin Kim; Myungjoo Ham
-> Subject: Re: [PATCH v5 5/7] thermal:boost: Automatic enable/disable of BOOST
-> feature
-> 
-> On Thu, 4 Jul 2013 17:19:04 +0000
-> "R, Durgadoss" <durgadoss.r@intel.com> wrote:
-> Hi,
-> 
+the LBR is shared resource, can be used by multiple events at the same time.
+Strictly speaking，LBR is associated with task, not event. One example is
+there are 5 events using the LBR stack feature, but there are only 4 counters.
+So these events need schedule. Saving/restoring LBR on the basis of event is
+clearly wrong.
 
-[Cut.]
+Regards
+Yan, Zheng
 
-> > > @@ -326,6 +327,15 @@ static void monitor_thermal_zone(struct
-> > > thermal_zone_device *tz)
-> > >  static void handle_non_critical_trips(struct thermal_zone_device
-> > > *tz, int trip, enum thermal_trip_type trip_type)
-> > >  {
-> > > +	if (cpufreq_boost_supported()) {
-> > > +		tz->overheated = true;
-> > > +		cpufreq_boost_trigger_state(0);
-> > > +		if (!tz->polling_delay) {
-> > > +			tz->boost_polling = true;
-> > > +			tz->polling_delay = 1000;
-> > > +		}
-> > > +	}
-> > > +
-> > >  	if (tz->governor)
-> > >  		tz->governor->throttle(tz, trip);
-> > >  }
-> > > @@ -453,6 +463,27 @@ static void thermal_zone_device_check(struct
-> > > work_struct *work)
-> > >  	struct thermal_zone_device *tz = container_of(work, struct
-> > >  						      thermal_zone_device,
-> > >  						      poll_queue.work);
-> > > +	long trip_temp;
-> > > +
-> > > +	if (cpufreq_boost_supported() && tz->overheated) {
-> >
-> > Not all thermal drivers support trip points. So, we first need a
-> > if (tz->ops->get_trip_temp) check here.
-> 
-> Ok, thanks for tip. Bluntly speaking, I thought, that all SoCs supported
-> by thermal set trip points.
-
-We would wish to get there. But not the reality today ;)
-
-> 
-> >
-> > > +		tz->ops->get_trip_temp(tz, 0, &trip_temp);
-> > > +		/*
-> > > +		 * Enable boost again only when current
-> > > temperature is less
-> > > +		 * than 75% of trip_temp[0]
-> > > +		 */
-> > > +		if ((tz->temperature + (trip_temp >> 2)) <
-> > > trip_temp) {
-> >
-> > Another way would be to use the get_trend APIs for this thermal zone.
-> > If the trend is cooling we can re-enable boost otherwise not.
-> 
-> Trend evaluation seems like a good complementary idea.
-> 
-> However, I would also like to have the relative temperature drop
-> measurement (if possible) like above (to 75% of the first trip point).
-> 
-> Then I would be more confident, that everything cooled down and that I
-> can start boost again.
-> 
-> >
-> > > +			tz->overheated = false;
-> > > +			if (tz->boost_polling) {
-> > > +				tz->boost_polling = false;
-> > > +				tz->polling_delay = 0;
-> > > +				monitor_thermal_zone(tz);
-> > > +			}
-> >
-> > Overall, I believe this will work well only if the thermal zone is
-> > CPU.
-> 
-> My assumption:
-> 
-> When I enable boost at CPU, then I also shall cool down the CPU. And
-> the CPU zone seemed a natural choice.
-> 
-> However I might be missing something, so hints are welcome.
-> 
-> >
-> > Another suggestion is: We tried hard to remove all throttling logic
-> > from thermal_core.c.
-> 
-> By throttling logic you mean:
-> if ((tz->temperature + (trip_temp >> 2)) and other conditions (like
-> trend measurement)?
-
-Yes. That is correct.
-
-> 
-> > May be we should include this kind of logic in
-> > step_wise.c ?
-> 
-> It sounds interesting (since ->throttle at thermal_core.c is called
-> always when needed), but I'm afraid of a code duplication when one
-> use Boost with fair_share or other thermal governor.
-
-right. So, for the time being, (as part of this patch series)
-I am Okay to have this code in thermal_core.c. From the thermal
-subsystem perspective, we will (need to) work out a better/
-cleaner/easier approach for this later.
-
-Thanks,
-Durga
 
