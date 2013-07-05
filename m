@@ -1,87 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932890Ab3GENto (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 5 Jul 2013 09:49:44 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:45831 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751170Ab3GENtm (ORCPT
+	id S1757422Ab3GENum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 5 Jul 2013 09:50:42 -0400
+Received: from mail-ye0-f175.google.com ([209.85.213.175]:45883 "EHLO
+	mail-ye0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756251Ab3GENuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 5 Jul 2013 09:49:42 -0400
-From: Peter Korsgaard <jacmet@sunsite.dk>
-To: "Joseph Chang" <joseph_chang@davicom.com.tw>
-Cc: "'Joseph CHANG'" <josright123@gmail.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <netdev@vger.kernel.org>, <josright@hotmail.com>
-Subject: Re: [PATCH 1/1] net: add dm9620 net usb driver
-References: <201307030548.r635mxI6027578@mail.davicom.com.tw>
-Date: Fri, 05 Jul 2013 15:49:36 +0200
-In-Reply-To: <201307030548.r635mxI6027578@mail.davicom.com.tw> (Joseph Chang's
-	message of "Wed, 3 Jul 2013 13:49:11 +0800")
-Message-ID: <87bo6hjevj.fsf@dell.be.48ers.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Fri, 5 Jul 2013 09:50:40 -0400
+Date: Fri, 5 Jul 2013 10:16:11 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCHSET 00/16] perf tools: Cleanups on tracepoint handling
+Message-ID: <20130705131611.GA2559@ghostprotocols.net>
+References: <1370323231-14022-1-git-send-email-namhyung@kernel.org>
+ <87hagazplh.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87hagazplh.fsf@sejong.aot.lge.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Joseph" == Joseph Chang <joseph_chang@davicom.com.tw> writes:
+Em Thu, Jul 04, 2013 at 05:39:06PM +0900, Namhyung Kim escreveu:
+> Ping!
 
-Hi,
+Pong, should be processing these today,
 
- Joseph>   This is Joseph CHANG, I am glade to contact and work with
- Joseph>   you.  I am busy in some affairs else these days, and will
- Joseph>   like to be back soon.
-
- Joseph>   For the begin, We copy the source code 'dm9601.c' which was
- Joseph>   by you, In order to work for our new chips (DM9620, DM9621,
- Joseph>   DM9621A... series), We did modify to get 'dm9620.c' base on
- Joseph>   'dm0601.c', Since you are the author and also the owner, so
- Joseph>   keep MODULE_AUTHOR() as you.
-
-Yes, that's what I learned from a number of bug reports. It would have
-been good if you would have worked with me to get your modifications
-integrated instead.
-
-
- Joseph>   To generate DM9620.c is a way to distinguish the different
- Joseph>   generation chips: (as below)
-
- Joseph>    DM9601: old revision:     USB1.1, Ethernet 10/100,     Phase out
- Joseph>    DM9620: current revision:  USB2.0, Ethernet 10/100, Mass production state
- Joseph>    DM9633: next revision: USB3.0, Ethernet 10/100/1000, Will to
- Joseph> release on 2013/E
-
-dm9620 is basically backwards compatible with dm9601, so I added dm9620
-support to the dm9601 driver earlier this year:
-
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=6642f91c92da0736
-
-Is there anything missing from that?
-
-I don't see any dm9633 datasheet on the davicom website, so I cannot say
-if it makes sense to add support for it in the existing driver. Is the
-datasheet available somewhere?
-
-
- Joseph>   So want to make it from the configuration by "make
- Joseph>   menuconfig".
-
- Joseph>   Can you help give further advices, we hope you can go ahead
- Joseph> be the owner (author) of the 'dm9620.c', And then we make patch
- Joseph> to it. Would you agree this idea? If so we will be happy
- Joseph> because we did not ever create such a code.
-
- Joseph>   * Think about DM9633 driver to be, It will be is total
- Joseph> different compare to DM9601 & DM9620. And will get the same
- Joseph> issue.
-
-If you can provide me with a dm9633 datasheet and a sample device then I
-can look into writing a driver for it / extending dm9601.c. Please
-contact me off list for that.
-
-Thanks!
-
--- 
-Bye, Peter Korsgaard
+- Arnaldo
+ 
+> On Tue,  4 Jun 2013 14:20:15 +0900, Namhyung Kim wrote:
+> > Hello,
+> >
+> > This patchset is a resend version of previous work and basis of
+> > upcoming perf ftrace patchset.  Although I saw no issue on this series
+> > when I posted earlier, it'd be great if Steve or others take a look at
+> > it again and give comments.
+> >
+> > I also updated 'perf/cleanup' branch on my tree at:
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> >
+> > Thanks,
+> > Namhyung
+> >
+> >
+> > Namhyung Kim (16):
+> >   tools lib traceevent: Remove unused install targets
+> >   tools lib traceevent: Get rid of unused gui target
+> >   tools lib traceevent: Add const qualifier to string arguments
+> >   tools lib traceevent: Add trace_seq_reset()
+> >   tools lib traceevent: Add page_size field to pevent
+> >   tools lib traceevent: Port kbuffer parser routines
+> >   perf util: Save page size in a trace file to pevent
+> >   perf util: Save long size of traced system
+> >   perf util: Make file/host_bigendian variable local
+> >   perf util: Skip reading header_event file
+> >   perf util: Parse header_page to get proper long size
+> >   perf util: Get rid of unused header_page_* variables
+> >   perf util: Move latency_format variable to builtin-script.c
+> >   perf util: Rename read_*() functions in trace-event-info.c
+> >   perf util: No need to call read_trace_init() in tracing_data_header()
+> >   perf util: Remove unused enum and macro in trace-event.h
+> >
+> >  tools/lib/traceevent/Makefile        |  18 +-
+> >  tools/lib/traceevent/event-parse.c   |   7 +-
+> >  tools/lib/traceevent/event-parse.h   |  15 +-
+> >  tools/lib/traceevent/kbuffer-parse.c | 732 +++++++++++++++++++++++++++++++++++
+> >  tools/lib/traceevent/kbuffer.h       |  67 ++++
+> >  tools/lib/traceevent/trace-seq.c     |  13 +
+> >  tools/perf/builtin-script.c          |   1 +
+> >  tools/perf/util/trace-event-info.c   |  22 +-
+> >  tools/perf/util/trace-event-parse.c  |   6 -
+> >  tools/perf/util/trace-event-read.c   |  52 ++-
+> >  tools/perf/util/trace-event.h        |  15 -
+> >  11 files changed, 875 insertions(+), 73 deletions(-)
+> >  create mode 100644 tools/lib/traceevent/kbuffer-parse.c
+> >  create mode 100644 tools/lib/traceevent/kbuffer.h
