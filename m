@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752968Ab3GFKJY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 06:09:24 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:56706 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752870Ab3GFKJW convert rfc822-to-8bit (ORCPT
+	id S1752983Ab3GFKYM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 06:24:12 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:37971 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827Ab3GFKYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 06:09:22 -0400
+	Sat, 6 Jul 2013 06:24:10 -0400
+Message-ID: <51D7F044.9040205@kernel.org>
+Date: Sat, 06 Jul 2013 11:24:04 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-From: Hui Zhu <teawater@gmail.com>
-Date: Sat, 6 Jul 2013 18:08:42 +0800
-Message-ID: <CANFwon3mt2ZT9vpm7R-teYBkH0c+GDWZSq7TpFswbE+7=b6iFw@mail.gmail.com>
-Subject: KGTP (Linux debugger and tracer) 20130706 release (bugs fix and doc update)
-To: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>
-Cc: Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Geoff Levand <geoff@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Geunsik Lim <leemgs1@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Tao Ma <taoma.tm@gmail.com>,
-        Oliver Yang <yangoliver@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        jimwall@q.com, brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv3 1/3] iio: Add Nuvoton NAU7802 ADC driver
+References: <1372094699-3832-1-git-send-email-alexandre.belloni@free-electrons.com> <1372094699-3832-2-git-send-email-alexandre.belloni@free-electrons.com> <51D53B72.6020309@metafoo.de>
+In-Reply-To: <51D53B72.6020309@metafoo.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On 07/04/2013 10:08 AM, Lars-Peter Clausen wrote:
+> On 06/24/2013 07:24 PM, Alexandre Belloni wrote:
+>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
+>> gain and sampling rates.
+>>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> 
+> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
+Applied to the togreg branch of iio.git (with a few little tweaks).
 
-KGTP (http://code.google.com/p/kgtp/) is a flexible, lightweight and
-realtime Linux debugger and tracer.
-To use it, you don't need patch or rebuild the Linux kernel. Just
-build KGTP module and insmod it is OK.
-I will introduce KGTP in GNU Tools Cauldron 2013
-http://gcc.gnu.org/wiki/cauldron2013.
+There was some fuzz that required manual fixing because of another driver merge so
+please check I didn't foul anything up with this or the other bits below.
 
-Please go to http://code.google.com/p/kgtp/wiki/HOWTO or
-http://code.google.com/p/kgtp/wiki/HOWTO (Chinese) to get more info
-about howto use KGTP.
+There were two trivial missing unlocks on error paths in the read_raw function that
+I've fixed up (Coccinelle found these for me - if you can I would always advise
+running sparse, coccicheck and ideally smatch before submitting patches).
 
-Please goto https://code.google.com/p/kgtp/wiki/HOWTO#Table_of_different_between_GDB_debug_normal_program_and_KGTP
-or https://code.google.com/p/kgtp/wiki/HOWTOCN#GDB调试普通程序和KGTP的区别表
-(Chinese) get the table of different between GDB debug normal program
-and KGTP if you have experience using GDB debug normal program.
+I fixed up the comments because if there is one thing I hate bothering
+with it is delightful patches that just fix this stuff. Much better
+to do it now given it took 20 secs ;)
 
-Now, KGTP 20130706 release.
-You can get the package for it from
-http://kgtp.googlecode.com/files/kgtp_20130706.tar.bz2
-or
-svn co https://kgtp.googlecode.com/svn/tags/20130706
-
-The main change of this release is:
-Fix bug with functions return value.
-Fix dead lock with dynamic watch tracepoint.
-Add $watch_prev_val to show the previous value that watch tracepoint
-is watching on.
-Update doc add "Get the way that access the variable that has been out
-through parse ASM code".
-Please goto http://code.google.com/p/kgtp/wiki/UPDATE get more info
-about this release.
-
-According to the comments of Christoph, Geoff and Andi.  I make lite
-patch for review.  Please goto https://lkml.org/lkml/2012/5/9/90 to
-see it.
-
-Thanks,
-Hui
+> One remark though. Multiline comments should be like
+> 
+> /*
+>  * foo
+>  * bar
+>  */
+> 
+> not
+> 
+> /* foo
+>  * bar
+>  */
+> 
+> But not need to resend the patch just for this
+> 
+> - Lars
+> 
