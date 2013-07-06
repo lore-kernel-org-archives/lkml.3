@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab3GFLnN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 07:43:13 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:54226 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab3GFLnM (ORCPT
+	id S1753136Ab3GFLrP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 07:47:15 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:38567 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752943Ab3GFLrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 07:43:12 -0400
-Date: Sat, 6 Jul 2013 13:43:10 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
-        linux-mtd@lists.infradead.org
-Subject: Re: MTD EEPROM support and driver integration
-Message-ID: <20130706114310.GA2959@lukather>
-References: <20130705201118.GM2959@lukather>
- <201307060033.13259.arnd@arndb.de>
- <20130706082804.GZ2959@lukather>
- <5811519.oHVuMujf0I@wuerfel>
+	Sat, 6 Jul 2013 07:47:13 -0400
+Message-ID: <51D803BC.8000403@kernel.org>
+Date: Sat, 06 Jul 2013 12:47:08 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Eu9PQ+LfZADlAtIa"
-Content-Disposition: inline
-In-Reply-To: <5811519.oHVuMujf0I@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        jic23@cam.ac.uk
+Subject: Re: Issue with porting i2c driver to k3.10 (iio)
+References: <CAGH3droX_J9JJ60EP6d62Sh6MK6T5WvYTq+uwcmJkwb0c1Yurg@mail.gmail.com> <20130704161911.GC20907@kroah.com>
+In-Reply-To: <20130704161911.GC20907@kroah.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/04/2013 05:19 PM, Greg KH wrote:
+> On Thu, Jul 04, 2013 at 04:16:43PM +0300, Oleksandr Kravchenko wrote:
+>> Hi All,
+>>
+>> I wrote i2c driver for APDS-9300 light sensor in drivers/misc, but I have some
+>> questions regarding upstreaming of it.
+>> 1. It works properly in kernel-3.4, but it works very slow in kernel-3.10 (on
+>> mutex and i2c operations, particulary on mutex_lock() and i2c_smbus_read_data
+>> ()). Does anyone know why this issue may be occurred?
+> 
+> What is "slow"?  Have you run 'perf' on the driver to see where it is
+> spending time?
+> 
+>> 2. Can I send this driver without using Industrial I/O framework?
+> 
+> No, why would you even want to?
 
---Eu9PQ+LfZADlAtIa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Looks like a fairly standard light sensor so drivers/iio/light.
 
+Actually very close in design to some of the TAOS parts such as those supported
+by the tsl2563 driver if you want a reference driver to compare with.
 
---Eu9PQ+LfZADlAtIa
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR2ALOAAoJEBx+YmzsjxAgCpYP/iBqUpu/BmN6uGidlCas4t8v
-ktmXOko/RnNgqvNR1ktJS8A3xBblPHQZ7awholC+d59af6doKLWuW+ynQuil13wZ
-1E5brvgt/VWIQgLlmJi/PsuZTz1+JruJIbaKJcXM2DST++ISsm2ZFRvVwY+aqHy3
-d3mtD9vOiHAPlsu9gmrablYBHOPXCDWZe47P9kPj7vruamOu7mYyC4TuxytN10OM
-1pri8o/xdAUKtnQbk3JkB0xZ1hoaw5OHFUT/QM0H9b87BSpwuJ3ZwYsDdHHBQAmT
-z2ls9Gm19Nl6sW+5m5zHCg7LZH5pwgFrCjJq4t71RSPhoJpteCJWqsxNmfLPRy9E
-SNk1brIRdS26zHbXZ35dfOxZKhoxMXgiD1mWTulFgMaqdqLeigsjK61bHFzWoojh
-HpYKLYefUOD8sU7GVRvWZ3GCe2IIzx5Hhcjx943Y3+RgfQyg6X6/l9oVJW21Hsy1
-5zGqvgrsnL4r9jZXtX0fRYjEIoi3di0tta5nRMUsaWX/jxPgWXdDVBcO/ZsVhsOM
-HcMx+q7WQJ66raOeHtJCSsxGx0bv+5EC5J52HGIrP6p2+6wSxzKGMGkX7s9PuwEn
-jDqEMZyRxZC9beZRW0Z6kCO2vJVw2rBDu9FmwvxAL4ooMCHmRt/xWqN6RGWcmR2R
-+ReLVakMQKOraHk1Y1bD
-=oNUQ
------END PGP SIGNATURE-----
-
---Eu9PQ+LfZADlAtIa--
+Jonathan
