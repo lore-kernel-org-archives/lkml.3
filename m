@@ -1,56 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460Ab3GFRrH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 13:47:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33746 "EHLO
+	id S1752248Ab3GFR4y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 13:56:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33758 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab3GFRrE (ORCPT
+	with ESMTP id S1751058Ab3GFR4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 13:47:04 -0400
-Date: Sat, 6 Jul 2013 10:47:58 -0700
+	Sat, 6 Jul 2013 13:56:53 -0400
+Date: Sat, 6 Jul 2013 10:57:47 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: Guenter Roeck <linux@roeck-us.net>
 Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] driver core: Introduce device_create_groups
-Message-ID: <20130706174758.GA8122@kroah.com>
+Subject: Re: [RFC PATCH 3/5] hwmon: (ds1621) Convert to use
+ hwmon_device_register_groups
+Message-ID: <20130706175747.GA8658@kroah.com>
 References: <1373131495-13465-1-git-send-email-linux@roeck-us.net>
- <1373131495-13465-2-git-send-email-linux@roeck-us.net>
+ <1373131495-13465-4-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373131495-13465-2-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1373131495-13465-4-git-send-email-linux@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 06, 2013 at 10:24:51AM -0700, Guenter Roeck wrote:
-> device_create_groups lets callers create devices as well as associated
-> sysfs attributes with a single call. This avoids race conditions seen
-> if sysfs attributes on new devices are created later.
-> 
+On Sat, Jul 06, 2013 at 10:24:53AM -0700, Guenter Roeck wrote:
 > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 > ---
->  drivers/base/core.c    |   60 +++++++++++++++++++++++++++++++++++++++++++++---
->  include/linux/device.h |    4 ++++
->  2 files changed, 61 insertions(+), 3 deletions(-)
+>  drivers/hwmon/ds1621.c |   25 +++++++++----------------
+>  1 file changed, 9 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/hwmon/ds1621.c b/drivers/hwmon/ds1621.c
+> index a26ba7a..f1d0fa0 100644
+> --- a/drivers/hwmon/ds1621.c
+> +++ b/drivers/hwmon/ds1621.c
+> @@ -358,11 +358,15 @@ static const struct attribute_group ds1621_group = {
+>  	.is_visible = ds1621_attribute_visible
+>  };
+>  
+> +static const struct attribute_group *ds1621_groups[] = {
+> +	&ds1621_group,
+> +	NULL
+> +};
+> +
+>  static int ds1621_probe(struct i2c_client *client,
+>  			const struct i2c_device_id *id)
+>  {
+>  	struct ds1621_data *data;
+> -	int err;
+>  
+>  	data = devm_kzalloc(&client->dev, sizeof(struct ds1621_data),
+>  			    GFP_KERNEL);
+> @@ -377,22 +381,12 @@ static int ds1621_probe(struct i2c_client *client,
+>  	/* Initialize the DS1621 chip */
+>  	ds1621_init_client(client);
+>  
+> -	/* Register sysfs hooks */
+> -	err = sysfs_create_group(&client->dev.kobj, &ds1621_group);
+> -	if (err)
+> -		return err;
+> -
+> -	data->hwmon_dev = hwmon_device_register(&client->dev);
+> -	if (IS_ERR(data->hwmon_dev)) {
+> -		err = PTR_ERR(data->hwmon_dev);
+> -		goto exit_remove_files;
+> -	}
+> +	data->hwmon_dev = hwmon_device_register_groups(&client->dev, data,
+> +						       ds1621_groups);
+> +	if (IS_ERR(data->hwmon_dev))
+> +		return PTR_ERR(data->hwmon_dev);
+>  
+>  	return 0;
+> -
+> - exit_remove_files:
+> -	sysfs_remove_group(&client->dev.kobj, &ds1621_group);
+> -	return err;
 
-Ok, in reading the code, it makes more sense to me now.  That looks
-good, but the name is a bit rough.  How many device_create() calls do we
-have in the kernel today?
+Aren't your sysfs files now being created attached to a different device
+than they originally were?  Before this patch, they were being attached
+to the parent device of the hwmon device being created with the call to
+hwmon_device_register(), and now they are attached to the device created
+with that call.
 
-$ git grep -w device_create | wc -l
-127
+Is that what you really want?  Can userspace handle this movement of
+files?
 
-That's really not that many, I wonder how many of those should be using
-something like this as well?  A quick look showed that the sound core
-should be using this, but maybe not all that many others...
-
-My objection to the name is at first glance, it sounds like you are
-creating "groups", not a device + groups.
-"device_create_with_groups()"?
-
-Ick, naming is hard...
+thanks,
 
 greg k-h
