@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3GFTzN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 15:55:13 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:23901 "EHLO
+	id S1752840Ab3GFT4I (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 15:56:08 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:31034 "EHLO
 	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752182Ab3GFTzK (ORCPT
+	with ESMTP id S1751085Ab3GFT4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 15:55:10 -0400
-Date: Sat, 6 Jul 2013 21:54:58 +0200
+	Sat, 6 Jul 2013 15:56:06 -0400
+Date: Sat, 6 Jul 2013 21:55:26 +0200
 From: Jean Delvare <khali@linux-fr.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/5] hwmon: (ds1621) Convert to use 
- hwmon_device_register_groups
-Message-ID: <20130706215458.64753cd0@endymion.delvare>
-In-Reply-To: <20130706193142.GA9778@kroah.com>
-References: <1373131495-13465-1-git-send-email-linux@roeck-us.net>
-	<1373131495-13465-4-git-send-email-linux@roeck-us.net>
-	<20130706175747.GA8658@kroah.com>
-	<20130706200151.70b7ac3d@endymion.delvare>
-	<20130706191816.GA15066@roeck-us.net>
-	<20130706193142.GA9778@kroah.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
+        linux-mtd@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org
+Subject: Re: MTD EEPROM support and driver integration
+Message-ID: <20130706215526.7fc3e191@endymion.delvare>
+In-Reply-To: <8997501.Dchyii8uWX@wuerfel>
+References: <20130705201118.GM2959@lukather>
+	<5811519.oHVuMujf0I@wuerfel>
+	<20130706120112.GA11069@lukather>
+	<8997501.Dchyii8uWX@wuerfel>
 X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -30,23 +33,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 6 Jul 2013 12:31:42 -0700, Greg Kroah-Hartman wrote:
-> On Sat, Jul 06, 2013 at 12:18:16PM -0700, Guenter Roeck wrote:
-> > Yes, and I tested it with the new nct6775 driver to make sure that it works.
-> > The i2c and spi drivers need some more work, though - the name attribute is
-> > now missing and will have to be created for the hwmon device itself. If you have
-> > an idea how to do that without adding it in every driver, please let me know.
+On Sat, 06 Jul 2013 21:06:49 +0200, Arnd Bergmann wrote:
+> On Saturday 06 July 2013 14:01:12 Maxime Ripard wrote:
+> > So that leave us with mainly one path to achieve this goal:
+> >   - Add a regmap-mtd backend
+> >   - Add DT parsing code for regmap
+> >   - Move the EEPROM drivers from misc to mtd
 > 
-> Why do you need a name attribute at all?  Shouldn't that just be the
-> name of the device, or the parent?
+> Yes, I think that would be good. For the last step, we definitely need
+> buy-in from Wolfgand and Jean, as they are maintaining the current eeprom
+> drivers.
 
-libsensors expects the hwmon attributes and the name attribute at the
-same place.
-
-> Can you make the name be part of the groups always?
-
-Sounds good, but then we have to make the hwmon core handles it. So far
-each driver (or its bus type subsystem) was responsible for it.
+I am maintaining the legacy eeprom driver, which nobody should be using
+in conjunction with DT. So you don't need my approval for anything.
 
 -- 
 Jean Delvare
