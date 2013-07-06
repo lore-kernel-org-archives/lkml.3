@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858Ab3GFIHv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 04:07:51 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:56843 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab3GFIHs (ORCPT
+	id S1752872Ab3GFIKl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 04:10:41 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:49497 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667Ab3GFIKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 04:07:48 -0400
-Date: Sat, 6 Jul 2013 10:07:44 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: scheduling while atomic & hang.
-Message-ID: <20130706080744.GA1342@gmail.com>
-References: <20130704015525.GA8486@redhat.com>
- <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
- <51D5BA25.9060207@zytor.com>
- <20130705065113.GA6588@gmail.com>
- <CA+55aFx57XS4wYeEmukk8hMGxD4sVu0pz_BYppEeOdScJObXxw@mail.gmail.com>
- <20130706080225.GA439@somewhere>
+	Sat, 6 Jul 2013 04:10:37 -0400
+Message-ID: <51D7D003.2030001@linux.vnet.ibm.com>
+Date: Sat, 06 Jul 2013 13:36:27 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130706080225.GA439@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wang YanQing <udknight@gmail.com>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, npiggin@suse.de,
+        deepthi@linux.vnet.ibm.com, peterz@infradead.org,
+        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, rostedt@goodmis.org,
+        miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
+        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, shli@kernel.org, tglx@linutronix.de,
+        lig.fnst@cn.fujitsu.com, anton@samba.org
+Subject: Re: [PATCH 3/3] smp/ipi:Remove check around csd lock in handler for
+ smp_call_function variants
+References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com> <20130705162720.16888.81958.stgit@preeti.in.ibm.com> <20130706054552.GA2929@udknight>
+In-Reply-To: <20130706054552.GA2929@udknight>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070608-5564-0000-0000-000008AD656B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
-
-> On Fri, Jul 05, 2013 at 12:27:51PM -0700, Linus Torvalds wrote:
-> > On Thu, Jul 4, 2013 at 11:51 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> > >
-> > > It would be nice to have a full-kernel-stack backtrace printout as an
-> > > option, which prints entries 'above' the current RSP.
-> > 
-> > One problem with that is that it is likely to be mostly overwritten by 
-> > the debug code that is about to print this all out - and any non-debug 
-> > code may well be really old, just with a sufficiently deep stack trace 
-> > to show up. Not to mention missing any irq-stack changes etc anyway.
-> > 
-> > So it can easily be *very* misleading - I'm not sure how useful it 
-> > would be as an idea.
-> > 
-> >                 Linus
+On 07/06/2013 11:15 AM, Wang YanQing wrote:
+> On Fri, Jul 05, 2013 at 09:57:21PM +0530, Preeti U Murthy wrote:
+>> call_single_data is always locked by all callers of
+>> arch_send_call_function_single_ipi() or
+>> arch_send_call_function_ipi_mask() which results in execution of
+>> generic_call_function_interrupt() handler.
+>>
+>> Hence remove the check for lock on csd in generic_call_function_interrupt()
+>> handler, before unlocking it.
 > 
-> So if the unwider doesn't run with the same stak than the target, it 
-> migh work. This can work with BUG for example But I believe that WARN 
-> doesn't do a trap in x86.
+> I can't find where is the generic_call_function_interrupt :)
 
-Instead of switching stacks it might be better to create an early snapshot 
-of the stack into a temporary area before calling anything, and to print 
-that. This is debug code, so overhead is not a big issue.
+Sorry about this error :)
+> 
+>> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Cc: Ingo Molnar <mingo@elte.hu>
+>> Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+>> Cc: srivatsa.bhat@linux.vnet.ibm.com
+>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Rusty Russell <rusty@rustcorp.com.au
+>> ---
+>>
+>>  kernel/smp.c |   14 +-------------
+>>  1 file changed, 1 insertion(+), 13 deletions(-)
+>>
+>> diff --git a/kernel/smp.c b/kernel/smp.c
+>> index b6981ae..d37581a 100644
+>> --- a/kernel/smp.c
+>> +++ b/kernel/smp.c
+>> @@ -181,25 +181,13 @@ void generic_smp_call_function_single_interrupt(void)
+>>  
+>>  	while (!list_empty(&list)) {
+>>  		struct call_single_data *csd;
+>> -		unsigned int csd_flags;
+>>  
+>>  		csd = list_entry(list.next, struct call_single_data, list);
+>>  		list_del(&csd->list);
+>>  
+>> -		/*
+>> -		 * 'csd' can be invalid after this call if flags == 0
+>> -		 * (when called through generic_exec_single()),
+>> -		 * so save them away before making the call:
+>> -		 */
+>> -		csd_flags = csd->flags;
+>> -
+> 
+> You haven't mention this change in the ChangeLog, don't do it.
 
-But yeah, Linus is right, it gets hairy, can be misleading and has limited 
-utility :-/
+Right, I will include it in the changelog.
 
-Thanks,
+> I can't see any harm to remove csd_flags, but I hope others
+> check it again.
+> 
+>>  		csd->func(csd->info);
+>>  
+>> -		/*
+>> -		 * Unlocked CSDs are valid through generic_exec_single():
+>> -		 */
+>> -		if (csd_flags & CSD_FLAG_LOCK)
+>> -			csd_unlock(csd);
+>> +		csd_unlock(csd);
+> 
+> I don't like this change, I think check CSD_FLAG_LOCK 
+> to make sure we really need csd_unlock is good.
 
-	Ingo
+Ideally it should be under a WARN_ON(). csd_unlock() has that WARN_ON().
+Unlocking a parameter which is not locked should be seen as a bug, which
+the above code is not doing. In fact it avoids it being reported as a bug.
+
+> 
+> Just like you can't know who and how people will use the
+> API, so some robust check code is good.
+> 
+
+Regards
+Preeti U Murthy
+
