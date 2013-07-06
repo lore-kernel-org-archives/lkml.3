@@ -1,105 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab3GFFen (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 01:34:43 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:48823 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751657Ab3GFFem (ORCPT
+	id S1752573Ab3GFFmk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 01:42:40 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:53713 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab3GFFmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 01:34:42 -0400
-Message-ID: <51D7AB43.7010208@linux.vnet.ibm.com>
-Date: Sat, 06 Jul 2013 10:59:39 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, npiggin@suse.de,
-        deepthi@linux.vnet.ibm.com, peterz@infradead.org,
-        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, rostedt@goodmis.org,
-        miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
-        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, shli@kernel.org, tglx@linutronix.de,
-        lig.fnst@cn.fujitsu.com, anton@samba.org,
-        torvalds@linux-foundation.org, jbeulich@suse.com
-Subject: Re: [PATCH 1/3] smp/ipi: Remove redundant cfd->cpumask_ipi mask
-References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com> <20130705162701.16888.81171.stgit@preeti.in.ibm.com> <20130706031310.GA1941@udknight>
-In-Reply-To: <20130706031310.GA1941@udknight>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070605-9574-0000-0000-0000089AC7D8
+	Sat, 6 Jul 2013 01:42:39 -0400
+From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+To: eric.y.miao@gmail.com, linux@arm.linux.org.uk, haojian.zhuang@gmail.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Subject: [PATCH] ARM: pxa: remove IRQF_DISABLED
+Date: Sat,  6 Jul 2013 07:42:20 +0200
+Message-Id: <1373089340-20118-1-git-send-email-michael.opdenacker@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wang,
+This flag is a NOOP since 2.6.35 and can be removed.
 
-On 07/06/2013 08:43 AM, Wang YanQing wrote:
-> On Fri, Jul 05, 2013 at 09:57:01PM +0530, Preeti U Murthy wrote:
->> cfd->cpumask_ipi is used only in smp_call_function_many().The existing
->> comment around it says that this additional mask is used because
->> cfd->cpumask can get overwritten.
->>
->> There is no reason why the cfd->cpumask can be overwritten, since this
->> is a per_cpu mask; nobody can change it but us and we are
->> called with preemption disabled.
-> 
-> The ChangeLog for f44310b98ddb7f0d06550d73ed67df5865e3eda5
-> which import cfd->cpumask_ipi saied the reason why we need
-> it:
-> 
-> "    As explained by Linus as well:
->     
->      |
->      | Once we've done the "list_add_rcu()" to add it to the
->      | queue, we can have (another) IPI to the target CPU that can
->      | now see it and clear the mask.
->      |
->      | So by the time we get to actually send the IPI, the mask might
->      | have been cleared by another IPI.
+Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+---
+ arch/arm/mach-pxa/am200epd.c         | 3 +--
+ arch/arm/mach-pxa/am300epd.c         | 3 +--
+ arch/arm/mach-pxa/em-x270.c          | 3 +--
+ arch/arm/mach-pxa/magician.c         | 2 +-
+ arch/arm/mach-pxa/mainstone.c        | 2 +-
+ arch/arm/mach-pxa/pcm990-baseboard.c | 2 +-
+ arch/arm/mach-pxa/sharpsl_pm.c       | 8 ++++----
+ arch/arm/mach-pxa/time.c             | 2 +-
+ arch/arm/mach-pxa/trizeps4.c         | 3 +--
+ arch/arm/plat-pxa/dma.c              | 2 +-
+ 10 files changed, 13 insertions(+), 17 deletions(-)
 
-I am unable to understand where the cfd->cpumask of the source cpu is
-getting cleared. Surely not by itself, since it is preempt disabled.
-Also why should it get cleared?
-
-The idea behind clearing a source CPU's cfd->cpumask AFAICS, could be
-that the source cpu should not send an IPI to the target if the target
-has already received an IPI from another CPU. The reason being that the
-target would execute the already queued csds, hence would not need
-another IPI to see its queue.
-
-If the above is the intention of clearing the cfd->cpumask of the source
-cpu, why is the mechanism not consistent with what happens in
-generic_exec_single(), where in an ipi is decided to be sent if there
-are no previous queued csds on the target?
-
-Also why is it that in the wait condition under
-smp_call_function_many(), cfd->cpumask continues to be used and not
-cfd->cpumask_ipi ?
-
->      |
->     
->     This patch also fixes a system hang problem, if the data->cpumask
->     gets cleared after passing this point:
->     
->             if (WARN_ONCE(!mask, "empty IPI mask"))
->                     return;
->     
->     then the problem in commit 83d349f35e1a ("x86: don't send an IPI to
->     the empty set of CPU's") will happen again.
-> "
-> So this patch is wrong.
-> 
-> And you should cc linus and Jan Beulich who give acked-by tag to
-> the commit.
-> 
-> Thanks.
-> 
-
-Thank you
-
-Regards
-Preeti U Murthy
+diff --git a/arch/arm/mach-pxa/am200epd.c b/arch/arm/mach-pxa/am200epd.c
+index ffa6d81..12fb0f4 100644
+--- a/arch/arm/mach-pxa/am200epd.c
++++ b/arch/arm/mach-pxa/am200epd.c
+@@ -293,8 +293,7 @@ static int am200_setup_irq(struct fb_info *info)
+ 	int ret;
+ 
+ 	ret = request_irq(PXA_GPIO_TO_IRQ(RDY_GPIO_PIN), am200_handle_irq,
+-				IRQF_DISABLED|IRQF_TRIGGER_FALLING,
+-				"AM200", info->par);
++				IRQF_TRIGGER_FALLING, "AM200", info->par);
+ 	if (ret)
+ 		dev_err(&am200_device->dev, "request_irq failed: %d\n", ret);
+ 
+diff --git a/arch/arm/mach-pxa/am300epd.c b/arch/arm/mach-pxa/am300epd.c
+index 3dfec1e..c9f309a 100644
+--- a/arch/arm/mach-pxa/am300epd.c
++++ b/arch/arm/mach-pxa/am300epd.c
+@@ -241,8 +241,7 @@ static int am300_setup_irq(struct fb_info *info)
+ 	struct broadsheetfb_par *par = info->par;
+ 
+ 	ret = request_irq(PXA_GPIO_TO_IRQ(RDY_GPIO_PIN), am300_handle_irq,
+-				IRQF_DISABLED|IRQF_TRIGGER_RISING,
+-				"AM300", par);
++				IRQF_TRIGGER_RISING, "AM300", par);
+ 	if (ret)
+ 		dev_err(&am300_device->dev, "request_irq failed: %d\n", ret);
+ 
+diff --git a/arch/arm/mach-pxa/em-x270.c b/arch/arm/mach-pxa/em-x270.c
+index f6726bb..86936d9 100644
+--- a/arch/arm/mach-pxa/em-x270.c
++++ b/arch/arm/mach-pxa/em-x270.c
+@@ -556,8 +556,7 @@ static int em_x270_mci_init(struct device *dev,
+ 	}
+ 
+ 	err = request_irq(gpio_to_irq(mmc_cd), em_x270_detect_int,
+-			      IRQF_DISABLED | IRQF_TRIGGER_RISING |
+-			      IRQF_TRIGGER_FALLING,
++			      IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+ 			      "MMC card detect", data);
+ 	if (err) {
+ 		dev_err(dev, "can't request MMC card detect IRQ: %d\n", err);
+diff --git a/arch/arm/mach-pxa/magician.c b/arch/arm/mach-pxa/magician.c
+index f44532f..38f544d 100644
+--- a/arch/arm/mach-pxa/magician.c
++++ b/arch/arm/mach-pxa/magician.c
+@@ -633,7 +633,7 @@ static struct platform_device bq24022 = {
+ static int magician_mci_init(struct device *dev,
+ 				irq_handler_t detect_irq, void *data)
+ {
+-	return request_irq(IRQ_MAGICIAN_SD, detect_irq, IRQF_DISABLED,
++	return request_irq(IRQ_MAGICIAN_SD, detect_irq, 0,
+ 			   "mmc card detect", data);
+ }
+ 
+diff --git a/arch/arm/mach-pxa/mainstone.c b/arch/arm/mach-pxa/mainstone.c
+index d2c6523..1184efa 100644
+--- a/arch/arm/mach-pxa/mainstone.c
++++ b/arch/arm/mach-pxa/mainstone.c
+@@ -400,7 +400,7 @@ static int mainstone_mci_init(struct device *dev, irq_handler_t mstone_detect_in
+ 	 */
+ 	MST_MSCWR1 &= ~MST_MSCWR1_MS_SEL;
+ 
+-	err = request_irq(MAINSTONE_MMC_IRQ, mstone_detect_int, IRQF_DISABLED,
++	err = request_irq(MAINSTONE_MMC_IRQ, mstone_detect_int, 0,
+ 			     "MMC card detect", data);
+ 	if (err)
+ 		printk(KERN_ERR "mainstone_mci_init: MMC/SD: can't request MMC card detect IRQ\n");
+diff --git a/arch/arm/mach-pxa/pcm990-baseboard.c b/arch/arm/mach-pxa/pcm990-baseboard.c
+index fb7f1d1..33f058f 100644
+--- a/arch/arm/mach-pxa/pcm990-baseboard.c
++++ b/arch/arm/mach-pxa/pcm990-baseboard.c
+@@ -326,7 +326,7 @@ static int pcm990_mci_init(struct device *dev, irq_handler_t mci_detect_int,
+ {
+ 	int err;
+ 
+-	err = request_irq(PCM027_MMCDET_IRQ, mci_detect_int, IRQF_DISABLED,
++	err = request_irq(PCM027_MMCDET_IRQ, mci_detect_int,
+ 			     "MMC card detect", data);
+ 	if (err)
+ 		printk(KERN_ERR "pcm990_mci_init: MMC/SD: can't request MMC "
+diff --git a/arch/arm/mach-pxa/sharpsl_pm.c b/arch/arm/mach-pxa/sharpsl_pm.c
+index 0a36d35..051a655 100644
+--- a/arch/arm/mach-pxa/sharpsl_pm.c
++++ b/arch/arm/mach-pxa/sharpsl_pm.c
+@@ -860,18 +860,18 @@ static int sharpsl_pm_probe(struct platform_device *pdev)
+ 
+ 	/* Register interrupt handlers */
+ 	irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_acin);
+-	if (request_irq(irq, sharpsl_ac_isr, IRQF_DISABLED | IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, "AC Input Detect", sharpsl_ac_isr)) {
++	if (request_irq(irq, sharpsl_ac_isr, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, "AC Input Detect", sharpsl_ac_isr)) {
+ 		dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
+ 	}
+ 
+ 	irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_batlock);
+-	if (request_irq(irq, sharpsl_fatal_isr, IRQF_DISABLED | IRQF_TRIGGER_FALLING, "Battery Cover", sharpsl_fatal_isr)) {
++	if (request_irq(irq, sharpsl_fatal_isr, IRQF_TRIGGER_FALLING, "Battery Cover", sharpsl_fatal_isr)) {
+ 		dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
+ 	}
+ 
+ 	if (sharpsl_pm.machinfo->gpio_fatal) {
+ 		irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_fatal);
+-		if (request_irq(irq, sharpsl_fatal_isr, IRQF_DISABLED | IRQF_TRIGGER_FALLING, "Fatal Battery", sharpsl_fatal_isr)) {
++		if (request_irq(irq, sharpsl_fatal_isr, IRQF_TRIGGER_FALLING, "Fatal Battery", sharpsl_fatal_isr)) {
+ 			dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
+ 		}
+ 	}
+@@ -879,7 +879,7 @@ static int sharpsl_pm_probe(struct platform_device *pdev)
+ 	if (sharpsl_pm.machinfo->batfull_irq) {
+ 		/* Register interrupt handler. */
+ 		irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_batfull);
+-		if (request_irq(irq, sharpsl_chrg_full_isr, IRQF_DISABLED | IRQF_TRIGGER_RISING, "CO", sharpsl_chrg_full_isr)) {
++		if (request_irq(irq, sharpsl_chrg_full_isr, IRQF_TRIGGER_RISING, "CO", sharpsl_chrg_full_isr)) {
+ 			dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
+ 		}
+ 	}
+diff --git a/arch/arm/mach-pxa/time.c b/arch/arm/mach-pxa/time.c
+index 8f1ee92..e48fc61 100644
+--- a/arch/arm/mach-pxa/time.c
++++ b/arch/arm/mach-pxa/time.c
+@@ -137,7 +137,7 @@ static struct clock_event_device ckevt_pxa_osmr0 = {
+ 
+ static struct irqaction pxa_ost0_irq = {
+ 	.name		= "ost0",
+-	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
++	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
+ 	.handler	= pxa_ost0_interrupt,
+ 	.dev_id		= &ckevt_pxa_osmr0,
+ };
+diff --git a/arch/arm/mach-pxa/trizeps4.c b/arch/arm/mach-pxa/trizeps4.c
+index c580434..872dcb2 100644
+--- a/arch/arm/mach-pxa/trizeps4.c
++++ b/arch/arm/mach-pxa/trizeps4.c
+@@ -332,8 +332,7 @@ static int trizeps4_mci_init(struct device *dev, irq_handler_t mci_detect_int,
+ 	int err;
+ 
+ 	err = request_irq(TRIZEPS4_MMC_IRQ, mci_detect_int,
+-			  IRQF_DISABLED | IRQF_TRIGGER_RISING,
+-			  "MMC card detect", data);
++			  IRQF_TRIGGER_RISING, "MMC card detect", data);
+ 	if (err) {
+ 		printk(KERN_ERR "trizeps4_mci_init: MMC/SD: can't request"
+ 						"MMC card detect IRQ\n");
+diff --git a/arch/arm/plat-pxa/dma.c b/arch/arm/plat-pxa/dma.c
+index 79ef102..054fc5a 100644
+--- a/arch/arm/plat-pxa/dma.c
++++ b/arch/arm/plat-pxa/dma.c
+@@ -377,7 +377,7 @@ int __init pxa_init_dma(int irq, int num_ch)
+ 		spin_lock_init(&dma_channels[i].lock);
+ 	}
+ 
+-	ret = request_irq(irq, dma_irq_handler, IRQF_DISABLED, "DMA", NULL);
++	ret = request_irq(irq, dma_irq_handler, 0, "DMA", NULL);
+ 	if (ret) {
+ 		printk (KERN_CRIT "Wow!  Can't register IRQ for DMA\n");
+ 		kfree(dma_channels);
+-- 
+1.8.1.2
 
