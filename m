@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab3GFKlt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 06:41:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40645 "EHLO
+	id S1753092Ab3GFKp2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 06:45:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40679 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872Ab3GFKls (ORCPT
+	with ESMTP id S1752905Ab3GFKp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 06:41:48 -0400
-Date: Sat, 6 Jul 2013 12:41:07 +0200
+	Sat, 6 Jul 2013 06:45:27 -0400
+Date: Sat, 6 Jul 2013 12:44:46 +0200
 From: Peter Zijlstra <peterz@infradead.org>
 To: Mel Gorman <mgorman@suse.de>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
@@ -16,7 +16,7 @@ Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH 13/15] sched: Set preferred NUMA node based on number of
  private faults
-Message-ID: <20130706104107.GR18898@dyad.programming.kicks-ass.net>
+Message-ID: <20130706104446.GS18898@dyad.programming.kicks-ass.net>
 References: <1373065742-9753-1-git-send-email-mgorman@suse.de>
  <1373065742-9753-14-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
@@ -29,25 +29,12 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sat, Jul 06, 2013 at 12:09:00AM +0100, Mel Gorman wrote:
-> +++ b/include/linux/mm.h
-> @@ -582,11 +582,11 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
->   * sets it, so none of the operations on it need to be atomic.
->   */
->  
-> -/* Page flags: | [SECTION] | [NODE] | ZONE | [LAST_NID] | ... | FLAGS | */
-> +/* Page flags: | [SECTION] | [NODE] | ZONE | [LAST_NIDPID] | ... | FLAGS | */
->  #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
->  #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
->  #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
-> -#define LAST_NID_PGOFF		(ZONES_PGOFF - LAST_NID_WIDTH)
-> +#define LAST_NIDPID_PGOFF	(ZONES_PGOFF - LAST_NIDPID_WIDTH)
+> The third reason is that multiple threads in a process will race each
+> other to fault the shared page making the fault information unreliable.
 
-I saw the same with Ingo's patch doing the similar thing. But why do we fuse
-these two into a single field? Would it not make more sense to have them be
-separate fields?
+Ingo and I played around with that particular issue for a while and we had a
+patch that worked fairly well for cpu bound threads and made sure the
+task_numa_work() thing indeed interleaved between the threads and wasn't done
+by the same thread every time.
 
-Yes I get we update and read them together, and we could still do that with
-appropriate helper function, but they are two independent values stored in the
-page flags.
-
-Its not something I care too much about, just something that strikes me as weird.
+I don't know what the current code does and if that is indeed still an issue.
