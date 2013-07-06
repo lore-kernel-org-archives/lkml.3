@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667Ab3GFGEx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 02:04:53 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:40758 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab3GFGEv (ORCPT
+	id S1752709Ab3GFGNK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 02:13:10 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:47627 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752046Ab3GFGNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 02:04:51 -0400
-Date: Sat, 6 Jul 2013 14:03:17 +0800
+	Sat, 6 Jul 2013 02:13:08 -0400
+Date: Sat, 6 Jul 2013 14:12:05 +0800
 From: Wang YanQing <udknight@gmail.com>
 To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Cc: xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, paulmck@linux.vnet.ibm.com,
@@ -17,10 +17,10 @@ Cc: xiaoguangrong@cn.fujitsu.com, mingo@elte.hu, paulmck@linux.vnet.ibm.com,
         miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
         jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
         svaidy@linux.vnet.ibm.com, shli@kernel.org, tglx@linutronix.de,
-        lig.fnst@cn.fujitsu.com, anton@samba.org,
-        torvalds@linux-foundation.org, jbeulich@suse.com
-Subject: Re: [PATCH 1/3] smp/ipi: Remove redundant cfd->cpumask_ipi mask
-Message-ID: <20130706060317.GA3382@udknight>
+        lig.fnst@cn.fujitsu.com, anton@samba.org
+Subject: Re: [PATCH 2/3] smp/ipi:Clarify ambiguous comments around deadlock
+ scenarios in smp_call_function variants.
+Message-ID: <20130706061205.GA3518@udknight>
 Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
 	Preeti U Murthy <preeti@linux.vnet.ibm.com>,
 	xiaoguangrong@cn.fujitsu.com, mingo@elte.hu,
@@ -31,76 +31,74 @@ Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
 	srivatsa.bhat@linux.vnet.ibm.com, jens.axboe@oracle.com,
 	tj@kernel.org, akpm@linux-foundation.org, svaidy@linux.vnet.ibm.com,
 	shli@kernel.org, tglx@linutronix.de, lig.fnst@cn.fujitsu.com,
-	anton@samba.org, torvalds@linux-foundation.org, jbeulich@suse.com
+	anton@samba.org
 References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com>
- <20130705162701.16888.81171.stgit@preeti.in.ibm.com>
- <20130706031310.GA1941@udknight>
- <51D7AB43.7010208@linux.vnet.ibm.com>
+ <20130705162711.16888.30274.stgit@preeti.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51D7AB43.7010208@linux.vnet.ibm.com>
+In-Reply-To: <20130705162711.16888.30274.stgit@preeti.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 06, 2013 at 10:59:39AM +0530, Preeti U Murthy wrote:
-> Hi Wang,
+On Fri, Jul 05, 2013 at 09:57:11PM +0530, Preeti U Murthy wrote:
+> Elaborate on when deadlocks can occur when a call is made to
+> smp_call_function_single() and its friends. This avoids ambiguity about
+> when to use these calls.
 > 
-> On 07/06/2013 08:43 AM, Wang YanQing wrote:
-> > On Fri, Jul 05, 2013 at 09:57:01PM +0530, Preeti U Murthy wrote:
-> >> cfd->cpumask_ipi is used only in smp_call_function_many().The existing
-> >> comment around it says that this additional mask is used because
-> >> cfd->cpumask can get overwritten.
-> >>
-> >> There is no reason why the cfd->cpumask can be overwritten, since this
-> >> is a per_cpu mask; nobody can change it but us and we are
-> >> called with preemption disabled.
-> > 
-> > The ChangeLog for f44310b98ddb7f0d06550d73ed67df5865e3eda5
-> > which import cfd->cpumask_ipi saied the reason why we need
-> > it:
-> > 
-> > "    As explained by Linus as well:
-> >     
-> >      |
-> >      | Once we've done the "list_add_rcu()" to add it to the
-> >      | queue, we can have (another) IPI to the target CPU that can
-> >      | now see it and clear the mask.
-> >      |
-> >      | So by the time we get to actually send the IPI, the mask might
-> >      | have been cleared by another IPI.
+> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> Cc: srivatsa.bhat@linux.vnet.ibm.com
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au
+> ---
 > 
-> I am unable to understand where the cfd->cpumask of the source cpu is
-> getting cleared. Surely not by itself, since it is preempt disabled.
-> Also why should it get cleared?
+>  kernel/smp.c |   46 ++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 44 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 89be6e6..b6981ae 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -230,7 +230,23 @@ int smp_call_function_single(int cpu, smp_call_func_t func, void *info,
+>  	this_cpu = get_cpu();
+>  
+>  	/*
+> -	 * Can deadlock when called with interrupts disabled.
+> +	 * Can deadlock when called with interrupts disabled under two
+> +	 * different circumstances depending on the wait parameter.
+> +	 *
+> +	 * 1. wait = 1: Two CPUs execute smp_call_function_single(), send an
+> +	 * IPI to each other, and wait for func to finish on each other.
+> +	 * Since they are interrupt disabled, neither receives this IPI,
+> +	 * nor do they proceed forward,as they wait for each other to complete
+> +	 * execution of func.
+> +	 *
 
-Assume we have three CPUs: A,B,C
+Yes, we should avoid this situation, but I am not sure whether this is 
+the meaning of "deadlock" in the original comment.
 
-A call smp_call_function_many to notify C do something,
-and current it execute on finished below codes:
+> +	 * 2. wait = 0: This function could be called from an interrupt
+> +	 * context, and can get blocked on the csd_lock(csd) below in
+> +	 * "non wait cases".
+> +	 * This is because the percpu copy of csd of this_cpu is used
+> +	 * in non wait cases. Under such circumstances, if the previous caller
+> +	 * of this function who got preempted by this interrupt has already taken
+> +	 * the lock under non wait condition, it will result in deadlock.
+> +	 *
 
-"for_each_cpu(cpu, cfd->cpumask) {
-                struct call_single_data *csd = per_cpu_ptr(cfd->csd, cpu);
-                struct call_single_queue *dst =
-                                        &per_cpu(call_single_queue, cpu);
-                unsigned long flags;
+No, it will not cause deadlock, it is not mutex lock,  it is busy wait, so
+when the CSD_FLAG_LOCK be cleared, the code will go on running.
 
-                csd_lock(csd);
-                csd->func = func;
-                csd->info = info;
+After stare into the kernel/smp.c, I can't catch what the exactly meaning
+of the "DeadLock" in the original comment also.
 
-                raw_spin_lock_irqsave(&dst->lock, flags);
-                list_add_tail(&csd->list, &dst->list);
-                raw_spin_unlock_irqrestore(&dst->lock, flags);
-        }
-"
-You see "list_add_tail(&csd->list, &dst->list);", it pass the address of csd,
-and A stop before call arch_send_call_function_ipi_mask due interrupt.
-
-At this time B send ipi to C also, then C will see the csd passed by A,
-then C will clear itself in the cfd->cpumask.
+I hope someone can clarify it.
 
 Thanks.
 
