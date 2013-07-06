@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab3GFKu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 06:50:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40779 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab3GFKu5 (ORCPT
+	id S1753142Ab3GFKy5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 06:54:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:56202 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab3GFKy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 06:50:57 -0400
-Date: Sat, 6 Jul 2013 12:50:10 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Alex Shi <alex.shi@intel.com>,
-        hpa@linux.intel.com, tim.c.chen@linux.intel.com,
-        linux-kernel@vger.kernel.org, andi.kleen@intel.com, mingo@elte.hu
-Subject: Re: [URGENT rfc patch 0/3] tsc clocksource bug fix
-Message-ID: <20130706105010.GV18898@dyad.programming.kicks-ass.net>
-References: <1372916056-24301-1-git-send-email-alex.shi@intel.com>
- <20130704075840.GH18898@dyad.programming.kicks-ass.net>
- <CAFTL4hy24+=2++CN5rBhn9v+pvxR+tTja9Z-wRLSS__LGQBWaQ@mail.gmail.com>
- <20130705143833.GT23916@twins.programming.kicks-ass.net>
- <alpine.DEB.2.02.1307051718430.32106@ionos.tec.linutronix.de>
- <20130705212235.GU23916@twins.programming.kicks-ass.net>
- <alpine.DEB.2.02.1307052345330.32106@ionos.tec.linutronix.de>
+	Sat, 6 Jul 2013 06:54:56 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Oliver Schinagl <oliver+list@schinagl.nl>, linux-kernel@vger.kernel.org
+Subject: Re: [linux-sunxi] Re: [PATCHv4 08/10] clocksource: sun4i: Remove TIMER_SCAL variable
+Date: Sat, 06 Jul 2013 12:56:56 +0200
+Message-ID: <13255064.lFze3iqNa0@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <51D7E083.1090109@schinagl.nl>
+References: <1373062725-19625-1-git-send-email-maxime.ripard@free-electrons.com> <20130706081045.GY2959@lukather> <51D7E083.1090109@schinagl.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307052345330.32106@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:qmYbadDKDZWn1TComGPTQKRq+cgX5dyw2ZdipP+KmaQ
+ q5wseHZDgWCTwrPotTWLs7+xZrGhQTAib8x9CerehuXIEdHI5V
+ vc7x0v33J4P0i9rY+rVpgTH2Z6EqxBy0sn3T2U3kQsD0Mq25pJ
+ edI8RKhXexPJTCL4AEMF03yJqAyLsN4pIdIZsmvskOa+HdkNg9
+ UGxWL1uaiZJHY/GrL04cJ4X6ZzQmGJeV/Ta4Lnd8sidUaMBkyn
+ +la655Ggi9lfKG+fP5aBXCvXHZGisehwFeaTLtU9vrZ60a9yq0
+ M/T3/I75iHYLZWw9qe1ZPi4Y0ClTxRRhQIEHLPFSN3bcpjNX70
+ 87Q1fawjeb4yakT7aUR8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 11:50:05PM +0200, Thomas Gleixner wrote:
-> On Fri, 5 Jul 2013, Peter Zijlstra wrote:
-> > On Fri, Jul 05, 2013 at 05:24:09PM +0200, Thomas Gleixner wrote:
-> > > See arch/x86/kernel/tsc.c
-> > > 
-> > > We disable the watchdog for the TSC when tsc_clocksource_reliable is
-> > > set.
-> > > 
-> > > tsc_clocksource_reliable is set when:
-> > > 
-> > >  - you add tsc=reliable to the kernel command line
-> > 
-> > Ah, I didn't know about that one, useful.
-> > 
-> > >  - boot_cpu_has(X86_FEATURE_TSC_RELIABLE)
-> > >  
-> > >    X86_FEATURE_TSC_RELIABLE is a software flag, set by vmware and
-> > >    moorsetown. So all other machines keep the watchdog enabled.
-> > 
-> > Right.. I knew it was enabled on my machines even though they normally
-> > have usable TSC.
-> 
-> Yeah, but our well justified paranoia still prevents us from trusting
-> these CPU flags. Maybe some day BIOS is going to be replaced by
-> something useful. You know: Hope springs eternal....
+On Saturday 06 July 2013 11:16:51 Oliver Schinagl wrote:
+> On 06-07-13 10:10, Maxime Ripard wrote:
+> >
+> > I'll send a v5. Do you have any additionnal comments on those patches to
+> > avoid wasting more electrons?
+>
+> Pff, we all know Maxime's electrons are free
 
-Oh quite agreed. Its just that at several times I've wanted to disable the
-thing. Now I know you can do using the kernel cmdline. Previously I had to
-wreck code -- not that much harder really :-)
+Only free as in Drude-Sommerfeld, not free as in beer.
+
+	Arnd
