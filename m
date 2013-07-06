@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab3GFHvO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 03:51:14 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47701 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab3GFHvN (ORCPT
+	id S1752840Ab3GFICi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 04:02:38 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:38203 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab3GFICf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 03:51:13 -0400
-Message-ID: <51D7CBD7.2060902@linux.vnet.ibm.com>
-Date: Sat, 06 Jul 2013 13:18:39 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Sat, 6 Jul 2013 04:02:35 -0400
+Date: Sat, 6 Jul 2013 10:02:27 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: scheduling while atomic & hang.
+Message-ID: <20130706080225.GA439@somewhere>
+References: <20130704015525.GA8486@redhat.com>
+ <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
+ <51D5BA25.9060207@zytor.com>
+ <20130705065113.GA6588@gmail.com>
+ <CA+55aFx57XS4wYeEmukk8hMGxD4sVu0pz_BYppEeOdScJObXxw@mail.gmail.com>
 MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, npiggin@suse.de,
-        deepthi@linux.vnet.ibm.com, peterz@infradead.org,
-        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, rostedt@goodmis.org,
-        miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
-        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, shli@kernel.org, tglx@linutronix.de,
-        lig.fnst@cn.fujitsu.com, anton@samba.org
-Subject: Re: [PATCH 2/3] smp/ipi:Clarify ambiguous comments around deadlock
- scenarios in smp_call_function variants.
-References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com> <20130705162711.16888.30274.stgit@preeti.in.ibm.com> <20130706061205.GA3518@udknight>
-In-Reply-To: <20130706061205.GA3518@udknight>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070607-6102-0000-0000-000003D08AE7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx57XS4wYeEmukk8hMGxD4sVu0pz_BYppEeOdScJObXxw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wang,
-
-On 07/06/2013 11:42 AM, Wang YanQing wrote:
-> On Fri, Jul 05, 2013 at 09:57:11PM +0530, Preeti U Murthy wrote:
->> Elaborate on when deadlocks can occur when a call is made to
->> smp_call_function_single() and its friends. This avoids ambiguity about
->> when to use these calls.
->>
->> +	 * 2. wait = 0: This function could be called from an interrupt
->> +	 * context, and can get blocked on the csd_lock(csd) below in
->> +	 * "non wait cases".
->> +	 * This is because the percpu copy of csd of this_cpu is used
->> +	 * in non wait cases. Under such circumstances, if the previous caller
->> +	 * of this function who got preempted by this interrupt has already taken
->> +	 * the lock under non wait condition, it will result in deadlock.
->> +	 *
+On Fri, Jul 05, 2013 at 12:27:51PM -0700, Linus Torvalds wrote:
+> On Thu, Jul 4, 2013 at 11:51 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > It would be nice to have a full-kernel-stack backtrace printout as an
+> > option, which prints entries 'above' the current RSP.
 > 
-> No, it will not cause deadlock, it is not mutex lock,  it is busy wait, so
-> when the CSD_FLAG_LOCK be cleared, the code will go on running.
-
-A deadlock might not result, but a potential long wait in an interrupt
-context could result if the source cpu got preempted by an interrupt
-between  csd_lock(csd) and generic_exec_single(), where it actually
-sends an ipi to the target cpu.
-
-Under such a scenario, if no other cpu has sent a smp_call_function ipi
-to it, it will not check its queue till such an ipi is sent, as a result
-of which the target will not release the csd on which the source cpu is
-waiting.
-
-Hence, on the source cpu,the interrupt handler will have to wait till
-then. It would be good therefore to issue a warning under this circumstance.
-Maybe we can modify the changelog to reflect this scenario.
-
+> One problem with that is that it is likely to be mostly overwritten by
+> the debug code that is about to print this all out - and any non-debug
+> code may well be really old, just with a sufficiently deep stack trace
+> to show up. Not to mention missing any irq-stack changes etc anyway.
 > 
-> After stare into the kernel/smp.c, I can't catch what the exactly meaning
-> of the "DeadLock" in the original comment also.
+> So it can easily be *very* misleading - I'm not sure how useful it
+> would be as an idea.
 > 
-> I hope someone can clarify it.
-> 
-> Thanks.
-> 
+>                 Linus
 
-Regards
-Preeti U Murthy
-
+So if the unwider doesn't run with the same stak than the target,
+it migh work. This can work with BUG for example But I believe that WARN
+doesn't do a trap in x86.
