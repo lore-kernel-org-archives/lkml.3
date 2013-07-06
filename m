@@ -1,66 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab3GFWOQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 18:14:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13093 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750703Ab3GFWOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 18:14:14 -0400
-Date: Sat, 6 Jul 2013 18:14:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: gregkh@linuxfoundation.org, tiwai@suse.de
-Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
-Message-ID: <20130706221401.GA3652@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	gregkh@linuxfoundation.org, tiwai@suse.de
-References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752827Ab3GFWRr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 18:17:47 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:48291 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab3GFWRo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Jul 2013 18:17:44 -0400
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: lf-virt <virtualization@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Asias He <asias@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jens Axboe <axboe@kernel.dk>, Tejun Heo <tj@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH-v2 2/3] vhost/scsi: Convert to per-cpu ida_alloc + ida_free command map
+Date: Sat,  6 Jul 2013 22:03:22 +0000
+Message-Id: <1373148203-7150-3-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1373148203-7150-1-git-send-email-nab@linux-iscsi.org>
+References: <1373148203-7150-1-git-send-email-nab@linux-iscsi.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 07:27:49PM +0000, Linux Kernel wrote:
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=d05c39ea67f5786a549ac9d672d2951992b658c6
- > Commit:     d05c39ea67f5786a549ac9d672d2951992b658c6
- > Parent:     a3b2c8c7aa1ca860edcf0b0afa371d9eb2269c3c
- > Author:     Takashi Iwai <tiwai@suse.de>
- > AuthorDate: Wed May 22 18:28:37 2013 +0200
- > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- > CommitDate: Mon Jun 3 13:57:29 2013 -0700
- > 
- >     dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
- >     
- >     The usermode helper is mandatory for this driver.
- >     
- >     Signed-off-by: Takashi Iwai <tiwai@suse.de>
- >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- > ---
- >  drivers/firmware/Kconfig |    1 +
- >  1 files changed, 1 insertions(+), 0 deletions(-)
- > 
- > diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
- > index 9387630..0747872 100644
- > --- a/drivers/firmware/Kconfig
- > +++ b/drivers/firmware/Kconfig
- > @@ -64,6 +64,7 @@ config DELL_RBU
- >  	tristate "BIOS update support for DELL systems via sysfs"
- >  	depends on X86
- >  	select FW_LOADER
- > +	select FW_LOADER_USER_HELPER
- >  	help
- >  	 Say m if you want to have the option of updating the BIOS for your
- >  	 DELL system. Note you need a Dell OpenManage or Dell Update package (DUP)
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
+This patch changes vhost/scsi to use transport_init_session_tags()
+pre-allocation logic for per-cpu session tag pooling with internal
+ida_alloc() + ida_free() calls based upon the saved se_cmd->map_tag id.
 
-This is pretty crappy. Now every distro kernel has to have that enabled,
-which screws up for eg, the x86 microcode driver. (It takes 1 minute per cpu
-when this is enabled).
+FIXME: Make transport_init_session_tags() number of tags setup
+configurable per vring client setting via configfs
 
-	Dave
+v3: Update to percpu-ida usage
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Asias He <asias@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+---
+ drivers/vhost/scsi.c |   33 +++++++++++++++++++++------------
+ 1 files changed, 21 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/vhost/scsi.c b/drivers/vhost/scsi.c
+index 1e5e820..6224434 100644
+--- a/drivers/vhost/scsi.c
++++ b/drivers/vhost/scsi.c
+@@ -48,6 +48,7 @@
+ #include <linux/virtio_scsi.h>
+ #include <linux/llist.h>
+ #include <linux/bitmap.h>
++#include <linux/idr.h>
+ 
+ #include "vhost.c"
+ #include "vhost.h"
+@@ -55,6 +56,7 @@
+ #define TCM_VHOST_VERSION  "v0.1"
+ #define TCM_VHOST_NAMELEN 256
+ #define TCM_VHOST_MAX_CDB_SIZE 32
++#define TCM_VHOST_DEFAULT_TAGS 256
+ 
+ struct vhost_scsi_inflight {
+ 	/* Wait for the flush operation to finish */
+@@ -448,6 +450,7 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
+ {
+ 	struct tcm_vhost_cmd *tv_cmd = container_of(se_cmd,
+ 				struct tcm_vhost_cmd, tvc_se_cmd);
++	struct se_session *se_sess = se_cmd->se_sess;
+ 
+ 	if (tv_cmd->tvc_sgl_count) {
+ 		u32 i;
+@@ -458,7 +461,7 @@ static void tcm_vhost_release_cmd(struct se_cmd *se_cmd)
+         }
+ 
+ 	tcm_vhost_put_inflight(tv_cmd->inflight);
+-	kfree(tv_cmd);
++	percpu_ida_free(&se_sess->sess_tag_pool, se_cmd->map_tag);
+ }
+ 
+ static int tcm_vhost_shutdown_session(struct se_session *se_sess)
+@@ -700,7 +703,7 @@ static void vhost_scsi_complete_cmd_work(struct vhost_work *work)
+ 		vhost_signal(&vs->dev, &vs->vqs[vq].vq);
+ }
+ 
+-static struct tcm_vhost_cmd *vhost_scsi_allocate_cmd(
++static struct tcm_vhost_cmd *vhost_scsi_get_tag(
+ 	struct vhost_virtqueue *vq,
+ 	struct tcm_vhost_tpg *tv_tpg,
+ 	struct virtio_scsi_cmd_req *v_req,
+@@ -709,18 +712,21 @@ static struct tcm_vhost_cmd *vhost_scsi_allocate_cmd(
+ {
+ 	struct tcm_vhost_cmd *tv_cmd;
+ 	struct tcm_vhost_nexus *tv_nexus;
++	struct se_session *se_sess;
++	int tag;
+ 
+ 	tv_nexus = tv_tpg->tpg_nexus;
+ 	if (!tv_nexus) {
+ 		pr_err("Unable to locate active struct tcm_vhost_nexus\n");
+ 		return ERR_PTR(-EIO);
+ 	}
++	se_sess = tv_nexus->tvn_se_sess;
+ 
+-	tv_cmd = kzalloc(sizeof(struct tcm_vhost_cmd), GFP_ATOMIC);
+-	if (!tv_cmd) {
+-		pr_err("Unable to allocate struct tcm_vhost_cmd\n");
+-		return ERR_PTR(-ENOMEM);
+-	}
++	tag = percpu_ida_alloc(&se_sess->sess_tag_pool, GFP_KERNEL);
++	tv_cmd = &((struct tcm_vhost_cmd *)se_sess->sess_cmd_map)[tag];
++	memset(tv_cmd, 0, sizeof(struct tcm_vhost_cmd));
++
++	tv_cmd->tvc_se_cmd.map_tag = tag;
+ 	tv_cmd->tvc_tag = v_req->tag;
+ 	tv_cmd->tvc_task_attr = v_req->task_attr;
+ 	tv_cmd->tvc_exp_data_len = exp_data_len;
+@@ -982,10 +988,10 @@ static void vhost_scsi_handle_vq(struct vhost_scsi *vs,
+ 		for (i = 0; i < data_num; i++)
+ 			exp_data_len += vq->iov[data_first + i].iov_len;
+ 
+-		tv_cmd = vhost_scsi_allocate_cmd(vq, tv_tpg, &v_req,
+-					exp_data_len, data_direction);
++		tv_cmd = vhost_scsi_get_tag(vq, tv_tpg, &v_req,
++					    exp_data_len, data_direction);
+ 		if (IS_ERR(tv_cmd)) {
+-			vq_err(vq, "vhost_scsi_allocate_cmd failed %ld\n",
++			vq_err(vq, "vhost_scsi_get_tag failed %ld\n",
+ 					PTR_ERR(tv_cmd));
+ 			goto err_cmd;
+ 		}
+@@ -1662,9 +1668,12 @@ static int tcm_vhost_make_nexus(struct tcm_vhost_tpg *tv_tpg,
+ 		return -ENOMEM;
+ 	}
+ 	/*
+-	 *  Initialize the struct se_session pointer
++	 *  Initialize the struct se_session pointer and setup tagpool
++	 *  for struct tcm_vhost_cmd descriptors
+ 	 */
+-	tv_nexus->tvn_se_sess = transport_init_session();
++	tv_nexus->tvn_se_sess = transport_init_session_tags(
++						TCM_VHOST_DEFAULT_TAGS,
++						sizeof(struct tcm_vhost_cmd));
+ 	if (IS_ERR(tv_nexus->tvn_se_sess)) {
+ 		mutex_unlock(&tv_tpg->tv_tpg_mutex);
+ 		kfree(tv_nexus);
+-- 
+1.7.2.5
 
