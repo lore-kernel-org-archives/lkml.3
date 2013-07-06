@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740Ab3GFGk3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 02:40:29 -0400
-Received: from pan-hq.tensilica.com ([65.119.96.30]:39314 "EHLO
-	mailgw.tensilica.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751900Ab3GFGkV convert rfc822-to-8bit (ORCPT
+	id S1752762Ab3GFGoT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 02:44:19 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:53257 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339Ab3GFGoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 02:40:21 -0400
-X-Greylist: delayed 1909 seconds by postgrey-1.27 at vger.kernel.org; Sat, 06 Jul 2013 02:40:21 EDT
-From: Marc Gauthier <Marc.Gauthier@tensilica.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Date: Fri, 5 Jul 2013 23:07:31 -0700
-Subject: Re: Build regressions/improvements in v3.10
-Thread-Topic: Build regressions/improvements in v3.10
-Thread-Index: Ac53bFEliOqsQnA4RhqdEq3t/sOc2wAMLpcg
-Message-ID: <522C1DF17AF50042AD8AE87F7887BD3D0B7886DB32@exch>
-References: <alpine.DEB.2.02.1307021912180.12710@ayla.of.borg>
-	<CAErSpo41dwRCbMgYz8veHP6Mz62Z-uFJZ8NEQY6y1ULsqwiY7g@mail.gmail.com>
- <CAMuHMdWoTMEyyph8aEu46+xHfkXRFN_qn4a987n7eo6EPRyyhw@mail.gmail.com>
-In-Reply-To: <CAMuHMdWoTMEyyph8aEu46+xHfkXRFN_qn4a987n7eo6EPRyyhw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 6 Jul 2013 02:44:18 -0400
+Date: Sat, 6 Jul 2013 12:14:08 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/8] sched: Reschedule task on preferred NUMA node once
+ selected
+Message-ID: <20130706064408.GB3996@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <1372257487-9749-1-git-send-email-mgorman@suse.de>
+ <1372257487-9749-7-git-send-email-mgorman@suse.de>
+ <20130702120655.GA2959@linux.vnet.ibm.com>
+ <20130702181732.GD23916@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20130702181732.GD23916@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070606-7606-0000-0000-00000D182998
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert, Bjorn,
+* Peter Zijlstra <peterz@infradead.org> [2013-07-02 20:17:32]:
 
-Geert Uytterhoeven wrote:
-> On Tue, Jul 2, 2013 at 8:34 PM, Bjorn Helgaas
-> <bhelgaas@google.com> wrote:
-> >>   + warning: vmlinux.o(.text+0x1ad7a4): Section mismatch
-> in reference from the function pwmchip_add() to the function
-> .init.text:pcibios_fixup_bus():  => N/A
-> >>   + warning: vmlinux.o(.text+0x1b18d8): Section mismatch
-> in reference from the function pci_scan_child_bus() to the
-> function .init.text:pcibios_fixup_bus():  => N/A
-> >
-> > I understand the second warning, but not the first (reference from
-> > pwmchip_add() to pcibios_fixup_bus()).  I don't think pwmchip_add()
-> > calls pcibios_fixup_bus().  Is the pwmchip_chip() function name
-> > inexact, or is there some other problem here?
->
-> Indeed, that's weird.
->
-> This happened with xtensa-allmodconfig.
-> I compiled my own xtensa-allmodconfig kernel, and it happens
-> there, too.
->
-> If I'm not mistaken, the hex address between parentheses should match
-> the "from" function, right?
-> After disassembly ("xtensa-linux-objdump -D vmlinux"), the addresses
-> didn't seem to match the function names at all.
-> So it may be an issue with the toolchain?
+> On Tue, Jul 02, 2013 at 05:36:55PM +0530, Srikar Dronamraju wrote:
+> > Here, moving tasks this way doesnt update the schedstats at all.
+> 
+> Do you actually use schedstats? 
+> 
+
+Yes, I do use schedstats. Are there any plans to obsolete it?
+
+It gave me good information about how many times we did load balancing
+and how many times we were successful in the load balancing esp across
+domains.
+
+-- 
+Thanks and Regards
+Srikar Dronamraju
 
 
-The Xtensa linker, by default, does some code shrinkage
-(some of the "relaxations") after applying relocations,
-causing code to move around.  This can sometimes cause
-error/warning messages to use incorrect addresses.
-(Not trivial to fix in the linker.)
-
-There's a config option LD_NO_RELAX to disable linker
-relaxation.  If using this option fixes the names, it
-may be this issue.
-
--Marc
