@@ -1,129 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752467Ab3GFTsI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 15:48:08 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:53278 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab3GFTsG (ORCPT
+	id S1752580Ab3GFTtf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 15:49:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48726 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3GFTtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 15:48:06 -0400
-Date: Sat, 6 Jul 2013 12:48:03 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/5] hwmon: (ds1621) Convert to use
- hwmon_device_register_groups
-Message-ID: <20130706194803.GA15473@roeck-us.net>
-References: <1373131495-13465-1-git-send-email-linux@roeck-us.net>
- <1373131495-13465-4-git-send-email-linux@roeck-us.net>
- <20130706175747.GA8658@kroah.com>
- <20130706200151.70b7ac3d@endymion.delvare>
- <20130706191816.GA15066@roeck-us.net>
- <20130706193142.GA9778@kroah.com>
+	Sat, 6 Jul 2013 15:49:32 -0400
+Date: Sat, 6 Jul 2013 21:48:51 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+cc: Wang YanQing <udknight@gmail.com>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, npiggin@suse.de,
+        deepthi@linux.vnet.ibm.com, peterz@infradead.org,
+        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, rostedt@goodmis.org,
+        miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
+        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, shli@kernel.org, lig.fnst@cn.fujitsu.com,
+        anton@samba.org
+Subject: Re: [PATCH 2/3] smp/ipi:Clarify ambiguous comments around deadlock
+ scenarios in smp_call_function variants.
+In-Reply-To: <51D7CBD7.2060902@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.02.1307062148040.32106@ionos.tec.linutronix.de>
+References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com> <20130705162711.16888.30274.stgit@preeti.in.ibm.com> <20130706061205.GA3518@udknight> <51D7CBD7.2060902@linux.vnet.ibm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130706193142.GA9778@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 06, 2013 at 12:31:42PM -0700, Greg Kroah-Hartman wrote:
-> On Sat, Jul 06, 2013 at 12:18:16PM -0700, Guenter Roeck wrote:
-> > On Sat, Jul 06, 2013 at 08:01:51PM +0200, Jean Delvare wrote:
-> > > On Sat, 6 Jul 2013 10:57:47 -0700, Greg Kroah-Hartman wrote:
-> > > > On Sat, Jul 06, 2013 at 10:24:53AM -0700, Guenter Roeck wrote:
-> > > > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > > > > ---
-> > > > >  drivers/hwmon/ds1621.c |   25 +++++++++----------------
-> > > > >  1 file changed, 9 insertions(+), 16 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/hwmon/ds1621.c b/drivers/hwmon/ds1621.c
-> > > > > index a26ba7a..f1d0fa0 100644
-> > > > > --- a/drivers/hwmon/ds1621.c
-> > > > > +++ b/drivers/hwmon/ds1621.c
-> > > > > @@ -358,11 +358,15 @@ static const struct attribute_group ds1621_group = {
-> > > > >  	.is_visible = ds1621_attribute_visible
-> > > > >  };
-> > > > >  
-> > > > > +static const struct attribute_group *ds1621_groups[] = {
-> > > > > +	&ds1621_group,
-> > > > > +	NULL
-> > > > > +};
-> > > > > +
-> > > > >  static int ds1621_probe(struct i2c_client *client,
-> > > > >  			const struct i2c_device_id *id)
-> > > > >  {
-> > > > >  	struct ds1621_data *data;
-> > > > > -	int err;
-> > > > >  
-> > > > >  	data = devm_kzalloc(&client->dev, sizeof(struct ds1621_data),
-> > > > >  			    GFP_KERNEL);
-> > > > > @@ -377,22 +381,12 @@ static int ds1621_probe(struct i2c_client *client,
-> > > > >  	/* Initialize the DS1621 chip */
-> > > > >  	ds1621_init_client(client);
-> > > > >  
-> > > > > -	/* Register sysfs hooks */
-> > > > > -	err = sysfs_create_group(&client->dev.kobj, &ds1621_group);
-> > > > > -	if (err)
-> > > > > -		return err;
-> > > > > -
-> > > > > -	data->hwmon_dev = hwmon_device_register(&client->dev);
-> > > > > -	if (IS_ERR(data->hwmon_dev)) {
-> > > > > -		err = PTR_ERR(data->hwmon_dev);
-> > > > > -		goto exit_remove_files;
-> > > > > -	}
-> > > > > +	data->hwmon_dev = hwmon_device_register_groups(&client->dev, data,
-> > > > > +						       ds1621_groups);
-> > > > > +	if (IS_ERR(data->hwmon_dev))
-> > > > > +		return PTR_ERR(data->hwmon_dev);
-> > > > >  
-> > > > >  	return 0;
-> > > > > -
-> > > > > - exit_remove_files:
-> > > > > -	sysfs_remove_group(&client->dev.kobj, &ds1621_group);
-> > > > > -	return err;
-> > > > 
-> > > > Aren't your sysfs files now being created attached to a different device
-> > > > than they originally were?  Before this patch, they were being attached
-> > > > to the parent device of the hwmon device being created with the call to
-> > > > hwmon_device_register(), and now they are attached to the device created
-> > > > with that call.
-> > > > 
-> > > > Is that what you really want?  Can userspace handle this movement of
-> > > > files?
-> > > 
-> > > libsensors supports both, as well as pwmconfig/fancontrol. Some drivers
-> > > are already doing that so every application dealing with hwmon devices
-> > > should handle it already.
-> > > 
-> > Yes, and I tested it with the new nct6775 driver to make sure that it works.
-> > The i2c and spi drivers need some more work, though - the name attribute is
-> > now missing and will have to be created for the hwmon device itself. If you have
-> > an idea how to do that without adding it in every driver, please let me know.
+On Sat, 6 Jul 2013, Preeti U Murthy wrote:
+
+> Hi Wang,
 > 
-> Why do you need a name attribute at all?  Shouldn't that just be the
-> name of the device, or the parent?
+> On 07/06/2013 11:42 AM, Wang YanQing wrote:
+> > On Fri, Jul 05, 2013 at 09:57:11PM +0530, Preeti U Murthy wrote:
+> >> Elaborate on when deadlocks can occur when a call is made to
+> >> smp_call_function_single() and its friends. This avoids ambiguity about
+> >> when to use these calls.
+> >>
+> >> +	 * 2. wait = 0: This function could be called from an interrupt
+> >> +	 * context, and can get blocked on the csd_lock(csd) below in
+> >> +	 * "non wait cases".
+> >> +	 * This is because the percpu copy of csd of this_cpu is used
+> >> +	 * in non wait cases. Under such circumstances, if the previous caller
+> >> +	 * of this function who got preempted by this interrupt has already taken
+> >> +	 * the lock under non wait condition, it will result in deadlock.
+> >> +	 *
+> > 
+> > No, it will not cause deadlock, it is not mutex lock,  it is busy wait, so
+> > when the CSD_FLAG_LOCK be cleared, the code will go on running.
 > 
-It is part of the hwmon ABI and, at least in almost all cases, does return
-the name of the device.
+> A deadlock might not result, but a potential long wait in an interrupt
+> context could result if the source cpu got preempted by an interrupt
+> between  csd_lock(csd) and generic_exec_single(), where it actually
+> sends an ipi to the target cpu.
 
-It is kind of similar to the 'name' attribute in i2c and spi drivers - in fact,
-the drivers just use that attribute since the hwmon attributes are currently
-associated with the parent device.
-
-> Can you make the name be part of the groups always?
-> 
-Yes, that would be one option. All drivers except for spi and i2c drivers
-already do that.
-
-Another option would be to create a class attribute to return the parent driver
-name for spi and i2c devices and otherwise the hwmon driver name. This would
-reduce the amount of code needed in the drivers. Jean, do you see a problem with
-that approach (except that we would have to remove explicit name attributes from
-existing drivers) ?
-
+See https://lkml.org/lkml/2013/7/5/183 and the related thread for real
+deadlock scenarios.
+ 
 Thanks,
-Guenter
+
+	tglx
