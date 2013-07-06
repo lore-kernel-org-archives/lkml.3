@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751307Ab3GFWyZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 18:54:25 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:38383 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888Ab3GFWyW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 18:54:22 -0400
-Message-ID: <1373151546.7397.55.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH v3] lib/idr.c rewrite, percpu ida/tag allocator
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org,
-        sfr@canb.auug.org.au, andi@firstfloor.org, oleg@redhat.com,
-        mingo@redhat.com, axboe@kernel.dk,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        target-devel <target-devel@vger.kernel.org>
-Date: Sat, 06 Jul 2013 15:59:06 -0700
-In-Reply-To: <1373087301-23730-1-git-send-email-kmo@daterainc.com>
-References: <1373087301-23730-1-git-send-email-kmo@daterainc.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751400Ab3GFX0m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 19:26:42 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:60885 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888Ab3GFX0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 6 Jul 2013 19:26:40 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: intel-gfx@lists.freedesktop.org, Chris Wilson <chris@chris-wilson.co.uk>
+Cc: dri-devel@lists.freedesktop.org, LKML <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        =?ISO-8859-1?Q?St=E9phane?= Marchesin <marcheu@chromium.org>
+Subject: Re: [Regression in 3.10] Garbage displayed after resume on Acer Aspire S5
+Date: Sun, 07 Jul 2013 01:36:15 +0200
+Message-ID: <14306109.Kf2NcaamIl@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1511667.B4N0cEgdH9@vostro.rjw.lan>
+References: <1511667.B4N0cEgdH9@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-05 at 22:08 -0700, Kent Overstreet wrote:
-> Previous posting: http://thread.gmane.org/gmane.linux.kernel/1511216
+On Saturday, July 06, 2013 03:59:49 PM Rafael J. Wysocki wrote:
+> Hi,
 > 
-> The only real change since the last version is that I've reworked the
-> new ida implementation to not use one giant allocation - it's still
-> logically one big arary, but it's implemented as an array of arrays.
+> I've just started to play with a new Acer Aspire S5 test box and noticed that
+> garbage is displayed after resume from suspend to RAM with the 3.10 kernel
+> (under KDE 4.10.3 on openSUSE 12.3).  The display corruption goes away after
+> killing X and restarting it.
 > 
-> With that, it scales up to INT_MAX allocated ids just fine. Benchmarks
-> are included in that patch.
+> The CPU is a Core i5-3317U (Ivy Bridge), i915 graphics.
 > 
-> Patch series is available in my git repo:
-> git://evilpiepirate.org/~kent/linux-bcache.git idr
+> That doesn't happen with 3.9 (same config otherwise).  It also doesn't happen
+> with my older Sandy Bridge-based box (with 3.10), so I suspect Ivy Bridge
+> specifics.
 > 
-> Andrew, want to pick this up for 3.12?
+> Is this known?  Do you want me to bisect?
 
-Just FYI that the target-pending/target-per-cpu-ida branch utilizing
-per-cpu ida logic for vhost-scsi has been rebased to include this latest
-series.  Thanks Kent!
+Most likely, this has been introduced by this commit:
 
-Andrew, what are your plans for this..?
+commit 19b2dbde5732170a03bd82cc8bd442cf88d856f7
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Wed Jun 12 10:15:12 2013 +0100
 
-Would you consider allowing this series be merged through target-pending
-in order to allow us to start taking advantage of per-cpu ida tag
-pre-allocation optimizations for v3.12 target code..? 
+    drm/i915: Restore fences after resume and GPU resets
 
-Another option would be to merge the per-cpu ida specific piece now for
-v3.11 for which the risk is low given it doesn't touch any existing
-code, and then include Kent's full idr rewrite separately as v3.12 item.
+At least I'm not able to reproduce it with that commit reverted.  With that
+commit in I was able to reproduce it quite readily on machines with Ivy Bridge
+and Sandy Bridge processors.
 
-WDYT..?
+Thanks,
+Rafael
 
---nab
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
