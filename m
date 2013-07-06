@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717Ab3GFMPT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 08:15:19 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:41162 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707Ab3GFMPR (ORCPT
+	id S1753214Ab3GFMPr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 08:15:47 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:41852 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752199Ab3GFMPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 08:15:17 -0400
+	Sat, 6 Jul 2013 08:15:24 -0400
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/3] Trivial sparse acquire/release annotations
-Date: Sat,  6 Jul 2013 17:41:23 +0530
-Message-Id: <1373112686-28501-1-git-send-email-artagnon@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3/3] irq: add lock annotation to squelch a sparse warning
+Date: Sat,  6 Jul 2013 17:41:26 +0530
+Message-Id: <1373112686-28501-4-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.8.3.2.733.gf8abaeb
+In-Reply-To: <1373112686-28501-1-git-send-email-artagnon@gmail.com>
+References: <1373112686-28501-1-git-send-email-artagnon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+__irq_put_desc_unlock() releases &desc->lock, but being a static
+analyzer, sparse emits a warning:
 
-So, I was looking at sparse this lazy Saturday afternoon.  Thought I
-might as well clean up a few obvious warnings while I'm there.
+  context imbalance in '__irq_put_desc_unlock' - unexpected unlock
 
-Thanks.
+Help it by annotating the function with a __release.  Do not annotate
+its counterpart which acquires the lock, __irq_get_desc_lock(), because
+it does so conditionally.
 
-Ramkumar Ramachandra (3):
-  nfs: add lock annotations to squelch sparse warnings
-  apic: add lock annotations to squelch sparse warnings
-  irq: add lock annotation to squelch a sparse warning
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ kernel/irq/irqdesc.c | 1 +
+ 1 file changed, 1 insertion(+)
 
- arch/x86/kernel/apic/io_apic.c | 2 ++
- fs/nfs/client.c                | 4 ++++
- kernel/irq/irqdesc.c           | 1 +
- 3 files changed, 7 insertions(+)
-
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 192a302..d6bc26a 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -449,6 +449,7 @@ __irq_get_desc_lock(unsigned int irq, unsigned long *flags, bool bus,
+ }
+ 
+ void __irq_put_desc_unlock(struct irq_desc *desc, unsigned long flags, bool bus)
++	__releases(&desc->lock)
+ {
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	if (bus)
 -- 
 1.8.3.2.733.gf8abaeb
 
