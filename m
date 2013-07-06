@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214Ab3GFMPr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 08:15:47 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41852 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab3GFMPY (ORCPT
+	id S1753171Ab3GFMPp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 08:15:45 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:47904 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab3GFMPW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 08:15:24 -0400
+	Sat, 6 Jul 2013 08:15:22 -0400
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3/3] irq: add lock annotation to squelch a sparse warning
-Date: Sat,  6 Jul 2013 17:41:26 +0530
-Message-Id: <1373112686-28501-4-git-send-email-artagnon@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 2/3] apic: add lock annotations to squelch sparse warnings
+Date: Sat,  6 Jul 2013 17:41:25 +0530
+Message-Id: <1373112686-28501-3-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.8.3.2.733.gf8abaeb
 In-Reply-To: <1373112686-28501-1-git-send-email-artagnon@gmail.com>
 References: <1373112686-28501-1-git-send-email-artagnon@gmail.com>
@@ -20,33 +20,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__irq_put_desc_unlock() releases &desc->lock, but being a static
-analyzer, sparse emits a warning:
+sparse, being a static analyzer, emits the following warnings:
 
-  context imbalance in '__irq_put_desc_unlock' - unexpected unlock
+  context imbalance in 'lock_vector_lock' - wrong count at exit
+  context imbalance in 'unlock_vector_lock' - unexpected unlock
 
-Help it by annotating the function with a __release.  Do not annotate
-its counterpart which acquires the lock, __irq_get_desc_lock(), because
-it does so conditionally.
+Help it by annotating the pair of functions with __acquires and
+__releases.
 
+Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- kernel/irq/irqdesc.c | 1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/apic/io_apic.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index 192a302..d6bc26a 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -449,6 +449,7 @@ __irq_get_desc_lock(unsigned int irq, unsigned long *flags, bool bus,
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 9ed796c..b756417 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1061,6 +1061,7 @@ int IO_APIC_get_PCI_irq_vector(int bus, int slot, int pin,
+ EXPORT_SYMBOL(IO_APIC_get_PCI_irq_vector);
+ 
+ void lock_vector_lock(void)
++	__acquires(&vector_lock)
+ {
+ 	/* Used to the online set of cpus does not change
+ 	 * during assign_irq_vector.
+@@ -1069,6 +1070,7 @@ void lock_vector_lock(void)
  }
  
- void __irq_put_desc_unlock(struct irq_desc *desc, unsigned long flags, bool bus)
-+	__releases(&desc->lock)
+ void unlock_vector_lock(void)
++	__releases(&vector_lock)
  {
- 	raw_spin_unlock_irqrestore(&desc->lock, flags);
- 	if (bus)
+ 	raw_spin_unlock(&vector_lock);
+ }
 -- 
 1.8.3.2.733.gf8abaeb
 
