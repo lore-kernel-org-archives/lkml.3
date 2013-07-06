@@ -1,89 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab3GFJHO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 05:07:14 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:17353 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752816Ab3GFJHM (ORCPT
+	id S1752959Ab3GFJQq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 05:16:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:53440 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752871Ab3GFJQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 05:07:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sat, 06 Jul 2013 02:07:45 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2] ARM: tegra: enable gpio-keys on dalmore
-Date: Sat, 6 Jul 2013 14:44:29 +0530
-Message-ID: <1373102069-5641-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Sat, 6 Jul 2013 05:16:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
+        linux-mtd@lists.infradead.org
+Subject: Re: MTD EEPROM support and driver integration
+Date: Sat, 06 Jul 2013 11:18 +0200
+Message-ID: <5811519.oHVuMujf0I@wuerfel>
+User-Agent: KMail/4.10.3 (Linux/3.9.0-2-generic; KDE/4.10.4; x86_64; ; )
+In-Reply-To: <20130706082804.GZ2959@lukather>
+References: <20130705201118.GM2959@lukather> <201307060033.13259.arnd@arndb.de> <20130706082804.GZ2959@lukather>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:CE91GvuQUdm+LXsMsLR5tuF/pH4CeFULfxbJJkNMYmu
+ l0CWkWh1c5EJmvGWfqUYLASmhfK1anBlH1KopWJxC2/KVYB2AV
+ Rlnjp+5TJlnQhG4rLmvOrBI5+WLiv1L/opXwDUa/h7M721ZxsB
+ VpXhTUpc5USZFrCTDO6oehd6+DAqelfM9/JF3t4ikMlr/Kgohx
+ KOK2ezAuVA9YXyZNmO0x2a+plEg0b2BPAb1IZr2Cr/OSUaVUxU
+ W7ea9ZxmhXfymQsbRILLLNQyx9nH5FuhBV3Ohrd/4Xww2XMhZu
+ L52Fp30EoJg2+rDseJByZtXsx+9mlt12+qTx0BXdjF1w5j/67/
+ +XkvEcfbde2Yb2gM5BQI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dalmore have the keys mounted on board which are connected
-to different pins of Tegra.
+On Saturday 06 July 2013 10:28:04 Maxime Ripard wrote:
+> > a) like interrupts, regs, dmas, clocks, pinctrl, reset, pwm: fixed property names
+> > 
+> >       regmap = <&at25 0xstart 0xlen>;
+> >       regmap-names = "mac-address";
+> > 
+> > b) like gpio, regulator: variable property names
+> > 
+> >       mac-storage = <&at25 0xstart 0xlen>;
+> > 
+> > It's unfortunate that we already have examples of both. They are largely
+> > equivalent, but the tendency is towards the first.
+> 
+> I don't have a strong feeling for one against another, so whatever works
+> best. Both solutions will be a huge improvement anyway 
+> 
+> Just out of curiosity, is there any advantages besides having a fixed
+> property name to the first solution?
 
-Add the keys entry in DTS file to enable key functionality.
-This will enable KEY_POWER, KEY_HOME, KEY_VOLUMEUP and
-KEY_VOLUMEDOWN.
+I think it's mostly for consistency: trying to get most subsystems to
+do it the same way to make it easier for people to write dts files.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- Reorder the nodes.
+A lesser point is that it simplifies the driver code if you don't
+have to pass a name.
 
- arch/arm/boot/dts/tegra114-dalmore.dts |   30 ++++++++++++++++++++++++++++++
- 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index cb640eb..259b517 100644
---- a/arch/arm/boot/dts/tegra114-dalmore.dts
-+++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -883,6 +883,35 @@
- 		};
- 	};
- 
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+
-+		home {
-+			label = "Home";
-+			gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
-+			linux,code = <102>; /* KEY_HOME */
-+		};
-+
-+		power {
-+			label = "Power";
-+			gpios = <&gpio TEGRA_GPIO(Q, 0) GPIO_ACTIVE_LOW>;
-+			linux,code = <116>; /* KEY_POWER */
-+			gpio-key,wakeup;
-+		};
-+
-+		volume_down {
-+			label = "VolumeDown";
-+			gpios = <&gpio TEGRA_GPIO(R, 1) GPIO_ACTIVE_LOW>;
-+			linux,code = <114>; /* KEY_VOLUMEDOWN */
-+		};
-+
-+		volume_up {
-+			label = "VolumeUp";
-+			gpios = <&gpio TEGRA_GPIO(R, 2) GPIO_ACTIVE_LOW>;
-+			linux,code = <115>; /* KEY_VOLUMEUP */
-+		};
-+	};
-+
- 	regulators {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
-@@ -976,4 +1005,5 @@
- 			 <&tegra_car TEGRA114_CLK_EXTERN1>;
- 		clock-names = "pll_a", "pll_a_out0", "mclk";
- 	};
-+
- };
--- 
-1.7.1.1
-
+	Arnd
