@@ -1,196 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573Ab3GFFmk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 01:42:40 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:53713 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751905Ab3GFFmj (ORCPT
+	id S1752627Ab3GFFp0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 01:45:26 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:62072 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905Ab3GFFpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 01:42:39 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: eric.y.miao@gmail.com, linux@arm.linux.org.uk, haojian.zhuang@gmail.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] ARM: pxa: remove IRQF_DISABLED
-Date: Sat,  6 Jul 2013 07:42:20 +0200
-Message-Id: <1373089340-20118-1-git-send-email-michael.opdenacker@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
+	Sat, 6 Jul 2013 01:45:24 -0400
+Message-ID: <51D7AF14.9050508@gmail.com>
+Date: Sat, 06 Jul 2013 13:45:56 +0800
+From: Aaron Lu <aaron.lwe@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Matthew Garrett <matthew.garrett@nebula.com>, daniel.vetter@ffwll.ch,
+        linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
+        joeyli.kernel@gmail.com, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        lenb@kernel.org
+Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if firmware
+ expects Windows 8
+References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <2759570.WXymCRumvH@vostro.rjw.lan> <2888060.4Smt6Tu6bv@vostro.rjw.lan> <2962350.laXfENfrac@vostro.rjw.lan>
+In-Reply-To: <2962350.laXfENfrac@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This flag is a NOOP since 2.6.35 and can be removed.
+On 07/06/2013 06:23 AM, Rafael J. Wysocki wrote:
+> On Friday, July 05, 2013 11:40:02 PM Rafael J. Wysocki wrote:
+>> On Friday, July 05, 2013 10:00:55 PM Rafael J. Wysocki wrote:
+>>> On Friday, July 05, 2013 02:20:14 PM Rafael J. Wysocki wrote:
+>>>> On Sunday, June 09, 2013 07:01:39 PM Matthew Garrett wrote:
+>>>>> Windows 8 leaves backlight control up to individual graphics drivers rather
+>>>>> than making ACPI calls itself. There's plenty of evidence to suggest that
+>>>>> the Intel driver for Windows doesn't use the ACPI interface, including the
+>>>>> fact that it's broken on a bunch of machines when the OS claims to support
+>>>>> Windows 8. The simplest thing to do appears to be to disable the ACPI
+>>>>> backlight interface on these systems.
+>>>>>
+>>>>> Signed-off-by: Matthew Garrett <matthew.garrett@nebula.com>
+>>>>> ---
+>>>>>  drivers/gpu/drm/i915/i915_dma.c | 3 +++
+>>>>>  1 file changed, 3 insertions(+)
+>>>>>
+>>>>> diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
+>>>>> index 3b315ba..23b6292 100644
+>>>>> --- a/drivers/gpu/drm/i915/i915_dma.c
+>>>>> +++ b/drivers/gpu/drm/i915/i915_dma.c
+>>>>> @@ -1661,6 +1661,9 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
+>>>>>  		/* Must be done after probing outputs */
+>>>>>  		intel_opregion_init(dev);
+>>>>>  		acpi_video_register();
+>>>>> +		/* Don't use ACPI backlight functions on Windows 8 platforms */
+>>>>> +		if (acpi_osi_version() >= ACPI_OSI_WIN_8)
+>>>>> +			acpi_video_backlight_unregister();
+>>>>>  	}
+>>>>>  
+>>>>>  	if (IS_GEN5(dev))
+>>>>>
+>>>>
+>>>> Well, this causes build failures to happen when the ACPI video driver is
+>>>> modular and the graphics driver is not.
+>>>>
+>>>> I'm not sure how to resolve that, so suggestions are welcome.
+>>>
+>>> Actually, that happened with the radeon patch.
+>>>
+>>> That said, ACPI_OSI_WIN_8 doesn't make much sense for !CONFIG_ACPI, for
+>>> example.
+>>>
+>>> What about making acpi_video_register() do the quirk instead?  We could add an
+>>> argument to it indicating whether or not quirks should be applied.
+>>
+>> Actually, I wonder what about the appended patch (on top of the Aaron's
+>> https://patchwork.kernel.org/patch/2812951/) instead of [1-3/3] from this series.
+> 
+> Or even something as simple as this one.
+> 
+> ---
+>  drivers/acpi/video_detect.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> Index: linux-pm/drivers/acpi/video_detect.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/video_detect.c
+> +++ linux-pm/drivers/acpi/video_detect.c
+> @@ -203,6 +203,9 @@ long acpi_video_get_capabilities(acpi_ha
+>  		 */
+>  
+>  		dmi_check_system(video_detect_dmi_table);
+> +
+> +		if (acpi_gbl_osi_data >= ACPI_OSI_WIN_8)
+> +			acpi_video_support |= ACPI_VIDEO_BACKLIGHT_FORCE_VENDOR;
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- arch/arm/mach-pxa/am200epd.c         | 3 +--
- arch/arm/mach-pxa/am300epd.c         | 3 +--
- arch/arm/mach-pxa/em-x270.c          | 3 +--
- arch/arm/mach-pxa/magician.c         | 2 +-
- arch/arm/mach-pxa/mainstone.c        | 2 +-
- arch/arm/mach-pxa/pcm990-baseboard.c | 2 +-
- arch/arm/mach-pxa/sharpsl_pm.c       | 8 ++++----
- arch/arm/mach-pxa/time.c             | 2 +-
- arch/arm/mach-pxa/trizeps4.c         | 3 +--
- arch/arm/plat-pxa/dma.c              | 2 +-
- 10 files changed, 13 insertions(+), 17 deletions(-)
+Then vendor driver(thinkpad_acpi) will step in and create a backlight
+interface for the system, which, unfortunately, is also broken for those
+win8 thinkpads.
 
-diff --git a/arch/arm/mach-pxa/am200epd.c b/arch/arm/mach-pxa/am200epd.c
-index ffa6d81..12fb0f4 100644
---- a/arch/arm/mach-pxa/am200epd.c
-+++ b/arch/arm/mach-pxa/am200epd.c
-@@ -293,8 +293,7 @@ static int am200_setup_irq(struct fb_info *info)
- 	int ret;
- 
- 	ret = request_irq(PXA_GPIO_TO_IRQ(RDY_GPIO_PIN), am200_handle_irq,
--				IRQF_DISABLED|IRQF_TRIGGER_FALLING,
--				"AM200", info->par);
-+				IRQF_TRIGGER_FALLING, "AM200", info->par);
- 	if (ret)
- 		dev_err(&am200_device->dev, "request_irq failed: %d\n", ret);
- 
-diff --git a/arch/arm/mach-pxa/am300epd.c b/arch/arm/mach-pxa/am300epd.c
-index 3dfec1e..c9f309a 100644
---- a/arch/arm/mach-pxa/am300epd.c
-+++ b/arch/arm/mach-pxa/am300epd.c
-@@ -241,8 +241,7 @@ static int am300_setup_irq(struct fb_info *info)
- 	struct broadsheetfb_par *par = info->par;
- 
- 	ret = request_irq(PXA_GPIO_TO_IRQ(RDY_GPIO_PIN), am300_handle_irq,
--				IRQF_DISABLED|IRQF_TRIGGER_RISING,
--				"AM300", par);
-+				IRQF_TRIGGER_RISING, "AM300", par);
- 	if (ret)
- 		dev_err(&am300_device->dev, "request_irq failed: %d\n", ret);
- 
-diff --git a/arch/arm/mach-pxa/em-x270.c b/arch/arm/mach-pxa/em-x270.c
-index f6726bb..86936d9 100644
---- a/arch/arm/mach-pxa/em-x270.c
-+++ b/arch/arm/mach-pxa/em-x270.c
-@@ -556,8 +556,7 @@ static int em_x270_mci_init(struct device *dev,
- 	}
- 
- 	err = request_irq(gpio_to_irq(mmc_cd), em_x270_detect_int,
--			      IRQF_DISABLED | IRQF_TRIGGER_RISING |
--			      IRQF_TRIGGER_FALLING,
-+			      IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 			      "MMC card detect", data);
- 	if (err) {
- 		dev_err(dev, "can't request MMC card detect IRQ: %d\n", err);
-diff --git a/arch/arm/mach-pxa/magician.c b/arch/arm/mach-pxa/magician.c
-index f44532f..38f544d 100644
---- a/arch/arm/mach-pxa/magician.c
-+++ b/arch/arm/mach-pxa/magician.c
-@@ -633,7 +633,7 @@ static struct platform_device bq24022 = {
- static int magician_mci_init(struct device *dev,
- 				irq_handler_t detect_irq, void *data)
- {
--	return request_irq(IRQ_MAGICIAN_SD, detect_irq, IRQF_DISABLED,
-+	return request_irq(IRQ_MAGICIAN_SD, detect_irq, 0,
- 			   "mmc card detect", data);
- }
- 
-diff --git a/arch/arm/mach-pxa/mainstone.c b/arch/arm/mach-pxa/mainstone.c
-index d2c6523..1184efa 100644
---- a/arch/arm/mach-pxa/mainstone.c
-+++ b/arch/arm/mach-pxa/mainstone.c
-@@ -400,7 +400,7 @@ static int mainstone_mci_init(struct device *dev, irq_handler_t mstone_detect_in
- 	 */
- 	MST_MSCWR1 &= ~MST_MSCWR1_MS_SEL;
- 
--	err = request_irq(MAINSTONE_MMC_IRQ, mstone_detect_int, IRQF_DISABLED,
-+	err = request_irq(MAINSTONE_MMC_IRQ, mstone_detect_int, 0,
- 			     "MMC card detect", data);
- 	if (err)
- 		printk(KERN_ERR "mainstone_mci_init: MMC/SD: can't request MMC card detect IRQ\n");
-diff --git a/arch/arm/mach-pxa/pcm990-baseboard.c b/arch/arm/mach-pxa/pcm990-baseboard.c
-index fb7f1d1..33f058f 100644
---- a/arch/arm/mach-pxa/pcm990-baseboard.c
-+++ b/arch/arm/mach-pxa/pcm990-baseboard.c
-@@ -326,7 +326,7 @@ static int pcm990_mci_init(struct device *dev, irq_handler_t mci_detect_int,
- {
- 	int err;
- 
--	err = request_irq(PCM027_MMCDET_IRQ, mci_detect_int, IRQF_DISABLED,
-+	err = request_irq(PCM027_MMCDET_IRQ, mci_detect_int,
- 			     "MMC card detect", data);
- 	if (err)
- 		printk(KERN_ERR "pcm990_mci_init: MMC/SD: can't request MMC "
-diff --git a/arch/arm/mach-pxa/sharpsl_pm.c b/arch/arm/mach-pxa/sharpsl_pm.c
-index 0a36d35..051a655 100644
---- a/arch/arm/mach-pxa/sharpsl_pm.c
-+++ b/arch/arm/mach-pxa/sharpsl_pm.c
-@@ -860,18 +860,18 @@ static int sharpsl_pm_probe(struct platform_device *pdev)
- 
- 	/* Register interrupt handlers */
- 	irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_acin);
--	if (request_irq(irq, sharpsl_ac_isr, IRQF_DISABLED | IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, "AC Input Detect", sharpsl_ac_isr)) {
-+	if (request_irq(irq, sharpsl_ac_isr, IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, "AC Input Detect", sharpsl_ac_isr)) {
- 		dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
- 	}
- 
- 	irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_batlock);
--	if (request_irq(irq, sharpsl_fatal_isr, IRQF_DISABLED | IRQF_TRIGGER_FALLING, "Battery Cover", sharpsl_fatal_isr)) {
-+	if (request_irq(irq, sharpsl_fatal_isr, IRQF_TRIGGER_FALLING, "Battery Cover", sharpsl_fatal_isr)) {
- 		dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
- 	}
- 
- 	if (sharpsl_pm.machinfo->gpio_fatal) {
- 		irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_fatal);
--		if (request_irq(irq, sharpsl_fatal_isr, IRQF_DISABLED | IRQF_TRIGGER_FALLING, "Fatal Battery", sharpsl_fatal_isr)) {
-+		if (request_irq(irq, sharpsl_fatal_isr, IRQF_TRIGGER_FALLING, "Fatal Battery", sharpsl_fatal_isr)) {
- 			dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
- 		}
- 	}
-@@ -879,7 +879,7 @@ static int sharpsl_pm_probe(struct platform_device *pdev)
- 	if (sharpsl_pm.machinfo->batfull_irq) {
- 		/* Register interrupt handler. */
- 		irq = gpio_to_irq(sharpsl_pm.machinfo->gpio_batfull);
--		if (request_irq(irq, sharpsl_chrg_full_isr, IRQF_DISABLED | IRQF_TRIGGER_RISING, "CO", sharpsl_chrg_full_isr)) {
-+		if (request_irq(irq, sharpsl_chrg_full_isr, IRQF_TRIGGER_RISING, "CO", sharpsl_chrg_full_isr)) {
- 			dev_err(sharpsl_pm.dev, "Could not get irq %d.\n", irq);
- 		}
- 	}
-diff --git a/arch/arm/mach-pxa/time.c b/arch/arm/mach-pxa/time.c
-index 8f1ee92..e48fc61 100644
---- a/arch/arm/mach-pxa/time.c
-+++ b/arch/arm/mach-pxa/time.c
-@@ -137,7 +137,7 @@ static struct clock_event_device ckevt_pxa_osmr0 = {
- 
- static struct irqaction pxa_ost0_irq = {
- 	.name		= "ost0",
--	.flags		= IRQF_DISABLED | IRQF_TIMER | IRQF_IRQPOLL,
-+	.flags		= IRQF_TIMER | IRQF_IRQPOLL,
- 	.handler	= pxa_ost0_interrupt,
- 	.dev_id		= &ckevt_pxa_osmr0,
- };
-diff --git a/arch/arm/mach-pxa/trizeps4.c b/arch/arm/mach-pxa/trizeps4.c
-index c580434..872dcb2 100644
---- a/arch/arm/mach-pxa/trizeps4.c
-+++ b/arch/arm/mach-pxa/trizeps4.c
-@@ -332,8 +332,7 @@ static int trizeps4_mci_init(struct device *dev, irq_handler_t mci_detect_int,
- 	int err;
- 
- 	err = request_irq(TRIZEPS4_MMC_IRQ, mci_detect_int,
--			  IRQF_DISABLED | IRQF_TRIGGER_RISING,
--			  "MMC card detect", data);
-+			  IRQF_TRIGGER_RISING, "MMC card detect", data);
- 	if (err) {
- 		printk(KERN_ERR "trizeps4_mci_init: MMC/SD: can't request"
- 						"MMC card detect IRQ\n");
-diff --git a/arch/arm/plat-pxa/dma.c b/arch/arm/plat-pxa/dma.c
-index 79ef102..054fc5a 100644
---- a/arch/arm/plat-pxa/dma.c
-+++ b/arch/arm/plat-pxa/dma.c
-@@ -377,7 +377,7 @@ int __init pxa_init_dma(int irq, int num_ch)
- 		spin_lock_init(&dma_channels[i].lock);
- 	}
- 
--	ret = request_irq(irq, dma_irq_handler, IRQF_DISABLED, "DMA", NULL);
-+	ret = request_irq(irq, dma_irq_handler, 0, "DMA", NULL);
- 	if (ret) {
- 		printk (KERN_CRIT "Wow!  Can't register IRQ for DMA\n");
- 		kfree(dma_channels);
--- 
-1.8.1.2
+So we will need to do something in thinkpad_acpi to also not create
+backlight interface for these systems too.
+
+This actually doesn't feel bad to me, since the modules are blacklisting
+their own interfaces. The downside is of course, two quirk code exist.
+
+BTW, unregistering ACPI video's backlight interface in GPU driver doesn't
+have this problem since it made the platform driver think the ACPI video
+driver will control the backlight and then use the newly added API to
+remove ACPI video created backlight interface.
+
+Thanks,
+Aaron
+
+>  	} else {
+>  		status = acpi_bus_get_device(graphics_handle, &tmp_dev);
+>  		if (ACPI_FAILURE(status)) {
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
