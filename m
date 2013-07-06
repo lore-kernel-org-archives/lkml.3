@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab3GFRXA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 13:23:00 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:52915 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab3GFRW7 (ORCPT
+	id S1752564Ab3GFRXS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 13:23:18 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:38347 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab3GFRXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 13:22:59 -0400
+	Sat, 6 Jul 2013 13:23:11 -0400
 From: Guenter Roeck <linux@roeck-us.net>
 To: Jean Delvare <khali@linux-fr.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org
 Subject: [RFC PATCH 0/5] Introduce and use device_create_groups
-Date: Sat,  6 Jul 2013 10:22:51 -0700
-Message-Id: <1373131376-13293-1-git-send-email-linux@roeck-us.net>
+Date: Sat,  6 Jul 2013 10:23:02 -0700
+Message-Id: <1373131387-13342-1-git-send-email-linux@roeck-us.net>
 X-Mailer: git-send-email 1.7.9.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
