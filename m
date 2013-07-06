@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab3GFHYO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 03:24:14 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:47771 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab3GFHYN (ORCPT
+	id S1752827Ab3GFHvO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 03:51:14 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47701 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590Ab3GFHvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 03:24:13 -0400
-Date: Sat, 6 Jul 2013 09:24:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Dave Jones <davej@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Yet more softlockups.
-Message-ID: <20130706072408.GA14865@gmail.com>
-References: <20130704015525.GA8486@redhat.com>
- <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
- <20130705143821.GB325@redhat.com>
- <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de>
- <20130705160043.GF325@redhat.com>
+	Sat, 6 Jul 2013 03:51:13 -0400
+Message-ID: <51D7CBD7.2060902@linux.vnet.ibm.com>
+Date: Sat, 06 Jul 2013 13:18:39 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130705160043.GF325@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wang YanQing <udknight@gmail.com>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, npiggin@suse.de,
+        deepthi@linux.vnet.ibm.com, peterz@infradead.org,
+        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, rostedt@goodmis.org,
+        miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
+        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, shli@kernel.org, tglx@linutronix.de,
+        lig.fnst@cn.fujitsu.com, anton@samba.org
+Subject: Re: [PATCH 2/3] smp/ipi:Clarify ambiguous comments around deadlock
+ scenarios in smp_call_function variants.
+References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com> <20130705162711.16888.30274.stgit@preeti.in.ibm.com> <20130706061205.GA3518@udknight>
+In-Reply-To: <20130706061205.GA3518@udknight>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070607-6102-0000-0000-000003D08AE7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wang,
 
-* Dave Jones <davej@redhat.com> wrote:
-
-> On Fri, Jul 05, 2013 at 05:15:07PM +0200, Thomas Gleixner wrote:
->  > On Fri, 5 Jul 2013, Dave Jones wrote:
->  > 
->  > > BUG: soft lockup - CPU#3 stuck for 23s! [trinity-child1:14565]
->  > > perf samples too long (2519 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
->  > > INFO: NMI handler (perf_event_nmi_handler) took too long to run: 238147.002 msecs
->  > 
->  > So we see a softlockup of 23 seconds and the perf_event_nmi_handler
->  > claims it did run 23.8 seconds.
->  > 
->  > Are there more instances of NMI handler messages ?
+On 07/06/2013 11:42 AM, Wang YanQing wrote:
+> On Fri, Jul 05, 2013 at 09:57:11PM +0530, Preeti U Murthy wrote:
+>> Elaborate on when deadlocks can occur when a call is made to
+>> smp_call_function_single() and its friends. This avoids ambiguity about
+>> when to use these calls.
+>>
+>> +	 * 2. wait = 0: This function could be called from an interrupt
+>> +	 * context, and can get blocked on the csd_lock(csd) below in
+>> +	 * "non wait cases".
+>> +	 * This is because the percpu copy of csd of this_cpu is used
+>> +	 * in non wait cases. Under such circumstances, if the previous caller
+>> +	 * of this function who got preempted by this interrupt has already taken
+>> +	 * the lock under non wait condition, it will result in deadlock.
+>> +	 *
 > 
-> [ 2552.006181] perf samples too long (2511 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
-> [ 2552.008680] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 500392.002 msecs
+> No, it will not cause deadlock, it is not mutex lock,  it is busy wait, so
+> when the CSD_FLAG_LOCK be cleared, the code will go on running.
 
-Dave, could you pull in the latest perf fixes at:
+A deadlock might not result, but a potential long wait in an interrupt
+context could result if the source cpu got preempted by an interrupt
+between  csd_lock(csd) and generic_exec_single(), where it actually
+sends an ipi to the target cpu.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/urgent
+Under such a scenario, if no other cpu has sent a smp_call_function ipi
+to it, it will not check its queue till such an ipi is sent, as a result
+of which the target will not release the csd on which the source cpu is
+waiting.
 
-In particular this:
+Hence, on the source cpu,the interrupt handler will have to wait till
+then. It would be good therefore to issue a warning under this circumstance.
+Maybe we can modify the changelog to reflect this scenario.
 
-  e5302920da9e perf: Fix interrupt handler timing harness
+> 
+> After stare into the kernel/smp.c, I can't catch what the exactly meaning
+> of the "DeadLock" in the original comment also.
+> 
+> I hope someone can clarify it.
+> 
+> Thanks.
+> 
 
-could make a difference - if your tests somehow end up activating perf.
+Regards
+Preeti U Murthy
 
-Thanks,
-
-	Ingo
