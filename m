@@ -1,127 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab3GFI1o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 04:27:44 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51336 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752720Ab3GFI1k (ORCPT
+	id S1752905Ab3GFI20 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 04:28:26 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:53953 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752720Ab3GFI2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 04:27:40 -0400
+	Sat, 6 Jul 2013 04:28:16 -0400
+Date: Sat, 6 Jul 2013 10:28:04 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
+        linux-mtd@lists.infradead.org
+Subject: Re: MTD EEPROM support and driver integration
+Message-ID: <20130706082804.GZ2959@lukather>
+References: <20130705201118.GM2959@lukather>
+ <201307052302.40588.arnd@arndb.de>
+ <20130705222342.GP2959@lukather>
+ <201307060033.13259.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20130706000949.GD16853@hostway.ca>
-References: <20130706000949.GD16853@hostway.ca>
-Date: Sat, 6 Jul 2013 11:27:38 +0300
-X-Google-Sender-Auth: kGedg--mck-hNty2R7-pOvV9axQ
-Message-ID: <CAOJsxLGA+Aha8JcPsWyNd3BLQ6L0g7iznN0o2fG5yL5Xw0s8Lg@mail.gmail.com>
-Subject: Re: [3.10] Oopses in kmem_cache_allocate() via prepare_creds()
-From: Pekka Enberg <penberg@kernel.org>
-To: Simon Kirby <sim@hostway.ca>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FilwpOHBrTVNlmJ3"
+Content-Disposition: inline
+In-Reply-To: <201307060033.13259.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 6, 2013 at 3:09 AM, Simon Kirby <sim@hostway.ca> wrote:
-> We saw two Oopses overnight on two separate boxes that seem possibly
-> related, but both are weird. These boxes typically run btrfs for rsync
-> snapshot backups (and usually Oops in btrfs ;), but not this time!
-> backup02 was running 3.10-rc6 plus btrfs-next at the time, and backup03
-> was running 3.10 release plus btrfs-next from yesterday. Full kern.log
-> and .config at http://0x.ca/sim/ref/3.10/
->
-> backup02's first Oops:
->
-> BUG: unable to handle kernel paging request at 0000000100000000
-> IP: [<ffffffff81124beb>] kmem_cache_alloc+0x4b/0x110
-> PGD 1f54f7067 PUD 0
-> Oops: 0000 [#1] SMP
-> Modules linked in: ipmi_devintf ipmi_si ipmi_msghandler aoe microcode serio_raw bnx2 evdev
-> CPU: 0 PID: 23112 Comm: ionice Not tainted 3.10.0-rc6-hw+ #46
-> Hardware name: Dell Inc. PowerEdge 2950/0NH278, BIOS 2.7.0 10/30/2010
-> task: ffff8802c3f08000 ti: ffff8801b4876000 task.ti: ffff8801b4876000
-> RIP: 0010:[<ffffffff81124beb>]  [<ffffffff81124beb>] kmem_cache_alloc+0x4b/0x110
-> RSP: 0018:ffff8801b4877e88  EFLAGS: 00010206
-> RAX: 0000000000000000 RBX: ffff8802c3f08000 RCX: 00000000017f040e
-> RDX: 00000000017f040d RSI: 00000000000000d0 RDI: ffffffff8107a503
-> RBP: ffff8801b4877ec8 R08: 0000000000016a80 R09: 0000000000000000
-> R10: 00007fff025fe120 R11: 0000000000000246 R12: 00000000000000d0
-> R13: ffff88042d8019c0 R14: 0000000100000000 R15: 00007fc3588ee97f
-> FS:  0000000000000000(0000) GS:ffff88043fc00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000100000000 CR3: 0000000409d68000 CR4: 00000000000007f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Stack:
->  ffff8801b4877ed8 ffffffff8112a1bc ffff8800985acd20 ffff8802c3f08000
->  0000000000000001 00007fc3588ee334 00007fc358af5758 00007fc3588ee97f
->  ffff8801b4877ee8 ffffffff8107a503 ffff8801b4877ee8 ffffffffffffffea
-> Call Trace:
->  [<ffffffff8112a1bc>] ? __fput+0x12c/0x240
->  [<ffffffff8107a503>] prepare_creds+0x23/0x150
->  [<ffffffff811272d4>] SyS_faccessat+0x34/0x1f0
->  [<ffffffff811274a3>] SyS_access+0x13/0x20
->  [<ffffffff8179e7a9>] system_call_fastpath+0x16/0x1b
-> Code: 75 f0 4c 89 7d f8 49 8b 4d 00 65 48 03 0c 25 68 da 00 00 48 8b 51 08 4c 8b 31 4d 85 f6 74 5f 49 63 45 20 4d 8b 45 00 48 8d 4a 01 <49> 8b 1c 06 4c 89 f0 65 49 0f c7 08 0f 94 c0 84 c0 74 c8 49 63
-> RIP  [<ffffffff81124beb>] kmem_cache_alloc+0x4b/0x110
->  RSP <ffff8801b4877e88>
-> CR2: 0000000100000000
-> ---[ end trace 744477356cd98306 ]---
->
-> backup03's first Oops:
->
-> BUG: unable to handle kernel paging request at ffff880502efc240
-> IP: [<ffffffff81124c4b>] kmem_cache_alloc+0x4b/0x110
-> PGD 1d3a067 PUD 0
-> Oops: 0000 [#1] SMP
-> Modules linked in: aoe ipmi_devintf ipmi_msghandler bnx2 microcode serio_raw evdev
-> CPU: 6 PID: 14066 Comm: perl Not tainted 3.10.0-hw+ #2
-> Hardware name: Dell Inc. PowerEdge R510/0DPRKF, BIOS 1.11.0 07/23/2012
-> task: ffff88040111c3b0 ti: ffff8803c23ae000 task.ti: ffff8803c23ae000
-> RIP: 0010:[<ffffffff81124c4b>]  [<ffffffff81124c4b>] kmem_cache_alloc+0x4b/0x110
-> RSP: 0018:ffff8803c23afd90  EFLAGS: 00010282
-> RAX: 0000000000000000 RBX: ffff88040111c3b0 RCX: 000000000002a76e
-> RDX: 000000000002a76d RSI: 00000000000000d0 RDI: ffffffff8107a4e3
-> RBP: ffff8803c23afdd0 R08: 0000000000016a80 R09: 00000000ffffffff
-> R10: fffffffffffffffe R11: ffffffffffffffd0 R12: 00000000000000d0
-> R13: ffff88041d403980 R14: ffff880502efc240 R15: ffff88010e375a40
-> FS:  00007f2cae496700(0000) GS:ffff88041f2c0000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: ffff880502efc240 CR3: 00000001e0ced000 CR4: 00000000000007e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Stack:
->  ffff8803c23afe98 ffff8803c23afdb8 ffffffff81133811 ffff88040111c3b0
->  ffff88010e375a40 0000000001200011 00007f2cae4969d0 ffff88010e375a40
->  ffff8803c23afdf0 ffffffff8107a4e3 ffffffff81b49b80 0000000001200011
-> Call Trace:
->  [<ffffffff81133811>] ? final_putname+0x21/0x50
->  [<ffffffff8107a4e3>] prepare_creds+0x23/0x150
->  [<ffffffff8107ab11>] copy_creds+0x31/0x160
->  [<ffffffff8101a97b>] ? unlazy_fpu+0x9b/0xb0
->  [<ffffffff8104ef09>] copy_process.part.49+0x239/0x1390
->  [<ffffffff81143312>] ? __alloc_fd+0x42/0x100
->  [<ffffffff81050134>] do_fork+0xa4/0x320
->  [<ffffffff81131b77>] ? __do_pipe_flags+0x77/0xb0
->  [<ffffffff81143426>] ? __fd_install+0x26/0x60
->  [<ffffffff81050431>] SyS_clone+0x11/0x20
->  [<ffffffff817ad849>] stub_clone+0x69/0x90
->  [<ffffffff817ad569>] ? system_call_fastpath+0x16/0x1b
-> Code: 75 f0 4c 89 7d f8 49 8b 4d 00 65 48 03 0c 25 68 da 00 00 48 8b 51 08 4c 8b 31 4d 85 f6 74 5f 49 63 45 20 4d 8b 45 00 48 8d 4a 01 <49> 8b 1c 06 4c 89 f0 65 49 0f c7 08 0f 94 c0 84 c0 74 c8 49 63
-> RIP  [<ffffffff81124c4b>] kmem_cache_alloc+0x4b/0x110
->  RSP <ffff8803c23afd90>
-> CR2: ffff880502efc240
-> ---[ end trace 956d153150ecc57f ]---
 
-Looks like slab corruption to me.
+--FilwpOHBrTVNlmJ3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please try reproducing with "slub_debug" passed as a kernel parameter.
-It should give us some more debug output for catching the caller
-that's messing up slab.
+On Sat, Jul 06, 2013 at 12:33:13AM +0200, Arnd Bergmann wrote:
+> On Saturday 06 July 2013, Maxime Ripard wrote:
+> > > My first thought is that it should be more generic than that and not
+> > > have the mac address hardcoded as the purpose. We could possibly use
+> > > regmap as the in-kernel interface, and come up with a more generic
+> > > way of referring to registers in another device node.
+> >=20
+> > Hmm, I maybe wasn't as clear as I wanted. Here mac-storage was just an
+> > example. It should indeed be completely generic, and a device could have
+> > several "storage source" defined, each driver knowing what property it
+> > would need, pretty much like what's done currently for the regulators
+> > for example.
+> >=20
+> > We will have such a use case anyway for the Allwinner stuff, since the
+> > fuses can be used for several thing, including storing the SoC ID,
+> > serial numbers, and so on.
+>=20
+> Ah, I see. In general, we have two ways of expressing the same thing
+> here:
+>=20
+> a) like interrupts, regs, dmas, clocks, pinctrl, reset, pwm: fixed proper=
+ty names
+>=20
+> 	regmap =3D <&at25 0xstart 0xlen>;
+> 	regmap-names =3D "mac-address";
+>=20
+> b) like gpio, regulator: variable property names
+>=20
+> 	mac-storage =3D <&at25 0xstart 0xlen>;
+>=20
+> It's unfortunate that we already have examples of both. They are largely
+> equivalent, but the tendency is towards the first.
 
-Btw, there are some btrfs related lockup warnings in the logs so I'm
-also CC'ing Chris.
+I don't have a strong feeling for one against another, so whatever works
+best. Both solutions will be a huge improvement anyway :)
 
-                        Pekka
+Just out of curiosity, is there any advantages besides having a fixed
+property name to the first solution?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--FilwpOHBrTVNlmJ3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR19UUAAoJEBx+YmzsjxAgeo0QAKVjrA8g07FlbI9ElVjbGWbq
+/Xd5i3W75P6frSG9xAOpx2gDkCkbdAWlRaKY2QMkdjG4rgY2LQrsJt1MeaKp2nl5
++UhHipdof9m9fpI536kPJTTqQQzhOYVzrUSIJcBHMkHMmlMdmiFsDH4LzU3HkaLF
+DNSVRIDC3e+M7PRzc5mI8sGxJia+ptUxdtynUxKCHead/b3AxcBMx1RtElzPDhSl
+vDIQ4enzboP8k5YjrN8onYoV+/DaHGy+4ltDt4JTznubzW0safto9oHr69g4OMF6
+4oLWCzGoJBVOwSpEKQVeLKD90P7Dv+RwEFWPq6hYtl8BeGp5jx591co6SzEiFV9k
+nfKS+NlovtX4AULjD4hoJEYLfKdXHSKGn/z3g5LtkAAZgoSUOsSbF9Ha21gAM82H
+04lg3KNwsIoJLJC+SHKeD9fEeVxZJysodJG6UwfKfNb4prM6gsNCPg8iMDsu2Ht5
+apkqucunbPa/zemaYdzAMGHT4Ed1Yk+doh5tDCKYq1pwb2IHUCK48xoXL5/OVjUQ
+RBmlU+Bc9TAhXoypzEQpU8pPYak6uskGje6Tdir1K3Acxnt1KRXWd08W0XuiFOeb
+DiVicZM1r77nBXXFc2w4nSz3iMkTC63PSgXrhVLNE5yYitdM127Dg8QeSf3nfzTD
+bfSBOddQtniXwP4SBTby
+=SqFZ
+-----END PGP SIGNATURE-----
+
+--FilwpOHBrTVNlmJ3--
