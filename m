@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab3GGPab (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 11:30:31 -0400
-Received: from www.linutronix.de ([62.245.132.108]:50193 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab3GGPaa (ORCPT
+	id S1752583Ab3GGPiu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 11:38:50 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:50597 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751547Ab3GGPit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 11:30:30 -0400
-Date: Sun, 7 Jul 2013 17:30:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jason Cooper <jason@lakedaemon.net>
-cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Lunn <andrew@lunn.ch>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] clockevents/clocksource: Add Marvell Orion SoC
- timer
-In-Reply-To: <20130707144645.GA11908@titan.lakedaemon.net>
-Message-ID: <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de>
-References: <51B8D310.4050404@linaro.org> <51D9548B.9040907@gmail.com> <alpine.DEB.2.02.1307071508030.32106@ionos.tec.linutronix.de> <20130707144645.GA11908@titan.lakedaemon.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sun, 7 Jul 2013 11:38:49 -0400
+Message-ID: <51D98B84.4000607@kernel.org>
+Date: Sun, 07 Jul 2013 18:38:44 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] mm/slab: Fix drain freelist excessively
+References: <1372898006-6308-1-git-send-email-liwanp@linux.vnet.ibm.com> <0000013faf0d3958-00e5e945-25d8-43c1-ac6e-3d3ad69b2718-000000@email.amazonses.com> <20130707092448.GA11177@hacker.(null)>
+In-Reply-To: <20130707092448.GA11177@hacker.(null)>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Jul 2013, Jason Cooper wrote:
-> Sure, but to be clear, Daniel, please drop this patch from your tree.  I
-> have no desire to create an out-of-tree dependency if we can avoid it.
-> It has a habit of going horribly wrong [1].
-> 
-> I'll cherry-pick
-> 
->   0c1dcfd clocksource: Add Marvell Orion SoC timer
+On 7/7/13 12:24 PM, Wanpeng Li wrote:
+> On Fri, Jul 05, 2013 at 01:37:28PM +0000, Christoph Lameter wrote:
+>> On Thu, 4 Jul 2013, Wanpeng Li wrote:
+>>
+>>> This patch fix the callers that pass # of objects. Make sure they pass #
+>>> of slabs.
+>>
+>> Acked-by: Christoph Lameter <cl@linux.com>
+>
+> Hi Pekka,
+>
+> Is it ok for you to pick this patchset? ;-)
 
-Don't do that. Do a git fetch on that branch and then git merge
-0c1dcfd. The patches before that Marvel commit are already in Linus
-tree. That way it does not matter who sends first or not.
-
-We don't force others to drop stuff and cherry picking is a nuisance
-as well as you end up with two different commits doing the same thing.
-
-Also for the next merge window: Can we please let everything under
-drivers/clocksoure go through Daniels and my trees?
-
-I'm starting to be grumpy about anyone thinking that this directory is
-a public dump ground with no rules.
-
-Thanks,
-
-	tglx
-
-
-
+Applied, thanks a lot!
 
