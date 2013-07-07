@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3GGVcT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 17:32:19 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:60019 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab3GGVcR (ORCPT
+	id S1753251Ab3GGVjX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 17:39:23 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:36844 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab3GGVjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 17:32:17 -0400
+	Sun, 7 Jul 2013 17:39:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFkjPTmzqPTCxyxfwmZX8w7aeO4D9L3wQ2GPypkP=uyK1U6P9g@mail.gmail.com>
-References: <CAFkjPTmzqPTCxyxfwmZX8w7aeO4D9L3wQ2GPypkP=uyK1U6P9g@mail.gmail.com>
-Date: Sun, 7 Jul 2013 14:32:16 -0700
-X-Google-Sender-Auth: Yfv77pYnaepEyKUOPa3TwqdDebQ
-Message-ID: <CA+55aFxOed9ARsDStX_hN_dyRvv5Lza65JLN6Vzu=xihTWEnMw@mail.gmail.com>
-Subject: Re: [GIT PULL] 9p changes for 3.11 merge window (part 1)
+In-Reply-To: <20130707041714.GB16653@intel.com>
+References: <20130707041714.GB16653@intel.com>
+Date: Sun, 7 Jul 2013 14:39:18 -0700
+X-Google-Sender-Auth: qymQIQka9Wu2vzFixdRfb6ZA5MQ
+Message-ID: <CA+55aFw3c2RO-MeocJ0YL_pEy3X1+mAwvQBeVAiND9ia6M-vJA@mail.gmail.com>
+Subject: Re: [GIT PULL] slave-dmaengine updates
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dan Williams <djbw@fb.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 7, 2013 at 12:39 PM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
-> The following changes since commit c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1:
+On Sat, Jul 6, 2013 at 9:17 PM, Vinod Koul <vinod.koul@intel.com> wrote:
 >
->   Linux 3.9 (2013-04-28 17:36:01 -0700)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git
-> tags/9p-for-3.11-merge-window-part-1
+> Once you have some time from extended weekend celebrations please consider
+> pulling the following to get:
+> - Various fixes and PCI driver for dw_dmac by Andy
+> - DT binding for imx-dma by Markus & imx-sdma by Shawn
+> - DT fixes for dmaengine by Lars
+> - jz4740 dmac driver by Lars
+> - and various fixes across the drivers
 
-What the F*CK is wrong with people?
+Sadly, I noticed much too late that I should have checked the
+time-stamps on this too. Almost all of the commits seem to have been
+rebased recently. Not quite minutes before the pull request, but 90%
+of the commits seem to have been created long after the merge window
+opened.
 
-This is the second pull request in minutes that I'm going to have to
-reject, this time because all the commits were apparently rebased just
-minutes before sending me the pull request. So it clearly hasn't
-gotten any testing, and hasn't been in next.
+I have already pushed this out so it's too late now, but if I had
+noticed earlier I would have rejected this pull too.
 
-Why? No explanation, no nothing.
+Today has not been a good day for pulling. If it wasn't for the
+__cpuinit removal pull, I wouldn't have had *anything* today that did
+things properly.
 
-                Linus
+                     Linus "very annoyed" Torvalds
