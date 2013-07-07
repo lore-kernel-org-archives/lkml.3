@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab3GGS1G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 14:27:06 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:51271 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975Ab3GGS05 convert rfc822-to-8bit (ORCPT
+	id S1753084Ab3GGS3Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 14:29:24 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60061 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752427Ab3GGS3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 14:26:57 -0400
-Date: Sat, 06 Jul 2013 18:00:05 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] menuconfig: Allow j/k to move down/up the menu
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
-In-Reply-To: <1373023979-20537-1-git-send-email-artagnon@gmail.com> (from
-	artagnon@gmail.com on Fri Jul  5 06:32:59 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1373151605.27613.9@driftwood>
+	Sun, 7 Jul 2013 14:29:21 -0400
+Date: Sun, 7 Jul 2013 20:29:11 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: build warning after merge of the mfd tree
+Message-ID: <20130707182911.GA1799@breakpoint.cc>
+References: <20130703155655.9fbacfa867af35fd743099e2@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130703155655.9fbacfa867af35fd743099e2@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2013 06:32:59 AM, Ramkumar Ramachandra wrote:
-> Like in Vim.
+On Wed, Jul 03, 2013 at 03:56:55PM +1000, Stephen Rothwell wrote:
+> Hi Samuel,
+Hi Stephen,
+
+> Introduced by commit 18926edebcb8 ("iio: ti_am335x_adc: Allow to specify
+> input line").  CONFIG_OF is not set in this build.
 > 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->  Unsure why nobody has done this yet.
+> Maybe someone could come up with a way to make these arguments to
+> of_property_for_each_u32() etc look used in the !CONFIG_OF case.
 
-While you're at it, why don't you add the ws up and down bindings from  
-World of Warcraft?
+Already posted:
 
-The reason nobody has done this yet is that vi predates the invention  
-of cursor keys. They keyboards Bill Joy was using in the 1970's did not  
-have standardized cursor keys, in large part because you can't cursor  
-around on a teletype printer. Once people started using "glass tty"  
-devices (vt100 and such) cursor keys got standardized within a few  
-years. They were reasonably ubiquitous by the time the IBM PC showed up  
-(the vic 20 and commodore 64 and such all had them; anything that  
-displayed to a television instead of through a daisy wheel).
+  https://lists.ozlabs.org/pipermail/devicetree-discuss/2013-June/035703.html
 
-They also didn't have ALT or control keys. The vi modal interface is a  
-legacy of not having any standardized keys on the keyboard except  
-letters, numbers, and (for 8 bit machines) shift. (There's a song  
-"double bucky" to the tune of "Rubber Ducky" that commemorates a  
-particular bespoke keyboard design from MIT in the 1970's.) Even the  
-punctuation was potluck for a while there, although they could copy  
-manual typewriters and the IBM selectric and such for some of that.
-
-And now you know _why_ Linux is over 20 years old and has never needed  
-this.
-
-Rob
+Sebastian
