@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab3GGLsN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 07:48:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57288 "EHLO mx1.redhat.com"
+	id S1752227Ab3GGLtC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 07:49:02 -0400
+Received: from arrakis.dune.hu ([78.24.191.176]:33922 "EHLO arrakis.dune.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537Ab3GGLsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 07:48:10 -0400
-Date: Sun, 7 Jul 2013 14:48:52 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Kent Overstreet <kmo@daterainc.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, sfr@canb.auug.org.au,
-        andi@firstfloor.org, oleg@redhat.com, mingo@redhat.com,
-        axboe@kernel.dk, target-devel <target-devel@vger.kernel.org>
-Subject: Re: [PATCH v3] lib/idr.c rewrite, percpu ida/tag allocator
-Message-ID: <20130707114852.GA5463@redhat.com>
-References: <1373087301-23730-1-git-send-email-kmo@daterainc.com>
- <1373151546.7397.55.camel@haakon3.risingtidesystems.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373151546.7397.55.camel@haakon3.risingtidesystems.com>
+	id S1751537Ab3GGLs6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 07:48:58 -0400
+Date: Sun, 7 Jul 2013 13:48:53 +0200
+From: Jonas Gorski <jogo@openwrt.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
+Subject: Re: Second ethernet on kirkwood does not work when probed through
+ DT
+Message-ID: <20130707134853.00003b9d@unknown>
+In-Reply-To: <51D952D3.8070401@gmail.com>
+References: <20130706215426.6e666d6af0dc6c9ea5fe32cd@openwrt.org>
+	<51D88A8E.1060104@gmail.com>
+	<20130706233912.00004044@unknown>
+	<51D94884.4000204@gmail.com>
+	<20130707132607.00007188@unknown>
+	<51D952D3.8070401@gmail.com>
+Organization: OpenWrt
+X-Mailer: Claws Mail 3.9.0cvs12 (GTK+ 2.16.6; i586-pc-mingw32msvc)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 06, 2013 at 03:59:06PM -0700, Nicholas A. Bellinger wrote:
-> On Fri, 2013-07-05 at 22:08 -0700, Kent Overstreet wrote:
-> > Previous posting: http://thread.gmane.org/gmane.linux.kernel/1511216
-> > 
-> > The only real change since the last version is that I've reworked the
-> > new ida implementation to not use one giant allocation - it's still
-> > logically one big arary, but it's implemented as an array of arrays.
-> > 
-> > With that, it scales up to INT_MAX allocated ids just fine. Benchmarks
-> > are included in that patch.
-> > 
-> > Patch series is available in my git repo:
-> > git://evilpiepirate.org/~kent/linux-bcache.git idr
-> > 
-> > Andrew, want to pick this up for 3.12?
-> 
-> Just FYI that the target-pending/target-per-cpu-ida branch utilizing
-> per-cpu ida logic for vhost-scsi has been rebased to include this latest
-> series.  Thanks Kent!
-> 
-> Andrew, what are your plans for this..?
-> 
-> Would you consider allowing this series be merged through target-pending
-> in order to allow us to start taking advantage of per-cpu ida tag
-> pre-allocation optimizations for v3.12 target code..? 
-> 
-> Another option would be to merge the per-cpu ida specific piece now for
-> v3.11 for which the risk is low given it doesn't touch any existing
-> code, and then include Kent's full idr rewrite separately as v3.12 item.
-> 
-> WDYT..?
+On Sun, 07 Jul 2013 13:36:51 +0200
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 
-Takes as is, this conflicts with cleanup patches by Asias in vhost-next
-that I was going to send to Linus for 3.11.
-Merging new target code for 3.11 and vhost code for 3.12
-helps keep the dependencies simple, so I'm all for it.
+> On 07/07/2013 01:26 PM, Jonas Gorski wrote:
+> > On Sun, 07 Jul 2013 12:52:52 +0200
+> > Sebastian Hesselbarth<sebastian.hesselbarth@gmail.com>  wrote:
+> >> Anyway, can you please try to have both ports reg properties set
+> >> to<0>, with nodes named ethernet0-port@0 and ethernet1-port@0,
+> >> and the platform_device_alloc in mv643xx_eth modified?
+> >
+> > In addition I added a static counter for the allocated devs (to not
+> > overwrite the pointers in port_platdev[]).
+> 
+> Ok, but that is not required to make it work, is it? IMHO we should
+> honor what is passed by reg property, even it will be always zero
+> for KW and the other Orion SoCs. Otherwise, we would implicitly put
+> the numbering in the order of port nodes.
+
+No, picking the next free "slot" should work, too - it was just the
+easiest to fix the name for the alloc to what seems to be expected by
+other parts.
+
+> > That seems to work, as now eth1 comes up and works (successfully got a
+> > IP through DHCP).
+> 
+> Ok, great. Will prepare a fix for mv643xx_eth on top of net-next. And
+> an update of the kirkwood conversion patches.
 
 
-> 
-> --nab
+Thanks,
+Jonas
