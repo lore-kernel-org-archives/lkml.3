@@ -1,43 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab3GGS3Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 14:29:24 -0400
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:60061 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752427Ab3GGS3V (ORCPT
+	id S1753062Ab3GGSay (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 14:30:54 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:36497 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752427Ab3GGSau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 14:29:21 -0400
-Date: Sun, 7 Jul 2013 20:29:11 +0200
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: linux-next: build warning after merge of the mfd tree
-Message-ID: <20130707182911.GA1799@breakpoint.cc>
-References: <20130703155655.9fbacfa867af35fd743099e2@canb.auug.org.au>
+	Sun, 7 Jul 2013 14:30:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703155655.9fbacfa867af35fd743099e2@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1373151605.27613.9@driftwood>
+References: <1373023979-20537-1-git-send-email-artagnon@gmail.com> <1373151605.27613.9@driftwood>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+Date: Mon, 8 Jul 2013 00:00:10 +0530
+Message-ID: <CALkWK0nydtVsC3=B4ZALYg9FE-NHE_n0DvGhZY8WUgu9kPS4dw@mail.gmail.com>
+Subject: Re: [PATCH] menuconfig: Allow j/k to move down/up the menu
+To: Rob Landley <rob@landley.net>
+Cc: LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 03:56:55PM +1000, Stephen Rothwell wrote:
-> Hi Samuel,
-Hi Stephen,
+Rob Landley wrote:
+>>  Unsure why nobody has done this yet.
+>
+> [...]
+> And now you know _why_ Linux is over 20 years old and has never needed this.
 
-> Introduced by commit 18926edebcb8 ("iio: ti_am335x_adc: Allow to specify
-> input line").  CONFIG_OF is not set in this build.
-> 
-> Maybe someone could come up with a way to make these arguments to
-> of_property_for_each_u32() etc look used in the !CONFIG_OF case.
-
-Already posted:
-
-  https://lists.ozlabs.org/pipermail/devicetree-discuss/2013-June/035703.html
-
-Sebastian
+I was just asking out of curiosity: I'm not old enough to know that
+much history.  Isn't it a nice convenience to have _now_?  Or do you
+have something against it?
