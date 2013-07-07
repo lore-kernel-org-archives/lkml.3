@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782Ab3GGQpV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 12:45:21 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:62421 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab3GGQpR (ORCPT
+	id S1752834Ab3GGQpa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 12:45:30 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:61892 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab3GGQpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 12:45:17 -0400
-Message-ID: <51D99B19.3090107@gmail.com>
-Date: Sun, 07 Jul 2013 10:45:13 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Sun, 7 Jul 2013 12:45:19 -0400
+Message-ID: <51D99B1B.7050106@linaro.org>
+Date: Sun, 07 Jul 2013 18:45:15 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 6/6] perf parse events: demystify memory allocations
-References: <1372793245-4136-1-git-send-email-dsahern@gmail.com> <1372793245-4136-7-git-send-email-dsahern@gmail.com> <20130707152623.GF23433@krava.brq.redhat.com>
-In-Reply-To: <20130707152623.GF23433@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Lunn <andrew@lunn.ch>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [GIT PULL] clockevents/clocksource: Add Marvell Orion SoC timer
+References: <51B8D310.4050404@linaro.org> <51D9548B.9040907@gmail.com> <alpine.DEB.2.02.1307071508030.32106@ionos.tec.linutronix.de> <20130707144645.GA11908@titan.lakedaemon.net> <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/7/13 9:26 AM, Jiri Olsa wrote:
-> On Tue, Jul 02, 2013 at 01:27:25PM -0600, David Ahern wrote:
->> List heads are currently allocated way down the function chain in __add_event
->> and add_tracepoint and then freed when the scanner code calls
->> parse_events_update_lists.
+On 07/07/2013 05:30 PM, Thomas Gleixner wrote:
+> On Sun, 7 Jul 2013, Jason Cooper wrote:
+>> Sure, but to be clear, Daniel, please drop this patch from your tree.  I
+>> have no desire to create an out-of-tree dependency if we can avoid it.
+>> It has a habit of going horribly wrong [1].
 >>
->> Be more explicit with where memory is allocated and who should free it. With
->> this patch the list_head is allocated in the scanner code and freed when the
->> scanner code calls parse_events_update_lists.
+>> I'll cherry-pick
 >>
->
-> SNIP
->
->> @@ -266,9 +279,10 @@ event_legacy_mem:
->>   PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
->>   {
->>   	struct parse_events_evlist *data = _data;
->> -	struct list_head *list = NULL;
->> +	struct list_head *list;
->>
->> -	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
->> +	ALLOC_LIST(list);
->> +	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
->>   					     (void *) $2, $4));
->>   	$$ = list;
->>   }
->> @@ -276,9 +290,10 @@ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
->>   PE_PREFIX_MEM PE_VALUE sep_dc
->>   {
->>   	struct parse_events_evlist *data = _data;
->> -	struct list_head *list = NULL;
->> +	struct list_head *list;
->>
->> -	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
->> +	ALLOC_LIST(list);
->> +	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
->>   					     (void *) $2, NULL));
->
-> so who now frees the list if there's an error
-> in parse_events_add_breakpoint?
+>>   0c1dcfd clocksource: Add Marvell Orion SoC timer
+> 
+> Don't do that. Do a git fetch on that branch and then git merge
+> 0c1dcfd. The patches before that Marvel commit are already in Linus
+> tree. That way it does not matter who sends first or not.
+> 
+> We don't force others to drop stuff and cherry picking is a nuisance
+> as well as you end up with two different commits doing the same thing.
+> 
+> Also for the next merge window: Can we please let everything under
+> drivers/clocksoure go through Daniels and my trees?
+> 
+> I'm starting to be grumpy about anyone thinking that this directory is
+> a public dump ground with no rules.
 
-According to valgrind that memory is not freed prior to this patch, so 
-this one does not introduce new leaks.
+Yes I agree. I will meet John this week and we will sort out this and
+define a clear set of rules to prevent that to happen again.
 
->
-> ditto for other ABORT_ON cases
+  -- Daniel
 
-I will whip up a patch to free memory on failure paths.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-David
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
