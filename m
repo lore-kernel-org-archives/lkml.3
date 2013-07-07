@@ -1,164 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab3GGJ2W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 05:28:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17034 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683Ab3GGJ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 05:28:19 -0400
-Date: Sun, 7 Jul 2013 12:28:04 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Dominik Dingel <dingel@linux.vnet.ibm.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Alexander Graf <agraf@suse.de>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] PF: Provide additional direct page notification
-Message-ID: <20130707092804.GU5113@redhat.com>
-References: <1373057754-59225-1-git-send-email-dingel@linux.vnet.ibm.com>
- <1373057754-59225-4-git-send-email-dingel@linux.vnet.ibm.com>
+	id S1752165Ab3GGJcb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 05:32:31 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:50441 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab3GGJc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 05:32:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373057754-59225-4-git-send-email-dingel@linux.vnet.ibm.com>
+In-Reply-To: <Pine.LNX.4.44L0.1307061646560.29104-100000@netrider.rowland.org>
+References: <51D85BDE.4000703@gmail.com>
+	<Pine.LNX.4.44L0.1307061646560.29104-100000@netrider.rowland.org>
+Date: Sun, 7 Jul 2013 17:32:26 +0800
+Message-ID: <CACVXFVOYOhHKy4Ej5V5+d0atGRn7x5RVT55joWD+ndR2ASqpfw@mail.gmail.com>
+Subject: Re: inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage with hcd_urb_list_lock
+From: Ming Lei <tom.leiming@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 10:55:53PM +0200, Dominik Dingel wrote:
-> By setting a Kconfig option, the architecture can control when
-> guest notifications will be presented by the apf backend.
-> So there is the default batch mechanism, working as before, where the vcpu thread
-> should pull in this information. On the other hand there is now the direct
-> mechanism, this will directly push the information to the guest.
-> 
-> Still the vcpu thread should call check_completion to cleanup leftovers,
-> that leaves most of the common code untouched.
-> 
-> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/mmu.c       |  2 +-
->  include/linux/kvm_host.h |  2 +-
->  virt/kvm/Kconfig         |  4 ++++
->  virt/kvm/async_pf.c      | 22 +++++++++++++++++++---
->  4 files changed, 25 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 0d094da..b8632e9 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -3343,7 +3343,7 @@ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
->  	arch.direct_map = vcpu->arch.mmu.direct_map;
->  	arch.cr3 = vcpu->arch.mmu.get_cr3(vcpu);
->  
-> -	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
-> +	return kvm_setup_async_pf(vcpu, gva, gfn_to_hva(vcpu->kvm, gfn), &arch);
->  }
->  
->  static bool can_do_async_pf(struct kvm_vcpu *vcpu)
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 210f493..969d575 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -175,7 +175,7 @@ struct kvm_async_pf {
->  
->  void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
->  void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu);
-> -int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
-> +int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
->  		       struct kvm_arch_async_pf *arch);
->  int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu);
->  #endif
-> diff --git a/virt/kvm/Kconfig b/virt/kvm/Kconfig
-> index 779262f..715e6b5 100644
-> --- a/virt/kvm/Kconfig
-> +++ b/virt/kvm/Kconfig
-> @@ -22,6 +22,10 @@ config KVM_MMIO
->  config KVM_ASYNC_PF
->         bool
->  
-> +# Toggle to switch between direct notification and batch job
-> +config KVM_ASYNC_PF_DIRECT
-> +       bool
-> +
->  config HAVE_KVM_MSI
->         bool
->  
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index ea475cd..b8df37a 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -28,6 +28,21 @@
->  #include "async_pf.h"
->  #include <trace/events/kvm.h>
->  
-> +static inline void kvm_async_page_direct_present(struct kvm_vcpu *vcpu,
-> +						 struct kvm_async_pf *work)
-> +{
-> +#ifdef CONFIG_KVM_ASYNC_PF_DIRECT
-> +	kvm_arch_async_page_present(vcpu, work);
-> +#endif
-> +}
-> +static inline void kvm_async_page_batch_present(struct kvm_vcpu *vcpu,
-> +						struct kvm_async_pf *work)
-> +{
-> +#ifndef CONFIG_KVM_ASYNC_PF_DIRECT
-> +	kvm_arch_async_page_present(vcpu, work);
-> +#endif
-> +}
-> +
-I would call them kvm_async_page_present_(async|sync)().
+On Sun, Jul 7, 2013 at 4:48 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Sat, 6 Jul 2013, Maarten Lankhorst wrote:
+>
+>> I didn't even know I still had lockdep on.
+>> The following lockdep splat happened when I plugged in a usb bluetooth dongle, using
+>> the pre-rc1 3.11 kernel at HEAD b2c311075db
+>>
+>> =================================
+>> [ INFO: inconsistent lock state ]
+>> 3.10.0+ #106 Not tainted
+>> ---------------------------------
+>> inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
+>> irq/42-xhci_hcd/97 [HC0[0]:SC0[2]:HE1:SE0] takes:
+>>  (hcd_urb_list_lock){?.....}, at: [<ffffffff8149440e>] usb_hcd_unlink_urb_from_ep+0x28/0x4e
+>
+>> stack backtrace:
+>> CPU: 1 PID: 97 Comm: irq/42-xhci_hcd Not tainted 3.10.0+ #106
 
-Hmm, to much "sync" in each function name, but I still think it is
-better.
+Maarten, I am wondering you are running kernel from linus tree since
+looks xhci threaded irq is enabled from the log.
 
->  static struct kmem_cache *async_pf_cache;
->  
->  int kvm_async_pf_init(void)
-> @@ -70,6 +85,7 @@ static void async_pf_execute(struct work_struct *work)
->  	down_read(&mm->mmap_sem);
->  	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
->  	up_read(&mm->mmap_sem);
-> +	kvm_async_page_direct_present(vcpu, apf);
->  	unuse_mm(mm);
->  
->  	spin_lock(&vcpu->async_pf.lock);
-> @@ -134,7 +150,7 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  
->  		if (work->page)
->  			kvm_arch_async_page_ready(vcpu, work);
-> -		kvm_arch_async_page_present(vcpu, work);
-> +		kvm_async_page_batch_present(vcpu, work);
->  
->  		list_del(&work->queue);
->  		vcpu->async_pf.queued--;
-> @@ -144,7 +160,7 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
->  	}
->  }
->  
-> -int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
-> +int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
->  		       struct kvm_arch_async_pf *arch)
->  {
->  	struct kvm_async_pf *work;
-> @@ -166,7 +182,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
->  	work->done = false;
->  	work->vcpu = vcpu;
->  	work->gva = gva;
-> -	work->addr = gfn_to_hva(vcpu->kvm, gfn);
-> +	work->addr = hva;
->  	work->arch = *arch;
->  	work->mm = current->mm;
->  	atomic_inc(&work->mm->mm_count);
-> -- 
-> 1.8.2.2
+If yes, please don't do that because USB host controller driver still
+doesn't support threaded irq now.
 
---
-			Gleb.
+>> Hardware name: Acer Aspire M3985/Aspire M3985, BIOS P01-A1 03/12/2012
+>>  ffffffff8210c150 ffff88040834da48 ffffffff81691af4 0000000000000007
+>>  ffff8804082e20b0 ffff88040834daa8 ffffffff8168cb10 0000000000000002
+>>  ffff880400000001 ffff880400000000 ffffffff8100f4f7 ffff88040834dac4
+>> Call Trace:
+>>  [<ffffffff81691af4>] dump_stack+0x4f/0x84
+>>  [<ffffffff8168cb10>] print_usage_bug+0x1f5/0x206
+>>  [<ffffffff8100f4f7>] ? save_stack_trace+0x2f/0x50
+>>  [<ffffffff810af30c>] mark_lock+0x276/0x2cf
+>>  [<ffffffff810ae8cc>] ? check_usage_forwards+0x12f/0x12f
+>>  [<ffffffff810af925>] __lock_acquire+0x5c0/0x1c2e
+>>  [<ffffffff810b1e04>] ? mark_held_locks+0x6d/0x117
+>>  [<ffffffff8168e8d4>] ? __slab_free+0x1c7/0x2ed
+>>  [<ffffffff810b1f5a>] ? trace_hardirqs_on_caller+0xac/0x1bb
+>>  [<ffffffff810b2076>] ? trace_hardirqs_on+0xd/0xf
+>>  [<ffffffff8149440e>] ? usb_hcd_unlink_urb_from_ep+0x28/0x4e
+>>  [<ffffffff810b1556>] lock_acquire+0x87/0x139
+>>  [<ffffffff8149440e>] ? usb_hcd_unlink_urb_from_ep+0x28/0x4e
+>>  [<ffffffff81698a1a>] _raw_spin_lock+0x3b/0x4a
+>>  [<ffffffff8149440e>] ? usb_hcd_unlink_urb_from_ep+0x28/0x4e
+>>  [<ffffffff8149440e>] usb_hcd_unlink_urb_from_ep+0x28/0x4e
+>>  [<ffffffff814bf55a>] xhci_irq+0x5ac/0x143d
+>>  [<ffffffff81699171>] ? _raw_spin_unlock_irq+0x3b/0x5d
+>>  [<ffffffff8108386d>] ? finish_task_switch+0x7c/0x101
+>>  [<ffffffff81083830>] ? finish_task_switch+0x3f/0x101
+>>  [<ffffffff81697060>] ? __schedule+0x42a/0x885
+>>  [<ffffffff810d7fdb>] ? irq_thread_fn+0x48/0x48
+>>  [<ffffffff814c03fc>] xhci_msi_irq+0x11/0x15
+>
+> It looks like xhci_msi_irq() needs to call local_irq_save() and
+> local_irq_restore().
+
+Looks it isn't needed.
+
+Thanks,
+-- 
+Ming Lei
