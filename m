@@ -1,108 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752806Ab3GGRRI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 13:17:08 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:44790 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab3GGRRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 13:17:03 -0400
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: mturquette@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Peter Meerwald <pmeerw@pmeerw.net>
-Subject: [PATCH] clk: fix typos
-Date: Sun,  7 Jul 2013 19:16:39 +0200
-Message-Id: <1373217399-1541-1-git-send-email-pmeerw@pmeerw.net>
-X-Mailer: git-send-email 1.8.3.2
+	id S1752865Ab3GGR0u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 13:26:50 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:41974 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752740Ab3GGR0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 13:26:48 -0400
+Date: Mon, 8 Jul 2013 01:25:41 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: mingo@elte.hu, paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, deepthi@linux.vnet.ibm.com,
+        peterz@infradead.org, rusty@rustcorp.com.au, heiko.carstens@de.ibm.com,
+        rostedt@goodmis.org, miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
+        tj@kernel.org, akpm@linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        shli@kernel.org, tglx@linutronix.de, lig.fnst@cn.fujitsu.com,
+        anton@samba.org
+Subject: Re: [PATCH 3/3] smp/ipi:Remove check around csd lock in handler for
+ smp_call_function variants
+Message-ID: <20130707172541.GA3218@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Preeti U Murthy <preeti@linux.vnet.ibm.com>, mingo@elte.hu,
+	paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+	a.p.zijlstra@chello.nl, deepthi@linux.vnet.ibm.com,
+	peterz@infradead.org, rusty@rustcorp.com.au,
+	heiko.carstens@de.ibm.com, rostedt@goodmis.org, miltonm@bga.com,
+	srivatsa.bhat@linux.vnet.ibm.com, tj@kernel.org,
+	akpm@linux-foundation.org, svaidy@linux.vnet.ibm.com,
+	shli@kernel.org, tglx@linutronix.de, lig.fnst@cn.fujitsu.com,
+	anton@samba.org
+References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com>
+ <20130705162720.16888.81958.stgit@preeti.in.ibm.com>
+ <20130706054552.GA2929@udknight>
+ <51D7D003.2030001@linux.vnet.ibm.com>
+ <20130706142152.GA2227@udknight>
+ <51D99614.303@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51D99614.303@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
----
- drivers/clk/Kconfig |  2 +-
- drivers/clk/clk.c   | 13 +++++++------
- 2 files changed, 8 insertions(+), 7 deletions(-)
+On Sun, Jul 07, 2013 at 09:53:48PM +0530, Preeti U Murthy wrote:
+> > "
+> >  /*                                                                                               
+> >   * Unlocked CSDs are valid through generic_exec_single():                                        
+> >   */
+> 
+> I don't understand this comment. All callers of generic_exec_single()
+> take the csd lock. So where is the scenario of csds being unlocked in
+> generic_exec_single() before the call to
+> arch_send_call_function_single_ipi() is made?
+>   Rather what is the above comment trying to say?
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 51380d6..cd49096 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -27,7 +27,7 @@ config COMMON_CLK_DEBUG
- 	bool "DebugFS representation of clock tree"
- 	select DEBUG_FS
- 	---help---
--	  Creates a directory hierchy in debugfs for visualizing the clk
-+	  Creates a directory hierarchy in debugfs for visualizing the clk
- 	  tree structure.  Each directory contains read-only members
- 	  that export information specific to that clk node: clk_rate,
- 	  clk_flags, clk_prepare_count, clk_enable_count &
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 54a191c..56a00db 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -702,7 +702,7 @@ void __clk_unprepare(struct clk *clk)
- 
- /**
-  * clk_unprepare - undo preparation of a clock source
-- * @clk: the clk being unprepare
-+ * @clk: the clk being unprepared
-  *
-  * clk_unprepare may sleep, which differentiates it from clk_disable.  In a
-  * simple case, clk_unprepare can be used instead of clk_disable to gate a clk
-@@ -869,6 +869,7 @@ EXPORT_SYMBOL_GPL(clk_enable);
- /**
-  * __clk_round_rate - round the given rate for a clk
-  * @clk: round the rate of this clock
-+ * @rate: the rate which is to be rounded
-  *
-  * Caller must hold prepare_lock.  Useful for clk_ops such as .set_rate
-  */
-@@ -956,7 +957,7 @@ static int __clk_notify(struct clk *clk, unsigned long msg,
-  *
-  * Walks the subtree of clks starting with clk and recalculates rates as it
-  * goes.  Note that if a clk does not implement the .recalc_rate callback then
-- * it is assumed that the clock will take on the rate of it's parent.
-+ * it is assumed that the clock will take on the rate of its parent.
-  *
-  * clk_recalc_rates also propagates the POST_RATE_CHANGE notification,
-  * if necessary.
-@@ -1026,7 +1027,7 @@ EXPORT_SYMBOL_GPL(clk_get_rate);
-  * pre-rate change notifications and returns early if no clks in the
-  * subtree have subscribed to the notifications.  Note that if a clk does not
-  * implement the .recalc_rate callback then it is assumed that the clock will
-- * take on the rate of it's parent.
-+ * take on the rate of its parent.
-  *
-  * Caller must hold prepare_lock.
-  */
-@@ -1198,7 +1199,7 @@ static void clk_change_rate(struct clk *clk)
-  * outcome of clk's .round_rate implementation.  If *parent_rate is unchanged
-  * after calling .round_rate then upstream parent propagation is ignored.  If
-  * *parent_rate comes back with a new rate for clk's parent then we propagate
-- * up to clk's parent and set it's rate.  Upward propagation will continue
-+ * up to clk's parent and set its rate.  Upward propagation will continue
-  * until either a clk does not support the CLK_SET_RATE_PARENT flag or
-  * .round_rate stops requesting changes to clk's parent_rate.
-  *
-@@ -1648,7 +1649,7 @@ int __clk_init(struct device *dev, struct clk *clk)
- 	 * The .init callback is not used by any of the basic clock types, but
- 	 * exists for weird hardware that must perform initialization magic.
- 	 * Please consider other ways of solving initialization problems before
--	 * using this callback, as it's use is discouraged.
-+	 * using this callback, as its use is discouraged.
- 	 */
- 	if (clk->ops->init)
- 		clk->ops->init(clk->hw);
-@@ -1675,7 +1676,7 @@ out:
-  * very large numbers of clocks that need to be statically initialized.  It is
-  * a layering violation to include clk-private.h from any code which implements
-  * a clock's .ops; as such any statically initialized clock data MUST be in a
-- * separate C file from the logic that implements it's operations.  Returns 0
-+ * separate C file from the logic that implements its operations.  Returns 0
-  * on success, otherwise an error code.
-  */
- struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
--- 
-1.8.3.2
+I have given the answer to this question in last reply.
+
+I don't know whether it is right to make a assumption through
+this way that what you do currently:
+
+Find all the current api users, and drop all the robust codes,
+despite the unpredictable future users.
+
+Ok, I know the balance between "robust" vs "performance",
+robust check codes will bring performance penalty in fastest
+code path, but the "penalty" is neglectable sometimes for
+modern CPU.
+
+I decide to respect the MAINTAINER's decision to accept this 
+change or not.
+
+Thanks.
+
+
 
