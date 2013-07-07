@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab3GGVnu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 17:43:50 -0400
-Received: from arrakis.dune.hu ([78.24.191.176]:47664 "EHLO arrakis.dune.hu"
+	id S1753259Ab3GGV62 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 17:58:28 -0400
+Received: from ishtar.tlinx.org ([173.164.175.65]:50009 "EHLO Ishtar.tlinx.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127Ab3GGVns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 17:43:48 -0400
-Date: Sun, 7 Jul 2013 23:43:41 +0200
-From: Jonas Gorski <jogo@openwrt.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Lennert Buytenhek <buytenh@wantstofly.org>, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: mv643xx_eth: fix DT port device name
-Message-ID: <20130707234341.0000721b@unknown>
-In-Reply-To: <1373229231-8838-1-git-send-email-sebastian.hesselbarth@gmail.com>
-References: <1373229231-8838-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Organization: OpenWrt
-X-Mailer: Claws Mail 3.9.0cvs12 (GTK+ 2.16.6; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753171Ab3GGV61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 17:58:27 -0400
+Message-ID: <51D9E47B.90606@tlinx.org>
+Date: Sun, 07 Jul 2013 14:58:19 -0700
+From: Linda Walsh <lkml@tlinx.org>
+User-Agent: Thunderbird
+MIME-Version: 1.0
+To: Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Disabling interrupt remapping seems to cause 50% drop in ethernet speed (v3.10)
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  7 Jul 2013 22:33:51 +0200
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
-
-> Device tree support added to Marvell MV643xx ethernet driver registers
-> port devices from port device nodes found on the corresponding controller
-> node. The current port device name will cause the second controller to
-> fail on registration because of two identical device names. This fixes
-> the issue by taking the device node's name also as port device name.
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Reported-by: Jonas Gorski <jogo@openwrt.org>
-> ---
-> Cc: Lennert Buytenhek <buytenh@wantstofly.org>
-> Cc: Jonas Gorski <jogo@openwrt.org>
-> Cc: netdev@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/net/ethernet/marvell/mv643xx_eth.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-> index 6495bea..1f3a03d 100644
-> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-> @@ -2521,7 +2521,7 @@ static int mv643xx_eth_shared_of_add_port(struct platform_device *pdev,
->  		of_property_read_u32(pnp, "duplex", &ppd.duplex);
->  	}
->  
-> -	ppdev = platform_device_alloc(MV643XX_ETH_NAME, ppd.port_number);
-> +	ppdev = platform_device_alloc(pnp->name, ppd.port_number);
->  	if (!ppdev)
->  		return -ENOMEM;
->  	ppdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-
-This breaks ethernet completely, as there is no platform driver
-registered for pnp->name ("ethernetX-port"), only for MV643XX_ETH_NAME.
-
-Also since I didn't see a patch for it and no mentioning of it:
-
-There's still one further issue from having two ethernet-ports with
-port_number 0, it causes a device leak:
-
-static struct platform_device *port_platdev[3];
-
-mv643xx_eth_shared_of_add_port()
-{
-	...
-	port_platdev[ppd.port_number] = ppdev;
-	...
-}
-
-The second port at 0 will overwrite the first and thus will never be
-deleted in
-
-mv643xx_eth_shared_of_remove()
-{
-	...
-	for (n = 0; n < 3; n++) {
-		platform_device_del(port_platdev[n]);
-		port_platdev[n] = NULL;
-	}
-}
-
-I doubt a insmod-rmmod-insmod will go well in that case ;-)
+There seems to be a new check :
 
 
-Regards
-Jonas
+    Comments
+
+Neil Horman <mailto:nhorman@tuxdriver.com> - April 15, 2013, 4:28 p.m.
+
+A few years back intel published a spec update:
+http://www.intel.com/content/dam/doc/specification-update/5520-and-5500-chipset-ioh-specification-update.pdf
+
+For the 5520 and 5500 chipsets which contained an errata (specificially errata
+53), which noted that these chipsets can't properly do interrupt remapping, and
+as a result the recommend that interrupt remapping be disabled in bios.  While
+many vendors have a bios update to do exactly that, not all do, and of course
+not all users update their bios to a level that corrects the problem.  As a
+result, occasionally interrupts can arrive at a cpu even after affinity for that
+interrupt has be moved, leading to lost or spurrious interrupts (usually
+characterized by the message:
+kernel: do_IRQ: 7.71 No irq handler for vector (irq -1)
+
+There have been several incidents recently of people seeing this error, and
+investigation has shown that they have system for which their BIOS level is such
+that this feature was not properly turned off.  As such, it would be good to
+give them a reminder that their systems are vulnurable to this problem.  For
+details of those that reported the problem, please see:
+https://bugzilla.redhat.com/show_bug.cgi?id=887006
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Prarit Bhargava <prarit@redhat.com>
+CC: Don Zickus <dzickus@redhat.com>
+CC: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Asit Mallick <asit.k.mallick@intel.com>
+CC: David Woodhouse <dwmw2@infradead.org>
+CC: linux-pci@vger.kernel.org
+CC: Joerg Roedel <joro@8bytes.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+====================
+
+That causes a >=50% drop in receive performance on
+ethernet file transfers (with the linux machine being
+receiving a file)... Sending doesn't appear to be affected.
+
+Is the above error message "No irq handler for vector" the only
+error message I would see if I suffered from this bug?
+
+I looked through message logs going back to 2012-01-27 and found 0 
+of those messages.  I do have the part that that is claimed to be affected.
+
+I've been using interrupt affinity /steering (not irqbalancing) to put
+ethernet interrupts for this interface on a specific cpu, keeping
+the file server for that interface on the same cpu as well as keeping
+other HW interrupts off of that node.
+
+
+Without the remapping, I am finding 50% or greater drop in receive speed,
+yet with the remapping, I am not finding the error indicated above.
+
+It is possible I don't see the interrupt because I don't dynamically
+changed affinity after it is initialized -- dunno.  According to the
+report this shouldn't be the case.  If the above error message is the
+symptom, I'd think I'd see it in 2 years of logs.
+
+Is there a way to disable this short of reverting the patch?
+
+
+
+
