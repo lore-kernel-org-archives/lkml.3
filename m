@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736Ab3GGQbs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 12:31:48 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:47212 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545Ab3GGQbr (ORCPT
+	id S1752772Ab3GGQjP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 12:39:15 -0400
+Received: from mail-qe0-f41.google.com ([209.85.128.41]:58966 "EHLO
+	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab3GGQjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 12:31:47 -0400
-Message-ID: <51D99752.7050804@linux.vnet.ibm.com>
-Date: Sun, 07 Jul 2013 21:59:06 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Sun, 7 Jul 2013 12:39:13 -0400
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Wang YanQing <udknight@gmail.com>, xiaoguangrong@cn.fujitsu.com,
-        mingo@elte.hu, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, npiggin@suse.de,
-        deepthi@linux.vnet.ibm.com, peterz@infradead.org,
-        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, rostedt@goodmis.org,
-        miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
-        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, shli@kernel.org, lig.fnst@cn.fujitsu.com,
-        anton@samba.org
-Subject: Re: [PATCH 2/3] smp/ipi:Clarify ambiguous comments around deadlock
- scenarios in smp_call_function variants.
-References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com> <20130705162711.16888.30274.stgit@preeti.in.ibm.com> <20130706061205.GA3518@udknight> <51D7CBD7.2060902@linux.vnet.ibm.com> <alpine.DEB.2.02.1307062148040.32106@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307062148040.32106@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070716-2000-0000-0000-00000CCA5000
+Date: Sun, 7 Jul 2013 22:39:11 +0600
+Message-ID: <CAN_LGv2zhu3zWd+7Jmi9FZd728W5T5kte2P0FMWABzENmyKJ5w@mail.gmail.com>
+Subject: CIFS-related deadlock in 3.10-rc7
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+To: linux-cifs@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the pointer Thomas :)
+While playing a file from a CIFS-mounted samba share (over wireless,
+if that matters), I got this deadlock:
 
-Regards
-Preeti U murthy
-On 07/07/2013 01:18 AM, Thomas Gleixner wrote:
-> On Sat, 6 Jul 2013, Preeti U Murthy wrote:
-> 
->> Hi Wang,
->>
->> On 07/06/2013 11:42 AM, Wang YanQing wrote:
->>> On Fri, Jul 05, 2013 at 09:57:11PM +0530, Preeti U Murthy wrote:
->>>> Elaborate on when deadlocks can occur when a call is made to
->>>> smp_call_function_single() and its friends. This avoids ambiguity about
->>>> when to use these calls.
->>>>
->>>> +	 * 2. wait = 0: This function could be called from an interrupt
->>>> +	 * context, and can get blocked on the csd_lock(csd) below in
->>>> +	 * "non wait cases".
->>>> +	 * This is because the percpu copy of csd of this_cpu is used
->>>> +	 * in non wait cases. Under such circumstances, if the previous caller
->>>> +	 * of this function who got preempted by this interrupt has already taken
->>>> +	 * the lock under non wait condition, it will result in deadlock.
->>>> +	 *
->>>
->>> No, it will not cause deadlock, it is not mutex lock,  it is busy wait, so
->>> when the CSD_FLAG_LOCK be cleared, the code will go on running.
->>
->> A deadlock might not result, but a potential long wait in an interrupt
->> context could result if the source cpu got preempted by an interrupt
->> between  csd_lock(csd) and generic_exec_single(), where it actually
->> sends an ipi to the target cpu.
-> 
-> See https://lkml.org/lkml/2013/7/5/183 and the related thread for real
-> deadlock scenarios.
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+[ 2164.132440] =============================================
+[ 2164.132443] [ INFO: possible recursive locking detected ]
+[ 2164.132446] 3.10.0-rc7-rafael+ #26 Tainted: G         C
+[ 2164.132448] ---------------------------------------------
+[ 2164.132452] vlc/2370 is trying to acquire lock:
+[ 2164.132454]  (&cifsi->lock_sem){++++.+}, at: [<ffffffffa0913110>]
+cifs_reopen_file+0x270/0x5b0 [cifs]
+[ 2164.132472]
+but task is already holding lock:
+[ 2164.132475]  (&cifsi->lock_sem){++++.+}, at: [<ffffffffa0918ca8>]
+cifs_strict_readv+0x88/0x160 [cifs]
+[ 2164.132488]
+other info that might help us debug this:
+[ 2164.132491]  Possible unsafe locking scenario:
 
+[ 2164.132494]        CPU0
+[ 2164.132496]        ----
+[ 2164.132498]   lock(&cifsi->lock_sem);
+[ 2164.132502]   lock(&cifsi->lock_sem);
+[ 2164.132505]
+ *** DEADLOCK ***
+
+[ 2164.132508]  May be due to missing lock nesting notation
+
+[ 2164.132511] 1 lock held by vlc/2370:
+[ 2164.132513]  #0:  (&cifsi->lock_sem){++++.+}, at:
+[<ffffffffa0918ca8>] cifs_strict_readv+0x88/0x160 [cifs]
+[ 2164.132526]
+stack backtrace:
+[ 2164.132531] CPU: 3 PID: 2370 Comm: vlc Tainted: G         C
+3.10.0-rc7-rafael+ #26
+[ 2164.132534] Hardware name: Sony Corporation VPCZ23A4R/VAIO, BIOS
+R1013H5 05/21/2012
+[ 2164.132537]  ffff880235033f80 ffff8802281fb958 ffffffff8165b7ae
+ffff8802281fba48
+[ 2164.132544]  ffffffff810a0042 ffff8802281fb978 ffffffff826360d0
+ffff8802281fb9c8
+[ 2164.132550]  0000000000000000 0000000000000000 00000000000389b0
+ffff880200000542
+[ 2164.132556] Call Trace:
+[ 2164.132564]  [<ffffffff8165b7ae>] dump_stack+0x19/0x1b
+[ 2164.132569]  [<ffffffff810a0042>] __lock_acquire+0x1522/0x1ee0
+[ 2164.132579]  [<ffffffffa091aa41>] ? cifs_get_inode_info+0x181/0x690 [cifs]
+[ 2164.132587]  [<ffffffffa0913110>] ? cifs_reopen_file+0x270/0x5b0 [cifs]
+[ 2164.132591]  [<ffffffff810a1027>] lock_acquire+0x87/0x150
+[ 2164.132598]  [<ffffffffa0913110>] ? cifs_reopen_file+0x270/0x5b0 [cifs]
+[ 2164.132604]  [<ffffffff8165ed3f>] down_write+0x3f/0x70
+[ 2164.132612]  [<ffffffffa0913110>] ? cifs_reopen_file+0x270/0x5b0 [cifs]
+[ 2164.132622]  [<ffffffffa0927a76>] ? cifs_set_fid+0x26/0x40 [cifs]
+[ 2164.132632]  [<ffffffffa0913110>] cifs_reopen_file+0x270/0x5b0 [cifs]
+[ 2164.132642]  [<ffffffffa0913d0b>] cifs_readpage_worker+0x1ab/0x4e0 [cifs]
+[ 2164.132652]  [<ffffffffa091427e>] cifs_readpage+0x5e/0x160 [cifs]
+[ 2164.132660]  [<ffffffff81109b87>] generic_file_aio_read+0x217/0x760
+[ 2164.132670]  [<ffffffffa0918d51>] cifs_strict_readv+0x131/0x160 [cifs]
+[ 2164.132675]  [<ffffffff8116fff5>] do_sync_read+0x75/0xb0
+[ 2164.132681]  [<ffffffff81170ef7>] vfs_read+0xa7/0x180
+[ 2164.132686]  [<ffffffff81171170>] SyS_read+0x50/0xa0
+[ 2164.132691]  [<ffffffff81668e16>] system_call_fastpath+0x1a/0x1f
+
+-- 
+Alexander E. Patrakov
