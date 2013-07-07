@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826Ab3GGRBZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 13:01:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26359 "EHLO mx1.redhat.com"
+	id S1752806Ab3GGRRI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 13:17:08 -0400
+Received: from ns.pmeerw.net ([87.118.82.44]:44790 "EHLO pmeerw.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752724Ab3GGRBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 13:01:24 -0400
-Date: Sun, 7 Jul 2013 19:00:48 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>
-Subject: Re: [PATCH 6/6] perf parse events: demystify memory allocations
-Message-ID: <20130707170048.GG23433@krava.brq.redhat.com>
-References: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
- <1372793245-4136-7-git-send-email-dsahern@gmail.com>
- <20130707152623.GF23433@krava.brq.redhat.com>
- <51D99B19.3090107@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51D99B19.3090107@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752573Ab3GGRRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 13:17:03 -0400
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: mturquette@linaro.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Peter Meerwald <pmeerw@pmeerw.net>
+Subject: [PATCH] clk: fix typos
+Date: Sun,  7 Jul 2013 19:16:39 +0200
+Message-Id: <1373217399-1541-1-git-send-email-pmeerw@pmeerw.net>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 07, 2013 at 10:45:13AM -0600, David Ahern wrote:
-> On 7/7/13 9:26 AM, Jiri Olsa wrote:
-> >On Tue, Jul 02, 2013 at 01:27:25PM -0600, David Ahern wrote:
-> >>List heads are currently allocated way down the function chain in __add_event
-> >>and add_tracepoint and then freed when the scanner code calls
-> >>parse_events_update_lists.
-> >>
-> >>Be more explicit with where memory is allocated and who should free it. With
-> >>this patch the list_head is allocated in the scanner code and freed when the
-> >>scanner code calls parse_events_update_lists.
-> >>
-> >
-> >SNIP
-> >
-> >>@@ -266,9 +279,10 @@ event_legacy_mem:
-> >>  PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
-> >>  {
-> >>  	struct parse_events_evlist *data = _data;
-> >>-	struct list_head *list = NULL;
-> >>+	struct list_head *list;
-> >>
-> >>-	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
-> >>+	ALLOC_LIST(list);
-> >>+	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
-> >>  					     (void *) $2, $4));
-> >>  	$$ = list;
-> >>  }
-> >>@@ -276,9 +290,10 @@ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
-> >>  PE_PREFIX_MEM PE_VALUE sep_dc
-> >>  {
-> >>  	struct parse_events_evlist *data = _data;
-> >>-	struct list_head *list = NULL;
-> >>+	struct list_head *list;
-> >>
-> >>-	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
-> >>+	ALLOC_LIST(list);
-> >>+	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
-> >>  					     (void *) $2, NULL));
-> >
-> >so who now frees the list if there's an error
-> >in parse_events_add_breakpoint?
-> 
-> According to valgrind that memory is not freed prior to this patch,
-> so this one does not introduce new leaks.
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+---
+ drivers/clk/Kconfig |  2 +-
+ drivers/clk/clk.c   | 13 +++++++------
+ 2 files changed, 8 insertions(+), 7 deletions(-)
 
-I thought this hunk did:
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 51380d6..cd49096 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -27,7 +27,7 @@ config COMMON_CLK_DEBUG
+ 	bool "DebugFS representation of clock tree"
+ 	select DEBUG_FS
+ 	---help---
+-	  Creates a directory hierchy in debugfs for visualizing the clk
++	  Creates a directory hierarchy in debugfs for visualizing the clk
+ 	  tree structure.  Each directory contains read-only members
+ 	  that export information specific to that clk node: clk_rate,
+ 	  clk_flags, clk_prepare_count, clk_enable_count &
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 54a191c..56a00db 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -702,7 +702,7 @@ void __clk_unprepare(struct clk *clk)
+ 
+ /**
+  * clk_unprepare - undo preparation of a clock source
+- * @clk: the clk being unprepare
++ * @clk: the clk being unprepared
+  *
+  * clk_unprepare may sleep, which differentiates it from clk_disable.  In a
+  * simple case, clk_unprepare can be used instead of clk_disable to gate a clk
+@@ -869,6 +869,7 @@ EXPORT_SYMBOL_GPL(clk_enable);
+ /**
+  * __clk_round_rate - round the given rate for a clk
+  * @clk: round the rate of this clock
++ * @rate: the rate which is to be rounded
+  *
+  * Caller must hold prepare_lock.  Useful for clk_ops such as .set_rate
+  */
+@@ -956,7 +957,7 @@ static int __clk_notify(struct clk *clk, unsigned long msg,
+  *
+  * Walks the subtree of clks starting with clk and recalculates rates as it
+  * goes.  Note that if a clk does not implement the .recalc_rate callback then
+- * it is assumed that the clock will take on the rate of it's parent.
++ * it is assumed that the clock will take on the rate of its parent.
+  *
+  * clk_recalc_rates also propagates the POST_RATE_CHANGE notification,
+  * if necessary.
+@@ -1026,7 +1027,7 @@ EXPORT_SYMBOL_GPL(clk_get_rate);
+  * pre-rate change notifications and returns early if no clks in the
+  * subtree have subscribed to the notifications.  Note that if a clk does not
+  * implement the .recalc_rate callback then it is assumed that the clock will
+- * take on the rate of it's parent.
++ * take on the rate of its parent.
+  *
+  * Caller must hold prepare_lock.
+  */
+@@ -1198,7 +1199,7 @@ static void clk_change_rate(struct clk *clk)
+  * outcome of clk's .round_rate implementation.  If *parent_rate is unchanged
+  * after calling .round_rate then upstream parent propagation is ignored.  If
+  * *parent_rate comes back with a new rate for clk's parent then we propagate
+- * up to clk's parent and set it's rate.  Upward propagation will continue
++ * up to clk's parent and set its rate.  Upward propagation will continue
+  * until either a clk does not support the CLK_SET_RATE_PARENT flag or
+  * .round_rate stops requesting changes to clk's parent_rate.
+  *
+@@ -1648,7 +1649,7 @@ int __clk_init(struct device *dev, struct clk *clk)
+ 	 * The .init callback is not used by any of the basic clock types, but
+ 	 * exists for weird hardware that must perform initialization magic.
+ 	 * Please consider other ways of solving initialization problems before
+-	 * using this callback, as it's use is discouraged.
++	 * using this callback, as its use is discouraged.
+ 	 */
+ 	if (clk->ops->init)
+ 		clk->ops->init(clk->hw);
+@@ -1675,7 +1676,7 @@ out:
+  * very large numbers of clocks that need to be statically initialized.  It is
+  * a layering violation to include clk-private.h from any code which implements
+  * a clock's .ops; as such any statically initialized clock data MUST be in a
+- * separate C file from the logic that implements it's operations.  Returns 0
++ * separate C file from the logic that implements its operations.  Returns 0
+  * on success, otherwise an error code.
+  */
+ struct clk *__clk_register(struct device *dev, struct clk_hw *hw)
+-- 
+1.8.3.2
 
-
-        evsel = perf_evsel__new(attr, (*idx)++);
--       if (!evsel) {
--               free(list);
-
-
-but I might have missed other cases..
-
-jirka
