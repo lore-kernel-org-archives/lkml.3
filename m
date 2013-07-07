@@ -1,90 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752662Ab3GGO4s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 10:56:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43578 "EHLO mx1.redhat.com"
+	id S1752545Ab3GGP06 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 11:26:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752318Ab3GGO4r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 10:56:47 -0400
-Date: Sun, 7 Jul 2013 16:56:04 +0200
+	id S1751547Ab3GGP05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 11:26:57 -0400
+Date: Sun, 7 Jul 2013 17:26:24 +0200
 From: Jiri Olsa <jolsa@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: perf/Documentation/ABI -- add some documentation for perf_event
- sysfs usage
-Message-ID: <20130707145604.GD23433@krava.brq.redhat.com>
-References: <alpine.DEB.2.10.1307031527390.12584@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1307032308040.13409@vincent-weaver-1.um.maine.edu>
- <20130704090253.GJ18898@dyad.programming.kicks-ass.net>
- <20130704220233.GA11319@krava.redhat.com>
- <alpine.DEB.2.10.1307051119410.27475@vincent-weaver-1.um.maine.edu>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 6/6] perf parse events: demystify memory allocations
+Message-ID: <20130707152623.GF23433@krava.brq.redhat.com>
+References: <1372793245-4136-1-git-send-email-dsahern@gmail.com>
+ <1372793245-4136-7-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1307051119410.27475@vincent-weaver-1.um.maine.edu>
+In-Reply-To: <1372793245-4136-7-git-send-email-dsahern@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 11:28:08AM -0400, Vince Weaver wrote:
-> On Fri, 5 Jul 2013, Jiri Olsa wrote:
+On Tue, Jul 02, 2013 at 01:27:25PM -0600, David Ahern wrote:
+> List heads are currently allocated way down the function chain in __add_event
+> and add_tracepoint and then freed when the scanner code calls
+> parse_events_update_lists.
 > 
-> > On Thu, Jul 04, 2013 at 11:02:53AM +0200, Peter Zijlstra wrote:
-> > > On Wed, Jul 03, 2013 at 11:14:40PM -0400, Vince Weaver wrote:
+> Be more explicit with where memory is allocated and who should free it. With
+> this patch the list_head is allocated in the scanner code and freed when the
+> scanner code calls parse_events_update_lists.
 > 
-> > > >    Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-> > > > 
-> > > > Should the ldlat value be fixed to be hex?  Or should we ammend the ABI
-> > > > document to allow decimal?
-> > > 
-> > > I don't see a good reason not to allow decimal as well. Jolsa?
-> > 
-> > yep, no technical problem with decimal
-> > 
-> > hum, the doc mentions 'event' term only, which IS hex only AFAICS ;-)
-> > 
-> > I think this docs should be updated and either describe all
-> > allowed terms or be generic enough to cover all of them.
-> 
-> So you're saying the official kernel ABI should be "whatever the 
-> userspace perf tool happens to accept"?
 
-nope, I meant whatever term is used by kernel to describe the event
+SNIP
 
-'event, umask, edge, pc, any, inv, cmask, ldat'
+> @@ -266,9 +279,10 @@ event_legacy_mem:
+>  PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+>  {
+>  	struct parse_events_evlist *data = _data;
+> -	struct list_head *list = NULL;
+> +	struct list_head *list;
+>  
+> -	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
+> +	ALLOC_LIST(list);
+> +	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+>  					     (void *) $2, $4));
+>  	$$ = list;
+>  }
+> @@ -276,9 +290,10 @@ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+>  PE_PREFIX_MEM PE_VALUE sep_dc
+>  {
+>  	struct parse_events_evlist *data = _data;
+> -	struct list_head *list = NULL;
+> +	struct list_head *list;
+>  
+> -	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
+> +	ALLOC_LIST(list);
+> +	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+>  					     (void *) $2, NULL));
 
-please check x86_event_sysfs_show function
+so who now frees the list if there's an error
+in parse_events_add_breakpoint?
 
-> 
-> That's not really useful, especially as perf doesn't distinguish between
-> event strings read from sysfs and those passed on the perf command line.
-> The ABI documentation in effect ends up being a pointer to a mostly 
-> incomprehensible lex/yacc file.
-
-the documentation is missing, no argument here :-\
-'sysfs-bus-event_source-devices-events' could be more descriptive
-
-> 
-> I think we should just remove the 
->    Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-> file as it's misleading.  Userspace broke and no one cares.
-> 
-> It's not even easy to audit all places in the kernel that create the sysfs 
-> event files because each architecture does it differently.  And there's no 
-> sane way to unit test this on a new kernel release because the values 
-> printed depend on the hardware you have, so without a full range of all 
-> families of cpus for all architectures you never know when someone has 
-> added a decimal value, or started depending on { characters, etc.
-> 
-> This is the problem with perf in the tools directory, any other user of 
-> the ABI is eternally second-class.
-
-with updated documentation I dont see the issue
+ditto for other ABORT_ON cases
 
 jirka
