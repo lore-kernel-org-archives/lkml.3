@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab3GGSFb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 14:05:31 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:60424 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab3GGSF3 (ORCPT
+	id S1752941Ab3GGSHE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 14:07:04 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:49514 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab3GGSHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 14:05:29 -0400
-From: Olof Johansson <olof@lixom.net>
-To: vinod.koul@intel.com, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, djbw@fb.com,
-        linux-arm-kernel@lists.infradead.org, b.zolnierkie@samsung.com,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] dma: iop: fix new warnings
-Date: Sun,  7 Jul 2013 11:05:55 -0700
-Message-Id: <1373220355-26712-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 7 Jul 2013 14:07:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130702174402.GA21817@windriver.com>
+References: <20130702174402.GA21817@windriver.com>
+Date: Sun, 7 Jul 2013 11:07:00 -0700
+X-Google-Sender-Auth: FuzzTyfkesmzm78F9CxBf8fVwHg
+Message-ID: <CA+55aFzoMm=_VbJJknFC=cVzbq2Xq3kN9X-Xsr=rSoZVPHZNPw@mail.gmail.com>
+Subject: Re: [GIT PULL] Stage 1 of __cpuinit removal
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recent "drivers/dma: remove unused support for MEMSET operations"
-change has fallout from lack of build testing by the author. This fixes:
+On Tue, Jul 2, 2013 at 10:44 AM, Paul Gortmaker
+<paul.gortmaker@windriver.com> wrote:
+>
+>  include/asm-generic/vmlinux.lds.h | 12 ---------
+>  include/linux/init.h              | 19 +++++++-------
+>  scripts/mod/modpost.c             | 52 +++++++--------------------------------
+>  3 files changed, 19 insertions(+), 65 deletions(-)
 
-drivers/dma/iop-adma.c:1020:13: warning: unused variable 'dma_addr' [-Wunused-variable]
-drivers/dma/iop-adma.c:1519:2: warning: format '%s' expects a matching 'char *' argument [-Wformat=]
+Your diffstat is odd, and doesn't match mine. But I'm pretty sure
+yours is just plain wrong, because your numbers just don't add up.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/dma/iop-adma.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+You have:
+  12+19+52 = 83
+  19+65 = 84
 
-diff --git a/drivers/dma/iop-adma.c b/drivers/dma/iop-adma.c
-index c9cc08c..cc727ec 100644
---- a/drivers/dma/iop-adma.c
-+++ b/drivers/dma/iop-adma.c
-@@ -1017,7 +1017,7 @@ iop_adma_xor_val_self_test(struct iop_adma_device *device)
- 	struct page *xor_srcs[IOP_ADMA_NUM_SRC_TEST];
- 	struct page *zero_sum_srcs[IOP_ADMA_NUM_SRC_TEST + 1];
- 	dma_addr_t dma_srcs[IOP_ADMA_NUM_SRC_TEST + 1];
--	dma_addr_t dma_addr, dest_dma;
-+	dma_addr_t dest_dma;
- 	struct dma_async_tx_descriptor *tx;
- 	struct dma_chan *dma_chan;
- 	dma_cookie_t cookie;
-@@ -1516,7 +1516,7 @@ static int iop_adma_probe(struct platform_device *pdev)
- 			goto err_free_iop_chan;
- 	}
- 
--	dev_info(&pdev->dev, "Intel(R) IOP: ( %s%s%s%s%s%s%s)\n",
-+	dev_info(&pdev->dev, "Intel(R) IOP: ( %s%s%s%s%s%s)\n",
- 		 dma_has_cap(DMA_PQ, dma_dev->cap_mask) ? "pq " : "",
- 		 dma_has_cap(DMA_PQ_VAL, dma_dev->cap_mask) ? "pq_val " : "",
- 		 dma_has_cap(DMA_XOR, dma_dev->cap_mask) ? "xor " : "",
--- 
-1.7.10.4
+how the heck did you manage that?
 
+The correct diffstat would seem to be
+
+ include/asm-generic/vmlinux.lds.h | 12 ------------
+ include/linux/init.h              | 19 +++++++++---------
+ scripts/mod/modpost.c             | 52
++++++++++----------------------------------------
+ 3 files changed, 18 insertions(+), 65 deletions(-)
+
+(where both set of numbers add up to 83).
+
+                  Linus
