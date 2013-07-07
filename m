@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab3GGQl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 12:41:59 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:39545 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab3GGQl4 (ORCPT
+	id S1752782Ab3GGQpV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 12:45:21 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:62421 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573Ab3GGQpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 12:41:56 -0400
+	Sun, 7 Jul 2013 12:45:17 -0400
+Message-ID: <51D99B19.3090107@gmail.com>
+Date: Sun, 07 Jul 2013 10:45:13 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <0000013f9aeb70c6-f6dad22c-bb88-4313-8602-538a3f5cedf5-000000@email.amazonses.com>
-References: <1372069394-26167-1-git-send-email-liwanp@linux.vnet.ibm.com>
-	<1372069394-26167-2-git-send-email-liwanp@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1306241421560.25343@chino.kir.corp.google.com>
-	<0000013f9aeb70c6-f6dad22c-bb88-4313-8602-538a3f5cedf5-000000@email.amazonses.com>
-Date: Sun, 7 Jul 2013 19:41:54 +0300
-X-Google-Sender-Auth: SuE5P5eOouMQ-Tc0XSW72oPrBd8
-Message-ID: <CAOJsxLGXTcB2iVcg5SArVytakjeTSCZqLEqnBWhTrjA4aLnSSQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] mm/slab: Sharing s_next and s_stop between slab and slub
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, Matt Mackall <mpm@selenic.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Olsa <jolsa@redhat.com>
+CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>
+Subject: Re: [PATCH 6/6] perf parse events: demystify memory allocations
+References: <1372793245-4136-1-git-send-email-dsahern@gmail.com> <1372793245-4136-7-git-send-email-dsahern@gmail.com> <20130707152623.GF23433@krava.brq.redhat.com>
+In-Reply-To: <20130707152623.GF23433@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 6:48 PM, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 24 Jun 2013, David Rientjes wrote:
->
->> On Mon, 24 Jun 2013, Wanpeng Li wrote:
+On 7/7/13 9:26 AM, Jiri Olsa wrote:
+> On Tue, Jul 02, 2013 at 01:27:25PM -0600, David Ahern wrote:
+>> List heads are currently allocated way down the function chain in __add_event
+>> and add_tracepoint and then freed when the scanner code calls
+>> parse_events_update_lists.
 >>
->> > This patch shares s_next and s_stop between slab and slub.
->> >
+>> Be more explicit with where memory is allocated and who should free it. With
+>> this patch the list_head is allocated in the scanner code and freed when the
+>> scanner code calls parse_events_update_lists.
 >>
->> Just about the entire kernel includes slab.h, so I think you'll need to
->> give these slab-specific names instead of exporting "s_next" and "s_stop"
->> to everybody.
 >
-> He put the export into mm/slab.h. The headerfile is only included by
-> mm/sl?b.c .
+> SNIP
+>
+>> @@ -266,9 +279,10 @@ event_legacy_mem:
+>>   PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+>>   {
+>>   	struct parse_events_evlist *data = _data;
+>> -	struct list_head *list = NULL;
+>> +	struct list_head *list;
+>>
+>> -	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
+>> +	ALLOC_LIST(list);
+>> +	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+>>   					     (void *) $2, $4));
+>>   	$$ = list;
+>>   }
+>> @@ -276,9 +290,10 @@ PE_PREFIX_MEM PE_VALUE ':' PE_MODIFIER_BP sep_dc
+>>   PE_PREFIX_MEM PE_VALUE sep_dc
+>>   {
+>>   	struct parse_events_evlist *data = _data;
+>> -	struct list_head *list = NULL;
+>> +	struct list_head *list;
+>>
+>> -	ABORT_ON(parse_events_add_breakpoint(&list, &data->idx,
+>> +	ALLOC_LIST(list);
+>> +	ABORT_ON(parse_events_add_breakpoint(list, &data->idx,
+>>   					     (void *) $2, NULL));
+>
+> so who now frees the list if there's an error
+> in parse_events_add_breakpoint?
 
-But he then went on to add globally visible symbols "s_next" and
-"s_stop" which is bad...
+According to valgrind that memory is not freed prior to this patch, so 
+this one does not introduce new leaks.
 
-Please send me an incremental patch on top of slab/next to fix this
-up. Otherwise I'll revert it before sending a pull request to Linus.
+>
+> ditto for other ABORT_ON cases
 
-                      Pekka
+I will whip up a patch to free memory on failure paths.
+
+David
+
