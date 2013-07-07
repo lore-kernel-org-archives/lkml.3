@@ -1,44 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab3GGE7b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 00:59:31 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:57553 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750802Ab3GGE7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 00:59:31 -0400
-Message-ID: <1373173169.1943.1.camel@joe-AO722>
-Subject: Re: [PATCH] lib: One less subtraction in binary search iterations.
-From: Joe Perches <joe@perches.com>
-To: Wedson Almeida Filho <wedsonaf@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
-        linux-kernel@vger.kernel.org
-Date: Sat, 06 Jul 2013 21:59:29 -0700
-In-Reply-To: <1373152062-28164-1-git-send-email-wedsonaf@gmail.com>
-References: <1373152062-28164-1-git-send-email-wedsonaf@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751479Ab3GGF3k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 01:29:40 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:45193 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3GGF3h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 01:29:37 -0400
+Date: Sat, 6 Jul 2013 22:29:34 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH 22/51] Input: atmel_mxt_ts - Add shutdown function
+Message-ID: <20130707052934.GB15453@core.coreip.homeip.net>
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk>
+ <1372337366-9286-23-git-send-email-nick.dyer@itdev.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372337366-9286-23-git-send-email-nick.dyer@itdev.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-07-06 at 16:07 -0700, Wedson Almeida Filho wrote:
-> There is no functional change, but this change eliminates a subtraction that
-> the compiler doesn't optimize out (as of gcc 4.7.3).
+Hi Nick,
 
-Not correct.
+On Thu, Jun 27, 2013 at 01:48:57PM +0100, Nick Dyer wrote:
+> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
+> Acked-by: Benson Leung <bleung@chromium.org>
 
-> diff --git a/lib/bsearch.c b/lib/bsearch.c
-[]
-> @@ -37,7 +37,7 @@ void *bsearch(const void *key, const void *base, size_t num, size_t size,
->  	int result;
+Why is this needed?
+
+Thanks.
+
+> ---
+>  drivers/input/touchscreen/atmel_mxt_ts.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/input/touchscreen/atmel_mxt_ts.c b/drivers/input/touchscreen/atmel_mxt_ts.c
+> index ee1e866..76f1c20 100644
+> --- a/drivers/input/touchscreen/atmel_mxt_ts.c
+> +++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+> @@ -1897,6 +1897,13 @@ static int mxt_resume(struct device *dev)
 >  
->  	while (start < end) {
-> -		size_t mid = start + (end - start) / 2;
-> +		size_t mid = (start + end) / 2;
+>  static SIMPLE_DEV_PM_OPS(mxt_pm_ops, mxt_suspend, mxt_resume);
+>  
+> +static void mxt_shutdown(struct i2c_client *client)
+> +{
+> +	struct mxt_data *data = i2c_get_clientdata(client);
+> +
+> +	disable_irq(data->irq);
+> +}
+> +
+>  static const struct i2c_device_id mxt_id[] = {
+>  	{ "qt602240_ts", 0 },
+>  	{ "atmel_mxt_ts", 0 },
+> @@ -1914,6 +1921,7 @@ static struct i2c_driver mxt_driver = {
+>  	},
+>  	.probe		= mxt_probe,
+>  	.remove		= mxt_remove,
+> +	.shutdown	= mxt_shutdown,
+>  	.id_table	= mxt_id,
+>  };
+>  
+> -- 
+> 1.7.10.4
+> 
 
-	size_t start = 0x80000000;
-	size_t end   = 0x80000001;
-
-
+-- 
+Dmitry
