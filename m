@@ -1,191 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753062Ab3GGSyq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 14:54:46 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:38242 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752886Ab3GGSyn (ORCPT
+	id S1753125Ab3GGTJD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 15:09:03 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:60856 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974Ab3GGTJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 14:54:43 -0400
+	Sun, 7 Jul 2013 15:09:00 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ferruh Yigit <fery@cypress.com>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] Input: cyttsp4 - Kill defined but not used compiler warnings
+Date: Sun,  7 Jul 2013 21:08:31 +0200
+Message-Id: <1373224111-16873-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1373014001-17746-2-git-send-email-cw00.choi@samsung.com>
-References: <1373014001-17746-1-git-send-email-cw00.choi@samsung.com>
-	<1373014001-17746-2-git-send-email-cw00.choi@samsung.com>
-Date: Sun, 7 Jul 2013 11:54:40 -0700
-Message-ID: <CADTbHxqsSpyAKFBg7t31h3SH-p_x2UO=jTpLz80GZW4+64eo5g@mail.gmail.com>
-Subject: Re: [PATCH 1/6] cpufreq: Add debugfs directory for cpufreq
-From: Pankaj Jangra <jangra.pankaj9@gmail.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: viresh.kumar@linaro.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, cpufreq@vger.kernel.org,
-        kyungmin.park@samsung.com, myungjoo.ham@samsung.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+If both CONFIG_PM_SLEEP and CONFIG_PM_RUNTIME are unset:
 
-On Fri, Jul 5, 2013 at 1:46 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch create debugfs root directory and child directory according to
-> the number of CPUs for CPUFreq as below debugfs directory path:
-> - /sys/kernel/debug/cpufreq/cpuX
->
-> If many CPUs share only one cpufreq policy, other CPU(except for CPU0) create
-> a link for debugfs directory of CPU0.
-> - /sys/kernel/debug/cpufreq/cpu0
-> - /sys/kernel/debug/cpufreq/cpu[1-(N-1)] -> /sys/kernel/debug/cpufreq/cpu0
->
-> And then cpufreq may need to create debugfs specific file below of debugfs
-> directory of cpufreq. (e.g., /sys/kernel/debug/cpufreq/cpu0/load_table)
->
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
-> ---
->  drivers/cpufreq/cpufreq.c | 57 +++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/cpufreq.h   |  1 +
->  2 files changed, 58 insertions(+)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 2d53f47..bc01c8e 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -23,6 +23,7 @@
->  #include <linux/notifier.h>
->  #include <linux/cpufreq.h>
->  #include <linux/delay.h>
-> +#include <linux/debugfs.h>
->  #include <linux/interrupt.h>
->  #include <linux/spinlock.h>
->  #include <linux/device.h>
-> @@ -47,6 +48,10 @@ static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
->  #endif
->  static DEFINE_RWLOCK(cpufreq_driver_lock);
->
-> +/* The cpufreq_debugfs is used to create debugfs root directory for CPUFreq. */
-> +#define MAX_DEBUGFS_NAME_LEN   CPUFREQ_NAME_LEN
-> +static struct dentry *cpufreq_debugfs;
-> +
->  /*
->   * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
->   * all cpufreq/hotplug/workqueue/etc related lock issues.
-> @@ -726,6 +731,20 @@ static int cpufreq_add_dev_symlink(unsigned int cpu,
->                         cpufreq_cpu_put(managed_policy);
->                         return ret;
->                 }
-> +
-> +               if (cpufreq_debugfs) {
-> +                       char symlink_name[MAX_DEBUGFS_NAME_LEN];
-> +                       char target_name[MAX_DEBUGFS_NAME_LEN];
-> +
-> +                       sprintf(symlink_name, "cpu%d", j);
-> +                       sprintf(target_name, "./cpu%d", cpu);
-> +                       managed_policy->cpu_debugfs[j] = debugfs_create_symlink(
-> +                                                       symlink_name,
-> +                                                       cpufreq_debugfs,
-> +                                                       target_name);
-> +                       if (!managed_policy->cpu_debugfs[j])
-> +                               pr_debug("creating debugfs symlink failed\n");
-> +               }
->         }
->         return ret;
->  }
-> @@ -746,6 +765,22 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
->         if (ret)
->                 return ret;
->
-> +       /* prepare interface data for debugfs */
-> +       if (cpufreq_debugfs) {
-> +               char name[MAX_DEBUGFS_NAME_LEN];
-> +               int size, i;
-> +
-> +               sprintf(name, "cpu%d", policy->cpu);
-> +               size = sizeof(struct dentry*) * NR_CPUS;
-> +               i = cpu;
-> +
-> +               policy->cpu_debugfs = devm_kzalloc(dev, size, GFP_KERNEL);
-> +               policy->cpu_debugfs[i] = debugfs_create_dir(name,
-> +                                                           cpufreq_debugfs);
-> +               if (!policy->cpu_debugfs[i])
-> +                       pr_debug("creating debugfs directory failed\n");
-> +       }
-> +
->         /* set up files for this cpu device */
->         drv_attr = cpufreq_driver->attr;
->         while ((drv_attr) && (*drv_attr)) {
-> @@ -839,6 +874,20 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
->                 return ret;
->         }
->
-> +       if (cpufreq_debugfs) {
-> +               char symlink_name[MAX_DEBUGFS_NAME_LEN];
-> +               char target_name[MAX_DEBUGFS_NAME_LEN];
-> +
-> +               sprintf(symlink_name, "cpu%d", cpu);
-> +               sprintf(target_name, "./cpu%d", sibling);
-> +               policy->cpu_debugfs[cpu] = debugfs_create_symlink(
-> +                                               symlink_name,
-> +                                               cpufreq_debugfs,
-> +                                               target_name);
-> +               if (!policy->cpu_debugfs[cpu])
-> +                       pr_debug("creating debugfs symlink failed\n");
-> +       }
-> +
->         return 0;
->  }
->  #endif
-> @@ -1046,6 +1095,7 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
->
->         if (cpu != data->cpu) {
->                 sysfs_remove_link(&dev->kobj, "cpufreq");
-> +               debugfs_remove(data->cpu_debugfs[cpu]);
+drivers/input/touchscreen/cyttsp4_core.c:1556: warning: ‘cyttsp4_core_sleep’ defined but not used
+drivers/input/touchscreen/cyttsp4_core.c:1634: warning: ‘cyttsp4_core_wake’ defined but not used
 
-I think you should add the call to remove the "cpufreq" also ???
-               "debugfs_remove(cpufreq_debugfs);"
->         } else if (cpus > 1) {
->                 /* first sibling now owns the new sysfs dir */
->                 cpu_dev = get_cpu_device(cpumask_first(data->cpus));
-> @@ -1068,6 +1118,9 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
->                         return -EINVAL;
->                 }
->
-> +               debugfs_remove_recursive(data->cpu_debugfs[cpu]);
-> +               debugfs_remove(cpufreq_debugfs);
-> +
->                 WARN_ON(lock_policy_rwsem_write(cpu));
->                 update_policy_cpu(data, cpu_dev->id);
->                 unlock_policy_rwsem_write(cpu);
-> @@ -1976,6 +2029,10 @@ static int __init cpufreq_core_init(void)
->         BUG_ON(!cpufreq_global_kobject);
->         register_syscore_ops(&cpufreq_syscore_ops);
->
-> +       cpufreq_debugfs = debugfs_create_dir("cpufreq", NULL);
-> +       if (!cpufreq_debugfs)
-> +               pr_debug("creating debugfs root failed\n");
-> +
->         return 0;
->  }
->  core_initcall(cpufreq_core_init);
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> index 037d36a..825f379 100644
-> --- a/include/linux/cpufreq.h
-> +++ b/include/linux/cpufreq.h
-> @@ -115,6 +115,7 @@ struct cpufreq_policy {
->
->         struct kobject          kobj;
->         struct completion       kobj_unregister;
-> +       struct dentry           **cpu_debugfs;
->  };
->
->  #define CPUFREQ_ADJUST                 (0)
-> --
-> 1.8.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Move cyttsp4_core_sleep(), cyttsp4_core_wake(), and cyttsp4_core_wake_()
+(which is called from cyttsp4_core_wake() only) inside the existing section
+protected by #if defined(CONFIG_PM_SLEEP) || defined(CONFIG_PM_RUNTIME)
 
-Regards,
-Pankaj Jangra
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/input/touchscreen/cyttsp4_core.c |  200 +++++++++++++++---------------
+ 1 file changed, 100 insertions(+), 100 deletions(-)
+
+diff --git a/drivers/input/touchscreen/cyttsp4_core.c b/drivers/input/touchscreen/cyttsp4_core.c
+index edcf799..c49161c2 100644
+--- a/drivers/input/touchscreen/cyttsp4_core.c
++++ b/drivers/input/touchscreen/cyttsp4_core.c
+@@ -1552,106 +1552,6 @@ exit:
+ 	return rc;
+ }
+ 
+-static int cyttsp4_core_sleep(struct cyttsp4 *cd)
+-{
+-	int rc;
+-
+-	rc = cyttsp4_request_exclusive(cd, cd->dev,
+-			CY_CORE_SLEEP_REQUEST_EXCLUSIVE_TIMEOUT);
+-	if (rc < 0) {
+-		dev_err(cd->dev, "%s: fail get exclusive ex=%p own=%p\n",
+-				__func__, cd->exclusive_dev, cd->dev);
+-		return 0;
+-	}
+-
+-	rc = cyttsp4_core_sleep_(cd);
+-
+-	if (cyttsp4_release_exclusive(cd, cd->dev) < 0)
+-		dev_err(cd->dev, "%s: fail to release exclusive\n", __func__);
+-	else
+-		dev_vdbg(cd->dev, "%s: pass release exclusive\n", __func__);
+-
+-	return rc;
+-}
+-
+-static int cyttsp4_core_wake_(struct cyttsp4 *cd)
+-{
+-	struct device *dev = cd->dev;
+-	int rc;
+-	u8 mode;
+-	int t;
+-
+-	/* Already woken? */
+-	mutex_lock(&cd->system_lock);
+-	if (cd->sleep_state == SS_SLEEP_OFF) {
+-		mutex_unlock(&cd->system_lock);
+-		return 0;
+-	}
+-	cd->int_status &= ~CY_INT_IGNORE;
+-	cd->int_status |= CY_INT_AWAKE;
+-	cd->sleep_state = SS_WAKING;
+-
+-	if (cd->cpdata->power) {
+-		dev_dbg(dev, "%s: Power up HW\n", __func__);
+-		rc = cd->cpdata->power(cd->cpdata, 1, dev, &cd->ignore_irq);
+-	} else {
+-		dev_dbg(dev, "%s: No power function\n", __func__);
+-		rc = -ENOSYS;
+-	}
+-	if (rc < 0) {
+-		dev_err(dev, "%s: HW Power up fails r=%d\n",
+-				__func__, rc);
+-
+-		/* Initiate a read transaction to wake up */
+-		cyttsp4_adap_read(cd, CY_REG_BASE, sizeof(mode), &mode);
+-	} else
+-		dev_vdbg(cd->dev, "%s: HW power up succeeds\n",
+-			__func__);
+-	mutex_unlock(&cd->system_lock);
+-
+-	t = wait_event_timeout(cd->wait_q,
+-			(cd->int_status & CY_INT_AWAKE) == 0,
+-			msecs_to_jiffies(CY_CORE_WAKEUP_TIMEOUT));
+-	if (IS_TMO(t)) {
+-		dev_err(dev, "%s: TMO waiting for wakeup\n", __func__);
+-		mutex_lock(&cd->system_lock);
+-		cd->int_status &= ~CY_INT_AWAKE;
+-		/* Try starting up */
+-		cyttsp4_queue_startup_(cd);
+-		mutex_unlock(&cd->system_lock);
+-	}
+-
+-	mutex_lock(&cd->system_lock);
+-	cd->sleep_state = SS_SLEEP_OFF;
+-	mutex_unlock(&cd->system_lock);
+-
+-	cyttsp4_start_wd_timer(cd);
+-
+-	return 0;
+-}
+-
+-static int cyttsp4_core_wake(struct cyttsp4 *cd)
+-{
+-	int rc;
+-
+-	rc = cyttsp4_request_exclusive(cd, cd->dev,
+-			CY_CORE_REQUEST_EXCLUSIVE_TIMEOUT);
+-	if (rc < 0) {
+-		dev_err(cd->dev, "%s: fail get exclusive ex=%p own=%p\n",
+-				__func__, cd->exclusive_dev, cd->dev);
+-		return 0;
+-	}
+-
+-	rc = cyttsp4_core_wake_(cd);
+-
+-	if (cyttsp4_release_exclusive(cd, cd->dev) < 0)
+-		dev_err(cd->dev, "%s: fail to release exclusive\n", __func__);
+-	else
+-		dev_vdbg(cd->dev, "%s: pass release exclusive\n", __func__);
+-
+-	return rc;
+-}
+-
+ static int cyttsp4_startup_(struct cyttsp4 *cd)
+ {
+ 	int retry = CY_CORE_STARTUP_RETRY_COUNT;
+@@ -1821,6 +1721,106 @@ static void cyttsp4_free_si_ptrs(struct cyttsp4 *cd)
+ }
+ 
+ #if defined(CONFIG_PM_SLEEP) || defined(CONFIG_PM_RUNTIME)
++static int cyttsp4_core_sleep(struct cyttsp4 *cd)
++{
++	int rc;
++
++	rc = cyttsp4_request_exclusive(cd, cd->dev,
++			CY_CORE_SLEEP_REQUEST_EXCLUSIVE_TIMEOUT);
++	if (rc < 0) {
++		dev_err(cd->dev, "%s: fail get exclusive ex=%p own=%p\n",
++				__func__, cd->exclusive_dev, cd->dev);
++		return 0;
++	}
++
++	rc = cyttsp4_core_sleep_(cd);
++
++	if (cyttsp4_release_exclusive(cd, cd->dev) < 0)
++		dev_err(cd->dev, "%s: fail to release exclusive\n", __func__);
++	else
++		dev_vdbg(cd->dev, "%s: pass release exclusive\n", __func__);
++
++	return rc;
++}
++
++static int cyttsp4_core_wake_(struct cyttsp4 *cd)
++{
++	struct device *dev = cd->dev;
++	int rc;
++	u8 mode;
++	int t;
++
++	/* Already woken? */
++	mutex_lock(&cd->system_lock);
++	if (cd->sleep_state == SS_SLEEP_OFF) {
++		mutex_unlock(&cd->system_lock);
++		return 0;
++	}
++	cd->int_status &= ~CY_INT_IGNORE;
++	cd->int_status |= CY_INT_AWAKE;
++	cd->sleep_state = SS_WAKING;
++
++	if (cd->cpdata->power) {
++		dev_dbg(dev, "%s: Power up HW\n", __func__);
++		rc = cd->cpdata->power(cd->cpdata, 1, dev, &cd->ignore_irq);
++	} else {
++		dev_dbg(dev, "%s: No power function\n", __func__);
++		rc = -ENOSYS;
++	}
++	if (rc < 0) {
++		dev_err(dev, "%s: HW Power up fails r=%d\n",
++				__func__, rc);
++
++		/* Initiate a read transaction to wake up */
++		cyttsp4_adap_read(cd, CY_REG_BASE, sizeof(mode), &mode);
++	} else
++		dev_vdbg(cd->dev, "%s: HW power up succeeds\n",
++			__func__);
++	mutex_unlock(&cd->system_lock);
++
++	t = wait_event_timeout(cd->wait_q,
++			(cd->int_status & CY_INT_AWAKE) == 0,
++			msecs_to_jiffies(CY_CORE_WAKEUP_TIMEOUT));
++	if (IS_TMO(t)) {
++		dev_err(dev, "%s: TMO waiting for wakeup\n", __func__);
++		mutex_lock(&cd->system_lock);
++		cd->int_status &= ~CY_INT_AWAKE;
++		/* Try starting up */
++		cyttsp4_queue_startup_(cd);
++		mutex_unlock(&cd->system_lock);
++	}
++
++	mutex_lock(&cd->system_lock);
++	cd->sleep_state = SS_SLEEP_OFF;
++	mutex_unlock(&cd->system_lock);
++
++	cyttsp4_start_wd_timer(cd);
++
++	return 0;
++}
++
++static int cyttsp4_core_wake(struct cyttsp4 *cd)
++{
++	int rc;
++
++	rc = cyttsp4_request_exclusive(cd, cd->dev,
++			CY_CORE_REQUEST_EXCLUSIVE_TIMEOUT);
++	if (rc < 0) {
++		dev_err(cd->dev, "%s: fail get exclusive ex=%p own=%p\n",
++				__func__, cd->exclusive_dev, cd->dev);
++		return 0;
++	}
++
++	rc = cyttsp4_core_wake_(cd);
++
++	if (cyttsp4_release_exclusive(cd, cd->dev) < 0)
++		dev_err(cd->dev, "%s: fail to release exclusive\n", __func__);
++	else
++		dev_vdbg(cd->dev, "%s: pass release exclusive\n", __func__);
++
++	return rc;
++}
++
+ static int cyttsp4_core_suspend(struct device *dev)
+ {
+ 	struct cyttsp4 *cd = dev_get_drvdata(dev);
+-- 
+1.7.9.5
+
