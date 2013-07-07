@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab3GGIor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 04:44:47 -0400
-Received: from mout.gmx.net ([212.227.15.15]:55006 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751535Ab3GGIoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 04:44:44 -0400
-Message-ID: <51D92A79.2030609@gmx.de>
-Date: Sun, 07 Jul 2013 10:44:41 +0200
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130628 Thunderbird/17.0.7
+	id S1751998Ab3GGIrY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 04:47:24 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:55488 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab3GGIrV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 04:47:21 -0400
+Message-ID: <51D92B19.8000706@free-electrons.com>
+Date: Sun, 07 Jul 2013 10:47:21 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: 3.9.0 + CONFIG_X86_INTEL_PSTATE=y  -> ThinkPad T420 with i5 lost
- ACPI functionality
-References: <5183EC09.9080208@gmx.de> <3715884.H8PIhhjRXL@vostro.rjw.lan> <51911826.907@gmail.com> <519120CC.10403@gmx.de> <51912990.8020206@intel.com> <51913B45.80901@gmx.de> <51913E0A.6060402@gmail.com> <51A4F363.2040003@gmx.de>
-In-Reply-To: <51A4F363.2040003@gmx.de>
-X-Enigmail-Version: 1.6a1pre
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:LNQQ7Uz3T0RsBAo/mgkp3qAesNCQKqTKmpgwlYCUsgDFtS/fyaC
- drU9SSi0d/x5BZi2G1+0iJ30lKzVlb3TfNrZxanOqpEQhNl3XZqKmEyAcjOP4gLd5BUPBgv
- AhL2rIErbxaPP3XqXJIfqt5CCsP//Qcn48RhKMFua8c1YJphh4cMfBIIlaiItP0EvqqKgKS
- IpEOmGaviSf3bwJ+esCCg==
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, Jonathan Cameron <jic23@cam.ac.uk>,
+        jimwall@q.com, brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv3 2/3] ARM: mxs: cfa10049: Switch bus i2c1 to bitbanging
+References: <1372094699-3832-1-git-send-email-alexandre.belloni@free-electrons.com> <1372094699-3832-3-git-send-email-alexandre.belloni@free-electrons.com> <51D7F0E6.2000008@kernel.org>
+In-Reply-To: <51D7F0E6.2000008@kernel.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2013 08:11 PM, Toralf Förster wrote:
-> cgexec from the libcgroup-tools package (fedora name) look like it will
->> place
->> a process in a group for you.
->> 
->> https://wiki.archlinux.org/index.php/Cgroups
->> 
->> Has some useful examples.
->> 
->> --Dirk
->> 
+On 06/07/2013 12:26, Jonathan Cameron wrote:
+> On 06/24/2013 06:24 PM, Alexandre Belloni wrote:
+>> From: Maxime Ripard <maxime.ripard@free-electrons.com>
+>>
+>> The ADCs connected to this bus have been experiencing some timeout
+>> issues when using the iMX28 i2c controller. Switching back to bitbanging
+>> solves this.
+>>
+>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> 
+> As there are no disadvantages in taking the driver through IIO and these changes
+> through the appropriate arch trees, I'd not propose to take these through IIO
+> (even when the discussion is done) unless specifically asked to.
+> 
 
-What I'm looking for is a command telling the governor "do not increase
-CPU frequency for this process (group)" - because that's the main
-intention of "nice -19", right ?
+Sure, especially since, we may finally not move to i2c bitbanging. I'll
+probably resend a new version of those patches separately.
 
-Without such a simple-to-use-command/replacement-of-nice-19 a lot of
-systems in the wild won't work as expected with the p-state driver in
-place of acpi_cpufreq.
+Shawn, please wait for the i2c-mxs PIO/DMA mode discussion to end before
+applying. If possible, I would prefer not using bitbanging.
 
-(And AFAICR this was one of those reasons why for ondemand the
-"ignore_nice" sysfs feature was implemented)
+Regards,
 
-Especially RedHat systems using the  kernel-ml will automatically switch
-to p-state - pretty sure, that's not wanted by a reasonable amount of
-people, or ?
 
 -- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
