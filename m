@@ -1,116 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab3GGArz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 6 Jul 2013 20:47:55 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:51721 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3GGArx (ORCPT
+	id S1751376Ab3GGBbp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 6 Jul 2013 21:31:45 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:34207 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab3GGBbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 6 Jul 2013 20:47:53 -0400
-Message-ID: <1373158365.7397.92.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH 1/3] target: remove iscsit_find_cmd_from_itt_or_dump()
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Joern Engel <joern@logfs.org>
-Cc: linux-kernel@vger.kernel.org, target-devel <target-devel@vger.kernel.org>
-Date: Sat, 06 Jul 2013 17:52:45 -0700
-In-Reply-To: <1372864937-32437-2-git-send-email-joern@logfs.org>
-References: <1372864937-32437-1-git-send-email-joern@logfs.org>
-	 <1372864937-32437-2-git-send-email-joern@logfs.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Sat, 6 Jul 2013 21:31:44 -0400
+Message-ID: <51D8C4F7.2010603@gmail.com>
+Date: Sun, 07 Jul 2013 09:31:35 +0800
+From: Sam Ben <sam.bennn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@intel.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH v3 1/2] sched: smart wake-affine foundation
+References: <51D50024.10902@linux.vnet.ibm.com> <51D50057.9000809@linux.vnet.ibm.com>
+In-Reply-To: <51D50057.9000809@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-03 at 11:22 -0400, Joern Engel wrote:
-> Code is a copy of iscsit_find_cmd_from_itt().  Afaics this is debug code
-> from at least two years ago.  Either the bug in question has been long
-> fixed or this debug code doesn't help fixing it.  Whichever way you look
-> at it, we should remove the debug code.
-> 
-> Signed-off-by: Joern Engel <joern@logfs.org>
+On 07/04/2013 12:55 PM, Michael Wang wrote:
+> wake-affine stuff is always trying to pull wakee close to waker, by theory,
+> this will bring benefit if waker's cpu cached hot data for wakee, or the
+> extreme ping-pong case.
+
+What's the meaning of ping-pong case?
+
+>
+> And testing show it could benefit hackbench 15% at most.
+>
+> However, the whole stuff is somewhat blindly and time-consuming, some
+> workload therefore suffer.
+>
+> And testing show it could damage pgbench 50% at most.
+>
+> Thus, wake-affine stuff should be more smart, and realise when to stop
+> it's thankless effort.
+>
+> This patch introduced 'nr_wakee_switch', which will be increased each
+> time the task switch it's wakee.
+>
+> So a high 'nr_wakee_switch' means the task has more than one wakee, and
+> bigger the number, higher the wakeup frequency.
+>
+> Now when making the decision on whether to pull or not, pay attention on
+> the wakee with a high 'nr_wakee_switch', pull such task may benefit wakee,
+> but also imply that waker will face cruel competition later, it could be
+> very cruel or very fast depends on the story behind 'nr_wakee_switch',
+> whatever, waker therefore suffer.
+>
+> Furthermore, if waker also has a high 'nr_wakee_switch', imply that multiple
+> tasks rely on it, then waker's higher latency will damage all of them, pull
+> wakee seems to be a bad deal.
+>
+> Thus, when 'waker->nr_wakee_switch / wakee->nr_wakee_switch' become higher
+> and higher, the deal seems to be worse and worse.
+>
+> The patch therefore help wake-affine stuff to stop it's work when:
+>
+> 	wakee->nr_wakee_switch > factor &&
+> 	waker->nr_wakee_switch > (factor * wakee->nr_wakee_switch)
+>
+> The factor here is the node-size of current-cpu, so bigger node will lead
+> to more pull since the trial become more severe.
+>
+> After applied the patch, pgbench show 40% improvement at most.
+>
+> Test:
+> 	Tested with 12 cpu X86 server and tip 3.10.0-rc7.
+>
+> 	pgbench		    base	smart
+>
+> 	| db_size | clients |  tps  |	|  tps  |
+> 	+---------+---------+-------+   +-------+
+> 	| 22 MB   |       1 | 10598 |   | 10796 |
+> 	| 22 MB   |       2 | 21257 |   | 21336 |
+> 	| 22 MB   |       4 | 41386 |   | 41622 |
+> 	| 22 MB   |       8 | 51253 |   | 57932 |
+> 	| 22 MB   |      12 | 48570 |   | 54000 |
+> 	| 22 MB   |      16 | 46748 |   | 55982 | +19.75%
+> 	| 22 MB   |      24 | 44346 |   | 55847 | +25.93%
+> 	| 22 MB   |      32 | 43460 |   | 54614 | +25.66%
+> 	| 7484 MB |       1 |  8951 |   |  9193 |
+> 	| 7484 MB |       2 | 19233 |   | 19240 |
+> 	| 7484 MB |       4 | 37239 |   | 37302 |
+> 	| 7484 MB |       8 | 46087 |   | 50018 |
+> 	| 7484 MB |      12 | 42054 |   | 48763 |
+> 	| 7484 MB |      16 | 40765 |   | 51633 | +26.66%
+> 	| 7484 MB |      24 | 37651 |   | 52377 | +39.11%
+> 	| 7484 MB |      32 | 37056 |   | 51108 | +37.92%
+> 	| 15 GB   |       1 |  8845 |   |  9104 |
+> 	| 15 GB   |       2 | 19094 |   | 19162 |
+> 	| 15 GB   |       4 | 36979 |   | 36983 |
+> 	| 15 GB   |       8 | 46087 |   | 49977 |
+> 	| 15 GB   |      12 | 41901 |   | 48591 |
+> 	| 15 GB   |      16 | 40147 |   | 50651 | +26.16%
+> 	| 15 GB   |      24 | 37250 |   | 52365 | +40.58%
+> 	| 15 GB   |      32 | 36470 |   | 50015 | +37.14%
+>
+> CC: Ingo Molnar <mingo@kernel.org>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Mike Galbraith <efault@gmx.de>
+> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 > ---
-
-NAK on this one.
-
-iscsit_handle_data_out() is expected to dump the incoming per
-ISCSI_OP_SCSI_DATA_OUT payload for allowing existing code to determine
-the next PDU header to process after this specific 'ITT not found'
-exception case occurs.
-
-Otherwise, the traditional iscsi connection will need to be reset when
-the remaining DATA_OUT payload_length is not cleared from conn_sock.
-
---nab
-
->  drivers/target/iscsi/iscsi_target.c      |    3 +--
->  drivers/target/iscsi/iscsi_target_util.c |   24 ------------------------
->  drivers/target/iscsi/iscsi_target_util.h |    2 --
->  3 files changed, 1 insertion(+), 28 deletions(-)
-> 
-> diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-> index 7ea246a..49346b3 100644
-> --- a/drivers/target/iscsi/iscsi_target.c
-> +++ b/drivers/target/iscsi/iscsi_target.c
-> @@ -1213,8 +1213,7 @@ static int iscsit_handle_data_out(struct iscsi_conn *conn, unsigned char *buf)
->  					buf, conn);
->  	}
->  
-> -	cmd = iscsit_find_cmd_from_itt_or_dump(conn, hdr->itt,
-> -			payload_length);
-> +	cmd = iscsit_find_cmd_from_itt(conn, hdr->itt);
->  	if (!cmd)
->  		return 0;
->  
-> diff --git a/drivers/target/iscsi/iscsi_target_util.c b/drivers/target/iscsi/iscsi_target_util.c
-> index 7ce3505..e59dec0 100644
-> --- a/drivers/target/iscsi/iscsi_target_util.c
-> +++ b/drivers/target/iscsi/iscsi_target_util.c
-> @@ -369,30 +369,6 @@ struct iscsi_cmd *iscsit_find_cmd_from_itt(
->  	return NULL;
->  }
->  
-> -struct iscsi_cmd *iscsit_find_cmd_from_itt_or_dump(
-> -	struct iscsi_conn *conn,
-> -	itt_t init_task_tag,
-> -	u32 length)
-> -{
-> -	struct iscsi_cmd *cmd;
-> -
-> -	spin_lock_bh(&conn->cmd_lock);
-> -	list_for_each_entry(cmd, &conn->conn_cmd_list, i_conn_node) {
-> -		if (cmd->init_task_tag == init_task_tag) {
-> -			spin_unlock_bh(&conn->cmd_lock);
-> -			return cmd;
-> -		}
-> -	}
-> -	spin_unlock_bh(&conn->cmd_lock);
-> -
-> -	pr_err("Unable to locate ITT: 0x%08x on CID: %hu,"
-> -			" dumping payload\n", init_task_tag, conn->cid);
-> -	if (length)
-> -		iscsit_dump_data_payload(conn, length, 1);
-> -
-> -	return NULL;
-> -}
-> -
->  struct iscsi_cmd *iscsit_find_cmd_from_ttt(
->  	struct iscsi_conn *conn,
->  	u32 targ_xfer_tag)
-> diff --git a/drivers/target/iscsi/iscsi_target_util.h b/drivers/target/iscsi/iscsi_target_util.h
-> index 894d0f8..9614cb9 100644
-> --- a/drivers/target/iscsi/iscsi_target_util.h
-> +++ b/drivers/target/iscsi/iscsi_target_util.h
-> @@ -15,8 +15,6 @@ extern struct iscsi_r2t *iscsit_get_holder_for_r2tsn(struct iscsi_cmd *, u32);
->  int iscsit_sequence_cmd(struct iscsi_conn *conn, struct iscsi_cmd *cmd, __be32 cmdsn);
->  extern int iscsit_check_unsolicited_dataout(struct iscsi_cmd *, unsigned char *);
->  extern struct iscsi_cmd *iscsit_find_cmd_from_itt(struct iscsi_conn *, itt_t);
-> -extern struct iscsi_cmd *iscsit_find_cmd_from_itt_or_dump(struct iscsi_conn *,
-> -			itt_t, u32);
->  extern struct iscsi_cmd *iscsit_find_cmd_from_ttt(struct iscsi_conn *, u32);
->  extern int iscsit_find_cmd_for_recovery(struct iscsi_session *, struct iscsi_cmd **,
->  			struct iscsi_conn_recovery **, itt_t);
-
+>   include/linux/sched.h |    3 +++
+>   kernel/sched/fair.c   |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+>   2 files changed, 50 insertions(+), 0 deletions(-)
+>
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 178a8d9..1c996c7 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1041,6 +1041,9 @@ struct task_struct {
+>   #ifdef CONFIG_SMP
+>   	struct llist_node wake_entry;
+>   	int on_cpu;
+> +	struct task_struct *last_wakee;
+> +	unsigned long nr_wakee_switch;
+> +	unsigned long last_switch_decay;
+>   #endif
+>   	int on_rq;
+>   
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index c61a614..a4ddbf5 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -2971,6 +2971,23 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+>   	return 0;
+>   }
+>   
+> +static void record_wakee(struct task_struct *p)
+> +{
+> +	/*
+> +	 * Rough decay(wiping) for cost saving, don't worry
+> +	 * about the boundary, really active task won't care
+> +	 * the loose.
+> +	 */
+> +	if (jiffies > current->last_switch_decay + HZ) {
+> +		current->nr_wakee_switch = 0;
+> +		current->last_switch_decay = jiffies;
+> +	}
+> +
+> +	if (current->last_wakee != p) {
+> +		current->last_wakee = p;
+> +		current->nr_wakee_switch++;
+> +	}
+> +}
+>   
+>   static void task_waking_fair(struct task_struct *p)
+>   {
+> @@ -2991,6 +3008,7 @@ static void task_waking_fair(struct task_struct *p)
+>   #endif
+>   
+>   	se->vruntime -= min_vruntime;
+> +	record_wakee(p);
+>   }
+>   
+>   #ifdef CONFIG_FAIR_GROUP_SCHED
+> @@ -3109,6 +3127,28 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+>   
+>   #endif
+>   
+> +static int wake_wide(struct task_struct *p)
+> +{
+> +	int factor = nr_cpus_node(cpu_to_node(smp_processor_id()));
+> +
+> +	/*
+> +	 * Yeah, it's the switching-frequency, could means many wakee or
+> +	 * rapidly switch, use factor here will just help to automatically
+> +	 * adjust the loose-degree, so bigger node will lead to more pull.
+> +	 */
+> +	if (p->nr_wakee_switch > factor) {
+> +		/*
+> +		 * wakee is somewhat hot, it needs certain amount of cpu
+> +		 * resource, so if waker is far more hot, prefer to leave
+> +		 * it alone.
+> +		 */
+> +		if (current->nr_wakee_switch > (factor * p->nr_wakee_switch))
+> +			return 1;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>   static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>   {
+>   	s64 this_load, load;
+> @@ -3118,6 +3158,13 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>   	unsigned long weight;
+>   	int balanced;
+>   
+> +	/*
+> +	 * If we wake multiple tasks be careful to not bounce
+> +	 * ourselves around too much.
+> +	 */
+> +	if (wake_wide(p))
+> +		return 0;
+> +
+>   	idx	  = sd->wake_idx;
+>   	this_cpu  = smp_processor_id();
+>   	prev_cpu  = task_cpu(p);
 
