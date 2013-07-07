@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3GGO2n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 10:28:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23161 "EHLO mx1.redhat.com"
+	id S1752537Ab3GGOba (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 10:31:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41767 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752349Ab3GGO2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 10:28:39 -0400
-Date: Sun, 7 Jul 2013 17:29:44 +0300
+	id S1752302Ab3GGOb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 10:31:29 -0400
+Date: Sun, 7 Jul 2013 17:32:38 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: kvm@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>, Asias He <asias@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH] tools/virtio: move module license stub to module.h
-Message-ID: <20130707142944.GA3022@redhat.com>
+To: virtualization@lists.linux-foundation.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au
+Subject: [PATCH] MAINTAINERS: add tools/virtio/ under virtio
+Message-ID: <20130707143238.GA3059@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes build for the vringh test:
-[linux]$ make -C tools/virtio/
-make: Entering directory `/home/mst/scm/linux/tools/virtio'
-cc -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign
--fno-strict-overflow -fno-strict-aliasing -fno-common -MMD
--U_FORTIFY_SOURCE   -c -o vringh.o ../../drivers/vhost/vringh.c
-../../drivers/vhost/vringh.c:1010:16: error: expected declaration
-specifiers or ‘...’ before string constant
+This should help make sure patches go to the correct list.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- tools/virtio/linux/module.h | 5 +++++
- tools/virtio/linux/virtio.h | 3 ---
- 2 files changed, 5 insertions(+), 3 deletions(-)
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/virtio/linux/module.h b/tools/virtio/linux/module.h
-index 3039a7e..28ce95a 100644
---- a/tools/virtio/linux/module.h
-+++ b/tools/virtio/linux/module.h
-@@ -1 +1,6 @@
- #include <linux/export.h>
-+
-+#define MODULE_LICENSE(__MODULE_LICENSE_value) \
-+	static __attribute__((unused)) const char *__MODULE_LICENSE_name = \
-+		__MODULE_LICENSE_value
-+
-diff --git a/tools/virtio/linux/virtio.h b/tools/virtio/linux/virtio.h
-index cd80183..8447830 100644
---- a/tools/virtio/linux/virtio.h
-+++ b/tools/virtio/linux/virtio.h
-@@ -45,9 +45,6 @@ struct virtqueue {
- 	void *priv;
- };
- 
--#define MODULE_LICENSE(__MODULE_LICENSE_value) \
--	const char *__MODULE_LICENSE_name = __MODULE_LICENSE_value
--
- /* Interfaces exported by virtio_ring. */
- int virtqueue_add_sgs(struct virtqueue *vq,
- 		      struct scatterlist *sgs[],
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ad7e322..66172fc 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -8800,6 +8800,7 @@ M:	"Michael S. Tsirkin" <mst@redhat.com>
+ L:	virtualization@lists.linux-foundation.org
+ S:	Maintained
+ F:	drivers/virtio/
++F:	tools/virtio/
+ F:	drivers/net/virtio_net.c
+ F:	drivers/block/virtio_blk.c
+ F:	include/linux/virtio_*.h
 -- 
 MST
