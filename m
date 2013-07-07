@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834Ab3GGQpa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 12:45:30 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:61892 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab3GGQpT (ORCPT
+	id S1752807Ab3GGQrq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 12:47:46 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58531 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab3GGQrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 12:45:19 -0400
-Message-ID: <51D99B1B.7050106@linaro.org>
-Date: Sun, 07 Jul 2013 18:45:15 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sun, 7 Jul 2013 12:47:43 -0400
+Message-ID: <51D99B12.7040407@linux.vnet.ibm.com>
+Date: Sun, 07 Jul 2013 22:15:06 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Lunn <andrew@lunn.ch>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [GIT PULL] clockevents/clocksource: Add Marvell Orion SoC timer
-References: <51B8D310.4050404@linaro.org> <51D9548B.9040907@gmail.com> <alpine.DEB.2.02.1307071508030.32106@ionos.tec.linutronix.de> <20130707144645.GA11908@titan.lakedaemon.net> <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Wang YanQing <udknight@gmail.com>, xiaoguangrong@cn.fujitsu.com,
+        mingo@elte.hu, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, npiggin@suse.de,
+        deepthi@linux.vnet.ibm.com, peterz@infradead.org,
+        rusty@rustcorp.com.au, heiko.carstens@de.ibm.com, rostedt@goodmis.org,
+        miltonm@bga.com, srivatsa.bhat@linux.vnet.ibm.com,
+        jens.axboe@oracle.com, tj@kernel.org, akpm@linux-foundation.org,
+        svaidy@linux.vnet.ibm.com, shli@kernel.org, tglx@linutronix.de,
+        lig.fnst@cn.fujitsu.com, anton@samba.org,
+        torvalds@linux-foundation.org, jbeulich@suse.com
+Subject: Re: [PATCH 1/3] smp/ipi: Remove redundant cfd->cpumask_ipi mask
+References: <20130705162548.16888.18957.stgit@preeti.in.ibm.com> <20130705162701.16888.81171.stgit@preeti.in.ibm.com> <20130706031310.GA1941@udknight> <51D7AB43.7010208@linux.vnet.ibm.com> <20130706060317.GA3382@udknight>
+In-Reply-To: <20130706060317.GA3382@udknight>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070716-5816-0000-0000-000008CD130C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2013 05:30 PM, Thomas Gleixner wrote:
-> On Sun, 7 Jul 2013, Jason Cooper wrote:
->> Sure, but to be clear, Daniel, please drop this patch from your tree.  I
->> have no desire to create an out-of-tree dependency if we can avoid it.
->> It has a habit of going horribly wrong [1].
+Hi Wang,
+
+On 07/06/2013 11:33 AM, Wang YanQing wrote:
+> On Sat, Jul 06, 2013 at 10:59:39AM +0530, Preeti U Murthy wrote:
+>> Hi Wang,
 >>
->> I'll cherry-pick
+>> On 07/06/2013 08:43 AM, Wang YanQing wrote:
+>>> On Fri, Jul 05, 2013 at 09:57:01PM +0530, Preeti U Murthy wrote:
+>>>> cfd->cpumask_ipi is used only in smp_call_function_many().The existing
+>>>> comment around it says that this additional mask is used because
+>>>> cfd->cpumask can get overwritten.
+>>>>
+>>>> There is no reason why the cfd->cpumask can be overwritten, since this
+>>>> is a per_cpu mask; nobody can change it but us and we are
+>>>> called with preemption disabled.
+>>>
+>>> The ChangeLog for f44310b98ddb7f0d06550d73ed67df5865e3eda5
+>>> which import cfd->cpumask_ipi saied the reason why we need
+>>> it:
+>>>
+>>> "    As explained by Linus as well:
+>>>     
+>>>      |
+>>>      | Once we've done the "list_add_rcu()" to add it to the
+>>>      | queue, we can have (another) IPI to the target CPU that can
+>>>      | now see it and clear the mask.
+>>>      |
+>>>      | So by the time we get to actually send the IPI, the mask might
+>>>      | have been cleared by another IPI.
 >>
->>   0c1dcfd clocksource: Add Marvell Orion SoC timer
+>> I am unable to understand where the cfd->cpumask of the source cpu is
+>> getting cleared. Surely not by itself, since it is preempt disabled.
+>> Also why should it get cleared?
 > 
-> Don't do that. Do a git fetch on that branch and then git merge
-> 0c1dcfd. The patches before that Marvel commit are already in Linus
-> tree. That way it does not matter who sends first or not.
+> Assume we have three CPUs: A,B,C
 > 
-> We don't force others to drop stuff and cherry picking is a nuisance
-> as well as you end up with two different commits doing the same thing.
+> A call smp_call_function_many to notify C do something,
+> and current it execute on finished below codes:
 > 
-> Also for the next merge window: Can we please let everything under
-> drivers/clocksoure go through Daniels and my trees?
+> "for_each_cpu(cpu, cfd->cpumask) {
+>                 struct call_single_data *csd = per_cpu_ptr(cfd->csd, cpu);
+>                 struct call_single_queue *dst =
+>                                         &per_cpu(call_single_queue, cpu);
+>                 unsigned long flags;
 > 
-> I'm starting to be grumpy about anyone thinking that this directory is
-> a public dump ground with no rules.
+>                 csd_lock(csd);
+>                 csd->func = func;
+>                 csd->info = info;
+> 
+>                 raw_spin_lock_irqsave(&dst->lock, flags);
+>                 list_add_tail(&csd->list, &dst->list);
+>                 raw_spin_unlock_irqrestore(&dst->lock, flags);
+>         }
+> "
+> You see "list_add_tail(&csd->list, &dst->list);", it pass the address of csd,
+> and A stop before call arch_send_call_function_ipi_mask due interrupt.
+> 
+> At this time B send ipi to C also, then C will see the csd passed by A,
+> then C will clear itself in the cfd->cpumask.
 
-Yes I agree. I will meet John this week and we will sort out this and
-define a clear set of rules to prevent that to happen again.
+Ah ok! Thank you very much for this clarification :)
 
-  -- Daniel
-
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+Regards
+Preeti U Murthy
 
