@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab3GGPiu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 11:38:50 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:50597 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab3GGPit (ORCPT
+	id S1752646Ab3GGPrq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 11:47:46 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:51409 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab3GGPrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 11:38:49 -0400
-Message-ID: <51D98B84.4000607@kernel.org>
-Date: Sun, 07 Jul 2013 18:38:44 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
+	Sun, 7 Jul 2013 11:47:45 -0400
 MIME-Version: 1.0
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: Christoph Lameter <cl@linux.com>, Matt Mackall <mpm@selenic.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <js1304@gmail.com>, David Rientjes <rientjes@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] mm/slab: Fix drain freelist excessively
-References: <1372898006-6308-1-git-send-email-liwanp@linux.vnet.ibm.com> <0000013faf0d3958-00e5e945-25d8-43c1-ac6e-3d3ad69b2718-000000@email.amazonses.com> <20130707092448.GA11177@hacker.(null)>
-In-Reply-To: <20130707092448.GA11177@hacker.(null)>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1371623635-26575-1-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Sun, 7 Jul 2013 18:47:43 +0300
+X-Google-Sender-Auth: s7yYIT5jPxLcIsU7NITttH0w0w8
+Message-ID: <CAOJsxLEipdF=vZrDCOipcLYnpAjXOyAgWmTznRt0rsiHPRfTPA@mail.gmail.com>
+Subject: Re: [PATCH] slub: do not put a slab to cpu partial list when
+ cpu_partial is 0
+From: Pekka Enberg <penberg@kernel.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/7/13 12:24 PM, Wanpeng Li wrote:
-> On Fri, Jul 05, 2013 at 01:37:28PM +0000, Christoph Lameter wrote:
->> On Thu, 4 Jul 2013, Wanpeng Li wrote:
->>
->>> This patch fix the callers that pass # of objects. Make sure they pass #
->>> of slabs.
->>
->> Acked-by: Christoph Lameter <cl@linux.com>
+On Wed, Jun 19, 2013 at 9:33 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> In free path, we don't check number of cpu_partial, so one slab can
+> be linked in cpu partial list even if cpu_partial is 0. To prevent this,
+> we should check number of cpu_partial in put_cpu_partial().
 >
-> Hi Pekka,
->
-> Is it ok for you to pick this patchset? ;-)
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 Applied, thanks a lot!
-
