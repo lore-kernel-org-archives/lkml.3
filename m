@@ -1,159 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab3GPIXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 04:23:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:54488 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753190Ab3GPIXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 04:23:25 -0400
-Date: Tue, 16 Jul 2013 11:22:47 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>, Daniel Mack <zonque@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: v3.11-rc1 USB regressions
-Message-ID: <20130716082247.GD8880@arwen.pp.htv.fi>
-Reply-To: <balbi@ti.com>
-References: <20130715225647.GE3296@blackmetal.musicnaut.iki.fi>
- <51E4E922.2040707@gmail.com>
- <51E4EF70.3040502@ti.com>
- <20130716080836.GC8880@arwen.pp.htv.fi>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="F8dlzb82+Fcn6AgP"
-Content-Disposition: inline
-In-Reply-To: <20130716080836.GC8880@arwen.pp.htv.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753728Ab3GPIXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 04:23:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:32422 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753417Ab3GPIXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Jul 2013 04:23:35 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-11-51e50300e70d
+From: Yadwinder Singh Brar <yadi.brar@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: sbkim73@samsung.com, broonie@kernel.org, lgirdwood@gmail.com,
+        yadi.brar01@gmail.com, Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH] regulator: s2mps11: Add linux/of.h header
+Date: Sun, 07 Jul 2013 13:44:49 +0530
+Message-id: <1373184889-16929-1-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsWyRsSkSpeB+WmgwfenlhZTHz5hs/h2pYPJ
+	4vKuOWwWF1d8YbKY+7uR1WLO9HdMDmweO2fdZffYtKqTzaNvyypGj8+b5AJYorhsUlJzMstS
+	i/TtErgyHm9sZCo4xlqxcP8v5gbG2yxdjJwcEgImEmuvPYCyxSQu3FvP1sXIxSEksJRRYs6V
+	Z8wwRSd+TYZKLGKUeL/sHzOE08YksX7OUqYuRg4ONgEjiVfH7EAaRAQUJDb3PmMFsZkF2hkl
+	Ws9xg9jCAlYSh29uYASxWQRUJe53PAVbwCvgKvF80zWoZQoSrcsOsYPMlxD4ziaxfeslZogG
+	AYlvkw+xgOySEJCV2HQAql5S4uCKGywTGAUXMDKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/d
+	xAgM0dP/nk3YwXjvgPUhxmSgcROZpUST84EhnlcSb2hsZmRhamJqbGRuaUaasJI4r3qLdaCQ
+	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGxhl1H0PFD1Tf3yf5TzSN82v+4naRuli1a6LFiWmN
+	fBMlDHnknO9zRipwev943Gj6pLW4c5VEWLxV2yOL2kNimw2r2n7cXRJvWpzm3pH5ddUFI/NP
+	9c1yMrqNNotW98zaF/vMz7FZJUSU9Xe5u2HO45UiPhtiHblV2V7UL96YVWfGZRg4X0+JpTgj
+	0VCLuag4EQAQfTIEZwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t9jAV0G5qeBBgvWGVhMffiEzeLblQ4m
+	i8u75rBZXFzxhcli7u9GVos5098xObB57Jx1l91j06pONo++LasYPT5vkgtgiWpgtMlITUxJ
+	LVJIzUvOT8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wB2q6kUJaYUwoUCkgs
+	LlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzHi8sZGp4BhrxcL9v5gbGG+zdDFyckgImEic
+	+DWZDcIWk7hwbz2QzcUhJLCIUeL9sn/MEE4bk8T6OUuZuhg5ONgEjCReHbMDaRARUJDY3PuM
+	FcRmFmhnlGg9xw1iCwtYSRy+uYERxGYRUJW43/GUGcTmFXCVeL7pGjPEMgWJ1mWH2Ccwci9g
+	ZFjFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJERwBz6R2MK5ssDjEKMDBqMTDK8HzJFCINbGs
+	uDL3EKMEB7OSCG/iJqAQb0piZVVqUX58UWlOavEhxmSg7ROZpUST84HRmVcSb2hsYm5qbGpp
+	YmFiZkmasJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjAks++TnmLheyj5w99cd3d03OO5F
+	RxUumSmhGScQeffamvVCDx6sWtfE7KzKvXL6v2rOTrFTAXc/+oW+V+x99+mmjLrufym7Z9zr
+	5T1/P+k+8OeaO6+ZXN7ZTT/5K7NmLLxy5d/Pe7MF2yT/fphzzPmUor+u9KMnos7MWzf2vmM8
+	x7aBM04xYooSS3FGoqEWc1FxIgDz4oAKxAIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---F8dlzb82+Fcn6AgP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds linux/of.h required to fix an error and warning reported by
+kbuild test robot for some x86 config file.
 
-On Tue, Jul 16, 2013 at 11:08:36AM +0300, Felipe Balbi wrote:
-> Hi,
->=20
-> On Tue, Jul 16, 2013 at 12:30:00PM +0530, Kishon Vijay Abraham I wrote:
-> > On Tuesday 16 July 2013 12:03 PM, Daniel Mack wrote:
-> > > Hi Aaro,
-> > >=20
-> > > On 16.07.2013 00:56, Aaro Koskinen wrote:
-> > >> Hi,
-> > >>
-> > >> I think USB tree introduced regressions in v3.11-rc1, at least for s=
-ome
-> > >> OMAP devices using legacy boot.
-> > >=20
-> > > Thanks for checking the tree so early.
-> > >=20
-> > >> I have only bisected these; I have no
-> > >> idea what the real fixes are but the following reverts make Nokia OM=
-AP2+
-> > >> boards again usable for kernel development work (they need working U=
-SB
-> > >> connection for interacting with the device):
-> > >>
-> > >> 1) USB peripheral mode (g_ether) is broken on Nokia N900, N950 and N9
-> > >>    (USB_MUSB_OMAP2PLUS). To make it it work, I need to revert three
-> > >>    commits:
-> > >>
-> > >> 	09fc7d22b024692b2fe8a943b246de1af307132b
-> > >> 	usb: musb: fix incorrect usage of resource pointer
-> > >> 	(Reverting this fixes the g_ether probe failure "couldn't find
-> > >> 	 an available UDC")
-> >=20
-> > I've posted a patch fixing the issue
-> > http://comments.gmane.org/gmane.linux.usb.general/89541
-> > There were some comments on it. I'll be posting a new version for it.
->=20
-> hmm, n8x0 used tusb6010, so perhaps a similar patch needs to be cooked
-> for that too. Right now, let's to the minimum fix, which is just to
-> increment the array size to 3 and for v3.12 we do the changes that I
-> suggested.
+Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ drivers/regulator/s2mps11.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-this should solve the problem on n900 and n8x0, it's pretty much
-kishon's original patch, so I guess it deserves his authorship:
+diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
+index e1aadbd..350e04f 100644
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -17,6 +17,7 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/regmap.h>
++#include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
+-- 
+1.7.0.4
 
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 6708a3b..f44e8b5 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -481,7 +481,7 @@ static u64 omap2430_dmamask =3D DMA_BIT_MASK(32);
-=20
- static int omap2430_probe(struct platform_device *pdev)
- {
--	struct resource			musb_resources[2];
-+	struct resource			musb_resources[3];
- 	struct musb_hdrc_platform_data	*pdata =3D pdev->dev.platform_data;
- 	struct omap_musb_board_data	*data;
- 	struct platform_device		*musb;
-@@ -581,6 +581,11 @@ static int omap2430_probe(struct platform_device *pdev)
- 	musb_resources[1].end =3D pdev->resource[1].end;
- 	musb_resources[1].flags =3D pdev->resource[1].flags;
-=20
-+	musb_resources[2].name =3D pdev->resource[2].name;
-+	musb_resources[2].start =3D pdev->resource[2].start;
-+	musb_resources[2].end =3D pdev->resource[2].end;
-+	musb_resources[2].flags =3D pdev->resource[2].flags;
-+
- 	ret =3D platform_device_add_resources(musb, musb_resources,
- 			ARRAY_SIZE(musb_resources));
- 	if (ret) {
-diff --git a/drivers/usb/musb/tusb6010.c b/drivers/usb/musb/tusb6010.c
-index 2c06a89..6f8a9ca 100644
---- a/drivers/usb/musb/tusb6010.c
-+++ b/drivers/usb/musb/tusb6010.c
-@@ -1156,7 +1156,7 @@ static u64 tusb_dmamask =3D DMA_BIT_MASK(32);
-=20
- static int tusb_probe(struct platform_device *pdev)
- {
--	struct resource musb_resources[2];
-+	struct resource musb_resources[3];
- 	struct musb_hdrc_platform_data	*pdata =3D pdev->dev.platform_data;
- 	struct platform_device		*musb;
- 	struct tusb6010_glue		*glue;
-@@ -1199,6 +1199,11 @@ static int tusb_probe(struct platform_device *pdev)
- 	musb_resources[1].end =3D pdev->resource[1].end;
- 	musb_resources[1].flags =3D pdev->resource[1].flags;
-=20
-+	musb_resources[2].name =3D pdev->resource[2].name;
-+	musb_resources[2].start =3D pdev->resource[2].start;
-+	musb_resources[2].end =3D pdev->resource[2].end;
-+	musb_resources[2].flags =3D pdev->resource[2].flags;
-+
- 	ret =3D platform_device_add_resources(musb, musb_resources,
- 			ARRAY_SIZE(musb_resources));
- 	if (ret) {
-
---=20
-balbi
-
---F8dlzb82+Fcn6AgP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR5QLXAAoJEIaOsuA1yqREUTgQALDwjHa3LTuQIIi3oU63IFi1
-X6ZlXFSx7H5dFmz0rKF78PdLTH6DiwucMaktcM2w9DFhHE1msY9oXRkzXgSFUvK3
-i6MqKW+HoEKFgeP4vUNQ+4gHT5l5Yna/H16O29Q+a0TR/NWjovrcycA1Zz0DboKh
-L+p8Zf/vlcg3RTgw/YfjBXyBJ2rGyg0JHaWyte/EQI3FUuQyNaEMEuV/r6nngp4t
-MAIu5dhrSf8e79tXRAVnFobvbNM1IMuN+C767azXhiCXgd2V54MeVc/fivs3V1TP
-v11HoEq6XMSZVUeAA8+VWtp9dxBL924Je8GxTNImpTAjrGjPUEHVQfGRGk8LYzEi
-fpGsxbtOgm2IZ0Dt8RmOrJc6S16cTk1qgOz9Z9t2Vn6+aISZTodiu9fOugChnr4x
-2KaZbps7WzZoULnoRaS8ilBz6pWyaJ+fhret0/eL0PECRONnZ52kCVgI00qf7fSI
-UXY7WTK3hPIljQewuRA1kGCyT6gsbM6/7m914Mm730cVQxr504kcRBj36ssZu0zT
-Be2GjVA/+xSxZZD2bi4hSS5mp14S+DSJNoaMB6tdp7knKZ4PHNhi8gaVVU2Cxg9d
-9UCPnnKqI9fbWTTm/U2kUykSsP7xVHpyb+rJbJtqOXRYENhEw0GZ/iE5bFeGMGQh
-/KFrdvGdS32vA72bqv1b
-=yffj
------END PGP SIGNATURE-----
-
---F8dlzb82+Fcn6AgP--
