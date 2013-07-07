@@ -1,58 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234Ab3GGUoA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 16:44:00 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:63273 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab3GGUn6 (ORCPT
+	id S1753222Ab3GGU4v (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 16:56:51 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:37231 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab3GGU4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 16:43:58 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf: free original memory on realloc failure in str_append
-Date: Sun,  7 Jul 2013 14:43:53 -0600
-Message-Id: <1373229833-6157-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Sun, 7 Jul 2013 16:56:50 -0400
+Subject: Re: [PATCH v2] swap: warn when a swap area overflows the maximum
+ size
+From: Raymond Jennings <shentino@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Valdis Kletnieks <valdis.kletnieks@vt.edu>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <51D9C217.5030507@redhat.com>
+References: <1373197450.26573.5.camel@warfang>
+	 <1373197978.26573.7.camel@warfang> <1373224421.26573.11.camel@warfang>
+	 <51D9C217.5030507@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 07 Jul 2013 13:56:45 -0700
+Message-ID: <1373230605.26573.17.camel@warfang>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-str_append was added in 578d9c6. If realloc fails orignal block is
-not freed. Need to save the original pointer to handle on failure.
+Screwed up and didn't attach my fixed test log to the second version.
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/util/string.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+See below.
 
-diff --git a/tools/perf/util/string.c b/tools/perf/util/string.c
-index f0b0c00..53bca50 100644
---- a/tools/perf/util/string.c
-+++ b/tools/perf/util/string.c
-@@ -398,13 +398,20 @@ int str_append(char **s, int *len, const char *a)
- {
- 	int olen = *s ? strlen(*s) : 0;
- 	int nlen = olen + strlen(a) + 1;
-+	char *p;
-+
- 	if (*len < nlen) {
- 		*len = *len * 2;
- 		if (*len < nlen)
- 			*len = nlen;
-+
-+		p = *s;
- 		*s = realloc(*s, *len);
--		if (!*s)
-+		if (!*s) {
-+			free(p);
- 			return -ENOMEM;
-+		}
-+
- 		if (olen == 0)
- 			**s = 0;
- 	}
--- 
-1.7.10.1
+On Sun, 2013-07-07 at 15:31 -0400, Rik van Riel wrote:
+> On 07/07/2013 03:13 PM, Raymond Jennings wrote:
+> > Turned the comparison around for clarity of "bigger than"
+> >
+> > No semantic changes, if it still compiles it should do the same thing so
+> > I've omitted the testing this time.  Will be happy to retest if required
+> > but I'm on an atom 330 and kernel rebuilds are a nightmare.
+> 
+> Added CC: Andrew Morton, since this should probably go into -mm :)
+> 
+> > ----
+> >
+> > swap: warn when a swap area overflows the maximum size
+> >
+> > It is possible to swapon a swap area that is too big for the pte width
+> > to handle.
+> >
+> > Presently this failure happens silently.
+> >
+> > Instead, emit a diagnostic to warn the user.
+> >
+> > Signed-off-by: Raymond Jennings <shentino@gmail.com>
+> > Acked-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> 
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+> 
+> > diff --git a/mm/swapfile.c b/mm/swapfile.c
+> > index 36af6ee..5a4ce53 100644
+> > --- a/mm/swapfile.c
+> > +++ b/mm/swapfile.c
+> > @@ -1953,6 +1953,12 @@ static unsigned long read_swap_header(struct
+> > swap_info_struct *p,
+> >           */
+> >          maxpages = swp_offset(pte_to_swp_entry(
+> >                          swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
+> > +       if (swap_header->info.last_page > maxpages) {
+> > +               printk(KERN_WARNING
+> > +                      "Truncating oversized swap area, only using %luk
+> > out of %luk
+> > \n",
+> > +                      maxpages << (PAGE_SHIFT - 10),
+> > +                      swap_header->info.last_page << (PAGE_SHIFT -
+> > 10));
+> > +       }
+> >          if (maxpages > swap_header->info.last_page) {
+> >                  maxpages = swap_header->info.last_page + 1;
+> >                  /* p->max is an unsigned int: don't overflow it */
+> >
+> > ----
+> >
+> > Testing results, root prompt commands and kernel log messages:
+> >
+> > # lvresize /dev/system/swap --size 16G
+> > # mkswap /dev/system/swap
+> > # swapon /dev/system/swap
+> >
+> > Jul  7 04:27:22 warfang kernel: Adding 16777212k swap
+> > on /dev/mapper/system-swap.  Priority:-1 extents:1 across:16777212k
+> >
+> > # lvresize /dev/system/swap --size 16G
+
+On Sun, 2013-07-07 at 04:52 -0700, Raymond Jennings wrote:
+> # lvresize /dev/system/swap --size 16G
+
+Typo in the second test.
+
+The first line should read:
+
+# lvresize /dev/system/swap --size 64G
+
+First ever serious patch, got excited and burned the copypasta.
+
+> # mkswap /dev/system/swap
+> # swapon /dev/system/swap
+
+> > # mkswap /dev/system/swap
+> > # swapon /dev/system/swap
+> >
+> > Jul  7 04:27:22 warfang kernel: Truncating oversized swap area, only
+> > using 33554432k out of 67108860k
+> > Jul  7 04:27:22 warfang kernel: Adding 33554428k swap
+> > on /dev/mapper/system-swap.  Priority:-1 extents:1 across:33554428k
+> >
+> >
+> 
+> 
+
 
