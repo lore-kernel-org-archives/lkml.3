@@ -1,121 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab3GGU4v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 16:56:51 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:37231 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab3GGU4u (ORCPT
+	id S1753239Ab3GGV2A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 17:28:00 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:54365 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab3GGV14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 16:56:50 -0400
-Subject: Re: [PATCH v2] swap: warn when a swap area overflows the maximum
- size
-From: Raymond Jennings <shentino@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Valdis Kletnieks <valdis.kletnieks@vt.edu>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <51D9C217.5030507@redhat.com>
-References: <1373197450.26573.5.camel@warfang>
-	 <1373197978.26573.7.camel@warfang> <1373224421.26573.11.camel@warfang>
-	 <51D9C217.5030507@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 07 Jul 2013 13:56:45 -0700
-Message-ID: <1373230605.26573.17.camel@warfang>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 7 Jul 2013 17:27:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130707.132133.1335860703202153192.davem@davemloft.net>
+References: <20130707.132133.1335860703202153192.davem@davemloft.net>
+Date: Sun, 7 Jul 2013 14:27:54 -0700
+X-Google-Sender-Auth: 4Odcr_7f-jxx5CPCAtq2aQRN-Iw
+Message-ID: <CA+55aFzgBXwye=ebPmEDN_6yqdKA6ZaD9hSUzbFjSacC_v3y5g@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Screwed up and didn't attach my fixed test log to the second version.
+On Sun, Jul 7, 2013 at 1:21 PM, David Miller <davem@davemloft.net> wrote:
+>
+> 5) arch/arm/mach-mxs/Kconfig
+>
+>    Overlapping additions of select statements for SOC_IMX2.
 
-See below.
+Nope. Removals.
 
-On Sun, 2013-07-07 at 15:31 -0400, Rik van Riel wrote:
-> On 07/07/2013 03:13 PM, Raymond Jennings wrote:
-> > Turned the comparison around for clarity of "bigger than"
-> >
-> > No semantic changes, if it still compiles it should do the same thing so
-> > I've omitted the testing this time.  Will be happy to retest if required
-> > but I'm on an atom 330 and kernel rebuilds are a nightmare.
-> 
-> Added CC: Andrew Morton, since this should probably go into -mm :)
-> 
-> > ----
-> >
-> > swap: warn when a swap area overflows the maximum size
-> >
-> > It is possible to swapon a swap area that is too big for the pte width
-> > to handle.
-> >
-> > Presently this failure happens silently.
-> >
-> > Instead, emit a diagnostic to warn the user.
-> >
-> > Signed-off-by: Raymond Jennings <shentino@gmail.com>
-> > Acked-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-> 
-> Reviewed-by: Rik van Riel <riel@redhat.com>
-> 
-> > diff --git a/mm/swapfile.c b/mm/swapfile.c
-> > index 36af6ee..5a4ce53 100644
-> > --- a/mm/swapfile.c
-> > +++ b/mm/swapfile.c
-> > @@ -1953,6 +1953,12 @@ static unsigned long read_swap_header(struct
-> > swap_info_struct *p,
-> >           */
-> >          maxpages = swp_offset(pte_to_swp_entry(
-> >                          swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
-> > +       if (swap_header->info.last_page > maxpages) {
-> > +               printk(KERN_WARNING
-> > +                      "Truncating oversized swap area, only using %luk
-> > out of %luk
-> > \n",
-> > +                      maxpages << (PAGE_SHIFT - 10),
-> > +                      swap_header->info.last_page << (PAGE_SHIFT -
-> > 10));
-> > +       }
-> >          if (maxpages > swap_header->info.last_page) {
-> >                  maxpages = swap_header->info.last_page + 1;
-> >                  /* p->max is an unsigned int: don't overflow it */
-> >
-> > ----
-> >
-> > Testing results, root prompt commands and kernel log messages:
-> >
-> > # lvresize /dev/system/swap --size 16G
-> > # mkswap /dev/system/swap
-> > # swapon /dev/system/swap
-> >
-> > Jul  7 04:27:22 warfang kernel: Adding 16777212k swap
-> > on /dev/mapper/system-swap.  Priority:-1 extents:1 across:16777212k
-> >
-> > # lvresize /dev/system/swap --size 16G
+> 6) arch/arm/mach-mxs/mach-mxs.c
+>
+>    In mxs_machine_init(), the of_platform_populate() call has it's final
+>    two arguments changed to be NULL.
 
-On Sun, 2013-07-07 at 04:52 -0700, Raymond Jennings wrote:
-> # lvresize /dev/system/swap --size 16G
+Hmm. That's not how I read it. The next-to-last argument in changed to
+NULL in one branch, the other adds "parent".
 
-Typo in the second test.
+> 11) fs/select.c
+>
+>     Overlapping additions of include directives, keep both.
 
-The first line should read:
+This LL_POLL thing is ugly as hell. Where was this discussed?
+Apparently on lkml without talking to people who are actually involved
+in select/poll.
 
-# lvresize /dev/system/swap --size 64G
+I'm not at all sure I want to pull this kind of crap without having
+seen the full discussion, and the performance numbers are kind of
+pointless without also talking about CPU utilization etc. Since when
+is it ok to start doing things like this without any acks from anybody
+else?
 
-First ever serious patch, got excited and burned the copypasta.
+Because quite frankly, the fs/select.c changes make me go: "No way in
+hell". Partly because of the idiotic and completely undescriptive
+naming, partly because of the disgisting calling convetions with
+random flags variables passed in to be changed be helper functions.
 
-> # mkswap /dev/system/swap
-> # swapon /dev/system/swap
+So no, I'm not pulling this. Things like this need discussion and
+heads-up, not just random "let's add completely ugly things to core
+kernel functionality without even asking people".
 
-> > # mkswap /dev/system/swap
-> > # swapon /dev/system/swap
-> >
-> > Jul  7 04:27:22 warfang kernel: Truncating oversized swap area, only
-> > using 33554432k out of 67108860k
-> > Jul  7 04:27:22 warfang kernel: Adding 33554428k swap
-> > on /dev/mapper/system-swap.  Priority:-1 extents:1 across:33554428k
-> >
-> >
-> 
-> 
+Even the commit messages in question are just PURE AND UTTER CRAP. Ask
+yourself honestly what the F*CK this means:
 
+  net: convert lls to use time_in_range
 
+what the hell, David? What diseased mind uses idiotic short-hand like
+this that makes no sense? And dammit, I'd expect the VFS people to be
+cc'd on changes to the VFS layer functions. I wasn't, Al wasn't.
+
+So not pulled. Fix up this mess.
+
+               Linus
