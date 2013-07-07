@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab3GGV2A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 17:28:00 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:54365 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab3GGV14 (ORCPT
+	id S1753234Ab3GGVcT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 17:32:19 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:60019 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753170Ab3GGVcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 17:27:56 -0400
+	Sun, 7 Jul 2013 17:32:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130707.132133.1335860703202153192.davem@davemloft.net>
-References: <20130707.132133.1335860703202153192.davem@davemloft.net>
-Date: Sun, 7 Jul 2013 14:27:54 -0700
-X-Google-Sender-Auth: 4Odcr_7f-jxx5CPCAtq2aQRN-Iw
-Message-ID: <CA+55aFzgBXwye=ebPmEDN_6yqdKA6ZaD9hSUzbFjSacC_v3y5g@mail.gmail.com>
-Subject: Re: [GIT] Networking
+In-Reply-To: <CAFkjPTmzqPTCxyxfwmZX8w7aeO4D9L3wQ2GPypkP=uyK1U6P9g@mail.gmail.com>
+References: <CAFkjPTmzqPTCxyxfwmZX8w7aeO4D9L3wQ2GPypkP=uyK1U6P9g@mail.gmail.com>
+Date: Sun, 7 Jul 2013 14:32:16 -0700
+X-Google-Sender-Auth: Yfv77pYnaepEyKUOPa3TwqdDebQ
+Message-ID: <CA+55aFxOed9ARsDStX_hN_dyRvv5Lza65JLN6Vzu=xihTWEnMw@mail.gmail.com>
+Subject: Re: [GIT PULL] 9p changes for 3.11 merge window (part 1)
 From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 7, 2013 at 1:21 PM, David Miller <davem@davemloft.net> wrote:
+On Sun, Jul 7, 2013 at 12:39 PM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
+> The following changes since commit c1be5a5b1b355d40e6cf79cc979eb66dafa24ad1:
 >
-> 5) arch/arm/mach-mxs/Kconfig
+>   Linux 3.9 (2013-04-28 17:36:01 -0700)
 >
->    Overlapping additions of select statements for SOC_IMX2.
-
-Nope. Removals.
-
-> 6) arch/arm/mach-mxs/mach-mxs.c
+> are available in the git repository at:
 >
->    In mxs_machine_init(), the of_platform_populate() call has it's final
->    two arguments changed to be NULL.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git
+> tags/9p-for-3.11-merge-window-part-1
 
-Hmm. That's not how I read it. The next-to-last argument in changed to
-NULL in one branch, the other adds "parent".
+What the F*CK is wrong with people?
 
-> 11) fs/select.c
->
->     Overlapping additions of include directives, keep both.
+This is the second pull request in minutes that I'm going to have to
+reject, this time because all the commits were apparently rebased just
+minutes before sending me the pull request. So it clearly hasn't
+gotten any testing, and hasn't been in next.
 
-This LL_POLL thing is ugly as hell. Where was this discussed?
-Apparently on lkml without talking to people who are actually involved
-in select/poll.
+Why? No explanation, no nothing.
 
-I'm not at all sure I want to pull this kind of crap without having
-seen the full discussion, and the performance numbers are kind of
-pointless without also talking about CPU utilization etc. Since when
-is it ok to start doing things like this without any acks from anybody
-else?
-
-Because quite frankly, the fs/select.c changes make me go: "No way in
-hell". Partly because of the idiotic and completely undescriptive
-naming, partly because of the disgisting calling convetions with
-random flags variables passed in to be changed be helper functions.
-
-So no, I'm not pulling this. Things like this need discussion and
-heads-up, not just random "let's add completely ugly things to core
-kernel functionality without even asking people".
-
-Even the commit messages in question are just PURE AND UTTER CRAP. Ask
-yourself honestly what the F*CK this means:
-
-  net: convert lls to use time_in_range
-
-what the hell, David? What diseased mind uses idiotic short-hand like
-this that makes no sense? And dammit, I'd expect the VFS people to be
-cc'd on changes to the VFS layer functions. I wasn't, Al wasn't.
-
-So not pulled. Fix up this mess.
-
-               Linus
+                Linus
