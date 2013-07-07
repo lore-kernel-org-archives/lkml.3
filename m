@@ -1,48 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932591Ab3GPLxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Jul 2013 07:53:34 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:38672 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932431Ab3GPLxb (ORCPT
+	id S932499Ab3GPLxF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Jul 2013 07:53:05 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:63662 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932104Ab3GPLxC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Jul 2013 07:53:31 -0400
-Date: Tue, 16 Jul 2013 05:53:24 -0600
-From: Tejun Heo <tj@kernel.org>
-To: Youquan Song <youquan.song@intel.com>
-Cc: jgarzik@redhat.com, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, seth.heasley@intel.com,
-        james.d.ralston@intel.com, ed.ciechanowski@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>, stable@vger.kernel.org
-Subject: Re: [PATCH] ata: Fix DVD not dectected at some platform with
- Wellsburg PCH
-Message-ID: <20130716115324.GC23827@mtj.dyndns.org>
-References: <1373591757-416-1-git-send-email-youquan.song@intel.com>
- <20130716114826.GB23827@mtj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716114826.GB23827@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 16 Jul 2013 07:53:02 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-2e-51e5341d2506
+From: Yadwinder Singh Brar <yadi.brar@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, sbkim73@samsung.com,
+        sameo@linux.intel.com, mturquette@linaro.org, lee.jones@linaro.org,
+        broonie@kernel.org, yadi.brar01@gmail.com,
+        Yadwinder Singh Brar <yadi.brar@samsung.com>
+Subject: [PATCH 2/3] mfd: sec: Add clock cell for s2mps11
+Date: Sun, 07 Jul 2013 17:14:21 +0530
+Message-id: <1373197462-4033-3-git-send-email-yadi.brar@samsung.com>
+X-Mailer: git-send-email 1.7.0.4
+In-reply-to: <1373197462-4033-1-git-send-email-yadi.brar@samsung.com>
+References: <1373197462-4033-1-git-send-email-yadi.brar@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42JZI2JSpytr8jTQ4P4rHoupD5+wWdz/epTR
+	YtPja6wWl3fNYbN4OuEim8XpblaLiyu+MFnM/d3IajFn+jsmB06PnbPusntsWtXJ5nHn2h42
+	j3knAz02L6n36NuyitHj8ya5APYoLpuU1JzMstQifbsErox1xxayFBwUrLh1OK6B8RNvFyMn
+	h4SAicSsdTMZIWwxiQv31rN1MXJxCAksZZQ4++EWK0zRyq9r2SES0xkl5p65ywThtDFJPPl6
+	CKiKg4NNwEji1TE7kAYRAQWJzb3PWEFqmAUeMEo8fLcZbJKwgKXErXddbCA2i4CqxIvjTWCr
+	eQVcJJ49ncYMsU1BonXZIXYQm1PAVeL0keXsIPOFgGpmnpIAmSkhsItdYl7nMlaIOQIS3yYf
+	YgGpkRCQldh0AGqMpMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtcmpeul5yfu4kRGAen
+	/z2buIPx/gHrQ4zJQOMmMkuJJucD4yivJN7Q2MzIwtTE1NjI3NKMNGElcV71FutAIYH0xJLU
+	7NTUgtSi+KLSnNTiQ4xMHJxSDYyiyVfUq2wPXHPaYHUiN5h5R3P6Oq1cPcG/n1ri/t/N8GtM
+	U5gzJ9pVQEuF++aL9KiZ+VeZXnBqNh8Kt2iwZqxq7zldFxkrEla20pp5ueklNZWHDh8fHb41
+	OzZD9IbbGpNN15erfr554/uW/fP/GVpqFH1vvVP7cWfVipWZ13cumux9nZX35holluKMREMt
+	5qLiRADLn0MkmQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsVy+t9jQV1Zk6eBBpens1pMffiEzeL+16OM
+	FpseX2O1uLxrDpvF0wkX2SxOd7NaXFzxhcli7u9GVos5098xOXB67Jx1l91j06pONo871/aw
+	ecw7GeixeUm9R9+WVYwenzfJBbBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpa
+	mCsp5CXmptoqufgE6Lpl5gAdpqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0k
+	rGHMWHdsIUvBQcGKW4fjGhg/8XYxcnJICJhIrPy6lh3CFpO4cG89WxcjF4eQwHRGibln7jJB
+	OG1MEk++HmLtYuTgYBMwknh1zA6kQURAQWJz7zNWkBpmgQeMEg/fbWYFSQgLWErcetfFBmKz
+	CKhKvDjexAhi8wq4SDx7Oo0ZYpuCROuyQ2CbOQVcJU4fWc4OMl8IqGbmKYkJjLwLGBlWMYqm
+	FiQXFCel5xrpFSfmFpfmpesl5+duYgRH2TPpHYyrGiwOMQpwMCrx8B7kfBIoxJpYVlyZe4hR
+	goNZSYT3Fv/TQCHelMTKqtSi/Pii0pzU4kOMyUBHTWSWEk3OByaAvJJ4Q2MTc1NjU0sTCxMz
+	S9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLglGpglDfRXPNOa+7iqtrq6+vnpG2tT7Uojbmz
+	R3HTvOItWnum+6aePv+v84th1eeC3h3njN4bP3tW6OTX3vrsediMRTLWi2ak7nyp0iRq5vj+
+	/bTA4vdvzt9rSlCWe5m3RyWkUlr97bqzZ3+q628Pmfn3QrPvpYnpsScPak8Urd2qXB0txnbj
+	VKToeSWW4oxEQy3mouJEAHdwjbz2AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 05:48:26AM -0600, Tejun Heo wrote:
-> On Thu, Jul 11, 2013 at 09:15:57PM -0400, Youquan Song wrote:
-> > There is a patch b55f84e2d527182e7c611d466cd0bb6ddce201de "ata_piix: Fix DVD
-> >  not dectected at some Haswell platforms" to fix an issue of DVD not 
-> > recognized on Haswell Desktop platform with Lynx Point. 
-> > Recently, it is also found the same issue at some platformas with Wellsburg PCH.
-> > 
-> > So deliver a similar patch to fix it by disables 32bit PIO in IDE mode.
-> > 
-> > Signed-off-by: Youquan Song <youquan.song@intel.com>
-> > Cc: stable@vger.kernel.org
-> 
-> Applied to libata/for-3.12.  Thanks!
+This patch adds clock to list of mfd cells for s2mps11 and DT documentation
+for clock part.
 
-Oops, make that libata/for-3.11-fixes.
+Signed-off-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
+---
+ Documentation/devicetree/bindings/mfd/s2mps11.txt |   20 ++++++++++++++++++++
+ drivers/mfd/sec-core.c                            |    4 +++-
+ 2 files changed, 23 insertions(+), 1 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/mfd/s2mps11.txt b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+index 36269c4..e41dd16 100644
+--- a/Documentation/devicetree/bindings/mfd/s2mps11.txt
++++ b/Documentation/devicetree/bindings/mfd/s2mps11.txt
+@@ -16,6 +16,21 @@ Optional properties:
+ - interrupts: Interrupt specifiers for interrupt sources.
+ 
+ Optional nodes:
++- clocks: s2mps11 provides three(AP/CP/BT) buffered 32.768 KHz outputs, so to
++  register these as clocks with common clock framework instantiate a sub-node
++  named "clocks". It uses the common clock binding documented in :
++  [Documentation/devicetree/bindings/clock/clock-bindings.txt]
++  - #clock-cells: should be 1.
++
++  - The following is the list of clocks generated by the controller. Each clock
++    is assigned an identifier and client nodes use this identifier to specify
++    the clock which they consume.
++    Clock               ID
++    ----------------------
++    32KhzAP		0
++    32KhzCP		1
++    32KhzBT		2
++
+ - regulators: The regulators of s2mps11 that have to be instantiated should be
+ included in a sub-node named 'regulators'. Regulator nodes included in this
+ sub-node should be of the format as listed below.
+@@ -55,6 +70,11 @@ Example:
+ 		compatible = "samsung,s2mps11-pmic";
+ 		reg = <0x66>;
+ 
++		s2m_osc: clocks{
++			#clock-cells = 1;
++			clock-output-names = "xx", "yy", "zz";
++		};
++
+ 		regulators {
+ 			ldo1_reg: LDO1 {
+ 				regulator-name = "VDD_ABB_3.3V";
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 760da8a..eaee5ec 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -58,7 +58,9 @@ static struct mfd_cell s5m8767_devs[] = {
+ static struct mfd_cell s2mps11_devs[] = {
+ 	{
+ 		.name = "s2mps11-pmic",
+-	},
++	}, {
++		.name = "s2mps11-clk",
++	}
+ };
+ 
+ #ifdef CONFIG_OF
 -- 
-tejun
+1.7.0.4
+
