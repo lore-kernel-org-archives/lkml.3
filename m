@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab3GGWpc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 18:45:32 -0400
-Received: from mail.nanl.de ([217.115.11.12]:41095 "EHLO mail.nanl.de"
+	id S1753314Ab3GGXJh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 19:09:37 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33705 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753233Ab3GGWpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 18:45:30 -0400
-From: Jonas Gorski <jogo@openwrt.org>
-To: netdev@vger.kernel.org
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net: mv643xx_eth: do not use port number as platform device id
-Date: Mon,  8 Jul 2013 00:44:55 +0200
-Message-Id: <1373237095-28989-1-git-send-email-jogo@openwrt.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <51D9E499.5000801@gmail.com>
-References: <51D9E499.5000801@gmail.com>
+	id S1753250Ab3GGXJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 19:09:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>
+Subject: [PATCH 0/2] PCI / ACPI cleanups
+Date: Mon, 08 Jul 2013 01:15:31 +0200
+Message-ID: <1468174.eo7i60DZFT@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The port number is only local to the ethernet block, not global, so
-there can be two ethernet blocks both using the same port, like
-kirkwood with both using port 0.
+Hi,
 
-Fix this by using the array index offset for the allocated platform
-devices as the id.
+These two patches clean up the ACPI part of the PCI core and ACPIPHP.
 
-Signed-off-by: Jonas Gorski <jogo@openwrt.org>
----
- drivers/net/ethernet/marvell/mv643xx_eth.c | 13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
+[1/2] Make bus registration and unregistration symmetric.
+[2/2] Consolidate acpiphp_enumerate_slots().
 
-diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-index 6495bea..c35db73 100644
---- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-+++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-@@ -2483,6 +2483,7 @@ static int mv643xx_eth_shared_of_add_port(struct platform_device *pdev,
- 	struct resource res;
- 	const char *mac_addr;
- 	int ret;
-+	int dev_num = 0;
- 
- 	memset(&ppd, 0, sizeof(ppd));
- 	ppd.shared = pdev;
-@@ -2503,6 +2504,14 @@ static int mv643xx_eth_shared_of_add_port(struct platform_device *pdev,
- 		return -EINVAL;
- 	}
- 
-+	while (dev_num < 3 && port_platdev[dev_num])
-+		dev_num++;
-+
-+	if (dev_num == 3) {
-+		dev_err(&pdev->dev, "too many ports registered\n");
-+		return -EINVAL;
-+	}
-+
- 	mac_addr = of_get_mac_address(pnp);
- 	if (mac_addr)
- 		memcpy(ppd.mac_addr, mac_addr, 6);
-@@ -2521,7 +2530,7 @@ static int mv643xx_eth_shared_of_add_port(struct platform_device *pdev,
- 		of_property_read_u32(pnp, "duplex", &ppd.duplex);
- 	}
- 
--	ppdev = platform_device_alloc(MV643XX_ETH_NAME, ppd.port_number);
-+	ppdev = platform_device_alloc(MV643XX_ETH_NAME, dev_num);
- 	if (!ppdev)
- 		return -ENOMEM;
- 	ppdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
-@@ -2538,7 +2547,7 @@ static int mv643xx_eth_shared_of_add_port(struct platform_device *pdev,
- 	if (ret)
- 		goto port_err;
- 
--	port_platdev[ppd.port_number] = ppdev;
-+	port_platdev[dev_num] = ppdev;
- 
- 	return 0;
- 
+They are on top of 3.10 plus my 3.11 queue (should apply on plain 3.10),
+but if they look good, I'll add them to the previous ACPI dock cleanups.
+
+Thanks,
+Rafael
+
+
 -- 
-1.8.3.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
