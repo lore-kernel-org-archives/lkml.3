@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab3GHANW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 20:13:22 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:46768 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288Ab3GHANQ (ORCPT
+	id S1753370Ab3GHASc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 20:18:32 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:33346 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab3GHASb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 20:13:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
-References: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
-Date: Sun, 7 Jul 2013 20:13:15 -0400
-X-Google-Sender-Auth: f4aE39w1VpUYLH-8GaBiRo-nSDI
-Message-ID: <CAOvdn6XcEwFa2CRGqUhsaTeTMKHsQeFHJ-KmyCTBZRLbAoimmQ@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH v6 0/5] Xen/ACPI: support sleep state entering
- on hardware reduced systems
-From: Ben Guthro <benjamin.guthro@citrix.com>
-To: "Rafael J . Wysocki" <rjw@sisk.pl>, Bob Moore <robert.moore@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, xen-devel@lists.xen.org,
-        Shane Wang <shane.wang@intel.com>, tboot-devel@lists.sourceforge.net,
-        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
-        Gang Wei <gang.wei@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 7 Jul 2013 20:18:31 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] ia64/pci: set mmio decoding on for some host bridge
+Date: Mon,  8 Jul 2013 08:16:53 +0800
+Message-Id: <1373242613-4603-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 1, 2013 at 7:48 AM, Ben Guthro <benjamin.guthro@citrix.com> wrote:
-> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
-> reduced hardware sleep support, and the two changes didn't get
-> synchronized: The new code doesn't call the hook function (if so
-> requested). Fix this, requiring a boolean parameter to be added to the
-> hook function to distinguish "extended" from "legacy" sleep.
->
-> This requires adjusting TXT, but the adjustments only go as far as
-> failing the extended mode call (since, looking at the TXT interface,
-> there doesn't even appear to be precautions to deal with that
-> alternative interface).
->
-> The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
-> v5 (reduced HW) sleep interface") on the master branch of
-> git://xenbits.xen.org/xen.git.
->
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-> Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
-> Cc: Gang Wei <gang.wei@intel.com>
-> Cc: Shane Wang <shane.wang@intel.com>
-> Cc: Bob Moore <robert.moore@intel.com>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: linux-acpi@vger.kernel.org
-> Cc: tboot-devel@lists.sourceforge.net
->
-> v2: Extend description to include reference to hypervisor side change
-> v3: Split into multiple patches, separating subsystems
->     Remove bool parameters, in favor of u8
-> v4: Remove linux/acpi.h dependencies
->     Further patch split to break out acpica from OSL
->     More bool vs u8 fixes
-> v5: Fix build of consumers of acpi_os_prepare_sleep() interface change,
->     so intermediate builds of partial patch series will not fail.
-> v6: Rebased to linux-pm linux-next branch
->     Added warning in tboot early return code
->     Added Reviewed-by lines
->
-> Ben Guthro (5):
->   acpi: Remove need to include linux/acpi.h in common acpica code
->   acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
->   acpi/xen/tboot: Adjust linux acpi OS functions to new extended
->     parameter
->   x86/tboot: Fail extended mode reduced hardware sleep
->   xen/acpi: notify xen when reduced hardware sleep is available
+On some IA64 platforms with intel PCI bridge, for example, HP BL890c i2 
+with  Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+when kernel tries to disable the mmio decoding on the PCI bridge devices,
+kernel may crash. 
 
-Rafael, Bob -
+And in the comment of function quirk_mmio_always_on, it also says:
+"But doing so (disable the mmio decoding) may cause problems on host bridge
+ and perhaps other key system devices"
 
-Is this version of the series something that you may consider taking?
-If not - is there something specific you would like to see addressed?
-
-Thanks for your time.
+So, for these PCI bridges,  dev->mmio_always_on bit should be set to 1.
 
 
-Ben
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ drivers/pci/quirks.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
->
->  arch/x86/kernel/tboot.c          |    9 ++++++++-
->  drivers/acpi/acpica/hwesleep.c   |    7 +++++++
->  drivers/acpi/acpica/hwsleep.c    |    3 +--
->  drivers/acpi/osl.c               |   16 ++++++++--------
->  drivers/xen/acpi.c               |   26 +++++++++++++-------------
->  include/acpi/acpiosxf.h          |    6 ++++++
->  include/linux/acpi.h             |    9 +++------
->  include/xen/acpi.h               |    4 ++--
->  include/xen/interface/platform.h |    7 ++++---
->  9 files changed, 52 insertions(+), 35 deletions(-)
->
-> --
-> 1.7.9.5
->
->
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index e85d230..24b8024 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -44,6 +44,21 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+ 				PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
+ 
++#ifdef CONFIG_IA64
++/*
++ * On some IA64 platforms, for some intel PCI bridge devices, for example,
++ * the Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
++ * disable the mmio decoding on these devices may cause system crash.
++ * So dev->mmio_always_on bit should be set to 1.
++ */
++static void quirk_mmio_on_intel_pcibridge(struct pci_dev *dev)
++{
++	dev->mmio_always_on = 1;
++}
++DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
++			PCI_CLASS_BRIDGE_PCI, 8, quirk_mmio_on_intel_pcibridge);
++#endif
++
+ /* The Mellanox Tavor device gives false positive parity errors
+  * Mark this device with a broken_parity_status, to allow
+  * PCI scanning code to "skip" this now blacklisted device.
+-- 
+1.7.10.4
+
