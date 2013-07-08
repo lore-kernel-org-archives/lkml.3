@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab3GHCDL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 22:03:11 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:12501 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753326Ab3GHCDK (ORCPT
+	id S1753440Ab3GHCEh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 22:04:37 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:50440 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab3GHCEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 22:03:10 -0400
-Message-ID: <51DA1D75.2010503@atmel.com>
-Date: Mon, 8 Jul 2013 10:01:25 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: <devicetree-discuss@lists.ozlabs.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [RFC PATCH 08/13] sound: sam9x5_wm8731: machine driver for at91sam9x5
- wm8731 boards
-References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com> <1372667978-4718-9-git-send-email-richard.genoud@gmail.com> <51D2472B.2010407@atmel.com> <CACQ1gAji8KkjXee8o=9jt8O38611LBJ95yXimxbfn1qLaLOcnA@mail.gmail.com>
-In-Reply-To: <CACQ1gAji8KkjXee8o=9jt8O38611LBJ95yXimxbfn1qLaLOcnA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Sun, 7 Jul 2013 22:04:36 -0400
+Message-ID: <1373249375.7397.139.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH v3] lib/idr.c rewrite, percpu ida/tag allocator
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Kent Overstreet <kmo@daterainc.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org, sfr@canb.auug.org.au,
+        andi@firstfloor.org, oleg@redhat.com, mingo@redhat.com,
+        axboe@kernel.dk, target-devel <target-devel@vger.kernel.org>
+Date: Sun, 07 Jul 2013 19:09:35 -0700
+In-Reply-To: <20130707114852.GA5463@redhat.com>
+References: <1373087301-23730-1-git-send-email-kmo@daterainc.com>
+	 <1373151546.7397.55.camel@haakon3.risingtidesystems.com>
+	 <20130707114852.GA5463@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On Sun, 2013-07-07 at 14:48 +0300, Michael S. Tsirkin wrote:
+> On Sat, Jul 06, 2013 at 03:59:06PM -0700, Nicholas A. Bellinger wrote:
+> > On Fri, 2013-07-05 at 22:08 -0700, Kent Overstreet wrote:
+> > > Previous posting: http://thread.gmane.org/gmane.linux.kernel/1511216
+> > > 
+> > > The only real change since the last version is that I've reworked the
+> > > new ida implementation to not use one giant allocation - it's still
+> > > logically one big arary, but it's implemented as an array of arrays.
+> > > 
+> > > With that, it scales up to INT_MAX allocated ids just fine. Benchmarks
+> > > are included in that patch.
+> > > 
+> > > Patch series is available in my git repo:
+> > > git://evilpiepirate.org/~kent/linux-bcache.git idr
+> > > 
+> > > Andrew, want to pick this up for 3.12?
+> > 
+> > Just FYI that the target-pending/target-per-cpu-ida branch utilizing
+> > per-cpu ida logic for vhost-scsi has been rebased to include this latest
+> > series.  Thanks Kent!
+> > 
+> > Andrew, what are your plans for this..?
+> > 
+> > Would you consider allowing this series be merged through target-pending
+> > in order to allow us to start taking advantage of per-cpu ida tag
+> > pre-allocation optimizations for v3.12 target code..? 
+> > 
+> > Another option would be to merge the per-cpu ida specific piece now for
+> > v3.11 for which the risk is low given it doesn't touch any existing
+> > code, and then include Kent's full idr rewrite separately as v3.12 item.
+> > 
+> > WDYT..?
+> 
+> Takes as is, this conflicts with cleanup patches by Asias in vhost-next
+> that I was going to send to Linus for 3.11.
 
-On 7/5/2013 23:15, Richard Genoud wrote:
->>> +       card->dev = &pdev->dev;
->>> >>+       card->owner = THIS_MODULE;
->>> >>+       card->dai_link = dai;
->>> >>+       card->num_links = 1;
->>> >>+       dai->name = "WM8731";
->>> >>+       dai->stream_name = "WM8731 PCM";
->>> >>+       dai->codec_dai_name = "wm8731-hifi";
->>> >>+       dai->init = at91sam9x5ek_wm8731_init;
->>> >>+       card->dapm_widgets = at91sam9x5ek_dapm_widgets;
->>> >>+       card->num_dapm_widgets = ARRAY_SIZE(at91sam9x5ek_dapm_widgets);
->> >
->> >
->> >Will keep these as snd_soc_card and snd_soc_dai_link structure separately?
-> I don't really understand what you mean here.
-> do you mean that something like that will more explicit ? :
-> +       card->dai_link[0].name = "WM8731";
-> +       card->dai_link[0].stream_name = "WM8731 PCM";
-> +       card->dai_link[0].codec_dai_name = "wm8731-hifi";
-> +       card->dai_link[0].init = at91sam9x5ek_wm8731_init;
->
+So the proposed vhost-scsi per-cpu ida/tag pre-allocation changes should
+be considered v3.12 items.
 
-I mean using structure to define snd_soc_card and snd_soc_dai_link, look 
-like:
-struct snd_soc_dai_link dai_link_name = {
-	.name = xxx,
-	.stream_name = xxx,
-	...
-};
+> Merging new target code for 3.11 and vhost code for 3.12
+> helps keep the dependencies simple, so I'm all for it.
+> 
 
-struct snd_soc_card card_name = {
-	.name = xxxx
-	.ower = THIS_MODULE,
-	.dai_link = &dai_link_name,
-	...
-};
+My point above is that having (at least) Kent's per-cpu ida code merged
+for v3.11 would make it easier to move forward during the v3.12 cycle on
+per-cpu ida/tag conversions for vhost-scsi + other target fabric
+drivers.
 
-In this way, I think it will be more clear than put them in code.
+--nab
 
-Best Regards,
-Bo Shen
