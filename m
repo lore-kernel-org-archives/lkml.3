@@ -1,580 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab3GHJ7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:59:35 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:54268 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab3GHJ7e (ORCPT
+	id S1752206Ab3GHKAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 06:00:23 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53128 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751045Ab3GHKAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:59:34 -0400
-Subject: [PATCH RFC] fsio: filesystem io accounting cgroup
-To: linux-mm@kvack.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Mon, 08 Jul 2013 13:59:28 +0400
-Message-ID: <20130708095928.14058.26736.stgit@zurg>
-User-Agent: StGit/0.15
+	Mon, 8 Jul 2013 06:00:21 -0400
+Date: Mon, 8 Jul 2013 10:59:40 +0100
+From: Dave P Martin <Dave.Martin@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Michal Marek <mmarek@suse.cz>, Dave Martin <dave.martin@linaro.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: scripts/kallsyms: Avoid ARM veneer symbols
+Message-ID: <20130708095940.GB2906@localhost.localdomain>
+References: <2983817.Xe2505Drlj@wuerfel>
+ <201307051842.44721.arnd@arndb.de>
+ <20130705172659.GJ2932@localhost.localdomain>
+ <201307060134.56933.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201307060134.56933.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is proof of concept, just basic functionality for IO controller.
-This cgroup will control filesystem usage on vfs layer, it's main goal is
-bandwidth control. It's supposed to be much more lightweight than memcg/blkio.
+On Sat, Jul 06, 2013 at 01:34:56AM +0200, Arnd Bergmann wrote:
+> On Friday 05 July 2013, Dave P Martin wrote:
+> > On Fri, Jul 05, 2013 at 05:42:44PM +0100, Arnd Bergmann wrote:
+> > > On Friday 05 July 2013, Dave P Martin wrote:
+> > > > On Wed, Jul 03, 2013 at 06:03:04PM +0200, Arnd Bergmann wrote:
+> > 
+> > I think there are a small number of patterns to check for.
+> > 
+> > __*_veneer, __*_from_arm and __*_from_thumb should cover most cases.
+> 
+> Ok.
+> 
+> > > * There are actually symbols without a name on ARM, which screws up the
+> > >   kallsyms.c parser. These also seem to be veneers, but attached to some
+> > >   random function:
+> > 
+> > Hmmm, I don't what those are.  By default, we should probably ignore those
+> > too.  Maybe they have something to do with link-time relocation processing.
+> 
+> Definitely link-time. It only shows up after the final link, and only
+> with ld.bfd not with ld.gold as I found out now.
+> 
+> > > $ nm obj-tmp/.tmp_vmlinux1 | head
+> > > c09e8db1 t 
+> > > c09e8db5 t 
+> > > c09e8db9 t    # <==========
+> > > c09e8dbd t 
+> > > c0abfc29 t 
+> > > c0008000 t $a
+> > > c0f7b640 t $a
+> > > 
+> > > $ objdump -Dr obj-tmp/.tmp_vmlinux1 | grep -C 30 c09e8db.
+> > > c0851fcc <wlc_phy_edcrs_lock>:
+> > > c0851fcc:       b538            push    {r3, r4, r5, lr}
+> > > c0851fce:       b500            push    {lr}
+> > > c0851fd0:       f7bb d8dc       bl      c000d18c <__gnu_mcount_nc>
+> > > c0851fd4:       f240 456b       movw    r5, #1131       ; 0x46b
+> > > c0851fd8:       4604            mov     r4, r0
+> > > c0851fda:       f880 14d5       strb.w  r1, [r0, #1237] ; 0x4d5
+> > > c0851fde:       462a            mov     r2, r5
+> > > c0851fe0:       f44f 710b       mov.w   r1, #556        ; 0x22c
+> > > c0851fe4:       f7ff fe6d       bl      c0851cc2 <write_phy_reg>
+> > > c0851fe8:       4620            mov     r0, r4
+> > > c0851fea:       462a            mov     r2, r5
+> > > c0851fec:       f240 212d       movw    r1, #557        ; 0x22d
+> > > c0851ff0:       f7ff fe67       bl      c0851cc2 <write_phy_reg>
+> > > c0851ff4:       4620            mov     r0, r4
+> > > c0851ff6:       f240 212e       movw    r1, #558        ; 0x22e
+> > > c0851ffa:       f44f 7270       mov.w   r2, #960        ; 0x3c0
+> > > c0851ffe:       f196 fedb       bl      c09e8db8 <tpci200_free_irq+0x78>  # <===========
+> > > c0852002:       4620            mov     r0, r4
+> > > c0852004:       f240 212f       movw    r1, #559        ; 0x22f
+> > > c0852008:       f44f 7270       mov.w   r2, #960        ; 0x3c0
+> > > c085200c:       e8bd 4038       ldmia.w sp!, {r3, r4, r5, lr}
+> > > c0852010:       f7ff be57       b.w     c0851cc2 <write_phy_reg>
+> > > 
+> > > 
+> > > ... # in tpci200_free_irq:
+> > > c09e8d9e:       e003            b.n     c09e8da8 <tpci200_free_irq+0x68>
+> > > c09e8da0:       f06f 0415       mvn.w   r4, #21
+> > > c09e8da4:       e000            b.n     c09e8da8 <tpci200_free_irq+0x68>
+> > > c09e8da6:       4c01            ldr     r4, [pc, #4]    ; (c09e8dac <tpci200_free_irq+0x6c>)
+> > > c09e8da8:       4620            mov     r0, r4
+> > > c09e8daa:       bdf8            pop     {r3, r4, r5, r6, r7, pc}
+> > > c09e8dac:       fffffe00                        ; <UNDEFINED> instruction: 0xfffffe00
+> > > c09e8db0:       f4cf b814       b.w     c06b7ddc <bna_enet_sm_chld_stop_wait_entry>
+> > > c09e8db4:       f53e bed8       b.w     c0727b68 <gem_do_stop>
+> > > c09e8db8:       f668 bf83       b.w     c0851cc2 <write_phy_reg>           # <==========
+> > > c09e8dbc:       d101            bne.n   c09e8dc2 <tpci200_free_irq+0x82>
+> > > c09e8dbe:       f435 b920       b.w     c061e002 <twl_reset_sequence+0x34c>
+> > > 
+> > > It makes no sense to me at all that a function in one driver can just call
+> > > write_phy_reg a couple of times, but need a veneer in the middle, and put
+> > > that veneer in a totally unrelated function in another driver!
+> > 
+> > I think that if ld inserts a veneer for a function anywhere, branches
+> > from any object in the link to that target symbol can reuse the same
+> > veneer as a trampoline, effectively appearing to branch through an
+> > unrelated location to reach the destination.
+> 
+> That part makes sense, but it doesn't explain why ld would do that just
+> for the third out of four identical function calls in the example above.
+> 
+> > ld inserts veneers between individual input sections, but I don't
+> > think they have to go next to the same section the branch originates
+> > from.  In the above code, it looks like that series of unconditional
+> > branches after the end of tpci200_free_irq might be a common veneer pool
+> > for many different destinations.
+> 
+> Yes, exactly. In this build I had six of these nameless symbols, and five
+> of them were in this one function.
+> 
+> > LTO may also make the expected compilation unit boundaries disappear
+> > completely.  Anything could end up almost anywhere in that case.
+> > Files could get intermingled, inlined and generally spread all over the
+> > place.
+> 
+> I'm not sure we actually want to enable that in the kernel ;-)
+> 
+> In particular in combination with kallsyms, it would make the kallsyms
+> information rather useless when we can no longer infer a function name
+> from an address.
 
-This patch shows easy way for accounting pages in dirty/writeback state in
-per-inode manner. This is easier that doing this in memcg in per-page manner.
-Main idea is in keeping on each inode pointer (->i_fsio) to cgroup which owns
-dirty data in that inode. It's settled by fsio_account_page_dirtied() when
-first dirty tag appears in the inode. Relying to mapping tags gives us locking
-for free, this patch doesn't add any new locks to hot paths.
+Well, indeed.  But that's a separate discussion -- I don't think we want
+to block it needlessly just due to an obscure feature of the ARM toolchain.
 
-Unlike to blkio this method works for all of filesystems, not just disk-backed.
-Also it's able to handle writeback, because each inode has context which can be
-used in writeback thread to account io operations.
+Ignoring veneers and nameless symbols in kallsyms sounds like a reasonable
+approach for now, even if it's not a perfect.
 
-This is early prototype, I have some plans about extra functionality because
-this accounting itself is mostly useless, but it can be used as basis for more
-usefull features.
+> > Even so, veneers shouldn't be needed in the common case where we're not
+> > jumping across .rodata.
+> > 
+> > > 
+> > > If this is a binutils bug or gcc bug, we should probably just fix it, but it
+> > > might be easier to work around it by changing kallsyms.c some more.
+> > 
+> > I haven't found a trivial way to reproduce those nameless symbols.
+> > I don't know whether they're a bug or not...
+> > 
+> > Making kallsyms robust against this might be a good idea anyway.
+> 
+> Maybe we can find a binutils expert next week at Linaro connect to take a
+> look at the data. I can prepare a test case.
 
-Planned impovements:
-* Split bdi into several tiers and account them separately. For example:
-  hdd/ssd/usb/nfs. In complicated containerized environments that might be
-  different kinds of storages with different limits and billing. This is more
-  usefull that independent per-disk accounting and much easier to implement
-  because all per-tier structures are allocated before disk appearance.
-* Add some hooks for accounting actualy issued IO requests (iops).
-* Implement bandwidth throttlers for each tier individually (bps and iops).
-  This will be the most tasty feature. I already have very effective prototype.
-* Add hook into balance_dirty_pages to limit amount of dirty page for each
-  cgroup in each tier individually. This is required for accurate throttling,
-  because if we want to limit speed of writeback we also must limit amount
-  of dirty pages otherwise we have to inject enourmous delay after each sync().
-* Implement filtered writeback requests for writing only data which belongs to
-  particular fsio cgroup (or cgroups tree) to keep dirty balance in background.
-* Implement filtered 'sync', special mode for sync() which syncs only
-  filesystems which 'belong' to current fsio cgroup. Each container should sync
-  only it's own filesystems. This also can be made in terms of 'visibility' in
-  vfsmount namespaces.
+Sure, that could be worth a try.
 
-This patch lays on top of this:
-b26008c page_writeback: put account_page_redirty() after set_page_dirty()
-80979bd page_writeback: get rid of account_size argument in cancel_dirty_page()
-c575ef6 hugetlbfs: remove cancel_dirty_page() from truncate_huge_page()
-b720923 nfs: remove redundant cancel_dirty_page() from nfs_wb_page_cancel()
-4c21e52 mm: remove redundant dirty pages check from __delete_from_page_cache()
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: cgroups@vger.kernel.org
-Cc: devel@openvz.org
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Sha Zhengju <handai.szj@gmail.com>
----
- block/blk-core.c              |    2 +
- fs/Makefile                   |    2 +
- fs/direct-io.c                |    2 +
- fs/fsio_cgroup.c              |  137 +++++++++++++++++++++++++++++++++++++++++
- fs/nfs/direct.c               |    2 +
- include/linux/cgroup_subsys.h |    6 ++
- include/linux/fs.h            |    3 +
- include/linux/fsio_cgroup.h   |  136 +++++++++++++++++++++++++++++++++++++++++
- init/Kconfig                  |    3 +
- mm/page-writeback.c           |    8 ++
- mm/readahead.c                |    2 +
- mm/truncate.c                 |    2 +
- 12 files changed, 304 insertions(+), 1 deletion(-)
- create mode 100644 fs/fsio_cgroup.c
- create mode 100644 include/linux/fsio_cgroup.h
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 93a18d1..5f4e6c9 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -26,6 +26,7 @@
- #include <linux/swap.h>
- #include <linux/writeback.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/fsio_cgroup.h>
- #include <linux/fault-inject.h>
- #include <linux/list_sort.h>
- #include <linux/delay.h>
-@@ -1866,6 +1867,7 @@ void submit_bio(int rw, struct bio *bio)
- 			count_vm_events(PGPGOUT, count);
- 		} else {
- 			task_io_account_read(bio->bi_size);
-+			fsio_account_read(bio->bi_size);
- 			count_vm_events(PGPGIN, count);
- 		}
- 
-diff --git a/fs/Makefile b/fs/Makefile
-index 4fe6df3..d4432e7 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -52,6 +52,8 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
- 
- obj-y				+= quota/
- 
-+obj-$(CONFIG_FSIO_CGROUP)	+= fsio_cgroup.o
-+
- obj-$(CONFIG_PROC_FS)		+= proc/
- obj-$(CONFIG_SYSFS)		+= sysfs/
- obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 7ab90f5..0fe99af 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -28,6 +28,7 @@
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/fsio_cgroup.h>
- #include <linux/bio.h>
- #include <linux/wait.h>
- #include <linux/err.h>
-@@ -722,6 +723,7 @@ submit_page_section(struct dio *dio, struct dio_submit *sdio, struct page *page,
- 		 * Read accounting is performed in submit_bio()
- 		 */
- 		task_io_account_write(len);
-+		fsio_account_write(len);
- 	}
- 
- 	/*
-diff --git a/fs/fsio_cgroup.c b/fs/fsio_cgroup.c
-new file mode 100644
-index 0000000..5d5158f
---- /dev/null
-+++ b/fs/fsio_cgroup.c
-@@ -0,0 +1,137 @@
-+#include <linux/fsio_cgroup.h>
-+#include "internal.h"
-+
-+static inline struct fsio_cgroup *cgroup_fsio(struct cgroup *cgroup)
-+{
-+	return container_of(cgroup_subsys_state(cgroup, fsio_subsys_id),
-+			    struct fsio_cgroup, css);
-+}
-+
-+static void fsio_free(struct fsio_cgroup *fsio)
-+{
-+	percpu_counter_destroy(&fsio->read_bytes);
-+	percpu_counter_destroy(&fsio->write_bytes);
-+	percpu_counter_destroy(&fsio->nr_dirty);
-+	percpu_counter_destroy(&fsio->nr_writeback);
-+	kfree(fsio);
-+}
-+
-+static struct cgroup_subsys_state *fsio_css_alloc(struct cgroup *cgroup)
-+{
-+	struct fsio_cgroup *fsio;
-+
-+	fsio = kzalloc(sizeof(struct fsio_cgroup), GFP_KERNEL);
-+	if (!fsio)
-+		return ERR_PTR(-ENOMEM);
-+
-+	if (percpu_counter_init(&fsio->read_bytes, 0) ||
-+	    percpu_counter_init(&fsio->write_bytes, 0) ||
-+	    percpu_counter_init(&fsio->nr_dirty, 0) ||
-+	    percpu_counter_init(&fsio->nr_writeback, 0)) {
-+		fsio_free(fsio);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	return &fsio->css;
-+}
-+
-+/* switch all ->i_fsio references to the parent cgroup */
-+static void fsio_switch_sb(struct super_block *sb, void *_fsio)
-+{
-+	struct fsio_cgroup *fsio = _fsio;
-+	struct fsio_cgroup *parent = cgroup_fsio(fsio->css.cgroup->parent);
-+	struct address_space *mapping;
-+	struct inode *inode;
-+
-+	spin_lock(&inode_sb_list_lock);
-+	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
-+		mapping = inode->i_mapping;
-+		if (mapping->i_fsio == fsio &&
-+		    (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY) ||
-+		     mapping_tagged(mapping, PAGECACHE_TAG_WRITEBACK))) {
-+			spin_lock_irq(&mapping->tree_lock);
-+			if (mapping->i_fsio == fsio)
-+				mapping->i_fsio = parent;
-+			spin_unlock_irq(&mapping->tree_lock);
-+		}
-+	}
-+	spin_unlock(&inode_sb_list_lock);
-+}
-+
-+static void fsio_css_free(struct cgroup *cgroup)
-+{
-+	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
-+	struct fsio_cgroup *parent = cgroup_fsio(fsio->css.cgroup->parent);
-+	u64 nr_dirty, nr_writeback, tmp;
-+
-+	nr_dirty = percpu_counter_sum_positive(&fsio->nr_dirty);
-+	percpu_counter_add(&parent->nr_dirty, nr_dirty);
-+
-+	nr_writeback = percpu_counter_sum_positive(&fsio->nr_writeback);
-+	percpu_counter_add(&parent->nr_writeback, nr_writeback);
-+
-+	iterate_supers(fsio_switch_sb, fsio);
-+
-+	tmp = percpu_counter_sum(&fsio->nr_dirty);
-+	percpu_counter_add(&parent->nr_dirty, tmp - nr_dirty);
-+
-+	tmp = percpu_counter_sum(&fsio->nr_writeback);
-+	percpu_counter_add(&parent->nr_writeback, tmp - nr_writeback);
-+}
-+
-+static u64 fsio_get_read_bytes(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
-+
-+	return percpu_counter_sum(&fsio->read_bytes);
-+}
-+
-+static u64 fsio_get_write_bytes(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
-+
-+	return percpu_counter_sum(&fsio->write_bytes);
-+}
-+
-+static u64 fsio_get_dirty_bytes(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
-+
-+	return percpu_counter_sum_positive(&fsio->nr_dirty) * PAGE_CACHE_SIZE;
-+}
-+
-+static u64 fsio_get_writeback_bytes(struct cgroup *cgroup, struct cftype *cft)
-+{
-+	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
-+
-+	return percpu_counter_sum_positive(&fsio->nr_writeback) *
-+		PAGE_CACHE_SIZE;
-+}
-+
-+static struct cftype fsio_files[] = {
-+	{
-+		.name = "read_bytes",
-+		.read_u64 = fsio_get_read_bytes,
-+	},
-+	{
-+		.name = "write_bytes",
-+		.read_u64 = fsio_get_write_bytes,
-+	},
-+	{
-+		.name = "dirty_bytes",
-+		.read_u64 = fsio_get_dirty_bytes,
-+	},
-+	{
-+		.name = "writeback_bytes",
-+		.read_u64 = fsio_get_writeback_bytes,
-+	},
-+	{ }	/* terminate */
-+};
-+
-+struct cgroup_subsys fsio_subsys = {
-+	.name = "fsio",
-+	.subsys_id = fsio_subsys_id,
-+	.css_alloc = fsio_css_alloc,
-+	.css_free = fsio_css_free,
-+	.base_cftypes = fsio_files,
-+};
-diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
-index 0bd7a55..b8e61ee 100644
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -46,6 +46,7 @@
- #include <linux/kref.h>
- #include <linux/slab.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/fsio_cgroup.h>
- #include <linux/module.h>
- 
- #include <linux/nfs_fs.h>
-@@ -987,6 +988,7 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
- 		goto out;
- 
- 	task_io_account_write(count);
-+	fsio_account_write(count);
- 
- 	retval = nfs_direct_write(iocb, iov, nr_segs, pos, count, uio);
- 	if (retval > 0) {
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index 6e7ec64..d16df6e 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -84,3 +84,9 @@ SUBSYS(bcache)
- #endif
- 
- /* */
-+
-+#if IS_SUBSYS_ENABLED(CONFIG_FSIO_CGROUP)
-+SUBSYS(fsio)
-+#endif
-+
-+/* */
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 99be011..8156d99 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -421,6 +421,9 @@ struct address_space {
- 	spinlock_t		private_lock;	/* for use by the address_space */
- 	struct list_head	private_list;	/* ditto */
- 	void			*private_data;	/* ditto */
-+#ifdef CONFIG_FSIO_CGROUP
-+	struct fsio_cgroup	*i_fsio;	/* protected with tree_lock */
-+#endif
- } __attribute__((aligned(sizeof(long))));
- 	/*
- 	 * On most architectures that alignment is already the case; but
-diff --git a/include/linux/fsio_cgroup.h b/include/linux/fsio_cgroup.h
-new file mode 100644
-index 0000000..78aa53b
---- /dev/null
-+++ b/include/linux/fsio_cgroup.h
-@@ -0,0 +1,136 @@
-+#ifndef _LINUX_FSIO_CGGROUP_H
-+#define _LINUX_FSIO_CGGROUP_H
-+
-+#include <linux/fs.h>
-+#include <linux/pagemap.h>
-+#include <linux/cgroup.h>
-+#include <linux/workqueue.h>
-+#include <linux/percpu_counter.h>
-+
-+struct fsio_cgroup {
-+	struct cgroup_subsys_state css;
-+	struct percpu_counter read_bytes;
-+	struct percpu_counter write_bytes;
-+	struct percpu_counter nr_dirty;
-+	struct percpu_counter nr_writeback;
-+};
-+
-+#ifdef CONFIG_FSIO_CGROUP
-+
-+static inline struct fsio_cgroup *task_fsio_cgroup(struct task_struct *task)
-+{
-+	return container_of(task_subsys_state(task, fsio_subsys_id),
-+			    struct fsio_cgroup, css);
-+}
-+
-+/*
-+ * This accounts all reads, both cached and direct-io.
-+ */
-+static inline void fsio_account_read(unsigned long bytes)
-+{
-+	struct task_struct *task = current;
-+	struct fsio_cgroup *fsio;
-+
-+	rcu_read_lock();
-+	fsio = task_fsio_cgroup(task);
-+	__percpu_counter_add(&fsio->read_bytes, bytes,
-+			PAGE_CACHE_SIZE * percpu_counter_batch);
-+	rcu_read_unlock();
-+}
-+
-+/*
-+ * This is used for accounting  direct-io writes.
-+ */
-+static inline void fsio_account_write(unsigned long bytes)
-+{
-+	struct task_struct *task = current;
-+	struct fsio_cgroup *fsio;
-+
-+	rcu_read_lock();
-+	fsio = task_fsio_cgroup(task);
-+	__percpu_counter_add(&fsio->write_bytes, bytes,
-+			PAGE_CACHE_SIZE * percpu_counter_batch);
-+	rcu_read_unlock();
-+}
-+
-+/*
-+ * This called under mapping->tree_lock before setting radix-tree tag,
-+ * page which caused this call either locked (write) or mapped (unmap).
-+ *
-+ * If this is first dirty page in inode and there is no writeback then current
-+ * fsio cgroup becomes owner of this inode. Following radix_tree_tag_set()
-+ * will pin this pointer till the end of writeback or truncate. Otherwise
-+ * mapping->i_fsio already valid and points to cgroup who owns this inode.
-+ */
-+static inline void fsio_account_page_dirtied(struct address_space *mapping)
-+{
-+	struct fsio_cgroup *fsio = mapping->i_fsio;
-+
-+	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY) &&
-+	    !mapping_tagged(mapping, PAGECACHE_TAG_WRITEBACK)) {
-+		rcu_read_lock();
-+		fsio = task_fsio_cgroup(current);
-+		mapping->i_fsio = fsio;
-+		rcu_read_unlock();
-+	}
-+
-+	percpu_counter_inc(&fsio->nr_dirty);
-+}
-+
-+/*
-+ * This called after clearing dirty bit. Page here locked and unmapped,
-+ * thus dirtying process is complete and mapping->i_fsio is valid.
-+ * This state is stable because at this point page still in mapping and tagged.
-+ * We cannot reset mapping->i_mapping here even that was last dirty page, becase
-+ * this hook is called without tree_lock before removing page from page cache.
-+ */
-+static inline void fsio_cancel_dirty_page(struct address_space *mapping)
-+{
-+	percpu_counter_dec(&mapping->i_fsio->nr_dirty);
-+}
-+
-+/*
-+ * This called after redirtying page, thus nr_dirty will not fall to zero.
-+ * No tree_lock, page is locked and still tagged in mapping.
-+ */
-+static inline void fsio_account_page_redirty(struct address_space *mapping)
-+{
-+	percpu_counter_dec(&mapping->i_fsio->nr_dirty);
-+}
-+
-+/*
-+ * This switches page accounging from dirty to writeback.
-+ */
-+static inline void fsio_set_page_writeback(struct address_space *mapping)
-+{
-+	struct fsio_cgroup *fsio = mapping->i_fsio;
-+
-+	percpu_counter_inc(&fsio->nr_writeback);
-+	percpu_counter_dec(&fsio->nr_dirty);
-+}
-+
-+/*
-+ * Writeback is done, mapping->i_fsio pointer becomes invalid after that.
-+ */
-+static inline void fsio_clear_page_writeback(struct address_space *mapping)
-+{
-+	struct fsio_cgroup *fsio = mapping->i_fsio;
-+
-+	__percpu_counter_add(&fsio->write_bytes, PAGE_CACHE_SIZE,
-+			PAGE_CACHE_SIZE * percpu_counter_batch);
-+	percpu_counter_dec(&fsio->nr_writeback);
-+}
-+
-+#else /* CONFIG_FSIO_CGROUP */
-+
-+static inline void fsio_account_read(unsigned long bytes) {}
-+static inline void fsio_account_write(unsigned long bytes) {}
-+static inline void fsio_account_page_dirtied(struct address_space *mapping) {}
-+static inline void fsio_cancel_dirty_page(struct address_space *mapping) {}
-+static inline void fsio_account_page_redirty(struct address_space *mapping) {}
-+static inline void fsio_set_page_writeback(struct address_space *mapping) {}
-+static inline void fsio_clear_page_writeback(struct address_space *mapping) {}
-+
-+#endif /* CONFIG_FSIO_CGROUP */
-+
-+#endif /* _LINUX_FSIO_CGGROUP_H */
-diff --git a/init/Kconfig b/init/Kconfig
-index ea1be00..689b29a 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1050,6 +1050,9 @@ config DEBUG_BLK_CGROUP
- 	Enable some debugging help. Currently it exports additional stat
- 	files in a cgroup which can be useful for debugging.
- 
-+config FSIO_CGROUP
-+	bool "Filesystem IO controller"
-+
- endif # CGROUPS
- 
- config CHECKPOINT_RESTORE
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index a599f38..bc39a36 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -23,6 +23,7 @@
- #include <linux/init.h>
- #include <linux/backing-dev.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/fsio_cgroup.h>
- #include <linux/blkdev.h>
- #include <linux/mpage.h>
- #include <linux/rmap.h>
-@@ -1994,6 +1995,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
- 		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
- 		task_io_account_write(PAGE_CACHE_SIZE);
-+		fsio_account_page_dirtied(mapping);
- 		current->nr_dirtied++;
- 		this_cpu_inc(bdp_ratelimits);
- 	}
-@@ -2071,6 +2073,7 @@ void account_page_redirty(struct page *page)
- 		current->nr_dirtied--;
- 		dec_zone_page_state(page, NR_DIRTIED);
- 		dec_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
-+		fsio_account_page_redirty(mapping);
- 	}
- }
- EXPORT_SYMBOL(account_page_redirty);
-@@ -2242,6 +2245,7 @@ int test_clear_page_writeback(struct page *page)
- 			if (bdi_cap_account_writeback(bdi)) {
- 				__dec_bdi_stat(bdi, BDI_WRITEBACK);
- 				__bdi_writeout_inc(bdi);
-+				fsio_clear_page_writeback(mapping);
- 			}
- 		}
- 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
-@@ -2270,8 +2274,10 @@ int test_set_page_writeback(struct page *page)
- 			radix_tree_tag_set(&mapping->page_tree,
- 						page_index(page),
- 						PAGECACHE_TAG_WRITEBACK);
--			if (bdi_cap_account_writeback(bdi))
-+			if (bdi_cap_account_writeback(bdi)) {
- 				__inc_bdi_stat(bdi, BDI_WRITEBACK);
-+				fsio_set_page_writeback(mapping);
-+			}
- 		}
- 		if (!PageDirty(page))
- 			radix_tree_tag_clear(&mapping->page_tree,
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 829a77c..530599c 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -15,6 +15,7 @@
- #include <linux/blkdev.h>
- #include <linux/backing-dev.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/fsio_cgroup.h>
- #include <linux/pagevec.h>
- #include <linux/pagemap.h>
- #include <linux/syscalls.h>
-@@ -102,6 +103,7 @@ int read_cache_pages(struct address_space *mapping, struct list_head *pages,
- 			break;
- 		}
- 		task_io_account_read(PAGE_CACHE_SIZE);
-+		fsio_account_read(PAGE_CACHE_SIZE);
- 	}
- 	return ret;
- }
-diff --git a/mm/truncate.c b/mm/truncate.c
-index e212252..e84668e 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -17,6 +17,7 @@
- #include <linux/highmem.h>
- #include <linux/pagevec.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/fsio_cgroup.h>
- #include <linux/buffer_head.h>	/* grr. try_to_release_page,
- 				   do_invalidatepage */
- #include <linux/cleancache.h>
-@@ -75,6 +76,7 @@ void cancel_dirty_page(struct page *page)
- 			dec_bdi_stat(mapping->backing_dev_info,
- 					BDI_RECLAIMABLE);
- 			task_io_account_cancelled_write(PAGE_CACHE_SIZE);
-+			fsio_cancel_dirty_page(mapping);
- 		}
- 	}
- }
-
+Cheers
+---Dave
