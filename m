@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab3GHEhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 00:37:08 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:51348 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750793Ab3GHEhG (ORCPT
+	id S1753544Ab3GHEhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 00:37:21 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:33590 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750793Ab3GHEhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 00:37:06 -0400
-Date: Mon, 8 Jul 2013 06:37:03 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] pci: Avoid unnecessary calls to work_on_cpu
-Message-ID: <20130708043703.GT6123@two.firstfloor.org>
-References: <20130624195942.40795.27292.stgit@ahduyck-cp1.jf.intel.com>
- <CAErSpo70VKFxJqyZJKSp=CZ2x131Kz_+0vah3juTEuEx5RLX8A@mail.gmail.com>
- <87wqp1esff.fsf@rustcorp.com.au>
+	Mon, 8 Jul 2013 00:37:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhgQAElB2lF5LGhq/2dsb2JhbABagwmDHrkahSMEAYELF3SCIwEBBTIBIyMQCAMYCSUPBSUDIROIDrggFo44BoEXB4MHaQOXUoohhyiDIyo
+Date: Mon, 8 Jul 2013 14:37:09 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: linux-kernel@vger.kernel.org, Chris Mason <chris.mason@fusionio.com>,
+        linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 0/2] introduce list_for_each_entry_del
+Message-ID: <20130708043709.GB3438@dastard>
+References: <1370280485-10047-1-git-send-email-joern@logfs.org>
+ <20130705204100.GA15943@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <87wqp1esff.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130705204100.GA15943@logfs.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > But Rusty added this (in 873392ca51), and he knows way more about this
-> > stuff than I do.
+On Fri, Jul 05, 2013 at 04:41:00PM -0400, Jörn Engel wrote:
+> On Mon, 3 June 2013 13:28:03 -0400, Joern Engel wrote:
+> > 
+> > A purely janitorial patchset.  A fairly common pattern is to take a
+> > list, remove every object from it and do something with this object -
+> > usually kfree() some variant.  A stupid grep identified roughly 300
+> > instances, with many more hidden behind more complicated patterns to
+> > achieve the same end results.
 > 
-> Actually, I just stopped the code from playing cpumask games, which is
-> what it used to do.
+> Next version of the same patchset.  Object size is shrinking now, at
+> least for the one compiler I tested.  And a few kernel hackers met on
+> a frozen lake in hell with pigs flying overhead and could actually
+> agree on a name.  While I am sure almost every reader will still
+> disagree and have one or two better suggestions, I would like to use
+> this historical moment.
+> 
+> list_del_each and list_del_each_entry is shall be!
 
-You're right the numa_node_id() check ptimization is not 100% safe on preempt 
-kernels and should be probably removed. Also I agree it would probably
-make sense to move it up to the generic device layer (although I'm not
-sure that other bus types really care that much about NUMA locality)
+Can you add _init variants to this? There are many loops that
+actually require list_del_init() rather than list_del()...
 
-None of it seems to be a fatal problem though, so it boils down to
-"if someone cares enough to write a patch"
+Cheers,
 
--Andi
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
