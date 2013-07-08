@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579Ab3GHNv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:51:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab3GHNv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:51:27 -0400
-Date: Mon, 8 Jul 2013 15:50:48 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        trinity@vger.kernel.org
-Subject: Re: [bisected] perf: yet another fuzzer triggered crash
-Message-ID: <20130708135048.GA1069@krava.brq.redhat.com>
-References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
- <20130701090713.GO6626@twins.programming.kicks-ass.net>
- <alpine.DEB.2.10.1307011112090.8216@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1307021628510.8353@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1307022314450.11385@vincent-weaver-1.um.maine.edu>
- <20130703074929.GE23916@twins.programming.kicks-ass.net>
+	id S1752051Ab3GHNxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:53:46 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:34484 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216Ab3GHNxp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 09:53:45 -0400
+Message-ID: <51DAC467.8060504@atmel.com>
+Date: Mon, 8 Jul 2013 15:53:43 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130703074929.GE23916@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Genoud <richard.genoud@gmail.com>, Mark Brown <broonie@kernel.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH v2 0/5] Sound support for at91sam9x5-wm8731 based boards
+References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
+In-Reply-To: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 09:49:29AM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 02, 2013 at 11:15:59PM -0400, Vince Weaver wrote:
-> > 
-> > OK, I have bisected this problem to the following change:
-> > 
-> > commit 8dc85d547285668e509f86c177bcd4ea055bcaaf
-> > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Date:   Thu Sep 2 16:50:03 2010 +0200
-> > 
-> >     perf: Multiple task contexts
-> >     
-> >     Provide the infrastructure for multiple task contexts.
-> > 
-> 
-> Thanks, that narrows down the scope a bit. As it happens I was also
-> narrowing down on that particular area so that's good.
-> 
+On 08/07/2013 15:29, Richard Genoud :
+> Hi,
+>
+> This patchset add sound on the at91sam9x5ek board.
+> It's based on Nicolas Ferre's work in the 2.6.39 atmel patch for sam9x5:
+> https://github.com/linux4sam/linux-at91/commit/0aa157c9e71ccccf3abc30fa37eb5c95b392978d
+>
+> It needs Bo Chen's patchset on the generic dmaengine (topic/atmel branch
+> on Mark's sound tree) and the SSC interrupts disabled (cf
+> http://www.spinics.net/lists/arm-kernel/msg256901.html)
+>
+>
+> Tested on at91sam9g35ek.
+>
+> patches applies on next-20130708
+>
+> [I let the original signed-off from Nicolas and Uwe in place, I don't
+> know if I should replace them by something like "originaly-signed-off-by"
+> since the code has been changed.]
 
-hi,
-patch below gets rid of the warning, and probably the
-crash as well
+I am happy to give my "signed-off" to this patch. I guess that Uwe's one 
+was more an integration signed-off when he imported the code to his git 
+tree.
 
-the reason seems to be when HW context is cloned based
-on SW event that happened to get there because of the
-HW leader, which got closed just before (fd[15] event
-in the reproducer)
+> [Sorry if it's too late for 3.11]
 
-and the consequence is that in HW context we access
-SW's cpuctx -> and thus overwriting its task_ctx variable
-any time there's *sched_in routine
+Do not be sorry. Good work is always appreciated at any time!
 
-need to check if that does not break anything else ;-)
+> Changes from V1-RFC:
+>   * drop patches on SSC since Bo Chen already did the work
+>   * reorder patches to have the machine driver first
+>   * drop code already handled by the ASoC framework
+>   * drop unneeded SND_ATMEL_SOC_PDC config selection
+>   * use static snd_soc_card and  snd_soc_dai_link structures.
+>
+> Best regards,
+> Richard.
+>
+> Nicolas Ferre (1):
+>    sound: sam9x5_wm8731: machine driver for at91sam9x5 wm8731 boards
+>
+> Richard Genoud (4):
+>    ARM: AT91: DTS: sam9x5: add SSC DMA parameters
+>    ARM: AT91: DTS: sam9x5ek: add WM8731 codec
+>    ARM: AT91: DTS: sam9x5ek: add sound configuration
+>    ARM: AT91: DTS: sam9x5ek: enable SSC
 
-jirka
+Maybe we will have to split the series and let these DT patches go with 
+arm-soc.
 
----
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 1833bc5..1d1f030 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7465,7 +7465,7 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
- 		 * child.
- 		 */
- 
--		child_ctx = alloc_perf_context(event->pmu, child);
-+		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
- 		if (!child_ctx)
- 			return -ENOMEM;
- 
+>   arch/arm/boot/dts/at91sam9x5.dtsi   |    3 +
+>   arch/arm/boot/dts/at91sam9x5ek.dtsi |   27 +++++
+>   sound/soc/atmel/Kconfig             |   10 ++
+>   sound/soc/atmel/Makefile            |    2 +
+>   sound/soc/atmel/sam9x5_wm8731.c     |  206 +++++++++++++++++++++++++++++++++++
+>   5 files changed, 248 insertions(+)
+>   create mode 100644 sound/soc/atmel/sam9x5_wm8731.c
+>
+
+Thanks, bye,
+-- 
+Nicolas Ferre
