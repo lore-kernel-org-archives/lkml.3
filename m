@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752066Ab3GHNFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:05:16 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:56110 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab3GHNFN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:05:13 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1020,1363132800"; 
-   d="scan'208";a="6453383"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH RFC 3/4] xen-blkfront: prevent hoarding all grants
-Date: Mon, 8 Jul 2013 15:03:26 +0200
-Message-ID: <1373288607-1876-4-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-In-Reply-To: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
-References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
+	id S1752351Ab3GHNGH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:06:07 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:60273 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab3GHNGG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 09:06:06 -0400
+Date: Mon, 8 Jul 2013 06:05:12 -0700
+From: Kees Cook <keescook@chromium.org>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-mtd@lists.infradead.org
+Subject: [RESEND][PATCH] mtd: refactor call to request_module
+Message-ID: <20130708130512.GA24315@www.outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent blkfront from hoarding all grants by adding a minimum number
-of grants that must be free at all times. We still need a way to free
-unused grants in blkfront, but this patch will mitigate the problem
-in the meantime.
+This reduces the size of the stack frame when calling request_module().
+Performing the sprintf before the call is not needed.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- drivers/block/xen-blkfront.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/mtd/chips/gen_probe.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index 187a437..3d445c0 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -101,6 +101,12 @@ MODULE_PARM_DESC(max, "Maximum amount of segments in indirect requests (default
- #define BLK_RING_SIZE __CONST_RING_SIZE(blkif, PAGE_SIZE)
+diff --git a/drivers/mtd/chips/gen_probe.c b/drivers/mtd/chips/gen_probe.c
+index 74dbb6b..ffb36ba 100644
+--- a/drivers/mtd/chips/gen_probe.c
++++ b/drivers/mtd/chips/gen_probe.c
+@@ -211,9 +211,7 @@ static inline struct mtd_info *cfi_cmdset_unknown(struct map_info *map,
  
- /*
-+ * Make sure there are at least MIN_FREE_GRANTS at all times, preventing
-+ * blkfront from hoarding all grants
-+ */
-+#define MIN_FREE_GRANTS		512
-+
-+/*
-  * We have one of these per vbd, whether ide, scsi or 'other'.  They
-  * hang in private_data off the gendisk structure. We may end up
-  * putting all kinds of interesting stuff here :-)
-@@ -412,13 +418,13 @@ static int blkif_queue_request(struct request *req)
- 	if (info->persistent_gnts_c < max_grefs) {
- 		new_persistent_gnts = 1;
- 		if (gnttab_alloc_grant_references(
--		    max_grefs - info->persistent_gnts_c,
-+		    max_grefs - info->persistent_gnts_c + MIN_FREE_GRANTS,
- 		    &gref_head) < 0) {
- 			gnttab_request_free_callback(
- 				&info->callback,
- 				blkif_restart_queue_callback,
- 				info,
--				max_grefs);
-+				max_grefs + MIN_FREE_GRANTS);
- 			return 1;
- 		}
- 	} else
+ 	probe_function = __symbol_get(probename);
+ 	if (!probe_function) {
+-		char modname[sizeof("cfi_cmdset_%4.4X")];
+-		sprintf(modname, "cfi_cmdset_%4.4X", type);
+-		request_module(modname);
++		request_module("cfi_cmdset_%4.4X", type);
+ 		probe_function = __symbol_get(probename);
+ 	}
+ 
 -- 
-1.7.7.5 (Apple Git-26)
+1.7.9.5
 
+
+-- 
+Kees Cook
+Chrome OS Security
