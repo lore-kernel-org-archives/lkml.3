@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335Ab3GHMKc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 08:10:32 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34871 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab3GHMKa (ORCPT
+	id S1752235Ab3GHML4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 08:11:56 -0400
+Received: from dmz-mailsec-scanner-2.mit.edu ([18.9.25.13]:46328 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751653Ab3GHMLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 08:10:30 -0400
-Date: Mon, 8 Jul 2013 13:10:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        spi-devel-general@lists.sourceforge.net,
-        Ryan Mallon <rmallon@gmail.com>, mika.westerberg@iki.fi,
-        grant.likely@linaro.org, hsweeten@visionengravers.com
-Message-ID: <20130708121002.GZ27646@sirena.org.uk>
-References: <201307021010.30326.hartleys@visionengravers.com>
+	Mon, 8 Jul 2013 08:11:55 -0400
+X-AuditID: 1209190d-b7f078e000000937-28-51daac8adbfd
+Date: Mon, 8 Jul 2013 08:11:50 -0400
+From: Greg Price <price@MIT.EDU>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Waiman Long <Waiman.Long@hp.com>, Jiri Olsa <jolsa@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: Avoid missing macros FALSE, TRUE outside ui/gtk/
+Message-ID: <20130708121148.GC15534@biohazard-cafe.mit.edu>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5OeNRVRLQ41UuqCe"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201307021010.30326.hartleys@visionengravers.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.118
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 09/11] spi: spi-ep93xx: move the clock divider calcs
- into ep93xx_spi_chip_setup()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsUixG6notu15lagwYu1OhYHu6+zWRw9+5fJ
+	4vKuOWwWD0/ZOrB47Nq2k8nj/b6rbB6fN8kFMEdx2aSk5mSWpRbp2yVwZTx9toepYDJPxbr7
+	i5gaGH9ydjFyckgImEi86ZnHDmGLSVy4t56ti5GLQ0hgH6PEmgt97BDOBkaJjqbLrBDOJ0aJ
+	X/ceMnYxcnCwCKhILGkNBOlmE1CQ+DF/HTOILSKgJ3H71Et2kBJmgUyJv6s8QMLCAu4SZ07f
+	ZQGxeQWsJRbOX8cKYQtKnJz5BCzOLKAlcePfSyaIVmmJ5f84QMKiQIuu7W9nm8DIPwtJxywk
+	HbMQOhYwMq9ilE3JrdLNTczMKU5N1i1OTszLSy3SNdLLzSzRS00p3cQIClJOSd4djO8OKh1i
+	FOBgVOLhLTh7M1CINbGsuDL3EKMkB5OSKO/P1bcChfiS8lMqMxKLM+KLSnNSiw8xSnAwK4nw
+	irMC5XhTEiurUovyYVLSHCxK4rxPn54NFBJITyxJzU5NLUgtgsnKcHAoSfDKgAwVLEpNT61I
+	y8wpQUgzcXCCDOcBGq4LUsNbXJCYW5yZDpE/xagoJc4bCpIQAElklObB9cKSyCtGcaBXhHlb
+	Qap4gAkIrvsV0GAmoMENaWCDSxIRUlINjJnPVz7meuTwR1r20mJ1rlenrdyuM92Of3a6vVHy
+	1ZPmqOL9jdJqh5jnZdn/j/lvvOGBjjnv7VT37233MyMclIM7Vmm9SvvAZxaxidva3ONEW+25
+	lgB5h8W9/x0qUplcn+t1H5exleFeq5N2LGF5n3f4XyXp/qwv+/dar/Hp5TYqqtEzeemqxFKc
+	kWioxVxUnAgAEsDVPv0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We use these macros in a few files in ui/gtk/ and they work fine
+because GTK includes GLib which defines them, but here in util/
+they break the build, at least on my machine.  So stick to 0 and 1.
 
---5OeNRVRLQ41UuqCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Waiman Long <Waiman.Long@hp.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Greg Price <price@mit.edu>
+---
 
-On Tue, Jul 02, 2013 at 10:10:29AM -0700, H Hartley Sweeten wrote:
-> The divider values stored in the per chip data are only used to set the
-> registers in the hardware to generate the desired SPI clock. Since these
-> are calculated per transfer based on the t->speed_hz there is no reason
-> keep them in the per chip data.
+This is based on 6d895ece5, which is currently Arnaldo's perf/core.
+The offending lines were introduced in 78213177f, committed just the
+other day.
 
-Applied, thanks.  I don't seem to have been sent patch 10?
+Cheers,
+Greg
 
---5OeNRVRLQ41UuqCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+ tools/perf/util/dso.c  | 2 +-
+ tools/perf/util/vdso.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR2qwXAAoJELSic+t+oim9G+oQAJwnzZqNrtgRtFfXtmnwWqjt
-H2rBAKJqbIlfY/ekm+uTrv3qzvkQjbMD7zcLTi9j7JmyzegFbuH4Pe3VewvMaSDO
-GU+JTYYxn1KVQFnhHRZdAgJJbZ+ObUsV5BQ4cOVUcMp+dJshaoAi3gsJQXmkEDan
-8tqZoFOrk2WMJTTrHUMrSsBOEYKOq0isdCQEaEhiFezjmZ6dGv5VrzvwtmQ98ZeZ
-9bOc69U2bC2a9ndmkQa3T+g85Tzc4dUNTZSlDp+oHJ0qqjXOMEKAyPR5Dn+93qdR
-Np2FcR1rMIw+KN81BDaGA/Oecz+WzqcfiapiX2Gkf9kfb81yf60mC1be+2JlQLHi
-PR1DA5F2TvEQhEJt7GSFPNKTpV26dhG6/YXnrK8zsmXWdrbqXqr8pwQO3FfCzZKZ
-GrIWrevn4hMjq39UEfW4aErYHmuOnshc2fu4x6nTNOGuaKgTrosX6mtcwjR8kD67
-bJIRXx2/by/eGkh8oayV7nWE0g9RX1XEpp8wTOfU9Wjtr8FptQxk3/zfNEhg8Bqv
-GqARZstdZo1R3to3+Mgt/AqzFdWJwNoDMh7eNziSJFqURk6QUbtTsiBe3Ht2Dyzx
-5ZAw7j2SBVwZgm71aPEQ/8eH1CjKqowKl0/4CPMzcsrvI/Jl+FubP34UX2ZHoFeo
-rblQ/I11i4UPz8q3EQNl
-=Px7C
------END PGP SIGNATURE-----
-
---5OeNRVRLQ41UuqCe--
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 3d80f92..b4c8624 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -531,7 +531,7 @@ struct dso *dsos__find(struct list_head *head, const char *name, bool cmp_short)
+ 
+ struct dso *__dsos__findnew(struct list_head *head, const char *name)
+ {
+-	struct dso *dso = dsos__find(head, name, FALSE);
++	struct dso *dso = dsos__find(head, name, 0);
+ 
+ 	if (!dso) {
+ 		dso = dso__new(name);
+diff --git a/tools/perf/util/vdso.c b/tools/perf/util/vdso.c
+index a8fd73d..49edf93 100644
+--- a/tools/perf/util/vdso.c
++++ b/tools/perf/util/vdso.c
+@@ -91,7 +91,7 @@ void vdso__exit(void)
+ 
+ struct dso *vdso__dso_findnew(struct list_head *head)
+ {
+-	struct dso *dso = dsos__find(head, VDSO__MAP_NAME, TRUE);
++	struct dso *dso = dsos__find(head, VDSO__MAP_NAME, 1);
+ 
+ 	if (!dso) {
+ 		char *file;
+-- 
+1.8.2
