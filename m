@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab3GHFdI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 01:33:08 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:39293 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532Ab3GHFdH (ORCPT
+	id S1753664Ab3GHFfW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 01:35:22 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57821 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753534Ab3GHFfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 01:33:07 -0400
-Date: Mon, 8 Jul 2013 15:33:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
+	Mon, 8 Jul 2013 01:35:21 -0400
+Message-ID: <51DA4EC5.10707@linux.vnet.ibm.com>
+Date: Mon, 08 Jul 2013 11:01:49 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Marcus Gelderie <redmnic@gmail.com>
+CC: artem.bityutskiy@linux.intel.com, herbert@gondor.hengli.com.au,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio: include asm/barrier explicitly
-Message-Id: <20130708153304.3b44e03a4897136fc9419f89@canb.auug.org.au>
-In-Reply-To: <87obaderna.fsf@rustcorp.com.au>
-References: <20130707142019.GA2447@redhat.com>
-	<87obaderna.fsf@rustcorp.com.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__8_Jul_2013_15_33_04_+1000_qSX8v6cPhpIfLc41"
+Subject: Re: [PATCH] kernel:time fix race condition in alaramtimer.c
+References: <1373126870-17978-1-git-send-email-redmnic@gmail.com>
+In-Reply-To: <1373126870-17978-1-git-send-email-redmnic@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070805-5490-0000-0000-000003C714FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__8_Jul_2013_15_33_04_+1000_qSX8v6cPhpIfLc41
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/06/2013 09:37 PM, Marcus Gelderie wrote:
+> This patch fixes a race condition whereby the process can be caused to
+> sleep indefinitely. The problem occurs when the process is preempted
+> after having set its state to TASK_INTERRUPTIBLE but before starting the
+> alarm.
+> 
 
-Hi Rusty,
+I don't think there is any such problem. The __schedule() function does
+this check before dequeuing a task:
 
-On Mon, 08 Jul 2013 11:31:45 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
->
-> PS.  I'll squeeze these into this merge window, since they're trivial.
+if (prev->state && !(preempt_count() & PREEMPT_ACTIVE))
 
-s/'re trivial/fix bugs/  ;-)
+The latter part helps prevent the kind of indefinite sleeping you described
+above. Also, take a look at preempt_schedule(), preempt_schedule_irq()
+and friends to see how in-kernel preemption is dealt with, by using
+PREEMPT_ACTIVE. That would clarify why there is no bug here.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
+Srivatsa S. Bhat
 
---Signature=_Mon__8_Jul_2013_15_33_04_+1000_qSX8v6cPhpIfLc41
-Content-Type: application/pgp-signature
+> ---
+>  kernel/time/alarmtimer.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/time/alarmtimer.c b/kernel/time/alarmtimer.c
+> index f11d83b..81c8b31 100644
+> --- a/kernel/time/alarmtimer.c
+> +++ b/kernel/time/alarmtimer.c
+> @@ -585,15 +585,19 @@ static int alarmtimer_do_nsleep(struct alarm *alarm, ktime_t absexp)
+>  {
+>  	alarm->data = (void *)current;
+>  	do {
+> +		preempt_disable();
+>  		set_current_state(TASK_INTERRUPTIBLE);
+>  		alarm_start(alarm, absexp);
+> +		preempt_enable_no_resched();
+>  		if (likely(alarm->data))
+>  			schedule();
+> 
+> +		preempt_disable();
+>  		alarm_cancel(alarm);
+> +		__set_current_state(TASK_RUNNING);
+> +		preempt_enable_no_resched();
+>  	} while (alarm->data && !signal_pending(current));
+> 
+> -	__set_current_state(TASK_RUNNING);
+> 
+>  	return (alarm->data == NULL);
+>  }
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR2k8QAAoJEECxmPOUX5FEhhAP/0xcq2gPLfCbMrLhJNMGcZX/
-/jRRK83jni5hTdTXccm+/N/uUdRqjStyi5CR5WQEPdSIOfuNop3K7DJBTka8znd3
-kGr4vxCMjzBuuLJrLGAEbxca/2XjaaqJpgToc9aGvBCJgyQa+KeDyQcriqO1l+vf
-erahYrlcATMKnTe6SFall2Rdawh33XdVN5rbzP5zs4+aj7nkS5OxP3qWuluWiJKO
-RpID0f1udSf9eh6cIeWFG93L8KMAw4AZAhom+Q55H/lK4AWD1ggkbXBmRJATy2ih
-ErzFueuJncjxXsuvZHNKtuxEsnFAJrULTx6Cxncclpd+dWNMgT8Q+11cuYq/LKq5
-Eref/Cw5eBEhbSeKFrErwZH4BDDhhUuZqkeoLqvqTlYDiQb0nKrKmUyRwbAh/0LK
-yddVBAYMhCZb06dJ6t9QHXweWKWtY0ab6NQ19KvpulAkbOjHq9pR258Afh6x+SCr
-ZwFS2b1e1geJEUfxcLjjgRRu0poQiphDSK7nibKkfcEBO3pZe2YWFxDupNlqHKYj
-BVbxHyqOPKGSxyMfem3dX/lL1tJIu+D810AGwXVQACLJlU30sTHTR2IXsIavOe8V
-2cNJUq0rHJmFjESSZWIXBdh5M3/cauGTBE63yx9Uge0eHC17G19XPEzAB2Bn68Lj
-Vh7OKq1HK6wEAMXoUfj4
-=wpXo
------END PGP SIGNATURE-----
-
---Signature=_Mon__8_Jul_2013_15_33_04_+1000_qSX8v6cPhpIfLc41--
