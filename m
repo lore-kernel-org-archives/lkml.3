@@ -1,311 +1,419 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab3GHIwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 04:52:08 -0400
-Received: from 17.mo3.mail-out.ovh.net ([87.98.178.58]:58820 "EHLO
-	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752159Ab3GHIwF (ORCPT
+	id S1752497Ab3GHIwm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 04:52:42 -0400
+Received: from www.linutronix.de ([62.245.132.108]:51978 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752343Ab3GHIwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 04:52:05 -0400
-Date: Mon, 8 Jul 2013 10:52:05 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fbdev <linux-fbdev@vger.kernel.org>, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
-Subject: [PULL] fbdev changes for 3.11
-Message-ID: <20130708085205.GB18477@ns203013.ovh.net>
+	Mon, 8 Jul 2013 04:52:40 -0400
+Message-ID: <51DA7DD5.9060700@linutronix.de>
+Date: Mon, 08 Jul 2013 10:52:37 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Ovh-Tracer-Id: 10513090382092282682
-X-Ovh-Remote: 91.121.171.124 (ns203013.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+CC: linux-usb@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] usb/musb dma: add cppi41 dma driver
+References: <1373040764-3711-1-git-send-email-bigeasy@linutronix.de> <1373040764-3711-2-git-send-email-bigeasy@linutronix.de> <51D9817B.6080209@cogentembedded.com>
+In-Reply-To: <51D9817B.6080209@cogentembedded.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 07/07/2013 04:55 PM, Sergei Shtylyov wrote:
+> Hello.
 
-	Here is the first fbdev pull for 3.11
+Hello Sergei,
 
-The following changes since commit 317ddd256b9c24b0d78fa8018f80f1e495481a10:
+> On 05-07-2013 20:12, Sebastian Andrzej Siewior wrote:
+> 
+>> This is a first shot of the cppi41 DMA driver.
+> 
+>    Where have you been when I submitted my drivers back in 2009? :-)
 
-  Linux 3.10-rc5 (2013-06-08 17:41:04 -0700)
+Not here it seems :) There is a driver I got which seem to work but it
+is not using the dma engine and is not really in shape so I'm doing
+this.
 
-are available in the git repository at:
+And the current musb's cppi dma engine (3.1, different logic etc.) is
+not using dmaengine and the network driver (cpsw) which is also using
+cppi 3.1 is having its own implementation of the cppi-dma part. So I
+think dma enggine implementation is a must here.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/plagnioj/linux-fbdev.git tags/fbdev-for-3.11
+>    MUSB DMA engine support can't be generic unfortunately. There are
+> some non-generic DMA registers in each MUSB implementation that used
+> CPPI 4.1.
 
-for you to fetch changes up to 1b6c79361ba5ce30b40f0f7d6fc2421dc5fcbe0c:
+I haven't got to it yet. The TX part seem generic enough so far. There
+seem to be two cases of how DMA is used:
+- hard wired dma channel like cppi
+- mostly free dma channel, the transfer requires the FIFO address
 
-  video: imxfb: Add DT support (2013-07-08 16:36:49 +0800)
+A big win is we move as much as possible of the dma code to drivers/dma
+so the driver can be used by other driver's like network. However if we
+manage to have better abstraction of the DMA interface within musb we
+maybe get even to a point where we can enable multiple engines.
 
-----------------------------------------------------------------
-Various fbdev changes for 3.11
+>> diff --git a/arch/arm/boot/dts/am33xx.dtsi
+>> b/arch/arm/boot/dts/am33xx.dtsi
+>> index bb2298c..fc29b54 100644
+>> --- a/arch/arm/boot/dts/am33xx.dtsi
+>> +++ b/arch/arm/boot/dts/am33xx.dtsi
+>> @@ -349,6 +349,18 @@
+>>               status = "disabled";
+>>           };
+>>
+>> +        cppi41dma: dma@07402000 {
+> 
+>    @47402000? maybe?
 
- * xilinxfb updates
- * Small cleanups and fixes to multiple drivers
- * OMAP display subsystem bug updates
- * imxfb dt support
+maybe, I will double check.
 
-----------------------------------------------------------------
-Borislav Petkov (1):
-      uvesafb: Correct/simplify warning message
+>> +            compatible = "ti,am3359-cppi41";
+>> +            reg =  <0x47400000 0x1000    /* usbss */
+> 
+>    USB register are not a part of CPPI 4.1 DMA. They are not generic and
+> are different on e.g. DA8xx/OMAP-L1x. Besides this range is conflicting
+> with the next node.
 
-Dan Carpenter (1):
-      fbmem: return -EFAULT on copy_to_user() failure
+I will shorten them for the range conflict. usbss is only used for
+interrupt mask on/off. If there are different, a different compatible
+string will carry the difference. I think I will also add the usb
+string to it since a possible network engine will look different in
+terms of the queue used (which I plan to move away from DT).
 
-Emil Goode (1):
-      OMAPDSS: Remove kfree for memory allocated with devm_kzalloc
+>> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+>> index 3215a3c..c19a593 100644
+>> --- a/drivers/dma/Kconfig
+>> +++ b/drivers/dma/Kconfig
+>> @@ -305,6 +305,15 @@ config DMA_OMAP
+>>       select DMA_ENGINE
+>>       select DMA_VIRTUAL_CHANNELS
+>>
+>> +config TI_CPPI41
+>> +    tristate "AM33xx CPPI41 DMA support"
+> 
+>    It shouldn't be specific to AM33xx.
 
-Fabio Estevam (1):
-      video: of_display_timing.h: Declare 'display_timing'
+Okay.
 
-Jean-Christophe PLAGNIOL-VILLARD (4):
-      Merge branch 'fbdev-3.11' of git://gitorious.org/linux-omap-dss2/linux into fbdev/for-next
-      Merge tag 'omapdss-for-3.11-1' of git://gitorious.org/linux-omap-dss2/linux into fbdev/for-next
-      Merge tag 'omapdss-for-3.11-2' of git://gitorious.org/linux-omap-dss2/linux into fbdev/for-next
-      Merge tag 'fbdev-3.11-2' of git://gitorious.org/linux-omap-dss2/linux into fbdev/for-next
+> 
+>> +    depends on ARCH_OMAP
+> 
+>    And shouldn't depend on ARCH_OMAP only, also on ARCH_DAVINCI_DA8XX.
 
-Jing Xiang (2):
-      video: mmp: fix memcpy wrong size for mmp_addr issue
-      video: mmp: fix graphics/video layer enable/mask swap issue
+Okay
 
-Jingoo Han (2):
-      video: remove unnecessary platform_set_drvdata()
-      video: replace strict_strtoul() with kstrtoul()
+> 
+> [...]
+>> diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
+>> new file mode 100644
+>> index 0000000..80dcb56
+>> --- /dev/null
+>> +++ b/drivers/dma/cppi41.c
+>> @@ -0,0 +1,777 @@
+>> +/* USB SS */
+>> +#define USBSS_IRQ_STATUS    (0x28)
+>> +#define USBSS_IRQ_ENABLER    (0x2c)
+>> +#define USBSS_IRQ_CLEARR    (0x30)
+> 
+>    These shouldn't be here. Why enclose them in () BTW?
 
-Lars-Peter Clausen (1):
-      fbdev: bfin-lq035q1-fb: Use dev_pm_ops
+The enclose is not on purpose and will be removed. I would keep them
+and distinguish different regs via compatible string once we have
+different implementations.
 
-Markus Pargmann (1):
-      video: imxfb: Add DT support
+>> +#define USBSS_IRQ_RX1        (1 << 11)
+>> +#define USBSS_IRQ_TX1        (1 << 10)
+>> +#define USBSS_IRQ_RX0        (1 <<  9)
+>> +#define USBSS_IRQ_TX0        (1 <<  8)
+>> +#define USBSS_IRQ_PD_COMP    (1 <<  2)
+>> +
+>> +#define USBSS_IRQ_RXTX1        (USBSS_IRQ_RX1 | USBSS_IRQ_TX1)
+>> +#define USBSS_IRQ_RXTX0        (USBSS_IRQ_RX0 | USBSS_IRQ_TX0)
+>> +#define USBSS_IRQ_RXTX01    (USBSS_IRQ_RXTX0 | USBSS_IRQ_RXTX1)
+>> +
+> 
+>    Neither these shouldn't be here.
 
-Maxime Ripard (4):
-      video: ssd1307fb: Add support for SSD1306 OLED controller
-      video: ssd1307fb: Rework the communication functions
-      video: ssd1307fb: Speed up the communication with the controller
-      video: ssd1307fb: Make use of horizontal addressing mode
+Se above.
 
-Michal Simek (7):
-      video: xilinxfb: Fix OF probing on little-endian systems
-      video: xilinxfb: Do not name out_be32 in function name
-      video: xilinxfb: Rename PLB_ACCESS_FLAG to BUS_ACCESS_FLAG
-      video: xilinxfb: Use drvdata->regs_phys instead of physaddr
-      video: xilinxfb: Group bus initialization
-      video: xilinxfb: Add support for little endian accesses
-      video: xilinxfb: Use driver for Xilinx ARM Zynq
+> 
+>> +/* Queue manager */
+>> +/* 4 KiB of memory for descriptors, 2 for each endpoint */
+> 
+>    Endpoints shouldn't be mentioned. CPPI 4.1 is universal DMA engine,
+> not USB specific.
 
-Randy Dunlap (2):
-      fb: fix atyfb build warning
-      fb: fix atyfb unused data warnings
+Okay. My current plan is to keep 4kib of descriptors memory but add
+dynamic allocation.
 
-Sachin Kamat (5):
-      video: smscufx: Use NULL instead of 0
-      video: udlfb: Use NULL instead of 0
-      video: udlfb: Make local symbol static
-      video: imxfb: Make local symbols static
-      video: i740fb: Make i740fb_init static
+>> +struct cppi41_dd {
+>> +    struct dma_device ddev;
+>> +
+>> +    void *qmgr_scratch;
+>> +    dma_addr_t scratch_phys;
+>> +
+>> +    struct cppi41_desc *cd;
+>> +    dma_addr_t descs_phys;
+>> +    struct cppi41_channel *chan_busy[ALLOC_DECS_NUM];
+>> +
+>> +    void __iomem *usbss_mem;
+> 
+>    Shouldn't be here.
+> 
+>> +    void __iomem *ctrl_mem;
+>> +    void __iomem *sched_mem;
+>> +    void __iomem *qmgr_mem;
+>> +    unsigned int irq;
+> 
+>    Shouldn't be here either.
 
-Sergey Kibrik (1):
-      OMAPDSS: gracefully disable overlay at error
+What is wrong with the four mem pointer here?
 
-Tomi Valkeinen (62):
-      videomode: don't allocate mem in of_get_display_timing()
-      videomode: implement public of_get_display_timing()
-      OMAPDSS: add pdata->default_display_name
-      OMAPDSS: only probe pdata if there's one
-      OMAPDSS: add omap_dss_find_output()
-      OMAPDSS: add omap_dss_find_output_by_node()
-      OMAPDSS: fix dss_get_ctx_loss_count for DT
-      OMAPDSS: clean up dss_[ovl|mgr]_get_device()
-      OMAPDSS: add helpers to get mgr or output from display
-      OMAPDSS: split overlay manager creation
-      OMAPDRM: fix overlay manager handling
-      OMAPDSS: Implement display (dis)connect support
-      OMAPDSS: CORE: use devm_regulator_get
-      OMAPDSS: DSI: cleanup regulator init
-      OMAPDSS: DPI: cleanup pll & regulator init
-      OMAPDSS: DPI: fix regulators for DT
-      OMAPDSS: HDMI: add hdmi_init_regulator
-      OMAPDSS: SDI: clean up regulator init
-      OMAPDSS: SDI: fix regulators for DT
-      OMAPDSS: VENC: clean up regulator init
-      OMAPDSS: add videomode conversion support
-      OMAPDSS: remove dssdev uses in trivial cases
-      OMAPDSS: add panel list
-      OMAPDSS: use the panel list in omap_dss_get_next_device
-      OMAPDSS: don't use dss bus in suspend/resume
-      OMAPDSS: implement display sysfs without dss bus
-      OMAPDSS: Add panel dev pointer to dssdev
-      OMAPDSS: remove omap_dss_start/stop_device()
-      OMAPDSS: combine omap_dss_output into omap_dss_device
-      OMAPDSS: omapdss.h: add owner field to omap_dss_device
-      OMAPDSS: add module_get/put to omap_dss_get/put_device()
-      OMAPDSS: add THIS_MODULE owner to DSS outputs
-      OMAPDSS: output: increase refcount in find_output funcs
-      OMAPFB: use EPROBE_DEFER if default display is not present
-      OMAPDSS: HDMI: clean up PHY power handling
-      OMAPDSS: HDMI clean up hpd_gpio
-      OMAPDSS: remove unused fields in omap_dss_device
-      OMAPDSS: remove dispc's dependency to VENC/HDMI
-      OMAPDSS: public omapdss_register_output()
-      OMAPDSS: modify get/find functions to go through the device chain
-      OMAPDSS: add OMAP_DISPLAY_TYPE_DVI
-      drm/omap: DVI connector fix
-      OMAPDSS: DPI: Add ops
-      OMAPDSS: SDI: Add ops
-      OMAPDSS: DVI: Add ops
-      OMAPDSS: AnalogTV: Add ops
-      OMAPDSS: HDMI: Add ops
-      OMAPDSS: DSI: Add ops
-      OMAPDSS: Add new TFP410 Encoder driver
-      OMAPDSS: Add new TPD12S015 Encoder driver
-      OMAPDSS: Add new DVI Connector driver
-      OMAPDSS: Add new HDMI Connector driver
-      OMAPDSS: Add new Analog TV Connector driver
-      OMAPDSS: Add new simple DPI panel driver
-      OMAPDSS: Add new DSI Command Mode panel  driver
-      OMAPDSS: Add Sony ACX565AKM panel driver
-      OMAPDSS: Add LG.Philips LB035Q02 panel driver
-      OMAPDSS: Add Sharp LS037V7DW01 panel driver
-      OMAPDSS: Add TPO TD043MTEA1 panel driver
-      OMAPDSS: Add NEC NL8048HL11 panel driver
-      OMAPDSS: panels: add Kconfig comment
-      OMAPDSS: DPI: Fix wrong pixel clock limit
+>> +static struct cppi41_channel *desc_to_chan(struct cppi41_dd *cdd, u32
+>> desc)
+>> +{
+>> +    struct cppi41_channel *c;
+>> +    u32 descs_size;
+>> +    u32 desc_num;
+>> +
+>> +    descs_size = sizeof(struct cppi41_desc) * ALLOC_DECS_NUM;
+>> +
+>> +    if (!((desc >= cdd->descs_phys) &&
+>> +            (desc < (cdd->descs_phys + descs_size)))) {
+>> +        return NULL;
+>> +    }
+> 
+>    checkpatch.pl would complain about single statement in {}.
 
-Vincent Stehlé (1):
-      fb: make fp_get_options name argument const
+It did not, but I agree.
 
-Wei Yongjun (1):
-      video: mxsfb: remove redundant dev_err call in mxsfb_probe()
+>> +static void cppi_writel(u32 val, void *__iomem *mem)
+>> +{
+>> +    writel(val, mem);
+>> +}
+>> +
+>> +static u32 cppi_readl(void *__iomem *mem)
+>> +{
+>> +    u32 val;
+>> +    val = readl(mem);
+>> +    return val;
+>> +}
+> 
+>    I don't see much sense in these functions. Besides, they should
+> probably be using __raw_{read|write}().
 
-Yijing Wang (2):
-      aty128fb: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
-      radeon: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
+I had printk() before posting for debugging. Using raw would require an
+explicit cache flush before triggering the engine, right?
 
- Documentation/devicetree/bindings/video/fsl,imx-fb.txt      |   51 ++++++
- Documentation/devicetree/bindings/video/ssd1307fb.txt       |   10 +-
- drivers/gpu/drm/omapdrm/omap_crtc.c                         |   46 +++++-
- drivers/gpu/drm/omapdrm/omap_drv.c                          |   27 +++-
- drivers/gpu/drm/omapdrm/omap_drv.h                          |    1 +
- drivers/video/Kconfig                                       |    4 +-
- drivers/video/aty/aty128fb.c                                |    2 +-
- drivers/video/aty/atyfb_base.c                              |    9 +-
- drivers/video/aty/radeon_pm.c                               |    2 +-
- drivers/video/au1100fb.c                                    |    1 -
- drivers/video/bf54x-lq043fb.c                               |    1 -
- drivers/video/bfin-lq035q1-fb.c                             |   24 +--
- drivers/video/bfin-t350mcqb-fb.c                            |    2 -
- drivers/video/ep93xx-fb.c                                   |    2 -
- drivers/video/fbmem.c                                       |    6 +-
- drivers/video/fsl-diu-fb.c                                  |    4 +-
- drivers/video/i740fb.c                                      |    2 +-
- drivers/video/imxfb.c                                       |  201 ++++++++++++++++++-----
- drivers/video/jz4740_fb.c                                   |    2 -
- drivers/video/mmp/fb/mmpfb.c                                |    1 -
- drivers/video/mmp/hw/mmp_ctrl.c                             |    9 +-
- drivers/video/mxsfb.c                                       |    3 -
- drivers/video/nuc900fb.c                                    |    1 -
- drivers/video/of_display_timing.c                           |   55 +++++--
- drivers/video/omap2/Kconfig                                 |    1 +
- drivers/video/omap2/Makefile                                |    1 +
- drivers/video/omap2/displays-new/Kconfig                    |   73 +++++++++
- drivers/video/omap2/displays-new/Makefile                   |   12 ++
- drivers/video/omap2/displays-new/connector-analog-tv.c      |  265 ++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/connector-dvi.c            |  351 ++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/connector-hdmi.c           |  375 ++++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/encoder-tfp410.c           |  267 ++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/encoder-tpd12s015.c        |  395 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/panel-dpi.c                |  270 +++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/panel-dsi-cm.c             | 1336 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/panel-lgphilips-lb035q02.c |  358 ++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/panel-nec-nl8048hl11.c     |  394 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/panel-sharp-ls037v7dw01.c  |  324 +++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/panel-sony-acx565akm.c     |  865 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays-new/panel-tpo-td043mtea1.c     |  646 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/video/omap2/displays/Kconfig                        |    2 +-
- drivers/video/omap2/displays/panel-acx565akm.c              |   16 +-
- drivers/video/omap2/displays/panel-generic-dpi.c            |   26 +--
- drivers/video/omap2/displays/panel-lgphilips-lb035q02.c     |   10 +-
- drivers/video/omap2/displays/panel-n8x0.c                   |   30 ++--
- drivers/video/omap2/displays/panel-nec-nl8048hl11-01b.c     |    4 +-
- drivers/video/omap2/displays/panel-picodlp.c                |   34 ++--
- drivers/video/omap2/displays/panel-sharp-ls037v7dw01.c      |   10 +-
- drivers/video/omap2/displays/panel-taal.c                   |  170 +++++++++----------
- drivers/video/omap2/displays/panel-tfp410.c                 |   32 ++--
- drivers/video/omap2/displays/panel-tpo-td043mtea1.c         |   36 ++---
- drivers/video/omap2/dss/Kconfig                             |    1 +
- drivers/video/omap2/dss/apply.c                             |   59 ++++---
- drivers/video/omap2/dss/core.c                              |  108 +++++++------
- drivers/video/omap2/dss/dispc-compat.c                      |    3 +-
- drivers/video/omap2/dss/dispc.c                             |   24 ++-
- drivers/video/omap2/dss/display-sysfs.c                     |  154 ++++++++++--------
- drivers/video/omap2/dss/display.c                           |  247 +++++++++++++++++++---------
- drivers/video/omap2/dss/dpi.c                               |  209 ++++++++++++++++--------
- drivers/video/omap2/dss/dsi.c                               |  232 ++++++++++++++++----------
- drivers/video/omap2/dss/dss.c                               |    3 +-
- drivers/video/omap2/dss/dss.h                               |   35 +---
- drivers/video/omap2/dss/dss_features.c                      |    1 -
- drivers/video/omap2/dss/hdmi.c                              |  345 ++++++++++++++++++++++++++++++++-------
- drivers/video/omap2/dss/manager-sysfs.c                     |   47 ++++--
- drivers/video/omap2/dss/manager.c                           |   29 +++-
- drivers/video/omap2/dss/output.c                            |   87 +++++++++-
- drivers/video/omap2/dss/rfbi.c                              |   43 +++--
- drivers/video/omap2/dss/sdi.c                               |  143 ++++++++++++----
- drivers/video/omap2/dss/ti_hdmi.h                           |    5 +-
- drivers/video/omap2/dss/ti_hdmi_4xxx_ip.c                   |   87 +++++-----
- drivers/video/omap2/dss/ti_hdmi_4xxx_ip.h                   |    1 +
- drivers/video/omap2/dss/venc.c                              |  163 ++++++++++++-------
- drivers/video/omap2/dss/venc_panel.c                        |   16 +-
- drivers/video/omap2/omapfb/omapfb-ioctl.c                   |    9 +-
- drivers/video/omap2/omapfb/omapfb-main.c                    |   27 ++--
- drivers/video/pxa3xx-gcu.c                                  |    2 -
- drivers/video/pxafb.c                                       |    1 -
- drivers/video/s3c2410fb.c                                   |    2 -
- drivers/video/sa1100fb.c                                    |    1 -
- drivers/video/sh7760fb.c                                    |    1 -
- drivers/video/sh_mipi_dsi.c                                 |    1 -
- drivers/video/smscufx.c                                     |    2 +-
- drivers/video/ssd1307fb.c                                   |  392 ++++++++++++++++++++++++++++++++------------
- drivers/video/tmiofb.c                                      |    3 -
- drivers/video/udlfb.c                                       |   12 +-
- drivers/video/uvesafb.c                                     |    4 +-
- drivers/video/vga16fb.c                                     |    1 -
- drivers/video/vt8500lcdfb.c                                 |    1 -
- drivers/video/wm8505fb.c                                    |    2 +-
- drivers/video/xilinxfb.c                                    |  135 ++++++++--------
- include/linux/fb.h                                          |    2 +-
- include/video/of_display_timing.h                           |    3 +
- include/video/omap-panel-data.h                             |  209 ++++++++++++++++++++++++
- include/video/omapdss.h                                     |  293 ++++++++++++++++++++++++++++-----
- 95 files changed, 8700 insertions(+), 1214 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/video/fsl,imx-fb.txt
- create mode 100644 drivers/video/omap2/displays-new/Kconfig
- create mode 100644 drivers/video/omap2/displays-new/Makefile
- create mode 100644 drivers/video/omap2/displays-new/connector-analog-tv.c
- create mode 100644 drivers/video/omap2/displays-new/connector-dvi.c
- create mode 100644 drivers/video/omap2/displays-new/connector-hdmi.c
- create mode 100644 drivers/video/omap2/displays-new/encoder-tfp410.c
- create mode 100644 drivers/video/omap2/displays-new/encoder-tpd12s015.c
- create mode 100644 drivers/video/omap2/displays-new/panel-dpi.c
- create mode 100644 drivers/video/omap2/displays-new/panel-dsi-cm.c
- create mode 100644 drivers/video/omap2/displays-new/panel-lgphilips-lb035q02.c
- create mode 100644 drivers/video/omap2/displays-new/panel-nec-nl8048hl11.c
- create mode 100644 drivers/video/omap2/displays-new/panel-sharp-ls037v7dw01.c
- create mode 100644 drivers/video/omap2/displays-new/panel-sony-acx565akm.c
- create mode 100644 drivers/video/omap2/displays-new/panel-tpo-td043mtea1.c
+>> +static irqreturn_t cppi41_irq(int irq, void *data)
+>> +{
+>> +    struct cppi41_dd *cdd = data;
+>> +    struct cppi41_channel *c;
+>> +    u32 status;
+>> +    int i;
+>> +
+>> +    status = cppi_readl(cdd->usbss_mem + USBSS_IRQ_STATUS);
+>> +    if (!(status & USBSS_IRQ_PD_COMP))
+>> +        return IRQ_NONE;
+> 
+>    No, this can't be here.
 
-Best Regards,
-J.
+again. Why not?
+
+>> +static u32 get_host_pd0(u32 length)
+>> +{
+>> +    u32 reg;
+>> +
+>> +    reg = DESC_TYPE_HOST << DESC_TYPE;
+>> +    reg |= length;
+>> +
+>> +    return reg;
+>> +}
+>> +
+>> +static u32 get_host_pd1(struct cppi41_channel *c)
+>> +{
+>> +    u32 reg;
+>> +
+>> +    reg = 0;
+>> +
+>> +    return reg;
+>> +}
+>> +
+>> +static u32 get_host_pd2(struct cppi41_channel *c)
+>> +{
+>> +    u32 reg;
+>> +
+>> +    reg = 5 << 26; /* USB TYPE */
+> 
+>    The driver shouldn't be tied to USB at all.
+
+For now it is USB only. Once we git different types we will have
+different compatible strings for that. But that shift could by hidden
+behind a define so to comment could vanish as well.
+
+>> +static int cppi41_dma_probe(struct platform_device *pdev)
+>> +{
+>> +    struct cppi41_dd *cdd;
+>> +    int irq;
+>> +    int ret;
+>> +
+>> +    cdd = kzalloc(sizeof(*cdd), GFP_KERNEL);
+>> +    if (!cdd)
+>> +        return -ENOMEM;
+>> +
+>> +    dma_cap_set(DMA_SLAVE, cdd->ddev.cap_mask);
+>> +    cdd->ddev.device_alloc_chan_resources =
+>> cppi41_dma_alloc_chan_resources;
+>> +    cdd->ddev.device_free_chan_resources =
+>> cppi41_dma_free_chan_resources;
+>> +    cdd->ddev.device_tx_status = cppi41_dma_tx_status;
+>> +    cdd->ddev.device_issue_pending = cppi41_dma_issue_pending;
+>> +    cdd->ddev.device_prep_slave_sg = cppi41_dma_prep_slave_sg;
+>> +    cdd->ddev.device_control = cppi41_dma_control;
+>> +    cdd->ddev.dev = &pdev->dev;
+>> +    INIT_LIST_HEAD(&cdd->ddev.channels);
+>> +    cpp41_dma_info.dma_cap = cdd->ddev.cap_mask;
+>> +
+>> +    cdd->usbss_mem = of_iomap(pdev->dev.of_node, 0);
+> 
+>     You should use the generic platform_get_resource()/
+> devm_ioremap_resource() functions.
+> 
+>> +    irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
+>> +    if (!irq)
+>> +        goto err_irq;
+>> +
+>> +    cppi_writel(USBSS_IRQ_PD_COMP, cdd->usbss_mem + USBSS_IRQ_ENABLER);
+> 
+>     Shouldn't be here.
+> 
+> [...]
+>> +static const struct of_device_id cppi41_dma_ids[] = {
+>> +    { .compatible = "ti,am3359-cppi41", },
+> 
+>     CPPI 4.1 driver should be generic, not SoC specific.
+
+So you want another driver around it to handle the SoC specific stuff?
+
+> 
+>> diff --git a/drivers/usb/musb/musb_dma.h b/drivers/usb/musb/musb_dma.h
+>> index c8e67fd..bfe2993 100644
+>> --- a/drivers/usb/musb/musb_dma.h
+>> +++ b/drivers/usb/musb/musb_dma.h
+>> @@ -71,7 +71,7 @@ struct musb_hw_ep;
+>>   #ifdef CONFIG_USB_TI_CPPI_DMA
+>>   #define    is_cppi_enabled()    1
+>>   #else
+>> -#define    is_cppi_enabled()    0
+>> +#define    is_cppi_enabled()    1
+> 
+>    What does that mean?
+
+This isn't meant for final. It is just for me to easy hacking.
+
+> 
+>> diff --git a/drivers/usb/musb/musb_dmaeng.c
+>> b/drivers/usb/musb/musb_dmaeng.c
+>> new file mode 100644
+>> index 0000000..c12f42a
+>> --- /dev/null
+>> +++ b/drivers/usb/musb/musb_dmaeng.c
+>> @@ -0,0 +1,294 @@
+> [...]
+>> +static struct dma_channel *cppi41_dma_channel_allocate(struct
+>> dma_controller *c,
+>> +                struct musb_hw_ep *hw_ep, u8 is_tx)
+>> +{
+>> +    struct cppi41_dma_controller *controller = container_of(c,
+>> +            struct cppi41_dma_controller, controller);
+>> +    struct cppi41_dma_channel *cppi41_channel = NULL;
+>> +    struct musb *musb = controller->musb;
+>> +    u8 ch_num = hw_ep->epnum - 1;
+>> +
+>> +    if (ch_num >= MUSB_DMA_NUM_CHANNELS)
+>> +        return NULL;
+>> +
+>> +    if (!is_tx)
+>> +        return NULL;
+>> +    if (is_tx)
+> 
+>     You've just returned on '!is_tx'.
+
+As I said earlier, I have only TX completed so for RX channels there is
+nothing to do. If you want this to be removed wait for the next version
+which has RX also implemented :)
+
+> [...]
+>> +static void cppi41_release_all_dma_chans(struct cppi41_dma_controller
+>> *ctrl)
+>> +{
+>> +    struct dma_chan *dc;
+>> +    int i;
+>> +
+>> +    for (i = 0; i < MUSB_DMA_NUM_CHANNELS; i++) {
+>> +        dc = ctrl->tx_channel[i].dc;
+>> +        if (dc)
+>> +            dma_release_channel(dc);
+>> +        dc = ctrl->rx_channel[i].dc;
+>> +        if (dc)
+>> +            dma_release_channel(dc);
+>> +    }
+>> +}
+>> +
+>> +static void cppi41_dma_controller_stop(struct cppi41_dma_controller
+>> *controller)
+>> +{
+>> +    cppi41_release_all_dma_chans(controller);
+> 
+>    Why not just expand it inline?
+
+Will do so once I'm done and sure that there is nothing else coming
+here.
+
+>> +}
+>> +
+>> +static int cppi41_dma_controller_start(struct cppi41_dma_controller
+>> *controller)
+>> +{
+>> +    struct musb *musb = controller->musb;
+>> +    struct device *dev = musb->controller;
+>> +    struct device_node *np = dev->of_node;
+>> +    struct cppi41_dma_channel *cppi41_channel;
+>> +    int count;
+>> +    int i;
+>> +    int ret;
+>> +    dma_cap_mask_t mask;
+>> +
+>> +    dma_cap_zero(mask);
+>> +    dma_cap_set(DMA_SLAVE, mask);
+> 
+>    You don't seem to use 'mask'.
+
+Strange. That is true but I assumed that I passed it somehow to the
+dma-engine code.
+
+> [...]
+>> +        musb_dma = &cppi41_channel->channel;
+>> +        musb_dma->private_data = cppi41_channel;
+>> +        musb_dma->status = MUSB_DMA_STATUS_FREE;
+>> +        musb_dma->max_len = SZ_4M;
+> 
+>    Really?
+
+The TRM says somewhere that it can handle a single transfer up to 4MiB.
+
+> 
+> WBR, Sergei
+> 
+
+Sebastian
