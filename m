@@ -1,161 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab3GHKAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 06:00:23 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:53128 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751045Ab3GHKAV (ORCPT
+	id S1752283Ab3GHKB2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 06:01:28 -0400
+Received: from static.52.99.9.5.clients.your-server.de ([5.9.99.52]:43045 "EHLO
+	mail1.project-insanity.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751304Ab3GHKB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 06:00:21 -0400
-Date: Mon, 8 Jul 2013 10:59:40 +0100
-From: Dave P Martin <Dave.Martin@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Michal Marek <mmarek@suse.cz>, Dave Martin <dave.martin@linaro.org>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: scripts/kallsyms: Avoid ARM veneer symbols
-Message-ID: <20130708095940.GB2906@localhost.localdomain>
-References: <2983817.Xe2505Drlj@wuerfel>
- <201307051842.44721.arnd@arndb.de>
- <20130705172659.GJ2932@localhost.localdomain>
- <201307060134.56933.arnd@arndb.de>
+	Mon, 8 Jul 2013 06:01:26 -0400
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Jul 2013 06:01:26 EDT
+Date: Mon, 8 Jul 2013 09:50:43 +0000
+From: Jonas Heinrich <onny@project-insanity.org>
+To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "H. Peter Anvin" <hpa@zytor.com>,
+        len.brown@intel.com, pavel@ucw.cz, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
+Message-ID: <20130708095042.GA20797@onny.Speedport_W_700V>
+References: <20130218155439.GA902@onny>
+ <1487368.CBCgti1nd5@vostro.rjw.lan>
+ <20130503110705.GA3828@onny.Speedport_W_700V>
+ <201305031515.55595.jarkko.sakkinen@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
 Content-Disposition: inline
-In-Reply-To: <201307060134.56933.arnd@arndb.de>
+In-Reply-To: <201305031515.55595.jarkko.sakkinen@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 06, 2013 at 01:34:56AM +0200, Arnd Bergmann wrote:
-> On Friday 05 July 2013, Dave P Martin wrote:
-> > On Fri, Jul 05, 2013 at 05:42:44PM +0100, Arnd Bergmann wrote:
-> > > On Friday 05 July 2013, Dave P Martin wrote:
-> > > > On Wed, Jul 03, 2013 at 06:03:04PM +0200, Arnd Bergmann wrote:
-> > 
-> > I think there are a small number of patterns to check for.
-> > 
-> > __*_veneer, __*_from_arm and __*_from_thumb should cover most cases.
-> 
-> Ok.
-> 
-> > > * There are actually symbols without a name on ARM, which screws up the
-> > >   kallsyms.c parser. These also seem to be veneers, but attached to some
-> > >   random function:
-> > 
-> > Hmmm, I don't what those are.  By default, we should probably ignore those
-> > too.  Maybe they have something to do with link-time relocation processing.
-> 
-> Definitely link-time. It only shows up after the final link, and only
-> with ld.bfd not with ld.gold as I found out now.
-> 
-> > > $ nm obj-tmp/.tmp_vmlinux1 | head
-> > > c09e8db1 t 
-> > > c09e8db5 t 
-> > > c09e8db9 t    # <==========
-> > > c09e8dbd t 
-> > > c0abfc29 t 
-> > > c0008000 t $a
-> > > c0f7b640 t $a
-> > > 
-> > > $ objdump -Dr obj-tmp/.tmp_vmlinux1 | grep -C 30 c09e8db.
-> > > c0851fcc <wlc_phy_edcrs_lock>:
-> > > c0851fcc:       b538            push    {r3, r4, r5, lr}
-> > > c0851fce:       b500            push    {lr}
-> > > c0851fd0:       f7bb d8dc       bl      c000d18c <__gnu_mcount_nc>
-> > > c0851fd4:       f240 456b       movw    r5, #1131       ; 0x46b
-> > > c0851fd8:       4604            mov     r4, r0
-> > > c0851fda:       f880 14d5       strb.w  r1, [r0, #1237] ; 0x4d5
-> > > c0851fde:       462a            mov     r2, r5
-> > > c0851fe0:       f44f 710b       mov.w   r1, #556        ; 0x22c
-> > > c0851fe4:       f7ff fe6d       bl      c0851cc2 <write_phy_reg>
-> > > c0851fe8:       4620            mov     r0, r4
-> > > c0851fea:       462a            mov     r2, r5
-> > > c0851fec:       f240 212d       movw    r1, #557        ; 0x22d
-> > > c0851ff0:       f7ff fe67       bl      c0851cc2 <write_phy_reg>
-> > > c0851ff4:       4620            mov     r0, r4
-> > > c0851ff6:       f240 212e       movw    r1, #558        ; 0x22e
-> > > c0851ffa:       f44f 7270       mov.w   r2, #960        ; 0x3c0
-> > > c0851ffe:       f196 fedb       bl      c09e8db8 <tpci200_free_irq+0x78>  # <===========
-> > > c0852002:       4620            mov     r0, r4
-> > > c0852004:       f240 212f       movw    r1, #559        ; 0x22f
-> > > c0852008:       f44f 7270       mov.w   r2, #960        ; 0x3c0
-> > > c085200c:       e8bd 4038       ldmia.w sp!, {r3, r4, r5, lr}
-> > > c0852010:       f7ff be57       b.w     c0851cc2 <write_phy_reg>
-> > > 
-> > > 
-> > > ... # in tpci200_free_irq:
-> > > c09e8d9e:       e003            b.n     c09e8da8 <tpci200_free_irq+0x68>
-> > > c09e8da0:       f06f 0415       mvn.w   r4, #21
-> > > c09e8da4:       e000            b.n     c09e8da8 <tpci200_free_irq+0x68>
-> > > c09e8da6:       4c01            ldr     r4, [pc, #4]    ; (c09e8dac <tpci200_free_irq+0x6c>)
-> > > c09e8da8:       4620            mov     r0, r4
-> > > c09e8daa:       bdf8            pop     {r3, r4, r5, r6, r7, pc}
-> > > c09e8dac:       fffffe00                        ; <UNDEFINED> instruction: 0xfffffe00
-> > > c09e8db0:       f4cf b814       b.w     c06b7ddc <bna_enet_sm_chld_stop_wait_entry>
-> > > c09e8db4:       f53e bed8       b.w     c0727b68 <gem_do_stop>
-> > > c09e8db8:       f668 bf83       b.w     c0851cc2 <write_phy_reg>           # <==========
-> > > c09e8dbc:       d101            bne.n   c09e8dc2 <tpci200_free_irq+0x82>
-> > > c09e8dbe:       f435 b920       b.w     c061e002 <twl_reset_sequence+0x34c>
-> > > 
-> > > It makes no sense to me at all that a function in one driver can just call
-> > > write_phy_reg a couple of times, but need a veneer in the middle, and put
-> > > that veneer in a totally unrelated function in another driver!
-> > 
-> > I think that if ld inserts a veneer for a function anywhere, branches
-> > from any object in the link to that target symbol can reuse the same
-> > veneer as a trampoline, effectively appearing to branch through an
-> > unrelated location to reach the destination.
-> 
-> That part makes sense, but it doesn't explain why ld would do that just
-> for the third out of four identical function calls in the example above.
-> 
-> > ld inserts veneers between individual input sections, but I don't
-> > think they have to go next to the same section the branch originates
-> > from.  In the above code, it looks like that series of unconditional
-> > branches after the end of tpci200_free_irq might be a common veneer pool
-> > for many different destinations.
-> 
-> Yes, exactly. In this build I had six of these nameless symbols, and five
-> of them were in this one function.
-> 
-> > LTO may also make the expected compilation unit boundaries disappear
-> > completely.  Anything could end up almost anywhere in that case.
-> > Files could get intermingled, inlined and generally spread all over the
-> > place.
-> 
-> I'm not sure we actually want to enable that in the kernel ;-)
-> 
-> In particular in combination with kallsyms, it would make the kallsyms
-> information rather useless when we can no longer infer a function name
-> from an address.
 
-Well, indeed.  But that's a separate discussion -- I don't think we want
-to block it needlessly just due to an obscure feature of the ARM toolchain.
+--PEIAKu/WMn1b1Hv9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ignoring veneers and nameless symbols in kallsyms sounds like a reasonable
-approach for now, even if it's not a perfect.
+On 05-03 15:15, Jarkko Sakkinen wrote:
+> Hi
+>=20
+> On Friday, May 03, 2013 02:07:05 PM Jonas Heinrich wrote:
+> > On 05-03 01:29, Rafael J. Wysocki wrote:
+> > > On Thursday, May 02, 2013 08:32:30 PM Jonas Heinrich wrote:
+> > > > On 05-02 02:45, Rafael J. Wysocki wrote:
+> > > > > On Wednesday, May 01, 2013 11:55:10 AM H. Peter Anvin wrote:
+> > > > > > On 05/01/2013 11:51 AM, Jonas Heinrich wrote:
+> > > > > > > Well, you could give me instructions on how to debug this (I'=
+ll
+> > > > > > > do everything ;)) or I could ship you the Thinkpad T43. I gue=
+ss
+> > > > > > > this would worth the effort since this bug is somehow critica=
+l.
+> > > > > > >=20
+> > > > > > > Best regards, Jonas
+> > > > > >=20
+> > > > > > I'll put together a debug patch unless I can trick Rafael into
+> > > > > > doing it first...
+> > > > >=20
+> > > > > I'm afraid that code has changed quite a bit since I looked at it
+> > > > > last time. [Jarkko Sakkinen seems to have worked on it lately,
+> > > > > CCed.]
+> > > > >=20
+> > > > > Jonas, I wonder what happens if you drop the first hunk of the pa=
+tch
+> > > > > (it just uses a different register, which shouldn't matter)?  Does
+> > > > > it still help then?
+> > > >=20
+> > > > Hello Rafel, first of all, thank you for helping me out :)
+> > > > You're right, the patch still solves the suspend bug, after removing
+> > > > the first hunk of the patch and applying it (see attachement:
+> > > > suspendfix_first_hunk_dropped.patch).
+> > > >=20
+> > > > > If so, there are still a few things you can do to it, e.g:
+> > > > > (1) drop the
+> > > > >=20
+> > > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_CR4, %edi
+> > > > > -       jnc     1f
+> > > >=20
+> > > > Still works :) (used suspendfix_1.patch)
+> > > >=20
+> > > > > lines,
+> > > > > (2) drop the
+> > > > >=20
+> > > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
+> > > > > -       jnc     1f
+> > > > >=20
+> > > > > lines,
+> > > >=20
+> > > > Still works :) (used suspendfix_2.patch)
+> > > >=20
+> > > > > (3) drop the
+> > > > >=20
+> > > > > +       jecxz   1f
+> > > >=20
+> > > > Still works :) (used suspendfix_3.patch)
+> > > >=20
+> > > > > line,
+> > > > > (4) drop the
+> > > > >=20
+> > > > > +       movl    %eax, %ecx
+> > > > > +       orl     %edx, %ecx
+> > > > > +       jz      1f
+> > > >=20
+> > > > At this point, the bug reoccurs (used suspendfix_4.patch)!
+> > > > But that doesn't mean these lines are the only critical, because the
+> > > > more minimal patch
+> > > >=20
+> > > > @@ -119,6 +119,9 @@
+> > > >=20
+> > > >         jnc     1f
+> > > >         movl    pmode_efer, %eax
+> > > >         movl    pmode_efer + 4, %edx
+> > > >=20
+> > > > +       movl    %eax, %ecx
+> > > > +       orl     %edx, %ecx
+> > > > +       jz      1f
+> > > >=20
+> > > >         movl    $MSR_EFER, %ecx
+> > > >         wrmsr
+> > > > =20
+> > > >  1:
+> > > > with removing this part
+> > > >=20
+> > > > -       movl    pmode_cr4, %eax
+> > > > -       movl    %eax, %cr4
+> > > > +       movl    pmode_cr4, %ecx
+> > > > +       movl    %ecx, %cr4
+> > > >=20
+> > > > also doesn't fix the issue (see suspendfix_5.patch).
+> > > >=20
+> > > > > lines and see what the minimal patch needed for things to work ag=
+ain
+> > > > > is.
+> > > >=20
+> > > > So the most minimal working patch is suspendfix_3.patch.
+> > >=20
+> > > Thanks for doing that detective work!
+> > >=20
+> > > The only explanation of why this particular patch can help that seems
+> > > viable to us at the moment is that we have a memory corruption in the
+> > > code region modified by it and the patch simply changes the alignment=
+ of
+> > > the instructions that don't get corrupted.
+> > >=20
+> > > It looks like this may be verified by putting a bunch of nops into the
+> > > region in question, so can you please check if the attached patch hel=
+ps
+> > > too?
+> >=20
+> > Unfortunately, your attached patch doesn't seem to fix the bug.
+> > Hope you still have some ideas to address this issue :)
+>=20
+> Kind of had to experiment with this since I don't have access to
+> T43. Did you already try:
+>=20
+> - EFER handling only is reverted as it was before 73201dbe.
+> - CR4 handling only is reverted as it was before 73201dbe.
+Hi Jarkko,
+thank you for your response!
+Can you please be more specific about that instruction? I don't really
+know what to do, sorry :/
 
-> > Even so, veneers shouldn't be needed in the common case where we're not
-> > jumping across .rodata.
-> > 
-> > > 
-> > > If this is a binutils bug or gcc bug, we should probably just fix it, but it
-> > > might be easier to work around it by changing kallsyms.c some more.
-> > 
-> > I haven't found a trivial way to reproduce those nameless symbols.
-> > I don't know whether they're a bug or not...
-> > 
-> > Making kallsyms robust against this might be a good idea anyway.
-> 
-> Maybe we can find a binutils expert next week at Linaro connect to take a
-> look at the data. I can prepare a test case.
+@Rafael: Bug still present in kernel 3.10 final :(
 
-Sure, that could be worth a try.
+- Jonas
 
-Cheers
----Dave
+>=20
+> Thanks.
+>=20
+> /Jarkko
+>=20
+> >=20
+> > - Jonas
+> >=20
+> > > Rafael
+
+--PEIAKu/WMn1b1Hv9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAEBAgAGBQJR2otyAAoJEPFqEBdQ3ykkQe4H/0tNJVVU7QKUQm1FnXhe6IoD
+IOYM2obdQNuSZdwnWJunv8TjkPJruC9Bh5y7h37E6bEqc4Yv4BGs12sqFbNRi1iQ
+xCnCJLXfLid1F6CIdUGp0H+xzk9iGHQ66h/k1KuSRd+bXw15sB04i87sD31qwZg2
+ANFuSRmHVsSXEHCWWA3lCHhTfIkq58Qq5RqELM4kIWAiGnz05gSiFLlp6tXkSldR
+9pBn8CpjYnLFaBcTyXXJaWVIR1+gKtOCF/e8BzPe8XHrvkOjetA4M5mocrwwQkWE
+HTacBgnVUtnEa70vyV7WcKH0A/LyBk9dfBoMrXOMHKYcISzhBiVMvNz7cN4XBSo=
+=X3P3
+-----END PGP SIGNATURE-----
+
+--PEIAKu/WMn1b1Hv9--
