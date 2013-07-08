@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3GHUHf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 16:07:35 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:10304 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab3GHUHd (ORCPT
+	id S1753013Ab3GHUKw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 16:10:52 -0400
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:54749 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab3GHUKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 16:07:33 -0400
-Message-ID: <51DB1BA0.8020402@hp.com>
-Date: Mon, 08 Jul 2013 16:05:52 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Mon, 8 Jul 2013 16:10:49 -0400
 MIME-Version: 1.0
-To: Paul Moore <paul@paul-moore.com>
-CC: Eric Paris <eparis@parisplace.org>, Stephen Smalley <sds@tycho.nsa.gov>,
-        James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>, selinux@tycho.nsa.gov
-Subject: Re: [PATCH 1/2 v5] SELinux: Reduce overhead of mls_level_isvalid()
- function call
-References: <1370886908-65256-1-git-send-email-Waiman.Long@hp.com> <51B70EE4.5030209@tycho.nsa.gov> <51D6FE08.8030904@hp.com> <2187595.WquvNei6zx@sifl>
-In-Reply-To: <2187595.WquvNei6zx@sifl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130708130512.1171af89@nehalam.linuxnetplumber.net>
+References: <20130708132034.17639.4396.stgit@ladj378.jer.intel.com>
+	<CA+55aFxgrOtsv7vCtic97ehpvqyezCzDcyqHVD+821BiTuiRtw@mail.gmail.com>
+	<51DAF373.4040606@linux.intel.com>
+	<CA+55aFwWAmHhYaPWVm7rsqiD9+RhDPpgVC1yWc0oNmP38bty4Q@mail.gmail.com>
+	<51DB16FC.7060003@linux.intel.com>
+	<20130708130512.1171af89@nehalam.linuxnetplumber.net>
+Date: Mon, 8 Jul 2013 13:10:48 -0700
+X-Google-Sender-Auth: kNwVrFRv7-xahLnDmKA1X0t6LjU
+Message-ID: <CA+55aFwVBY4LqmAvvCDBhESVY2QwCExzvhPdET99Hgo1LnFb=g@mail.gmail.com>
+Subject: Re: [PATCH net-next] net: rename low latency sockets functions to
+ busy poll
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: Eliezer Tamir <eliezer.tamir@linux.intel.com>,
+        David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 12:30 PM, Paul Moore wrote:
-> On Friday, July 05, 2013 01:10:32 PM Waiman Long wrote:
->> On 06/11/2013 07:49 AM, Stephen Smalley wrote:
->>> On 06/10/2013 01:55 PM, Waiman Long wrote:
-> ...
+On Mon, Jul 8, 2013 at 1:05 PM, Stephen Hemminger
+<stephen@networkplumber.org> wrote:
+>> >
+>> >     unsigned long start_time = 0;
+>> >     ...
+>> >     if (want_busy_poll && !need_resched()) {
+>> >         unsigned long now = busy_poll_sched_clock();
+>> >         if (!start_time) {
+>> >             start_time = now + sysctl.busypoll;
+>> >             continue;
+>> >         }
+>> >         if (time_before(start_time, now))
+>> >             continue;
+>> >     }
+>> >
+>>
 >
->>>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
->>> Acked-by:  Stephen Smalley<sds@tycho.nsa.gov>
->> Thank for the Ack. Will that patch go into v3.11?
-> [NOTE: I add the SELinux list to the CC line, for future reference, be sure to
-> send your SELinux patches there.]
->
-> Your patch looked reasonable to me and Stephen ACK'd it so I went ahead and
-> pulled the 1/2 patch into my lblnet-next tree.  It is probably an abuse of the
-> system, but as you noted it in the description, it does have an impact on
-> socket creation so it isn't completely unrelated ;)
->
-> If you don't want me to include your patch let me know and I'll drop it.
+> Since this code is in hot path, and a special case, looks like a good
+> candidate for static branch.
 
-Sure. I would like to have my patch included. Thank for letting me know.
+No, it's not static. It's an initializer, yes, but it's not a static
+one, and it gets run on every single select()/poll(). Well, every
+single one that goes through the loop more than once.
 
-Regards,
-Longman
+So it's very much a dynamic condition. It's just placed that way to
+avoid doing the (relatively expensive) time read for the case where
+data is available immediately.
+
+And the "data is available immediately" case is actually fairly
+common. Sometimes it's because the producer/network is faster than the
+consumer. And sometimes it's because you get big chunks at a time, but
+the reader/writer ends up always going through a select() loop without
+actually reading/writing everything in a loop until it gets a
+full/empty error.
+
+And I bet that both of those cases happen even with programs/networks
+that end up using the magic low-latency/busyloop polling flags. So
+avoiding the timer read if at all possible is definitely a good idea.
+
+                  Linus
