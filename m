@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab3GHNO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:14:26 -0400
-Received: from mail-pb0-f65.google.com ([209.85.160.65]:57077 "EHLO
-	mail-pb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3GHNOY (ORCPT
+	id S1751770Ab3GHNTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:19:13 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51524 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab3GHNTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:14:24 -0400
-Date: Mon, 8 Jul 2013 06:14:21 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Wei Ni <wni@nvidia.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [lm-sensors] [PATCH 1/2] ARM: dt: t30 cardhu: add dt entry for
- lm90
-Message-ID: <20130708131421.GB21638@roeck-us.net>
-References: <1372928979-26938-1-git-send-email-wni@nvidia.com>
- <1372928979-26938-2-git-send-email-wni@nvidia.com>
- <51D70483.70203@wwwdotorg.org>
- <51DA6BD4.1040300@nvidia.com>
- <20130708095024.041a6d57@endymion.delvare>
- <51DA8805.50709@nvidia.com>
+	Mon, 8 Jul 2013 09:19:12 -0400
+Date: Mon, 8 Jul 2013 14:19:00 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Yadwinder Singh Brar <yadi.brar@samsung.com>
+Cc: linux-kernel@vger.kernel.org, sbkim73@samsung.com, lgirdwood@gmail.com,
+        sameo@linux.intel.com, rob.herring@calxeda.com,
+        grant.likely@linaro.org, sachin.kamat@linaro.org,
+        yadi.brar01@gmail.com
+Message-ID: <20130708131900.GA27646@sirena.org.uk>
+References: <1372510280-31931-1-git-send-email-yadi.brar@samsung.com>
+ <1372510280-31931-2-git-send-email-yadi.brar@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eWAQXdaW/6bU2HH2"
 Content-Disposition: inline
-In-Reply-To: <51DA8805.50709@nvidia.com>
+In-Reply-To: <1372510280-31931-2-git-send-email-yadi.brar@samsung.com>
+X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.118
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [v2 PATCH 1/6] regulator: core: Add support for disabling ramp
+ delay
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 05:36:05PM +0800, Wei Ni wrote:
-> On 07/08/2013 03:50 PM, Jean Delvare wrote:
-> > On Mon, 8 Jul 2013 15:35:48 +0800, Wei Ni wrote:
-> >> On 07/06/2013 01:38 AM, Stephen Warren wrote:
-> >>> On 07/04/2013 03:09 AM, Wei Ni wrote:
-> >>>> Enable thermal sensor lm90 for t30 cardhu.
-> >>>
-> >>>> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-> >>>
-> >>>> +		nct1008: nct1008 {
-> >>>> +			compatible = "lm90,nct1008";
-> >>>
-> >>> "lm90" isn't a valid vendor prefix. I believe the value you want is
-> >>> "onnn,nct1008". Same comment for patch 2/2.
-> >>
-> >> The lm90 doesn't support device tree very well.
-> > 
-> > I doubt it, but if this is the case, then please fix it, instead of
-> > working the problem around in a different place.
-> > 
-> >> In the DT, we need to
-> >> named as "lm90" so that the lm90 driver can be loaded,
-> > 
-> > Not that I am an expert with regards to DT, but this doesn't make any
-> > sense to me. AFAIK DT is about devices, not which drivers handle them.
-> > 
-> >> and we also need
-> >> to add "nct1008" to indicate this is the nct1008 device, so that the
-> >> lm90 driver can be loaded with the right i2c_device_id->driver_data.
-> >>
-> >> I set the " compatible = "lm90,nct1008" ", this is the simplest way, and
-> >> we doesn't need to change the lm90.c.
-> > 
-> > There's no problem with changing the lm90 driver, if this is the right
-> > thing to do.
-> 
-> Ok, I will add DT support in the lm90.c in my next version patch.
-> 
-Only if you can show that it is necessary.
 
-Guenter
+--eWAQXdaW/6bU2HH2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Sat, Jun 29, 2013 at 06:21:15PM +0530, Yadwinder Singh Brar wrote:
+> Some hardwares support disabling ramp delay, so adding ramp_disable flag to
+> constraints. It will be used to figure out whether ramp_delay in constraints
+> is explicitly set to zero or its unintialized (zero by default).
+> And we don't need to call set_voltage_time_sel() for regulators for whom ramp
+> delay is disabled in constraints.
+
+Applied, thanks.  I've applied this on a branch topic/ramp but please
+ask for a tag if it needs to be merged elsewhere - I'll definitely be
+rebasing after -rc1 if nothing else.
+
+--eWAQXdaW/6bU2HH2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR2rw7AAoJELSic+t+oim9FTQP/Ay/CHLL1EKoEiZggrAywbV9
+dwcqNMw3K6rFt7aTjApIteasrRSHt3VVZQbEDaL+WcfTW9ZZX46qLQAXpyJErrpR
+2Gnbjk61ypnO+CZ53xHbayVRIJVop14oIhHM/JpKLZP3iWowB6YaHOO2dAcy3JkA
+hQB89P1w8ReX35hZiAPZLwX5UpLqn72awlRe+eY96+LhR2VRVugR1I72r4ZbIsJL
+C6+wsLOSfco05MqEiY3wROV08t5mc2b8W+W8me+jOBgnb0VAGHbWAqSdpWh2OJWA
+6BJnEKbLZL/LEJ0jrcgTaQCSboNb6cEtqAhuzS2M0lkbF4Tb4ddRlFpOHRydUOQK
+2uCFoBog0vnm/T10HJZo0InQ2RC8OW2ZnNMGyLzCDih9p+AuOyo6NHZ4SLjoSALc
+m0afrNVEeYz6YLz6AcVW8hkYc+DDh0+0QIENvjpNnkcrNVzqYdnYtIiZqPE4n+QI
+G834t9iPeb/Jb+6E2h4evGnSQ19F1IubAzfgg1iEiTzxNtNfeXduiNtPzmw2iK8D
+o1cD9ZuGpwqpB8atb8jVO0ydXOJwcsKbVAeMzr097qSymvak96/5Rolut2/edAvI
+b+FxWpktjrF5Hm7td+cw1MJVQthiuKY6egJNKXH+cviG1wRXN1mPINb0zwPe9GCz
+CfQtax8Agj9+Qgq2qHKU
+=SSJq
+-----END PGP SIGNATURE-----
+
+--eWAQXdaW/6bU2HH2--
