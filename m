@@ -1,104 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752765Ab3GHTSd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 15:18:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40541 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab3GHTSc (ORCPT
+	id S1752804Ab3GHTTh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 15:19:37 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:58010 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657Ab3GHTTg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 15:18:32 -0400
-Date: Mon, 8 Jul 2013 21:17:42 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@kernel.org
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf: Fix perf_lock_task_context() vs RCU
-Message-ID: <20130708191742.GB25631@dyad.programming.kicks-ass.net>
+	Mon, 8 Jul 2013 15:19:36 -0400
+Date: Mon, 8 Jul 2013 15:25:13 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: perf: export struct perf_branch_entry to userspace
+Message-ID: <alpine.DEB.2.10.1307081520520.10386@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: perf: Fix perf_lock_task_context() vs RCU
 
-Jiri managed to trigger:
+In include/uapi/linux/perf_event.h we describe the 
+PERF_SAMPLE_BRANCH_STACK fields in the PERF_RECORD_SAMPLE
+to be of type struct perf_branch_entry, but that structure
+is not exported to the user.
 
-[] ======================================================
-[] [ INFO: possible circular locking dependency detected ]
-[] 3.10.0+ #228 Tainted: G        W  
-[] -------------------------------------------------------
-[] p/6613 is trying to acquire lock:
-[]  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
-[]
-[] but task is already holding lock:
-[]  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
-[]
-[] which lock already depends on the new lock.
-[]
-[] the existing dependency chain (in reverse order) is:
-[]
-[] -> #4 (&ctx->lock){-.-...}:
-[] -> #3 (&rq->lock){-.-.-.}:
-[] -> #2 (&p->pi_lock){-.-.-.}:
-[] -> #1 (&rnp->nocb_gp_wq[1]){......}:
-[] -> #0 (rcu_node_0){..-...}:
+Should we not export that structure, something like the following?
 
-Paul was quick to explain that due to preemptible RCU we cannot call
-rcu_read_unlock() while holding scheduler (or nested) locks when part of the
-read side critical section was preemptible.
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 
-Therefore solve it by making the entire RCU read side non-preemptible.
-
-Also pull out the retry from under the non-preempt to play nice with RT.
-
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/events/core.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
-
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -947,8 +947,18 @@ perf_lock_task_context(struct task_struc
- {
- 	struct perf_event_context *ctx;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 8873f82..65b2553 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -64,30 +64,6 @@ struct perf_raw_record {
+ };
  
--	rcu_read_lock();
- retry:
-+	/*
-+	 * One of the few rules of preemptible RCU is that one cannot do
-+	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
-+	 * part of the read side critical section was preemptible -- see
-+	 * rcu_read_unlock_special().
-+	 *
-+	 * Since ctx->lock nests under rq->lock we must ensure the entire read
-+	 * side critical section is non-preemptible.
-+	 */
-+	preempt_disable();
-+	rcu_read_lock();
- 	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
- 	if (ctx) {
- 		/*
-@@ -964,6 +974,8 @@ perf_lock_task_context(struct task_struc
- 		raw_spin_lock_irqsave(&ctx->lock, *flags);
- 		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
- 			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
-+			rcu_read_unlock();
-+			preempt_enable();
- 			goto retry;
- 		}
+ /*
+- * single taken branch record layout:
+- *
+- *      from: source instruction (may not always be a branch insn)
+- *        to: branch target
+- *   mispred: branch target was mispredicted
+- * predicted: branch target was predicted
+- *
+- * support for mispred, predicted is optional. In case it
+- * is not supported mispred = predicted = 0.
+- *
+- *     in_tx: running in a hardware transaction
+- *     abort: aborting a hardware transaction
+- */
+-struct perf_branch_entry {
+-	__u64	from;
+-	__u64	to;
+-	__u64	mispred:1,  /* target mispredicted */
+-		predicted:1,/* target predicted */
+-		in_tx:1,    /* in transaction */
+-		abort:1,    /* transaction abort */
+-		reserved:60;
+-};
+-
+-/*
+  * branch stack layout:
+  *  nr: number of taken branches stored in entries[]
+  *
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 0b1df41..c6e2f76 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -685,4 +685,28 @@ union perf_mem_data_src {
+ #define PERF_MEM_S(a, s) \
+ 	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
  
-@@ -973,6 +985,7 @@ perf_lock_task_context(struct task_struc
- 		}
- 	}
- 	rcu_read_unlock();
-+	preempt_enable();
- 	return ctx;
- }
- 
-
-
++/*
++ * single taken branch record layout:
++ *
++ *      from: source instruction (may not always be a branch insn)
++ *        to: branch target
++ *   mispred: branch target was mispredicted
++ * predicted: branch target was predicted
++ *
++ * support for mispred, predicted is optional. In case it
++ * is not supported mispred = predicted = 0.
++ *
++ *     in_tx: running in a hardware transaction
++ *     abort: aborting a hardware transaction
++ */
++struct perf_branch_entry {
++	__u64	from;
++	__u64	to;
++	__u64	mispred:1,  /* target mispredicted */
++		predicted:1,/* target predicted */
++		in_tx:1,    /* in transaction */
++		abort:1,    /* transaction abort */
++		reserved:60;
++};
++
+ #endif /* _UAPI_LINUX_PERF_EVENT_H */
