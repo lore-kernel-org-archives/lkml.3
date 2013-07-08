@@ -1,83 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973Ab3GHTOx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 15:14:53 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:37930 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab3GHTOw (ORCPT
+	id S1752765Ab3GHTSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 15:18:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40541 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab3GHTSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 15:14:52 -0400
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Mike Pagano <mpagano@gentoo.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Modification of the diffconfig script to support python 3.x and 2.7
-In-Reply-To: Your message of "Thu, 04 Jul 2013 20:19:03 -0400."
-             <10816010.V3ekNYfWHj@comanche>
-From: Valdis.Kletnieks@vt.edu
-References: <10816010.V3ekNYfWHj@comanche>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1373310883_2229P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 08 Jul 2013 15:14:43 -0400
-Message-ID: <15619.1373310883@turing-police.cc.vt.edu>
+	Mon, 8 Jul 2013 15:18:32 -0400
+Date: Mon, 8 Jul 2013 21:17:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] perf: Fix perf_lock_task_context() vs RCU
+Message-ID: <20130708191742.GB25631@dyad.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1373310883_2229P
-Content-Type: text/plain; charset=us-ascii
+Subject: perf: Fix perf_lock_task_context() vs RCU
 
-On Thu, 04 Jul 2013 20:19:03 -0400, Mike Pagano said:
+Jiri managed to trigger:
 
-I'm not a snake-language person, but...
+[] ======================================================
+[] [ INFO: possible circular locking dependency detected ]
+[] 3.10.0+ #228 Tainted: G        W  
+[] -------------------------------------------------------
+[] p/6613 is trying to acquire lock:
+[]  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
+[]
+[] but task is already holding lock:
+[]  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
+[]
+[] which lock already depends on the new lock.
+[]
+[] the existing dependency chain (in reverse order) is:
+[]
+[] -> #4 (&ctx->lock){-.-...}:
+[] -> #3 (&rq->lock){-.-.-.}:
+[] -> #2 (&p->pi_lock){-.-.-.}:
+[] -> #1 (&rnp->nocb_gp_wq[1]){......}:
+[] -> #0 (rcu_node_0){..-...}:
 
-> Modification of the diffconfig script to support both python 2.7 and 3.2.
-> Added a small change to gracefully exit if the default config files are not
-> present. (.config and .config.old)
->
-> Diffconfig is a utility script for comparing kernel configuration files.
->
-> Signed-off-by: Mike Pagano <mpagano@gentoo.org>
-> ---
->  scripts/diffconfig | 32 +++++++++++++++++++-------------
->  1 file changed, 19 insertions(+), 13 deletions(-)
->
-> diff --git a/scripts/diffconfig b/scripts/diffconfig
-> index b91f3e3..45a4ba4 100755
-> --- a/scripts/diffconfig
-> +++ b/scripts/diffconfig
-> @@ -10,7 +10,7 @@
->  import sys, os
->
->  def usage():
-> -    print """Usage: diffconfig [-h] [-m] [<config1> <config2>]
-> +    print ("""Usage: diffconfig [-h] [-m] [<config1> <config2>]
+Paul was quick to explain that due to preemptible RCU we cannot call
+rcu_read_unlock() while holding scheduler (or nested) locks when part of the
+read side critical section was preemptible.
 
-Is this hunk missing a ) at the end of the line?
+Therefore solve it by making the entire RCU read side non-preemptible.
 
---==_Exmh_1373310883_2229P
-Content-Type: application/pgp-signature
+Also pull out the retry from under the non-preempt to play nice with RT.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/events/core.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-iQIVAwUBUdsPogdmEQWDXROgAQKESA//X706/+hwPyjRtoOVsyA152sOwm2dKULK
-6mxZkGLcEQRzsUnlTtvbAA7fPnoHjabnaW0XGte8WBjqXhYQf6POjn8zpD7L+cpa
-fYUEXE4TKGQ5Tgus/MBnAmjfwgRdEt5lg7aQlCkRjiYmMisCzHErVL2XkbP0Azep
-oBtzawtggi5aearsPLfZ52OQiiFL8DcMn5eGH2VccfhJs7c5gLoDC411/JNA00bI
-qLq6JyFzrRKh5QvSQNHmS63aQeVSxZ53uHeicakT50z5KhyfmNEzkP4I9oo7yWEg
-1Lwg+Q1EF1/kze7sDFkC+cMEpO6RPDUqcSt2wOQsHh9UEkAXDaWGckQkZ2kV6W8A
-8ZWTkHdrw4JeR3zkxwxY1ndkNXcARC/uUxzjtcGuIqWVEL2vN80idnCZ2xvultrM
-ON4cW9FrfrjRoxbdw7SjwnjTBJFWpuLN9cdEUD+ar+JLOYsjD6fvBCCfww64xKMp
-H8MzMEki0SWBdGAnkVyEOeVRMPn7oNQNT2SscozKMP130uZMNkt/YWgb1q7HHuEV
-S8z+2pF01RyTrenWc2wuNDPPLv8sCawugrxz+SuPA3fyKW+zE6eSlwvsb/aQmrWf
-VVVQ75am/HNGspnzXybM8rnUm0fzAWxMnIJcflpVdlfEUDDvZLi6XjbZr9p5nmgi
-GqvKkYn6afE=
-=wiKh
------END PGP SIGNATURE-----
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -947,8 +947,18 @@ perf_lock_task_context(struct task_struc
+ {
+ 	struct perf_event_context *ctx;
+ 
+-	rcu_read_lock();
+ retry:
++	/*
++	 * One of the few rules of preemptible RCU is that one cannot do
++	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
++	 * part of the read side critical section was preemptible -- see
++	 * rcu_read_unlock_special().
++	 *
++	 * Since ctx->lock nests under rq->lock we must ensure the entire read
++	 * side critical section is non-preemptible.
++	 */
++	preempt_disable();
++	rcu_read_lock();
+ 	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
+ 	if (ctx) {
+ 		/*
+@@ -964,6 +974,8 @@ perf_lock_task_context(struct task_struc
+ 		raw_spin_lock_irqsave(&ctx->lock, *flags);
+ 		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
+ 			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
++			rcu_read_unlock();
++			preempt_enable();
+ 			goto retry;
+ 		}
+ 
+@@ -973,6 +985,7 @@ perf_lock_task_context(struct task_struc
+ 		}
+ 	}
+ 	rcu_read_unlock();
++	preempt_enable();
+ 	return ctx;
+ }
+ 
 
---==_Exmh_1373310883_2229P--
+
