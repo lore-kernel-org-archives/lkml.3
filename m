@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab3GHKFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 06:05:42 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46682 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab3GHKFl (ORCPT
+	id S1752244Ab3GHKHz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 06:07:55 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54917 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab3GHKHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 06:05:41 -0400
-From: Alexander Savchenko <oleksandr.savchenko@ti.com>
-To: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <matts@commtech-fastcom.com>, <paulmck@linux.vnet.ibm.com>,
-        <santosh.shilimkar@ti.com>, <dhowells@redhat.com>
-CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Alexander Savchenko <oleksandr.savchenko@ti.com>
-Subject: [PATCH] OMAP: UART: Keep the TX fifo full when possible
-Date: Mon, 8 Jul 2013 13:04:44 +0300
-Message-ID: <1373277884-3006-1-git-send-email-oleksandr.savchenko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 8 Jul 2013 06:07:54 -0400
+Date: Mon, 8 Jul 2013 11:07:52 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs.git, part 3
+Message-ID: <20130708100752.GW4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Fink <finik@ti.com>
+Misc stuff all over the place.  Please, pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus
+There will be one more pile in a couple of days.
 
-Current logic results in interrupt storm since the fifo
-is constantly below the threshold level. Change the logic
-to fill all the available spaces in the fifo as long as
-we have data to minimize the possibilty of underflow and
-elimiate excessive interrupts.
+Shortlog:
+Al Viro (3):
+      helper for reading ->d_count
+      lustre: kill the pointless wrapper
+      mode_t whack-a-mole...
 
-Signed-off-by: Dmitry Fink <finik@ti.com>
-Signed-off-by: Alexander Savchenko <oleksandr.savchenko@ti.com>
----
- drivers/tty/serial/omap-serial.c |    3 ++-
- include/uapi/linux/serial_reg.h  |    1 +
- 2 files changed, 3 insertions(+), 1 deletion(-)
+Jaegeuk Kim (1):
+      f2fs: fix readdir incorrectness
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index b6d1728..5c9b074 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -310,7 +310,8 @@ static void transmit_chars(struct uart_omap_port *up, unsigned int lsr)
- 		serial_omap_stop_tx(&up->port);
- 		return;
- 	}
--	count = up->port.fifosize / 4;
-+	count = up->port.fifosize -
-+		(serial_in(up, UART_OMAP_TXFIFO_LVL) & 0xFF);
- 	do {
- 		serial_out(up, UART_TX, xmit->buf[xmit->tail]);
- 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
-index e632260..97c26be 100644
---- a/include/uapi/linux/serial_reg.h
-+++ b/include/uapi/linux/serial_reg.h
-@@ -366,6 +366,7 @@
- #define UART_OMAP_MDR1_FIR_MODE		0x05	/* FIR mode */
- #define UART_OMAP_MDR1_CIR_MODE		0x06	/* CIR mode */
- #define UART_OMAP_MDR1_DISABLE		0x07	/* Disable (default state) */
-+#define UART_OMAP_TXFIFO_LVL		0x1A	/* TX FIFO fullness */
- 
- /*
-  * These are definitions for the Exar XR17V35X and XR17(C|D)15X
--- 
-1.7.9.5
+Jeff Layton (2):
+      seq_file: add seq_list_*_percpu helpers
+      locks: move file_lock_list to a set of percpu hlist_heads and convert file_lock_lock to an lglock
 
+Wei Yongjun (1):
+      ncpfs: fix error return code in ncp_parse_options()
+
+Diffstat:
+ .../lustre/include/linux/lustre_patchless_compat.h |    2 -
+ drivers/staging/lustre/lustre/include/linux/lvfs.h |    2 +-
+ .../staging/lustre/lustre/include/lprocfs_status.h |    6 +-
+ drivers/staging/lustre/lustre/llite/dcache.c       |    8 +-
+ .../staging/lustre/lustre/llite/llite_internal.h   |    4 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    2 +-
+ drivers/staging/lustre/lustre/llite/namei.c        |    4 +-
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |    4 +-
+ .../lustre/lustre/obdclass/lprocfs_status.c        |    8 +-
+ fs/autofs4/expire.c                                |    8 +-
+ fs/autofs4/root.c                                  |    2 +-
+ fs/ceph/inode.c                                    |    4 +-
+ fs/ceph/mds_client.c                               |    2 +-
+ fs/coda/dir.c                                      |    2 +-
+ fs/ecryptfs/inode.c                                |    2 +-
+ fs/f2fs/dir.c                                      |   20 +++---
+ fs/locks.c                                         |   71 ++++++++++++++------
+ fs/ncpfs/inode.c                                   |   12 +++-
+ fs/nfs/dir.c                                       |    6 +-
+ fs/nfs/unlink.c                                    |    2 +-
+ fs/nilfs2/super.c                                  |    2 +-
+ fs/seq_file.c                                      |   54 +++++++++++++++
+ include/linux/dcache.h                             |    5 ++
+ include/linux/fs.h                                 |    1 +
+ include/linux/seq_file.h                           |    6 ++
+ 25 files changed, 168 insertions(+), 71 deletions(-)
