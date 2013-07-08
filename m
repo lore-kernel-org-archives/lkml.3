@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552Ab3GHQy1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:54:27 -0400
-Received: from [216.240.18.76] ([216.240.18.76]:30171 "EHLO mx11.netapp.com"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab3GHQyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:54:25 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1021,1363158000"; 
-   d="scan'208";a="32448870"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Waiman Long <Waiman.Long@hp.com>, Jeff Layton <jlayton@redhat.com>,
-        "Miklos Szeredi" <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v3 24/25] sunrpc: Change how dentry's d_lock field is
- accessed
-Thread-Topic: [PATCH v3 24/25] sunrpc: Change how dentry's d_lock field is
- accessed
-Thread-Index: AQHOeCuDxj1Mkxx6v0SrzBwmCw+D3plUYKkAgAcbxwA=
-Date: Mon, 8 Jul 2013 16:53:52 +0000
-Message-ID: <1373302428.2231.9.camel@leira.trondhjem.org>
-References: <1372883132-23410-1-git-send-email-Waiman.Long@hp.com>
-	 <20130704042034.GM4165@ZenIV.linux.org.uk>
-In-Reply-To: <20130704042034.GM4165@ZenIV.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <80EDF0303559BA419A6FC4A793CD17AD@hq.netapp.com>
+	id S1752586Ab3GHQ65 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:58:57 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:62841 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751582Ab3GHQ6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 12:58:55 -0400
 MIME-Version: 1.0
+In-Reply-To: <522C1DF17AF50042AD8AE87F7887BD3D0B7886DB32@exch>
+References: <alpine.DEB.2.02.1307021912180.12710@ayla.of.borg>
+	<CAErSpo41dwRCbMgYz8veHP6Mz62Z-uFJZ8NEQY6y1ULsqwiY7g@mail.gmail.com>
+	<CAMuHMdWoTMEyyph8aEu46+xHfkXRFN_qn4a987n7eo6EPRyyhw@mail.gmail.com>
+	<522C1DF17AF50042AD8AE87F7887BD3D0B7886DB32@exch>
+Date: Mon, 8 Jul 2013 18:58:54 +0200
+X-Google-Sender-Auth: dRPzV9HsqmhtGpjgcUeOrL7br7s
+Message-ID: <CAMuHMdXuFUSheKrxD_8Apj0y=j91cB+0p1VCqyF1piopQ_Of5w@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.10
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Marc Gauthier <Marc.Gauthier@tensilica.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r68GsVuD006034
 
-On Thu, 2013-07-04 at 05:20 +0100, Al Viro wrote:
-> On Wed, Jul 03, 2013 at 04:25:32PM -0400, Waiman Long wrote:
-> > There is no change in logic and everything should just work.
-> 
-> > -		spin_lock(&file->f_path.dentry->d_lock);
-> > +		d_lock(file->f_path.dentry);
-> >  		if (!d_unhashed(file->f_path.dentry))
-> >  			clnt = RPC_I(inode)->private;
-> >  		if (clnt != NULL && atomic_inc_not_zero(&clnt->cl_count)) {
-> > -			spin_unlock(&file->f_path.dentry->d_lock);
-> > +			d_unlock(file->f_path.dentry);
-> 
-> Could somebody explain WTF is being protected here?  It's not ->private -
-> that gets set (and, more importantly, cleared) without ->d_lock in sight.
-> Trond, that seems to be your code from about three years ago (introduced
-> in "SUNRPC: Fix a race in rpc_info_open").  What's going on there?
+Hi Marc,
 
-AFAICR we're using the fact that the dentry will remain hashed until
-we're in the process of freeing up the rpc_client. By testing that the
-dentry is hashed under the dentry->d_lock, we are assured that the
-non-NULL 'clnt' is still pointing to a valid rpc_client, and that it is
-safe to access clnt->cl_count.
+On Sat, Jul 6, 2013 at 8:07 AM, Marc Gauthier
+<Marc.Gauthier@tensilica.com> wrote:
+> Geert Uytterhoeven wrote:
+>> On Tue, Jul 2, 2013 at 8:34 PM, Bjorn Helgaas
+>> <bhelgaas@google.com> wrote:
+>> >>   + warning: vmlinux.o(.text+0x1ad7a4): Section mismatch
+>> in reference from the function pwmchip_add() to the function
+>> .init.text:pcibios_fixup_bus():  => N/A
+>> >>   + warning: vmlinux.o(.text+0x1b18d8): Section mismatch
+>> in reference from the function pci_scan_child_bus() to the
+>> function .init.text:pcibios_fixup_bus():  => N/A
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Bjorn: both warnings went away after your patch
+(http://permalink.gmane.org/gmane.linux.kernel.pci/23678). Thanks!
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>> > I understand the second warning, but not the first (reference from
+>> > pwmchip_add() to pcibios_fixup_bus()).  I don't think pwmchip_add()
+>> > calls pcibios_fixup_bus().  Is the pwmchip_chip() function name
+>> > inexact, or is there some other problem here?
+>>
+>> Indeed, that's weird.
+>>
+>> This happened with xtensa-allmodconfig.
+>> I compiled my own xtensa-allmodconfig kernel, and it happens
+>> there, too.
+>>
+>> If I'm not mistaken, the hex address between parentheses should match
+>> the "from" function, right?
+>> After disassembly ("xtensa-linux-objdump -D vmlinux"), the addresses
+>> didn't seem to match the function names at all.
+>> So it may be an issue with the toolchain?
+>
+> The Xtensa linker, by default, does some code shrinkage
+> (some of the "relaxations") after applying relocations,
+> causing code to move around.  This can sometimes cause
+> error/warning messages to use incorrect addresses.
+> (Not trivial to fix in the linker.)
+>
+> There's a config option LD_NO_RELAX to disable linker
+> relaxation.  If using this option fixes the names, it
+> may be this issue.
+
+This was allmodconfig, so CONFIG_LD_NO_RELAX was set.
+After disabling it, it fails with:
+
+net/built-in.o: In function `net_rx_action':
+net/core/dev.c:4194:(.text+0x11b91): dangerous relocation: call8:
+misaligned call target: (.text.unlikely+0x47)
+net/built-in.o: In function `raw_seqcount_begin':
+include/linux/seqlock.h:106:(.text+0x132be): dangerous relocation:
+call8: misaligned call target: (.text.unlikely+0x47)
+
+Similar to the defconfig on
+http://kisskb.ellerman.id.au/kisskb/buildresult/9070101/.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
