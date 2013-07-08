@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab3GHFVK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 01:21:10 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:32770 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753531Ab3GHFVI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 01:21:08 -0400
-Message-ID: <51DA4C23.6050604@ti.com>
-Date: Mon, 8 Jul 2013 10:50:35 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753661Ab3GHFVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 01:21:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59137 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753634Ab3GHFVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 01:21:15 -0400
+Date: Mon, 8 Jul 2013 08:21:58 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Kent Overstreet <kmo@daterainc.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org, sfr@canb.auug.org.au,
+        andi@firstfloor.org, oleg@redhat.com, mingo@redhat.com,
+        axboe@kernel.dk, target-devel <target-devel@vger.kernel.org>
+Subject: Re: [PATCH v3] lib/idr.c rewrite, percpu ida/tag allocator
+Message-ID: <20130708052158.GA6938@redhat.com>
+References: <1373087301-23730-1-git-send-email-kmo@daterainc.com>
+ <1373151546.7397.55.camel@haakon3.risingtidesystems.com>
+ <20130707114852.GA5463@redhat.com>
+ <1373249375.7397.139.camel@haakon3.risingtidesystems.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
-        <a-kishore@ti.com>, <afzal@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm: dts: AM43x: Add usb_otg_hs node
-References: <1372401887-19422-1-git-send-email-george.cherian@ti.com> <20130707083558.GA12992@arwen.pp.htv.fi>
-In-Reply-To: <20130707083558.GA12992@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373249375.7397.139.camel@haakon3.risingtidesystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/7/2013 2:05 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Fri, Jun 28, 2013 at 12:14:47PM +0530, George Cherian wrote:
->> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
->> index ddc1df7..e4f5eb8 100644
->> --- a/arch/arm/boot/dts/am4372.dtsi
->> +++ b/arch/arm/boot/dts/am4372.dtsi
->> @@ -64,5 +64,24 @@
->>   			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
->>   			reg = <0x44e86000 0x40>;
->>   		};
->> +
->> +		usb_otg_hs1: am4372_dwc3@48380000 {
->> +			compatible = "ti,am437x-dwc3";
->> +			reg = <0x48380000 0x1ff>;
->> +			interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
->> +			#address-cells = <1>;
->> +			#size-cells = <1>;
->> +			utmi-mode = <1>;
->> +			ranges;
->> +
->> +			dwc3@48390000 {
->> +				compatible = "synopsys,dwc3";
-> let's us snps,dwc3. I recently posted a patch converting synopsys to
-> snps like all other DesignWare drivers. Support for synopsys,dwc3 is
-> still there, but shouldn't be used.
-okay
->
->> +				reg = <0x48390000 0xcfff>;
->> +				interrupts = <GIC_SPI  168 IRQ_TYPE_LEVEL_HIGH>;
->> +				tx-fifo-resize;
-> is this flag *really* necessary, I asked you and didn't get an answer.
-We will not be needing this flag , since each EP has 3K tx fifo size. 
-Also given the fact that we will be operating only
-in 2.0 mode the default values are only sufficient.
-I will re-send the patch with above changes.
+On Sun, Jul 07, 2013 at 07:09:35PM -0700, Nicholas A. Bellinger wrote:
+> On Sun, 2013-07-07 at 14:48 +0300, Michael S. Tsirkin wrote:
+> > On Sat, Jul 06, 2013 at 03:59:06PM -0700, Nicholas A. Bellinger wrote:
+> > > On Fri, 2013-07-05 at 22:08 -0700, Kent Overstreet wrote:
+> > > > Previous posting: http://thread.gmane.org/gmane.linux.kernel/1511216
+> > > > 
+> > > > The only real change since the last version is that I've reworked the
+> > > > new ida implementation to not use one giant allocation - it's still
+> > > > logically one big arary, but it's implemented as an array of arrays.
+> > > > 
+> > > > With that, it scales up to INT_MAX allocated ids just fine. Benchmarks
+> > > > are included in that patch.
+> > > > 
+> > > > Patch series is available in my git repo:
+> > > > git://evilpiepirate.org/~kent/linux-bcache.git idr
+> > > > 
+> > > > Andrew, want to pick this up for 3.12?
+> > > 
+> > > Just FYI that the target-pending/target-per-cpu-ida branch utilizing
+> > > per-cpu ida logic for vhost-scsi has been rebased to include this latest
+> > > series.  Thanks Kent!
+> > > 
+> > > Andrew, what are your plans for this..?
+> > > 
+> > > Would you consider allowing this series be merged through target-pending
+> > > in order to allow us to start taking advantage of per-cpu ida tag
+> > > pre-allocation optimizations for v3.12 target code..? 
+> > > 
+> > > Another option would be to merge the per-cpu ida specific piece now for
+> > > v3.11 for which the risk is low given it doesn't touch any existing
+> > > code, and then include Kent's full idr rewrite separately as v3.12 item.
+> > > 
+> > > WDYT..?
+> > 
+> > Takes as is, this conflicts with cleanup patches by Asias in vhost-next
+> > that I was going to send to Linus for 3.11.
+> 
+> So the proposed vhost-scsi per-cpu ida/tag pre-allocation changes should
+> be considered v3.12 items.
+> 
+> > Merging new target code for 3.11 and vhost code for 3.12
+> > helps keep the dependencies simple, so I'm all for it.
+> > 
+> 
+> My point above is that having (at least) Kent's per-cpu ida code merged
+> for v3.11 would make it easier to move forward during the v3.12 cycle on
+> per-cpu ida/tag conversions for vhost-scsi + other target fabric
+> drivers.
+> 
+> --nab
 
-Regards,
--George
+Exactly. I think it's a good idea, too.
 
