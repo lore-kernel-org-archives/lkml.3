@@ -1,80 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab3GHLzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 07:55:10 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38401 "EHLO bear.ext.ti.com"
+	id S1752156Ab3GHL4N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 07:56:13 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:45044 "EHLO mxout1.idt.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751672Ab3GHLzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 07:55:08 -0400
-Message-ID: <51DAA890.5090006@ti.com>
-Date: Mon, 8 Jul 2013 17:24:56 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751304Ab3GHL4L convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 07:56:11 -0400
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Matt Porter <mporter@kernel.crashing.org>
+CC: Ryan Mallon <rmallon@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: RE: [patch v2] rapidio: use after free in unregister function
+Thread-Topic: [patch v2] rapidio: use after free in unregister function
+Thread-Index: AQHOeb/IdM5HhU2vGUCTp5WWf6d5xJlar/wg
+Date: Mon, 8 Jul 2013 11:55:56 +0000
+Message-ID: <8D983423E7EDF846BB3056827B8CC5D14BC3ABB9@corpmail1.na.ads.idt.com>
+References: <51D67066.9070105@gmail.com>
+ <20130705203908.GA7594@elgon.mountain>
+In-Reply-To: <20130705203908.GA7594@elgon.mountain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.165.140.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <bigeasy@linutronix.de>
-Subject: Re: [PATCH 4/5] arm: dts: Add USB phy nodes for AM33XX
-References: <1373280201-31785-1-git-send-email-george.cherian@ti.com> <1373280201-31785-5-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1373280201-31785-5-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Friday, July 05, 2013 4:39 PM, Dan Carpenter wrote:
 
-On Monday 08 July 2013 04:13 PM, George Cherian wrote:
-> Add DT bindings of phy nodes for AM33XX platform.
->
-> Signed-off-by: George Cherian <george.cherian@ti.com>
+> We're freeing the list iterator so we can't move to the next entry.
+> Since there is only one matching mport_id, we can just break after
+> finding it.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 > ---
->   arch/arm/boot/dts/am33xx.dtsi | 22 ++++++++++++++++++++++
->   1 file changed, 22 insertions(+)
+> v2: cleaner fix than v1
+> 
+> diff --git a/drivers/rapidio/rio.c b/drivers/rapidio/rio.c
+> index f4f30af..2e8a20c 100644
+> --- a/drivers/rapidio/rio.c
+> +++ b/drivers/rapidio/rio.c
+> @@ -1715,11 +1715,13 @@ int rio_unregister_scan(int mport_id, struct
+> rio_scan *scan_ops)
+>  		    (mport_id == RIO_MPORT_ANY && port->nscan == scan_ops))
+>  			port->nscan = NULL;
+> 
+> -	list_for_each_entry(scan, &rio_scans, node)
+> +	list_for_each_entry(scan, &rio_scans, node) {
+>  		if (scan->mport_id == mport_id) {
+>  			list_del(&scan->node);
+>  			kfree(scan);
+> +			break;
+>  		}
+> +	}
+> 
+>  	mutex_unlock(&rio_mport_list_lock);
 >
-> diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-> index 8e1248f..4f3cca0 100644
-> --- a/arch/arm/boot/dts/am33xx.dtsi
-> +++ b/arch/arm/boot/dts/am33xx.dtsi
-> @@ -326,6 +326,25 @@
->   			status = "disabled";
->   		};
->
-> +		phy1: usbphy-gs70@44e10620 {
 
-*44e10620* is not needed if you are not having the reg property.
-> +			compatible = "ti,am335x-usb2";
-> +			#phy-cells = <0>;
-> +			id = <0>;
-> +		};
-> +
-> +		phy2: usbphy-gs71@44e10628 {
-ditto.
-> +			compatible = "ti,am335x-usb2";
-> +			#phy-cells = <0>;
-> +			id = <1>;
-> +		};
-> +
-> +		omap_control_usb: omap-control-usb@44e10620 {
-> +			compatible = "ti,omap-control-usb";
-> +			reg = <0x44e10620 0x10>;
-> +			reg-names = "control_dev_conf";
-> +			ti,type = <3>;
-> +		};
-> +
->   		usb@47400000 {
->   			compatible = "ti,musb-am33xx";
->   			reg = <0x47400000 0x1000	/* usbss */
-> @@ -341,6 +360,9 @@
->   			port1-mode = <3>;
->   			power = <250>;
->   			ti,hwmods = "usb_otg_hs";
-> +			phy-names = "am335x-usb0", "am335x-usb1";
-> +			phys	= <&phy1>, <&phy2>;
+Acked-by: Alexandre Bounine <alexandre.bounine@idt.com>
 
-Lets have *phys* before *phy-names*.
-
-Thanks
-Kishon
+ 
