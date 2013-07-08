@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3GHHvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 03:51:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20108 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488Ab3GHHvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 03:51:43 -0400
-Date: Mon, 8 Jul 2013 10:51:41 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
-        pbonzini@redhat.com
-Subject: [GIT PULL] more KVM changes for 3.11
-Message-ID: <20130708075141.GA9165@redhat.com>
+	id S1751636Ab3GHH4M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 03:56:12 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:44956 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab3GHH4K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 03:56:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+In-Reply-To: <51DA1D75.2010503@atmel.com>
+References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
+ <1372667978-4718-9-git-send-email-richard.genoud@gmail.com>
+ <51D2472B.2010407@atmel.com> <CACQ1gAji8KkjXee8o=9jt8O38611LBJ95yXimxbfn1qLaLOcnA@mail.gmail.com>
+ <51DA1D75.2010503@atmel.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Mon, 8 Jul 2013 09:55:48 +0200
+Message-ID: <CACQ1gAjYOutkdn1J=HSY3i95TNU-WyJzTZPcb6QLykT53O3a2w@mail.gmail.com>
+Subject: Re: [RFC PATCH 08/13] sound: sam9x5_wm8731: machine driver for
+ at91sam9x5 wm8731 boards
+To: Bo Shen <voice.shen@atmel.com>
+Cc: devicetree-discuss@lists.ozlabs.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+2013/7/8 Bo Shen <voice.shen@atmel.com>:
+> Hi Richard,
+>
+>
+> On 7/5/2013 23:15, Richard Genoud wrote:
+>>>>
+>>>> +       card->dev = &pdev->dev;
+>>>> >>+       card->owner = THIS_MODULE;
+>>>> >>+       card->dai_link = dai;
+>>>> >>+       card->num_links = 1;
+>>>> >>+       dai->name = "WM8731";
+>>>> >>+       dai->stream_name = "WM8731 PCM";
+>>>> >>+       dai->codec_dai_name = "wm8731-hifi";
+>>>> >>+       dai->init = at91sam9x5ek_wm8731_init;
+>>>> >>+       card->dapm_widgets = at91sam9x5ek_dapm_widgets;
+>>>> >>+       card->num_dapm_widgets =
+>>>> >> ARRAY_SIZE(at91sam9x5ek_dapm_widgets);
+>>>
+>>> >
+>>> >
+>>> >Will keep these as snd_soc_card and snd_soc_dai_link structure
+>>> > separately?
+>>
+>> I don't really understand what you mean here.
+>> do you mean that something like that will more explicit ? :
+>> +       card->dai_link[0].name = "WM8731";
+>> +       card->dai_link[0].stream_name = "WM8731 PCM";
+>> +       card->dai_link[0].codec_dai_name = "wm8731-hifi";
+>> +       card->dai_link[0].init = at91sam9x5ek_wm8731_init;
+>>
+>
+> I mean using structure to define snd_soc_card and snd_soc_dai_link, look
+> like:
+> struct snd_soc_dai_link dai_link_name = {
+>         .name = xxx,
+>         .stream_name = xxx,
+>         ...
+> };
+>
+> struct snd_soc_card card_name = {
+>         .name = xxxx
+>         .ower = THIS_MODULE,
+>         .dai_link = &dai_link_name,
+>         ...
+> };
+>
+> In this way, I think it will be more clear than put them in code.
 
-Please pull from
+ok, got it !
 
-git://git.kernel.org/pub/scm/virt/kvm/kvm.git tags/kvm-3.11-2
+Thanks !
 
-to receive more KVM updates for the 3.11 merge window. There is a fix for
-a bug that prevents some guests from working on old Intel CPUs and a patch
-that integrates ARM64 KVM, merged via ARM64 tree, into Kconfig.
-
-----------------------------------------------------------------
-Gleb Natapov (1):
-      KVM: VMX: mark unusable segment as nonpresent
-
-Marc Zyngier (1):
-      arm64: KVM: Kconfig integration
-
- arch/arm64/Kconfig              |    2 ++
- arch/arm64/kernel/asm-offsets.c |    1 +
- arch/arm64/kvm/Kconfig          |   51 +++++++++++++++++++++++++++++++++++++++
- arch/x86/kvm/vmx.c              |   11 +++++++--
- 4 files changed, 63 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm64/kvm/Kconfig
---
-			Gleb.
+Richard.
