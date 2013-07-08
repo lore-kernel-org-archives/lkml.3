@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab3GHQ3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:29:03 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53615 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752439Ab3GHQ2f convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:28:35 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dIc89bh154dI1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
-Date: Mon, 8 Jul 2013 09:27:40 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: John Stultz <john.stultz@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Re: [PATCH] clocksource/cadence_ttc: Reuse clocksource as sched_clock
-References: <1372888216-10726-1-git-send-email-soren.brinkmann@xilinx.com>
- <alpine.DEB.2.02.1307050819000.11637@ionos.tec.linutronix.de>
- <fbeb6f36-f07a-4518-b6f2-0b8e36028fe9@CH1EHSMHS012.ehs.local>
- <alpine.DEB.2.02.1307051802560.32106@ionos.tec.linutronix.de>
- <e55e70b7-7e63-4718-ad48-f5d4479b5326@DB9EHSMHS006.ehs.local>
- <alpine.DEB.2.02.1307051819530.32106@ionos.tec.linutronix.de>
+	id S1752343Ab3GHQ2W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:28:22 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46192 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752250Ab3GHQ2T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 12:28:19 -0400
+Date: Mon, 8 Jul 2013 16:02:26 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sourav Poddar <sourav.poddar@ti.com>
+Cc: spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
+        balbi@ti.com, rnayak@ti.com, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130708150226.GA16401@sirena.org.uk>
+References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
+ <1373290980-17883-2-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307051819530.32106@ionos.tec.linutronix.de>
+In-Reply-To: <1373290980-17883-2-git-send-email-sourav.poddar@ti.com>
+X-Cookie: You dialed 5483.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <ad28a9ee-541e-4b28-8b4e-9ebb2e1c4283@TX2EHSMHS015.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
+X-SA-Exim-Connect-IP: 193.120.41.118
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC/PATCH 1/3] driver: spi: Modify core to compute the message
+ length
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 05, 2013 at 06:23:19PM +0200, Thomas Gleixner wrote:
-> On Fri, 5 Jul 2013, Sören Brinkmann wrote:
-> > On Fri, Jul 05, 2013 at 06:05:14PM +0200, Thomas Gleixner wrote:
-> > > On Fri, 5 Jul 2013, Sören Brinkmann wrote:
-> > > > On Fri, Jul 05, 2013 at 08:30:47AM +0200, Thomas Gleixner wrote:
-> > > > > On Wed, 3 Jul 2013, Soren Brinkmann wrote:
-> > > > > 
-> > > > > > Reuse the TTC clocksource timer as sched clock, too. Since only a single
-> > > > > > sched clock is supported in Linux, this feature optional and can be
-> > > > > > selected through Kconfig.
-> > > > > 
-> > > > > This changelog doesn't make sense.
-> > > > > 
-> > > > > There can be only one active sched_clock, but that does no mean, that
-> > > > > you cannot have different implementations compiled in.
-> > > > > 
-> > > > > So if you disable this config which sched_clock is your kernel using?
-> > > > Jiffies
-> > > > 
-> > > > > And if you enable it, how is guaranteed that you end up with the ttc
-> > > > > sched_clock as the active one? Just due to initcall ordering?
-> > > > I assumed so. Is there a different mechanism?
-> > > 
-> > > jiffies is the default one. If you setup an explicit sched clock then
-> > > this is used. initcall ordering only matters if you have two possible
-> > > sched clocks which might replace jiffies. The one which gets
-> > > registered last wins.
-> > > 
-> > > So the question is, why you want to disable your sched clock at
-> > > compile time.
-> > The timer drivers I have seen unconditionally register themselves as
-> > sched_clock. There does not seem to be a runtime mechanism to choose the
-> > best one - I might miss it though.
-> > I was thinking about this due to the arm_global_timer driver which has
-> > been dicussed on lkml recently, which seemed to do it this way too. And since
-> > that timer would be an alternative sched_clock for Zynq too, I thought I
-> > follow the same approach for the TTC.
-> 
-> Hmm, ok. So there is a generic one as well. If we end up with multiple
-> choices for that sched_clock, then there should be a mechanism to
-> avoid that #ifdeffery and have it runtime selected.
-> 
-> Having a setup call with a rating argument would be a first step. So
-> the one with the highest rating wins. If people want to have it
-> selectable from the kernel commandline, it would need some string
-> matching as well.
-I revisited the code:
-My original reason for adding the Kconfig option was that I hit this
-warning when I had multiple sched_clock providers:
-	arch/arm/kernel/sched_clock.c:setup_sched_clock():
-		WARN_ON(read_sched_clock != jiffy_sched_clock_read);
 
-That code is gone in the lates Linux tree.
+--k1lZvvs/B4yU6o8G
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Furthermore the now used setup_sched_clock routine, only updates the
-sched clock provider, if the new one is faster than the old one:
-	if (cd.rate > rate)                                                      
-                return;
+On Mon, Jul 08, 2013 at 07:12:58PM +0530, Sourav Poddar wrote:
+> Make spi core calculate the message length while
+> populating the other transfer parameters. This will
+> be useful in cases where controller driver need to configure its=20
+> framelength field without iterating through the linklist again in the
+> driver controller.
 
-Which is good enough in terms of a rating mechanism, at least for this case.
+This seems fine but I'm going to hold off on applying it until it's
+reqired since it'll bloat the structure a little and it's a bit unusual
+to need it.  We should do an audit in case some drivers do need this
+though...
 
-So, I'll remove all the #ifdefs and Kconfig stuff and send a v2.
+--k1lZvvs/B4yU6o8G
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	Sören
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR2tR/AAoJELSic+t+oim9BegP/0QJG84t44al+maP3PrnLkoY
+EJwwx9c+VQqsGEQLAPztyIAJQEuCrd6PHcoiqcB4nRvPH2SHr7iqz6GnPtibEZ3k
+cUWRvxQyYudl0w6i68WkWGohO+7upWMsi8MJkDFndGRHJv1rvakMLM4NH+JAIINP
+YywsYB5ysPLFDT+6P86EIk0S8zzzeySsP8RZ0R3FdDLWng/ZwSrClS/05SAeeAvh
+qP28NH5QC5KvsLnXW7VG7fAiW8GDIkZBPobbCTznhqK039kRetHitjR0ozh1bojE
+xXBctCxVn97V04qlbd/HH5PRlyBBi04TbRf9MYVWHbApvUEPM72vol15jHF5K0Oc
+jW+OuCyi2ev+Cy/uxjnNYDUU5W45C3j9NvPIuGP2wTgv/dXWjnGGCrq1E6EpMGNL
+LQngwj0sfi9A2FlsiLT9tb1eQwfCsix3gXOIEiA8ChRLyd9R9ixsUF4aRzW767K/
+xkO1ZP6far0z72QhOZeWst6LlqGJBz6+1Ym7QPsgB7YaLbov8hID/ej6iDnzbhJG
+lNOOx87yJImlF6MDjBPjmUAMZX8czUXY3Iyd5zhnhhNw/1xfM9oGAwGx9TLZcyHN
+TsPF2YvL716e9ujYi2/Jn2zeKjp6ZcTG/AGKfwM2LoO6in90A3i5jwV4kZ/TiYEW
+H6w+QzNrbatEcIoRnfp/
+=gsIH
+-----END PGP SIGNATURE-----
 
+--k1lZvvs/B4yU6o8G--
