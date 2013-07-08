@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752437Ab3GHQmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:42:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49235 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab3GHQmv (ORCPT
+	id S1752546Ab3GHQnb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:43:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:50609 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752159Ab3GHQn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:42:51 -0400
-Date: Mon, 8 Jul 2013 09:42:50 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>
-Subject: Re: [PATCH 1/4] lkdtm: fix stack protector trigger
-Message-ID: <20130708164250.GA12670@kroah.com>
-References: <1371926227-2609-1-git-send-email-keescook@chromium.org>
- <1371926227-2609-2-git-send-email-keescook@chromium.org>
- <CAGXu5jKrW4t0HxBiinYTQs9eun_Z+bkNCjKgM_RYaL6Vz1PsoA@mail.gmail.com>
+	Mon, 8 Jul 2013 12:43:29 -0400
+Message-ID: <51DAEC2C.7070800@canonical.com>
+Date: Mon, 08 Jul 2013 12:43:24 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jKrW4t0HxBiinYTQs9eun_Z+bkNCjKgM_RYaL6Vz1PsoA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kamal Mostafa <kamal.mostafa@canonical.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+CC: stable@vger.kernel.org, kys@microsoft.com, haiyangz@microsoft.com,
+        devel@linuxdriverproject.org, LKML <linux-kernel@vger.kernel.org>,
+        Kernel Team <kernel-team@lists.ubuntu.com>
+Subject: [PATCH][v3.8.y] Drivers: hv: Execute shutdown in a thread context
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 06:09:50AM -0700, Kees Cook wrote:
-> Hi,
-> 
-> I'd like to get this series added to lkdtm. Can someone take a moment
-> to review or ack them?
+Hello,
 
-I don't see these in my queue at all, did you copy me the first time
-around on them?
+Please consider including upstream commit:
+3dd6cb497198a0533a2530b6a345c60c9a29b9bc in the next v3.8.y release.  It
+was included upstream as of v3.9-rc1.  It has been tested and confirmed
+to resolve http://bugs.launchpad.net/bugs/1180419 .
 
-Care to resend them?  Everything is on hold until 3.11-rc1 is out for
-new stuff like this, so you'll have to wait until then at the earliest.
+commit 3dd6cb497198a0533a2530b6a345c60c9a29b9bc
+Author: K. Y. Srinivasan <kys@microsoft.com>
+Date:   Wed Jan 23 17:42:45 2013 -0800
 
-thanks,
+    Drivers: hv: Execute shutdown in a thread context
 
-greg k-h
+
+Sincerely,
+Joseph Salisbury
+
