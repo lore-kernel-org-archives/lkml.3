@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab3GHQRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:17:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18364 "EHLO mx1.redhat.com"
+	id S1752148Ab3GHQZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:25:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8852 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab3GHQRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:17:51 -0400
-Message-ID: <1373300262.2602.22.camel@ul30vt.home>
-Subject: Re: [PATCH v2 0/3] pci: ACS fixes & quirks
-From: Alex Williamson <alex.williamson@redhat.com>
-To: bhelgaas@google.com
-Cc: linux-pci@vger.kernel.org, joro@8bytes.org, andihartmann@01019freenet.de,
-        linux-kernel@vger.kernel.org
-Date: Mon, 08 Jul 2013 10:17:42 -0600
-In-Reply-To: <20130627222159.16564.38166.stgit@bling.home>
-References: <20130627222159.16564.38166.stgit@bling.home>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751648Ab3GHQZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 12:25:12 -0400
+Date: Mon, 8 Jul 2013 18:24:52 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Greg Price <price@mit.edu>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH v2] perf report/top: Add option to collapse undesired
+ parts of call graph
+Message-ID: <20130708162452.GB2957@krava.brq.redhat.com>
+References: <20130701142841.GE22203@biohazard-cafe.mit.edu>
+ <20130707131340.GA23433@krava.brq.redhat.com>
+ <20130708115746.GO22203@biohazard-cafe.mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130708115746.GO22203@biohazard-cafe.mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.  Comments?
+On Mon, Jul 08, 2013 at 07:57:46AM -0400, Greg Price wrote:
+> On Sun, Jul 07, 2013 at 03:13:40PM +0200, Jiri Olsa wrote:
+> > On Mon, Jul 01, 2013 at 10:28:45AM -0400, Greg Price wrote:
+> > > For example, in an application with an expensive function
+> > > implemented with deeply nested recursive calls, the default
+> > > call-graph presentation is dominated by the different callchains
+> > > within that function.  By ignoring these callees, we can collect
+> > > the callchains leading into the function and compactly identify
+> > > what to blame for expensive calls.
+> > 
+> > hi,
+> > what's this one based on? I cannot get it applied on acme's perf/core
+> 
+> That was on v3.10.  Here it is on 6d895ece5, which is currently acme's
+> perf/core.
+> 
+> Cheers,
+> Greg
+> 
+> 
+> -- >8 --
+> Date: Thu, 6 Dec 2012 21:48:05 -0800
+> 
+> For example, in an application with an expensive function
+> implemented with deeply nested recursive calls, the default
+> call-graph presentation is dominated by the different callchains
+> within that function.  By ignoring these callees, we can collect
+> the callchains leading into the function and compactly identify
+> what to blame for expensive calls.
 
-On Thu, 2013-06-27 at 16:39 -0600, Alex Williamson wrote:
-> v2:
-> 
-> Revised patch 1/ to match comments from Bjorn.  PCIe event collectors
-> and PCIe-to-PCI bridges now indicate that they do not support ACS.
-> I've reached out to try to get clarification on this, but I think it's
-> reasonable to proceed with a conservative approach until then.  I also
-> added PCI-to-PCIe bridges for the sake of being complete.  Also added
-> more comments about the purpose and behavior of pci_acs_enabled().  If
-> I've overlooked anything else that needs to be addressed, please let
-> me know.
-> 
-> Patch 2/ had no comments, it's unchanged.
-> 
-> Patch 3/ is added.  This was sent as an RFC nearly a year ago and
-> Joerg confirmed for us that these devices do not support p2p on AMD
-> systems with AMD IOMMU.  We can't simply use iommu_present() to test
-> for an IOMMU because it's setup just after we need this function.  
-> Instead we test for the ACPI IVRS table that describes the IOMMU.  It
-> would probably suffice to skip an actual AMD IOMMU check, but I don't
-> want it to later come bite us if these ASICs get re-used, maybe with
-> a different IOMMU, and don't make the same guarantees.
-> 
-> Joerg, I was also curious back when we investigated this patch if the
-> same rules hold true for these other southbridge devices:
-> 
-> 1002:43a0 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 0)
-> 1002:43a1 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 1)
-> 1002:43a2 SB900 PCI to PCI bridge (PCIE port 2)
-> 1002:43a3 SB900 PCI to PCI bridge (PCIE port 3)
-> 
-> If you remember or have contacts to poke, I'd be happy to follow-up
-> with another patch to add them.  Thanks,
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (3):
->       pci: Fix flaw in pci_acs_enabled()
->       pci: Differentiate ACS controllable from enabled
->       pci: ACS quirk for AMD southbridge
-> 
-> 
->  drivers/pci/pci.c    |   93 +++++++++++++++++++++++++++++++++++++++++---------
->  drivers/pci/quirks.c |   50 +++++++++++++++++++++++++++
->  2 files changed, 127 insertions(+), 16 deletions(-)
+change looks ok, but I'm not that confident in this part, so at least:
 
+Tested-by: Jiri Olsa <jolsa@redhat.com>
 
-
+thanks,
+jirka
