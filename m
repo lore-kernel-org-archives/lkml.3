@@ -1,89 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab3GHBoQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 21:44:16 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:52013 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab3GHBoP (ORCPT
+	id S1753457Ab3GHBoz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 21:44:55 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:36922 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab3GHBow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 21:44:15 -0400
-X-AuditID: cbfee68e-b7f276d000002279-a3-51da196c7aa2
-From: Jingoo Han <jg1.han@samsung.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH 8/8] ARM: exynos: select PM_GENERIC_DOMAINS only when used
-Date: Mon, 08 Jul 2013 10:44:12 +0900
-Message-id: <001901ce7b7c$a5af8df0$f10ea9d0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac57fJZeIKGp33gZTZuL1gi/P/dC4w==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t8zI90cyVuBBouvG1v8nXSM3eLywkus
-	Fr0LrrJZXN41h82BxeP3r0mMHn1bVjF6fN4kF8AcxWWTkpqTWZZapG+XwJVx7Op7poLV7BUb
-	r3UwNjD+Ze1i5OSQEDCR2H9mDhuELSZx4d56IJuLQ0hgGaPElJ/bmGCKfrS+YYJILGKUuHt2
-	KzuE84tRomF9FzNIFZuAmsSXL4fZQWwRAUWJqS+eAcU5OJgFMiQ6Wi1ATGEBP4m1y/VBTBYB
-	VYnHDfkgJq+ApcSDiSIgfbwCghI/Jt9jAbGZBbQk1u88zgRhy0tsXvOWGeIaBYkdZ18zQuzR
-	k3ix+A0bRI2IxL4X7xhBDpMQWMcuseDkXLAEi4CAxLfJh1hAdkkIyEpsOgA1R1Li4IobLBMY
-	xWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk9CIjveLE3OLSvHS95PzcTYyQuOrbwXjzgPUh
-	xmSg9ROZpUST84FxmVcSb2hsZmRhamJqbGRuaUaasJI4r1qLdaCQQHpiSWp2ampBalF8UWlO
-	avEhRiYOTqkGRuuXhxkeMi7453/txdn8+CjezhSjkH3S5psy5oqUKYdOXs2x8cQEXQd1aSWm
-	lZdPTOR1lQpe2KvAuOWYOFu9fjtLh4+Mxpoji2olNoofZuy+UKJuOa3N0+D7Zc9JNaJqlR+j
-	M39cfS4VlWG3+4bt89ivqQenqPrMP6z0RELTe3PehFshZ29PVmIpzkg01GIuKk4EAEcG2SrB	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xgG6O5K1Agx2NBhZ/Jx1jt7i88BKr
-	Re+Cq2wWl3fNYXNg8fj9axKjR9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7
-	x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
-	GxIE12NkgAYS1jFmHLv6nqlgNXvFxmsdjA2Mf1m7GDk5JARMJH60vmGCsMUkLtxbz9bFyMUh
-	JLCIUeLu2a3sEM4vRomG9V3MIFVsAmoSX74cZgexRQQUJaa+eAYU5+BgFsiQ6Gi1ADGFBfwk
-	1i7XBzFZBFQlHjfkg5i8ApYSDyaKgPTxCghK/Jh8jwXEZhbQkli/8zgThC0vsXnNW2aIaxQk
-	dpx9zQixR0/ixeI3bBA1IhL7XrxjnMAoMAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPSc430
-	ihNzi0vz0vWS83M3MYKj9pn0DsZVDRaHGAU4GJV4eCVO3wwUYk0sK67MPcQowcGsJMIrznor
-	UIg3JbGyKrUoP76oNCe1+BBjMtCfE5mlRJPzgQklryTe0NjEzMjSyMzCyMTcnDRhJXHeg63W
-	gUIC6YklqdmpqQWpRTBbmDg4pRoYW9ttk7qVExvm/vlgLpvLffaWLbuJf+aWJ/V/9E7f1k4p
-	+ar14vuN0i9PusQUvjh2yp0L+DJZjXfxLi839ZaqqwWMK6eL3XK5/XKLqejk6YeZ7ifXPlha
-	y1Vscm2XnWjGpdm7571nWPd50rf3E05MznrcJGjsoP7+KDeL6fkZdZe2zLz+prsuS4mlOCPR
-	UIu5qDgRAFfr6FMeAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 7 Jul 2013 21:44:52 -0400
+From: Mike Turquette <mturquette@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-pm@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH RFC 2/3] clk: cpufreq helper for voltage scaling
+Date: Sun,  7 Jul 2013 18:44:27 -0700
+Message-Id: <1373247868-21444-3-git-send-email-mturquette@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1373247868-21444-1-git-send-email-mturquette@linaro.org>
+References: <1373247868-21444-1-git-send-email-mturquette@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 05, 2013 9:25 AM, Arnd Bergmann wrote:
+This patch builds on "clk: notifier handler for dynamic voltage scaling"
+by adding a CPUfreq-specific helper function for registering a clock
+rate-change notifier to scale regulator voltage as a function of clock
+rate.
 
-Hi Arnd,
+In particular this patch creates an instance of struct
+cpufreq_frequency_table and also calculate the voltage scaling latency,
+both of which are returned to the caller for use in the CPUfreq driver.
 
-This bug fix patch was already submitted on May 27th, as below:
+Signed-off-by: Mike Turquette <mturquette@linaro.org>
+---
+ drivers/clk/clk-voltage-notifier.c | 71 ++++++++++++++++++++++++++++++++++++++
+ include/linux/clk.h                |  6 ++++
+ 2 files changed, 77 insertions(+)
 
-https://patchwork.kernel.org/patch/2617191/
-
-
-Best regards,
-Jingoo Han
-
-> This fixes building exynos kernels with CONFIG_PM disabled.
->
-> Signed-off-by: Arnd Bergmann <a...@arndb.de>
-> Cc: Kukjin Kim <kgene....@samsung.com>
-> ---
->  arch/arm/mach-exynos/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-> index 2d503b3..ba70a84 100644
-> --- a/arch/arm/mach-exynos/Kconfig
-> +++ b/arch/arm/mach-exynos/Kconfig
-> @@ -38,7 +38,7 @@ config CPU_EXYNOS4210
-> 	depends on ARCH_EXYNOS4
-> 	select ARM_CPU_SUSPEND if PM
-> 	select PINCTRL_EXYNOS
-> -	select PM_GENERIC_DOMAINS
-> +	select PM_GENERIC_DOMAINS if PM
-> 	select S5P_PM if PM
-> 	select S5P_SLEEP if PM
-> 	select SAMSUNG_DMADEV
-> --
+diff --git a/drivers/clk/clk-voltage-notifier.c b/drivers/clk/clk-voltage-notifier.c
+index cb6b85f..8e1707f 100644
+--- a/drivers/clk/clk-voltage-notifier.c
++++ b/drivers/clk/clk-voltage-notifier.c
+@@ -10,6 +10,7 @@
+  */
+ 
+ #include <linux/clk.h>
++#include <linux/cpufreq.h>
+ #include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/notifier.h>
+@@ -133,3 +134,73 @@ void of_clk_volt_notifier_unregister(struct notifier_block *nb)
+ 	kfree(vsd);
+ }
+ EXPORT_SYMBOL_GPL(of_clk_volt_notifier_unregister);
++
++void of_clk_cpufreq_notifier_unregister(struct notifier_block *nb,
++		struct cpufreq_frequency_table *freq_table)
++{
++	struct volt_scale_data *data = to_volt_scale_data(nb);
++	struct device *dev = data->dev;
++
++	opp_free_cpufreq_table(dev, &freq_table);
++	of_clk_volt_notifier_unregister(nb);
++}
++EXPORT_SYMBOL_GPL(of_clk_cpufreq_notifier_unregister);
++
++/**
++ * of_clk_cpufreq_notifer_register - register clock notifier to scale voltage
++ * @dev: device that owns this scaling operation
++ * @np: pointer to device's DT node
++ * @clk: clock whose rate-change notifier triggers voltage scaling
++ * @supply: regulator id string
++ * @freq_table: pointer to uninitialized CPUfreq frequency scaling table
++ * @voltage_latency: worst case voltage scaling latency
++ */
++struct notifier_block *of_clk_cpufreq_notifier_register(struct device *dev,
++		struct device_node *np, struct clk *clk, const char *supply,
++		struct cpufreq_frequency_table **table,
++		unsigned int *voltage_latency)
++{
++	struct notifier_block *nb;
++	struct volt_scale_data *vsd;
++	struct opp *opp;
++	unsigned long min, max;
++	int ret, i;
++
++	nb = of_clk_volt_notifier_register(dev, np, clk, supply,
++			voltage_latency);
++	if (IS_ERR(nb))
++		return nb;
++
++	vsd = to_volt_scale_data(nb);
++
++	ret = opp_init_cpufreq_table(dev, table);
++	if (ret) {
++		pr_err("failed to init cpufreq table: %d\n", ret);
++		goto err_unregister;
++	}
++
++	/* find the min and max voltages and compute worst-case latency */
++	for (i = 0; table[0][i].frequency != CPUFREQ_TABLE_END; i++)
++		;
++
++	rcu_read_lock();
++	opp = opp_find_freq_exact(dev,
++			table[0][0].frequency * 1000, true);
++	min = opp_get_voltage(opp);
++	opp = opp_find_freq_exact(dev,
++			table[0][i-1].frequency * 1000, true);
++	max = opp_get_voltage(opp);
++	rcu_read_unlock();
++
++	*voltage_latency = regulator_set_voltage_time(vsd->reg, min, max);
++	if (*voltage_latency < 0)
++		pr_warn("%s: failed to calculate voltage latency, %d\n",
++				__func__, ret);
++
++	return nb;
++
++err_unregister:
++	of_clk_volt_notifier_unregister(nb);
++	return ERR_PTR(ret);
++}
++EXPORT_SYMBOL_GPL(of_clk_cpufreq_notifier_register);
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 85ea520..3104883 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -86,6 +86,12 @@ struct notifier_block *of_clk_volt_notifier_register(struct device *dev,
+ 		struct device_node *np, struct clk *clk, const char *supply,
+ 		int *voltage_latency);
+ void of_clk_volt_notifier_unregister(struct notifier_block *nb);
++struct notifier_block *of_clk_cpufreq_notifier_register(struct device *dev,
++		struct device_node *np, struct clk *clk, const char *supply,
++		struct cpufreq_frequency_table **table,
++		unsigned int *voltage_latency);
++void of_clk_cpufreq_notifier_unregister(struct notifier_block *nb,
++		struct cpufreq_frequency_table *freq_table);
+ 
+ #endif
+ 
+-- 
+1.8.1.2
 
