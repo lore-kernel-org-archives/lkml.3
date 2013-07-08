@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752326Ab3GHQgh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:36:37 -0400
-Received: from rcdn-iport-4.cisco.com ([173.37.86.75]:35242 "EHLO
-	rcdn-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3GHQgf (ORCPT
+	id S1752423Ab3GHQhq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:37:46 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:40583 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549Ab3GHQho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:36:35 -0400
-X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Jul 2013 12:36:35 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgkFALPn2lGtJV2a/2dsb2JhbABagwl/gwi9XBd7FnSCIwEBAQQjBA1FDAQCAQgRBAEBAQICBiACAgIwFQgIAgQBDQUIiAYBp2uRFYEmjhQWGwcGgk4zaQOhc4cogxGCKA
-X-IronPort-AV: E=Sophos;i="4.87,1021,1363132800"; 
-   d="scan'208";a="232261840"
-From: "Neel Patel (neepatel)" <neepatel@cisco.com>
-To: "Nishank Trivedi (nistrive)" <nistrive@cisco.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Christian Benvenuti (benve)" <benve@cisco.com>
-Subject: RE: [PATCH] drivers/net: enic: release rtnl_lock on error-path
-Thread-Topic: [PATCH] drivers/net: enic: release rtnl_lock on error-path
-Thread-Index: AQHOe6v/r7tslmN0WUy0e1cJ9qWDb5lbTDCA//+sPgA=
-Date: Mon, 8 Jul 2013 16:26:58 +0000
-Message-ID: <644DFB2E795E0348A1614A34EE0D35711837FDB1@xmb-rcd-x05.cisco.com>
-References: <20130708072251.20540.50413.stgit@zurg>
- <51DAE823.4030406@cisco.com>
-In-Reply-To: <51DAE823.4030406@cisco.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [171.71.13.213]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 8 Jul 2013 12:37:44 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130708132034.17639.4396.stgit@ladj378.jer.intel.com>
+References: <20130708132034.17639.4396.stgit@ladj378.jer.intel.com>
+Date: Mon, 8 Jul 2013 09:37:43 -0700
+X-Google-Sender-Auth: Z-dNk3YzowsyTNRyWFZszetRvgk
+Message-ID: <CA+55aFxgrOtsv7vCtic97ehpvqyezCzDcyqHVD+821BiTuiRtw@mail.gmail.com>
+Subject: Re: [PATCH net-next] net: rename low latency sockets functions to
+ busy poll
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Andrew Mortons <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r68Gah0h005933
 
-Looks good.
-
-Thanks!
-
------Original Message-----
-From: Nishank Trivedi (nistrive) 
-Sent: Monday, July 08, 2013 9:26 AM
-To: Konstantin Khlebnikov
-Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Neel Patel (neepatel); Christian Benvenuti (benve)
-Subject: Re: [PATCH] drivers/net: enic: release rtnl_lock on error-path
-
-On 7/8/13 12:22 AM, Konstantin Khlebnikov wrote:
-> enic_change_mtu_work() must call rtnl_unlock() on all exiting paths.
+On Mon, Jul 8, 2013 at 6:20 AM, Eliezer Tamir
+<eliezer.tamir@linux.intel.com> wrote:
 >
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Cc: Christian Benvenuti <benve@cisco.com>
-> Cc: Roopa Prabhu <roprabhu@cisco.com>
-> Cc: Neel Patel <neepatel@cisco.com>
-> Cc: Nishank Trivedi <nistrive@cisco.com>
-> ---
->   drivers/net/ethernet/cisco/enic/enic_main.c |    2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
-> index 635f559..992ec2e 100644
-> --- a/drivers/net/ethernet/cisco/enic/enic_main.c
-> +++ b/drivers/net/ethernet/cisco/enic/enic_main.c
-> @@ -1761,6 +1761,7 @@ static void enic_change_mtu_work(struct work_struct *work)
->   	enic_synchronize_irqs(enic);
->   	err = vnic_rq_disable(&enic->rq[0]);
->   	if (err) {
-> +		rtnl_unlock();
->   		netdev_err(netdev, "Unable to disable RQ.\n");
->   		return;
->   	}
-> @@ -1773,6 +1774,7 @@ static void enic_change_mtu_work(struct work_struct *work)
->   	vnic_rq_fill(&enic->rq[0], enic_rq_alloc_buf);
->   	/* Need at least one buffer on ring to get going */
->   	if (vnic_rq_desc_used(&enic->rq[0]) == 0) {
-> +		rtnl_unlock();
->   		netdev_err(netdev, "Unable to alloc receive buffers.\n");
->   		return;
->   	}
->
+> -               /* only if on, have sockets with POLL_LL and not out of time */
+> -               if (ll_flag && can_ll && can_poll_ll(ll_start, ll_time))
+> +               /* only if found POLL_BUSY_LOOP sockets && not out of time */
+> +               if (!need_resched() && can_busy_loop &&
+> +                   busy_loop_range(busy_start, busy_end))
+>                         continue;
 
-Acked.
+Better, but still horribly ugly. I also suspect the need_resched()
+test should be done after testing can_busy_loop, just in case the
+compiler can avoid having to load things off the current pointer.
 
-Thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I also think that we should clear busy_flag if we don't continue, no?
+
+I also don't understand why the code keeps both busy_start and
+busy_end around. It all looks completely pointless. Why have two
+variables, and why make the comparisons more complicated, and the code
+look more complex than it actually is?
+
+So the code *should* just do
+
+        if (need_busy_loop) {
+                if (!need_resched() && !busy_loop_timeout(start_time))
+                        continue;
+        }
+        busy_flag = 0;
+
+or something like that. Then, calculate busy_end there, since it's
+just an addition. Keeping two 64-bit variables around not only makes
+the code more complex, it generates worse code.
+
+I also suspect there's a lot of other micro-optimizations that could
+be done: while keeping *two* 64-bit timeouts is just completely insane
+on a 32-bit architecture, keeping even just one is debatable. I
+suspect the timeouts should be just "unsigned long", so that 32-bit
+architectures don't bother with unnecessary 64-bit clocks. 32-bit
+clocks are several seconds even if you count nanoseconds, and you
+actually only do microseconds anyway (so instead of shifting the
+microseconds left by ten like you do, shift the nanoseconds of
+sched_clock right by ten, and now you only need 32-bit values).
+
+select() and poll() performance is actually fairly critical, so trying
+to avoid bad code generation here is likely worth it.
+
+                      Linus
