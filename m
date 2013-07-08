@@ -1,67 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab3GHJDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:03:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6980 "EHLO mx1.redhat.com"
+	id S1752609Ab3GHJER (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 05:04:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26573 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab3GHJDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:03:30 -0400
-Date: Mon, 8 Jul 2013 12:04:41 +0300
+	id S1751997Ab3GHJEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 05:04:15 -0400
+Date: Mon, 8 Jul 2013 12:05:26 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: [PATCH 2/2] virtio_net: fix race in RX VQ processing
-Message-ID: <1373274069-4301-3-git-send-email-mst@redhat.com>
-References: <1373274069-4301-1-git-send-email-mst@redhat.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Jason Wang <jasowang@redhat.com>, David Miller <davem@davemloft.net>
+Subject: [PATCH 0/2] virtio_net: fix race in RX VQ processing
+Message-ID: <1373274069-4301-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373274069-4301-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virtio net called virtqueue_enable_cq on RX path after napi_complete, so
-with NAPI_STATE_SCHED clear - outside the implicit napi lock.
-This violates the requirement to synchronize virtqueue_enable_cq wrt
-virtqueue_add_buf.  In particular, used event can move backwards,
-causing us to lose interrupts.
-In a debug build, this can trigger panic within START_USE.
+Jason Wang reported a race in RX VQ processing:
+virtqueue_enable_cb is called outside napi lock,
+violating virtio serialization rules.
+The race has been there from day 1, but it got especially nasty in 3.0
+when commit a5c262c5fd83ece01bd649fb08416c501d4c59d7
+"virtio_ring: support event idx feature"
+added more dependency on vq state.
 
-Jason Wang reports that he can trigger the races artificially,
-by adding udelay() in virtqueue_enable_cb() after virtio_mb().
+Please review, and consider for 3.11 and for stable.
 
-However, we must call napi_complete to clear NAPI_STATE_SCHED before
-polling the virtqueue for used buffers, otherwise napi_schedule_prep in
-a callback will fail, causing us to lose RX events.
-
-To fix, call virtqueue_enable_cb_prepare with NAPI_STATE_SCHED
-set (under napi lock), later call virtqueue_poll with
-NAPI_STATE_SCHED clear (outside the lock).
-
-Reported-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/virtio_net.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 5305bd1..fbdd79a 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -622,8 +622,9 @@ again:
- 
- 	/* Out of packets? */
- 	if (received < budget) {
-+		unsigned r = virtqueue_enable_cb_prepare(rq->vq);
- 		napi_complete(napi);
--		if (unlikely(!virtqueue_enable_cb(rq->vq)) &&
-+		if (unlikely(virtqueue_poll(rq->vq, r)) &&
- 		    napi_schedule_prep(napi)) {
- 			virtqueue_disable_cb(rq->vq);
- 			__napi_schedule(napi);
--- 
-MST
-
+Jason, could you please report whether this fixes the issues for you?
