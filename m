@@ -1,194 +1,584 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752283Ab3GHKB2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 06:01:28 -0400
-Received: from static.52.99.9.5.clients.your-server.de ([5.9.99.52]:43045 "EHLO
-	mail1.project-insanity.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751304Ab3GHKB0 (ORCPT
+	id S1752606Ab3GHKBq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 06:01:46 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:40735 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752347Ab3GHKBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 06:01:26 -0400
-X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Jul 2013 06:01:26 EDT
-Date: Mon, 8 Jul 2013 09:50:43 +0000
-From: Jonas Heinrich <onny@project-insanity.org>
-To: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, "H. Peter Anvin" <hpa@zytor.com>,
-        len.brown@intel.com, pavel@ucw.cz, tglx@linutronix.de,
-        mingo@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
-Message-ID: <20130708095042.GA20797@onny.Speedport_W_700V>
-References: <20130218155439.GA902@onny>
- <1487368.CBCgti1nd5@vostro.rjw.lan>
- <20130503110705.GA3828@onny.Speedport_W_700V>
- <201305031515.55595.jarkko.sakkinen@intel.com>
+	Mon, 8 Jul 2013 06:01:44 -0400
+Subject: [PATCH RFC] fsio: filesystem io accounting cgroup
+To: linux-mm@kvack.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org
+Date: Mon, 08 Jul 2013 14:01:39 +0400
+Message-ID: <20130708100046.14417.12932.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PEIAKu/WMn1b1Hv9"
-Content-Disposition: inline
-In-Reply-To: <201305031515.55595.jarkko.sakkinen@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+RESEND: fix CC
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is proof of concept, just basic functionality for IO controller.
+This cgroup will control filesystem usage on vfs layer, it's main goal is
+bandwidth control. It's supposed to be much more lightweight than memcg/blkio.
 
-On 05-03 15:15, Jarkko Sakkinen wrote:
-> Hi
->=20
-> On Friday, May 03, 2013 02:07:05 PM Jonas Heinrich wrote:
-> > On 05-03 01:29, Rafael J. Wysocki wrote:
-> > > On Thursday, May 02, 2013 08:32:30 PM Jonas Heinrich wrote:
-> > > > On 05-02 02:45, Rafael J. Wysocki wrote:
-> > > > > On Wednesday, May 01, 2013 11:55:10 AM H. Peter Anvin wrote:
-> > > > > > On 05/01/2013 11:51 AM, Jonas Heinrich wrote:
-> > > > > > > Well, you could give me instructions on how to debug this (I'=
-ll
-> > > > > > > do everything ;)) or I could ship you the Thinkpad T43. I gue=
-ss
-> > > > > > > this would worth the effort since this bug is somehow critica=
-l.
-> > > > > > >=20
-> > > > > > > Best regards, Jonas
-> > > > > >=20
-> > > > > > I'll put together a debug patch unless I can trick Rafael into
-> > > > > > doing it first...
-> > > > >=20
-> > > > > I'm afraid that code has changed quite a bit since I looked at it
-> > > > > last time. [Jarkko Sakkinen seems to have worked on it lately,
-> > > > > CCed.]
-> > > > >=20
-> > > > > Jonas, I wonder what happens if you drop the first hunk of the pa=
-tch
-> > > > > (it just uses a different register, which shouldn't matter)?  Does
-> > > > > it still help then?
-> > > >=20
-> > > > Hello Rafel, first of all, thank you for helping me out :)
-> > > > You're right, the patch still solves the suspend bug, after removing
-> > > > the first hunk of the patch and applying it (see attachement:
-> > > > suspendfix_first_hunk_dropped.patch).
-> > > >=20
-> > > > > If so, there are still a few things you can do to it, e.g:
-> > > > > (1) drop the
-> > > > >=20
-> > > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_CR4, %edi
-> > > > > -       jnc     1f
-> > > >=20
-> > > > Still works :) (used suspendfix_1.patch)
-> > > >=20
-> > > > > lines,
-> > > > > (2) drop the
-> > > > >=20
-> > > > > -       btl     $WAKEUP_BEHAVIOR_RESTORE_EFER, %edi
-> > > > > -       jnc     1f
-> > > > >=20
-> > > > > lines,
-> > > >=20
-> > > > Still works :) (used suspendfix_2.patch)
-> > > >=20
-> > > > > (3) drop the
-> > > > >=20
-> > > > > +       jecxz   1f
-> > > >=20
-> > > > Still works :) (used suspendfix_3.patch)
-> > > >=20
-> > > > > line,
-> > > > > (4) drop the
-> > > > >=20
-> > > > > +       movl    %eax, %ecx
-> > > > > +       orl     %edx, %ecx
-> > > > > +       jz      1f
-> > > >=20
-> > > > At this point, the bug reoccurs (used suspendfix_4.patch)!
-> > > > But that doesn't mean these lines are the only critical, because the
-> > > > more minimal patch
-> > > >=20
-> > > > @@ -119,6 +119,9 @@
-> > > >=20
-> > > >         jnc     1f
-> > > >         movl    pmode_efer, %eax
-> > > >         movl    pmode_efer + 4, %edx
-> > > >=20
-> > > > +       movl    %eax, %ecx
-> > > > +       orl     %edx, %ecx
-> > > > +       jz      1f
-> > > >=20
-> > > >         movl    $MSR_EFER, %ecx
-> > > >         wrmsr
-> > > > =20
-> > > >  1:
-> > > > with removing this part
-> > > >=20
-> > > > -       movl    pmode_cr4, %eax
-> > > > -       movl    %eax, %cr4
-> > > > +       movl    pmode_cr4, %ecx
-> > > > +       movl    %ecx, %cr4
-> > > >=20
-> > > > also doesn't fix the issue (see suspendfix_5.patch).
-> > > >=20
-> > > > > lines and see what the minimal patch needed for things to work ag=
-ain
-> > > > > is.
-> > > >=20
-> > > > So the most minimal working patch is suspendfix_3.patch.
-> > >=20
-> > > Thanks for doing that detective work!
-> > >=20
-> > > The only explanation of why this particular patch can help that seems
-> > > viable to us at the moment is that we have a memory corruption in the
-> > > code region modified by it and the patch simply changes the alignment=
- of
-> > > the instructions that don't get corrupted.
-> > >=20
-> > > It looks like this may be verified by putting a bunch of nops into the
-> > > region in question, so can you please check if the attached patch hel=
-ps
-> > > too?
-> >=20
-> > Unfortunately, your attached patch doesn't seem to fix the bug.
-> > Hope you still have some ideas to address this issue :)
->=20
-> Kind of had to experiment with this since I don't have access to
-> T43. Did you already try:
->=20
-> - EFER handling only is reverted as it was before 73201dbe.
-> - CR4 handling only is reverted as it was before 73201dbe.
-Hi Jarkko,
-thank you for your response!
-Can you please be more specific about that instruction? I don't really
-know what to do, sorry :/
+This patch shows easy way for accounting pages in dirty/writeback state in
+per-inode manner. This is easier that doing this in memcg in per-page manner.
+Main idea is in keeping on each inode pointer (->i_fsio) to cgroup which owns
+dirty data in that inode. It's settled by fsio_account_page_dirtied() when
+first dirty tag appears in the inode. Relying to mapping tags gives us locking
+for free, this patch doesn't add any new locks to hot paths.
 
-@Rafael: Bug still present in kernel 3.10 final :(
+Unlike to blkio this method works for all of filesystems, not just disk-backed.
+Also it's able to handle writeback, because each inode has context which can be
+used in writeback thread to account io operations.
 
-- Jonas
+This is early prototype, I have some plans about extra functionality because
+this accounting itself is mostly useless, but it can be used as basis for more
+usefull features.
 
->=20
-> Thanks.
->=20
-> /Jarkko
->=20
-> >=20
-> > - Jonas
-> >=20
-> > > Rafael
+Planned impovements:
+* Split bdi into several tiers and account them separately. For example:
+  hdd/ssd/usb/nfs. In complicated containerized environments that might be
+  different kinds of storages with different limits and billing. This is more
+  usefull that independent per-disk accounting and much easier to implement
+  because all per-tier structures are allocated before disk appearance.
+* Add some hooks for accounting actualy issued IO requests (iops).
+* Implement bandwidth throttlers for each tier individually (bps and iops).
+  This will be the most tasty feature. I already have very effective prototype.
+* Add hook into balance_dirty_pages to limit amount of dirty page for each
+  cgroup in each tier individually. This is required for accurate throttling,
+  because if we want to limit speed of writeback we also must limit amount
+  of dirty pages otherwise we have to inject enourmous delay after each sync().
+* Implement filtered writeback requests for writing only data which belongs to
+  particular fsio cgroup (or cgroups tree) to keep dirty balance in background.
+* Implement filtered 'sync', special mode for sync() which syncs only
+  filesystems which 'belong' to current fsio cgroup. Each container should sync
+  only it's own filesystems. This also can be made in terms of 'visibility' in
+  vfsmount namespaces.
 
---PEIAKu/WMn1b1Hv9
-Content-Type: application/pgp-signature
+This patch lays on top of this:
+b26008c page_writeback: put account_page_redirty() after set_page_dirty()
+80979bd page_writeback: get rid of account_size argument in cancel_dirty_page()
+c575ef6 hugetlbfs: remove cancel_dirty_page() from truncate_huge_page()
+b720923 nfs: remove redundant cancel_dirty_page() from nfs_wb_page_cancel()
+4c21e52 mm: remove redundant dirty pages check from __delete_from_page_cache()
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: cgroups@vger.kernel.org
+Cc: devel@openvz.org
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Sha Zhengju <handai.szj@gmail.com>
+---
+ block/blk-core.c              |    2 +
+ fs/Makefile                   |    2 +
+ fs/direct-io.c                |    2 +
+ fs/fsio_cgroup.c              |  137 +++++++++++++++++++++++++++++++++++++++++
+ fs/nfs/direct.c               |    2 +
+ include/linux/cgroup_subsys.h |    6 ++
+ include/linux/fs.h            |    3 +
+ include/linux/fsio_cgroup.h   |  136 +++++++++++++++++++++++++++++++++++++++++
+ init/Kconfig                  |    3 +
+ mm/page-writeback.c           |    8 ++
+ mm/readahead.c                |    2 +
+ mm/truncate.c                 |    2 +
+ 12 files changed, 304 insertions(+), 1 deletion(-)
+ create mode 100644 fs/fsio_cgroup.c
+ create mode 100644 include/linux/fsio_cgroup.h
 
-iQEcBAEBAgAGBQJR2otyAAoJEPFqEBdQ3ykkQe4H/0tNJVVU7QKUQm1FnXhe6IoD
-IOYM2obdQNuSZdwnWJunv8TjkPJruC9Bh5y7h37E6bEqc4Yv4BGs12sqFbNRi1iQ
-xCnCJLXfLid1F6CIdUGp0H+xzk9iGHQ66h/k1KuSRd+bXw15sB04i87sD31qwZg2
-ANFuSRmHVsSXEHCWWA3lCHhTfIkq58Qq5RqELM4kIWAiGnz05gSiFLlp6tXkSldR
-9pBn8CpjYnLFaBcTyXXJaWVIR1+gKtOCF/e8BzPe8XHrvkOjetA4M5mocrwwQkWE
-HTacBgnVUtnEa70vyV7WcKH0A/LyBk9dfBoMrXOMHKYcISzhBiVMvNz7cN4XBSo=
-=X3P3
------END PGP SIGNATURE-----
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 93a18d1..5f4e6c9 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -26,6 +26,7 @@
+ #include <linux/swap.h>
+ #include <linux/writeback.h>
+ #include <linux/task_io_accounting_ops.h>
++#include <linux/fsio_cgroup.h>
+ #include <linux/fault-inject.h>
+ #include <linux/list_sort.h>
+ #include <linux/delay.h>
+@@ -1866,6 +1867,7 @@ void submit_bio(int rw, struct bio *bio)
+ 			count_vm_events(PGPGOUT, count);
+ 		} else {
+ 			task_io_account_read(bio->bi_size);
++			fsio_account_read(bio->bi_size);
+ 			count_vm_events(PGPGIN, count);
+ 		}
+ 
+diff --git a/fs/Makefile b/fs/Makefile
+index 4fe6df3..d4432e7 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -52,6 +52,8 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
+ 
+ obj-y				+= quota/
+ 
++obj-$(CONFIG_FSIO_CGROUP)	+= fsio_cgroup.o
++
+ obj-$(CONFIG_PROC_FS)		+= proc/
+ obj-$(CONFIG_SYSFS)		+= sysfs/
+ obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 7ab90f5..0fe99af 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -28,6 +28,7 @@
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
+ #include <linux/task_io_accounting_ops.h>
++#include <linux/fsio_cgroup.h>
+ #include <linux/bio.h>
+ #include <linux/wait.h>
+ #include <linux/err.h>
+@@ -722,6 +723,7 @@ submit_page_section(struct dio *dio, struct dio_submit *sdio, struct page *page,
+ 		 * Read accounting is performed in submit_bio()
+ 		 */
+ 		task_io_account_write(len);
++		fsio_account_write(len);
+ 	}
+ 
+ 	/*
+diff --git a/fs/fsio_cgroup.c b/fs/fsio_cgroup.c
+new file mode 100644
+index 0000000..5d5158f
+--- /dev/null
++++ b/fs/fsio_cgroup.c
+@@ -0,0 +1,137 @@
++#include <linux/fsio_cgroup.h>
++#include "internal.h"
++
++static inline struct fsio_cgroup *cgroup_fsio(struct cgroup *cgroup)
++{
++	return container_of(cgroup_subsys_state(cgroup, fsio_subsys_id),
++			    struct fsio_cgroup, css);
++}
++
++static void fsio_free(struct fsio_cgroup *fsio)
++{
++	percpu_counter_destroy(&fsio->read_bytes);
++	percpu_counter_destroy(&fsio->write_bytes);
++	percpu_counter_destroy(&fsio->nr_dirty);
++	percpu_counter_destroy(&fsio->nr_writeback);
++	kfree(fsio);
++}
++
++static struct cgroup_subsys_state *fsio_css_alloc(struct cgroup *cgroup)
++{
++	struct fsio_cgroup *fsio;
++
++	fsio = kzalloc(sizeof(struct fsio_cgroup), GFP_KERNEL);
++	if (!fsio)
++		return ERR_PTR(-ENOMEM);
++
++	if (percpu_counter_init(&fsio->read_bytes, 0) ||
++	    percpu_counter_init(&fsio->write_bytes, 0) ||
++	    percpu_counter_init(&fsio->nr_dirty, 0) ||
++	    percpu_counter_init(&fsio->nr_writeback, 0)) {
++		fsio_free(fsio);
++		return ERR_PTR(-ENOMEM);
++	}
++
++	return &fsio->css;
++}
++
++/* switch all ->i_fsio references to the parent cgroup */
++static void fsio_switch_sb(struct super_block *sb, void *_fsio)
++{
++	struct fsio_cgroup *fsio = _fsio;
++	struct fsio_cgroup *parent = cgroup_fsio(fsio->css.cgroup->parent);
++	struct address_space *mapping;
++	struct inode *inode;
++
++	spin_lock(&inode_sb_list_lock);
++	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
++		mapping = inode->i_mapping;
++		if (mapping->i_fsio == fsio &&
++		    (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY) ||
++		     mapping_tagged(mapping, PAGECACHE_TAG_WRITEBACK))) {
++			spin_lock_irq(&mapping->tree_lock);
++			if (mapping->i_fsio == fsio)
++				mapping->i_fsio = parent;
++			spin_unlock_irq(&mapping->tree_lock);
++		}
++	}
++	spin_unlock(&inode_sb_list_lock);
++}
++
++static void fsio_css_free(struct cgroup *cgroup)
++{
++	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
++	struct fsio_cgroup *parent = cgroup_fsio(fsio->css.cgroup->parent);
++	u64 nr_dirty, nr_writeback, tmp;
++
++	nr_dirty = percpu_counter_sum_positive(&fsio->nr_dirty);
++	percpu_counter_add(&parent->nr_dirty, nr_dirty);
++
++	nr_writeback = percpu_counter_sum_positive(&fsio->nr_writeback);
++	percpu_counter_add(&parent->nr_writeback, nr_writeback);
++
++	iterate_supers(fsio_switch_sb, fsio);
++
++	tmp = percpu_counter_sum(&fsio->nr_dirty);
++	percpu_counter_add(&parent->nr_dirty, tmp - nr_dirty);
++
++	tmp = percpu_counter_sum(&fsio->nr_writeback);
++	percpu_counter_add(&parent->nr_writeback, tmp - nr_writeback);
++}
++
++static u64 fsio_get_read_bytes(struct cgroup *cgroup, struct cftype *cft)
++{
++	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
++
++	return percpu_counter_sum(&fsio->read_bytes);
++}
++
++static u64 fsio_get_write_bytes(struct cgroup *cgroup, struct cftype *cft)
++{
++	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
++
++	return percpu_counter_sum(&fsio->write_bytes);
++}
++
++static u64 fsio_get_dirty_bytes(struct cgroup *cgroup, struct cftype *cft)
++{
++	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
++
++	return percpu_counter_sum_positive(&fsio->nr_dirty) * PAGE_CACHE_SIZE;
++}
++
++static u64 fsio_get_writeback_bytes(struct cgroup *cgroup, struct cftype *cft)
++{
++	struct fsio_cgroup *fsio = cgroup_fsio(cgroup);
++
++	return percpu_counter_sum_positive(&fsio->nr_writeback) *
++		PAGE_CACHE_SIZE;
++}
++
++static struct cftype fsio_files[] = {
++	{
++		.name = "read_bytes",
++		.read_u64 = fsio_get_read_bytes,
++	},
++	{
++		.name = "write_bytes",
++		.read_u64 = fsio_get_write_bytes,
++	},
++	{
++		.name = "dirty_bytes",
++		.read_u64 = fsio_get_dirty_bytes,
++	},
++	{
++		.name = "writeback_bytes",
++		.read_u64 = fsio_get_writeback_bytes,
++	},
++	{ }	/* terminate */
++};
++
++struct cgroup_subsys fsio_subsys = {
++	.name = "fsio",
++	.subsys_id = fsio_subsys_id,
++	.css_alloc = fsio_css_alloc,
++	.css_free = fsio_css_free,
++	.base_cftypes = fsio_files,
++};
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index 0bd7a55..b8e61ee 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -46,6 +46,7 @@
+ #include <linux/kref.h>
+ #include <linux/slab.h>
+ #include <linux/task_io_accounting_ops.h>
++#include <linux/fsio_cgroup.h>
+ #include <linux/module.h>
+ 
+ #include <linux/nfs_fs.h>
+@@ -987,6 +988,7 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
+ 		goto out;
+ 
+ 	task_io_account_write(count);
++	fsio_account_write(count);
+ 
+ 	retval = nfs_direct_write(iocb, iov, nr_segs, pos, count, uio);
+ 	if (retval > 0) {
+diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+index 6e7ec64..d16df6e 100644
+--- a/include/linux/cgroup_subsys.h
++++ b/include/linux/cgroup_subsys.h
+@@ -84,3 +84,9 @@ SUBSYS(bcache)
+ #endif
+ 
+ /* */
++
++#if IS_SUBSYS_ENABLED(CONFIG_FSIO_CGROUP)
++SUBSYS(fsio)
++#endif
++
++/* */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 99be011..8156d99 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -421,6 +421,9 @@ struct address_space {
+ 	spinlock_t		private_lock;	/* for use by the address_space */
+ 	struct list_head	private_list;	/* ditto */
+ 	void			*private_data;	/* ditto */
++#ifdef CONFIG_FSIO_CGROUP
++	struct fsio_cgroup	*i_fsio;	/* protected with tree_lock */
++#endif
+ } __attribute__((aligned(sizeof(long))));
+ 	/*
+ 	 * On most architectures that alignment is already the case; but
+diff --git a/include/linux/fsio_cgroup.h b/include/linux/fsio_cgroup.h
+new file mode 100644
+index 0000000..78aa53b
+--- /dev/null
++++ b/include/linux/fsio_cgroup.h
+@@ -0,0 +1,136 @@
++#ifndef _LINUX_FSIO_CGGROUP_H
++#define _LINUX_FSIO_CGGROUP_H
++
++#include <linux/fs.h>
++#include <linux/pagemap.h>
++#include <linux/cgroup.h>
++#include <linux/workqueue.h>
++#include <linux/percpu_counter.h>
++
++struct fsio_cgroup {
++	struct cgroup_subsys_state css;
++	struct percpu_counter read_bytes;
++	struct percpu_counter write_bytes;
++	struct percpu_counter nr_dirty;
++	struct percpu_counter nr_writeback;
++};
++
++#ifdef CONFIG_FSIO_CGROUP
++
++static inline struct fsio_cgroup *task_fsio_cgroup(struct task_struct *task)
++{
++	return container_of(task_subsys_state(task, fsio_subsys_id),
++			    struct fsio_cgroup, css);
++}
++
++/*
++ * This accounts all reads, both cached and direct-io.
++ */
++static inline void fsio_account_read(unsigned long bytes)
++{
++	struct task_struct *task = current;
++	struct fsio_cgroup *fsio;
++
++	rcu_read_lock();
++	fsio = task_fsio_cgroup(task);
++	__percpu_counter_add(&fsio->read_bytes, bytes,
++			PAGE_CACHE_SIZE * percpu_counter_batch);
++	rcu_read_unlock();
++}
++
++/*
++ * This is used for accounting  direct-io writes.
++ */
++static inline void fsio_account_write(unsigned long bytes)
++{
++	struct task_struct *task = current;
++	struct fsio_cgroup *fsio;
++
++	rcu_read_lock();
++	fsio = task_fsio_cgroup(task);
++	__percpu_counter_add(&fsio->write_bytes, bytes,
++			PAGE_CACHE_SIZE * percpu_counter_batch);
++	rcu_read_unlock();
++}
++
++/*
++ * This called under mapping->tree_lock before setting radix-tree tag,
++ * page which caused this call either locked (write) or mapped (unmap).
++ *
++ * If this is first dirty page in inode and there is no writeback then current
++ * fsio cgroup becomes owner of this inode. Following radix_tree_tag_set()
++ * will pin this pointer till the end of writeback or truncate. Otherwise
++ * mapping->i_fsio already valid and points to cgroup who owns this inode.
++ */
++static inline void fsio_account_page_dirtied(struct address_space *mapping)
++{
++	struct fsio_cgroup *fsio = mapping->i_fsio;
++
++	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY) &&
++	    !mapping_tagged(mapping, PAGECACHE_TAG_WRITEBACK)) {
++		rcu_read_lock();
++		fsio = task_fsio_cgroup(current);
++		mapping->i_fsio = fsio;
++		rcu_read_unlock();
++	}
++
++	percpu_counter_inc(&fsio->nr_dirty);
++}
++
++/*
++ * This called after clearing dirty bit. Page here locked and unmapped,
++ * thus dirtying process is complete and mapping->i_fsio is valid.
++ * This state is stable because at this point page still in mapping and tagged.
++ * We cannot reset mapping->i_mapping here even that was last dirty page, becase
++ * this hook is called without tree_lock before removing page from page cache.
++ */
++static inline void fsio_cancel_dirty_page(struct address_space *mapping)
++{
++	percpu_counter_dec(&mapping->i_fsio->nr_dirty);
++}
++
++/*
++ * This called after redirtying page, thus nr_dirty will not fall to zero.
++ * No tree_lock, page is locked and still tagged in mapping.
++ */
++static inline void fsio_account_page_redirty(struct address_space *mapping)
++{
++	percpu_counter_dec(&mapping->i_fsio->nr_dirty);
++}
++
++/*
++ * This switches page accounging from dirty to writeback.
++ */
++static inline void fsio_set_page_writeback(struct address_space *mapping)
++{
++	struct fsio_cgroup *fsio = mapping->i_fsio;
++
++	percpu_counter_inc(&fsio->nr_writeback);
++	percpu_counter_dec(&fsio->nr_dirty);
++}
++
++/*
++ * Writeback is done, mapping->i_fsio pointer becomes invalid after that.
++ */
++static inline void fsio_clear_page_writeback(struct address_space *mapping)
++{
++	struct fsio_cgroup *fsio = mapping->i_fsio;
++
++	__percpu_counter_add(&fsio->write_bytes, PAGE_CACHE_SIZE,
++			PAGE_CACHE_SIZE * percpu_counter_batch);
++	percpu_counter_dec(&fsio->nr_writeback);
++}
++
++#else /* CONFIG_FSIO_CGROUP */
++
++static inline void fsio_account_read(unsigned long bytes) {}
++static inline void fsio_account_write(unsigned long bytes) {}
++static inline void fsio_account_page_dirtied(struct address_space *mapping) {}
++static inline void fsio_cancel_dirty_page(struct address_space *mapping) {}
++static inline void fsio_account_page_redirty(struct address_space *mapping) {}
++static inline void fsio_set_page_writeback(struct address_space *mapping) {}
++static inline void fsio_clear_page_writeback(struct address_space *mapping) {}
++
++#endif /* CONFIG_FSIO_CGROUP */
++
++#endif /* _LINUX_FSIO_CGGROUP_H */
+diff --git a/init/Kconfig b/init/Kconfig
+index ea1be00..689b29a 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1050,6 +1050,9 @@ config DEBUG_BLK_CGROUP
+ 	Enable some debugging help. Currently it exports additional stat
+ 	files in a cgroup which can be useful for debugging.
+ 
++config FSIO_CGROUP
++	bool "Filesystem IO controller"
++
+ endif # CGROUPS
+ 
+ config CHECKPOINT_RESTORE
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index a599f38..bc39a36 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/backing-dev.h>
+ #include <linux/task_io_accounting_ops.h>
++#include <linux/fsio_cgroup.h>
+ #include <linux/blkdev.h>
+ #include <linux/mpage.h>
+ #include <linux/rmap.h>
+@@ -1994,6 +1995,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+ 		__inc_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
+ 		task_io_account_write(PAGE_CACHE_SIZE);
++		fsio_account_page_dirtied(mapping);
+ 		current->nr_dirtied++;
+ 		this_cpu_inc(bdp_ratelimits);
+ 	}
+@@ -2071,6 +2073,7 @@ void account_page_redirty(struct page *page)
+ 		current->nr_dirtied--;
+ 		dec_zone_page_state(page, NR_DIRTIED);
+ 		dec_bdi_stat(mapping->backing_dev_info, BDI_DIRTIED);
++		fsio_account_page_redirty(mapping);
+ 	}
+ }
+ EXPORT_SYMBOL(account_page_redirty);
+@@ -2242,6 +2245,7 @@ int test_clear_page_writeback(struct page *page)
+ 			if (bdi_cap_account_writeback(bdi)) {
+ 				__dec_bdi_stat(bdi, BDI_WRITEBACK);
+ 				__bdi_writeout_inc(bdi);
++				fsio_clear_page_writeback(mapping);
+ 			}
+ 		}
+ 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+@@ -2270,8 +2274,10 @@ int test_set_page_writeback(struct page *page)
+ 			radix_tree_tag_set(&mapping->page_tree,
+ 						page_index(page),
+ 						PAGECACHE_TAG_WRITEBACK);
+-			if (bdi_cap_account_writeback(bdi))
++			if (bdi_cap_account_writeback(bdi)) {
+ 				__inc_bdi_stat(bdi, BDI_WRITEBACK);
++				fsio_set_page_writeback(mapping);
++			}
+ 		}
+ 		if (!PageDirty(page))
+ 			radix_tree_tag_clear(&mapping->page_tree,
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 829a77c..530599c 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -15,6 +15,7 @@
+ #include <linux/blkdev.h>
+ #include <linux/backing-dev.h>
+ #include <linux/task_io_accounting_ops.h>
++#include <linux/fsio_cgroup.h>
+ #include <linux/pagevec.h>
+ #include <linux/pagemap.h>
+ #include <linux/syscalls.h>
+@@ -102,6 +103,7 @@ int read_cache_pages(struct address_space *mapping, struct list_head *pages,
+ 			break;
+ 		}
+ 		task_io_account_read(PAGE_CACHE_SIZE);
++		fsio_account_read(PAGE_CACHE_SIZE);
+ 	}
+ 	return ret;
+ }
+diff --git a/mm/truncate.c b/mm/truncate.c
+index e212252..e84668e 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -17,6 +17,7 @@
+ #include <linux/highmem.h>
+ #include <linux/pagevec.h>
+ #include <linux/task_io_accounting_ops.h>
++#include <linux/fsio_cgroup.h>
+ #include <linux/buffer_head.h>	/* grr. try_to_release_page,
+ 				   do_invalidatepage */
+ #include <linux/cleancache.h>
+@@ -75,6 +76,7 @@ void cancel_dirty_page(struct page *page)
+ 			dec_bdi_stat(mapping->backing_dev_info,
+ 					BDI_RECLAIMABLE);
+ 			task_io_account_cancelled_write(PAGE_CACHE_SIZE);
++			fsio_cancel_dirty_page(mapping);
+ 		}
+ 	}
+ }
 
---PEIAKu/WMn1b1Hv9--
