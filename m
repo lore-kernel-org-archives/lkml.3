@@ -1,37 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761Ab3GHPrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 11:47:05 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:39248 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab3GHPrD convert rfc822-to-8bit (ORCPT
+	id S1751998Ab3GHPs1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 11:48:27 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:60916 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab3GHPsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 11:47:03 -0400
+	Mon, 8 Jul 2013 11:48:25 -0400
+Message-ID: <51DADF3E.1000802@monstr.eu>
+Date: Mon, 08 Jul 2013 17:48:14 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20130708153716.GF29556@pengutronix.de>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
-	<20130708153716.GF29556@pengutronix.de>
-Date: Mon, 8 Jul 2013 21:17:01 +0530
-Message-ID: <CAKohpon+dFBDUhfbJcBBWyg4mAfQ1nU_wSd6OMvdTH6SzkUjNg@mail.gmail.com>
-Subject: Re: [PATCH V5 0/5] Queue work on power efficient wq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: tj@kernel.org, davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
-        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
-        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Livi@jasper.es
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Mark Brown <broonie@kernel.org>
+CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        spi-devel-general@lists.sourceforge.net
+Subject: Re: [PATCH v1 3/4] spi/xilinx: Simplify irq allocation
+References: <ff70173bee5f9223ffea2b92b903b4e46ef8b323.1373290150.git.michal.simek@xilinx.com> <b4458c93742bd9dfe69e3553cf377a703c945f81.1373290150.git.michal.simek@xilinx.com> <20130708144930.GG27646@sirena.org.uk>
+In-Reply-To: <20130708144930.GG27646@sirena.org.uk>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2TQIMIDSORAPMILXNPEAQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 July 2013 21:07, Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> This patch set hit my tree now. I wonder if it makes sense to make
-> WQ_POWER_EFFICIENT_DEFAULT depend on SMP. (Oh wait, big.LITTLE isn't
-> SMP, so probably there is a better symbol to depend on?)
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2TQIMIDSORAPMILXNPEAQ
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Well, big LITTLE still runs an SMP kernel :) and so has this flag set.
-You can make it dependent on that if required.
+On 07/08/2013 04:49 PM, Mark Brown wrote:
+> On Mon, Jul 08, 2013 at 03:29:16PM +0200, Michal Simek wrote:
+>> Use devm_request_irq() for irq allocation which
+>> simplify driver code.
+>=20
+>> @@ -495,7 +493,6 @@ static int xilinx_spi_remove(struct platform_devic=
+e *pdev)
+>>  	struct xilinx_spi *xspi =3D platform_get_drvdata(pdev);
+>>
+>>  	spi_bitbang_stop(&xspi->bitbang);
+>> -	free_irq(xspi->irq, xspi);
+>>
+>>  	spi_master_put(xspi->bitbang.master);
+>=20
+> Is it definitely safe to leave the IRQ hanging around after the master
+> has been freed - there's no possibility of a late error interrupt or
+> something?
+
+I think it is more generic question if this race condition is fine
+for all drivers which are using devres groups.
+
+I have just looked at it and devres_release_all() is called where
+driver is unload and irq are disabled there.
+
+It means that all handlers should be unregistered and if IRQ happen
+after it then it should be handled by Linux kernel if driver
+doesn't disable it.
+
+btw: What's the proper way for spi driver unregistration?
+
+spi_unregistered_master() (which also free private structure)
+and
+spi_master_put()?
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2TQIMIDSORAPMILXNPEAQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHa3z4ACgkQykllyylKDCF+pACcCPp6bPsiNWyqP7rrLR81vTzX
++oYAoI9Mk4V8eznOWuktCXR3NC4og/ec
+=RMv3
+-----END PGP SIGNATURE-----
+
+------enig2TQIMIDSORAPMILXNPEAQ--
