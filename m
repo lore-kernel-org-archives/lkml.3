@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab3GHQrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:47:35 -0400
-Received: from mail-ye0-f170.google.com ([209.85.213.170]:57642 "EHLO
-	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751488Ab3GHQre (ORCPT
+	id S1752682Ab3GHQsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:48:12 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:58513 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab3GHQsJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:47:34 -0400
-Date: Mon, 8 Jul 2013 13:47:26 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Greg Price <price@mit.edu>, linux-kernel@vger.kernel.org,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH v2] perf report/top: Add option to collapse undesired
- parts of call graph
-Message-ID: <20130708164726.GB3028@ghostprotocols.net>
-References: <20130701142841.GE22203@biohazard-cafe.mit.edu>
- <20130707131340.GA23433@krava.brq.redhat.com>
- <20130708115746.GO22203@biohazard-cafe.mit.edu>
- <20130708162452.GB2957@krava.brq.redhat.com>
+	Mon, 8 Jul 2013 12:48:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130708162452.GB2957@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130708155747.GG29556@pengutronix.de>
+References: <cover.1366803121.git.viresh.kumar@linaro.org>
+	<20130708153716.GF29556@pengutronix.de>
+	<CAKohpon+dFBDUhfbJcBBWyg4mAfQ1nU_wSd6OMvdTH6SzkUjNg@mail.gmail.com>
+	<20130708155747.GG29556@pengutronix.de>
+Date: Mon, 8 Jul 2013 22:18:08 +0530
+Message-ID: <CAKohpokT3M5TNhzGxCwHZoFU69VkFutQ-KBCf5Xh5Vfwb+trzg@mail.gmail.com>
+Subject: Re: [PATCH V5 0/5] Queue work on power efficient wq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: tj@kernel.org, davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
+        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
+        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
+        Steve.Bannister@arm.com, Livi@jasper.es
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 08, 2013 at 06:24:52PM +0200, Jiri Olsa escreveu:
-> On Mon, Jul 08, 2013 at 07:57:46AM -0400, Greg Price wrote:
-> > For example, in an application with an expensive function
-> > implemented with deeply nested recursive calls, the default
-> > call-graph presentation is dominated by the different callchains
-> > within that function.  By ignoring these callees, we can collect the
-> > callchains leading into the function and compactly identify what to
-> > blame for expensive calls.
- 
-> change looks ok, but I'm not that confident in this part, so at least:
- 
-> Tested-by: Jiri Olsa <jolsa@redhat.com>
+On 8 July 2013 21:27, Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> On Mon, Jul 08, 2013 at 09:17:01PM +0530, Viresh Kumar wrote:
 
-Thanks, applied.
+>> Well, big LITTLE still runs an SMP kernel :) and so has this flag set.
+> The 'S' is justified because cpu0 and cpu1 are of the same type? Are
+> there b.L systems that have only one big and one LITTLE cpu? Do these
+> use SMP, too?
 
-- Arnaldo
+Following definition of SMP says:
+http://en.wikipedia.org/wiki/Symmetric_Multiprocessor
+
+A system is SMP when:
+- It has same type of cores
+- controlled by a single instance of OS.
+
+In big LITTLE first one is obviously not completely true as you pointed out.
+But second one is and so I would say its an SMP system :)
+
+Don't know how it should be called though.
+
+>> You can make it dependent on that if required.
+> Well, it's not required. It's just that the corresponding question in
+> make oldconfig isn't really an enrichment for a kernel targeting an
+> Cortex M3 :-)
+
+Just to make it clear enough, you are saying it doesn't make any
+sense to enable it for M3? But because it is disabled by default,
+the problem is not seen?
+
+Why? Can't we have two M3's on a SoC and run an SMP kernel over
+it?
+
+--
+viresh
