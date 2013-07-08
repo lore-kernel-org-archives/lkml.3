@@ -1,2841 +1,854 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab3GHOML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 10:12:11 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:61649 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab3GHOMH (ORCPT
+	id S1752381Ab3GHOOC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 10:14:02 -0400
+Received: from m59-178.qiye.163.com ([123.58.178.59]:57022 "EHLO
+	m59-178.qiye.163.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283Ab3GHOOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 10:12:07 -0400
-Message-ID: <1373292716.32554.5.camel@maxim-laptop>
-Subject: Re: [merged] memstick-add-support-for-legacy-memorysticks.patch
- removed from -mm tree
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: akpm@linux-foundation.org, axboe@kernel.dk, oakad@yahoo.com, tj@kernel.org,
-        mm-commits@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Jul 2013 17:11:56 +0300
-In-Reply-To: <239047.1373249476@turing-police.cc.vt.edu>
-References: <20121001192920.0D7765C0050@hpza9.eem.corp.google.com>
-	 <1373244102.18009.6.camel@maxim-laptop>
-	 <239047.1373249476@turing-police.cc.vt.edu>
-Content-Type: multipart/mixed; boundary="=-9EGkuEBc07v3H+cFobdJ"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Mime-Version: 1.0
+	Mon, 8 Jul 2013 10:14:00 -0400
+From: Li Wang <liwang@ubuntukylin.com>
+To: ceph-devel@vger.kernel.org
+Cc: Sage Weil <sage@inktank.com>, linux-kernel@vger.kernel.org,
+        Li Wang <liwang@ubuntukylin.com>,
+        Yunchuan Wen <yunchuanwen@ubuntukylin.com>
+Subject: [RFC] Ceph: Kernel client part of inline data support
+Date: Mon,  8 Jul 2013 22:13:51 +0800
+Message-Id: <1373292831-25020-1-git-send-email-liwang@ubuntukylin.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1372862768-8194-1-git-send-email-liwang@ubuntukylin.com>
+References: <1372862768-8194-1-git-send-email-liwang@ubuntukylin.com>
+X-HM-Spam-Status: e1koWUFPN1dZCBgUCR5ZQUpOVUNJQkJCQkJJSExLTUtOTldZCQ4XHghZQVkoKz0kKzooKCQyNSQz
+	Pjo*PilBS1VLQDYjJCI#KCQyNSQzPjo*PilBS1VLQCsvKSQiPigkMjUkMz46Pz4pQUtVS0A4NC41
+	LykiJDg1QUtVS0ApPjwyNDUkOigyOkFLVUtAKyk0LTI1OD4kMy41OjVBS1VLQD8iNTo2MjgkMisk
+	NTQkMjUkMz46Pz4pQUtVS0ApPjo3JDIrJDI1JCk5NyQyNSQzPjo*PilBSklVS0A2LjcvMiQpOCsv
+	JD8yPT0#KT41LyQyNSQzPjo*PilBSVVLQDIrJC80PzoiJDg1LyRLJEpLS0FLVUtAMiskSiQzNC4p
+	JDg1LyRLJEpLS0FLVUtAMiskSiQ2MjUuLz4kODUvJEskSktBS1VLQDIrJEhLJDYyNS4vPiQ4NS8k
+	SyROS0FLVUtAMiskTiQ2MjUuLz4kODUvJEskSktBS1VLQCguOSQ#QUpVTk5APTUkKC45JD41LDQp
+	PygkMzcxJEpLS0lLSkFLVUlDWQY+
+X-HM-Sender-Digest: e1kSHx4VD1lBWUc6MQg6Cjo4LDo4EDorKjhIOj4qOkMwCjFVSlVKSExISUJJQ0hOTElLVTMWGhIX
+	VRcSDBoVHDsOGQ4VDw4QAhcSFVUYFBZFWVdZDB4ZWUEdGhcIHgY+
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch implements the kernel client part of inline data support,
+the algorithm is described below.
 
---=-9EGkuEBc07v3H+cFobdJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+This is a preliminarly implementation based on Linux kernel 3.8.3.
 
-On Sun, 2013-07-07 at 22:11 -0400, Valdis.Kletnieks@vt.edu wrote: 
-> On Mon, 08 Jul 2013 03:41:42 +0300, Maxim Levitsky said:
-> 
-> > +/* Debug test to validate free block counts */
-> > +#ifdef DEBUG
-> > +static int msb_validate_used_block_bitmap(struct msb_data *msb)
-> > +{
-> 
-> Is there a reason this should be inside a #ifdef DEBUG with no
-> easy way to select DEBUG?  Maybe CONFIG_MS_BLOCK_DEBUG similar to
-> the way other subsystems allow configuring additional debug code?
+State:
+CEPH_INLINE_MIGRATION: The file size has exceeded the threshold of inline, but MDS has the newest inline data
+CEPH_INLINE_DISABLED: The file is not inlined, and MDS does not have the inline data
 
-Unless there is a bug in the driver, the code shouldn't really be
-needed.
-I have a module param 'debug' and I don't mind hooking this code to it.
+Client:
+Open, lookup, getattr, handle_cap_grant etc,
+  MDS send inline data together with inode metadata to client
 
-But I don't mind hooking this code to 'debug' module param I have.
-I updated this, and fixed deprecated usage of idr_pre_get.
+Read side:
 
-Updated version attached.
+if (hold CEPH_CAP_FILE_CACHE capability) // ceph_readpage()/ceph_readpages()
+  if (state < CEPH_INLINE_MIGRATION)
+    copy inline data from inode buffer into page cache 
+  else 
+    if (state == CEPH_INLINE_MIGRATION)
+      read the data from the OSD
+      replace the head of the first page with the inline data from inode buffer
+else // ceph_sync_read()
+  if (state != CEPH_INLINE_DISABLED)
+    send GETATTR message to MDS to fetch inline data into inode buffer
+    copy the inline data from inode buffer to user buffer directly
+    if (state == CEPH_INLINE_MIGRATION and pos+len>CEPH_INLINE_SIZE)
+      continue to read the remaning data from OSD to user buffer
 
+Write side:
 
--- 
-Best regards,
-        Maxim Levitsky
+if (hold CEPH_CAP_FILE_CACHE capability) 
+  if (state < CEPH_INLINE_MIGRATION) // ceph_write_end()
+    if (pos < CEPH_INLINE_SIZE)
+      if (pos + len > CEPH_INLINE_SIZE)
+        let state = CEPH_INLINE_DISABLED
+    else
+      let state = CEPH_INLINE_MIGRATION
+  else if (state == CEPH_INLINE_MIGRATION)
+    if (pos < CEPH_INLINE_SIZE)
+      let state = CEPH_INLINE_DISABLED;
+ 
+  if (state < CEPH_INLINE_MIGRATION) // ceph_writepage/ceph_writepages_start()
+    copy data from page cache into inode buffer
+    mark cap and inode dirty to send inode buffer to MDS
+  else
+    do the normal write to OSD
+else // ceph_sync_write()
+  if (state != CEPH_INLINE_DISABLED) 
+    if (pos < CEPH_INLINE_SIZE)
+      copy the written data fit into [pos, min(pos+len, CEPH_INLINE_SIZE)) from user buffer directly to inode buffer
+      let dirty_data_only=true, record the write pos as well as length // leave MDS to merge
+      mark cap and inode dirty to send (maybe part of) written data to MDS
+    if (pos + len >= CEPH_INLINE_SIZE)
+      let state = CEPH_INLINE_MIGRATION
+      write the remaining data to OSD
+  else
+    do the normal write to OSD
 
-
-
---=-9EGkuEBc07v3H+cFobdJ
-Content-Type: text/x-patch;
-	name="0001-memstick-add-support-for-legacy-memorysticks.patch";
-	charset="UTF-8"
-Content-Description: 
-Content-Disposition: inline; filename="0001-memstick-add-support-for-legacy-memorysticks.patch"
-Content-Transfer-Encoding: 7bit
-
->From 9974616d623266281aba5292c7b6d81710a435f6 Mon Sep 17 00:00:00 2001
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-Date: Fri, 5 Apr 2013 16:37:31 +0300
-Subject: [PATCH] memstick: add support for legacy memorysticks
-
-Based partially on MS standard spec quotes from Alex Dubov.
-
-As any code that works with user data this driver isn't
-recommended to use to write cards that contain valuable data.
-
-It tries its best though to avoid data corruption
-and possible damage to the card.
-
-Tested on MS DUO 64 MB card on Ricoh R592 card reader.
-
-Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+Signed-off-by: Li Wang <liwang@ubuntukylin.com>
+Signed-off-by: Yunchuan Wen <yunchuanwen@ubuntukylin.com>
 ---
- MAINTAINERS                      |    5 +
- drivers/memstick/core/Kconfig    |   12 +
- drivers/memstick/core/Makefile   |    2 +-
- drivers/memstick/core/ms_block.c | 2390 ++++++++++++++++++++++++++++++++++++++
- drivers/memstick/core/ms_block.h |  290 +++++
- 5 files changed, 2698 insertions(+), 1 deletion(-)
- create mode 100644 drivers/memstick/core/ms_block.c
- create mode 100644 drivers/memstick/core/ms_block.h
+ fs/ceph/addr.c               |  186 ++++++++++++++++++++++++++++++++++--------
+ fs/ceph/caps.c               |   61 ++++++++++++--
+ fs/ceph/file.c               |   90 +++++++++++++++++++-
+ fs/ceph/inode.c              |   19 ++++-
+ fs/ceph/mds_client.c         |   14 ++--
+ fs/ceph/mds_client.h         |    2 +
+ fs/ceph/super.h              |   14 ++++
+ include/linux/ceph/ceph_fs.h |    4 +
+ net/ceph/messenger.c         |    2 +-
+ 9 files changed, 342 insertions(+), 50 deletions(-)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 836a618..5479d2a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7359,6 +7359,11 @@ W:	http://tifmxx.berlios.de/
- S:	Maintained
- F:	drivers/memstick/host/tifm_ms.c
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index 064d1a6..033396c 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -204,6 +204,18 @@ static int readpage_nounlock(struct file *filp, struct page *page)
  
-+SONY MEMORYSTICK STANDARD SUPPORT
-+M:	Maxim Levitsky <maximlevitsky@gmail.com>
-+S:	Maintained
-+F:	drivers/memstick/core/ms_block.*
+ 	dout("readpage inode %p file %p page %p index %lu\n",
+ 	     inode, filp, page, page->index);
 +
- SOUND
- M:	Jaroslav Kysela <perex@perex.cz>
- M:	Takashi Iwai <tiwai@suse.de>
-diff --git a/drivers/memstick/core/Kconfig b/drivers/memstick/core/Kconfig
-index 95f1814..1d38949 100644
---- a/drivers/memstick/core/Kconfig
-+++ b/drivers/memstick/core/Kconfig
-@@ -24,3 +24,15 @@ config MSPRO_BLOCK
- 	  support. This provides a block device driver, which you can use
- 	  to mount the filesystem. Almost everyone wishing MemoryStick
- 	  support should say Y or M here.
++	if (ci->i_inline_data.version < CEPH_INLINE_MIGRATION && ci->i_inline_data.length) {
++		void *virt = kmap(page);
++		memcpy(virt, ci->i_inline_data.data, ci->i_inline_data.length);
++		kunmap(page);
++		zero_user_segment(page, ci->i_inline_data.length, PAGE_CACHE_SIZE);
++		flush_dcache_page(page);
++		SetPageUptodate(page);
++		err = 0;
++		goto out;
++	}
++	
+ 	err = ceph_osdc_readpages(osdc, ceph_vino(inode), &ci->i_layout,
+ 				  (u64) page_offset(page), &len,
+ 				  ci->i_truncate_seq, ci->i_truncate_size,
+@@ -217,6 +229,13 @@ static int readpage_nounlock(struct file *filp, struct page *page)
+ 		/* zero fill remainder of page */
+ 		zero_user_segment(page, err, PAGE_CACHE_SIZE);
+ 	}
 +
-+config MS_BLOCK
-+	tristate "MemoryStick Standard device driver"
-+	depends on BLOCK
-+	help
-+	  Say Y here to enable the MemoryStick Standard device driver
-+	  support. This provides a block device driver, which you can use
-+	  to mount the filesystem.
-+	  This driver works with old (bulky) MemoryStick and MemoryStick Duo
-+	  but not PRO. Say Y if you have such card.
-+	  Driver is new and not yet well tested, thus it can damage your card
-+	  (even permanently)
-diff --git a/drivers/memstick/core/Makefile b/drivers/memstick/core/Makefile
-index ecd0299..0d7f90c 100644
---- a/drivers/memstick/core/Makefile
-+++ b/drivers/memstick/core/Makefile
-@@ -3,5 +3,5 @@
- #
++	if (ci->i_inline_data.version == CEPH_INLINE_MIGRATION && ci->i_inline_data.length) {
++		void *virt = kmap(page);
++		memcpy(virt, ci->i_inline_data.data, ci->i_inline_data.length);
++		kunmap(page);
++		flush_dcache_page(page);
++	}
+ 	SetPageUptodate(page);
  
- obj-$(CONFIG_MEMSTICK)		+= memstick.o
+ out:
+@@ -252,6 +271,15 @@ static void finish_read(struct ceph_osd_request *req, struct ceph_msg *msg)
+ 	for (i = 0; i < req->r_num_pages; i++, bytes -= PAGE_CACHE_SIZE) {
+ 		struct page *page = req->r_pages[i];
+ 
++		struct ceph_inode_info *ci = ceph_inode(inode);
++		if (ci->i_inline_data.version == CEPH_INLINE_MIGRATION && page->index == 0) {
++			if (ci->i_inline_data.length) {
++				void *virt = kmap(page);
++				memcpy(virt, ci->i_inline_data.data, ci->i_inline_data.length);
++				kunmap(page);
++			}
++		}
++
+ 		if (bytes < (int)PAGE_CACHE_SIZE) {
+ 			/* zero (remainder of) page */
+ 			int s = bytes < 0 ? 0 : bytes;
+@@ -372,9 +400,28 @@ static int ceph_readpages(struct file *file, struct address_space *mapping,
+ {
+ 	struct inode *inode = file->f_dentry->d_inode;
+ 	struct ceph_fs_client *fsc = ceph_inode_to_client(inode);
++	struct ceph_inode_info *ci = ceph_inode(inode);
+ 	int rc = 0;
+ 	int max = 0;
+ 
++	if (ci->i_inline_data.version < CEPH_INLINE_MIGRATION) {
++		struct page *page = list_entry(page_list->prev, struct page, lru);
++		if (ci->i_inline_data.length) {
++			void *virt = kmap(page);
++			memcpy(virt, ci->i_inline_data.data, ci->i_inline_data.length);
++			kfree(tem);
++			kunmap(page);
++		}
++		zero_user_segment(page, ci->i_inline_data.length, PAGE_CACHE_SIZE);
++		flush_dcache_page(page);
++		SetPageUptodate(page);
++		list_del(&page->lru);		
++		add_to_page_cache_lru(page, &inode->i_data, page->index, GFP_NOFS);
++		unlock_page(page);
++		rc = 1;
++		goto out;
++	}
++
+ 	if (fsc->mount_options->rsize >= PAGE_CACHE_SIZE)
+ 		max = (fsc->mount_options->rsize + PAGE_CACHE_SIZE - 1)
+ 			>> PAGE_SHIFT;
+@@ -488,12 +535,31 @@ static int writepage_nounlock(struct page *page, struct writeback_control *wbc)
+ 		set_bdi_congested(&fsc->backing_dev_info, BLK_RW_ASYNC);
+ 
+ 	set_page_writeback(page);
++	
++	if (ci->i_inline_data.version < CEPH_INLINE_MIGRATION) {
++			if (ci->i_inline_data.data == NULL)
++				ci->i_inline_data.data = kmalloc(CEPH_INLINE_SIZE, GFP_NOFS);
++			ci->i_inline_data.length = inode->i_size < CEPH_INLINE_SIZE?inode->i_size:CEPH_INLINE_SIZE;
++			char *virt = kmap(page);
++			memcpy(ci->i_inline_data.data, virt, ci->i_inline_data.length);
++			kunmap(page);
++			spin_lock(&ci->i_ceph_lock);
++			int dirty = __ceph_mark_dirty_caps(ci, CEPH_CAP_FILE_WR | CEPH_CAP_FILE_BUFFER);
++			spin_unlock(&ci->i_ceph_lock);
++			if (dirty)
++				__mark_inode_dirty(inode, dirty);
++			goto written;
++	}
++	
+ 	err = ceph_osdc_writepages(osdc, ceph_vino(inode),
+ 				   &ci->i_layout, snapc,
+ 				   page_off, len,
+ 				   ci->i_truncate_seq, ci->i_truncate_size,
+ 				   &inode->i_mtime,
+ 				   &page, 1, 0, 0, true);
++	
++	written:
++	
+ 	if (err < 0) {
+ 		dout("writepage setting page/mapping error %d %p\n", err, page);
+ 		SetPageError(page);
+@@ -669,8 +735,9 @@ static int ceph_writepages_start(struct address_space *mapping,
+ 	unsigned wsize = 1 << inode->i_blkbits;
+ 	struct ceph_osd_request *req = NULL;
+ 	int do_sync;
+-	u64 snap_size = 0;
 -
-+obj-$(CONFIG_MS_BLOCK)		+= ms_block.o
- obj-$(CONFIG_MSPRO_BLOCK)	+= mspro_block.o
-diff --git a/drivers/memstick/core/ms_block.c b/drivers/memstick/core/ms_block.c
-new file mode 100644
-index 0000000..5de7bb2
---- /dev/null
-+++ b/drivers/memstick/core/ms_block.c
-@@ -0,0 +1,2390 @@
-+/*
-+ *  ms_block.c - Sony MemoryStick (legacy) storage support
-+
-+ *  Copyright (C) 2012 Maxim Levitsky <maximlevitsky@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Minor portions of the driver were copied from mspro_block.c which is
-+ * Copyright (C) 2007 Alex Dubov <oakad@yahoo.com>
-+ *
-+ */
-+#define DRIVER_NAME "ms_block"
-+#define pr_fmt(fmt) DRIVER_NAME ": " fmt
-+
-+#include <linux/module.h>
-+#include <linux/blkdev.h>
-+#include <linux/memstick.h>
-+#include <linux/idr.h>
-+#include <linux/hdreg.h>
-+#include <linux/delay.h>
-+#include <linux/slab.h>
-+#include <linux/random.h>
-+#include <linux/bitmap.h>
-+#include <linux/scatterlist.h>
-+#include <linux/jiffies.h>
-+#include <linux/workqueue.h>
-+#include <linux/mutex.h>
-+#include "ms_block.h"
-+
-+static int debug;
-+static int cache_flush_timeout = 1000;
-+static bool verify_writes;
-+
-+/*
-+ * Copies section of 'sg_from' starting from offset 'offset' and with length
-+ * 'len' To another scatterlist of to_nents enties
-+ */
-+static size_t msb_sg_copy(struct scatterlist *sg_from, struct scatterlist *sg_to,
-+					int to_nents, size_t offset, size_t len)
-+{
-+	size_t copied = 0;
-+
-+	while (offset > 0) {
-+		if (offset >= sg_from->length) {
-+			if (sg_is_last(sg_from))
-+				return 0;
-+
-+			offset -= sg_from->length;
-+			sg_from = sg_next(sg_from);
-+			continue;
-+		}
-+
-+		copied = min(len, sg_from->length - offset);
-+		sg_set_page(sg_to, sg_page(sg_from),
-+			copied, sg_from->offset + offset);
-+
-+		len -= copied;
-+		offset = 0;
-+
-+		if (sg_is_last(sg_from) || !len)
-+			goto out;
-+
-+		sg_to = sg_next(sg_to);
-+		to_nents--;
-+		sg_from = sg_next(sg_from);
-+	}
-+
-+	while (len > sg_from->length && to_nents--) {
-+		len -= sg_from->length;
-+		copied += sg_from->length;
-+
-+		sg_set_page(sg_to, sg_page(sg_from),
-+				sg_from->length, sg_from->offset);
-+
-+		if (sg_is_last(sg_from) || !len)
-+			goto out;
-+
-+		sg_from = sg_next(sg_from);
-+		sg_to = sg_next(sg_to);
-+	}
-+
-+	if (len && to_nents) {
-+		sg_set_page(sg_to, sg_page(sg_from), len, sg_from->offset);
-+		copied += len;
-+	}
-+out:
-+	sg_mark_end(sg_to);
-+	return copied;
-+}
-+
-+/*
-+ * Compares section of 'sg' starting from offset 'offset' and with length 'len'
-+ * to linear buffer of length 'len' at address 'buffer'
-+ * Returns 0 if equal and  -1 otherwice
-+ */
-+static int msb_sg_compare_to_buffer(struct scatterlist *sg,
-+					size_t offset, u8 *buffer, size_t len)
-+{
-+	int retval = 0, cmplen;
-+	struct sg_mapping_iter miter;
-+
-+	sg_miter_start(&miter, sg, sg_nents(sg),
-+					SG_MITER_ATOMIC | SG_MITER_FROM_SG);
-+
-+	while (sg_miter_next(&miter) && len > 0) {
-+		if (offset >= miter.length) {
-+			offset -= miter.length;
-+			continue;
-+		}
-+
-+		cmplen = min(miter.length - offset, len);
-+		retval = memcmp(miter.addr + offset, buffer, cmplen) ? -1 : 0;
-+		if (retval)
-+			break;
-+
-+		buffer += cmplen;
-+		len -= cmplen;
-+		offset = 0;
-+	}
-+
-+	if (!retval && len)
-+		retval = -1;
-+
-+	sg_miter_stop(&miter);
-+	return retval;
-+}
-+
-+
-+/* Get zone at which block with logical address 'lba' lives
-+ * Flash is broken into zones.
-+ * Each zone consists of 512 eraseblocks, out of which in first
-+ * zone 494 are used and 496 are for all following zones.
-+ * Therefore zone #0 hosts blocks 0-493, zone #1 blocks 494-988, etc...
-+*/
-+static int msb_get_zone_from_lba(int lba)
-+{
-+	if (lba < 494)
-+		return 0;
-+	return ((lba - 494) / 496) + 1;
-+}
-+
-+/* Get zone of physical block. Trivial */
-+static int msb_get_zone_from_pba(int pba)
-+{
-+	return pba / MS_BLOCKS_IN_ZONE;
-+}
-+
-+/* Debug test to validate free block counts */
-+static int msb_validate_used_block_bitmap(struct msb_data *msb)
-+{
-+	int total_free_blocks = 0;
-+	int i;
-+
-+	if (!debug)
-+		return 0;
-+
-+	for (i = 0 ; i < msb->zone_count ; i++)
-+		total_free_blocks += msb->free_block_count[i];
-+
-+	if (msb->block_count - bitmap_weight(msb->used_blocks_bitmap,
-+					msb->block_count) == total_free_blocks)
-+		return 0;
-+
-+	pr_err("BUG: free block counts don't match the bitmap");
-+	msb->read_only = true;
-+	return -EINVAL;
-+}
-+
-+/* Mark physical block as used */
-+static void msb_mark_block_used(struct msb_data *msb, int pba)
-+{
-+	int zone = msb_get_zone_from_pba(pba);
-+
-+	if (test_bit(pba, msb->used_blocks_bitmap)) {
-+		pr_err(
-+		"BUG: attempt to mark already used pba %d as used", pba);
-+		msb->read_only = true;
-+		return;
-+	}
-+
-+	if (msb_validate_used_block_bitmap(msb))
-+		return;
-+
-+	/* No races because all IO is single threaded */
-+	__set_bit(pba, msb->used_blocks_bitmap);
-+	msb->free_block_count[zone]--;
-+}
-+
-+/* Mark physical block as free */
-+static void msb_mark_block_unused(struct msb_data *msb, int pba)
-+{
-+	int zone = msb_get_zone_from_pba(pba);
-+
-+	if (!test_bit(pba, msb->used_blocks_bitmap)) {
-+		pr_err("BUG: attempt to mark "
-+				"already unused pba %d as unused" , pba);
-+		msb->read_only = true;
-+		return;
-+	}
-+
-+	if (msb_validate_used_block_bitmap(msb))
-+		return;
-+
-+	/* No races because all IO is single threaded */
-+	__clear_bit(pba, msb->used_blocks_bitmap);
-+	msb->free_block_count[zone]++;
-+}
-+
-+/* Invalidate current register window */
-+static void msb_invalidate_reg_window(struct msb_data *msb)
-+{
-+	msb->reg_addr.w_offset = offsetof(struct ms_register, id);
-+	msb->reg_addr.w_length = sizeof(struct ms_id_register);
-+	msb->reg_addr.r_offset = offsetof(struct ms_register, id);
-+	msb->reg_addr.r_length = sizeof(struct ms_id_register);
-+	msb->addr_valid = false;
-+}
-+
-+/* Start a state machine */
-+static int msb_run_state_machine(struct msb_data *msb, int   (*state_func)
-+		(struct memstick_dev *card, struct memstick_request **req))
-+{
-+	struct memstick_dev *card = msb->card;
-+
-+	WARN_ON(msb->state != -1);
-+	msb->int_polling = false;
-+	msb->state = 0;
-+	msb->exit_error = 0;
-+
-+	memset(&card->current_mrq, 0, sizeof(card->current_mrq));
-+
-+	card->next_request = state_func;
-+	memstick_new_req(card->host);
-+	wait_for_completion(&card->mrq_complete);
-+
-+	WARN_ON(msb->state != -1);
-+	return msb->exit_error;
-+}
-+
-+/* State machines call that to exit */
-+static int msb_exit_state_machine(struct msb_data *msb, int error)
-+{
-+	WARN_ON(msb->state == -1);
-+
-+	msb->state = -1;
-+	msb->exit_error = error;
-+	msb->card->next_request = h_msb_default_bad;
-+
-+	/* Invalidate reg window on errors */
-+	if (error)
-+		msb_invalidate_reg_window(msb);
-+
-+	complete(&msb->card->mrq_complete);
-+	return -ENXIO;
-+}
-+
-+/* read INT register */
-+static int msb_read_int_reg(struct msb_data *msb, long timeout)
-+{
-+	struct memstick_request *mrq = &msb->card->current_mrq;
-+
-+	WARN_ON(msb->state == -1);
-+
-+	if (!msb->int_polling) {
-+		msb->int_timeout = jiffies +
-+			msecs_to_jiffies(timeout == -1 ? 500 : timeout);
-+		msb->int_polling = true;
-+	} else if (time_after(jiffies, msb->int_timeout)) {
-+		mrq->data[0] = MEMSTICK_INT_CMDNAK;
-+		return 0;
-+	}
-+
-+	if ((msb->caps & MEMSTICK_CAP_AUTO_GET_INT) &&
-+				mrq->need_card_int && !mrq->error) {
-+		mrq->data[0] = mrq->int_reg;
-+		mrq->need_card_int = false;
-+		return 0;
-+	} else {
-+		memstick_init_req(mrq, MS_TPC_GET_INT, NULL, 1);
-+		return 1;
-+	}
-+}
-+
-+/* Read a register */
-+static int msb_read_regs(struct msb_data *msb, int offset, int len)
-+{
-+	struct memstick_request *req = &msb->card->current_mrq;
-+
-+	if (msb->reg_addr.r_offset != offset ||
-+	    msb->reg_addr.r_length != len || !msb->addr_valid) {
-+
-+		msb->reg_addr.r_offset = offset;
-+		msb->reg_addr.r_length = len;
-+		msb->addr_valid = true;
-+
-+		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS,
-+			&msb->reg_addr, sizeof(msb->reg_addr));
-+		return 0;
-+	}
-+
-+	memstick_init_req(req, MS_TPC_READ_REG, NULL, len);
-+	return 1;
-+}
-+
-+/* Write a card register */
-+static int msb_write_regs(struct msb_data *msb, int offset, int len, void *buf)
-+{
-+	struct memstick_request *req = &msb->card->current_mrq;
-+
-+	if (msb->reg_addr.w_offset != offset ||
-+		msb->reg_addr.w_length != len  || !msb->addr_valid) {
-+
-+		msb->reg_addr.w_offset = offset;
-+		msb->reg_addr.w_length = len;
-+		msb->addr_valid = true;
-+
-+		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS,
-+			&msb->reg_addr, sizeof(msb->reg_addr));
-+		return 0;
-+	}
-+
-+	memstick_init_req(req, MS_TPC_WRITE_REG, buf, len);
-+	return 1;
-+}
-+
-+/* Handler for absence of IO */
-+static int h_msb_default_bad(struct memstick_dev *card,
-+						struct memstick_request **mrq)
-+{
-+	return -ENXIO;
-+}
-+
-+/*
-+ * This function is a handler for reads of one page from device.
-+ * Writes output to msb->current_sg, takes sector address from msb->reg.param
-+ * Can also be used to read extra data only. Set params accordintly.
-+ */
-+static int h_msb_read_page(struct memstick_dev *card,
-+					struct memstick_request **out_mrq)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
-+	struct scatterlist sg[2];
-+	u8 command, intreg;
-+
-+	if (mrq->error) {
-+		dbg("read_page, unknown error");
-+		return msb_exit_state_machine(msb, mrq->error);
-+	}
-+again:
-+	switch (msb->state) {
-+	case MSB_RP_SEND_BLOCK_ADDRESS:
-+		/* msb_write_regs sometimes "fails" because it needs to update
-+			the reg window, and thus it returns request for that.
-+			Then we stay in this state and retry */
-+		if (!msb_write_regs(msb,
-+			offsetof(struct ms_register, param),
-+			sizeof(struct ms_param_register),
-+			(unsigned char *)&msb->regs.param))
-+			return 0;
-+
-+		msb->state = MSB_RP_SEND_READ_COMMAND;
-+		return 0;
-+
-+	case MSB_RP_SEND_READ_COMMAND:
-+		command = MS_CMD_BLOCK_READ;
-+		memstick_init_req(mrq, MS_TPC_SET_CMD, &command, 1);
-+		msb->state = MSB_RP_SEND_INT_REQ;
-+		return 0;
-+
-+	case MSB_RP_SEND_INT_REQ:
-+		msb->state = MSB_RP_RECEIVE_INT_REQ_RESULT;
-+		/* If dont actually need to send the int read request (only in
-+			serial mode), then just fall through */
-+		if (msb_read_int_reg(msb, -1))
-+			return 0;
-+		/* fallthrough */
-+
-+	case MSB_RP_RECEIVE_INT_REQ_RESULT:
-+		intreg = mrq->data[0];
-+		msb->regs.status.interrupt = intreg;
-+
-+		if (intreg & MEMSTICK_INT_CMDNAK)
-+			return msb_exit_state_machine(msb, -EIO);
-+
-+		if (!(intreg & MEMSTICK_INT_CED)) {
-+			msb->state = MSB_RP_SEND_INT_REQ;
-+			goto again;
-+		}
-+
-+		msb->int_polling = false;
-+		msb->state = (intreg & MEMSTICK_INT_ERR) ?
-+			MSB_RP_SEND_READ_STATUS_REG : MSB_RP_SEND_OOB_READ;
-+		goto again;
-+
-+	case MSB_RP_SEND_READ_STATUS_REG:
-+		 /* read the status register to understand source of the INT_ERR */
-+		if (!msb_read_regs(msb,
-+			offsetof(struct ms_register, status),
-+			sizeof(struct ms_status_register)))
-+			return 0;
-+
-+		msb->state = MSB_RP_RECEIVE_OOB_READ;
-+		return 0;
-+
-+	case MSB_RP_RECIVE_STATUS_REG:
-+		msb->regs.status = *(struct ms_status_register *)mrq->data;
-+		msb->state = MSB_RP_SEND_OOB_READ;
-+		/* fallthrough */
-+
-+	case MSB_RP_SEND_OOB_READ:
-+		if (!msb_read_regs(msb,
-+			offsetof(struct ms_register, extra_data),
-+			sizeof(struct ms_extra_data_register)))
-+			return 0;
-+
-+		msb->state = MSB_RP_RECEIVE_OOB_READ;
-+		return 0;
-+
-+	case MSB_RP_RECEIVE_OOB_READ:
-+		msb->regs.extra_data =
-+			*(struct ms_extra_data_register *) mrq->data;
-+		msb->state = MSB_RP_SEND_READ_DATA;
-+		/* fallthrough */
-+
-+	case MSB_RP_SEND_READ_DATA:
-+		/* Skip that state if we only read the oob */
-+		if (msb->regs.param.cp == MEMSTICK_CP_EXTRA) {
-+			msb->state = MSB_RP_RECEIVE_READ_DATA;
-+			goto again;
-+		}
-+
-+		sg_init_table(sg, ARRAY_SIZE(sg));
-+		msb_sg_copy(msb->current_sg, sg, ARRAY_SIZE(sg),
-+			msb->current_sg_offset,
-+			msb->page_size);
-+
-+		memstick_init_req_sg(mrq, MS_TPC_READ_LONG_DATA, sg);
-+		msb->state = MSB_RP_RECEIVE_READ_DATA;
-+		return 0;
-+
-+	case MSB_RP_RECEIVE_READ_DATA:
-+		if (!(msb->regs.status.interrupt & MEMSTICK_INT_ERR)) {
-+			msb->current_sg_offset += msb->page_size;
-+			return msb_exit_state_machine(msb, 0);
-+		}
-+
-+		if (msb->regs.status.status1 & MEMSTICK_UNCORR_ERROR) {
-+			dbg("read_page: uncorrectable error");
-+			return msb_exit_state_machine(msb, -EBADMSG);
-+		}
-+
-+		if (msb->regs.status.status1 & MEMSTICK_CORR_ERROR) {
-+			dbg("read_page: correctable error");
-+			msb->current_sg_offset += msb->page_size;
-+			return msb_exit_state_machine(msb, -EUCLEAN);
++	u64 snap_size = 0;	
++	bool written = false;
++	
+ 	/*
+ 	 * Include a 'sync' in the OSD request if this is a data
+ 	 * integrity write (e.g., O_SYNC write or fsync()), or if our
+@@ -744,7 +811,7 @@ retry:
+ 		struct ceph_osd_request_head *reqhead;
+ 		struct ceph_osd_op *op;
+ 		long writeback_stat;
+-
++		
+ 		next = 0;
+ 		locked_pages = 0;
+ 		max_pages = max_pages_ever;
+@@ -761,7 +828,8 @@ get_more_pages:
+ 		dout("pagevec_lookup_tag got %d\n", pvec_pages);
+ 		if (!pvec_pages && !locked_pages)
+ 			break;
+-		for (i = 0; i < pvec_pages && locked_pages < max_pages; i++) {
++		for (i = 0; i < pvec_pages && locked_pages < max_pages; i++) {			
++			written = false;
+ 			page = pvec.pages[i];
+ 			dout("? %p idx %lu\n", page, page->index);
+ 			if (locked_pages == 0)
+@@ -823,12 +891,38 @@ get_more_pages:
+ 				break;
+ 			}
+ 
++			if (ci->i_inline_data.version < CEPH_INLINE_MIGRATION && page->index == 0) {
++				if (ci->i_inline_data.data == NULL)
++					ci->i_inline_data.data = kmalloc(CEPH_INLINE_SIZE, GFP_NOFS);
++				char *virt = kmap(page);
++				ci->i_inline_data.length = inode->i_size < CEPH_INLINE_SIZE?inode->i_size:CEPH_INLINE_SIZE;
++				memcpy(ci->i_inline_data.data, virt, ci->i_inline_data.length);
++				kunmap(page);
++				spin_lock(&ci->i_ceph_lock);
++				int dirty = __ceph_mark_dirty_caps(ci, CEPH_CAP_FILE_WR | CEPH_CAP_FILE_BUFFER);
++				spin_unlock(&ci->i_ceph_lock);
++				if (dirty)
++					__mark_inode_dirty(inode, dirty);
++				ceph_put_snap_context(page_snap_context(page));
++				page->private = 0;
++				ClearPagePrivate(page);
++				SetPageUptodate(page);
++				unsigned issued = ceph_caps_issued(ci);
++				if ((issued & (CEPH_CAP_FILE_CACHE|CEPH_CAP_FILE_LAZYIO)) == 0)
++					generic_error_remove_page(inode->i_mapping, page);
++				unlock_page(page);				
++				ceph_put_wrbuffer_cap_refs(ci, 1, snapc);
++				written = true;
++				rc = 0;
++			}
++
+ 			/* ok */
+ 			if (locked_pages == 0) {
+ 				/* prepare async write request */
+ 				offset = (u64) page_offset(page);
+ 				len = wsize;
+-				req = ceph_osdc_new_request(&fsc->client->osdc,
++				if (written == false) {
++					req = ceph_osdc_new_request(&fsc->client->osdc,
+ 					    &ci->i_layout,
+ 					    ceph_vino(inode),
+ 					    offset, &len,
+@@ -840,35 +934,40 @@ get_more_pages:
+ 					    ci->i_truncate_size,
+ 					    &inode->i_mtime, true, 1, 0);
+ 
+-				if (IS_ERR(req)) {
+-					rc = PTR_ERR(req);
+-					unlock_page(page);
+-					break;
+-				}
++					if (IS_ERR(req)) {
++						rc = PTR_ERR(req);
++						unlock_page(page);
++						break;
++					}
+ 
+-				max_pages = req->r_num_pages;
++					max_pages = req->r_num_pages;
+ 
+-				alloc_page_vec(fsc, req);
+-				req->r_callback = writepages_finish;
+-				req->r_inode = inode;
+-			}
++					alloc_page_vec(fsc, req);
++					req->r_callback = writepages_finish;
++					req->r_inode = inode;
++					} else { 
++						max_pages = calc_pages_for(0, len);
++					}
++				}
+ 
+ 			/* note position of first page in pvec */
+ 			if (first < 0)
+ 				first = i;
+ 			dout("%p will write page %p idx %lu\n",
+ 			     inode, page, page->index);
++			
+ 
+-			writeback_stat =
++			if (written == false) {
++				writeback_stat =
+ 			       atomic_long_inc_return(&fsc->writeback_count);
+ 			if (writeback_stat > CONGESTION_ON_THRESH(
+ 				    fsc->mount_options->congestion_kb)) {
+ 				set_bdi_congested(&fsc->backing_dev_info,
+ 						  BLK_RW_ASYNC);
+ 			}
+-
+-			set_page_writeback(page);
+-			req->r_pages[locked_pages] = page;
++				set_page_writeback(page);
++				req->r_pages[locked_pages] = page;
++			}
+ 			locked_pages++;
+ 			next = page->index + 1;
+ 		}
+@@ -897,31 +996,33 @@ get_more_pages:
+ 			pvec.nr -= i-first;
+ 		}
+ 
++		if (written == false) {
+ 		/* submit the write */
+-		offset = req->r_pages[0]->index << PAGE_CACHE_SHIFT;
+-		len = min((snap_size ? snap_size : i_size_read(inode)) - offset,
++			offset = req->r_pages[0]->index << PAGE_CACHE_SHIFT;
++			len = min((snap_size ? snap_size : i_size_read(inode)) - offset,
+ 			  (u64)locked_pages << PAGE_CACHE_SHIFT);
+-		dout("writepages got %d pages at %llu~%llu\n",
++			dout("writepages got %d pages at %llu~%llu\n",
+ 		     locked_pages, offset, len);
+ 
+-		/* revise final length, page count */
+-		req->r_num_pages = locked_pages;
+-		reqhead = req->r_request->front.iov_base;
+-		op = (void *)(reqhead + 1);
+-		op->extent.length = cpu_to_le64(len);
+-		op->payload_len = cpu_to_le32(len);
+-		req->r_request->hdr.data_len = cpu_to_le32(len);
+-
+-		rc = ceph_osdc_start_request(&fsc->client->osdc, req, true);
+-		BUG_ON(rc);
++			/* revise final length, page count */
++			req->r_num_pages = locked_pages;
++			reqhead = req->r_request->front.iov_base;
++			op = (void *)(reqhead + 1);
++			op->extent.length = cpu_to_le64(len);
++			op->payload_len = cpu_to_le32(len);
++			req->r_request->hdr.data_len = cpu_to_le32(len);
++
++			rc = ceph_osdc_start_request(&fsc->client->osdc, req, true);
++			BUG_ON(rc);
++		}		
+ 		req = NULL;
+-
++		
+ 		/* continue? */
+ 		index = next;
+ 		wbc->nr_to_write -= locked_pages;
+ 		if (wbc->nr_to_write <= 0)
+-			done = 1;
+-
++			done = 1;		
++		
+ release_pvec_pages:
+ 		dout("pagevec_release on %d pages (%p)\n", (int)pvec.nr,
+ 		     pvec.nr ? pvec.pages[0] : NULL);
+@@ -945,6 +1046,7 @@ release_pvec_pages:
+ out:
+ 	if (req)
+ 		ceph_osdc_put_request(req);
++	
+ 	ceph_put_snap_context(snapc);
+ 	dout("writepages done, rc = %d\n", rc);
+ 	return rc;
+@@ -1164,6 +1266,20 @@ static int ceph_write_end(struct file *file, struct address_space *mapping,
+ 	if (pos+copied > inode->i_size)
+ 		check_cap = ceph_inode_set_size(inode, pos+copied);
+ 
++	if (ci->i_inline_data.version < CEPH_INLINE_MIGRATION) {
++		if (pos >= CEPH_INLINE_SIZE) {
++			ci->i_inline_data.version = CEPH_INLINE_MIGRATION;
 +		} else {
-+			dbg("read_page: INT error, but no status error bits");
-+			return msb_exit_state_machine(msb, -EIO);
-+		}
-+	}
-+
-+	BUG();
-+}
-+
-+/*
-+ * Handler of writes of exactly one block.
-+ * Takes address from msb->regs.param.
-+ * Writes same extra data to blocks, also taken
-+ * from msb->regs.extra
-+ * Returns -EBADMSG if write fails due to uncorrectable error, or -EIO if
-+ * device refuses to take the command or something else
-+ */
-+static int h_msb_write_block(struct memstick_dev *card,
-+					struct memstick_request **out_mrq)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
-+	struct scatterlist sg[2];
-+	u8 intreg, command;
-+
-+	if (mrq->error)
-+		return msb_exit_state_machine(msb, mrq->error);
-+
-+again:
-+	switch (msb->state) {
-+
-+	/* HACK: Jmicon handling of TPCs between 8 and
-+	 *	sizeof(memstick_request.data) is broken due to hardware
-+	 *	bug in PIO mode that is used for these TPCs
-+	 *	Therefore split the write
-+	 */
-+
-+	case MSB_WB_SEND_WRITE_PARAMS:
-+		if (!msb_write_regs(msb,
-+			offsetof(struct ms_register, param),
-+			sizeof(struct ms_param_register),
-+			&msb->regs.param))
-+			return 0;
-+
-+		msb->state = MSB_WB_SEND_WRITE_OOB;
-+		return 0;
-+
-+	case MSB_WB_SEND_WRITE_OOB:
-+		if (!msb_write_regs(msb,
-+			offsetof(struct ms_register, extra_data),
-+			sizeof(struct ms_extra_data_register),
-+			&msb->regs.extra_data))
-+			return 0;
-+		msb->state = MSB_WB_SEND_WRITE_COMMAND;
-+		return 0;
-+
-+
-+	case MSB_WB_SEND_WRITE_COMMAND:
-+		command = MS_CMD_BLOCK_WRITE;
-+		memstick_init_req(mrq, MS_TPC_SET_CMD, &command, 1);
-+		msb->state = MSB_WB_SEND_INT_REQ;
-+		return 0;
-+
-+	case MSB_WB_SEND_INT_REQ:
-+		msb->state = MSB_WB_RECEIVE_INT_REQ;
-+		if (msb_read_int_reg(msb, -1))
-+			return 0;
-+		/* fallthrough */
-+
-+	case MSB_WB_RECEIVE_INT_REQ:
-+		intreg = mrq->data[0];
-+		msb->regs.status.interrupt = intreg;
-+
-+		/* errors mean out of here, and fast... */
-+		if (intreg & (MEMSTICK_INT_CMDNAK))
-+			return msb_exit_state_machine(msb, -EIO);
-+
-+		if (intreg & MEMSTICK_INT_ERR)
-+			return msb_exit_state_machine(msb, -EBADMSG);
-+
-+
-+		/* for last page we need to poll CED */
-+		if (msb->current_page == msb->pages_in_block) {
-+			if (intreg & MEMSTICK_INT_CED)
-+				return msb_exit_state_machine(msb, 0);
-+			msb->state = MSB_WB_SEND_INT_REQ;
-+			goto again;
-+
-+		}
-+
-+		/* for non-last page we need BREQ before writing next chunk */
-+		if (!(intreg & MEMSTICK_INT_BREQ)) {
-+			msb->state = MSB_WB_SEND_INT_REQ;
-+			goto again;
-+		}
-+
-+		msb->int_polling = false;
-+		msb->state = MSB_WB_SEND_WRITE_DATA;
-+		/* fallthrough */
-+
-+	case MSB_WB_SEND_WRITE_DATA:
-+		sg_init_table(sg, ARRAY_SIZE(sg));
-+
-+		if (msb_sg_copy(msb->current_sg, sg, ARRAY_SIZE(sg),
-+			msb->current_sg_offset,
-+			msb->page_size) < msb->page_size)
-+			return msb_exit_state_machine(msb, -EIO);
-+
-+		memstick_init_req_sg(mrq, MS_TPC_WRITE_LONG_DATA, sg);
-+		mrq->need_card_int = 1;
-+		msb->state = MSB_WB_RECEIVE_WRITE_CONFIRMATION;
-+		return 0;
-+
-+	case MSB_WB_RECEIVE_WRITE_CONFIRMATION:
-+		msb->current_page++;
-+		msb->current_sg_offset += msb->page_size;
-+		msb->state = MSB_WB_SEND_INT_REQ;
-+		goto again;
-+	default:
-+		BUG();
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * This function is used to send simple IO requests to device that consist
-+ * of register write + command
-+ */
-+static int h_msb_send_command(struct memstick_dev *card,
-+					struct memstick_request **out_mrq)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
-+	u8 intreg;
-+
-+	if (mrq->error) {
-+		dbg("send_command: unknown error");
-+		return msb_exit_state_machine(msb, mrq->error);
-+	}
-+again:
-+	switch (msb->state) {
-+
-+	/* HACK: see h_msb_write_block */
-+	case MSB_SC_SEND_WRITE_PARAMS: /* write param register*/
-+		if (!msb_write_regs(msb,
-+			offsetof(struct ms_register, param),
-+			sizeof(struct ms_param_register),
-+			&msb->regs.param))
-+			return 0;
-+		msb->state = MSB_SC_SEND_WRITE_OOB;
-+		return 0;
-+
-+	case MSB_SC_SEND_WRITE_OOB:
-+		if (!msb->command_need_oob) {
-+			msb->state = MSB_SC_SEND_COMMAND;
-+			goto again;
-+		}
-+
-+		if (!msb_write_regs(msb,
-+			offsetof(struct ms_register, extra_data),
-+			sizeof(struct ms_extra_data_register),
-+			&msb->regs.extra_data))
-+			return 0;
-+
-+		msb->state = MSB_SC_SEND_COMMAND;
-+		return 0;
-+
-+	case MSB_SC_SEND_COMMAND:
-+		memstick_init_req(mrq, MS_TPC_SET_CMD, &msb->command_value, 1);
-+		msb->state = MSB_SC_SEND_INT_REQ;
-+		return 0;
-+
-+	case MSB_SC_SEND_INT_REQ:
-+		msb->state = MSB_SC_RECEIVE_INT_REQ;
-+		if (msb_read_int_reg(msb, -1))
-+			return 0;
-+		/* fallthrough */
-+
-+	case MSB_SC_RECEIVE_INT_REQ:
-+		intreg = mrq->data[0];
-+
-+		if (intreg & MEMSTICK_INT_CMDNAK)
-+			return msb_exit_state_machine(msb, -EIO);
-+		if (intreg & MEMSTICK_INT_ERR)
-+			return msb_exit_state_machine(msb, -EBADMSG);
-+
-+		if (!(intreg & MEMSTICK_INT_CED)) {
-+			msb->state = MSB_SC_SEND_INT_REQ;
-+			goto again;
-+		}
-+
-+		return msb_exit_state_machine(msb, 0);
-+	}
-+
-+	BUG();
-+}
-+
-+/* Small handler for card reset */
-+static int h_msb_reset(struct memstick_dev *card,
-+					struct memstick_request **out_mrq)
-+{
-+	u8 command = MS_CMD_RESET;
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
-+
-+	if (mrq->error)
-+		return msb_exit_state_machine(msb, mrq->error);
-+
-+	switch (msb->state) {
-+	case MSB_RS_SEND:
-+		memstick_init_req(mrq, MS_TPC_SET_CMD, &command, 1);
-+		mrq->need_card_int = 0;
-+		msb->state = MSB_RS_CONFIRM;
-+		return 0;
-+	case MSB_RS_CONFIRM:
-+		return msb_exit_state_machine(msb, 0);
-+	}
-+	BUG();
-+}
-+
-+/* This handler is used to do serial->parallel switch */
-+static int h_msb_parallel_switch(struct memstick_dev *card,
-+					struct memstick_request **out_mrq)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct memstick_request *mrq = *out_mrq = &card->current_mrq;
-+	struct memstick_host *host = card->host;
-+
-+	if (mrq->error) {
-+		dbg("parallel_switch: error");
-+		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
-+		return msb_exit_state_machine(msb, mrq->error);
-+	}
-+
-+	switch (msb->state) {
-+	case MSB_PS_SEND_SWITCH_COMMAND:
-+		/* Set the parallel interface on memstick side */
-+		msb->regs.param.system |= MEMSTICK_SYS_PAM;
-+
-+		if (!msb_write_regs(msb,
-+			offsetof(struct ms_register, param),
-+			1,
-+			(unsigned char *)&msb->regs.param))
-+			return 0;
-+
-+		msb->state = MSB_PS_SWICH_HOST;
-+		return 0;
-+
-+	case MSB_PS_SWICH_HOST:
-+		 /* Set parallel interface on our side + send a dummy request
-+			to see if card responds */
-+		host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
-+		memstick_init_req(mrq, MS_TPC_GET_INT, NULL, 1);
-+		msb->state = MSB_PS_CONFIRM;
-+		return 0;
-+
-+	case MSB_PS_CONFIRM:
-+		return msb_exit_state_machine(msb, 0);
-+	}
-+
-+	BUG();
-+}
-+
-+static int msb_switch_to_parallel(struct msb_data *msb);
-+
-+/* Reset the card, to guard against hw errors beeing treated as bad blocks */
-+static int msb_reset(struct msb_data *msb, bool full)
-+{
-+
-+	bool was_parallel = msb->regs.param.system & MEMSTICK_SYS_PAM;
-+	struct memstick_dev *card = msb->card;
-+	struct memstick_host *host = card->host;
-+	int error;
-+
-+	/* Reset the card */
-+	msb->regs.param.system = MEMSTICK_SYS_BAMD;
-+
-+	if (full) {
-+		error =  host->set_param(host,
-+					MEMSTICK_POWER, MEMSTICK_POWER_OFF);
-+		if (error)
-+			goto out_error;
-+
-+		msb_invalidate_reg_window(msb);
-+
-+		error = host->set_param(host,
-+					MEMSTICK_POWER, MEMSTICK_POWER_ON);
-+		if (error)
-+			goto out_error;
-+
-+		error = host->set_param(host,
-+					MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
-+		if (error) {
-+out_error:
-+			dbg("Failed to reset the host controller");
-+			msb->read_only = true;
-+			return -EFAULT;
-+		}
-+	}
-+
-+	error = msb_run_state_machine(msb, h_msb_reset);
-+	if (error) {
-+		dbg("Failed to reset the card");
-+		msb->read_only = true;
-+		return -ENODEV;
-+	}
-+
-+	/* Set parallel mode */
-+	if (was_parallel)
-+		msb_switch_to_parallel(msb);
-+	return 0;
-+}
-+
-+/* Attempts to switch interface to parallel mode */
-+static int msb_switch_to_parallel(struct msb_data *msb)
-+{
-+	int error;
-+
-+	error = msb_run_state_machine(msb, h_msb_parallel_switch);
-+	if (error) {
-+		pr_err("Switch to parallel failed");
-+		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
-+		msb_reset(msb, true);
-+		return -EFAULT;
-+	}
-+
-+	msb->caps |= MEMSTICK_CAP_AUTO_GET_INT;
-+	return 0;
-+}
-+
-+/* Changes overwrite flag on a page */
-+static int msb_set_overwrite_flag(struct msb_data *msb,
-+						u16 pba, u8 page, u8 flag)
-+{
-+	if (msb->read_only)
-+		return -EROFS;
-+
-+	msb->regs.param.block_address = cpu_to_be16(pba);
-+	msb->regs.param.page_address = page;
-+	msb->regs.param.cp = MEMSTICK_CP_OVERWRITE;
-+	msb->regs.extra_data.overwrite_flag = flag;
-+	msb->command_value = MS_CMD_BLOCK_WRITE;
-+	msb->command_need_oob = true;
-+
-+	dbg_verbose("changing overwrite flag to %02x for sector %d, page %d",
-+							flag, pba, page);
-+	return msb_run_state_machine(msb, h_msb_send_command);
-+}
-+
-+static int msb_mark_bad(struct msb_data *msb, int pba)
-+{
-+	pr_notice("marking pba %d as bad", pba);
-+	msb_reset(msb, true);
-+	return msb_set_overwrite_flag(
-+			msb, pba, 0, 0xFF & ~MEMSTICK_OVERWRITE_BKST);
-+}
-+
-+static int msb_mark_page_bad(struct msb_data *msb, int pba, int page)
-+{
-+	dbg("marking page %d of pba %d as bad", page, pba);
-+	msb_reset(msb, true);
-+	return msb_set_overwrite_flag(msb,
-+		pba, page, ~MEMSTICK_OVERWRITE_PGST0);
-+}
-+
-+/* Erases one physical block */
-+static int msb_erase_block(struct msb_data *msb, u16 pba)
-+{
-+	int error, try;
-+	if (msb->read_only)
-+		return -EROFS;
-+
-+	dbg_verbose("erasing pba %d", pba);
-+
-+	for (try = 1 ; try < 3 ; try++) {
-+		msb->regs.param.block_address = cpu_to_be16(pba);
-+		msb->regs.param.page_address = 0;
-+		msb->regs.param.cp = MEMSTICK_CP_BLOCK;
-+		msb->command_value = MS_CMD_BLOCK_ERASE;
-+		msb->command_need_oob = false;
-+
-+
-+		error = msb_run_state_machine(msb, h_msb_send_command);
-+		if (!error || msb_reset(msb, true))
-+			break;
-+	}
-+
-+	if (error) {
-+		pr_err("erase failed, marking pba %d as bad", pba);
-+		msb_mark_bad(msb, pba);
-+	}
-+
-+	dbg_verbose("erase success, marking pba %d as unused", pba);
-+	msb_mark_block_unused(msb, pba);
-+	__set_bit(pba, msb->erased_blocks_bitmap);
-+	return error;
-+}
-+
-+/* Reads one page from device */
-+static int msb_read_page(struct msb_data *msb,
-+	u16 pba, u8 page, struct ms_extra_data_register *extra,
-+					struct scatterlist *sg,  int offset)
-+{
-+	int try, error;
-+
-+	if (pba == MS_BLOCK_INVALID) {
-+		unsigned long flags;
-+		struct sg_mapping_iter miter;
-+		size_t len = msb->page_size;
-+
-+		dbg_verbose("read unmapped sector. returning 0xFF");
-+
-+		local_irq_save(flags);
-+		sg_miter_start(&miter, sg, sg_nents(sg),
-+				SG_MITER_ATOMIC | SG_MITER_TO_SG);
-+
-+		while (sg_miter_next(&miter) && len > 0) {
-+
-+			int chunklen;
-+
-+			if (offset && offset >= miter.length) {
-+				offset -= miter.length;
-+				continue;
++			if (pos + copied > CEPH_INLINE_SIZE) {
++				ci->i_inline_data.version = CEPH_INLINE_DISABLED;
 +			}
-+
-+			chunklen = min(miter.length - offset, len);
-+			memset(miter.addr + offset, 0xFF, chunklen);
-+			len -= chunklen;
-+			offset = 0;
-+		}
-+
-+		sg_miter_stop(&miter);
-+		local_irq_restore(flags);
-+
-+		if (offset)
-+			return -EFAULT;
-+
-+		if (extra)
-+			memset(extra, 0xFF, sizeof(*extra));
-+		return 0;
-+	}
-+
-+	if (pba >= msb->block_count) {
-+		pr_err("BUG: attempt to read beyond"
-+					" the end of the card at pba %d", pba);
-+		return -EINVAL;
-+	}
-+
-+	for (try = 1 ; try < 3 ; try++) {
-+		msb->regs.param.block_address = cpu_to_be16(pba);
-+		msb->regs.param.page_address = page;
-+		msb->regs.param.cp = MEMSTICK_CP_PAGE;
-+
-+		msb->current_sg = sg;
-+		msb->current_sg_offset = offset;
-+		error = msb_run_state_machine(msb, h_msb_read_page);
-+
-+
-+		if (error == -EUCLEAN) {
-+			pr_notice("correctable error on pba %d, page %d",
-+				pba, page);
-+			error = 0;
-+		}
-+
-+		if (!error && extra)
-+			*extra = msb->regs.extra_data;
-+
-+		if (!error || msb_reset(msb, true))
-+			break;
-+
-+	}
-+
-+	/* Mark bad pages */
-+	if (error == -EBADMSG) {
-+		pr_err("uncorrectable error on read of pba %d, page %d",
-+			pba, page);
-+
-+		if (msb->regs.extra_data.overwrite_flag &
-+					MEMSTICK_OVERWRITE_PGST0)
-+			msb_mark_page_bad(msb, pba, page);
-+		return -EBADMSG;
-+	}
-+
-+	if (error)
-+		pr_err("read of pba %d, page %d failed with error %d",
-+			pba, page, error);
-+	return error;
-+}
-+
-+/* Reads oob of page only */
-+static int msb_read_oob(struct msb_data *msb, u16 pba, u16 page,
-+	struct ms_extra_data_register *extra)
-+{
-+	int error;
-+
-+	BUG_ON(!extra);
-+	msb->regs.param.block_address = cpu_to_be16(pba);
-+	msb->regs.param.page_address = page;
-+	msb->regs.param.cp = MEMSTICK_CP_EXTRA;
-+
-+	if (pba > msb->block_count) {
-+		pr_err("BUG: attempt to read beyond"
-+					" the end of card at pba %d", pba);
-+		return -EINVAL;
-+	}
-+
-+	error = msb_run_state_machine(msb, h_msb_read_page);
-+	*extra = msb->regs.extra_data;
-+
-+	if (error == -EUCLEAN) {
-+		pr_notice("correctable error on pba %d, page %d",
-+			pba, page);
-+		return 0;
-+	}
-+
-+	return error;
-+}
-+
-+
-+/* Reads a block and compares it with data contained in scatterlist orig_sg */
-+static int msb_verify_block(struct msb_data *msb, u16 pba,
-+				struct scatterlist *orig_sg,  int offset)
-+{
-+	struct scatterlist sg;
-+	int page = 0, error;
-+
-+	sg_init_one(&sg, msb->block_buffer, msb->block_size);
-+
-+	while (page < msb->pages_in_block) {
-+
-+		error = msb_read_page(msb, pba, page,
-+				NULL, &sg, page * msb->page_size);
-+		if (error)
-+			return error;
-+		page++;
-+	}
-+
-+	if (msb_sg_compare_to_buffer(orig_sg, offset,
-+				msb->block_buffer, msb->block_size))
-+		return -EIO;
-+	return 0;
-+}
-+
-+/* Writes exectly one block + oob */
-+static int msb_write_block(struct msb_data *msb,
-+			u16 pba, u32 lba, struct scatterlist *sg, int offset)
-+{
-+	int error, current_try = 1;
-+	BUG_ON(sg->length < msb->page_size);
-+
-+	if (msb->read_only)
-+		return -EROFS;
-+
-+	if (pba == MS_BLOCK_INVALID) {
-+		pr_err(
-+			"BUG: write: attempt to write MS_BLOCK_INVALID block");
-+		return -EINVAL;
-+	}
-+
-+	if (pba >= msb->block_count || lba >= msb->logical_block_count) {
-+		pr_err(
-+		"BUG: write: attempt to write beyond the end of device");
-+		return -EINVAL;
-+	}
-+
-+	if (msb_get_zone_from_lba(lba) != msb_get_zone_from_pba(pba)) {
-+		pr_err("BUG: write: lba zone mismatch");
-+		return -EINVAL;
-+	}
-+
-+	if (pba == msb->boot_block_locations[0] ||
-+		pba == msb->boot_block_locations[1]) {
-+		pr_err("BUG: write: attempt to write to boot blocks!");
-+		return -EINVAL;
-+	}
-+
-+	while (1) {
-+
-+		if (msb->read_only)
-+			return -EROFS;
-+
-+		msb->regs.param.cp = MEMSTICK_CP_BLOCK;
-+		msb->regs.param.page_address = 0;
-+		msb->regs.param.block_address = cpu_to_be16(pba);
-+
-+		msb->regs.extra_data.management_flag = 0xFF;
-+		msb->regs.extra_data.overwrite_flag = 0xF8;
-+		msb->regs.extra_data.logical_address = cpu_to_be16(lba);
-+
-+		msb->current_sg = sg;
-+		msb->current_sg_offset = offset;
-+		msb->current_page = 0;
-+
-+		error = msb_run_state_machine(msb, h_msb_write_block);
-+
-+		/* Sector we just wrote to is assumed erased since its pba
-+			was erased. If it wasn't erased, write will succeed
-+			and will just clear the bits that were set in the block
-+			thus test that what we have written,
-+			matches what we expect.
-+			We do trust the blocks that we erased */
-+		if (!error && (verify_writes ||
-+				!test_bit(pba, msb->erased_blocks_bitmap)))
-+			error = msb_verify_block(msb, pba, sg, offset);
-+
-+		if (!error)
-+			break;
-+
-+		if (current_try > 1 || msb_reset(msb, true))
-+			break;
-+
-+		pr_err("write failed, trying to erase the pba %d", pba);
-+		error = msb_erase_block(msb, pba);
-+		if (error)
-+			break;
-+
-+		current_try++;
-+	}
-+	return error;
-+}
-+
-+/* Finds a free block for write replacement */
-+static u16 msb_get_free_block(struct msb_data *msb, int zone)
-+{
-+	u16 pos;
-+	int pba = zone * MS_BLOCKS_IN_ZONE;
-+	int i;
-+
-+	get_random_bytes(&pos, sizeof(pos));
-+
-+	if (!msb->free_block_count[zone]) {
-+		pr_err("NO free blocks in the zone %d, to use for a write, "
-+			"(media is WORN out) switching to RO mode", zone);
-+		msb->read_only = true;
-+		return MS_BLOCK_INVALID;
-+	}
-+
-+	pos %= msb->free_block_count[zone];
-+
-+	dbg_verbose("have %d choices for a free block, selected randomally: %d",
-+		msb->free_block_count[zone], pos);
-+
-+	pba = find_next_zero_bit(msb->used_blocks_bitmap,
-+							msb->block_count, pba);
-+	for (i = 0 ; i < pos ; ++i)
-+		pba = find_next_zero_bit(msb->used_blocks_bitmap,
-+						msb->block_count, pba + 1);
-+
-+	dbg_verbose("result of the free blocks scan: pba %d", pba);
-+
-+	if (pba == msb->block_count || (msb_get_zone_from_pba(pba)) != zone) {
-+		pr_err("BUG: cant get a free block");
-+		msb->read_only = true;
-+		return MS_BLOCK_INVALID;
-+	}
-+
-+	msb_mark_block_used(msb, pba);
-+	return pba;
-+}
-+
-+static int msb_update_block(struct msb_data *msb, u16 lba,
-+	struct scatterlist *sg, int offset)
-+{
-+	u16 pba, new_pba;
-+	int error, try;
-+
-+	pba = msb->lba_to_pba_table[lba];
-+	dbg_verbose("start of a block update at lba  %d, pba %d", lba, pba);
-+
-+	if (pba != MS_BLOCK_INVALID) {
-+		dbg_verbose("setting the update flag on the block");
-+		msb_set_overwrite_flag(msb, pba, 0,
-+				0xFF & ~MEMSTICK_OVERWRITE_UDST);
-+	}
-+
-+	for (try = 0 ; try < 3 ; try++) {
-+		new_pba = msb_get_free_block(msb,
-+			msb_get_zone_from_lba(lba));
-+
-+		if (new_pba == MS_BLOCK_INVALID) {
-+			error = -EIO;
-+			goto out;
-+		}
-+
-+		dbg_verbose("block update: writing updated block to the pba %d",
-+								new_pba);
-+		error = msb_write_block(msb, new_pba, lba, sg, offset);
-+		if (error == -EBADMSG) {
-+			msb_mark_bad(msb, new_pba);
-+			continue;
-+		}
-+
-+		if (error)
-+			goto out;
-+
-+		dbg_verbose("block update: erasing the old block");
-+		msb_erase_block(msb, pba);
-+		msb->lba_to_pba_table[lba] = new_pba;
-+		return 0;
-+	}
-+out:
-+	if (error) {
-+		pr_err("block update error after %d tries, "
-+						"switching to r/o mode", try);
-+		msb->read_only = true;
-+	}
-+	return error;
-+}
-+
-+/* Converts endiannes in the boot block for easy use */
-+static void msb_fix_boot_page_endianness(struct ms_boot_page *p)
-+{
-+	p->header.block_id = be16_to_cpu(p->header.block_id);
-+	p->header.format_reserved = be16_to_cpu(p->header.format_reserved);
-+	p->entry.disabled_block.start_addr
-+		= be32_to_cpu(p->entry.disabled_block.start_addr);
-+	p->entry.disabled_block.data_size
-+		= be32_to_cpu(p->entry.disabled_block.data_size);
-+	p->entry.cis_idi.start_addr
-+		= be32_to_cpu(p->entry.cis_idi.start_addr);
-+	p->entry.cis_idi.data_size
-+		= be32_to_cpu(p->entry.cis_idi.data_size);
-+	p->attr.block_size = be16_to_cpu(p->attr.block_size);
-+	p->attr.number_of_blocks = be16_to_cpu(p->attr.number_of_blocks);
-+	p->attr.number_of_effective_blocks
-+		= be16_to_cpu(p->attr.number_of_effective_blocks);
-+	p->attr.page_size = be16_to_cpu(p->attr.page_size);
-+	p->attr.memory_manufacturer_code
-+		= be16_to_cpu(p->attr.memory_manufacturer_code);
-+	p->attr.memory_device_code = be16_to_cpu(p->attr.memory_device_code);
-+	p->attr.implemented_capacity
-+		= be16_to_cpu(p->attr.implemented_capacity);
-+	p->attr.controller_number = be16_to_cpu(p->attr.controller_number);
-+	p->attr.controller_function = be16_to_cpu(p->attr.controller_function);
-+}
-+
-+static int msb_read_boot_blocks(struct msb_data *msb)
-+{
-+	int pba = 0;
-+	struct scatterlist sg;
-+	struct ms_extra_data_register extra;
-+	struct ms_boot_page *page;
-+
-+	msb->boot_block_locations[0] = MS_BLOCK_INVALID;
-+	msb->boot_block_locations[1] = MS_BLOCK_INVALID;
-+	msb->boot_block_count = 0;
-+
-+	dbg_verbose("Start of a scan for the boot blocks");
-+
-+	if (!msb->boot_page) {
-+		page = kmalloc(sizeof(struct ms_boot_page)*2, GFP_KERNEL);
-+		if (!page)
-+			return -ENOMEM;
-+
-+		msb->boot_page = page;
-+	} else
-+		page = msb->boot_page;
-+
-+	msb->block_count = MS_BLOCK_MAX_BOOT_ADDR;
-+
-+	for (pba = 0 ; pba < MS_BLOCK_MAX_BOOT_ADDR ; pba++) {
-+
-+		sg_init_one(&sg, page, sizeof(*page));
-+		if (msb_read_page(msb, pba, 0, &extra, &sg, 0)) {
-+			dbg("boot scan: can't read pba %d", pba);
-+			continue;
-+		}
-+
-+		if (extra.management_flag & MEMSTICK_MANAGEMENT_SYSFLG) {
-+			dbg("managment flag doesn't indicate boot block %d",
-+									pba);
-+			continue;
-+		}
-+
-+		if (be16_to_cpu(page->header.block_id) != MS_BLOCK_BOOT_ID) {
-+			dbg("the pba at %d doesn' contain boot block ID", pba);
-+			continue;
-+		}
-+
-+		msb_fix_boot_page_endianness(page);
-+		msb->boot_block_locations[msb->boot_block_count] = pba;
-+
-+		page++;
-+		msb->boot_block_count++;
-+
-+		if (msb->boot_block_count == 2)
-+			break;
-+	}
-+
-+	if (!msb->boot_block_count) {
-+		pr_err("media doesn't contain master page, aborting");
-+		return -EIO;
-+	}
-+
-+	dbg_verbose("End of scan for boot blocks");
-+	return 0;
-+}
-+
-+static int msb_read_bad_block_table(struct msb_data *msb, int block_nr)
-+{
-+	struct ms_boot_page *boot_block;
-+	struct scatterlist sg;
-+	u16 *buffer = NULL;
-+	int offset = 0;
-+	int i, error = 0;
-+	int data_size, data_offset, page, page_offset, size_to_read;
-+	u16 pba;
-+
-+	BUG_ON(block_nr > 1);
-+	boot_block = &msb->boot_page[block_nr];
-+	pba = msb->boot_block_locations[block_nr];
-+
-+	if (msb->boot_block_locations[block_nr] == MS_BLOCK_INVALID)
-+		return -EINVAL;
-+
-+	data_size = boot_block->entry.disabled_block.data_size;
-+	data_offset = sizeof(struct ms_boot_page) +
-+			boot_block->entry.disabled_block.start_addr;
-+	if (!data_size)
-+		return 0;
-+
-+	page = data_offset / msb->page_size;
-+	page_offset = data_offset % msb->page_size;
-+	size_to_read =
-+		DIV_ROUND_UP(data_size + page_offset, msb->page_size) *
-+			msb->page_size;
-+
-+	dbg("reading bad block of boot block at pba %d, offset %d len %d",
-+		pba, data_offset, data_size);
-+
-+	buffer = kzalloc(size_to_read, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
-+
-+	/* Read the buffer */
-+	sg_init_one(&sg, buffer, size_to_read);
-+
-+	while (offset < size_to_read) {
-+		error = msb_read_page(msb, pba, page, NULL, &sg, offset);
-+		if (error)
-+			goto out;
-+
-+		page++;
-+		offset += msb->page_size;
-+
-+		if (page == msb->pages_in_block) {
-+			pr_err(
-+			"bad block table extends beyond the boot block");
-+			break;
 +		}
 +	}
-+
-+	/* Process the bad block table */
-+	for (i = page_offset ; i < data_size / sizeof(u16) ; i++) {
-+
-+		u16 bad_block = be16_to_cpu(buffer[i]);
-+
-+		if (bad_block >= msb->block_count) {
-+			dbg("bad block table contains invalid block %d",
-+								bad_block);
-+			continue;
-+		}
-+
-+		if (test_bit(bad_block, msb->used_blocks_bitmap))  {
-+			dbg("duplicate bad block %d in the table",
-+				bad_block);
-+			continue;
-+		}
-+
-+		dbg("block %d is marked as factory bad", bad_block);
-+		msb_mark_block_used(msb, bad_block);
++	if (ci->i_inline_data.version == CEPH_INLINE_MIGRATION) {
++		if (pos < CEPH_INLINE_SIZE)
++				ci->i_inline_data.version = CEPH_INLINE_DISABLED;
 +	}
-+out:
-+	kfree(buffer);
-+	return error;
-+}
-+
-+static int msb_ftl_initialize(struct msb_data *msb)
-+{
-+	int i;
-+
-+	if (msb->ftl_initialized)
-+		return 0;
-+
-+	msb->zone_count = msb->block_count / MS_BLOCKS_IN_ZONE;
-+	msb->logical_block_count = msb->zone_count * 496 - 2;
-+
-+	msb->used_blocks_bitmap = kzalloc(msb->block_count / 8, GFP_KERNEL);
-+	msb->erased_blocks_bitmap = kzalloc(msb->block_count / 8, GFP_KERNEL);
-+	msb->lba_to_pba_table =
-+		kmalloc(msb->logical_block_count * sizeof(u16), GFP_KERNEL);
-+
-+	if (!msb->used_blocks_bitmap || !msb->lba_to_pba_table ||
-+						!msb->erased_blocks_bitmap) {
-+		kfree(msb->used_blocks_bitmap);
-+		kfree(msb->lba_to_pba_table);
-+		kfree(msb->erased_blocks_bitmap);
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0 ; i < msb->zone_count ; i++)
-+		msb->free_block_count[i] = MS_BLOCKS_IN_ZONE;
-+
-+	memset(msb->lba_to_pba_table, MS_BLOCK_INVALID,
-+			msb->logical_block_count * sizeof(u16));
-+
-+	dbg("initial FTL tables created. Zone count = %d, "
-+					"Logical block count = %d",
-+		msb->zone_count, msb->logical_block_count);
-+
-+	msb->ftl_initialized = true;
-+	return 0;
-+}
-+
-+static int msb_ftl_scan(struct msb_data *msb)
-+{
-+	u16 pba, lba, other_block;
-+	u8 overwrite_flag, managment_flag, other_overwrite_flag;
-+	int error;
-+	struct ms_extra_data_register extra;
-+	u8 *overwrite_flags = kzalloc(msb->block_count, GFP_KERNEL);
-+
-+	if (!overwrite_flags)
-+		return -ENOMEM;
-+
-+	dbg("Start of media scanning");
-+	for (pba = 0 ; pba < msb->block_count ; pba++) {
-+
-+		if (pba == msb->boot_block_locations[0] ||
-+			pba == msb->boot_block_locations[1]) {
-+			dbg_verbose("pba %05d -> [boot block]", pba);
-+			msb_mark_block_used(msb, pba);
-+			continue;
-+		}
-+
-+		if (test_bit(pba, msb->used_blocks_bitmap)) {
-+			dbg_verbose("pba %05d -> [factory bad]", pba);
-+			continue;
-+		}
-+
-+		memset(&extra, 0, sizeof(extra));
-+		error = msb_read_oob(msb, pba, 0, &extra);
-+
-+		/* can't trust the page if we can't read the oob */
-+		if (error == -EBADMSG) {
-+			pr_notice(
-+			"oob of pba %d damaged, will try to erase it", pba);
-+			msb_mark_block_used(msb, pba);
-+			msb_erase_block(msb, pba);
-+			continue;
-+		} else if (error)
-+			return error;
-+
-+		lba = be16_to_cpu(extra.logical_address);
-+		managment_flag = extra.management_flag;
-+		overwrite_flag = extra.overwrite_flag;
-+		overwrite_flags[pba] = overwrite_flag;
-+
-+		/* Skip bad blocks */
-+		if (!(overwrite_flag & MEMSTICK_OVERWRITE_BKST)) {
-+			dbg("pba %05d -> [BAD]", pba);
-+			msb_mark_block_used(msb, pba);
-+			continue;
-+		}
-+
-+		/* Skip system/drm blocks */
-+		if ((managment_flag & MEMSTICK_MANAGMENT_FLAG_NORMAL) !=
-+			MEMSTICK_MANAGMENT_FLAG_NORMAL) {
-+			dbg("pba %05d -> [reserved managment flag %02x]",
-+							pba, managment_flag);
-+			msb_mark_block_used(msb, pba);
-+			continue;
-+		}
-+
-+		/* Erase temporary tables */
-+		if (!(managment_flag & MEMSTICK_MANAGEMENT_ATFLG)) {
-+			dbg("pba %05d -> [temp table] - will erase", pba);
-+
-+			msb_mark_block_used(msb, pba);
-+			msb_erase_block(msb, pba);
-+			continue;
-+		}
-+
-+		if (lba == MS_BLOCK_INVALID) {
-+			dbg_verbose("pba %05d -> [free]", pba);
-+			continue;
-+		}
-+
-+		msb_mark_block_used(msb, pba);
-+
-+		/* Block has LBA not according to zoning*/
-+		if (msb_get_zone_from_lba(lba) != msb_get_zone_from_pba(pba)) {
-+			pr_notice("pba %05d -> [bad lba %05d] - will erase",
-+								pba, lba);
-+			msb_erase_block(msb, pba);
-+			continue;
-+		}
-+
-+		/* No collisions - great */
-+		if (msb->lba_to_pba_table[lba] == MS_BLOCK_INVALID) {
-+			dbg_verbose("pba %05d -> [lba %05d]", pba, lba);
-+			msb->lba_to_pba_table[lba] = pba;
-+			continue;
-+		}
-+
-+		other_block = msb->lba_to_pba_table[lba];
-+		other_overwrite_flag = overwrite_flags[other_block];
-+
-+		pr_notice("Collision between pba %d and pba %d",
-+			pba, other_block);
-+
-+		if (!(overwrite_flag & MEMSTICK_OVERWRITE_UDST)) {
-+			pr_notice("pba %d is marked as stable, use it", pba);
-+			msb_erase_block(msb, other_block);
-+			msb->lba_to_pba_table[lba] = pba;
-+			continue;
-+		}
-+
-+		if (!(other_overwrite_flag & MEMSTICK_OVERWRITE_UDST)) {
-+			pr_notice("pba %d is marked as stable, use it",
-+								other_block);
-+			msb_erase_block(msb, pba);
-+			continue;
-+		}
-+
-+		pr_notice("collision between blocks %d and %d,"
-+		" without stable flag set on both, erasing pba %d",
-+				pba, other_block, other_block);
-+
-+		msb_erase_block(msb, other_block);
-+		msb->lba_to_pba_table[lba] = pba;
-+	}
-+
-+	dbg("End of media scanning");
-+	kfree(overwrite_flags);
-+	return 0;
-+}
-+
-+static void msb_cache_flush_timer(unsigned long data)
-+{
-+	struct msb_data *msb = (struct msb_data *)data;
-+	msb->need_flush_cache = true;
-+	queue_work(msb->io_queue, &msb->io_work);
-+}
-+
-+
-+static void msb_cache_discard(struct msb_data *msb)
-+{
-+	if (msb->cache_block_lba == MS_BLOCK_INVALID)
-+		return;
-+
-+	del_timer_sync(&msb->cache_flush_timer);
-+
-+	dbg_verbose("Discarding the write cache");
-+	msb->cache_block_lba = MS_BLOCK_INVALID;
-+	bitmap_zero(&msb->valid_cache_bitmap, msb->pages_in_block);
-+}
-+
-+static int msb_cache_init(struct msb_data *msb)
-+{
-+	setup_timer(&msb->cache_flush_timer, msb_cache_flush_timer,
-+		(unsigned long)msb);
-+
-+	if (!msb->cache)
-+		msb->cache = kzalloc(msb->block_size, GFP_KERNEL);
-+	if (!msb->cache)
-+		return -ENOMEM;
-+
-+	msb_cache_discard(msb);
-+	return 0;
-+}
-+
-+static int msb_cache_flush(struct msb_data *msb)
-+{
-+	struct scatterlist sg;
-+	struct ms_extra_data_register extra;
-+	int page, offset, error;
-+	u16 pba, lba;
-+
-+	if (msb->read_only)
-+		return -EROFS;
-+
-+	if (msb->cache_block_lba == MS_BLOCK_INVALID)
-+		return 0;
-+
-+	lba = msb->cache_block_lba;
-+	pba = msb->lba_to_pba_table[lba];
-+
-+	dbg_verbose("Flushing the write cache of pba %d (LBA %d)",
-+						pba, msb->cache_block_lba);
-+
-+	sg_init_one(&sg, msb->cache , msb->block_size);
-+
-+	/* Read all missing pages in cache */
-+	for (page = 0 ; page < msb->pages_in_block ; page++) {
-+
-+		if (test_bit(page, &msb->valid_cache_bitmap))
-+			continue;
-+
-+		offset = page * msb->page_size;
-+
-+		dbg_verbose("reading non-present sector %d of cache block %d",
-+			page, lba);
-+		error = msb_read_page(msb, pba, page, &extra, &sg, offset);
-+
-+		/* Bad pages are copied with 00 page status */
-+		if (error == -EBADMSG) {
-+			pr_err("read error on sector %d, contents probably"
-+				" damaged", page);
-+			continue;
-+		}
-+
-+		if (error)
-+			return error;
-+
-+		if ((extra.overwrite_flag & MEMSTICK_OV_PG_NORMAL) !=
-+							MEMSTICK_OV_PG_NORMAL) {
-+			dbg("page %d is marked as bad", page);
-+			continue;
-+		}
-+
-+		set_bit(page, &msb->valid_cache_bitmap);
-+	}
-+
-+	/* Write the cache now */
-+	error = msb_update_block(msb, msb->cache_block_lba, &sg, 0);
-+	pba = msb->lba_to_pba_table[msb->cache_block_lba];
-+
-+	/* Mark invalid pages */
-+	if (!error) {
-+		for (page = 0 ; page < msb->pages_in_block ; page++) {
-+
-+			if (test_bit(page, &msb->valid_cache_bitmap))
-+				continue;
-+
-+			dbg("marking page %d as containing damaged data",
-+				page);
-+			msb_set_overwrite_flag(msb,
-+				pba , page, 0xFF & ~MEMSTICK_OV_PG_NORMAL);
-+		}
-+	}
-+
-+	msb_cache_discard(msb);
-+	return error;
-+}
-+
-+static int msb_cache_write(struct msb_data *msb, int lba,
-+	int page, bool add_to_cache_only, struct scatterlist *sg, int offset)
-+{
-+	int error;
-+	struct scatterlist sg_tmp[10];
-+
-+	if (msb->read_only)
-+		return -EROFS;
-+
-+	if (msb->cache_block_lba == MS_BLOCK_INVALID ||
-+						lba != msb->cache_block_lba)
-+		if (add_to_cache_only)
-+			return 0;
-+
-+	/* If we need to write different block */
-+	if (msb->cache_block_lba != MS_BLOCK_INVALID &&
-+						lba != msb->cache_block_lba) {
-+		dbg_verbose("first flush the cache");
-+		error = msb_cache_flush(msb);
-+		if (error)
-+			return error;
-+	}
-+
-+	if (msb->cache_block_lba  == MS_BLOCK_INVALID) {
-+		msb->cache_block_lba  = lba;
-+		mod_timer(&msb->cache_flush_timer,
-+			jiffies + msecs_to_jiffies(cache_flush_timeout));
-+	}
-+
-+	dbg_verbose("Write of LBA %d page %d to cache ", lba, page);
-+
-+	sg_init_table(sg_tmp, ARRAY_SIZE(sg_tmp));
-+	msb_sg_copy(sg, sg_tmp, ARRAY_SIZE(sg_tmp), offset, msb->page_size);
-+
-+	sg_copy_to_buffer(sg_tmp, sg_nents(sg_tmp),
-+		msb->cache + page * msb->page_size, msb->page_size);
-+
-+	set_bit(page, &msb->valid_cache_bitmap);
-+	return 0;
-+}
-+
-+static int msb_cache_read(struct msb_data *msb, int lba,
-+				int page, struct scatterlist *sg, int offset)
-+{
-+	int pba = msb->lba_to_pba_table[lba];
-+	struct scatterlist sg_tmp[10];
-+	int error = 0;
-+
-+	if (lba == msb->cache_block_lba &&
-+			test_bit(page, &msb->valid_cache_bitmap)) {
-+
-+		dbg_verbose("Read of LBA %d (pba %d) sector %d from cache",
-+							lba, pba, page);
-+
-+		sg_init_table(sg_tmp, ARRAY_SIZE(sg_tmp));
-+		msb_sg_copy(sg, sg_tmp, ARRAY_SIZE(sg_tmp), offset, msb->page_size);
-+		sg_copy_from_buffer(sg_tmp, sg_nents(sg_tmp),
-+			msb->cache + msb->page_size * page,
-+							msb->page_size);
++	
+ 	if (!PageUptodate(page))
+ 		SetPageUptodate(page);
+ 
+diff --git a/fs/ceph/caps.c b/fs/ceph/caps.c
+index a1d9bb3..124ba52 100644
+--- a/fs/ceph/caps.c
++++ b/fs/ceph/caps.c
+@@ -933,7 +933,9 @@ static int send_cap_msg(struct ceph_mds_session *session,
+ 			uid_t uid, gid_t gid, umode_t mode,
+ 			u64 xattr_version,
+ 			struct ceph_buffer *xattrs_buf,
+-			u64 follows)
++			u64 follows,
++			struct ceph_inline_data_info *inline_data
++			)
+ {
+ 	struct ceph_mds_caps *fc;
+ 	struct ceph_msg *msg;
+@@ -946,15 +948,15 @@ static int send_cap_msg(struct ceph_mds_session *session,
+ 	     seq, issue_seq, mseq, follows, size, max_size,
+ 	     xattr_version, xattrs_buf ? (int)xattrs_buf->vec.iov_len : 0);
+ 
+-	msg = ceph_msg_new(CEPH_MSG_CLIENT_CAPS, sizeof(*fc), GFP_NOFS, false);
++	msg = ceph_msg_new(CEPH_MSG_CLIENT_CAPS, sizeof(*fc)+
++		                 inline_data->length+(inline_data->dirty_data_only?12:4), GFP_NOFS, false);
+ 	if (!msg)
+ 		return -ENOMEM;
+ 
+ 	msg->hdr.tid = cpu_to_le64(flush_tid);
+ 
+ 	fc = msg->front.iov_base;
+-	memset(fc, 0, sizeof(*fc));
+-
++	memset(fc, 0, sizeof(*fc)+inline_data->length+(inline_data->dirty_data_only?12:4));
+ 	fc->cap_id = cpu_to_le64(cid);
+ 	fc->op = cpu_to_le32(op);
+ 	fc->seq = cpu_to_le32(seq);
+@@ -979,12 +981,38 @@ static int send_cap_msg(struct ceph_mds_session *session,
+ 	fc->mode = cpu_to_le32(mode);
+ 
+ 	fc->xattr_version = cpu_to_le64(xattr_version);
++
++	struct ceph_mds_caps *s = fc + 1;	
++	u32 *p = (u32 *)s;
++	if ((dirty & CEPH_CAP_FILE_WR) && (dirty & CEPH_CAP_FILE_BUFFER)) {
++		fc->inline_version = inline_data->dirty_data_only?0:cpu_to_le32(inline_data->version);
++		if (inline_data->dirty_data_only == false) {			
++			*p = cpu_to_le32(inline_data->length);
++			p++;
++			if (inline_data->length)
++				memcpy(p, inline_data->data, inline_data->length);
++		} else {
++			*p = cpu_to_le32(inline_data->length)+8;
++			p++;
++			*p = cpu_to_le32(inline_data->offset);
++			p++;
++			*p = cpu_to_le32(inline_data->length);
++			if (inline_data->length)
++				memcpy(p, inline_data->data, inline_data->length);
++			inline_data->length = 0;
++			inline_data->dirty_data_only = false;
++			inline_data->offset = 0;
++		} 	
 +	} else {
-+		dbg_verbose("Read of LBA %d (pba %d) sector %d from device",
-+							lba, pba, page);
-+
-+		error = msb_read_page(msb, pba, page, NULL, sg, offset);
-+		if (error)
-+			return error;
-+
-+		msb_cache_write(msb, lba, page, true, sg, offset);
++		fc->inline_version = cpu_to_le32(0);
++		*p = cpu_to_le32(0);
 +	}
-+	return error;
-+}
-+
-+/* Emulated geometry table
-+ * This table content isn't that importaint,
-+ * One could put here different values, providing that they still
-+ * cover whole disk.
-+ * 64 MB entry is what windows reports for my 64M memstick */
-+
-+static const struct chs_entry chs_table[] = {
-+/*        size sectors cylynders  heads */
-+	{ 4,    16,    247,       2  },
-+	{ 8,    16,    495,       2  },
-+	{ 16,   16,    495,       4  },
-+	{ 32,   16,    991,       4  },
-+	{ 64,   16,    991,       8  },
-+	{128,   16,    991,       16 },
-+	{ 0 }
-+};
-+
-+/* Load information about the card */
-+static int msb_init_card(struct memstick_dev *card)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct memstick_host *host = card->host;
-+	struct ms_boot_page *boot_block;
-+	int error = 0, i, raw_size_in_megs;
-+
-+	msb->caps = 0;
-+
-+	if (card->id.class >= MEMSTICK_CLASS_ROM &&
-+				card->id.class <= MEMSTICK_CLASS_ROM)
-+		msb->read_only = true;
-+
-+	msb->state = -1;
-+	error = msb_reset(msb, false);
-+	if (error)
-+		return error;
-+
-+	/* Due to a bug in Jmicron driver written by Alex Dubov,
-+	 its serial mode barely works,
-+	 so we switch to parallel mode right away */
-+	if (host->caps & MEMSTICK_CAP_PAR4)
-+		msb_switch_to_parallel(msb);
-+
-+	msb->page_size = sizeof(struct ms_boot_page);
-+
-+	/* Read the boot page */
-+	error = msb_read_boot_blocks(msb);
-+	if (error)
-+		return -EIO;
-+
-+	boot_block = &msb->boot_page[0];
-+
-+	/* Save intersting attributes from boot page */
-+	msb->block_count = boot_block->attr.number_of_blocks;
-+	msb->page_size = boot_block->attr.page_size;
-+
-+	msb->pages_in_block = boot_block->attr.block_size * 2;
-+	msb->block_size = msb->page_size * msb->pages_in_block;
-+
-+	if (msb->page_size > PAGE_SIZE) {
-+		/* this isn't supported by linux at all, anyway*/
-+		dbg("device page %d size isn't supported", msb->page_size);
-+		return -EINVAL;
-+	}
-+
-+	msb->block_buffer = kzalloc(msb->block_size, GFP_KERNEL);
-+	if (!msb->block_buffer)
-+		return -ENOMEM;
-+
-+	raw_size_in_megs = (msb->block_size * msb->block_count) >> 20;
-+
-+	for (i = 0 ; chs_table[i].size ; i++) {
-+
-+		if (chs_table[i].size != raw_size_in_megs)
-+			continue;
-+
-+		msb->geometry.cylinders = chs_table[i].cyl;
-+		msb->geometry.heads = chs_table[i].head;
-+		msb->geometry.sectors = chs_table[i].sec;
-+		break;
-+	}
-+
-+	if (boot_block->attr.transfer_supporting == 1)
-+		msb->caps |= MEMSTICK_CAP_PAR4;
-+
-+	if (boot_block->attr.device_type & 0x03)
-+		msb->read_only = true;
-+
-+	dbg("Total block count = %d", msb->block_count);
-+	dbg("Each block consists of %d pages", msb->pages_in_block);
-+	dbg("Page size = %d bytes", msb->page_size);
-+	dbg("Parallel mode supported: %d", !!(msb->caps & MEMSTICK_CAP_PAR4));
-+	dbg("Read only: %d", msb->read_only);
-+
-+#if 0
-+	/* Now we can switch the interface */
-+	if (host->caps & msb->caps & MEMSTICK_CAP_PAR4)
-+		msb_switch_to_parallel(msb);
-+#endif
-+
-+	error = msb_cache_init(msb);
-+	if (error)
-+		return error;
-+
-+	error = msb_ftl_initialize(msb);
-+	if (error)
-+		return error;
-+
-+
-+	/* Read the bad block table */
-+	error = msb_read_bad_block_table(msb, 0);
-+
-+	if (error && error != -ENOMEM) {
-+		dbg("failed to read bad block table from primary boot block,"
-+							" trying from backup");
-+		error = msb_read_bad_block_table(msb, 1);
-+	}
-+
-+	if (error)
-+		return error;
-+
-+	/* *drum roll* Scan the media */
-+	error = msb_ftl_scan(msb);
-+	if (error) {
-+		pr_err("Scan of media failed");
-+		return error;
-+	}
-+
-+	return 0;
-+
-+}
-+
-+static int msb_do_write_request(struct msb_data *msb, int lba,
-+	int page, struct scatterlist *sg, size_t len, int *sucessfuly_written)
-+{
-+	int error = 0;
-+	off_t offset = 0;
-+	*sucessfuly_written = 0;
-+
-+	while (offset < len) {
-+		if (page == 0 && len - offset >= msb->block_size) {
-+
-+			if (msb->cache_block_lba == lba)
-+				msb_cache_discard(msb);
-+
-+			dbg_verbose("Writing whole lba %d", lba);
-+			error = msb_update_block(msb, lba, sg, offset);
-+			if (error)
-+				return error;
-+
-+			offset += msb->block_size;
-+			*sucessfuly_written += msb->block_size;
-+			lba++;
-+			continue;
+ 	if (xattrs_buf) {
+ 		msg->middle = ceph_buffer_get(xattrs_buf);
+ 		fc->xattr_len = cpu_to_le32(xattrs_buf->vec.iov_len);
+ 		msg->hdr.middle_len = cpu_to_le32(xattrs_buf->vec.iov_len);
+ 	}
+-
++	
+ 	ceph_con_send(&session->s_con, msg);
+ 	return 0;
+ }
+@@ -1179,7 +1207,9 @@ static int __send_cap(struct ceph_mds_client *mdsc, struct ceph_cap *cap,
+ 		op, keep, want, flushing, seq, flush_tid, issue_seq, mseq,
+ 		size, max_size, &mtime, &atime, time_warp_seq,
+ 		uid, gid, mode, xattr_version, xattr_blob,
+-		follows);
++		follows,
++		&ci->i_inline_data
++		);
+ 	if (ret < 0) {
+ 		dout("error sending cap msg, must requeue %p\n", inode);
+ 		delayed = 1;
+@@ -1300,7 +1330,9 @@ retry:
+ 			     capsnap->time_warp_seq,
+ 			     capsnap->uid, capsnap->gid, capsnap->mode,
+ 			     capsnap->xattr_version, capsnap->xattr_blob,
+-			     capsnap->follows);
++			     capsnap->follows,
++			     &ci->i_inline_data
++			     );
+ 
+ 		next_follows = capsnap->follows + 1;
+ 		ceph_put_cap_snap(capsnap);
+@@ -2386,6 +2418,20 @@ static void handle_cap_grant(struct inode *inode, struct ceph_mds_caps *grant,
+ 	ceph_fill_file_size(inode, issued,
+ 			    le32_to_cpu(grant->truncate_seq),
+ 			    le64_to_cpu(grant->truncate_size), size);
++	
++	if ((newcaps & CEPH_CAP_FILE_CACHE) &&
++      (le32_to_cpu(grant->inline_version) >= ci->i_inline_data.version)) {
++    	ci->i_inline_data.version = le32_to_cpu(grant->inline_version);
++		struct ceph_mds_caps *s = grant+1;
++		u32 *p = (u32 *)s;
++		ci->i_inline_data.length = le32_to_cpu(*p);
++		if (ci->i_inline_data.length) {
++			if (ci->i_inline_data.data == NULL)
++				ci->i_inline_data.data = kmalloc(CEPH_INLINE_SIZE, GFP_NOFS);
++			p++;
++			memcpy(ci->i_inline_data.data, p, ci->i_inline_data.length);  
 +		}
++  	}
+ 	ceph_decode_timespec(&mtime, &grant->mtime);
+ 	ceph_decode_timespec(&atime, &grant->atime);
+ 	ceph_decode_timespec(&ctime, &grant->ctime);
+@@ -3092,3 +3138,4 @@ int ceph_encode_dentry_release(void **p, struct dentry *dentry,
+ 	spin_unlock(&dentry->d_lock);
+ 	return ret;
+ }
 +
-+		error = msb_cache_write(msb, lba, page, false, sg, offset);
-+		if (error)
-+			return error;
-+
-+		offset += msb->page_size;
-+		*sucessfuly_written += msb->page_size;
-+
-+		page++;
-+		if (page == msb->pages_in_block) {
-+			page = 0;
-+			lba++;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int msb_do_read_request(struct msb_data *msb, int lba,
-+		int page, struct scatterlist *sg, int len, int *sucessfuly_read)
-+{
-+	int error = 0;
-+	int offset = 0;
-+	*sucessfuly_read = 0;
-+
-+	while (offset < len) {
-+
-+		error = msb_cache_read(msb, lba, page, sg, offset);
-+		if (error)
-+			return error;
-+
-+		offset += msb->page_size;
-+		*sucessfuly_read += msb->page_size;
-+
-+		page++;
-+		if (page == msb->pages_in_block) {
-+			page = 0;
-+			lba++;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static void msb_io_work(struct work_struct *work)
-+{
-+	struct msb_data *msb = container_of(work, struct msb_data, io_work);
-+	int page, error, len;
-+	sector_t lba;
-+	unsigned long flags;
-+	struct scatterlist *sg = msb->prealloc_sg;
-+
-+	dbg_verbose("IO: work started");
-+
-+	while (1) {
-+		spin_lock_irqsave(&msb->q_lock, flags);
-+
-+		if (msb->need_flush_cache) {
-+			msb->need_flush_cache = false;
-+			spin_unlock_irqrestore(&msb->q_lock, flags);
-+			msb_cache_flush(msb);
-+			continue;
-+		}
-+
-+		if (!msb->req) {
-+			msb->req = blk_fetch_request(msb->queue);
-+			if (!msb->req) {
-+				dbg_verbose("IO: no more requests exiting");
-+				spin_unlock_irqrestore(&msb->q_lock, flags);
-+				return;
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index e51558f..1b46147 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -421,6 +421,45 @@ static ssize_t ceph_sync_read(struct file *file, char __user *data,
+ 	if (ret < 0)
+ 		goto done;
+ 
++	struct ceph_inode_info *ci = ceph_inode(inode);
++	struct ceph_fs_client *fsc = ceph_sb_to_client(inode->i_sb);
++	struct ceph_mds_client *mdsc = fsc->mdsc;
++	struct ceph_mds_request *req;
++	
++	if ((ci->i_inline_data.version != CEPH_INLINE_DISABLED) && 
++			(ceph_caps_issued(ci) & CEPH_CAP_FILE_CACHE) == 0) {
++			req = ceph_mdsc_create_request(mdsc, CEPH_MDS_OP_GETATTR, USE_ANY_MDS);
++			if (IS_ERR(req))
++				return PTR_ERR(req);
++			req->r_inode = inode;
++			ihold(inode);
++			req->r_num_caps = 1;
++			req->r_args.getattr.mask = cpu_to_le32(CEPH_STAT_CAP_INLINE);
++			ret = ceph_mdsc_do_request(mdsc, NULL, req);
++			ceph_mdsc_put_request(req);
++			if (off >= inode->i_size) {
++				*checkeof = 1;
++				return 0;
 +			}
++			if (off < ci->i_inline_data.length) {
++				ret = ci->i_inline_data.length - off;
++				if (len < ret)
++					ret = len;
++				copy_to_user(data, ci->i_inline_data.data+off, ret);
++				off = off + ret;				
++				*poff = off;
++				if (off < ci->i_inline_data.length) {
++					return ret;
++				}
++				if (ci->i_inline_data.version < CEPH_INLINE_MIGRATION) {						
++					*checkeof = 1;						
++					return ret;
++				}
++				len = len - ret;
++				data = data + ret;
++			}
++	}
++	
+ 	ret = striped_read(inode, off, len, pages, num_pages, checkeof,
+ 			   file->f_flags & O_DIRECT,
+ 			   (unsigned long)data & ~PAGE_MASK);
+@@ -512,6 +551,41 @@ static ssize_t ceph_sync_write(struct file *file, const char __user *data,
+ 	else
+ 		do_sync = 1;
+ 
++	if ((ci->i_inline_data.version != CEPH_INLINE_DISABLED) &&
++			(ceph_caps_issued(ci) & CEPH_CAP_FILE_CACHE) == 0) {
++			if (pos < CEPH_INLINE_SIZE) {
++					ret = CEPH_INLINE_SIZE - pos;
++					if (left < ret)
++						ret = left;
++					if (ci->i_inline_data.data == NULL) {
++						ci->i_inline_data.data = kmalloc(CEPH_INLINE_SIZE, GFP_NOFS);
++					}
++					copy_from_user(ci->i_inline_data.data, data, ret);
++					ci->i_inline_data.offset = pos;
++					ci->i_inline_data.length = ret;
++					ci->i_inline_data.dirty_data_only = true;
++					spin_lock(&ci->i_ceph_lock);
++					int dirty = __ceph_mark_dirty_caps(ci, CEPH_CAP_FILE_WR | CEPH_CAP_FILE_BUFFER);
++					spin_unlock(&ci->i_ceph_lock);
++					if (dirty)
++						__mark_inode_dirty(inode, dirty);
++					pos = pos + ret;
++					if (pos < CEPH_INLINE_SIZE) {
++						*offset = pos;
++						return ret;
++					}
++					if (ci->i_inline_data.version < CEPH_INLINE_MIGRATION) {						
++						*offset = pos;
++						left = left - ret;
++						data = data + ret;
++						written = ret;
++						ci->i_inline_data.version = CEPH_INLINE_MIGRATION;
++					}
++				}else {
++					ci->i_inline_data.version = CEPH_INLINE_MIGRATION;
++				}
++	}
++	
+ 	/*
+ 	 * we may need to do multiple writes here if we span an object
+ 	 * boundary.  this isn't atomic, unfortunately.  :(
+@@ -724,6 +798,19 @@ retry_snap:
+ 		return -ENOSPC;
+ 	__ceph_do_pending_vmtruncate(inode);
+ 
++	int want;
++	int have;
++	if (ci->i_inline_data.version != CEPH_INLINE_DISABLED) {
++    	want = 0;
++    	if (pos < CEPH_INLINE_SIZE)
++      		want |= CEPH_CAP_FILE_CACHE;
++    	if (endoff > CEPH_INLINE_SIZE)
++      		want |= CEPH_CAP_FILE_BUFFER;
++  	} else {
++    	want = CEPH_CAP_FILE_BUFFER;
++  	}
++  	ceph_get_caps(ci, CEPH_CAP_FILE_WR, want, &have, endoff);
++
+ 	/*
+ 	 * try to do a buffered write.  if we don't have sufficient
+ 	 * caps, we'll get -EAGAIN from generic_file_aio_write, or a
+@@ -732,7 +819,7 @@ retry_snap:
+ 	if (!(iocb->ki_filp->f_flags & O_DIRECT) &&
+ 	    !(inode->i_sb->s_flags & MS_SYNCHRONOUS) &&
+ 	    !(fi->flags & CEPH_F_SYNC)) {
+-		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
++		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);		
+ 		if (ret >= 0)
+ 			written = ret;
+ 
+@@ -747,6 +834,7 @@ retry_snap:
+ 			goto out;
+ 	}
+ 
++
+ 	dout("aio_write %p %llx.%llx %llu~%u getting caps. i_size %llu\n",
+ 	     inode, ceph_vinop(inode), pos + written,
+ 	     (unsigned)iov->iov_len - written, inode->i_size);
+diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
+index 2971eaa..0259be1 100644
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -376,6 +376,12 @@ struct inode *ceph_alloc_inode(struct super_block *sb)
+ 
+ 	INIT_WORK(&ci->i_vmtruncate_work, ceph_vmtruncate_work);
+ 
++	ci->i_inline_data.version = 1;
++	ci->i_inline_data.length = 0;
++	ci->i_inline_data.data = NULL;
++	ci->i_inline_data.dirty_data_only = false;
++	ci->i_inline_data.offset = 0;
++	
+ 	return &ci->vfs_inode;
+ }
+ 
+@@ -629,6 +635,17 @@ static int fill_inode(struct inode *inode,
+ 					  le32_to_cpu(info->truncate_seq),
+ 					  le64_to_cpu(info->truncate_size),
+ 					  le64_to_cpu(info->size));
++	
++	u32 inline_version = le32_to_cpu(info->inline_version);
++	if (inline_version) {
++		ci->i_inline_data.version = le32_to_cpu(info->inline_version);
++		ci->i_inline_data.length = le32_to_cpu(iinfo->inline_len);
++		if (ci->i_inline_data.length) {
++			ci->i_inline_data.data = kmalloc(CEPH_INLINE_SIZE, GFP_NOFS);
++			memcpy(ci->i_inline_data.data, iinfo->inline_data, ci->i_inline_data.length);			
 +		}
-+
-+		spin_unlock_irqrestore(&msb->q_lock, flags);
-+
-+		/* If card was removed meanwhile */
-+		if (!msb->req)
-+			return;
-+
-+		/* process the request */
-+		dbg_verbose("IO: processing new request");
-+		blk_rq_map_sg(msb->queue, msb->req, sg);
-+
-+		lba = blk_rq_pos(msb->req);
-+
-+		sector_div(lba, msb->page_size / 512);
-+		page = do_div(lba, msb->pages_in_block);
-+
-+		if (rq_data_dir(msb->req) == READ)
-+			error = msb_do_read_request(msb, lba, page, sg,
-+				blk_rq_bytes(msb->req), &len);
-+		else
-+			error = msb_do_write_request(msb, lba, page, sg,
-+				blk_rq_bytes(msb->req), &len);
-+
-+		spin_lock_irqsave(&msb->q_lock, flags);
-+
-+		if (len)
-+			if (!__blk_end_request(msb->req, 0, len))
-+				msb->req = NULL;
-+
-+		if (error && msb->req) {
-+			dbg_verbose("IO: ending one sector "
-+					"of the request with error");
-+			if (!__blk_end_request(msb->req, error, msb->page_size))
-+				msb->req = NULL;
-+		}
-+
-+		if (msb->req)
-+			dbg_verbose("IO: request still pending");
-+
-+		spin_unlock_irqrestore(&msb->q_lock, flags);
 +	}
-+}
++	
+ 	ceph_fill_file_time(inode, issued,
+ 			    le32_to_cpu(info->time_warp_seq),
+ 			    &ctime, &mtime, &atime);
+@@ -944,7 +961,7 @@ int ceph_fill_trace(struct super_block *sb, struct ceph_mds_request *req,
+ 	struct ceph_fs_client *fsc = ceph_sb_to_client(sb);
+ 	int i = 0;
+ 	int err = 0;
+-
++	
+ 	dout("fill_trace %p is_dentry %d is_target %d\n", req,
+ 	     rinfo->head->is_dentry, rinfo->head->is_target);
+ 
+diff --git a/fs/ceph/mds_client.c b/fs/ceph/mds_client.c
+index 9165eb8..ff96d51 100644
+--- a/fs/ceph/mds_client.c
++++ b/fs/ceph/mds_client.c
+@@ -70,9 +70,9 @@ static int parse_reply_info_in(void **p, void *end,
+ 	*p += sizeof(struct ceph_mds_reply_inode) +
+ 		sizeof(*info->in->fragtree.splits) *
+ 		le32_to_cpu(info->in->fragtree.nsplits);
+-
++	
+ 	ceph_decode_32_safe(p, end, info->symlink_len, bad);
+-	ceph_decode_need(p, end, info->symlink_len, bad);
++	ceph_decode_need(p, end, info->symlink_len, bad);	
+ 	info->symlink = *p;
+ 	*p += info->symlink_len;
+ 
+@@ -82,10 +82,14 @@ static int parse_reply_info_in(void **p, void *end,
+ 	else
+ 		memset(&info->dir_layout, 0, sizeof(info->dir_layout));
+ 
+-	ceph_decode_32_safe(p, end, info->xattr_len, bad);
+-	ceph_decode_need(p, end, info->xattr_len, bad);
++	ceph_decode_32_safe(p, end, info->xattr_len, bad);	
++	ceph_decode_need(p, end, info->xattr_len, bad);	
+ 	info->xattr_data = *p;
+ 	*p += info->xattr_len;
++	ceph_decode_32_safe(p, end, info->inline_len, bad);
++	ceph_decode_need(p, end, info->inline_len, bad);
++	info->inline_data = *p;
++	*p += info->inline_len;
+ 	return 0;
+ bad:
+ 	return err;
+@@ -273,7 +277,7 @@ static int parse_reply_info(struct ceph_msg *msg,
+ 	ceph_decode_32_safe(&p, end, len, bad);
+ 	if (len > 0) {
+ 		ceph_decode_need(&p, end, len, bad);
+-		err = parse_reply_info_extra(&p, p+len, info, features);
++		err = parse_reply_info_extra(&p, p+len, info, features);		
+ 		if (err < 0)
+ 			goto out_bad;
+ 	}
+diff --git a/fs/ceph/mds_client.h b/fs/ceph/mds_client.h
+index dd26846..846759b 100644
+--- a/fs/ceph/mds_client.h
++++ b/fs/ceph/mds_client.h
+@@ -41,6 +41,8 @@ struct ceph_mds_reply_info_in {
+ 	char *symlink;
+ 	u32 xattr_len;
+ 	char *xattr_data;
++	u32 inline_len;
++	char *inline_data;
+ };
+ 
+ /*
+diff --git a/fs/ceph/super.h b/fs/ceph/super.h
+index 66ebe72..cfb5ad6 100644
+--- a/fs/ceph/super.h
++++ b/fs/ceph/super.h
+@@ -245,6 +245,18 @@ struct ceph_inode_xattrs_info {
+ 	u64 version, index_version;
+ };
+ 
++#define CEPH_INLINE_SIZE       (1 << 8)
++#define CEPH_INLINE_DISABLED   ((__u32)-1)
++#define CEPH_INLINE_MIGRATION  (CEPH_INLINE_DISABLED >> 1)
 +
-+static DEFINE_IDR(msb_disk_idr); /*set of used disk numbers */
-+static DEFINE_MUTEX(msb_disk_lock); /* protects against races in open/release */
-+
-+static int msb_bd_open(struct block_device *bdev, fmode_t mode)
-+{
-+	struct gendisk *disk = bdev->bd_disk;
-+	struct msb_data *msb = disk->private_data;
-+
-+	dbg_verbose("block device open");
-+
-+	mutex_lock(&msb_disk_lock);
-+
-+	if (msb && msb->card)
-+		msb->usage_count++;
-+
-+	mutex_unlock(&msb_disk_lock);
-+	return 0;
-+}
-+
-+static void msb_data_clear(struct msb_data *msb)
-+{
-+	kfree(msb->boot_page);
-+	kfree(msb->used_blocks_bitmap);
-+	kfree(msb->lba_to_pba_table);
-+	kfree(msb->cache);
-+	msb->card = NULL;
-+}
-+
-+static int msb_disk_release(struct gendisk *disk)
-+{
-+	struct msb_data *msb = disk->private_data;
-+
-+	dbg_verbose("block device release");
-+	mutex_lock(&msb_disk_lock);
-+
-+	if (msb) {
-+		if (msb->usage_count)
-+			msb->usage_count--;
-+
-+		if (!msb->usage_count) {
-+			kfree(msb);
-+			disk->private_data = NULL;
-+			idr_remove(&msb_disk_idr, msb->disk_id);
-+			put_disk(disk);
-+		}
-+	}
-+	mutex_unlock(&msb_disk_lock);
-+	return 0;
-+}
-+
-+static int msb_bd_release(struct gendisk *disk, fmode_t mode)
-+{
-+	return msb_disk_release(disk);
-+}
-+
-+static int msb_bd_getgeo(struct block_device *bdev,
-+				 struct hd_geometry *geo)
-+{
-+	struct msb_data *msb = bdev->bd_disk->private_data;
-+	*geo = msb->geometry;
-+	return 0;
-+}
-+
-+static int msb_prepare_req(struct request_queue *q, struct request *req)
-+{
-+	if (req->cmd_type != REQ_TYPE_FS &&
-+				req->cmd_type != REQ_TYPE_BLOCK_PC) {
-+		blk_dump_rq_flags(req, "MS unsupported request");
-+		return BLKPREP_KILL;
-+	}
-+	req->cmd_flags |= REQ_DONTPREP;
-+	return BLKPREP_OK;
-+}
-+
-+static void msb_submit_req(struct request_queue *q)
-+{
-+	struct memstick_dev *card = q->queuedata;
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct request *req = NULL;
-+
-+	dbg_verbose("Submit request");
-+
-+	if (msb->card_dead) {
-+		dbg("Refusing requests on removed card");
-+
-+		WARN_ON(!msb->io_queue_stopped);
-+
-+		while ((req = blk_fetch_request(q)) != NULL)
-+			__blk_end_request_all(req, -ENODEV);
-+		return;
-+	}
-+
-+	if (msb->req)
-+		return;
-+
-+	if (!msb->io_queue_stopped)
-+		queue_work(msb->io_queue, &msb->io_work);
-+}
-+
-+static int msb_check_card(struct memstick_dev *card)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	return (msb->card_dead == 0);
-+}
-+
-+static void msb_stop(struct memstick_dev *card)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	unsigned long flags;
-+
-+	dbg("Stopping all msblock IO");
-+
-+	spin_lock_irqsave(&msb->q_lock, flags);
-+	blk_stop_queue(msb->queue);
-+	msb->io_queue_stopped = true;
-+	spin_unlock_irqrestore(&msb->q_lock, flags);
-+
-+	del_timer_sync(&msb->cache_flush_timer);
-+	flush_workqueue(msb->io_queue);
-+
-+	if (msb->req) {
-+		spin_lock_irqsave(&msb->q_lock, flags);
-+		blk_requeue_request(msb->queue, msb->req);
-+		msb->req = NULL;
-+		spin_unlock_irqrestore(&msb->q_lock, flags);
-+	}
-+
-+}
-+
-+static void msb_start(struct memstick_dev *card)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	unsigned long flags;
-+
-+	dbg("Resuming IO from msblock");
-+
-+	msb_invalidate_reg_window(msb);
-+
-+	spin_lock_irqsave(&msb->q_lock, flags);
-+	if (!msb->io_queue_stopped || msb->card_dead) {
-+		spin_unlock_irqrestore(&msb->q_lock, flags);
-+		return;
-+	}
-+	spin_unlock_irqrestore(&msb->q_lock, flags);
-+
-+	/* Kick cache flush anyway, its harmless */
-+	msb->need_flush_cache = true;
-+	msb->io_queue_stopped = false;
-+
-+	spin_lock_irqsave(&msb->q_lock, flags);
-+	blk_start_queue(msb->queue);
-+	spin_unlock_irqrestore(&msb->q_lock, flags);
-+
-+	queue_work(msb->io_queue, &msb->io_work);
-+
-+}
-+
-+static const struct block_device_operations msb_bdops = {
-+	.open    = msb_bd_open,
-+	.release = msb_bd_release,
-+	.getgeo  = msb_bd_getgeo,
-+	.owner   = THIS_MODULE
++struct ceph_inline_data_info {
++	u32 version;
++	u32 length;
++	char *data;
++	bool dirty_data_only;
++	u32 offset;
 +};
 +
-+/* Registers the block device */
-+static int msb_init_disk(struct memstick_dev *card)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct memstick_host *host = card->host;
-+	int rc;
-+	u64 limit = BLK_BOUNCE_HIGH;
-+	unsigned long capacity;
-+
-+	if (host->dev.dma_mask && *(host->dev.dma_mask))
-+		limit = *(host->dev.dma_mask);
-+
-+	mutex_lock(&msb_disk_lock);
-+	msb->disk_id = idr_alloc(&msb_disk_idr, card, 0, 256, GFP_KERNEL);
-+	mutex_unlock(&msb_disk_lock);
-+
-+	if (msb->disk_id  < 0)
-+		return msb->disk_id;
-+
-+	msb->disk = alloc_disk(0);
-+	if (!msb->disk) {
-+		rc = -ENOMEM;
-+		goto out_release_id;
-+	}
-+
-+	msb->queue = blk_init_queue(msb_submit_req, &msb->q_lock);
-+	if (!msb->queue) {
-+		rc = -ENOMEM;
-+		goto out_put_disk;
-+	}
-+
-+	msb->queue->queuedata = card;
-+	blk_queue_prep_rq(msb->queue, msb_prepare_req);
-+
-+	blk_queue_bounce_limit(msb->queue, limit);
-+	blk_queue_max_hw_sectors(msb->queue, MS_BLOCK_MAX_PAGES);
-+	blk_queue_max_segments(msb->queue, MS_BLOCK_MAX_SEGS);
-+	blk_queue_max_segment_size(msb->queue,
-+				   MS_BLOCK_MAX_PAGES * msb->page_size);
-+	blk_queue_logical_block_size(msb->queue, msb->page_size);
-+
-+	sprintf(msb->disk->disk_name, "msblk%d", msb->disk_id);
-+	msb->disk->fops = &msb_bdops;
-+	msb->disk->private_data = msb;
-+	msb->disk->queue = msb->queue;
-+	msb->disk->driverfs_dev = &card->dev;
-+	msb->disk->flags |= GENHD_FL_EXT_DEVT;
-+
-+	capacity = msb->pages_in_block * msb->logical_block_count;
-+	capacity *= (msb->page_size / 512);
-+	set_capacity(msb->disk, capacity);
-+	dbg("Set total disk size to %lu sectors", capacity);
-+
-+	msb->usage_count = 1;
-+	msb->io_queue = alloc_ordered_workqueue("ms_block", WQ_MEM_RECLAIM);
-+	INIT_WORK(&msb->io_work, msb_io_work);
-+	sg_init_table(msb->prealloc_sg, MS_BLOCK_MAX_SEGS+1);
-+
-+	if (msb->read_only)
-+		set_disk_ro(msb->disk, 1);
-+
-+	msb_start(card);
-+	add_disk(msb->disk);
-+	dbg("Disk added");
-+	return 0;
-+
-+out_put_disk:
-+	put_disk(msb->disk);
-+out_release_id:
-+	mutex_lock(&msb_disk_lock);
-+	idr_remove(&msb_disk_idr, msb->disk_id);
-+	mutex_unlock(&msb_disk_lock);
-+	return rc;
-+}
-+
-+static int msb_probe(struct memstick_dev *card)
-+{
-+	struct msb_data *msb;
-+	int rc = 0;
-+
-+	msb = kzalloc(sizeof(struct msb_data), GFP_KERNEL);
-+	if (!msb)
-+		return -ENOMEM;
-+	memstick_set_drvdata(card, msb);
-+	msb->card = card;
-+	spin_lock_init(&msb->q_lock);
-+
-+	rc = msb_init_card(card);
-+	if (rc)
-+		goto out_free;
-+
-+	rc = msb_init_disk(card);
-+	if (!rc) {
-+		card->check = msb_check_card;
-+		card->stop = msb_stop;
-+		card->start = msb_start;
-+		return 0;
-+	}
-+out_free:
-+	memstick_set_drvdata(card, NULL);
-+	msb_data_clear(msb);
-+	kfree(msb);
-+	return rc;
-+}
-+
-+static void msb_remove(struct memstick_dev *card)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	unsigned long flags;
-+
-+	if (!msb->io_queue_stopped)
-+		msb_stop(card);
-+
-+	dbg("Removing the disk device");
-+
-+	/* Take care of unhandled + new requests from now on */
-+	spin_lock_irqsave(&msb->q_lock, flags);
-+	msb->card_dead = true;
-+	blk_start_queue(msb->queue);
-+	spin_unlock_irqrestore(&msb->q_lock, flags);
-+
-+	/* Remove the disk */
-+	del_gendisk(msb->disk);
-+	blk_cleanup_queue(msb->queue);
-+	msb->queue = NULL;
-+
-+	mutex_lock(&msb_disk_lock);
-+	msb_data_clear(msb);
-+	mutex_unlock(&msb_disk_lock);
-+
-+	msb_disk_release(msb->disk);
-+	memstick_set_drvdata(card, NULL);
-+}
-+
-+#ifdef CONFIG_PM
-+
-+static int msb_suspend(struct memstick_dev *card, pm_message_t state)
-+{
-+	msb_stop(card);
-+	return 0;
-+}
-+
-+static int msb_resume(struct memstick_dev *card)
-+{
-+	struct msb_data *msb = memstick_get_drvdata(card);
-+	struct msb_data *new_msb = NULL;
-+	bool card_dead = true;
-+
-+#ifndef CONFIG_MEMSTICK_UNSAFE_RESUME
-+	msb->card_dead = true;
-+	return 0;
-+#endif
-+	mutex_lock(&card->host->lock);
-+
-+	new_msb = kzalloc(sizeof(struct msb_data), GFP_KERNEL);
-+	if (!new_msb)
-+		goto out;
-+
-+	new_msb->card = card;
-+	memstick_set_drvdata(card, new_msb);
-+	spin_lock_init(&new_msb->q_lock);
-+	sg_init_table(msb->prealloc_sg, MS_BLOCK_MAX_SEGS+1);
-+
-+	if (msb_init_card(card))
-+		goto out;
-+
-+	if (msb->block_size != new_msb->block_size)
-+		goto out;
-+
-+	if (memcmp(msb->boot_page, new_msb->boot_page,
-+					sizeof(struct ms_boot_page)))
-+		goto out;
-+
-+	if (msb->logical_block_count != new_msb->logical_block_count ||
-+		memcmp(msb->lba_to_pba_table, new_msb->lba_to_pba_table,
-+						msb->logical_block_count))
-+		goto out;
-+
-+	if (msb->block_count != new_msb->block_count ||
-+		memcmp(msb->used_blocks_bitmap, new_msb->used_blocks_bitmap,
-+							msb->block_count / 8))
-+		goto out;
-+
-+	card_dead = false;
-+out:
-+	if (card_dead)
-+		dbg("Card was removed/replaced during suspend");
-+
-+	msb->card_dead = card_dead;
-+	memstick_set_drvdata(card, msb);
-+
-+	if (new_msb) {
-+		msb_data_clear(new_msb);
-+		kfree(new_msb);
-+	}
-+
-+	msb_start(card);
-+	mutex_unlock(&card->host->lock);
-+	return 0;
-+}
-+#else
-+
-+#define msb_suspend NULL
-+#define msb_resume NULL
-+
-+#endif /* CONFIG_PM */
-+
-+static struct memstick_device_id msb_id_tbl[] = {
-+	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
-+	 MEMSTICK_CLASS_FLASH},
-+
-+	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
-+	 MEMSTICK_CLASS_ROM},
-+
-+	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
-+	 MEMSTICK_CLASS_RO},
-+
-+	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_LEGACY, MEMSTICK_CATEGORY_STORAGE,
-+	 MEMSTICK_CLASS_WP},
-+
-+	{MEMSTICK_MATCH_ALL, MEMSTICK_TYPE_DUO, MEMSTICK_CATEGORY_STORAGE_DUO,
-+	 MEMSTICK_CLASS_DUO},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(memstick, msb_id_tbl);
-+
-+
-+static struct memstick_driver msb_driver = {
-+	.driver = {
-+		.name  = DRIVER_NAME,
-+		.owner = THIS_MODULE
-+	},
-+	.id_table = msb_id_tbl,
-+	.probe    = msb_probe,
-+	.remove   = msb_remove,
-+	.suspend  = msb_suspend,
-+	.resume   = msb_resume
-+};
-+
-+static int major;
-+
-+static int __init msb_init(void)
-+{
-+	int rc = register_blkdev(0, DRIVER_NAME);
-+
-+	if (rc < 0) {
-+		pr_err("failed to register major (error %d)\n", rc);
-+		return rc;
-+	}
-+
-+	major = rc;
-+	rc = memstick_register_driver(&msb_driver);
-+	if (rc) {
-+		unregister_blkdev(major, DRIVER_NAME);
-+		pr_err("failed to register memstick driver (error %d)\n", rc);
-+	}
-+
-+	return rc;
-+}
-+
-+static void __exit msb_exit(void)
-+{
-+	memstick_unregister_driver(&msb_driver);
-+	unregister_blkdev(major, DRIVER_NAME);
-+	idr_destroy(&msb_disk_idr);
-+}
-+
-+module_init(msb_init);
-+module_exit(msb_exit);
-+
-+module_param(cache_flush_timeout, int, S_IRUGO);
-+MODULE_PARM_DESC(cache_flush_timeout,
-+				"Cache flush timeout in msec (1000 default)");
-+module_param(debug, int, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(debug, "Debug level (0-2)");
-+
-+module_param(verify_writes, bool, S_IRUGO);
-+MODULE_PARM_DESC(verify_writes, "Read back and check all data that is written");
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Maxim Levitsky");
-+MODULE_DESCRIPTION("Sony MemoryStick block device driver");
-diff --git a/drivers/memstick/core/ms_block.h b/drivers/memstick/core/ms_block.h
-new file mode 100644
-index 0000000..91df347
---- /dev/null
-+++ b/drivers/memstick/core/ms_block.h
-@@ -0,0 +1,290 @@
-+/*
-+ *  ms_block.h - Sony MemoryStick (legacy) storage support
-+
-+ *  Copyright (C) 2012 Maxim Levitsky <maximlevitsky@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Minor portions of the driver are copied from mspro_block.c which is
-+ * Copyright (C) 2007 Alex Dubov <oakad@yahoo.com>
-+ *
-+ * Also ms structures were copied from old broken driver by same author
-+ * These probably come from MS spec
-+ *
-+ */
-+
-+#ifndef MS_BLOCK_NEW_H
-+#define MS_BLOCK_NEW_H
-+
-+#define MS_BLOCK_MAX_SEGS      32
-+#define MS_BLOCK_MAX_PAGES     ((2 << 16) - 1)
-+
-+#define MS_BLOCK_MAX_BOOT_ADDR 0x000c
-+#define MS_BLOCK_BOOT_ID       0x0001
-+#define MS_BLOCK_INVALID       0xffff
-+#define MS_MAX_ZONES           16
-+#define MS_BLOCKS_IN_ZONE      512
-+
-+#define MS_BLOCK_MAP_LINE_SZ   16
-+#define MS_BLOCK_PART_SHIFT    3
-+
-+
-+#define MEMSTICK_UNCORR_ERROR (MEMSTICK_STATUS1_UCFG | \
-+		MEMSTICK_STATUS1_UCEX | MEMSTICK_STATUS1_UCDT)
-+
-+#define MEMSTICK_CORR_ERROR (MEMSTICK_STATUS1_FGER | MEMSTICK_STATUS1_EXER | \
-+	MEMSTICK_STATUS1_DTER)
-+
-+#define MEMSTICK_INT_ERROR (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR)
-+
-+#define MEMSTICK_OVERWRITE_FLAG_NORMAL \
-+	(MEMSTICK_OVERWRITE_PGST1 | \
-+	MEMSTICK_OVERWRITE_PGST0  | \
-+	MEMSTICK_OVERWRITE_BKST)
-+
-+#define MEMSTICK_OV_PG_NORMAL \
-+	(MEMSTICK_OVERWRITE_PGST1 | MEMSTICK_OVERWRITE_PGST0)
-+
-+#define MEMSTICK_MANAGMENT_FLAG_NORMAL \
-+	(MEMSTICK_MANAGEMENT_SYSFLG |  \
-+	MEMSTICK_MANAGEMENT_SCMS1   |  \
-+	MEMSTICK_MANAGEMENT_SCMS0)     \
-+
-+struct ms_boot_header {
-+	unsigned short block_id;
-+	unsigned short format_reserved;
-+	unsigned char  reserved0[184];
-+	unsigned char  data_entry;
-+	unsigned char  reserved1[179];
-+} __packed;
-+
-+
-+struct ms_system_item {
-+	unsigned int  start_addr;
-+	unsigned int  data_size;
-+	unsigned char data_type_id;
-+	unsigned char reserved[3];
-+} __packed;
-+
-+struct ms_system_entry {
-+	struct ms_system_item disabled_block;
-+	struct ms_system_item cis_idi;
-+	unsigned char         reserved[24];
-+} __packed;
-+
-+struct ms_boot_attr_info {
-+	unsigned char      memorystick_class;
-+	unsigned char      format_unique_value1;
-+	unsigned short     block_size;
-+	unsigned short     number_of_blocks;
-+	unsigned short     number_of_effective_blocks;
-+	unsigned short     page_size;
-+	unsigned char      extra_data_size;
-+	unsigned char      format_unique_value2;
-+	unsigned char      assembly_time[8];
-+	unsigned char      format_unique_value3;
-+	unsigned char      serial_number[3];
-+	unsigned char      assembly_manufacturer_code;
-+	unsigned char      assembly_model_code[3];
-+	unsigned short     memory_manufacturer_code;
-+	unsigned short     memory_device_code;
-+	unsigned short     implemented_capacity;
-+	unsigned char      format_unique_value4[2];
-+	unsigned char      vcc;
-+	unsigned char      vpp;
-+	unsigned short     controller_number;
-+	unsigned short     controller_function;
-+	unsigned char      reserved0[9];
-+	unsigned char      transfer_supporting;
-+	unsigned short     format_unique_value5;
-+	unsigned char      format_type;
-+	unsigned char      memorystick_application;
-+	unsigned char      device_type;
-+	unsigned char      reserved1[22];
-+	unsigned char      format_uniqure_value6[2];
-+	unsigned char      reserved2[15];
-+} __packed;
-+
-+struct ms_cis_idi {
-+	unsigned short general_config;
-+	unsigned short logical_cylinders;
-+	unsigned short reserved0;
-+	unsigned short logical_heads;
-+	unsigned short track_size;
-+	unsigned short page_size;
-+	unsigned short pages_per_track;
-+	unsigned short msw;
-+	unsigned short lsw;
-+	unsigned short reserved1;
-+	unsigned char  serial_number[20];
-+	unsigned short buffer_type;
-+	unsigned short buffer_size_increments;
-+	unsigned short long_command_ecc;
-+	unsigned char  firmware_version[28];
-+	unsigned char  model_name[18];
-+	unsigned short reserved2[5];
-+	unsigned short pio_mode_number;
-+	unsigned short dma_mode_number;
-+	unsigned short field_validity;
-+	unsigned short current_logical_cylinders;
-+	unsigned short current_logical_heads;
-+	unsigned short current_pages_per_track;
-+	unsigned int   current_page_capacity;
-+	unsigned short mutiple_page_setting;
-+	unsigned int   addressable_pages;
-+	unsigned short single_word_dma;
-+	unsigned short multi_word_dma;
-+	unsigned char  reserved3[128];
-+} __packed;
-+
-+
-+struct ms_boot_page {
-+	struct ms_boot_header    header;
-+	struct ms_system_entry   entry;
-+	struct ms_boot_attr_info attr;
-+} __packed;
-+
-+struct msb_data {
-+	unsigned int			usage_count;
-+	struct memstick_dev		*card;
-+	struct gendisk			*disk;
-+	struct request_queue		*queue;
-+	spinlock_t			q_lock;
-+	struct hd_geometry		geometry;
-+	struct attribute_group		attr_group;
-+	struct request			*req;
-+	int				caps;
-+	int				disk_id;
-+
-+	/* IO */
-+	struct workqueue_struct		*io_queue;
-+	bool				io_queue_stopped;
-+	struct work_struct		io_work;
-+	bool				card_dead;
-+
-+	/* Media properties */
-+	struct ms_boot_page		*boot_page;
-+	u16				boot_block_locations[2];
-+	int				boot_block_count;
-+
-+	bool				read_only;
-+	unsigned short			page_size;
-+	int				block_size;
-+	int				pages_in_block;
-+	int				zone_count;
-+	int				block_count;
-+	int				logical_block_count;
-+
-+	/* FTL tables */
-+	unsigned long			*used_blocks_bitmap;
-+	unsigned long			*erased_blocks_bitmap;
-+	u16				*lba_to_pba_table;
-+	int				free_block_count[MS_MAX_ZONES];
-+	bool				ftl_initialized;
-+
-+	/* Cache */
-+	unsigned char			*cache;
-+	unsigned long			valid_cache_bitmap;
-+	int				cache_block_lba;
-+	bool				need_flush_cache;
-+	struct timer_list		cache_flush_timer;
-+
-+	/* Preallocated buffers */
-+	unsigned char			*block_buffer;
-+	struct scatterlist		prealloc_sg[MS_BLOCK_MAX_SEGS+1];
-+
-+
-+	/* handler's local data */
-+	struct ms_register_addr		reg_addr;
-+	bool				addr_valid;
-+
-+	u8				command_value;
-+	bool				command_need_oob;
-+	struct scatterlist		*current_sg;
-+	int				current_sg_offset;
-+
-+	struct ms_register		regs;
-+	int				current_page;
-+
-+	int				state;
-+	int				exit_error;
-+	bool				int_polling;
-+	unsigned long			int_timeout;
-+
-+};
-+
-+enum msb_readpage_states {
-+	MSB_RP_SEND_BLOCK_ADDRESS = 0,
-+	MSB_RP_SEND_READ_COMMAND,
-+
-+	MSB_RP_SEND_INT_REQ,
-+	MSB_RP_RECEIVE_INT_REQ_RESULT,
-+
-+	MSB_RP_SEND_READ_STATUS_REG,
-+	MSB_RP_RECIVE_STATUS_REG,
-+
-+	MSB_RP_SEND_OOB_READ,
-+	MSB_RP_RECEIVE_OOB_READ,
-+
-+	MSB_RP_SEND_READ_DATA,
-+	MSB_RP_RECEIVE_READ_DATA,
-+};
-+
-+enum msb_write_block_states {
-+	MSB_WB_SEND_WRITE_PARAMS = 0,
-+	MSB_WB_SEND_WRITE_OOB,
-+	MSB_WB_SEND_WRITE_COMMAND,
-+
-+	MSB_WB_SEND_INT_REQ,
-+	MSB_WB_RECEIVE_INT_REQ,
-+
-+	MSB_WB_SEND_WRITE_DATA,
-+	MSB_WB_RECEIVE_WRITE_CONFIRMATION,
-+};
-+
-+enum msb_send_command_states {
-+	MSB_SC_SEND_WRITE_PARAMS,
-+	MSB_SC_SEND_WRITE_OOB,
-+	MSB_SC_SEND_COMMAND,
-+
-+	MSB_SC_SEND_INT_REQ,
-+	MSB_SC_RECEIVE_INT_REQ,
-+
-+};
-+
-+enum msb_reset_states {
-+	MSB_RS_SEND,
-+	MSB_RS_CONFIRM,
-+};
-+
-+enum msb_par_switch_states {
-+	MSB_PS_SEND_SWITCH_COMMAND,
-+	MSB_PS_SWICH_HOST,
-+	MSB_PS_CONFIRM,
-+};
-+
-+struct chs_entry {
-+	unsigned long size;
-+	unsigned char sec;
-+	unsigned short cyl;
-+	unsigned char head;
-+};
-+
-+static int msb_reset(struct msb_data *msb, bool full);
-+
-+static int h_msb_default_bad(struct memstick_dev *card,
-+						struct memstick_request **mrq);
-+
-+#define __dbg(level, format, ...) \
-+	do { \
-+		if (debug >= level) \
-+			pr_err(format "\n", ## __VA_ARGS__); \
-+	} while (0)
-+
-+
-+#define dbg(format, ...)		__dbg(1, format, ## __VA_ARGS__)
-+#define dbg_verbose(format, ...)	__dbg(2, format, ## __VA_ARGS__)
-+
-+#endif
+ /*
+  * Ceph inode.
+  */
+@@ -331,6 +343,8 @@ struct ceph_inode_info {
+ 
+ 	struct work_struct i_vmtruncate_work;
+ 
++	struct ceph_inline_data_info i_inline_data;
++
+ 	struct inode vfs_inode; /* at end */
+ };
+ 
+diff --git a/include/linux/ceph/ceph_fs.h b/include/linux/ceph/ceph_fs.h
+index cf6f4d9..6554d77 100644
+--- a/include/linux/ceph/ceph_fs.h
++++ b/include/linux/ceph/ceph_fs.h
+@@ -457,6 +457,7 @@ struct ceph_mds_reply_inode {
+ 	struct ceph_file_layout layout;
+ 	struct ceph_timespec ctime, mtime, atime;
+ 	__le32 time_warp_seq;
++	__le32 inline_version;
+ 	__le64 size, max_size, truncate_size;
+ 	__le32 truncate_seq;
+ 	__le32 mode, uid, gid;
+@@ -563,6 +564,7 @@ int ceph_flags_to_mode(int flags);
+ #define CEPH_STAT_CAP_MTIME    CEPH_CAP_FILE_SHARED
+ #define CEPH_STAT_CAP_SIZE     CEPH_CAP_FILE_SHARED
+ #define CEPH_STAT_CAP_ATIME    CEPH_CAP_FILE_SHARED  /* fixme */
++#define CEPH_STAT_CAP_INLINE   CEPH_CAP_FILE_SHARED
+ #define CEPH_STAT_CAP_XATTR    CEPH_CAP_XATTR_SHARED
+ #define CEPH_STAT_CAP_INODE_ALL (CEPH_CAP_PIN |			\
+ 				 CEPH_CAP_AUTH_SHARED |	\
+@@ -640,6 +642,8 @@ struct ceph_mds_caps {
+ 	struct ceph_timespec mtime, atime, ctime;
+ 	struct ceph_file_layout layout;
+ 	__le32 time_warp_seq;
++
++	__le32 inline_version;
+ } __attribute__ ((packed));
+ 
+ /* cap release msg head */
+diff --git a/net/ceph/messenger.c b/net/ceph/messenger.c
+index 5ccf87e..a0e836d 100644
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -1914,7 +1914,7 @@ static int read_partial_message(struct ceph_connection *con)
+ 	}
+ 
+ 	/* (page) data */
+-	while (con->in_msg_pos.data_pos < data_len) {
++    	while (con->in_msg_pos.data_pos < data_len) {	
+ 		if (m->pages) {
+ 			ret = read_partial_message_pages(con, m->pages,
+ 						 data_len, do_datacrc);
 -- 
 1.7.9.5
 
-
---=-9EGkuEBc07v3H+cFobdJ--
 
