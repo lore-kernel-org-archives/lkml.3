@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab3GHQ2W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:28:22 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46192 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752250Ab3GHQ2T (ORCPT
+	id S1752547Ab3GHQaY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:30:24 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:44290 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab3GHQaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:28:19 -0400
-Date: Mon, 8 Jul 2013 16:02:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sourav Poddar <sourav.poddar@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, grant.likely@linaro.org,
-        balbi@ti.com, rnayak@ti.com, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20130708150226.GA16401@sirena.org.uk>
-References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
- <1373290980-17883-2-git-send-email-sourav.poddar@ti.com>
+	Mon, 8 Jul 2013 12:30:22 -0400
+From: Paul Moore <paul@paul-moore.com>
+To: Waiman Long <waiman.long@hp.com>, Eric Paris <eparis@parisplace.org>
+Cc: Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, selinux@tycho.nsa.gov
+Subject: Re: [PATCH 1/2 v5] SELinux: Reduce overhead of mls_level_isvalid() function call
+Date: Mon, 08 Jul 2013 12:30:17 -0400
+Message-ID: <2187595.WquvNei6zx@sifl>
+User-Agent: KMail/4.10.5 (Linux/3.9.5-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <51D6FE08.8030904@hp.com>
+References: <1370886908-65256-1-git-send-email-Waiman.Long@hp.com> <51B70EE4.5030209@tycho.nsa.gov> <51D6FE08.8030904@hp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
-Content-Disposition: inline
-In-Reply-To: <1373290980-17883-2-git-send-email-sourav.poddar@ti.com>
-X-Cookie: You dialed 5483.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.118
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC/PATCH 1/3] driver: spi: Modify core to compute the message
- length
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, July 05, 2013 01:10:32 PM Waiman Long wrote:
+> On 06/11/2013 07:49 AM, Stephen Smalley wrote:
+> > On 06/10/2013 01:55 PM, Waiman Long wrote:
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+...
 
-On Mon, Jul 08, 2013 at 07:12:58PM +0530, Sourav Poddar wrote:
-> Make spi core calculate the message length while
-> populating the other transfer parameters. This will
-> be useful in cases where controller driver need to configure its=20
-> framelength field without iterating through the linklist again in the
-> driver controller.
+> >> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> > 
+> > Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
+> 
+> Thank for the Ack. Will that patch go into v3.11?
 
-This seems fine but I'm going to hold off on applying it until it's
-reqired since it'll bloat the structure a little and it's a bit unusual
-to need it.  We should do an audit in case some drivers do need this
-though...
+[NOTE: I add the SELinux list to the CC line, for future reference, be sure to 
+send your SELinux patches there.]
 
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Your patch looked reasonable to me and Stephen ACK'd it so I went ahead and 
+pulled the 1/2 patch into my lblnet-next tree.  It is probably an abuse of the 
+system, but as you noted it in the description, it does have an impact on 
+socket creation so it isn't completely unrelated ;)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+If you don't want me to include your patch let me know and I'll drop it.
 
-iQIcBAEBAgAGBQJR2tR/AAoJELSic+t+oim9BegP/0QJG84t44al+maP3PrnLkoY
-EJwwx9c+VQqsGEQLAPztyIAJQEuCrd6PHcoiqcB4nRvPH2SHr7iqz6GnPtibEZ3k
-cUWRvxQyYudl0w6i68WkWGohO+7upWMsi8MJkDFndGRHJv1rvakMLM4NH+JAIINP
-YywsYB5ysPLFDT+6P86EIk0S8zzzeySsP8RZ0R3FdDLWng/ZwSrClS/05SAeeAvh
-qP28NH5QC5KvsLnXW7VG7fAiW8GDIkZBPobbCTznhqK039kRetHitjR0ozh1bojE
-xXBctCxVn97V04qlbd/HH5PRlyBBi04TbRf9MYVWHbApvUEPM72vol15jHF5K0Oc
-jW+OuCyi2ev+Cy/uxjnNYDUU5W45C3j9NvPIuGP2wTgv/dXWjnGGCrq1E6EpMGNL
-LQngwj0sfi9A2FlsiLT9tb1eQwfCsix3gXOIEiA8ChRLyd9R9ixsUF4aRzW767K/
-xkO1ZP6far0z72QhOZeWst6LlqGJBz6+1Ym7QPsgB7YaLbov8hID/ej6iDnzbhJG
-lNOOx87yJImlF6MDjBPjmUAMZX8czUXY3Iyd5zhnhhNw/1xfM9oGAwGx9TLZcyHN
-TsPF2YvL716e9ujYi2/Jn2zeKjp6ZcTG/AGKfwM2LoO6in90A3i5jwV4kZ/TiYEW
-H6w+QzNrbatEcIoRnfp/
-=gsIH
------END PGP SIGNATURE-----
+Now, being in my lblnet-next tree means pretty much nothing in terms of 
+actually getting upstream, but it will at least get the patch into tomorrow's 
+spin of the linux-next tree.  I think is a good thing as it allows you to say 
+"my patch has been in linux-next for the past X weeks!" whenever Eric gets 
+around to merging patches again.
 
---k1lZvvs/B4yU6o8G--
+Here are the details for the lblnet-next tree:
+
+ * git://git.infradead.org/users/pcmoore/lblnet-2.6_next
+ * http://git.infradead.org/users/pcmoore/lblnet-2.6_next
+
+Also, a snapshot of what currently resides there:
+
+Paul Moore (9):
+      selinux: fix problems in netnode when BUG() is compiled out
+      lsm: split the xfrm_state_alloc_security() hook implementation
+      selinux: cleanup and consolidate the XFRM alloc/clone/delete/free code
+      selinux: cleanup selinux_xfrm_policy_lookup() ... 
+      selinux: cleanup selinux_xfrm_sock_rcv_skb() ... 
+      selinux: cleanup some comment and whitespace issues in the XFRM code
+      selinux: cleanup selinux_xfrm_decode_session()
+      selinux: cleanup the XFRM header
+      selinux: remove the BUG_ON() from selinux_skb_xfrm_sid()
+
+Waiman Long (1):
+      SELinux: Reduce overhead of mls_level_isvalid() function call
+
+ include/linux/security.h        |   26 ++
+ security/capability.c           |   15 +
+ security/security.c             |   13 -
+ security/selinux/hooks.c        |   11 +
+ security/selinux/include/xfrm.h |   45 ++--
+ security/selinux/netnode.c      |    2
+ security/selinux/ss/ebitmap.c   |   20 ++
+ security/selinux/ss/ebitmap.h   |    2
+ security/selinux/ss/mls.c       |   22 +-
+ security/selinux/ss/mls_types.h |    2
+ security/selinux/xfrm.c         |  453 ++++++++++++++++---------------------
+ 11 files changed, 291 insertions(+), 320 deletions(-)
+
+-- 
+paul moore
+www.paul-moore.com
+
