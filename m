@@ -1,109 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753235Ab3GHVE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 17:04:58 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:60667 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752946Ab3GHVE4 (ORCPT
+	id S1753269Ab3GHV0c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 17:26:32 -0400
+Received: from mx-out.ocsa-data.net ([194.36.166.37]:53857 "EHLO
+	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab3GHV03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 17:04:56 -0400
-Date: Mon, 8 Jul 2013 23:04:52 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
-        linux-mtd@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
-Subject: Re: MTD EEPROM support and driver integration
-Message-ID: <20130708210452.GL11243@lukather>
-References: <20130705201118.GM2959@lukather>
- <5811519.oHVuMujf0I@wuerfel>
- <20130706120112.GA11069@lukather>
- <8997501.Dchyii8uWX@wuerfel>
- <20130707071501.GD11243@lukather>
- <20130708083614.GP27646@sirena.org.uk>
+	Mon, 8 Jul 2013 17:26:29 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8/UBlNHSEJa6utmr"
-Content-Disposition: inline
-In-Reply-To: <20130708083614.GP27646@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Mon, 08 Jul 2013 23:26:26 +0200
+From: Yann Droneaud <ydroneaud@opteya.com>
+To: Roland Dreier <roland@purestorage.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-rdma@vger.kernel.org,
+        ydroneaud@opteya.com
+Subject: Re: [PATCH 03/13] infiniband: use =?UTF-8?Q?get=5Funused=5Ffd=5Ff?=
+ =?UTF-8?Q?lags=28=30=29=20instead=20of=20get=5Funused=5Ffd=28=29?=
+Organization: OPTEYA
+In-Reply-To: <CAL1RGDXV1_BjSLrQDFdVQ1_D75+bMtOtikHOUp8VBiy_OJUf=w@mail.gmail.com>
+References: <cover.1372777600.git.ydroneaud@opteya.com>
+ <651e35493f6a970610d35785e1972ec9e2426abf.1372777600.git.ydroneaud@opteya.com>
+ <CAL1RGDXV1_BjSLrQDFdVQ1_D75+bMtOtikHOUp8VBiy_OJUf=w@mail.gmail.com>
+Message-ID: <f58540dc64fec1ac0e496dfcd3cc1af7@meuh.org>
+User-Agent: Roundcube Webmail/0.9.2
+X-abuse-contact: abuse@ocsa-data.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le 08.07.2013 20:23, Roland Dreier a écrit :
+> Thanks, I just applied a patch to convert to
+> get_unused_fd_flags(O_CLOEXEC) in uverbs, since there isn't anything
+> useful that can be done with uverbs fds across an exec.
+> 
 
---8/UBlNHSEJa6utmr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks.
 
-On Mon, Jul 08, 2013 at 09:36:14AM +0100, Mark Brown wrote:
-> On Sun, Jul 07, 2013 at 09:15:01AM +0200, Maxime Ripard wrote:
-> > On Sat, Jul 06, 2013 at 09:06:49PM +0200, Arnd Bergmann wrote:
->=20
-> > > We also have a bunch of OTP drivers spread around the kernel, it prob=
-ably
-> > > makes sense to consolidate them at the same time, at least on the DT =
-binding
-> > > side if not the device drivers.
->=20
-> > From a quick grep, the only one I've seen so far are:
-> >   - imx6q, that has a hook at machine start to poke into its OCOTP to
-> >     retrieve some frequency scaling parameters it seems. I'm not sure
-> >     how the current solution could improve the situation for this
-> >     use-case, but the DT bindings of the OCOTP is just a DT node, with
-> >     no clients, so we have nothing to worry about here.
-> >   - imx28, that has a hook at machine start to look up the MAC address
-> >     values and patch the ethernet controller nodes to add the right
-> >     local-mac-address property. This one could benefit from the new
-> >     bindings, but we already mentionned it, and I intended to develop
-> >     with an imx28 board anyway.
-> >   - picoxcell-pc3x3 DTSI has a node for a OTP device, but they don't
-> >     seem to be doing anything with it, nor do they seem to have a driver
-> >     for it. So I guess we don't care about migrating for this one
-> >     either.
->=20
-> > Did you have other cases in mind?
->=20
-> We have some OTP support in the ab8500 and wm831x MFD drivers too but
-> they just expose the data.
+In fact, InfiniBand was my main target and I kept this change (setting 
+O_CLOEXEC)
+for another batch.
 
-I guess you mean ab8100, right?
+It's following my patch on libibverbs "[PATCH] open files with close on 
+exec flag"
+http://thread.gmane.org/gmane.linux.drivers.rdma/15727
+http://marc.info/?l=linux-rdma&m=136908991102575&w=2
 
-Anyway, thanks for pointing this out
+This patch was already quoting Dan Walsh, "Excuse me son, but your code 
+is leaking !!!"
+http://danwalsh.livejournal.com/53603.html but I couldn't resist to post 
+it again.
 
-Maxime
+BTW, I was working on the rationnal/commit message for setting flags to 
+O_CLOEXEC
+on kernel side, please find the draft if revelant.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+--------------------8<----------------------
 
---8/UBlNHSEJa6utmr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+InfiniBand verbs/RDMA: use O_CLOEXEC
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+This subsystem is allocating new file descriptor through the InfiniBand 
+verbs / RDMA API.
 
-iQIcBAEBAgAGBQJR2yl0AAoJEBx+YmzsjxAgQhsP/1RiP1Ft/gRJR9yxekJHQ29P
-FOMSNecQQwcoh4gpReIZVcKiq/OeM7CPdzTXu70ma/5E2l/WbVYjXzE6P2zPZyn9
-vii7+BLp4VltgkGvKS4yEDaJE8sY0V9Eztk2WKIJaF4Rg8dBU+dfv1boH60YFzrJ
-NX5Xn8D/OtTZ2oaD+jlPc3a1gEZrg3V8GV2eYMLTQFUHKDedNJwdwdHuCEGR8XTu
-NKSF2It5z7ZvOkrCwveVL8nZ/ehFKJGVz7DNbj88p+XnCiZ+EOKZCbi/OZ924UwD
-XAeL03obiKwWzqRe7IBsu+PK1W3BSl6CrKYHe+YAmO9jwNIeUpNjUY2WqcrNhEkq
-5ZIWM9wkexm72TJZ0K3X48ysX7h9AtqJuYRHUc/bMz1bU2s8o0BwdlXL+C2CdBZl
-p5SEyby2bJlZVQiIuJLzZGvH5r4AIPuz6s4d0c/O4oK9Nrq7BKIf8CFtvx0U7MXu
-OuUYvyhoRdDhlaXfXgK292l+YyHO33EHN93oB99jhdRNUnVitcW2YC9fGcWgN+B6
-zgSoBCBR649hzm8sNw3n24FouNGfPHrJIDpHDEy9cImolC6GeimzKEd8d9kVXw9x
-VqRg68qQrcE6EM0zrsYYRG5uiHKKUpaoBglR+ibNIATfOuUQt3EZYPY4OPg8bJi6
-+04FoPiWLmYI29X6IIUC
-=rjWp
------END PGP SIGNATURE-----
+Thoses file descriptors are created after a write() from userspace to a 
+special device file.
+No read operation is needed to get the file descriptor: it is returned 
+to userspace
+in a buffer whose address was stored as part of the buffer passed to 
+write().
+If the write() succeed, the response buffer is updated and the new file 
+descriptor is available.
 
---8/UBlNHSEJa6utmr--
+But such file descriptors are mostly hidden to application developpers
+by libibverbs / librdma_cm libraries API.
+In fact, application developpers could use InfiniBand verbs / RDMA 
+without
+using directly the file descriptors.
+
+Here's how are created the two file descriptors (using mlx4 as example):
+
+- ibv_context.async_fd:
+
+   ---- kernel ----
+
+   ib_uverbs_get_context() : linux/drivers/infiniband/core/uverbs_cmd.c
+   uverbs_cmd_table[IB_USER_VERBS_CMD_GET_CONTEXT]() : 
+linux/drivers/infiniband/core/uverbs_main.c
+   ib_uverbs_write() : linux/drivers/infiniband/core/uverbs_main.c
+   uverbs_mmap_fops.write : linux/drivers/infiniband/core/uverbs_main.c
+
+   ---- userspace ----
+
+   ibv_cmd_get_context() : libibverbs/src/cmd.c
+   mlx4_alloc_context() : libmlx4/src/mlx4.c
+   mlx4_dev_ops.alloc_context : libmlx4/src/mlx4.c
+   __ibv_open_device() : libibverbs/src/device.c
+
+- ibv_comp_channel.fd:
+
+   ---- kernel ----
+
+   ib_uverbs_create_comp_channel() : 
+linux/drivers/infiniband/core/uverbs_cmd.c
+   uverbs_cmd_table[IB_USER_VERBS_CMD_CREATE_COMP_CHANNEL]() : 
+linux/drivers/infiniband/core/uverbs_main.c
+   ib_uverbs_write() : linux/drivers/infiniband/core/uverbs_main.c
+   uverbs_mmap_fops.write : linux/drivers/infiniband/core/uverbs_main.c
+
+   ---- userspace ----
+
+   ibv_create_comp_channel() : libibverbs/src/verbs.c
+
+But those file descriptors are of no use for another program executed 
+through exec():
+
+- without the memory mappings for special memory pages,
+   the file descriptor are of no use ...
+
+- the userland libraries/drivers are not ready to
+   found the devices already opened.
+
+[ In fact, supporting fork() is already a challenge for thoses API. ]
+
+So those file descriptors can safely be opened with O_CLOEXEC without
+disturbing users of InfiniBand verbs /RDMA
+
+
+--------------------8<----------------------
+
+
+Regards.
+
+-- 
+Yann Droneaud
+OPTEYA
+
