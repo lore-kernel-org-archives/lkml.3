@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752494Ab3GHPSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 11:18:20 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:49008 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab3GHPSS (ORCPT
+	id S1752569Ab3GHPSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 11:18:40 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:51955 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135Ab3GHPSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 11:18:18 -0400
-Date: Mon, 8 Jul 2013 12:18:10 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Waiman Long <Waiman.Long@hp.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf tools: Fix boolean for NO_LIBPYTHON=1 NO_LIBPERL=1
- build
-Message-ID: <20130708151810.GA3028@ghostprotocols.net>
-References: <1373205339-17550-1-git-send-email-jolsa@redhat.com>
+	Mon, 8 Jul 2013 11:18:39 -0400
+Date: Mon, 8 Jul 2013 11:24:18 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: perf: more ABI breakage
+Message-ID: <alpine.DEB.2.10.1307081115350.2281@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373205339-17550-1-git-send-email-jolsa@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Jul 07, 2013 at 03:55:39PM +0200, Jiri Olsa escreveu:
-> The build is broken for 'NO_LIBPYTHON=1 NO_LIBPERL=1' switches.
-> 
-> The reason is that without perl and python support we
-> dont have TRUE/FALSE macro definitions in dso and vdso
-> objects (added there by commit 7821317).
-> 
-> Using stdbool.h defines instead which seems to be more
-> common in perf code anyway.
 
-Thanks, applied.
+I guess I should have been noisier about this at the time.
 
-- Arnaldo
+Linux 3.9 came with commit
+   e259514eef764a5286873618e34c560ecb6cff13
+that enabled AMD fam15h Northbridge support, by exposing the events as 
+part of the core CPU.
+
+Then Linux 3.10 changed this with
+   c43ca5091a374c1f6778bd7e4a39a5a10735a917
+and split them out as a separate PMU.
+
+This of course breaks libpfm4 and thus PAPI, and so now that 3.10 has come 
+out we've had multiple people complaining about this on the PAPI lists (I 
+can never get them to come complain here, which is why I always look like 
+the lone whiner in these cases).
+
+So can perf_event just break the ABI with impunity?
+
+How many kernel releases do we need to wait before we implement features?
+
+There's not really even a good backwards-compatible fix for this issue, as 
+PAPI presents core-CPU events and uncore-CPU events through different 
+interfaces.
+
+Vince
