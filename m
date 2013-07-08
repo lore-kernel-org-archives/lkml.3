@@ -1,149 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab3GHHXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 03:23:11 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:51017 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab3GHHXJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 03:23:09 -0400
-Subject: [PATCH] drivers/net: caif: fix wrong rtnl_is_locked() usage
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>
-Date: Mon, 08 Jul 2013 11:23:04 +0400
-Message-ID: <20130708072304.20622.60798.stgit@zurg>
-User-Agent: StGit/0.15
+	id S1751845Ab3GHHZv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 03:25:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44963 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392Ab3GHHZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 03:25:50 -0400
+From: Alexander Savchenko <oleksandr.savchenko@ti.com>
+To: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>
+CC: <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Alexander Savchenko <oleksandr.savchenko@ti.com>
+Subject: [PATCH] serial: omap: Initialize platform_data
+Date: Mon, 8 Jul 2013 10:25:43 +0300
+Message-ID: <1373268343-2981-1-git-send-email-oleksandr.savchenko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtnl_is_locked() doesn't check who holds this lock, it just tells that it's
-locked right now. if caif::ldisc_close really can be called under rtrnl_lock
-then it should release net device in other context because there is no way
-to grab rtnl_lock without deadlock.
+From: Vikram Pandita <vikram.pandita@ti.com>
 
-This patch adds work which releases these devices. Also this patch fixes calling
-dev_close/unregister_netdevice without rtnl_lock from caif_ser_exit().
+Otherwise serial driver would crash accessing platform_data that was
+not initialized in functions like:
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Dmitry Tarnyagin <dmitry.tarnyagin@lockless.no>
+        serial_omap_pm(...)
+        ...
+        if (!state && pdata->enable_wakeup)
+                   ^^^^^^^
+        ...
+
+Signed-off-by: Vikram Pandita <vikram.pandita@ti.com>
+Signed-off-by: Alexander Savchenko <oleksandr.savchenko@ti.com>
 ---
- drivers/net/caif/caif_serial.c |   61 ++++++++++++++++++++++++++--------------
- 1 file changed, 39 insertions(+), 22 deletions(-)
+ drivers/tty/serial/omap-serial.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/caif/caif_serial.c b/drivers/net/caif/caif_serial.c
-index 77be3cb..34dea95 100644
---- a/drivers/net/caif/caif_serial.c
-+++ b/drivers/net/caif/caif_serial.c
-@@ -35,8 +35,9 @@ MODULE_ALIAS_LDISC(N_CAIF);
- #define OFF 0
- #define CAIF_MAX_MTU 4096
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index b6d1728..e42b4c9 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -1402,8 +1402,10 @@ static int serial_omap_probe(struct platform_device *pdev)
+ 	struct omap_uart_port_info *omap_up_info = pdev->dev.platform_data;
+ 	int ret;
  
--/*This list is protected by the rtnl lock. */
-+static DEFINE_SPINLOCK(ser_lock);
- static LIST_HEAD(ser_list);
-+static LIST_HEAD(ser_release_list);
- 
- static bool ser_loop;
- module_param(ser_loop, bool, S_IRUGO);
-@@ -308,6 +309,28 @@ static void ldisc_tx_wakeup(struct tty_struct *tty)
- }
- 
- 
-+static void ser_release(struct work_struct *work)
-+{
-+	struct list_head list;
-+	struct ser_device *ser, *tmp;
-+
-+	spin_lock(&ser_lock);
-+	list_replace_init(&ser_release_list, &list);
-+	spin_unlock(&ser_lock);
-+
-+	if (!list_empty(&list)) {
-+		rtnl_lock();
-+		list_for_each_entry_safe(ser, tmp, &list, node) {
-+			dev_close(ser->dev);
-+			unregister_netdevice(ser->dev);
-+			debugfs_deinit(ser);
-+		}
-+		rtnl_unlock();
+-	if (pdev->dev.of_node)
++	if (pdev->dev.of_node) {
+ 		omap_up_info = of_get_uart_port_info(&pdev->dev);
++		pdev->dev.platform_data = omap_up_info;
 +	}
-+}
-+
-+static DECLARE_WORK(ser_release_work, ser_release);
-+
- static int ldisc_open(struct tty_struct *tty)
- {
- 	struct ser_device *ser;
-@@ -321,6 +344,9 @@ static int ldisc_open(struct tty_struct *tty)
- 	if (!capable(CAP_SYS_ADMIN) && !capable(CAP_SYS_TTY_CONFIG))
- 		return -EPERM;
  
-+	/* release devices to avoid name collision */
-+	ser_release(NULL);
-+
- 	sprintf(name, "cf%s", tty->name);
- 	dev = alloc_netdev(sizeof(*ser), name, caifdev_setup);
- 	if (!dev)
-@@ -341,7 +367,9 @@ static int ldisc_open(struct tty_struct *tty)
- 		return -ENODEV;
- 	}
- 
-+	spin_lock(&ser_lock);
- 	list_add(&ser->node, &ser_list);
-+	spin_unlock(&ser_lock);
- 	rtnl_unlock();
- 	netif_stop_queue(dev);
- 	update_tty_status(ser);
-@@ -351,19 +379,13 @@ static int ldisc_open(struct tty_struct *tty)
- static void ldisc_close(struct tty_struct *tty)
- {
- 	struct ser_device *ser = tty->disc_data;
--	/* Remove may be called inside or outside of rtnl_lock */
--	int islocked = rtnl_is_locked();
- 
--	if (!islocked)
--		rtnl_lock();
--	/* device is freed automagically by net-sysfs */
--	dev_close(ser->dev);
--	unregister_netdevice(ser->dev);
--	list_del(&ser->node);
--	debugfs_deinit(ser);
- 	tty_kref_put(ser->tty);
--	if (!islocked)
--		rtnl_unlock();
-+
-+	spin_lock(&ser_lock);
-+	list_move(&ser->node, &ser_release_list);
-+	spin_unlock(&ser_lock);
-+	schedule_work(&ser_release_work);
- }
- 
- /* The line discipline structure. */
-@@ -438,16 +460,11 @@ static int __init caif_ser_init(void)
- 
- static void __exit caif_ser_exit(void)
- {
--	struct ser_device *ser = NULL;
--	struct list_head *node;
--	struct list_head *_tmp;
--
--	list_for_each_safe(node, _tmp, &ser_list) {
--		ser = list_entry(node, struct ser_device, node);
--		dev_close(ser->dev);
--		unregister_netdevice(ser->dev);
--		list_del(node);
--	}
-+	spin_lock(&ser_lock);
-+	list_splice(&ser_list, &ser_release_list);
-+	spin_unlock(&ser_lock);
-+	ser_release(NULL);
-+	cancel_work_sync(&ser_release_work);
- 	tty_unregister_ldisc(N_CAIF);
- 	debugfs_remove_recursive(debugfsdir);
- }
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (!mem) {
+-- 
+1.7.9.5
 
