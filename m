@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165Ab3GHOio (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 10:38:44 -0400
-Received: from smtp-out-123.synserver.de ([212.40.185.123]:1086 "EHLO
-	smtp-out-123.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab3GHOin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 10:38:43 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1773
-Message-ID: <51DACF15.9080303@metafoo.de>
-Date: Mon, 08 Jul 2013 16:39:17 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130116 Icedove/10.0.12
+	id S1752183Ab3GHOmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 10:42:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34166 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751279Ab3GHOmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 10:42:05 -0400
+Date: Mon, 8 Jul 2013 16:42:02 +0200
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: [GIT PULL] ext3 fix & quota cleanup
+Message-ID: <20130708144202.GB12743@quack.suse.cz>
 MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Bo Shen <voice.shen@atmel.com>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [alsa-devel] [PATCH v2 1/5] sound: sam9x5_wm8731: machine driver
- for at91sam9x5 wm8731 boards
-References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com> <1373290193-25300-2-git-send-email-richard.genoud@gmail.com>
-In-Reply-To: <1373290193-25300-2-git-send-email-richard.genoud@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 03:29 PM, Richard Genoud wrote:
-[...]
-> +/*
-> + * Logic for a wm8731 as connected on a at91sam9x5 based board.
-> + */
-> +static int at91sam9x5ek_wm8731_init(struct snd_soc_pcm_runtime *rtd)
-> +{
-[...]
-> +	codec_dai->driver->playback.rates &= SNDRV_PCM_RATE_8000 |
-> +		SNDRV_PCM_RATE_32000 |
-> +		SNDRV_PCM_RATE_48000 |
-> +		SNDRV_PCM_RATE_96000;
-> +	codec_dai->driver->capture.rates &= SNDRV_PCM_RATE_8000 |
-> +		SNDRV_PCM_RATE_32000 |
-> +		SNDRV_PCM_RATE_48000 |
-> +		SNDRV_PCM_RATE_96000;
+  Hello Linus,
 
-That's not right. The driver structure is shared between all instances of
-the codec, a single instance should not modify it. If you need to constrain
-the list of supported rates use snd_pcm_hw_constraint_list().
+  could you please pull from
 
-> +
-> +	/* set the codec system clock for DAC and ADC */
-> +	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
-> +				     MCLK_RATE, SND_SOC_CLOCK_IN);
-> +	if (ret < 0) {
-> +		dev_err(dev, "ASoC: Failed to set WM8731 SYSCLK: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	/* signal a DAPM event */
-> +	snd_soc_dapm_sync(dapm);
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs.git for_linus
 
-This should not be necessary.
+to get a fix of ext3 error reporting from fsync and a quota cleanup.
 
-> +	return 0;
-> +}
+Top of the tree is e628753. The full shortlog is:
 
+Dmitry Monakhov (1):
+      ext3: Fix fsync error handling after filesystem abort.
+
+Joe Perches (1):
+      quota: Convert use of typedef ctl_table to struct ctl_table
+
+The diffstat is
+
+ fs/ext3/fsync.c  |  8 ++++++--
+ fs/ext3/super.c  | 13 ++++++++++++-
+ fs/quota/dquot.c |  6 +++---
+ 3 files changed, 21 insertions(+), 6 deletions(-)
+
+							Thanks
+								Honza
+
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
