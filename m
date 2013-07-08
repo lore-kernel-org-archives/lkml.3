@@ -1,300 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab3GHNb6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:31:58 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:48175 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950Ab3GHNaU (ORCPT
+	id S1752195Ab3GHNhv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:37:51 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:46364 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab3GHNht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:30:20 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Cc: Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        devicetree-discuss@lists.ozlabs.org,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH v2 1/5] sound: sam9x5_wm8731: machine driver for at91sam9x5 wm8731 boards
-Date: Mon,  8 Jul 2013 15:29:49 +0200
-Message-Id: <1373290193-25300-2-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
-References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Mon, 8 Jul 2013 09:37:49 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Bruce Fields <bfields@fieldses.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>
+Subject: [PATCH] locks: close potential race between setlease and open
+Date: Mon,  8 Jul 2013 09:30:55 -0400
+Message-Id: <1373290255-16977-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+As Al Viro points out, there is an unlikely, but possible race between
+opening a file and setting a lease on it. generic_add_lease is done with
+the i_lock held, but the inode->i_flock check in break_lease is
+lockless. It's possible for another task doing an open to do the entire
+pathwalk and call break_lease between the point where generic_add_lease
+checks for a conflicting open and adds the lease to the list. If this
+occurs, we can end up with a lease set on the file with a conflicting
+open.
 
-Description of the Asoc machine driver for an at91sam9x5 based board
-with a wm8731 audio DAC. Wm8731 is clocked by a crystal and used as a
-master on the SSC/I2S interface. Its connections are a headphone jack
-and an Line input jack.
+To guard against that, check again for a conflicting open after adding
+the lease to the i_flock list. If the above race occurs, then we can
+simply unwind the lease setting and return -EAGAIN.
 
-[Richard: this is based on an old patch from Nicolas that I forward
-ported and reworked to use only device tree]
-
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+Cc: Bruce Fields <bfields@fieldses.org>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
 ---
- sound/soc/atmel/Kconfig         |   10 ++
- sound/soc/atmel/Makefile        |    2 +
- sound/soc/atmel/sam9x5_wm8731.c |  206 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 218 insertions(+)
- create mode 100644 sound/soc/atmel/sam9x5_wm8731.c
+ fs/locks.c | 31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
-diff --git a/sound/soc/atmel/Kconfig b/sound/soc/atmel/Kconfig
-index 1c0b185..9eb8c49 100644
---- a/sound/soc/atmel/Kconfig
-+++ b/sound/soc/atmel/Kconfig
-@@ -33,6 +33,16 @@ config SND_AT91_SOC_SAM9G20_WM8731
- 	  Say Y if you want to add support for SoC audio on WM8731-based
- 	  AT91sam9g20 evaluation board.
+diff --git a/fs/locks.c b/fs/locks.c
+index b27a300..9f7f647 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1455,6 +1455,19 @@ int fcntl_getlease(struct file *filp)
+ 	return type;
+ }
  
-+config SND_AT91_SOC_SAM9X5_WM8731
-+	tristate "SoC Audio support for WM8731-based at91sam9x5 board"
-+	depends on ATMEL_SSC && SND_ATMEL_SOC && SOC_AT91SAM9X5
-+	select SND_ATMEL_SOC_SSC
-+	select SND_ATMEL_SOC_DMA
-+	select SND_SOC_WM8731
-+	help
-+	  Say Y if you want to add support for audio SoC on an
-+	  at91sam9x5 based board that is using WM8731 codec.
-+
- config SND_AT91_SOC_AFEB9260
- 	tristate "SoC Audio support for AFEB9260 board"
- 	depends on ARCH_AT91 && ATMEL_SSC && ARCH_AT91 && MACH_AFEB9260 && SND_ATMEL_SOC
-diff --git a/sound/soc/atmel/Makefile b/sound/soc/atmel/Makefile
-index 41967cc..7784c09 100644
---- a/sound/soc/atmel/Makefile
-+++ b/sound/soc/atmel/Makefile
-@@ -11,6 +11,8 @@ obj-$(CONFIG_SND_ATMEL_SOC_SSC) += snd-soc-atmel_ssc_dai.o
- 
- # AT91 Machine Support
- snd-soc-sam9g20-wm8731-objs := sam9g20_wm8731.o
-+snd-soc-sam9x5-wm8731-objs := sam9x5_wm8731.o
- 
- obj-$(CONFIG_SND_AT91_SOC_SAM9G20_WM8731) += snd-soc-sam9g20-wm8731.o
-+obj-$(CONFIG_SND_AT91_SOC_SAM9X5_WM8731) += snd-soc-sam9x5-wm8731.o
- obj-$(CONFIG_SND_AT91_SOC_AFEB9260) += snd-soc-afeb9260.o
-diff --git a/sound/soc/atmel/sam9x5_wm8731.c b/sound/soc/atmel/sam9x5_wm8731.c
-new file mode 100644
-index 0000000..3e5a9f6
---- /dev/null
-+++ b/sound/soc/atmel/sam9x5_wm8731.c
-@@ -0,0 +1,206 @@
-+/*
-+ * sam9x5_wm8731   --	SoC audio for AT91SAM9X5-based boards
-+ *			that are using WM8731 as codec.
-+ *
-+ *  Copyright (C) 2011 Atmel,
-+ *		  Nicolas Ferre <nicolas.ferre@atmel.com>
-+ *
-+ * Based on sam9g20_wm8731.c by:
-+ * Sedji Gaouaou <sedji.gaouaou@atmel.com>
-+ *
-+ * GPL
-+ */
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/kernel.h>
-+#include <linux/clk.h>
-+#include <linux/timer.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/i2c.h>
-+
-+#include <linux/atmel-ssc.h>
-+
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/pcm_params.h>
-+#include <sound/soc.h>
-+
-+#include <asm/mach-types.h>
-+#include <mach/hardware.h>
-+#include <mach/gpio.h>
-+
-+#include "../codecs/wm8731.h"
-+#include "atmel-pcm.h"
-+#include "atmel_ssc_dai.h"
-+
-+#define MCLK_RATE 12288000
-+
-+#define DRV_NAME "sam9x5-snd-wm8731"
-+
-+/*
-+ * Logic for a wm8731 as connected on a at91sam9x5 based board.
-+ */
-+static int at91sam9x5ek_wm8731_init(struct snd_soc_pcm_runtime *rtd)
++static int
++check_conflicting_open(struct dentry *dentry, long arg)
 +{
-+	struct snd_soc_codec *codec = rtd->codec;
-+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
-+	struct snd_soc_dapm_context *dapm = &codec->dapm;
-+	struct device *dev = rtd->dev;
-+	int ret;
++	struct inode *inode = dentry->d_inode;
 +
-+	dev_dbg(dev, "ASoC: %s called\n", __func__);
-+
-+	codec_dai->driver->playback.rates &= SNDRV_PCM_RATE_8000 |
-+		SNDRV_PCM_RATE_32000 |
-+		SNDRV_PCM_RATE_48000 |
-+		SNDRV_PCM_RATE_96000;
-+	codec_dai->driver->capture.rates &= SNDRV_PCM_RATE_8000 |
-+		SNDRV_PCM_RATE_32000 |
-+		SNDRV_PCM_RATE_48000 |
-+		SNDRV_PCM_RATE_96000;
-+
-+	/* set the codec system clock for DAC and ADC */
-+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
-+				     MCLK_RATE, SND_SOC_CLOCK_IN);
-+	if (ret < 0) {
-+		dev_err(dev, "ASoC: Failed to set WM8731 SYSCLK: %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* signal a DAPM event */
-+	snd_soc_dapm_sync(dapm);
++	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
++		return -EAGAIN;
++	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
++	    (atomic_read(&inode->i_count) > 1)))
++		return -EAGAIN;
 +	return 0;
 +}
 +
-+/*
-+ * Audio paths on at91sam9x5ek board:
-+ *
-+ *  |A| ------------> |      | ---R----> Headphone Jack
-+ *  |T| <----\        |  WM  | ---L--/
-+ *  |9| ---> CLK <--> | 8751 | <--R----- Line In Jack
-+ *  |1| <------------ |      | <--L--/
-+ */
-+static const struct snd_soc_dapm_widget at91sam9x5ek_dapm_widgets[] = {
-+	SND_SOC_DAPM_HP("Headphone Jack", NULL),
-+	SND_SOC_DAPM_LINE("Line In Jack", NULL),
-+};
-+
-+static struct snd_soc_dai_link at91sam9x5ek_dai = {
-+	.name = "WM8731",
-+	.stream_name = "WM8731 PCM",
-+	.codec_dai_name = "wm8731-hifi",
-+	.init = at91sam9x5ek_wm8731_init,
-+};
-+
-+static struct snd_soc_card snd_soc_at91sam9x5ek = {
-+	.owner = THIS_MODULE,
-+	.dai_link = &at91sam9x5ek_dai,
-+	.num_links = 1,
-+	.dapm_widgets = at91sam9x5ek_dapm_widgets,
-+	.num_dapm_widgets = ARRAY_SIZE(at91sam9x5ek_dapm_widgets),
-+};
-+
-+static int sam9x5_wm8731_driver_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct device_node *codec_np, *cpu_np;
-+	int ret;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "No device node supplied\n");
-+		return -EINVAL;
-+	}
-+
-+	ret = atmel_ssc_set_audio(0);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev,
-+			"ASoC: Failed to set SSC 0 for audio: %d\n", ret);
-+		return ret;
-+	}
-+
-+	snd_soc_at91sam9x5ek.dev = &pdev->dev;
-+
-+	ret = snd_soc_of_parse_card_name(&snd_soc_at91sam9x5ek, "atmel,model");
-+	if (ret)
-+		goto out;
-+
-+	ret = snd_soc_of_parse_audio_routing(&snd_soc_at91sam9x5ek,
-+					     "atmel,audio-routing");
-+	if (ret)
-+		goto out;
-+
-+	codec_np = of_parse_phandle(np, "atmel,audio-codec", 0);
-+	if (!codec_np) {
-+		dev_err(&pdev->dev, "codec info missing\n");
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	at91sam9x5ek_dai.codec_of_node = codec_np;
-+
-+	cpu_np = of_parse_phandle(np, "atmel,ssc-controller", 0);
-+	if (!cpu_np) {
-+		dev_err(&pdev->dev, "ssc controller node missing\n");
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+	at91sam9x5ek_dai.cpu_of_node = cpu_np;
-+	at91sam9x5ek_dai.platform_of_node = cpu_np;
-+
-+	of_node_put(codec_np);
-+	of_node_put(cpu_np);
-+
-+	at91sam9x5ek_dai.dai_fmt = snd_soc_of_parse_daifmt(np, "atmel,");
-+
-+	ret = snd_soc_register_card(&snd_soc_at91sam9x5ek);
-+	if (ret) {
-+		dev_err(&pdev->dev,
-+			"ASoC: Platform device allocation failed\n");
-+		goto out;
-+	}
-+
-+	platform_set_drvdata(pdev, &snd_soc_at91sam9x5ek);
-+
-+	dev_dbg(&pdev->dev, "ASoC: %s ok\n", __func__);
-+
-+	return ret;
-+
-+out:
-+	atmel_ssc_put_audio(0);
-+	return ret;
-+}
-+
-+static int sam9x5_wm8731_driver_remove(struct platform_device *pdev)
-+{
-+	struct snd_soc_card *card = platform_get_drvdata(pdev);
-+
-+	snd_soc_unregister_card(card);
-+	atmel_ssc_put_audio(0);
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id sam9x5_wm8731_of_match[] = {
-+	{ .compatible = "atmel,sam9x5-audio-wm8731", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, sam9x5_wm8731_of_match);
-+
-+static struct platform_driver sam9x5_wm8731_driver = {
-+	.driver = {
-+		.name = DRV_NAME,
-+		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(sam9x5_wm8731_of_match),
-+	},
-+	.probe = sam9x5_wm8731_driver_probe,
-+	.remove = sam9x5_wm8731_driver_remove,
-+};
-+module_platform_driver(sam9x5_wm8731_driver);
-+
-+/* Module information */
-+MODULE_AUTHOR("Nicolas Ferre <nicolas.ferre@atmel.com>");
-+MODULE_AUTHOR("Richard Genoud <richard.genoud@gmail.com>");
-+MODULE_DESCRIPTION("ALSA SoC machine driver for AT91SAM9x5 - WM8731");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:" DRV_NAME);
+ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
+ {
+ 	struct file_lock *fl, **before, **my_before = NULL, *lease;
+@@ -1464,12 +1477,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+ 
+ 	lease = *flp;
+ 
+-	error = -EAGAIN;
+-	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+-		goto out;
+-	if ((arg == F_WRLCK)
+-	    && ((d_count(dentry) > 1)
+-		|| (atomic_read(&inode->i_count) > 1)))
++	error = check_conflicting_open(dentry, arg);
++	if (error)
+ 		goto out;
+ 
+ 	/*
+@@ -1514,8 +1523,16 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
+ 		goto out;
+ 
+ 	locks_insert_lock(before, lease);
+-	return 0;
+ 
++	/*
++	 * The check in break_lease() is lockless. It's possible for another
++	 * open to race in after we did the earlier check for a conflicting
++	 * open but before the lease was inserted. Check again for a
++	 * conflicting open and cancel the lease if there is one.
++	 */
++	error = check_conflicting_open(dentry, arg);
++	if (error)
++		locks_delete_lock(flp);
+ out:
+ 	return error;
+ }
 -- 
-1.7.10.4
+1.8.1.4
 
