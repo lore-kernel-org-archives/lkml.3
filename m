@@ -1,101 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab3GHMHW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 08:07:22 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:36982 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751770Ab3GHMHV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 08:07:21 -0400
-Date: Mon, 8 Jul 2013 08:07:17 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Mats Liljegren <liljegren.mats2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: lttng and full nohz
-Message-ID: <20130708120717.GA21348@Krystal>
-References: <CA+xJJ1-2zHMjV3AFiprRjChEff=Bynj4uK_1wL6vKVR=H-T8Bg@mail.gmail.com>
+	id S1752297Ab3GHMIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 08:08:21 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38965 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751760Ab3GHMIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 08:08:19 -0400
+Message-ID: <51DAABA6.9050106@ti.com>
+Date: Mon, 8 Jul 2013 17:38:06 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CA+xJJ1-2zHMjV3AFiprRjChEff=Bynj4uK_1wL6vKVR=H-T8Bg@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: George Cherian <george.cherian@ti.com>
+CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, <bigeasy@linutronix.de>
+Subject: Re: [PATCH 5/5] usb: musb: dsps: Remove the phy control from glue
+ and add phy driver APIs
+References: <1373280201-31785-1-git-send-email-george.cherian@ti.com> <1373280201-31785-6-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1373280201-31785-6-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mats Liljegren (liljegren.mats2@gmail.com) wrote:
-> I've been investigating why lttng destroys full nohz mode, and the
-> root cause is that lttng uses timers for flushing trace buffers. So
-> I'm planning on moving the timers to the ticking CPU, so that any CPU
-> using full nohz mode can continue to do so even though they might have
-> tracepoints.
-> 
-> I can see that kernel/sched/core.c has the function
-> get_nohz_timer_target() which tries to find an idle CPU to allocate
-> for a timer that has not specified a CPU to be pinned to.
-> 
-> My question here is: For full nohz mode, should this still be "only"
-> an idle CPU, or should it be translated to a CPU not running in full
-> nohz mode? I'd think this could make it a lot easier to allow
-> applications to make full use of full nohz.
+Hi,
 
-One thing to be aware of wrt LTTng ring buffer: if you look at
-lttng-ring-buffer-client.h, you will notice that we use
+On Monday 08 July 2013 04:13 PM, George Cherian wrote:
+> Remove usb phy control module access from platform glue.
+> The same is now done using amxxxx phy driver and phy-omap-control.
+>
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>   drivers/usb/musb/musb_dsps.c | 105 +++++++++++++++----------------------------
+>   1 file changed, 36 insertions(+), 69 deletions(-)
+>
+> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
+> index 41f135a..8f4e04a 100644
+> --- a/drivers/usb/musb/musb_dsps.c
+> +++ b/drivers/usb/musb/musb_dsps.c
+> @@ -123,49 +123,11 @@ struct dsps_glue {
+>   	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
+>   	struct timer_list timer[2];	/* otg_workaround timer */
+>   	unsigned long last_timer[2];    /* last timer data for each instance */
+> -	u32 __iomem *usb_ctrl[2];
+>   };
+>
+> -#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
+> -#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_1	0x44e10628
+> +#define glue_to_musb(g, i)		platform_get_drvdata(g->musb[i])
+>
+> -static const resource_size_t dsps_control_module_phys[] = {
+> -	DSPS_AM33XX_CONTROL_MODULE_PHYS_0,
+> -	DSPS_AM33XX_CONTROL_MODULE_PHYS_1,
+> -};
+> -
+> -#define USBPHY_CM_PWRDN		(1 << 0)
+> -#define USBPHY_OTG_PWRDN	(1 << 1)
+> -#define USBPHY_OTGVDET_EN	(1 << 19)
+> -#define USBPHY_OTGSESSEND_EN	(1 << 20)
+> -
+> -/**
+> - * musb_dsps_phy_control - phy on/off
+> - * @glue: struct dsps_glue *
+> - * @id: musb instance
+> - * @on: flag for phy to be switched on or off
+> - *
+> - * This is to enable the PHY using usb_ctrl register in system control
+> - * module space.
+> - *
+> - * XXX: This function will be removed once we have a seperate driver for
+> - * control module
+> - */
+> -static void musb_dsps_phy_control(struct dsps_glue *glue, u8 id, u8 on)
+> -{
+> -	u32 usbphycfg;
+>
+> -	usbphycfg = readl(glue->usb_ctrl[id]);
+> -
+> -	if (on) {
+> -		usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
+> -		usbphycfg |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
+> -	} else {
+> -		usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
+> -	}
+> -
+> -	writel(usbphycfg, glue->usb_ctrl[id]);
+> -}
+>   /**
+>    * dsps_musb_enable - enable interrupts
+>    */
+> @@ -411,16 +373,31 @@ static int dsps_musb_init(struct musb *musb)
+>   	void __iomem *reg_base = musb->ctrl_base;
+>   	u32 rev, val;
+>   	int status;
+> +	char phyname[12];
+>
+>   	/* mentor core register starts at offset of 0x400 from musb base */
+>   	musb->mregs += wrp->musb_core_offset;
+>
+> -	/* NOP driver needs change if supporting dual instance */
+> -	usb_nop_xceiv_register();
+> -	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+> +	if (dev->parent->of_node) {
+> +		snprintf(phyname , 12, "am335x-usb%d", pdev->id);
+> +		musb->phy = devm_phy_get(dev->parent, phyname);
+> +		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
+> +							"phys", pdev->id);
+> +	} else {
+> +		snprintf(phyname , 12, "am335x-usb%d", pdev->id);
 
-  .sync = RING_BUFFER_SYNC_PER_CPU,
+Both these snprintf can be moved out of the *if*.
+> +		musb->phy = devm_phy_get(dev, musb->phy_label);
+> +		musb->xceiv = devm_usb_get_phy_dev(dev, pdev->id);
+> +	}
+> +
+>   	if (IS_ERR_OR_NULL(musb->xceiv))
+>   		return -EPROBE_DEFER;
+>
+> +	if (IS_ERR_OR_NULL(musb->phy)) {
 
-as ring buffer synchronization. This means we need to issue event write
-and sub-buffer switch from the CPU owning the buffer, or, in very
-specific cases, if the CPU owning the buffer is offline, we can touch it
-from a remote CPU, but just one (e.g. cpu hotplug code).
+The framework should never return NULL.
 
-For the LTTng ring buffer, there are two timers to take into account:
-switch_timer and read_timer.
-
-The switch_timer is not enabled by default. When it is enabled by the
-end-user, it periodically flush the lttng buffers. If you want to make
-this timer execute from a single timer handler and apply to all buffers
-(without IPI), you will need to use
-
-  .sync = RING_BUFFER_SYNC_GLOBAL,
-
-to allow concurrent updates to a ring buffer from remote CPUs.
-
-The other timer requires less modifications: the read_timer periodically
-checks if the poll() needs to be awakened. It just reads the producer
-offset position and compares it to the current consumer position. This
-one can be moved to a single timer handler that covers all CPUs without
-any change to the "sync" choice.
-
-Please note that the read_timer is current used by default. It can be
-entirely removed if you choose
-
-  .wakeup = RING_BUFFER_WAKEUP_BY_WRITER,
-
-instead of RING_BUFFER_WAKEUP_BY_TIMER. However, if you choose the
-wakeup by writer, the tracer will discard events coming from NMI
-handlers, because some locks need to be taken by the tracing site in
-this mode.
-
-If we care about performance and scalability (we really should), the
-right approach would be to keep RING_BUFFER_SYNC_PER_CPU though, and
-keep the per-CPU timers for periodic flush (switch_timer). We might want
-to hook into the full nohz entry/hooks (hopefully they exist) to move
-the per-cpu timers out of the full nohz CPUs, and enable a new flag on
-these ring buffers that would allow to dynamically change between
-RING_BUFFER_SYNC_PER_CPU and RING_BUFFER_SYNC_GLOBAL for a given ring
-buffer.
-
-Thoughts ?
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+Thanks
+Kishon
