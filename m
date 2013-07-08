@@ -1,80 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab3GHF2T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 01:28:19 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:48232 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab3GHF2S (ORCPT
+	id S1753634Ab3GHFca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 01:32:30 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40256 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab3GHFc3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 01:28:18 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-5d-51da4defd9d9
-From: Jonghwan Choi <jhbird.choi@samsung.com>
-To: "'Jonghwan Choi'" <jhbird.choi@samsung.com>, linux-kernel@vger.kernel.org
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>
-References: 
-In-reply-to: 
-Subject: [PATCH]  PCI: fix typo in iov.c
-Date: Mon, 08 Jul 2013 14:28:14 +0900
-Message-id: <00a301ce7b9b$f1c9bac0$d55d3040$%choi@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac4vhL6OHdYi6A9aR4m9yzeDEXJPogAflJswAu8tBWABA4TFIAFsOElwAIhNXzAAnKxWYACLd58QADUgf7AB+cfNsAAATvIgAMqg8eAAkzGCMAAA5gYwAMf3LxAFffBYYAICyd8w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t8zI933vrcCDS4dZbdY0pRhsaSZ2+Ly
-	rjlsDsweCzaVevRtWcXo8XmTXABzFJdNSmpOZllqkb5dAldG9+yPrAXrWSs65pU1MK5n6WLk
-	5JAQMJFYeWwVO4QtJnHh3no2EFtIYBmjxMN7mjA11/9/Ze5i5AKKLwKKLz8M5fxllLj0/QYT
-	SBWbgK7EsfVbWEFsEQFviVNTfgEVcXAwC2hKHPjvCWIKCXBLrG4OAqngFOCRWPenkxnEFhbQ
-	kJi/pgXsBhYBVYmPL1eC2bwCdhJH5k9jgrAFJX5Mvgd2M7OAlsT6nceZIGx5ic1r3oJtkhBQ
-	l3j0VxfkMhGBGYwS//4dY4WoEZHY9+IdI0hCQmAfu0Rv0xYWiGUCEt8mH2KBaJaV2HSAGeJf
-	SYmDK26wTGCUmIVk9Swkq2chWT0LyYoFjCyrGEVTC5ILipPSi4z1ihNzi0vz0vWS83M3MULi
-	rn8H490D1ocYk4HWT2SWEk3OB8ZtXkm8obGZkYWpiamxkbmlGWnCSuK8ai3WgUIC6Yklqdmp
-	qQWpRfFFpTmpxYcYmTg4pRoY1Xe8WG6Zr7HK+/epVdrWTKlVEVoMJRV5JjHMB/b1531cJhrM
-	X35c2eJ+pHQX0+SrtvLTX1aEf+lWt2UtFgwP+ZMd4vxi/UsxPpfnXgu4H9z+OGlCQmjLkeuP
-	hP/drbBkOHU79kHPn52qxW+OVLVd+fvkji9retiLKeWzX0rsymn+XnJ/pVKsEktxRqKhFnNR
-	cSIAYlx7JNECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDKsWRmVeSWpSXmKPExsVy+t9jAd33vrcCDRpaWSyWNGVYLGnmtri8
-	aw6bA7PHgk2lHn1bVjF6fN4kF8Ac1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hp
-	Ya6kkJeYm2qr5OIToOuWmQO0RkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpI
-	WMeY0T37I2vBetaKjnllDYzrWboYOTkkBEwkrv//ygxhi0lcuLeerYuRi0NIYBGjxMPlh5kh
-	nL+MEpe+32ACqWIT0JU4tn4LK4gtIuAtcWrKL6AiDg5mAU2JA/89QUwhAW6J1c1BIBWcAjwS
-	6/50gs0XFtCQmL+mhR3EZhFQlfj4ciWYzStgJ3Fk/jQmCFtQ4sfke2C3MQtoSazfeZwJwpaX
-	2LzmLdgmCQF1iUd/dUEuExGYwSjx798xVogaEYl9L94xTmAUmoVk1Cwko2YhGTULScsCRpZV
-	jKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFx/Ux6B+OqBotDjAIcjEo8vBKnbwYKsSaWFVfm
-	HmKU4GBWEuEVZ70VKMSbklhZlVqUH19UmpNafIgxGejTicxSosn5wJSTVxJvaGxiZmRpZGZh
-	ZGJuTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MJlU9H4V/Mx9/cGpvpP363x9umXsw
-	5rOc6JmcW/OQ5WT4w2WLerwUe/eUuD8MkZn7h814E/+XSI6SnoWr0i3bP1ozyN9yXqO6MWGv
-	kfLuoJuejsseu1z+trfl1iElrveHVXv4RE6snrFa89opnVA5hlrllLsXj9XVRR+wzY9Keq3k
-	oujQtLJHiaU4I9FQi7moOBEAg8EMLS8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 8 Jul 2013 01:32:29 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <51DA4ED9.60903@jp.fujitsu.com>
+Date: Mon, 08 Jul 2013 14:32:09 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+CC: Vivek Goyal <vgoyal@redhat.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, kexec@lists.infradead.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
+References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com> <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com>
+In-Reply-To: <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Devic3 should be device.
+(2013/07/02 4:32), Michael Holzheu wrote:
+> For zfcpdump we can't map the HSA storage because it is only available
+> via a read interface. Therefore, for the new vmcore mmap feature we have
+> introduce a new mechanism to create mappings on demand.
+>
+> This patch introduces a new architecture function remap_oldmem_pfn_range()
+> that should be used to create mappings with remap_pfn_range() for oldmem
+> areas that can be directly mapped. For zfcpdump this is everything besides
+> of the HSA memory. For the areas that are not mapped by remap_oldmem_pfn_range()
+> a generic vmcore a new generic vmcore fault handler mmap_vmcore_fault()
+> is called.
+>
 
-Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
----
- drivers/pci/iov.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This fault handler is only for s390 specific issue. Other architectures don't need
+this for the time being.
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index de8ffac..de4034e 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -786,7 +786,7 @@ int pci_sriov_set_totalvfs(struct pci_dev *dev, u16
-numvfs)
- EXPORT_SYMBOL_GPL(pci_sriov_set_totalvfs);
- 
- /**
-- * pci_sriov_get_totalvfs -- get total VFs supported on this devic3
-+ * pci_sriov_get_totalvfs -- get total VFs supported on this device
-  * @dev: the PCI PF device
-  *
-  * For a PCIe device with SRIOV support, return the PCIe
+Also, from the same reason, I'm doing this review based on source code only.
+I cannot run the fault handler on meaningful system, which is currently s390 only.
+
+I'm also concerned about the fault handler covers a full range of vmcore, which
+could hide some kind of mmap() bug that results in page fault.
+
+So, the fault handler should be enclosed by ifdef CONFIG_S390 for the time being.
+
+> This handler works as follows:
+>
+> * Get already available or new page from page cache (find_or_create_page)
+> * Check if /proc/vmcore page is filled with data (PageUptodate)
+> * If yes:
+>    Return that page
+> * If no:
+>    Fill page using __vmcore_read(), set PageUptodate, and return page
+>
+
+It seems good to me on this page-in logic.
+
+<cut>
+> @@ -225,6 +250,48 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+>   	return acc;
+>   }
+>
+> +static ssize_t read_vmcore(struct file *file, char __user *buffer,
+> +			   size_t buflen, loff_t *fpos)
+> +{
+> +	return __read_vmcore(buffer, buflen, fpos, 1);
+> +}
+> +
+> +/*
+> + * The vmcore fault handler uses the page cache and fills data using the
+> + * standard __vmcore_read() function.
+> + */
+
+Could you describe usecase of this fault handler on s390?
+
+> +static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+> +{
+> +	struct address_space *mapping = vma->vm_file->f_mapping;
+> +	pgoff_t index = vmf->pgoff;
+> +	struct page *page;
+> +	loff_t src;
+> +	char *buf;
+> +	int rc;
+> +
+
+You should check where faulting address points to valid range.
+If the fault happens on invalid range, return VM_FAULT_SIGBUS.
+
+On s390 case, I think the range except for HSA should be thought of as invalid.
+
+> +	page = find_or_create_page(mapping, index, GFP_KERNEL);
+> +	if (!page)
+> +		return VM_FAULT_OOM;
+> +	if (!PageUptodate(page)) {
+> +		src = index << PAGE_CACHE_SHIFT;
+
+src = (loff_t)index << PAGE_CACHE_SHIFT;
+
+loff_t has long long while index has unsigned long.
+On s390 both might have the same byte length.
+
+Also I prefer offset to src, but this is minor suggestion.
+
+> +		buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
+
+I found page_to_virt() macro.
+
+> +		rc = __read_vmcore(buf, PAGE_SIZE, &src, 0);
+> +		if (rc < 0) {
+> +			unlock_page(page);
+> +			page_cache_release(page);
+> +			return (rc == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS;
+> +		}
+> +		SetPageUptodate(page);
+> +	}
+> +	unlock_page(page);
+> +	vmf->page = page;
+> +	return 0;
+> +}
+> +
+> +static const struct vm_operations_struct vmcore_mmap_ops = {
+> +	.fault = mmap_vmcore_fault,
+> +};
+> +
+>   static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>   {
+>   	size_t size = vma->vm_end - vma->vm_start;
+> @@ -242,6 +309,7 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+>
+>   	vma->vm_flags &= ~(VM_MAYWRITE | VM_MAYEXEC);
+>   	vma->vm_flags |= VM_MIXEDMAP;
+> +	vma->vm_ops = &vmcore_mmap_ops;
+>
+>   	len = 0;
+>
+
 -- 
-1.7.9.5
+Thanks.
+HATAYAMA, Daisuke
 
