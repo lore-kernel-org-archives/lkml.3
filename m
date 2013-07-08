@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab3GHJgN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:36:13 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8651 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab3GHJgM (ORCPT
+	id S1751752Ab3GHJli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 05:41:38 -0400
+Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:16032 "EHLO
+	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751045Ab3GHJlg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:36:12 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 08 Jul 2013 02:35:21 -0700
-Message-ID: <51DA8805.50709@nvidia.com>
-Date: Mon, 8 Jul 2013 17:36:05 +0800
-From: Wei Ni <wni@nvidia.com>
+	Mon, 8 Jul 2013 05:41:36 -0400
+Message-ID: <51DA894D.3050208@itdev.co.uk>
+Date: Mon, 08 Jul 2013 10:41:33 +0100
+From: Nick Dyer <nick.dyer@itdev.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [lm-sensors] [PATCH 1/2] ARM: dt: t30 cardhu: add dt entry for
- lm90
-References: <1372928979-26938-1-git-send-email-wni@nvidia.com> <1372928979-26938-2-git-send-email-wni@nvidia.com> <51D70483.70203@wwwdotorg.org>	<51DA6BD4.1040300@nvidia.com> <20130708095024.041a6d57@endymion.delvare>
-In-Reply-To: <20130708095024.041a6d57@endymion.delvare>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Daniel Kurtz <djkurtz@chromium.org>, Henrik Rydberg <rydberg@euromail.se>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Alan Bowens <Alan.Bowens@atmel.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Meerwald <pmeerw@pmeerw.net>,
+        Benson Leung <bleung@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: Re: [PATCH 26/51] Input: atmel_mxt_ts - Move input device init into
+ separate function
+References: <1372337366-9286-1-git-send-email-nick.dyer@itdev.co.uk> <1372337366-9286-27-git-send-email-nick.dyer@itdev.co.uk> <20130707053407.GC15453@core.coreip.homeip.net>
+In-Reply-To: <20130707053407.GC15453@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 03:50 PM, Jean Delvare wrote:
-> On Mon, 8 Jul 2013 15:35:48 +0800, Wei Ni wrote:
->> On 07/06/2013 01:38 AM, Stephen Warren wrote:
->>> On 07/04/2013 03:09 AM, Wei Ni wrote:
->>>> Enable thermal sensor lm90 for t30 cardhu.
->>>
->>>> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
->>>
->>>> +		nct1008: nct1008 {
->>>> +			compatible = "lm90,nct1008";
->>>
->>> "lm90" isn't a valid vendor prefix. I believe the value you want is
->>> "onnn,nct1008". Same comment for patch 2/2.
->>
->> The lm90 doesn't support device tree very well.
+Dmitry Torokhov wrote:
+> On Thu, Jun 27, 2013 at 01:49:01PM +0100, Nick Dyer wrote:
+>> Signed-off-by: Nick Dyer <nick.dyer@itdev.co.uk>
 > 
-> I doubt it, but if this is the case, then please fix it, instead of
-> working the problem around in a different place.
-> 
->> In the DT, we need to
->> named as "lm90" so that the lm90 driver can be loaded,
-> 
-> Not that I am an expert with regards to DT, but this doesn't make any
-> sense to me. AFAIK DT is about devices, not which drivers handle them.
-> 
->> and we also need
->> to add "nct1008" to indicate this is the nct1008 device, so that the
->> lm90 driver can be loaded with the right i2c_device_id->driver_data.
->>
->> I set the " compatible = "lm90,nct1008" ", this is the simplest way, and
->> we doesn't need to change the lm90.c.
-> 
-> There's no problem with changing the lm90 driver, if this is the right
-> thing to do.
+> So before we allocated input device before requesting IRQ, now we fo it
+> afterwards so there is moment where the interrupt is requested and not
+> disabled and input device is not allocated yet. Is it possible for
+> interrupt to happen at that moment?
 
-Ok, I will add DT support in the lm90.c in my next version patch.
+Yes, and it will be handled correctly, there are guards in the correct
+places to ensure the input device will not be used before being registered.
 
-Thanks.
-Wei.
-
-> 
-
+It is registered at this point since there are several paths that might
+need the interrupt handler (for example, to handle flash if device is in
+failed state, or to upload configuration if necessary).
