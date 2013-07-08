@@ -1,64 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3GHCuK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 22:50:10 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:60506 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab3GHCuH (ORCPT
+	id S1753493Ab3GHCv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 22:51:26 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:49660 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331Ab3GHCvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 22:50:07 -0400
-Message-ID: <51DA28D2.9030104@linux.vnet.ibm.com>
-Date: Mon, 08 Jul 2013 10:49:54 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Sun, 7 Jul 2013 22:51:24 -0400
+X-Greylist: delayed 509 seconds by postgrey-1.27 at vger.kernel.org; Sun, 07 Jul 2013 22:51:24 EDT
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r682gfad003627, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <gregkh@linuxfoundation.org>, <oliver@neukum.org>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <nic_swsd@realtek.com>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next] net/usb: add relative mii functions for r815x
+Date: Mon, 8 Jul 2013 10:41:21 +0800
+Message-ID: <1373251281-2402-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Alex Shi <alex.shi@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Turner <pjt@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH] sched: smart wake-affine
-References: <51A43B16.9080801@linux.vnet.ibm.com> <51D25A80.8090406@linux.vnet.ibm.com> <20130702085202.GA23916@twins.programming.kicks-ass.net> <51D29EE5.8080307@linux.vnet.ibm.com> <20130704091339.GK18898@dyad.programming.kicks-ass.net> <51D5428D.7080805@linux.vnet.ibm.com> <1372934013.9046.16.camel@marge.simpson.net> <51D633DB.5010508@linux.vnet.ibm.com> <1372997318.7315.23.camel@marge.simpson.net> <51D64C84.5080100@linux.vnet.ibm.com> <1373002865.8318.11.camel@marge.simpson.net> <51D664B9.7010407@linux.vnet.ibm.com> <1373179405.19316.41.camel@marge.simpson.net>
-In-Reply-To: <1373179405.19316.41.camel@marge.simpson.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070802-6102-0000-0000-000003D1E50E
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2013 02:43 PM, Mike Galbraith wrote:
-> On Fri, 2013-07-05 at 14:16 +0800, Michael Wang wrote:
-> 
->> PeterZ has suggested some optimization which I sent out yesterday, I
->> suppose they haven't been included into this test yet, correct?
-> 
-> No, that was with both v3 patches applied.  hackbench -l 1000 delta
-> tracked to next pull/build fwiw, but I don't see anything noteworthy
-> elsewhere, so I'm filing it under "tasks/core ~= zillion ~= hohum".
+Base on cdc_ether, add the mii functions for RTL8152 and RTL8153.
+The RTL8152 and RTL8153 support ECM mode which use the driver of
+cdc_ether. Add the mii functions. Then, the basic PHY access is
+possible.
 
-I see, thanks for the testing, Mike :)
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/Makefile    |   2 +-
+ drivers/net/usb/cdc_ether.c |   9 +-
+ drivers/net/usb/r815x.c     | 231 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 239 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/net/usb/r815x.c
 
-I still can't reproduce the issue on my box, so I suggest we put down
-this temporarily, if later more similar report show up, let's try to
-catch the point.
-
-BTW, could you please show me the '/proc/cpuinfo' of your box? I'd like
-to collect some data for analyse later ;-)
-
-Regards,
-Michael Wang
-
-> 
-> -Mike
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+diff --git a/drivers/net/usb/Makefile b/drivers/net/usb/Makefile
+index 9ab5c9d..e817178 100644
+--- a/drivers/net/usb/Makefile
++++ b/drivers/net/usb/Makefile
+@@ -11,7 +11,7 @@ obj-$(CONFIG_USB_HSO)		+= hso.o
+ obj-$(CONFIG_USB_NET_AX8817X)	+= asix.o
+ asix-y := asix_devices.o asix_common.o ax88172a.o
+ obj-$(CONFIG_USB_NET_AX88179_178A)      += ax88179_178a.o
+-obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o
++obj-$(CONFIG_USB_NET_CDCETHER)	+= cdc_ether.o r815x.o
+ obj-$(CONFIG_USB_NET_CDC_EEM)	+= cdc_eem.o
+ obj-$(CONFIG_USB_NET_DM9601)	+= dm9601.o
+ obj-$(CONFIG_USB_NET_SMSC75XX)	+= smsc75xx.o
+diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
+index 4393f14..03ad4dc 100644
+--- a/drivers/net/usb/cdc_ether.c
++++ b/drivers/net/usb/cdc_ether.c
+@@ -646,13 +646,18 @@ static const struct usb_device_id	products [] = {
+ },
+ 
+ /* Realtek RTL8152 Based USB 2.0 Ethernet Adapters */
+-#if defined(CONFIG_USB_RTL8152) || defined(CONFIG_USB_RTL8152_MODULE)
+ {
+ 	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8152, USB_CLASS_COMM,
+ 			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
+ 	.driver_info = 0,
+ },
+-#endif
++
++/* Realtek RTL8153 Based USB 3.0 Ethernet Adapters */
++{
++	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8153, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++	.driver_info = 0,
++},
+ 
+ /*
+  * WHITELIST!!!
+diff --git a/drivers/net/usb/r815x.c b/drivers/net/usb/r815x.c
+new file mode 100644
+index 0000000..6516737
+--- /dev/null
++++ b/drivers/net/usb/r815x.c
+@@ -0,0 +1,231 @@
++#include <linux/module.h>
++#include <linux/netdevice.h>
++#include <linux/mii.h>
++#include <linux/usb.h>
++#include <linux/usb/cdc.h>
++#include <linux/usb/usbnet.h>
++
++#define RTL815x_REQT_READ	0xc0
++#define RTL815x_REQT_WRITE	0x40
++#define RTL815x_REQ_GET_REGS	0x05
++#define RTL815x_REQ_SET_REGS	0x05
++
++#define MCU_TYPE_PLA		0x0100
++#define OCP_BASE		0xe86c
++#define BASE_MII		0xa400
++
++#define BYTE_EN_DWORD		0xff
++#define BYTE_EN_WORD		0x33
++#define BYTE_EN_BYTE		0x11
++
++#define R815x_PHY_ID		32
++#define REALTEK_VENDOR_ID	0x0bda
++
++
++static int pla_read_word(struct usb_device *udev, u16 index)
++{
++	int data, ret;
++	u8 shift = index & 2;
++
++	index &= ~3;
++
++	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
++			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
++			      index, MCU_TYPE_PLA, &data, sizeof(data), 500);
++	if (ret < 0)
++		return ret;
++
++	data = __le32_to_cpu(data);
++	data >>= (shift * 8);
++	data &= 0xffff;
++
++	return data;
++}
++
++static int pla_write_word(struct usb_device *udev, u16 index, u32 data)
++{
++	u32 tmp, mask = 0xffff;
++	u16 byen = BYTE_EN_WORD;
++	u8 shift = index & 2;
++	int ret;
++
++	data &= mask;
++
++	if (shift) {
++		byen <<= shift;
++		mask <<= (shift * 8);
++		data <<= (shift * 8);
++		index &= ~3;
++	}
++
++	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
++			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
++			      index, MCU_TYPE_PLA, &tmp, sizeof(tmp), 500);
++	if (ret < 0)
++		return ret;
++
++	tmp = __le32_to_cpu(tmp) & ~mask;
++	tmp |= data;
++	tmp = __cpu_to_le32(tmp);
++
++	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
++			      RTL815x_REQ_SET_REGS, RTL815x_REQT_WRITE,
++			      index, MCU_TYPE_PLA | byen, &tmp,
++			      sizeof(tmp), 500);
++
++	return ret;
++}
++
++static int ocp_reg_read(struct usbnet *dev, u16 addr)
++{
++	u16 ocp_base, ocp_index;
++	int ret;
++
++	ocp_base = addr & 0xf000;
++	ret = pla_write_word(dev->udev, OCP_BASE, ocp_base);
++	if (ret < 0)
++		goto out;
++
++	ocp_index = (addr & 0x0fff) | 0xb000;
++	ret = pla_read_word(dev->udev, ocp_index);
++
++out:
++	return ret;
++}
++
++static int ocp_reg_write(struct usbnet *dev, u16 addr, u16 data)
++{
++	u16 ocp_base, ocp_index;
++	int ret;
++
++	ocp_base = addr & 0xf000;
++	ret = pla_write_word(dev->udev, OCP_BASE, ocp_base);
++	if (ret < 0)
++		goto out1;
++
++	ocp_index = (addr & 0x0fff) | 0xb000;
++	ret = pla_write_word(dev->udev, ocp_index, data);
++
++out1:
++	return ret;
++}
++
++static int r815x_mdio_read(struct net_device *netdev, int phy_id, int reg)
++{
++	struct usbnet *dev = netdev_priv(netdev);
++
++	if (phy_id != R815x_PHY_ID)
++		return -EINVAL;
++
++	return ocp_reg_read(dev, BASE_MII + reg * 2);
++}
++
++static
++void r815x_mdio_write(struct net_device *netdev, int phy_id, int reg, int val)
++{
++	struct usbnet *dev = netdev_priv(netdev);
++
++	if (phy_id != R815x_PHY_ID)
++		return;
++
++	ocp_reg_write(dev, BASE_MII + reg * 2, val);
++}
++
++static int r8153_bind(struct usbnet *dev, struct usb_interface *intf)
++{
++	int status;
++
++	status = usbnet_cdc_bind(dev, intf);
++	if (status < 0)
++		return status;
++
++	dev->mii.dev = dev->net;
++	dev->mii.mdio_read = r815x_mdio_read;
++	dev->mii.mdio_write = r815x_mdio_write;
++	dev->mii.phy_id_mask = 0x3f;
++	dev->mii.reg_num_mask = 0x1f;
++	dev->mii.phy_id = R815x_PHY_ID;
++	dev->mii.supports_gmii = 1;
++
++	return 0;
++}
++
++static int r8152_bind(struct usbnet *dev, struct usb_interface *intf)
++{
++	int status;
++
++	status = usbnet_cdc_bind(dev, intf);
++	if (status < 0)
++		return status;
++
++	dev->mii.dev = dev->net;
++	dev->mii.mdio_read = r815x_mdio_read;
++	dev->mii.mdio_write = r815x_mdio_write;
++	dev->mii.phy_id_mask = 0x3f;
++	dev->mii.reg_num_mask = 0x1f;
++	dev->mii.phy_id = R815x_PHY_ID;
++	dev->mii.supports_gmii = 0;
++
++	return 0;
++}
++
++static const struct driver_info r8152_info = {
++	.description =	"RTL8152 ECM Device",
++	.flags =	FLAG_ETHER | FLAG_POINTTOPOINT,
++	.bind =		r8152_bind,
++	.unbind =	usbnet_cdc_unbind,
++	.status =	usbnet_cdc_status,
++	.manage_power =	usbnet_manage_power,
++};
++
++static const struct driver_info r8153_info = {
++	.description =	"RTL8153 ECM Device",
++	.flags =	FLAG_ETHER | FLAG_POINTTOPOINT,
++	.bind =		r8153_bind,
++	.unbind =	usbnet_cdc_unbind,
++	.status =	usbnet_cdc_status,
++	.manage_power =	usbnet_manage_power,
++};
++
++static const struct usb_device_id products[] = {
++{
++	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8152, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++#if defined(CONFIG_USB_RTL8152) || defined(CONFIG_USB_RTL8152_MODULE)
++	.driver_info = 0,
++#else
++	.driver_info = (unsigned long) &r8152_info,
++#endif
++},
++
++{
++	USB_DEVICE_AND_INTERFACE_INFO(REALTEK_VENDOR_ID, 0x8153, USB_CLASS_COMM,
++			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
++#if defined(CONFIG_USB_RTL8153) || defined(CONFIG_USB_RTL8153_MODULE)
++	.driver_info = 0,
++#else
++	.driver_info = (unsigned long) &r8153_info,
++#endif
++},
++
++	{ },		/* END */
++};
++MODULE_DEVICE_TABLE(usb, products);
++
++static struct usb_driver r815x_driver = {
++	.name =		"r815x",
++	.id_table =	products,
++	.probe =	usbnet_probe,
++	.disconnect =	usbnet_disconnect,
++	.suspend =	usbnet_suspend,
++	.resume =	usbnet_resume,
++	.reset_resume =	usbnet_resume,
++	.supports_autosuspend = 1,
++	.disable_hub_initiated_lpm = 1,
++};
++
++module_usb_driver(r815x_driver);
++
++MODULE_AUTHOR("Hayes Wang");
++MODULE_DESCRIPTION("Realtek USB ECM device");
++MODULE_LICENSE("GPL");
+-- 
+1.8.3.1
 
