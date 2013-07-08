@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab3GHNnf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:43:35 -0400
-Received: from dmz-mailsec-scanner-3.mit.edu ([18.9.25.14]:43381 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752114Ab3GHNne (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:43:34 -0400
-X-AuditID: 1209190e-b7f988e0000009a7-bb-51dac2052618
-Date: Mon, 8 Jul 2013 09:43:28 -0400
-From: Greg Price <price@MIT.EDU>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Waiman Long <Waiman.Long@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Avoid missing macros FALSE, TRUE outside ui/gtk/
-Message-ID: <20130708134328.GQ22203@biohazard-cafe.mit.edu>
-References: <20130708121148.GC15534@biohazard-cafe.mit.edu>
- <20130708131052.GA2957@krava.brq.redhat.com>
+	id S1752492Ab3GHNns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:43:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43381 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425Ab3GHNnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 09:43:46 -0400
+From: Sourav Poddar <sourav.poddar@ti.com>
+To: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>
+CC: <balbi@ti.com>, <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>
+Subject: [RFC/PATCH 1/3] driver: spi: Modify core to compute the message length
+Date: Mon, 8 Jul 2013 19:12:58 +0530
+Message-ID: <1373290980-17883-2-git-send-email-sourav.poddar@ti.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
+References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130708131052.GA2957@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42IR4hRV1mU9dCvQYP1DJYuD3dfZLI6e/ctk
-	cXnXHDaLh6dsHVg8dm3byeTxft9VNo/Pm+QCmKO4bFJSczLLUov07RK4MiZsfMZc8IO54tuq
-	N2wNjN3MXYycHBICJhKLlm9igrDFJC7cW8/WxcjFISSwj1Fizotz7BDOBkaJ9Ud3skI4nxgl
-	Fsy8DNTCwcEioCLx5pU/SDebgILEj/nrwKaKANlPm/qZQUqYBcol3h9OBQkLC3hLXFq7hQ3E
-	5hWwlpj0ZheYLSSQJdG8ZjorRFxQ4uTMJywgNrOAlsSNfy+ZIMZISyz/xwES5hSwlHgw9TZY
-	uSjQAdf2t7NNYBSchaR7FpLuWQjdCxiZVzHKpuRW6eYmZuYUpybrFicn5uWlFuka6+Vmluil
-	ppRuYgQHtSTfDsavB5UOMQpwMCrx8J44fzNQiDWxrLgy9xCjJAeTkijv2i23AoX4kvJTKjMS
-	izPii0pzUosPMUpwMCuJ8IqzAuV4UxIrq1KL8mFS0hwsSuK8z56eDRQSSE8sSc1OTS1ILYLJ
-	ynBwKEnw/j4A1ChYlJqeWpGWmVOCkGbi4AQZzgM0nPkgyPDigsTc4sx0iPwpRkUpcd4XIM0C
-	IImM0jy4XljSecUoDvSKMK8mSDsPMGHBdb8CGswENLghDWxwSSJCSqqB0TX90+xd9dsCGLb+
-	XVNS33q3b1WSMlPJHD4XvZkb/rSbfdk05/i28jM3PQIn+H1LW3y8QVrIXlvz0g/rI+mNT9jV
-	tm67Oq2H0fvLPTm9gli35Af729iiWP0MvJkvx/5tmaH979O8JobErU77FwttW9LIeZ05zTQx
-	S+uR1L3i33fORMslzvKfq8RSnJFoqMVcVJwIAG9KkisVAwAA
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 03:10:52PM +0200, Jiri Olsa wrote:
-> On Mon, Jul 08, 2013 at 08:11:50AM -0400, Greg Price wrote:
-> > We use these macros in a few files in ui/gtk/ and they work fine
-> > because GTK includes GLib which defines them, but here in util/
-> > they break the build, at least on my machine.  So stick to 0 and 1.
-> 
-> and here's another one, pick at your will :))
-> 
-> http://marc.info/?l=linux-kernel&m=137320542616579&w=2
+Make spi core calculate the message length while
+populating the other transfer parameters. This will
+be useful in cases where controller driver need to configure its 
+framelength field without iterating through the linklist again in the
+driver controller.
 
-Ah excellent, that's a better fix, thanks.
+Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+---
+ drivers/spi/spi.c       |    1 +
+ include/linux/spi/spi.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-Greg
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 32b7bb1..6a05b3c 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1375,6 +1375,7 @@ static int __spi_async(struct spi_device *spi, struct spi_message *message)
+ 	 * it is not set for this transfer.
+ 	 */
+ 	list_for_each_entry(xfer, &message->transfers, transfer_list) {
++		message->frame_length += xfer->len;
+ 		if (!xfer->bits_per_word)
+ 			xfer->bits_per_word = spi->bits_per_word;
+ 		if (!xfer->speed_hz)
+diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+index 6ff26c8..d83841e 100644
+--- a/include/linux/spi/spi.h
++++ b/include/linux/spi/spi.h
+@@ -575,6 +575,7 @@ struct spi_message {
+ 	/* completion is reported through a callback */
+ 	void			(*complete)(void *context);
+ 	void			*context;
++	unsigned		frame_length;
+ 	unsigned		actual_length;
+ 	int			status;
+ 
+-- 
+1.7.1
+
