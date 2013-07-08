@@ -1,97 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab3GHPs1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 11:48:27 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:60916 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab3GHPsZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 11:48:25 -0400
-Message-ID: <51DADF3E.1000802@monstr.eu>
-Date: Mon, 08 Jul 2013 17:48:14 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-spi <linux-spi@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        spi-devel-general@lists.sourceforge.net
-Subject: Re: [PATCH v1 3/4] spi/xilinx: Simplify irq allocation
-References: <ff70173bee5f9223ffea2b92b903b4e46ef8b323.1373290150.git.michal.simek@xilinx.com> <b4458c93742bd9dfe69e3553cf377a703c945f81.1373290150.git.michal.simek@xilinx.com> <20130708144930.GG27646@sirena.org.uk>
-In-Reply-To: <20130708144930.GG27646@sirena.org.uk>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2TQIMIDSORAPMILXNPEAQ"
+	id S1751942Ab3GHPtb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 11:49:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36447 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305Ab3GHPta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 11:49:30 -0400
+Subject: Suspect loop in dmi_scan_machine()
+From: Jean Delvare <jdelvare@suse.de>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Mon, 08 Jul 2013 17:49:14 +0200
+Message-ID: <1373298554.4298.228.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2TQIMIDSORAPMILXNPEAQ
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Ben,
 
-On 07/08/2013 04:49 PM, Mark Brown wrote:
-> On Mon, Jul 08, 2013 at 03:29:16PM +0200, Michal Simek wrote:
->> Use devm_request_irq() for irq allocation which
->> simplify driver code.
->=20
->> @@ -495,7 +493,6 @@ static int xilinx_spi_remove(struct platform_devic=
-e *pdev)
->>  	struct xilinx_spi *xspi =3D platform_get_drvdata(pdev);
->>
->>  	spi_bitbang_stop(&xspi->bitbang);
->> -	free_irq(xspi->irq, xspi);
->>
->>  	spi_master_put(xspi->bitbang.master);
->=20
-> Is it definitely safe to leave the IRQ hanging around after the master
-> has been freed - there's no possibility of a late error interrupt or
-> something?
+I am looking at this commit of yours:
 
-I think it is more generic question if this race condition is fine
-for all drivers which are using devres groups.
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/firmware/dmi_scan.c?id=79bae42d51a5d498500c890c19ef76df41d2bf59
 
-I have just looked at it and devres_release_all() is called where
-driver is unload and irq are disabled there.
+and am a little worried about the for loop in dmi_scan_machine()
+(non-EFI case):
 
-It means that all handlers should be unregistered and if IRQ happen
-after it then it should be handled by Linux kernel if driver
-doesn't disable it.
+* The first iteration looks wrong, as you're resetting the lower half of
+buf to 0 instead of initializing it with the 16 first bytes of p. So if
+a system as its SMBIOS entry point at 0xF0000, your code won't see it.
+Thankfully it will get the DMI entry point, but if the version is in the
+SMBIOS entry point, it will be missed.
 
-btw: What's the proper way for spi driver unregistration?
+* The last iteration looks wrong too, as you are reading from offsets
+0x10000-0x1000F of an iomap area of size 0x10000, i.e. beyond the end of
+the area. You'll hit that on a machine without SMBIOS/DMI. I'm not sure
+what exactly happens when calling memcpy_fromio() on an unmapped area
+but I'm reasonably certain this is bad and shouldn't be attempted.
 
-spi_unregistered_master() (which also free private structure)
-and
-spi_master_put()?
+Also, the code only looks for the DMI entry point in the second half of
+the buffer, so it would also miss a legacy DMI entry point at 0xF0000.
 
-Thanks,
-Michal
+Thoughts?
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+-- 
+Jean Delvare
+Suse L3
 
-
-
-------enig2TQIMIDSORAPMILXNPEAQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHa3z4ACgkQykllyylKDCF+pACcCPp6bPsiNWyqP7rrLR81vTzX
-+oYAoI9Mk4V8eznOWuktCXR3NC4og/ec
-=RMv3
------END PGP SIGNATURE-----
-
-------enig2TQIMIDSORAPMILXNPEAQ--
