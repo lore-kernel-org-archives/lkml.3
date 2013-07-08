@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3GHDyI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 23:54:08 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:46082 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752183Ab3GHDyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 23:54:06 -0400
-Message-ID: <1373255644.1893.3.camel@joe-AO722>
-Subject: Re: [v9fs:for-linus 7/7] ERROR: code indent should use tabs where
- possible
-From: Joe Perches <joe@perches.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Jim Garlick <garlick@llnl.gov>,
-        Andy Whitcroft <apw@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 07 Jul 2013 20:54:04 -0700
-In-Reply-To: <20130708033004.GA20091@localhost>
-References: <51d9c6c4.k6qhnvy45dNR8Ghq%fengguang.wu@intel.com>
-	 <20130708004233.GA8958@localhost>
-	 <CAFkjPTk5EZ_d5BdTTHjgrwdtU1XfZ3go_7ZDCv4Q_oqnn95AHg@mail.gmail.com>
-	 <20130708033004.GA20091@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753389Ab3GHD6L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 23:58:11 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63738 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab3GHD6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 23:58:09 -0400
+Date: Sun, 7 Jul 2013 23:58:14 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Stage 1 of __cpuinit removal
+Message-ID: <20130708035814.GN22702@windriver.com>
+References: <20130702174402.GA21817@windriver.com>
+ <CA+55aFzoMm=_VbJJknFC=cVzbq2Xq3kN9X-Xsr=rSoZVPHZNPw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzoMm=_VbJJknFC=cVzbq2Xq3kN9X-Xsr=rSoZVPHZNPw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-08 at 11:30 +0800, Fengguang Wu wrote:
-> In long run I'd like to disable
-> the check types that tend to have false positives.  As for now, these
-> checks are disabled in my checkpatch robot:
+[Re: [GIT PULL] Stage 1 of __cpuinit removal] On 07/07/2013 (Sun 11:07) Linus Torvalds wrote:
 
-Are you using a .checkpatch.conf file?
+> On Tue, Jul 2, 2013 at 10:44 AM, Paul Gortmaker
+> <paul.gortmaker@windriver.com> wrote:
+> >
+> >  include/asm-generic/vmlinux.lds.h | 12 ---------
+> >  include/linux/init.h              | 19 +++++++-------
+> >  scripts/mod/modpost.c             | 52 +++++++--------------------------------
+> >  3 files changed, 19 insertions(+), 65 deletions(-)
+> 
+> Your diffstat is odd, and doesn't match mine. But I'm pretty sure
+> yours is just plain wrong, because your numbers just don't add up.
+> 
+> You have:
+>   12+19+52 = 83
+>   19+65 = 84
+> 
+> how the heck did you manage that?
 
-> PATCH_PREFIX
-> LONG_LINE
-> CAMELCASE
+I must have fat fingered it in vim/mutt under screen with a stray
+Ctrl-A (increase number), since I still have the raw output from
+git request-pull that I pulled into mutt and it is sane and correct.
 
-That's a --strict test
+------
+$ ls -l prq
+-rw-rw-r-- 1 paul paul 845 Jul  2 13:11 prq
+$ grep changed prq
+ 3 files changed, 18 insertions(+), 65 deletions(-)
+------
 
-> MISSING_SIGN_OFF
+Sorry about the confusion.
 
-Why would you even consider this one?
+Paul.
+--
 
-> COMPLEX_MACRO
-> BRACES
-> SPACING
-> LONG_LINE
-
-OK by me.
-
-> REDUNDANT_CODE
-
-Also a --strict test
-
-> TRAILING_STATEMENTS
-
-False positives?  Got an example?
-
-> UNCOMMENTED_DEFINITION
-
-
+> 
+> The correct diffstat would seem to be
+> 
+>  include/asm-generic/vmlinux.lds.h | 12 ------------
+>  include/linux/init.h              | 19 +++++++++---------
+>  scripts/mod/modpost.c             | 52
+> +++++++++----------------------------------------
+>  3 files changed, 18 insertions(+), 65 deletions(-)
+> 
+> (where both set of numbers add up to 83).
+> 
+>                   Linus
