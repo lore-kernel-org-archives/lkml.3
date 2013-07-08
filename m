@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101Ab3GHUFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 16:05:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:10132 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752946Ab3GHUFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 16:05:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1021,1363158000"; 
-   d="scan'208";a="342320134"
-Message-ID: <51DB1B75.8060303@intel.com>
-Date: Mon, 08 Jul 2013 13:05:09 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1752997Ab3GHUHf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 16:07:35 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:10304 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752750Ab3GHUHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 16:07:33 -0400
+Message-ID: <51DB1BA0.8020402@hp.com>
+Date: Mon, 08 Jul 2013 16:05:52 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, dave.hansen@linux.intel.com,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf: fix interrupt handler timing harness
-References: <20130704223010.GA30625@quad> <51DACE08.5030109@intel.com> <CABPqkBT3QcKPGUoo2Wuvn0TdK3TKcMWtbuq4jGqbouBvqaKgDg@mail.gmail.com>
-In-Reply-To: <CABPqkBT3QcKPGUoo2Wuvn0TdK3TKcMWtbuq4jGqbouBvqaKgDg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Paul Moore <paul@paul-moore.com>
+CC: Eric Paris <eparis@parisplace.org>, Stephen Smalley <sds@tycho.nsa.gov>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, selinux@tycho.nsa.gov
+Subject: Re: [PATCH 1/2 v5] SELinux: Reduce overhead of mls_level_isvalid()
+ function call
+References: <1370886908-65256-1-git-send-email-Waiman.Long@hp.com> <51B70EE4.5030209@tycho.nsa.gov> <51D6FE08.8030904@hp.com> <2187595.WquvNei6zx@sifl>
+In-Reply-To: <2187595.WquvNei6zx@sifl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 11:08 AM, Stephane Eranian wrote:
-> I admit I have some issues with your patch and what it is trying to avoid.
-> There is already interrupt throttling. Your code seems to address latency
-> issues on the handler rather than rate issues. Yet to mitigate the latency
-> it is modify the throttling.
+On 07/08/2013 12:30 PM, Paul Moore wrote:
+> On Friday, July 05, 2013 01:10:32 PM Waiman Long wrote:
+>> On 06/11/2013 07:49 AM, Stephen Smalley wrote:
+>>> On 06/10/2013 01:55 PM, Waiman Long wrote:
+> ...
+>
+>>>> Signed-off-by: Waiman Long<Waiman.Long@hp.com>
+>>> Acked-by:  Stephen Smalley<sds@tycho.nsa.gov>
+>> Thank for the Ack. Will that patch go into v3.11?
+> [NOTE: I add the SELinux list to the CC line, for future reference, be sure to
+> send your SELinux patches there.]
+>
+> Your patch looked reasonable to me and Stephen ACK'd it so I went ahead and
+> pulled the 1/2 patch into my lblnet-next tree.  It is probably an abuse of the
+> system, but as you noted it in the description, it does have an impact on
+> socket creation so it isn't completely unrelated ;)
+>
+> If you don't want me to include your patch let me know and I'll drop it.
 
-If we have too many interrupts, we need to drop the rate (existing
-throttling).
+Sure. I would like to have my patch included. Thank for letting me know.
 
-If the interrupts _consistently_ take too long individually they can
-starve out all the other CPU users.  I saw no way to make them finish
-faster, so the only recourse is to also drop the rate.
-
-> For some unknown reasons, my HSW interrupt handler goes crazy for
-> a while running a very simple:
->    $ perf record -e cycles branchy_loop
-> 
-> And I do see in the log:
-> perf samples too long (2546 > 2500), lowering
-> kernel.perf_event_max_sample_rate to 50000
-> 
-> Which is an enormous latency. I instrumented the code, and under
-> normal conditions the latency
-> of the handler for this perf run, is about 500ns and it is consistent
-> with what I see on SNB.
-
-I was seeing latencies near 1 second from time to time, but
-_consistently_ in the hundreds of milliseconds.
+Regards,
+Longman
