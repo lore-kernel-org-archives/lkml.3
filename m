@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab3GHNGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:06:47 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:56110 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751442Ab3GHNFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:05:12 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1020,1363132800"; 
-   d="scan'208";a="6453381"
-From: Roger Pau Monne <roger.pau@citrix.com>
-To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-CC: Roger Pau Monne <roger.pau@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH RFC 1/4] xen-gnt: prevent adding duplicate gnt callbacks
-Date: Mon, 8 Jul 2013 15:03:24 +0200
-Message-ID: <1373288607-1876-2-git-send-email-roger.pau@citrix.com>
-X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
-In-Reply-To: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
-References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
+	id S1752100Ab3GHNHr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:07:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751108Ab3GHNHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 09:07:45 -0400
+Date: Mon, 8 Jul 2013 16:08:54 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] virtio_net: fix race in RX VQ processing
+Message-ID: <20130708130854.GA25442@redhat.com>
+References: <1373274069-4301-1-git-send-email-mst@redhat.com>
+ <1373274069-4301-3-git-send-email-mst@redhat.com>
+ <51DAB60A.5080305@cogentembedded.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51DAB60A.5080305@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the current implementation, the callback in the tail of the list
-can be added twice, because the check done in
-gnttab_request_free_callback is bogus, callback->next can be NULL if
-it is the last callback in the list. If we add the same callback twice
-we end up with an infinite loop, were callback == callback->next.
+On Mon, Jul 08, 2013 at 04:52:26PM +0400, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 08-07-2013 13:04, Michael S. Tsirkin wrote:
+> 
+> >virtio net called virtqueue_enable_cq on RX path after napi_complete, so
+> >with NAPI_STATE_SCHED clear - outside the implicit napi lock.
+> >This violates the requirement to synchronize virtqueue_enable_cq wrt
+> >virtqueue_add_buf.  In particular, used event can move backwards,
+> >causing us to lose interrupts.
+> >In a debug build, this can trigger panic within START_USE.
+> 
+> >Jason Wang reports that he can trigger the races artificially,
+> >by adding udelay() in virtqueue_enable_cb() after virtio_mb().
+> 
+> >However, we must call napi_complete to clear NAPI_STATE_SCHED before
+> >polling the virtqueue for used buffers, otherwise napi_schedule_prep in
+> >a callback will fail, causing us to lose RX events.
+> 
+> >To fix, call virtqueue_enable_cb_prepare with NAPI_STATE_SCHED
+> >set (under napi lock), later call virtqueue_poll with
+> >NAPI_STATE_SCHED clear (outside the lock).
+> 
+> >Reported-by: Jason Wang <jasowang@redhat.com>
+> >Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >---
+> >  drivers/net/virtio_net.c | 3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> >diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> >index 5305bd1..fbdd79a 100644
+> >--- a/drivers/net/virtio_net.c
+> >+++ b/drivers/net/virtio_net.c
+> >@@ -622,8 +622,9 @@ again:
+> >
+> >  	/* Out of packets? */
+> >  	if (received < budget) {
+> >+		unsigned r = virtqueue_enable_cb_prepare(rq->vq);
+> 
+>    Empty line wouldn't hurt here, after declaration.
+> 
+> WBR, Sergei
 
-Replace this check with a proper one that iterates over the list to
-see if the callback has already been added.
+I don't like an empty line here - it breaks _prepare
+away from _poll which is in the same logical code block.
 
-Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/xen/grant-table.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+Is there some rule that says we must have empty
+lines after declarations? If yes I'd rather split
+initialization away from declaration, though that's
+more verbose than it needs to be.
 
-diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-index 04c1b2d..d5418c1 100644
---- a/drivers/xen/grant-table.c
-+++ b/drivers/xen/grant-table.c
-@@ -729,9 +729,18 @@ void gnttab_request_free_callback(struct gnttab_free_callback *callback,
- 				  void (*fn)(void *), void *arg, u16 count)
- {
- 	unsigned long flags;
-+	struct gnttab_free_callback *cb;
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index fbdd79a..edcffc6 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -622,7 +622,9 @@ again:
+ 
+ 	/* Out of packets? */
+ 	if (received < budget) {
+-		unsigned r = virtqueue_enable_cb_prepare(rq->vq);
++		unsigned r;
 +
- 	spin_lock_irqsave(&gnttab_list_lock, flags);
--	if (callback->next)
--		goto out;
-+
-+	/* Check if the callback is already on the list */
-+	cb = gnttab_free_callback_list;
-+	while (cb) {
-+		if (cb == callback)
-+			goto out;
-+		cb = cb->next;
-+	}
-+
- 	callback->fn = fn;
- 	callback->arg = arg;
- 	callback->count = count;
--- 
-1.7.7.5 (Apple Git-26)
-
++		r = virtqueue_enable_cb_prepare(rq->vq);
+ 		napi_complete(napi);
+ 		if (unlikely(virtqueue_poll(rq->vq, r)) &&
+ 		    napi_schedule_prep(napi)) {
