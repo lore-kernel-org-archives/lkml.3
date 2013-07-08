@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636Ab3GHH4M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 03:56:12 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44956 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab3GHH4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 03:56:10 -0400
+	id S1751997Ab3GHH4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 03:56:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61475 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769Ab3GHH4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 03:56:21 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1018,1363104000"; 
+   d="scan'208";a="7817992"
+Message-ID: <51DA6FD5.8050300@cn.fujitsu.com>
+Date: Mon, 08 Jul 2013 15:52:53 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <51DA1D75.2010503@atmel.com>
-References: <1372667978-4718-1-git-send-email-richard.genoud@gmail.com>
- <1372667978-4718-9-git-send-email-richard.genoud@gmail.com>
- <51D2472B.2010407@atmel.com> <CACQ1gAji8KkjXee8o=9jt8O38611LBJ95yXimxbfn1qLaLOcnA@mail.gmail.com>
- <51DA1D75.2010503@atmel.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Mon, 8 Jul 2013 09:55:48 +0200
-Message-ID: <CACQ1gAjYOutkdn1J=HSY3i95TNU-WyJzTZPcb6QLykT53O3a2w@mail.gmail.com>
-Subject: Re: [RFC PATCH 08/13] sound: sam9x5_wm8731: machine driver for
- at91sam9x5 wm8731 boards
-To: Bo Shen <voice.shen@atmel.com>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: mfasheh@suse.com, jlbec@evilplan.org
+CC: ocfs2-devel@oss.oracle.com, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ocfs2/refcounttree: add the missing NULL check of the return
+ value of find_or_create_page()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/08 15:54:36,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/08 15:54:43,
+	Serialize complete at 2013/07/08 15:54:43
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/8 Bo Shen <voice.shen@atmel.com>:
-> Hi Richard,
->
->
-> On 7/5/2013 23:15, Richard Genoud wrote:
->>>>
->>>> +       card->dev = &pdev->dev;
->>>> >>+       card->owner = THIS_MODULE;
->>>> >>+       card->dai_link = dai;
->>>> >>+       card->num_links = 1;
->>>> >>+       dai->name = "WM8731";
->>>> >>+       dai->stream_name = "WM8731 PCM";
->>>> >>+       dai->codec_dai_name = "wm8731-hifi";
->>>> >>+       dai->init = at91sam9x5ek_wm8731_init;
->>>> >>+       card->dapm_widgets = at91sam9x5ek_dapm_widgets;
->>>> >>+       card->num_dapm_widgets =
->>>> >> ARRAY_SIZE(at91sam9x5ek_dapm_widgets);
->>>
->>> >
->>> >
->>> >Will keep these as snd_soc_card and snd_soc_dai_link structure
->>> > separately?
->>
->> I don't really understand what you mean here.
->> do you mean that something like that will more explicit ? :
->> +       card->dai_link[0].name = "WM8731";
->> +       card->dai_link[0].stream_name = "WM8731 PCM";
->> +       card->dai_link[0].codec_dai_name = "wm8731-hifi";
->> +       card->dai_link[0].init = at91sam9x5ek_wm8731_init;
->>
->
-> I mean using structure to define snd_soc_card and snd_soc_dai_link, look
-> like:
-> struct snd_soc_dai_link dai_link_name = {
->         .name = xxx,
->         .stream_name = xxx,
->         ...
-> };
->
-> struct snd_soc_card card_name = {
->         .name = xxxx
->         .ower = THIS_MODULE,
->         .dai_link = &dai_link_name,
->         ...
-> };
->
-> In this way, I think it will be more clear than put them in code.
+Add the missing NULL check of the return value of find_or_create_page() in
+function ocfs2_duplicate_clusters_by_page().
 
-ok, got it !
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/ocfs2/refcounttree.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Thanks !
+diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
+index 998b17e..456d0e4 100644
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -2965,7 +2965,11 @@ int ocfs2_duplicate_clusters_by_page(handle_t *handle,
+ 			to = map_end & (PAGE_CACHE_SIZE - 1);
 
-Richard.
+ 		page = find_or_create_page(mapping, page_index, GFP_NOFS);
+-
++		if (!page) {
++			ret = -ENOMEM;
++			mlog_errno(ret);
++			break;
++		}
+ 		/*
+ 		 * In case PAGE_CACHE_SIZE <= CLUSTER_SIZE, This page
+ 		 * can't be dirtied before we CoW it out.
+-- 
+1.7.7
+
