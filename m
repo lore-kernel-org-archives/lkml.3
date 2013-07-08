@@ -1,123 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3GHLhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 07:37:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:37786 "EHLO bear.ext.ti.com"
+	id S1751863Ab3GHLmc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 07:42:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:34930 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab3GHLhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 07:37:37 -0400
-Message-ID: <51DAA473.9030207@ti.com>
-Date: Mon, 8 Jul 2013 17:07:23 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <bigeasy@linutronix.de>
-Subject: Re: [PATCH 2/5] usb: phy: phy-omap-control: Add API to power on/off
- USB PHY for AM335X
-References: <1373280201-31785-1-git-send-email-george.cherian@ti.com> <1373280201-31785-3-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1373280201-31785-3-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751073Ab3GHLma (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 07:42:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1020,1363158000"; 
+   d="scan'208";a="265373113"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] i2c-designware: configure *CNT values from ACPI
+Date: Mon,  8 Jul 2013 14:45:27 +0300
+Message-Id: <1373283927-21677-2-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373283927-21677-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1373283927-21677-1-git-send-email-mika.westerberg@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Some Intel LPSS I2C devices make the *CNT values available from ACPI
+namespace in similar way than the SDA hold value. These values allow
+platform/BIOS to specify the most accurate *CNT values for the device
+driver to use.
 
-On Monday 08 July 2013 04:13 PM, George Cherian wrote:
-> Add API to power on/off USB PHY for AM335X. This API will be called
-> from phy-amxxxx-usb driver.
->
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->   drivers/usb/phy/phy-omap-control.c   | 32 ++++++++++++++++++++++++++++++++
->   include/linux/usb/omap_control_usb.h | 11 +++++++++++
->   2 files changed, 43 insertions(+)
->
-> diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
-> index 1419ced..0c1822d 100644
-> --- a/drivers/usb/phy/phy-omap-control.c
-> +++ b/drivers/usb/phy/phy-omap-control.c
-> @@ -46,6 +46,38 @@ struct device *omap_get_control_dev(void)
->   EXPORT_SYMBOL_GPL(omap_get_control_dev);
->
->   /**
-> + * omap_control_am335x_phy_power - power on/off the serializer using control
-> + *	module
-> + * @dev: the control module device
-> + * @on: 0 to off and 1 to on based on powering on or off the PHY
-> + * @id: phy id 0 or 1 for phy instance 0 and 1 repectively
-> + *
-> + * AMXXXX PHY driver should call this API to power on or off the PHY.
-> + */
-> +void omap_control_am335x_phy_power(struct device *dev, bool on, u8 id)
-> +{
-> +	u32 val;
-> +	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-> +
-> +	if (control_usb->type != OMAP_CTRL_DEV_TYPE3)
-> +		return;
+So change the ACPI part of the driver to use these values if they exists
+and otherwise use the default method based solely on the input clock speed.
 
-Lets validate id also here.
-> +
-> +	val = readl(control_usb->dev_conf + (id * 2));
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+This applies on top of following patch which is not yet in i2c tree:
 
-Understand you use id to calculate the offset. But looks a bit hacky to me.
-Can we define macros and use it instead?
-> +
-> +	if (on) {
-> +		val &= ~(AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN);
-> +		val |= AM335X_USBPHY_OTGVDET_EN |
-> +			AM335X_USBPHY_OTGSESSEND_EN;
-> +	} else
-> +		val |= AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN;
-> +
-> +
-> +	writel(val, (control_usb->dev_conf + (id * 2)));
-> +}
-> +EXPORT_SYMBOL_GPL(omap_control_am335x_phy_power);
-> +
-> +
-> +/**
->    * omap_control_usb3_phy_power - power on/off the serializer using control
->    *	module
->    * @dev: the control module device
-> diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
-> index 27b5b8c..11d7a34 100644
-> --- a/include/linux/usb/omap_control_usb.h
-> +++ b/include/linux/usb/omap_control_usb.h
-> @@ -45,6 +45,7 @@ enum omap_control_usb_mode {
->   /* To differentiate ctrl module IP having either mailbox or USB3 PHY power */
->   #define	OMAP_CTRL_DEV_TYPE1		0x1
->   #define	OMAP_CTRL_DEV_TYPE2		0x2
-> +#define	OMAP_CTRL_DEV_TYPE3		0x3
->
->   #define	OMAP_CTRL_DEV_PHY_PD		BIT(0)
->
-> @@ -63,10 +64,20 @@ enum omap_control_usb_mode {
->   #define	OMAP_CTRL_USB3_PHY_TX_RX_POWERON	0x3
->   #define	OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF	0x0
->
-> +#define AM335X_USBPHY_CM_PWRDN		(1 << 0)
-> +#define AM335X_USBPHY_OTG_PWRDN		(1 << 1)
-> +#define AM335X_USBPHY_OTGVDET_EN		(1 << 19)
-> +#define AM335X_USBPHY_OTGSESSEND_EN	(1 << 20)
-> +#define AM335X_USB0_WKUP_CTRL_ENABLE	(1 << 0)
-> +#define AM335X_USB1_WKUP_CTRL_ENABLE	(1 << 8)
-> +
-> +
-> +
->   #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
->   extern struct device *omap_get_control_dev(void);
->   extern void omap_control_usb_phy_power(struct device *dev, int on);
->   extern void omap_control_usb3_phy_power(struct device *dev, bool on);
-> +extern void omap_control_am335x_phy_power(struct device *dev, bool on, u8 id);
+http://permalink.gmane.org/gmane.linux.drivers.i2c/15754
 
-You might also need to provide an empty stub when CONFIG_OMAP_CONTROL_USB is
-not set.
+ drivers/i2c/busses/i2c-designware-platdrv.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
-Thanks
-Kishon
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index c7cfdac..a1488df 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -59,7 +59,6 @@ static int dw_i2c_acpi_configure(struct platform_device *pdev)
+ 	struct dw_i2c_dev *dev = platform_get_drvdata(pdev);
+ 	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
+ 	acpi_handle handle = ACPI_HANDLE(&pdev->dev);
+-	acpi_string name;
+ 
+ 	if (!handle)
+ 		return -ENODEV;
+@@ -68,14 +67,32 @@ static int dw_i2c_acpi_configure(struct platform_device *pdev)
+ 	dev->tx_fifo_depth = 32;
+ 	dev->rx_fifo_depth = 32;
+ 
+-	name = dev->master_cfg & DW_IC_CON_SPEED_FAST ? "FMCN" : "SSCN";
+-	if (ACPI_SUCCESS(acpi_evaluate_object(handle, name, NULL, &buf))) {
++	/* Standard speed configuration */
++	if (ACPI_SUCCESS(acpi_evaluate_object(handle, "SSCN", NULL, &buf))) {
+ 		union acpi_object *obj = (union acpi_object *)buf.pointer;
+ 
+ 		if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 3) {
+ 			const union acpi_object *objs = obj->package.elements;
+ 
+-			dev->sda_hold_time = (u32)objs[2].integer.value;
++			dev->ss_hcnt = (u16)objs[0].integer.value;
++			dev->ss_lcnt = (u16)objs[1].integer.value;
++			if (!(dev->master_cfg & DW_IC_CON_SPEED_FAST))
++				dev->sda_hold_time = (u32)objs[2].integer.value;
++		}
++
++		kfree(buf.pointer);
++	}
++	/* Fast speed configuration */
++	if (ACPI_SUCCESS(acpi_evaluate_object(handle, "FMCN", NULL, &buf))) {
++		union acpi_object *obj = (union acpi_object *)buf.pointer;
++
++		if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 3) {
++			const union acpi_object *objs = obj->package.elements;
++
++			dev->fs_hcnt = (u16)objs[0].integer.value;
++			dev->fs_lcnt = (u16)objs[1].integer.value;
++			if (dev->master_cfg & DW_IC_CON_SPEED_FAST)
++				dev->sda_hold_time = (u32)objs[2].integer.value;
+ 		}
+ 
+ 		kfree(buf.pointer);
+-- 
+1.8.3.2
+
