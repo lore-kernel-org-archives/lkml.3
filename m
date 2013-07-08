@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab3GHS3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 14:29:08 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:57145 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab3GHS3G (ORCPT
+	id S1752860Ab3GHSeW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 14:34:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49707 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab3GHSeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 14:29:06 -0400
-Message-ID: <1373308135.12543.6.camel@ubuntu>
-Subject: [PATCH 01/01] Drivers: MMB and PI ZigBee USB Device Support in
- cp210x.c
-From: Sami Rahman <sami.rahman@mmbresearch.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alireza.motamed@mmbresearch.com, software@mmbresearch.com
-Date: Mon, 08 Jul 2013 14:28:55 -0400
-Organization: MMB Networks
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu0.1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Jul 2013 14:34:21 -0400
+Date: Mon, 8 Jul 2013 11:34:19 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rodolfo Giometti <giometti@linux.it>, linux-kernel@vger.kernel.org
+Subject: [PATCH] misc: c2port: use dev_bin_attrs instead of hand-coding it
+Message-ID: <20130708183419.GA2535@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sami Rahman <sami.rahman@mmbresearch.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Kernel Version: 3.5.0-34-generic
-Added support for MMB Networks and Planet Innovation Ingeni ZigBee USB devices using customized Silicon Labs' CP210x.c USB to UART bridge drivers with PIDs: 88A4, 88A5. 
+Classes support a list of default binary attributes, so use that in the
+c2port driver, instead of hand creating and destroying the file, which
+is racing with userspace.  Bonus is this removes lines of code.
 
-Signed-off-by: Sami Rahman <sami.rahman@mmbresearch.com>
-Tested-by: Sami Rahman <sami.rahman@mmbresearch.com>
+Cc: Rodolfo Giometti <giometti@linux.it>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+--
+ drivers/misc/c2port/core.c |   30 +++++++++++++-----------------
+ 1 file changed, 13 insertions(+), 17 deletions(-)
 
----
-
---- linux-source-3.5.0/drivers/usb/serial/cp210x.c.orig	2013-07-05 11:55:58.000000000 -0400
-+++ linux-source-3.5.0/drivers/usb/serial/cp210x.c	2013-07-05 12:12:19.000000000 -0400
-@@ -122,6 +122,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
-+	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
-+	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
-
-
+diff --git a/drivers/misc/c2port/core.c b/drivers/misc/c2port/core.c
+index f32550a..a3b8370 100644
+--- a/drivers/misc/c2port/core.c
++++ b/drivers/misc/c2port/core.c
+@@ -867,14 +867,17 @@ static struct device_attribute c2port_attrs[] = {
+ 	__ATTR_NULL,
+ };
+ 
+-static struct bin_attribute c2port_bin_attrs = {
+-	.attr	= {
+-		.name	= "flash_data",
+-		.mode	= 0644
++static struct bin_attribute c2port_bin_attrs[] = {
++	{
++		.attr	= {
++			.name	= "flash_data",
++			.mode	= 0644
++		},
++		.read	= c2port_read_flash_data,
++		.write	= c2port_write_flash_data,
++		/* .size is computed at run-time */
+ 	},
+-	.read	= c2port_read_flash_data,
+-	.write	= c2port_write_flash_data,
+-	/* .size is computed at run-time */
++	__ATTR_NULL
+ };
+ 
+ /*
+@@ -907,6 +910,8 @@ struct c2port_device *c2port_device_register(char *name,
+ 		goto error_idr_alloc;
+ 	c2dev->id = ret;
+ 
++	c2port_bin_attrs[0].size = ops->blocks_num * ops->block_size;
++
+ 	c2dev->dev = device_create(c2port_class, NULL, 0, c2dev,
+ 				   "c2port%d", c2dev->id);
+ 	if (unlikely(IS_ERR(c2dev->dev))) {
+@@ -919,12 +924,6 @@ struct c2port_device *c2port_device_register(char *name,
+ 	c2dev->ops = ops;
+ 	mutex_init(&c2dev->mutex);
+ 
+-	/* Create binary file */
+-	c2port_bin_attrs.size = ops->blocks_num * ops->block_size;
+-	ret = device_create_bin_file(c2dev->dev, &c2port_bin_attrs);
+-	if (unlikely(ret))
+-		goto error_device_create_bin_file;
+-
+ 	/* By default C2 port access is off */
+ 	c2dev->access = c2dev->flash_access = 0;
+ 	ops->access(c2dev, 0);
+@@ -937,9 +936,6 @@ struct c2port_device *c2port_device_register(char *name,
+ 
+ 	return c2dev;
+ 
+-error_device_create_bin_file:
+-	device_destroy(c2port_class, 0);
+-
+ error_device_create:
+ 	spin_lock_irq(&c2port_idr_lock);
+ 	idr_remove(&c2port_idr, c2dev->id);
+@@ -959,7 +955,6 @@ void c2port_device_unregister(struct c2port_device *c2dev)
+ 
+ 	dev_info(c2dev->dev, "C2 port %s removed\n", c2dev->name);
+ 
+-	device_remove_bin_file(c2dev->dev, &c2port_bin_attrs);
+ 	spin_lock_irq(&c2port_idr_lock);
+ 	idr_remove(&c2port_idr, c2dev->id);
+ 	spin_unlock_irq(&c2port_idr_lock);
+@@ -985,6 +980,7 @@ static int __init c2port_init(void)
+ 		return PTR_ERR(c2port_class);
+ 	}
+ 	c2port_class->dev_attrs = c2port_attrs;
++	c2port_class->dev_bin_attrs = c2port_bin_attrs;
+ 
+ 	return 0;
+ }
