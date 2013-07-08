@@ -1,360 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab3GHJ2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:28:50 -0400
-Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:46788 "EHLO
-	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab3GHJ2t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:28:49 -0400
-Date: Mon, 8 Jul 2013 11:28:39 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, kexec@lists.infradead.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-Message-ID: <20130708112839.498ccfc6@holzheu>
-In-Reply-To: <51DA4ED9.60903@jp.fujitsu.com>
-References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com>
-	<51DA4ED9.60903@jp.fujitsu.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070809-6892-0000-0000-0000059F48C0
+	id S1751312Ab3GHJdW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 05:33:22 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26725 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750754Ab3GHJdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 05:33:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1019,1363158000"; 
+   d="scan'208";a="342040318"
+From: Vinod Koul <vinod.koul@intel.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Porter <matt@ohporter.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [RFC] dmaengine: add dma_slave_get_caps api
+Date: Mon,  8 Jul 2013 14:24:10 +0530
+Message-Id: <1373273650-31097-1-git-send-email-vinod.koul@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 08 Jul 2013 14:32:09 +0900
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+add new device callback .device_slave_caps api which can be used by clients to
+query the dma channel capablties before they program the channel. This can help
+is removing errors during the channel programming. Also add helper
+dma_slave_get_caps API
 
-> (2013/07/02 4:32), Michael Holzheu wrote:
-> > For zfcpdump we can't map the HSA storage because it is only available
-> > via a read interface. Therefore, for the new vmcore mmap feature we have
-> > introduce a new mechanism to create mappings on demand.
-> >
-> > This patch introduces a new architecture function remap_oldmem_pfn_range()
-> > that should be used to create mappings with remap_pfn_range() for oldmem
-> > areas that can be directly mapped. For zfcpdump this is everything besides
-> > of the HSA memory. For the areas that are not mapped by remap_oldmem_pfn_range()
-> > a generic vmcore a new generic vmcore fault handler mmap_vmcore_fault()
-> > is called.
-> >
-> 
-> This fault handler is only for s390 specific issue. Other architectures don't need
-> this for the time being.
-> 
-> Also, from the same reason, I'm doing this review based on source code only.
-> I cannot run the fault handler on meaningful system, which is currently s390 only.
+This patch folds the work done by Matt earlier
+https://patchwork.kernel.org/patch/2094891/
 
-You can test the code on other architectures if you do not map anything in advance.
-For example you could just "return 0" in remap_oldmem_pfn_range():
-
-/*
- * Architectures may override this function to map oldmem
- */
-int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
-                                  unsigned long from, unsigned long pfn,
-                                  unsigned long size, pgprot_t prot)
-{
-        return 0;
-}
-
-In that case for all pages the new mechanism would be used.
-
-> 
-> I'm also concerned about the fault handler covers a full range of vmcore, which
-> could hide some kind of mmap() bug that results in page fault.
-> 
-> So, the fault handler should be enclosed by ifdef CONFIG_S390 for the time being.
-
-I personally do not like that, but if Vivek and you prefer this, of course we
-can do that.
-
-What about something like:
-
-#ifdef CONFIG_S390
-static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-{
-...
-}
-#else
-static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-{
-	BUG();
-}
-#endif
-
-> 
-> > This handler works as follows:
-> >
-> > * Get already available or new page from page cache (find_or_create_page)
-> > * Check if /proc/vmcore page is filled with data (PageUptodate)
-> > * If yes:
-> >    Return that page
-> > * If no:
-> >    Fill page using __vmcore_read(), set PageUptodate, and return page
-> >
-> 
-> It seems good to me on this page-in logic.
-> 
-> <cut>
-> > @@ -225,6 +250,48 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
-> >   	return acc;
-> >   }
-> >
-> > +static ssize_t read_vmcore(struct file *file, char __user *buffer,
-> > +			   size_t buflen, loff_t *fpos)
-> > +{
-> > +	return __read_vmcore(buffer, buflen, fpos, 1);
-> > +}
-> > +
-> > +/*
-> > + * The vmcore fault handler uses the page cache and fills data using the
-> > + * standard __vmcore_read() function.
-> > + */
-> 
-> Could you describe usecase of this fault handler on s390?
-
-ok.
-
-> 
-> > +static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > +{
-> > +	struct address_space *mapping = vma->vm_file->f_mapping;
-> > +	pgoff_t index = vmf->pgoff;
-> > +	struct page *page;
-> > +	loff_t src;
-> > +	char *buf;
-> > +	int rc;
-> > +
-> 
-> You should check where faulting address points to valid range.
-> If the fault happens on invalid range, return VM_FAULT_SIGBUS.
-> 
-> On s390 case, I think the range except for HSA should be thought of as invalid.
-> 
-
-Hmmm, this would require another architecture backend interface. If we get a fault
-for a page outside of the HSA this would be a programming error in our code. Not
-sure if we should introduce new architecture interfaces just for sanity checks.
-
-> > +	page = find_or_create_page(mapping, index, GFP_KERNEL);
-> > +	if (!page)
-> > +		return VM_FAULT_OOM;
-> > +	if (!PageUptodate(page)) {
-> > +		src = index << PAGE_CACHE_SHIFT;
-> 
-> src = (loff_t)index << PAGE_CACHE_SHIFT;
-> 
-> loff_t has long long while index has unsigned long.
-
-Ok.
-
-> On s390 both might have the same byte length.
-
-On s390x both are 64 bit. On our 32 bit s390 archtecture long long is 64 bit
-and unsigned long 32 bit.
-
-> Also I prefer offset to src, but this is minor suggestion.
-
-Yes, I agree.
-
-> 
-> > +		buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-> 
-> I found page_to_virt() macro.
-
-Looks like page_to_virt() is not usable on most architectures and probably
-pfn_to_kaddr(pfn) would be the correct thing here. Unfortunately is also not
-defined on s390.
-
-But when I discussed your comment with Martin, we found out that the current
-
-buf = (void *) (page_to_pfn(page) << PAGE_SHIFT);
-
-is not correct on x86. It should be:
-
-buf = __va((page_to_pfn(page) << PAGE_SHIFT));
-
-So would be the following patch ok for you?
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 ---
- fs/proc/vmcore.c           |   94 +++++++++++++++++++++++++++++++++++++++++----
- include/linux/crash_dump.h |    3 +
- 2 files changed, 89 insertions(+), 8 deletions(-)
+ include/linux/dmaengine.h |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 45 insertions(+), 0 deletions(-)
 
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -21,6 +21,7 @@
- #include <linux/crash_dump.h>
- #include <linux/list.h>
- #include <linux/vmalloc.h>
-+#include <linux/pagemap.h>
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include "internal.h"
-@@ -153,11 +154,35 @@ ssize_t __weak elfcorehdr_read_notes(cha
- 	return read_from_oldmem(buf, count, ppos, 0);
- }
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 96d3e4a..f259f27 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -371,6 +371,37 @@ struct dma_slave_config {
+ 	unsigned int slave_id;
+ };
  
-+/*
-+ * Architectures may override this function to map oldmem
-+ */
-+int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
-+				  unsigned long from, unsigned long pfn,
-+				  unsigned long size, pgprot_t prot)
-+{
-+	return remap_pfn_range(vma, from, pfn, size, prot);
-+}
-+
-+/*
-+ * Copy to either kernel or user space
-+ */
-+static int copy_to(void *target, void *src, size_t size, int userbuf)
-+{
-+	if (userbuf) {
-+		if (copy_to_user(target, src, size))
-+			return -EFAULT;
-+	} else {
-+		memcpy(target, src, size);
-+	}
-+	return 0;
-+}
-+
- /* Read from the ELF header and then the crash dump. On error, negative value is
-  * returned otherwise number of bytes read are returned.
-  */
--static ssize_t read_vmcore(struct file *file, char __user *buffer,
--				size_t buflen, loff_t *fpos)
-+static ssize_t __read_vmcore(char *buffer, size_t buflen, loff_t *fpos,
-+			     int userbuf)
- {
- 	ssize_t acc = 0, tmp;
- 	size_t tsz;
-@@ -174,7 +199,7 @@ static ssize_t read_vmcore(struct file *
- 	/* Read ELF core header */
- 	if (*fpos < elfcorebuf_sz) {
- 		tsz = min(elfcorebuf_sz - (size_t)*fpos, buflen);
--		if (copy_to_user(buffer, elfcorebuf + *fpos, tsz))
-+		if (copy_to(buffer, elfcorebuf + *fpos, tsz, userbuf))
- 			return -EFAULT;
- 		buflen -= tsz;
- 		*fpos += tsz;
-@@ -192,7 +217,7 @@ static ssize_t read_vmcore(struct file *
- 
- 		tsz = min(elfcorebuf_sz + elfnotes_sz - (size_t)*fpos, buflen);
- 		kaddr = elfnotes_buf + *fpos - elfcorebuf_sz;
--		if (copy_to_user(buffer, kaddr, tsz))
-+		if (copy_to(buffer, kaddr, tsz, userbuf))
- 			return -EFAULT;
- 		buflen -= tsz;
- 		*fpos += tsz;
-@@ -208,7 +233,7 @@ static ssize_t read_vmcore(struct file *
- 		if (*fpos < m->offset + m->size) {
- 			tsz = min_t(size_t, m->offset + m->size - *fpos, buflen);
- 			start = m->paddr + *fpos - m->offset;
--			tmp = read_from_oldmem(buffer, tsz, &start, 1);
-+			tmp = read_from_oldmem(buffer, tsz, &start, userbuf);
- 			if (tmp < 0)
- 				return tmp;
- 			buflen -= tsz;
-@@ -225,6 +250,58 @@ static ssize_t read_vmcore(struct file *
- 	return acc;
- }
- 
-+static ssize_t read_vmcore(struct file *file, char __user *buffer,
-+			   size_t buflen, loff_t *fpos)
-+{
-+	return __read_vmcore(buffer, buflen, fpos, 1);
-+}
-+
-+#ifdef CONFIG_S390
-+/*
-+ * The vmcore fault handler uses the page cache and fills data using the
-+ * standard __vmcore_read() function.
++/* struct dma_slave_caps - expose capabilities of a slave channel only
 + *
-+ * On s390 the fault handler is used for memory regions that can't be mapped
-+ * directly with remap_pfn_range().
++ * @src_addr_widths: bit mask of src addr widths the channel supports
++ * @dstn_addr_widths: bit mask of dstn addr widths the channel supports
++ * @src_burst_lengths: bit mask of src slave burst lengths supported
++ * @dstn_burst_lengths: bit mask of dstn slave burst lengths supported
++ * @directions: bit mask of slave direction the channel supported
++ * 	since the enum dma_transfer_direction is not defined as bits for each
++ * 	type of direction, the dma controller should fill (1 << <TYPE>) and same
++ * 	should be checked by controller as well
++ * @cmd_pause: true, if pause and thereby resume is supported
++ * @cmd_terminate: true, if terminate cmd is supported
++ *
++ * @max_seg_nr: maximum number of SG segments supported
++ * 	0 for no maximum
++ * @max_seg_len: maximum length of a SG segment supported
++ * 	0 for no maximum
 + */
-+static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	struct address_space *mapping = vma->vm_file->f_mapping;
-+	pgoff_t index = vmf->pgoff;
-+	struct page *page;
-+	loff_t offset;
-+	char *buf;
-+	int rc;
++struct dma_slave_caps {
++	u32 src_addr_widths;
++	u32 dstn_addr_widths;
++	u32 src_burst_lengths;
++	u32 dstn_burst_lengths;
++	u32 directions;
++	bool cmd_pause;
++	bool cmd_terminate;
 +
-+	page = find_or_create_page(mapping, index, GFP_KERNEL);
-+	if (!page)
-+		return VM_FAULT_OOM;
-+	if (!PageUptodate(page)) {
-+		offset = (loff_t) index << PAGE_CACHE_SHIFT;
-+		buf = __va((page_to_pfn(page) << PAGE_SHIFT));
-+		rc = __read_vmcore(buf, PAGE_SIZE, &offset, 0);
-+		if (rc < 0) {
-+			unlock_page(page);
-+			page_cache_release(page);
-+			return (rc == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS;
-+		}
-+		SetPageUptodate(page);
-+	}
-+	unlock_page(page);
-+	vmf->page = page;
-+	return 0;
-+}
-+#else
-+static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	BUG();
-+}
-+#endif
-+
-+static const struct vm_operations_struct vmcore_mmap_ops = {
-+	.fault = mmap_vmcore_fault,
++	u32 max_sg_nr;
++	u32 max_sg_len;
 +};
 +
- static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ static inline const char *dma_chan_name(struct dma_chan *chan)
  {
- 	size_t size = vma->vm_end - vma->vm_start;
-@@ -242,6 +319,7 @@ static int mmap_vmcore(struct file *file
+ 	return dev_name(&chan->dev->device);
+@@ -534,6 +565,7 @@ struct dma_tx_state {
+  *	struct with auxiliary transfer status information, otherwise the call
+  *	will just return a simple status code
+  * @device_issue_pending: push pending transactions to hardware
++ * @device_slave_caps: return the slave channel capabilities
+  */
+ struct dma_device {
  
- 	vma->vm_flags &= ~(VM_MAYWRITE | VM_MAYEXEC);
- 	vma->vm_flags |= VM_MIXEDMAP;
-+	vma->vm_ops = &vmcore_mmap_ops;
+@@ -602,6 +634,7 @@ struct dma_device {
+ 					    dma_cookie_t cookie,
+ 					    struct dma_tx_state *txstate);
+ 	void (*device_issue_pending)(struct dma_chan *chan);
++	struct dma_slave_caps *(*device_slave_caps)(struct dma_chan *chan);
+ };
  
- 	len = 0;
+ static inline int dmaengine_device_control(struct dma_chan *chan,
+@@ -675,6 +708,18 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
+ 	return chan->device->device_prep_interleaved_dma(chan, xt, flags);
+ }
  
-@@ -283,9 +361,9 @@ static int mmap_vmcore(struct file *file
- 
- 			tsz = min_t(size_t, m->offset + m->size - start, size);
- 			paddr = m->paddr + start - m->offset;
--			if (remap_pfn_range(vma, vma->vm_start + len,
--					    paddr >> PAGE_SHIFT, tsz,
--					    vma->vm_page_prot))
-+			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
-+						   paddr >> PAGE_SHIFT, tsz,
-+						   vma->vm_page_prot))
- 				goto fail;
- 			size -= tsz;
- 			start += tsz;
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -17,6 +17,9 @@ extern int __weak elfcorehdr_alloc(unsig
- extern void __weak elfcorehdr_free(unsigned long long addr);
- extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
- extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
-+extern int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
-+					 unsigned long from, unsigned long pfn,
-+					 unsigned long size, pgprot_t prot);
- 
- extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
- 						unsigned long, int);
++static inline struct dma_slave_caps *dma_get_slave_caps(struct dma_chan *chan)
++{
++	/* check if the channel supports slave transactions */
++	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
++		return NULL;
++
++	if (chan->device->device_slave_caps)
++		return chan->device->device_slave_caps(chan);
++
++	return NULL;
++}
++
+ static inline int dmaengine_terminate_all(struct dma_chan *chan)
+ {
+ 	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
+-- 
+1.7.0.4
 
