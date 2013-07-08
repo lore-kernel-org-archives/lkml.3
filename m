@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606Ab3GHHVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 03:21:12 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44764 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753440Ab3GHHVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 03:21:11 -0400
-Message-ID: <1373268055.4446.31.camel@pasglop>
-Subject: Re: [PATCH v2] powerpc: add real mode support for dma operations on
- powernv
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, Paul Mackerras <paulus@samba.org>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 08 Jul 2013 17:20:55 +1000
-In-Reply-To: <1373258669-3130-1-git-send-email-aik@ozlabs.ru>
-References: <1373123227-22969-6-git-send-email-aik@ozlabs.ru>
-	 <1373258669-3130-1-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1753650Ab3GHHW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 03:22:57 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:43252 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3GHHW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 03:22:56 -0400
+Subject: [PATCH] drivers/net: enic: release rtnl_lock on error-path
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Neel Patel <neepatel@cisco.com>, Nishank Trivedi <nistrive@cisco.com>,
+        Roopa Prabhu <roprabhu@cisco.com>,
+        Christian Benvenuti <benve@cisco.com>
+Date: Mon, 08 Jul 2013 11:22:51 +0400
+Message-ID: <20130708072251.20540.50413.stgit@zurg>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-08 at 14:44 +1000, Alexey Kardashevskiy wrote:
+enic_change_mtu_work() must call rtnl_unlock() on all exiting paths.
 
-> diff --git a/arch/powerpc/platforms/powernv/pci.h b/arch/powerpc/platforms/powernv/pci.h
-> index 25d76c4..7ea82c1 100644
-> --- a/arch/powerpc/platforms/powernv/pci.h
-> +++ b/arch/powerpc/platforms/powernv/pci.h
-> @@ -52,6 +52,7 @@ struct pnv_ioda_pe {
->  	int			tce32_seg;
->  	int			tce32_segcount;
->  	struct iommu_table	tce32_table;
-> +	phys_addr_t		it_index_rm;
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Christian Benvenuti <benve@cisco.com>
+Cc: Roopa Prabhu <roprabhu@cisco.com>
+Cc: Neel Patel <neepatel@cisco.com>
+Cc: Nishank Trivedi <nistrive@cisco.com>
+---
+ drivers/net/ethernet/cisco/enic/enic_main.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Please ....
-
-The fact that we hijack the it_index field of the iommu table
-for the virtual address is bad enough, but really don't need
-to perpetuate this :-)
-
-Call the field something decent such as "tce_inval_reg_phys"
-
-Cheers,
-Ben.
-
+diff --git a/drivers/net/ethernet/cisco/enic/enic_main.c b/drivers/net/ethernet/cisco/enic/enic_main.c
+index 635f559..992ec2e 100644
+--- a/drivers/net/ethernet/cisco/enic/enic_main.c
++++ b/drivers/net/ethernet/cisco/enic/enic_main.c
+@@ -1761,6 +1761,7 @@ static void enic_change_mtu_work(struct work_struct *work)
+ 	enic_synchronize_irqs(enic);
+ 	err = vnic_rq_disable(&enic->rq[0]);
+ 	if (err) {
++		rtnl_unlock();
+ 		netdev_err(netdev, "Unable to disable RQ.\n");
+ 		return;
+ 	}
+@@ -1773,6 +1774,7 @@ static void enic_change_mtu_work(struct work_struct *work)
+ 	vnic_rq_fill(&enic->rq[0], enic_rq_alloc_buf);
+ 	/* Need at least one buffer on ring to get going */
+ 	if (vnic_rq_desc_used(&enic->rq[0]) == 0) {
++		rtnl_unlock();
+ 		netdev_err(netdev, "Unable to alloc receive buffers.\n");
+ 		return;
+ 	}
 
