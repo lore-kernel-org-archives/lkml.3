@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab3GHJLI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:11:08 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37985 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751719Ab3GHJLF (ORCPT
+	id S1752492Ab3GHJNM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 05:13:12 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:58845 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab3GHJNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:11:05 -0400
-X-Sasl-enc: OtI41ON+TDkVRyuAWR91Wk9ejTNWmnB9oYe07ITYgwVj 1373274663
-Message-ID: <1373274660.2278.26.camel@perseus.fritz.box>
-Subject: Re: [RFC PATCH 7/7] autofs - change CONFIG_AUTOFS4_FS to
- CONFIG_AUTOFS_FS
-From: Ian Kent <raven@themaw.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Mon, 08 Jul 2013 17:11:00 +0800
-In-Reply-To: <20130708151023.f29446059a3161fc2e8c9b2d@canb.auug.org.au>
-References: <20130701031335.4423.6154.stgit@perseus.fritz.box>
-	 <20130701031449.4423.58614.stgit@perseus.fritz.box>
-	 <20130701143924.79f57e7206577a2e7777c0a2@canb.auug.org.au>
-	 <1373017884.2497.10.camel@perseus.fritz.box>
-	 <20130708151023.f29446059a3161fc2e8c9b2d@canb.auug.org.au>
+	Mon, 8 Jul 2013 05:13:10 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r689CHvY013959, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <dwmw2@infradead.org>, <ben@decadent.org.uk>
+CC: <romieu@fr.zoreil.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH firmware] rtl_nic: add firmware rtl8411-2
+Date: Mon, 8 Jul 2013 17:11:21 +0800
+Message-ID: <1373274681-1225-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.3.1
+MIME-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.21.71.111]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-08 at 15:10 +1000, Stephen Rothwell wrote:
-> Hi Ian,
-> 
-> On Fri, 05 Jul 2013 17:51:24 +0800 Ian Kent <raven@themaw.net> wrote:
-> >
-> > On Mon, 2013-07-01 at 14:39 +1000, Stephen Rothwell wrote:
-> > > 
-> > > On Mon, 01 Jul 2013 11:14:51 +0800 Ian Kent <raven@themaw.net> wrote:
-> > > >
-> > > > Signed-off-by: Ian Kent <raven@themaw.net>
-> > > 
-> > > Please don't do this.  Find a simple way to make sure that if
-> > > CONFIG_AUTOFS4_FS is set, then "make oldconfig"  (or equivalent) will
-> > > cause CONFIG_AUTOFS_FS to be set the same.
-> > 
-> > I get what your recommending but still can't think of a way to do it,
-> > any thoughts?
-> 
-> Isn't just having
-> 
-> config AUTOFS4_FS
-> 	tristate
-> 	select AUTOFS_FS
+File: rtl_nic/rtl8411-2.fw
+Version: 0.0.1
 
-I though that would set AUTOFS_FS=y unconditionally which I think is not
-necessarily the setting that is needed. Also, I believe there's no way
-to set it based on AUTOFS4_FS after it's value has been set from the
-menu.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ WHENCE               |   3 +++
+ rtl_nic/rtl8411-2.fw | Bin 0 -> 1040 bytes
+ 2 files changed, 3 insertions(+)
+ create mode 100644 rtl_nic/rtl8411-2.fw
+
+diff --git a/WHENCE b/WHENCE
+index d7fba9d..39f11af 100644
+--- a/WHENCE
++++ b/WHENCE
+@@ -1879,6 +1879,9 @@ Version: 0.0.4
+ File: rtl_nic/rtl8411-1.fw
+ Version: 0.0.3
  
-Ian
++File: rtl_nic/rtl8411-2.fw
++Version: 0.0.1
++
+ File: rtl_nic/rtl8402-1.fw
+ Version: 0.0.1
+ 
+diff --git a/rtl_nic/rtl8411-2.fw b/rtl_nic/rtl8411-2.fw
+new file mode 100644
+index 0000000000000000000000000000000000000000..e3789fe576c41c2a12d606ece1e41552693ad9ac
+GIT binary patch
+literal 1040
+zcmYk(L2DC16bJB^?IsOr*ldz9m16B8MMP@4yJ=$#B7sW1^yIOZG}uE9Qi}8#<S8i#
+zRS5k6wV;Q71VNOb=%J_}B3}2dQqk07<A3L6q)A@p?Qh<^o!KQKy0>+=wh#nY!lqyL
+z%Yo-#o%d_=K?PI#vxfigh{tq$rCRZW=4NZ_PP-ZUK^TN#wY;=^%L^9ki`VLYg`Pa0
+zjTeoEUV^CcCO5-GX+#E*MK}l-Q9vj}iN}Z{q7*Y~(-CndvN#*r>_jPcqcj(y467*1
+zrO09HJ=VUKwbr{5)2p+*GCsxD+jC4W&vPd2q2>Z=X3_g1@=M4sBcDTFM(!gIkuM;x
+zBCjE@BfpOP2J8KD3OO|%PQ-h6@zuXR>ucJ?xuTdFL|%ie{dJ-qQPN+^%<%GqB2z+f
+z`9+Zvq&PMYdCyW@*vA}9VYKHIkDm(rnc@WEzNdI<RF}dy%qg}<qcs`{W5-pxuZzC%
+zJ&2^Y?0J$-hU5`V_W$n*_ciA^(sOSAgFcU<;YnPp`Zsl-JoWW?^LlNUbzd4jm6~{J
+zOdg4zFO24iF@YYR&~xokLGS60ncE?ExFhR-8LPwUVn@c3u%y^uV;isyu^-0Tu(sGw
+zV;xvW?6<K2Y#=r;whh}Bi=T}fzb{fm2k-;&oUv)xv{>HQG3;2ZXsiWmiJdXF3)>ZQ
+zjM*?-ENkr4z9)>WqHa~{;yr#gdmqX({%EfEP`4*_UyM00N9?PyL)f9%H)CB`SFEAm
+GJJCOC1@r*`
 
+literal 0
+HcmV?d00001
+
+-- 
+1.8.3.1
 
