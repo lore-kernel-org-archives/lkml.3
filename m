@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455Ab3GHXSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 19:18:44 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:64063 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab3GHXSn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 19:18:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Subject: Re: [PATCH v1 0/4] ARM: STi fixes and ethernet support
-Date: Tue, 9 Jul 2013 01:18:06 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, Olof Johansson <olof@lixom.net>
-References: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com>
-In-Reply-To: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com>
+	id S1753442Ab3GHXd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 19:33:56 -0400
+Received: from mail-db9lp0248.outbound.messaging.microsoft.com ([213.199.154.248]:46917
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752969Ab3GHXdw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 19:33:52 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+Date: Mon, 8 Jul 2013 18:33:45 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [linuxppc-dev] Unbinding device from a driver
+To: Gupta Ruchika-R66431 <R66431@freescale.com>
+CC: "linuxppc-dev@linux.freescale.net" <linuxppc-dev@linux.freescale.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <B2B5EF0D8FDD10429C8DE6C4C2B38282093BABDD@039-SN2MPN1-023.039d.mgd.msft.net>
+	(from R66431@freescale.com on Thu Jul  4 05:35:28 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1373326425.8183.184@snotra>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307090118.06715.arnd@arndb.de>
-X-Provags-ID: V02:K0:VE0G2JZKVsRQbCtWjbBnaH26F1BYVcMRY5/MhmWQPJc
- xx50RpCv99TpddBKROLVbUaJhLVh1fzHT1fihhc2sTNZuNI3bq
- DE4KSUIT3XBbzsNIfmM8Rar5xAPSwinPc6UCHWFJdTRFmv6ajk
- PuIyxGCj2jAOQzIh/UYbg35E0LaJcjzv2P83yXFz/f5xCWVGBQ
- dMmLkTo9XUNW3TcKte+5RGjnIXRA8N29QZe7csRehLu6736JXM
- sKox1Oqqq0sBYvGA53JZBoZwq9sWINofwRqVQXwuPj82XPU0R/
- ekydhUlkeQ/mXnvK+q8wpEE/zXBVFW1a83CbRVRYteQD24LfR0
- w38RITF5CJuvOAjJ5Y+c=
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 08 July 2013, Srinivas KANDAGATLA wrote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+On 07/04/2013 05:35:28 AM, Gupta Ruchika-R66431 wrote:
+> Hi,
 > 
-> This patch series fixes 2 configuration issues and adds ethernet support to
-> STiH415, STiH416 based B2000, B2020 boards.
-> With this patchset B2000 and B2020 can have basic ethernet support in
-> MII and RGMII modes.
 > 
-> Thanks,
-> srini
 > 
-> Srinivas Kandagatla (4):
->   ARM: dts: STi: Fix pinconf setup for STiH416 serial2
->   ARM: STi: Set correct ARM ERRATAs.
->   ARM: STi: Add STiH415 ethernet support.
->   ARM: STi: Add STiH416 ethernet support.
+> I am trying to unbind a platform device from a driver. Even when the  
+> remove function of the device returns an EBUSY error, the device is  
+> unbound from the driver. Is this the right behavior ? Why does kernel  
+> forcefully unbind the device even if device remove function returns  
+> an error ?
 
-Hi Srini,
+ From looking at the code, it seems it's not allowed for a driver to  
+refuse the unbinding.  If you can't unbind yet, you need to block until  
+you can (and take measures to ensure that it won't take too long).
 
-You really have to send those things separately, as the bug fixes should
-probably go into 3.11, while the rest is new features and needs to be
-reviewed for merging into 3.12.
+I don't know the history of why the remove method can return an error  
+even though nothing seems to check it.
 
-I'm also puzzled by the fact that you add auxdata and callback
-functions for the ether part in the platform code. Those should
-probably all be properties added to the stmmac binding.
+> root@p4080ds: ls
+> 
+> bind  ffe301000.jr  ffe302000.jr  ffe303000.jr  ffe304000.jr  uevent   
+> unbind
+> 
+> 
+> 
+> root@p4080ds: echo ffe301000.jr > unbind
+> 
+> In caam_jr_remove
+> 
+> caam_jr ffe301000.jr: Device Busy
 
-	Arnd
+Is the caam_jr driver printing this, or the device model infrastructure?
+
+-Scott
