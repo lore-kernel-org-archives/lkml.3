@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab3GHIpr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 04:45:47 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51949 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab3GHIpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 04:45:47 -0400
-Date: Mon, 8 Jul 2013 10:45:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jason Cooper <jason@lakedaemon.net>
-cc: Andrew Lunn <andrew@lunn.ch>, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [GIT PULL] clockevents/clocksource: Add Marvell Orion SoC
- timer
-In-Reply-To: <20130707235819.GB11908@titan.lakedaemon.net>
-Message-ID: <alpine.DEB.2.02.1307081041290.32106@ionos.tec.linutronix.de>
-References: <51B8D310.4050404@linaro.org> <51D9548B.9040907@gmail.com> <alpine.DEB.2.02.1307071508030.32106@ionos.tec.linutronix.de> <20130707144645.GA11908@titan.lakedaemon.net> <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de>
- <20130707235819.GB11908@titan.lakedaemon.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752113Ab3GHIuM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 04:50:12 -0400
+Received: from mout.gmx.net ([212.227.17.20]:62967 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751752Ab3GHIuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 04:50:11 -0400
+Message-ID: <1373273368.30325.7.camel@marge.simpson.net>
+Subject: Re: [PATCH] sched: smart wake-affine
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Wang <wangyun@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Date: Mon, 08 Jul 2013 10:49:28 +0200
+In-Reply-To: <20130708082106.GW23916@twins.programming.kicks-ass.net>
+References: <51D29EE5.8080307@linux.vnet.ibm.com>
+	 <20130704091339.GK18898@dyad.programming.kicks-ass.net>
+	 <51D5428D.7080805@linux.vnet.ibm.com>
+	 <1372934013.9046.16.camel@marge.simpson.net>
+	 <51D633DB.5010508@linux.vnet.ibm.com>
+	 <1372997318.7315.23.camel@marge.simpson.net>
+	 <51D64C84.5080100@linux.vnet.ibm.com>
+	 <1373002865.8318.11.camel@marge.simpson.net>
+	 <51D664B9.7010407@linux.vnet.ibm.com>
+	 <1373179405.19316.41.camel@marge.simpson.net>
+	 <20130708082106.GW23916@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V03:K0:NUtLpfRQ2rceNcyoPImeGX50znykMsNO1YRWVuMkdtssGTryF3S
+ Y7dhg1r1G9tC0/eCMTjKOvLgXovunb4FhY/mDclTMBSRtnemmRU9xSkKNy4GIVy07SJBlkg
+ 1f/0SSbOufNHbcNYbPGV96xXgBJWTMmL7kg5aE7Yhssj3EEag4mZqb7nVpCDjE64qzHtj2I
+ hQZnfAYAm2c6N7KMprFNw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Jul 2013, Jason Cooper wrote:
-> On Sun, Jul 07, 2013 at 05:30:31PM +0200, Thomas Gleixner wrote:
-> I don't mind delaying half of a series so the drivers/ portion can land
-> in mainline, and the rest can land in the next cycle.  But when things
-> don't go according to that plan, I'd like a little consideration /
-> flexibility about solving the problem.  Especially considering I'm
-> *trying* to do the right thing by pushing to appropriate maintainers
-> first.
+On Mon, 2013-07-08 at 10:21 +0200, Peter Zijlstra wrote: 
+> On Sun, Jul 07, 2013 at 08:43:25AM +0200, Mike Galbraith wrote:
+> > On Fri, 2013-07-05 at 14:16 +0800, Michael Wang wrote:
+> > 
+> > > PeterZ has suggested some optimization which I sent out yesterday, I
+> > > suppose they haven't been included into this test yet, correct?
+> > 
+> > No, that was with both v3 patches applied.  hackbench -l 1000 delta
+> > tracked to next pull/build fwiw, but I don't see anything noteworthy
+> > elsewhere, so I'm filing it under "tasks/core ~= zillion ~= hohum".
 > 
-> Of course, this is a moot point since, as you clarified above, this
-> dependency doesn't have the hazards typically associated with
-> out-of-tree dependencies.
+> OK, I'll apply the patches, we'll see what happens. If there significant
+> fallout we'll immediately have more information anyway ;-)
 
-There is a very simple procedure for stuff like this.
+Yup.  It's a repeatable oddity on my box, but it doesn't even track to
+itself when using different hackbench parameters.  All I can really
+conclude from test results is "golly, changing stuff affects stuff" :) 
 
-Series has parts which go through tree A and B and another larger part
-for tree C which depends on the A and B parts.
-
-So ask the maintainers of A and B to apply this to separate branches,
-which are based on some commit in Linus tree. These branches can be
-pulled into C and C can apply the depending stuff on top.
-
-Now the maintainers of A and B merge these branches into their main
-devel branch, can do further fixups and stuff on top. And the whole
-thing just works without glitches during the merge window.
-
-We do this all the time.
-
-Thanks,
-
-	tglx
-
+-Mike
 
