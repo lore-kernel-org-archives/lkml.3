@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753485Ab3GHCWR (ORCPT <rfc822;w@1wt.eu>);
+	id S1753463Ab3GHCWR (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 7 Jul 2013 22:22:17 -0400
-Received: from ozlabs.org ([203.10.76.45]:47938 "EHLO ozlabs.org"
+Received: from ozlabs.org ([203.10.76.45]:45140 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753357Ab3GHCWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753331Ab3GHCWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 7 Jul 2013 22:22:14 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Wedson Almeida Filho <wedsonaf@gmail.com>,
-        Tim Abbott <tabbott@ksplice.com>
-Cc: linux-kernel@vger.kernel.org, Wedson Almeida Filho <wedsonaf@gmail.com>
-Subject: Re: [PATCH] lib: One less subtraction in binary search iterations.
-In-Reply-To: <1373152062-28164-1-git-send-email-wedsonaf@gmail.com>
-References: <1373152062-28164-1-git-send-email-wedsonaf@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: add tools/virtio/ under virtio
+In-Reply-To: <20130707143238.GA3059@redhat.com>
+References: <20130707143238.GA3059@redhat.com>
 User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 08 Jul 2013 11:16:41 +0930
-Message-ID: <87txk5esce.fsf@rustcorp.com.au>
+Date: Mon, 08 Jul 2013 11:32:25 +0930
+Message-ID: <87ip0lerm6.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wedson Almeida Filho <wedsonaf@gmail.com> writes:
-> There is no functional change, but this change eliminates a subtraction that
-> the compiler doesn't optimize out (as of gcc 4.7.3).
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+> This should help make sure patches go to the correct list.
 >
-> Signed-off-by: Wedson Almeida Filho <wedsonaf@gmail.com>
-> ---
->  lib/bsearch.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/lib/bsearch.c b/lib/bsearch.c
-> index e33c179..3264146 100644
-> --- a/lib/bsearch.c
-> +++ b/lib/bsearch.c
-> @@ -37,7 +37,7 @@ void *bsearch(const void *key, const void *base, size_t num, size_t size,
->  	int result;
->  
->  	while (start < end) {
-> -		size_t mid = start + (end - start) / 2;
-> +		size_t mid = (start + end) / 2;
->  
->  		result = cmp(key, base + mid * size);
->  		if (result < 0)
-> -- 
-> 1.7.9.5
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-Please add a comment about overflow instead?
+Indeed.  Thanks.
 
-Thanks,
+Applied,
 Rusty.
+
+> ---
+>  MAINTAINERS | 1 +
+>  1 file changed, 1 insertion(+)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index ad7e322..66172fc 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -8800,6 +8800,7 @@ M:	"Michael S. Tsirkin" <mst@redhat.com>
+>  L:	virtualization@lists.linux-foundation.org
+>  S:	Maintained
+>  F:	drivers/virtio/
+> +F:	tools/virtio/
+>  F:	drivers/net/virtio_net.c
+>  F:	drivers/block/virtio_blk.c
+>  F:	include/linux/virtio_*.h
+> -- 
+> MST
