@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab3GHU2F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 16:28:05 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753141Ab3GHU2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 16:28:03 -0400
-Message-ID: <51DB20CB.9020706@nod.at>
-Date: Mon, 08 Jul 2013 22:27:55 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753230Ab3GHUai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 16:30:38 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:56777 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753138Ab3GHUah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 16:30:37 -0400
+Date: Mon, 8 Jul 2013 16:30:36 -0400
+From: Mike Pagano <mpagano@gentoo.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Modification of the diffconfig script to support python
+ 3.x and 2.7
+Message-ID: <20130708203036.GA30726@woodpecker.gentoo.org>
+References: <10816010.V3ekNYfWHj@comanche>
+ <15619.1373310883@turing-police.cc.vt.edu>
 MIME-Version: 1.0
-To: Tristan Schmelcher <tschmelcher@google.com>
-CC: jdike@addtoit.com, user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] uml: Fix which_tmpdir failure when /dev/shm is a symlink,
- and in other edge cases
-References: <51DB1EE5.5040108@google.com>
-In-Reply-To: <51DB1EE5.5040108@google.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <15619.1373310883@turing-police.cc.vt.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 08.07.2013 22:19, schrieb Tristan Schmelcher:
-> From: Tristan Schmelcher <tschmelcher@google.com>
+On Mon, Jul 08, 2013 at 03:14:43PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 04 Jul 2013 20:19:03 -0400, Mike Pagano said:
 > 
-> which_tmpdir did the wrong thing if /dev/shm was a symlink (e.g., to /run/shm),
-> if there were multiple mounts on top of each other, if the mount(s) were
-> obscured by a later mount, or if /dev/shm was a prefix of another mount point.
-> This fixes these cases. Applies to 3.9.6.
+> I'm not a snake-language person, but...
 > 
-> Signed-off-by: Tristan Schmelcher <tschmelcher@google.com>
+> > -    print """Usage: diffconfig [-h] [-m] [<config1> <config2>]
+> > +    print ("""Usage: diffconfig [-h] [-m] [<config1> <config2>]
+> 
+> Is this hunk missing a ) at the end of the line?
 
-Is this just a resend or did your alter the patch you sent me already?
-I'm about to send my UML patches to Linus tomorrow.
 
-Thanks,
-//richard
+No, there's a lot of lines in bewteen the first ( and the closing one
+which is added in the patch:
+
+
+-"""
++""")
+
+
+
+-- 
+Mike Pagano
+Gentoo Developer - Kernel Project
+Gentoo Sources - Lead 
+E-Mail     : mpagano@gentoo.org
+GnuPG FP   : EEE2 601D 0763 B60F 848C  9E14 3C33 C650 B576 E4E3
+Public Key : http://pgp.mit.edu:11371/pks/lookup?search=0xB576E4E3&op=index
