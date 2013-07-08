@@ -1,127 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab3GHMIV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 08:08:21 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38965 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab3GHMIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 08:08:19 -0400
-Message-ID: <51DAABA6.9050106@ti.com>
-Date: Mon, 8 Jul 2013 17:38:06 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1752412Ab3GHMJM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 08:09:12 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:58377 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab3GHMJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 08:09:10 -0400
 MIME-Version: 1.0
-To: George Cherian <george.cherian@ti.com>
-CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <bigeasy@linutronix.de>
-Subject: Re: [PATCH 5/5] usb: musb: dsps: Remove the phy control from glue
- and add phy driver APIs
-References: <1373280201-31785-1-git-send-email-george.cherian@ti.com> <1373280201-31785-6-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1373280201-31785-6-git-send-email-george.cherian@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1372949142-8260-1-git-send-email-jonas.jensen@gmail.com>
+References: <1372949142-8260-1-git-send-email-jonas.jensen@gmail.com>
+Date: Mon, 8 Jul 2013 14:09:10 +0200
+Message-ID: <CACmBeS3Ges44HxOGZns+G=jQhSmGjVmZBir2_ZBXT1i2nrNQwg@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] ARM: reinsert ARCH_MULTI_V4 Kconfig option
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, arm@kernel.org, arnd@arndb.de,
+        olof@lixom.net, Jonas Jensen <jonas.jensen@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Arnd suggested removing one (or many) of the options:
 
-On Monday 08 July 2013 04:13 PM, George Cherian wrote:
-> Remove usb phy control module access from platform glue.
-> The same is now done using amxxxx phy driver and phy-omap-control.
->
-> Signed-off-by: George Cherian <george.cherian@ti.com>
-> ---
->   drivers/usb/musb/musb_dsps.c | 105 +++++++++++++++----------------------------
->   1 file changed, 36 insertions(+), 69 deletions(-)
->
-> diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-> index 41f135a..8f4e04a 100644
-> --- a/drivers/usb/musb/musb_dsps.c
-> +++ b/drivers/usb/musb/musb_dsps.c
-> @@ -123,49 +123,11 @@ struct dsps_glue {
->   	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
->   	struct timer_list timer[2];	/* otg_workaround timer */
->   	unsigned long last_timer[2];    /* last timer data for each instance */
-> -	u32 __iomem *usb_ctrl[2];
->   };
->
-> -#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
-> -#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_1	0x44e10628
-> +#define glue_to_musb(g, i)		platform_get_drvdata(g->musb[i])
->
-> -static const resource_size_t dsps_control_module_phys[] = {
-> -	DSPS_AM33XX_CONTROL_MODULE_PHYS_0,
-> -	DSPS_AM33XX_CONTROL_MODULE_PHYS_1,
-> -};
-> -
-> -#define USBPHY_CM_PWRDN		(1 << 0)
-> -#define USBPHY_OTG_PWRDN	(1 << 1)
-> -#define USBPHY_OTGVDET_EN	(1 << 19)
-> -#define USBPHY_OTGSESSEND_EN	(1 << 20)
-> -
-> -/**
-> - * musb_dsps_phy_control - phy on/off
-> - * @glue: struct dsps_glue *
-> - * @id: musb instance
-> - * @on: flag for phy to be switched on or off
-> - *
-> - * This is to enable the PHY using usb_ctrl register in system control
-> - * module space.
-> - *
-> - * XXX: This function will be removed once we have a seperate driver for
-> - * control module
-> - */
-> -static void musb_dsps_phy_control(struct dsps_glue *glue, u8 id, u8 on)
-> -{
-> -	u32 usbphycfg;
->
-> -	usbphycfg = readl(glue->usb_ctrl[id]);
-> -
-> -	if (on) {
-> -		usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
-> -		usbphycfg |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
-> -	} else {
-> -		usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
-> -	}
-> -
-> -	writel(usbphycfg, glue->usb_ctrl[id]);
-> -}
->   /**
->    * dsps_musb_enable - enable interrupts
->    */
-> @@ -411,16 +373,31 @@ static int dsps_musb_init(struct musb *musb)
->   	void __iomem *reg_base = musb->ctrl_base;
->   	u32 rev, val;
->   	int status;
-> +	char phyname[12];
->
->   	/* mentor core register starts at offset of 0x400 from musb base */
->   	musb->mregs += wrp->musb_core_offset;
->
-> -	/* NOP driver needs change if supporting dual instance */
-> -	usb_nop_xceiv_register();
-> -	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-> +	if (dev->parent->of_node) {
-> +		snprintf(phyname , 12, "am335x-usb%d", pdev->id);
-> +		musb->phy = devm_phy_get(dev->parent, phyname);
-> +		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
-> +							"phys", pdev->id);
-> +	} else {
-> +		snprintf(phyname , 12, "am335x-usb%d", pdev->id);
+CPU_ABRT_EV4T
+CPU_CACHE_V4WT
+CPU_COPY_V4WB
+CPU_TLB_V4WBI
 
-Both these snprintf can be moved out of the *if*.
-> +		musb->phy = devm_phy_get(dev, musb->phy_label);
-> +		musb->xceiv = devm_usb_get_phy_dev(dev, pdev->id);
-> +	}
-> +
->   	if (IS_ERR_OR_NULL(musb->xceiv))
->   		return -EPROBE_DEFER;
->
-> +	if (IS_ERR_OR_NULL(musb->phy)) {
+However boot is still broken after removing all including CPU_32v4T.
 
-The framework should never return NULL.
+Selecting CPU_SA1100 instead, it boots normally and init works.
 
-Thanks
-Kishon
+The idea is, If you can help figure out what exactly breaks boot, the
+patch can be dropped.
+
+>From these tests, I have created two branches ( arch/arm/mm have
+replacements for calls to no longer compiled in ):
+
+http://code.google.com/p/linux-next-20130703-moxart/source/detail?r=a88f33ad22d3f9a31fe126f1c95568e5b2e8f32d&name=multi_V4_test_arm920t
+http://code.google.com/p/linux-next-20130703-moxart/source/detail?r=9f4c21f1123a122c51792cd374217ce6e426e74a&name=multi_V4_test_sa1100
+
+Best regards,
+Jonas
