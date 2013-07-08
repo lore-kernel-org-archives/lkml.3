@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab3GHUfD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 16:35:03 -0400
-Received: from www.sr71.net ([198.145.64.142]:44868 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752680Ab3GHUfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 16:35:00 -0400
-Message-ID: <51DB2271.1010009@sr71.net>
-Date: Mon, 08 Jul 2013 13:34:57 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753257Ab3GHUgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 16:36:19 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:35240 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937Ab3GHUgR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 16:36:17 -0400
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Dave Hansen <dave.hansen@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        dave.hansen@linux.intel.com, "ak@linux.intel.com" <ak@linux.intel.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] perf: fix interrupt handler timing harness
-References: <20130704223010.GA30625@quad> <51DACE08.5030109@intel.com> <CABPqkBT3QcKPGUoo2Wuvn0TdK3TKcMWtbuq4jGqbouBvqaKgDg@mail.gmail.com> <51DB1B75.8060303@intel.com> <CABPqkBRdK5WwokEWE3tQZiAyO3pWbS9aUn7HUkQT+XsMYfJUiA@mail.gmail.com>
-In-Reply-To: <CABPqkBRdK5WwokEWE3tQZiAyO3pWbS9aUn7HUkQT+XsMYfJUiA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1373242613-4603-1-git-send-email-zhen-hual@hp.com>
+References: <1373242613-4603-1-git-send-email-zhen-hual@hp.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 8 Jul 2013 14:35:56 -0600
+Message-ID: <CAErSpo6Kpw5VX5e5PUy8V4PdL6-rg14NdaXYOYHkAGm72GgHBg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ia64/pci: set mmio decoding on for some host bridge
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 01:20 PM, Stephane Eranian wrote:
-> On Mon, Jul 8, 2013 at 10:05 PM, Dave Hansen <dave.hansen@intel.com> wrote:
->> If the interrupts _consistently_ take too long individually they can
->> starve out all the other CPU users.  I saw no way to make them finish
->> faster, so the only recourse is to also drop the rate.
->>
-> I think we need to investigate why some interrupts take so much time.
-> Could be HW, could be SW. Not talking about old hardware here.
-> Once we understand this, then we know maybe adjust the timing on
-> our patch.
+On Sun, Jul 7, 2013 at 6:16 PM, Li, Zhen-Hua <zhen-hual@hp.com> wrote:
+> On some IA64 platforms with intel PCI bridge, for example, HP BL890c i2
+> with  Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+> when kernel tries to disable the mmio decoding on the PCI bridge devices,
+> kernel may crash.
+>
+> And in the comment of function quirk_mmio_always_on, it also says:
+> "But doing so (disable the mmio decoding) may cause problems on host bridge
+>  and perhaps other key system devices"
+>
+> So, for these PCI bridges,  dev->mmio_always_on bit should be set to 1.
+>
+>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>  drivers/pci/quirks.c |   15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index e85d230..24b8024 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -44,6 +44,21 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
+>  DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+>                                 PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
+>
+> +#ifdef CONFIG_IA64
+> +/*
+> + * On some IA64 platforms, for some intel PCI bridge devices, for example,
+> + * the Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+> + * disable the mmio decoding on these devices may cause system crash.
+> + * So dev->mmio_always_on bit should be set to 1.
+> + */
+> +static void quirk_mmio_on_intel_pcibridge(struct pci_dev *dev)
+> +{
+> +       dev->mmio_always_on = 1;
+> +}
+> +DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+> +                       PCI_CLASS_BRIDGE_PCI, 8, quirk_mmio_on_intel_pcibridge);
+> +#endif
 
-I spent quite a while looking at it on my hardware.  It's difficult to
-profile in NMIs, but I'm fairly satisfied (for me) it is a NUMA issue
-which gets worse as I add cores.
+The changelog and comment suggest an issue specific to Intel
+5520/5500/X58, but the patch sets mmio_always_on for *all* PCI
+bridges.
 
-I did a quite a bit of ftracing to look for spots inside the handler
-which were taking large amounts of time.  There were none.  The
-execution time was spread very evenly over the entire nmi handler.  It
-didn't appear to be any individual hot cachelines or doing something
-silly like sitting in a loop handling lots of PMU events.
+It claims to be specific to ia64 (and is only compiled there), but the
+chipset is also used for x86.  You need to explain why the problem
+only affects ia64.
 
+Bjorn
