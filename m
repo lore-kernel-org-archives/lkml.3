@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143Ab3GHNFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:05:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57329 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751960Ab3GHNFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752066Ab3GHNFQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:05:16 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:56110 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab3GHNFN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 8 Jul 2013 09:05:13 -0400
-Message-ID: <51DAB8DF.6060806@redhat.com>
-Date: Mon, 08 Jul 2013 09:04:31 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+X-IronPort-AV: E=Sophos;i="4.87,1020,1363132800"; 
+   d="scan'208";a="6453383"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH RFC 3/4] xen-blkfront: prevent hoarding all grants
+Date: Mon, 8 Jul 2013 15:03:26 +0200
+Message-ID: <1373288607-1876-4-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+In-Reply-To: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>, athorlton@sgi.com,
-        CAI Qian <caiqian@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: tick device NULL pointer during system initialization and
- shutdown
-References: <51C0AB09.2090605@redhat.com> <alpine.DEB.2.02.1306241551020.4013@ionos.tec.linutronix.de> <51CA2CBF.70404@redhat.com> <alpine.DEB.2.02.1306261303260.4013@ionos.tec.linutronix.de> <51CC708B.7040605@redhat.com> <alpine.DEB.2.02.1306281250270.4013@ionos.tec.linutronix.de> <51D17F2B.7000300@redhat.com> <alpine.DEB.2.02.1307011518350.4013@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1307011518350.4013@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Prevent blkfront from hoarding all grants by adding a minimum number
+of grants that must be free at all times. We still need a way to free
+unused grants in blkfront, but this patch will mitigate the problem
+in the meantime.
 
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/block/xen-blkfront.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-On 07/01/2013 09:30 AM, Thomas Gleixner wrote:
-> On Mon, 1 Jul 2013, Prarit Bhargava wrote:
->> On 06/28/2013 06:52 AM, Thomas Gleixner wrote:
->>> Huch. Did the warning in the broadcast code trigger before that?
->>
->> tglx,
->>
->> AFAICT it does not.  Log below on the system I'm testing on.  The test on the
->> system is system boots, sleeps for 30 seconds and then reboots.
-> 
->> [  270.563197] INFO: rcu_sched detected stalls on CPUs/tasks: { 51} (detected by
->> 63, t=217205 jiffies, g=3583, c=3582, q=578)
-> 
-> So the stall is on CPU51, but we do not get a backtrace for CPU51. 
-> 
-> The backtrace trigger is only sent to online cpus. So CPU51 is offline
-> already. Which makes sense as we are in the process of bringing CPUs
-> down and the CPUs with backtrace are 0 and 53-63.
-> 
-> I'm pretty sure, that the patch which clears the stale flag is
-> unrelated to this and it cures the NULL pointer dereference (the
-> reason why this can happen is clear).
-> 
-> So now you do not longer trip over the NULL pointer dereference, but
-> you see a weird RCU stall on an already DEAD cpu. Note, it's dead
-> because we already took CPU52 offline as well.
-> 
-> Paul???
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 187a437..3d445c0 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -101,6 +101,12 @@ MODULE_PARM_DESC(max, "Maximum amount of segments in indirect requests (default
+ #define BLK_RING_SIZE __CONST_RING_SIZE(blkif, PAGE_SIZE)
+ 
+ /*
++ * Make sure there are at least MIN_FREE_GRANTS at all times, preventing
++ * blkfront from hoarding all grants
++ */
++#define MIN_FREE_GRANTS		512
++
++/*
+  * We have one of these per vbd, whether ide, scsi or 'other'.  They
+  * hang in private_data off the gendisk structure. We may end up
+  * putting all kinds of interesting stuff here :-)
+@@ -412,13 +418,13 @@ static int blkif_queue_request(struct request *req)
+ 	if (info->persistent_gnts_c < max_grefs) {
+ 		new_persistent_gnts = 1;
+ 		if (gnttab_alloc_grant_references(
+-		    max_grefs - info->persistent_gnts_c,
++		    max_grefs - info->persistent_gnts_c + MIN_FREE_GRANTS,
+ 		    &gref_head) < 0) {
+ 			gnttab_request_free_callback(
+ 				&info->callback,
+ 				blkif_restart_queue_callback,
+ 				info,
+-				max_grefs);
++				max_grefs + MIN_FREE_GRANTS);
+ 			return 1;
+ 		}
+ 	} else
+-- 
+1.7.7.5 (Apple Git-26)
 
-I hit this a few times ... but the frequency of hitting this is MUCH less than
-that off the original bug.  So Thomas, can you add
-
-Tested-by: Prarit Bhargava <prarit@redhat.com>
-
-to the "tick: Make oneshot broadcast robust vs. CPU offlining" patch?
-
-IMO that problem seems to be solved and we're just peeling the proverbial onion
-and finding deeper bugs.
-
-P.
