@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab3GHKop (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 06:44:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49536 "EHLO comal.ext.ti.com"
+	id S1751871Ab3GHKnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 06:43:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49528 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752103Ab3GHKnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 06:43:50 -0400
+	id S1751404Ab3GHKno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 06:43:44 -0400
 From: George Cherian <george.cherian@ti.com>
 To: <linux-usb@vger.kernel.org>
 CC: <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
         <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
         <kishon@ti.com>, <bigeasy@linutronix.de>,
         George Cherian <george.cherian@ti.com>
-Subject: [PATCH 2/5] usb: phy: phy-omap-control: Add API to power on/off USB PHY for AM335X
-Date: Mon, 8 Jul 2013 16:13:18 +0530
-Message-ID: <1373280201-31785-3-git-send-email-george.cherian@ti.com>
+Subject: [PATCH 0/5] Add phy support for AM335X platform using Generic PHy framework
+Date: Mon, 8 Jul 2013 16:13:16 +0530
+Message-ID: <1373280201-31785-1-git-send-email-george.cherian@ti.com>
 X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1373280201-31785-1-git-send-email-george.cherian@ti.com>
-References: <1373280201-31785-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add API to power on/off USB PHY for AM335X. This API will be called
-from phy-amxxxx-usb driver.
+This patch series adds phy support for AM335X platform.
+This patch series is based on Generic PHY framework [1]. 
 
-Signed-off-by: George Cherian <george.cherian@ti.com>
----
- drivers/usb/phy/phy-omap-control.c   | 32 ++++++++++++++++++++++++++++++++
- include/linux/usb/omap_control_usb.h | 11 +++++++++++
- 2 files changed, 43 insertions(+)
 
-diff --git a/drivers/usb/phy/phy-omap-control.c b/drivers/usb/phy/phy-omap-control.c
-index 1419ced..0c1822d 100644
---- a/drivers/usb/phy/phy-omap-control.c
-+++ b/drivers/usb/phy/phy-omap-control.c
-@@ -46,6 +46,38 @@ struct device *omap_get_control_dev(void)
- EXPORT_SYMBOL_GPL(omap_get_control_dev);
- 
- /**
-+ * omap_control_am335x_phy_power - power on/off the serializer using control
-+ *	module
-+ * @dev: the control module device
-+ * @on: 0 to off and 1 to on based on powering on or off the PHY
-+ * @id: phy id 0 or 1 for phy instance 0 and 1 repectively
-+ *
-+ * AMXXXX PHY driver should call this API to power on or off the PHY.
-+ */
-+void omap_control_am335x_phy_power(struct device *dev, bool on, u8 id)
-+{
-+	u32 val;
-+	struct omap_control_usb	*control_usb = dev_get_drvdata(dev);
-+
-+	if (control_usb->type != OMAP_CTRL_DEV_TYPE3)
-+		return;
-+
-+	val = readl(control_usb->dev_conf + (id * 2));
-+
-+	if (on) {
-+		val &= ~(AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN);
-+		val |= AM335X_USBPHY_OTGVDET_EN |
-+			AM335X_USBPHY_OTGSESSEND_EN;
-+	} else
-+		val |= AM335X_USBPHY_CM_PWRDN | AM335X_USBPHY_OTG_PWRDN;
-+
-+
-+	writel(val, (control_usb->dev_conf + (id * 2)));
-+}
-+EXPORT_SYMBOL_GPL(omap_control_am335x_phy_power);
-+
-+
-+/**
-  * omap_control_usb3_phy_power - power on/off the serializer using control
-  *	module
-  * @dev: the control module device
-diff --git a/include/linux/usb/omap_control_usb.h b/include/linux/usb/omap_control_usb.h
-index 27b5b8c..11d7a34 100644
---- a/include/linux/usb/omap_control_usb.h
-+++ b/include/linux/usb/omap_control_usb.h
-@@ -45,6 +45,7 @@ enum omap_control_usb_mode {
- /* To differentiate ctrl module IP having either mailbox or USB3 PHY power */
- #define	OMAP_CTRL_DEV_TYPE1		0x1
- #define	OMAP_CTRL_DEV_TYPE2		0x2
-+#define	OMAP_CTRL_DEV_TYPE3		0x3
- 
- #define	OMAP_CTRL_DEV_PHY_PD		BIT(0)
- 
-@@ -63,10 +64,20 @@ enum omap_control_usb_mode {
- #define	OMAP_CTRL_USB3_PHY_TX_RX_POWERON	0x3
- #define	OMAP_CTRL_USB3_PHY_TX_RX_POWEROFF	0x0
- 
-+#define AM335X_USBPHY_CM_PWRDN		(1 << 0)
-+#define AM335X_USBPHY_OTG_PWRDN		(1 << 1)
-+#define AM335X_USBPHY_OTGVDET_EN		(1 << 19)
-+#define AM335X_USBPHY_OTGSESSEND_EN	(1 << 20)
-+#define AM335X_USB0_WKUP_CTRL_ENABLE	(1 << 0)
-+#define AM335X_USB1_WKUP_CTRL_ENABLE	(1 << 8)
-+
-+
-+
- #if IS_ENABLED(CONFIG_OMAP_CONTROL_USB)
- extern struct device *omap_get_control_dev(void);
- extern void omap_control_usb_phy_power(struct device *dev, int on);
- extern void omap_control_usb3_phy_power(struct device *dev, bool on);
-+extern void omap_control_am335x_phy_power(struct device *dev, bool on, u8 id);
- extern void omap_control_usb_set_mode(struct device *dev,
- 	enum omap_control_usb_mode mode);
- #else
+This series has
+	- adds dual musb instances support for am335x platform (just for testing)
+	- adds phy-amxxxx-usb driver used in AMxxxx platforms
+	- adds dt  bindings for the phys
+	- removes usb-phy and replaced with generic phy apis in glue layer
+
+All these changes are avilable at [2]
+
+[1] - http://marc.info/?l=linux-usb&m=137224750928570&w=2
+[2] - git://git.ti.com/~georgecherian/ti-linux-kernel/georgec-connectivity-linux-feature-tree.git 
+	am335x-phy-driver
+
+George Cherian (4):
+  usb: phy: phy-omap-control: Add API to power on/off USB PHY for AM335X
+  phy: phy-amxxxx-usb: Add PHY driver for amxxxx platform
+  arm: dts: Add USB phy nodes for AM33XX
+  usb: musb: dsps: Remove the phy control from glue and add phy driver
+    APIs
+
+Ravi Babu (1):
+  usb: musb: dsps: enable dual instance support for am33xx platform
+
+ arch/arm/boot/dts/am33xx.dtsi        |  22 ++++
+ drivers/phy/Kconfig                  |  12 +++
+ drivers/phy/Makefile                 |   1 +
+ drivers/phy/phy-amxxxx-usb.c         | 201 +++++++++++++++++++++++++++++++++++
+ drivers/usb/musb/musb_dsps.c         | 107 +++++++------------
+ drivers/usb/phy/phy-omap-control.c   |  32 ++++++
+ include/linux/usb/omap_control_usb.h |  11 ++
+ 7 files changed, 316 insertions(+), 70 deletions(-)
+ create mode 100644 drivers/phy/phy-amxxxx-usb.c
+
 -- 
 1.8.1.4
 
