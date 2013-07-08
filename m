@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab3GHPKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 11:10:47 -0400
-Received: from sabertooth02.qualcomm.com ([65.197.215.38]:11147 "EHLO
-	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab3GHPKp (ORCPT
+	id S1752494Ab3GHPSU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 11:18:20 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:49008 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab3GHPSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 11:10:45 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1020,1363158000"; 
-   d="scan'208";a="47058295"
-X-IronPort-AV: E=Sophos;i="4.87,1020,1363158000"; 
-   d="scan'208";a="501526174"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: <sedat.dilek@gmail.com>
-CC: <linux-wireless@vger.kernel.org>, <ath9k-devel@venema.h4ckr.net>,
-        LKML <linux-kernel@vger.kernel.org>, <ath10k@lists.infradead.org>
-Subject: Re: ath10k mailing list and new git tree
-References: <87r4f9cf0w.fsf@kamboji.qca.qualcomm.com>
-	<CA+icZUU32347g48dpk-gVZZ1H9pvnjaSWpQ12B-5vOkLzs8Nbg@mail.gmail.com>
-Date: Mon, 8 Jul 2013 18:10:34 +0300
-In-Reply-To: <CA+icZUU32347g48dpk-gVZZ1H9pvnjaSWpQ12B-5vOkLzs8Nbg@mail.gmail.com>
-	(Sedat Dilek's message of "Mon, 8 Jul 2013 16:58:46 +0200")
-Message-ID: <877gh1cck5.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 8 Jul 2013 11:18:18 -0400
+Date: Mon, 8 Jul 2013 12:18:10 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Waiman Long <Waiman.Long@hp.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH] perf tools: Fix boolean for NO_LIBPYTHON=1 NO_LIBPERL=1
+ build
+Message-ID: <20130708151810.GA3028@ghostprotocols.net>
+References: <1373205339-17550-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.39.5]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373205339-17550-1-git-send-email-jolsa@redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sedat Dilek <sedat.dilek@gmail.com> writes:
+Em Sun, Jul 07, 2013 at 03:55:39PM +0200, Jiri Olsa escreveu:
+> The build is broken for 'NO_LIBPYTHON=1 NO_LIBPERL=1' switches.
+> 
+> The reason is that without perl and python support we
+> dont have TRUE/FALSE macro definitions in dso and vdso
+> objects (added there by commit 7821317).
+> 
+> Using stdbool.h defines instead which seems to be more
+> common in perf code anyway.
 
-> On Mon, Jul 8, 2013 at 4:17 PM, Kalle Valo <kvalo@qca.qualcomm.com> wrote:
->> Hi,
->>
->> we have a new mailing list for ath10k, please use that in the future
->> instead of ath9k-devel:
->>
->> http://lists.infradead.org/mailman/listinfo/ath10k
->>
->> As ath10k is now in wireless-next please use the new git tree which is
->> for both ath6kl and ath10k:
->>
->> https://github.com/kvalo/ath
->>
->> I have also updated the wiki accordingly:
->>
->> http://wireless.kernel.org/en/users/Drivers/ath10k
->>
->
-> You have sent these new informations for MAINTAINERS file to upstream?
+Thanks, applied.
 
-Good point. Actually MAINTAINERS entry for ath10k is completely missing,
-I'll send a patch for that.
-
-Thanks.
-
--- 
-Kalle Valo
+- Arnaldo
