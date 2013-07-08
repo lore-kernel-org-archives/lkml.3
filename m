@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714Ab3GHQww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:52:52 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:56432 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab3GHQwr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:52:47 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Baruch Siach <baruch@tkos.co.il>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Michal Simek <michal.simek@xilinx.com>,
-        Soren Brinkmann <soren.brinkmann@xilinx.com>
-Subject: [PATCH v2 2/2] clocksource/cadence_ttc: Reuse clocksource as sched_clock
-Date: Mon,  8 Jul 2013 09:51:38 -0700
-Message-Id: <1373302298-27957-3-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1373302298-27957-1-git-send-email-soren.brinkmann@xilinx.com>
-References: <1373302298-27957-1-git-send-email-soren.brinkmann@xilinx.com>
+	id S1752552Ab3GHQy1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:54:27 -0400
+Received: from [216.240.18.76] ([216.240.18.76]:30171 "EHLO mx11.netapp.com"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751894Ab3GHQyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 12:54:25 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1021,1363158000"; 
+   d="scan'208";a="32448870"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Waiman Long <Waiman.Long@hp.com>, Jeff Layton <jlayton@redhat.com>,
+        "Miklos Szeredi" <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH v3 24/25] sunrpc: Change how dentry's d_lock field is
+ accessed
+Thread-Topic: [PATCH v3 24/25] sunrpc: Change how dentry's d_lock field is
+ accessed
+Thread-Index: AQHOeCuDxj1Mkxx6v0SrzBwmCw+D3plUYKkAgAcbxwA=
+Date: Mon, 8 Jul 2013 16:53:52 +0000
+Message-ID: <1373302428.2231.9.camel@leira.trondhjem.org>
+References: <1372883132-23410-1-git-send-email-Waiman.Long@hp.com>
+	 <20130704042034.GM4165@ZenIV.linux.org.uk>
+In-Reply-To: <20130704042034.GM4165@ZenIV.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <80EDF0303559BA419A6FC4A793CD17AD@hq.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r68GsVuD006034
 
-Reuse the TTC clocksource timer as sched clock provider.
+On Thu, 2013-07-04 at 05:20 +0100, Al Viro wrote:
+> On Wed, Jul 03, 2013 at 04:25:32PM -0400, Waiman Long wrote:
+> > There is no change in logic and everything should just work.
+> 
+> > -		spin_lock(&file->f_path.dentry->d_lock);
+> > +		d_lock(file->f_path.dentry);
+> >  		if (!d_unhashed(file->f_path.dentry))
+> >  			clnt = RPC_I(inode)->private;
+> >  		if (clnt != NULL && atomic_inc_not_zero(&clnt->cl_count)) {
+> > -			spin_unlock(&file->f_path.dentry->d_lock);
+> > +			d_unlock(file->f_path.dentry);
+> 
+> Could somebody explain WTF is being protected here?  It's not ->private -
+> that gets set (and, more importantly, cleared) without ->d_lock in sight.
+> Trond, that seems to be your code from about three years ago (introduced
+> in "SUNRPC: Fix a race in rpc_info_open").  What's going on there?
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
-v2:
- - #include linux/sched_clock.h instead of asm/sched_clock.h
- - remove Kconfig options and #ifdefs around sched_clock related code
-    The reasons for having those are obsolete, since ARM deprecated its
-    custom sched_clock framework and migrated to the common one.
+AFAICR we're using the fact that the dentry will remain hashed until
+we're in the process of freeing up the rpc_client. By testing that the
+dentry is hashed under the dentry->d_lock, we are assured that the
+non-NULL 'clnt' is still pointing to a valid rpc_client, and that it is
+safe to access clnt->cl_count.
 
- drivers/clocksource/cadence_ttc_timer.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/drivers/clocksource/cadence_ttc_timer.c b/drivers/clocksource/cadence_ttc_timer.c
-index 0eefc8d..b2bb3a4b 100644
---- a/drivers/clocksource/cadence_ttc_timer.c
-+++ b/drivers/clocksource/cadence_ttc_timer.c
-@@ -21,6 +21,7 @@
- #include <linux/of_address.h>
- #include <linux/of_irq.h>
- #include <linux/slab.h>
-+#include <linux/sched_clock.h>
- 
- /*
-  * This driver configures the 2 16-bit count-up timers as follows:
-@@ -94,6 +95,8 @@ struct ttc_timer_clockevent {
- #define to_ttc_timer_clkevent(x) \
- 		container_of(x, struct ttc_timer_clockevent, ce)
- 
-+static void __iomem *ttc_sched_clock_val_reg;
-+
- /**
-  * ttc_set_interval - Set the timer interval value
-  *
-@@ -155,6 +158,11 @@ static cycle_t __ttc_clocksource_read(struct clocksource *cs)
- 				TTC_COUNT_VAL_OFFSET);
- }
- 
-+static u32 notrace ttc_sched_clock_read(void)
-+{
-+	return __raw_readl(ttc_sched_clock_val_reg);
-+}
-+
- /**
-  * ttc_set_next_event - Sets the time interval for next event
-  *
-@@ -296,6 +304,10 @@ static void __init ttc_setup_clocksource(struct clk *clk, void __iomem *base)
- 		kfree(ttccs);
- 		return;
- 	}
-+
-+	ttc_sched_clock_val_reg = base + TTC_COUNT_VAL_OFFSET;
-+	setup_sched_clock(ttc_sched_clock_read, 16,
-+			clk_get_rate(ttccs->ttc.clk) / PRESCALE);
- }
- 
- static int ttc_rate_change_clockevent_cb(struct notifier_block *nb,
 -- 
-1.8.3.2
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
