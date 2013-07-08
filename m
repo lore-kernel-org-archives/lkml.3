@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab3GHNxq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:53:46 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:34484 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216Ab3GHNxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:53:45 -0400
-Message-ID: <51DAC467.8060504@atmel.com>
-Date: Mon, 8 Jul 2013 15:53:43 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>, Mark Brown <broonie@kernel.org>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v2 0/5] Sound support for at91sam9x5-wm8731 based boards
-References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
-In-Reply-To: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	id S1752114Ab3GHNy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:54:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60084 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216Ab3GHNyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 09:54:55 -0400
+Subject: Re: memcpy_fromio in dmi_scan.c
+From: Jean Delvare <jdelvare@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Robin Holt <holt@sgi.com>, "Luck, Tony" <tony.luck@intel.com>,
+        DuanZhenzhong <zhenzhong.duan@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Yu, Fenghua" <fenghua.yu@intel.com>
+In-Reply-To: <20130425133701.04d31844cb594030a0431171@linux-foundation.org>
+References: <1366636689.4503.35.camel@chaos.site>
+	 <5175FF0F.9050206@oracle.com> <1366702122.4667.11.camel@chaos.site>
+	 <3908561D78D1C84285E8C5FCA982C28F1EA52ED3@ORSMSX104.amr.corp.intel.com>
+	 <1366831328.4618.476.camel@chaos.site>
+	 <3908561D78D1C84285E8C5FCA982C28F1EA53DAA@ORSMSX104.amr.corp.intel.com>
+	 <20130425020724.GR3658@sgi.com> <20130425095242.GT3658@sgi.com>
+	 <20130425133701.04d31844cb594030a0431171@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Mon, 08 Jul 2013 15:54:38 +0200
+Message-ID: <1373291678.4298.211.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2013 15:29, Richard Genoud :
-> Hi,
->
-> This patchset add sound on the at91sam9x5ek board.
-> It's based on Nicolas Ferre's work in the 2.6.39 atmel patch for sam9x5:
-> https://github.com/linux4sam/linux-at91/commit/0aa157c9e71ccccf3abc30fa37eb5c95b392978d
->
-> It needs Bo Chen's patchset on the generic dmaengine (topic/atmel branch
-> on Mark's sound tree) and the SSC interrupts disabled (cf
-> http://www.spinics.net/lists/arm-kernel/msg256901.html)
->
->
-> Tested on at91sam9g35ek.
->
-> patches applies on next-20130708
->
-> [I let the original signed-off from Nicolas and Uwe in place, I don't
-> know if I should replace them by something like "originaly-signed-off-by"
-> since the code has been changed.]
+Hi Andrew,
 
-I am happy to give my "signed-off" to this patch. I guess that Uwe's one 
-was more an integration signed-off when he imported the code to his git 
-tree.
+Sorry for the late reply.
 
-> [Sorry if it's too late for 3.11]
+Le Thursday 25 April 2013 à 13:37 -0700, Andrew Morton a écrit :
+> So what's the fix?  This?
+> 
+> --- a/drivers/firmware/dmi_scan.c~a
+> +++ a/drivers/firmware/dmi_scan.c
+> @@ -500,9 +500,12 @@ void __init dmi_scan_machine(void)
+>  			goto error;
+>  
+>  		for (q = p; q < p + 0x10000; q += 16) {
+> -			if (memcmp(q, "_SM_", 4) == 0 && q - p <= 0xFFE0)
+> +			char buf[5];
+> +
+> +			memcpy_from_io(buf, q, 5);
+> +			if (memcmp(buf, "_SM_", 4) == 0 && q - p <= 0xFFE0)
+>  				rc = smbios_present(q);
+> -			else if (memcmp(q, "_DMI_", 5) == 0)
+> +			else if (memcmp(buf, "_DMI_", 5) == 0)
+>  				rc = dmi_present(q);
+>  			else
+>  				continue;
 
-Do not be sorry. Good work is always appreciated at any time!
+That would have been it, yes, but meanwhile Ben Hutchings reworked the
+whole thing and that fixed the problem I reported as a side effect:
 
-> Changes from V1-RFC:
->   * drop patches on SSC since Bo Chen already did the work
->   * reorder patches to have the machine driver first
->   * drop code already handled by the ASoC framework
->   * drop unneeded SND_ATMEL_SOC_PDC config selection
->   * use static snd_soc_card and  snd_soc_dai_link structures.
->
-> Best regards,
-> Richard.
->
-> Nicolas Ferre (1):
->    sound: sam9x5_wm8731: machine driver for at91sam9x5 wm8731 boards
->
-> Richard Genoud (4):
->    ARM: AT91: DTS: sam9x5: add SSC DMA parameters
->    ARM: AT91: DTS: sam9x5ek: add WM8731 codec
->    ARM: AT91: DTS: sam9x5ek: add sound configuration
->    ARM: AT91: DTS: sam9x5ek: enable SSC
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/firmware/dmi_scan.c?id=79bae42d51a5d498500c890c19ef76df41d2bf59
 
-Maybe we will have to split the series and let these DT patches go with 
-arm-soc.
+I'd suggest leaving the stable kernels alone until someone complains, as
+there doesn't seem to be any issue in practice (the only machines where
+it would possibly matter are already hopelessly broken.)
 
->   arch/arm/boot/dts/at91sam9x5.dtsi   |    3 +
->   arch/arm/boot/dts/at91sam9x5ek.dtsi |   27 +++++
->   sound/soc/atmel/Kconfig             |   10 ++
->   sound/soc/atmel/Makefile            |    2 +
->   sound/soc/atmel/sam9x5_wm8731.c     |  206 +++++++++++++++++++++++++++++++++++
->   5 files changed, 248 insertions(+)
->   create mode 100644 sound/soc/atmel/sam9x5_wm8731.c
->
+All I can say is that these dmi_scan patches should never have made it
+to stable kernels in the first place, as they infringed several rules
+stable patches are supposed to comply with.
 
-Thanks, bye,
 -- 
-Nicolas Ferre
+Jean Delvare
+Suse L3
+
