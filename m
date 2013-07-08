@@ -1,115 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab3GHOCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 10:02:35 -0400
-Received: from fieldses.org ([174.143.236.118]:55068 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751213Ab3GHOCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 10:02:34 -0400
-Date: Mon, 8 Jul 2013 10:02:23 -0400
-From: Bruce Fields <bfields@fieldses.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matthew Wilcox <matthew@wil.cx>
-Subject: Re: [PATCH] locks: close potential race between setlease and open
-Message-ID: <20130708140223.GB29071@fieldses.org>
-References: <1373290255-16977-1-git-send-email-jlayton@redhat.com>
+	id S1752193Ab3GHOKK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 10:10:10 -0400
+Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:62123 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751468Ab3GHOKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 10:10:08 -0400
+X-TM-IMSS-Message-ID: <1e0b126b000a0361@nsa.gov>
+Message-ID: <51DAC81D.6020807@tycho.nsa.gov>
+Date: Mon, 08 Jul 2013 10:09:33 -0400
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373290255-16977-1-git-send-email-jlayton@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Waiman Long <waiman.long@hp.com>
+CC: James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@parisplace.org>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>
+Subject: Re: [PATCH 1/2 v5] SELinux: Reduce overhead of mls_level_isvalid()
+ function call
+References: <1370886908-65256-1-git-send-email-Waiman.Long@hp.com> <51B70EE4.5030209@tycho.nsa.gov> <51D6FE08.8030904@hp.com>
+In-Reply-To: <51D6FE08.8030904@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 09:30:55AM -0400, Jeff Layton wrote:
-> As Al Viro points out, there is an unlikely, but possible race between
-> opening a file and setting a lease on it. generic_add_lease is done with
-> the i_lock held, but the inode->i_flock check in break_lease is
-> lockless. It's possible for another task doing an open to do the entire
-> pathwalk and call break_lease between the point where generic_add_lease
-> checks for a conflicting open and adds the lease to the list. If this
-> occurs, we can end up with a lease set on the file with a conflicting
-> open.
-> 
-> To guard against that, check again for a conflicting open after adding
-> the lease to the i_flock list. If the above race occurs, then we can
-> simply unwind the lease setting and return -EAGAIN.
+On 07/05/2013 01:10 PM, Waiman Long wrote:
+> On 06/11/2013 07:49 AM, Stephen Smalley wrote:
+>> On 06/10/2013 01:55 PM, Waiman Long wrote:
+>>> v4->v5:
+>>>    - Fix scripts/checkpatch.pl warning.
+>>>
+>>> v3->v4:
+>>>    - Merge the 2 separate while loops in ebitmap_contains() into
+>>>      a single one.
+>>>
+>>> v2->v3:
+>>>    - Remove unused local variables i, node from mls_level_isvalid().
+>>>
+>>> v1->v2:
+>>>   - Move the new ebitmap comparison logic from mls_level_isvalid()
+>>>     into the ebitmap_contains() helper function.
+>>>   - Rerun perf and performance tests on the latest v3.10-rc4 kernel.
+>>>
+>>> While running the high_systime workload of the AIM7 benchmark on
+>>> a 2-socket 12-core Westmere x86-64 machine running 3.10-rc4 kernel
+>>> (with HT on), it was found that a pretty sizable amount of time was
+>>> spent in the SELinux code. Below was the perf trace of the "perf
+>>> record -a -s" of a test run at 1500 users:
+>>>
+>>>    5.04%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+>>>    1.96%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+>>>    1.95%            ls  [kernel.kallsyms]     [k] find_next_bit
+>>>
+>>> The ebitmap_get_bit() was the hottest function in the perf-report
+>>> output.  Both the ebitmap_get_bit() and find_next_bit() functions
+>>> were, in fact, called by mls_level_isvalid(). As a result, the
+>>> mls_level_isvalid() call consumed 8.95% of the total CPU time of
+>>> all the 24 virtual CPUs which is quite a lot. The majority of the
+>>> mls_level_isvalid() function invocations come from the socket creation
+>>> system call.
+>>>
+>>> Looking at the mls_level_isvalid() function, it is checking to see
+>>> if all the bits set in one of the ebitmap structure are also set in
+>>> another one as well as the highest set bit is no bigger than the one
+>>> specified by the given policydb data structure. It is doing it in
+>>> a bit-by-bit manner. So if the ebitmap structure has many bits set,
+>>> the iteration loop will be done many times.
+>>>
+>>> The current code can be rewritten to use a similar algorithm as the
+>>> ebitmap_contains() function with an additional check for the
+>>> highest set bit. The ebitmap_contains() function was extended to
+>>> cover an optional additional check for the highest set bit, and the
+>>> mls_level_isvalid() function was modified to call ebitmap_contains().
+>>>
+>>> With that change, the perf trace showed that the used CPU time drop
+>>> down to just 0.08% (ebitmap_contains + mls_level_isvalid) of the
+>>> total which is about 100X less than before.
+>>>
+>>>    0.07%            ls  [kernel.kallsyms]     [k] ebitmap_contains
+>>>    0.05%            ls  [kernel.kallsyms]     [k] ebitmap_get_bit
+>>>    0.01%            ls  [kernel.kallsyms]     [k] mls_level_isvalid
+>>>    0.01%            ls  [kernel.kallsyms]     [k] find_next_bit
+>>>
+>>> The remaining ebitmap_get_bit() and find_next_bit() functions calls
+>>> are made by other kernel routines as the new mls_level_isvalid()
+>>> function will not call them anymore.
+>>>
+>>> This patch also improves the high_systime AIM7 benchmark result,
+>>> though the improvement is not as impressive as is suggested by the
+>>> reduction in CPU time spent in the ebitmap functions. The table below
+>>> shows the performance change on the 2-socket x86-64 system (with HT
+>>> on) mentioned above.
+>>>
+>>> +--------------+---------------+----------------+-----------------+
+>>> |   Workload   | mean % change | mean % change  | mean % change   |
+>>> |              | 10-100 users  | 200-1000 users | 1100-2000 users |
+>>> +--------------+---------------+----------------+-----------------+
+>>> | high_systime |     +0.1%     |     +0.9%      |     +2.6%       |
+>>> +--------------+---------------+----------------+-----------------+
+>>>
+>>> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+>>
+>> Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
+>>
+>
+> Thank for the Ack. Will that patch go into v3.11?
 
-Maybe it's an entirely theoretical question at this point, but in the
-absence of any lock or memory barrier on the lease-setter's side I still
-don't understand what guarantees that the opener calling break_lease
-will see the new value of i_flock.
-
---b.
+I hope so, but that's up to Eric Paris, who maintains the kernel tree 
+for SELinux changes these days.
 
 
-> 
-> Cc: Bruce Fields <bfields@fieldses.org>
-> Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> ---
->  fs/locks.c | 31 ++++++++++++++++++++++++-------
->  1 file changed, 24 insertions(+), 7 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index b27a300..9f7f647 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -1455,6 +1455,19 @@ int fcntl_getlease(struct file *filp)
->  	return type;
->  }
->  
-> +static int
-> +check_conflicting_open(struct dentry *dentry, long arg)
-> +{
-> +	struct inode *inode = dentry->d_inode;
-> +
-> +	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-> +		return -EAGAIN;
-> +	if ((arg == F_WRLCK) && ((d_count(dentry) > 1) ||
-> +	    (atomic_read(&inode->i_count) > 1)))
-> +		return -EAGAIN;
-> +	return 0;
-> +}
-> +
->  static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
->  {
->  	struct file_lock *fl, **before, **my_before = NULL, *lease;
-> @@ -1464,12 +1477,8 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
->  
->  	lease = *flp;
->  
-> -	error = -EAGAIN;
-> -	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-> -		goto out;
-> -	if ((arg == F_WRLCK)
-> -	    && ((d_count(dentry) > 1)
-> -		|| (atomic_read(&inode->i_count) > 1)))
-> +	error = check_conflicting_open(dentry, arg);
-> +	if (error)
->  		goto out;
->  
->  	/*
-> @@ -1514,8 +1523,16 @@ static int generic_add_lease(struct file *filp, long arg, struct file_lock **flp
->  		goto out;
->  
->  	locks_insert_lock(before, lease);
-> -	return 0;
->  
-> +	/*
-> +	 * The check in break_lease() is lockless. It's possible for another
-> +	 * open to race in after we did the earlier check for a conflicting
-> +	 * open but before the lease was inserted. Check again for a
-> +	 * conflicting open and cancel the lease if there is one.
-> +	 */
-> +	error = check_conflicting_open(dentry, arg);
-> +	if (error)
-> +		locks_delete_lock(flp);
->  out:
->  	return error;
->  }
-> -- 
-> 1.8.1.4
-> 
