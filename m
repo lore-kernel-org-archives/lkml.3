@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab3GHJui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:50:38 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:16161
+	id S1752571Ab3GHJvH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 05:51:07 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:32193
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751108Ab3GHJuh (ORCPT
+	by vger.kernel.org with ESMTP id S1751997Ab3GHJuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:50:37 -0400
+	Mon, 8 Jul 2013 05:50:55 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h1354h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
 From: <akhil.goyal@freescale.com>
 To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>, <lars@metafoo.de>,
         <robin.getz@analog.com>, <Michael.Hennerich@analog.com>,
         <lars-peter.clausen@analog.com>
 CC: <linux-kernel@vger.kernel.org>, <pankaj.chauhan@freescale.com>,
         Akhil Goyal <akhil.goyal@freescale.com>
-Subject: [PATCH v2 0/4] Radio device framework
-Date: Mon, 8 Jul 2013 15:19:58 +0530
-Message-ID: <1373277002-14009-1-git-send-email-akhil.goyal@freescale.com>
+Subject: [PATCH v2 4/4] BSC9131rdb/dts: Add nodes for supporting AIC
+Date: Mon, 8 Jul 2013 15:20:02 +0530
+Message-ID: <1373277002-14009-5-git-send-email-akhil.goyal@freescale.com>
 X-Mailer: git-send-email 1.6.3.1
+In-Reply-To: <1373277002-14009-4-git-send-email-akhil.goyal@freescale.com>
+References: <1373277002-14009-1-git-send-email-akhil.goyal@freescale.com>
+ <1373277002-14009-2-git-send-email-akhil.goyal@freescale.com>
+ <1373277002-14009-3-git-send-email-akhil.goyal@freescale.com>
+ <1373277002-14009-4-git-send-email-akhil.goyal@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -29,90 +34,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Akhil Goyal <akhil.goyal@freescale.com>
 
-RF signal path is integral part of any system that transmits/receives RF
-(radio frequency) signals. In these systems Data is processed/converted
-to IQ samples (digital representation a RF signal) and passed to a RFIC
-(RF PHY) which converts the digital RF signal (IQ samples) to analog and
-transmits over antenna.
+BSC9131 is a hetrogenous system where Antenna interface controller
+(AIC) is a part of DSP subsystem. But its configuration is done from
+PA side. So a DSP node is added with appropriate CCSR address visible
+to PA and hence the address space for AIC will be visible to PA.
 
-Typically The signal path consists of multiple components: 
+BSC9131 support 3 AIC lanes for ADI interface and 3 for MAXIM type of
+interface. This patch support only ADI lanes.
 
-Antenna controller <-> vector signal processors <-> RFIC <-> Antenna
+Signed-off-by: Pankaj Chauhan <pankaj.chauhan@freescale.com>
+Signed-off-by: Shaveta Leekha <shaveta@freescale.com>
+Signed-off-by: Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>
+Signed-off-by: Akhil Goyal <akhil.goyal@freescale.com>
+---
+ arch/powerpc/boot/dts/bsc9131rdb.dts          |    4 ++
+ arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi |   38 +++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+), 0 deletions(-)
 
-Each of these components have specific functionalities: 
-
-1. Antenna controller: Framing of digital IQ data into protocol specific frames.
-2. vector signal processors: For conditioning of signal.
-3. RFIC : converts digital IQ data to analog signal which is transmitted/received on/from Air.
-
-Also it is desirable to control the complete signal path, for example:
-bringing the complete signal path up/down etc. 
-
-The radio device framework introduces a way to accommodate the RF signal
-paths.  One signal path is represented as a RF device (rf0, rf1 etc), and
-it can contain multiple components which have their individual vendor
-specific drivers. The framework provides mechanism by which individual
-components can register with RF framework, and the framework will handle the binding
-of individual component devices to a RF device. RF device exports the control
-interfaces to user space, and this user space interface is independent of
-component (vendor specific) drivers.
-
-This patch set include
-1. RF Interface: Independent of phy or antenna controller.
-2. AIC driver: Antenna interface Controller(AIC) of Hetrogenous SOC's
-like BSC9131, BSC9132
-4. Device tree bindings for AIC.
-5. Device tree changes for BSC9131-AIC
-
-changes in v2:
-1. incorporated comments for handling pointers in user space API structures.
-2. Removed patches for AD9361 phy driver. It shall be sent once a proper
-driver is in place for AD9361 chip
-3. Removed Device tree nodes/bindings for AD9361
-4. Incorporated comments for proper handling of wait_events
-5. Added Documentation for IOCTL APIs and the structures used.
-6. Inserted paddings in user space structures.
-7. Reorganized code for rfdev.c to remove forward declaration and broke the
-rf_ioctl() function to handle local structures correctly.
-8. Corrected the error handling for mutex used.
-
-Akhil Goyal (4):
-  drivers/misc: Support for RF interface device framework
-  drivers/misc/rf: AIC: Freescale Antenna Interface controller driver
-  binding: Add device tree bindings for freescale AIC
-  BSC9131rdb/dts: Add nodes for supporting AIC
-
- Documentation/devicetree/bindings/rf/fsl-aic.txt |   47 +
- Documentation/misc-devices/rf_framework          |  422 ++++++
- arch/powerpc/boot/dts/bsc9131rdb.dts             |    4 +
- arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi    |   38 +
- drivers/misc/Kconfig                             |    1 +
- drivers/misc/Makefile                            |    1 +
- drivers/misc/rf/Kconfig                          |   30 +
- drivers/misc/rf/Makefile                         |    6 +
- drivers/misc/rf/controllers/Makefile             |    1 +
- drivers/misc/rf/controllers/fsl_aic.c            | 1560 ++++++++++++++++++++++
- drivers/misc/rf/controllers/fsl_aic.h            |  450 +++++++
- drivers/misc/rf/core/Makefile                    |    2 +
- drivers/misc/rf/core/rf_channel.c                |  211 +++
- drivers/misc/rf/core/rfdev.c                     | 1384 +++++++++++++++++++
- include/linux/rf_channel.h                       |   25 +
- include/linux/rfdev.h                            |  251 ++++
- include/uapi/linux/rfdev.h                       |  367 +++++
- 17 files changed, 4800 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rf/fsl-aic.txt
- create mode 100644 Documentation/misc-devices/rf_framework
- create mode 100644 drivers/misc/rf/Kconfig
- create mode 100644 drivers/misc/rf/Makefile
- create mode 100644 drivers/misc/rf/controllers/Makefile
- create mode 100644 drivers/misc/rf/controllers/fsl_aic.c
- create mode 100644 drivers/misc/rf/controllers/fsl_aic.h
- create mode 100644 drivers/misc/rf/core/Makefile
- create mode 100644 drivers/misc/rf/core/rf_channel.c
- create mode 100644 drivers/misc/rf/core/rfdev.c
- create mode 100644 include/linux/rf_channel.h
- create mode 100644 include/linux/rfdev.h
- create mode 100644 include/uapi/linux/rfdev.h
+diff --git a/arch/powerpc/boot/dts/bsc9131rdb.dts b/arch/powerpc/boot/dts/bsc9131rdb.dts
+index e13d2d4..c134de7 100644
+--- a/arch/powerpc/boot/dts/bsc9131rdb.dts
++++ b/arch/powerpc/boot/dts/bsc9131rdb.dts
+@@ -28,6 +28,10 @@
+ 	board_soc: soc: soc@ff700000 {
+ 		ranges = <0x0 0x0 0xff700000 0x100000>;
+ 	};
++
++	dsp_soc: sc3850@ff600000 {
++		ranges = <0x0 0x0 0xff600000 0x100000>;
++	};
+ };
+ 
+ /include/ "bsc9131rdb.dtsi"
+diff --git a/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi b/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
+index 5180d9d..487e949 100644
+--- a/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
++++ b/arch/powerpc/boot/dts/fsl/bsc9131si-post.dtsi
+@@ -191,3 +191,41 @@ global-utilities@e0000 {
+ 		fsl,has-rstcr;
+ 	};
+ };
++
++&dsp_soc {
++	#address-cells = <1>;
++	#size-cells = <1>;
++	compatible = "simple-bus";
++	gcr@18000 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "fsl,bsc9131-gcr", "fsl,bsc9132-gcr";
++		reg = <0x18000 0x200>;
++	};
++	aic@50000 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "fsl,bsc9131-aic", "fsl,bsc9132-aic";
++		reg = <0x50000 0x200>;
++		interrupts = <49 2 0 0 53 2 0 0>;
++		lane0: aiclane@200 {
++			reg = <0x200 0x200>;
++			lane_id = <0>;
++			interrupts = <45 2 0 0>;
++		};
++
++		lane1: aiclane@400 {
++			reg = <0x400 0x200>;
++			lane_id = <1>;
++			interrupts = <46 2 0 0>;
++		};
++
++		lane2: aiclane@600 {
++			reg = <0x600 0x200>;
++			lane_id = <2>;
++			interrupts = <47 2 0 0>;
++		};
++	};
++};
++
++
+-- 
+1.6.3.1
 
 
 
