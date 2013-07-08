@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab3GHNn5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:43:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43393 "EHLO bear.ext.ti.com"
+	id S1752579Ab3GHNv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:51:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab3GHNny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:43:54 -0400
-From: Sourav Poddar <sourav.poddar@ti.com>
-To: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
-        <grant.likely@linaro.org>
-CC: <balbi@ti.com>, <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Sourav Poddar <sourav.poddar@ti.com>
-Subject: [RFC/PATCH 3/3] driver: spi: Add quad spi read support
-Date: Mon, 8 Jul 2013 19:13:00 +0530
-Message-ID: <1373290980-17883-4-git-send-email-sourav.poddar@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
-References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
+	id S1751760Ab3GHNv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 09:51:27 -0400
+Date: Mon, 8 Jul 2013 15:50:48 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: [bisected] perf: yet another fuzzer triggered crash
+Message-ID: <20130708135048.GA1069@krava.brq.redhat.com>
+References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
+ <20130701090713.GO6626@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1307011112090.8216@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1307021628510.8353@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1307022314450.11385@vincent-weaver-1.um.maine.edu>
+ <20130703074929.GE23916@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130703074929.GE23916@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since, qspi controller uses quad read.
+On Wed, Jul 03, 2013 at 09:49:29AM +0200, Peter Zijlstra wrote:
+> On Tue, Jul 02, 2013 at 11:15:59PM -0400, Vince Weaver wrote:
+> > 
+> > OK, I have bisected this problem to the following change:
+> > 
+> > commit 8dc85d547285668e509f86c177bcd4ea055bcaaf
+> > Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Date:   Thu Sep 2 16:50:03 2010 +0200
+> > 
+> >     perf: Multiple task contexts
+> >     
+> >     Provide the infrastructure for multiple task contexts.
+> > 
+> 
+> Thanks, that narrows down the scope a bit. As it happens I was also
+> narrowing down on that particular area so that's good.
+> 
 
-Configuring the command register, if the transfer of data needs
-quad lines.
+hi,
+patch below gets rid of the warning, and probably the
+crash as well
 
-This patch has been done on top of the following patch[1], which is still
-under review/comments.
-This patch will also go changes, as the parent patch[1] does.
+the reason seems to be when HW context is cloned based
+on SW event that happened to get there because of the
+HW leader, which got closed just before (fd[15] event
+in the reproducer)
 
-[1]: http://comments.gmane.org/gmane.linux.kernel.spi.devel/14047
+and the consequence is that in HW context we access
+SW's cpuctx -> and thus overwriting its task_ctx variable
+any time there's *sched_in routine
 
-Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+need to check if that does not break anything else ;-)
+
+jirka
+
 ---
- drivers/spi/spi-ti-qspi.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/spi/spi-ti-qspi.c b/drivers/spi/spi-ti-qspi.c
-index 430de9c..307cbed 100644
---- a/drivers/spi/spi-ti-qspi.c
-+++ b/drivers/spi/spi-ti-qspi.c
-@@ -258,8 +258,12 @@ static int qspi_read_msg(struct dra7xxx_qspi *qspi, struct spi_transfer *t)
- 			qspi->cmd | QSPI_RD_SNGL, qspi->dc);
- 		dra7xxx_writel(qspi, QSPI_WC_INT_EN, QSPI_INTR_ENABLE_SET_REG);
- 		dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
--		dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
--			QSPI_SPI_CMD_REG);
-+		if (t->bitwidth == SPI_BITWIDTH_QUAD)
-+			dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_QUAD,
-+				QSPI_SPI_CMD_REG);
-+		else
-+			dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
-+				QSPI_SPI_CMD_REG);
- 		wait_for_completion(&qspi->word_complete);
- 		*rxbuf++ = dra7xxx_readl_data(qspi, QSPI_SPI_DATA_REG, wlen);
- 		dev_dbg(qspi->dev, "rx done, read %02x\n", *(rxbuf-1));
--- 
-1.7.1
-
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 1833bc5..1d1f030 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7465,7 +7465,7 @@ inherit_task_group(struct perf_event *event, struct task_struct *parent,
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = alloc_perf_context(event->pmu, child);
++		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
+ 		if (!child_ctx)
+ 			return -ENOMEM;
+ 
