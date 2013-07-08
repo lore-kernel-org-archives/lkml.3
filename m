@@ -1,75 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751770Ab3GHNTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:19:13 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:51524 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213Ab3GHNTM (ORCPT
+	id S1752083Ab3GHNT3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:19:29 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:64981 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751984Ab3GHNTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:19:12 -0400
-Date: Mon, 8 Jul 2013 14:19:00 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Yadwinder Singh Brar <yadi.brar@samsung.com>
-Cc: linux-kernel@vger.kernel.org, sbkim73@samsung.com, lgirdwood@gmail.com,
-        sameo@linux.intel.com, rob.herring@calxeda.com,
-        grant.likely@linaro.org, sachin.kamat@linaro.org,
-        yadi.brar01@gmail.com
-Message-ID: <20130708131900.GA27646@sirena.org.uk>
-References: <1372510280-31931-1-git-send-email-yadi.brar@samsung.com>
- <1372510280-31931-2-git-send-email-yadi.brar@samsung.com>
+	Mon, 8 Jul 2013 09:19:24 -0400
+Message-ID: <51DABC58.5070503@cogentembedded.com>
+Date: Mon, 08 Jul 2013 17:19:20 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eWAQXdaW/6bU2HH2"
-Content-Disposition: inline
-In-Reply-To: <1372510280-31931-2-git-send-email-yadi.brar@samsung.com>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.118
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [v2 PATCH 1/6] regulator: core: Add support for disabling ramp
- delay
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-usb@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/2] usb/musb dma: add cppi41 dma driver
+References: <1373040764-3711-1-git-send-email-bigeasy@linutronix.de> <1373040764-3711-2-git-send-email-bigeasy@linutronix.de> <51D9817B.6080209@cogentembedded.com> <51DA7DD5.9060700@linutronix.de> <51DAAD86.2060102@cogentembedded.com> <51DAB2C3.6060303@linutronix.de>
+In-Reply-To: <51DAB2C3.6060303@linutronix.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---eWAQXdaW/6bU2HH2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 08-07-2013 16:38, Sebastian Andrzej Siewior wrote:
 
-On Sat, Jun 29, 2013 at 06:21:15PM +0530, Yadwinder Singh Brar wrote:
-> Some hardwares support disabling ramp delay, so adding ramp_disable flag to
-> constraints. It will be used to figure out whether ramp_delay in constraints
-> is explicitly set to zero or its unintialized (zero by default).
-> And we don't need to call set_voltage_time_sel() for regulators for whom ramp
-> delay is disabled in constraints.
+>>> not using dmaengine and the network driver (cpsw) which is also using
+>>> cppi 3.1 is having its own implementation of the cppi-dma part. So I
+>>> think dma enggine implementation is a must here.
 
-Applied, thanks.  I've applied this on a branch topic/ramp but please
-ask for a tag if it needs to be merged elsewhere - I'll definitely be
-rebasing after -rc1 if nothing else.
+>>     Not at all. I'm not familiar with CPSW but DaVinci EMAC uses CPPI 3.0
+>> too but it's completely regisyter incompatible with USB. CPPI 3.0
+>> doesn't seem to be universal DMA engine, hence drivers/dma/ driver
+>> doesn't seem feasible.
 
---eWAQXdaW/6bU2HH2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> So you suggest to avoid drivers/dma and create drivers/usb
+> /musb/cpp41-dma.c instead?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+    Where I was suggesting that? I was replying about CPPI 3.0 only.
 
-iQIcBAEBAgAGBQJR2rw7AAoJELSic+t+oim9FTQP/Ay/CHLL1EKoEiZggrAywbV9
-dwcqNMw3K6rFt7aTjApIteasrRSHt3VVZQbEDaL+WcfTW9ZZX46qLQAXpyJErrpR
-2Gnbjk61ypnO+CZ53xHbayVRIJVop14oIhHM/JpKLZP3iWowB6YaHOO2dAcy3JkA
-hQB89P1w8ReX35hZiAPZLwX5UpLqn72awlRe+eY96+LhR2VRVugR1I72r4ZbIsJL
-C6+wsLOSfco05MqEiY3wROV08t5mc2b8W+W8me+jOBgnb0VAGHbWAqSdpWh2OJWA
-6BJnEKbLZL/LEJ0jrcgTaQCSboNb6cEtqAhuzS2M0lkbF4Tb4ddRlFpOHRydUOQK
-2uCFoBog0vnm/T10HJZo0InQ2RC8OW2ZnNMGyLzCDih9p+AuOyo6NHZ4SLjoSALc
-m0afrNVEeYz6YLz6AcVW8hkYc+DDh0+0QIENvjpNnkcrNVzqYdnYtIiZqPE4n+QI
-G834t9iPeb/Jb+6E2h4evGnSQ19F1IubAzfgg1iEiTzxNtNfeXduiNtPzmw2iK8D
-o1cD9ZuGpwqpB8atb8jVO0ydXOJwcsKbVAeMzr097qSymvak96/5Rolut2/edAvI
-b+FxWpktjrF5Hm7td+cw1MJVQthiuKY6egJNKXH+cviG1wRXN1mPINb0zwPe9GCz
-CfQtax8Agj9+Qgq2qHKU
-=SSJq
------END PGP SIGNATURE-----
+> cpsw is using davinci_cpdma.c and you say it is completely different
+> from what musb is using? I just browsed over the spec it looked very
+> familiar.
 
---eWAQXdaW/6bU2HH2--
+    Yes, the register interface is incompatible -- I too compared it 
+some time ago. The only things compatible are the DMA descriptors.
+
+>>> I will shorten them for the range conflict. usbss is only used for
+>>> interrupt mask on/off. If there are different, a different compatible
+>>> string will carry the difference.
+
+>>     You don't quite understand. CPPI 4.1 specification as such (which I
+>> guess you haven't seen) doesn't include any interrupt registers.
+
+> Yes but you do have them somewhere. So all its needs is just the SoC
+> type which brings the register specification.
+
+    Well, it can be viewed this way...
+
+>>> I think I will also add the usb
+>>> string to it since a possible network engine will look different in
+>>> terms of the queue used (which I plan to move away from DT).
+
+>>     There are out of tree platform which uses CPPI 4.1 not only for USB
+>> but e.g. for Ethernet.
+
+> So what? The binding will be different, you get a different register
+> for interrupt. I'm still not buying that part where you want skip the
+> dmaengine framework and introduce custom callbacks for this kind of
+> things.
+
+    I'm just not sure drivers/dma/ needs IRQs. To be honest, I'm not 
+very familiar with its APIs.
+
+>>>> diff --git a/drivers/dma/cppi41.c b/drivers/dma/cppi41.c
+>>>>> new file mode 100644
+>>>>> index 0000000..80dcb56
+>>>>> --- /dev/null
+>>>>> +++ b/drivers/dma/cppi41.c
+>>>>> @@ -0,0 +1,777 @@
+>> [...]
+
+>>>>> +static u32 get_host_pd2(struct cppi41_channel *c)
+>>>>> +{
+>>>>> +    u32 reg;
+>>>>> +
+>>>>> +    reg = 5 << 26; /* USB TYPE */
+
+>>>>      The driver shouldn't be tied to USB at all.
+
+>>> For now it is USB only. Once we git different types we will have
+>>> different compatible strings for that. But that shift could by hidden
+>>> behind a define so to comment could vanish as well.
+
+>>     I repeat: CPPI 4.1 is universal DMA engine. It's a pity that it's
+>> implemented as a part of USB peripheral on all in-tree platforms but
+>> it's implemented as an autonomous module on out-of-tree platforms.
+
+> It can be still extended to use normal/generic memcpy() operation if
+> this is supported somewhere.
+
+     No, it can't. CPPI 4.1 spec simply has no support for such thing.
+It can't be implemented "somewhare" because then that hardware stops to 
+be CPPI 4.1 compatible.
+
+> That one here tight to USB and can't do
+> anything else. I do not start to include a bunch of function pointer if
+> there is no need it for it. I didn't do anything that it made
+> impossible to do so, right?
+
+    I'd like to see universal driver in the end, not tied to USB in any 
+way.
+
+>>>> [...]
+>>>>> +static const struct of_device_id cppi41_dma_ids[] = {
+>>>>> +    { .compatible = "ti,am3359-cppi41", },
+
+>>>>       CPPI 4.1 driver should be generic, not SoC specific.
+
+>>> So you want another driver around it to handle the SoC specific stuff?
+
+>>     This can be handled as part of MUSB DMA driver in our case.
+
+> The glue layer you say. Okay. This does not look that bad. I will
+> try to push it there. But then I need to pass pointers somehow between
+> cppi41 which is behind dma-engine and this glue layer.
+
+    I think that's enough to export a output queue polling function from 
+the DMA engine.
+
+>>> Sebastian
+
+>> PS: Are you aware that TI has written CPPI 4.2 DMA engine driver in
+>> their Arago project?
+
+    They actually had plans to write CPPI 4.1 DMA engine support too but 
+that seems to have lead nowhere so far. They seem still content with 
+what I wrote based on their CPPI 4.1 code back in 2008 (only moved it 
+into drivers/usb/musb/).
+
+>> http://linux.davincidsp.com/pipermail/davinci-linux-open-source/2013-February/026345.html
+
+> No I wasn't. They could bring their code upstream…
+
+    Oh, they are usually in no hurry to do so. BTW, if you read the 
+mail, they weren't quite content with the DMA engine framework, and 
+developed 2 alternate solutions as far as I could understand.
+
+> Sebastian
+
+WBR, Sergei
+
