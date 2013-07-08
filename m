@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab3GHFNX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 01:13:23 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:45660 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab3GHFNV (ORCPT
+	id S1753620Ab3GHFVK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 01:21:10 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:32770 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753531Ab3GHFVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 01:13:21 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-2c-51da4a686d60
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-References: <000201ce7959$bf0fb150$3d2f13f0$@samsung.com>
- <51D6A370.7060604@st.com> <002801ce7b98$e1520f60$a3f62e20$@samsung.com>
-In-reply-to: <002801ce7b98$e1520f60$a3f62e20$@samsung.com>
-Subject: Re: [PATCH] pci: exynos: split into two parts such as Synopsys part
- and Exynos part
-Date: Mon, 08 Jul 2013 14:13:12 +0900
-Message-id: <002901ce7b99$d7e42930$87ac7b90$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQII16kcxw44AVHNORO1PoktmeAs2wG+yqifAbxODj+YyasLUA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsVy+t8zA90Mr1uBBg0PpC3+TjrGbrGkKcPi
-	5SFNi8sLL7Fa9C64ymZxedccNouz846zWcw4v4/JYuPUX4wW7ZeULRqPPmC1aH3ygNGBx+P3
-	r0mMHgs2lXp8Xzif3aNvyypGj6c/9jJ7fN4kF8AWxWWTkpqTWZZapG+XwJXRfW4BW8FKtor9
-	qyYzNTC+ZOli5OSQEDCRmHp3HzOELSZx4d56NhBbSGAZo0T7VgmYmu8Lu5m6GLmA4osYJX7v
-	/8oG4fxilNg88yY7SBWbgJrEly+HwWwRgQCJrVePMYIUMQucZZJY+OQbI0RHM6NEz7s7rCBV
-	nAJWErva5zGC2MICcRITXj0H62YRUJVY3HMHzOYVsJTo+HiNGcIWlPgx+R7Y3cwCWhLrdx5n
-	grDlJTaveQv1g4LEjrOvGSGucJJ4t+IHM0SNiMS+F+/AjpAQmMohMXP9OhaIZQIS3yYfArI5
-	gBKyEpsOQM2RlDi44gbLBEaJWUhWz0KyehaS1bOQrFjAyLKKUTS1ILmgOCm9yESvODG3uDQv
-	XS85P3cTIyTuJ+xgvHfA+hBjMtD6icxSosn5wLSRVxJvaGxmZGFqYmpsZG5pRpqwkjiveot1
-	oJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQZG62/hMrXzroeqrE0oZ/+04aQTg0/e81yebJ6v
-	T5hmhr3JLjzQ7+ss9PPKo4dsEdLmb8xyeeYZFd/vv9Tc9uwOs6tsViCbU3rlpBUmDu7WO5uL
-	Pk9n1l+2y/d117PVQfzTVxzclrrPJYVfUZrp/M4l0xWY/S/KHeP3YmTVz5hxk93F1lV5wn0l
-	luKMREMt5qLiRAALcOleEQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDKsWRmVeSWpSXmKPExsVy+t9jAd0Mr1uBBrM/iln8nXSM3WJJU4bF
-	y0OaFpcXXmK16F1wlc3i8q45bBZn5x1ns5hxfh+Txcapvxgt2i8pWzQefcBq0frkAaMDj8fv
-	X5MYPRZsKvX4vnA+u0ffllWMHk9/7GX2+LxJLoAtqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzje
-	Od7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwfoQiWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6
-	viFBcD1GBmggYR1jRve5BWwFK9kq9q+azNTA+JKli5GTQ0LAROL7wm4mCFtM4sK99WxdjFwc
-	QgKLGCV+7/8K5fxilNg88yY7SBWbgJrEly+HwWwRgQCJrVePMYIUMQucZZJY+OQbI0RHM6NE
-	z7s7rCBVnAJWErva5zGC2MICcRITXj0H62YRUJVY3HMHzOYVsJTo+HiNGcIWlPgx+R7YfcwC
-	WhLrdx5ngrDlJTavecsMcauCxI6zrxkhrnCSeLfiBzNEjYjEvhfvGCcwCs1CMmoWklGzkIya
-	haRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgtPJMagfjygaLQ4wCHIxKPLwSp28G
-	CrEmlhVX5h5ilOBgVhLhFWe9FSjEm5JYWZValB9fVJqTWnyIMRno04nMUqLJ+cCUl1cSb2hs
-	YmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjOuU1n5csNPgs5BoNH/b
-	oeVdgXahOcf73vNPv8Ft+9v+tEwSu87zRrZjPGeKftxa/PzShqUui9NfhE3u/sH36Dz3Xh7P
-	uLD7LgtN3qYrWzUKu2zxuLjuiXDMzMJ7iTPWKBoc2fJiZaTmljuJqkdOLo79VWF8Zabb81+6
-	d+79kFTfbbqDsVkkRkWJpTgj0VCLuag4EQAcRzsfbwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 8 Jul 2013 01:21:08 -0400
+Message-ID: <51DA4C23.6050604@ti.com>
+Date: Mon, 8 Jul 2013 10:50:35 +0530
+From: George Cherian <george.cherian@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>,
+        <a-kishore@ti.com>, <afzal@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm: dts: AM43x: Add usb_otg_hs node
+References: <1372401887-19422-1-git-send-email-george.cherian@ti.com> <20130707083558.GA12992@arwen.pp.htv.fi>
+In-Reply-To: <20130707083558.GA12992@arwen.pp.htv.fi>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 08, 2013 2:06 PM, Jingoo Han wrote:
-> On Friday, July 05, 2013 7:44 PM, Pratyush Anand wrote:
-> > On 7/5/2013 1:59 PM, Jingoo Han wrote:
-> > > Exynos PCIe IP consists of Synopsys specific part and Exynos
-> > > specific part. Only core block is a Synopsys designware part;
-> > > other parts are Exynos specific.
-> > > Also, the Synopsys designware part can be shared with other
-> > > platforms; thus, it can be split two parts such as Synopsys
-> > > designware part and Exynos specific part.
-> > >
-> >
-> > A quick and nice job :)
-> > Just few minor comments.
-> 
-> Thank you.
-> Without your comment, it could be done. :)
+On 7/7/2013 2:05 PM, Felipe Balbi wrote:
+> Hi,
+>
+> On Fri, Jun 28, 2013 at 12:14:47PM +0530, George Cherian wrote:
+>> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+>> index ddc1df7..e4f5eb8 100644
+>> --- a/arch/arm/boot/dts/am4372.dtsi
+>> +++ b/arch/arm/boot/dts/am4372.dtsi
+>> @@ -64,5 +64,24 @@
+>>   			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
+>>   			reg = <0x44e86000 0x40>;
+>>   		};
+>> +
+>> +		usb_otg_hs1: am4372_dwc3@48380000 {
+>> +			compatible = "ti,am437x-dwc3";
+>> +			reg = <0x48380000 0x1ff>;
+>> +			interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
+>> +			#address-cells = <1>;
+>> +			#size-cells = <1>;
+>> +			utmi-mode = <1>;
+>> +			ranges;
+>> +
+>> +			dwc3@48390000 {
+>> +				compatible = "synopsys,dwc3";
+> let's us snps,dwc3. I recently posted a patch converting synopsys to
+> snps like all other DesignWare drivers. Support for synopsys,dwc3 is
+> still there, but shouldn't be used.
+okay
+>
+>> +				reg = <0x48390000 0xcfff>;
+>> +				interrupts = <GIC_SPI  168 IRQ_TYPE_LEVEL_HIGH>;
+>> +				tx-fifo-resize;
+> is this flag *really* necessary, I asked you and didn't get an answer.
+We will not be needing this flag , since each EP has 3K tx fifo size. 
+Also given the fact that we will be operating only
+in 2.0 mode the default values are only sufficient.
+I will re-send the patch with above changes.
 
-Oops, it is a typo.
-Without your comment, it could 'NOT' be done. :)
-
-Thank you for your comment.
-It is very helpful.
-
-Best regards,
-Jingoo Han
-
+Regards,
+-George
 
