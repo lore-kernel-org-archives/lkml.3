@@ -1,146 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab3GHCMQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 22:12:16 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:56968 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab3GHCMO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 22:12:14 -0400
-Message-ID: <51DA1FAE.3000306@gmail.com>
-Date: Mon, 08 Jul 2013 10:10:54 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1753513Ab3GHCWS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 22:22:18 -0400
+Received: from ozlabs.org ([203.10.76.45]:39377 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753360Ab3GHCWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 7 Jul 2013 22:22:14 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Cc: "linux-pci\@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] pci: Avoid unnecessary calls to work_on_cpu
+In-Reply-To: <CAErSpo70VKFxJqyZJKSp=CZ2x131Kz_+0vah3juTEuEx5RLX8A@mail.gmail.com>
+References: <20130624195942.40795.27292.stgit@ahduyck-cp1.jf.intel.com> <CAErSpo70VKFxJqyZJKSp=CZ2x131Kz_+0vah3juTEuEx5RLX8A@mail.gmail.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 08 Jul 2013 11:14:51 +0930
+Message-ID: <87wqp1esff.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Chen Gang <gang.chen@asianux.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>,
-        David Sharp <dhsharp@google.com>, Ingo Molnar <mingo@kernel.org>,
-        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        uml-user <user-mode-linux-user@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jiri Kosina <trivial@kernel.org>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] include/asm-generic/io.h: add dummy fuctions to support
- 'COMPILE_TEST' in 'asm-generic'.
-References: <20130704011221.GA11230@kroah.com> <51D617E9.8080907@gmail.com> <51D67D6C.4080603@gmail.com> <201307051313.43491.arnd@arndb.de>
-In-Reply-To: <201307051313.43491.arnd@arndb.de>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bjorn Helgaas <bhelgaas@google.com> writes:
+> [+cc Rusty]
+>
+> On Mon, Jun 24, 2013 at 2:05 PM, Alexander Duyck
+> <alexander.h.duyck@intel.com> wrote:
+>> This patch is meant to address the fact that we are making unnecessary calls
+>> to work_on_cpu.  To resolve this I have added a check to see if the current
+>> node is the correct node for the device before we decide to assign the probe
+>> task to another CPU.
+>>
+>> The advantages to this approach is that we can avoid reentrant calls to
+>> work_on_cpu.  In addition we should not make any calls to setup the work
+>> remotely in the case of a single node system that has NUMA enabled.
+>
+> The description above makes it sound like this is just a minor
+> performance enhancement, but I think the real reason you want this is
+> to resolve the lockdep warning mentioned at [1].  That thread is long
+> and confusing, so I'd like to see a bugzilla that distills out the
+> useful details, and a synopsis in this changelog.
+>
+> [1] https://lkml.kernel.org/r/1368498506-25857-7-git-send-email-yinghai@kernel.org
+>
+>> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+>> ---
+>>
+>> This patch is based off of work I submitted in an earlier patch that I never
+>> heard back on.  The change was originally submitted in:
+>>   pci: Avoid reentrant calls to work_on_cpu
+>>
+>> I'm not sure what ever happened with that patch, however after reviewing it
+>> some myself I decided I could do without the change to the comments since they
+>> were unneeded.  As such I am resubmitting this as a much simpler patch that
+>> only adds the line of code needed to avoid calling work_on_cpu for every call
+>> to probe on an NUMA node specific device.
+>>
+>>  drivers/pci/pci-driver.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+>> index 79277fb..7d81713 100644
+>> --- a/drivers/pci/pci-driver.c
+>> +++ b/drivers/pci/pci-driver.c
+>> @@ -282,7 +282,7 @@ static int pci_call_probe(struct pci_driver *drv, struct pci_dev *dev,
+>>            its local memory on the right node without any need to
+>>            change it. */
+>>         node = dev_to_node(&dev->dev);
+>> -       if (node >= 0) {
+>> +       if ((node >= 0) && (node != numa_node_id())) {
+>>                 int cpu;
+>>
+>>                 get_online_cpus();
+>
+> I think it's theoretically unsafe to use numa_node_id() while
+> preemption is enabled.
+>
+> It seems a little strange to me that this "run the driver probe method
+> on the correct node" code is in PCI.  I would think this behavior
+> would be desirable for *all* bus types, not just PCI, so maybe it
+> would make sense to do this up in device_attach() or somewhere
+> similar.
+>
+> But Rusty added this (in 873392ca51), and he knows way more about this
+> stuff than I do.
 
-Firstly, thank you very much for your reply.
+Actually, I just stopped the code from playing cpumask games, which is
+what it used to do.
 
-On 07/05/2013 07:13 PM, Arnd Bergmann wrote:
-> On Friday 05 July 2013, Chen Gang F T wrote:
->> > Hello All:
->> > 
->> > It seems 'asm-generic' dislikes 'mad users' (e.g allmodconfig,
->> > randconfig, and me).
->> > 
->> > I guess the main reason is: 'asm-generic' thinks what mad users talk
->> > about is useless in real world, so it is just noisy.
->> > 
->> > I can understand, at least what I talk about is not for urgent things.
->> > (maybe 'asm-generic' also thinks it not important either, every members
->> > have their own opinions).
->> > 
->> > Next, I still use allmodconfig/randconfig for some architectures which I
->> > am interested in (and also for learning compilers), but I will skip all
->> > things which are related with 'asm-generic', since it dislikes me (a mad
->> > user).
-> As the asm-generic maintainer I think I have to clarify a few things:
-> 
-> * Build-time fixes for warnings and randconfig errors are good,
->   and you have sent a number of good bug fixes all over the kernel,
->   I definitely welcome getting more of those. In many cases the
->   fix is trivial and obvious, in other cases you need to know
->   much more of the background to understand what the underlying
->   problem is and why you should not just fix the symptom.
-> 
+You want Andi and/or Greg KH:
 
-Since we (at least my company) has already get benifits from Public Open
-Source, we should try to provide the contribution back to Public Open
-Source.
+commit d42c69972b853fd33a26c8c7405624be41a22136
+Author: Andi Kleen <ak@suse.de>
+Date:   Wed Jul 6 19:56:03 2005 +0200
 
-Providing contributions to Public Open Source is part of my duty (what
-I should do).
+    [PATCH] PCI: Run PCI driver initialization on local node
+    
+    Run PCI driver initialization on local node
+    
+    Instead of adding messy kmalloc_node()s everywhere run the
+    PCI driver probe on the node local to the device.
+    
+    This would not have helped for IDE, but should for
+    other more clean drivers that do more initialization in probe().
+    It won't help for drivers that do most of the work
+    on first open (like many network drivers)
+    
+    Signed-off-by: Andi Kleen <ak@suse.de>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
-> * You have made an (understandable) mistake with this particular
->   patch. It would have been nice if you had not made it, but I
->   can see that you are still learning about these things. There
->   is a fine line between what makes sense to be enabled as a
->   'compile test' and what should better be left disabled by
->   Kconfig.
-> 
-
-We have to meet three roles: 'user', 'provider' and 'tester' (which is
-may mad user, and not quite familiar with the details).
-
-For 'user', they really need 'COMPILE_TEST', so it should be added into
-kernel wide. And 'user' often thinks the 'tester' is just a 'mad user'
-for 'tester' offten does "mad things" which will be useless in real
-world.
-
-For 'provider', he/she often feels the 'tester' is not familiar the
-details (in fact, they really not familiar), but he/she has to discuss
-with 'tester' (especially 'user' does not care about it). He/She really
-feels it is just boring and waste time.
-
-Instead of discussing the details, 'tester' should only provide the
-related proof and only can discus the related API, he/she wants the
-'provider' to explain about the proof and make the API clearer to every
-one (not only for 'expert').
-
-Now, I think, I may just play a 'tester' role for 'asm-generic'.
-
-
-> * When experienced developers tell you that you are mistaken, you
->   need to make an effort to understand what the mistake was so you
->   can learn from it and not make the same mistake again. If you
->   make the same mistakes again, maintainers will get annoyed and
->   ignore you (or worse), which is not a good situation to be
->   in when you want to get your patches merged.
-
-'tester' wants the 'provider' to explain the proof:
-
-  e.g. 'COMPILE_TEST' help contents whether really say: "can allow 'COMIPLE_TEST=y' in architectures which no related HW support"
-  e.g. If compile fails because of no HW support with "COMPILE_TEST=y", can we still let it suspending ?
-  e.g. Does it still count an issue, although in real world, it may not happen, at least now ?
-
-'tester' also wants the 'provider' to explain 'asm-generic':
-
-  Arnd said:
-    "It's a set of examples for the architectures to look at and include if they want to"
-  Steven saind:
-    "The purpose of asm-generic is to add a standard infrastructure that some archs may be able to optimize."
-
-  (In fact, they are not precisely the same).
-
-  Did 'provider' have the related document for it (I guess so, could you provide the related location), thanks ?
-
-  according to the definition of 'asm-generic' (either of them):
-    the 'CONFIG_BUG' need really remove from 'asm-generic', for it is only related with some of architectures, not generic enough for all architectures
-      (we can continue to discus it in the related thread).
-    it belongs architectures wide, not kernel wide, is it better to move "./include/asm-generic" to "./arch/asm-default" or "./arch/asm-standard" ?
-
-'tester' also wants to try something (but maybe incorrect).
-
-  one sample for string, its value has 4 kinds: 'volatile string', 'const string', '""', 'NULL'.  ('""' is not equal to 'NULL').
-  may we also have the 4 kinds: 'HAS_IOMAP', 'NOMMU', 'COMPILE_TEST', 'N/A' ('COMPILE_TEST' is not equal to 'N/A')?
-
-  (this is maybe just boring or wast time, need not reply).
-
-
-Thanks.
--- 
-Chen Gang
+Cheers,
+Rusty.
