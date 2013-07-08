@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751979Ab3GHOgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 10:36:53 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41617 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab3GHOgw (ORCPT
+	id S1752235Ab3GHOhS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 10:37:18 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59210 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751183Ab3GHOhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 10:36:52 -0400
-Date: Mon, 8 Jul 2013 15:36:20 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org
-Message-ID: <20130708143620.GF27646@sirena.org.uk>
-References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
- <1373290193-25300-4-git-send-email-richard.genoud@gmail.com>
+	Mon, 8 Jul 2013 10:37:16 -0400
+Date: Mon, 8 Jul 2013 17:36:51 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sourav Poddar <sourav.poddar@ti.com>
+CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
+        <grant.likely@linaro.org>, <balbi@ti.com>, <rnayak@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/PATCH 3/3] driver: spi: Add quad spi read support
+Message-ID: <20130708143651.GH31221@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
+ <1373290980-17883-4-git-send-email-sourav.poddar@ti.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vmAJtI3ncFun9MAx"
+	protocol="application/pgp-signature"; boundary="VbfcI4OLZ4XW0yH2"
 Content-Disposition: inline
-In-Reply-To: <1373290193-25300-4-git-send-email-richard.genoud@gmail.com>
-X-Cookie: You will contract a rare disease.
+In-Reply-To: <1373290980-17883-4-git-send-email-sourav.poddar@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.118
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v2 3/5] ARM: AT91: DTS: sam9x5ek: add WM8731
- codec
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---vmAJtI3ncFun9MAx
+--VbfcI4OLZ4XW0yH2
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 08, 2013 at 03:29:51PM +0200, Richard Genoud wrote:
-> The WM8731 codec on sam9x5ek board is on i2c, address 1A
+On Mon, Jul 08, 2013 at 07:13:00PM +0530, Sourav Poddar wrote:
+> Since, qspi controller uses quad read.
 >=20
-> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> Configuring the command register, if the transfer of data needs
+> quad lines.
+>=20
+> This patch has been done on top of the following patch[1], which is still
+> under review/comments.
+> This patch will also go changes, as the parent patch[1] does.
+>=20
+> [1]: http://comments.gmane.org/gmane.linux.kernel.spi.devel/14047
+>=20
+> Signed-off-by: Sourav Poddar <sourav.poddar@ti.com>
+> ---
+>  drivers/spi/spi-ti-qspi.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/spi/spi-ti-qspi.c b/drivers/spi/spi-ti-qspi.c
+> index 430de9c..307cbed 100644
+> --- a/drivers/spi/spi-ti-qspi.c
+> +++ b/drivers/spi/spi-ti-qspi.c
+> @@ -258,8 +258,12 @@ static int qspi_read_msg(struct dra7xxx_qspi *qspi, =
+struct spi_transfer *t)
+>  			qspi->cmd | QSPI_RD_SNGL, qspi->dc);
+>  		dra7xxx_writel(qspi, QSPI_WC_INT_EN, QSPI_INTR_ENABLE_SET_REG);
+>  		dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
+> -		dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
+> -			QSPI_SPI_CMD_REG);
+> +		if (t->bitwidth =3D=3D SPI_BITWIDTH_QUAD)
+> +			dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_QUAD,
+> +				QSPI_SPI_CMD_REG);
+> +		else
+> +			dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
+> +				QSPI_SPI_CMD_REG);
 
-Acked-by: Mark Brown <broonie@linaro.org>
+we also have read dual, in order to make this code a little better you
+could:
 
-This should go via arm-soc.
+	unsigned cmd =3D qspi->cmd;
 
---vmAJtI3ncFun9MAx
+	switch (t->bitwidth)
+	case SPI_BITWIDTH_QUAD:
+		cmd |=3D QSPI_RD_QUAD;
+		break;
+	case SPI_BITWIDTH_DUAL:
+		cmd |=3D QSPI_RD_DUAL;
+		break;
+	case SPI_BITWIDTH_SINGLE:
+	default:
+		cmd |=3D QSPI_RD_SNGL;
+	}
+
+	dra7xx_writel(qspi, cmd, QSPI_SPI_CMD_REG);
+
+--=20
+balbi
+
+--VbfcI4OLZ4XW0yH2
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR2s5aAAoJELSic+t+oim9WOMP/2cxxwVEWX3VmRHWRCQooQth
-wGxyk7WVqb4JUschwhgTjxcNexDeg3A6L0GhgKNOyqbFLux9EChTqyp7TMsfgPvQ
-Sf+ZFA1nDMHCjgU/iGHzVd7NZVuXWf9LRwji+IT4anZMPWBO71Xv7XdDTXvGSvbb
-bX3UsqKgiU0p/QUTKCtWgaXUPNmdtpUw8NTGWkBSB97EgU12JtvKUZKi6gOl5ZrC
-kGcrWcgPbcrEqPsHuQZZQB3PChl9LV/xPU76PH2yDGMLb/590/zuVSEqyad/3jC6
-nxs6Ti32EMm+XbWben+MRBLKIZJzM+Uzw6RWOQKXUK8lObPZ+ZyfRY5KG6JpZY6v
-jPAR5R1ScKadF+J7hjIxjpGIqKiOYmH5Ckr3WonXQXlT9ygd5Ji6tzxJIs9f6NYY
-mHFpGjbd/6SzHiXUx244G8bI2oEQuBWfhJag9pltUF6oMZUxGMEwWOd32sBUba59
-4cQvR4Q2lFsXy0kiKtqatxCrrYVspFf4fPrbfJYkxjicZ2cqUXmrXuzYJ3OMmXKM
-2h2lsN3Ao3rBqbzfkSvv6FxQcKXQWIrNFLy2GDsig6qzvcsMINmkbxWL/Ohp7FM2
-HMpMbWVPhJF/8dtK63PMcE5PwXVRpZxqSmXB8Wt5MphXfMEwtEod2ZNWf/iAaPs5
-2IC4nKzY/w/q1Ijnd1Ik
-=yrBV
+iQIcBAEBAgAGBQJR2s6DAAoJEIaOsuA1yqRE2BsQAJW+05dztetj0tVqUtHAwz/S
+LGBd1ke63nBFMKsieKJzGRxsD7lRV3L2STzljIajvVfehhUuEab8xXIQ8tZNY2+m
+gNftfX9JFM59D3LFjHaKeLA2vKpPe8A/JEL+BZcwm35vyTRKTW5W++OS7cjp1dHV
+nsULDWeI89zzbEI0lFalyFvn4k9/YBQqKccfld/lTCHO8js7ctcbVEdZQW7I2EgE
+fH9z2nz7fby6xo3TWnR/+kACz/gKHMqBZZsSPdSOcvQfcKEtttgS4kEzOtivKkp/
+CPftx7FUiahR/ORAbhvc5ov5OjWV7E179EiW9XX6Dfd4qzsZOIroFcpPUnMPFFcI
+oEP0LfUkMKqAVTkACWdwSU5zPFo8HhcuJr1vI36/zTtdcolrKX+EXCjiNuj/IJ5f
+Nwtu8M4FEvIn2mG6VPjy5kO7fZw2bEacO3XEuy8bDXvGh1DYG+otlpgqFfwgWAAn
+GQJtqQ122woYESPUjfFBg8WmQHfBC0vjHVJ26PXetVwNhFNJ+7k6SiT+yf6cq2MJ
+WKp0pBQ6cMrMciWkWt999A9exSTsVuTZWsDAZmoI78cxJa4mhQ8BnwVJbGdzP4Of
+FY1DiG/pATVucaL/NQSa0EfEPKlWgZas8fE4QTtMF+oxowS3rQGFBMxwlBCpIq9f
+pFTY2G6aEJ4A5Lqk/0l1
+=UlaK
 -----END PGP SIGNATURE-----
 
---vmAJtI3ncFun9MAx--
+--VbfcI4OLZ4XW0yH2--
