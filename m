@@ -1,201 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab3GHVix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 17:38:53 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:34785 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab3GHViv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 17:38:51 -0400
-Date: Mon, 8 Jul 2013 22:34:56 +0100
-From: Frederick van der Wyck <fvanderwyck@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] platform samsung-q10: use ACPI instead of direct EC
- calls
-Message-ID: <20130708213456.GA5441@lat.lan>
-References: <20130703212737.GC5579@lat.lan>
- <1373297814.24233.5.camel@x230.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373297814.24233.5.camel@x230.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753279Ab3GHVoJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 17:44:09 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2182 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751026Ab3GHVoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 17:44:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1022,1363158000"; 
+   d="scan'208";a="328410507"
+Subject: [PATCH] x86: perf: fix incorrect use of do_div() in nmi warning
+To: linux-kernel@vger.kernel.org
+Cc: x86@kernel.org, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Mon, 08 Jul 2013 14:44:04 -0700
+Message-Id: <20130708214404.B0B6EA66@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 11:36:54AM -0400, Matthew Garrett wrote:
 
-> you should be able to just use first_ec directly rather than  
-> probing yourself.
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Thanks, I've made that change below.
+This fixes a bug present in 3.10 and introduced here:
 
-> > +	for (i = 0; i < SAMSUNGQ10_BL_MAX_INTENSITY; i++) {
-> > +		status = acpi_evaluate_object(ec_handle, "_Q63", NULL, NULL);
-> 
-> The potential problem here is that there's no guarantee that these event
-> numbers are stable, and a firmware upgrade could change them. Of course,
-> that's also true of the EC registers, but we haven't had anyone complain
-> about the driver suddenly breaking so I'm not hugely enthusiastic about
-> replacing one fragile but seemingly working method with a fragile but
-> unproven one. 
+commit 2ab00456ea8a0d79acb1390659b98416111880b2
+Author: Dave Hansen <dave.hansen@linux.intel.com>
+Date:   Fri Jun 21 08:51:35 2013 -0700
 
-That's true. On the other hand, imitating the action of the brightness keys at
-this higher level seems somewhat cleaner and has the advantage that the
-brightness setting is preserved on reboot (as the smi handler stores it in
-nvram). I did test that 63 and 64 are the appropriate event numbers on each of
-the models in the dmi table (although I only tested one firmware version per
-model).
+    x86: Warn when NMI handlers take large amounts of time
 
-Signed-off-by: Frederick van der Wyck <fvanderwyck@gmail.com>
+I completely botched understanding the calling conventions of
+do_div().  I assumed that do_div() returned the result instead
+of realizing that it modifies its argument and returns a
+remainder.  The side-effect from this would be bogus numbers
+for the "msecs" value in the warning messages:
+
+	INFO: NMI handler (perf_event_nmi_handler) took too long to run: 0.114 msecs
+
+Note, there was a second fix posted by Stephane Eranian for
+a separate patch which I also botched:
+
+	http://lkml.kernel.org/r/20130704223010.GA30625@quad
+
+Both of these fixes need to get pulled in to Linus's tree and
+the 3.10 stable tree.
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: stable@vger.kernel.org
+Cc: x86@kernel.org
 ---
- drivers/platform/x86/Kconfig       |    2 +-
- drivers/platform/x86/samsung-q10.c |   65 +++++++++++------------------------
- 2 files changed, 22 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 8577261..52aed6d 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -762,7 +762,7 @@ config INTEL_OAKTRAIL
+ linux.git-davehans/arch/x86/kernel/nmi.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff -puN arch/x86/kernel/nmi.c~dave-is-stupid-do_div arch/x86/kernel/nmi.c
+--- linux.git/arch/x86/kernel/nmi.c~dave-is-stupid-do_div	2013-07-08 13:10:55.498656504 -0700
++++ linux.git-davehans/arch/x86/kernel/nmi.c	2013-07-08 13:10:55.501656637 -0700
+@@ -111,7 +111,7 @@ static int __kprobes nmi_handle(unsigned
+ 	 */
+ 	list_for_each_entry_rcu(a, &desc->head, list) {
+ 		u64 before, delta, whole_msecs;
+-		int decimal_msecs, thishandled;
++		int remainder_ns, decimal_msecs, thishandled;
  
- config SAMSUNG_Q10
- 	tristate "Samsung Q10 Extras"
--	depends on SERIO_I8042
-+	depends on ACPI
- 	select BACKLIGHT_CLASS_DEVICE
- 	---help---
- 	  This driver provides support for backlight control on Samsung Q10
-diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
-index 1a90b62..9d6609d 100644
---- a/drivers/platform/x86/samsung-q10.c
-+++ b/drivers/platform/x86/samsung-q10.c
-@@ -14,16 +14,12 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/backlight.h>
--#include <linux/i8042.h>
- #include <linux/dmi.h>
-+#include <acpi/acpi_drivers.h>
+ 		before = local_clock();
+ 		thishandled = a->handler(type, regs);
+@@ -123,8 +123,9 @@ static int __kprobes nmi_handle(unsigned
+ 			continue;
  
--#define SAMSUNGQ10_BL_MAX_INTENSITY      255
--#define SAMSUNGQ10_BL_DEFAULT_INTENSITY  185
-+#define SAMSUNGQ10_BL_MAX_INTENSITY 7
- 
--#define SAMSUNGQ10_BL_8042_CMD           0xbe
--#define SAMSUNGQ10_BL_8042_DATA          { 0x89, 0x91 }
--
--static int samsungq10_bl_brightness;
-+static acpi_handle ec_handle;
- 
- static bool force;
- module_param(force, bool, 0);
-@@ -33,21 +29,26 @@ MODULE_PARM_DESC(force,
- static int samsungq10_bl_set_intensity(struct backlight_device *bd)
- {
- 
--	int brightness = bd->props.brightness;
--	unsigned char c[3] = SAMSUNGQ10_BL_8042_DATA;
-+	acpi_status status;
-+	int i;
- 
--	c[2] = (unsigned char)brightness;
--	i8042_lock_chip();
--	i8042_command(c, (0x30 << 8) | SAMSUNGQ10_BL_8042_CMD);
--	i8042_unlock_chip();
--	samsungq10_bl_brightness = brightness;
-+	for (i = 0; i < SAMSUNGQ10_BL_MAX_INTENSITY; i++) {
-+		status = acpi_evaluate_object(ec_handle, "_Q63", NULL, NULL);
-+		if (ACPI_FAILURE(status))
-+			return -EIO;
-+	}
-+	for (i = 0; i < bd->props.brightness; i++) {
-+		status = acpi_evaluate_object(ec_handle, "_Q64", NULL, NULL);
-+		if (ACPI_FAILURE(status))
-+			return -EIO;
-+	}
- 
- 	return 0;
- }
- 
- static int samsungq10_bl_get_intensity(struct backlight_device *bd)
- {
--	return samsungq10_bl_brightness;
-+	return bd->props.brightness;
- }
- 
- static const struct backlight_ops samsungq10_bl_ops = {
-@@ -55,28 +56,6 @@ static const struct backlight_ops samsungq10_bl_ops = {
- 	.update_status	= samsungq10_bl_set_intensity,
- };
- 
--#ifdef CONFIG_PM_SLEEP
--static int samsungq10_suspend(struct device *dev)
--{
--	return 0;
--}
--
--static int samsungq10_resume(struct device *dev)
--{
--
--	struct backlight_device *bd = dev_get_drvdata(dev);
--
--	samsungq10_bl_set_intensity(bd);
--	return 0;
--}
--#else
--#define samsungq10_suspend NULL
--#define samsungq10_resume  NULL
--#endif
--
--static SIMPLE_DEV_PM_OPS(samsungq10_pm_ops,
--			  samsungq10_suspend, samsungq10_resume);
--
- static int samsungq10_probe(struct platform_device *pdev)
- {
- 
-@@ -93,9 +72,6 @@ static int samsungq10_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, bd);
- 
--	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
--	samsungq10_bl_set_intensity(bd);
--
- 	return 0;
- }
- 
-@@ -104,9 +80,6 @@ static int samsungq10_remove(struct platform_device *pdev)
- 
- 	struct backlight_device *bd = platform_get_drvdata(pdev);
- 
--	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
--	samsungq10_bl_set_intensity(bd);
--
- 	backlight_device_unregister(bd);
- 
- 	return 0;
-@@ -116,7 +89,6 @@ static struct platform_driver samsungq10_driver = {
- 	.driver		= {
- 		.name	= KBUILD_MODNAME,
- 		.owner	= THIS_MODULE,
--		.pm	= &samsungq10_pm_ops,
- 	},
- 	.probe		= samsungq10_probe,
- 	.remove		= samsungq10_remove,
-@@ -172,6 +144,11 @@ static int __init samsungq10_init(void)
- 	if (!force && !dmi_check_system(samsungq10_dmi_table))
- 		return -ENODEV;
- 
-+	ec_handle = ec_get_handle();
-+
-+	if (!ec_handle)
-+		return -ENODEV;
-+
- 	samsungq10_device = platform_create_bundle(&samsungq10_driver,
- 						   samsungq10_probe,
- 						   NULL, 0, NULL, 0);
--- 
-1.7.3.4
+ 		nmi_longest_ns = delta;
+-		whole_msecs = do_div(delta, (1000 * 1000));
+-		decimal_msecs = do_div(delta, 1000) % 1000;
++		whole_msecs = delta;
++		remainder_ns = do_div(whole_msecs, (1000 * 1000));
++		decimal_msecs = remainder_ns / 1000;
+ 		printk_ratelimited(KERN_INFO
+ 			"INFO: NMI handler (%ps) took too long to run: "
+ 			"%lld.%03d msecs\n", a->handler, whole_msecs,
+_
