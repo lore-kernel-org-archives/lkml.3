@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab3GHQtf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:49:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49244 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab3GHQte (ORCPT
+	id S1752246Ab3GHQvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:51:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38418 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488Ab3GHQvO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:49:34 -0400
-Date: Mon, 8 Jul 2013 09:49:33 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Dave Jones <davej@redhat.com>, Ming Lei <ming.lei@canonical.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
-Message-ID: <20130708164933.GB12670@kroah.com>
-References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
- <20130706221401.GA3652@redhat.com>
- <20130706223003.GA10697@kroah.com>
- <s5h4nc5bewf.wl%tiwai@suse.de>
+	Mon, 8 Jul 2013 12:51:14 -0400
+Date: Mon, 8 Jul 2013 18:50:23 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        trinity@vger.kernel.org
+Subject: Re: [bisected] perf: yet another fuzzer triggered crash
+Message-ID: <20130708165023.GD22923@dyad.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1306121911500.12627@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306140058520.8617@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306281531070.10799@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1306281705340.10799@vincent-weaver-1.um.maine.edu>
+ <20130701090713.GO6626@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1307011112090.8216@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1307021628510.8353@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1307022314450.11385@vincent-weaver-1.um.maine.edu>
+ <20130703074929.GE23916@twins.programming.kicks-ass.net>
+ <20130708135048.GA1069@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <s5h4nc5bewf.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130708135048.GA1069@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 11:05:20AM +0200, Takashi Iwai wrote:
-> The reason is that dell_rbu driver requires it.  Without the kconfig
-> option, this driver won't work at all.  So, it's a right fix for
-> dell_rbu.
-> 
-> AFAIK, the consensus in the kernel side is that this too long fw
-> loading time is basically a regression of user-space (udev or
-> whatever).  There is no change in the kernel behavior.  The problem
-> must exist even with the older kernels.
-> 
-> But, looking at the development, we can't expect that udev will be
-> fixed soon, and this breakage persists already way too long.  Maybe a
-> better solution is to kill the fallback to udev for normal f/w loading
-> (i.e. for distro kernels).
+On Mon, Jul 08, 2013 at 03:50:48PM +0200, Jiri Olsa wrote:
 
-I thought udev was already fixed for this issue, so why would a "modern"
-distro need to worry about this?
+> need to check if that does not break anything else ;-)
 
-> The patch below is an untested quick hack.  It adds a new Kconfig and
-> a new function request_firmware_via_user_helper().  Distro kernels may
-> set CONFIG_FW_LOADER_USER_HELPER_FALLBACK=n for avoiding 60 seconds
-> stall for non-existing firmware file access -- as distributions know
-> that the firmware files should be placed in the right path.
-> 
-> Thoughts?
+Vince's test-case triggered the below; so there might still be a few loose
+ends.
 
-There's no way we can just fix up the driver instead of doing this in
-the firmware core?
 
-thanks,
+[  324.983534] ------------[ cut here ]------------
+[  324.984420] WARNING: at /usr/src/linux-2.6/kernel/events/core.c:1953 __perf_event_enable+0x187/0x190()
+[  324.984420] Modules linked in:
+[  324.984420] CPU: 19 PID: 2715 Comm: nmi_bug_snb Not tainted 3.10.0+ #246
+[  324.984420] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
+[  324.984420]  0000000000000009 ffff88043fce3ec8 ffffffff8160ea0b ffff88043fce3f00
+[  324.984420]  ffffffff81080ff0 ffff8802314fdc00 ffff880231a8f800 ffff88043fcf7860
+[  324.984420]  0000000000000286 ffff880231a8f800 ffff88043fce3f10 ffffffff8108103a
+[  324.984420] Call Trace:
+[  324.984420]  <IRQ>  [<ffffffff8160ea0b>] dump_stack+0x19/0x1b
+[  324.984420]  [<ffffffff81080ff0>] warn_slowpath_common+0x70/0xa0
+[  324.984420]  [<ffffffff8108103a>] warn_slowpath_null+0x1a/0x20
+[  324.984420]  [<ffffffff81134437>] __perf_event_enable+0x187/0x190
+[  324.984420]  [<ffffffff81130030>] remote_function+0x40/0x50
+[  324.984420]  [<ffffffff810e51de>] generic_smp_call_function_single_interrupt+0xbe/0x130
+[  324.984420]  [<ffffffff81066a47>] smp_call_function_single_interrupt+0x27/0x40
+[  324.984420]  [<ffffffff8161fd2f>] call_function_single_interrupt+0x6f/0x80
+[  324.984420]  <EOI>  [<ffffffff816161a1>] ? _raw_spin_unlock_irqrestore+0x41/0x70
+[  324.984420]  [<ffffffff8113799d>] perf_event_exit_task+0x14d/0x210
+[  324.984420]  [<ffffffff810acd04>] ? switch_task_namespaces+0x24/0x60
+[  324.984420]  [<ffffffff81086946>] do_exit+0x2b6/0xa40
+[  324.984420]  [<ffffffff8161615c>] ? _raw_spin_unlock_irq+0x2c/0x30
+[  324.984420]  [<ffffffff81087279>] do_group_exit+0x49/0xc0
+[  324.984420]  [<ffffffff81096854>] get_signal_to_deliver+0x254/0x620
+[  324.984420]  [<ffffffff81043057>] do_signal+0x57/0x5a0
+[  324.984420]  [<ffffffff8161a164>] ? __do_page_fault+0x2a4/0x4e0
+[  324.984420]  [<ffffffff8161665c>] ? retint_restore_args+0xe/0xe
+[  324.984420]  [<ffffffff816166cd>] ? retint_signal+0x11/0x84
+[  324.984420]  [<ffffffff81043605>] do_notify_resume+0x65/0x80
+[  324.984420]  [<ffffffff81616702>] retint_signal+0x46/0x84
+[  324.984420] ---[ end trace 442ec2f04db3771a ]---
 
-greg k-h
+
