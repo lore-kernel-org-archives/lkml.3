@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab3GHOm4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 10:42:56 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17747 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751910Ab3GHOmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 10:42:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1020,1363158000"; 
-   d="scan'208";a="265438737"
-Date: Mon, 8 Jul 2013 19:33:57 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Dan Williams <djbw@fb.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Porter <matt@ohporter.com>
-Subject: Re: [RFC] dmaengine: add dma_slave_get_caps api
-Message-ID: <20130708140357.GI16653@intel.com>
-References: <1373273650-31097-1-git-send-email-vinod.koul@intel.com>
- <51DAAA1F.5050002@metafoo.de>
- <20130708134024.GH16653@intel.com>
- <51DACC8D.5020201@metafoo.de>
+	id S1752351Ab3GHOuI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 10:50:08 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41461 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489Ab3GHOuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 10:50:07 -0400
+Date: Mon, 8 Jul 2013 15:49:30 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>,
+        linux-spi <linux-spi@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        spi-devel-general@lists.sourceforge.net
+Message-ID: <20130708144930.GG27646@sirena.org.uk>
+References: <ff70173bee5f9223ffea2b92b903b4e46ef8b323.1373290150.git.michal.simek@xilinx.com>
+ <b4458c93742bd9dfe69e3553cf377a703c945f81.1373290150.git.michal.simek@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="5wAPvwbAcQJrmmvx"
 Content-Disposition: inline
-In-Reply-To: <51DACC8D.5020201@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <b4458c93742bd9dfe69e3553cf377a703c945f81.1373290150.git.michal.simek@xilinx.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.118
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v1 3/4] spi/xilinx: Simplify irq allocation
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 04:28:29PM +0200, Lars-Peter Clausen wrote:
-> On 07/08/2013 03:40 PM, Vinod Koul wrote:
-> > On Mon, Jul 08, 2013 at 02:01:35PM +0200, Lars-Peter Clausen wrote:
-> >> On 07/08/2013 10:54 AM, Vinod Koul wrote:
-> >>> +/* struct dma_slave_caps - expose capabilities of a slave channel only
-> >>> + *
-> >>> + * @src_addr_widths: bit mask of src addr widths the channel supports
-> >>> + * @dstn_addr_widths: bit mask of dstn addr widths the channel supports
-> >>> + * @src_burst_lengths: bit mask of src slave burst lengths supported
-> >>> + * @dstn_burst_lengths: bit mask of dstn slave burst lengths supported
-> >>
-> >> I'm not sure if we need the burst_lengths fields. For one we can only
-> >> express a max burst length up 32. And usually it is fine if the dma
-> >> controller does not support the burst length requested by the slave driver,
-> >> since this only specifies the maximum and the dma controller driver can
-> >> choose a value below this limit. E.g. if the max burst length is set to 16
-> >> it is still fine if the controller only supports a burst length of 8.
-> > well how are you picking up which one to use?
-> > The idea is that you query and match that with system and client to get best
-> > throughput. If you have IP block which over generations change capablities you
-> > can runtime query and then program the channel smartly!
-> 
-> The client would always request the largest burst size it can support, and
-> the dma master would then select a burst size equal or smaller to it
-> depending on what it can support.
-not really, most dmac drivers will return an error when they find a value is not
-in the supported list. And that is precisely what we would like to prevent.
-If you look at current model, it mostly program value which we know is already
-a capablity and works model.
 
-> E.g. if the client has an internal FIFO with room for 16 samples and it
-> sends a request once the FIFO is half empty, max_burst would be set to 8. If
-> the master supports burst sizes of 8 sample it would send 8 samples, if it
-> only supported burst sizes of 4 it might send either one burst of 4 or two of 4.
+--5wAPvwbAcQJrmmvx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-~Vinod
--- 
+On Mon, Jul 08, 2013 at 03:29:16PM +0200, Michal Simek wrote:
+> Use devm_request_irq() for irq allocation which
+> simplify driver code.
+
+> @@ -495,7 +493,6 @@ static int xilinx_spi_remove(struct platform_device *=
+pdev)
+>  	struct xilinx_spi *xspi =3D platform_get_drvdata(pdev);
+>=20
+>  	spi_bitbang_stop(&xspi->bitbang);
+> -	free_irq(xspi->irq, xspi);
+>=20
+>  	spi_master_put(xspi->bitbang.master);
+
+Is it definitely safe to leave the IRQ hanging around after the master
+has been freed - there's no possibility of a late error interrupt or
+something?
+
+--5wAPvwbAcQJrmmvx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR2tF3AAoJELSic+t+oim9EKMP/1xBt9VO3AJi2/jSXyfX5+Ah
+Xh/qzvSQUmW1VDr2l2oQvDDfH3uO1QZolXpBxreINVFdzrqBQ4PObsIgFWYS4MhJ
+f107fxby+1Fy2D64aCAA0hZjZSqetlOq3ZPe2EJDJxIM7nkmm8RzxN+Ru13bYEM9
+KsFU7fHaxMwegg80Pv/rmiisR5CqqdOdnXrbWFy3ocnk1xAN7D/DjwqOG0KqzM6N
+DCJytl574Ocs6thnojlS5TL2JjBkcEvEFkxfxXNTNGDv08M6B56S2oZQm2l0tPaZ
+iu1X+Xg96W49KKKUvf2YAAmrloltDW9LtD6sPR8wUmtCkjL0zmj8ItG2UWa59AVQ
+T6KUnfzIJLMbTeaerJjH5WE4/Nkju6OvW1UK/LvHnrlCAQQUH/aWedXpLB3TbhMy
+w/Jv5dUILu2/cNeSMwegTH29HDofAgAv6+tQnXj3oGPr1+Smn4BJwSZj8hXqofFH
+EFlEYpZTcm13aMjo2SKsg608vesmy9PIC/6Xny8dlSPAS8PrTWe2nam1BrriJgBm
+g+YqH8ETVUjPaHyHew8RaKIbN4eJj86UiW1+oXa8sgvSlEXUTZp51ZAs6HkrEQa9
+3iRJEsU+55PF4RV54eEmkOeqCnB41XHuSyOQ1aciByvjXShXqT8DUPyi6zNISXD0
+s+swoSPnzwLdo3cBi4N9
+=2Q0u
+-----END PGP SIGNATURE-----
+
+--5wAPvwbAcQJrmmvx--
