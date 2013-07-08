@@ -1,74 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492Ab3GHJNM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:13:12 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:58845 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab3GHJNK (ORCPT
+	id S1752635Ab3GHJNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 05:13:14 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:41698 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab3GHJNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:13:10 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r689CHvY013959, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <dwmw2@infradead.org>, <ben@decadent.org.uk>
-CC: <romieu@fr.zoreil.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH firmware] rtl_nic: add firmware rtl8411-2
-Date: Mon, 8 Jul 2013 17:11:21 +0800
-Message-ID: <1373274681-1225-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [172.21.71.111]
+	Mon, 8 Jul 2013 05:13:12 -0400
+From: Alexander Holler <holler@ahsoftware.de>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 0/2] rtc: rtc-hid-sensor-time: enable HID input processing early
+Date: Mon,  8 Jul 2013 11:12:45 +0200
+Message-Id: <1373274767-24724-1-git-send-email-holler@ahsoftware.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <51D91A5D.3050908@ahsoftware.de>
+References: <51D91A5D.3050908@ahsoftware.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File: rtl_nic/rtl8411-2.fw
-Version: 0.0.1
+The following 2 patches together replace the previous send patch
+"rtc: rtc-hid-sensor-time: delay registering as rtc into a work".
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- WHENCE               |   3 +++
- rtl_nic/rtl8411-2.fw | Bin 0 -> 1040 bytes
- 2 files changed, 3 insertions(+)
- create mode 100644 rtl_nic/rtl8411-2.fw
+They are based on the current master, so they might become included in 3.11.
 
-diff --git a/WHENCE b/WHENCE
-index d7fba9d..39f11af 100644
---- a/WHENCE
-+++ b/WHENCE
-@@ -1879,6 +1879,9 @@ Version: 0.0.4
- File: rtl_nic/rtl8411-1.fw
- Version: 0.0.3
- 
-+File: rtl_nic/rtl8411-2.fw
-+Version: 0.0.1
-+
- File: rtl_nic/rtl8402-1.fw
- Version: 0.0.1
- 
-diff --git a/rtl_nic/rtl8411-2.fw b/rtl_nic/rtl8411-2.fw
-new file mode 100644
-index 0000000000000000000000000000000000000000..e3789fe576c41c2a12d606ece1e41552693ad9ac
-GIT binary patch
-literal 1040
-zcmYk(L2DC16bJB^?IsOr*ldz9m16B8MMP@4yJ=$#B7sW1^yIOZG}uE9Qi}8#<S8i#
-zRS5k6wV;Q71VNOb=%J_}B3}2dQqk07<A3L6q)A@p?Qh<^o!KQKy0>+=wh#nY!lqyL
-z%Yo-#o%d_=K?PI#vxfigh{tq$rCRZW=4NZ_PP-ZUK^TN#wY;=^%L^9ki`VLYg`Pa0
-zjTeoEUV^CcCO5-GX+#E*MK}l-Q9vj}iN}Z{q7*Y~(-CndvN#*r>_jPcqcj(y467*1
-zrO09HJ=VUKwbr{5)2p+*GCsxD+jC4W&vPd2q2>Z=X3_g1@=M4sBcDTFM(!gIkuM;x
-zBCjE@BfpOP2J8KD3OO|%PQ-h6@zuXR>ucJ?xuTdFL|%ie{dJ-qQPN+^%<%GqB2z+f
-z`9+Zvq&PMYdCyW@*vA}9VYKHIkDm(rnc@WEzNdI<RF}dy%qg}<qcs`{W5-pxuZzC%
-zJ&2^Y?0J$-hU5`V_W$n*_ciA^(sOSAgFcU<;YnPp`Zsl-JoWW?^LlNUbzd4jm6~{J
-zOdg4zFO24iF@YYR&~xokLGS60ncE?ExFhR-8LPwUVn@c3u%y^uV;isyu^-0Tu(sGw
-zV;xvW?6<K2Y#=r;whh}Bi=T}fzb{fm2k-;&oUv)xv{>HQG3;2ZXsiWmiJdXF3)>ZQ
-zjM*?-ENkr4z9)>WqHa~{;yr#gdmqX({%EfEP`4*_UyM00N9?PyL)f9%H)CB`SFEAm
-GJJCOC1@r*`
+I've splitted the changes into two patches because the patch changed such, that
+combining them into just one patch doesn't make sense anymore.
 
-literal 0
-HcmV?d00001
+Regards,
 
--- 
-1.8.3.1
+Alexander Holler
 
