@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab3GHQ7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:59:36 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:32945 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab3GHQ7f (ORCPT
+	id S1752741Ab3GHRAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 13:00:55 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:37616 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab3GHRAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:59:35 -0400
+	Mon, 8 Jul 2013 13:00:53 -0400
+Date: Mon, 8 Jul 2013 10:00:47 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Michal Hocko <mhocko@suse.cz>, cgroups@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
+        Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
+Message-ID: <20130708170047.GA18600@mtj.dyndns.org>
+References: <20130708100046.14417.12932.stgit@zurg>
 MIME-Version: 1.0
-In-Reply-To: <20130708164250.GA12670@kroah.com>
-References: <1371926227-2609-1-git-send-email-keescook@chromium.org>
-	<1371926227-2609-2-git-send-email-keescook@chromium.org>
-	<CAGXu5jKrW4t0HxBiinYTQs9eun_Z+bkNCjKgM_RYaL6Vz1PsoA@mail.gmail.com>
-	<20130708164250.GA12670@kroah.com>
-Date: Mon, 8 Jul 2013 09:59:34 -0700
-X-Google-Sender-Auth: FNC0OzWiikz7ZvH_yG_uCLYNdvY
-Message-ID: <CAGXu5jLERGWcXTunTa9oYmwB-58uNB=OwoYpo_xqS=6RNF=1xQ@mail.gmail.com>
-Subject: Re: [PATCH 1/4] lkdtm: fix stack protector trigger
-From: Kees Cook <keescook@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Simon Kagstrom <simon.kagstrom@netinsight.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130708100046.14417.12932.stgit@zurg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 8, 2013 at 9:42 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Jul 08, 2013 at 06:09:50AM -0700, Kees Cook wrote:
->> Hi,
->>
->> I'd like to get this series added to lkdtm. Can someone take a moment
->> to review or ack them?
->
-> I don't see these in my queue at all, did you copy me the first time
-> around on them?
+(cc'ing Vivek and Jens)
 
-Yup. June 22nd.
+Hello,
 
-> Care to resend them?  Everything is on hold until 3.11-rc1 is out for
-> new stuff like this, so you'll have to wait until then at the earliest.
+On Mon, Jul 08, 2013 at 02:01:39PM +0400, Konstantin Khlebnikov wrote:
+> This is proof of concept, just basic functionality for IO controller.
+> This cgroup will control filesystem usage on vfs layer, it's main goal is
+> bandwidth control. It's supposed to be much more lightweight than memcg/blkio.
 
-Sure, no problem.
+While blkcg is pretty heavy handed right now, there's no inherent
+reason for it to be that way.  The right thing to do would be updating
+blkcg to be light-weight rather than adding yet another controller.
+Also, all controllers should support full hierarchy.
 
--Kees
+> Unlike to blkio this method works for all of filesystems, not just disk-backed.
+> Also it's able to handle writeback, because each inode has context which can be
+> used in writeback thread to account io operations.
 
---
-Kees Cook
-Chrome OS Security
+Again, a problem to be fixed in the stack rather than patching up from
+up above.  The right thing to do is to propagate pressure through bdi
+properly and let whatever is backing the bdi generate appropriate
+amount of pressure, be that disk or network.
+
+> This is early prototype, I have some plans about extra functionality because
+> this accounting itself is mostly useless, but it can be used as basis for more
+> usefull features.
+
+I'm afraid it'd have very low chance of making upstream.  If this area
+of work is interesting / important, please look into improving blkcg
+rather than working around it.
+
+Thanks.
+
+-- 
+tejun
