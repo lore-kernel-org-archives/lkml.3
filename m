@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940Ab3GHSsH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 14:48:07 -0400
-Received: from mail-qe0-f49.google.com ([209.85.128.49]:57809 "EHLO
-	mail-qe0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab3GHSsG (ORCPT
+	id S1752841Ab3GHSuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 14:50:54 -0400
+Received: from s15283307.onlinehome-server.info ([87.106.208.187]:36828 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752247Ab3GHSux convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 14:48:06 -0400
-Message-ID: <51DB0962.50209@gmail.com>
-Date: Mon, 08 Jul 2013 14:48:02 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] mm: Honor min_free_kbytes set by user
-References: <1372954036-16988-1-git-send-email-mhocko@suse.cz> <1372954239.1886.40.camel@joe-AO722> <20130704161641.GD7833@dhcp22.suse.cz> <20130704162005.GE7833@dhcp22.suse.cz>
-In-Reply-To: <20130704162005.GE7833@dhcp22.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Jul 2013 14:50:53 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
+Subject: Re: [PATCH] btusb: fix overflow return values
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1372941783-30657-1-git-send-email-adam.lee@canonical.com>
+Date: Mon, 8 Jul 2013 11:50:54 -0700
+Cc: linux-bluetooth@vger.kernel.org,
+        Wen-chien Jesse Sung <jesse.sung@canonical.com>,
+        AceLan Kao <acelan.kao@canonical.com>,
+        Tedd Ho-Jeong An <tedd.an@intel.com>,
+        "Anthony Wong'" <anthony.wong@canonical.com>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-kernel@vger.kernel.org (open list)
+Content-Transfer-Encoding: 8BIT
+Message-Id: <25CD2206-7B7B-4DAD-A714-A79976C9DB13@holtmann.org>
+References: <1372941783-30657-1-git-send-email-adam.lee@canonical.com>
+To: Adam Lee <adam.lee@canonical.com>
+X-Mailer: Apple Mail (2.1508)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Checkpatch fixes
-> ---
->  From 5f089c0b2a57ff6c08710ac9698d65aede06079f Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 4 Jul 2013 17:15:54 +0200
-> Subject: [PATCH] mm: Honor min_free_kbytes set by user
->
-> min_free_kbytes is updated during memory hotplug (by init_per_zone_wmark_min)
-> currently which is right thing to do in most cases but this could be
-> unexpected if admin increased the value to prevent from allocation
-> failures and the new min_free_kbytes would be decreased as a result of
-> memory hotadd.
->
-> This patch saves the user defined value and allows updating
-> min_free_kbytes only if it is higher than the saved one.
->
-> A warning is printed when the new value is ignored.
->
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Hi Adam,
 
-Thank you. I have similar patch and I have been bothered long time to
-refine and post it.
-Yes, current logic is not memory hotplug aware and could be dangerous.
+> PTR_ERR() returns a long type value, but btusb_setup_intel() and
+> btusb_setup_intel_patching() should return an int type value.
+> 
+> This bug makes the judgement "if (ret < 0)" not working on x86_64
+> architecture systems, leading to failure as below, even panic.
+> 
+> [   12.958920] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   14.961765] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   16.964688] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   20.954501] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   22.957358] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   30.948922] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   32.951780] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   40.943359] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   42.946219] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   50.937812] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   52.940670] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   60.932236] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   62.935092] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   70.926688] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   72.929545] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   80.921111] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   82.923969] Bluetooth: hci0 command 0xfc2f tx timeout
+> [   90.915542] Bluetooth: hci0 sending Intel patch command (0xfc2f) failed (-110)
+> [   92.918406] Bluetooth: hci0 command 0xfc11 tx timeout
+> [  100.909955] Bluetooth: hci0 sending Intel patch command (0xfc11) failed (-110)
+> [  102.912858] Bluetooth: hci0 command 0xfc60 tx timeout
+> [  110.904394] Bluetooth: hci0 sending Intel patch command (0xfc60) failed (-110)
+> [  112.907293] Bluetooth: hci0 command 0xfc11 tx timeout
+> [  120.898831] Bluetooth: hci0 exiting Intel manufacturer mode failed (-110)
+> [  120.904757] bluetoothd[1030]: segfault at 4 ip 00007f8b2eb55236 sp 00007fff53ff6920 error 4 in bluetoothd[7f8b2eaff000+cb000]
+> 
+> For not affecting other modules, I choose to modify the return values
+> but not extend btusb_setup_intel() and btusb_setup_intel_patching()'s
+> return types. This is harmless, because the return values were only
+> used to comparing number 0.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+there are tons of examples in various subsystems and drivers where we return PTR_ERR from a function calls returning int.
 
+So I wonder what is actually going wrong here. If this is x86_64 specific problem with PTR_ERR vs int, then we should have this problem everywhere in the kernel.
 
+Regards
 
-
-
+Marcel
 
