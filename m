@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751975Ab3GHLos (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 07:44:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50764 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751651Ab3GHLor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 07:44:47 -0400
-Date: Mon, 8 Jul 2013 14:45:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
+	id S1751918Ab3GHLsl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 07:48:41 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42314 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab3GHLsk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 07:48:40 -0400
+Date: Mon, 8 Jul 2013 12:48:12 +0100
+From: Mark Brown <broonie@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, asias@redhat.com,
-        jasowang@redhat.com, mst@redhat.com
-Subject: [PULL] vhost: cleanups and fixes
-Message-ID: <20130708114556.GA17036@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
+Message-ID: <20130708114812.GV27646@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="o7uAeVo2HayWuXRE"
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.118
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] regulator fixes for v3.11
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 8bb495e3f02401ee6f76d1b1d77f3ac9f079e376:
 
-  Linux 3.10 (2013-06-30 15:13:29 -0700)
+--o7uAeVo2HayWuXRE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+The following changes since commit 70083c4c8c60d9ddc188f51e0960574badc919af:
+
+  Merge remote-tracking branch 'regulator/topic/tps62360' into regulator-next (2013-07-01 11:17:11 +0100)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git tags/for_linus
 
-for you to fetch changes up to 09a34c8404c1d4c5782de319c02e1d742c57875c:
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.11-2
 
-  vhost/test: update test after vhost cleanups (2013-07-07 18:02:25 +0300)
+for you to fetch changes up to 37c3f0144c806e026b8d1ce0f41a5f57b25e44f5:
 
-----------------------------------------------------------------
-vhost: fixes and cleanups 3.11
-
-This includes some fixes and cleanups for vhost net and scsi drivers.
-The scsi driver changes will cause a conflict with  Nicholas Bellinger's scsi
-target changes, but the conflicting commit in my tree simply renames some
-variables so it's trivial to resolve.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+  Merge remote-tracking branch 'regulator/fix/sec' into regulator-linus (2013-07-04 11:14:13 +0100)
 
 ----------------------------------------------------------------
-Asias He (8):
-      vhost: Simplify dev->vqs[i] access
-      vhost-scsi: Remove unnecessary forward struct vhost_scsi declaration
-      vhost-scsi: Rename struct vhost_scsi *s to *vs
-      vhost-scsi: Make func indention more consistent
-      vhost-scsi: Rename struct tcm_vhost_tpg *tv_tpg to *tpg
-      vhost-scsi: Rename struct tcm_vhost_cmd *tv_cmd to *cmd
-      vhost: Make vhost a separate module
-      vhost: Make local function static
 
-Michael S. Tsirkin (2):
-      vhost-net: fix use-after-free in vhost_net_flush
-      vhost/test: update test after vhost cleanups
+regulator: Fixes for the merge window
 
- drivers/vhost/Kconfig  |   8 +
- drivers/vhost/Makefile |   3 +-
- drivers/vhost/net.c    |  13 +-
- drivers/vhost/scsi.c   | 472 ++++++++++++++++++++++++++-----------------------
- drivers/vhost/test.c   |  33 ++--
- drivers/vhost/vhost.c  |  86 +++++++--
- drivers/vhost/vhost.h  |   2 +
- 7 files changed, 356 insertions(+), 261 deletions(-)
+A set of small fixes for issues noticed during the merge window, all
+very much non-invasive.
+
+----------------------------------------------------------------
+Mark Brown (3):
+      Merge remote-tracking branch 'regulator/fix/max8997' into regulator-linus
+      Merge remote-tracking branch 'regulator/fix/s5m8767' into regulator-linus
+      Merge remote-tracking branch 'regulator/fix/sec' into regulator-linus
+
+Sachin Kamat (4):
+      regulator: s5m8767: Update s5m8767-regulator bindings document
+      regulator: s5m8767: Fix a trivial typo in documentation
+      regulator: max8997: Fix a trivial typo in documentation
+      MAINTAINERS: Update git repository
+
+Yadwinder Singh Brar (1):
+      regulator: s2mps11: Convert ramp rate to uV/us and set default ramp rate
+
+ .../devicetree/bindings/regulator/max8997-regulator.txt    |  2 +-
+ .../devicetree/bindings/regulator/s5m8767-regulator.txt    | 14 +++++++-------
+ MAINTAINERS                                                |  2 +-
+ drivers/regulator/s2mps11.c                                |  7 ++++++-
+ include/linux/mfd/samsung/s2mps11.h                        |  1 +
+ 5 files changed, 16 insertions(+), 10 deletions(-)
+
+--o7uAeVo2HayWuXRE
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR2qb5AAoJELSic+t+oim9QMEQAIqqen/lzkCc1bWHS8klnZkr
+0P3+jGvZGzgeqMjZH8yvIqoXwlNeoRrkaDn5zhdRn+AO+OTWL2kNDC3BrUz0Lg9G
+jcnUMjSlGUhcIKMX92CYk4ONt9sRHv5vNcNrSNyKJP21mGlAhibm5FhwRhm5yU+n
+dhLDFwrOCNZoyGwVZipjs0BpziowteoC2ae6sBJtdWu9EiN+wriK6K0lmA8SqRzE
+0mXaoYEuOnmM+Ql+zndT9Wbu+1MIWb4tCiuZH7TU42btNfBlalNjBinaH3oRIv2h
+geSRDUI01biCCMjFCXjuIdw3ESTkjGxwUmRI3CmLMyS3sbZBKcoW6iLey8NbIb/j
+W2KJethqxEz9wHpnAjzw2j2xJKyq1ZwmTvoKQdmeoGhgOJrq1FA6Hh+qed6BY0C6
+YPfWR7OP/cSPv2R3ZifDqeHnDNxmOlGvIBnpvbG1ibp2qAu5iAtAN0mk8tZLJTvQ
+foVDfZixfVpZiVXIjpSXiNQ9heZJXKJCgnA0M6hhqeSAQRJ0SMaxSjACirivzREr
+DffvrFjpM+2kQknHuxuDVn33dzcyELvwOgV5zHuk8tO7KizcyMvRcSEJUmsuf9Jl
+cKHefG2y4QC75yFj00lHjFg4lgFHs81fYeqTb/n35CFS/ZIkP/SGKublKgpe9Sv/
+j8D55/bkoRE92Oz3UkHy
+=xZNR
+-----END PGP SIGNATURE-----
+
+--o7uAeVo2HayWuXRE--
