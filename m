@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab3GHCEh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 7 Jul 2013 22:04:37 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:50440 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab3GHCEg (ORCPT
+	id S1753457Ab3GHCMm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 7 Jul 2013 22:12:42 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:49892 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab3GHCMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 7 Jul 2013 22:04:36 -0400
-Message-ID: <1373249375.7397.139.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH v3] lib/idr.c rewrite, percpu ida/tag allocator
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, sfr@canb.auug.org.au,
-        andi@firstfloor.org, oleg@redhat.com, mingo@redhat.com,
-        axboe@kernel.dk, target-devel <target-devel@vger.kernel.org>
-Date: Sun, 07 Jul 2013 19:09:35 -0700
-In-Reply-To: <20130707114852.GA5463@redhat.com>
-References: <1373087301-23730-1-git-send-email-kmo@daterainc.com>
-	 <1373151546.7397.55.camel@haakon3.risingtidesystems.com>
-	 <20130707114852.GA5463@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Sun, 7 Jul 2013 22:12:30 -0400
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: akpm@linux-foundation.org, axboe@kernel.dk, oakad@yahoo.com, tj@kernel.org,
+        mm-commits@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [merged] memstick-add-support-for-legacy-memorysticks.patch removed from -mm tree
+In-Reply-To: Your message of "Mon, 08 Jul 2013 03:41:42 +0300."
+             <1373244102.18009.6.camel@maxim-laptop>
+From: Valdis.Kletnieks@vt.edu
+References: <20121001192920.0D7765C0050@hpza9.eem.corp.google.com>
+            <1373244102.18009.6.camel@maxim-laptop>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1373249476_4049P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Sun, 07 Jul 2013 22:11:16 -0400
+Message-ID: <239047.1373249476@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-07-07 at 14:48 +0300, Michael S. Tsirkin wrote:
-> On Sat, Jul 06, 2013 at 03:59:06PM -0700, Nicholas A. Bellinger wrote:
-> > On Fri, 2013-07-05 at 22:08 -0700, Kent Overstreet wrote:
-> > > Previous posting: http://thread.gmane.org/gmane.linux.kernel/1511216
-> > > 
-> > > The only real change since the last version is that I've reworked the
-> > > new ida implementation to not use one giant allocation - it's still
-> > > logically one big arary, but it's implemented as an array of arrays.
-> > > 
-> > > With that, it scales up to INT_MAX allocated ids just fine. Benchmarks
-> > > are included in that patch.
-> > > 
-> > > Patch series is available in my git repo:
-> > > git://evilpiepirate.org/~kent/linux-bcache.git idr
-> > > 
-> > > Andrew, want to pick this up for 3.12?
-> > 
-> > Just FYI that the target-pending/target-per-cpu-ida branch utilizing
-> > per-cpu ida logic for vhost-scsi has been rebased to include this latest
-> > series.  Thanks Kent!
-> > 
-> > Andrew, what are your plans for this..?
-> > 
-> > Would you consider allowing this series be merged through target-pending
-> > in order to allow us to start taking advantage of per-cpu ida tag
-> > pre-allocation optimizations for v3.12 target code..? 
-> > 
-> > Another option would be to merge the per-cpu ida specific piece now for
-> > v3.11 for which the risk is low given it doesn't touch any existing
-> > code, and then include Kent's full idr rewrite separately as v3.12 item.
-> > 
-> > WDYT..?
-> 
-> Takes as is, this conflicts with cleanup patches by Asias in vhost-next
-> that I was going to send to Linus for 3.11.
+--==_Exmh_1373249476_4049P
+Content-Type: text/plain; charset=us-ascii
 
-So the proposed vhost-scsi per-cpu ida/tag pre-allocation changes should
-be considered v3.12 items.
+On Mon, 08 Jul 2013 03:41:42 +0300, Maxim Levitsky said:
 
-> Merging new target code for 3.11 and vhost code for 3.12
-> helps keep the dependencies simple, so I'm all for it.
-> 
+> +/* Debug test to validate free block counts */
+> +#ifdef DEBUG
+> +static int msb_validate_used_block_bitmap(struct msb_data *msb)
+> +{
 
-My point above is that having (at least) Kent's per-cpu ida code merged
-for v3.11 would make it easier to move forward during the v3.12 cycle on
-per-cpu ida/tag conversions for vhost-scsi + other target fabric
-drivers.
+Is there a reason this should be inside a #ifdef DEBUG with no
+easy way to select DEBUG?  Maybe CONFIG_MS_BLOCK_DEBUG similar to
+the way other subsystems allow configuring additional debug code?
 
---nab
+--==_Exmh_1373249476_4049P
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBUdofxAdmEQWDXROgAQKH5BAAgAPVeCUS9Fh8FfGdUlyZQTmtAhvpuAgo
+iwjnYHVqOOtIdpmyK9Qt0VfvUh16SJDSocbsV6D6H4l0fzu/StaTP6cIQ57bkP57
+JUO5/r1Pom+xRwsXp2y2clUoIHHWy8J1n0eS46hUYyItikL58BjJGwrDRRCREosH
+ap22vKAjkzJS1kjRqyHhldm4bVfCobQSs9vPiOgQZIZRT4Egcr9dji1r769GeAI1
+aBW2f1uLJ2evoGofgksp5/tmdcMukd4s5KsrRApH/BiD9H39E5tPbj2xHeEyova5
+ze3DyG3i2LiWYcPHOoD5QCTyP5gmcVvy+kpSe9i71pxj6rDEO4FGSqz1ScWgTuB9
+D0rkPoUk50jFaokh4jlrANI2XeXjoqtrzfSbmCD1FdGItXQbpRhaSMkmheRbI1N5
+owEC3gcF/oHLPE5D/mIzgsRiWaOXFN5fUtBn4dxE+jawtgWIUgeyyuiWh4JDJbKr
+yaKfs5lJf/iYp15xi/2WqaqQePkik/ycMe6zPMspWWzhEwSrkpZoSv9vFzCBdTZ9
+Se85lW9BOoDRP1pC3pf/0f9aD4BxuSGDdfHvPSDrs9+X4duDfJgcmMPsWF1AL2FV
+P0rLZD9DpljJY+5LEI/L6kvwWuERzfQ2DiXIiy2dyzksupyKn/5bhz2RCTQ4k1Ex
+BGFFzYM9ShM=
+=TqUt
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1373249476_4049P--
