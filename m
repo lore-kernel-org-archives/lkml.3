@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312Ab3GHJdW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 05:33:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26725 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750754Ab3GHJdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 05:33:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1019,1363158000"; 
-   d="scan'208";a="342040318"
-From: Vinod Koul <vinod.koul@intel.com>
-To: Dan Williams <djbw@fb.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matt Porter <matt@ohporter.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Vinod Koul <vinod.koul@intel.com>
-Subject: [RFC] dmaengine: add dma_slave_get_caps api
-Date: Mon,  8 Jul 2013 14:24:10 +0530
-Message-Id: <1373273650-31097-1-git-send-email-vinod.koul@intel.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1751537Ab3GHJgN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 05:36:13 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:8651 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754Ab3GHJgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 05:36:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 08 Jul 2013 02:35:21 -0700
+Message-ID: <51DA8805.50709@nvidia.com>
+Date: Mon, 8 Jul 2013 17:36:05 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Jean Delvare <khali@linux-fr.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        Matthew Longnecker <MLongnecker@nvidia.com>,
+        Alex Courbot <acourbot@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [lm-sensors] [PATCH 1/2] ARM: dt: t30 cardhu: add dt entry for
+ lm90
+References: <1372928979-26938-1-git-send-email-wni@nvidia.com> <1372928979-26938-2-git-send-email-wni@nvidia.com> <51D70483.70203@wwwdotorg.org>	<51DA6BD4.1040300@nvidia.com> <20130708095024.041a6d57@endymion.delvare>
+In-Reply-To: <20130708095024.041a6d57@endymion.delvare>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add new device callback .device_slave_caps api which can be used by clients to
-query the dma channel capablties before they program the channel. This can help
-is removing errors during the channel programming. Also add helper
-dma_slave_get_caps API
+On 07/08/2013 03:50 PM, Jean Delvare wrote:
+> On Mon, 8 Jul 2013 15:35:48 +0800, Wei Ni wrote:
+>> On 07/06/2013 01:38 AM, Stephen Warren wrote:
+>>> On 07/04/2013 03:09 AM, Wei Ni wrote:
+>>>> Enable thermal sensor lm90 for t30 cardhu.
+>>>
+>>>> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+>>>
+>>>> +		nct1008: nct1008 {
+>>>> +			compatible = "lm90,nct1008";
+>>>
+>>> "lm90" isn't a valid vendor prefix. I believe the value you want is
+>>> "onnn,nct1008". Same comment for patch 2/2.
+>>
+>> The lm90 doesn't support device tree very well.
+> 
+> I doubt it, but if this is the case, then please fix it, instead of
+> working the problem around in a different place.
+> 
+>> In the DT, we need to
+>> named as "lm90" so that the lm90 driver can be loaded,
+> 
+> Not that I am an expert with regards to DT, but this doesn't make any
+> sense to me. AFAIK DT is about devices, not which drivers handle them.
+> 
+>> and we also need
+>> to add "nct1008" to indicate this is the nct1008 device, so that the
+>> lm90 driver can be loaded with the right i2c_device_id->driver_data.
+>>
+>> I set the " compatible = "lm90,nct1008" ", this is the simplest way, and
+>> we doesn't need to change the lm90.c.
+> 
+> There's no problem with changing the lm90 driver, if this is the right
+> thing to do.
 
-This patch folds the work done by Matt earlier
-https://patchwork.kernel.org/patch/2094891/
+Ok, I will add DT support in the lm90.c in my next version patch.
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
----
- include/linux/dmaengine.h |   45 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 45 insertions(+), 0 deletions(-)
+Thanks.
+Wei.
 
-diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index 96d3e4a..f259f27 100644
---- a/include/linux/dmaengine.h
-+++ b/include/linux/dmaengine.h
-@@ -371,6 +371,37 @@ struct dma_slave_config {
- 	unsigned int slave_id;
- };
- 
-+/* struct dma_slave_caps - expose capabilities of a slave channel only
-+ *
-+ * @src_addr_widths: bit mask of src addr widths the channel supports
-+ * @dstn_addr_widths: bit mask of dstn addr widths the channel supports
-+ * @src_burst_lengths: bit mask of src slave burst lengths supported
-+ * @dstn_burst_lengths: bit mask of dstn slave burst lengths supported
-+ * @directions: bit mask of slave direction the channel supported
-+ * 	since the enum dma_transfer_direction is not defined as bits for each
-+ * 	type of direction, the dma controller should fill (1 << <TYPE>) and same
-+ * 	should be checked by controller as well
-+ * @cmd_pause: true, if pause and thereby resume is supported
-+ * @cmd_terminate: true, if terminate cmd is supported
-+ *
-+ * @max_seg_nr: maximum number of SG segments supported
-+ * 	0 for no maximum
-+ * @max_seg_len: maximum length of a SG segment supported
-+ * 	0 for no maximum
-+ */
-+struct dma_slave_caps {
-+	u32 src_addr_widths;
-+	u32 dstn_addr_widths;
-+	u32 src_burst_lengths;
-+	u32 dstn_burst_lengths;
-+	u32 directions;
-+	bool cmd_pause;
-+	bool cmd_terminate;
-+
-+	u32 max_sg_nr;
-+	u32 max_sg_len;
-+};
-+
- static inline const char *dma_chan_name(struct dma_chan *chan)
- {
- 	return dev_name(&chan->dev->device);
-@@ -534,6 +565,7 @@ struct dma_tx_state {
-  *	struct with auxiliary transfer status information, otherwise the call
-  *	will just return a simple status code
-  * @device_issue_pending: push pending transactions to hardware
-+ * @device_slave_caps: return the slave channel capabilities
-  */
- struct dma_device {
- 
-@@ -602,6 +634,7 @@ struct dma_device {
- 					    dma_cookie_t cookie,
- 					    struct dma_tx_state *txstate);
- 	void (*device_issue_pending)(struct dma_chan *chan);
-+	struct dma_slave_caps *(*device_slave_caps)(struct dma_chan *chan);
- };
- 
- static inline int dmaengine_device_control(struct dma_chan *chan,
-@@ -675,6 +708,18 @@ static inline struct dma_async_tx_descriptor *dmaengine_prep_interleaved_dma(
- 	return chan->device->device_prep_interleaved_dma(chan, xt, flags);
- }
- 
-+static inline struct dma_slave_caps *dma_get_slave_caps(struct dma_chan *chan)
-+{
-+	/* check if the channel supports slave transactions */
-+	if (!test_bit(DMA_SLAVE, chan->device->cap_mask.bits))
-+		return NULL;
-+
-+	if (chan->device->device_slave_caps)
-+		return chan->device->device_slave_caps(chan);
-+
-+	return NULL;
-+}
-+
- static inline int dmaengine_terminate_all(struct dma_chan *chan)
- {
- 	return dmaengine_device_control(chan, DMA_TERMINATE_ALL, 0);
--- 
-1.7.0.4
+> 
 
