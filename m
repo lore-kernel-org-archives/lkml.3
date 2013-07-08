@@ -1,278 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab3GHH7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 03:59:46 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:53313 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab3GHH7n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 03:59:43 -0400
-Message-ID: <51DA7190.6080208@gmail.com>
-Date: Mon, 08 Jul 2013 16:00:16 +0800
-From: Aaron Lu <aaron.lwe@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1752060Ab3GHICZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 04:02:25 -0400
+Received: from 8bytes.org ([85.214.48.195]:56395 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751453Ab3GHICV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 04:02:21 -0400
+Date: Mon, 8 Jul 2013 10:02:18 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org
+Subject: [git pull] IOMMU Updates for v3.11
+Message-ID: <20130708080204.GA3289@8bytes.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Matthew Garrett <matthew.garrett@nebula.com>, daniel.vetter@ffwll.ch,
-        linux-acpi@vger.kernel.org, seth.forshee@canonical.com,
-        joeyli.kernel@gmail.com, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        lenb@kernel.org
-Subject: Re: [PATCH 3/3] i915: Don't provide ACPI backlight interface if firmware
- expects Windows 8
-References: <1370818899-8595-1-git-send-email-matthew.garrett@nebula.com> <51D7AF14.9050508@gmail.com> <3467567.zOLDhye8QD@vostro.rjw.lan> <12270512.1rshgKaUug@vostro.rjw.lan>
-In-Reply-To: <12270512.1rshgKaUug@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Jul  8 10:02:19 2013
+X-DSPAM-Confidence: 0.9990
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51da720b20861152016487
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2013 09:19 PM, Rafael J. Wysocki wrote:
-> OK, the patch is appended.  Please have a look and tell me what you think.
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: ACPI / video / i915: Remove ACPI backlight if firmware expects Windows 8
-> 
-> According to Matthew Garrett, "Windows 8 leaves backlight control up
-> to individual graphics drivers rather than making ACPI calls itself.
-> There's plenty of evidence to suggest that the Intel driver for
-> Windows [8] doesn't use the ACPI interface, including the fact that
-> it's broken on a bunch of machines when the OS claims to support
-> Windows 8.  The simplest thing to do appears to be to disable the
-> ACPI backlight interface on these systems".
-> 
-> There's a problem with that approach, however, because simply
-> avoiding to register the ACPI backlight interface if the firmware
-> calls _OSI for Windows 8 may not work in the following situations:
->  (1) The ACPI backlight interface actually works on the given system
->      and the i915 driver is not loaded (e.g. another graphics driver
->      is used).
->  (2) The ACPI backlight interface doesn't work on the given system,
->      but there is a vendor platform driver that will register its
->      own, equally broken, backlight interface if the ACPI one is not
->      registered in advance.
 
-The condition thinkpad_acpi checks to decide if it wants to create
-backlight control interface is acpi_video_backlight_support function,
-not that if ACPI video driver has registered previously. I'm sorry if my
-previous words gave you such a conclusion.
+--jRHKVT23PllUwdXP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Therefore we need to keep the ACPI backlight interface registered
-> until the i915 driver is loaded which then will unregister it if
-> the firmware has called _OSI for Windows 8.
-> 
-> For this reason, introduce an alternative function for registering
-> ACPI video, acpi_video_register_with_quirks(), that will check
-> whether or not the ACPI video driver has already been registered
-> and whether or not the backlight Windows 8 quirk has to be applied.
-> If the quirk has to be applied, it will block the ACPI backlight
-> support and either unregister the backlight interface if the ACPI
-> video driver has already been registered, or register the ACPI
-> video driver without the backlight interface otherwise.  Make
-> the i915 driver use acpi_video_register_with_quirks() instead of
-> acpi_video_register() in i915_driver_load().
-> 
-> This change is based on earlier patches from Matthew Garrett,
-> Chun-Yi Lee and Seth Forshee.
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/video.c            |   61 ++++++++++++++++++++++++++++++++++++----
->  drivers/acpi/video_detect.c     |   11 +++++++
->  drivers/gpu/drm/i915/i915_dma.c |    2 -
->  include/acpi/video.h            |   11 ++++++-
->  include/linux/acpi.h            |    6 +++
->  5 files changed, 84 insertions(+), 7 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/video.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/video.c
-> +++ linux-pm/drivers/acpi/video.c
-> @@ -1854,6 +1854,46 @@ static int acpi_video_bus_remove(struct
->  	return 0;
->  }
->  
-> +static acpi_status video_unregister_backlight(acpi_handle handle, u32 lvl,
-> +					      void *context, void **rv)
-> +{
-> +	struct acpi_device *acpi_dev;
-> +	struct acpi_video_bus *video;
-> +	struct acpi_video_device *dev, *next;
-> +
-> +	if (acpi_bus_get_device(handle, &acpi_dev))
-> +		return AE_OK;
-> +
-> +	if (acpi_match_device_ids(acpi_dev, video_device_ids))
-> +		return AE_OK;
-> +
-> +	video = acpi_driver_data(acpi_dev);
-> +	if (!video)
-> +		return AE_OK;
-> +
-> +	acpi_video_bus_stop_devices(video);
-> +	mutex_lock(&video->device_list_lock);
-> +	list_for_each_entry_safe(dev, next, &video->video_device_list, entry) {
-> +		if (dev->backlight) {
-> +			backlight_device_unregister(dev->backlight);
-> +			dev->backlight = NULL;
-> +			kfree(dev->brightness->levels);
-> +			kfree(dev->brightness);
-> +		}
-> +		if (dev->cooling_dev) {
-> +			sysfs_remove_link(&dev->dev->dev.kobj,
-> +					  "thermal_cooling");
-> +			sysfs_remove_link(&dev->cooling_dev->device.kobj,
-> +					  "device");
-> +			thermal_cooling_device_unregister(dev->cooling_dev);
-> +			dev->cooling_dev = NULL;
-> +		}
-> +	}
-> +	mutex_unlock(&video->device_list_lock);
-> +	acpi_video_bus_start_devices(video);
-> +	return AE_OK;
-> +}
-> +
->  static int __init is_i740(struct pci_dev *dev)
->  {
->  	if (dev->device == 0x00D1)
-> @@ -1885,14 +1925,25 @@ static int __init intel_opregion_present
->  	return opregion;
->  }
->  
-> -int acpi_video_register(void)
-> +int __acpi_video_register(bool backlight_quirks)
->  {
-> -	int result = 0;
-> +	bool no_backlight;
-> +	int result;
-> +
-> +	no_backlight = backlight_quirks ? acpi_video_backlight_quirks() : false;
-> +
->  	if (register_count) {
->  		/*
-> -		 * if the function of acpi_video_register is already called,
-> -		 * don't register the acpi_vide_bus again and return no error.
-> +		 * If acpi_video_register() has been called already, don't try
-> +		 * to register acpi_video_bus, but unregister backlight devices
-> +		 * if no backlight support is requested.
->  		 */
-> +		if (no_backlight)
-> +			acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
-> +					    ACPI_UINT32_MAX,
-> +					    video_unregister_backlight,
-> +					    NULL, NULL, NULL);
-> +
->  		return 0;
->  	}
->  
-> @@ -1908,7 +1959,7 @@ int acpi_video_register(void)
->  
->  	return 0;
->  }
-> -EXPORT_SYMBOL(acpi_video_register);
-> +EXPORT_SYMBOL(__acpi_video_register);
->  
->  void acpi_video_unregister(void)
->  {
-> Index: linux-pm/drivers/gpu/drm/i915/i915_dma.c
-> ===================================================================
-> --- linux-pm.orig/drivers/gpu/drm/i915/i915_dma.c
-> +++ linux-pm/drivers/gpu/drm/i915/i915_dma.c
-> @@ -1660,7 +1660,7 @@ int i915_driver_load(struct drm_device *
->  	if (INTEL_INFO(dev)->num_pipes) {
->  		/* Must be done after probing outputs */
->  		intel_opregion_init(dev);
-> -		acpi_video_register();
-> +		acpi_video_register_with_quirks();
->  	}
->  
->  	if (IS_GEN5(dev))
-> Index: linux-pm/include/acpi/video.h
-> ===================================================================
-> --- linux-pm.orig/include/acpi/video.h
-> +++ linux-pm/include/acpi/video.h
-> @@ -17,12 +17,21 @@ struct acpi_device;
->  #define ACPI_VIDEO_DISPLAY_LEGACY_TV      0x0200
->  
->  #if (defined CONFIG_ACPI_VIDEO || defined CONFIG_ACPI_VIDEO_MODULE)
-> -extern int acpi_video_register(void);
-> +extern int __acpi_video_register(bool backlight_quirks);
-> +static inline int acpi_video_register(void)
-> +{
-> +	return __acpi_video_register(false);
-> +}
-> +static inline int acpi_video_register_with_quirks(void)
-> +{
-> +	return __acpi_video_register(true);
-> +}
->  extern void acpi_video_unregister(void);
->  extern int acpi_video_get_edid(struct acpi_device *device, int type,
->  			       int device_id, void **edid);
->  #else
->  static inline int acpi_video_register(void) { return 0; }
-> +static inline int acpi_video_register_with_quirks(void) { return 0; }
->  static inline void acpi_video_unregister(void) { return; }
->  static inline int acpi_video_get_edid(struct acpi_device *device, int type,
->  				      int device_id, void **edid)
-> Index: linux-pm/drivers/acpi/video_detect.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/video_detect.c
-> +++ linux-pm/drivers/acpi/video_detect.c
-> @@ -234,6 +234,17 @@ static void acpi_video_caps_check(void)
->  		acpi_video_get_capabilities(NULL);
->  }
->  
-> +bool acpi_video_backlight_quirks(void)
-> +{
-> +	if (acpi_gbl_osi_data >= ACPI_OSI_WIN_8) {
-> +		acpi_video_caps_check();
-> +		acpi_video_support |= ACPI_VIDEO_BACKLIGHT_FORCE_VENDOR;
+Hi Linus,
 
-If the ACPI_VIDEO_BACKLIGHT_FORCE_VENDOR flag is set,
-acpi_video_backlight_support will return 0, thinkpad_acpi will create
-backlight interface for the system, which is not what we want.
+The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
+
+  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git tags/iommu-updates-v3.11
+
+for you to fetch changes up to 01ce784acfa69a171afe6ec3f85a959546f2d18a:
+
+  Merge branches 'x86/vt-d', 'arm/omap', 'core', 'x86/amd' and 'arm/smmu' into next (2013-06-25 23:34:29 +0200)
+
+----------------------------------------------------------------
+
+IOMMU Updates for Linux 3.11
+
+A few updates this time, most important and exiciting (to me) is:
+
+	* The new ARM SMMU driver. This is a common IOMMU driver that will
+	  hopefully be used in a lot of upcoming ARM chips. So the mess in the
+	  past where every SOC had its own IOMMU will be over.
+
+Besides that:
+
+	* Some important fixes in the IOMMU unmap path. There are fixes in the
+	  common code and also in the AMD IOMMU driver.
+	* Other random fixes
+
+----------------------------------------------------------------
+Alex Williamson (4):
+      iommu/{vt-d,amd}: Remove multifunction assumption around grouping
+      iommu: Split iommu_unmaps
+      iommu: Fix compiler warning on pr_debug
+      iommu/amd: Only unmap large pages from the first pte
+
+Andy Lutomirski (1):
+      iommu/vt-d: Downgrade the warning if enabling irq remapping fails
+
+Joe Perches (1):
+      iommu: Use %pa and %zx instead of casting
+
+Joerg Roedel (2):
+      iommu/amd: Fix memory leak in free_pagetable
+      Merge branches 'x86/vt-d', 'arm/omap', 'core', 'x86/amd' and 'arm/smmu' into next
+
+Li, Zhen-Hua (1):
+      iommu/vt-d: DMAR reporting table needs at least one DRHD
+
+Suman Anna (2):
+      iommu/omap: fix printk formats for dma_addr_t
+      iommu/omap: fix checkpatch warnings in omap iommu code
+
+Will Deacon (3):
+      documentation/iommu: Add description of ARM System MMU binding
+      iommu/arm: Add support for ARM Ltd. System MMU architecture
+      MAINTAINERS: add entry for ARM system MMU driver
+
+ .../devicetree/bindings/iommu/arm,smmu.txt         |   70 +
+ MAINTAINERS                                        |    6 +
+ drivers/iommu/Kconfig                              |   13 +
+ drivers/iommu/Makefile                             |    1 +
+ drivers/iommu/amd_iommu.c                          |  104 +-
+ drivers/iommu/arm-smmu.c                           | 1969 ++++++++++++++++++++
+ drivers/iommu/dmar.c                               |    4 +
+ drivers/iommu/intel-iommu.c                        |   25 +-
+ drivers/iommu/intel_irq_remapping.c                |    3 +-
+ drivers/iommu/iommu.c                              |   86 +-
+ drivers/iommu/omap-iommu.c                         |   15 +-
+ drivers/iommu/omap-iopgtable.h                     |    2 +-
+ drivers/iommu/omap-iovmm.c                         |    4 +-
+ 13 files changed, 2212 insertions(+), 90 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/iommu/arm,smmu.txt
+ create mode 100644 drivers/iommu/arm-smmu.c
+
+Please pull.
 
 Thanks,
-Aaron
 
-> +		return true;
-> +	}
-> +	return false;
-> +}
-> +EXPORT_SYMBOL(acpi_video_backlight_quirks);
-> +
->  /* Promote the vendor interface instead of the generic video module.
->   * This function allow DMI blacklists to be implemented by externals
->   * platform drivers instead of putting a big blacklist in video_detect.c
-> Index: linux-pm/include/linux/acpi.h
-> ===================================================================
-> --- linux-pm.orig/include/linux/acpi.h
-> +++ linux-pm/include/linux/acpi.h
-> @@ -196,6 +196,7 @@ extern bool wmi_has_guid(const char *gui
->  
->  extern long acpi_video_get_capabilities(acpi_handle graphics_dev_handle);
->  extern long acpi_is_video_device(acpi_handle handle);
-> +extern bool acpi_video_backlight_quirks(void);
->  extern void acpi_video_dmi_promote_vendor(void);
->  extern void acpi_video_dmi_demote_vendor(void);
->  extern int acpi_video_backlight_support(void);
-> @@ -213,6 +214,11 @@ static inline long acpi_is_video_device(
->  	return 0;
->  }
->  
-> +static inline bool acpi_video_backlight_quirks(void)
-> +{
-> +	return false;
-> +}
-> +
->  static inline void acpi_video_dmi_promote_vendor(void)
->  {
->  }
-> 
+	Joerg
+
+
+--jRHKVT23PllUwdXP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR2nH8AAoJECvwRC2XARrj65EQAM1PoiexYrU7SkU1Vf799xU1
+RlvSXPwDYjjJjmECzhR8iVQREw8n6I/9itQ15uaMwdDNWCUI47hk0WbqxJLRqHEN
+uicdiNteeJbSUtyZkiZDMcy0y6DVm1WgNMoZLy+7SpYvDQRsKNYIeKMVzbAvMJDc
+kThcELUVhsngTW6uRxVbF3P/Lg8Lfzz9Hn168EUm3saDFRpuWdCsDA3V3aLPOU5X
+GUtgih++rfCcl71GhSKDFkql9p3aWuvsfA/c6A+CwUaAEM2jR1KY4+fIysEOgkf0
+kDjjMpSrgT+RQsYUVA1memVrU/kg+2uUsEOtHBgYbJaWB2RPjcCvf4U5FCY9I21Q
+kTCRk4rKk+y3SU3EVlsdz96kNUJqk64y1x9NoAQaVec8xRX9xWgtSPXbbEJuYYZm
+qtv7Qs3R3ILWeg0darU4xBu4pb/UAVjzOTExCdIx4sEqBintXxmfajYUXPwIy4vQ
+ddttFnnWd0g5BsqSPCZ2U+5V+qKjUL0Rnbi4sNLdCk8zoweKcP39HY7rbJROvBOl
+neOoeTyQD3VLID/T6Ih4Yiyd948YfHmj0uy0IMcE6okY5uVc8U1GYgIPuqsOWWYT
+y/jWR2eaE1h2rykCz7lxQVyMZZVGEYOjfE37LCOzn3ch+nfS+xMgvfOEq4rLv4ac
+aUPaNXbCby35jHhI2m7C
+=n49T
+-----END PGP SIGNATURE-----
+
+--jRHKVT23PllUwdXP--
+
 
