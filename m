@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3GHNZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 09:25:14 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:34442 "EHLO hydra.sisk.pl"
+	id S1751962Ab3GHNZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 09:25:08 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:34437 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743Ab3GHNZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 09:25:11 -0400
+	id S1751723Ab3GHNZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 09:25:06 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Linux PCI <linux-pci@vger.kernel.org>,
         ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
         Yinghai Lu <yinghai@kernel.org>, Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 2/3] ACPI / hotplug / PCI: Hotplug context objects for bridges and functions
-Date: Mon, 08 Jul 2013 15:30:16 +0200
-Message-ID: <5467602.Eu9oTtT08x@vostro.rjw.lan>
+Subject: [PATCH 3/3] ACPI / hotplug / PCI: Unified notify handler for hotplug events
+Date: Mon, 08 Jul 2013 15:34:49 +0200
+Message-ID: <1435262.bzVFRzrbmZ@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <5361579.8un1t1TCfk@vostro.rjw.lan>
 References: <1468174.eo7i60DZFT@vostro.rjw.lan> <5361579.8un1t1TCfk@vostro.rjw.lan>
@@ -27,340 +27,265 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-When either a new hotplug brigde or a new hotplug function is added
-by the ACPI-based PCI hotplug (acpiphp) code, attach a context object
-to its ACPI handle to store hotplug-related information in it.  To
-start with, put the handle's bridge and function pointers into that
-object.  Count references to the context objects and drop them when
-they are not needed any more.
+Using the hotplug context objects introduced previously rework the
+ACPI-based PCI hotplug (acpiphp) core code so that all notifications
+for ACPI device objects corresponding to the hotplug PCI devices are
+handled by one function, handle_hotplug_event(), which recognizes
+whether it has to handle a bridge or a function.
 
-First of all, this makes it possible to find out if the given bridge
-has been registered as a function already in a much more
-straightforward way and acpiphp_bridge_handle_to_function() can be
-dropped (Yay!).
-
-This also will allow some more simplifications to be made going
-forward.
+In addition to code size reduction it allows some ugly pieces of code
+where notify handlers have to be uninstalled and installed again to
+go away.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp.h      |   10 ++
- drivers/pci/hotplug/acpiphp_glue.c |  149 ++++++++++++++++++++++++++-----------
- 2 files changed, 116 insertions(+), 43 deletions(-)
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -49,6 +49,7 @@
- #define info(format, arg...) printk(KERN_INFO "%s: " format, MY_NAME , ## arg)
- #define warn(format, arg...) printk(KERN_WARNING "%s: " format, MY_NAME , ## arg)
- 
-+struct acpiphp_context;
- struct acpiphp_bridge;
- struct acpiphp_slot;
- 
-@@ -77,6 +78,7 @@ struct acpiphp_bridge {
- 	struct kref ref;
- 	acpi_handle handle;
- 
-+	struct acpiphp_context *context;
- 	/* Ejectable PCI-to-PCI bridge (PCI bridge and PCI function) */
- 	struct acpiphp_func *func;
- 
-@@ -119,6 +121,7 @@ struct acpiphp_slot {
-  * typically 8 objects per slot (i.e. for each PCI function)
-  */
- struct acpiphp_func {
-+	struct acpiphp_context *context;
- 	struct acpiphp_slot *slot;	/* parent */
- 
- 	struct list_head sibling;
-@@ -129,6 +132,13 @@ struct acpiphp_func {
- 	u32		flags;		/* see below */
- };
- 
-+struct acpiphp_context {
-+	struct kref kref;
-+	acpi_handle handle;
-+	struct acpiphp_func *func;
-+	struct acpiphp_bridge *bridge;
-+};
-+
- /*
-  * struct acpiphp_attention_info - device specific attention registration
-  *
+The future direction would be to merge _handle_hotplug_event_bridge()
+and _handle_hotplug_event_func() into one function taking acpiphp_context
+as the "context" argument and possibly simplify the addition/removal
+code paths going from there.
+
+Eventually, I'd like to install handle_hotplug_event() as a universal
+hotplug event handler for all ACPI device objects corresponding to PCI
+devices (regardless of whether or not they have any "hotplugish" methods
+etc.).
+
+Thanks,
+Rafael
+
+---
+ drivers/pci/hotplug/acpiphp.h      |    1 
+ drivers/pci/hotplug/acpiphp_glue.c |  127 +++++++++++++------------------------
+ 2 files changed, 48 insertions(+), 80 deletions(-)
+
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -79,6 +79,61 @@ is_pci_dock_device(acpi_handle handle, u
- 	}
- }
+@@ -58,11 +58,10 @@ static DEFINE_MUTEX(bridge_mutex);
  
-+static void acpiphp_context_handler(acpi_handle handle, void *context)
-+{
-+	/* Intentionally empty. */
-+}
-+
-+static struct acpiphp_context *acpiphp_init_context(acpi_handle handle)
-+{
-+	struct acpiphp_context *context;
-+	acpi_status status;
-+
-+	context = kzalloc(sizeof(*context), GFP_KERNEL);
-+	if (!context)
-+		return NULL;
-+
-+	context->handle = handle;
-+	kref_init(&context->kref);
-+	status = acpi_attach_data(handle, acpiphp_context_handler, context);
-+	if (ACPI_FAILURE(status)) {
-+		kfree(context);
-+		return NULL;
-+	}
-+	return context;
-+}
-+
-+static struct acpiphp_context *acpiphp_get_context(acpi_handle handle)
-+{
-+	struct acpiphp_context *context = NULL;
-+	acpi_status status;
-+	void *data;
-+
-+	status = acpi_get_data(handle, acpiphp_context_handler, &data);
-+	if (ACPI_SUCCESS(status)) {
-+		context = data;
-+		kref_get(&context->kref);
-+	} else if (status == AE_NOT_FOUND) {
-+		context = acpiphp_init_context(handle);
-+	}
-+	return context;
-+}
-+
-+static void acpiphp_release_context(struct kref *kref)
-+{
-+	struct acpiphp_context *context;
-+
-+	context = container_of(kref, struct acpiphp_context, kref);
-+	WARN_ON(context->func || context->bridge);
-+	acpi_detach_data(context->handle, acpiphp_context_handler);
-+	kfree(context);
-+}
-+
-+static void acpiphp_put_context(struct acpiphp_context *context)
-+{
-+	kref_put(&context->kref, acpiphp_release_context);
-+}
-+
- static inline void get_bridge(struct acpiphp_bridge *bridge)
- {
- 	kref_get(&bridge->ref);
-@@ -91,6 +146,7 @@ static inline void put_bridge(struct acp
+ #define MY_NAME "acpiphp_glue"
  
- static void free_bridge(struct kref *kref)
- {
-+	struct acpiphp_context *context;
- 	struct acpiphp_bridge *bridge;
- 	struct acpiphp_slot *slot, *next;
- 	struct acpiphp_func *func, *tmp;
-@@ -99,17 +155,24 @@ static void free_bridge(struct kref *kre
+-static void handle_hotplug_event_bridge (acpi_handle, u32, void *);
++static void handle_hotplug_event(acpi_handle handle, u32 type, void *data);
+ static void acpiphp_sanitize_bus(struct pci_bus *bus);
+ static void acpiphp_set_hpp_values(struct pci_bus *bus);
+ static void hotplug_event_func(acpi_handle handle, u32 type, void *context);
+-static void handle_hotplug_event_func(acpi_handle handle, u32 type, void *context);
+ static void free_bridge(struct kref *kref);
  
- 	list_for_each_entry_safe(slot, next, &bridge->slots, node) {
- 		list_for_each_entry_safe(func, tmp, &slot->funcs, sibling) {
-+			context = func->context;
-+			context->func = NULL;
- 			kfree(func);
-+			acpiphp_put_context(context);
- 		}
+ /* callback routine to check for the existence of a pci dock device */
+@@ -163,13 +162,13 @@ static void free_bridge(struct kref *kre
  		kfree(slot);
  	}
  
--	/* Release reference acquired by acpiphp_bridge_handle_to_function() */
-+	/* Release reference acquired by acpiphp_enumerate_slots(). */
- 	if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)
++	context = bridge->context;
+ 	/* Release reference acquired by acpiphp_enumerate_slots(). */
+-	if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)
++	if (context->handler_for_func)
  		put_bridge(bridge->func->slot->bridge);
-+
+ 
  	put_device(&bridge->pci_bus->dev);
  	pci_dev_put(bridge->pci_dev);
-+	context = bridge->context;
-+	context->bridge = NULL;
+-	context = bridge->context;
+ 	context->bridge = NULL;
  	kfree(bridge);
-+	acpiphp_put_context(context);
+ 	acpiphp_put_context(context);
+@@ -404,12 +403,12 @@ static acpi_status register_slot(acpi_ha
+ 
+ 	/* install notify handler */
+ 	if (!(newfunc->flags & FUNC_HAS_DCK)) {
+-		status = acpi_install_notify_handler(handle,
+-					     ACPI_SYSTEM_NOTIFY,
+-					     handle_hotplug_event_func,
+-					     newfunc);
+-
+-		if (ACPI_FAILURE(status))
++		status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
++						     handle_hotplug_event,
++						     context);
++		if (ACPI_SUCCESS(status))
++			context->handler_for_func = true;
++		else
+ 			err("failed to register interrupt notify handler\n");
+ 	}
+ 
+@@ -463,23 +462,13 @@ static void cleanup_bridge(struct acpiph
+ 	acpi_status status;
+ 	acpi_handle handle = bridge->handle;
+ 
+-	if (!pci_is_root_bus(bridge->pci_bus)) {
+-		status = acpi_remove_notify_handler(handle,
+-					    ACPI_SYSTEM_NOTIFY,
+-					    handle_hotplug_event_bridge);
++	if (!bridge->context->handler_for_func) {
++		status = acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
++						    handle_hotplug_event);
+ 		if (ACPI_FAILURE(status))
+ 			err("failed to remove notify handler\n");
+ 	}
+ 
+-	if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
+-		status = acpi_install_notify_handler(bridge->func->handle,
+-						ACPI_SYSTEM_NOTIFY,
+-						handle_hotplug_event_func,
+-						bridge->func);
+-		if (ACPI_FAILURE(status))
+-			err("failed to install interrupt notify handler\n");
+-	}
+-
+ 	list_for_each_entry(slot, &bridge->slots, node) {
+ 		list_for_each_entry(func, &slot->funcs, sibling) {
+ 			if (is_dock_device(func->handle)) {
+@@ -487,9 +476,10 @@ static void cleanup_bridge(struct acpiph
+ 				unregister_dock_notifier(&func->nb);
+ 			}
+ 			if (!(func->flags & FUNC_HAS_DCK)) {
++				func->context->handler_for_func = false;
+ 				status = acpi_remove_notify_handler(func->handle,
+-						ACPI_SYSTEM_NOTIFY,
+-						handle_hotplug_event_func);
++							ACPI_SYSTEM_NOTIFY,
++							handle_hotplug_event);
+ 				if (ACPI_FAILURE(status))
+ 					err("failed to remove notify handler\n");
+ 			}
+@@ -1070,31 +1060,6 @@ static void _handle_hotplug_event_bridge
+ 	put_bridge(bridge);
+ }
+ 
+-/**
+- * handle_hotplug_event_bridge - handle ACPI event on bridges
+- * @handle: Notify()'ed acpi_handle
+- * @type: Notify code
+- * @context: pointer to acpiphp_bridge structure
+- *
+- * Handles ACPI event notification on {host,p2p} bridges.
+- */
+-static void handle_hotplug_event_bridge(acpi_handle handle, u32 type,
+-					void *context)
+-{
+-	struct acpiphp_bridge *bridge = context;
+-
+-	/*
+-	 * Currently the code adds all hotplug events to the kacpid_wq
+-	 * queue when it should add hotplug events to the kacpi_hotplug_wq.
+-	 * The proper way to fix this is to reorganize the code so that
+-	 * drivers (dock, etc.) do not call acpi_os_execute(), etc.
+-	 * For now just re-add this work to the kacpi_hotplug_wq so we
+-	 * don't deadlock on hotplug actions.
+-	 */
+-	get_bridge(bridge);
+-	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_bridge);
+-}
+-
+ static void hotplug_event_func(acpi_handle handle, u32 type, void *context)
+ {
+ 	struct acpiphp_func *func = context;
+@@ -1152,18 +1117,29 @@ static void _handle_hotplug_event_func(s
+ }
+ 
+ /**
+- * handle_hotplug_event_func - handle ACPI event on functions (i.e. slots)
++ * handle_hotplug_event - handle ACPI hotplug event
+  * @handle: Notify()'ed acpi_handle
+  * @type: Notify code
+- * @context: pointer to acpiphp_func structure
++ * @data: pointer to acpiphp_context structure
+  *
+  * Handles ACPI event notification on slots.
+  */
+-static void handle_hotplug_event_func(acpi_handle handle, u32 type,
+-				      void *context)
++static void handle_hotplug_event(acpi_handle handle, u32 type, void *data)
+ {
+-	struct acpiphp_func *func = context;
++	struct acpiphp_context *context = data;
++	void (*work_func)(struct work_struct *work);
+ 
++	if (context->bridge) {
++		get_bridge(context->bridge);
++		data = context->bridge;
++		work_func = _handle_hotplug_event_bridge;
++	} else if (context->func) {
++		get_bridge(context->func->slot->bridge);
++		data = context->func;
++		work_func = _handle_hotplug_event_func;
++	} else {
++		return;
++	}
+ 	/*
+ 	 * Currently the code adds all hotplug events to the kacpid_wq
+ 	 * queue when it should add hotplug events to the kacpi_hotplug_wq.
+@@ -1172,8 +1148,7 @@ static void handle_hotplug_event_func(ac
+ 	 * For now just re-add this work to the kacpi_hotplug_wq so we
+ 	 * don't deadlock on hotplug actions.
+ 	 */
+-	get_bridge(func->slot->bridge);
+-	alloc_acpi_hp_work(handle, type, context, _handle_hotplug_event_func);
++	alloc_acpi_hp_work(handle, type, data, work_func);
  }
  
  /*
-@@ -195,10 +258,11 @@ static void acpiphp_dock_release(void *d
- }
- 
- /* callback routine to register each ACPI PCI slot object */
--static acpi_status
--register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-+static acpi_status register_slot(acpi_handle handle, u32 lvl, void *data,
-+				 void **rv)
- {
--	struct acpiphp_bridge *bridge = (struct acpiphp_bridge *)context;
-+	struct acpiphp_bridge *bridge = (struct acpiphp_bridge *)data;
-+	struct acpiphp_context *context;
- 	struct acpiphp_slot *slot;
- 	struct acpiphp_func *newfunc;
- 	acpi_handle tmp;
-@@ -229,8 +293,18 @@ register_slot(acpi_handle handle, u32 lv
- 	if (!newfunc)
- 		return AE_NO_MEMORY;
- 
-+	context = acpiphp_get_context(newfunc->handle);
-+	if (!context) {
-+		acpi_handle_err(newfunc->handle,
-+				"Unable to get hotplug context\n");
-+		kfree(newfunc);
-+		return AE_NOT_EXIST;
-+	}
-+
- 	newfunc->handle = handle;
- 	newfunc->function = function;
-+	newfunc->context = context;
-+	context->func = newfunc;
- 
- 	if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &tmp)))
- 		newfunc->flags = FUNC_HAS_EJ0;
-@@ -268,8 +342,8 @@ register_slot(acpi_handle handle, u32 lv
- 	if (!found) {
- 		slot = kzalloc(sizeof(struct acpiphp_slot), GFP_KERNEL);
- 		if (!slot) {
--			kfree(newfunc);
--			return AE_NO_MEMORY;
-+			status = AE_NO_MEMORY;
-+			goto err_out;
- 		}
- 
- 		slot->bridge = bridge;
-@@ -293,7 +367,9 @@ register_slot(acpi_handle handle, u32 lv
- 			else
- 				warn("acpiphp_register_hotplug_slot failed "
- 					"(err code = 0x%x)\n", retval);
--			goto err_exit;
-+
-+			status = AE_OK;
-+			goto err;
- 		}
- 	}
- 
-@@ -339,15 +415,17 @@ register_slot(acpi_handle handle, u32 lv
- 
- 	return AE_OK;
- 
-- err_exit:
-+ err:
- 	bridge->nr_slots--;
- 	mutex_lock(&bridge_mutex);
- 	list_del(&slot->node);
- 	mutex_unlock(&bridge_mutex);
- 	kfree(slot);
-+ err_out:
-+	context->func = NULL;
- 	kfree(newfunc);
--
--	return AE_OK;
-+	acpiphp_put_context(context);
-+	return status;
- }
- 
- 
-@@ -362,32 +440,6 @@ static int detect_ejectable_slots(acpi_h
- 	return found;
- }
- 
--
--/* find acpiphp_func from acpiphp_bridge */
--static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle)
--{
--	struct acpiphp_bridge *bridge;
--	struct acpiphp_slot *slot;
--	struct acpiphp_func *func = NULL;
--
--	mutex_lock(&bridge_mutex);
--	list_for_each_entry(bridge, &bridge_list, list) {
--		list_for_each_entry(slot, &bridge->slots, node) {
--			list_for_each_entry(func, &slot->funcs, sibling) {
--				if (func->handle == handle) {
--					get_bridge(func->slot->bridge);
--					mutex_unlock(&bridge_mutex);
--					return func;
--				}
--			}
--		}
--	}
--	mutex_unlock(&bridge_mutex);
--
--	return NULL;
--}
--
--
- static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle)
- {
- 	struct acpiphp_bridge *bridge;
-@@ -1130,6 +1182,7 @@ static void handle_hotplug_event_func(ac
-  */
- void acpiphp_enumerate_slots(struct pci_bus *bus)
- {
-+	struct acpiphp_context *context;
- 	struct acpiphp_bridge *bridge;
- 	acpi_handle handle;
- 	acpi_status status;
-@@ -1141,9 +1194,16 @@ void acpiphp_enumerate_slots(struct pci_
- 	if (!handle || detect_ejectable_slots(handle) <= 0)
+@@ -1238,33 +1213,25 @@ void acpiphp_enumerate_slots(struct pci_
+ 	if (pci_is_root_bus(bridge->pci_bus))
  		return;
  
-+	context = acpiphp_get_context(handle);
-+	if (!context) {
-+		acpi_handle_err(handle, "Unable to get hotplug context\n");
++	status = acpi_get_handle(bridge->handle, "_EJ0", &handle);
++	if (ACPI_SUCCESS(status)) {
++		dbg("found ejectable p2p bridge\n");
++		bridge->flags |= BRIDGE_HAS_EJ0;
++	}
++	if (context->handler_for_func) {
++		/* Notify handler already installed. */
++		bridge->func = context->func;
++		get_bridge(context->func->slot->bridge);
 +		return;
 +	}
 +
- 	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
- 	if (bridge == NULL) {
--		err("out of memory\n");
-+		acpi_handle_err(handle, "No memory for bridge object\n");
-+		acpiphp_put_context(context);
- 		return;
- 	}
- 
-@@ -1152,6 +1212,8 @@ void acpiphp_enumerate_slots(struct pci_
- 	bridge->handle = handle;
- 	bridge->pci_dev = pci_dev_get(bus->self);
- 	bridge->pci_bus = bus;
-+	bridge->context = context;
-+	context->bridge = bridge;
- 
- 	/*
- 	 * Grab a ref to the subordinate PCI bus in case the bus is
-@@ -1185,20 +1247,21 @@ void acpiphp_enumerate_slots(struct pci_
- 				"failed to register notify handler\n");
- 		goto err;
- 	}
--
- 	status = acpi_get_handle(bridge->handle, "_EJ0", &handle);
- 	if (ACPI_FAILURE(status))
+ 	/* install notify handler for P2P bridges */
+ 	status = acpi_install_notify_handler(bridge->handle, ACPI_SYSTEM_NOTIFY,
+-					     handle_hotplug_event_bridge,
+-					     bridge);
+-	if (ACPI_FAILURE(status)) {
+-		acpi_handle_err(bridge->handle,
+-				"failed to register notify handler\n");
+-		goto err;
+-	}
+-	status = acpi_get_handle(bridge->handle, "_EJ0", &handle);
+-	if (ACPI_FAILURE(status))
++					     handle_hotplug_event, context);
++	if (ACPI_SUCCESS(status))
  		return;
  
- 	dbg("found ejectable p2p bridge\n");
- 	bridge->flags |= BRIDGE_HAS_EJ0;
--	bridge->func = acpiphp_bridge_handle_to_function(bridge->handle);
--	if (bridge->func) {
--		status = acpi_remove_notify_handler(bridge->func->handle,
--						    ACPI_SYSTEM_NOTIFY,
-+	if (context->func) {
-+		get_bridge(context->func->slot->bridge);
-+		bridge->func = context->func;
-+		handle = context->handle;
-+		WARN_ON(bridge->handle != handle);
-+		status = acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 						    handle_hotplug_event_func);
- 		if (ACPI_FAILURE(status))
--			acpi_handle_err(bridge->func->handle,
-+			acpi_handle_err(handle,
- 					"failed to remove notify handler\n");
- 	}
- 	return;
+-	dbg("found ejectable p2p bridge\n");
+-	bridge->flags |= BRIDGE_HAS_EJ0;
+-	if (context->func) {
+-		get_bridge(context->func->slot->bridge);
+-		bridge->func = context->func;
+-		handle = context->handle;
+-		WARN_ON(bridge->handle != handle);
+-		status = acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
+-						    handle_hotplug_event_func);
+-		if (ACPI_FAILURE(status))
+-			acpi_handle_err(handle,
+-					"failed to remove notify handler\n");
+-	}
+-	return;
++	acpi_handle_err(bridge->handle, "failed to register notify handler\n");
+ 
+  err:
+ 	cleanup_bridge(bridge);
+Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
++++ linux-pm/drivers/pci/hotplug/acpiphp.h
+@@ -137,6 +137,7 @@ struct acpiphp_context {
+ 	acpi_handle handle;
+ 	struct acpiphp_func *func;
+ 	struct acpiphp_bridge *bridge;
++	bool handler_for_func:1;
+ };
+ 
+ /*
 
