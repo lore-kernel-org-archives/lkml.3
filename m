@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682Ab3GHQsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 12:48:12 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:58513 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab3GHQsJ convert rfc822-to-8bit (ORCPT
+	id S1752654Ab3GHQsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 12:48:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38372 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752517Ab3GHQsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 12:48:09 -0400
+	Mon, 8 Jul 2013 12:48:08 -0400
+Date: Mon, 8 Jul 2013 18:47:21 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf: more ABI breakage
+Message-ID: <20130708164721.GC22923@dyad.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1307081115350.2281@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-In-Reply-To: <20130708155747.GG29556@pengutronix.de>
-References: <cover.1366803121.git.viresh.kumar@linaro.org>
-	<20130708153716.GF29556@pengutronix.de>
-	<CAKohpon+dFBDUhfbJcBBWyg4mAfQ1nU_wSd6OMvdTH6SzkUjNg@mail.gmail.com>
-	<20130708155747.GG29556@pengutronix.de>
-Date: Mon, 8 Jul 2013 22:18:08 +0530
-Message-ID: <CAKohpokT3M5TNhzGxCwHZoFU69VkFutQ-KBCf5Xh5Vfwb+trzg@mail.gmail.com>
-Subject: Re: [PATCH V5 0/5] Queue work on power efficient wq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: tj@kernel.org, davem@davemloft.net, airlied@redhat.com, axboe@kernel.dk,
-        tglx@linutronix.de, peterz@infradead.org, mingo@redhat.com,
-        rostedt@goodmis.org, linux-rt-users@vger.kernel.org,
-        linux-kernel@vger.kernel.org, robin.randhawa@arm.com,
-        Steve.Bannister@arm.com, Livi@jasper.es
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1307081115350.2281@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 July 2013 21:27, Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> On Mon, Jul 08, 2013 at 09:17:01PM +0530, Viresh Kumar wrote:
+On Mon, Jul 08, 2013 at 11:24:18AM -0400, Vince Weaver wrote:
+> 
+> I guess I should have been noisier about this at the time.
+> 
+> Linux 3.9 came with commit
+>    e259514eef764a5286873618e34c560ecb6cff13
+> that enabled AMD fam15h Northbridge support, by exposing the events as 
+> part of the core CPU.
+> 
+> Then Linux 3.10 changed this with
+>    c43ca5091a374c1f6778bd7e4a39a5a10735a917
+> and split them out as a separate PMU.
+> 
+> This of course breaks libpfm4 and thus PAPI
 
->> Well, big LITTLE still runs an SMP kernel :) and so has this flag set.
-> The 'S' is justified because cpu0 and cpu1 are of the same type? Are
-> there b.L systems that have only one big and one LITTLE cpu? Do these
-> use SMP, too?
+Urgh, so the 3.9 patches should never have been merged and sunk in while I was
+doing my vegetable imitation.
 
-Following definition of SMP says:
-http://en.wikipedia.org/wiki/Symmetric_Multiprocessor
+Stephane agreed with the change in 3.10; and I suppose he overlooked the fact
+that people were already using it :/ I specifically asked if there were already
+users as that would indeed require some form of backwards compatibility --
+however annoying.
 
-A system is SMP when:
-- It has same type of cores
-- controlled by a single instance of OS.
+But to answer your question, no we should not blindly break stuff like this --
+but yeah it would have been ever so much more useful for people to report this
+before we ship a release.
 
-In big LITTLE first one is obviously not completely true as you pointed out.
-But second one is and so I would say its an SMP system :)
+Stephane; do you see a sane way to bridge this now?
 
-Don't know how it should be called though.
-
->> You can make it dependent on that if required.
-> Well, it's not required. It's just that the corresponding question in
-> make oldconfig isn't really an enrichment for a kernel targeting an
-> Cortex M3 :-)
-
-Just to make it clear enough, you are saying it doesn't make any
-sense to enable it for M3? But because it is disabled by default,
-the problem is not seen?
-
-Why? Can't we have two M3's on a SoC and run an SMP kernel over
-it?
-
---
-viresh
