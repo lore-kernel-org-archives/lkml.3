@@ -1,155 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab3GHKLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 06:11:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab3GHKLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 06:11:51 -0400
-Date: Mon, 8 Jul 2013 13:12:59 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: netdev@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Amos Kong <akong@redhat.com>, Dave Jones <davej@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] virtio-net: put virtio net header inline with data
-Message-ID: <20130708101259.GA16074@redhat.com>
+	id S1751623Ab3GHKmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 06:42:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:34609 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751213Ab3GHKmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 06:42:12 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1019,1363104000"; 
+   d="scan'208";a="7819853"
+Message-ID: <51DA96BC.1060701@cn.fujitsu.com>
+Date: Mon, 08 Jul 2013 18:38:52 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Benjamin LaHaise <bcrl@kvack.org>, Al Viro <viro@zeniv.linux.org.uk>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: [PATCH 0/2] Add support to aio ring pages migration
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/08 18:40:33,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/08 18:40:33,
+	Serialize complete at 2013/07/08 18:40:33
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For small packets we can simplify xmit processing
-by linearizing buffers with the header:
-most packets seem to have enough head room
-we can use for this purpose.
-Since existing hypervisors require that header
-is the first s/g element, we need a feature bit
-for this.
+Currently aio ring pages use get_user_pages() to allocate pages from movable
+zone,as discussed in thread https://lkml.org/lkml/2012/11/29/69, it is easy to
+pin user pages for a long time, which is fatal for memory hotplug/remove framework.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+As Mel Gorman suggested, "Implement a callback for migration to unpin pages,
+barrier operations until migration completes and pin the new pfns" can soloved
+this issue. And the best palce to hold the callbacks is address space operations
+which can be found via page->mapping.
 
-Note: this needs to be applied on top of patch
-defining VIRTIO_F_ANY_LAYOUT - bit to be
-selected by Rusty.
+But the current aio ring pages are anonymous pages, they don't have
+address_space_operations, so we use an anon inode file as the aio ring file to
+manage the aio ring pages, so that we can implement the callback and register it
+to page->mmapping->a_ops->migratepage.
 
-The following patch should work for any definition of
-VIRTIO_F_ANY_LAYOUT - I used bit 31 for testing.
-Rusty, could you please pick a valid bit for VIRTIO_F_ANY_LAYOUT
-and squeeze this patch into 3.11?
+But there's a ploblem that all files created by anon_inode_getfile() share the
+same inode, so mutil aio context will share the same aio ring pages, it'll lead
+to io events chaos. In order to solve this issus, we introduce a new fucntion
+anon_inode_getfile_private() which is samilar to anon_inode_getfile(), but each
+new file has its own anon inode.
 
- drivers/net/virtio_net.c        | 42 +++++++++++++++++++++++++++++++++--------
- include/uapi/linux/virtio_net.h |  4 +++-
- 2 files changed, 37 insertions(+), 9 deletions(-)
+This work is based on Benjamin's patch,
+http://www.spinics.net/lists/linux-fsdevel/msg66014.html
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index c9e0038..5305bd1 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -106,6 +106,9 @@ struct virtnet_info {
- 	/* Has control virtqueue */
- 	bool has_cvq;
- 
-+	/* Host can handle any s/g split between our header and packet data */
-+	bool any_header_sg;
-+
- 	/* enable config space updates */
- 	bool config_enable;
- 
-@@ -668,12 +671,28 @@ static void free_old_xmit_skbs(struct send_queue *sq)
- 
- static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
- {
--	struct skb_vnet_hdr *hdr = skb_vnet_hdr(skb);
-+	struct skb_vnet_hdr *hdr;
- 	const unsigned char *dest = ((struct ethhdr *)skb->data)->h_dest;
- 	struct virtnet_info *vi = sq->vq->vdev->priv;
- 	unsigned num_sg;
-+	unsigned hdr_len;
-+	bool can_push;
- 
- 	pr_debug("%s: xmit %p %pM\n", vi->dev->name, skb, dest);
-+	if (vi->mergeable_rx_bufs)
-+		hdr_len = sizeof hdr->mhdr;
-+	else
-+		hdr_len = sizeof hdr->hdr;
-+
-+	can_push = vi->any_header_sg &&
-+		!((unsigned long)skb->data & (__alignof__(*hdr) - 1)) &&
-+		!skb_header_cloned(skb) && skb_headroom(skb) >= hdr_len;
-+	/* Even if we can, don't push here yet as this would skew
-+	 * csum_start offset below. */
-+	if (can_push)
-+		hdr = (struct skb_vnet_hdr *)(skb->data - hdr_len);
-+	else
-+		hdr = skb_vnet_hdr(skb);
- 
- 	if (skb->ip_summed == CHECKSUM_PARTIAL) {
- 		hdr->hdr.flags = VIRTIO_NET_HDR_F_NEEDS_CSUM;
-@@ -702,15 +721,18 @@ static int xmit_skb(struct send_queue *sq, struct sk_buff *skb)
- 		hdr->hdr.gso_size = hdr->hdr.hdr_len = 0;
- 	}
- 
--	hdr->mhdr.num_buffers = 0;
--
--	/* Encode metadata header at front. */
- 	if (vi->mergeable_rx_bufs)
--		sg_set_buf(sq->sg, &hdr->mhdr, sizeof hdr->mhdr);
--	else
--		sg_set_buf(sq->sg, &hdr->hdr, sizeof hdr->hdr);
-+		hdr->mhdr.num_buffers = 0;
- 
--	num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
-+	if (can_push) {
-+		__skb_push(skb, hdr_len);
-+		num_sg = skb_to_sgvec(skb, sq->sg, 0, skb->len);
-+		/* Pull header back to avoid skew in tx bytes calculations. */
-+		__skb_pull(skb, hdr_len);
-+	} else {
-+		sg_set_buf(sq->sg, hdr, hdr_len);
-+		num_sg = skb_to_sgvec(skb, sq->sg + 1, 0, skb->len) + 1;
-+	}
- 	return virtqueue_add_outbuf(sq->vq, sq->sg, num_sg, skb, GFP_ATOMIC);
- }
- 
-@@ -1554,6 +1576,9 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
- 		vi->mergeable_rx_bufs = true;
- 
-+	if (virtio_has_feature(vdev, VIRTIO_F_ANY_LAYOUT))
-+		vi->any_header_sg = true;
-+
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
- 		vi->has_cvq = true;
- 
-@@ -1729,6 +1754,7 @@ static unsigned int features[] = {
- 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
- 	VIRTIO_NET_F_GUEST_ANNOUNCE, VIRTIO_NET_F_MQ,
- 	VIRTIO_NET_F_CTRL_MAC_ADDR,
-+	VIRTIO_F_ANY_LAYOUT,
- };
- 
- static struct virtio_driver virtio_net_driver = {
-diff --git a/include/uapi/linux/virtio_net.h b/include/uapi/linux/virtio_net.h
-index c520203..bd1993b 100644
---- a/include/uapi/linux/virtio_net.h
-+++ b/include/uapi/linux/virtio_net.h
-@@ -70,7 +70,9 @@ struct virtio_net_config {
- 	__u16 max_virtqueue_pairs;
- } __attribute__((packed));
- 
--/* This is the first element of the scatter-gather list.  If you don't
-+/* This header comes first in the scatter-gather list.
-+ * If VIRTIO_F_ANY_LAYOUT is not negotiated, it must
-+ * be the first element of the scatter-gather list.  If you don't
-  * specify GSO or CSUM features, you can simply ignore the header. */
- struct virtio_net_hdr {
- #define VIRTIO_NET_HDR_F_NEEDS_CSUM	1	// Use csum_start, csum_offset
+Gu Zheng (2):
+  fs/anon_inode: Introduce a new lib function
+    anon_inode_getfile_private()
+  fs/aio: Add support to aio ring pages migration
+
+ fs/aio.c                    |  120 +++++++++++++++++++++++++++++++++++++++----
+ fs/anon_inodes.c            |   66 +++++++++++++++++++++++
+ include/linux/anon_inodes.h |    3 +
+ include/linux/migrate.h     |    3 +
+ mm/migrate.c                |    2 +-
+ 5 files changed, 182 insertions(+), 12 deletions(-)
+
 -- 
-MST
+1.7.7
+
