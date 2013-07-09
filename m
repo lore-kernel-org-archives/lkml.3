@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab3GIC3J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 22:29:09 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:52575 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab3GIC3G convert rfc822-to-8bit (ORCPT
+	id S1752660Ab3GICa4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 22:30:56 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:60173 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab3GICay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 22:29:06 -0400
-Date: Mon, 08 Jul 2013 21:29:00 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [GIT] Networking
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20130707.132133.1335860703202153192.davem@davemloft.net>
-	<CA+55aFzgBXwye=ebPmEDN_6yqdKA6ZaD9hSUzbFjSacC_v3y5g@mail.gmail.com>
-In-Reply-To: <CA+55aFzgBXwye=ebPmEDN_6yqdKA6ZaD9hSUzbFjSacC_v3y5g@mail.gmail.com>
-	(from torvalds@linux-foundation.org on Sun Jul  7 16:27:54 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1373336940.27613.24@driftwood>
+	Mon, 8 Jul 2013 22:30:54 -0400
+Message-ID: <51DB75D4.6050302@linux.vnet.ibm.com>
+Date: Tue, 09 Jul 2013 10:30:44 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Alex Shi <alex.shi@intel.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH] sched: smart wake-affine
+References: <51D29EE5.8080307@linux.vnet.ibm.com> <20130704091339.GK18898@dyad.programming.kicks-ass.net> <51D5428D.7080805@linux.vnet.ibm.com> <1372934013.9046.16.camel@marge.simpson.net> <51D633DB.5010508@linux.vnet.ibm.com> <1372997318.7315.23.camel@marge.simpson.net> <51D64C84.5080100@linux.vnet.ibm.com> <1373002865.8318.11.camel@marge.simpson.net> <51D664B9.7010407@linux.vnet.ibm.com> <1373179405.19316.41.camel@marge.simpson.net> <20130708082106.GW23916@twins.programming.kicks-ass.net> <1373309998.1744.3.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1373309998.1744.3.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070902-2000-0000-0000-00000CCE9CE5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2013 04:27:54 PM, Linus Torvalds wrote:
-> And dammit, I'd expect the VFS people to be
-> cc'd on changes to the VFS layer functions. I wasn't, Al wasn't.
+Hi, Davidlohr
 
-Um, does that mean I should have cc'd you on the initmpfs patch series
-back before the merge window opened?
+Thanks for the testing :)
 
-   http://lkml.indiana.edu/hypermail/linux/kernel/1306.3/04204.html
+On 07/09/2013 02:59 AM, Davidlohr Bueso wrote:
+[snip]
+>>
+>> OK, I'll apply the patches, we'll see what happens. If there significant
+>> fallout we'll immediately have more information anyway ;-)
+> 
+> So I gave the v2 a spin on my aim7 benchmark on an 80-core 8 socket
+> DL980. Not much changed, most numbers are in the noise range, however,
+> with HT off, the high_systime workload suffered in throughput with this
+> patch with higher concurrency (after 600 users). Image attached.
 
-(I cc'd the scripts/get_maintainer.pl list, but only one person replied
-this time around. I got more on the initial RFC submission back in
-https://lwn.net/Articles/545740/)
+To make sure I'm not on the wrong way... HT here means hyperthreading,
+correct?
 
-Rob
+I have some questions like:
+1. how do you disable the hyperthreading? by manual or some other way?
+2. is the 3.10-rc5 in image also disabled the hyperthreading?
+3. is the v3 patch set show the same issue?
+
+Regards,
+Michael Wang
+
+> 
+> Thanks,
+> Davidlohr
+> 
+
