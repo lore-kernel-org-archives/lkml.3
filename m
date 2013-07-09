@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab3GIOjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:39:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56804 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753869Ab3GIOjj (ORCPT
+	id S1754059Ab3GIOk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:40:29 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35121 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753879Ab3GIOk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:39:39 -0400
+	Tue, 9 Jul 2013 10:40:27 -0400
+Message-ID: <51DC20DA.7050802@wwwdotorg.org>
+Date: Tue, 09 Jul 2013 08:40:26 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <s5hfvvng8py.wl%tiwai@suse.de>
-References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
-	<20130706221401.GA3652@redhat.com>
-	<20130706223003.GA10697@kroah.com>
-	<s5h4nc5bewf.wl%tiwai@suse.de>
-	<CACVXFVN452nktR=JTTubnYwVkcDdoued0VysT1vA+2jHU1A3Gw@mail.gmail.com>
-	<s5hmwpwuwjp.wl%tiwai@suse.de>
-	<CACVXFVNx7SA3rM46q4=7+7QU==EL3ukAeWcaBYruykfE6JPe8w@mail.gmail.com>
-	<s5hfvvng8py.wl%tiwai@suse.de>
-Date: Tue, 9 Jul 2013 22:39:36 +0800
-Message-ID: <CACVXFVN-Qt8PP1YspX_M8H1W_-9Q-f8u1xPKcsqSWsqZqkhVyw@mail.gmail.com>
-Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rob Herring <robherring2@gmail.com>
+CC: Huang Shijie <b32955@freescale.com>, Sascha Hauer <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] of: match the compatible in the order set by the dts
+ file
+References: <1373013818-11365-1-git-send-email-b32955@freescale.com> <20130709070541.GQ516@pengutronix.de> <51DBBFDA.70302@freescale.com> <20130709075124.GR516@pengutronix.de> <51DBC58D.90002@freescale.com> <CAL_JsqL4ABJCQXveSAMZKOiHwJi=w8zFYjg3DV7kqEEcCXQJcw@mail.gmail.com>
+In-Reply-To: <CAL_JsqL4ABJCQXveSAMZKOiHwJi=w8zFYjg3DV7kqEEcCXQJcw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 9, 2013 at 9:32 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 9 Jul 2013 16:43:30 +0800,
->> Actually from view of distribution, dell rbu has to be compiled in, then
->> no code size can be saved any more, which means looks the introduced
->> option in this patch isn't necessary.
->
-> Well, but it means that there is no way not to compile user-helper
-> mode code in firmware_class.c.  In other words, in which condition,
-> request_firmware_user() will be compiled?
+On 07/09/2013 06:03 AM, Rob Herring wrote:
+> On Tue, Jul 9, 2013 at 3:10 AM, Huang Shijie <b32955@freescale.com> wrote:
+>> 于 2013年07月09日 15:51, Sascha Hauer 写道:
+>>
+>>> On Tue, Jul 09, 2013 at 03:46:34PM +0800, Huang Shijie wrote:
+>>>>
+>>>> 于 2013年07月09日 15:05, Sascha Hauer 写道:
+>>>>>
+>>>>> Why don't you set the matching order in the driver the way you want it
+>>>>> to be, i.e.:
+>>>>>
+>>>>>         { .compatible = "fsl,imx6q-uart", ... },
+>>>>>         { .compatible = "fsl,imx21-uart", ... },
+>>>>>         { .compatible = "fsl,imx1-uart", ... },
+>>>>>
+>>>> yes. i can set it like this.
+>>>>
+>>>> but this method looks like a ugly workaround.
+>>>
+>>> If a driver has different ways of supporting a single device, then
+>>> putting the preferred or most feature rich on top doesn't look very ugly
+>>> to me.
+>>
+>> this method makes it much _coupled_ between the driver and the dts file.
+>>
+>> IMHO, it's an unnecessary _burden_ to the driver programmer:
+>>    he should puts the most feature compatible on the top.
+>>
+>> it's much graceful if we let the driver programmer be transparent about
+>> this.
+> 
+> The dts requires compatible strings to be most specific to least
+> specific. There is no reason that driver match tables should not be
+> the same and that is the assumption. Matching is not just based on
+> compatible properties and your patch does not handle the other cases.
 
-It can be always compiled in. Basically dell rbu is always enabled in
-distributions, which means the user helper code has to be compiled in.
-
-Thanks,
---
-Ming Lei
+Well, that may be true, but the only way to guarantee that the DT
+compatible property is matched correctly is to match it in the order
+it's written. Forcing driver writers to write the of_match table in a
+particular order is quite a hack, and doesn't guarantee the correct
+match order in all cases, only typical cases.
