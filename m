@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab3GIRNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:13:10 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45397 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751644Ab3GIRNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:13:05 -0400
-Message-ID: <1373389983.14604.18.camel@joe-AO722>
-Subject: ia64: dmi.h: Make dmi_alloc use kzalloc
-From: Joe Perches <joe@perches.com>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64 <linux-ia64@vger.kernel.org>
-Date: Tue, 09 Jul 2013 10:13:03 -0700
-In-Reply-To: <1373386794.14604.14.camel@joe-AO722>
-References: <1373384438.4391.6.camel@chaos.site>
-	 <1373384574.4391.9.camel@chaos.site> <1373386794.14604.14.camel@joe-AO722>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752141Ab3GIRND (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:13:03 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:58645 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3GIRNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 13:13:00 -0400
+Message-ID: <51DC4497.6060107@openvz.org>
+Date: Tue, 09 Jul 2013 21:12:55 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org
+Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
+References: <20130708100046.14417.12932.stgit@zurg> <20130709153907.GA17972@thunk.org>
+In-Reply-To: <20130709153907.GA17972@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86/ia64 have a slight mismatch in dmi_alloc as
-x86 does a memset(0), and ia64 just does kmalloc.
+Theodore Ts'o wrote:
+> Another major problem with this concept is that it lumps all I/O's
+> into a single cgroup.  So I/O's from pseudo filesystems (such as
+> reading from /sys/kernel/debug/tracing/trace_pipe), networked file
+> systems such as NFS, and I/O to various different block devices all
+> get counted in a single per-cgroup limit.
+>
+> This doesn't seem terribly useful to me.  Network resources and block
+> resources are quite different, and counting pseudo file systems and
+> ram disks makes no sense at all.
 
-Make the ia64 dmi_alloc match the x86 style.
+Yep, I know it. I've already mentioned about this as first planned improvement:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/ia64/include/asm/dmi.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+|* Split bdi into several tiers and account them separately. For example:
+|  hdd/ssd/usb/nfs. In complicated containerized environments that might be
+|  different kinds of storages with different limits and billing. This is more
+|  usefull that independent per-disk accounting and much easier to implement
+|  because all per-tier structures are allocated before disk appearance.
 
-diff --git a/arch/ia64/include/asm/dmi.h b/arch/ia64/include/asm/dmi.h
-index 1ed4c8f..185d3d1 100644
---- a/arch/ia64/include/asm/dmi.h
-+++ b/arch/ia64/include/asm/dmi.h
-@@ -7,6 +7,6 @@
- /* Use normal IO mappings for DMI */
- #define dmi_ioremap ioremap
- #define dmi_iounmap(x,l) iounmap(x)
--#define dmi_alloc(l) kmalloc(l, GFP_ATOMIC)
-+#define dmi_alloc(l) kzalloc(l, GFP_ATOMIC)
- 
- #endif
+Accounting each BDI separately doesn't very useful too, so I've chosen
+something in the middle.
 
+>
+> Regards,
+>
+> 					- Ted
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
 
