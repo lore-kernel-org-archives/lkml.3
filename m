@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753673Ab3GIKEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 06:04:35 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:51129 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601Ab3GIKE2 (ORCPT
+	id S1753586Ab3GIKE0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 06:04:26 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52223 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948Ab3GIKEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 06:04:28 -0400
+	Tue, 9 Jul 2013 06:04:22 -0400
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH v3 3/5] perf: squelch warnings from perl.h to compile-pass
-Date: Tue,  9 Jul 2013 15:30:31 +0530
-Message-Id: <1373364033-7918-4-git-send-email-artagnon@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Michael Witten <mfwitten@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH v3 1/5] perf/Makefile: do not open-code shell-sq
+Date: Tue,  9 Jul 2013 15:30:29 +0530
+Message-Id: <1373364033-7918-2-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.8.3.2.736.g869de25
 In-Reply-To: <1373364033-7918-1-git-send-email-artagnon@gmail.com>
 References: <1373364033-7918-1-git-send-email-artagnon@gmail.com>
@@ -21,43 +21,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, a simple
+d24e473e (perf_counter: copy in Git's top Makefile, 2009-04-20) started
+by determining *_SQ variables (shell-quoted equivalents) by calling
+subst by hand, with the rationale that $(call) must be avoided to
+accommodate ancient setups.  That reasoning does not hold true anymore,
+as our Makefiles are filled with $(call) invocations now.  So, use the
+shell-sq function introduced in ced465c4 (perf tools: Makefile:
+PYTHON{,_CONFIG} to bandage Python 3 incompatibility, 2011-04-02) in
+place of open-coding.
 
-  $ make
-
-errors out because we compile with -Werror by default, turning all
-warnings into errors.  Although no warnings are emitted by our code
-itself, two kinds of warnings are emitted by perl.h (perl 5.18.0):
-
-  -Wundef and -Wswitch-default
-
-Use #pragma statements to squelch exactly those warnings, making perf
-compile-pass.
-
-Helped-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Michael Witten <mfwitten@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- tools/perf/util/perl.h | 10 ++++++++++
- 1 file changed, 10 insertions(+)
- create mode 100644 tools/perf/util/perl.h
+ tools/perf/Makefile        |  2 +-
+ tools/perf/config/Makefile | 23 +++++++++++------------
+ 2 files changed, 12 insertions(+), 13 deletions(-)
 
-diff --git a/tools/perf/util/perl.h b/tools/perf/util/perl.h
-new file mode 100644
-index 0000000..862d08d
---- /dev/null
-+++ b/tools/perf/util/perl.h
-@@ -0,0 +1,10 @@
-+#ifndef __PERF_PERL_H
-+#define __PERF_PERL_H
-+
-+#pragma GCC diagnostic ignored "-Wundef"
-+#pragma GCC diagnostic ignored "-Wswitch-default"
-+#include_next <perl.h>
-+#pragma GCC diagnostic error "-Wundef"
-+#pragma GCC diagnostic error "-Wswitch-default"
-+
-+#endif
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 203cb0e..ace1784 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -731,7 +731,7 @@ cscope:
+ 	$(FIND) . -name '*.[hcS]' -print | xargs cscope -b
+ 
+ ### Detect prefix changes
+-TRACK_CFLAGS = $(subst ','\'',$(CFLAGS)):\
++TRACK_CFLAGS = $(call escape-for-shell-sq,$(CFLAGS)):\
+              $(bindir_SQ):$(perfexecdir_SQ):$(template_dir_SQ):$(prefix_SQ)
+ 
+ $(OUTPUT)PERF-CFLAGS: .FORCE-PERF-CFLAGS
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index f139dcd..3025d87 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -457,21 +457,20 @@ ETC_PERFCONFIG = etc/perfconfig
+ endif
+ lib = lib
+ 
+-# Shell quote (do not use $(call) to accommodate ancient setups);
+-ETC_PERFCONFIG_SQ = $(subst ','\'',$(ETC_PERFCONFIG))
+-DESTDIR_SQ = $(subst ','\'',$(DESTDIR))
+-bindir_SQ = $(subst ','\'',$(bindir))
+-mandir_SQ = $(subst ','\'',$(mandir))
+-infodir_SQ = $(subst ','\'',$(infodir))
+-perfexecdir_SQ = $(subst ','\'',$(perfexecdir))
+-template_dir_SQ = $(subst ','\'',$(template_dir))
+-htmldir_SQ = $(subst ','\'',$(htmldir))
+-prefix_SQ = $(subst ','\'',$(prefix))
+-sysconfdir_SQ = $(subst ','\'',$(sysconfdir))
++ETC_PERFCONFIG_SQ = $(call shell-sq,$(ETC_PERFCONFIG))
++DESTDIR_SQ = $(call shell-sq,$(DESTDIR))
++bindir_SQ = $(call shell-sq,$(bindir))
++mandir_SQ = $(call shell-sq,$(mandir))
++infodir_SQ = $(call shell-sq,$(infodir))
++perfexecdir_SQ = $(call shell-sq,$(perfexecdir))
++template_dir_SQ = $(call shell-sq,$(template_dir))
++htmldir_SQ = $(call shell-sq,$(htmldir))
++prefix_SQ = $(call shell-sq,$(prefix))
++sysconfdir_SQ = $(call shell-sq,$(sysconfdir))
+ 
+ ifneq ($(filter /%,$(firstword $(perfexecdir))),)
+ perfexec_instdir = $(perfexecdir)
+ else
+ perfexec_instdir = $(prefix)/$(perfexecdir)
+ endif
+-perfexec_instdir_SQ = $(subst ','\'',$(perfexec_instdir))
++perfexec_instdir_SQ = $(call shell-sq,$(perfexec_instdir))
 -- 
 1.8.3.2.736.g869de25
 
