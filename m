@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751950Ab3GIEM0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 00:12:26 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:39247 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750709Ab3GIEMY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 00:12:24 -0400
-X-Sasl-enc: VzzO1D0po3/fuP+79HIwDJSrhF99UFGZAzo2axnFOhQy 1373343143
-Date: Mon, 8 Jul 2013 21:13:21 -0700
-From: Greg KH <greg@kroah.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>, joe.lawrence@stratus.com,
-        myron.stowe@redhat.com, bhelgaas@google.com
-Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
-Message-ID: <20130709041321.GA30555@kroah.com>
-References: <20130709012611.GA22371@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130709012611.GA22371@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752687Ab3GIEMw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 00:12:52 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60626 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752113Ab3GIEM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 00:12:29 -0400
+Message-ID: <1373343147.9458.25.camel@joe-AO722>
+Subject: Re: [PATCH] lib: One less subtraction in binary search iterations.
+From: Joe Perches <joe@perches.com>
+To: Wedson Almeida Filho <wedsonaf@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 08 Jul 2013 21:12:27 -0700
+In-Reply-To: <CANeycqqGYKs+Q+_6zpjfdQ+y-QBZLD+jGdU9-YJi9XaYXyCv-w@mail.gmail.com>
+References: <1373152062-28164-1-git-send-email-wedsonaf@gmail.com>
+	 <1373173169.1943.1.camel@joe-AO722>
+	 <CANeycqqGYKs+Q+_6zpjfdQ+y-QBZLD+jGdU9-YJi9XaYXyCv-w@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 03:26:11AM +0200, Pavel Machek wrote:
-> Hi!
+On Mon, 2013-07-08 at 20:51 -0700, Wedson Almeida Filho wrote:
+> On Sat, Jul 6, 2013 at 9:59 PM, Joe Perches <joe@perches.com> wrote:
+> >
+> > Not correct.
+> >
+> >>       while (start < end) {
+> >> -             size_t mid = start + (end - start) / 2;
+> >> +             size_t mid = (start + end) / 2;
+> >
+> >         size_t start = 0x80000000;
+> >         size_t end   = 0x80000001;
 > 
-> My thinkpad has rather high ping latencies... and perhaps it is due to
-> PCIE ASPM.
+> Good point, they aren't equivalent in all cases.
+> 
+> For the overflow to happen though, we need an array with at least
+> N/2+1 entries, where N is the address space size. The array wouldn't
+> fit in addressable memory if the element size is greater than 1, so
+> this can only really happen when the element size is 1. Even then, it
+> would require the kernel range to be greater than half of all
+> addressable memory, and allow an allocation taking that much memory. I
+> don't know all architectures where linux runs, but I don't think such
+> configuration is likely to exist.
 
-Why would that be the problem?  The odds that the PCIE bus is the issue
-seems strange to me.
+Nor do I but that wasn't what you wrote.
 
-greg k-h
+> There is no functional change, but this change eliminates a subtraction that
+> the compiler doesn't optimize out (as of gcc 4.7.3).
+
+That's flatly incorrect.
+
+I don't mind if you change it, for just the reason
+you wrote, but you still have to now say under what
+conditions the test works and when it doesn't.
+
+
