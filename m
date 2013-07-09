@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab3GIO1F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:27:05 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44693 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803Ab3GIO1B (ORCPT
+	id S1753951Ab3GIO0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:26:05 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:35333 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803Ab3GIO0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:27:01 -0400
-Message-ID: <51DC1DB4.3050802@wwwdotorg.org>
-Date: Tue, 09 Jul 2013 08:27:00 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Huang Shijie <b32955@freescale.com>, grant.likely@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] of: match the compatible in the order set by the dts
- file
-References: <1373013818-11365-1-git-send-email-b32955@freescale.com> <20130709070541.GQ516@pengutronix.de>
-In-Reply-To: <20130709070541.GQ516@pengutronix.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Jul 2013 10:26:00 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH v4 2/7] Documentation: DT: add sam9x5ek-wm8731 machine driver
+Date: Tue,  9 Jul 2013 16:25:28 +0200
+Message-Id: <1373379933-32749-3-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1373379933-32749-1-git-send-email-richard.genoud@gmail.com>
+References: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com>
+ <1373379933-32749-1-git-send-email-richard.genoud@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 01:05 AM, Sascha Hauer wrote:
-> On Fri, Jul 05, 2013 at 04:43:38PM +0800, Huang Shijie wrote:
->> If we set the uart compatible in the dts file like this:
->>    ------------------------------------------------------
->>     compatible = "fsl,imx6q-uart", "fsl,imx21-uart";
->>    ------------------------------------------------------
->>
->> and we set the uart compatible in the uart driver like this:
->>    ------------------------------------------------------
->> 	{ .compatible = "fsl,imx1-uart", ... },
->> 	{ .compatible = "fsl,imx21-uart", ... },
->> 	{ .compatible = "fsl,imx6q-uart", ... },
->> 	{ /* sentinel */ }
->>    ------------------------------------------------------
->>
->> the current code will match the "fsl,imx21-uart" in the end.
->>
->> Of course, this is not what we want. We want it to match the "fsl,imx6q-uart".
->>
->> This patch rewrites the match code, and make it to check the compatible
->> in the order set by the DTS file.
-> 
-> Why don't you set the matching order in the driver the way you want it
-> to be, i.e.:
-> 
-> 	{ .compatible = "fsl,imx6q-uart", ... },
-> 	{ .compatible = "fsl,imx21-uart", ... },
-> 	{ .compatible = "fsl,imx1-uart", ... },
+This add the sound DT binding for sam9x5ek-wm8731 machine driver
 
-DT semantics are that earlier entries in the compatible property are
-supposed to be matched first, irrespective of how the driver is constructed.
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+---
+ .../bindings/sound/atmel-sam9x5-wm8731-audio.txt   |   30 ++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt
+
+diff --git a/Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt b/Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt
+new file mode 100644
+index 0000000..fd03dfd
+--- /dev/null
++++ b/Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt
+@@ -0,0 +1,30 @@
++* Atmel at91sam9x5ek wm8731 audio complex
++
++Required properties:
++  - compatible: "atmel,at91sam9x5ek-wm8731-audio"
++  - atmel,model: The user-visible name of this sound complex.
++  - atmel,audio-routing: A list of the connections between audio components.
++  - atmel,ssc-controller: The phandle of the SSC controller
++  - atmel,audio-codec: The phandle of the WM8731 audio codec
++  - atmel,format: DAI format. Must be "i2s"
++  - atmel,bitclock-master:  DAI clock master
++  - atmel,frame-master: DAI frame master
++
++Example:
++sound {
++	compatible = "atmel,sam9x5-wm8731-audio";
++
++	atmel,model = "wm8731 @ AT91SAM9X5EK";
++
++	atmel,audio-routing =
++		"Headphone Jack", "RHPOUT",
++		"Headphone Jack", "LHPOUT",
++		"LLINEIN", "Line In Jack",
++		"RLINEIN", "Line In Jack";
++
++	atmel,ssc-controller = <&ssc0>;
++	atmel,audio-codec = <&wm8731>;
++	atmel,format = "i2s";
++	atmel,bitclock-master;
++	atmel,frame-master;
++};
+-- 
+1.7.10.4
 
