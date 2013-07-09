@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab3GIRcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:32:21 -0400
-Received: from mail-qe0-f73.google.com ([209.85.128.73]:57100 "EHLO
-	mail-qe0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab3GIRbp (ORCPT
+	id S1753438Ab3GIRdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:33:05 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:63186 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3GIRc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:31:45 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Olof Johansson <olof@lixom.net>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] mmc: dw_mmc: Always setup the bus after suspend/resume
-Date: Tue,  9 Jul 2013 10:31:10 -0700
-Message-Id: <1373391071-6312-5-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1373391071-6312-1-git-send-email-dianders@chromium.org>
-References: <1373391071-6312-1-git-send-email-dianders@chromium.org>
+	Tue, 9 Jul 2013 13:32:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <1373336940.27613.24@driftwood>
+References: <20130707.132133.1335860703202153192.davem@davemloft.net>
+	<CA+55aFzgBXwye=ebPmEDN_6yqdKA6ZaD9hSUzbFjSacC_v3y5g@mail.gmail.com>
+	<1373336940.27613.24@driftwood>
+Date: Tue, 9 Jul 2013 10:32:56 -0700
+X-Google-Sender-Auth: 97C4Bjufsu0-48GOeuAHwl6i-r8
+Message-ID: <CA+55aFxbipsZFC2iQsVchstOP_7mR48sUbo96LEJ4kxtZWQDKQ@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rob Landley <rob@landley.net>
+Cc: David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After suspend/resume all of the dw_mmc registers are reset to
-defaults.  We restore most of them, but specifically don't setup the
-clock registers after resume unless we've got a powered card.  Things
-still work because the core will eventually call set_ios() and we'll
-set things up.
+On Mon, Jul 8, 2013 at 7:29 PM, Rob Landley <rob@landley.net> wrote:
+>
+> Um, does that mean I should have cc'd you on the initmpfs patch series
+> back before the merge window opened?
 
-There doesn't seem to be any reason that I can see _not_ to set things
-up after resume.  Restoring this state makes the code easier to reason
-about and should help prevent bugs.  It also allows us to do a
-register dump before and after suspend/resume to confirm that we've
-set things up OK.
+So I personally don't tend to care about that kind of patch-series -
+it doesn't really add new features to basic code unlike the polling
+changes. But I suspect for something like that series, the people to
+cc are Al Viro and Hugh Dickins because they maintain vfs adn tmpfs
+respectively.. That said, I think neither really cares.deeply, and
+this looks like a "Andrew" patch-series if only because it's so random
+;)
 
-I examined the state of the dw_mmc instance before and after suspend
-after this patch.  I had no card inserted in an SD card slot.
-
-Before this patch, differences were:
-* CLKDIV (0x08)
-* CLKENA (0x10)
-* TMOUT (0x14)
-* CMD (0x2C) - difference is not important
-* CLKSEL (0x9C - exynos specific)
-
-After this patch, only TMOUT was different.  I have a separate patch
-for that.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/mmc/host/dw_mmc.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 2aaa93f..a0a07df 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2510,9 +2510,7 @@ int dw_mci_resume(struct dw_mci *host)
- 		struct dw_mci_slot *slot = host->slot[i];
- 		if (!slot)
- 			continue;
--		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
--			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
--		}
-+		dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
- 
- 		ret = mmc_resume_host(host->slot[i]->mmc);
- 		if (ret < 0)
--- 
-1.8.3
-
+           Linus
