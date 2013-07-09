@@ -1,86 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752971Ab3GIFp0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 01:45:26 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:14363 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab3GIFpX (ORCPT
+	id S1752897Ab3GIFuH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 01:50:07 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50534 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab3GIFuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 01:45:23 -0400
-Message-ID: <51DBA312.7090908@hp.com>
-Date: Tue, 09 Jul 2013 13:43:46 +0800
-From: ZhenHua <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
+	Tue, 9 Jul 2013 01:50:02 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
+Message-ID: <51DBA47C.8090708@jp.fujitsu.com>
+Date: Tue, 09 Jul 2013 14:49:48 +0900
+From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: Re: [PATCH 1/1] ia64/pci: set mmio decoding on for some host bridge
-References: <1373242613-4603-1-git-send-email-zhen-hual@hp.com> <CAErSpo6Kpw5VX5e5PUy8V4PdL6-rg14NdaXYOYHkAGm72GgHBg@mail.gmail.com>
-In-Reply-To: <CAErSpo6Kpw5VX5e5PUy8V4PdL6-rg14NdaXYOYHkAGm72GgHBg@mail.gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>, kexec@lists.infradead.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
+References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com> <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com> <51DA4ED9.60903@jp.fujitsu.com> <20130708112839.498ccfc6@holzheu> <20130708142826.GA9094@redhat.com>
+In-Reply-To: <20130708142826.GA9094@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-Thank you for reviewing this patch. I have created a new one and sent it 
-out.
-And your questions are answered in that new wmail.
-
-Regards
-ZhenHua
-
-On 07/09/2013 04:35 AM, Bjorn Helgaas wrote:
-> On Sun, Jul 7, 2013 at 6:16 PM, Li, Zhen-Hua <zhen-hual@hp.com> wrote:
->> On some IA64 platforms with intel PCI bridge, for example, HP BL890c i2
->> with  Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
->> when kernel tries to disable the mmio decoding on the PCI bridge devices,
->> kernel may crash.
+(2013/07/08 23:28), Vivek Goyal wrote:
+> On Mon, Jul 08, 2013 at 11:28:39AM +0200, Michael Holzheu wrote:
+>> On Mon, 08 Jul 2013 14:32:09 +0900
+>> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
 >>
->> And in the comment of function quirk_mmio_always_on, it also says:
->> "But doing so (disable the mmio decoding) may cause problems on host bridge
->>   and perhaps other key system devices"
+>>> (2013/07/02 4:32), Michael Holzheu wrote:
+>>>> For zfcpdump we can't map the HSA storage because it is only available
+>>>> via a read interface. Therefore, for the new vmcore mmap feature we have
+>>>> introduce a new mechanism to create mappings on demand.
+>>>>
+>>>> This patch introduces a new architecture function remap_oldmem_pfn_range()
+>>>> that should be used to create mappings with remap_pfn_range() for oldmem
+>>>> areas that can be directly mapped. For zfcpdump this is everything besides
+>>>> of the HSA memory. For the areas that are not mapped by remap_oldmem_pfn_range()
+>>>> a generic vmcore a new generic vmcore fault handler mmap_vmcore_fault()
+>>>> is called.
+>>>>
+>>>
+>>> This fault handler is only for s390 specific issue. Other architectures don't need
+>>> this for the time being.
+>>>
+>>> Also, from the same reason, I'm doing this review based on source code only.
+>>> I cannot run the fault handler on meaningful system, which is currently s390 only.
 >>
->> So, for these PCI bridges,  dev->mmio_always_on bit should be set to 1.
+>> You can test the code on other architectures if you do not map anything in advance.
+>> For example you could just "return 0" in remap_oldmem_pfn_range():
 >>
+>> /*
+>>   * Architectures may override this function to map oldmem
+>>   */
+>> int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
+>>                                    unsigned long from, unsigned long pfn,
+>>                                    unsigned long size, pgprot_t prot)
+>> {
+>>          return 0;
+>> }
 >>
->> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->> ---
->>   drivers/pci/quirks.c |   15 +++++++++++++++
->>   1 file changed, 15 insertions(+)
+>> In that case for all pages the new mechanism would be used.
 >>
->> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
->> index e85d230..24b8024 100644
->> --- a/drivers/pci/quirks.c
->> +++ b/drivers/pci/quirks.c
->> @@ -44,6 +44,21 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
->>   DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
->>                                  PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
+>>>
+>>> I'm also concerned about the fault handler covers a full range of vmcore, which
+>>> could hide some kind of mmap() bug that results in page fault.
+>>>
+>>> So, the fault handler should be enclosed by ifdef CONFIG_S390 for the time being.
 >>
->> +#ifdef CONFIG_IA64
->> +/*
->> + * On some IA64 platforms, for some intel PCI bridge devices, for example,
->> + * the Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
->> + * disable the mmio decoding on these devices may cause system crash.
->> + * So dev->mmio_always_on bit should be set to 1.
->> + */
->> +static void quirk_mmio_on_intel_pcibridge(struct pci_dev *dev)
->> +{
->> +       dev->mmio_always_on = 1;
->> +}
->> +DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
->> +                       PCI_CLASS_BRIDGE_PCI, 8, quirk_mmio_on_intel_pcibridge);
->> +#endif
-> The changelog and comment suggest an issue specific to Intel
-> 5520/5500/X58, but the patch sets mmio_always_on for *all* PCI
-> bridges.
+>> I personally do not like that, but if Vivek and you prefer this, of course we
+>> can do that.
+>>
+>> What about something like:
+>>
+>> #ifdef CONFIG_S390
+>> static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>> {
+>> ...
+>> }
+>> #else
+>> static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>> {
+>> 	BUG();
+>> }
+>> #endif
 >
-> It claims to be specific to ia64 (and is only compiled there), but the
-> chipset is also used for x86.  You need to explain why the problem
-> only affects ia64.
+> I personally perfer not to special case it for s390 only and let the
+> handler be generic.
 >
-> Bjorn
+> If there is a bug in remap_old_pfn_range(), only side affect is that
+> we will fault in the page when it is accessed and that will be slow. BUG()
+> sounds excessive. At max it could be WARN_ONCE().
+>
+> In regular cases for x86, this path should not even hit. So special casing
+> it to detect issues with remap_old_pfn_range() does not sound very good
+> to me. I would rather leave it as it is and if there are bugs and mmap()
+> slows down, then somebody needs to debug it.
+>
+
+I agree to WARN_ONCE(). Then, we can notice bug at least if it occurs.
+
+Interface is like this?
+
+[generic]
+
+bool __weak in_valid_fault_range(pgoff_t pgoff)
+{
+     return false;
+}
+
+[s390]
+
+bool in_valid_fault_range(pgoff_t pgoff)
+{
+     loff_t offset = pgoff << PAGE_CACHE_SHIFT;
+     u64 paddr = vmcore_offset_to_paddr(offset);
+
+     return paddr < ZFCPDUMP_HSA_SIZE;
+}
+
+assuming vmcore_offset_to_paddr() that looks up vmcore_list and returns physical
+address corresponding to given offset of vmcore. I guess this could return error
+value if there's no entry corresponding to given offset in vmcore_list.
+
+-- 
+Thanks.
+HATAYAMA, Daisuke
 
