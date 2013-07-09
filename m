@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3GIIWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:22:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49888 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab3GIIWg (ORCPT
+	id S1753891Ab3GIIWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:22:54 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:56995 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753572Ab3GIIWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:22:36 -0400
-Date: Tue, 9 Jul 2013 10:21:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: Re: [RFC PATCH] tracing/kprobe: Wait for disabling all running
- kprobe handlers
-Message-ID: <20130709082149.GK25631@dyad.programming.kicks-ass.net>
-References: <20130708142533.GA23749@redhat.com>
- <20130709080145.7975.83164.stgit@mhiramat-M0-7522>
- <20130709080744.GH25631@dyad.programming.kicks-ass.net>
- <51DBC7C1.9000601@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51DBC7C1.9000601@hitachi.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 9 Jul 2013 04:22:38 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rob Landley <rob@landley.net>
+Cc: linux-doc@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] Documentation: Fix references to defunct linux-net@vger.kernel.org
+Date: Tue,  9 Jul 2013 10:22:31 +0200
+Message-Id: <1373358151-26161-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 05:20:17PM +0900, Masami Hiramatsu wrote:
-> (2013/07/09 17:07), Peter Zijlstra wrote:
-> > On Tue, Jul 09, 2013 at 05:01:45PM +0900, Masami Hiramatsu wrote:
-> >> +	if (wait) {
-> >> +		/*
-> >> +		 * synchronize with kprobe_trace_func/kretprobe_trace_func
-> >> +		 * to ensure disabled (all running handlers are finished)
-> >> +		 */
-> >> +		synchronize_sched();
-> >> +		kfree(link);	/* Ignored if link == NULL */
-> >> +	}
-> > 
-> > What's not clear to me from this comment is if we're only waiting for kfree()?
-> > In that case shouldn't we use call_rcu() to free the thing? Or do we need the
-> > sync_sched() for other purposes as well?
-> 
-> No, this is not only for kfree, but also to ensure completing
-> disabling process, because trace_remove_event_call() supposes
-> that for releasing event_call related objects (Those objects
-> will be accessed in the handlers).
+linux-net@vger.kernel.org was replaced by netdev@oss.sgi.com was replaced
+by netdev@vger.kernel.org.
 
-Then may I kindly suggest you clarify this in the comment? :-)
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ Documentation/networking/arcnet.txt |    7 ++++---
+ Documentation/networking/vortex.txt |    2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/networking/arcnet.txt b/Documentation/networking/arcnet.txt
+index 9ff5795..aff97f4 100644
+--- a/Documentation/networking/arcnet.txt
++++ b/Documentation/networking/arcnet.txt
+@@ -70,9 +70,10 @@ list, mail to linux-arcnet@tichy.ch.uj.edu.pl.
+ There are archives of the mailing list at:
+ 	http://epistolary.org/mailman/listinfo.cgi/arcnet
+ 
+-The people on linux-net@vger.kernel.org have also been known to be very
+-helpful, especially when we're talking about ALPHA Linux kernels that may or
+-may not work right in the first place.
++The people on linux-net@vger.kernel.org (now defunct, replaced by
++netdev@vger.kernel.org) have also been known to be very helpful, especially
++when we're talking about ALPHA Linux kernels that may or may not work right
++in the first place.
+ 
+ 
+ Other Drivers and Info
+diff --git a/Documentation/networking/vortex.txt b/Documentation/networking/vortex.txt
+index b4038ff..9a8041d 100644
+--- a/Documentation/networking/vortex.txt
++++ b/Documentation/networking/vortex.txt
+@@ -359,7 +359,7 @@ steps you should take:
+ - OK, it's a driver problem.
+ 
+    You need to generate a report.  Typically this is an email to the
+-   maintainer and/or linux-net@vger.kernel.org.  The maintainer's
++   maintainer and/or netdev@vger.kernel.org.  The maintainer's
+    email address will be in the driver source or in the MAINTAINERS file.
+ 
+ - The contents of your report will vary a lot depending upon the
+-- 
+1.7.9.5
+
