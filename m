@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542Ab3GIC1J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 22:27:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47908 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab3GIC1H (ORCPT
+	id S1752638Ab3GIC3J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 22:29:09 -0400
+Received: from mail-yh0-f41.google.com ([209.85.213.41]:52575 "EHLO
+	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab3GIC3G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 22:27:07 -0400
-Date: Mon, 08 Jul 2013 19:27:06 -0700 (PDT)
-Message-Id: <20130708.192706.1245480344087449229.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: eliezer.tamir@linux.intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, akpm@linux-foundation.org, dwmw2@infradead.org,
-        eliezer@tamir.org.il
-Subject: Re: [PATCH net-next] net: rename low latency sockets functions to
- busy poll
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFwWAmHhYaPWVm7rsqiD9+RhDPpgVC1yWc0oNmP38bty4Q@mail.gmail.com>
-References: <CA+55aFxgrOtsv7vCtic97ehpvqyezCzDcyqHVD+821BiTuiRtw@mail.gmail.com>
-	<51DAF373.4040606@linux.intel.com>
-	<CA+55aFwWAmHhYaPWVm7rsqiD9+RhDPpgVC1yWc0oNmP38bty4Q@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Jul 2013 22:29:06 -0400
+Date: Mon, 08 Jul 2013 21:29:00 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: [GIT] Networking
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20130707.132133.1335860703202153192.davem@davemloft.net>
+	<CA+55aFzgBXwye=ebPmEDN_6yqdKA6ZaD9hSUzbFjSacC_v3y5g@mail.gmail.com>
+In-Reply-To: <CA+55aFzgBXwye=ebPmEDN_6yqdKA6ZaD9hSUzbFjSacC_v3y5g@mail.gmail.com>
+	(from torvalds@linux-foundation.org on Sun Jul  7 16:27:54 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1373336940.27613.24@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 8 Jul 2013 12:37:06 -0700
+On 07/07/2013 04:27:54 PM, Linus Torvalds wrote:
+> And dammit, I'd expect the VFS people to be
+> cc'd on changes to the VFS layer functions. I wasn't, Al wasn't.
 
-> I think it's getting closer, and I'm ok with the last final details
-> being sorted out later. I just can't reasonably test any of my
-> suggestions, so I'd like to get it to a point where when I pull, I
-> don't feel like I'm pulling core code that I really detest. And the
-> VFS layer in particular I'm pretty attached to.
+Um, does that mean I should have cc'd you on the initmpfs patch series
+back before the merge window opened?
 
-So I've applied Eliezer's rename patch and will send another pull
-request once he also takes care of the reduction of the number and
-size of the variables used to track the poll timestamps.
+   http://lkml.indiana.edu/hypermail/linux/kernel/1306.3/04204.html
 
-Thanks.
+(I cc'd the scripts/get_maintainer.pl list, but only one person replied
+this time around. I got more on the initial RFC submission back in
+https://lwn.net/Articles/545740/)
+
+Rob
