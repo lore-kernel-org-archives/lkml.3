@@ -1,54 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab3GIWlf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 18:41:35 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:35531 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab3GIWle (ORCPT
+	id S1752955Ab3GIWnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 18:43:00 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:54324 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab3GIWm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 18:41:34 -0400
-Date: Tue, 9 Jul 2013 15:41:31 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Mika Kuoppala <mika.kuoppala@intel.com>
-Subject: Re: [PATCH] Revert "drm/i915: unconditionally use mt forcewake on
- hsw/ivb"
-Message-ID: <20130709224131.GA3097@roeck-us.net>
-References: <1373400849-30351-1-git-send-email-linux@roeck-us.net>
- <20130709203322.GC18285@phenom.ffwll.local>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130709203322.GC18285@phenom.ffwll.local>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 9 Jul 2013 18:42:58 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full 3/7] nohz_full: Add per-CPU idle-state tracking
+Date: Mon,  8 Jul 2013 18:30:02 -0700
+Message-Id: <1373333406-26979-3-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130709012934.GA26058@linux.vnet.ibm.com>
+ <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070901-7606-0000-0000-00000D268541
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 10:33:22PM +0200, Daniel Vetter wrote:
-> On Tue, Jul 09, 2013 at 01:14:09PM -0700, Guenter Roeck wrote:
-> > This reverts commit 36ec8f877481449bdfa072e6adf2060869e2b970.
-> > 
-> > The commit results in repeated 'Timed out waiting for forcewake old ack
-> > to clear' messages on a Supermicro C7H61 board (BIOS version 2.00 and 2.00b)
-> > with i7-3770K CPU. It ultimately results in a hangup if the system is highly
-> > loaded. Reverting the commit fixes the issue.
-> > 
-> > While I understand that this should be fixed in the BIOS, a more recent BIOS
-> > is not available fron the vendor. If/since no better solution is not available,
-> > reverting the patch seems to be the way to go (otherwise me and others with
-> > the same problem won't be able to run the upstream kernel on affected boards).
-> > 
-> > Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> 
-> Can you please add the bugzilla link here?
-> 
-I'll create one and add a reference.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Thanks,
-Guenter
+This commit adds the code that updates the rcu_dyntick structure's
+new fields to track the per-CPU idle state based on interrupts and
+transitions into and out of the idle loop (NMIs are ignored because NMI
+handlers cannot cleanly read out the time anyway).  This code is similar
+to the code that maintains RCU's idea of per-CPU idleness, but differs
+in that RCU treats CPUs running in user mode as idle, where this new
+code does not.
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree.c        |  4 +++
+ kernel/rcutree.h        |  2 ++
+ kernel/rcutree_plugin.h | 79 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 85 insertions(+)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 259e300..ed9a36a 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -416,6 +416,7 @@ void rcu_idle_enter(void)
+ 
+ 	local_irq_save(flags);
+ 	rcu_eqs_enter(false);
++	rcu_sysidle_enter(&__get_cpu_var(rcu_dynticks), 0);
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_enter);
+@@ -466,6 +467,7 @@ void rcu_irq_exit(void)
+ 		trace_rcu_dyntick("--=", oldval, rdtp->dynticks_nesting);
+ 	else
+ 		rcu_eqs_enter_common(rdtp, oldval, true);
++	rcu_sysidle_enter(rdtp, 1);
+ 	local_irq_restore(flags);
+ }
+ 
+@@ -534,6 +536,7 @@ void rcu_idle_exit(void)
+ 
+ 	local_irq_save(flags);
+ 	rcu_eqs_exit(false);
++	rcu_sysidle_exit(&__get_cpu_var(rcu_dynticks), 0);
+ 	local_irq_restore(flags);
+ }
+ EXPORT_SYMBOL_GPL(rcu_idle_exit);
+@@ -585,6 +588,7 @@ void rcu_irq_enter(void)
+ 		trace_rcu_dyntick("++=", oldval, rdtp->dynticks_nesting);
+ 	else
+ 		rcu_eqs_exit_common(rdtp, oldval, true);
++	rcu_sysidle_exit(rdtp, 1);
+ 	local_irq_restore(flags);
+ }
+ 
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index bd99d59..1895043 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -553,6 +553,8 @@ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+ static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+ static void rcu_kick_nohz_cpu(int cpu);
+ static bool init_nocb_callback_list(struct rcu_data *rdp);
++static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq);
++static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq);
+ static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+ 
+ #endif /* #ifndef RCU_TREE_NONCORE */
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 6937eb6..814ff47 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2380,6 +2380,77 @@ static void rcu_kick_nohz_cpu(int cpu)
+ #ifdef CONFIG_NO_HZ_FULL_SYSIDLE
+ 
+ /*
++ * Invoked to note exit from irq or task transition to idle.  Note that
++ * usermode execution does -not- count as idle here!  After all, we want
++ * to detect full-system idle states, not RCU quiescent states and grace
++ * periods.  The caller must have disabled interrupts.
++ */
++static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq)
++{
++	unsigned long j;
++
++	/* Adjust nesting, check for fully idle. */
++	if (irq) {
++		rdtp->dynticks_idle_nesting--;
++		WARN_ON_ONCE(rdtp->dynticks_idle_nesting < 0);
++		if (rdtp->dynticks_idle_nesting != 0)
++			return;  /* Still not fully idle. */
++	} else {
++		if ((rdtp->dynticks_idle_nesting & DYNTICK_TASK_NEST_MASK) ==
++		    DYNTICK_TASK_NEST_VALUE) {
++			rdtp->dynticks_idle_nesting = 0;
++		} else {
++			rdtp->dynticks_idle_nesting -= DYNTICK_TASK_NEST_VALUE;
++			WARN_ON_ONCE(rdtp->dynticks_idle_nesting < 0);
++			return;  /* Still not fully idle. */
++		}
++	}
++
++	/* Record start of fully idle period. */
++	j = jiffies;
++	ACCESS_ONCE(rdtp->dynticks_idle_jiffies) = j;
++	smp_mb__before_atomic_inc();
++	atomic_inc(&rdtp->dynticks_idle);
++	smp_mb__after_atomic_inc();
++	WARN_ON_ONCE(atomic_read(&rdtp->dynticks_idle) & 0x1);
++}
++
++/*
++ * Invoked to note entry to irq or task transition from idle.  Note that
++ * usermode execution does -not- count as idle here!  The caller must
++ * have disabled interrupts.
++ */
++static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
++{
++	/* Adjust nesting, check for already non-idle. */
++	if (irq) {
++		rdtp->dynticks_idle_nesting++;
++		WARN_ON_ONCE(rdtp->dynticks_idle_nesting <= 0);
++		if (rdtp->dynticks_idle_nesting != 1)
++			return; /* Already non-idle. */
++	} else {
++		/*
++		 * Allow for irq misnesting.  Yes, it really is possible
++		 * to enter an irq handler then never leave it, and maybe
++		 * also vice versa.  Handle both possibilities.
++		 */
++		if (rdtp->dynticks_idle_nesting & DYNTICK_TASK_NEST_MASK) {
++			rdtp->dynticks_idle_nesting += DYNTICK_TASK_NEST_VALUE;
++			WARN_ON_ONCE(rdtp->dynticks_idle_nesting <= 0);
++			return; /* Already non-idle. */
++		} else {
++			rdtp->dynticks_idle_nesting = DYNTICK_TASK_EXIT_IDLE;
++		}
++	}
++
++	/* Record end of idle period. */
++	smp_mb__before_atomic_inc();
++	atomic_inc(&rdtp->dynticks_idle);
++	smp_mb__after_atomic_inc();
++	WARN_ON_ONCE(!(atomic_read(&rdtp->dynticks_idle) & 0x1));
++}
++
++/*
+  * Initialize dynticks sysidle state for CPUs coming online.
+  */
+ static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
+@@ -2389,6 +2460,14 @@ static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
+ 
+ #else /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+ 
++static void rcu_sysidle_enter(struct rcu_dynticks *rdtp, int irq)
++{
++}
++
++static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq)
++{
++}
++
+ static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
+ {
+ }
+-- 
+1.8.1.5
+
