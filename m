@@ -1,140 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab3GIFyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 01:54:15 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:46797 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab3GIFyK (ORCPT
+	id S1752998Ab3GIF7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 01:59:35 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:6602 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab3GIF7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 01:54:10 -0400
-Date: Tue, 9 Jul 2013 07:54:03 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] pwm: Changes for v3.11-rc1
-Message-ID: <20130709055400.GA17347@mithrandir>
+	Tue, 9 Jul 2013 01:59:31 -0400
+X-Greylist: delayed 696 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Jul 2013 01:59:31 EDT
+Message-ID: <51DBA3AA.2080803@hp.com>
+Date: Tue, 09 Jul 2013 13:46:18 +0800
+From: ZhenHua <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2fHTh5uZTiUOsy+g"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: Re: [PATCH 1/1] ia64/pci: set mmio decoding on for some host bridge
+References: <1373348531-31893-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1373348531-31893-1-git-send-email-zhen-hual@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Bjorn,
 
---2fHTh5uZTiUOsy+g
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I tested on an X86 system with the same chipset, and this bug does not 
+happen.
+I am not sure why , but if it is needed, I will try to find out why.
 
-Hi Linus,
+Thanks
+ZhenHua
 
-The following changes since commit c7788792a5e7b0d5d7f96d0766b4cb6112d47d75:
+On 07/09/2013 01:42 PM, Li, Zhen-Hua wrote:
+> On some IA64 platforms with intel PCI bridge, for example, HP BL890c i2
+> with  Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+> when kernel tries to disable the mmio decoding on the PCI bridge devices,
+> kernel may crash.
+>
+> And in the comment of function quirk_mmio_always_on, it also says:
+> "But doing so (disable the mmio decoding) may cause problems on host bridge
+>   and perhaps other key system devices"
+>
+> So, for this PCI bridge,  dev->mmio_always_on bit should be set to 1.
+>
+> To avoid affecting the use of quirk_mmio_always_on, a new function is created.
+>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>   drivers/pci/quirks.c    |   17 +++++++++++++++++
+>   include/linux/pci_ids.h |    1 +
+>   2 files changed, 18 insertions(+)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index e85d230..665af3e 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -44,6 +44,23 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
+>   DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+>   				PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
+>   
+> +#ifdef CONFIG_IA64
+> +/*
+> + * On some IA64 platforms, for some intel PCI bridge devices, for example,
+> + * the Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+> + * disable the mmio decoding on this device may cause system crash.
+> + * So dev->mmio_always_on bit should be set to 1.
+> + */
+> +static void quirk_mmio_on_intel_pcibridge(struct pci_dev *dev)
+> +{
+> +	dev->mmio_always_on = 1;
+> +}
+> +DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_VENDOR_ID_INTEL,
+> +			PCI_DEVICE_ID_INTEL_5520_5550_X58,
+> +			PCI_CLASS_BRIDGE_PCI,
+> +			8, quirk_mmio_on_intel_pcibridge);
+> +#endif
+> +
+>   /* The Mellanox Tavor device gives false positive parity errors
+>    * Mark this device with a broken_parity_status, to allow
+>    * PCI scanning code to "skip" this now blacklisted device.
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index 3bed2e8..d8c60b7 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2742,6 +2742,7 @@
+>   #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
+>   #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
+>   #define PCI_DEVICE_ID_INTEL_82855PM_HB	0x3340
+> +#define PCI_DEVICE_ID_INTEL_5520_5550_X58       0x3408
+>   #define PCI_DEVICE_ID_INTEL_IOAT_TBG4	0x3429
+>   #define PCI_DEVICE_ID_INTEL_IOAT_TBG5	0x342a
+>   #define PCI_DEVICE_ID_INTEL_IOAT_TBG6	0x342b
 
-  Linux 3.10-rc2 (2013-05-20 14:37:38 -0700)
-
-are available in the git repository at:
-
-  git://gitorious.org/linux-pwm/linux-pwm.git tags/for-3.11-rc1
-
-for you to fetch changes up to b388f15fd14c3ae62deb9a059464aa99b524ea4a:
-
-  pwm: pwm-tiehrpwm: Use clk_enable/disable instead clk_prepare/unprepare. (2013-06-26 23:23:54 +0200)
-
-Thanks,
-Thierry
-
-----------------------------------------------------------------
-pwm: Changes for v3.11-rc1
-
-A new driver supports driving PWM signals using the TPU unit found on
-various Renesas SoCs. Furthermore support is added for the NXP PCA9685
-LED controller. Another big chunk is the sysfs interface which has been
-in the works for quite some time.
-
-The remaining patches are a random assortment of cleanups and fixes.
-
-----------------------------------------------------------------
-Axel Lin (2):
-      pwm: renesas-tpu: Add MODULE_ALIAS to make module auto loading work
-      pwm: pca9685: Fix wrong argument to set MODE1_SLEEP bit
-
-Boris BREZILLON (1):
-      pwm: atmel-tcb: prepare clk before calling enable
-
-Fabio Estevam (1):
-      pwm: mxs: Let device core handle pinctrl
-
-H Hartley Sweeten (1):
-      pwm: Add sysfs interface
-
-Laurent Pinchart (1):
-      pwm: Add Renesas TPU PWM driver
-
-Marek Belisko (1):
-      pwm: pwm-tiehrpwm: Use clk_enable/disable instead clk_prepare/unprepare.
-
-Steffen Trumtrar (1):
-      pwm: add pca9685 driver
-
-Thierry Reding (2):
-      MAINTAINERS: Update PWM subsystem entry
-      pwm: Fill in missing .owner fields
-
-Wei Yongjun (1):
-      pwm: renesas-tpu: fix return value check in tpu_probe()
-
-Wolfram Sang (1):
-      pwm: devm: alloc correct pointer size
-
- Documentation/ABI/testing/sysfs-class-pwm          |  79 ++++
- .../devicetree/bindings/pwm/nxp,pca9685-pwm.txt    |  27 ++
- Documentation/pwm.txt                              |  37 ++
- MAINTAINERS                                        |   4 +-
- drivers/pwm/Kconfig                                |  23 +
- drivers/pwm/Makefile                               |   3 +
- drivers/pwm/core.c                                 |  29 +-
- drivers/pwm/pwm-atmel-tcb.c                        |   5 +-
- drivers/pwm/pwm-bfin.c                             |   1 +
- drivers/pwm/pwm-imx.c                              |   1 +
- drivers/pwm/pwm-lpc32xx.c                          |   1 +
- drivers/pwm/pwm-mxs.c                              |   7 +-
- drivers/pwm/pwm-pca9685.c                          | 300 +++++++++++++
- drivers/pwm/pwm-puv3.c                             |   1 +
- drivers/pwm/pwm-renesas-tpu.c                      | 474 +++++++++++++++++++++
- drivers/pwm/pwm-spear.c                            |   1 +
- drivers/pwm/pwm-tegra.c                            |   1 +
- drivers/pwm/pwm-tiehrpwm.c                         |  13 +-
- drivers/pwm/sysfs.c                                | 352 +++++++++++++++
- include/linux/platform_data/pwm-renesas-tpu.h      |  16 +
- include/linux/pwm.h                                |  29 +-
- 21 files changed, 1387 insertions(+), 17 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-class-pwm
- create mode 100644 Documentation/devicetree/bindings/pwm/nxp,pca9685-pwm.txt
- create mode 100644 drivers/pwm/pwm-pca9685.c
- create mode 100644 drivers/pwm/pwm-renesas-tpu.c
- create mode 100644 drivers/pwm/sysfs.c
- create mode 100644 include/linux/platform_data/pwm-renesas-tpu.h
-
---2fHTh5uZTiUOsy+g
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR26V4AAoJEN0jrNd/PrOhOIoP/jLwdeV0RfjqavFgmauP4o01
-32HQ+Sz28CVzLRBDemIVyxLckI7ngF78XrUQpsR4mupkw28s+mor4+c40A6Y+aIn
-fLyj7zLMWtEoUhjiD/Z6KkWHHK++ZBKBvt+F8+1iGFKEau++r6xaQHl/26z7FJ5/
-O9m7itFesgSArh5WSel954nr0HWGmPwRfZO9dnXJmPde6YJ3Bu2wWVtynO70b/4k
-IxD2BhtpLVlw7EhztIphttRupx7/e9MbUeII7YLRFCXRaNTFyPFiJPwqMWQpKxhY
-94wwgrH75cZmdyEHSRN9pTIld8zyGdCyYTD3Hy+rxSCgHkSQ3OPufHQMjFzUWe9X
-GoVYqvk1uK33fydchMllu+AoAjbxUNzbLT7rnp9pVTkib7e2O4SFi5edEg1e5J6q
-sH9ANTQjUOzoprquBupKQjVwucV9TkVbSQbMTHwsXQ0mPnRjH6gWb9lm3HY6Hlzm
-6laHAA0m82uvc9iNnmfUSRf/wrShLiLvpvaztLGm3VI+h0y1g7qxv4jtc7uVycWt
-Q3iLNcTl4ZGBEsaby+Qfmee/Zad4oHtc0Rgb2QbjCuse0REfF4U6MfKXC2Lq5yZw
-q3t9QZk9+L7pYKBItDZUP9HUESxtC1KSkvaglCI9Xq3F87gnWJ+s3NPkM2PsrzHR
-UvV/mmcdlBEjoJtn/MOy
-=9S21
------END PGP SIGNATURE-----
-
---2fHTh5uZTiUOsy+g--
