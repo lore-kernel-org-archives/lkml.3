@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3GIN6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:58:04 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:41344 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753439Ab3GIN5G (ORCPT
+	id S1753969Ab3GIN6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:58:01 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:43035 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab3GIN5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Jul 2013 09:57:06 -0400
 From: Dominik Dingel <dingel@linux.vnet.ibm.com>
@@ -21,70 +21,138 @@ Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
         linux-s390@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH v3 0/4] Enable async page faults on s390 
-Date: Tue,  9 Jul 2013 15:56:43 +0200
-Message-Id: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
+Subject: [PATCH 3/4] PF: Provide additional direct page notification
+Date: Tue,  9 Jul 2013 15:56:46 +0200
+Message-Id: <1373378207-10451-4-git-send-email-dingel@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
+In-Reply-To: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
+References: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070913-3548-0000-0000-000005E2C3E8
+x-cbid: 13070913-2966-0000-0000-000008178EA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gleb, Paolo, 
+By setting a Kconfig option, the architecture can control when
+guest notifications will be presented by the apf backend.
+So there is the default batch mechanism, working as before, where the vcpu thread
+should pull in this information. On the other hand there is now the direct
+mechanism, this will directly push the information to the guest.
 
-based on the work from Martin and Carsten, this implementation enables async page faults.
-To the guest it will provide the pfault interface, but internally it uses the
-async page fault common code. 
+Still the vcpu thread should call check_completion to cleanup leftovers,
+that leaves most of the common code untouched.
 
-The inital submission and it's discussion can be followed on http://www.mail-archive.com/kvm@vger.kernel.org/msg63359.html . 
+Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c       |  2 +-
+ include/linux/kvm_host.h |  2 +-
+ virt/kvm/Kconfig         |  4 ++++
+ virt/kvm/async_pf.c      | 22 +++++++++++++++++++---
+ 4 files changed, 25 insertions(+), 5 deletions(-)
 
-There is a slight modification for common code to move from a pull to a push based approch on s390. 
-As s390 we don't want to wait till we leave the guest state to queue the notification interrupts.
-
-To use this feature the controlling userspace hase to enable the capability.
-With that knob we can later on disable this feature for live migration.
-
-v2 -> v3
- - Reworked the architecture specific parts, to only provide on addtional
-   implementation
- - Renamed function to kvm_async_page_present_(sync|async)
- - Fixing KVM_HVA_ERR_BAD handling
-
-v1 -> v2:
- - Adding other architecture backends
- - Adding documentation for the ioctl
- - Improving the overall error handling
- - Reducing the needed modifications on the common code
-
-
-Dominik Dingel (4):
-  PF: Add FAULT_FLAG_RETRY_NOWAIT for guest fault
-  PF: Make KVM_HVA_ERR_BAD usable on s390
-  PF: Provide additional direct page notification
-  PF: Async page fault support on s390
-
- Documentation/s390/kvm.txt        |  24 +++++++++
- arch/s390/include/asm/kvm_host.h  |  22 ++++++++
- arch/s390/include/asm/pgtable.h   |   2 +
- arch/s390/include/asm/processor.h |   1 +
- arch/s390/include/uapi/asm/kvm.h  |  10 ++++
- arch/s390/kvm/Kconfig             |   2 +
- arch/s390/kvm/Makefile            |   2 +-
- arch/s390/kvm/diag.c              |  57 ++++++++++++++++++++
- arch/s390/kvm/interrupt.c         |  38 ++++++++++---
- arch/s390/kvm/kvm-s390.c          | 111 ++++++++++++++++++++++++++++++++++++++
- arch/s390/kvm/kvm-s390.h          |   4 ++
- arch/s390/kvm/sigp.c              |   2 +
- arch/s390/mm/fault.c              |  26 +++++++--
- arch/x86/kvm/mmu.c                |   2 +-
- include/linux/kvm_host.h          |  16 +++++-
- include/uapi/linux/kvm.h          |   2 +
- virt/kvm/Kconfig                  |   4 ++
- virt/kvm/async_pf.c               |  22 ++++++--
- 18 files changed, 330 insertions(+), 17 deletions(-)
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 0d094da..b8632e9 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3343,7 +3343,7 @@ static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn)
+ 	arch.direct_map = vcpu->arch.mmu.direct_map;
+ 	arch.cr3 = vcpu->arch.mmu.get_cr3(vcpu);
+ 
+-	return kvm_setup_async_pf(vcpu, gva, gfn, &arch);
++	return kvm_setup_async_pf(vcpu, gva, gfn_to_hva(vcpu->kvm, gfn), &arch);
+ }
+ 
+ static bool can_do_async_pf(struct kvm_vcpu *vcpu)
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index f3c04e7..465c639 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -197,7 +197,7 @@ struct kvm_async_pf {
+ 
+ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu);
+ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu);
+-int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
++int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
+ 		       struct kvm_arch_async_pf *arch);
+ int kvm_async_pf_wakeup_all(struct kvm_vcpu *vcpu);
+ #endif
+diff --git a/virt/kvm/Kconfig b/virt/kvm/Kconfig
+index 779262f..0774495 100644
+--- a/virt/kvm/Kconfig
++++ b/virt/kvm/Kconfig
+@@ -22,6 +22,10 @@ config KVM_MMIO
+ config KVM_ASYNC_PF
+        bool
+ 
++# Toggle to switch between direct notification and batch job
++config KVM_ASYNC_PF_SYNC
++       bool
++
+ config HAVE_KVM_MSI
+        bool
+ 
+diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
+index ea475cd..cfa9366 100644
+--- a/virt/kvm/async_pf.c
++++ b/virt/kvm/async_pf.c
+@@ -28,6 +28,21 @@
+ #include "async_pf.h"
+ #include <trace/events/kvm.h>
+ 
++static inline void kvm_async_page_present_sync(struct kvm_vcpu *vcpu,
++					       struct kvm_async_pf *work)
++{
++#ifdef CONFIG_KVM_ASYNC_PF_SYNC
++	kvm_arch_async_page_present(vcpu, work);
++#endif
++}
++static inline void kvm_async_page_present_async(struct kvm_vcpu *vcpu,
++						struct kvm_async_pf *work)
++{
++#ifndef CONFIG_KVM_ASYNC_PF_SYNC
++	kvm_arch_async_page_present(vcpu, work);
++#endif
++}
++
+ static struct kmem_cache *async_pf_cache;
+ 
+ int kvm_async_pf_init(void)
+@@ -70,6 +85,7 @@ static void async_pf_execute(struct work_struct *work)
+ 	down_read(&mm->mmap_sem);
+ 	get_user_pages(current, mm, addr, 1, 1, 0, &page, NULL);
+ 	up_read(&mm->mmap_sem);
++	kvm_async_page_present_sync(vcpu, apf);
+ 	unuse_mm(mm);
+ 
+ 	spin_lock(&vcpu->async_pf.lock);
+@@ -134,7 +150,7 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+ 
+ 		if (work->page)
+ 			kvm_arch_async_page_ready(vcpu, work);
+-		kvm_arch_async_page_present(vcpu, work);
++		kvm_async_page_present_async(vcpu, work);
+ 
+ 		list_del(&work->queue);
+ 		vcpu->async_pf.queued--;
+@@ -144,7 +160,7 @@ void kvm_check_async_pf_completion(struct kvm_vcpu *vcpu)
+ 	}
+ }
+ 
+-int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
++int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
+ 		       struct kvm_arch_async_pf *arch)
+ {
+ 	struct kvm_async_pf *work;
+@@ -166,7 +182,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, gfn_t gfn,
+ 	work->done = false;
+ 	work->vcpu = vcpu;
+ 	work->gva = gva;
+-	work->addr = gfn_to_hva(vcpu->kvm, gfn);
++	work->addr = hva;
+ 	work->arch = *arch;
+ 	work->mm = current->mm;
+ 	atomic_inc(&work->mm->mm_count);
 -- 
 1.8.2.2
 
