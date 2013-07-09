@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321Ab3GIRnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:43:05 -0400
-Received: from mail-la0-f50.google.com ([209.85.215.50]:41411 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3GIRnB (ORCPT
+	id S1752494Ab3GIRna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:43:30 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:43299 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab3GIRn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:43:01 -0400
-Message-ID: <51DC4BA1.3000403@openvz.org>
-Date: Tue, 09 Jul 2013 21:42:57 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	Tue, 9 Jul 2013 13:43:28 -0400
+Message-ID: <51DC4BB4.6060506@kernel.org>
+Date: Tue, 09 Jul 2013 18:43:16 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
-References: <20130708175201.GB9094@redhat.com> <20130708175607.GB18600@mtj.dyndns.org> <51DBC99F.4030301@openvz.org> <20130709125734.GA2478@htj.dyndns.org> <51DC0CE2.2050906@openvz.org> <20130709131605.GB2478@htj.dyndns.org> <20130709131646.GC2478@htj.dyndns.org> <51DC136E.6020901@openvz.org> <20130709134558.GD2478@htj.dyndns.org> <51DC1FCA.3060904@openvz.org> <20130709150605.GC2237@redhat.com>
-In-Reply-To: <20130709150605.GC2237@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Jonathan Cameron <jic23@cam.ac.uk>, jimwall@q.com,
+        brian@crystalfontz.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, Rob Landley <rob@landley.net>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCHv3 1/3] iio: Add Nuvoton NAU7802 ADC driver
+References: <1372094699-3832-1-git-send-email-alexandre.belloni@free-electrons.com> <1372094699-3832-2-git-send-email-alexandre.belloni@free-electrons.com> <51D53B72.6020309@metafoo.de> <51D7F044.9040205@kernel.org> <51DC1858.8010008@free-electrons.com>
+In-Reply-To: <51DC1858.8010008@free-electrons.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Tue, Jul 09, 2013 at 06:35:54PM +0400, Konstantin Khlebnikov wrote:
->
-> [..]
->> I'm not interested in QoS or proportional control. Let schedulers do it.
->> I want just bandwidth control. I don't want to write a new scheduler
->> or extend some of existing one. I want implement simple and lightweight
->> accounting and add couple of throttlers on top of that.
->> It can be easily done without violation of that hierarchical design.
+Sorry, looks like I forgot to push the tree out.
+Anyhow should be there shortly.
+
+On 07/09/2013 03:04 PM, Alexandre Belloni wrote:
+> Hi Jonathan,
+> 
+> I don't actually see it in iio.git on kernel.org, am I doing something
+> wrong ?
+> 
+> On 06/07/2013 12:24, Jonathan Cameron wrote:
+>> On 07/04/2013 10:08 AM, Lars-Peter Clausen wrote:
+>>> On 06/24/2013 07:24 PM, Alexandre Belloni wrote:
+>>>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
+>>>> gain and sampling rates.
+>>>>
+>>>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+>>>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+>>> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
+>>>
+>> Applied to the togreg branch of iio.git (with a few little tweaks).
 >>
->> The same problem already has happened with cpu scheduler. It has really
->> complicated rate limiter which is actually useless in the real world because
->> it triggers all possible priority inversions since it puts bunch of tasks into
->> deep sleep while some of them may hold kernel locks. Perfect.
+>> There was some fuzz that required manual fixing because of another driver merge so
+>> please check I didn't foul anything up with this or the other bits below.
 >>
->> QoS and scheduling policy are good thing, but rate-limiting must be separated
->> and done only in places where it doesn't leads to these problems.
->
-> So what kind of priority inversion you are facing with blkcg and how would
-> you avoid it with your implementation?
->
-> I know that serialization can happen at filesystem level while trying
-> to commit journal. But I think same thing will happen with your
-> implementation too.
-
-Yes, metadata changes are serialized and and they depends on data commits,
-thus block layer cannot delay write requests without introducing nasty priority
-inversions. Cached read requests cannot be delayed at all. All solutions either
-breaks throttling or adds PI. So block layer is just wrong place for this.
-
->
-> One simple way of avoiding that will be to throttle IO even earlier
-> but that means we do not take advantage of writeback cache and buffered
-> writes will slow down.
-
-If we want to control writeback speed we also must control size of dirty set.
-There are several possibilities: we either can start writeback earlier,
-or when dirty set exceeds some threshold we will start charging that dirty
-memory into throttler and slow down all tasks who generates this dirty memory.
-Because dirty memory is charged and accounted we can write it without delays.
-
->
-> So I am curious how would you take care of these serialization issue.
->
-> Also the throttlers you are planning to implement, what kind of throttling
-> do they provide. Is it throttling rate per cgroup or per file per cgroup
-> or rules will be per bdi per cgroup or something else.
-
-Currently I'm thinking about per-cgroup X per-tier. Each bdi will be assigned
-to some tier. It's flexible enough and solves chicken-and-egg problem:
-when disk appears it will be assigned to default tier and can be reassigned.
-
->
-> Thanks
-> Vivek
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
+>> There were two trivial missing unlocks on error paths in the read_raw function that
+>> I've fixed up (Coccinelle found these for me - if you can I would always advise
+>> running sparse, coccicheck and ideally smatch before submitting patches).
+>>
+>> I fixed up the comments because if there is one thing I hate bothering
+>> with it is delightful patches that just fix this stuff. Much better
+>> to do it now given it took 20 secs ;)
+>>
+>>> One remark though. Multiline comments should be like
+>>>
+>>> /*
+>>>  * foo
+>>>  * bar
+>>>  */
+>>>
+>>> not
+>>>
+>>> /* foo
+>>>  * bar
+>>>  */
+>>>
+>>> But not need to resend the patch just for this
+>>>
+>>> - Lars
+>>>
+> 
+> 
