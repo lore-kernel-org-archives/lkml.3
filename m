@@ -1,230 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696Ab3GIIQp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:16:45 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28657 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752957Ab3GIIQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:16:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1026,1363158000"; 
-   d="scan'208";a="366989567"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH net-next] net/fs: change busy poll time accounting
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 09 Jul 2013 11:16:35 +0300
-Message-ID: <20130709081635.20852.54955.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1753793Ab3GIIS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:18:28 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:25705 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab3GIISZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 04:18:25 -0400
+Message-ID: <51DBC73E.7080401@huawei.com>
+Date: Tue, 9 Jul 2013 16:18:06 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Rafael <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
+        Oliver Neukum <oneukum@suse.de>, Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 2/2] PCI,pciehp: avoid add a device already exist during
+ pciehp_resume
+References: <1373356564-21668-1-git-send-email-wangyijing@huawei.com> <1373357261.1633.4.camel@x61.thuisdomein>
+In-Reply-To: <1373357261.1633.4.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Suggested by Linus:
-Changed time accounting for busy-poll:
-- Make it microsecond based.
-- Use unsigned longs.
-- Revert back to use time_after instead of time_in_range.
-Reorder poll/select busy loop conditions:
-- Clear busy_flag after one time we can't busy-poll.
-- Only init busy_end if we actually are going to busy-poll.
-Added one more missing need_resched() test.
+>> In this case, we can improve it a little by add a guard
+>> if (!list_empty(bus->devices)).
+> 
+> Great!
+> 
+> I'm currently trying to bisect another problem, but hope to test this
+> patch (and the preceding patch it apparently needs) in a few days.
+> Please feel free to prod me if you think testing is needed but I'm
+> taking to long to report back.
 
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+Hi Paul,
+   Thank you for helping test. Because I have no machine to test this case,
+so your test report is very important, it can help us going in the right way
+to solve this problem.
 
- fs/select.c           |   31 ++++++++++++++++++----------
- include/net/ll_poll.h |   55 +++++++++++++++----------------------------------
- 2 files changed, 37 insertions(+), 49 deletions(-)
+Thanks!
+Yijing.
 
-diff --git a/fs/select.c b/fs/select.c
-index 25cac5f..50a804b 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -403,8 +403,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 	int retval, i, timed_out = 0;
- 	unsigned long slack = 0;
- 	unsigned int busy_flag = net_busy_loop_on() ? POLL_BUSY_LOOP : 0;
--	u64 busy_start = busy_loop_start_time(busy_flag);
--	u64 busy_end = busy_loop_end_time();
-+	unsigned long busy_end = 0;
- 
- 	rcu_read_lock();
- 	retval = max_select_fd(n, fds);
-@@ -506,9 +505,15 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 		}
- 
- 		/* only if found POLL_BUSY_LOOP sockets && not out of time */
--		if (!need_resched() && can_busy_loop &&
--		    busy_loop_range(busy_start, busy_end))
--			continue;
-+		if (can_busy_loop && !need_resched()) {
-+			if (!busy_end) {
-+				busy_end = busy_loop_end_time();
-+				continue;
-+			}
-+			if (!busy_loop_timeout(busy_end))
-+				continue;
-+		}
-+		busy_flag = 0;
- 
- 		/*
- 		 * If this is the first loop and we have a timeout
-@@ -780,9 +785,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 	int timed_out = 0, count = 0;
- 	unsigned long slack = 0;
- 	unsigned int busy_flag = net_busy_loop_on() ? POLL_BUSY_LOOP : 0;
--	u64 busy_start = busy_loop_start_time(busy_flag);
--	u64 busy_end = busy_loop_end_time();
--
-+	unsigned long busy_end = 0;
- 
- 	/* Optimise the no-wait case */
- 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
-@@ -834,9 +837,15 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 			break;
- 
- 		/* only if found POLL_BUSY_LOOP sockets && not out of time */
--		if (!need_resched() && can_busy_loop &&
--		    busy_loop_range(busy_start, busy_end))
--			continue;
-+		if (can_busy_loop && !need_resched()) {
-+			if (!busy_end) {
-+				busy_end = busy_loop_end_time();
-+				continue;
-+			}
-+			if (!busy_loop_timeout(busy_end))
-+				continue;
-+		}
-+		busy_flag = 0;
- 
- 		/*
- 		 * If this is the first loop and we have a timeout
-diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
-index f14dd88..2bacbbf 100644
---- a/include/net/ll_poll.h
-+++ b/include/net/ll_poll.h
-@@ -47,7 +47,7 @@ static inline bool net_busy_loop_on(void)
-  * we only care that the average is bounded
-  */
- #ifdef CONFIG_DEBUG_PREEMPT
--static inline u64 busy_loop_sched_clock(void)
-+static inline u64 busy_loop_us_clock(void)
- {
- 	u64 rc;
- 
-@@ -55,37 +55,24 @@ static inline u64 busy_loop_sched_clock(void)
- 	rc = sched_clock();
- 	preempt_enable_no_resched_notrace();
- 
--	return rc;
-+	return rc >> 10;
- }
- #else /* CONFIG_DEBUG_PREEMPT */
--static inline u64 busy_loop_sched_clock(void)
-+static inline u64 busy_loop_us_clock(void)
- {
--	return sched_clock();
-+	return sched_clock() >> 10;
- }
- #endif /* CONFIG_DEBUG_PREEMPT */
- 
--/* we don't mind a ~2.5% imprecision so <<10 instead of *1000
-- * sk->sk_ll_usec is a u_int so this can't overflow
-- */
--static inline u64 sk_busy_loop_end_time(struct sock *sk)
-+static inline unsigned long sk_busy_loop_end_time(struct sock *sk)
- {
--	return (u64)ACCESS_ONCE(sk->sk_ll_usec) << 10;
-+	return busy_loop_us_clock() + ACCESS_ONCE(sk->sk_ll_usec);
- }
- 
--/* in poll/select we use the global sysctl_net_ll_poll value
-- * only call sched_clock() if enabled
-- */
--static inline u64 busy_loop_end_time(void)
--{
--	return (u64)ACCESS_ONCE(sysctl_net_ll_poll) << 10;
--}
--
--/* if flag is not set we don't need to know the time
-- * so we want to avoid a potentially expensive sched_clock()
-- */
--static inline u64 busy_loop_start_time(unsigned int flag)
-+/* in poll/select we use the global sysctl_net_ll_poll value */
-+static inline unsigned long busy_loop_end_time(void)
- {
--	return flag ? busy_loop_sched_clock() : 0;
-+	return busy_loop_us_clock() + ACCESS_ONCE(sysctl_net_ll_poll);
- }
- 
- static inline bool sk_can_busy_loop(struct sock *sk)
-@@ -94,12 +81,10 @@ static inline bool sk_can_busy_loop(struct sock *sk)
- 	       !need_resched() && !signal_pending(current);
- }
- 
--/* careful! time_in_range64 will evaluate now twice */
--static inline bool busy_loop_range(u64 start_time, u64 run_time)
--{
--	u64 now = busy_loop_sched_clock();
- 
--	return time_in_range64(now, start_time, start_time + run_time);
-+static inline bool busy_loop_timeout(unsigned long end_time)
-+{
-+	return time_after(busy_loop_us_clock(), end_time);
- }
- 
- /* when used in sock_poll() nonblock is known at compile time to be true
-@@ -107,8 +92,7 @@ static inline bool busy_loop_range(u64 start_time, u64 run_time)
-  */
- static inline bool sk_busy_loop(struct sock *sk, int nonblock)
- {
--	u64 start_time = busy_loop_start_time(!nonblock);
--	u64 end_time = sk_busy_loop_end_time(sk);
-+	unsigned long end_time = !nonblock ? sk_busy_loop_end_time(sk) : 0;
- 	const struct net_device_ops *ops;
- 	struct napi_struct *napi;
- 	int rc = false;
-@@ -139,7 +123,7 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
- 					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
- 
- 	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
--		 busy_loop_range(start_time, end_time));
-+		 !need_resched() && !busy_loop_timeout(end_time));
- 
- 	rc = !skb_queue_empty(&sk->sk_receive_queue);
- out:
-@@ -165,12 +149,7 @@ static inline unsigned long net_busy_loop_on(void)
- 	return 0;
- }
- 
--static inline u64 busy_loop_start_time(unsigned int flag)
--{
--	return 0;
--}
--
--static inline u64 busy_loop_end_time(void)
-+static inline unsigned long busy_loop_end_time(void)
- {
- 	return 0;
- }
-@@ -193,9 +172,9 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
- {
- }
- 
--static inline bool busy_loop_range(u64 start_time, u64 run_time)
-+static inline bool busy_loop_timeout(unsigned long end_time)
- {
--	return false;
-+	return true;
- }
- 
- #endif /* CONFIG_NET_LL_RX_POLL */
+> 
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
 
