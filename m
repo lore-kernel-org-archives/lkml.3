@@ -1,51 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab3GIH4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:56:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51734 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768Ab3GIH4L (ORCPT
+	id S1753532Ab3GIH40 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:56:26 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:6586 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701Ab3GIH4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 9 Jul 2013 03:56:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: srinivas.kandagatla@st.com
-Subject: Re: [PATCH v1 0/4] ARM: STi fixes and ethernet support
-Date: Tue, 9 Jul 2013 09:56:02 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Stuart Menefy <stuart.menefy@st.com>, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, Olof Johansson <olof@lixom.net>
-References: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com> <201307090118.06715.arnd@arndb.de> <51DBB629.1050000@st.com>
-In-Reply-To: <51DBB629.1050000@st.com>
+From: Yijing Wang <wangyijing@huawei.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
+        Oliver Neukum <oneukum@suse.de>, Paul Bolle <pebolle@tiscali.nl>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: [PATCH 1/2] PCI: introduce PCIe Device Serial NUmber Capability support
+Date: Tue, 9 Jul 2013 15:55:45 +0800
+Message-ID: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
+X-Mailer: git-send-email 1.7.11.msysgit.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307090956.03191.arnd@arndb.de>
-X-Provags-ID: V02:K0:o9hJ8XVUOGPMnXG4PtuucbTWUXd1ShGpMllzPxPiXy7
- HYpcIeRGVF/I/qHqdQUq5NmYx1ZjHjg6YYMPhXEijB3P+xu17c
- mY9MsMtDj44yT9QilV0jicq183aJIZkNbbyIKM+J4KCTmIPkYt
- f8LFltgQpaLjO5CdiP5hCZbc01Zbd++qeagJ8wZXnyYQ9mq8vk
- vN6+r/nXTx70ivN8Toje3MYWiwzysA1LNcxpuga2BSomOoruBV
- 9WG0y5VKPb1htarYfHioLUhS4WwtbpoBeu7eE8O+T7SZHaBs7N
- qPs6x9TJz8+FcUz1/FIptvNDM6nj5t6Sp5WLK8cQCu8EGQaycX
- djQxrZgNnmn9+OZiIefM=
+Content-Type: text/plain
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 July 2013, Srinivas KANDAGATLA wrote:
-> stmmac (aka "dwmac" a synopsis IP) driver is integrated in to kernel
-> sometime in 2.6 series I think :-), and Is used by more than 4 platforms
-> in 3.10 kernel. The driver is more generic than it sounds.
-> So adding properties/hooks specific to STiH41x SOCs in driver seemed to
-> incorrect. Instead doing platform specific bits in the mach via
-> callbacks was the only choice I had.
+Introduce PCIe Ext Capability Device Serial Number support,
+so we can use the unique device serial number to identify
+the physical device. During system suspend, if the PCIe
+device was removed and inserted a new same device, after
+system resume there is no good way to identify it, maybe
+Device Serial Number is a good choice if device support.
 
-No, you should be using generic interfaces to do the things you need.
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Oliver Neukum <oneukum@suse.de>
+Cc: Paul Bolle <pebolle@tiscali.nl>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/pci/pci.c   |   33 +++++++++++++++++++++++++++++++++
+ drivers/pci/pci.h   |    1 +
+ drivers/pci/probe.c |    3 +++
+ include/linux/pci.h |    4 ++++
+ 4 files changed, 41 insertions(+), 0 deletions(-)
 
-I believe what you are missing is an ethernet phy driver that is specific
-to your SoC.
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index e37fea6..d08df2b 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2048,6 +2048,39 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
+ }
+ 
+ /**
++ * pci_get_dsn - get device serial number
++ * @dev: the PCI device
++ * @sn: saved device serial number
++ */
++void pci_get_dsn(struct pci_dev *dev, u64 *sn)
++{
++	int pos;
++	u32 lo, hi;
++
++	if (!pci_is_pcie(dev))
++		goto out;
++
++	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
++	if (!pos)
++		goto out;
++
++	pci_read_config_dword(dev, pos + 4, &lo);
++	pci_read_config_dword(dev, pos + 8, &hi);
++	*sn = ((u64)hi << 32) | lo;
++	return;
++
++out:
++	*sn = 0;
++	return;
++}
++EXPORT_SYMBOL(pci_get_dsn);
++
++void pci_dsn_init(struct pci_dev *dev)
++{
++	return pci_get_dsn(dev, &dev->sn);
++}
++
++/**
+  * pci_configure_ari - enable or disable ARI forwarding
+  * @dev: the PCI device
+  *
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 68678ed..f626006 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -202,6 +202,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+ 		    struct resource *res, unsigned int reg);
+ int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
+ void pci_configure_ari(struct pci_dev *dev);
++void pci_dsn_init(struct pci_dev *dev);
+ 
+ /**
+  * pci_ari_enabled - query ARI forwarding status
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 46ada5c..d4c6e7e 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1322,6 +1322,9 @@ static void pci_init_capabilities(struct pci_dev *dev)
+ 	/* Power Management */
+ 	pci_pm_init(dev);
+ 
++	/* Device Serial Number */
++	pci_dsn_init(dev);
++
+ 	/* Vital Product Data */
+ 	pci_vpd_pci22_init(dev);
+ 
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 0fd1f15..59cd205 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -342,6 +342,7 @@ struct pci_dev {
+ 	struct list_head msi_list;
+ 	struct kset *msi_kset;
+ #endif
++	u64 sn;		/* device serieal number, 0 if not support */
+ 	struct pci_vpd *vpd;
+ #ifdef CONFIG_PCI_ATS
+ 	union {
+@@ -995,6 +996,9 @@ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
+ ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
+ int pci_vpd_truncate(struct pci_dev *dev, size_t size);
+ 
++/* Device Serial Number */
++void pci_get_dsn(struct pci_dev *dev, u64 *sn);
++
+ /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
+ resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
+ void pci_bus_assign_resources(const struct pci_bus *bus);
+-- 
+1.7.1
 
-	Arnd
+
