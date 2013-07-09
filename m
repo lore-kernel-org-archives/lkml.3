@@ -1,14 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab3GIBSJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 21:18:09 -0400
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:38022 "EHLO
+	id S1752729Ab3GIBS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 21:18:27 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:38010 "EHLO
 	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752520Ab3GIBR4 (ORCPT
+	with ESMTP id S1752500Ab3GIBRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 21:17:56 -0400
+	Mon, 8 Jul 2013 21:17:55 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>,
+        Oleg Drokin <oleg.drokin@intel.com>, Fan Yong <fan.yong@intel.com>,
+        Ned Bass <bass6@llnl.gov>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -16,9 +20,9 @@ Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
         Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v6 14/14] dcache: Enable lockless update of refcount in dentry structure
-Date: Mon,  8 Jul 2013 21:10:04 -0400
-Message-Id: <1373332204-10379-15-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v6 12/14] lustre-fs: Use the standard d_count() helper to access refcount
+Date: Mon,  8 Jul 2013 21:10:02 -0400
+Message-Id: <1373332204-10379-13-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com>
 References: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com>
@@ -29,268 +33,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code takes the dentry's d_lock lock whenever the
-d_refcount is being updated. In reality, nothing big really happens
-until d_refcount goes to 0 in dput(). So it is not necessary to take
-the lock if the reference count won't go to 0. On the other hand,
-there are cases where d_refcount should not be updated or was not
-expected to be updated while d_lock was acquired by another thread.
-
-To use the new lockref infrastructure to do lockless reference count
-update, the d_lock and d_refcount field of the dentry structure was
-combined into a new d_lockcnt field.
-
-The offsets of the new d_lockcnt field are at byte 72 and 88 for
-32-bit and 64-bit SMP systems respectively. In both cases, they are
-8-byte aligned and their combination into a single 8-byte word will
-not introduce a hole that increase the size of the dentry structure.
-
-This patch has a particular big impact on the short workload of the
-AIM7 benchmark with ramdisk filesystem. The table below show the
-performance improvement to the JPM (jobs per minutes) throughput
-due to this patch on an 8-socket 80-core x86-64 system with a 3.10
-kernel in a 1/2/4/8 node configuration by using numactl to restrict
-the execution of the workload on certain nodes.
-
-+-----------------+----------------+-----------------+----------+
-|  Configuration  |    Mean JPM    |    Mean JPM     | % Change |
-|                 | Rate w/o patch | Rate with patch |          |
-+-----------------+---------------------------------------------+
-|                 |              User Range 10 - 100            |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |    1650355     |     5191497     | +214.6%  |
-| 4 nodes, HT off |    1665137     |     5204267     | +212.5%  |
-| 2 nodes, HT off |    1667552     |     3815637     | +128.8%  |
-| 1 node , HT off |    2442998     |     2352103     |   -3.7%  |
-+-----------------+---------------------------------------------+
-|                 |              User Range 200 - 1000          |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |    1008604     |     5972142     | +492.1%  |
-| 4 nodes, HT off |    1317284     |     7190302     | +445.8%  |
-| 2 nodes, HT off |    1048363     |     4516400     | +330.8%  |
-| 1 node , HT off |    2461802     |     2466583     |   +0.2%  |
-+-----------------+---------------------------------------------+
-|                 |              User Range 1100 - 2000         |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |     995149     |     6424182     | +545.6%  |
-| 4 nodes, HT off |    1313386     |     7012193     | +433.9%  |
-| 2 nodes, HT off |    1041411     |     4478519     | +330.0%  |
-| 1 node , HT off |    2511186     |     2482650     |   -1.1%  |
-+-----------------+----------------+-----------------+----------+
-
-It can be seen that with 20 CPUs (2 nodes) or more, this patch can
-significantly improve the short workload performance. With only 1
-node, the performance is similar with or without the patch. The short
-workload also scales pretty well up to 4 nodes with this patch.
-
-The following table shows the short workload performance difference
-of the original 3.10 kernel versus the one with the patch but have
-SPINLOCK_REFCOUNT config variable disabled.
-
-+-----------------+----------------+-----------------+----------+
-|  Configuration  |    Mean JPM    |    Mean JPM     | % Change |
-|                 | Rate w/o patch | Rate with patch |          |
-+-----------------+---------------------------------------------+
-|                 |              User Range 10 - 100            |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |    1650355     |     1634232     |   -1.0%  |
-| 4 nodes, HT off |    1665137     |     1675791     |   +0.6%  |
-| 2 nodes, HT off |    1667552     |     2985552     |  +79.0%  |
-| 1 node , HT off |    2442998     |     2396091     |   -1.9%  |
-+-----------------+---------------------------------------------+
-|                 |              User Range 200 - 1000          |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |    1008604     |     1005153     |   -0.3%  |
-| 4 nodes, HT off |    1317284     |     1330782     |   +1.0%  |
-| 2 nodes, HT off |    1048363     |     2056871     |  +96.2%  |
-| 1 node , HT off |    2461802     |     2463877     |   +0.1%  |
-+-----------------+---------------------------------------------+
-|                 |              User Range 1100 - 2000         |
-+-----------------+---------------------------------------------+
-| 8 nodes, HT off |     995149     |      991157     |   -0.4%  |
-| 4 nodes, HT off |    1313386     |     1321806     |   +0.6%  |
-| 2 nodes, HT off |    1041411     |     2032808     |  +95.2%  |
-| 1 node , HT off |    2511186     |     2483815     |   -1.1%  |
-+-----------------+----------------+-----------------+----------+
-
-There are some abnormalities in the original 3.10 2-node data. Ignoring
-that, the performance difference for the other node counts, if any,
-is insignificant.
-
-A perf call-graph report of the short workload at 1500 users
-without the patch on the same 8-node machine indicates that about
-78% of the workload's total time were spent in the _raw_spin_lock()
-function. Almost all of which can be attributed to the following 2
-kernel functions:
- 1. dget_parent (49.91%)
- 2. dput (49.89%)
-
-The relevant perf report lines are:
-+  78.37%    reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-+   0.09%    reaim  [kernel.kallsyms]     [k] dput
-+   0.05%    reaim  [kernel.kallsyms]     [k] _raw_spin_lock_irq
-+   0.00%    reaim  [kernel.kallsyms]     [k] dget_parent
-
-With this patch installed, the new perf report lines are:
-+  19.65%    reaim  [kernel.kallsyms]     [k] _raw_spin_lock_irqsave
-+   3.94%    reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-+   2.47%    reaim  [kernel.kallsyms]     [k] lockref_get_not_zero
-+   0.62%    reaim  [kernel.kallsyms]     [k] lockref_put_or_locked
-+   0.36%    reaim  [kernel.kallsyms]     [k] dput
-+   0.31%    reaim  [kernel.kallsyms]     [k] lockref_get
-+   0.02%    reaim  [kernel.kallsyms]     [k] dget_parent
-
--   3.94%    reaim  [kernel.kallsyms]     [k] _raw_spin_lock
-   - _raw_spin_lock
-      + 32.86% SyS_getcwd
-      + 31.99% d_path
-      + 4.81% prepend_path
-      + 4.14% __rcu_process_callbacks
-      + 3.73% complete_walk
-      + 2.31% dget_parent
-      + 1.99% unlazy_walk
-      + 1.44% do_anonymous_page
-      + 1.22% lockref_put_or_locked
-      + 1.16% sem_lock
-      + 0.95% task_rq_lock
-      + 0.89% selinux_inode_free_security
-      + 0.89% process_backlog
-      + 0.79% enqueue_to_backlog
-      + 0.72% unix_dgram_sendmsg
-      + 0.69% unix_stream_sendmsg
-
-The lockref_put_or_locked used up only 1.22% of the _raw_spin_lock
-time while dget_parent used only 2.31%.
-
-This impact of this patch on other AIM7 workloads were much more
-modest.  The table below show the mean %change due to this patch on
-the same 8-socket system with a 3.10 kernel.
-
-+--------------+---------------+----------------+-----------------+
-|   Workload   | mean % change | mean % change  | mean % change   |
-|              | 10-100 users  | 200-1000 users | 1100-2000 users |
-+--------------+---------------+----------------+-----------------+
-| alltests     |     -0.2%     |     +0.5%      |     -0.3%       |
-| five_sec     |     +2.5%     |     -4.2%      |     -4.7%       |
-| fserver      |     +1.7%     |     +1.6%      |     +0.3%       |
-| high_systime |     +0.1%     |     +1.4%      |     +5.5%       |
-| new_fserver  |     +0.4%     |     +1.2%      |     +0.3%       |
-| shared       |     +0.8%     |     -0.3%      |      0.0%       |
-+--------------+---------------+----------------+-----------------+
-
-There are slight drops in performance for the five_sec workload,
-but slight increase in the high_systime workload.
-
-The checkpatch.pl scripts reported errors in the d_lock and d_refcount
-macros as it wanted to have parentheses around the actual names.
-That won't work for those macros and so the errors should be ignored.
+The Lustre FS should use the newly defined d_count() helper function
+to access the dentry's reference count instead of defining its own
+d_refcount() macro for the same purpose. Since the current lustre
+code is marked as broken, no build test was attempted for this change.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- fs/dcache.c            |   18 ++++++++++++------
- include/linux/dcache.h |   17 ++++++++++-------
- 2 files changed, 22 insertions(+), 13 deletions(-)
+ .../lustre/include/linux/lustre_patchless_compat.h |    2 --
+ drivers/staging/lustre/lustre/include/linux/lvfs.h |    2 +-
+ drivers/staging/lustre/lustre/llite/dcache.c       |    8 ++++----
+ .../staging/lustre/lustre/llite/llite_internal.h   |    4 ++--
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    2 +-
+ drivers/staging/lustre/lustre/llite/namei.c        |    4 ++--
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |    4 ++--
+ 7 files changed, 12 insertions(+), 14 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 20def64..095ee18 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -515,7 +515,9 @@ void dput(struct dentry *dentry)
- repeat:
- 	if (dentry->d_refcount == 1)
- 		might_sleep();
--	spin_lock(&dentry->d_lock);
-+	if (lockref_put_or_lock(&dentry->d_lockcnt))
-+		return;
-+	/* dentry's lock taken */
- 	BUG_ON(!dentry->d_refcount);
- 	if (dentry->d_refcount > 1) {
- 		dentry->d_refcount--;
-@@ -611,26 +613,30 @@ static inline void __dget_dlock(struct dentry *dentry)
- 
- static inline void __dget(struct dentry *dentry)
- {
--	spin_lock(&dentry->d_lock);
--	__dget_dlock(dentry);
--	spin_unlock(&dentry->d_lock);
-+	lockref_get(&dentry->d_lockcnt);
+diff --git a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
+index f050808..a8e9c0c 100644
+--- a/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
++++ b/drivers/staging/lustre/lustre/include/linux/lustre_patchless_compat.h
+@@ -60,8 +60,6 @@ truncate_complete_page(struct address_space *mapping, struct page *page)
+ 	ll_delete_from_page_cache(page);
  }
  
- struct dentry *dget_parent(struct dentry *dentry)
- {
- 	struct dentry *ret;
+-#  define d_refcount(d)		 ((d)->d_count)
+-
+ #ifdef ATTR_OPEN
+ # define ATTR_FROM_OPEN ATTR_OPEN
+ #else
+diff --git a/drivers/staging/lustre/lustre/include/linux/lvfs.h b/drivers/staging/lustre/lustre/include/linux/lvfs.h
+index b4db6cb..eb59ac7 100644
+--- a/drivers/staging/lustre/lustre/include/linux/lvfs.h
++++ b/drivers/staging/lustre/lustre/include/linux/lvfs.h
+@@ -99,7 +99,7 @@ static inline void l_dput(struct dentry *de)
+ 	if (!de || IS_ERR(de))
+ 		return;
+ 	//shrink_dcache_parent(de);
+-	LASSERT(d_refcount(de) > 0);
++	LASSERT(d_count(de) > 0);
+ 	dput(de);
+ }
  
-+	rcu_read_lock();
-+	ret = rcu_dereference(dentry->d_parent);
-+	if (lockref_get_not_zero(&ret->d_lockcnt)) {
-+		rcu_read_unlock();
-+		return ret;
-+	}
- repeat:
- 	/*
- 	 * Don't need rcu_dereference because we re-check it was correct under
- 	 * the lock.
- 	 */
--	rcu_read_lock();
--	ret = dentry->d_parent;
-+	ret = ACCESS_ONCE(dentry->d_parent);
- 	spin_lock(&ret->d_lock);
- 	if (unlikely(ret != dentry->d_parent)) {
- 		spin_unlock(&ret->d_lock);
- 		rcu_read_unlock();
-+		rcu_read_lock();
- 		goto repeat;
+diff --git a/drivers/staging/lustre/lustre/llite/dcache.c b/drivers/staging/lustre/lustre/llite/dcache.c
+index 7d6abff..ff0d085 100644
+--- a/drivers/staging/lustre/lustre/llite/dcache.c
++++ b/drivers/staging/lustre/lustre/llite/dcache.c
+@@ -98,7 +98,7 @@ int ll_dcompare(const struct dentry *parent, const struct inode *pinode,
+ 
+ 	CDEBUG(D_DENTRY, "found name %.*s(%p) flags %#x refc %d\n",
+ 	       name->len, name->name, dentry, dentry->d_flags,
+-	       d_refcount(dentry));
++	       d_count(dentry));
+ 
+ 	/* mountpoint is always valid */
+ 	if (d_mountpoint((struct dentry *)dentry))
+@@ -165,7 +165,7 @@ static int ll_ddelete(const struct dentry *de)
+ 	       list_empty(&de->d_subdirs) ? "" : "subdirs");
+ 
+ 	/* kernel >= 2.6.38 last refcount is decreased after this function. */
+-	LASSERT(d_refcount(de) == 1);
++	LASSERT(d_count(de) == 1);
+ 
+ 	/* Disable this piece of code temproarily because this is called
+ 	 * inside dcache_lock so it's not appropriate to do lots of work
+@@ -190,7 +190,7 @@ static int ll_set_dd(struct dentry *de)
+ 
+ 	CDEBUG(D_DENTRY, "ldd on dentry %.*s (%p) parent %p inode %p refc %d\n",
+ 		de->d_name.len, de->d_name.name, de, de->d_parent, de->d_inode,
+-		d_refcount(de));
++		d_count(de));
+ 
+ 	if (de->d_fsdata == NULL) {
+ 		struct ll_dentry_data *lld;
+@@ -540,7 +540,7 @@ out:
+ 		CDEBUG(D_DENTRY, "revalidated dentry %.*s (%p) parent %p "
+ 		       "inode %p refc %d\n", de->d_name.len,
+ 		       de->d_name.name, de, de->d_parent, de->d_inode,
+-		       d_refcount(de));
++		       d_count(de));
+ 
+ 		ll_set_lock_data(exp, de->d_inode, it, &bits);
+ 
+diff --git a/drivers/staging/lustre/lustre/llite/llite_internal.h b/drivers/staging/lustre/lustre/llite/llite_internal.h
+index 992cd20..5227c5c 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_internal.h
++++ b/drivers/staging/lustre/lustre/llite/llite_internal.h
+@@ -1529,12 +1529,12 @@ static inline void d_lustre_invalidate(struct dentry *dentry, int nested)
+ {
+ 	CDEBUG(D_DENTRY, "invalidate dentry %.*s (%p) parent %p inode %p "
+ 	       "refc %d\n", dentry->d_name.len, dentry->d_name.name, dentry,
+-	       dentry->d_parent, dentry->d_inode, d_refcount(dentry));
++	       dentry->d_parent, dentry->d_inode, d_count(dentry));
+ 
+ 	spin_lock_nested(&dentry->d_lock,
+ 			 nested ? DENTRY_D_LOCK_NESTED : DENTRY_D_LOCK_NORMAL);
+ 	__d_lustre_invalidate(dentry);
+-	if (d_refcount(dentry) == 0)
++	if (d_count(dentry) == 0)
+ 		__d_drop(dentry);
+ 	spin_unlock(&dentry->d_lock);
+ }
+diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
+index 2311b20..afae801 100644
+--- a/drivers/staging/lustre/lustre/llite/llite_lib.c
++++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
+@@ -659,7 +659,7 @@ void lustre_dump_dentry(struct dentry *dentry, int recur)
+ 	       " flags=0x%x, fsdata=%p, %d subdirs\n", dentry,
+ 	       dentry->d_name.len, dentry->d_name.name,
+ 	       dentry->d_parent->d_name.len, dentry->d_parent->d_name.name,
+-	       dentry->d_parent, dentry->d_inode, d_refcount(dentry),
++	       dentry->d_parent, dentry->d_inode, d_count(dentry),
+ 	       dentry->d_flags, dentry->d_fsdata, subdirs);
+ 	if (dentry->d_inode != NULL)
+ 		ll_dump_inode(dentry->d_inode);
+diff --git a/drivers/staging/lustre/lustre/llite/namei.c b/drivers/staging/lustre/lustre/llite/namei.c
+index 58d59aa..ff8f63d 100644
+--- a/drivers/staging/lustre/lustre/llite/namei.c
++++ b/drivers/staging/lustre/lustre/llite/namei.c
+@@ -409,7 +409,7 @@ struct dentry *ll_splice_alias(struct inode *inode, struct dentry *de)
+ 			iput(inode);
+ 			CDEBUG(D_DENTRY,
+ 			       "Reuse dentry %p inode %p refc %d flags %#x\n",
+-			      new, new->d_inode, d_refcount(new), new->d_flags);
++			      new, new->d_inode, d_count(new), new->d_flags);
+ 			return new;
+ 		}
  	}
- 	rcu_read_unlock();
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 6b9b7f4..c6e9c7a 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -9,6 +9,7 @@
- #include <linux/seqlock.h>
- #include <linux/cache.h>
- #include <linux/rcupdate.h>
-+#include <linux/spinlock_refcount.h>
- 
- struct nameidata;
- struct path;
-@@ -112,8 +113,7 @@ struct dentry {
- 	unsigned char d_iname[DNAME_INLINE_LEN];	/* small names */
- 
- 	/* Ref lookup also touches following */
--	unsigned int d_refcount;	/* protected by d_lock */
--	spinlock_t d_lock;		/* per dentry lock */
-+	struct lockref d_lockcnt;	/* per dentry lock & count */
- 	const struct dentry_operations *d_op;
- 	struct super_block *d_sb;	/* The root of the dentry tree */
- 	unsigned long d_time;		/* used by d_revalidate */
-@@ -132,6 +132,12 @@ struct dentry {
- };
- 
- /*
-+ * Define macros to access the name-changed spinlock and reference count
-+ */
-+#define d_lock		d_lockcnt.lock
-+#define d_refcount	d_lockcnt.refcnt
-+
-+/*
-  * dentry->d_lock spinlock nesting subclasses:
-  *
-  * 0: normal
-@@ -367,11 +373,8 @@ static inline struct dentry *dget_dlock(struct dentry *dentry)
- 
- static inline struct dentry *dget(struct dentry *dentry)
- {
--	if (dentry) {
--		spin_lock(&dentry->d_lock);
--		dget_dlock(dentry);
--		spin_unlock(&dentry->d_lock);
--	}
-+	if (dentry)
-+		lockref_get(&dentry->d_lockcnt);
- 	return dentry;
+@@ -417,7 +417,7 @@ struct dentry *ll_splice_alias(struct inode *inode, struct dentry *de)
+ 	__d_lustre_invalidate(de);
+ 	d_add(de, inode);
+ 	CDEBUG(D_DENTRY, "Add dentry %p inode %p refc %d flags %#x\n",
+-	       de, de->d_inode, d_refcount(de), de->d_flags);
++	       de, de->d_inode, d_count(de), de->d_flags);
+ 	return de;
  }
  
+diff --git a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
+index 1e6f32c..e70d8fe 100644
+--- a/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
++++ b/drivers/staging/lustre/lustre/lvfs/lvfs_linux.c
+@@ -121,8 +121,8 @@ void push_ctxt(struct lvfs_run_ctxt *save, struct lvfs_run_ctxt *new_ctx,
+ 	OBD_SET_CTXT_MAGIC(save);
+ 
+ 	save->fs = get_fs();
+-	LASSERT(d_refcount(cfs_fs_pwd(current->fs)));
+-	LASSERT(d_refcount(new_ctx->pwd));
++	LASSERT(d_count(cfs_fs_pwd(current->fs)));
++	LASSERT(d_count(new_ctx->pwd));
+ 	save->pwd = dget(cfs_fs_pwd(current->fs));
+ 	save->pwdmnt = mntget(cfs_fs_mnt(current->fs));
+ 	save->luc.luc_umask = current_umask();
 -- 
 1.7.1
 
