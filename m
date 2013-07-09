@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654Ab3GIUCK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 16:02:10 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47476 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab3GIUCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 16:02:07 -0400
-Date: Tue, 9 Jul 2013 22:01:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Matt Wilson <msw@amazon.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        jeremy@goop.org, x86@kernel.org, tglx@linutronix.de,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com, mingo@redhat.com,
-        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
-Message-ID: <20130709200150.GB27579@pd.tnic>
-References: <20130708192854.GF4927@phenom.dumpdata.com>
- <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>
- <51DB2134.9040909@zytor.com>
- <20130708205834.GA481@pd.tnic>
- <1373326534.1438.10.camel@x61.thuisdomein>
- <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
- <51DBDAB802000078000E37C1@nat28.tlf.novell.com>
- <20130709144840.GF24897@phenom.dumpdata.com>
- <20130709150554.GA27579@pd.tnic>
- <20130709171909.GA25586@phenom.dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130709171909.GA25586@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753059Ab3GIUNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 16:13:12 -0400
+Received: from mail-ye0-f202.google.com ([209.85.213.202]:46692 "EHLO
+	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab3GIUNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 16:13:07 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Markos Chandras <markos.chandras@imgtec.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: dw_mmc: Handle DW_MCI_QUIRK_IDMAC_DTO properly
+Date: Tue,  9 Jul 2013 13:04:40 -0700
+Message-Id: <1373400280-7408-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 01:19:09PM -0400, Konrad Rzeszutek Wilk wrote:
-> My thinking is that what should be done to have some sense of history
-> is that the patch in GRUB to not rely on kernel internals should be
-> done. Then that git commit of that tree should be mentioned in this
-> kernel patch.
+In (1fb5f68 mmc: dw_mmc: Don't loop when handling an interrupt), the
+code for handling DW_MCI_QUIRK_IDMAC_DTO became dead code.  Move it to
+where it ought to live.
 
-That's absolutely backwards and you know it. The two things - the kernel
-and grub2 - have a defined interface and it is the only way they should
-interact. Everything else is a bug.
+Found by code inspection and compile-tested only--I don't know of any
+boards that need DW_MCI_QUIRK_IDMAC_DTO.
 
-> I wouldn't want GRUB2 to have regressions and stop generating the
-> proper menu options. That smells of userspace regressions and I am not
-> too keen to have Linus point this out to me.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/mmc/host/dw_mmc.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
-You keep repeating that...
-
-Dear Konrad, we need to talk about what a userspace regression is. And
-in that case, grepping through the kernel .config and suddenly not
-finding a certain symbol is not. That's like objdump-ing vmlinux and
-relying on something there.
-
-The patch removing this symbol is not violating a defined interface to
-userspace. So you can't claim we're breaking anything here.
-
-> Once that is done we can follow up on this patch and perhaps also
-> nicely convience the initial author of this patch to look at removing
-> the CONFIG_XEN_DOM0 and replacing them with the two other CONFIG
-> options that Jan and me have been discussing.
-
-Yes, but please make sure there's a bug opened against grub2 which lets
-them know that grepping kernel configs is doomed to break sooner or
-later.
-
-Thanks.
-
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index bc3a1bc..cdc0940 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -1595,18 +1595,17 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
+ 
+ 	pending = mci_readl(host, MINTSTS); /* read-only mask reg */
+ 
+-	if (pending) {
+-
+-		/*
+-		 * DTO fix - version 2.10a and below, and only if internal DMA
+-		 * is configured.
+-		 */
+-		if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO) {
+-			if (!pending &&
+-			    ((mci_readl(host, STATUS) >> 17) & 0x1fff))
+-				pending |= SDMMC_INT_DATA_OVER;
+-		}
++	/*
++	 * DTO fix - version 2.10a and below, and only if internal DMA
++	 * is configured.
++	 */
++	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO) {
++		if (!pending &&
++		    ((mci_readl(host, STATUS) >> 17) & 0x1fff))
++			pending |= SDMMC_INT_DATA_OVER;
++	}
+ 
++	if (pending) {
+ 		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
+ 			mci_writel(host, RINTSTS, DW_MCI_CMD_ERROR_FLAGS);
+ 			host->cmd_status = pending;
 -- 
-Regards/Gruss,
-    Boris.
+1.8.3
 
-Sent from a fat crate under my desk. Formatting is fine.
---
