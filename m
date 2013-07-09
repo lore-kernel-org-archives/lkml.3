@@ -1,157 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab3GIXdp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 19:33:45 -0400
-Received: from mail-qe0-f46.google.com ([209.85.128.46]:43407 "EHLO
-	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab3GIXdn (ORCPT
+	id S1753681Ab3GIXfZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 19:35:25 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:64801 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab3GIXfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 19:33:43 -0400
-Date: Tue, 9 Jul 2013 16:33:38 -0700
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>, Kent Overstreet <kent.overstreet@gmail.com>
-Cc: cgroups@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH cgroup/for-3.11-fixes] cgroup: remove bcache_subsys_id which
- got added stealthily
-Message-ID: <20130709233338.GB10374@htj.dyndns.org>
+	Tue, 9 Jul 2013 19:35:22 -0400
+Message-ID: <51DC9E32.8040109@ozlabs.ru>
+Date: Wed, 10 Jul 2013 09:35:14 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Graf <agraf@suse.de>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 2/8] KVM: PPC: reserve a capability and ioctl numbers
+ for realmode VFIO
+References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru> <1372309356-28320-3-git-send-email-aik@ozlabs.ru> <51DC2DDA.6040408@suse.de>
+In-Reply-To: <51DC2DDA.6040408@suse.de>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From add0c59d802e6118e51e21244c3871be35164e4b Mon Sep 17 00:00:00 2001
-From: Tejun Heo <tj@kernel.org>
-Date: Tue, 9 Jul 2013 16:17:39 -0700
+On 07/10/2013 01:35 AM, Alexander Graf wrote:
+> On 06/27/2013 07:02 AM, Alexey Kardashevskiy wrote:
+>> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
+>> ---
+>>   include/uapi/linux/kvm.h |    2 ++
+>>   1 file changed, 2 insertions(+)
+>>
+>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+>> index 970b1f5..0865c01 100644
+>> --- a/include/uapi/linux/kvm.h
+>> +++ b/include/uapi/linux/kvm.h
+>> @@ -667,6 +667,7 @@ struct kvm_ppc_smmu_info {
+>>   #define KVM_CAP_PPC_RTAS 91
+>>   #define KVM_CAP_IRQ_XICS 92
+>>   #define KVM_CAP_SPAPR_MULTITCE 93
+>> +#define KVM_CAP_SPAPR_TCE_IOMMU 94
+>>
+>>   #ifdef KVM_CAP_IRQ_ROUTING
+>>
+>> @@ -923,6 +924,7 @@ struct kvm_s390_ucas_mapping {
+>>   /* Available with KVM_CAP_PPC_ALLOC_HTAB */
+>>   #define KVM_PPC_ALLOCATE_HTAB      _IOWR(KVMIO, 0xa7, __u32)
+>>   #define KVM_CREATE_SPAPR_TCE      _IOW(KVMIO,  0xa8, struct
+>> kvm_create_spapr_tce)
+>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, struct
+>> kvm_create_spapr_tce_iommu)
+> 
+> Please order them by number.
 
-cafe563591 ("bcache: A block layer cache") added a new cgroup
-subsystem bcache_subsys without proper review and ack.  bcache_subsys
-seems to use cgroup for group stats and per-group cache_mode
-configuration.  This is very much the type of usage that we don't want
-to allow.
+Oh. Again :( We have had this discussion with Scott Wood here already.
+Where _exactly_ do you want me to put it? Many sections, not really
+ordered. Thank you.
 
-Fortunately, CONFIG_CGROUP_BCACHE which enables bcache_subsys is
-currently commented out, so this shouldn't have any upstream users.
-Let's nip in the bud.  While at it, clarify in cgroup_subsys.h that no
-new subsystem should be added without explicit acks from cgroup
-maintainers.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org
-Cc: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: linux-bcache@vger.kernel.org
----
-Applied to cgroup/for-3.11-fixes.  Please don't do things like this
-ever again.
 
-Thanks.
-
- include/linux/cgroup_subsys.h | 45 +++++++------------------------------------
- 1 file changed, 7 insertions(+), 38 deletions(-)
-
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index 6e7ec64..b613ffd 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -1,86 +1,55 @@
--/* Add subsystem definitions of the form SUBSYS(<name>) in this
-- * file. Surround each one by a line of comment markers so that
-- * patches don't collide
-+/*
-+ * List of cgroup subsystems.
-+ *
-+ * DO NOT ADD ANY SUBSYSTEM WITHOUT EXPLICIT ACKS FROM CGROUP MAINTAINERS.
-  */
--
--/* */
--
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CPUSETS)
- SUBSYS(cpuset)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEBUG)
- SUBSYS(debug)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_SCHED)
- SUBSYS(cpu_cgroup)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_CPUACCT)
- SUBSYS(cpuacct)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_MEMCG)
- SUBSYS(mem_cgroup)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEVICE)
- SUBSYS(devices)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_FREEZER)
- SUBSYS(freezer)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_NET_CLS_CGROUP)
- SUBSYS(net_cls)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_BLK_CGROUP)
- SUBSYS(blkio)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_PERF)
- SUBSYS(perf)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_NETPRIO_CGROUP)
- SUBSYS(net_prio)
- #endif
- 
--/* */
--
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_HUGETLB)
- SUBSYS(hugetlb)
- #endif
--
--/* */
--
--#ifdef CONFIG_CGROUP_BCACHE
--SUBSYS(bcache)
--#endif
--
--/* */
-+/*
-+ * DO NOT ADD ANY SUBSYSTEM WITHOUT EXPLICIT ACKS FROM CGROUP MAINTAINERS.
-+ */
 -- 
-1.8.3.1
-
+Alexey
