@@ -1,56 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab3GIDGn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 23:06:43 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:48784 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752056Ab3GIDGl (ORCPT
+	id S1752134Ab3GIDPZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 23:15:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53354 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab3GIDPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 23:06:41 -0400
-Date: Tue, 9 Jul 2013 11:06:27 +0800 (CST)
-From: Xiong Zhou <jencce.kernel@gmail.com>
-To: tglx@linutronix.de, matthew.garrett@nebula.com
-cc: platform-driver-x86@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com, x86@kernel.org,
-        rui.zhang@intel.com, alan@linux.intel.com, ffainelli@freebox.fr,
-        mingo@kernel.org, mbizon@freebox.fr
-Subject: [PATCH] x86: ce4100: add head file for reboot type
-Message-ID: <alpine.DEB.2.02.1307091053280.28371@M2420>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 8 Jul 2013 23:15:23 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1625292718-1373339199=:28371"
+In-Reply-To: <s5h4nc5bewf.wl%tiwai@suse.de>
+References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
+	<20130706221401.GA3652@redhat.com>
+	<20130706223003.GA10697@kroah.com>
+	<s5h4nc5bewf.wl%tiwai@suse.de>
+Date: Tue, 9 Jul 2013 11:15:20 +0800
+Message-ID: <CACVXFVN452nktR=JTTubnYwVkcDdoued0VysT1vA+2jHU1A3Gw@mail.gmail.com>
+Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, Jul 8, 2013 at 5:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Sat, 6 Jul 2013 15:30:03 -0700,
+> Greg KH wrote:
+>>
+>> On Sat, Jul 06, 2013 at 06:14:01PM -0400, Dave Jones wrote:
+>> > On Tue, Jul 02, 2013 at 07:27:49PM +0000, Linux Kernel wrote:
+>> >  > Gitweb:     http://git.kernel.org/linus/;a=commit;h=d05c39ea67f5786a549ac9d672d2951992b658c6
+>> >  > Commit:     d05c39ea67f5786a549ac9d672d2951992b658c6
+>> >  > Parent:     a3b2c8c7aa1ca860edcf0b0afa371d9eb2269c3c
+>> >  > Author:     Takashi Iwai <tiwai@suse.de>
+>> >  > AuthorDate: Wed May 22 18:28:37 2013 +0200
+>> >  > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >  > CommitDate: Mon Jun 3 13:57:29 2013 -0700
+>> >  >
+>> >  >     dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
+>> >  >
+>> >  >     The usermode helper is mandatory for this driver.
+>> >  >
+>> >  >     Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> >  >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >  > ---
+>> >  >  drivers/firmware/Kconfig |    1 +
+>> >  >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> >  >
+>> >  > diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+>> >  > index 9387630..0747872 100644
+>> >  > --- a/drivers/firmware/Kconfig
+>> >  > +++ b/drivers/firmware/Kconfig
+>> >  > @@ -64,6 +64,7 @@ config DELL_RBU
+>> >  >          tristate "BIOS update support for DELL systems via sysfs"
+>> >  >          depends on X86
+>> >  >          select FW_LOADER
+>> >  > +        select FW_LOADER_USER_HELPER
+>> >  >          help
+>> >  >           Say m if you want to have the option of updating the BIOS for your
+>> >  >           DELL system. Note you need a Dell OpenManage or Dell Update package (DUP)
+>> >
+>> >
+>> > This is pretty crappy. Now every distro kernel has to have that enabled,
+>> > which screws up for eg, the x86 microcode driver. (It takes 1 minute per cpu
+>> > when this is enabled).
+>>
+>> I'll let you and Takashi battle this one out, for some reason I thought
+>> he added it _because_ a distro kernel needed it...
+>
+> The reason is that dell_rbu driver requires it.  Without the kconfig
+> option, this driver won't work at all.  So, it's a right fix for
+> dell_rbu.
+>
+> AFAIK, the consensus in the kernel side is that this too long fw
+> loading time is basically a regression of user-space (udev or
+> whatever).  There is no change in the kernel behavior.  The problem
+> must exist even with the older kernels.
+>
+> But, looking at the development, we can't expect that udev will be
+> fixed soon, and this breakage persists already way too long.  Maybe a
+> better solution is to kill the fallback to udev for normal f/w loading
+> (i.e. for distro kernels).
+>
+> The patch below is an untested quick hack.  It adds a new Kconfig and
+> a new function request_firmware_via_user_helper().  Distro kernels may
+> set CONFIG_FW_LOADER_USER_HELPER_FALLBACK=n for avoiding 60 seconds
 
---8323328-1625292718-1373339199=:28371
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+I understand your proposed approach is basically equal to unset DELL_RBU,
+don't I?
 
-From: Xiong Zhou <jencce.kernel@gmail.com>
+Actually if DELL_RBU is set, FW_LOADER_USER_HELPER is still set, and
+it won't avoid the fallback to loading from userspace.
 
-Add head file for reboot type stuff to fix this:
-error: ¡reboot_type¢ undeclared (first use in this function)
-error: ¡BOOT_KBD¢ undeclared (first use in this function)
+> stall for non-existing firmware file access -- as distributions know
+> that the firmware files should be placed in the right path.
+>
+> Thoughts?
 
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
----
- arch/x86/platform/ce4100/ce4100.c |    1 +
- 1 file changed, 1 insertion(+)
+I suggest not to introduce new config options in firmware loader any more,
+and the current options are too many already and it is very easy to trigger
+build problem, and introduce extra complexity to users at the same time.
 
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index baec704..643b8b5e 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -14,6 +14,7 @@
- #include <linux/module.h>
- #include <linux/serial_reg.h>
- #include <linux/serial_8250.h>
-+#include <linux/reboot.h>
- 
- #include <asm/ce4100.h>
- #include <asm/prom.h>
---8323328-1625292718-1373339199=:28371--
+About Dave's problem, I think distribution may not trigger it since
+cpu microcode
+should exist, so I am wondering if Dave can disable DELL_RBU to work around
+the problem in his system? Or fake a one byte microcode file to fool the driver?
+
+Also looks the problem should be handled inside x86 microcode driver because
+the usage is unique in x86 microcode driver. Other drivers either need one
+firmware or stop to work without a firmware, but this driver can work
+well no matter
+the firmware loading is satisfied or not.
+
+Or could we force dell rbu to use uevent based loading now?
+
+thanks
+--
+Ming Lei
