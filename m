@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3GINkf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:40:35 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:43276 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab3GINkd (ORCPT
+	id S1753961Ab3GINnU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:43:20 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:39145 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753656Ab3GINnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 09:40:33 -0400
+	Tue, 9 Jul 2013 09:43:16 -0400
+Message-ID: <51DC136E.6020901@openvz.org>
+Date: Tue, 09 Jul 2013 17:43:10 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
 MIME-Version: 1.0
-In-Reply-To: <CAE7qMrosUkhF3Yak11Mh81NcGhYduUKRoHiUwH4RbTN1KXqi8A@mail.gmail.com>
-References: <1315638713-3731-1-git-send-email-benjamin.tissoires@gmail.com>
-	<20110910072826.GA1611@x4.trippels.de>
-	<CAN+gG=H2jfT2zdn5H19hyn9JtDU7U1ensX_aUDgv0jk4d81jXg@mail.gmail.com>
-	<CAN+gG=E90-y--6C-Ok8TibcFZGAaL2X-KxnchquDLCUUniip1Q@mail.gmail.com>
-	<alpine.LNX.2.00.1306271513180.3538@pobox.suse.cz>
-	<CAE7qMrosUkhF3Yak11Mh81NcGhYduUKRoHiUwH4RbTN1KXqi8A@mail.gmail.com>
-Date: Tue, 9 Jul 2013 15:40:31 +0200
-Message-ID: <CAN+gG=HNSzg_W-26vMb2seWNU+QcO3+wv4Z1AmZ36LqPhbzdEg@mail.gmail.com>
-Subject: Re: Logitech M705: Thumb button (was Re: [PATCH v4] HID: Add full
- support for Logitech Unifying receivers)
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Nestor Lopez Casado <nlopezcasad@logitech.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Richard Titmuss <rtitmuss@logitech.com>,
-        Olivier Gay <ogay@logitech.com>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Daniel Zanone <jzanone@logitech.com>,
-        =?UTF-8?Q?Franti=C5=A1ek_Fuka?= <fuka@fuxoft.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: Vivek Goyal <vgoyal@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
+References: <20130708100046.14417.12932.stgit@zurg> <20130708170047.GA18600@mtj.dyndns.org> <20130708175201.GB9094@redhat.com> <20130708175607.GB18600@mtj.dyndns.org> <51DBC99F.4030301@openvz.org> <20130709125734.GA2478@htj.dyndns.org> <51DC0CE2.2050906@openvz.org> <20130709131605.GB2478@htj.dyndns.org> <20130709131646.GC2478@htj.dyndns.org>
+In-Reply-To: <20130709131646.GC2478@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nestor,
-
-On Wed, Jul 3, 2013 at 12:46 PM, Nestor Lopez Casado
-<nlopezcasad@logitech.com> wrote:
-> Hi all,
->
-> Sorry it took me some time to answer.
->
-> I extended the Logitech HIDPP10 specification here:
-> https://drive.google.com/folderview?id=0BxbRzx7vEV7eWmgwazJ3NUFfQ28&usp=sharing
-
-Thanks :)
-
-> [...]
->> Let me resurrect this 2 years old thread, as I have received multiple
->> reports since then, stating that some revisions of M705 don't have working
->> thumb button.
+Tejun Heo wrote:
+> On Tue, Jul 09, 2013 at 06:16:05AM -0700, Tejun Heo wrote:
+>> On Tue, Jul 09, 2013 at 05:15:14PM +0400, Konstantin Khlebnikov wrote:
+>>> blkio controls block devices. not filesystems or superblocks or bdi or pagecache.
+>>> It's all about block layer and nothing more. Am I right?
+>>>
+>>> So, you want to link some completely unrelated subsystems like NFS into the block layer?
 >>
->> Question mostly to the Logitech guys: Nestor, Olivier, could you please
->> provide us with the sequence that needs to be sent to (certain revisisons
->> of) M705 to let enter the debug mode, making the thumb button actually
->> emit a USB message?
+>> Heh, yeah, sure, network QoS is completely unrelated to sockets too,
+>> right?
 >
->
-> There are two versions of FW in the field:
->
-> 1) Version 17.01.Build 0017.
-> This version reports the thumb button by default as HID button 6.
->
-> 2) Version 17.00.Build 0015
-> This version does not report the thumb button by default.
->
-> It is possible to enable the M705 with FW 17.00.Build 0015 to send the
-> thumb button as HID button 6 via HIDPP10 command. But this will have a
-> (undesirable ?) side effect.
-> Once the button 6 is enabled, the buttons aside to the wheel (tilt
-> buttons) will no longer be reported as AC pan HID usage, they will be
-> reported as buttons 7 & 8. This might disrupt some users that rely on
-> the mouse AC pan feature.
-
-This side effect can be solved by handling the magic sequence in the
-kernel, and do the mapping in the kernel also.
-This would need to add a special driver for the M705 though. The good
-point is that both the firmware behave the same way when they are
-switched to the special mode, meaning that we don't need to check the
-build number and do the switch as soon as we see the M705 PID.
-
->
-> To enable HID button 6 reporting from thumb button we need to clear
-> the bit 1 (Special button function) in register 0x01 on the M705
-> READ register: 10 IDX 81 01 r0 r1 r2
-> Clear Bit1: r0 &= 0xFD;
-> Write back register: 10 IDX 80 01 r0 r1 r2
->
-> IDX is the device index on the Unifying receiver.
->
-> Note that if the command is sent to all M705 devices, users that have
-> the  17.01.Build 0017 will lose the Ac pan and will gain nothing.
+> And, no, blkio wouldn't have anything to do with NFS.  Where did you
+> get that idea?
 >
 
-For those who wants to try, I have set up a project [1] to implement
-part of the spec Nestor released.
-I implemented various features: list devices paired to a receiver,
-pair/unpair a device, and toggle the button 6 on M705 mouse with the
-faulty firmware.
-When switching mode for the M705, as Nestor said, we lose the AC
-panning ability until the correct remapping is done in the kernel.
-
-Cheers,
-Benjamin
-
-
-[1] https://github.com/bentiss/uLogitech
+My concept it cgroup which would control io operation on vfs layer for all filesystems.
+It will account and manage IO operations. I've found really lightweight technique
+for accounting and throttling which don't introduce new locks or priority inversions
+(which is major problem in all existing throttlers, including cpu cgroup rate limiter)
+So, I've tried to keep code smaller, cleaner and saner as possible while you guys are
+trying to push me into the block layer =)
