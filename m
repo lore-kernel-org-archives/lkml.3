@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab3GINT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:19:28 -0400
-Received: from gmmr8.centrum.cz ([46.255.227.254]:43145 "EHLO gmmr8.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752846Ab3GINTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 09:19:24 -0400
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
-Date: Tue, 09 Jul 2013 15:19:21 +0200
-From: "azurIt" <azurit@pobox.sk>
-Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>
-References: <20130607131157.GF8117@dhcp22.suse.cz>, <20130617122134.2E072BA8@pobox.sk>, <20130619132614.GC16457@dhcp22.suse.cz>, <20130622220958.D10567A4@pobox.sk>, <20130624201345.GA21822@cmpxchg.org>, <20130628120613.6D6CAD21@pobox.sk>, <20130705181728.GQ17812@cmpxchg.org>, <20130705210246.11D2135A@pobox.sk>, <20130705191854.GR17812@cmpxchg.org>, <20130708014224.50F06960@pobox.sk> <20130709131029.GH20281@dhcp22.suse.cz>
-In-Reply-To: <20130709131029.GH20281@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1753936Ab3GINTd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:19:33 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:58195 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab3GINTa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 09:19:30 -0400
 MIME-Version: 1.0
-Message-Id: <20130709151921.5160C199@pobox.sk>
-X-Maser: brud
+In-Reply-To: <1373372929-17800-4-git-send-email-richard.genoud@gmail.com>
+References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
+ <1373372929-17800-1-git-send-email-richard.genoud@gmail.com> <1373372929-17800-4-git-send-email-richard.genoud@gmail.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Tue, 9 Jul 2013 15:19:09 +0200
+Message-ID: <CACQ1gAg8WQTaz4XkXJCH+-bNU_U3s_1pgmQYoQR3v-KHOzzBTA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/7] Documentation: DT: update atmel SSC with DMA binding
+To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
+        Richard Genoud <richard.genoud@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->On Mon 08-07-13 01:42:24, azurIt wrote:
->> > CC: "Michal Hocko" <mhocko@suse.cz>, linux-kernel@vger.kernel.org, linux-mm@kvack.org, "cgroups mailinglist" <cgroups@vger.kernel.org>, "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>
->> >On Fri, Jul 05, 2013 at 09:02:46PM +0200, azurIt wrote:
->> >> >I looked at your debug messages but could not find anything that would
->> >> >hint at a deadlock.  All tasks are stuck in the refrigerator, so I
->> >> >assume you use the freezer cgroup and enabled it somehow?
->> >> 
->> >> 
->> >> Yes, i'm really using freezer cgroup BUT i was checking if it's not
->> >> doing problems - unfortunately, several days passed from that day
->> >> and now i don't fully remember if i was checking it for both cases
->> >> (unremoveabled cgroups and these freezed processes holding web
->> >> server port). I'm 100% sure i was checking it for unremoveable
->> >> cgroups but not so sure for the other problem (i had to act quickly
->> >> in that case). Are you sure (from stacks) that freezer cgroup was
->> >> enabled there?
->> >
->> >Yeah, all the traces without exception look like this:
->> >
->> >1372089762/23433/stack:[<ffffffff81080925>] refrigerator+0x95/0x160
->> >1372089762/23433/stack:[<ffffffff8106ab7b>] get_signal_to_deliver+0x1cb/0x540
->> >1372089762/23433/stack:[<ffffffff8100188b>] do_signal+0x6b/0x750
->> >1372089762/23433/stack:[<ffffffff81001fc5>] do_notify_resume+0x55/0x80
->> >1372089762/23433/stack:[<ffffffff815cac77>] int_signal+0x12/0x17
->> >1372089762/23433/stack:[<ffffffffffffffff>] 0xffffffffffffffff
->> >
->> >so the freezer was already enabled when you took the backtraces.
->> >
->> >> Btw, what about that other stacks? I mean this file:
->> >> http://watchdog.sk/lkml/memcg-bug-7.tar.gz
->> >> 
->> >> It was taken while running the kernel with your patch and from
->> >> cgroup which was under unresolveable OOM (just like my very original
->> >> problem).
->> >
->> >I looked at these traces too, but none of the tasks are stuck in rmdir
->> >or the OOM path.  Some /are/ in the page fault path, but they are
->> >happily doing reclaim and don't appear to be stuck.  So I'm having a
->> >hard time matching this data to what you otherwise observed.
+2013/7/9 Richard Genoud <richard.genoud@gmail.com>:
+> As atmel-ssc can be used with DMA, the documentation should be updated.
+> Also, a configuration DMA example is given.
 >
->Agreed.
+> Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> ---
+>  .../devicetree/bindings/misc/atmel-ssc.txt         |   24 ++++++++++++++++++--
+>  1 file changed, 22 insertions(+), 2 deletions(-)
 >
->> >However, based on what you reported the most likely explanation for
->> >the continued hangs is the unfinished OOM handling for which I sent
->> >the followup patch for arch/x86/mm/fault.c.
->> 
->> Johannes,
->> 
->> today I tested both of your patches but problem with unremovable
->> cgroups, unfortunately, persists.
+> diff --git a/Documentation/devicetree/bindings/misc/atmel-ssc.txt b/Documentation/devicetree/bindings/misc/atmel-ssc.txt
+> index 38e51ad..96958ca 100644
+> --- a/Documentation/devicetree/bindings/misc/atmel-ssc.txt
+> +++ b/Documentation/devicetree/bindings/misc/atmel-ssc.txt
+> @@ -6,10 +6,30 @@ Required properties:
+>         - atmel,at91sam9g45-ssc: support dma transfer
+>  - reg: Should contain SSC registers location and length
+>  - interrupts: Should contain SSC interrupt
+> +For dma transfer:
+> +- dmas: DMA specifier, consisting of a phandle to DMA controller node,
+> +  the memory interface and SSC DMA channel ID (for tx and rx).
+> +  See Documentation/devicetree/bindings/dma/atmel-dma.txt for details.
+> +- dma-names: Must be "tx", "rx".
 >
->Is the group empty again with marked under_oom?
+> -Example:
+> +
+> +Examples:
+>  ssc0: ssc@fffbc000 {
+>         compatible = "atmel,at91rm9200-ssc";
+>         reg = <0xfffbc000 0x4000>;
+> -       interrupts = <14 4 5>;
+> +       interrupts = <14 IRQ_TYPE_LEVEL_HIGH 5>;
+maybe I should not use macro in the documentation (not sure if I should or not).
+>  };
+> +
+> +
+> +ssc0: ssc@f0010000 {
+> +      compatible = "atmel,at91sam9g45-ssc";
+> +      reg = <0xf0010000 0x4000>;
+> +      interrupts = <28 IRQ_TYPE_LEVEL_HIGH 5>;
+> +      dmas = <&dma0 1 AT91_DMA_CFG_PER_ID(13)>,
+> +            <&dma0 1 AT91_DMA_CFG_PER_ID(14)>;
+same here
+> +      dma-names = "tx", "rx";
+> +      pinctrl-names = "default";
+> +      pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
+> +      status = "disabled";
+> +};
+> +
+> --
+> 1.7.10.4
+>
 
 
-Now i realized that i forgot to remove UID from that cgroup before trying to remove it, so cgroup cannot be removed anyway (we are using third party cgroup called cgroup-uid from Andrea Righi, which is able to associate all user's processes with target cgroup). Look here for cgroup-uid patch:
-https://www.develer.com/~arighi/linux/patches/cgroup-uid/cgroup-uid-v8.patch
 
-ANYWAY, i'm 101% sure that 'tasks' file was empty and 'under_oom' was permanently '1'.
-
-azur
+-- 
+for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
