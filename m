@@ -1,74 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab3GII7p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:59:45 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2787 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3GII7m (ORCPT
+	id S1753635Ab3GIJIF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 05:08:05 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:50855 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab3GIJIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:59:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 09 Jul 2013 01:59:35 -0700
-Message-ID: <51DBD0CB.2000504@nvidia.com>
-Date: Tue, 9 Jul 2013 16:58:51 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 9 Jul 2013 05:08:01 -0400
+Message-ID: <51DBD3C2.2040807@linux.vnet.ibm.com>
+Date: Tue, 09 Jul 2013 14:41:30 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [lm-sensors] [PATCH 1/2] ARM: dt: t30 cardhu: add dt entry for
- lm90
-References: <1372928979-26938-1-git-send-email-wni@nvidia.com> <1372928979-26938-2-git-send-email-wni@nvidia.com> <51D70483.70203@wwwdotorg.org>	<51DA6BD4.1040300@nvidia.com> <20130708095024.041a6d57@endymion.delvare>	<51DA8805.50709@nvidia.com> <20130708131421.GB21638@roeck-us.net>	<20130709062112.GC17499@mithrandir> <51DBC058.2040904@nvidia.com> <20130709095525.5158a0a5@endymion.delvare>
-In-Reply-To: <20130709095525.5158a0a5@endymion.delvare>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Gleb Natapov <gleb@redhat.com>, Andrew Jones <drjones@redhat.com>,
+        mingo@redhat.com, ouyang@cs.pitt.edu
+CC: habanero@linux.vnet.ibm.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
+        chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+References: <20130601192125.5966.35563.sendpatchset@codeblue> <1372171802.3804.30.camel@oc2024037011.ibm.com> <51CAAA26.4090204@linux.vnet.ibm.com> <20130626113744.GA6300@hawk.usersys.redhat.com> <20130626125240.GY18508@redhat.com> <51CAEF45.3010203@linux.vnet.ibm.com> <20130626161130.GB18152@redhat.com> <51CB2AD9.5060508@linux.vnet.ibm.com>
+In-Reply-To: <51CB2AD9.5060508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070909-3864-0000-0000-000008FE374A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 03:55 PM, Jean Delvare wrote:
-> On Tue, 9 Jul 2013 15:48:40 +0800, Wei Ni wrote:
->> On 07/09/2013 02:21 PM, Thierry Reding wrote:
->>> It should work out of the box. As a matter of fact the same chip is used
->>> on Tamonten and the DTS files use "onnn,nct1008". That used to work. If
->>> it no longer does then that's a regression.
+On 06/26/2013 11:24 PM, Raghavendra K T wrote:
+> On 06/26/2013 09:41 PM, Gleb Natapov wrote:
+>> On Wed, Jun 26, 2013 at 07:10:21PM +0530, Raghavendra K T wrote:
+>>> On 06/26/2013 06:22 PM, Gleb Natapov wrote:
+>>>> On Wed, Jun 26, 2013 at 01:37:45PM +0200, Andrew Jones wrote:
+>>>>> On Wed, Jun 26, 2013 at 02:15:26PM +0530, Raghavendra K T wrote:
+>>>>>> On 06/25/2013 08:20 PM, Andrew Theurer wrote:
+>>>>>>> On Sun, 2013-06-02 at 00:51 +0530, Raghavendra K T wrote:
+>>>>>>>> This series replaces the existing paravirtualized spinlock
+>>>>>>>> mechanism
+>>>>>>>> with a paravirtualized ticketlock mechanism. The series provides
+>>>>>>>> implementation for both Xen and KVM.
+>>>>>>>>
+>>>>>>>> Changes in V9:
+>>>>>>>> - Changed spin_threshold to 32k to avoid excess halt exits that are
+>>>>>>>>     causing undercommit degradation (after PLE handler
+>>>>>>>> improvement).
+>>>>>>>> - Added  kvm_irq_delivery_to_apic (suggested by Gleb)
+>>>>>>>> - Optimized halt exit path to use PLE handler
+>>>>>>>>
+>>>>>>>> V8 of PVspinlock was posted last year. After Avi's suggestions
+>>>>>>>> to look
+>>>>>>>> at PLE handler's improvements, various optimizations in PLE
+>>>>>>>> handling
+>>>>>>>> have been tried.
+>>>>>>>
+>>>>>>> Sorry for not posting this sooner.  I have tested the v9
+>>>>>>> pv-ticketlock
+>>>>>>> patches in 1x and 2x over-commit with 10-vcpu and 20-vcpu VMs.  I
+>>>>>>> have
+>>>>>>> tested these patches with and without PLE, as PLE is still not
+>>>>>>> scalable
+>>>>>>> with large VMs.
+>>>>>>>
+>>>>>>
+>>>>>> Hi Andrew,
+>>>>>>
+>>>>>> Thanks for testing.
+>>>>>>
+>>>>>>> System: x3850X5, 40 cores, 80 threads
+>>>>>>>
+>>>>>>>
+>>>>>>> 1x over-commit with 10-vCPU VMs (8 VMs) all running dbench:
+>>>>>>> ----------------------------------------------------------
+>>>>>>>                         Total
+>>>>>>> Configuration                Throughput(MB/s)    Notes
+>>>>>>>
+>>>>>>> 3.10-default-ple_on            22945            5% CPU in host
+>>>>>>> kernel, 2% spin_lock in guests
+>>>>>>> 3.10-default-ple_off            23184            5% CPU in host
+>>>>>>> kernel, 2% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_on            22895            5% CPU in host
+>>>>>>> kernel, 2% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_off            23051            5% CPU in host
+>>>>>>> kernel, 2% spin_lock in guests
+>>>>>>> [all 1x results look good here]
+>>>>>>
+>>>>>> Yes. The 1x results look too close
+>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>> 2x over-commit with 10-vCPU VMs (16 VMs) all running dbench:
+>>>>>>> -----------------------------------------------------------
+>>>>>>>                         Total
+>>>>>>> Configuration                Throughput        Notes
+>>>>>>>
+>>>>>>> 3.10-default-ple_on             6287            55% CPU  host
+>>>>>>> kernel, 17% spin_lock in guests
+>>>>>>> 3.10-default-ple_off             1849            2% CPU in host
+>>>>>>> kernel, 95% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_on             6691            50% CPU in host
+>>>>>>> kernel, 15% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_off            16464            8% CPU in host
+>>>>>>> kernel, 33% spin_lock in guests
+>>>>>>
+>>>>>> I see 6.426% improvement with ple_on
+>>>>>> and 161.87% improvement with ple_off. I think this is a very good
+>>>>>> sign
+>>>>>>   for the patches
+>>>>>>
+>>>>>>> [PLE hinders pv-ticket improvements, but even with PLE off,
+>>>>>>>   we still off from ideal throughput (somewhere >20000)]
+>>>>>>>
+>>>>>>
+>>>>>> Okay, The ideal throughput you are referring is getting around
+>>>>>> atleast
+>>>>>> 80% of 1x throughput for over-commit. Yes we are still far away from
+>>>>>> there.
+>>>>>>
+>>>>>>>
+>>>>>>> 1x over-commit with 20-vCPU VMs (4 VMs) all running dbench:
+>>>>>>> ----------------------------------------------------------
+>>>>>>>                         Total
+>>>>>>> Configuration                Throughput        Notes
+>>>>>>>
+>>>>>>> 3.10-default-ple_on            22736            6% CPU in host
+>>>>>>> kernel, 3% spin_lock in guests
+>>>>>>> 3.10-default-ple_off            23377            5% CPU in host
+>>>>>>> kernel, 3% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_on            22471            6% CPU in host
+>>>>>>> kernel, 3% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_off            23445            5% CPU in host
+>>>>>>> kernel, 3% spin_lock in guests
+>>>>>>> [1x looking fine here]
+>>>>>>>
+>>>>>>
+>>>>>> I see ple_off is little better here.
+>>>>>>
+>>>>>>>
+>>>>>>> 2x over-commit with 20-vCPU VMs (8 VMs) all running dbench:
+>>>>>>> ----------------------------------------------------------
+>>>>>>>                         Total
+>>>>>>> Configuration                Throughput        Notes
+>>>>>>>
+>>>>>>> 3.10-default-ple_on             1965            70% CPU in host
+>>>>>>> kernel, 34% spin_lock in guests
+>>>>>>> 3.10-default-ple_off              226            2% CPU in host
+>>>>>>> kernel, 94% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_on             1942            70% CPU in host
+>>>>>>> kernel, 35% spin_lock in guests
+>>>>>>> 3.10-pvticket-ple_off             8003            11% CPU in host
+>>>>>>> kernel, 70% spin_lock in guests
+>>>>>>> [quite bad all around, but pv-tickets with PLE off the best so far.
+>>>>>>>   Still quite a bit off from ideal throughput]
+>>>>>>
+>>>>>> This is again a remarkable improvement (307%).
+>>>>>> This motivates me to add a patch to disable ple when pvspinlock is
+>>>>>> on.
+>>>>>> probably we can add a hypercall that disables ple in kvm init patch.
+>>>>>> but only problem I see is what if the guests are mixed.
+>>>>>>
+>>>>>>   (i.e one guest has pvspinlock support but other does not. Host
+>>>>>> supports pv)
+>>>>>
+>>>>> How about reintroducing the idea to create per-kvm ple_gap,ple_window
+>>>>> state. We were headed down that road when considering a dynamic
+>>>>> window at
+>>>>> one point. Then you can just set a single guest's ple_gap to zero,
+>>>>> which
+>>>>> would lead to PLE being disabled for that guest. We could also revisit
+>>>>> the dynamic window then.
+>>>>>
+>>>> Can be done, but lets understand why ple on is such a big problem.
+>>>> Is it
+>>>> possible that ple gap and SPIN_THRESHOLD are not tuned properly?
+>>>>
+>>>
+>>> The one obvious reason I see is commit awareness inside the guest. for
+>>> under-commit there is no necessity to do PLE, but unfortunately we do.
+>>>
+>>> atleast we return back immediately in case of potential undercommits,
+>>> but we still incur vmexit delay.
+>> But why do we? If SPIN_THRESHOLD will be short enough (or ple windows
+>> long enough) to not generate PLE exit we will not go into PLE handler
+>> at all, no?
 >>
->> I synced the linux-next from:
->> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
->> and use the tag v3.10-rc7, but in the lm90.c it doesn't have DT support,
->> such as "onnn,nct1008".
->> I googled it and found there has patch:
->> [PATCH] hwmon: (lm90) Add device tree support , which is in:
->> http://lists.lm-sensors.org/pipermail/lm-sensors/2013-February/038099.html
->> , but it didn't be merged into the linux-next.
-> 
-> It was not, because of the next reply in the same thread:
-> http://lists.lm-sensors.org/pipermail/lm-sensors/2013-February/038100.html
-> 
->> which git repository and branch should I use ?
-> 
-> It is supposed to just work. What doesn't work for you exactly?
-> 
+>
+> Yes. you are right. dynamic ple window was an attempt to solve it.
+>
+> Probelm is, reducing the SPIN_THRESHOLD is resulting in excess halt
+> exits in under-commits and increasing ple_window may be sometimes
+> counter productive as it affects other busy-wait constructs such as
+> flush_tlb AFAIK.
+> So if we could have had a dynamically changing SPIN_THRESHOLD too, that
+> would be nice.
+>
 
-Oh, yes, the "onnn,nct1008" can work. I read the i2c driver and the
-of_i2c.c carefully, I understand why the lm90 can be loaded by setting
-"onnn,nct1008". Indeed, we can set the vendor string to anything, even
-"xxx,nct1008", the lm90 also can be loaded correctly.
+Gleb, Andrew,
+I tested with the global ple window change (similar to what I posted 
+here https://lkml.org/lkml/2012/11/11/14 ),
+But did not see good result. May be it is good to go with per VM
+ple_window.
 
-Anyway, I will use the "onnn,nct1008" in my next version.
+Gleb,
+Can you elaborate little more on what you have in mind regarding per VM 
+ple_window. (maintaining part of it as a per vm variable is clear to
+  me), but is it that we have to load that every time of guest entry?
 
-Thanks for your comments.
-Wei.
+I 'll try that idea next.
 
+Ingo, Gleb,
 
+ From the results perspective, Andrew Theurer, Vinod's test results are
+pro-pvspinlock.
+Could you please help me to know what will make it a mergeable
+candidate?.
+
+I agree that Jiannan's Preemptable Lock idea is promising and we could
+evaluate that  approach, and make the best one get into kernel and also
+will carry on discussion with Jiannan to improve that patch.
+Experiments so far have been good for smaller machine but it is not
+scaling for bigger machines.
 
