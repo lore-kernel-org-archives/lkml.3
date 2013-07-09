@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895Ab3GIPzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:55:43 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:45895 "EHLO
+	id S1752962Ab3GIP4K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:56:10 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46283 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3GIPzf (ORCPT
+	with ESMTP id S1752801Ab3GIPzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:55:35 -0400
+	Tue, 9 Jul 2013 11:55:41 -0400
 From: Morten Rasmussen <morten.rasmussen@arm.com>
 To: mingo@kernel.org, peterz@infradead.org
 Cc: arjan@linux.intel.com, vincent.guittot@linaro.org,
@@ -16,84 +16,78 @@ Cc: arjan@linux.intel.com, vincent.guittot@linaro.org,
         tglx@linutronix.de, catalin.marinas@arm.com,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         morten.rasmussen@arm.com
-Subject: [RFC][PATCH 1/9] sched: Introduce power scheduler
-Date: Tue,  9 Jul 2013 16:55:30 +0100
-Message-Id: <1373385338-12983-2-git-send-email-morten.rasmussen@arm.com>
+Subject: [RFC][PATCH 9/9] sched: power: cpufreq: Initial schedpower cpufreq governor
+Date: Tue,  9 Jul 2013 16:55:38 +0100
+Message-Id: <1373385338-12983-10-git-send-email-morten.rasmussen@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
 References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 09 Jul 2013 15:55:30.0888 (UTC) FILETIME=[BD1E0480:01CE7CBC]
-X-MC-Unique: 113070916553211201
+X-OriginalArrivalTime: 09 Jul 2013 15:55:37.0825 (UTC) FILETIME=[C1408510:01CE7CBC]
+X-MC-Unique: 113070916553900901
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r69Fu8Io011621
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r69FuMif011625
 
-Proof of concept capacity managing power scheduler. Supports simple
-packing without any consideration of power topology. The power scheduler
-is meant to use a platform specific power driver to obtain information
-about power topology and select idle states and frequency/P-states.
-
-For now, the power scheduler is called periodically on cpu0. This will be
-replaced by calls from the scheduler in the future. Thresholds and other
-defined constants will be configurable, possibly set by the power driver,
-in the future. Iterations over all cpus will be also be optimized to
-ensure scalability.
+Adds a 'schedpower' cpufreq governor that acts as a cpufreq driver
+wrapper for the power scheduler. This enables the power scheduler
+to initially use existing cpufreq drivers during development.
+The long term plan is platform specific unified power drivers.
 
 Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
 CC: Ingo Molnar <mingo@kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>
 CC: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/Kconfig      |    2 +
- kernel/Kconfig.power  |    3 +
- kernel/sched/Makefile |    1 +
- kernel/sched/power.c  |  161 +++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 167 insertions(+)
- create mode 100644 kernel/Kconfig.power
- create mode 100644 kernel/sched/power.c
+ drivers/cpufreq/Kconfig              |    8 +++
+ drivers/cpufreq/Makefile             |    1 +
+ drivers/cpufreq/cpufreq_schedpower.c |  119 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 128 insertions(+)
+ create mode 100644 drivers/cpufreq/cpufreq_schedpower.c
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 2651b1d..04076ab 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1805,6 +1805,8 @@ config XEN
- 	help
- 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM.
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 534fcb8..f0d168d 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -184,6 +184,14 @@ config CPU_FREQ_GOV_CONSERVATIVE
  
-+source "kernel/Kconfig.power"
+ 	  If in doubt, say N.
+ 
++config CPU_FREQ_GOV_SCHEDPOWER
++	bool "'schedpower' governor/power driver"
++	depends on CPU_FREQ
++	depends on SCHED_POWER
++	help
++	  'schedpower' - this governor acts as a wrapper power driver for the
++	  power scheduler.
 +
- endmenu
+ config GENERIC_CPUFREQ_CPU0
+ 	tristate "Generic CPU0 cpufreq driver"
+ 	depends on HAVE_CLK && REGULATOR && PM_OPP && OF
+diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
+index 315b923..6ff50ad 100644
+--- a/drivers/cpufreq/Makefile
++++ b/drivers/cpufreq/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_POWERSAVE)	+= cpufreq_powersave.o
+ obj-$(CONFIG_CPU_FREQ_GOV_USERSPACE)	+= cpufreq_userspace.o
+ obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o
+ obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o
++obj-$(CONFIG_CPU_FREQ_GOV_SCHEDPOWER)	+= cpufreq_schedpower.o
+ obj-$(CONFIG_CPU_FREQ_GOV_COMMON)		+= cpufreq_governor.o
  
- menu "Boot options"
-diff --git a/kernel/Kconfig.power b/kernel/Kconfig.power
+ # CPUfreq cross-arch helpers
+diff --git a/drivers/cpufreq/cpufreq_schedpower.c b/drivers/cpufreq/cpufreq_schedpower.c
 new file mode 100644
-index 0000000..4fdaa13
+index 0000000..1b20adb
 --- /dev/null
-+++ b/kernel/Kconfig.power
-@@ -0,0 +1,3 @@
-+config SCHED_POWER
-+	bool "(EXPERIMENTAL) Power scheduler"
-+	default n
-diff --git a/kernel/sched/Makefile b/kernel/sched/Makefile
-index deaf90e..67b01b2 100644
---- a/kernel/sched/Makefile
-+++ b/kernel/sched/Makefile
-@@ -17,3 +17,4 @@ obj-$(CONFIG_SCHED_AUTOGROUP) += auto_group.o
- obj-$(CONFIG_SCHEDSTATS) += stats.o
- obj-$(CONFIG_SCHED_DEBUG) += debug.o
- obj-$(CONFIG_CGROUP_CPUACCT) += cpuacct.o
-+obj-$(CONFIG_SCHED_POWER) += power.o
-diff --git a/kernel/sched/power.c b/kernel/sched/power.c
-new file mode 100644
-index 0000000..ddf249f
---- /dev/null
-+++ b/kernel/sched/power.c
-@@ -0,0 +1,161 @@
++++ b/drivers/cpufreq/cpufreq_schedpower.c
+@@ -0,0 +1,119 @@
 +/*
-+ * kernel/sched/power.c
++ * Power driver to cpufreq wrapper for power scheduler
++ *
++ * drivers/cpufreq/cpufreq_schedpower.c
 + *
 + * Copyright (C) 2013 ARM Limited.
 + * Author: Morten Rasmussen <morten.rasmussen@arm.com>
@@ -105,154 +99,110 @@ index 0000000..ddf249f
 + */
 +
 +#include <linux/kernel.h>
++#include <linux/cpufreq.h>
 +#include <linux/init.h>
 +#include <linux/percpu.h>
-+#include <linux/workqueue.h>
-+#include <linux/sched.h>
++#include <linux/sched/power.h>
 +
-+#include "sched.h"
++static struct cpufreq_policy *cur_policy;
 +
-+#define INTERVAL 5 /* ms */
-+#define CPU_FULL 90 /* Busy %-age - TODO: Make tunable */
++DEFINE_PER_CPU(unsigned int, freq_req);
 +
-+struct cpu_stats_struct {
-+	int load;
-+	int nr_tasks;
++static int cpufreq_governor_schedpower(struct cpufreq_policy *policy,
++					unsigned int event)
++{
++	int i;
++
++	switch (event) {
++	case CPUFREQ_GOV_START:
++	case CPUFREQ_GOV_LIMITS:
++		pr_debug("setting to %u kHz because of event %u\n",
++						policy->max, event);
++		__cpufreq_driver_target(policy, policy->max,
++						CPUFREQ_RELATION_H);
++
++		for_each_cpu(i, policy->cpus)
++			per_cpu(freq_req, i) = policy->max;
++
++		break;
++	default:
++		break;
++	}
++
++	cur_policy = policy;
++
++	return 0;
++}
++
++static
++struct cpufreq_governor cpufreq_gov_schedpower = {
++	.name		= "schedpower",
++	.governor	= cpufreq_governor_schedpower,
++	.owner		= THIS_MODULE,
 +};
 +
-+static unsigned long power_of(int cpu)
++static struct sched_power_driver pdriver;
++
++static int __init cpufreq_gov_schedpower_init(void)
 +{
-+	return cpu_rq(cpu)->cpu_power;
++	int freq_reg;
++
++	cur_policy = NULL;
++
++	freq_reg = cpufreq_register_governor(&cpufreq_gov_schedpower);
++	if (freq_reg)
++		return freq_reg;
++	return sched_power_register_driver(&pdriver);
++}
++late_initcall(cpufreq_gov_schedpower_init);
++
++unsigned long pdriver_get_power(int cpu)
++{
++	if (!cur_policy)
++		return 1024;
++	return (cur_policy->cur * 1024)/cur_policy->max;
 +}
 +
-+DEFINE_PER_CPU(struct cpu_stats_struct, cpu_stats);
-+
-+/*
-+ * update_cpu_load fetches runqueue statistics from the scheduler should
-+ * only be called with approitate locks held.
-+ */
-+static void update_cpu_load(void)
++unsigned long pdriver_get_power_cap(int cpu)
 +{
-+	int i;
-+
-+	for_each_online_cpu(i) {
-+		struct rq *rq = cpu_rq(i);
-+		int load = 0;
-+		u32 sum = rq->avg.runnable_avg_sum;
-+		u32 period = rq->avg.runnable_avg_period;
-+
-+		load = (sum * power_of(i)) / (period+1);
-+		per_cpu(cpu_stats, i).load = load;
-+		per_cpu(cpu_stats, i).nr_tasks = rq->nr_running;
-+
-+		/* Take power scheduler kthread into account */
-+		if (smp_processor_id() == i)
-+			per_cpu(cpu_stats, i).nr_tasks--;
-+	}
++	return 1024;
 +}
 +
-+extern unsigned long arch_scale_freq_power(struct sched_domain *sd, int cpu);
-+DEFINE_PER_CPU(unsigned long, arch_cpu_power);
-+
-+static void get_arch_cpu_power(void)
++static unsigned long max_freq_req(void)
 +{
 +	int i;
++	int max = 0;
 +
-+	if (sched_feat(ARCH_POWER)) {
-+		for_each_online_cpu(i)
-+			per_cpu(arch_cpu_power, i) =
-+				arch_scale_freq_power(cpu_rq(i)->sd, i);
-+	} else {
-+		for_each_online_cpu(i)
-+			per_cpu(arch_cpu_power, i) = SCHED_POWER_SCALE;
++	for_each_cpu(i, cur_policy->cpus) {
++		if (per_cpu(freq_req, i) > max)
++			max = per_cpu(freq_req, i);
 +	}
++
++	if (max < cur_policy->min)
++		return cur_policy->min;
++	return max;
 +}
 +
-+DEFINE_PER_CPU(unsigned long, cpu_power);
-+
-+/*
-+ * power_sched_cpu_power is called from fair.c to get the power scheduler
-+ * cpu capacities. We can't use arch_scale_freq_power() as this may already
-+ * be defined by the platform.
-+ */
-+unsigned long power_sched_cpu_power(struct sched_domain *sd, int cpu)
++unsigned long pdriver_req_power(int cpu, unsigned long cpu_power)
 +{
-+	return per_cpu(cpu_power, cpu);
++	unsigned int target;
++	if (!cur_policy)
++		return 1024;
++	target = (cur_policy->max * cpu_power)/1024;
++
++	per_cpu(freq_req, cpu) = target;
++
++	cpufreq_driver_target(cur_policy, max_freq_req(), CPUFREQ_RELATION_H);
++
++	return (cur_policy->cur * 1024)/cur_policy->max;
 +}
 +
-+/*
-+ * calculate_cpu_capacities figures out how many cpus that are necessary
-+ * to handle the current load. The current algorithm is very simple and
-+ * does not take power topology into account and it does not scale the cpu
-+ * capacity. It is either on or off. Plenty of potential for improvements!
-+ */
-+static void calculate_cpu_capacities(void)
-+{
-+	int i, spare_cap = 0;
-+	struct cpu_stats_struct *stats;
++static struct sched_power_driver pdriver = {
++	.get_power	= pdriver_get_power,
++	.get_power_cap	= pdriver_get_power_cap,
++	.req_power	= pdriver_req_power,
++};
 +
-+	/*
-+	 * spare_cap keeps track of the total available capacity across
-+	 * all cpus
-+	 */
-+
-+	for_each_online_cpu(i) {
-+		int t_cap = 0;
-+		int arch_power = per_cpu(arch_cpu_power, i);
-+
-+		stats = &per_cpu(cpu_stats, i);
-+		t_cap = arch_power - stats->load;
-+
-+		if (t_cap < (arch_power * (100-CPU_FULL)) / 100) {
-+			/* Potential for spreading load */
-+			if (stats->nr_tasks > 1)
-+				t_cap = -(stats->load / stats->nr_tasks);
-+		}
-+
-+		/* Do we have enough capacity already? */
-+		if (spare_cap + t_cap > arch_power) {
-+			per_cpu(cpu_power, i) = 1;
-+		} else {
-+			per_cpu(cpu_power, i) = arch_power;
-+			spare_cap += t_cap;
-+		}
-+	}
-+}
-+
-+static void __power_schedule(void)
-+{
-+	rcu_read_lock();
-+
-+	get_arch_cpu_power();
-+	update_cpu_load();
-+	calculate_cpu_capacities();
-+
-+	rcu_read_unlock();
-+}
-+
-+struct delayed_work dwork;
-+
-+/* Periodic power schedule target cpu */
-+static int schedule_cpu(void)
-+{
-+	return 0;
-+}
-+
-+void power_schedule_wq(struct work_struct *work)
-+{
-+	__power_schedule();
-+	mod_delayed_work_on(schedule_cpu(), system_wq, &dwork,
-+				msecs_to_jiffies(INTERVAL));
-+}
-+
-+static int __init sched_power_init(void)
-+{
-+	INIT_DELAYED_WORK(&dwork, power_schedule_wq);
-+	mod_delayed_work_on(schedule_cpu(), system_wq, &dwork,
-+				msecs_to_jiffies(INTERVAL));
-+	return 0;
-+}
-+late_initcall(sched_power_init);
 -- 
 1.7.9.5
 
