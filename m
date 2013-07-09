@@ -1,110 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754109Ab3GIOxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:53:47 -0400
-Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:35304
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753948Ab3GIOxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:53:34 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzbb2dI98dI9371I1dbaI1432I4015Ide40hzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839hd24hf0ah119dh1288h12a5h12bdh137ah1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1bceh1be0h1d0ch1d2eh1d3fh1dfeh1dffh34h19b6n1155h192ch)
-Date: Tue, 9 Jul 2013 16:53:25 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754098Ab3GIOys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:54:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17189 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753864Ab3GIOyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 10:54:45 -0400
+Date: Tue, 9 Jul 2013 10:54:30 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
+Message-ID: <20130709145430.GB2237@redhat.com>
+References: <20130708175607.GB18600@mtj.dyndns.org>
+ <51DBC99F.4030301@openvz.org>
+ <20130709125734.GA2478@htj.dyndns.org>
+ <51DC0CE2.2050906@openvz.org>
+ <20130709131605.GB2478@htj.dyndns.org>
+ <20130709131646.GC2478@htj.dyndns.org>
+ <51DC136E.6020901@openvz.org>
+ <20130709134558.GD2478@htj.dyndns.org>
+ <20130709141833.GA2237@redhat.com>
+ <20130709142908.GE2478@htj.dyndns.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Michal Simek <monstr@monstr.eu>, Michal Simek <michal.simek@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, linux-spi <linux-spi@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        <spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH v1 3/4] spi/xilinx: Simplify irq allocation
-References: <ff70173bee5f9223ffea2b92b903b4e46ef8b323.1373290150.git.michal.simek@xilinx.com> <b4458c93742bd9dfe69e3553cf377a703c945f81.1373290150.git.michal.simek@xilinx.com> <20130708144930.GG27646@sirena.org.uk> <51DADF3E.1000802@monstr.eu> <20130708162642.GM27646@sirena.org.uk> <51DC1AF1.3090401@monstr.eu> <20130709144704.GY27646@sirena.org.uk>
-In-Reply-To: <20130709144704.GY27646@sirena.org.uk>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="----enig2CPXEQERUWJVTAQBQSBFQ"
-X-RCIS-Action: ALLOW
-Message-ID: <cab4ad33-0aee-4bc4-be36-6610f19c403d@AM1EHSMHS015.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709142908.GE2478@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------enig2CPXEQERUWJVTAQBQSBFQ
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jul 09, 2013 at 07:29:08AM -0700, Tejun Heo wrote:
+> On Tue, Jul 09, 2013 at 10:18:33AM -0400, Vivek Goyal wrote:
+> > For implementing throttling one as such does not have to do time
+> > slice management on the queue.  For providing constructs like IOPS
+> > or bandwidth throttling, one just need to put one throttling knob 
+> > in the cgroup pipe irrespective of time slice management on the
+> > backing device/network.
+> 
+> We should be providing a comprehensive mechanism to be used from
+> userland, not something which serves pieces of specialized
+> requirements here and there.  blkio is already a mess with the
+> capability changing depending on which elevator is in use and
+> blk-throttle counting bios instead of merged requests making iops
+> control a bit silly.  We need to clean that up, not add more mess on
+> top.
 
-On 07/09/2013 04:47 PM, Mark Brown wrote:
-> On Tue, Jul 09, 2013 at 04:15:13PM +0200, Michal Simek wrote:
-> =
+It is not clear whether counting bio or counting request is right
+thing to do here. It depends where you are trying to throttle. For
+bio based drivers there is request and they need throttling mechanism
+too. So keeping it common for both, kind of makes sense.
 
->> 4. spi_master_release()
->> 5. devres_release() with irq
-> =
+> 
+> > Also time slice management is one way of managing the backend resource.
+> > CFQ did that and it works only for slow devices. For faster devices
+> > we anyway need some kind of token mechanism instead of keeping track
+> > of time.
+> 
+> No, it is the *right* resource to manage for rotating devices if you
+> want any sort of meaningful proportional resource distribution.  It's
+> not something one dreams up out of blue but something which arises
+> from the fundamental operating characteristics of the device.  For
+> SSDs, iops is good enough as their latency profile is consistent
+> enough but doing so with rotating disks doesn't yield anything useful.
 
->> If interrupt happends between 4 and 5 than it can be the problem.
->> Do I understand you correctly?
-> =
+Ok, so first of all you agree that time slice management is not a
+requirement for fast devices.
 
-> Yes.
+Secondly, even for slow devices, time slice management practically works
+only if NCQ is not implemented in device or NCQ is not being used because
+CFQ is not dispatching more requests.
 
-great.
+So even in CFQ, time slice accounting works only for sequential IO.
+Anybody doing random IO, there is no notion of time slice. We allow
+dispatching requests from multiple queues at the same time and then
+we don't have a way to count time.
 
-> =
+So time slice management is a problem even on slow devices which implement
+NCQ. IIRC, in the beginning even CFQ as doing some kind of request
+management (and not time slice management). And later it switched to
+time slice management in an effort to provide better fairness (If somebody
+is doing random IO and seek takes more time the process should be
+accounted for it).
 
->> If this is problematic case we can disable local and global interrupts
->> and add it between 2 and 3 or 3-4.
->> 	/* Disable all the interrupts just in case */
->> 	xspi->write_fn(0, regs_base + XIPIF_V123B_IIER_OFFSET);
->> 	/* Disable the global IPIF interrupt */
->> 	xspi->write_fn(0, regs_base + XIPIF_V123B_DGIER_OFFSET);
-> =
+But ideal time slice accounting requires driving a queue depth of 1
+and for any non-sequential IO, it kills performance.
 
->> What do you think about this solution?
-> =
+> 
+> > So I don't think trying to manage time slice is the requirement here.
+> 
+> For a cgroup resource controller, it *is* a frigging requirement to
+> control the right fundamental resource at the right place where the
+> resource resides and can be fully controlled.  Nobody should have any
+> other impression.
 
-> That's fine, though if just manually freeing the IRQ works that's also
-> OK...
+Seriously, time slice accounting is one way of managing resource. Same
+disk resource can be divided proportionally by counting either iops
+or by counting amount of IO done (bandwidth).
 
-yeah.
+If we count iops or bandwidth, it might not be most fair way of doing
+things on rotational media but it also should provide more accurate
+results in case of NCQ. When multiple requests have been dispatched
+to disk we have no idea which request consumed how much of disk time.
+So there is no way to account it properly. Iops or bandwidth based
+accounting will work just fine even with NCQ.
 
+> 
+> > > and by the time you implemented proper hierarchy support and
+> > > proportional contnrol, yours isn't gonna be that simple either.
+> > 
+> > I suspect he is not plannnig to do any proportional control at that
+> > layer. Just throttling mechanism.
+> 
+> blkio should be able to do proportional control in general.  The fact
+> that we aren't able to do that except when cfq-iosched is in use is a
+> problem which needs to be fixed.  It's not a free-for-all pass for
+> creating more broken stuff.
 
->> I have also tried to run one thing with and without this patch
->> and the results are below.
-> =
+So you want this generic block layer proportional implementation to
+do time slice management?
 
->> When I add this irq disable function between 1 and 2 then
->> module removing stucks.
-> =
+I thought we talked about this implementation to use some kind of token
+based mechanism so that it scales better on faster devices. And on slower
+devices one will continue to use CFQ.
 
-> You'll need to wait until the device is quiesced at least if it's
-> relying on the interrupt to complete operations.
-> =
-
-
-ok. Will send v2 of this patch.
-
-Thanks,
-Michal
-
-
-------enig2CPXEQERUWJVTAQBQSBFQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHcI+UACgkQykllyylKDCHHcQCePC7ImYcQwBUODfLFTpgeZOz6
-ciMAmQEFccuRrgh3/vEQXW7vloz4K0Gh
-=ktlc
------END PGP SIGNATURE-----
-
-
-------enig2CPXEQERUWJVTAQBQSBFQ--
+Thanks
+Vivek
