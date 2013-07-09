@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab3GIHNK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:13:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55922 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab3GIHNH (ORCPT
+	id S1753458Ab3GIHNW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:13:22 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:49067 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753436Ab3GIHNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 03:13:07 -0400
-Message-ID: <51DBB800.3010704@linutronix.de>
-Date: Tue, 09 Jul 2013 09:13:04 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Tue, 9 Jul 2013 03:13:19 -0400
+Message-ID: <51DBB629.1050000@st.com>
+Date: Tue, 09 Jul 2013 08:05:13 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
-        balbi@ti.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-omap@vger.kernel.org, kishon@ti.com
-Subject: Re: [PATCH 0/5] Add phy support for AM335X platform using Generic
- PHy framework
-References: <1373280201-31785-1-git-send-email-george.cherian@ti.com> <51DB16A1.6010006@linutronix.de> <20130708203435.GB2596@localhost>
-In-Reply-To: <20130708203435.GB2596@localhost>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Stuart Menefy <stuart.menefy@st.com>, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v1 0/4] ARM: STi fixes and ethernet support
+References: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com> <201307090118.06715.arnd@arndb.de>
+In-Reply-To: <201307090118.06715.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 10:34 PM, Ezequiel Garcia wrote:
-> Hi,
-
-Hi,
-
-> On Mon, Jul 08, 2013 at 09:44:33PM +0200, Sebastian Andrzej Siewior wrote:
-> 
->> We need two nodes each one with a glue layer and a musb child node. The
->> instances crap in kernel has to vanish. Also that means your phy nodes
->> are wrong. This is not musb with two ports but two musb instances each
->> with one port.
+Thanks Arnd,
+On 09/07/13 00:18, Arnd Bergmann wrote:
+> On Monday 08 July 2013, Srinivas KANDAGATLA wrote:
+>> From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 >>
+>> This patch series fixes 2 configuration issues and adds ethernet support to
+>> STiH415, STiH416 based B2000, B2020 boards.
 > 
-> I agree completely. The current DT representation looks definitely odd,
-> and we should be looking at improving it.
+> Hi Srini,
 > 
-> I wonder if this is now possible, given the DT is supposed to be stable ABI.
+> You really have to send those things separately, as the bug fixes should
+> probably go into 3.11, while the rest is new features and needs to be
+> reviewed for merging into 3.12.
+Yes, I will resend the fixes separately.
+> 
+> I'm also puzzled by the fact that you add auxdata and callback
+> functions for the ether part in the platform code. Those should
+> probably all be properties added to the stmmac binding.
 
-I posted this [0] and Felipe + Benoit were pro change. I am still not
-sure if this is okay or just one glue layer per instance so I delay
-this until I am sure. Stable or not, what currently have in is beyond
-broken and it can't be fixed in kernel.
-I would add some code to check for the old nodes and give a proper
-warning and how to react. This should reduce the pain full search.
+stmmac (aka "dwmac" a synopsis IP) driver is integrated in to kernel
+sometime in 2.6 series I think :-), and Is used by more than 4 platforms
+in 3.10 kernel. The driver is more generic than it sounds.
+So adding properties/hooks specific to STiH41x SOCs in driver seemed to
+incorrect. Instead doing platform specific bits in the mach via
+callbacks was the only choice I had.
 
-[0]
-http://git.breakpoint.cc/cgit.cgi/bigeasy/linux.git/commit/?h=am335x_usb&id=0a60cd77ee50edd8cd07cbd699ed67b2c4b2ab93
+Thanks,
+srini
 
-Sebastian
+> 
+> 	Arnd
+> 
+
