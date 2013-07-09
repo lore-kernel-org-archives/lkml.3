@@ -1,97 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753836Ab3GIIFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:05:08 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:41640 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab3GIIEb (ORCPT
+	id S1753860Ab3GIIFx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:05:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47025 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753590Ab3GIICt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:04:31 -0400
-X-AuditID: 85900ec0-d38c8b900000151e-21-51dbc40c752b
-Subject: [RFC PATCH] tracing/kprobe: Wait for disabling all running kprobe
- handlers
-To: Steven Rostedt <rostedt@goodmis.org>
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Date: Tue, 09 Jul 2013 17:01:45 +0900
-Message-ID: <20130709080145.7975.83164.stgit@mhiramat-M0-7522>
-In-Reply-To: <20130708142533.GA23749@redhat.com>
-References: <20130708142533.GA23749@redhat.com>
-User-Agent: StGit/0.15
+	Tue, 9 Jul 2013 04:02:49 -0400
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: [v3][PATCH 3/8] book3e/kexec/kdump: enable kexec for kernel
+Date: Tue, 9 Jul 2013 16:03:22 +0800
+Message-ID: <1373357007-30785-4-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
+References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wait for disabling all running kprobe handlers when a kprobe
-event is disabled, since the caller, trace_remove_event_call()
-supposes that a removing event is disabled completely by
-disabling the event.
-With this change, ftrace can ensure that there is no running
-event handlers after disabling it.
+We need to active KEXEC for book3e and bypass or convert non-book3e stuff
+in kexec coverage.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- kernel/trace/trace_kprobe.c |   19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
+ arch/powerpc/Kconfig                   |    2 +-
+ arch/powerpc/kernel/machine_kexec_64.c |  148 ++++++++++++++++++--------------
+ arch/powerpc/kernel/misc_64.S          |    6 ++
+ 3 files changed, 89 insertions(+), 67 deletions(-)
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 7ed6976..a9a4fe5 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -243,11 +243,11 @@ find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
- static int
- disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- {
-+	struct event_file_link *link = NULL;
-+	int wait = 0;
- 	int ret = 0;
+diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
+index 5374776..d945435 100644
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -357,7 +357,7 @@ config ARCH_ENABLE_MEMORY_HOTREMOVE
  
- 	if (file) {
--		struct event_file_link *link;
+ config KEXEC
+ 	bool "kexec system call"
+-	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP))
++	depends on (PPC_BOOK3S || FSL_BOOKE || (44x && !SMP)) || PPC_BOOK3E
+ 	help
+ 	  kexec is a system call that implements the ability to shutdown your
+ 	  current kernel, and to start another kernel.  It is like a reboot
+diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
+index 611acdf..ee153a8 100644
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -30,72 +30,6 @@
+ #include <asm/smp.h>
+ #include <asm/hw_breakpoint.h>
+ 
+-int default_machine_kexec_prepare(struct kimage *image)
+-{
+-	int i;
+-	unsigned long begin, end;	/* limits of segment */
+-	unsigned long low, high;	/* limits of blocked memory range */
+-	struct device_node *node;
+-	const unsigned long *basep;
+-	const unsigned int *sizep;
 -
- 		link = find_event_file_link(tp, file);
- 		if (!link) {
- 			ret = -EINVAL;
-@@ -255,10 +255,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 		}
- 
- 		list_del_rcu(&link->list);
--		/* synchronize with kprobe_trace_func/kretprobe_trace_func */
--		synchronize_sched();
--		kfree(link);
+-	if (!ppc_md.hpte_clear_all)
+-		return -ENOENT;
 -
-+		wait = 1;
- 		if (!list_empty(&tp->files))
- 			goto out;
+-	/*
+-	 * Since we use the kernel fault handlers and paging code to
+-	 * handle the virtual mode, we must make sure no destination
+-	 * overlaps kernel static data or bss.
+-	 */
+-	for (i = 0; i < image->nr_segments; i++)
+-		if (image->segment[i].mem < __pa(_end))
+-			return -ETXTBSY;
+-
+-	/*
+-	 * For non-LPAR, we absolutely can not overwrite the mmu hash
+-	 * table, since we are still using the bolted entries in it to
+-	 * do the copy.  Check that here.
+-	 *
+-	 * It is safe if the end is below the start of the blocked
+-	 * region (end <= low), or if the beginning is after the
+-	 * end of the blocked region (begin >= high).  Use the
+-	 * boolean identity !(a || b)  === (!a && !b).
+-	 */
+-	if (htab_address) {
+-		low = __pa(htab_address);
+-		high = low + htab_size_bytes;
+-
+-		for (i = 0; i < image->nr_segments; i++) {
+-			begin = image->segment[i].mem;
+-			end = begin + image->segment[i].memsz;
+-
+-			if ((begin < high) && (end > low))
+-				return -ETXTBSY;
+-		}
+-	}
+-
+-	/* We also should not overwrite the tce tables */
+-	for_each_node_by_type(node, "pci") {
+-		basep = of_get_property(node, "linux,tce-base", NULL);
+-		sizep = of_get_property(node, "linux,tce-size", NULL);
+-		if (basep == NULL || sizep == NULL)
+-			continue;
+-
+-		low = *basep;
+-		high = low + (*sizep);
+-
+-		for (i = 0; i < image->nr_segments; i++) {
+-			begin = image->segment[i].mem;
+-			end = begin + image->segment[i].memsz;
+-
+-			if ((begin < high) && (end > low))
+-				return -ETXTBSY;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ #define IND_FLAGS (IND_DESTINATION | IND_INDIRECTION | IND_DONE | IND_SOURCE)
  
-@@ -271,8 +268,18 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
- 			disable_kretprobe(&tp->rp);
- 		else
- 			disable_kprobe(&tp->rp.kp);
-+		wait = 1;
- 	}
-  out:
-+	if (wait) {
-+		/*
-+		 * synchronize with kprobe_trace_func/kretprobe_trace_func
-+		 * to ensure disabled (all running handlers are finished)
-+		 */
-+		synchronize_sched();
-+		kfree(link);	/* Ignored if link == NULL */
-+	}
-+
- 	return ret;
+ static void copy_segments(unsigned long ind)
+@@ -367,6 +301,87 @@ void default_machine_kexec(struct kimage *image)
+ 	/* NOTREACHED */
  }
  
++#ifdef CONFIG_PPC_BOOK3E
++int default_machine_kexec_prepare(struct kimage *image)
++{
++	int i;
++	/*
++	 * Since we use the kernel fault handlers and paging code to
++	 * handle the virtual mode, we must make sure no destination
++	 * overlaps kernel static data or bss.
++	 */
++	for (i = 0; i < image->nr_segments; i++)
++		if (image->segment[i].mem < __pa(_end))
++			return -ETXTBSY;
++	return 0;
++}
++#else /* CONFIG_PPC_BOOK3E */
++int default_machine_kexec_prepare(struct kimage *image)
++{
++	int i;
++	unsigned long begin, end;	/* limits of segment */
++	unsigned long low, high;	/* limits of blocked memory range */
++	struct device_node *node;
++	const unsigned long *basep;
++	const unsigned int *sizep;
++
++	if (!ppc_md.hpte_clear_all)
++		return -ENOENT;
++
++	/*
++	 * Since we use the kernel fault handlers and paging code to
++	 * handle the virtual mode, we must make sure no destination
++	 * overlaps kernel static data or bss.
++	 */
++	for (i = 0; i < image->nr_segments; i++)
++		if (image->segment[i].mem < __pa(_end))
++			return -ETXTBSY;
++
++	/*
++	 * For non-LPAR, we absolutely can not overwrite the mmu hash
++	 * table, since we are still using the bolted entries in it to
++	 * do the copy.  Check that here.
++	 *
++	 * It is safe if the end is below the start of the blocked
++	 * region (end <= low), or if the beginning is after the
++	 * end of the blocked region (begin >= high).  Use the
++	 * boolean identity !(a || b)  === (!a && !b).
++	 */
++	if (htab_address) {
++		low = __pa(htab_address);
++		high = low + htab_size_bytes;
++
++		for (i = 0; i < image->nr_segments; i++) {
++			begin = image->segment[i].mem;
++			end = begin + image->segment[i].memsz;
++
++			if ((begin < high) && (end > low))
++				return -ETXTBSY;
++		}
++	}
++
++	/* We also should not overwrite the tce tables */
++	for_each_node_by_type(node, "pci") {
++		basep = of_get_property(node, "linux,tce-base", NULL);
++		sizep = of_get_property(node, "linux,tce-size", NULL);
++		if (basep == NULL || sizep == NULL)
++			continue;
++
++		low = *basep;
++		high = low + (*sizep);
++
++		for (i = 0; i < image->nr_segments; i++) {
++			begin = image->segment[i].mem;
++			end = begin + image->segment[i].memsz;
++
++			if ((begin < high) && (end > low))
++				return -ETXTBSY;
++		}
++	}
++
++	return 0;
++}
++
+ /* Values we need to export to the second kernel via the device tree. */
+ static unsigned long htab_base;
+ 
+@@ -411,3 +426,4 @@ static int __init export_htab_values(void)
+ 	return 0;
+ }
+ late_initcall(export_htab_values);
++#endif /* !CONFIG_PPC_BOOK3E */
+diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
+index 6820e45..f1a7ce7 100644
+--- a/arch/powerpc/kernel/misc_64.S
++++ b/arch/powerpc/kernel/misc_64.S
+@@ -543,9 +543,13 @@ _GLOBAL(kexec_sequence)
+ 	lhz	r25,PACAHWCPUID(r13)	/* get our phys cpu from paca */
+ 
+ 	/* disable interrupts, we are overwriting kernel data next */
++#ifndef CONFIG_PPC_BOOK3E
+ 	mfmsr	r3
+ 	rlwinm	r3,r3,0,17,15
+ 	mtmsrd	r3,1
++#else
++	wrteei	0
++#endif
+ 
+ 	/* copy dest pages, flush whole dest image */
+ 	mr	r3,r29
+@@ -567,10 +571,12 @@ _GLOBAL(kexec_sequence)
+ 	li	r6,1
+ 	stw	r6,kexec_flag-1b(5)
+ 
++#ifndef CONFIG_PPC_BOOK3E
+ 	/* clear out hardware hash page table and tlb */
+ 	ld	r5,0(r27)		/* deref function descriptor */
+ 	mtctr	r5
+ 	bctrl				/* ppc_md.hpte_clear_all(void); */
++#endif
+ 
+ /*
+  *   kexec image calling is:
+-- 
+1.7.9.5
 
