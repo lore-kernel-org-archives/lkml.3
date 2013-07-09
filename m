@@ -1,107 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab3GIO4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:56:08 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:40349 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab3GIO4D (ORCPT
+	id S1754035Ab3GIO75 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:59:57 -0400
+Received: from mail-vb0-f54.google.com ([209.85.212.54]:65263 "EHLO
+	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab3GIO7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:56:03 -0400
-Date: Tue, 9 Jul 2013 15:55:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
-        linux-mtd@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
-Message-ID: <20130709145510.GZ27646@sirena.org.uk>
-References: <20130705201118.GM2959@lukather>
- <5811519.oHVuMujf0I@wuerfel>
- <20130706120112.GA11069@lukather>
- <8997501.Dchyii8uWX@wuerfel>
- <20130708083426.GO27646@sirena.org.uk>
- <20130708202538.GK11243@lukather>
+	Tue, 9 Jul 2013 10:59:54 -0400
+Date: Tue, 9 Jul 2013 11:05:30 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Vince Weaver <vince@deater.net>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, acme@redhat.com, mingo@kernel.org,
+        Stephane Eranian <eranian@google.com>, sukadev@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for
+ perf
+In-Reply-To: <20130709081434.GI25631@dyad.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1307091059270.675@vincent-weaver-1.um.maine.edu>
+References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com> <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com> <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy> <20130704125218.GA21134@concordia>
+ <20130704125700.GM18898@dyad.programming.kicks-ass.net> <20130709012952.GA7185@concordia> <alpine.DEB.2.10.1307082204550.26280@vincent-weaver-1.um.maine.edu> <20130709081434.GI25631@dyad.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3aDtFGIaURYlkDgg"
-Content-Disposition: inline
-In-Reply-To: <20130708202538.GK11243@lukather>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.114
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: MTD EEPROM support and driver integration
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 9 Jul 2013, Peter Zijlstra wrote:
 
---3aDtFGIaURYlkDgg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On Mon, Jul 08, 2013 at 10:24:34PM -0400, Vince Weaver wrote:
+> > 
+> > So something like they have on ARM?
+> > 
+> > vince@pandaboard:/sys/bus/event_source/devices$ ls -l
+> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 ARMv7 Cortex-A9 -> ../../../devices/ARMv7 Cortex-A9
+> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 breakpoint -> ../../../devices/breakpoint
+> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 software -> ../../../devices/software
+> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 tracepoint -> ../../../devices/tracepoint
+> 
+> Right so what I remember of the ARM case is that their /proc/cpuinfo isn't
+> sufficient to identify their PMU. And they don't have a cpuid like instruction
+> at all.
 
-On Mon, Jul 08, 2013 at 10:25:38PM +0200, Maxime Ripard wrote:
-> On Mon, Jul 08, 2013 at 09:34:26AM +0100, Mark Brown wrote:
+libpfm4 uses the
+   CPU part	: 0xc09
+line in /proc/cpuinfo on ARM, and that's enough for the processors PAPI 
+supports (Cortex A8/A9/A15 plus the 1176 on the raspberry-pi).  I'm 
+guessing it wouldn't be enough if we wanted to support *all* ARMs with
+PMUs.
 
-> > I'd really like to see more discussion of this "DT parsing code for
-> > regmap" idea...  I've missed almost all the context here.
+And speaking of ARM, I should be railing at them for breaking the ABI too, 
+with their (understandable yet still ABI breaking) decision to remove 
+BogoMIPS from /proc/cpuinfo.  That change will impact PAPI as well as 
+various other programs I maintain that have the misfortune of parsing that 
+file.
 
-> The context was that I found we lack a way to simply express the need
-> for one driver to get a value from an EEPROM-like device, for example to
-> get a MAC Address, or a serial number, in a generic way, without having
-> to poke directly with some custom function that would be exported by the
-> EEPROM driver.
-
-This sort of information is often stored in places like flash partitions
-too.  Are we sure that regmap is a good place to be hooking in here?
-The use case is sane, and being able to use regmap to do some of it
-seems sensible (I've seen people use OTP in PMICs for similar purposes)
-but perhaps an additional layer of abstraction on top makes sense.
-
-> What we've been discussing so far is that:
->   - To have a common framework we could base our work on, we could move
->     the EEPROM drivers from drivers/misc/eeprom to MTD
->   - To declare the ranges that needed to be used by a driver that was
->     needing a value from one of those MTD drivers, we would use regmap
->     with a MTD backend
->   - And since we actually need to declare which ranges and in which
->     device one driver would have to retrieve this value from, we were
->     actually in need of DT bindings.
-
-> This is pretty much the only context involved, and we are at the early
-> stage of the discussion, so any comment is very welcome :)
-
-If this stuff is being represented in MTD doesn't MTD already have
-adequate abstractions for saying "this region in flash".  But otherwise
-this seems fine, it's not a generic regmap DT binding but instead rather
-more specific than that.
-
---3aDtFGIaURYlkDgg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR3CRLAAoJELSic+t+oim9/fkQAIfgoN5SRhyj8ZAbGa4b4Ulm
-JzOoeIMuSKHxri5+dpG4mpCtORIrDq+dThd+c6plhBVBLZlJ2UoCT7NatfGB6jqM
-PFmZQ43nOZVcWwR291arCyG8b6gpd2c1AzrO3Ofufw0dlm3GgPKs4EuEZszPunoy
-Mkad+y8z0iGOvHEzXm0fAs4zC5tjHEVkgLToHxogZ6McF9OrIMrLey2BeUwvQJIY
-GQppcVJagLrRAROKECWfmdjlJSmkr3QqyZMMG/uaQovSVuJOPyDOBysE5i8XsBWY
-7nnH14YXykmw6oUzH45E9ZBpI0R51VVhvMIdvIJMxqsclTd6M1y2JJxJV8AxhnJt
-odb7sMGEbEV2yUO7sSBFPLoAuPrT8GIO5IvNuJE0JP9b04O2Dvq/NDl8puhVw5Jo
-o+k3+y5WI3+PJDVrxKlp+w7Vuu6C0EOomQHYaEq8xhhkwwehIdtUMHXiPPU06ztm
-vXfzCVWWbaiEDHXX14tGP4Y+s14+3Tv/R6X+1+uyCyDflCJ+gIDq87uLLB9wnfpL
-V02xc/brP8Hu+cnedVgnzPx4NlzqHDhgNFifwpejx72zBJHDtW4w3TrxjaPvLw5a
-WVirvW65t8rHgxgA4Nw+p3ven3rEKfkW7Cn9mMVnJycFcrDO/NunI71tu1Oxr18A
-Q9Xq6ZRpziwfbvLdqhBj
-=OEHm
------END PGP SIGNATURE-----
-
---3aDtFGIaURYlkDgg--
+Vince
