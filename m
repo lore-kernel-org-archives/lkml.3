@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab3GIAdc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 20:33:32 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:7749 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab3GIAda (ORCPT
+	id S1753509Ab3GIAdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 20:33:40 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:55747 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753407Ab3GIAdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 20:33:30 -0400
-X-Spam-Score: -100.8
-Message-ID: <51DB5A22.9080307@asianux.com>
-Date: Tue, 09 Jul 2013 08:32:34 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, lig.fnst@cn.fujitsu.com,
-        chuansheng.liu@intel.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/smp.c: free related resources when failure occurs
- in hotplug_cfd()
-References: <51DA7D50.8010209@asianux.com> <20130709002830.GA2071@udknight>
-In-Reply-To: <20130709002830.GA2071@udknight>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 8 Jul 2013 20:33:35 -0400
+Message-ID: <1373330011.4223.7.camel@phoenix>
+Subject: [RFT][PATCH 2/2] irqchip: vt8500: Support 'rising and falling edge'
+ trigger mode
+From: Axel Lin <axel.lin@ingics.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tony Prisk <linux@prisktech.co.nz>, Alexey Charkov <alchark@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 09 Jul 2013 08:33:31 +0800
+In-Reply-To: <1373329275.4223.1.camel@phoenix>
+References: <1373329275.4223.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 08:28 AM, Wang YanQing wrote:
-> On Mon, Jul 08, 2013 at 04:50:24PM +0800, Chen Gang wrote:
->> > When failure occurs in hotplug_cfd(), need release related resources,
->> > or will cause memory leak.
->> > 
->> > Also beautify the related code.
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> > ---
->> >  kernel/smp.c |   13 +++++++++----
->> >  1 files changed, 9 insertions(+), 4 deletions(-)
->> > 
->> > diff --git a/kernel/smp.c b/kernel/smp.c
->> > index 02a885d..c264623 100644
->> > --- a/kernel/smp.c
->> > +++ b/kernel/smp.c
->> > @@ -45,15 +45,20 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
->> >  	switch (action) {
->> >  	case CPU_UP_PREPARE:
->> >  	case CPU_UP_PREPARE_FROZEN:
->> > -		if (!zalloc_cpumask_var_node(&cfd->cpumask, GFP_KERNEL,
->> > -				cpu_to_node(cpu)))
->> > +		if (!zalloc_cpumask_var_node(&cfd->cpumask,
->> > +						GFP_KERNEL, cpu_to_node(cpu)))
->> >  			return notifier_from_errno(-ENOMEM);
-> What did you fixed here? code style?
-> You can drop this part.
-> 
+This chip supports below interrupt request trigger mode:
 
-Yes, I should drop.
+Destination Control Register:
+BIT[5:4] Interrupt Request Trigger Mode.
+        00: High level trigger
+        01: Posedge trigger
+        10: Negedge trigger
+        11: Both posedge and negedge trigger
 
->> > -		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
->> > -				cpu_to_node(cpu)))
->> > +
->> > +		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi,
->> > +						GFP_KERNEL, cpu_to_node(cpu))) {
->> > +			free_cpumask_var(cfd->cpumask);
->> >  			return notifier_from_errno(-ENOMEM);
->> > +		}
->> > +
->> >  		cfd->csd = alloc_percpu(struct call_single_data);
->> >  		if (!cfd->csd) {
->> >  			free_cpumask_var(cfd->cpumask);
->> > +			free_cpumask_var(cfd->cpumask_ipi);
->> >  			return notifier_from_errno(-ENOMEM);
->> >  		}
->> >  		break;
-> Yes, we need this fix.
-> 
-> If you resend the v2, I will give acked-by :)
+This patch adds support for setting 'posedge and negedge trigger' mode.
 
-Thanks.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Current code does not correctly handle the case if a driver request irq with
+"IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING" flag.
+I'm not sure if we have such use case in current code.
+
+ drivers/irqchip/irq-vt8500.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/irqchip/irq-vt8500.c b/drivers/irqchip/irq-vt8500.c
+index eb6d05a..e040994 100644
+--- a/drivers/irqchip/irq-vt8500.c
++++ b/drivers/irqchip/irq-vt8500.c
+@@ -136,6 +136,10 @@ static int vt8500_irq_set_type(struct irq_data *d, unsigned int flow_type)
+ 		dctr |= VT8500_TRIGGER_RISING;
+ 		__irq_set_handler_locked(d->irq, handle_edge_irq);
+ 		break;
++	case IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING:
++		dctr |= VT8500_EDGE;
++		__irq_set_handler_locked(d->irq, handle_edge_irq);
++		break;
+ 	}
+ 	writeb(dctr, base + VT8500_ICDC + d->hwirq);
+ 
 -- 
-Chen Gang
+1.8.1.2
+
+
+
