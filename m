@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767Ab3GIP6S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:58:18 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:44843 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751999Ab3GIP6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:58:17 -0400
-Message-ID: <1373385495.14604.4.camel@joe-AO722>
-Subject: Re: [PATCH 3/3] firmware/dmi_scan: Constify strings
-From: Joe Perches <joe@perches.com>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 09 Jul 2013 08:58:15 -0700
-In-Reply-To: <1373384634.4391.10.camel@chaos.site>
-References: <1373384438.4391.6.camel@chaos.site>
-	 <1373384634.4391.10.camel@chaos.site>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752492Ab3GIQBy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 12:01:54 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:37340 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751843Ab3GIQBv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 12:01:51 -0400
+Message-ID: <51DC33E7.1030404@de.ibm.com>
+Date: Tue, 09 Jul 2013 18:01:43 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Dominik Dingel <dingel@linux.vnet.ibm.com>
+CC: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Alexander Graf <agraf@suse.de>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] PF: Provide additional direct page notification
+References: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com> <1373378207-10451-4-git-send-email-dingel@linux.vnet.ibm.com>
+In-Reply-To: <1373378207-10451-4-git-send-email-dingel@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070915-4966-0000-0000-0000063DED2C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-09 at 17:43 +0200, Jean Delvare wrote:
-> Add const to all DMI string pointers where this is possible. This
-> fixes a checkpatch warning.
+On 09/07/13 15:56, Dominik Dingel wrote:
+> By setting a Kconfig option, the architecture can control when
+> guest notifications will be presented by the apf backend.
+> So there is the default batch mechanism, working as before, where the vcpu thread
+> should pull in this information. On the other hand there is now the direct
+> mechanism, this will directly push the information to the guest.
+> 
+> Still the vcpu thread should call check_completion to cleanup leftovers,
+> that leaves most of the common code untouched.
+> 
+> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
 
-That's a nice little improvement.
-
-> +++ linux-3.10-rc0/drivers/firmware/dmi_scan.c	2013-05-04 11:20:52.808187924 +0200
-[]
-> @@ -252,7 +252,7 @@ static void __init dmi_save_oem_strings_
->  	struct dmi_device *dev;
->  
->  	for (i = 1; i <= count; i++) {
-> -		char *devname = dmi_string(dm, i);
-> +		const char *devname = dmi_string(dm, i);
->  
->  		if (devname == dmi_empty_string)
-
-btw: that last test sure looks like it would be
-     better written as
-		if (strcmp(devname, dmi_empty_string) == 0)
-
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com> 
+for the "why". We want to use the existing architectured interface.
 
