@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab3GIKEV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 06:04:21 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:47423 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752948Ab3GIKEU (ORCPT
+	id S1753673Ab3GIKEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 06:04:35 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:51129 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601Ab3GIKE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 06:04:20 -0400
+	Tue, 9 Jul 2013 06:04:28 -0400
 From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH v3 0/5] Minor perf build fixes
-Date: Tue,  9 Jul 2013 15:30:28 +0530
-Message-Id: <1373364033-7918-1-git-send-email-artagnon@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH v3 3/5] perf: squelch warnings from perl.h to compile-pass
+Date: Tue,  9 Jul 2013 15:30:31 +0530
+Message-Id: <1373364033-7918-4-git-send-email-artagnon@gmail.com>
 X-Mailer: git-send-email 1.8.3.2.736.g869de25
+In-Reply-To: <1373364033-7918-1-git-send-email-artagnon@gmail.com>
+References: <1373364033-7918-1-git-send-email-artagnon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently, a simple
 
-This iteration is in response to Namhyung's review of the previous
-iteration.  The differences are:
+  $ make
 
-[3/5] adds a util/perl.h using #include_next without touching any
-other files.  This is a much cleaner approach.
+errors out because we compile with -Werror by default, turning all
+warnings into errors.  Although no warnings are emitted by our code
+itself, two kinds of warnings are emitted by perl.h (perl 5.18.0):
 
-[4/5] regenerates Context.c.
+  -Wundef and -Wswitch-default
 
-[5/5] is new.  I just noticed it.
+Use #pragma statements to squelch exactly those warnings, making perf
+compile-pass.
 
-Thanks.
-
-Ramkumar Ramachandra (5):
-  perf/Makefile: do not open-code shell-sq
-  perf/Perf-Trace-Util: fix broken include in Context.xs
-  perf: squelch warnings from perl.h to compile-pass
-  perf/Perf-Trace-Util: regenerate Context.c
-  perf/Perf-Trace-Util: add .gitignore
-
- tools/perf/Makefile                                |   2 +-
- tools/perf/config/Makefile                         |  23 ++-
- tools/perf/scripts/perl/Perf-Trace-Util/.gitignore |   5 +
- tools/perf/scripts/perl/Perf-Trace-Util/Context.c  | 211 +++++++++++++++++----
- tools/perf/scripts/perl/Perf-Trace-Util/Context.xs |   2 +-
- tools/perf/util/perl.h                             |  10 +
- 6 files changed, 199 insertions(+), 54 deletions(-)
- create mode 100644 tools/perf/scripts/perl/Perf-Trace-Util/.gitignore
+Helped-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ tools/perf/util/perl.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
  create mode 100644 tools/perf/util/perl.h
 
+diff --git a/tools/perf/util/perl.h b/tools/perf/util/perl.h
+new file mode 100644
+index 0000000..862d08d
+--- /dev/null
++++ b/tools/perf/util/perl.h
+@@ -0,0 +1,10 @@
++#ifndef __PERF_PERL_H
++#define __PERF_PERL_H
++
++#pragma GCC diagnostic ignored "-Wundef"
++#pragma GCC diagnostic ignored "-Wswitch-default"
++#include_next <perl.h>
++#pragma GCC diagnostic error "-Wundef"
++#pragma GCC diagnostic error "-Wswitch-default"
++
++#endif
 -- 
 1.8.3.2.736.g869de25
 
