@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753785Ab3GIJOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 05:14:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33723 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab3GIJOt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 05:14:49 -0400
-Date: Tue, 9 Jul 2013 10:14:16 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        linux-spi <linux-spi@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        spi-devel-general@lists.sourceforge.net,
-        devicetree-discuss@lists.ozlabs.org
-Message-ID: <20130709091416.GN27646@sirena.org.uk>
-References: <ff70173bee5f9223ffea2b92b903b4e46ef8b323.1373290150.git.michal.simek@xilinx.com>
- <95fea2ecead16435fc526b1d7f36a0a1ec1635ff.1373290150.git.michal.simek@xilinx.com>
- <20130708145119.GJ27646@sirena.org.uk>
- <51DB9F03.3050203@monstr.eu>
+	id S1753784Ab3GIJSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 05:18:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55833 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752920Ab3GIJSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 05:18:21 -0400
+From: George Cherian <george.cherian@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>
+CC: <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>, <afzal@ti.com>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>,
+        George Cherian <george.cherian@ti.com>
+Subject: [PATCH v2] arm: dts: AM43x: Add usb_otg_hs node
+Date: Tue, 9 Jul 2013 14:47:26 +0530
+Message-ID: <1373361446-30050-1-git-send-email-george.cherian@ti.com>
+X-Mailer: git-send-email 1.8.1.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pRIGWEjU0Bw92Zdr"
-Content-Disposition: inline
-In-Reply-To: <51DB9F03.3050203@monstr.eu>
-X-Cookie: You will contract a rare disease.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.118
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v1 4/4] spi/xilinx: Use of_property_read_u32 for reading
- value from node
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Adds device node for HS USB Host module for AM437x
 
---pRIGWEjU0Bw92Zdr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+changes from v1
 
-On Tue, Jul 09, 2013 at 07:26:27AM +0200, Michal Simek wrote:
-> On 07/08/2013 04:51 PM, Mark Brown wrote:
+renamed synopsis to snps
+removed flag tx-fifo-resize
 
-> > Applied, thanks.
+Signed-off-by: George Cherian <george.cherian@ti.com>
+---
+ arch/arm/boot/dts/am4372.dtsi | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-> have you applied this patch?
+diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+index ddc1df7..c9e0da8 100644
+--- a/arch/arm/boot/dts/am4372.dtsi
++++ b/arch/arm/boot/dts/am4372.dtsi
+@@ -64,5 +64,23 @@
+ 			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
+ 			reg = <0x44e86000 0x40>;
+ 		};
++
++		usb_otg_hs1: am4372_dwc3@48380000 {
++			compatible = "ti,am437x-dwc3";
++			reg = <0x48380000 0x1ff>;
++			interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			utmi-mode = <1>;
++			ranges;
++
++			dwc3@48390000 {
++				compatible = "snps,dwc3";
++				reg = <0x48390000 0xcfff>;
++				interrupts = <GIC_SPI  168 IRQ_TYPE_LEVEL_HIGH>;
++			};
++
++		};
++		
+ 	};
+ };
+-- 
+1.8.1.4
 
-Yes, network is spotty here so pushes aren't working so well.
-
---pRIGWEjU0Bw92Zdr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR29RfAAoJELSic+t+oim9dyQP/2zCV9M1s8C+KRDQjBOA1LBD
-8P4OR4DGZWoku0CZEBNbMR9bslleHcPo+8m7/5kFF3Bg7HPneiYPs8gIgGv1dicE
-zP93Y7MBM/EKrIecPRf1uomaIcqbgD0Q9nSqU8j3F1ERcoshFdNrnTcaJHI9Asxj
-Bh195itiyZeU1kK5jAqQrhh34ETT+rPJRe3Yu4CvPtjTESDJhVwzO7N4y7tL25JM
-iLMmcFQc+hXs/Xz8y0vqF2r+qfIOwZvAgC5LPZjJ4flU4urZ/9LM9cu5NkitzaFx
-rUPGv4NI2tjTKMuwW5jqcsUVniFf2t8mip+yeaDAQ7Pu5CkNRdATgWHAbPvEW/JT
-r4o7fg3jtCH8BbEoHl87lb9vKQebhaKSA4Wlot20IiNCa5sH1PiF1lIQ4Mq/Q8BS
-QF8LX/qYPXciPHU0BCamdUPeiVdE5bPgAKo+AJ+PGh//uN/YKWwERzDpNagAxY6d
-de5aVgEcSLLcybbXTcndQAKmNBAczMG2WT27OZtfibrN8skJCi6nHltTWrajEeHu
-A/jwF20gaNsA7a1SH6KQqS8Tmlap8SfXmGaR8KiZtUeK1UYrAjefRlrPJnksxAgs
-MJOacuFtVAeGHoKbxmA1Ub78oZO/iQeWAoxN98tMePSMUJ/uwSi6tcDrcrg8nNdf
-vhtrLC5EdLRHMPKcNhRn
-=ojdQ
------END PGP SIGNATURE-----
-
---pRIGWEjU0Bw92Zdr--
