@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752541Ab3GICTJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 22:19:09 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:43228 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653Ab3GICTG (ORCPT
+	id S1752549Ab3GICTk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 22:19:40 -0400
+Received: from mail-ye0-f173.google.com ([209.85.213.173]:51495 "EHLO
+	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab3GICTj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 22:19:06 -0400
-Date: Mon, 8 Jul 2013 22:24:34 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Michael Ellerman <michael@ellerman.id.au>
-cc: Peter Zijlstra <peterz@infradead.org>, Vince Weaver <vince@deater.net>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com, mingo@kernel.org,
-        vincent.weaver@maine.edu, Stephane Eranian <eranian@google.com>,
-        sukadev@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com
-Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for
- perf
-In-Reply-To: <20130709012952.GA7185@concordia>
-Message-ID: <alpine.DEB.2.10.1307082204550.26280@vincent-weaver-1.um.maine.edu>
-References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com> <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com> <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy> <20130704125218.GA21134@concordia>
- <20130704125700.GM18898@dyad.programming.kicks-ass.net> <20130709012952.GA7185@concordia>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Mon, 8 Jul 2013 22:19:39 -0400
+X-Greylist: delayed 115178 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Jul 2013 22:19:39 EDT
+Date: Mon, 08 Jul 2013 21:19:36 -0500
+From: Rob Landley <rob@landley.net>
+Subject: Re: Bluez with uclibc
+To: lkml@serverphorums.com
+Cc: linux-kernel@vger.kernel.org
+References: <6e9104c416ff417b9c63f47891f947ea.LinuxKernel@www.serverphorums.com>
+In-Reply-To: <6e9104c416ff417b9c63f47891f947ea.LinuxKernel@www.serverphorums.com>
+	(from lkml@serverphorums.com on Mon Jul  8 03:06:15 2013)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1373336376.27613.23@driftwood>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Jul 2013, Michael Ellerman wrote:
-
-> On Thu, Jul 04, 2013 at 02:57:00PM +0200, Peter Zijlstra wrote:
-> > 
-> > Right; I think Stephane and Jiri are in favour of creating a 'new' project that
-> > includes just the event definitions in a plain text format and a little library
-> > with parser to be used by all interested parties.
+On 07/08/2013 03:06:15 AM, lkml@serverphorums.com wrote:
+> Hi,
 > 
-> OK that would be great.
+> Today, I need to cross compile Bluez for arm with uclibc library into  
+> Buildroot environment.
+> However, I meet some dependencies between bluez-utils package and MMU  
+> deactivation due to dBus.
 > 
-> The part that seems to be missing to make that work is we have no way of
-> matching the PMU that appears in /sys with a list of events.
-> 
-> Eg. on my system I have /sys/bus/event_source/devices/cpu - but there's
-> nothing in there to identify that it's a Sandy Bridge.
+> Do you know a way to use Bluez with uclibc library?
 
-So something like they have on ARM?
+Dunno about buildroot, but if you just want to statically link  
+something against uClibc on arm, you could grab either the cross or  
+native "armv5l" compiler from
 
-vince@pandaboard:/sys/bus/event_source/devices$ ls -l
-lrwxrwxrwx 1 root root 0 Jul  8 21:57 ARMv7 Cortex-A9 -> ../../../devices/ARMv7 Cortex-A9
-lrwxrwxrwx 1 root root 0 Jul  8 21:57 breakpoint -> ../../../devices/breakpoint
-lrwxrwxrwx 1 root root 0 Jul  8 21:57 software -> ../../../devices/software
-lrwxrwxrwx 1 root root 0 Jul  8 21:57 tracepoint -> ../../../devices/tracepoint
+   http://landley.net/aboriginal/bin
 
-> For the cpu you can obviously just detect what processor you're on with
-> cpuid or whatever, but it's a bit of a hack. And that really doesn't
-> work for non-cpu PMUs.
+and add its "bin" subdirectory to your $PATH. I just updated that  
+toolchain so it's using the 3.10 headers (yes, with the patch for  
+http://lkml.indiana.edu/hypermail/linux/kernel/1305.2/01452.html the  
+kernel developers never did fix), and it's the last release version of  
+uClibc (from a year and change ago, but that's uClibc for you).
 
-why is it a hack to use cpuid?
+As for fixing dependencies beyond "building against uClibc", that's a  
+buildroot question. They have their own mailing list...
 
-People have done event lists in userspace for years.  Why must it be the 
-kernel's job?
-
-Vince Weaver
-vincent.weaver@maine.edu
-http://www.eece.maine.edu/~vweaver/
+Rob
