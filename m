@@ -1,189 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab3GIInk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:43:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:54844 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab3GIInd (ORCPT
+	id S1753531Ab3GIIsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:48:19 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:55365 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab3GIIsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:43:33 -0400
+	Tue, 9 Jul 2013 04:48:17 -0400
+Date: Tue, 9 Jul 2013 16:48:09 +0800
+From: Adam Lee <adam.lee@canonical.com>
+To: linux-bluetooth@vger.kernel.org
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Wen-chien Jesse Sung <jesse.sung@canonical.com>,
+        AceLan Kao <acelan.kao@canonical.com>,
+        Tedd Ho-Jeong An <tedd.an@intel.com>,
+        Anthony Wong <anthony.wong@canonical.com>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] btusb: fix wrong use of PTR_ERR()
+Message-ID: <20130709084809.GA23395@adam-laptop>
 MIME-Version: 1.0
-In-Reply-To: <s5hmwpwuwjp.wl%tiwai@suse.de>
-References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
-	<20130706221401.GA3652@redhat.com>
-	<20130706223003.GA10697@kroah.com>
-	<s5h4nc5bewf.wl%tiwai@suse.de>
-	<CACVXFVN452nktR=JTTubnYwVkcDdoued0VysT1vA+2jHU1A3Gw@mail.gmail.com>
-	<s5hmwpwuwjp.wl%tiwai@suse.de>
-Date: Tue, 9 Jul 2013 16:43:30 +0800
-Message-ID: <CACVXFVNx7SA3rM46q4=7+7QU==EL3ukAeWcaBYruykfE6JPe8w@mail.gmail.com>
-Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="EVF5PPMfhYS0aIcm"
+Content-Disposition: inline
+In-Reply-To: <20130709074039.GA25268@adam-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 9, 2013 at 1:33 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 9 Jul 2013 11:15:20 +0800,
-> Ming Lei wrote:
->>
->> On Mon, Jul 8, 2013 at 5:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Sat, 6 Jul 2013 15:30:03 -0700,
->> > Greg KH wrote:
->> >>
->> >> On Sat, Jul 06, 2013 at 06:14:01PM -0400, Dave Jones wrote:
->> >> > On Tue, Jul 02, 2013 at 07:27:49PM +0000, Linux Kernel wrote:
->> >> >  > Gitweb:     http://git.kernel.org/linus/;a=commit;h=d05c39ea67f5786a549ac9d672d2951992b658c6
->> >> >  > Commit:     d05c39ea67f5786a549ac9d672d2951992b658c6
->> >> >  > Parent:     a3b2c8c7aa1ca860edcf0b0afa371d9eb2269c3c
->> >> >  > Author:     Takashi Iwai <tiwai@suse.de>
->> >> >  > AuthorDate: Wed May 22 18:28:37 2013 +0200
->> >> >  > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >> >  > CommitDate: Mon Jun 3 13:57:29 2013 -0700
->> >> >  >
->> >> >  >     dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
->> >> >  >
->> >> >  >     The usermode helper is mandatory for this driver.
->> >> >  >
->> >> >  >     Signed-off-by: Takashi Iwai <tiwai@suse.de>
->> >> >  >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> >> >  > ---
->> >> >  >  drivers/firmware/Kconfig |    1 +
->> >> >  >  1 files changed, 1 insertions(+), 0 deletions(-)
->> >> >  >
->> >> >  > diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
->> >> >  > index 9387630..0747872 100644
->> >> >  > --- a/drivers/firmware/Kconfig
->> >> >  > +++ b/drivers/firmware/Kconfig
->> >> >  > @@ -64,6 +64,7 @@ config DELL_RBU
->> >> >  >          tristate "BIOS update support for DELL systems via sysfs"
->> >> >  >          depends on X86
->> >> >  >          select FW_LOADER
->> >> >  > +        select FW_LOADER_USER_HELPER
->> >> >  >          help
->> >> >  >           Say m if you want to have the option of updating the BIOS for your
->> >> >  >           DELL system. Note you need a Dell OpenManage or Dell Update package (DUP)
->> >> >
->> >> >
->> >> > This is pretty crappy. Now every distro kernel has to have that enabled,
->> >> > which screws up for eg, the x86 microcode driver. (It takes 1 minute per cpu
->> >> > when this is enabled).
->> >>
->> >> I'll let you and Takashi battle this one out, for some reason I thought
->> >> he added it _because_ a distro kernel needed it...
->> >
->> > The reason is that dell_rbu driver requires it.  Without the kconfig
->> > option, this driver won't work at all.  So, it's a right fix for
->> > dell_rbu.
->> >
->> > AFAIK, the consensus in the kernel side is that this too long fw
->> > loading time is basically a regression of user-space (udev or
->> > whatever).  There is no change in the kernel behavior.  The problem
->> > must exist even with the older kernels.
->> >
->> > But, looking at the development, we can't expect that udev will be
->> > fixed soon, and this breakage persists already way too long.  Maybe a
->> > better solution is to kill the fallback to udev for normal f/w loading
->> > (i.e. for distro kernels).
->> >
->> > The patch below is an untested quick hack.  It adds a new Kconfig and
->> > a new function request_firmware_via_user_helper().  Distro kernels may
->> > set CONFIG_FW_LOADER_USER_HELPER_FALLBACK=n for avoiding 60 seconds
->>
->> I understand your proposed approach is basically equal to unset DELL_RBU,
->> don't I?
->>
->> Actually if DELL_RBU is set, FW_LOADER_USER_HELPER is still set, and
->> it won't avoid the fallback to loading from userspace.
->
-> No, it changes the behavior.  The fallback is now checked explicitly
-> via #ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK (this is the only
-> place where this kconfig is referred to).  The patch isn't great and
-> can be rewritten better, but the idea is to split the fallback
-> behavior (for normal drivers) and the firmware loading that mandates
-> the user-mode helper (for dell_rbu).
 
-Right, sorry for missing that.
+--EVF5PPMfhYS0aIcm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
->
->> > stall for non-existing firmware file access -- as distributions know
->> > that the firmware files should be placed in the right path.
->> >
->> > Thoughts?
->>
->> I suggest not to introduce new config options in firmware loader any more,
->> and the current options are too many already and it is very easy to trigger
->> build problem, and introduce extra complexity to users at the same time.
->
-> Yeah, I hate adding a new kconfig, too.  But, in this case, I couldn't
-> have other idea for solving in a reasonable amount of change.
+PTR_ERR() returns a signed long type value which is limited by IS_ERR(),
+it must be a negative number and bigger than -MAX_ERRNO(-4095).
 
-One approach I thought of is to introduce request_firmware_user()
-which should be used only in FW_ACTION_NOHOTPLUG situation,
-but allows CONFIG_FW_LOADER_USER_HELPER disabled.
+The bug here, btusb_setup_intel_patching()'s return value might come
+from -PTR_ERR() which must be a positive number, we can't judge if it's
+an error by "if (ret < 0)", the wrong use here leads to failure as
+below, even panic.
 
-Actually from view of distribution, dell rbu has to be compiled in, then
-no code size can be saved any more, which means looks the introduced
-option in this patch isn't necessary.
+Error log:
 
->
->> About Dave's problem, I think distribution may not trigger it since
->> cpu microcode
->> should exist,
->
-> It doesn't have to exist -- imagine a brand new CPU that is shipped
-> without errata (I guess it's the case Dave hit).
+[   12.958920] Bluetooth: hci0 command 0xfc8e tx timeout
+[   14.961765] Bluetooth: hci0 command 0xfc8e tx timeout
+[   16.964688] Bluetooth: hci0 command 0xfc8e tx timeout
+[   20.954501] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+[   22.957358] Bluetooth: hci0 command 0xfc8e tx timeout
+[   30.948922] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+[   32.951780] Bluetooth: hci0 command 0xfc8e tx timeout
+[   40.943359] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+[   42.946219] Bluetooth: hci0 command 0xfc8e tx timeout
+[   50.937812] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+[   52.940670] Bluetooth: hci0 command 0xfc8e tx timeout
+[   60.932236] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+[   62.935092] Bluetooth: hci0 command 0xfc8e tx timeout
+[   70.926688] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+[   72.929545] Bluetooth: hci0 command 0xfc8e tx timeout
+[   80.921111] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+[   82.923969] Bluetooth: hci0 command 0xfc2f tx timeout
+[   90.915542] Bluetooth: hci0 sending Intel patch command (0xfc2f) failed (-110)
+[   92.918406] Bluetooth: hci0 command 0xfc11 tx timeout
+[  100.909955] Bluetooth: hci0 sending Intel patch command (0xfc11) failed (-110)
+[  102.912858] Bluetooth: hci0 command 0xfc60 tx timeout
+[  110.904394] Bluetooth: hci0 sending Intel patch command (0xfc60) failed (-110)
+[  112.907293] Bluetooth: hci0 command 0xfc11 tx timeout
+[  120.898831] Bluetooth: hci0 exiting Intel manufacturer mode failed (-110)
+[  120.904757] bluetoothd[1030]: segfault at 4 ip 00007f8b2eb55236 sp 00007fff53ff6920 error 4 in bluetoothd[7f8b2eaff000+cb000]
 
-Yes, I mean other drivers(or most of drivers) may have not the situation
-to be afraid of.
+Signed-off-by: Adam Lee <adam.lee@canonical.com>
+---
+ drivers/bluetooth/btusb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
->
->> so I am wondering if Dave can disable DELL_RBU to work around
->> the problem in his system? Or fake a one byte microcode file to fool the driver?
->
-> Well, the kernel cannot know whether the microcode f/w exists or not
-> beforehand.  It needs to probe.  And the probing itself stalls for 60
-> seconds...
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 7a7e5f8..05a38a2 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -1256,7 +1256,7 @@ static int btusb_setup_intel(struct hci_dev *hdev)
+ 
+ 		ret = btusb_setup_intel_patching(hdev, fw, &fw_ptr,
+ 						 &disable_patch);
+-		if (ret < 0)
++		if (!ret)
+ 			goto exit_mfg_deactivate;
+ 	}
+ 
+-- 
+1.8.3.2
 
-The driver can use request_firmware_no_wait() to work around it too...
+--EVF5PPMfhYS0aIcm
+Content-Type: text/x-csrc; charset=us-ascii
+Content-Disposition: attachment; filename="ptr_err.c"
 
->
->> Also looks the problem should be handled inside x86 microcode driver because
->> the usage is unique in x86 microcode driver. Other drivers either need one
->> firmware or stop to work without a firmware, but this driver can work
->> well no matter
->> the firmware loading is satisfied or not.
->
-> Not really specific to microcode driver.  Other drivers work without
-> the inquired firmware file.  For example, iwlwifi has a fallback
-> mechanism to fetch the old version of firmware.  If each probe of
-> non-existing firmware file stalls for 60 seconds, it may take really
-> long.
+#include <stdio.h>
 
-I am wondering why people didn't complain the loading in iwlwifi, :-)
+#define MAX_ERRNO       4095
 
->
->> Or could we force dell rbu to use uevent based loading now?
->
-> .... only if we break dell_rbu user-space behavior.
->
-> So, our options are:
->
-> A. Ignore, with a hope that udev is/will be fixed.
->
-> B. Break dell_rbu, rewrite dell_rbu driver code and user-space at the
->    same time
->
-> C. Split the user-space fallback and the mandatory user-space loading
->    (as my patch does)
+#define IS_ERR_VALUE(x) ((x) >= (unsigned long)-MAX_ERRNO)
 
+static inline long IS_ERR(const void *ptr)
+{
+        return IS_ERR_VALUE((unsigned long)ptr);
+}
 
+static inline long PTR_ERR(const void *ptr)
+{
+	return (long) ptr;
+}
 
-Thanks,
---
-Ming Lei
+int main(int argc, const char *argv[])
+{
+	void *ptr = (void *)-1;
+
+	printf("ptr = %p, -PTR_ERR(ptr) = %ld\n\n", ptr, -PTR_ERR(ptr));
+
+	if(IS_ERR(ptr)) {
+		if (-PTR_ERR(ptr) < 0)
+			printf("That's what the codes want.\n");
+		else
+			printf("Bug happens!\n");
+	}
+
+	return 0;
+}
+
+--EVF5PPMfhYS0aIcm--
