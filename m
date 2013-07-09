@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab3GIRjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:39:19 -0400
-Received: from mail-qa0-f73.google.com ([209.85.216.73]:47843 "EHLO
-	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab3GIRjS (ORCPT
+	id S1752321Ab3GIRnF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:43:05 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:41411 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab3GIRnB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:39:18 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Olof Johansson <olof@lixom.net>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Doug Anderson <dianders@chromium.org>,
-        linux-samsung-soc@vger.kernel.org, linux-mmc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 0/5] mmc: dw_mmc: fixes for suspend/resume on exynos
-Date: Tue,  9 Jul 2013 10:31:06 -0700
-Message-Id: <1373391071-6312-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
+	Tue, 9 Jul 2013 13:43:01 -0400
+Message-ID: <51DC4BA1.3000403@openvz.org>
+Date: Tue, 09 Jul 2013 21:42:57 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Tejun Heo <tj@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
+References: <20130708175201.GB9094@redhat.com> <20130708175607.GB18600@mtj.dyndns.org> <51DBC99F.4030301@openvz.org> <20130709125734.GA2478@htj.dyndns.org> <51DC0CE2.2050906@openvz.org> <20130709131605.GB2478@htj.dyndns.org> <20130709131646.GC2478@htj.dyndns.org> <51DC136E.6020901@openvz.org> <20130709134558.GD2478@htj.dyndns.org> <51DC1FCA.3060904@openvz.org> <20130709150605.GC2237@redhat.com>
+In-Reply-To: <20130709150605.GC2237@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches addresses some suspend/resume problems with
-dw_mmc on exynos platforms.  Since suspend/resume is not fully working
-on ToT Linux (3.10) on exynos5250-snow, this series was tested against
-the current ToT ChromeOS 3.8 tree.  I have confirmed basic booting
-and eMMC / SD card usage (and compiling, honest!) against ToT Linux.
+Vivek Goyal wrote:
+> On Tue, Jul 09, 2013 at 06:35:54PM +0400, Konstantin Khlebnikov wrote:
+>
+> [..]
+>> I'm not interested in QoS or proportional control. Let schedulers do it.
+>> I want just bandwidth control. I don't want to write a new scheduler
+>> or extend some of existing one. I want implement simple and lightweight
+>> accounting and add couple of throttlers on top of that.
+>> It can be easily done without violation of that hierarchical design.
+>>
+>> The same problem already has happened with cpu scheduler. It has really
+>> complicated rate limiter which is actually useless in the real world because
+>> it triggers all possible priority inversions since it puts bunch of tasks into
+>> deep sleep while some of them may hold kernel locks. Perfect.
+>>
+>> QoS and scheduling policy are good thing, but rate-limiting must be separated
+>> and done only in places where it doesn't leads to these problems.
+>
+> So what kind of priority inversion you are facing with blkcg and how would
+> you avoid it with your implementation?
+>
+> I know that serialization can happen at filesystem level while trying
+> to commit journal. But I think same thing will happen with your
+> implementation too.
 
+Yes, metadata changes are serialized and and they depends on data commits,
+thus block layer cannot delay write requests without introducing nasty priority
+inversions. Cached read requests cannot be delayed at all. All solutions either
+breaks throttling or adds PI. So block layer is just wrong place for this.
 
-Doug Anderson (5):
-  mmc: dw_mmc: Invalidate cache of current_speed after suspend/resume
-  mmc: dw_mmc: Add suspend/resume callbacks; disable irq during suspend
-  mmc: dw_mmc: Add exynos resume callback to clear WAKEUP_INT
-  mmc: dw_mmc: Always setup the bus after suspend/resume
-  mmc: dw_mmc: Set timeout to max upon resume
+>
+> One simple way of avoiding that will be to throttle IO even earlier
+> but that means we do not take advantage of writeback cache and buffered
+> writes will slow down.
 
- drivers/mmc/host/dw_mmc-exynos.c | 23 +++++++++++++++++++++++
- drivers/mmc/host/dw_mmc.c        | 26 ++++++++++++++++++++++----
- drivers/mmc/host/dw_mmc.h        |  4 ++++
- 3 files changed, 49 insertions(+), 4 deletions(-)
+If we want to control writeback speed we also must control size of dirty set.
+There are several possibilities: we either can start writeback earlier,
+or when dirty set exceeds some threshold we will start charging that dirty
+memory into throttler and slow down all tasks who generates this dirty memory.
+Because dirty memory is charged and accounted we can write it without delays.
 
--- 
-1.8.3
+>
+> So I am curious how would you take care of these serialization issue.
+>
+> Also the throttlers you are planning to implement, what kind of throttling
+> do they provide. Is it throttling rate per cgroup or per file per cgroup
+> or rules will be per bdi per cgroup or something else.
 
+Currently I'm thinking about per-cgroup X per-tier. Each bdi will be assigned
+to some tier. It's flexible enough and solves chicken-and-egg problem:
+when disk appears it will be assigned to default tier and can be reassigned.
+
+>
+> Thanks
+> Vivek
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email:<a href=mailto:"dont@kvack.org">  email@kvack.org</a>
