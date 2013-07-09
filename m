@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab3GIWfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 18:35:13 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:55116 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab3GIWfL (ORCPT
+	id S1752844Ab3GIWgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 18:36:19 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43012 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab3GIWgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 18:35:11 -0400
-Date: Wed, 10 Jul 2013 00:34:58 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1382658288.20130710003458@eikelenboom.it>
-To: Borislav Petkov <bp@alien8.de>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, jeremy@goop.org,
-        <xen-devel@lists.xensource.com>, Jan Beulich <JBeulich@suse.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        <x86@kernel.org>, Paul Bolle <pebolle@tiscali.nl>,
-        <virtualization@lists.linux-foundation.org>, <mingo@redhat.com>,
-        Matt Wilson <msw@amazon.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
-In-Reply-To: <20130709150554.GA27579@pd.tnic>
-References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com> <20130708192854.GF4927@phenom.dumpdata.com> <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com> <51DB2134.9040909@zytor.com> <20130708205834.GA481@pd.tnic> <1373326534.1438.10.camel@x61.thuisdomein> <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com> <51DBDAB802000078000E37C1@nat28.tlf.novell.com> <20130709144840.GF24897@phenom.dumpdata.com> <20130709150554.GA27579@pd.tnic>
+	Tue, 9 Jul 2013 18:36:18 -0400
+Message-ID: <51DC902F.3070403@oracle.com>
+Date: Tue, 09 Jul 2013 18:35:27 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Tejun Heo <tj@kernel.org>, tglx@linutronix.de
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        trinity@vger.kernel.org
+Subject: timer: lockup in run_timer_softirq()
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
-Tuesday, July 9, 2013, 5:05:54 PM, you wrote:
+While fuzzing with trinity inside a KVM tools guest running latest -next, I've
+stumbled on the following spew:
 
-> On Tue, Jul 09, 2013 at 10:48:40AM -0400, Konrad Rzeszutek Wilk wrote:
->> Then that should be discussed on grub2 to remove said check and modify
->> the code so that it can properly work without regression.
+[ 2536.440007] BUG: soft lockup - CPU#0 stuck for 23s! [trinity-child86:12368]
+[ 2536.440007] Modules linked in:
+[ 2536.440007] irq event stamp: 1572135
+[ 2536.440007] hardirqs last  enabled at (1572134): [<ffffffff84198ef7>] restore_args+0x0/0x30
+[ 2536.440007] hardirqs last disabled at (1572135): [<ffffffff841a2d2d>] apic_timer_interrupt+0x6d/0x80
+[ 2536.440007] softirqs last  enabled at (431824): [<ffffffff81132d07>] __do_softirq+0x447/0x4d0
+[ 2536.440007] softirqs last disabled at (431969): [<ffffffff81132ed6>] irq_exit+0x86/0x120
+[ 2536.440007] CPU: 0 PID: 12368 Comm: trinity-child86 Tainted: G        W 
+3.10.0-next-20130709-sasha #3953
+[ 2536.440007] task: ffff8807dea03000 ti: ffff8807d7c14000 task.ti: ffff8807d7c14000
+[ 2536.440007] RIP: 0010:[<ffffffff8419871c>]  [<ffffffff8419871c>] _raw_spin_unlock_irq+0x4c/0x80
+[ 2536.440007] RSP: 0000:ffff880807603e08  EFLAGS: 00000286
+[ 2536.440007] RAX: ffff8807dea03000 RBX: ffffffff84198ef7 RCX: 0000000000000000
+[ 2536.440007] RDX: ffff8807dea03000 RSI: 0000000000000000 RDI: ffff8807dea03000
+[ 2536.440007] RBP: ffff880807603e18 R08: 0000000000000000 R09: 0000000000000000
+[ 2536.440007] R10: 0000000000000001 R11: 0000000000000000 R12: ffff880807603d78
+[ 2536.440007] R13: ffffffff841a2d32 R14: ffff880807603e18 R15: ffffffff86c81980
+[ 2536.440007] FS:  00007f33dd6e5700(0000) GS:ffff880807600000(0000) knlGS:0000000000000000
+[ 2536.440007] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 2536.440007] CR2: 00000000024523c8 CR3: 00000007d255a000 CR4: 00000000000006f0
+[ 2536.440007] Stack:
+[ 2536.440007]  ffffffff86c829e8 ffffffff86c81980 ffff880807603eb8 ffffffff8113d180
+[ 2536.440007]  ffff8807dea03000 ffff880807603e38 ffffffff86c835e8 ffffffff86c831e8
+[ 2536.440007]  ffff8807d7c14010 ffffffff86c82de8 ffff8807d7c14000 ffff8807d7c14000
+[ 2536.440007] Call Trace:
+[ 2536.440007]  <IRQ>
+[ 2536.440007]  [<ffffffff8113d180>] run_timer_softirq+0x2d0/0x330
+[ 2536.440007]  [<ffffffff8113b400>] ? lock_timer_base+0x70/0x70
+[ 2536.440007]  [<ffffffff81132b21>] __do_softirq+0x261/0x4d0
+[ 2536.440007]  [<ffffffff81132ed6>] irq_exit+0x86/0x120
+[ 2536.440007]  [<ffffffff841a43ea>] smp_apic_timer_interrupt+0x4a/0x60
+[ 2536.440007]  [<ffffffff841a2d32>] apic_timer_interrupt+0x72/0x80
+[ 2536.440007]  <EOI>
+[ 2536.440007]  [<ffffffff84198ef7>] ? retint_restore_args+0x13/0x13
+[ 2536.440007]  [<ffffffff812355e5>] ? user_enter+0x135/0x150
+[ 2536.440007]  [<ffffffff81077d6d>] syscall_trace_leave+0x12d/0x160
+[ 2536.440007]  [<ffffffff841a2337>] int_check_syscall_exit_work+0x34/0x3d
+[ 2536.440007] Code: 01 fd 48 89 df e8 45 5b 8f fd e8 b0 f1 00 fd 48 83 3d 30 e6 8a 01 00 75 0e 0f 
+0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 fb 66 66 90 <66> 66 90 bf 01 00 00 00 e8 17 4f 00 00 65 48 8b 
+04 25 88 d9 00
 
-> Actually, the kernel patch removing that symbol should be applied so
-> that grub2 breaks faster. One can't possibly rely on kernel internals
-> for anything, as it is insanely insane (yep, the tautology is on purpose
-> :-)).
+While going through the NMI dump, I noticed that it's very incomplete, and full of:
+
+[ 2536.500130] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 
+697182.008 msecs
 
 
-How insanely insane is it to be able to determine whether a certain compiled kernel binary supports a certain function ?
-
-Grub does this in it's update script to prevent adding a xen + kernel combination that has no chance of booting when dom0 support has not been configured in the kernel.
-That doesn't seem to be a unreasonable thought.
-
-Grepping the accompanied config file in /boot for the xen dom0 Kconfig parameter seems the best possible effort grub can do at the moment.
-Especially since the Kconfig parameter naming doesn't change that often.
-
-If you know a better way for grub to determine if a certain function for a kernel binary is supported then please elaborate ..
-
- --
- Sander
-
+Thanks,
+Sasha
