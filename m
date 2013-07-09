@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315Ab3GIJqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 05:46:24 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:63468 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab3GIJqX (ORCPT
+	id S1753072Ab3GIJtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 05:49:11 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34989 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab3GIJtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 05:46:23 -0400
+	Tue, 9 Jul 2013 05:49:08 -0400
+Date: Tue, 9 Jul 2013 11:49:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <greg@kroah.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>, joe.lawrence@stratus.com,
+        myron.stowe@redhat.com, bhelgaas@google.com
+Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+Message-ID: <20130709094906.GA3870@amd.pavel.ucw.cz>
+References: <20130709012611.GA22371@amd.pavel.ucw.cz>
+ <20130709041321.GA30555@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130709093254.GP27646@sirena.org.uk>
-References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
- <1373290193-25300-3-git-send-email-richard.genoud@gmail.com>
- <20130708150756.GL27646@sirena.org.uk> <CACQ1gAgnRBr6Eu7sgbzNF2kmm18-zn_dGKZN45RaxXGd1kwL-Q@mail.gmail.com>
- <20130709093254.GP27646@sirena.org.uk>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Tue, 9 Jul 2013 11:46:03 +0200
-Message-ID: <CACQ1gAhNAnyfaDSCxqAv11KZA2bGTdcfgcBjprAu3Ecw1y02mg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/5] ARM: AT91: DTS: sam9x5: add SSC DMA parameters
-To: Mark Brown <broonie@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709041321.GA30555@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/9 Mark Brown <broonie@kernel.org>:
-> On Tue, Jul 09, 2013 at 10:27:53AM +0200, Richard Genoud wrote:
->
->> The dma binding is documented here
->> Documentation/devicetree/bindings/dma/atmel-dma.txt
->> But you're right, I shoud update
->> Documentation/devicetree/bindings/misc/atmel-ssc.txt.
->
-> No, you need to write a binding for this machine driver - the DMA and
-> SSC need to be documented as well but so too does the audio driver that
-> pulls them together with the CODEC.
-Ok, I understand !
+On Mon 2013-07-08 21:13:21, Greg KH wrote:
+> On Tue, Jul 09, 2013 at 03:26:11AM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > My thinkpad has rather high ping latencies... and perhaps it is due to
+> > PCIE ASPM.
+> 
+> Why would that be the problem?  The odds that the PCIE bus is the issue
+> seems strange to me.
 
-Richard.
+Aha: I guess that's why the file is not writable:
+
+pavel@amd:~$ dmesg | grep -i aspm 
+ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+e1000e 0000:02:00.0: Disabling ASPM L0s L1
+pavel@amd:~$ cat /sys/module/pcie_aspm/parameters/policy
+[default] performance powersave 
+pavel@amd:~$ 
+root@amd:~# echo -n performance >
+/sys/module/pcie_aspm/parameters/policy
+-su: echo: write error: Operation not permitted
+root@amd:~# 
+
+But:
+1) it should not list unavailable options
+
+2) operation not permitted seems like wrong error code for
+operation not supported.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
