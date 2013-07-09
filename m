@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3GIArT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 20:47:19 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:40423 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753407Ab3GIArS (ORCPT
+	id S1753467Ab3GIBA0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 21:00:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51973 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752773Ab3GIBAY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 20:47:18 -0400
-X-Spam-Score: -100.8
-Message-ID: <51DB5D5F.4050501@asianux.com>
-Date: Tue, 09 Jul 2013 08:46:23 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Wang YanQing <udknight@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>, lig.fnst@cn.fujitsu.com,
-        chuansheng.liu@intel.com, Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/smp.c: free related resources when failure
- occurs in hotplug_cfd()
-References: <51DA7D50.8010209@asianux.com> <20130709002830.GA2071@udknight> <51DB5A22.9080307@asianux.com> <51DB5C99.50405@asianux.com> <20130709004617.GA3129@udknight>
-In-Reply-To: <20130709004617.GA3129@udknight>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 8 Jul 2013 21:00:24 -0400
+Subject: Re: [PATCH 0/2] powerpc: allow kvm to use kerel debug framework
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1372918546-15075-1-git-send-email-Bharat.Bhushan@freescale.com>
+Date: Tue, 9 Jul 2013 03:00:16 +0200
+Cc: <linuxppc-dev@lists.ozlabs.org>, <mikey@neuling.org>,
+        <benh@kernel.crashing.org>, <linux-kernel@vger.kernel.org>,
+        <scottwood@freescale.com>,
+        Bharat Bhushan <bharat.bhushan@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C4D71A1A-3D5B-4C9C-A26B-9EAFFD9D87C5@suse.de>
+References: <1372918546-15075-1-git-send-email-Bharat.Bhushan@freescale.com>
+To: Bharat Bhushan <r65777@freescale.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 08:46 AM, Wang YanQing wrote:
-> On Tue, Jul 09, 2013 at 08:43:05AM +0800, Chen Gang wrote:
->> > When failure occurs in hotplug_cfd(), need release related resources,
->> > or will cause memory leak.
->> > 
->> > Signed-off-by: Chen Gang <gang.chen@asianux.com>
->> > ---
->> >  kernel/smp.c |    5 ++++-
->> >  1 files changed, 4 insertions(+), 1 deletions(-)
->> > 
->> > diff --git a/kernel/smp.c b/kernel/smp.c
->> > index 02a885d..2a3a017 100644
->> > --- a/kernel/smp.c
->> > +++ b/kernel/smp.c
->> > @@ -49,10 +49,13 @@ hotplug_cfd(struct notifier_block *nfb, unsigned long action, void *hcpu)
->> >  				cpu_to_node(cpu)))
->> >  			return notifier_from_errno(-ENOMEM);
->> >  		if (!zalloc_cpumask_var_node(&cfd->cpumask_ipi, GFP_KERNEL,
->> > -				cpu_to_node(cpu)))
->> > +				cpu_to_node(cpu))) {
->> > +			free_cpumask_var(cfd->cpumask);
->> >  			return notifier_from_errno(-ENOMEM);
->> > +		}
->> >  		cfd->csd = alloc_percpu(struct call_single_data);
->> >  		if (!cfd->csd) {
->> > +			free_cpumask_var(cfd->cpumask_ipi);
->> >  			free_cpumask_var(cfd->cpumask);
->> >  			return notifier_from_errno(-ENOMEM);
->> >  		}
->> > -- 
->> > 1.7.7.6
-> Acked-by: Wang YanQing <udknight@gmail.com>
+
+On 04.07.2013, at 08:15, Bharat Bhushan wrote:
+
+> From: Bharat Bhushan <bharat.bhushan@freescale.com>
+> 
+> This patchset moves the debug registers in a structure, which allows
+> kvm to use same structure for debug emulation.
+> 
+> Note: Earilier a patchset "https://lists.ozlabs.org/pipermail/linuxppc-dev/2013-June/108132.html"
+> was sent which is a bunch of six patches. That patchset is divided into two parts:
+> 	1) powerpc specific changes (These 2 patches are actually have those changes)
+> 	2) KVM specific changes (will send separate patch on agraf repository)
+
+Mikey, if you like those could you please apply the into a topic branch and get that one merged with Ben? I'd also pull it into my tree then.
+
+
+Alex
+
+> 
+> Bharat Bhushan (2):
+>  powerpc: remove unnecessary line continuations
+>  powerpc: move debug registers in a structure
+> 
+> arch/powerpc/include/asm/processor.h |   38 +++++----
+> arch/powerpc/include/asm/reg_booke.h |    8 +-
+> arch/powerpc/kernel/asm-offsets.c    |    2 +-
+> arch/powerpc/kernel/process.c        |   42 +++++-----
+> arch/powerpc/kernel/ptrace.c         |  154 +++++++++++++++++-----------------
+> arch/powerpc/kernel/ptrace32.c       |    2 +-
+> arch/powerpc/kernel/signal_32.c      |    6 +-
+> arch/powerpc/kernel/traps.c          |   35 ++++----
+> 8 files changed, 147 insertions(+), 140 deletions(-)
 > 
 > 
 
-Thanks  :-)
-
--- 
-Chen Gang
