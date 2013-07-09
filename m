@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab3GIANX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 20:13:23 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:35118 "EHLO hydra.sisk.pl"
+	id S1753600Ab3GIANf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 20:13:35 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:35142 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753428Ab3GIANQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 20:13:16 -0400
+	id S1753512Ab3GIANX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 20:13:23 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC][PATCH 7/8] ACPI / hotplug / PCI: Pass hotplug context object to event handlers
-Date: Tue, 09 Jul 2013 02:21:14 +0200
-Message-ID: <2105086.uA3FT4uR04@vostro.rjw.lan>
+Subject: [RFC][PATCH 2/8] ACPI / hotplug / PCI: Consolidate acpiphp_enumerate_slots()
+Date: Tue, 09 Jul 2013 02:16:21 +0200
+Message-ID: <2968184.45Unk7vAg9@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <26431283.HJCKsss0rt@vostro.rjw.lan>
 References: <26431283.HJCKsss0rt@vostro.rjw.lan>
@@ -27,81 +27,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Modify handle_hotplug_event() to pass the entire context object
-(instead of its fields individually) to work functions started by it.
-
-This change makes the subsequent consolidation of the event handling
-work functions a bit more straightforward.
+The acpiphp_enumerate_slots() function is now split into two parts,
+acpiphp_enumerate_slots() proper and init_bridge_misc() which is
+only called by the former.  If these functions are combined,
+it is possible to make the code easier to follow and to clean up
+the error handling (to prevent memory leaks on error from
+happening in particular), so do that.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/pci/hotplug/acpiphp_glue.c |   94 ++++++++++++++++++-------------------
+ 1 file changed, 46 insertions(+), 48 deletions(-)
 
 Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
 ===================================================================
 --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
 +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -984,6 +984,7 @@ void acpiphp_check_host_bridge(acpi_hand
+@@ -363,46 +363,6 @@ static int detect_ejectable_slots(acpi_h
+ 	return found;
+ }
  
- static void _handle_hotplug_event_bridge(struct work_struct *work)
+-/* initialize miscellaneous stuff for both root and PCI-to-PCI bridge */
+-static void init_bridge_misc(struct acpiphp_bridge *bridge)
+-{
+-	acpi_status status;
+-
+-	/* must be added to the list prior to calling register_slot */
+-	mutex_lock(&bridge_mutex);
+-	list_add(&bridge->list, &bridge_list);
+-	mutex_unlock(&bridge_mutex);
+-
+-	/* register all slot objects under this bridge */
+-	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, bridge->handle, (u32)1,
+-				     register_slot, NULL, bridge, NULL);
+-	if (ACPI_FAILURE(status)) {
+-		mutex_lock(&bridge_mutex);
+-		list_del(&bridge->list);
+-		mutex_unlock(&bridge_mutex);
+-		return;
+-	}
+-
+-	/* install notify handler for P2P bridges */
+-	if (!pci_is_root_bus(bridge->pci_bus)) {
+-		if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func) {
+-			status = acpi_remove_notify_handler(bridge->func->handle,
+-						ACPI_SYSTEM_NOTIFY,
+-						handle_hotplug_event_func);
+-			if (ACPI_FAILURE(status))
+-				err("failed to remove notify handler\n");
+-		}
+-		status = acpi_install_notify_handler(bridge->handle,
+-					     ACPI_SYSTEM_NOTIFY,
+-					     handle_hotplug_event_bridge,
+-					     bridge);
+-
+-		if (ACPI_FAILURE(status)) {
+-			err("failed to register interrupt notify handler\n");
+-		}
+-	}
+-}
+-
+ 
+ /* find acpiphp_func from acpiphp_bridge */
+ static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle)
+@@ -1171,8 +1131,9 @@ static void handle_hotplug_event_func(ac
+  */
+ void acpiphp_enumerate_slots(struct pci_bus *bus)
  {
-+	struct acpiphp_context *context;
+-	acpi_handle handle, dummy_handle;
  	struct acpiphp_bridge *bridge;
- 	char objname[64];
- 	struct acpi_buffer buffer = { .length = sizeof(objname),
-@@ -995,7 +996,8 @@ static void _handle_hotplug_event_bridge
- 	hp_work = container_of(work, struct acpi_hp_work, work);
- 	handle = hp_work->handle;
- 	type = hp_work->type;
--	bridge = (struct acpiphp_bridge *)hp_work->context;
-+	context = hp_work->context;
-+	bridge = context->bridge;
++	acpi_handle handle;
++	acpi_status status;
  
- 	acpi_scan_lock_acquire();
- 
-@@ -1100,18 +1102,18 @@ static void hotplug_event_func(acpi_hand
- 
- static void _handle_hotplug_event_func(struct work_struct *work)
- {
-+	struct acpiphp_context *context;
- 	struct acpi_hp_work *hp_work;
--	struct acpiphp_func *func;
- 
- 	hp_work = container_of(work, struct acpi_hp_work, work);
--	func = hp_work->context;
-+	context = hp_work->context;
- 	acpi_scan_lock_acquire();
- 
--	hotplug_event_func(hp_work->handle, hp_work->type, func);
-+	hotplug_event_func(hp_work->handle, hp_work->type, context->func);
- 
- 	acpi_scan_lock_release();
- 	kfree(hp_work); /* allocated in handle_hotplug_event_func */
--	put_bridge(func->slot->bridge);
-+	put_bridge(context->func->slot->bridge);
- }
- 
- /**
-@@ -1129,11 +1131,9 @@ static void handle_hotplug_event(acpi_ha
- 
- 	if (context->bridge) {
- 		get_bridge(context->bridge);
--		data = context->bridge;
- 		work_func = _handle_hotplug_event_bridge;
- 	} else if (context->func) {
- 		get_bridge(context->func->slot->bridge);
--		data = context->func;
- 		work_func = _handle_hotplug_event_func;
- 	} else {
+ 	if (acpiphp_disabled)
  		return;
-@@ -1146,7 +1146,7 @@ static void handle_hotplug_event(acpi_ha
- 	 * For now just re-add this work to the kacpi_hotplug_wq so we
- 	 * don't deadlock on hotplug actions.
+@@ -1200,15 +1161,52 @@ void acpiphp_enumerate_slots(struct pci_
  	 */
--	alloc_acpi_hp_work(handle, type, data, work_func);
-+	alloc_acpi_hp_work(handle, type, context, work_func);
+ 	get_device(&bus->dev);
+ 
+-	if (!pci_is_root_bus(bridge->pci_bus) &&
+-	    ACPI_SUCCESS(acpi_get_handle(bridge->handle,
+-					"_EJ0", &dummy_handle))) {
+-		dbg("found ejectable p2p bridge\n");
+-		bridge->flags |= BRIDGE_HAS_EJ0;
+-		bridge->func = acpiphp_bridge_handle_to_function(handle);
++	/* must be added to the list prior to calling register_slot */
++	mutex_lock(&bridge_mutex);
++	list_add(&bridge->list, &bridge_list);
++	mutex_unlock(&bridge_mutex);
++
++	/* register all slot objects under this bridge */
++	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, bridge->handle, 1,
++				     register_slot, NULL, bridge, NULL);
++	if (ACPI_FAILURE(status)) {
++		acpi_handle_err(bridge->handle, "failed to register slots\n");
++		goto err;
+ 	}
+ 
+-	init_bridge_misc(bridge);
++	if (pci_is_root_bus(bridge->pci_bus))
++		return;
++
++	/* install notify handler for P2P bridges */
++	status = acpi_install_notify_handler(bridge->handle, ACPI_SYSTEM_NOTIFY,
++					     handle_hotplug_event_bridge,
++					     bridge);
++	if (ACPI_FAILURE(status)) {
++		acpi_handle_err(bridge->handle,
++				"failed to register notify handler\n");
++		goto err;
++	}
++
++	status = acpi_get_handle(bridge->handle, "_EJ0", &handle);
++	if (ACPI_FAILURE(status))
++		return;
++
++	dbg("found ejectable p2p bridge\n");
++	bridge->flags |= BRIDGE_HAS_EJ0;
++	bridge->func = acpiphp_bridge_handle_to_function(bridge->handle);
++	if (bridge->func) {
++		status = acpi_remove_notify_handler(bridge->func->handle,
++						    ACPI_SYSTEM_NOTIFY,
++						    handle_hotplug_event_func);
++		if (ACPI_FAILURE(status))
++			acpi_handle_err(bridge->func->handle,
++					"failed to remove notify handler\n");
++	}
++	return;
++
++ err:
++	cleanup_bridge(bridge);
++	put_bridge(bridge);
  }
  
- /*
-
+ /* Destroy hotplug slots associated with the PCI bus */
