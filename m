@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752757Ab3GITax (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 15:30:53 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:47571 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752396Ab3GITaw (ORCPT
+	id S1752801Ab3GITdY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 15:33:24 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:28103 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396Ab3GITdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 15:30:52 -0400
-Date: Tue, 9 Jul 2013 12:30:51 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: torvalds@linux-foundation.org
-cc: ceph-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for 3.11
-Message-ID: <alpine.DEB.2.00.1307091227150.19631@cobra.newdream.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 9 Jul 2013 15:33:22 -0400
+Message-ID: <1373398362.24916.4.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / scan: Always call acpi_bus_scan() for bus check
+ notifications
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Tue, 09 Jul 2013 13:32:42 -0600
+In-Reply-To: <2230821.QbNohsyO0O@vostro.rjw.lan>
+References: <2230821.QbNohsyO0O@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 2013-07-08 at 02:10 +0200, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> An ACPI_NOTIFY_BUS_CHECK notification means that we should scan the
+> entire namespace starting from the given handle even if the device
+> represented by that handle is present (other devices below it may
+> just have been added).
+> 
+> For this reason, modify acpi_scan_bus_device_check() to always run
+> acpi_bus_scan() if the notification being handled is of type
+> ACPI_NOTIFY_BUS_CHECK.
+> 
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Cc: 3.10+ <stable@vger.kernel.org>
 
-Please pull the following Ceph updates from
+Acked-by: Toshi Kani <toshi.kani@hp.com>
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+But, I think we need the additional patch below.
 
-There is some follow-on RBD cleanup after the last window's code drop, a 
-series from Yan fixing multi-mds behavior in cephfs, and then a sprinkling 
-of bug fixes all around.  Some warnings, sleeping while atomic, a null 
-dereference, and cleanups.
+Thanks,
+-Toshi
 
-Thanks!
-sage
+=====
+From: Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH] ACPI: Do not call attach() if device is attached
+
+attach() of ACPI scan handlers does not expect to be called multiple
+times on a same device.  Also, the attached handler may not be changed
+without calling its detach().  Change acpi_scan_attach_handler() not
+to call attach() when the given device is already attached.
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+---
+ drivers/acpi/scan.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 20757e0..2b9e867 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -1885,6 +1885,9 @@ static int acpi_scan_attach_handler(struct
+acpi_device *device)
+ 	struct acpi_hardware_id *hwid;
+ 	int ret = 0;
+ 
++	if (device->handler)
++		return 1;
++
+ 	list_for_each_entry(hwid, &device->pnp.ids, list) {
+ 		const struct acpi_device_id *devid;
+ 		struct acpi_scan_handler *handler;
 
 
-----------------------------------------------------------------
-Alex Elder (11):
-      rbd: drop original request earlier for existence check
-      libceph: add lingering request reference when registered
-      rbd: flush dcache after zeroing page data
-      rbd: clean up a few things in the refresh path
-      rbd: protect against duplicate client creation
-      libceph: print more info for short message header
-      rbd: set removing flag while holding list lock
-      rbd: protect against concurrent unmaps
-      rbd: don't hold ctl_mutex to get/put device
-      rbd: use rwsem to protect header updates
-      rbd: take a little credit
-
-Dan Carpenter (1):
-      ceph: tidy ceph_mdsmap_decode() a little
-
-Emil Goode (1):
-      ceph: improve error handling in ceph_mdsmap_decode
-
-Geert Uytterhoeven (1):
-      rbd: Use min_t() to fix comparison of distinct pointer types warning
-
-Jianpeng Ma (1):
-      ceph: remove sb_start/end_write in ceph_aio_write.
-
-Jim Schutt (1):
-      ceph: fix up comment for ceph_count_locks() as to which lock to hold
-
-Josh Durgin (1):
-      libceph: fix invalid unsigned->signed conversion for timespec encoding
-
-Sage Weil (1):
-      rbd: fix a couple warnings
-
-Sasha Levin (1):
-      ceph: avoid accessing invalid memory
-
-Tyler Hicks (1):
-      libceph: Fix NULL pointer dereference in auth client code
-
-Yan, Zheng (12):
-      libceph: fix safe completion
-      libceph: fix truncate size calculation
-      ceph: fix cap release race
-      ceph: reset iov_len when discarding cap release messages
-      ceph: fix race between page writeback and truncate
-      ceph: check migrate seq before changing auth cap
-      ceph: clear migrate seq when MDS restarts
-      ceph: move inode to proper flushing list when auth MDS changes
-      ceph: fix pending vmtruncate race
-      ceph: fix cap revoke race
-      ceph: fix race between cap issue and revoke
-      libceph: call r_unsafe_callback when unsafe reply is received
-
-majianpeng (4):
-      ceph: fix sleeping function called from invalid context.
-      ceph: avoid meaningless calling ceph_caps_revoking if sync_mode == WB_SYNC_ALL.
-      ceph: Free mdsc if alloc mdsc->mdsmap failed.
-      ceph: Reconstruct the func ceph_reserve_caps.
-
- drivers/block/rbd.c             | 174 +++++++++++++++++++++-------------------
- fs/ceph/addr.c                  |  88 ++++++++++----------
- fs/ceph/caps.c                  | 102 ++++++++++++++---------
- fs/ceph/file.c                  |   4 +-
- fs/ceph/inode.c                 |  14 ++--
- fs/ceph/locks.c                 |   2 +-
- fs/ceph/mds_client.c            |   6 +-
- fs/ceph/mdsmap.c                |  42 +++++-----
- fs/ceph/super.c                 |   2 +-
- fs/ceph/super.h                 |   4 +-
- fs/ceph/xattr.c                 |   9 ++-
- include/linux/ceph/decode.h     |   5 --
- include/linux/ceph/osd_client.h |   1 -
- net/ceph/auth_none.c            |   6 ++
- net/ceph/osd_client.c           |  63 ++++++++-------
- 15 files changed, 277 insertions(+), 245 deletions(-)
