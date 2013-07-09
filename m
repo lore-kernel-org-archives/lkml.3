@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab3GIPVf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:21:35 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:57605 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752873Ab3GIPVb (ORCPT
+	id S1752183Ab3GIPWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:22:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:57049 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab3GIPWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:21:31 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839hd24he5bhf0ah107ah11b5h121eh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14afh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h1155h)
-From: Cristian Bercaru <cristian.bercaru@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: Cristian Bercaru <cristian.bercaru@freescale.com>, <cocci@systeme.lip6.fr>
-Subject: [PATCH] invoke arguments the right way in coccinelle script
-Date: Tue, 9 Jul 2013 18:21:18 +0300
-Message-ID: <1373383278-3339-1-git-send-email-cristian.bercaru@freescale.com>
-X-Mailer: git-send-email 1.7.11.7
+	Tue, 9 Jul 2013 11:22:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+In-Reply-To: <s5h1u77g41f.wl%tiwai@suse.de>
+References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
+	<20130706221401.GA3652@redhat.com>
+	<20130706223003.GA10697@kroah.com>
+	<s5h4nc5bewf.wl%tiwai@suse.de>
+	<CACVXFVN452nktR=JTTubnYwVkcDdoued0VysT1vA+2jHU1A3Gw@mail.gmail.com>
+	<s5hmwpwuwjp.wl%tiwai@suse.de>
+	<CACVXFVNx7SA3rM46q4=7+7QU==EL3ukAeWcaBYruykfE6JPe8w@mail.gmail.com>
+	<s5hfvvng8py.wl%tiwai@suse.de>
+	<CACVXFVN-Qt8PP1YspX_M8H1W_-9Q-f8u1xPKcsqSWsqZqkhVyw@mail.gmail.com>
+	<s5h4nc3g5cg.wl%tiwai@suse.de>
+	<CACVXFVPtAJUOH5v_i_xVkt9QoKN8wVdyJ=W+M87ASbBmHtz9rg@mail.gmail.com>
+	<s5h1u77g41f.wl%tiwai@suse.de>
+Date: Tue, 9 Jul 2013 23:22:33 +0800
+Message-ID: <CACVXFVPGeqvL-P8kXAg00bvWYbMK9N0OpRVbesuNgNEmVPJdSA@mail.gmail.com>
+Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because the command line arguments were invoked incorrectly
-'make coccicheck' failed to run 'irqf_oneshot.cocci' and all tests that
-followed. Fixed that.
+On Tue, Jul 9, 2013 at 11:13 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>>
+>> The only cost of built-in user helper code is ~6Kbytes code on my armv7
+>> box.
+>>
+>> If the 6KB memory does mater for this non-distro kernel, we can introduce
+>> more options.
+>
+> Well, if it doesn't matter, we don't need CONFIG_FW_LOADER_USER_HELPER
+> either.  The goal of this option is to kill the user helper code, not
+> intended as a workaround for 60 seconds stall.
 
-Signed-off-by: Cristian Bercaru <cristian.bercaru@freescale.com>
----
- scripts/coccinelle/misc/irqf_oneshot.cocci | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/scripts/coccinelle/misc/irqf_oneshot.cocci b/scripts/coccinelle/misc/irqf_oneshot.cocci
-index 6cfde94..5cca680 100644
---- a/scripts/coccinelle/misc/irqf_oneshot.cocci
-+++ b/scripts/coccinelle/misc/irqf_oneshot.cocci
-@@ -4,7 +4,7 @@
- //
- // Confidence: Good
- // Comments:
--// Options: --no-includes
-+// Options: -no_includes
- 
- virtual patch
- virtual context
--- 
-1.7.11.7
+Actually, the Kconfig help is "Fallback user-helper invocation for
+firmware loading",
+so looks the description in help doc isn't consistent with what you wanted, :-)
 
 
+Thanks,
+--
+Ming Lei
