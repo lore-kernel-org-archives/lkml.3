@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374Ab3GIKdD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 06:33:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41822 "EHLO bear.ext.ti.com"
+	id S1753481Ab3GIKdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 06:33:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28033 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab3GIKc6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 06:32:58 -0400
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: "Cherian, George" <george.cherian@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "benoit.cousson@linaro.org" <benoit.cousson@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>
-Subject: RE: [PATCH v2] arm: dts: AM43x: Add usb_otg_hs node
-Thread-Topic: [PATCH v2] arm: dts: AM43x: Add usb_otg_hs node
-Thread-Index: AQHOfIUxZ3JRNeejZEKGX4bz7p/ob5lcJJWQ
-Date: Tue, 9 Jul 2013 10:32:19 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EB30355@DBDE04.ent.ti.com>
-References: <1373361446-30050-1-git-send-email-george.cherian@ti.com>
-In-Reply-To: <1373361446-30050-1-git-send-email-george.cherian@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1751611Ab3GIKdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 06:33:39 -0400
+Date: Tue, 9 Jul 2013 13:34:52 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net 1/2] tuntap: correctly linearize skb when zerocopy is
+ used
+Message-ID: <20130709103452.GB14321@redhat.com>
+References: <1373364651-10474-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373364651-10474-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi George,
+On Tue, Jul 09, 2013 at 06:10:50PM +0800, Jason Wang wrote:
+> Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
+> linearize parts of the skb to let the rest of iov to be fit in
+> the frags, we need count copylen into linear when calling tun_alloc_skb()
+> instead of partly counting it into data_len. Since this breaks
+> zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
+> be zero at beginning. This cause nr_frags to be increased wrongly without
+> setting the correct frags.
+> 
+> This bug were introduced from 0690899b4d4501b3505be069b9a687e68ccbe15b
+> (tun: experimental zero copy tx support)
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+> This patch is needed for stable.
+> ---
+>  drivers/net/tun.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 7eab5fc..01d5a86 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -1109,7 +1109,8 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+>  	} else
+>  		copylen = len;
+>  
+> -	skb = tun_alloc_skb(tfile, align, copylen, gso.hdr_len, noblock);
+> +	skb = tun_alloc_skb(tfile, align, copylen,
+> +			    zerocopy ? copylen : gso.hdr_len, noblock);
+>  	if (IS_ERR(skb)) {
+>  		if (PTR_ERR(skb) != -EAGAIN)
+>  			tun->dev->stats.rx_dropped++;
 
-On Tue, Jul 09, 2013 at 14:47:26, Cherian, George wrote:
+Good catch, thanks. But let's add a new variable and
+set it in the if statement above
+instead of an extra branch here - not for performance but
+because it's clearer this way.
 
-> +		usb_otg_hs1: am4372_dwc3@48380000 {
-
-Wouldn't "usb" a better node name ?
-
-> +			compatible = "ti,am437x-dwc3";
-
-Usage of wild card is discouraged per DT documentation.
-
-Regards
-Afzal
-
+> -- 
+> 1.7.1
