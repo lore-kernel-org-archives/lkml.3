@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab3GIGqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 02:46:20 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:51295 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862Ab3GIGqT (ORCPT
+	id S1753248Ab3GIGuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 02:50:05 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:33713 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752571Ab3GIGuC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 02:46:19 -0400
-From: Wedson Almeida Filho <wedsonaf@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, Joe Perches <joe@perches.com>
-Cc: Tim Abbott <tabbott@ksplice.com>, linux-kernel@vger.kernel.org,
-        Wedson Almeida Filho <wedsonaf@gmail.com>
-Subject: [PATCH v2] lib: One less subtraction in binary search iterations.
-Date: Mon,  8 Jul 2013 23:37:02 -0700
-Message-Id: <1373351822-52050-1-git-send-email-wedsonaf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <CANeycqoHsRqCU4BSkPYK5O++ciShAmFcpEx+D3XUha7kukU0bQ@mail.gmail.com>
-References: <CANeycqoHsRqCU4BSkPYK5O++ciShAmFcpEx+D3XUha7kukU0bQ@mail.gmail.com>
+	Tue, 9 Jul 2013 02:50:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1373014001-17746-1-git-send-email-cw00.choi@samsung.com>
+References: <1373014001-17746-1-git-send-email-cw00.choi@samsung.com>
+Date: Tue, 9 Jul 2013 12:20:02 +0530
+Message-ID: <CAKohpokzn4jrO3rr8pjzwd4Xn+0umOK-sMANV2Fj5xn6UhBHVg@mail.gmail.com>
+Subject: Re: [PATCH 0/6] cpufreq: Add 'load_table' debugfs file to show
+ colleced CPUs load
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The subtraction is removed at the expense of generality: when the element size
-is 1, the array length cannot exceed half the architecture's addressable
-memory.
+On 5 July 2013 14:16, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> Second, previous performance/powersave governor haven't calculated CPUs load
+> becuase these governor didn't change CPU frequency according to CPUs load. But,
+> load_table debugfs file always should indicate the collected CPUs data regardless
+> of the kind of cpufreq governor. So, the patch3/4/5 implement that performance/
+> powersave governor will check periodically CPUs load by calling dbs_check_cpu()
+> with timer.
 
-Signed-off-by: Wedson Almeida Filho <wedsonaf@gmail.com>
----
- lib/bsearch.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/lib/bsearch.c b/lib/bsearch.c
-index e33c179..668ae6c 100644
---- a/lib/bsearch.c
-+++ b/lib/bsearch.c
-@@ -24,6 +24,11 @@
-  * contents of the array should already be in ascending sorted order
-  * under the provided comparison function.
-  *
-+ * There is a limitation when @size is 1: in this case @num must be at
-+ * most SIZE_MAX / 2; that is, the number of elements in the sorted
-+ * array must be at most half the maximum number expressible as a size_t
-+ * to avoid overflows.
-+ *
-  * Note that the key need not have the same type as the elements in
-  * the array, e.g. key could be a string and the comparison function
-  * could compare the string with the struct's name field.  However, if
-@@ -37,7 +42,7 @@ void *bsearch(const void *key, const void *base, size_t num, size_t size,
- 	int result;
- 
- 	while (start < end) {
--		size_t mid = start + (end - start) / 2;
-+		size_t mid = (start + end) / 2;
- 
- 		result = cmp(key, base + mid * size);
- 		if (result < 0)
--- 
-1.7.9.5
-
+I raised a query on how can we call dbs_check_cpu() from
+performance/powersave? Also, calling this routine will degrade
+performance without any sense. So, I vote not for doing it.
