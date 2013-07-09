@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab3GIXAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 19:00:54 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64073 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753449Ab3GIXAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 19:00:36 -0400
-From: Guenter Roeck <linux@roeck-us.net>
-To: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Mika Kuoppala <mika.kuoppala@intel.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v2] Partially revert "drm/i915: unconditionally use mt forcewake on hsw/ivb"
-Date: Tue,  9 Jul 2013 16:00:31 -0700
-Message-Id: <1373410831-1347-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	id S1753456Ab3GIXDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 19:03:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43237 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752111Ab3GIXDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 19:03:53 -0400
+Date: Tue, 9 Jul 2013 19:03:16 -0400
+From: Dave Jones <davej@redhat.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+Subject: Re: timer: lockup in run_timer_softirq()
+Message-ID: <20130709230316.GB13855@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Sasha Levin <sasha.levin@oracle.com>, Tejun Heo <tj@kernel.org>,
+	tglx@linutronix.de, Peter Zijlstra <peterz@infradead.org>,
+	LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+References: <51DC902F.3070403@oracle.com>
+ <20130709224706.GA13855@redhat.com>
+ <51DC9379.9050408@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51DC9379.9050408@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch partially reverts commit 36ec8f877481449bdfa072e6adf2060869e2b970 for
-IvyBridge CPUs.
+On Tue, Jul 09, 2013 at 06:49:29PM -0400, Sasha Levin wrote:
+ > On 07/09/2013 06:47 PM, Dave Jones wrote:
+ 
+ > >   > [ 2536.500130] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run:
+ > >   > 697182.008 msecs
+ > >
+ > > I've been reporting these (and other traces) for a while https://lkml.org/lkml/2013/7/5/185 [1]
+ > > on bare-metal.
+ > 
+ > Interesting. It's the first time I'm seeing these, but I haven't really changed
+ > anything in my configuration.
+ > 
+ > Are you also seeing the "NMI handler took too long" messages?
 
-The original commit results in repeated 'Timed out waiting for forcewake old
-ack to clear' messages on a Supermicro C7H61 board (BIOS version 2.00 and 2.00b)
-with i7-3770K CPU. It ultimately results in a hangup if the system is highly
-loaded. Reverting the commit for IvyBridge CPUs fixes the issue.
+Now that I look closer, one difference is you're seeing arch_trigger_all_cpu_backtrace_handler
+in that message. I'm seeing them from perf_event_nmi_handler.
 
-Issue a warning if the CPU is IvyBridge and mt forcewake is disabled, since
-this condition can result in secondary issues.
+	Dave
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60541
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-v2: Only revert patch for Ivybridge CPUs
-    Issue info message if mt forcewake is disabled on Ivybridge
-
- drivers/gpu/drm/i915/intel_pm.c |   31 ++++++++++++++++++++++++++++++-
- 1 file changed, 30 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index aa01128..0392c28 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -4510,9 +4510,38 @@ void intel_gt_init(struct drm_device *dev)
- 	if (IS_VALLEYVIEW(dev)) {
- 		dev_priv->gt.force_wake_get = vlv_force_wake_get;
- 		dev_priv->gt.force_wake_put = vlv_force_wake_put;
--	} else if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev)) {
-+	} else if (IS_HASWELL(dev)) {
- 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_mt_get;
- 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_mt_put;
-+	} else if (IS_IVYBRIDGE(dev)) {
-+		u32 ecobus;
-+
-+		/* IVB configs may use multi-threaded forcewake */
-+
-+		/* A small trick here - if the bios hasn't configured
-+		 * MT forcewake, and if the device is in RC6, then
-+		 * force_wake_mt_get will not wake the device and the
-+		 * ECOBUS read will return zero. Which will be
-+		 * (correctly) interpreted by the test below as MT
-+		 * forcewake being disabled.
-+		 */
-+		mutex_lock(&dev->struct_mutex);
-+		__gen6_gt_force_wake_mt_get(dev_priv);
-+		ecobus = I915_READ_NOTRACE(ECOBUS);
-+		__gen6_gt_force_wake_mt_put(dev_priv);
-+		mutex_unlock(&dev->struct_mutex);
-+
-+		if (ecobus & FORCEWAKE_MT_ENABLE) {
-+			dev_priv->gt.force_wake_get =
-+						__gen6_gt_force_wake_mt_get;
-+			dev_priv->gt.force_wake_put =
-+						__gen6_gt_force_wake_mt_put;
-+		} else {
-+			DRM_INFO("No MT forcewake available on Ivybridge, this can result in issues\n");
-+			DRM_INFO("when using vblank-synced partial screen updates.\n");
-+			dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
-+			dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
-+		}
- 	} else if (IS_GEN6(dev)) {
- 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
- 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
--- 
-1.7.9.7
 
