@@ -1,73 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633Ab3GIVtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 17:49:21 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:53958 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab3GIVtU (ORCPT
+	id S1753820Ab3GIVts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 17:49:48 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50948 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578Ab3GIVtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 17:49:20 -0400
-Date: Tue, 9 Jul 2013 22:49:10 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        device-drivers-devel@blackfin.uclinux.org,
-        Mike Frysinger <vapier@gentoo.org>
-Message-ID: <20130709214910.GA3179@sirena.org.uk>
-References: <1369190195-14598-1-git-send-email-swarren@wwwdotorg.org>
- <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
- <51DC3078.5090602@monstr.eu>
+	Tue, 9 Jul 2013 17:49:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: srinivas.kandagatla@st.com
+Subject: Re: [PATCH v1 0/4] ARM: STi fixes and ethernet support
+Date: Tue, 9 Jul 2013 23:15:05 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, Stuart Menefy <stuart.menefy@st.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+References: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com> <201307090956.03191.arnd@arndb.de> <51DBE718.2080007@st.com>
+In-Reply-To: <51DBE718.2080007@st.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
-Content-Disposition: inline
-In-Reply-To: <51DC3078.5090602@monstr.eu>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.114
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi: convert drivers to use bits_per_word_mask
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307092315.06131.arnd@arndb.de>
+X-Provags-ID: V02:K0:LjUzf2prJtYWOuK/enkZrPfAQj7RVb1VshiJCowhPaj
+ 8OCBfGrLsd2bGISjXGtd6zKXILlh5iCIxvORMAw/WMrmDUrfDn
+ 1dJI0NSpiTWMC7osIVfJMTXE/+J7RBxbIIwDVQKRwS2TyMwYWo
+ F3BUfLtM1QREKJtj6NL4YjG1k2Fz6zXgbPhhUt+ivtblcktUbP
+ R5twqQzlN5ZQmN40rdQoR6stEzksNZ6NsXjRv/vI6HNekc3lGH
+ DwZyTu17QW0dD1J+Tya8GV6EdDYHrT+id/qIok2TghnhVLBhVt
+ +yp6yyGSZ7MlfFYQPqaKl6cc2ChvdI49HfLBEJXEwVFC//mgXi
+ UcepPLy1K24J/oyNXS7A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 09 July 2013, Srinivas KANDAGATLA wrote:
+> On 09/07/13 08:56, Arnd Bergmann wrote:
+> > No, you should be using generic interfaces to do the things you need.
+> > 
+> > I believe what you are missing is an ethernet phy driver that is specific
+> > to your SoC.
+> It looks interesting way to solve the issue.
+> 
+> Did you mean "Ethernet PHY"?
+> 
+> Ethernet PHY is not integrated in the STiH41x SoC, We use an external
+> ICPLUS phy ( drivers/net/phy/icplus.c) for both B2000 and B2020 boards.
+> As we can't have  two Ethernet phy drivers at the same time, I think the
+> suggestion might not work in this case.
+> 
+> The callbacks in the mach level are setting up two SOC specific System
+> Configuration registers which configures the MAC (like PHY interface
+> selection, which is sampled during MAC reset assertion).
 
---3MwIy2ne0vdjdPXF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ah, right.
 
-On Tue, Jul 09, 2013 at 05:47:04PM +0200, Michal Simek wrote:
+> MAC used in STiH41x supports multiple PHY interfaces, so the PHY
+> interface selection is driven by external signals wired up to System
+> Configuration registers. The MAC driver is not aware of these System
+> Configuration registers. So for non-DT case, stmmac driver provided
+> callbacks to do things like this.
+> 
+> For DT case, At the moment I think callbacks at MACH level is one
+> possible solution. But am open for any discussions.
 
-> Probably the best solution is just revert this part of patch.
-> Mark: What do you think?
+Ok, so a PHY driver might not be the best place to put this, but it's
+one option, since the PHY driver already has to know about the
+interface speed you are setting.
 
-We should make it so that the user does not need to supply empty
-functions if none are needed.
+Having a global "*_setup_ethernet" callback is definitely not the
+right way to go. Please describe what the function actually does
+so we can come up with the right subsystem to move that functionality
+to. If you are setting clocks, you should use the clock subsystem,
+for taking the device out of reset, you should use the reset controller
+subsystem and for setting up the phy, you should use the phy subsystem,
+etc.
 
---3MwIy2ne0vdjdPXF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR3IVNAAoJELSic+t+oim9nBsQAIYo5DNkhCVhn6w07wS4uEhw
-Cj2l3REMOwkhG/YLXKcbm6HCWC+ezwATCBS8qBJE5XmRAJg/YGWKW5Ge0flSlmJj
-W8lKsxxpLKkAWnfmgGWKYZhMfwbL1ZsPABQYdEcfCkfNkFfm49eqDQZKlKIFpTrK
-5pcNcDB+z/KILVTTyo01iZhfZPa/HtJ7N/GF5sNxI6b3IAxDsTi1Ri1XBzhjEsf9
-T9F/m7HhPR3y/mN2sQVZmIm2IE844oPkiWUJfoLPl3COpgSXupPrud1MgdKZmKCh
-H052aooI0T08gRoxsWGNobYw+fyKtR1fD6sajtDcFzCjY/0MKTl70j5E0pnF4Gi4
-4C47O0KSNcPoj+xMAqJsFMo5h69LeqzUhqjlhrAW1bOGj5J7lY9xlK03JZ9wOwdY
-dIMMfybS+Coe44VYNeJqehToqOlmNfMOJSrLPKfq/bfqt6Pb4f7wCymUmbDSkP1E
-6LMEWslW9l2ytX7E9vIHqk1OgKc01mfulYdg1miOXh+wsv6A5XzPKNFcqMEgODkS
-lLxf4khHw0IMAXgSVt3/78NbOhDPaAfi5wg0CU7dk/05GPMrqsvPabR8Gx6NNUjl
-ISrg7UAS8lO66Yzokc/lLr3c2dyYGYGnHyp9k4MicjnOwKGqCHfniig4uzKzazr/
-zU4ygTItpHuvp73KCVZa
-=E3yT
------END PGP SIGNATURE-----
-
---3MwIy2ne0vdjdPXF--
+	Arnd
