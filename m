@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3GIIDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:03:10 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:42913 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753656Ab3GIIC4 (ORCPT
+	id S1753712Ab3GIIDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:03:14 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47129 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753577Ab3GIIDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:02:56 -0400
+	Tue, 9 Jul 2013 04:03:04 -0400
 From: Tiejun Chen <tiejun.chen@windriver.com>
 To: <benh@kernel.crashing.org>
 CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [v3][PATCH 7/8] book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
-Date: Tue, 9 Jul 2013 16:03:26 +0800
-Message-ID: <1373357007-30785-8-git-send-email-tiejun.chen@windriver.com>
+Subject: [v3][PATCH 8/8] book3e/kexec/kdump: recover "r4 = 0" to create the initial TLB
+Date: Tue, 9 Jul 2013 16:03:27 +0800
+Message-ID: <1373357007-30785-9-git-send-email-tiejun.chen@windriver.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
 References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
@@ -22,28 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Book3e is always aligned 1GB to create TLB so we should
-use (KERNELBASE - MEMORY_START) as VIRT_PHYS_OFFSET to
-get __pa/__va properly while boot kdump.
+In commit 96f013f, "powerpc/kexec: Add kexec "hold" support for Book3e
+processors", requires that GPR4 survive the "hold" process, for IBM Blue
+Gene/Q with with some very strange firmware. But for FSL Book3E, r4 = 1
+to indicate that the initial TLB entry for this core already exists so
+we still should set r4 with 0 to create that initial TLB.
 
 Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
- arch/powerpc/include/asm/page.h |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/powerpc/kernel/head_64.S |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
-index 988c812..5b00081 100644
---- a/arch/powerpc/include/asm/page.h
-+++ b/arch/powerpc/include/asm/page.h
-@@ -112,6 +112,8 @@ extern long long virt_phys_offset;
- /* See Description below for VIRT_PHYS_OFFSET */
- #ifdef CONFIG_RELOCATABLE_PPC32
- #define VIRT_PHYS_OFFSET virt_phys_offset
-+#elif defined(CONFIG_PPC_BOOK3E_64)
-+#define VIRT_PHYS_OFFSET (KERNELBASE - MEMORY_START)
- #else
- #define VIRT_PHYS_OFFSET (KERNELBASE - PHYSICAL_START)
- #endif
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index 0b46c9d..d546c5e 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -127,6 +127,10 @@ __secondary_hold:
+ 	/* Grab our physical cpu number */
+ 	mr	r24,r3
+ 	/* stash r4 for book3e */
++#ifdef CONFIG_PPC_FSL_BOOK3E
++	/* we need to setup initial TLB entry. */
++	li	r4,0
++#endif
+ 	mr	r25,r4
+ 
+ 	/* Tell the master cpu we're here */
 -- 
 1.7.9.5
 
