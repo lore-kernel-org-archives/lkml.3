@@ -1,62 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab3GIEMw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 00:12:52 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:60626 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752113Ab3GIEM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 00:12:29 -0400
-Message-ID: <1373343147.9458.25.camel@joe-AO722>
-Subject: Re: [PATCH] lib: One less subtraction in binary search iterations.
-From: Joe Perches <joe@perches.com>
-To: Wedson Almeida Filho <wedsonaf@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Tim Abbott <tabbott@ksplice.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 08 Jul 2013 21:12:27 -0700
-In-Reply-To: <CANeycqqGYKs+Q+_6zpjfdQ+y-QBZLD+jGdU9-YJi9XaYXyCv-w@mail.gmail.com>
-References: <1373152062-28164-1-git-send-email-wedsonaf@gmail.com>
-	 <1373173169.1943.1.camel@joe-AO722>
-	 <CANeycqqGYKs+Q+_6zpjfdQ+y-QBZLD+jGdU9-YJi9XaYXyCv-w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752197Ab3GIENN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 00:13:13 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:37477 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab3GIENJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 00:13:09 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full 2/7] nohz_full: Add rcu_dyntick data for scalable detection of all-idle state
+Date: Mon,  8 Jul 2013 18:30:01 -0700
+Message-Id: <1373333406-26979-2-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130709012934.GA26058@linux.vnet.ibm.com>
+ <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070901-7408-0000-0000-000011DA235F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-08 at 20:51 -0700, Wedson Almeida Filho wrote:
-> On Sat, Jul 6, 2013 at 9:59 PM, Joe Perches <joe@perches.com> wrote:
-> >
-> > Not correct.
-> >
-> >>       while (start < end) {
-> >> -             size_t mid = start + (end - start) / 2;
-> >> +             size_t mid = (start + end) / 2;
-> >
-> >         size_t start = 0x80000000;
-> >         size_t end   = 0x80000001;
-> 
-> Good point, they aren't equivalent in all cases.
-> 
-> For the overflow to happen though, we need an array with at least
-> N/2+1 entries, where N is the address space size. The array wouldn't
-> fit in addressable memory if the element size is greater than 1, so
-> this can only really happen when the element size is 1. Even then, it
-> would require the kernel range to be greater than half of all
-> addressable memory, and allow an allocation taking that much memory. I
-> don't know all architectures where linux runs, but I don't think such
-> configuration is likely to exist.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Nor do I but that wasn't what you wrote.
+This commit adds fields to the rcu_dyntick structure that are used to
+detect idle CPUs.  These new fields differ from the existing ones in
+that the existing ones consider a CPU executing in user mode to be idle,
+where the new ones consider CPUs executing in user mode to be busy.
+The handling of these new fields is otherwise quite similar to that for
+the exiting fields.  This commit also adds the initialization required
+for these fields.
 
-> There is no functional change, but this change eliminates a subtraction that
-> the compiler doesn't optimize out (as of gcc 4.7.3).
+So, why is usermode execution treated differently, with RCU considering
+it a quiescent state equivalent to idle, while in contrast the new
+full-system idle state detection considers usermode execution to be
+non-idle?
 
-That's flatly incorrect.
+It turns out that although one of RCU's quiescent states is usermode
+execution, it is not a full-system idle state.  This is because the
+purpose of the full-system idle state is not RCU, but rather determining
+when accurate timekeeping can safely be disabled.  Whenever accurate
+timekeeping is required in a CONFIG_NO_HZ_FULL kernel, at least one
+CPU must keep the scheduling-clock tick going.  If even one CPU is
+executing in user mode, accurate timekeeping is requires, particularly for
+architectures where gettimeofday() and friends do not enter the kernel.
+Only when all CPUs are really and truly idle can accurate timekeeping be
+disabled, allowing all CPUs to turn off the scheduling clock interrupt,
+thus greatly improving energy efficiency.
 
-I don't mind if you change it, for just the reason
-you wrote, but you still have to now say under what
-conditions the test works and when it doesn't.
+This naturally raises the question "Why is this code in RCU rather than in
+timekeeping?", and the answer is that RCU has the data and infrastructure
+to efficiently make this determination.
 
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree.c        |  5 +++++
+ kernel/rcutree.h        |  9 +++++++++
+ kernel/rcutree_plugin.h | 19 +++++++++++++++++++
+ 3 files changed, 33 insertions(+)
+
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 78745ae..259e300 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -209,6 +209,10 @@ EXPORT_SYMBOL_GPL(rcu_note_context_switch);
+ DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
+ 	.dynticks_nesting = DYNTICK_TASK_EXIT_IDLE,
+ 	.dynticks = ATOMIC_INIT(1),
++#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
++	.dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE,
++	.dynticks_idle = ATOMIC_INIT(1),
++#endif /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+ };
+ 
+ static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
+@@ -2902,6 +2906,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptible)
+ 	rdp->blimit = blimit;
+ 	init_callback_list(rdp);  /* Re-enable callbacks on this CPU. */
+ 	rdp->dynticks->dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
++	rcu_sysidle_init_percpu_data(rdp->dynticks);
+ 	atomic_set(&rdp->dynticks->dynticks,
+ 		   (atomic_read(&rdp->dynticks->dynticks) & ~0x1) + 1);
+ 	raw_spin_unlock(&rnp->lock);		/* irqs remain disabled. */
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index b383258..bd99d59 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -88,6 +88,14 @@ struct rcu_dynticks {
+ 				    /* Process level is worth LLONG_MAX/2. */
+ 	int dynticks_nmi_nesting;   /* Track NMI nesting level. */
+ 	atomic_t dynticks;	    /* Even value for idle, else odd. */
++#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
++	long long dynticks_idle_nesting;
++				    /* irq/process nesting level from idle. */
++	atomic_t dynticks_idle;	    /* Even value for idle, else odd. */
++				    /*  "Idle" excludes userspace execution. */
++	unsigned long dynticks_idle_jiffies;
++				    /* End of last non-NMI non-idle period. */
++#endif /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+ #ifdef CONFIG_RCU_FAST_NO_HZ
+ 	bool all_lazy;		    /* Are all CPU's CBs lazy? */
+ 	unsigned long nonlazy_posted;
+@@ -545,6 +553,7 @@ static void rcu_boot_init_nocb_percpu_data(struct rcu_data *rdp);
+ static void rcu_spawn_nocb_kthreads(struct rcu_state *rsp);
+ static void rcu_kick_nohz_cpu(int cpu);
+ static bool init_nocb_callback_list(struct rcu_data *rdp);
++static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+ 
+ #endif /* #ifndef RCU_TREE_NONCORE */
+ 
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 769e12e..6937eb6 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2375,3 +2375,22 @@ static void rcu_kick_nohz_cpu(int cpu)
+ 		smp_send_reschedule(cpu);
+ #endif /* #ifdef CONFIG_NO_HZ_FULL */
+ }
++
++
++#ifdef CONFIG_NO_HZ_FULL_SYSIDLE
++
++/*
++ * Initialize dynticks sysidle state for CPUs coming online.
++ */
++static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
++{
++	rdtp->dynticks_idle_nesting = DYNTICK_TASK_NEST_VALUE;
++}
++
++#else /* #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
++
++static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp)
++{
++}
++
++#endif /* #else #ifdef CONFIG_NO_HZ_FULL_SYSIDLE */
+-- 
+1.8.1.5
 
