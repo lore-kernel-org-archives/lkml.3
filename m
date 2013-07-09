@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752430Ab3GIBTr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 21:19:47 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:21761 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab3GIBRq (ORCPT
+	id S1752801Ab3GIBTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 21:19:45 -0400
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:37965 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752304Ab3GIBRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 21:17:46 -0400
+	Mon, 8 Jul 2013 21:17:47 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        Joel Becker <jlbec@evilplan.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
+        Tyler Hicks <tyhicks@canonical.com>, ecryptfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Andi Kleen <andi@firstfloor.org>,
         "Chandramouleeswaran, Aswin" <aswin@hp.com>,
         "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v6 07/14] config-fs: replace direct access of d_count with the d_count() helper
-Date: Mon,  8 Jul 2013 21:09:57 -0400
-Message-Id: <1373332204-10379-8-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v6 08/14] ecrypt-fs: replace direct access of d_count with the d_count() helper
+Date: Mon,  8 Jul 2013 21:09:58 -0400
+Message-Id: <1373332204-10379-9-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com>
 References: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com>
@@ -37,22 +37,22 @@ should just work.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- fs/configfs/dir.c |    2 +-
+ fs/ecryptfs/inode.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
-index 64e5323..1d75ec5 100644
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -387,7 +387,7 @@ static void remove_dir(struct dentry * d)
- 	if (d->d_inode)
- 		simple_rmdir(parent->d_inode,d);
+diff --git a/fs/ecryptfs/inode.c b/fs/ecryptfs/inode.c
+index a2f2bb2..67e9b63 100644
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -358,7 +358,7 @@ static int ecryptfs_lookup_interpose(struct dentry *dentry,
  
--	pr_debug(" o %s removing done (%d)\n",d->d_name.name, d->d_count);
-+	pr_debug(" o %s removing done (%d)\n", d->d_name.name, d_count(d));
+ 	lower_mnt = mntget(ecryptfs_dentry_to_lower_mnt(dentry->d_parent));
+ 	fsstack_copy_attr_atime(dir_inode, lower_dentry->d_parent->d_inode);
+-	BUG_ON(!lower_dentry->d_count);
++	BUG_ON(!d_count(lower_dentry));
  
- 	dput(parent);
- }
+ 	ecryptfs_set_dentry_private(dentry, dentry_info);
+ 	ecryptfs_set_dentry_lower(dentry, lower_dentry);
 -- 
 1.7.1
 
