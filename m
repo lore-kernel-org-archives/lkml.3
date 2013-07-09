@@ -1,129 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab3GIXOL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 19:14:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34252 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752509Ab3GIXOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 19:14:08 -0400
-Date: Wed, 10 Jul 2013 01:12:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Kay Sievers <kay@vrfy.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Lennart Poettering <lpoetter@redhat.com>,
-        Tim Hockin <thockin@hockin.org>, Michal Hocko <mhocko@suse.cz>,
-        Tejun Heo <tj@kernel.org>, Mike Galbraith <bitbucket@online.de>,
-        Li Zefan <lizefan@huawei.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
-        "dhaval.giani" <dhaval.giani@gmail.com>,
-        jpoimboe <jpoimboe@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        workman-devel <workman-devel@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: cgroup: status-quo and userland efforts
-In-Reply-To: <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1307100111410.4045@twin.jikos.cz>
-References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com> <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net>
- <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net> <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net> <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz>
- <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com> <51CE3CE0.9010506@redhat.com> <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com> <51D08976.6040005@redhat.com> <alpine.DEB.2.02.1307030021480.4013@ionos.tec.linutronix.de>
- <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753703Ab3GIXTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 19:19:32 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:58544 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753449Ab3GIXT3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 19:19:29 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Olof Johansson <olof@lixom.net>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Doug Anderson <dianders@chromium.org>,
+        linux-samsung-soc@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 0/5] mmc: dw_mmc: fixes for suspend/resume on exynos
+Date: Tue,  9 Jul 2013 16:19:16 -0700
+Message-Id: <1373411961-23812-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1373391071-6312-1-git-send-email-dianders@chromium.org>
+References: <1373391071-6312-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 3 Jul 2013, Kay Sievers wrote:
+This series of patches addresses some suspend/resume problems with
+dw_mmc on exynos platforms.  Since suspend/resume is not fully working
+on ToT Linux (3.10) on exynos5250-snow, this series was tested against
+the current ToT ChromeOS 3.8 tree.  I have confirmed basic booting
+and eMMC / SD card usage (and compiling, honest!) against ToT Linux.
 
-> >> > But that's not my point.  It seems pretty easy to make this cgroup
-> >> > management (in "native mode") a library that can have either a thin
-> >> > veneer of a main() function, while also being usable by systemd.  The
-> >> > point is to solve all of the problems ONCE.  I'm trying to make the
-> >> > case that systemd itself should be focusing on features and policies
-> >> > and awesome APIs.
-> >>
-> >> You know, getting this all right isn't easy. If you want to do things
-> >> properly, then you need to propagate attribute changes between the units you
-> >> manage. You also need something like a scheduler, since a number of
-> >> controllers can only be configured under certain external conditions (for
-> >> example: the blkio or devices controller use major/minor parameters for
-> >> configuring per-device limits. Since major/minor assignments are pretty much
-> >> unpredictable these days -- and users probably want to configure things with
-> >> friendly and stable /dev/disk/by-id/* symlinks anyway -- this requires us to
-> >> wait for devices to show up before we can configure the parameters.) Soo...
-> >> you need a graph of units, where you can propagate things, and schedule things
-> >> based on some execution/event queue. And the propagation and scheduling are
-> >> closely intermingled.
-> >
-> > you are confusing policy and mechanisms.
-> >
-> >     The access to cgroupfs is mechanism.
-> >
-> >     The propagation of changes, the scheduling of cgroupfs access and
-> >     the correlation to external conditions are policy.
-> >
-> > What Tim is asking for is to have a common interface, i.e. a library
-> > which implements the low level access to the cgroupfs mechanism
-> > without imposing systemd defined policies to it (It might implement a
-> > set of common useful policies, but that's a different discussion).
-> >
-> > That's definitely not an unreasonable request, because he wants to
-> > implement his own set of policies which are not necessarily the same
-> > as those which are implemented by systemd.
-> >
-> > You are simply ignoring the fact, that Linux is used in other ways
-> > than those which you are focussed on. That's true for Google's way to
-> > manage its gazillion machines and that's equally true for the other
-> > end of the spectrum which is deep embedded or any other specialized
-> > use case. Just face it: running Linux on your laptop and on some RHT
-> > lab machines is covering about 1% of the use cases.
-> >
-> > Nevertheless you repeatedly claim, that systemd is the only way to
-> > deal with system startup and system management, is covering _ALL_ use
-> > cases and the interfaces you expose are sufficient.
-> >
-> > Did you ever work on specialized embedded or big data use cases? I
-> > really doubt that, but I might be wrong as usual.
-> >
-> > So I invite you to prove that you can beat an existing setup for an
-> > automotive use case with your magic systemd foo. I refund you fully,
-> > if you can beat the mark of a functional system less than 800ms after
-> > reset release on a 200MHz ARM machine. Functional is defined by the
-> > use case requirements and means:
-> >
-> >     - Basic cgroups management working
-> >     - GUI up and running
-> >     - Main communication interface (CAN bus) up and running
-> >
-> > The rest of the system is starting up after that including a more
-> > complex cgroup management.
-> >
-> > According to your claim that systemd is covering everything and some
-> > more, this should take you a few hours. I grant you a full week to
-> > work on that.
-> >
-> > The use case Tim is talking about is different, but has similar
-> > constraints which are completely driven by his particular use case
-> > scenario. I'm sure, that Tim can persuade his management to setup a
-> > similar contest to prove your expertise on the other extreme of the
-> > Linux world.
-> >
-> > Before answering please think about the relevance of your statements
-> > "getting this all right isn't easy", "something like a scheduler",
-> > "users probably want ..."  and "stable /dev/disk/by-id/* symlinks" in
-> > those contexts.
-> 
-> I don't think anybody needs your money.
-> 
-> But it's sure an improvement over last time when you wanted to use a
-> "Kantholz" to make your statement.
+Changes in v2:
+- Fix typo (some -> come)
+- Use ~0 instead of 0xFFFFFFFF; add comment about value
+- Use suspend_noirq as per James Hogan.
 
-Now how about the policy vs. mechanisms part of Thomas' e-mail?
+Doug Anderson (5):
+  mmc: dw_mmc: Invalidate cache of current_speed after suspend/resume
+  mmc: dw_mmc: Add suspend_noirq/resume_noirq callbacks for dw_mmc-pltfm
+  mmc: dw_mmc: Add exynos resume_noirq callback to clear WAKEUP_INT
+  mmc: dw_mmc: Always setup the bus after suspend/resume
+  mmc: dw_mmc: Set timeout to max upon resume
+
+ drivers/mmc/host/dw_mmc-exynos.c | 23 +++++++++++++++++++++++
+ drivers/mmc/host/dw_mmc-pltfm.c  | 37 ++++++++++++++++++++++++++++++++++---
+ drivers/mmc/host/dw_mmc.c        | 15 +++++++++++----
+ drivers/mmc/host/dw_mmc.h        |  4 ++++
+ 4 files changed, 72 insertions(+), 7 deletions(-)
 
 -- 
-Jiri Kosina
-SUSE Labs
+1.8.3
 
