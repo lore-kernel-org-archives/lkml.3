@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753099Ab3GIHrV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:47:21 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:50156 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab3GIHrT (ORCPT
+	id S1753231Ab3GIHsV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:48:21 -0400
+Received: from vaxjo.synopsys.com ([198.182.60.75]:43873 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab3GIHsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 03:47:19 -0400
+	Tue, 9 Jul 2013 03:48:20 -0400
+Message-ID: <51DBC021.5040805@synopsys.com>
+Date: Tue, 9 Jul 2013 13:17:45 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <51DBBD3A.3020200@free-electrons.com>
-References: <1373263451-26841-1-git-send-email-michael.opdenacker@free-electrons.com>
-	<CAMuHMdVm_G6GuMnROosQb94rk3fokiOaz70T-HZ79amV3Cyx4A@mail.gmail.com>
-	<51DBBD3A.3020200@free-electrons.com>
-Date: Tue, 9 Jul 2013 09:47:19 +0200
-X-Google-Sender-Auth: dlx1X7aQUwxEgQOIADhN0xlTZmQ
-Message-ID: <CAMuHMdVZaW3=ZBot-RvuyCa94H0HSOwboOA8aBNPSdqkvcG=pA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] cris: cleanup Kconfig files
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Woodhouse, David" <David.Woodhouse@intel.com>,
-        artem.bityutskiy@linux.intel.com, Cris <linux-cris-kernel@axis.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Bolle <pebolle@tiscali.nl>
-Content-Type: text/plain; charset=UTF-8
+Newsgroups: gmane.linux.kernel
+To: Wedson Almeida Filho <wedsonaf@gmail.com>
+CC: Joe Perches <joe@perches.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Tim Abbott" <tabbott@ksplice.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] lib: One less subtraction in binary search iterations.
+References: <1373152062-28164-1-git-send-email-wedsonaf@gmail.com> <1373173169.1943.1.camel@joe-AO722> <CANeycqqGYKs+Q+_6zpjfdQ+y-QBZLD+jGdU9-YJi9XaYXyCv-w@mail.gmail.com>
+In-Reply-To: <CANeycqqGYKs+Q+_6zpjfdQ+y-QBZLD+jGdU9-YJi9XaYXyCv-w@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.141]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 9, 2013 at 9:35 AM, Michael Opdenacker
-<michael.opdenacker@free-electrons.com> wrote:
-> On 07/09/2013 09:33 AM, Geert Uytterhoeven wrote:
->> On Mon, Jul 8, 2013 at 8:04 AM, Michael Opdenacker
->> <michael.opdenacker@free-electrons.com> wrote:
->>> This set of patches removes kernel configuration parameters for the
->>> CRIS architecture, which are used nowhere in the kernel source
->>> code and makefiles.
->>>
->> (At least) Some of these have been in cris/for-next for a few months,
->> courtesy of
->> Paul Bolle.
->
-> Thank you for your reply. I hope they will make it this time.
+On 07/09/2013 09:21 AM, Wedson Almeida Filho wrote:
+> On Sat, Jul 6, 2013 at 9:59 PM, Joe Perches <joe@perches.com> wrote:
+>>
+>> Not correct.
+>>
+>>>       while (start < end) {
+>>> -             size_t mid = start + (end - start) / 2;
+>>> +             size_t mid = (start + end) / 2;
+>>
+>>         size_t start = 0x80000000;
+>>         size_t end   = 0x80000001;
+> 
+> Good point, they aren't equivalent in all cases.
+> 
+> For the overflow to happen though, we need an array with at least
+> N/2+1 entries, where N is the address space size. The array wouldn't
+> fit in addressable memory if the element size is greater than 1, so
+> this can only really happen when the element size is 1. Even then, it
+> would require the kernel range to be greater than half of all
+> addressable memory, and allow an allocation taking that much memory. I
+> don't know all architectures where linux runs, but I don't think such
+> configuration is likely to exist.
+> 
 
-/me too
+It does. In ARC port (arch/arc), the untranslated address space starts at
+0x8000_0000 and this is where kernel is linked at. So all ARC kernel addresses
+(code/data) lie in that range. This means you don't need special corner case for
+this trip on ARC - it will break rightaway - unless I'm missing something.
 
-Gr{oetje,eeting}s,
+P.S. Sorry for not replying earlier than ur v2.
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-Vineet
