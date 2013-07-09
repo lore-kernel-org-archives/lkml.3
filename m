@@ -1,134 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab3GIXlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 19:41:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34932 "EHLO mx2.suse.de"
+	id S1754068Ab3GIXjg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 19:39:36 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36238 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754935Ab3GIXl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 19:41:28 -0400
-Date: Wed, 10 Jul 2013 01:40:06 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] mm: Honor min_free_kbytes set by user
-In-Reply-To: <20130704162005.GE7833@dhcp22.suse.cz>
-Message-ID: <alpine.LRH.2.00.1307100139220.4045@twin.jikos.cz>
-References: <1372954036-16988-1-git-send-email-mhocko@suse.cz> <1372954239.1886.40.camel@joe-AO722> <20130704161641.GD7833@dhcp22.suse.cz> <20130704162005.GE7833@dhcp22.suse.cz>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754870Ab3GIXjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 19:39:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [RFC][PATCH 5/8] ACPI / hotplug / PCI: Unified notify handler for hotplug events
+Date: Wed, 10 Jul 2013 01:49:19 +0200
+Message-ID: <2332413.CRuyXNEmFc@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130709093045.GJ4898@intel.com>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1475924.SZkPqZAdKY@vostro.rjw.lan> <20130709093045.GJ4898@intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 4 Jul 2013, Michal Hocko wrote:
+On Tuesday, July 09, 2013 12:30:45 PM Mika Westerberg wrote:
+> On Tue, Jul 09, 2013 at 02:19:04AM +0200, Rafael J. Wysocki wrote:
+> > Index: linux-pm/drivers/pci/hotplug/acpiphp.h
+> > ===================================================================
+> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
+> > +++ linux-pm/drivers/pci/hotplug/acpiphp.h
+> > @@ -137,6 +137,7 @@ struct acpiphp_context {
+> >  	acpi_handle handle;
+> >  	struct acpiphp_func *func;
+> >  	struct acpiphp_bridge *bridge;
+> > +	bool handler_for_func:1;
+> 
+> Hmm, should it be just plain:
+> 
+> 	bool handler_for_func;
+> 
+> ? What's the reason using bitfields for bool?
 
-> On Thu 04-07-13 18:16:41, Michal Hocko wrote:
-> > On Thu 04-07-13 09:10:39, Joe Perches wrote:
-> > > On Thu, 2013-07-04 at 18:07 +0200, Michal Hocko wrote:
-> > > > A warning is printed when the new value is ignored.
-> > > 
-> > > []
-> > > 
-> > > > +		printk(KERN_WARNING "min_free_kbytes is not updated to %d"
-> > > > +				"because user defined value %d is preferred\n",
-> > > > +				new_min_free_kbytes, user_min_free_kbytes);
-> > > 
-> > > Please use pr_warn and coalesce the format.
-> > 
-> > Sure can do that. mm/page_alloc.c doesn't seem to be unified in that
-> > regards (44 printks and only 4 pr_<foo>) so I used printk.
-> > 
-> > > You'd've noticed a missing space between %d and because.
-> > 
-> > True
-> > 
-> 
-> Checkpatch fixes
-> ---
-> >From 5f089c0b2a57ff6c08710ac9698d65aede06079f Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 4 Jul 2013 17:15:54 +0200
-> Subject: [PATCH] mm: Honor min_free_kbytes set by user
-> 
-> min_free_kbytes is updated during memory hotplug (by init_per_zone_wmark_min)
-> currently which is right thing to do in most cases but this could be
-> unexpected if admin increased the value to prevent from allocation
-> failures and the new min_free_kbytes would be decreased as a result of
-> memory hotadd.
-> 
-> This patch saves the user defined value and allows updating
-> min_free_kbytes only if it is higher than the saved one.
-> 
-> A warning is printed when the new value is ignored.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  mm/page_alloc.c | 24 +++++++++++++++++-------
->  1 file changed, 17 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 22c528e..9c011fc 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -204,6 +204,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
->  };
->  
->  int min_free_kbytes = 1024;
-> +int user_min_free_kbytes;
+If there are more of them, they can be stored together in one int (they are
+unsigned int under the hood).
 
-Minor nit: any reason this can't be static?
+I this particular case it doesn't matter and one of subsequent patches will
+remove that field anyway. :-)
 
->  
->  static unsigned long __meminitdata nr_kernel_pages;
->  static unsigned long __meminitdata nr_all_pages;
-> @@ -5592,14 +5593,21 @@ static void __meminit setup_per_zone_inactive_ratio(void)
->  int __meminit init_per_zone_wmark_min(void)
->  {
->  	unsigned long lowmem_kbytes;
-> +	int new_min_free_kbytes;
->  
->  	lowmem_kbytes = nr_free_buffer_pages() * (PAGE_SIZE >> 10);
-> -
-> -	min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
-> -	if (min_free_kbytes < 128)
-> -		min_free_kbytes = 128;
-> -	if (min_free_kbytes > 65536)
-> -		min_free_kbytes = 65536;
-> +	new_min_free_kbytes = int_sqrt(lowmem_kbytes * 16);
-> +
-> +	if (new_min_free_kbytes > user_min_free_kbytes) {
-> +		min_free_kbytes = new_min_free_kbytes;
-> +		if (min_free_kbytes < 128)
-> +			min_free_kbytes = 128;
-> +		if (min_free_kbytes > 65536)
-> +			min_free_kbytes = 65536;
-> +	} else {
-> +		pr_warn("min_free_kbytes is not updated to %d because user defined value %d is preferred\n",
-> +				new_min_free_kbytes, user_min_free_kbytes);
-> +	}
->  	setup_per_zone_wmarks();
->  	refresh_zone_stat_thresholds();
->  	setup_per_zone_lowmem_reserve();
-> @@ -5617,8 +5625,10 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
->  	void __user *buffer, size_t *length, loff_t *ppos)
->  {
->  	proc_dointvec(table, write, buffer, length, ppos);
-> -	if (write)
-> +	if (write) {
-> +		user_min_free_kbytes = min_free_kbytes;
->  		setup_per_zone_wmarks();
-> +	}
->  	return 0;
->  }
->  
-> 
-
+> >  };
 -- 
-Jiri Kosina
-SUSE Labs
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
