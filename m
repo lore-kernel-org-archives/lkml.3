@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab3GIO75 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:59:57 -0400
-Received: from mail-vb0-f54.google.com ([209.85.212.54]:65263 "EHLO
-	mail-vb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861Ab3GIO7y (ORCPT
+	id S1754137Ab3GIPAF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:00:05 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33417 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab3GIPAC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:59:54 -0400
-Date: Tue, 9 Jul 2013 11:05:30 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Vince Weaver <vincent.weaver@maine.edu>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Vince Weaver <vince@deater.net>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com, mingo@kernel.org,
-        Stephane Eranian <eranian@google.com>, sukadev@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for
- perf
-In-Reply-To: <20130709081434.GI25631@dyad.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1307091059270.675@vincent-weaver-1.um.maine.edu>
-References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com> <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com> <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy> <20130704125218.GA21134@concordia>
- <20130704125700.GM18898@dyad.programming.kicks-ass.net> <20130709012952.GA7185@concordia> <alpine.DEB.2.10.1307082204550.26280@vincent-weaver-1.um.maine.edu> <20130709081434.GI25631@dyad.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 9 Jul 2013 11:00:02 -0400
+Date: Tue, 9 Jul 2013 15:59:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org
+Message-ID: <20130709145917.GA27646@sirena.org.uk>
+References: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com>
+ <1373379933-32749-1-git-send-email-richard.genoud@gmail.com>
+ <1373379933-32749-2-git-send-email-richard.genoud@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BqlgNdmPmeObzZTR"
+Content-Disposition: inline
+In-Reply-To: <1373379933-32749-2-git-send-email-richard.genoud@gmail.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.114
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 1/7] sound: sam9x5_wm8731: machine driver for
+ at91sam9x5 wm8731 boards
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Jul 2013, Peter Zijlstra wrote:
 
-> On Mon, Jul 08, 2013 at 10:24:34PM -0400, Vince Weaver wrote:
-> > 
-> > So something like they have on ARM?
-> > 
-> > vince@pandaboard:/sys/bus/event_source/devices$ ls -l
-> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 ARMv7 Cortex-A9 -> ../../../devices/ARMv7 Cortex-A9
-> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 breakpoint -> ../../../devices/breakpoint
-> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 software -> ../../../devices/software
-> > lrwxrwxrwx 1 root root 0 Jul  8 21:57 tracepoint -> ../../../devices/tracepoint
-> 
-> Right so what I remember of the ARM case is that their /proc/cpuinfo isn't
-> sufficient to identify their PMU. And they don't have a cpuid like instruction
-> at all.
+--BqlgNdmPmeObzZTR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-libpfm4 uses the
-   CPU part	: 0xc09
-line in /proc/cpuinfo on ARM, and that's enough for the processors PAPI 
-supports (Cortex A8/A9/A15 plus the 1176 on the raspberry-pi).  I'm 
-guessing it wouldn't be enough if we wanted to support *all* ARMs with
-PMUs.
+On Tue, Jul 09, 2013 at 04:25:27PM +0200, Richard Genoud wrote:
 
-And speaking of ARM, I should be railing at them for breaking the ABI too, 
-with their (understandable yet still ABI breaking) decision to remove 
-BogoMIPS from /proc/cpuinfo.  That change will impact PAPI as well as 
-various other programs I maintain that have the misfortune of parsing that 
-file.
+> +/*
+> + * Authorized rates are:
+> + * Rate = MCLK_RATE / (n * 2)
+> + * Where n is in [1..4095]
+> + * (cf register SSC_CMR)
+> + */
+> +static unsigned int rates[] = {
+> +	8000,
+> +	16000,
+> +	32000,
+> +	48000,
+> +	64000,
+> +	96000,
+> +};
 
-Vince
+Shouldn't the SSC driver be enforcing this constraint if it comes from
+the SSC hardware?  If the clock is reprogrammable the usual convention
+for drivers is to not constrain if the clock is set to zero so a machine
+driver could remove the constraint.
+
+> +	ret = atmel_ssc_set_audio(0);
+> +	if (ret != 0) {
+> +		dev_err(&pdev->dev,
+> +			"ASoC: Failed to set SSC 0 for audio: %d\n", ret);
+> +		return ret;
+> +	}
+
+Shouldn't this be a parameter in the DT too?
+
+> +	cpu_np = of_parse_phandle(np, "atmel,ssc-controller", 0);
+> +	if (!cpu_np) {
+> +		dev_err(&pdev->dev, "ssc controller node missing\n");
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +	at91sam9x5ek_dai.cpu_of_node = cpu_np;
+> +	at91sam9x5ek_dai.platform_of_node = cpu_np;
+
+After all we're looking things up in the DT...
+
+> +	at91sam9x5ek_dai.dai_fmt = snd_soc_of_parse_daifmt(np, "atmel,");
+
+Is this really something that machines would want to reconfigure?  If so
+why?
+
+--BqlgNdmPmeObzZTR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR3CVCAAoJELSic+t+oim97HcP/iKE7rM71nsMuTZlWymXsf7U
+swALhpMthbc4uqAj6NVisdrXjSbdoLP8FtxYl+AaLuksxFobpACcQOxNcfji1AIi
+Rs0ma5auifrRD4M04lscZAeA8Y1NgG2ktd8QdFLeT435roAjg8lkKtHb077xmCVC
+NtpiNip3YUDN0x/o0dnOCksnLYeCEDGovIpNK1aO8iQBreKZbHK0/Nkc5L7PQp8L
+lVu2EuY/1k78GzOzjKtHYB14Fz+dfQ8JtiJ0NkJFefNPi3DWxYTsAZL9NLYkYog1
+zcDcP1M6yNjBlyjPHqy0Wrw6ua5Bk9qHoCWru1LfQlcJ8yWVJHPNlAsc++gmt7d0
+V/0DPPzqnj52m8RzzZboMGFdn5o3c/ZEEgz32tHjd6+UuHPXx0JAG6DVMXPe1ZRf
+uKNwLwLD+PPJvRL4joJwwrUjn8jJzjcgZLVXwdog7mMFSKN1biIRycLBfc5TtRIh
+W8tFmShCm0MW0UFPVkEpk0mxNhFxC+eNfJGGqyiEm7Sg+/ae/oQMAGqw9vG+h2xj
+mB5HW2uOtIKINSzoLJD7BxCPl2HaTCmHH3+63AfbFujhNOHaSVr8HKnXquF5WrPD
+FIMA2qrcIjcedaGwWlZKj6yGr9Vua5dRySq5FVtxdwmX7boDmQWEDm3gpBpVGIUZ
+rRIIp9OcfiNjG9KEG/Yg
+=RwPv
+-----END PGP SIGNATURE-----
+
+--BqlgNdmPmeObzZTR--
