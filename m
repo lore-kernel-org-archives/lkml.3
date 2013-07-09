@@ -1,111 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab3GIBkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 21:40:40 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:56459 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab3GIBkE (ORCPT
+	id S1751999Ab3GIBoW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 21:44:22 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:49719 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab3GIBoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 21:40:04 -0400
-Date: Mon, 8 Jul 2013 18:29:34 -0700
+	Mon, 8 Jul 2013 21:44:21 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
         josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
         peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
         edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: [PATCH RFC nohz_full 0/7] v3 Provide infrastructure for full-system
- idle
-Message-ID: <20130709012934.GA26058@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC nohz_full 5/7] nohz_full: Add full-system-idle arguments to API
+Date: Mon,  8 Jul 2013 18:30:04 -0700
+Message-Id: <1373333406-26979-5-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130709012934.GA26058@linux.vnet.ibm.com>
+ <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070901-7408-0000-0000-000011DA2266
+x-cbid: 13070901-4834-0000-0000-000008D77E81
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whenever there is at least one non-idle CPU, it is necessary to
-periodically update timekeeping information.  Before NO_HZ_FULL, this
-updating was carried out by the scheduling-clock tick, which ran on
-every non-idle CPU.  With the advent of NO_HZ_FULL, it is possible
-to have non-idle CPUs that are not receiving scheduling-clock ticks.
-This possibility is handled by assigning a timekeeping CPU that continues
-taking scheduling-clock ticks.
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-Unfortunately, timekeeping CPU continues taking scheduling-clock
-interrupts even when all other CPUs are completely idle, which is
-not so good for energy efficiency and battery lifetime.  Clearly, it
-would be good to turn off the timekeeping CPU's scheduling-clock tick
-when all CPUs are completely idle.  This is conceptually simple, but
-we also need good performance and scalability on large systems, which
-rules out implementations based on frequently updated global counts of
-non-idle CPUs as well as implementations that frequently scan all CPUs.
-Nevertheless, we need a single global indicator in order to keep the
-overhead of checking acceptably low.
+This commit adds an isidle and jiffies argument to force_qs_rnp(),
+dyntick_save_progress_counter(), and rcu_implicit_dynticks_qs() to enable
+RCU's force-quiescent-state process to check for full-system idle.
 
-The chosen approach is to enforce hysteresis on the non-idle to
-full-system-idle transition, with the amount of hysteresis increasing
-linearly with the number of CPUs, thus keeping contention acceptably low.
-This approach piggybacks on RCU's existing force-quiescent-state scanning
-of idle CPUs, which has the advantage of avoiding the scan entirely on
-busy systems that have high levels of multiprogramming.  This scan
-takes per-CPU idleness information and feeds it into a state machine
-that applies the level of hysteresis required to arrive at a single
-full-system-idle indicator.
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree.c | 23 ++++++++++++++++-------
+ 1 file changed, 16 insertions(+), 7 deletions(-)
 
-The individual patches are as follows:
-
-1.	Add a CONFIG_NO_HZ_FULL_SYSIDLE Kconfig parameter to enable
-	this feature.  Kernels built with CONFIG_NO_HZ_FULL_SYSIDLE=n
-	act exactly as they do today.
-
-2.	Add new fields to the rcu_dynticks structure that track CPU-idle
-	information.  These fields consider CPUs running usermode to be
-	non-idle, in contrast with the existing fields in that structure.
-
-3.	Track per-CPU idle states.
-
-4.	Add full-system idle states and state variables.
-
-5.	Expand force_qs_rnp(), dyntick_save_progress_counter(), and
-	rcu_implicit_dynticks_qs() APIs to enable passing full-system
-	idle state information.
-
-6.	Add full-system-idle state machine.
-
-7.	Force RCU's grace-period kthreads onto the timekeeping CPU.
-
-Changes since v2:
-
-o	Completed removing NMI support (thanks to Frederic for spotting
-	the remaining cruft).
-
-o	Fix a state-machine bug, again spotted by Frederic.  See
-	http://lists-archives.com/linux-kernel/27865835-nohz_full-add-full-system-idle-state-machine.html
-	for the full details of the bug.
-
-o	Updated commit log and comment as suggested by Josh Triplett.
-
-Changes since v1:
-
-o	Removed NMI support because NMI handlers cannot safely read
-	the time anyway (thanks to Thomas Gleixner and Peter Zijlstra).
-
-						Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/include/linux/rcupdate.h |   18 +
- b/kernel/rcutree.c         |   49 ++++-
- b/kernel/rcutree.h         |   17 +
- b/kernel/rcutree_plugin.h  |  421 ++++++++++++++++++++++++++++++++++++++++++++-
- b/kernel/time/Kconfig      |   23 ++
- 5 files changed, 513 insertions(+), 15 deletions(-)
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ed9a36a..9971f86 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -231,7 +231,9 @@ module_param(jiffies_till_next_fqs, ulong, 0644);
+ 
+ static void rcu_start_gp_advanced(struct rcu_state *rsp, struct rcu_node *rnp,
+ 				  struct rcu_data *rdp);
+-static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
++static void force_qs_rnp(struct rcu_state *rsp,
++			 int (*f)(struct rcu_data *, bool *, unsigned long *),
++			 bool *isidle, unsigned long *maxj);
+ static void force_quiescent_state(struct rcu_state *rsp);
+ static int rcu_pending(int cpu);
+ 
+@@ -712,7 +714,8 @@ static int rcu_is_cpu_rrupt_from_idle(void)
+  * credit them with an implicit quiescent state.  Return 1 if this CPU
+  * is in dynticks idle mode, which is an extended quiescent state.
+  */
+-static int dyntick_save_progress_counter(struct rcu_data *rdp)
++static int dyntick_save_progress_counter(struct rcu_data *rdp,
++					 bool *isidle, unsigned long *maxj)
+ {
+ 	rdp->dynticks_snap = atomic_add_return(0, &rdp->dynticks->dynticks);
+ 	return (rdp->dynticks_snap & 0x1) == 0;
+@@ -724,7 +727,8 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
+  * idle state since the last call to dyntick_save_progress_counter()
+  * for this same CPU, or by virtue of having been offline.
+  */
+-static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
++static int rcu_implicit_dynticks_qs(struct rcu_data *rdp,
++				    bool *isidle, unsigned long *maxj)
+ {
+ 	unsigned int curr;
+ 	unsigned int snap;
+@@ -1345,16 +1349,19 @@ static int rcu_gp_init(struct rcu_state *rsp)
+ int rcu_gp_fqs(struct rcu_state *rsp, int fqs_state_in)
+ {
+ 	int fqs_state = fqs_state_in;
++	bool isidle = 0;
++	unsigned long maxj;
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+ 	rsp->n_force_qs++;
+ 	if (fqs_state == RCU_SAVE_DYNTICK) {
+ 		/* Collect dyntick-idle snapshots. */
+-		force_qs_rnp(rsp, dyntick_save_progress_counter);
++		force_qs_rnp(rsp, dyntick_save_progress_counter,
++			     &isidle, &maxj);
+ 		fqs_state = RCU_FORCE_QS;
+ 	} else {
+ 		/* Handle dyntick-idle and offline CPUs. */
+-		force_qs_rnp(rsp, rcu_implicit_dynticks_qs);
++		force_qs_rnp(rsp, rcu_implicit_dynticks_qs, &isidle, &maxj);
+ 	}
+ 	/* Clear flag to prevent immediate re-entry. */
+ 	if (ACCESS_ONCE(rsp->gp_flags) & RCU_GP_FLAG_FQS) {
+@@ -2055,7 +2062,9 @@ void rcu_check_callbacks(int cpu, int user)
+  *
+  * The caller must have suppressed start of new grace periods.
+  */
+-static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
++static void force_qs_rnp(struct rcu_state *rsp,
++			 int (*f)(struct rcu_data *, bool *, unsigned long *),
++			 bool *isidle, unsigned long *maxj)
+ {
+ 	unsigned long bit;
+ 	int cpu;
+@@ -2079,7 +2088,7 @@ static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
+ 		bit = 1;
+ 		for (; cpu <= rnp->grphi; cpu++, bit <<= 1) {
+ 			if ((rnp->qsmask & bit) != 0 &&
+-			    f(per_cpu_ptr(rsp->rda, cpu)))
++			    f(per_cpu_ptr(rsp->rda, cpu), isidle, maxj))
+ 				mask |= bit;
+ 		}
+ 		if (mask != 0) {
+-- 
+1.8.1.5
 
