@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab3GIJyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 05:54:13 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:52404 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab3GIJyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 05:54:11 -0400
+	id S1753422Ab3GIJ5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 05:57:11 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:53150 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752651Ab3GIJ5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 05:57:08 -0400
+Message-ID: <51DBDE71.1000805@imgtec.com>
+Date: Tue, 9 Jul 2013 10:57:05 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUV3cH5r6gScYt18tpaJx49oXtrn56BMTuj5jJQwvd_zig@mail.gmail.com>
-References: <20130709170155.a212513b3a95d78e404e70db@canb.auug.org.au>
-	<CA+icZUV3cH5r6gScYt18tpaJx49oXtrn56BMTuj5jJQwvd_zig@mail.gmail.com>
-Date: Tue, 9 Jul 2013 11:54:10 +0200
-Message-ID: <CA+icZUVw4KSG7rJkY+EBniwfceHzYYXTXzqB-9rCiTkLBLb2XQ@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jul 9
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel <linux-kernel@vger.kernel.org>
+CC: James <james.hogan@imgtec.com>
+Subject: [PATCH] metag: checksum.h: fix carry in csum_tcpudp_nofold
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_07_09_10_57_06
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 9, 2013 at 11:50 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Tue, Jul 9, 2013 at 9:01 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi all,
->>
->> Changes since 20130708:
->>
->> The v4l-dvb tree lost its build failure.
->>
->> The tip tree gained a conflict against Linus' tree.
->>
->> The akpm tree lost a patch that turned up elsewhere.
->>
->> The cpuinit tree lost some patches that turned up in Linus' tree.
->>
->> ----------------------------------------------------------------------------
->>
->
-> Hi,
->
-> I got today several emails from Andrew, that some post-fixes to
-> existing patches in mmotm got merged.
-> Looking into mmotm patch-series, it was not updated since 03-Jul-2013.
->
-> From where is [1]?
-> It has "memcg: fix build error if CONFIG_MEMCG_KMEM=n" folded in.
-> Isn't the procedure to get all these patches from Andrew's mmotm?
-> BTW, the new patch has no furher informations or a vX history and my
-> credits are gone, too.
->
+In csum_tcpudp_nofold, add 1 if the carry bit is set after adding the
+destination IP address (32 bits) to the checksum (16 bits).
 
-Hmmm, another patch where I was involved...
+The lack of carry handling for this particular addition meant that a
+destination address of *.*.255.255 (e.g. certain broadcasts) sometimes
+resulted in an incorrect checksum. This bug has been present in the Meta
+port since the code was written in the 2.4 days.
 
-Original: "ipc,msg: shorten critical region in msgrcv"
-Post-Fix: "ipc,msq: fix race in msgrcv(2)"
+Reported-by: Marcin Nowakowski <Marcin.Nowakowski@pure.com>
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+---
+I'll add this patch to my arch/metag fixes branch for v3.11.
 
-...strange, not folded in.
+ arch/metag/include/asm/checksum.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-- Sedat -
+diff --git a/arch/metag/include/asm/checksum.h b/arch/metag/include/asm/checksum.h
+index 999bf76..08dd1cc 100644
+--- a/arch/metag/include/asm/checksum.h
++++ b/arch/metag/include/asm/checksum.h
+@@ -64,7 +64,8 @@ static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
+ 					__wsum sum)
+ {
+ 	unsigned long len_proto = (proto + len) << 8;
+-	asm ("ADD    %0, %0, %1\n"
++	asm ("ADDS   %0, %0, %1\n"
++	     "ADDCS  %0, %0, #1\n"
+ 	     "ADDS   %0, %0, %2\n"
+ 	     "ADDCS  %0, %0, #1\n"
+ 	     "ADDS   %0, %0, %3\n"
+-- 
+1.8.1.2
 
-[1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=188ba7fb13646c4a4de00a315fbddc2f4cba1d20
-[2] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=74bd175d0d237894c14adcf0479dd9f22b30c77b
-
-> - Sedat -
->
->
-> [0] http://ozlabs.org/~akpm/mmotm/broken-out/
-> [1] http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/mm/memcontrol.c?id=958f4381fa3cb7abd6f63103c9099e648595a27e
