@@ -1,143 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3GID1F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 23:27:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab3GID1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 23:27:01 -0400
-Message-ID: <51DB82F9.7070307@redhat.com>
-Date: Tue, 09 Jul 2013 11:26:49 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/2] virtio: support unlocked queue poll
-References: <1373274069-4301-1-git-send-email-mst@redhat.com> <1373274069-4301-2-git-send-email-mst@redhat.com>
-In-Reply-To: <1373274069-4301-2-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752551Ab3GID2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 23:28:09 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39041 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026Ab3GID2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 23:28:07 -0400
+Date: Tue, 9 Jul 2013 13:27:53 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Asias He <asias@redhat.com>,
+        target-devel <target-devel@vger.kernel.org>
+Subject: Re: linux-next: manual merge of the vhost tree with the
+ target-updates tree
+Message-Id: <20130709132753.4ccecde4e20ac109ebeedc8e@canb.auug.org.au>
+In-Reply-To: <1373332406.7397.161.camel@haakon3.risingtidesystems.com>
+References: <20130708134721.8ac2d67125b60c745d46006f@canb.auug.org.au>
+	<1373332406.7397.161.camel@haakon3.risingtidesystems.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__9_Jul_2013_13_27_53_+1000_tr/YG0rulSySpz.N"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 05:04 PM, Michael S. Tsirkin wrote:
-> This adds a way to check ring empty state after enable_cb outside any
-> locks. Will be used by virtio_net.
->
-> Note: there's room for more optimization: caller is likely to have a
-> memory barrier already, which means we might be able to get rid of a
-> barrier here.  Deferring this optimization until we do some
-> benchmarking.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+--Signature=_Tue__9_Jul_2013_13_27_53_+1000_tr/YG0rulSySpz.N
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Tested-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
->  drivers/virtio/virtio_ring.c | 56 ++++++++++++++++++++++++++++++++++----------
->  include/linux/virtio.h       |  4 ++++
->  2 files changed, 48 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-> index 5217baf..37d58f8 100644
-> --- a/drivers/virtio/virtio_ring.c
-> +++ b/drivers/virtio/virtio_ring.c
-> @@ -607,19 +607,21 @@ void virtqueue_disable_cb(struct virtqueue *_vq)
->  EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
->  
->  /**
-> - * virtqueue_enable_cb - restart callbacks after disable_cb.
-> + * virtqueue_enable_cb_prepare - restart callbacks after disable_cb
->   * @vq: the struct virtqueue we're talking about.
->   *
-> - * This re-enables callbacks; it returns "false" if there are pending
-> - * buffers in the queue, to detect a possible race between the driver
-> - * checking for more work, and enabling callbacks.
-> + * This re-enables callbacks; it returns current queue state
-> + * in an opaque unsigned value. This value should be later tested by
-> + * virtqueue_poll, to detect a possible race between the driver checking for
-> + * more work, and enabling callbacks.
->   *
->   * Caller must ensure we don't call this with other virtqueue
->   * operations at the same time (except where noted).
->   */
-> -bool virtqueue_enable_cb(struct virtqueue *_vq)
-> +unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
->  {
->  	struct vring_virtqueue *vq = to_vvq(_vq);
-> +	u16 last_used_idx;
->  
->  	START_USE(vq);
->  
-> @@ -629,15 +631,45 @@ bool virtqueue_enable_cb(struct virtqueue *_vq)
->  	 * either clear the flags bit or point the event index at the next
->  	 * entry. Always do both to keep code simple. */
->  	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
-> -	vring_used_event(&vq->vring) = vq->last_used_idx;
-> +	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
-> +	END_USE(vq);
-> +	return last_used_idx;
-> +}
-> +EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
-> +
-> +/**
-> + * virtqueue_poll - query pending used buffers
-> + * @vq: the struct virtqueue we're talking about.
-> + * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
-> + *
-> + * Returns "true" if there are pending used buffers in the queue.
-> + *
-> + * This does not need to be serialized.
-> + */
-> +bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
-> +{
-> +	struct vring_virtqueue *vq = to_vvq(_vq);
-> +
->  	virtio_mb(vq->weak_barriers);
-> -	if (unlikely(more_used(vq))) {
-> -		END_USE(vq);
-> -		return false;
-> -	}
-> +	return (u16)last_used_idx != vq->vring.used->idx;
-> +}
-> +EXPORT_SYMBOL_GPL(virtqueue_poll);
->  
-> -	END_USE(vq);
-> -	return true;
-> +/**
-> + * virtqueue_enable_cb - restart callbacks after disable_cb.
-> + * @vq: the struct virtqueue we're talking about.
-> + *
-> + * This re-enables callbacks; it returns "false" if there are pending
-> + * buffers in the queue, to detect a possible race between the driver
-> + * checking for more work, and enabling callbacks.
-> + *
-> + * Caller must ensure we don't call this with other virtqueue
-> + * operations at the same time (except where noted).
-> + */
-> +bool virtqueue_enable_cb(struct virtqueue *_vq)
-> +{
-> +	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
-> +	return !virtqueue_poll(_vq, last_used_idx);
->  }
->  EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
->  
-> diff --git a/include/linux/virtio.h b/include/linux/virtio.h
-> index 9ff8645..72398ee 100644
-> --- a/include/linux/virtio.h
-> +++ b/include/linux/virtio.h
-> @@ -70,6 +70,10 @@ void virtqueue_disable_cb(struct virtqueue *vq);
->  
->  bool virtqueue_enable_cb(struct virtqueue *vq);
->  
-> +unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
-> +
-> +bool virtqueue_poll(struct virtqueue *vq, unsigned);
-> +
->  bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
->  
->  void *virtqueue_detach_unused_buf(struct virtqueue *vq);
+Hi Nicholas,
 
+On Mon, 08 Jul 2013 18:13:26 -0700 "Nicholas A. Bellinger" <nab@linux-iscsi=
+.org> wrote:
+>
+> On Mon, 2013-07-08 at 13:47 +1000, Stephen Rothwell wrote:
+> >=20
+> > Today's linux-next merge of the vhost tree got a conflict in
+> > drivers/vhost/scsi.c between commit 084ed45b3846 ("vhost/scsi: Convert =
+to
+> > se_cmd->cmd_kref TARGET_SCF_ACK_KREF usage") from the target-updates tr=
+ee
+> > and commit 3c63f66a0dcd ("vhost-scsi: Rename struct tcm_vhost_cmd *tv_c=
+md
+> > to *cmd") from the vhost tree.
+> >=20
+> > I fixed it up (see below) and can carry the fix as necessary (no action
+> > is required).
+> >=20
+>=20
+> Can you briefly refresh my memory how the process of 'carrying the fix'
+> in linux-next should work..?
+
+That means that (assuming my fix is correct), I will continue to apply
+that fix until your trees are merged into Linus' tree.  (git rerere is my
+friend :-))
+
+> So once I send a -rc1 PULL request to Linus over the next days, and MST
+> sends one shortly there-after and hits a conflict, you'll include this
+> patch in a separate next-fixes branch for Linus to PULL..?
+
+No, Linus will figure it out just as I did.  If you want to give him a
+hint, that 's fine.  The main intention of my "I fixed it up and can
+carry the fix as necessary (no action is required)" is to just get you
+guys to check that what I did was correct, and to dissuade you from
+merging/rebasing/rewriting your tree(s) to eliminate the conflict.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__9_Jul_2013_13_27_53_+1000_tr/YG0rulSySpz.N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR24M+AAoJEECxmPOUX5FEaqgQAKoxrLMvDmYtNih0/+IeDNy6
+W09UqAgeAJ3qluXaeYtu7+xoltHglV9v9WJv3B7N8q0TVToH5uR3vELceNWPpiva
+qFpLUdzj7Y+cahQHgHvakKmNyP66JEkXUOUE/f1H2VE76nLZaI4cw2y8hECCmnSi
+CjIE9GqikMFGC56TsGDW3Azi1BSYFy4NFDszTgv5tmRKK06+QS+jTYJks7IMED9s
+CxigeNqOn8zLDKvdBnKiXujy1Nux+DvTNCj5Pis1+/g5fTItvRK4iet1gaJsySxC
+Rwf7R7D77Q6379Z2McMs6FkOaKgrO3a5Eukjn/sw5wZ5TwHgXSv7puMmO6K9kj0F
+SSCF/0gXe0gLe5bPdF5Lc2eSmfU+lzs0fR87ht2vfJNfJbagiHvb5D8k8LUqiSx4
+98gwEmlB8xALIwIjg7qX6yHV9+vcWKb6r0L551X5IAV2PzmDMTe51eWIQBInUAHu
+5Tk6GGaH9UffNbbARHv4cFbDTP+XWK/dYO6mZiZmsO6pmpNqFABR1TalY/zDLxFy
+embCYGEfY+aH4lNoWfXWACzFRgOGPvqVdKCmxmiurOXhoY2If/pSV0JVztJZWwYI
+O2PnexX13E3su01m8tpgXnibPRi+O5DKGtouCcIOJDCUutXpjLKzPs3FsNbCB1Gj
+/58P6pNPnrvMeC3rXehJ
+=TkU9
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__9_Jul_2013_13_27_53_+1000_tr/YG0rulSySpz.N--
