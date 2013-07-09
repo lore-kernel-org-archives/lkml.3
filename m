@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab3GIN5L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:57:11 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39554 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab3GIN5F (ORCPT
+	id S1753569Ab3GIN5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:57:08 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:43015 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752990Ab3GIN5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 09:57:05 -0400
+	Tue, 9 Jul 2013 09:57:04 -0400
 From: Dominik Dingel <dingel@linux.vnet.ibm.com>
 To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
 Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
@@ -21,170 +21,61 @@ Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
         linux-s390@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH 1/4] PF: Add FAULT_FLAG_RETRY_NOWAIT for guest fault
-Date: Tue,  9 Jul 2013 15:56:44 +0200
-Message-Id: <1373378207-10451-2-git-send-email-dingel@linux.vnet.ibm.com>
+Subject: [PATCH 2/4] PF: Make KVM_HVA_ERR_BAD usable on s390
+Date: Tue,  9 Jul 2013 15:56:45 +0200
+Message-Id: <1373378207-10451-3-git-send-email-dingel@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
 References: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070913-5024-0000-0000-0000068A3BDD
+x-cbid: 13070913-2966-0000-0000-000008178E99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case of a fault retry exit sie64() with gmap_fault indication for the
-running thread set. This makes it possible to handle async page faults
-without the need for mm notifiers.
-
-Based on a patch from Martin Schwidefsky.
+Current common code uses PAGE_OFFSET to indicate a bad host virtual address.
+As this check won't work on architectures that don't map kernel and user memory
+into the same address space (e.g. s390), an additional implementation is made
+available in the case that PAGE_OFFSET == 0.
 
 Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
 ---
- arch/s390/include/asm/pgtable.h   |  2 ++
- arch/s390/include/asm/processor.h |  1 +
- arch/s390/kvm/kvm-s390.c          | 13 +++++++++++++
- arch/s390/mm/fault.c              | 26 ++++++++++++++++++++++----
- 4 files changed, 38 insertions(+), 4 deletions(-)
+ include/linux/kvm_host.h | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
-index 0ea4e59..4a4cc64 100644
---- a/arch/s390/include/asm/pgtable.h
-+++ b/arch/s390/include/asm/pgtable.h
-@@ -740,6 +740,7 @@ static inline void pgste_set_pte(pte_t *ptep, pte_t entry)
-  * @table: pointer to the page directory
-  * @asce: address space control element for gmap page table
-  * @crst_list: list of all crst tables used in the guest address space
-+ * @pfault_enabled: defines if pfaults are applicable for the guest
-  */
- struct gmap {
- 	struct list_head list;
-@@ -748,6 +749,7 @@ struct gmap {
- 	unsigned long asce;
- 	void *private;
- 	struct list_head crst_list;
-+	unsigned long pfault_enabled;
- };
- 
- /**
-diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
-index 6b49987..4fa96ca 100644
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -77,6 +77,7 @@ struct thread_struct {
-         unsigned long ksp;              /* kernel stack pointer             */
- 	mm_segment_t mm_segment;
- 	unsigned long gmap_addr;	/* address of last gmap fault. */
-+	unsigned int gmap_pfault;	/* signal of a pending guest pfault */
- 	struct per_regs per_user;	/* User specified PER registers */
- 	struct per_event per_event;	/* Cause of the last PER trap */
- 	unsigned long per_flags;	/* Flags to control debug behavior */
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index ba694d2..702daca 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -682,6 +682,15 @@ static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
- 	return 0;
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index a63d83e..f3c04e7 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -85,6 +85,18 @@ static inline bool is_noslot_pfn(pfn_t pfn)
+ 	return pfn == KVM_PFN_NOSLOT;
  }
  
-+static void kvm_arch_fault_in_sync(struct kvm_vcpu *vcpu)
++#if (PAGE_OFFSET == 0)
++
++#define KVM_HVA_ERR_BAD		(-1UL)
++#define KVM_HVA_ERR_RO_BAD	(-1UL)
++
++static inline bool kvm_is_error_hva(unsigned long addr)
 +{
-+	hva_t fault = gmap_fault(current->thread.gmap_addr, vcpu->arch.gmap);
-+	struct mm_struct *mm = current->mm;
-+	down_read(&mm->mmap_sem);
-+	get_user_pages(current, mm, fault, 1, 1, 0, NULL, NULL);
-+	up_read(&mm->mmap_sem);
++	return addr == KVM_HVA_ERR_BAD;
 +}
 +
- static int __vcpu_run(struct kvm_vcpu *vcpu)
- {
- 	int rc;
-@@ -715,6 +724,10 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 	if (rc < 0) {
- 		if (kvm_is_ucontrol(vcpu->kvm)) {
- 			rc = SIE_INTERCEPT_UCONTROL;
-+		} else if (current->thread.gmap_pfault) {
-+			kvm_arch_fault_in_sync(vcpu);
-+			current->thread.gmap_pfault = 0;
-+			rc = 0;
- 		} else {
- 			VCPU_EVENT(vcpu, 3, "%s", "fault in sie instruction");
- 			trace_kvm_s390_sie_fault(vcpu);
-diff --git a/arch/s390/mm/fault.c b/arch/s390/mm/fault.c
-index 047c3e4..7d4c4b1 100644
---- a/arch/s390/mm/fault.c
-+++ b/arch/s390/mm/fault.c
-@@ -50,6 +50,7 @@
- #define VM_FAULT_BADMAP		0x020000
- #define VM_FAULT_BADACCESS	0x040000
- #define VM_FAULT_SIGNAL		0x080000
-+#define VM_FAULT_PFAULT		0x100000
++#else
++
+ #define KVM_HVA_ERR_BAD		(PAGE_OFFSET)
+ #define KVM_HVA_ERR_RO_BAD	(PAGE_OFFSET + PAGE_SIZE)
  
- static unsigned long store_indication __read_mostly;
+@@ -93,6 +105,8 @@ static inline bool kvm_is_error_hva(unsigned long addr)
+ 	return addr >= PAGE_OFFSET;
+ }
  
-@@ -232,6 +233,7 @@ static noinline void do_fault_error(struct pt_regs *regs, int fault)
- 			return;
- 		}
- 	case VM_FAULT_BADCONTEXT:
-+	case VM_FAULT_PFAULT:
- 		do_no_context(regs);
- 		break;
- 	case VM_FAULT_SIGNAL:
-@@ -269,6 +271,9 @@ static noinline void do_fault_error(struct pt_regs *regs, int fault)
-  */
- static inline int do_exception(struct pt_regs *regs, int access)
- {
-+#ifdef CONFIG_PGSTE
-+	struct gmap *gmap;
 +#endif
- 	struct task_struct *tsk;
- 	struct mm_struct *mm;
- 	struct vm_area_struct *vma;
-@@ -307,9 +312,10 @@ static inline int do_exception(struct pt_regs *regs, int access)
- 	down_read(&mm->mmap_sem);
++
+ #define KVM_ERR_PTR_BAD_PAGE	(ERR_PTR(-ENOENT))
  
- #ifdef CONFIG_PGSTE
--	if ((current->flags & PF_VCPU) && S390_lowcore.gmap) {
--		address = __gmap_fault(address,
--				     (struct gmap *) S390_lowcore.gmap);
-+	gmap = (struct gmap *)
-+		((current->flags & PF_VCPU) ? S390_lowcore.gmap : 0);
-+	if (gmap) {
-+		address = __gmap_fault(address, gmap);
- 		if (address == -EFAULT) {
- 			fault = VM_FAULT_BADMAP;
- 			goto out_up;
-@@ -318,6 +324,8 @@ static inline int do_exception(struct pt_regs *regs, int access)
- 			fault = VM_FAULT_OOM;
- 			goto out_up;
- 		}
-+		if (test_bit(1, &gmap->pfault_enabled))
-+			flags |= FAULT_FLAG_RETRY_NOWAIT;
- 	}
- #endif
- 
-@@ -374,9 +382,19 @@ retry:
- 				      regs, address);
- 		}
- 		if (fault & VM_FAULT_RETRY) {
-+#ifdef CONFIG_PGSTE
-+			if (gmap && (flags & FAULT_FLAG_RETRY_NOWAIT)) {
-+				/* FAULT_FLAG_RETRY_NOWAIT has been set,
-+				 * mmap_sem has not been released */
-+				current->thread.gmap_pfault = 1;
-+				fault = VM_FAULT_PFAULT;
-+				goto out_up;
-+			}
-+#endif
- 			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
- 			 * of starvation. */
--			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			flags &= ~(FAULT_FLAG_ALLOW_RETRY |
-+				   FAULT_FLAG_RETRY_NOWAIT);
- 			flags |= FAULT_FLAG_TRIED;
- 			down_read(&mm->mmap_sem);
- 			goto retry;
+ static inline bool is_error_page(struct page *page)
 -- 
 1.8.2.2
 
