@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab3GIVst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 17:48:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4643 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752704Ab3GIVso convert rfc822-to-8bit (ORCPT
+	id S1753633Ab3GIVtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 17:49:21 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53958 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500Ab3GIVtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 17:48:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1030,1363158000"; 
-   d="scan'208";a="367666281"
-From: "Nikolova, Tatyana E" <tatyana.e.nikolova@intel.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Roland Dreier <roland@purestorage.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: build warnings in Linus' tree
-Thread-Topic: linux-next: build warnings in Linus' tree
-Thread-Index: AQHOeHN1sgkkqhuMxE6euXAQuTQSYJlc6I7g
-Date: Tue, 9 Jul 2013 21:48:43 +0000
-Message-ID: <13AA599688F47243B14FCFCCC2C803BB0D81E71E@FMSMSX104.amr.corp.intel.com>
-References: <20130704145852.44975d5801f592d00807d1c0@canb.auug.org.au>
-In-Reply-To: <20130704145852.44975d5801f592d00807d1c0@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Jul 2013 17:49:20 -0400
+Date: Tue, 9 Jul 2013 22:49:10 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        Mike Frysinger <vapier@gentoo.org>
+Message-ID: <20130709214910.GA3179@sirena.org.uk>
+References: <1369190195-14598-1-git-send-email-swarren@wwwdotorg.org>
+ <1369190195-14598-2-git-send-email-swarren@wwwdotorg.org>
+ <51DC3078.5090602@monstr.eu>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3MwIy2ne0vdjdPXF"
+Content-Disposition: inline
+In-Reply-To: <51DC3078.5090602@monstr.eu>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.114
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] spi: convert drivers to use bits_per_word_mask
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stephen,
 
-Thank you for reporting the error. I removed these variables from the debug statement, because I didn't see that they were defined. It is possible that I manually enabled the nes_debug and the #ifdef CONFIG_INFINIBAND_NES_DEBUG statement these variables are enclosed in wasn't true, so I saw a compilation issue.
+--3MwIy2ne0vdjdPXF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Feel free to revert the commit bca1935ccdec ("RDMA/nes: Fix compilation error when nes_debug is enabled") or I will submit a patch to address the issue next week.
+On Tue, Jul 09, 2013 at 05:47:04PM +0200, Michal Simek wrote:
 
-Regards,
-Tatyana
+> Probably the best solution is just revert this part of patch.
+> Mark: What do you think?
 
------Original Message-----
-From: Stephen Rothwell [mailto:sfr@canb.auug.org.au] 
-Sent: Wednesday, July 03, 2013 11:59 PM
-To: Roland Dreier
-Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Nikolova, Tatyana E
-Subject: linux-next: build warnings in Linus' tree
+We should make it so that the user does not need to supply empty
+functions if none are needed.
 
-Hi all,
+--3MwIy2ne0vdjdPXF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Building Linus' tree, today's linux-next build (x86_64 allmodconfig) produced this warning (these have been around for a while):
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-drivers/infiniband/hw/nes/nes_hw.c:81:23: warning: 'nes_iwarp_state_str' defined but not used [-Wunused-variable]  static unsigned char *nes_iwarp_state_str[] = {
-                       ^
-drivers/infiniband/hw/nes/nes_hw.c:92:23: warning: 'nes_tcp_state_str' defined but not used [-Wunused-variable]  static unsigned char *nes_tcp_state_str[] = {
-                       ^
+iQIcBAEBAgAGBQJR3IVNAAoJELSic+t+oim9nBsQAIYo5DNkhCVhn6w07wS4uEhw
+Cj2l3REMOwkhG/YLXKcbm6HCWC+ezwATCBS8qBJE5XmRAJg/YGWKW5Ge0flSlmJj
+W8lKsxxpLKkAWnfmgGWKYZhMfwbL1ZsPABQYdEcfCkfNkFfm49eqDQZKlKIFpTrK
+5pcNcDB+z/KILVTTyo01iZhfZPa/HtJ7N/GF5sNxI6b3IAxDsTi1Ri1XBzhjEsf9
+T9F/m7HhPR3y/mN2sQVZmIm2IE844oPkiWUJfoLPl3COpgSXupPrud1MgdKZmKCh
+H052aooI0T08gRoxsWGNobYw+fyKtR1fD6sajtDcFzCjY/0MKTl70j5E0pnF4Gi4
+4C47O0KSNcPoj+xMAqJsFMo5h69LeqzUhqjlhrAW1bOGj5J7lY9xlK03JZ9wOwdY
+dIMMfybS+Coe44VYNeJqehToqOlmNfMOJSrLPKfq/bfqt6Pb4f7wCymUmbDSkP1E
+6LMEWslW9l2ytX7E9vIHqk1OgKc01mfulYdg1miOXh+wsv6A5XzPKNFcqMEgODkS
+lLxf4khHw0IMAXgSVt3/78NbOhDPaAfi5wg0CU7dk/05GPMrqsvPabR8Gx6NNUjl
+ISrg7UAS8lO66Yzokc/lLr3c2dyYGYGnHyp9k4MicjnOwKGqCHfniig4uzKzazr/
+zU4ygTItpHuvp73KCVZa
+=E3yT
+-----END PGP SIGNATURE-----
 
-Introduced by commit bca1935ccdec ("RDMA/nes: Fix compilation error when nes_debug is enabled").
-
---
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+--3MwIy2ne0vdjdPXF--
