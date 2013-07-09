@@ -1,74 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab3GIIii (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:38:38 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59663 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920Ab3GIIie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:38:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1026,1363158000"; 
-   d="scan'208";a="367306030"
-Date: Tue, 9 Jul 2013 11:44:02 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: linux-i2c@vger.kernel.org, Wolfram Sang <wsa@the-dreams.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] i2c-designware: make *CNT values configurable
-Message-ID: <20130709084402.GF4898@intel.com>
-References: <1373283927-21677-1-git-send-email-mika.westerberg@linux.intel.com>
- <20130708134216.GB6402@ab42.lan>
+	id S1753461Ab3GIIjh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:39:37 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.246]:23051 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752811Ab3GIIje (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 04:39:34 -0400
+Message-ID: <51DBCBD0.8060901@atmel.com>
+Date: Tue, 9 Jul 2013 16:37:36 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130708134216.GB6402@ab42.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alsa-devel@alsa-project.org>, <devicetree-discuss@lists.ozlabs.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH v2 1/5] sound: sam9x5_wm8731: machine driver for at91sam9x5
+ wm8731 boards
+References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com> <1373290193-25300-2-git-send-email-richard.genoud@gmail.com> <20130708150721.GK27646@sirena.org.uk> <CACQ1gAgJyTSdxAKK7uwG-ybE2ddC90podM3+tOAqQwZUspsU8Q@mail.gmail.com>
+In-Reply-To: <CACQ1gAgJyTSdxAKK7uwG-ybE2ddC90podM3+tOAqQwZUspsU8Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 03:42:17PM +0200, Christian Ruppert wrote:
-> On Mon, Jul 08, 2013 at 02:45:26PM +0300, Mika Westerberg wrote:
-> > The DesignWare I2C controller has high count (HCNT) and low count (LCNT)
-> > registers for each of the I2C speed modes (standard and fast). These
-> > registers are programmed based on the input clock speed in the driver.
-> > 
-> > However, that is not always the most accurate way. For example on Intel
-> > BayTrail we have 100MHz input clock and calculated *CNT values result as
-> > measured by one of our team:
-> > 
-> >  Standard mode: 100.25kHz
-> >  Fast mode    : 315.41kHZ
-> > 
-> > The fast mode speed is over 20% lower than what is expected.
-> 
-> We have observed similar issues and I am wondering if this effect is due
-> to the overly-pessimistic formulas in i2c_dw_scl_lcnt and
-> i2c_dw_scl_hcnt. The comments in these functions are a bit confusing and
-> I don't pretend having fully understood what the intention is. I'm
-> having the impression that defining the arguments tf in function of the
-> hardware would be the "correct" way to achieve better clock accuracy.
+Hi Richard,
 
-Well, that's not the only timing parameter specified in the I2C spec. We
-also have tr among other things (even though the dw driver doesn't use it).
+On 7/9/2013 16:19, Richard Genoud wrote:
+> 2013/7/8 Mark Brown <broonie@kernel.org>:
+>> On Mon, Jul 08, 2013 at 03:29:49PM +0200, Richard Genoud wrote:
+>>
+>>> + *             Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> + *
+>>> + * Based on sam9g20_wm8731.c by:
+>>> + * Sedji Gaouaou <sedji.gaouaou@atmel.com>
+>>
+>> The obvious question here is of course if we can use the same driver for
+>> both of them.
+> I haven't got a g20 to test that, but that's the goal.
+> For now, g20 is still non-DT, so I think it's best to have a DT-only
+> driver like this one for the 9x5 family (9g15, 9g25, 9x25, 9g35,
+> 9x25).
+> When the g20 will move to DT completely, we can drop sam9g20_wm8731.c
+> and adjust sam9x5_wm8731.c (mainly master clock and widgets it seems)
 
-> > It might be
-> > that there are things like strenght of the pull-up resistors, bus
-> > capacitance etc. that are very platform specific and have an effect on the
-> > clock signal.
-> 
-> I believe tf is supposed to model these things. I just haven't clearly
-> understood how. In my understanding, transition times should be
-> subtracted rather than added to cycle times or am I getting something
-> fundamentally wrong here?
+The at91sam9g20ek board can work in DT mode, and the sound has support 
+in DT mode already.
 
-I'm not sure, honestly :-) I believe tf is the same tf that is in the I2C
-spec, meaning fall time of both SCL and SDA signals and the spec measures
-one clock cycle to be from end of the first tf to the end of the second
-(fig. 27 in the I2C spec). If I'm reading it right then it means adding
-instead of substracting.
+Sure, the mainly thing we need deal with is the master clock and 
+widgets. If put them together will make code ugly or need many many 
+#ifdef, I suggest to keep them separately.
 
-Do you have any suggestions how we could use tf here? At least on Intel
-hardware we have an ACPI method that returns directly the optimum *CNT
-values.
+> By the way, maybe g45 could use that also (and SAMA5 ?)
+
+For g45ek board, it use AC97 interface, not the case.
+
+>>
+>>> +     codec_dai->driver->playback.rates &= SNDRV_PCM_RATE_8000 |
+>>> +             SNDRV_PCM_RATE_32000 |
+>>> +             SNDRV_PCM_RATE_48000 |
+>>> +             SNDRV_PCM_RATE_96000;
+>>> +     codec_dai->driver->capture.rates &= SNDRV_PCM_RATE_8000 |
+>>> +             SNDRV_PCM_RATE_32000 |
+>>> +             SNDRV_PCM_RATE_48000 |
+>>> +             SNDRV_PCM_RATE_96000;
+>>
+>> You definitely shouldn't be fiddling with a driver's constant static
+>> data.  You want to be using snd_pcm_hw_constraint() APIs to set
+>> additional constraints intead.
+> Ok, I'll change that.
+>
+>
+> Thanks !
+>
+
+Best Regards,
+Bo Shen
