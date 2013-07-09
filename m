@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab3GIKeH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 06:34:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25727 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751611Ab3GIKeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 06:34:03 -0400
-Date: Tue, 9 Jul 2013 13:35:14 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net 2/2] macvtap: correctly linearize skb when zerocopy
- is used
-Message-ID: <20130709103514.GC14321@redhat.com>
-References: <1373364651-10474-1-git-send-email-jasowang@redhat.com>
- <1373364651-10474-2-git-send-email-jasowang@redhat.com>
+	id S1753623Ab3GIKmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 06:42:15 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:50717 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751611Ab3GIKmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 06:42:14 -0400
+Message-ID: <51DBE718.2080007@st.com>
+Date: Tue, 09 Jul 2013 11:34:00 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373364651-10474-2-git-send-email-jasowang@redhat.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, Stuart Menefy <stuart.menefy@st.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v1 0/4] ARM: STi fixes and ethernet support
+References: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com> <201307090118.06715.arnd@arndb.de> <51DBB629.1050000@st.com> <201307090956.03191.arnd@arndb.de>
+In-Reply-To: <201307090956.03191.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 06:10:51PM +0800, Jason Wang wrote:
-> Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
-> linearize parts of the skb to let the rest of iov to be fit in
-> the frags, we need count copylen into linear when calling macvtap_alloc_skb()
-> instead of partly counting it into data_len. Since this breaks
-> zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
-> be zero at beginning. This cause nr_frags to be increased wrongly without
-> setting the correct frags.
+On 09/07/13 08:56, Arnd Bergmann wrote:
+> No, you should be using generic interfaces to do the things you need.
 > 
-> This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-> (macvtap: zerocopy: validate vectors before building skb).
-> 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
-> This patch is needed for stable.
-> ---
->  drivers/net/macvtap.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-> index f2c4a3b..b213020 100644
-> --- a/drivers/net/macvtap.c
-> +++ b/drivers/net/macvtap.c
-> @@ -770,7 +770,8 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->  		copylen = len;
->  
->  	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
-> -				vnet_hdr.hdr_len, noblock, &err);
-> +				zerocopy ? copylen : vnet_hdr.hdr_len,
-> +				noblock, &err);
->  	if (!skb)
->  		goto err;
+> I believe what you are missing is an ethernet phy driver that is specific
+> to your SoC.
+It looks interesting way to solve the issue.
 
-Same comment as for tun - let's add code for the if statement above.
-Thanks!
+Did you mean "Ethernet PHY"?
 
-> -- 
-> 1.7.1
+Ethernet PHY is not integrated in the STiH41x SoC, We use an external
+ICPLUS phy ( drivers/net/phy/icplus.c) for both B2000 and B2020 boards.
+As we can't have  two Ethernet phy drivers at the same time, I think the
+suggestion might not work in this case.
+
+The callbacks in the mach level are setting up two SOC specific System
+Configuration registers which configures the MAC (like PHY interface
+selection, which is sampled during MAC reset assertion).
+
+MAC used in STiH41x supports multiple PHY interfaces, so the PHY
+interface selection is driven by external signals wired up to System
+Configuration registers. The MAC driver is not aware of these System
+Configuration registers. So for non-DT case, stmmac driver provided
+callbacks to do things like this.
+
+For DT case, At the moment I think callbacks at MACH level is one
+possible solution. But am open for any discussions.
+
+
+Thanks,
+srini
+
+
+> 
+> 	Arnd
+
