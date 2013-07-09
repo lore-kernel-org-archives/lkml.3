@@ -1,212 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab3GINw3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:52:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23157 "EHLO mga02.intel.com"
+	id S1753666Ab3GINyy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:54:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45123 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753656Ab3GINw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 09:52:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1028,1363158000"; 
-   d="scan'208";a="367140527"
-Message-ID: <51DC1591.7070907@intel.com>
-Date: Tue, 09 Jul 2013 21:52:17 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1752734Ab3GINyx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 09:54:53 -0400
+Date: Tue, 9 Jul 2013 15:54:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH for 3.2] memcg: do not trap chargers with full callstack
+ on OOM
+Message-ID: <20130709135450.GI20281@dhcp22.suse.cz>
+References: <20130619132614.GC16457@dhcp22.suse.cz>
+ <20130622220958.D10567A4@pobox.sk>
+ <20130624201345.GA21822@cmpxchg.org>
+ <20130628120613.6D6CAD21@pobox.sk>
+ <20130705181728.GQ17812@cmpxchg.org>
+ <20130705210246.11D2135A@pobox.sk>
+ <20130705191854.GR17812@cmpxchg.org>
+ <20130708014224.50F06960@pobox.sk>
+ <20130709131029.GH20281@dhcp22.suse.cz>
+ <20130709151921.5160C199@pobox.sk>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, eranian@google.com,
-        ak@linux.intel.com
-Subject: Re: [PATCH] perf: Update event buffer tail when overwriting old events
-References: <1370498286-12801-1-git-send-email-zheng.z.yan@intel.com> <20130708121557.GA17211@twins.programming.kicks-ass.net> <51DBB645.5070201@intel.com> <20130709080513.GG25631@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130709080513.GG25631@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709151921.5160C199@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 04:05 PM, Peter Zijlstra wrote:
-> On Tue, Jul 09, 2013 at 03:05:41PM +0800, Yan, Zheng wrote:
+On Tue 09-07-13 15:19:21, azurIt wrote:
+[...]
+> Now i realized that i forgot to remove UID from that cgroup before
+> trying to remove it, so cgroup cannot be removed anyway (we are using
+> third party cgroup called cgroup-uid from Andrea Righi, which is able
+> to associate all user's processes with target cgroup). Look here for
+> cgroup-uid patch:
+> https://www.develer.com/~arighi/linux/patches/cgroup-uid/cgroup-uid-v8.patch
 > 
->> Thank you for your help. I ran the same test, the results for regular case
->> are much better. But it still has about 1% overhead, probably because we
->> enlarge the ring_buffer structure, make it less cache friendly.
->>
->>       origin    with the patch
->> AVG    1000      1013
->> STDEV  13.4      15.0
-> 
-> And this is the !overwrite case, right? I don't suppose you cured the logic
-> Namhyung Kim pointed out? That should affect the overwrite case I suppose since
-> it won't switch to perf_event_output_overwrite().
+> ANYWAY, i'm 101% sure that 'tasks' file was empty and 'under_oom' was
+> permanently '1'.
 
-yes, it's the overwrite case.
+This is really strange. Could you post the whole diff against stable
+tree you are using (except for grsecurity stuff and the above cgroup-uid
+patch)?
 
-> 
-> tip/master:
-> 
-> struct ring_buffer {
->         atomic_t                   refcount;             /*     0     4 */
-> 
->         /* XXX 4 bytes hole, try to pack */
-> 
->         struct callback_head       callback_head;        /*     8    16 */
->         int                        nr_pages;             /*    24     4 */
->         int                        overwrite;            /*    28     4 */
->         atomic_t                   poll;                 /*    32     4 */
-> 
->         /* XXX 4 bytes hole, try to pack */
-> 
->         local_t                    head;                 /*    40     8 */
->         local_t                    nest;                 /*    48     8 */
->         local_t                    events;               /*    56     8 */
->         /* --- cacheline 1 boundary (64 bytes) --- */
->         local_t                    wakeup;               /*    64     8 */
->         local_t                    lost;                 /*    72     8 */
->         long int                   watermark;            /*    80     8 */
->         spinlock_t                 event_lock;           /*    88    56 */
->         /* --- cacheline 2 boundary (128 bytes) was 16 bytes ago --- */
->         struct list_head           event_list;           /*   144    16 */
->         atomic_t                   mmap_count;           /*   160     4 */
-> 
->         /* XXX 4 bytes hole, try to pack */
-> 
->         long unsigned int          mmap_locked;          /*   168     8 */
->         struct user_struct *       mmap_user;            /*   176     8 */
->         struct perf_event_mmap_page * user_page;         /*   184     8 */
->         /* --- cacheline 3 boundary (192 bytes) --- */
->         void *                     data_pages[0];        /*   192     0 */
-> 
->         /* size: 192, cachelines: 3, members: 18 */
->         /* sum members: 180, holes: 3, sum holes: 12 */
-> };
-> 
-> tip/master + patch:
-> 
-> struct ring_buffer {
->         atomic_t                   refcount;             /*     0     4 */
-> 
->         /* XXX 4 bytes hole, try to pack */
-> 
->         struct callback_head       callback_head;        /*     8    16 */
->         int                        nr_pages;             /*    24     4 */
->         int                        overwrite;            /*    28     4 */
->         atomic_t                   poll;                 /*    32     4 */
-> 
->         /* XXX 4 bytes hole, try to pack */
-> 
->         local_t                    tail;                 /*    40     8 */
->         local_t                    next_tail;            /*    48     8 */
->         local_t                    head;                 /*    56     8 */
->         /* --- cacheline 1 boundary (64 bytes) --- */
->         local_t                    nest;                 /*    64     8 */
->         local_t                    events;               /*    72     8 */
->         local_t                    wakeup;               /*    80     8 */
->         local_t                    lost;                 /*    88     8 */
->         long int                   watermark;            /*    96     8 */
->         spinlock_t                 event_lock;           /*   104    56 */
->         /* --- cacheline 2 boundary (128 bytes) was 32 bytes ago --- */
->         struct list_head           event_list;           /*   160    16 */
->         atomic_t                   mmap_count;           /*   176     4 */
-> 
->         /* XXX 4 bytes hole, try to pack */
-> 
->         long unsigned int          mmap_locked;          /*   184     8 */
->         /* --- cacheline 3 boundary (192 bytes) --- */
->         struct user_struct *       mmap_user;            /*   192     8 */
->         struct perf_event_mmap_page * user_page;         /*   200     8 */
->         void *                     data_pages[0];        /*   208     0 */
-> 
->         /* size: 208, cachelines: 4, members: 20 */
->         /* sum members: 196, holes: 3, sum holes: 12 */
->         /* last cacheline: 16 bytes */
-> };
-> 
-> tip/master + patch^2:
-> 
-> struct ring_buffer {
->         atomic_t                   refcount;             /*     0     4 */
->         atomic_t                   mmap_count;           /*     4     4 */
->         union {
->                 int                overwrite;            /*           4 */
->                 struct callback_head callback_head;      /*          16 */
->         };                                               /*     8    16 */
->         int                        nr_pages;             /*    24     4 */
->         atomic_t                   poll;                 /*    28     4 */
->         local_t                    tail;                 /*    32     8 */
->         local_t                    next_tail;            /*    40     8 */
->         local_t                    head;                 /*    48     8 */
->         local_t                    nest;                 /*    56     8 */
->         /* --- cacheline 1 boundary (64 bytes) --- */
->         local_t                    events;               /*    64     8 */
->         local_t                    wakeup;               /*    72     8 */
->         local_t                    lost;                 /*    80     8 */
->         long int                   watermark;            /*    88     8 */
->         spinlock_t                 event_lock;           /*    96    56 */
->         /* --- cacheline 2 boundary (128 bytes) was 24 bytes ago --- */
->         struct list_head           event_list;           /*   152    16 */
->         long unsigned int          mmap_locked;          /*   168     8 */
->         struct user_struct *       mmap_user;            /*   176     8 */
->         struct perf_event_mmap_page * user_page;         /*   184     8 */
->         /* --- cacheline 3 boundary (192 bytes) --- */
->         void *                     data_pages[0];        /*   192     0 */
-> 
->         /* size: 192, cachelines: 3, members: 19 */
-> };
-> 
-> 
-> ---
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -4641,7 +4641,7 @@ static void perf_event_output_overwrite(
->  static void
->  perf_event_set_overflow(struct perf_event *event, struct ring_buffer *rb)
->  {
-> -	if (event->overflow_handler != perf_event_output ||
-> +	if (event->overflow_handler != perf_event_output &&
->  	    event->overflow_handler != perf_event_output_overwrite)
->  		return;
->  
-> --- a/kernel/events/internal.h
-> +++ b/kernel/events/internal.h
-> @@ -10,13 +10,16 @@
->  
->  struct ring_buffer {
->  	atomic_t			refcount;
-> -	struct rcu_head			rcu_head;
-> +	atomic_t			mmap_count;
-> +	union {
-> +		int			overwrite;	/* can overwrite itself */
-> +		struct rcu_head		rcu_head;
-> +	};
->  #ifdef CONFIG_PERF_USE_VMALLOC
->  	struct work_struct		work;
->  	int				page_order;	/* allocation order  */
->  #endif
->  	int				nr_pages;	/* nr of data pages  */
-> -	int				overwrite;	/* can overwrite itself */
->  
->  	atomic_t			poll;		/* POLL_ for wakeups */
->  
-> @@ -33,7 +36,6 @@ struct ring_buffer {
->  	spinlock_t			event_lock;
->  	struct list_head		event_list;
->  
-> -	atomic_t			mmap_count;
->  	unsigned long			mmap_locked;
->  	struct user_struct		*mmap_user;
->  
-> 
-
-      origin    patch    patch^2
-AVG    1000      1013    1028
-STDEV  13.4      15.0    14.6
-
-patch^2 doesn't help. I will try moving the new fields down and re-test tomorrow
-
-Regards
-Yan, Zheng
-
-
-
+Btw. the bellow patch might help us to point to the exit path which
+leaves wait_on_memcg without mem_cgroup_oom_synchronize:
+---
+diff --git a/kernel/exit.c b/kernel/exit.c
+index e6e01b9..ad472e0 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -895,6 +895,7 @@ NORET_TYPE void do_exit(long code)
+ 
+ 	profile_task_exit(tsk);
+ 
++	WARN_ON(current->memcg_oom.wait_on_memcg);
+ 	WARN_ON(blk_needs_flush_plug(tsk));
+ 
+ 	if (unlikely(in_interrupt()))
+-- 
+Michal Hocko
+SUSE Labs
