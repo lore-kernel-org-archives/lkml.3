@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab3GIHhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:37:52 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:59705 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab3GIHhv (ORCPT
+	id S1753437Ab3GIHk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:40:58 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50742 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab3GIHkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 03:37:51 -0400
+	Tue, 9 Jul 2013 03:40:55 -0400
+Date: Tue, 9 Jul 2013 15:40:39 +0800
+From: Adam Lee <adam.lee@canonical.com>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: linux-bluetooth@vger.kernel.org,
+        Wen-chien Jesse Sung <jesse.sung@canonical.com>,
+        AceLan Kao <acelan.kao@canonical.com>,
+        Tedd Ho-Jeong An <tedd.an@intel.com>,
+        Anthony Wong <anthony.wong@canonical.com>,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] btusb: fix overflow return values
+Message-ID: <20130709074039.GA25268@adam-laptop>
+References: <1372941783-30657-1-git-send-email-adam.lee@canonical.com>
+ <25CD2206-7B7B-4DAD-A714-A79976C9DB13@holtmann.org>
+ <20130709025501.GA6369@adam-laptop>
 MIME-Version: 1.0
-In-Reply-To: <51DACF15.9080303@metafoo.de>
-References: <1373290193-25300-1-git-send-email-richard.genoud@gmail.com>
- <1373290193-25300-2-git-send-email-richard.genoud@gmail.com> <51DACF15.9080303@metafoo.de>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Tue, 9 Jul 2013 09:37:31 +0200
-Message-ID: <CACQ1gAh2Cy8VTx4Mgdv2NdrjdX1M7m-5M+8LqY6ncz3kS16O6g@mail.gmail.com>
-Subject: Re: [alsa-devel] [PATCH v2 1/5] sound: sam9x5_wm8731: machine driver
- for at91sam9x5 wm8731 boards
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, alsa-devel@alsa-project.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Bo Shen <voice.shen@atmel.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709025501.GA6369@adam-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/8 Lars-Peter Clausen <lars@metafoo.de>:
-> On 07/08/2013 03:29 PM, Richard Genoud wrote:
-> [...]
->> +/*
->> + * Logic for a wm8731 as connected on a at91sam9x5 based board.
->> + */
->> +static int at91sam9x5ek_wm8731_init(struct snd_soc_pcm_runtime *rtd)
->> +{
-> [...]
->> +     codec_dai->driver->playback.rates &= SNDRV_PCM_RATE_8000 |
->> +             SNDRV_PCM_RATE_32000 |
->> +             SNDRV_PCM_RATE_48000 |
->> +             SNDRV_PCM_RATE_96000;
->> +     codec_dai->driver->capture.rates &= SNDRV_PCM_RATE_8000 |
->> +             SNDRV_PCM_RATE_32000 |
->> +             SNDRV_PCM_RATE_48000 |
->> +             SNDRV_PCM_RATE_96000;
->
-> That's not right. The driver structure is shared between all instances of
-> the codec, a single instance should not modify it. If you need to constrain
-> the list of supported rates use snd_pcm_hw_constraint_list().
-Ok, I'll do that.
+On Tue, Jul 09, 2013 at 10:55:01AM +0800, Adam Lee wrote:
+> On Mon, Jul 08, 2013 at 11:50:54AM -0700, Marcel Holtmann wrote:
+> > Hi Adam,
+> > 
+> > > PTR_ERR() returns a long type value, but btusb_setup_intel() and
+> > > btusb_setup_intel_patching() should return an int type value.
+> > > 
+> > > This bug makes the judgement "if (ret < 0)" not working on x86_64
+> > > architecture systems, leading to failure as below, even panic.
+> > > ...
+> > > For not affecting other modules, I choose to modify the return values
+> > > but not extend btusb_setup_intel() and btusb_setup_intel_patching()'s
+> > > return types. This is harmless, because the return values were only
+> > > used to comparing number 0.
+> > 
+> > there are tons of examples in various subsystems and drivers where we
+> > return PTR_ERR from a function calls returning int.
+> > 
+> > So I wonder what is actually going wrong here. If this is x86_64
+> > specific problem with PTR_ERR vs int, then we should have this problem
+> > everywhere in the kernel.
+> 
+> Hi, Marcel
+> 
+> I see you point, the difference between here and other subsystems are:
+> 
+> 1, it returns -PTR_ERR() here but all other places return PTR_ERR(), I
+> checked.
+> 2, the judgement is "if (ret < 0)" here but other places are "if (ret)".
+> 
+> I'm not saying other subsystems are 100% right, but here, returning
+> -PTR_ERR() and checking "if (ret < 0)" make the judgement broken much
+> much more easily.
+> 
+> I attached a testing C file, run it on x86_64, you will see the bug.
+> 
+> PS, about other subsystems, I also think returning PTR_ERR() from a
+> function calls returning int considered harmful sometimes, will talk
+> about that in other thread.
 
->
->> +
->> +     /* set the codec system clock for DAC and ADC */
->> +     ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL,
->> +                                  MCLK_RATE, SND_SOC_CLOCK_IN);
->> +     if (ret < 0) {
->> +             dev_err(dev, "ASoC: Failed to set WM8731 SYSCLK: %d\n", ret);
->> +             return ret;
->> +     }
->> +
->> +     /* signal a DAPM event */
->> +     snd_soc_dapm_sync(dapm);
->
-> This should not be necessary.
-ok
->
->> +     return 0;
->> +}
->
+Hi, all
 
-Thanks !
+After diving into the err.h, I realized this patch contains some
+modifications which are actually not necessary. Will submit a v2
+version and explain.
+
+PS, other subsystems are using it right, this not.
 
 -- 
-for me, ck means con kolivas and not calvin klein... does it mean I'm a geek ?
+Regards,
+Adam Lee
+Hardware Enablement
