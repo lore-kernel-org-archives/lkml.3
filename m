@@ -1,90 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab3GIMBk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 08:01:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34343 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753790Ab3GIMB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 08:01:26 -0400
-Message-ID: <51DBFB8A.6000908@ti.com>
-Date: Tue, 9 Jul 2013 15:01:14 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1753786Ab3GIMDQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 08:03:16 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:65347 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab3GIMDP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 08:03:15 -0400
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <arnd@arndb.de>,
-        <adrienverge@gmail.com>, <kishon@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v3 1/2] USB: PHY: Make PHY driver selection possible by
- controller drivers
-References: <1371203502-29624-1-git-send-email-rogerq@ti.com> <1371203502-29624-2-git-send-email-rogerq@ti.com> <20130709112948.GJ5552@arwen.pp.htv.fi>
-In-Reply-To: <20130709112948.GJ5552@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51DBC58D.90002@freescale.com>
+References: <1373013818-11365-1-git-send-email-b32955@freescale.com>
+	<20130709070541.GQ516@pengutronix.de>
+	<51DBBFDA.70302@freescale.com>
+	<20130709075124.GR516@pengutronix.de>
+	<51DBC58D.90002@freescale.com>
+Date: Tue, 9 Jul 2013 07:03:14 -0500
+Message-ID: <CAL_JsqL4ABJCQXveSAMZKOiHwJi=w8zFYjg3DV7kqEEcCXQJcw@mail.gmail.com>
+Subject: Re: [PATCH] of: match the compatible in the order set by the dts file
+From: Rob Herring <robherring2@gmail.com>
+To: Huang Shijie <b32955@freescale.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 02:29 PM, Felipe Balbi wrote:
-> On Fri, Jun 14, 2013 at 12:51:41PM +0300, Roger Quadros wrote:
->> Convert PHY Drivers from menuconfig to menu so that the PHY drivers
->> can be explicitely selected by the controller drivers.
+On Tue, Jul 9, 2013 at 3:10 AM, Huang Shijie <b32955@freescale.com> wrote:
+> 于 2013年07月09日 15:51, Sascha Hauer 写道:
+>
+>> On Tue, Jul 09, 2013 at 03:46:34PM +0800, Huang Shijie wrote:
+>>>
+>>> 于 2013年07月09日 15:05, Sascha Hauer 写道:
+>>>>
+>>>> Why don't you set the matching order in the driver the way you want it
+>>>> to be, i.e.:
+>>>>
+>>>>         { .compatible = "fsl,imx6q-uart", ... },
+>>>>         { .compatible = "fsl,imx21-uart", ... },
+>>>>         { .compatible = "fsl,imx1-uart", ... },
+>>>>
+>>> yes. i can set it like this.
+>>>
+>>> but this method looks like a ugly workaround.
 >>
->> USB_PHY is no longer a user visible option. It is upto to the PHY
->> drivers to select it if needed. This patch does so for the existing
->> PHY drivers that use the USB_PHY library.
->>
->> Doing so moves the USB_PHY and PHY driver selection problem from the
->> end user to the PHY and controller driver developer.
->>
->> e.g.
->>
->> Earlier, a controller driver (e.g. EHCI_OMAP) that needs to select
->> a PHY driver (e.g. NOP_PHY) couldn't do so because the PHY driver
->> depended on USB_PHY. Making the controller driver depend on USB_PHY
->> has a negative effect i.e. it becomes invisible to the user till
->> USB_PHY is enabled. Most end users will not familiar with this.
->>
->> With this patch, the end user just needs to select the controller driver
->> needed for his/her platform without worrying about which PHY driver to
->> select.
->>
->> Also update USB_EHCI_MSM, USB_LPC32XX and USB_OMAP to not depend
->> on USB_PHY any more. They can safely select the necessary PHY drivers.
->>
->> CC: Pavankumar Kondeti <pkondeti@codeaurora.org>
->> CC: Roland Stigge <stigge@antcom.de>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
->> [USB_LPC32XX part] Acked-by: Roland Stigge <stigge@antcom.de>
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> 
-> There is one problem (?) with this: phy-core.ko will never be a module.
-> If that's not a problem for anyone, I guess this is safe to apply. I'll
-> wait a little longer until merge window closes to give people some extra
-> time to shout.
-> 
+>> If a driver has different ways of supporting a single device, then
+>> putting the preferred or most feature rich on top doesn't look very ugly
+>> to me.
+>
+> this method makes it much _coupled_ between the driver and the dts file.
+>
+> IMHO, it's an unnecessary _burden_ to the driver programmer:
+>    he should puts the most feature compatible on the top.
+>
+> it's much graceful if we let the driver programmer be transparent about
+> this.
 
-Is phy-core already meant to be loaded as a module already?
+The dts requires compatible strings to be most specific to least
+specific. There is no reason that driver match tables should not be
+the same and that is the assumption. Matching is not just based on
+compatible properties and your patch does not handle the other cases.
 
-At least with the old phy.c I was getting the following build errors if it was built as
-a module
+Rob
 
-arch/arm/mach-omap2/built-in.o: In function `usbhs_init_phys':
-/work/linux-2.6/arch/arm/mach-omap2/usb-host.c:652: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `omap_2430sdp_init':
-/work/linux-2.6/arch/arm/mach-omap2/board-2430sdp.c:236: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `omap3_beagle_init':
-/work/linux-2.6/arch/arm/mach-omap2/board-omap3beagle.c:554: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `devkit8000_init':
-/work/linux-2.6/arch/arm/mach-omap2/board-devkit8000.c:596: undefined reference to `usb_bind_phy'
-arch/arm/mach-omap2/built-in.o: In function `omap_ldp_init':
-/work/linux-2.6/arch/arm/mach-omap2/board-ldp.c:379: undefined reference to `usb_bind_phy'
 
-If we are sure it can be built as a module then we could just change "config USB_PHY" to tristate
-instead of bool.
 
-cheers,
--roger
+>
+>
+> thanks
+> Huang Shijie
+>
+>
+>
+>
+>
+>
+>
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
