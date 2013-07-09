@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab3GIPGK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:06:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56951 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3GIPGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:06:07 -0400
+	id S1754196Ab3GIPGs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:06:48 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33493 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754128Ab3GIPGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 11:06:09 -0400
+Date: Tue, 9 Jul 2013 17:05:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jan Beulich <JBeulich@suse.com>, Matt Wilson <msw@amazon.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        jeremy@goop.org, x86@kernel.org, tglx@linutronix.de,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com, mingo@redhat.com,
+        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
+Message-ID: <20130709150554.GA27579@pd.tnic>
+References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com>
+ <20130708192854.GF4927@phenom.dumpdata.com>
+ <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>
+ <51DB2134.9040909@zytor.com>
+ <20130708205834.GA481@pd.tnic>
+ <1373326534.1438.10.camel@x61.thuisdomein>
+ <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
+ <51DBDAB802000078000E37C1@nat28.tlf.novell.com>
+ <20130709144840.GF24897@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <s5h4nc3g5cg.wl%tiwai@suse.de>
-References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
-	<20130706221401.GA3652@redhat.com>
-	<20130706223003.GA10697@kroah.com>
-	<s5h4nc5bewf.wl%tiwai@suse.de>
-	<CACVXFVN452nktR=JTTubnYwVkcDdoued0VysT1vA+2jHU1A3Gw@mail.gmail.com>
-	<s5hmwpwuwjp.wl%tiwai@suse.de>
-	<CACVXFVNx7SA3rM46q4=7+7QU==EL3ukAeWcaBYruykfE6JPe8w@mail.gmail.com>
-	<s5hfvvng8py.wl%tiwai@suse.de>
-	<CACVXFVN-Qt8PP1YspX_M8H1W_-9Q-f8u1xPKcsqSWsqZqkhVyw@mail.gmail.com>
-	<s5h4nc3g5cg.wl%tiwai@suse.de>
-Date: Tue, 9 Jul 2013 23:06:05 +0800
-Message-ID: <CACVXFVPtAJUOH5v_i_xVkt9QoKN8wVdyJ=W+M87ASbBmHtz9rg@mail.gmail.com>
-Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
-From: Ming Lei <ming.lei@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130709144840.GF24897@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 9, 2013 at 10:45 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 9 Jul 2013 22:39:36 +0800,
-> Ming Lei wrote:
->>
->> On Tue, Jul 9, 2013 at 9:32 PM, Takashi Iwai <tiwai@suse.de> wrote:
->> > At Tue, 9 Jul 2013 16:43:30 +0800,
->> >> Actually from view of distribution, dell rbu has to be compiled in, then
->> >> no code size can be saved any more, which means looks the introduced
->> >> option in this patch isn't necessary.
->> >
->> > Well, but it means that there is no way not to compile user-helper
->> > mode code in firmware_class.c.  In other words, in which condition,
->> > request_firmware_user() will be compiled?
->>
->> It can be always compiled in. Basically dell rbu is always enabled in
->> distributions, which means the user helper code has to be compiled in.
->
-> But how non-distro kernel disables this being built-in...?
-> Or do you suggest to enable the user-helper codes always built, no
-> matter whether it's used or not?
+On Tue, Jul 09, 2013 at 10:48:40AM -0400, Konrad Rzeszutek Wilk wrote:
+> Then that should be discussed on grub2 to remove said check and modify
+> the code so that it can properly work without regression.
 
-The only cost of built-in user helper code is ~6Kbytes code on my armv7
-box.
+Actually, the kernel patch removing that symbol should be applied so
+that grub2 breaks faster. One can't possibly rely on kernel internals
+for anything, as it is insanely insane (yep, the tautology is on purpose
+:-)).
 
-If the 6KB memory does mater for this non-distro kernel, we can introduce
-more options.
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks,
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Ming Lei
