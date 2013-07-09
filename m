@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab3GIO1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:27:51 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:53904 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753925Ab3GIO0C (ORCPT
+	id S1753941Ab3GIO3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:29:15 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:48841 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753577Ab3GIO3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:26:02 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH v4 3/7] Documentation: DT: update atmel SSC with DMA binding
-Date: Tue,  9 Jul 2013 16:25:29 +0200
-Message-Id: <1373379933-32749-4-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1373379933-32749-1-git-send-email-richard.genoud@gmail.com>
-References: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com>
- <1373379933-32749-1-git-send-email-richard.genoud@gmail.com>
+	Tue, 9 Jul 2013 10:29:11 -0400
+Date: Tue, 9 Jul 2013 07:29:08 -0700
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
+        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
+Message-ID: <20130709142908.GE2478@htj.dyndns.org>
+References: <20130708175201.GB9094@redhat.com>
+ <20130708175607.GB18600@mtj.dyndns.org>
+ <51DBC99F.4030301@openvz.org>
+ <20130709125734.GA2478@htj.dyndns.org>
+ <51DC0CE2.2050906@openvz.org>
+ <20130709131605.GB2478@htj.dyndns.org>
+ <20130709131646.GC2478@htj.dyndns.org>
+ <51DC136E.6020901@openvz.org>
+ <20130709134558.GD2478@htj.dyndns.org>
+ <20130709141833.GA2237@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709141833.GA2237@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As atmel-ssc can be used with DMA, the documentation should be updated.
-Also, a configuration DMA example is given.
+On Tue, Jul 09, 2013 at 10:18:33AM -0400, Vivek Goyal wrote:
+> For implementing throttling one as such does not have to do time
+> slice management on the queue.  For providing constructs like IOPS
+> or bandwidth throttling, one just need to put one throttling knob 
+> in the cgroup pipe irrespective of time slice management on the
+> backing device/network.
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- .../devicetree/bindings/misc/atmel-ssc.txt         |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+We should be providing a comprehensive mechanism to be used from
+userland, not something which serves pieces of specialized
+requirements here and there.  blkio is already a mess with the
+capability changing depending on which elevator is in use and
+blk-throttle counting bios instead of merged requests making iops
+control a bit silly.  We need to clean that up, not add more mess on
+top.
 
-diff --git a/Documentation/devicetree/bindings/misc/atmel-ssc.txt b/Documentation/devicetree/bindings/misc/atmel-ssc.txt
-index 38e51ad..7c320da 100644
---- a/Documentation/devicetree/bindings/misc/atmel-ssc.txt
-+++ b/Documentation/devicetree/bindings/misc/atmel-ssc.txt
-@@ -6,10 +6,28 @@ Required properties:
- 	- atmel,at91sam9g45-ssc: support dma transfer
- - reg: Should contain SSC registers location and length
- - interrupts: Should contain SSC interrupt
-+For dma transfer:
-+- dmas: DMA specifier, consisting of a phandle to DMA controller node,
-+  the memory interface and SSC DMA channel ID (for tx and rx).
-+  See Documentation/devicetree/bindings/dma/atmel-dma.txt for details.
-+- dma-names: Must be "tx", "rx".
- 
--Example:
-+Examples:
- ssc0: ssc@fffbc000 {
- 	compatible = "atmel,at91rm9200-ssc";
- 	reg = <0xfffbc000 0x4000>;
- 	interrupts = <14 4 5>;
- };
-+
-+
-+ssc0: ssc@f0010000 {
-+      compatible = "atmel,at91sam9g45-ssc";
-+      reg = <0xf0010000 0x4000>;
-+      interrupts = <28 4 5>;
-+      dmas = <&dma0 1 13>,
-+	     <&dma0 1 14>;
-+      dma-names = "tx", "rx";
-+      pinctrl-names = "default";
-+      pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
-+      status = "disabled";
-+};
+> Also time slice management is one way of managing the backend resource.
+> CFQ did that and it works only for slow devices. For faster devices
+> we anyway need some kind of token mechanism instead of keeping track
+> of time.
+
+No, it is the *right* resource to manage for rotating devices if you
+want any sort of meaningful proportional resource distribution.  It's
+not something one dreams up out of blue but something which arises
+from the fundamental operating characteristics of the device.  For
+SSDs, iops is good enough as their latency profile is consistent
+enough but doing so with rotating disks doesn't yield anything useful.
+
+> So I don't think trying to manage time slice is the requirement here.
+
+For a cgroup resource controller, it *is* a frigging requirement to
+control the right fundamental resource at the right place where the
+resource resides and can be fully controlled.  Nobody should have any
+other impression.
+
+> > and by the time you implemented proper hierarchy support and
+> > proportional contnrol, yours isn't gonna be that simple either.
+> 
+> I suspect he is not plannnig to do any proportional control at that
+> layer. Just throttling mechanism.
+
+blkio should be able to do proportional control in general.  The fact
+that we aren't able to do that except when cfq-iosched is in use is a
+problem which needs to be fixed.  It's not a free-for-all pass for
+creating more broken stuff.
+
+Thanks.
+
 -- 
-1.7.10.4
-
+tejun
