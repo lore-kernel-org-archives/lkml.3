@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772Ab3GIOSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:18:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21256 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439Ab3GIOSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:18:44 -0400
-Date: Tue, 9 Jul 2013 10:18:33 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
-Message-ID: <20130709141833.GA2237@redhat.com>
-References: <20130708170047.GA18600@mtj.dyndns.org>
- <20130708175201.GB9094@redhat.com>
- <20130708175607.GB18600@mtj.dyndns.org>
- <51DBC99F.4030301@openvz.org>
- <20130709125734.GA2478@htj.dyndns.org>
- <51DC0CE2.2050906@openvz.org>
- <20130709131605.GB2478@htj.dyndns.org>
- <20130709131646.GC2478@htj.dyndns.org>
- <51DC136E.6020901@openvz.org>
- <20130709134558.GD2478@htj.dyndns.org>
+	id S1753730Ab3GIOT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:19:56 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59253 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab3GIOTz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 10:19:55 -0400
+Message-ID: <51DC1C05.6040500@gmail.com>
+Date: Tue, 09 Jul 2013 08:19:49 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130709134558.GD2478@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Al Cooper <alcooperx@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        mingo@infradead.org, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Build failure when python-devel not installed
+References: <20130709131926.GA3260@ghostprotocols.net>
+In-Reply-To: <20130709131926.GA3260@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 06:45:58AM -0700, Tejun Heo wrote:
-> On Tue, Jul 09, 2013 at 05:43:10PM +0400, Konstantin Khlebnikov wrote:
-> > My concept it cgroup which would control io operation on vfs layer
-> > for all filesystems.  It will account and manage IO operations. I've
-> > found really lightweight technique for accounting and throttling
-> > which don't introduce new locks or priority inversions (which is
-> > major problem in all existing throttlers, including cpu cgroup rate
-> > limiter) So, I've tried to keep code smaller, cleaner and saner as
-> > possible while you guys are trying to push me into the block layer
-> > =)
-> 
-> You're trying to implement QoS in the place where you don't have
-> control of the queue itself.
+On 7/9/13 7:19 AM, Arnaldo Carvalho de Melo wrote:
+> Hi,
+>
+> 	While trying to build perf on a freshly installed Fedora 18
+> machine I couldn't do it if python-devel isn't installed.
+>
+> 	The expected behaviour is for a warning to be emitted and the
+> build to continue.
+>
+> 	I bisected it down to:
+>
+> commit 31160d7feab786c991780d7f0ce2755a469e0e5e
+> "perf tools: Fix GNU make v3.80 compatibility issue"
+>
+> 	If I revert this changeset, everything works as expected, I get:
+>
+> config/Makefile:319: The path '/usr/bin/python-config' is not executable.
+> config/Makefile:323: No python-config tool was found
+> config/Makefile:323: Python support will not be built
 
-> You aren't even managing the right type
-> of resource for disks which is time slice rather than iops or
-> bandwidth
+https://lkml.org/lkml/2013/4/15/148
 
-For implementing throttling one as such does not have to do time
-slice management on the queue.  For providing constructs like IOPS
-or bandwidth throttling, one just need to put one throttling knob 
-in the cgroup pipe irrespective of time slice management on the
-backing device/network.
+Suggested patch at the bottom of https://lkml.org/lkml/2013/4/16/577
 
-Also time slice management is one way of managing the backend resource.
-CFQ did that and it works only for slow devices. For faster devices
-we anyway need some kind of token mechanism instead of keeping track
-of time.
-
-So I don't think trying to manage time slice is the requirement here.
-
-> and by the time you implemented proper hierarchy support and
-> proportional control, yours isn't gonna be that simple either.
-
-I suspect he is not plannnig to do any proportional control at that
-layer. Just throttling mechanism.
-
-Thanks
-Vivek
+David
