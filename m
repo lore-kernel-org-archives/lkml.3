@@ -1,210 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab3GIPyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:54:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49557 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751026Ab3GIPyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:54:47 -0400
-Message-ID: <51DC3242.30802@suse.de>
-Date: Tue, 09 Jul 2013 17:54:42 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120306 Thunderbird/10.0.3
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 4/8] powerpc: Prepare to support kernel handling of IOMMU
- map/unmap
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru>  <1373123227-22969-5-git-send-email-aik@ozlabs.ru> <1373247199.4446.29.camel@pasglop>
-In-Reply-To: <1373247199.4446.29.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752987Ab3GIPzr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:55:47 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46251 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab3GIPzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 11:55:40 -0400
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: mingo@kernel.org, peterz@infradead.org
+Cc: arjan@linux.intel.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, alex.shi@intel.com, efault@gmx.de,
+        pjt@google.com, len.brown@intel.com, corbet@lwn.net,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, catalin.marinas@arm.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        morten.rasmussen@arm.com
+Subject: [RFC][PATCH 8/9] sched: power: Add initial frequency scaling support to power scheduler
+Date: Tue,  9 Jul 2013 16:55:37 +0100
+Message-Id: <1373385338-12983-9-git-send-email-morten.rasmussen@arm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+X-OriginalArrivalTime: 09 Jul 2013 15:55:36.0794 (UTC) FILETIME=[C0A333A0:01CE7CBC]
+X-MC-Unique: 113070916553800201
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r69FtwaQ011617
 
-On 07/08/2013 03:33 AM, Benjamin Herrenschmidt wrote:
-> On Sun, 2013-07-07 at 01:07 +1000, Alexey Kardashevskiy wrote:
->> The current VFIO-on-POWER implementation supports only user mode
->> driven mapping, i.e. QEMU is sending requests to map/unmap pages.
->> However this approach is really slow, so we want to move that to KVM.
->> Since H_PUT_TCE can be extremely performance sensitive (especially with
->> network adapters where each packet needs to be mapped/unmapped) we chose
->> to implement that as a "fast" hypercall directly in "real
->> mode" (processor still in the guest context but MMU off).
->>
->> To be able to do that, we need to provide some facilities to
->> access the struct page count within that real mode environment as things
->> like the sparsemem vmemmap mappings aren't accessible.
->>
->> This adds an API to increment/decrement page counter as
->> get_user_pages API used for user mode mapping does not work
->> in the real mode.
->>
->> CONFIG_SPARSEMEM_VMEMMAP and CONFIG_FLATMEM are supported.
-> This patch will need an ack from "mm" people to make sure they are ok
-> with our approach and ack the change to the generic header.
->
-> (Added linux-mm).
->
-> Cheers,
-> Ben.
->
->> Reviewed-by: Paul Mackerras<paulus@samba.org>
->> Signed-off-by: Paul Mackerras<paulus@samba.org>
->> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
->>
->> ---
->>
->> Changes:
->> 2013/06/27:
->> * realmode_get_page() fixed to use get_page_unless_zero(). If failed,
->> the call will be passed from real to virtual mode and safely handled.
->> * added comment to PageCompound() in include/linux/page-flags.h.
->>
->> 2013/05/20:
->> * PageTail() is replaced by PageCompound() in order to have the same checks
->> for whether the page is huge in realmode_get_page() and realmode_put_page()
->>
->> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
->> ---
->>   arch/powerpc/include/asm/pgtable-ppc64.h |  4 ++
->>   arch/powerpc/mm/init_64.c                | 78 +++++++++++++++++++++++++++++++-
->>   include/linux/page-flags.h               |  4 +-
->>   3 files changed, 84 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
->> index e3d55f6f..7b46e5f 100644
->> --- a/arch/powerpc/include/asm/pgtable-ppc64.h
->> +++ b/arch/powerpc/include/asm/pgtable-ppc64.h
->> @@ -376,6 +376,10 @@ static inline pte_t *find_linux_pte_or_hugepte(pgd_t *pgdir, unsigned long ea,
->>   }
->>   #endif /* !CONFIG_HUGETLB_PAGE */
->>
->> +struct page *realmode_pfn_to_page(unsigned long pfn);
->> +int realmode_get_page(struct page *page);
->> +int realmode_put_page(struct page *page);
->> +
->>   #endif /* __ASSEMBLY__ */
->>
->>   #endif /* _ASM_POWERPC_PGTABLE_PPC64_H_ */
->> diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
->> index a90b9c4..7031be3 100644
->> --- a/arch/powerpc/mm/init_64.c
->> +++ b/arch/powerpc/mm/init_64.c
->> @@ -297,5 +297,81 @@ void vmemmap_free(unsigned long start, unsigned long end)
->>   {
->>   }
->>
->> -#endif /* CONFIG_SPARSEMEM_VMEMMAP */
->> +/*
->> + * We do not have access to the sparsemem vmemmap, so we fallback to
->> + * walking the list of sparsemem blocks which we already maintain for
->> + * the sake of crashdump. In the long run, we might want to maintain
->> + * a tree if performance of that linear walk becomes a problem.
->> + *
->> + * Any of realmode_XXXX functions can fail due to:
->> + * 1) As real sparsemem blocks do not lay in RAM continously (they
->> + * are in virtual address space which is not available in the real mode),
->> + * the requested page struct can be split between blocks so get_page/put_page
->> + * may fail.
->> + * 2) When huge pages are used, the get_page/put_page API will fail
->> + * in real mode as the linked addresses in the page struct are virtual
->> + * too.
->> + * When 1) or 2) takes place, the API returns an error code to cause
->> + * an exit to kernel virtual mode where the operation will be completed.
+Extends the power scheduler capacity management algorithm to handle
+frequency scaling and provide basic frequency/P-state selection hints
+to the power driver.
 
-I don't see where these functions enter kernel virtual mode. I think 
-it's best to just remove the last sentence. It doesn't belong here.
+Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>
+---
+ kernel/sched/power.c |   33 ++++++++++++++++++++++++++++-----
+ 1 file changed, 28 insertions(+), 5 deletions(-)
 
+diff --git a/kernel/sched/power.c b/kernel/sched/power.c
+index 9e44c0e..5fc32b0 100644
+--- a/kernel/sched/power.c
++++ b/kernel/sched/power.c
+@@ -21,6 +21,8 @@
+ 
+ #define INTERVAL 5 /* ms */
+ #define CPU_FULL 90 /* Busy %-age - TODO: Make tunable */
++#define CPU_TARGET 80 /* Target busy %-age - TODO: Make tunable */
++#define CPU_EMPTY 5 /* Idle noise %-age - TODO: Make tunable */
+ 
+ struct power_domain {
+ 	/* Domain hierarchy pointers */
+@@ -87,7 +89,7 @@ static void update_cpu_load(void)
+ 		u32 sum = rq->avg.runnable_avg_sum;
+ 		u32 period = rq->avg.runnable_avg_period;
+ 
+-		load = (sum * power_sched_cpu_power(i)) / (period+1);
++		load = (sum * cpu_pd(i)->curr_power) / (period+1);
+ 		cpu_pd(i)->load = load;
+ 		cpu_pd(i)->nr_tasks = rq->nr_running;
+ 
+@@ -160,19 +162,40 @@ static void calculate_cpu_capacities(void)
+ 
+ 	for_each_online_cpu(i) {
+ 		int t_cap = 0;
+-		int sched_power = cpu_pd(i)->sched_power;
++		int curr_power = cpu_pd(i)->curr_power;
+ 
+ 		stats = cpu_pd(i);
+-		t_cap = sched_power - stats->load;
++		t_cap = curr_power - stats->load;
+ 
+-		if (t_cap < (sched_power * (100-CPU_FULL)) / 100) {
++		if (t_cap < (curr_power * (100-CPU_FULL)) / 100) {
+ 			/* Potential for spreading load */
+ 			if (stats->nr_tasks > 1)
+ 				t_cap = -(stats->load / stats->nr_tasks);
++			/*
++			 * Single task and higher p-state available on
++			 * current cpu
++			 */
++			else if (power_driver &&
++					curr_power < cpu_pd(i)->arch_power)
++				power_driver->req_power(i,
++						cpu_pd(i)->arch_power);
++		} else {
++			/* cpu not full - request lower p-state */
++			/*
++			 * TODO global view of spare capacity is needed to do
++			 * proper p-state selection
++			 */
++			if (power_driver)
++				power_driver->req_power(i,
++						(stats->load*100)/CPU_TARGET);
++
++			/* Don't let noise keep the cpu awake */
++			if (t_cap > (curr_power * CPU_EMPTY) / 100)
++				t_cap = curr_power;
+ 		}
+ 
+ 		/* Do we have enough capacity already? */
+-		if (spare_cap + t_cap > sched_power) {
++		if (spare_cap + t_cap > curr_power) {
+ 			cpu_pd(i)->sched_power = 1;
+ 		} else {
+ 			cpu_pd(i)->sched_power = cpu_pd(i)->arch_power;
+-- 
+1.7.9.5
 
-Alex
-
->> + */
->> +struct page *realmode_pfn_to_page(unsigned long pfn)
->> +{
->> +	struct vmemmap_backing *vmem_back;
->> +	struct page *page;
->> +	unsigned long page_size = 1<<  mmu_psize_defs[mmu_vmemmap_psize].shift;
->> +	unsigned long pg_va = (unsigned long) pfn_to_page(pfn);
->>
->> +	for (vmem_back = vmemmap_list; vmem_back; vmem_back = vmem_back->list) {
->> +		if (pg_va<  vmem_back->virt_addr)
->> +			continue;
->> +
->> +		/* Check that page struct is not split between real pages */
->> +		if ((pg_va + sizeof(struct page))>
->> +				(vmem_back->virt_addr + page_size))
->> +			return NULL;
->> +
->> +		page = (struct page *) (vmem_back->phys + pg_va -
->> +				vmem_back->virt_addr);
->> +		return page;
->> +	}
->> +
->> +	return NULL;
->> +}
->> +EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
->> +
->> +#elif defined(CONFIG_FLATMEM)
->> +
->> +struct page *realmode_pfn_to_page(unsigned long pfn)
->> +{
->> +	struct page *page = pfn_to_page(pfn);
->> +	return page;
->> +}
->> +EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
->> +
->> +#endif /* CONFIG_SPARSEMEM_VMEMMAP/CONFIG_FLATMEM */
->> +
->> +#if defined(CONFIG_SPARSEMEM_VMEMMAP) || defined(CONFIG_FLATMEM)
->> +int realmode_get_page(struct page *page)
->> +{
->> +	if (PageCompound(page))
->> +		return -EAGAIN;
->> +
->> +	if (!get_page_unless_zero(page))
->> +		return -EAGAIN;
->> +
->> +	return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(realmode_get_page);
->> +
->> +int realmode_put_page(struct page *page)
->> +{
->> +	if (PageCompound(page))
->> +		return -EAGAIN;
->> +
->> +	if (!atomic_add_unless(&page->_count, -1, 1))
->> +		return -EAGAIN;
->> +
->> +	return 0;
->> +}
->> +EXPORT_SYMBOL_GPL(realmode_put_page);
->> +#endif
->> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
->> index 6d53675..98ada58 100644
->> --- a/include/linux/page-flags.h
->> +++ b/include/linux/page-flags.h
->> @@ -329,7 +329,9 @@ static inline void set_page_writeback(struct page *page)
->>    * System with lots of page flags available. This allows separate
->>    * flags for PageHead() and PageTail() checks of compound pages so that bit
->>    * tests can be used in performance sensitive paths. PageCompound is
->> - * generally not used in hot code paths.
->> + * generally not used in hot code paths except arch/powerpc/mm/init_64.c
->> + * and arch/powerpc/kvm/book3s_64_vio_hv.c which use it to detect huge pages
->> + * and avoid handling those in real mode.
->>    */
->>   __PAGEFLAG(Head, head) CLEARPAGEFLAG(Head, head)
->>   __PAGEFLAG(Tail, tail)
->
 
