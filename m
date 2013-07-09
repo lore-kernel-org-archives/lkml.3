@@ -1,59 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab3GIVSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 17:18:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:51899 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3GIVSQ (ORCPT
+	id S1753568Ab3GIVSX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 17:18:23 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52784 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752734Ab3GIVSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 17:18:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH V3 2/3] clocksource: mmp: support CLOCKSOURCE OF DECLARE
-Date: Tue, 9 Jul 2013 23:16:20 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Neil Zhang <zhangwm@marvell.com>, grant.likely@linaro.org,
-        haojian.zhuang@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com> <1373352166-10064-3-git-send-email-zhangwm@marvell.com> <20130709181434.76f6216d@skate>
-In-Reply-To: <20130709181434.76f6216d@skate>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Tue, 9 Jul 2013 17:18:18 -0400
+Message-ID: <1373404695.18560.17.camel@dabdike>
+Subject: Re: [PATCH 0/3] [SCSI] megaraid: Remove local (struct pci_dev)
+ pdev's
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Myron Stowe <myron.stowe@redhat.com>, adam radford <aradford@gmail.com>
+Cc: megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 09 Jul 2013 22:18:15 +0100
+In-Reply-To: <20130709203927.31676.35169.stgit@amt.stowe>
+References: <20130709203927.31676.35169.stgit@amt.stowe>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307092316.20905.arnd@arndb.de>
-X-Provags-ID: V02:K0:Z/nDu/+jEFOS6qYT9S4Dvox3gkjXOVPazmYVN2CYqVz
- NFIFhiCshnzQllRDOAw1BzOWXI/c4aqrI2dAV9MVITGy1FHpeS
- hDgIRYcKPmgteEj20CRXrHUwY8KuZYFX2wQ1FP752p66iPiBOD
- 2oXpjIUs5LFm4dOt6MwPnT0LlcnqMFFaQdMrn1+0VeanTRpe2s
- 8lwdO7u1Cm7w8b9XZgA0l58Pj1HgKh27PCEzqY2d+MBDReSYHP
- I28LhWnvVLs3VeCJR4N9QQRZ3LfaNQAGa7epoIVONsY2r1UHrk
- 3+EXhHOXIIOlyJrLdS1gk/kOvtN1qDaRer+QlEbL7/Qga3HNrY
- Ektd8+FdSxrq+lgQ/7No=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 July 2013, Thomas Petazzoni wrote:
-> Dear Neil Zhang,
+On Tue, 2013-07-09 at 14:39 -0600, Myron Stowe wrote:
+> Is the "megaraid" driver still actively used and maintained?  I originally
+> posted this series on 06.07.2013 and after receiving no comments, pinged
+> the list again on 06.17.2013 and still received no comments/feedback.
 > 
-> On Tue, 9 Jul 2013 14:42:45 +0800, Neil Zhang wrote:
-> > support CLOCKSOURCE OF DECLARE for mmp timer.
-> > 
-> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
-> > ---
-> >  arch/arm/mach-mmp/mmp-dt.c  |    5 ++---
-> >  arch/arm/mach-mmp/mmp2-dt.c |    3 +--
-> >  arch/arm/mach-mmp/time.c    |   15 ++-------------
-> >  3 files changed, 5 insertions(+), 18 deletions(-)
+> Trying again as I believe there is a real issue here, which I'd like
+> confirmation on, and we really should remove the local copy/usage of
+> 'struct pci_dev' that this driver currently maintains.
 > 
-> Maybe it would be good to take this opportunity to move
-> arch/arm/mach-mmp/time.c into drivers/clocksource/.
+> 
+> While the megaraid device itself may be 64-bit DMA capable, 32-bit address
+> restricted DMA buffers are apparently required for "internal commands" as
+> is denoted by a couple of comments - "For all internal commands, the
+> buffer must be allocated in <4GB address range" - within the driver.
+> 
+> If the device is 64-bit DMA capable then, once it is setup, any subsequent
+> DMA allocations for "internal commands" would not be properly restricted
+> due to megaraid_probe_one() having called pci_set_dma_mask() on pdev with
+> DMA_BIT_MASK(64).  The driver attempts to solve this by using
+> make_local_pdev() to dynamically create local pci_dev structures which are
+> then set and used for allocating 32-bit address space restricted DMA
+> buffers[1] but I don't believe that the implementation works as intended.
+> 
+> 
+> Assume that the megaraid device is 64-bit DMA capable.  While probing the
+> device and attaching the megaraid driver, pci_set_dma_mask() is called
+> with the "originating pdev" and a DMA_BIT_MASK of 64.  As a result, any
+> subsequent dynamic DMA related allocations associated with the
+> "originating pdev" will acquire 64-bit based buffers, which do not meet
+> the addressing restrictions for internal commands.
+> 
+>   megaraid_probe_one(struct pci_dev *pdev, ...)
+>       ...
+>       pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+> 
+> As mentioned, the driver attempts to solve this by using make_local_pdev()
+> to dynamically create local pci_dev structures - "local pdev's" - which
+> are set with a DMA_BIT_MASK of 32.
+> 
+>   make_local_pdev
+>       alloc_pci_dev
+>       memcpy
+>       pci_set_dma_mask
+>           dma_set_mask
+>               *dev->dma_mask = mask;
+> 
+> The "local pdev" is then used in allocating a DMA buffer in an attempt to
+> meet the < 4 GB restriction.
+> 
+> For a 64-bit DMA capable device, the "originating pdev" will have its
+> 'dma_mask' set to 0xffffffffffffffff after the driver attaches.
+> Subsequently, when an internal command is initiated, make_local_pdev() is
+> called.  make_local_pdev() uses the PCI's core to allocate a "local pdev"
+> and then copies the "originating pdev" content into the newly allocated
+> "local pdev".  As a result of copying the "originating pdev" content into
+> the "local pdev", pdev->dev.dma_mask will be pointing back to the
+> "originating pdev's" 'dma_mask' member, not the "local pdev's" as
+> intended.  Thus, when make_local_pdev() calls pci_set_dma_mask() in an
+> attempt to set the "local pdev's" DMA mask to 32 it will instead overwrite
+> the "originating pdev's" DMA mask.  Thus, after any user initiated
+> commands are issued, all subsequent DMA allocations will be 32-bit
+> restricted from that point onward regardless of whether they are internal
+> commands or otherwise.
+> 
+> 
+> This patch fixes the issue by removing the setup of DMA_BIT_MASK to 64 in
+> megaraid_probe_one(), leaving the driver with default 32-bit DMA
+> capabilities, as it currently ends up in such a state anyway after any
+> internal commands are initiated.
+> 
+> 
+> [1] It seems strange that both mega_buffer/buf_dma_handle and
+>     make_local_pdev() both exist for internal commands but this has been
+>     the case for a long time - at least since 2.6.12-rc2.  Perhaps there
+>     is some coalescing that could be done.
+> ---
+> Myron Stowe (3):
+>       [SCSI] megaraid: Remove 64-bit DMA related dead code
+>       [SCSI] megaraid: Remove local pdev's
+>       [SCSI] megaraid: Remove 64-bit DMA_BIT_MASK capability
 
-+1
+Adam, you do drive by coding on this for LSI ... ack or reject, please.
 
-Or we might want to have a more coordinated move of all clocksource
-drivers in arch/arm to drivers/clocksource now, as we have done for some
-other subsystems.
+James
 
-	Arnd
+
