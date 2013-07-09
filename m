@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab3GIMEQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 08:04:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34960 "EHLO comal.ext.ti.com"
+	id S1753835Ab3GIMEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 08:04:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34979 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553Ab3GIMEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 08:04:14 -0400
-Message-ID: <51DBFC33.3040705@ti.com>
-Date: Tue, 9 Jul 2013 15:04:03 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1752924Ab3GIMEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 08:04:34 -0400
+Date: Tue, 9 Jul 2013 15:03:54 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <benoit.cousson@linaro.org>, <afzal@ti.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] arm: dts: AM43x: Add usb_otg_hs node
+Message-ID: <20130709120354.GP5552@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1373361446-30050-1-git-send-email-george.cherian@ti.com>
+ <20130709102022.GH5552@arwen.pp.htv.fi>
+ <51DBF23F.20103@ti.com>
+ <20130709112751.GI5552@arwen.pp.htv.fi>
+ <51DBF98B.1050104@ti.com>
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>, <arnd@arndb.de>,
-        <adrienverge@gmail.com>, <kishon@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Pavankumar Kondeti <pkondeti@codeaurora.org>,
-        Roland Stigge <stigge@antcom.de>
-Subject: Re: [PATCH v3 1/2] USB: PHY: Make PHY driver selection possible by
- controller drivers
-References: <1371203502-29624-1-git-send-email-rogerq@ti.com> <1371203502-29624-2-git-send-email-rogerq@ti.com> <20130709112948.GJ5552@arwen.pp.htv.fi> <51DBFB8A.6000908@ti.com> <20130709120258.GO5552@arwen.pp.htv.fi>
-In-Reply-To: <20130709120258.GO5552@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tjOMJDssiV0CZSJH"
+Content-Disposition: inline
+In-Reply-To: <51DBF98B.1050104@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 03:02 PM, Felipe Balbi wrote:
-> On Tue, Jul 09, 2013 at 03:01:14PM +0300, Roger Quadros wrote:
->> On 07/09/2013 02:29 PM, Felipe Balbi wrote:
->>> On Fri, Jun 14, 2013 at 12:51:41PM +0300, Roger Quadros wrote:
->>>> Convert PHY Drivers from menuconfig to menu so that the PHY drivers
->>>> can be explicitely selected by the controller drivers.
->>>>
->>>> USB_PHY is no longer a user visible option. It is upto to the PHY
->>>> drivers to select it if needed. This patch does so for the existing
->>>> PHY drivers that use the USB_PHY library.
->>>>
->>>> Doing so moves the USB_PHY and PHY driver selection problem from the
->>>> end user to the PHY and controller driver developer.
->>>>
->>>> e.g.
->>>>
->>>> Earlier, a controller driver (e.g. EHCI_OMAP) that needs to select
->>>> a PHY driver (e.g. NOP_PHY) couldn't do so because the PHY driver
->>>> depended on USB_PHY. Making the controller driver depend on USB_PHY
->>>> has a negative effect i.e. it becomes invisible to the user till
->>>> USB_PHY is enabled. Most end users will not familiar with this.
->>>>
->>>> With this patch, the end user just needs to select the controller driver
->>>> needed for his/her platform without worrying about which PHY driver to
->>>> select.
->>>>
->>>> Also update USB_EHCI_MSM, USB_LPC32XX and USB_OMAP to not depend
->>>> on USB_PHY any more. They can safely select the necessary PHY drivers.
->>>>
->>>> CC: Pavankumar Kondeti <pkondeti@codeaurora.org>
->>>> CC: Roland Stigge <stigge@antcom.de>
->>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>> [USB_LPC32XX part] Acked-by: Roland Stigge <stigge@antcom.de>
->>>>
->>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
->>>
->>> There is one problem (?) with this: phy-core.ko will never be a module.
->>> If that's not a problem for anyone, I guess this is safe to apply. I'll
->>> wait a little longer until merge window closes to give people some extra
->>> time to shout.
->>>
->>
->> Is phy-core already meant to be loaded as a module already?
->>
->> At least with the old phy.c I was getting the following build errors if it was built as
->> a module
->>
->> arch/arm/mach-omap2/built-in.o: In function `usbhs_init_phys':
->> /work/linux-2.6/arch/arm/mach-omap2/usb-host.c:652: undefined reference to `usb_bind_phy'
->> arch/arm/mach-omap2/built-in.o: In function `omap_2430sdp_init':
->> /work/linux-2.6/arch/arm/mach-omap2/board-2430sdp.c:236: undefined reference to `usb_bind_phy'
->> arch/arm/mach-omap2/built-in.o: In function `omap3_beagle_init':
->> /work/linux-2.6/arch/arm/mach-omap2/board-omap3beagle.c:554: undefined reference to `usb_bind_phy'
->> arch/arm/mach-omap2/built-in.o: In function `devkit8000_init':
->> /work/linux-2.6/arch/arm/mach-omap2/board-devkit8000.c:596: undefined reference to `usb_bind_phy'
->> arch/arm/mach-omap2/built-in.o: In function `omap_ldp_init':
->> /work/linux-2.6/arch/arm/mach-omap2/board-ldp.c:379: undefined reference to `usb_bind_phy'
->>
->> If we are sure it can be built as a module then we could just change "config USB_PHY" to tristate
->> instead of bool.
-> 
-> good point, board-files are using some of our symbols. Then we can apply
-> your patches. I'll wait a bit longer, though.
-> 
-Thanks :) and no problem with the wait.
+--tjOMJDssiV0CZSJH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-cheers,
--roger
+Hi,
+
+On Tue, Jul 09, 2013 at 05:22:43PM +0530, George Cherian wrote:
+> >>>Another thing: am437x has 4 instances of this IP, why are you adding
+> >>>only one ?
+> >>AM437x has got only 2 instances. I have verified only one on HAPS so
+> >>adding only one.
+> >weird, on my TRM I see for dwc3 but 2 PHYs.
+>=20
+> Please confirm whether you are looking at am437x TRM or dra7x TRM?
+> dra7x has 4 dwc3 and 2 internal  phys and 2 external phys
+
+guilty as charged :-)
+
+> >>>And why aren't you pasing the PHY nodes here ? The device
+> >>>won't work without its PHYs.
+> >>Yes true, again in HAPS I  didnt have any PHY configuration to be done.
+> >alright, but we should still pass the PHY right ? once silicon comes,
+> >we want this to work without any further changers.
+>=20
+> okay will add phy nodes and 2 instances of dwc3.
+
+thanks
+
+--=20
+balbi
+
+--tjOMJDssiV0CZSJH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR2/wpAAoJEIaOsuA1yqRE+u8P/i9RlFNpp8aZoU5wgz1njZXm
+SKe0j03SMLzX1HX5VeNu+Y0kzVBs3cxfRXTwwY1f1TAlsB15xSNm/ZiORfpgXXWE
+516fxrJRsgwP7ZUW/I35iBh5NP0XOqZYv8p3rW5k52ojkc5RU8MrDpLntVB0TziA
+XqmWUhEt8bjSeCLux8yPRYCYMmaE2WH5w/583eSQlA/yfI7IX7ciYt/sKOKv2Hu8
+udRBoRZNNOBmnOKY9Mh5Lsh7b/BC94Nz3MdHLiZRsSgp1XwzyFvK0AiJJEj5CC4w
+G0syL74R3fEJdbL511yhWPhGzQanlsHvlNFVwggEnsKHp+rGUL9xjf2N07lXTF3B
+BcIkkaegykrKwfMEXWzx7Sl8aeagyWXjRylLHGcwEkCyhfBzs3+cu27BpnZtUu5k
+5mHHVZ1eHcWk+kGoZMGDsVJsDBjSBI5nHK9EvUIpcrMqjyYqmQgvGpFg5m1odDur
++Ii0YI1oI5OG/H6zn5PJGspOGRzhV6Xbe7ePNsTw/Cbq/NFkeFBCHC4+GpzkLqU0
+tlB2X620+YvFDFbZjyX3ugJLVrqWQYHwgAbJch8GKJMLa3hsMRcvkZ/ww/gf4j5Q
+b73ql+Al7lNnThZuVgshBjHVAMizTgySSZWeX6tWPQXSxEu1cYzdcKj/jDofVe6p
+pQVIPXxAFWS1eL1N93Gw
+=DMc7
+-----END PGP SIGNATURE-----
+
+--tjOMJDssiV0CZSJH--
