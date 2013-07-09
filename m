@@ -1,197 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab3GIRX5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:23:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:52891 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853Ab3GIRXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:23:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1029,1363158000"; 
-   d="scan'208";a="265986892"
-Date: Tue, 9 Jul 2013 10:24:57 -0700
-From: Jubin Mehta <jubin.mehta@intel.com>
-To: Dan Williams <djbw@fb.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Dave Jiang <dave.jiang@intel.com>, Jon Mason <jon.mason@intel.com>
-Subject: Re: [PATCH v2] dmatest: masking tests for channel capabilities
-Message-ID: <20130709172456.GC9213@intel.com>
-References: <20130621234647.GA3763@intel.com>
- <CAA9_cmePsWFfqmnEGB6XBJj7dsY7dSJtSLvy+s3NzVkttviRWQ@mail.gmail.com>
+	id S1752549Ab3GIR0v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:26:51 -0400
+Received: from tx2outboundsmtppool2.messaging.microsoft.com ([65.55.83.132]:40464
+	"EHLO TX2EHSNDR002.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751650Ab3GIR0r convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 13:26:47 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-OUTBOUND-SPAM: yes
+X-SpamScore: 3
+X-BigFish: VS3(zzc89bhzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h15abkzz8275bhz2dh87h2a8h668h839h93fhd24he5bhf0ah1239h1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b5bh1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e1dh1e23h41h42h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>
+CC: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <vincent.stehle@freescale.com>,
+        Matt Porter <mporter@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH linux-next] edma: select arch common code to fix link
+Date: Tue, 9 Jul 2013 18:49:20 +0200
+Message-ID: <1373388560-5129-1-git-send-email-vincent.stehle@freescale.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA9_cmePsWFfqmnEGB6XBJj7dsY7dSJtSLvy+s3NzVkttviRWQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Reply-To: <vstehle@debian>
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 01:47:07PM -0700, Dan Williams wrote:
-> On Fri, Jun 21, 2013 at 4:46 PM, Jubin Mehta <jubin.mehta@intel.com> wrote:
-> > The current dmatest module tests all the hardware capabilities (MEMCPY, XOR
-> > and PQ) supported by a particular DMA channel and these tests are performed
-> > concurrently by default. This patch allows the user to enable or disable the
-> > test performed for any particular capability. The mask bits for enabling the
-> > tests are set using the debugfs.
-> >
-> > Signed-off-by: Jubin Mehta <jubin.mehta@intel.com>
-> [..]
-> > diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
-> > index d8ce4ec..c152755 100644
-> > --- a/drivers/dma/dmatest.c
-> > +++ b/drivers/dma/dmatest.c
-> > @@ -23,6 +23,7 @@
-> >  #include <linux/debugfs.h>
-> >  #include <linux/uaccess.h>
-> >  #include <linux/seq_file.h>
-> > +#include <linux/string.h>
-> >
-> >  static unsigned int test_buf_size = 16384;
-> >  module_param(test_buf_size, uint, S_IRUGO);
-> > @@ -66,6 +67,11 @@ module_param(timeout, uint, S_IRUGO);
-> >  MODULE_PARM_DESC(timeout, "Transfer Timeout in msec (default: 3000), "
-> >                  "Pass -1 for infinite timeout");
-> >
-> > +static char test_cap_mask[20] = "copy,xor,pq";
-> > +module_param_string(cap_mask, test_cap_mask, sizeof(test_cap_mask), S_IRUGO);
-> 
-> Let's just make this module parameter writable so we don't need to add
-> a new debugfs file.
->
+EDMA code has been moved to a common folder with a new CONFIG_TI_PRIV_EDMA
+switch. Select it when the edma driver is enabled.
 
-I shall do that. But, instead of having just the cap_mask parameter as
-a writable module parameter, it would be great if we could have all
-the module parameters writable and just have run file (to trigger the
-test) and results file (to display the results of the test) in debugfs.
+This fixes the following link error:
 
-> The 'get' routine can also display the available testable operation
-> types.
->
+  drivers/built-in.o: In function `edma_remove':
+  of_iommu.c:(.text+0x4ef20): undefined reference to `edma_free_slot'
+  drivers/built-in.o: In function `edma_control':
+  of_iommu.c:(.text+0x4ef70): undefined reference to `edma_stop'
+  drivers/built-in.o: In function `edma_execute':
+  of_iommu.c:(.text+0x4f11c): undefined reference to `edma_write_slot'
+  of_iommu.c:(.text+0x4f150): undefined reference to `edma_link'
+  of_iommu.c:(.text+0x4f168): undefined reference to `edma_start'
+  drivers/built-in.o: In function `edma_free_chan_resources':
+  of_iommu.c:(.text+0x4f220): undefined reference to `edma_stop'
+  of_iommu.c:(.text+0x4f304): undefined reference to `edma_free_slot'
+  of_iommu.c:(.text+0x4f328): undefined reference to `edma_free_channel'
+  drivers/built-in.o: In function `edma_alloc_chan_resources':
+  of_iommu.c:(.text+0x4f37c): undefined reference to `edma_alloc_channel'
+  of_iommu.c:(.text+0x4f3d8): undefined reference to `edma_free_channel'
+  drivers/built-in.o: In function `edma_prep_slave_sg':
+  of_iommu.c:(.text+0x4f67c): undefined reference to `edma_alloc_slot'
+  drivers/built-in.o: In function `edma_probe':
+  of_iommu.c:(.text+0x4f794): undefined reference to `edma_alloc_slot'
+  of_iommu.c:(.text+0x4f8b8): undefined reference to `edma_free_slot'
+  drivers/built-in.o: In function `edma_callback':
+  of_iommu.c:(.text+0x4fae4): undefined reference to `edma_stop'
+  make: *** [vmlinux] Error 1
 
-The testable operation types depend on the dma channel under test.
-Thus, a 'get' routine cannot be used to obtain a default value for
-the module parameter 'cap_mask'.
+Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+Cc: Matt Porter <mporter@ti.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+---
 
---
-Jubin
-> > +MODULE_PARM_DESC(cap_mask, "Mask bits for different capability test "
-> > +                "(default: copy,xor,pq)");
-> > +
-> >  /* Maximum amount of mismatched bytes in buffer to print */
-> >  #define MAX_ERROR_COUNT                32
-> >
-> > @@ -164,6 +170,7 @@ struct dmatest_chan {
-> >   * @xor_sources:       number of xor source buffers
-> >   * @pq_sources:                number of p+q source buffers
-> >   * @timeout:           transfer timeout in msec, -1 for infinite timeout
-> > + * @cap_mask:          mask for different hardware capabilities tests
-> >   */
-> >  struct dmatest_params {
-> >         unsigned int    buf_size;
-> > @@ -175,6 +182,7 @@ struct dmatest_params {
-> >         unsigned int    xor_sources;
-> >         unsigned int    pq_sources;
-> >         int             timeout;
-> > +       char            cap_mask[128];
-> 
-> This can be the capability mask directly... see below:
-> 
-> >  };
-> >
-> >  /**
-> > @@ -883,11 +891,44 @@ static int dmatest_add_threads(struct dmatest_info *info,
-> >         return i;
-> >  }
-> >
-> > +static int dmatest_cap_check(struct dmatest_info *info,
-> > +               dma_cap_mask_t *test_cap_mask)
-> > +{
-> > +       struct dmatest_params   *params;
-> > +       char                    *cap;
-> > +       unsigned char c;
-> > +       int i;
-> > +
-> > +       params = &info->params;
-> > +       cap = (params->cap_mask);
-> > +
-> > +       for (i = 0; i < 3; i++) {
-> > +               if (!strncmp(cap, "copy", 4)) {
-> > +                       dma_cap_set(DMA_MEMCPY, *test_cap_mask);
-> > +                       cap += 4;
-> > +               } else if (!strncmp(cap, "xor", 3)) {
-> > +                       dma_cap_set(DMA_XOR, *test_cap_mask);
-> > +                       cap += 3;
-> > +               } else if (!strncmp(cap, "pq", 2)) {
-> > +                       dma_cap_set(DMA_PQ, *test_cap_mask);
-> > +                       cap += 2;
-> > +               } else {
-> > +                       return -1;
-> > +               }
-> > +               c = *cap++;
-> > +               if (c != ',')
-> > +                       break;
-> > +       }
-> > +       return 0;
-> > +}
-> 
-> We can run this routine when the capabilities are set to return error
-> on invalid capability masks directly.  Then we can set the
-> test_cap_mask before dmatest_add_channel().
-> 
-> > +
-> >  static int dmatest_add_channel(struct dmatest_info *info,
-> >                 struct dma_chan *chan)
-> >  {
-> >         struct dmatest_chan     *dtc;
-> >         struct dma_device       *dma_dev = chan->device;
-> > +       struct dmatest_params   *params;
-> > +       dma_cap_mask_t          test_cap_mask;
-> >         unsigned int            thread_count = 0;
-> >         int cnt;
-> >
-> > @@ -900,15 +941,28 @@ static int dmatest_add_channel(struct dmatest_info *info,
-> >         dtc->chan = chan;
-> >         INIT_LIST_HEAD(&dtc->threads);
-> >
-> > -       if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
-> > +       params = &info->params;
-> > +
-> > +       dma_cap_zero(test_cap_mask);
-> > +       cnt = dmatest_cap_check(info, &test_cap_mask);
-> > +       if (cnt) {
-> > +               pr_warn("dmatest: Invalid Capability Mask Paramters\n");
-> > +               return -EINVAL;
-> > +       }
-> 
-> As above I think this too late to be validating the parameters.
-> 
-> > +
-> > +       /* Run dmatest threads for the supported and enabled capabilities */
-> > +       if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)
-> > +           && dma_has_cap(DMA_MEMCPY, test_cap_mask)) {
-> >                 cnt = dmatest_add_threads(info, dtc, DMA_MEMCPY);
-> >                 thread_count += cnt > 0 ? cnt : 0;
-> >         }
-> > -       if (dma_has_cap(DMA_XOR, dma_dev->cap_mask)) {
-> > +       if (dma_has_cap(DMA_XOR, dma_dev->cap_mask)
-> > +           && dma_has_cap(DMA_XOR, test_cap_mask)) {
-> >                 cnt = dmatest_add_threads(info, dtc, DMA_XOR);
-> >                 thread_count += cnt > 0 ? cnt : 0;
-> >         }
-> > -       if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
-> > +       if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)
-> > +           && dma_has_cap(DMA_PQ, test_cap_mask)) {
-> >                 cnt = dmatest_add_threads(info, dtc, DMA_PQ);
-> >                 thread_count += cnt > 0 ? cnt : 0;
-> >         }
-> 
-> Could above be written simpler with one bitmap_and(test_cap_mask,
-> dma_dev->cap_mask, test_cap_mask) at the start and then
-> for_each_set_bit(test_cap_mask)?
-> 
-> 
-> --
-> Dan
+
+Hi,
+
+Build of linux next-20130709 is broken for ARM multi_v7_defconfig. This patch
+fixes it.
+
+(Note: the error messages mentioning of_iommu.c are misleading.)
+
+Best regards,
+
+V.
+
+
+ drivers/dma/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+index 6825957..8b3fca9 100644
+--- a/drivers/dma/Kconfig
++++ b/drivers/dma/Kconfig
+@@ -198,6 +198,7 @@ config TI_EDMA
+ 	depends on ARCH_DAVINCI || ARCH_OMAP
+ 	select DMA_ENGINE
+ 	select DMA_VIRTUAL_CHANNELS
++	select TI_PRIV_EDMA
+ 	default n
+ 	help
+ 	  Enable support for the TI EDMA controller. This DMA
+-- 
+1.7.10.4
+
+
+
