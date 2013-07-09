@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753080Ab3GIP5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:57:10 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:46132 "EHLO
+	id S1753172Ab3GIP5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:57:30 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:45974 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752669Ab3GIPzi (ORCPT
+	with ESMTP id S1752419Ab3GIPzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:55:38 -0400
+	Tue, 9 Jul 2013 11:55:36 -0400
 From: Morten Rasmussen <morten.rasmussen@arm.com>
 To: mingo@kernel.org, peterz@infradead.org
 Cc: arjan@linux.intel.com, vincent.guittot@linaro.org,
@@ -16,49 +16,65 @@ Cc: arjan@linux.intel.com, vincent.guittot@linaro.org,
         tglx@linutronix.de, catalin.marinas@arm.com,
         linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
         morten.rasmussen@arm.com
-Subject: [RFC][PATCH 5/9] sched: Make idle_balance() skip cpus with a cpu_power of 1
-Date: Tue,  9 Jul 2013 16:55:34 +0100
-Message-Id: <1373385338-12983-6-git-send-email-morten.rasmussen@arm.com>
+Subject: [RFC][PATCH 4/9] sched: Make periodic load-balance disregard cpus with a cpu_power of 1
+Date: Tue,  9 Jul 2013 16:55:33 +0100
+Message-Id: <1373385338-12983-5-git-send-email-morten.rasmussen@arm.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
 References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
-X-OriginalArrivalTime: 09 Jul 2013 15:55:34.0263 (UTC) FILETIME=[BF210070:01CE7CBC]
-X-MC-Unique: 113070916553607201
+X-OriginalArrivalTime: 09 Jul 2013 15:55:33.0419 (UTC) FILETIME=[BEA037B0:01CE7CBC]
+X-MC-Unique: 113070916553406601
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r69FvKP5011645
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r69FvjiY011649
 
-idle_balance() should disregard cpus disabled by the power scheduler.
+Some of the load_balance() helper functions will put tasks on cpus with
+cpu_power=1 when they are completely idle. This patch changes this behaviour.
 
-This is a quick fix. idle_balance() should be revisit to implement proper
-handling of cpus with cpu_power=1.
+The patch is a quick fix. The load_balance() helper functions should be
+revisited to implement proper handling of cpus with cpu_power=1.
 
 Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
 CC: Ingo Molnar <mingo@kernel.org>
 CC: Peter Zijlstra <peterz@infradead.org>
 CC: Catalin Marinas <catalin.marinas@arm.com>
 ---
- kernel/sched/fair.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/sched/fair.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 4610463..a59617b 100644
+index f637ea5..4610463 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -5261,6 +5261,10 @@ void idle_balance(int this_cpu, struct rq *this_rq)
- 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
- 		return;
+@@ -3952,6 +3952,13 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
+ 	}
  
-+	/* Don't pull tasks if disable by power scheduler */
-+	if (!power_cpu_balance(this_cpu))
-+		return;
-+
  	/*
- 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
- 	 */
++	 * Vacate cpus disabled by the power scheduler even if the cache is
++	 * hot
++	 */
++	if (!power_cpu_balance(env->src_cpu))
++		return 1;
++
++	/*
+ 	 * Aggressive migration if:
+ 	 * 1) task is cache cold, or
+ 	 * 2) too many balance attempts have failed.
+@@ -4500,6 +4507,11 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 			update_group_power(env->sd, env->dst_cpu);
+ 		} else if (time_after_eq(jiffies, group->sgp->next_update))
+ 			update_group_power(env->sd, env->dst_cpu);
++
++		if (!power_cpu_balance(env->dst_cpu)) {
++			*balance = 0;
++			return;
++		}
+ 	}
+ 
+ 	/* Adjust by relative CPU power of the group */
 -- 
 1.7.9.5
 
