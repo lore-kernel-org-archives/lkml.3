@@ -1,87 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab3GIOEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:04:13 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:35771 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3GIOEK (ORCPT
+	id S1753561Ab3GIOH5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:07:57 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:54711 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab3GIOHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:04:10 -0400
-Message-ID: <51DC1858.8010008@free-electrons.com>
-Date: Tue, 09 Jul 2013 16:04:08 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 9 Jul 2013 10:07:55 -0400
+Message-ID: <51DC1937.9080302@cogentembedded.com>
+Date: Tue, 09 Jul 2013 18:07:51 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>, jimwall@q.com,
-        brian@crystalfontz.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, Rob Landley <rob@landley.net>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCHv3 1/3] iio: Add Nuvoton NAU7802 ADC driver
-References: <1372094699-3832-1-git-send-email-alexandre.belloni@free-electrons.com> <1372094699-3832-2-git-send-email-alexandre.belloni@free-electrons.com> <51D53B72.6020309@metafoo.de> <51D7F044.9040205@kernel.org>
-In-Reply-To: <51D7F044.9040205@kernel.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: George Cherian <george.cherian@ti.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        afzal@ti.com, linux@arm.linux.org.uk, balbi@ti.com,
+        linux-kernel@vger.kernel.org, benoit.cousson@linaro.org
+Subject: Re: [PATCH v2] arm: dts: AM43x: Add usb_otg_hs node
+References: <1373361446-30050-1-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1373361446-30050-1-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jonathan,
+Hello.
 
-I don't actually see it in iio.git on kernel.org, am I doing something
-wrong ?
+On 09-07-2013 13:17, George Cherian wrote:
 
-On 06/07/2013 12:24, Jonathan Cameron wrote:
-> On 07/04/2013 10:08 AM, Lars-Peter Clausen wrote:
->> On 06/24/2013 07:24 PM, Alexandre Belloni wrote:
->>> The Nuvoton NAU7802 ADC is a 24-bit 2-channels I2C ADC, with adjustable
->>> gain and sampling rates.
->>>
->>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->>> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->> Reviewed-by: Lars-Peter Clausen <lars@metafoo.de>
->>
-> Applied to the togreg branch of iio.git (with a few little tweaks).
->
-> There was some fuzz that required manual fixing because of another driver merge so
-> please check I didn't foul anything up with this or the other bits below.
->
-> There were two trivial missing unlocks on error paths in the read_raw function that
-> I've fixed up (Coccinelle found these for me - if you can I would always advise
-> running sparse, coccicheck and ideally smatch before submitting patches).
->
-> I fixed up the comments because if there is one thing I hate bothering
-> with it is delightful patches that just fix this stuff. Much better
-> to do it now given it took 20 secs ;)
->
->> One remark though. Multiline comments should be like
->>
->> /*
->>  * foo
->>  * bar
->>  */
->>
->> not
->>
->> /* foo
->>  * bar
->>  */
->>
->> But not need to resend the patch just for this
->>
->> - Lars
->>
+> Adds device node for HS USB Host module for AM437x
 
+> changes from v1
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> renamed synopsis to snps
+> removed flag tx-fifo-resize
+
+> Signed-off-by: George Cherian <george.cherian@ti.com>
+> ---
+>   arch/arm/boot/dts/am4372.dtsi | 18 ++++++++++++++++++
+>   1 file changed, 18 insertions(+)
+
+> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
+> index ddc1df7..c9e0da8 100644
+> --- a/arch/arm/boot/dts/am4372.dtsi
+> +++ b/arch/arm/boot/dts/am4372.dtsi
+> @@ -64,5 +64,23 @@
+>   			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
+>   			reg = <0x44e86000 0x40>;
+>   		};
+> +
+> +		usb_otg_hs1: am4372_dwc3@48380000 {
+
+    See http://www.devicetree.org/Device_Tree_Usage, "Node Names" section.
+
+> +			compatible = "ti,am437x-dwc3";
+> +			reg = <0x48380000 0x1ff>;
+> +			interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
+> +			#address-cells = <1>;
+> +			#size-cells = <1>;
+> +			utmi-mode = <1>;
+> +			ranges;
+> +
+> +			dwc3@48390000 {
+
+    The same comment.
+
+> +				compatible = "snps,dwc3";
+> +				reg = <0x48390000 0xcfff>;
+> +				interrupts = <GIC_SPI  168 IRQ_TYPE_LEVEL_HIGH>;
+> +			};
+> +
+> +		};
+> +		
+
+WBR, Sergei
+
 
