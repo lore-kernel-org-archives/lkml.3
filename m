@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3GIIGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:06:43 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:48733 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753386Ab3GIIGN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:06:13 -0400
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        Stuart Menefy <stuart.menefy@st.com>, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH v2 1/2] ARM: dts: STi: Fix pinconf setup for STiH416 serial2
-Date: Tue,  9 Jul 2013 08:26:24 +0100
-Message-Id: <1373354784-26357-1-git-send-email-srinivas.kandagatla@st.com>
-X-Mailer: git-send-email 1.7.6.5
-In-Reply-To: <1373354752-26292-1-git-send-email-srinivas.kandagatla@st.com>
-References: <1373354752-26292-1-git-send-email-srinivas.kandagatla@st.com>
+	id S1753738Ab3GIIHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:07:07 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:16420
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753686Ab3GIIG7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 04:06:59 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dIc89bh1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Message-ID: <51DBC58D.90002@freescale.com>
+Date: Tue, 9 Jul 2013 16:10:53 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: <grant.likely@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] of: match the compatible in the order set by the dts
+ file
+References: <1373013818-11365-1-git-send-email-b32955@freescale.com> <20130709070541.GQ516@pengutronix.de> <51DBBFDA.70302@freescale.com> <20130709075124.GR516@pengutronix.de>
+In-Reply-To: <20130709075124.GR516@pengutronix.de>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+于 2013年07月09日 15:51, Sascha Hauer 写道:
+> On Tue, Jul 09, 2013 at 03:46:34PM +0800, Huang Shijie wrote:
+>> 于 2013年07月09日 15:05, Sascha Hauer 写道:
+>>> Why don't you set the matching order in the driver the way you want it
+>>> to be, i.e.:
+>>>
+>>> 	{ .compatible = "fsl,imx6q-uart", ... },
+>>> 	{ .compatible = "fsl,imx21-uart", ... },
+>>> 	{ .compatible = "fsl,imx1-uart", ... },
+>>>
+>> yes. i can set it like this.
+>>
+>> but this method looks like a ugly workaround.
+> If a driver has different ways of supporting a single device, then
+> putting the preferred or most feature rich on top doesn't look very ugly
+> to me.
+this method makes it much _coupled_ between the driver and the dts file.
 
-This patch fixes a bug in pinctrl setup of serial2 device, Some of the
-pins in the pinctrl node of serial2 do not belong to that
-pin-controller. This patch divides them in the pins into there
-respective pin controller nodes.
+IMHO, it's an unnecessary _burden_ to the driver programmer:
+    he should puts the most feature compatible on the top.
 
-Without this patch serial on StiH416-B2000 Board will not work as it
-fails with:
+it's much graceful if we let the driver programmer be transparent about 
+this.
 
-"st-pinctrl pin-controller-rear.3: failed to get pin(99) name
-st-pinctrl pin-controller-rear.3: maps: function serial2 group serial2-0
-num 4
-pinconfig core: failed to register map default (3): no group/pin given"
+thanks
+Huang Shijie
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
----
- arch/arm/boot/dts/stih416-pinctrl.dtsi |   10 +++++++++-
- arch/arm/boot/dts/stih416.dtsi         |    2 +-
- 2 files changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-index 957b21a..0f246c9 100644
---- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -166,6 +166,15 @@
- 				reg		= <0x9000 0x100>;
- 				st,bank-name	= "PIO31";
- 			};
-+
-+			serial2-oe {
-+				pinctrl_serial2_oe: serial2-1 {
-+					st,pins {
-+						output-enable	= <&PIO11 3 ALT2 OUT>;
-+					};
-+				};
-+			};
-+
- 		};
- 
- 		pin-controller-rear {
-@@ -218,7 +227,6 @@
- 					st,pins {
- 						tx	= <&PIO17 4 ALT2 OUT>;
- 						rx	= <&PIO17 5 ALT2 IN>;
--						output-enable	= <&PIO11 3 ALT2 OUT>;
- 					};
- 				};
- 			};
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index 3cecd96..1a0326e 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -79,7 +79,7 @@
- 			interrupts	= <0 197 0>;
- 			clocks          = <&CLK_S_ICN_REG_0>;
- 			pinctrl-names 	= "default";
--			pinctrl-0 	= <&pinctrl_serial2>;
-+			pinctrl-0 	= <&pinctrl_serial2 &pinctrl_serial2_oe>;
- 		};
- 
- 		/* SBC_UART1 */
--- 
-1.7.6.5
+
+
+
+
 
