@@ -1,114 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab3GIRHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:07:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52001 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab3GIRHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:07:00 -0400
-Date: Tue, 9 Jul 2013 19:06:56 +0200
-From: Jan Kara <jack@suse.cz>
-To: Maxim Patlasov <mpatlasov@parallels.com>
-Cc: akpm@linux-foundation.org, riel@redhat.com, jack@suse.cz,
-        dev@parallels.com, miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, xemul@parallels.com, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, linux-mm@kvack.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, fengguang.wu@intel.com,
-        devel@openvz.org, mgorman@suse.de
-Subject: Re: [PATCH] mm: cleanup backing_dev_info foo_stamp fields
-Message-ID: <20130709170656.GB7256@quack.suse.cz>
-References: <20130705155018.3532.45042.stgit@maximpc.sw.ru>
+	id S1752777Ab3GIRHr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:07:47 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:42040 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab3GIRHq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 13:07:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130705155018.3532.45042.stgit@maximpc.sw.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51DC4075.1000708@stranner.org>
+References: <1373023979-20537-1-git-send-email-artagnon@gmail.com>
+	<1373151605.27613.9@driftwood>
+	<478d866c-606e-42de-9779-6ae18d70e7f1@CO1EHSMHS014.ehs.local>
+	<51DC4075.1000708@stranner.org>
+Date: Tue, 9 Jul 2013 10:07:44 -0700
+Message-ID: <CAKbGBLgrTtMfkg9VEiQ=5JPzJvCUa5bPUjPHVswZFxviY1BKdg@mail.gmail.com>
+Subject: Re: [PATCH] menuconfig: Allow j/k to move down/up the menu
+From: Steven Noonan <steven@uplinklabs.net>
+To: Heimo Stranner <heimo@stranner.org>
+Cc: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>,
+        artagnon@gmail.com,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 05-07-13 19:50:41, Maxim Patlasov wrote:
-> State clearly that bw_time_stamp is measured in jiffies. Rename other
-> foo_stamp fields to reflect that they are in units of number-of-pages.
-> 
-> Reported-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
-  Looks good. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+On Tue, Jul 9, 2013 at 9:55 AM, Heimo Stranner <heimo@stranner.org> wrote:
+>
+>> Well, one advantage of these key bindings is, that you don't have to
+>> move your hands away from the base line. And as vim user I find myself
+>> using vim key sequences in all tools. I cannot even count how many
+>> processes I accidentally killed because I tried to scroll using 'k' in
+>> htop where it does 'kill'.
+>>
+>> In a nutshell: I'm all for vim key bindings everywhere!
+>>
+> I can't agree more!
+>
+> Because vim key bindings are rather common I can't see a problem if this
+> patch is applied.
 
-								Honza
-
-> ---
->  include/linux/backing-dev.h |    7 ++++---
->  mm/backing-dev.c            |    2 +-
->  mm/page-writeback.c         |    8 ++++----
->  3 files changed, 9 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-> index c388155..ee7eb1a 100644
-> --- a/include/linux/backing-dev.h
-> +++ b/include/linux/backing-dev.h
-> @@ -73,9 +73,10 @@ struct backing_dev_info {
->  
->  	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
->  
-> -	unsigned long bw_time_stamp;	/* last time write bw is updated */
-> -	unsigned long dirtied_stamp;
-> -	unsigned long written_stamp;	/* pages written at bw_time_stamp */
-> +	unsigned long bw_time_stamp;	/* last time (in jiffies) write bw
-> +					 * is updated */
-> +	unsigned long dirtied_nr_stamp;
-> +	unsigned long written_nr_stamp;	/* pages written at bw_time_stamp */
->  	unsigned long write_bandwidth;	/* the estimated write bandwidth */
->  	unsigned long avg_write_bandwidth; /* further smoothed write bw */
->  
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index 5025174..82efe7f 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -454,7 +454,7 @@ int bdi_init(struct backing_dev_info *bdi)
->  	bdi->dirty_exceeded = 0;
->  
->  	bdi->bw_time_stamp = jiffies;
-> -	bdi->written_stamp = 0;
-> +	bdi->written_nr_stamp = 0;
->  
->  	bdi->balanced_dirty_ratelimit = INIT_BW;
->  	bdi->dirty_ratelimit = INIT_BW;
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 4514ad7..088a8db 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -799,7 +799,7 @@ static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
->  	 * write_bandwidth = ---------------------------------------------------
->  	 *                                          period
->  	 */
-> -	bw = written - bdi->written_stamp;
-> +	bw = written - bdi->written_nr_stamp;
->  	bw *= HZ;
->  	if (unlikely(elapsed > period)) {
->  		do_div(bw, elapsed);
-> @@ -910,7 +910,7 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
->  	 * The dirty rate will match the writeout rate in long term, except
->  	 * when dirty pages are truncated by userspace or re-dirtied by FS.
->  	 */
-> -	dirty_rate = (dirtied - bdi->dirtied_stamp) * HZ / elapsed;
-> +	dirty_rate = (dirtied - bdi->dirtied_nr_stamp) * HZ / elapsed;
->  
->  	pos_ratio = bdi_position_ratio(bdi, thresh, bg_thresh, dirty,
->  				       bdi_thresh, bdi_dirty);
-> @@ -1066,8 +1066,8 @@ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
->  	bdi_update_write_bandwidth(bdi, elapsed, written);
->  
->  snapshot:
-> -	bdi->dirtied_stamp = dirtied;
-> -	bdi->written_stamp = written;
-> +	bdi->dirtied_nr_stamp = dirtied;
-> +	bdi->written_nr_stamp = written;
->  	bdi->bw_time_stamp = now;
->  }
->  
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+The biggest problem I see is the conflict between j/k and the letter
+shortcuts used to jump to specific menu items (the letter highlighted
+in blue on each item). But I haven't ever used that functionality in
+practice, so who knows.
