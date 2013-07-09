@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990Ab3GITqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 15:46:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58725 "EHLO
+	id S1753215Ab3GITup (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 15:50:45 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58810 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab3GITqP (ORCPT
+	with ESMTP id S1752597Ab3GITuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 15:46:15 -0400
-Date: Tue, 09 Jul 2013 12:46:14 -0700 (PDT)
-Message-Id: <20130709.124614.1747764332568941574.davem@davemloft.net>
-To: mst@redhat.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        rusty@rustcorp.com.au, jasowang@redhat.com
-Subject: Re: [PATCH v2 0/2] virtio_net: fix race in RX VQ processing
+	Tue, 9 Jul 2013 15:50:40 -0400
+Date: Tue, 09 Jul 2013 12:50:40 -0700 (PDT)
+Message-Id: <20130709.125040.1834646995344159799.davem@davemloft.net>
+To: nicolas.ferre@atmel.com
+Cc: neidhard.kim@lge.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] net/cadence/macb: fix bug/typo in extracting
+ gem_irq_read_clear bit
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1373346713-442-1-git-send-email-mst@redhat.com>
-References: <1373346713-442-1-git-send-email-mst@redhat.com>
+In-Reply-To: <51DC340F.2060402@atmel.com>
+References: <1373358960-10900-1-git-send-email-neidhard.kim@lge.com>
+	<51DC340F.2060402@atmel.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -24,23 +26,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Tue, 9 Jul 2013 08:12:57 +0300
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Date: Tue, 9 Jul 2013 18:02:23 +0200
 
-> Jason Wang reported a race in RX VQ processing:
-> virtqueue_enable_cb is called outside napi lock,
-> violating virtio serialization rules.
-> The race has been there from day 1, but it got especially nasty in 3.0
-> when commit a5c262c5fd83ece01bd649fb08416c501d4c59d7
-> "virtio_ring: support event idx feature"
-> added more dependency on vq state.
+> On 09/07/2013 10:36, Jongsung Kim :
+>> Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
 > 
-> Please review, and consider for 3.11 and stable.
-> 
-> Changes from v1:
-> 	- Added Jason's Tested-by tag
-> 	- minor coding style fix
+> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Cc: stable <stable@vger.kernel.org> # 3.10+
 
 Applied and queued up for -stable, thanks.
-
- 
