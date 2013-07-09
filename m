@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549Ab3GICTk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 22:19:40 -0400
-Received: from mail-ye0-f173.google.com ([209.85.213.173]:51495 "EHLO
-	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab3GICTj convert rfc822-to-8bit (ORCPT
+	id S1752542Ab3GIC1J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 22:27:09 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47908 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab3GIC1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 22:19:39 -0400
-X-Greylist: delayed 115178 seconds by postgrey-1.27 at vger.kernel.org; Mon, 08 Jul 2013 22:19:39 EDT
-Date: Mon, 08 Jul 2013 21:19:36 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: Bluez with uclibc
-To: lkml@serverphorums.com
-Cc: linux-kernel@vger.kernel.org
-References: <6e9104c416ff417b9c63f47891f947ea.LinuxKernel@www.serverphorums.com>
-In-Reply-To: <6e9104c416ff417b9c63f47891f947ea.LinuxKernel@www.serverphorums.com>
-	(from lkml@serverphorums.com on Mon Jul  8 03:06:15 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1373336376.27613.23@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Mon, 8 Jul 2013 22:27:07 -0400
+Date: Mon, 08 Jul 2013 19:27:06 -0700 (PDT)
+Message-Id: <20130708.192706.1245480344087449229.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: eliezer.tamir@linux.intel.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, akpm@linux-foundation.org, dwmw2@infradead.org,
+        eliezer@tamir.org.il
+Subject: Re: [PATCH net-next] net: rename low latency sockets functions to
+ busy poll
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFwWAmHhYaPWVm7rsqiD9+RhDPpgVC1yWc0oNmP38bty4Q@mail.gmail.com>
+References: <CA+55aFxgrOtsv7vCtic97ehpvqyezCzDcyqHVD+821BiTuiRtw@mail.gmail.com>
+	<51DAF373.4040606@linux.intel.com>
+	<CA+55aFwWAmHhYaPWVm7rsqiD9+RhDPpgVC1yWc0oNmP38bty4Q@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 03:06:15 AM, lkml@serverphorums.com wrote:
-> Hi,
-> 
-> Today, I need to cross compile Bluez for arm with uclibc library into  
-> Buildroot environment.
-> However, I meet some dependencies between bluez-utils package and MMU  
-> deactivation due to dBus.
-> 
-> Do you know a way to use Bluez with uclibc library?
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 8 Jul 2013 12:37:06 -0700
 
-Dunno about buildroot, but if you just want to statically link  
-something against uClibc on arm, you could grab either the cross or  
-native "armv5l" compiler from
+> I think it's getting closer, and I'm ok with the last final details
+> being sorted out later. I just can't reasonably test any of my
+> suggestions, so I'd like to get it to a point where when I pull, I
+> don't feel like I'm pulling core code that I really detest. And the
+> VFS layer in particular I'm pretty attached to.
 
-   http://landley.net/aboriginal/bin
+So I've applied Eliezer's rename patch and will send another pull
+request once he also takes care of the reduction of the number and
+size of the variables used to track the poll timestamps.
 
-and add its "bin" subdirectory to your $PATH. I just updated that  
-toolchain so it's using the 3.10 headers (yes, with the patch for  
-http://lkml.indiana.edu/hypermail/linux/kernel/1305.2/01452.html the  
-kernel developers never did fix), and it's the last release version of  
-uClibc (from a year and change ago, but that's uClibc for you).
-
-As for fixing dependencies beyond "building against uClibc", that's a  
-buildroot question. They have their own mailing list...
-
-Rob
+Thanks.
