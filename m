@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab3GIOxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:53:12 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:36312 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753681Ab3GIOxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:53:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130709144237.GW27646@sirena.org.uk>
-References: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com>
- <1373379933-32749-1-git-send-email-richard.genoud@gmail.com> <20130709144237.GW27646@sirena.org.uk>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Tue, 9 Jul 2013 16:52:47 +0200
-Message-ID: <CACQ1gAhp97rxEgM23TvzxtFdMtrrKyqXL5eVvJbHkSE5Zq-0=A@mail.gmail.com>
-Subject: Re: [PATCH v4 0/7] Sound support for at91sam9x5-wm8731 based boards
+	id S1754093Ab3GIOxf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:53:35 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53167 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753681Ab3GIOxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 10:53:33 -0400
+Date: Tue, 9 Jul 2013 09:53:21 -0500
+From: Nishanth Menon <nm@ti.com>
 To: Mark Brown <broonie@kernel.org>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+CC: <balbi@ti.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        <spi-devel-general@lists.sourceforge.net>, <grant.likely@linaro.org>,
+        <rnayak@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv3 2/3] drivers: spi: Add qspi flash controller
+Message-ID: <20130709145321.GA1680@kahuna>
+References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com>
+ <1373290980-17883-3-git-send-email-sourav.poddar@ti.com>
+ <20130708203330.GA28322@kahuna>
+ <20130709065143.GC5552@arwen.pp.htv.fi>
+ <51DC072F.40704@ti.com>
+ <20130709144043.GV27646@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130709144043.GV27646@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/9 Mark Brown <broonie@kernel.org>:
-> On Tue, Jul 09, 2013 at 04:25:26PM +0200, Richard Genoud wrote:
->> [I've just seen that I forgot to cc Uwe to the cover letter, sorry for that.]
->
-> This is the second or third copy of this patch set I've been sent
-> *today*.  Worse, everything seems to be being sent in reply to the same
-> thread increasing the nesting substantially.  Please slow down, it's
-> flooding my mailbox and discouraging me from looking since it seems
-> likely that there will just be another resend.
-Sorry Mark, I didn't want to be pushy...
-I still need to learn what should and what shouldn't be done on a linux-ML
+On 15:40-20130709, Mark Brown wrote:
+> On Tue, Jul 09, 2013 at 07:50:55AM -0500, Nishanth Menon wrote:
+> 
+> > with this input and looking closer, I think I see what you are saying now:
+> > dra7xxx_qspi_prepare_xfer -> does a pm_runtime_get_sync
+> > dra7xxx_qspi_unprepare_xfer -> does a pm_runtime_mark_last_busy,
+> > pm_runtime_put_autosuspend
+> 
+> > In between these calls, you have the remaining xfer calls going on.
+> > we are assuming here that autosuspend timeout should be greater than
+> > the time to complete the worst case transfer.
+> 
+> No, autosuspend will do nothing so long as there are references to the
+> device held.  The effect of autosuspend is to delay power down after the
+> last reference has been dropped, otherwise things run normally.
 
-Best regards,
-Richard.
+Thanks on the clarification. That concludes my confusion on the topic
+:).
+
+-- 
+Regards,
+Nishanth Menon
