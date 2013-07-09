@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab3GIVSX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 17:18:23 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:52784 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752734Ab3GIVSS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 17:18:18 -0400
-Message-ID: <1373404695.18560.17.camel@dabdike>
-Subject: Re: [PATCH 0/3] [SCSI] megaraid: Remove local (struct pci_dev)
- pdev's
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Myron Stowe <myron.stowe@redhat.com>, adam radford <aradford@gmail.com>
-Cc: megaraidlinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 09 Jul 2013 22:18:15 +0100
-In-Reply-To: <20130709203927.31676.35169.stgit@amt.stowe>
-References: <20130709203927.31676.35169.stgit@amt.stowe>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753473Ab3GIV2I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 17:28:08 -0400
+Received: from mout.gmx.net ([212.227.17.22]:64868 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752843Ab3GIV2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 17:28:06 -0400
+Date: Tue, 9 Jul 2013 23:28:00 +0200
+From: Helge Deller <deller@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-parisc@vger.kernel.org,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: [GIT PULL] parisc updates for v3.11
+Message-ID: <20130709212800.GA16807@p100.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V03:K0:F4GtQIcHDlUHbmxGyo/b12+a3IEfXbTESGIYIdiE21CsVwupY04
+ ex8dHjlvK/sB353k0xegjCZWBwFvNreg+WZ0jdXcMNsh0mGWctavJEcmoiv1Olg1t/NPQl0
+ koBdap44sReWe5CAeHd0iWi0RhukBQ6upw/1OKAOuC3DptWzo0EV/6e02MU03wqIYFkOY3+
+ CZl5bexz2gEnsRMknSKzw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-09 at 14:39 -0600, Myron Stowe wrote:
-> Is the "megaraid" driver still actively used and maintained?  I originally
-> posted this series on 06.07.2013 and after receiving no comments, pinged
-> the list again on 06.17.2013 and still received no comments/feedback.
-> 
-> Trying again as I believe there is a real issue here, which I'd like
-> confirmation on, and we really should remove the local copy/usage of
-> 'struct pci_dev' that this driver currently maintains.
-> 
-> 
-> While the megaraid device itself may be 64-bit DMA capable, 32-bit address
-> restricted DMA buffers are apparently required for "internal commands" as
-> is denoted by a couple of comments - "For all internal commands, the
-> buffer must be allocated in <4GB address range" - within the driver.
-> 
-> If the device is 64-bit DMA capable then, once it is setup, any subsequent
-> DMA allocations for "internal commands" would not be properly restricted
-> due to megaraid_probe_one() having called pci_set_dma_mask() on pdev with
-> DMA_BIT_MASK(64).  The driver attempts to solve this by using
-> make_local_pdev() to dynamically create local pci_dev structures which are
-> then set and used for allocating 32-bit address space restricted DMA
-> buffers[1] but I don't believe that the implementation works as intended.
-> 
-> 
-> Assume that the megaraid device is 64-bit DMA capable.  While probing the
-> device and attaching the megaraid driver, pci_set_dma_mask() is called
-> with the "originating pdev" and a DMA_BIT_MASK of 64.  As a result, any
-> subsequent dynamic DMA related allocations associated with the
-> "originating pdev" will acquire 64-bit based buffers, which do not meet
-> the addressing restrictions for internal commands.
-> 
->   megaraid_probe_one(struct pci_dev *pdev, ...)
->       ...
->       pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
-> 
-> As mentioned, the driver attempts to solve this by using make_local_pdev()
-> to dynamically create local pci_dev structures - "local pdev's" - which
-> are set with a DMA_BIT_MASK of 32.
-> 
->   make_local_pdev
->       alloc_pci_dev
->       memcpy
->       pci_set_dma_mask
->           dma_set_mask
->               *dev->dma_mask = mask;
-> 
-> The "local pdev" is then used in allocating a DMA buffer in an attempt to
-> meet the < 4 GB restriction.
-> 
-> For a 64-bit DMA capable device, the "originating pdev" will have its
-> 'dma_mask' set to 0xffffffffffffffff after the driver attaches.
-> Subsequently, when an internal command is initiated, make_local_pdev() is
-> called.  make_local_pdev() uses the PCI's core to allocate a "local pdev"
-> and then copies the "originating pdev" content into the newly allocated
-> "local pdev".  As a result of copying the "originating pdev" content into
-> the "local pdev", pdev->dev.dma_mask will be pointing back to the
-> "originating pdev's" 'dma_mask' member, not the "local pdev's" as
-> intended.  Thus, when make_local_pdev() calls pci_set_dma_mask() in an
-> attempt to set the "local pdev's" DMA mask to 32 it will instead overwrite
-> the "originating pdev's" DMA mask.  Thus, after any user initiated
-> commands are issued, all subsequent DMA allocations will be 32-bit
-> restricted from that point onward regardless of whether they are internal
-> commands or otherwise.
-> 
-> 
-> This patch fixes the issue by removing the setup of DMA_BIT_MASK to 64 in
-> megaraid_probe_one(), leaving the driver with default 32-bit DMA
-> capabilities, as it currently ends up in such a state anyway after any
-> internal commands are initiated.
-> 
-> 
-> [1] It seems strange that both mega_buffer/buf_dma_handle and
->     make_local_pdev() both exist for internal commands but this has been
->     the case for a long time - at least since 2.6.12-rc2.  Perhaps there
->     is some coalescing that could be done.
-> ---
-> Myron Stowe (3):
->       [SCSI] megaraid: Remove 64-bit DMA related dead code
->       [SCSI] megaraid: Remove local pdev's
->       [SCSI] megaraid: Remove 64-bit DMA_BIT_MASK capability
+Hi Linus,
 
-Adam, you do drive by coding on this for LSI ... ack or reject, please.
+Please pull the latest parisc updates from
 
-James
+  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-for-3.11
 
+PA-RISC updates for v3.11 include a gcc miscompilation fix,
+gzip-compressed vmlinuz support, a fix in the PCI code for ATI FireGL
+support on c8000 machines, a fix to prevent that %sr1 is being clobbered
+and a few smaller optimizations and documentation updates.
 
+Thanks,
+Helge
+
+----------------------------------------------------------------
+Helge Deller (6):
+      parisc: fix LMMIO mismatch between PAT length and MASK register
+      parisc: more capabilities info in /proc/cpuinfo
+      parisc: document the shadow registers
+      parisc: switch to gzip-compressed vmlinuz kernel
+      parisc: optimize mtsp(0,sr) inline assembly
+      parisc: Fix gcc miscompilation in pa_memcpy()
+
+John David Anglin (1):
+      parisc: Ensure volatile space register %sr1 is not clobbered
+
+ Documentation/parisc/registers          |  8 ++++
+ arch/parisc/Makefile                    | 15 +++++--
+ arch/parisc/defpalo.conf                |  8 ++--
+ arch/parisc/include/asm/special_insns.h |  9 ++--
+ arch/parisc/include/asm/tlbflush.h      |  5 ++-
+ arch/parisc/install.sh                  |  6 +--
+ arch/parisc/kernel/cache.c              |  2 +-
+ arch/parisc/kernel/processor.c          | 19 ++++++--
+ arch/parisc/lib/memcpy.c                | 79 +++++++++++++++++++++------------
+ drivers/parisc/lba_pci.c                | 56 +++++++++++++++++++++++
+ 10 files changed, 158 insertions(+), 49 deletions(-)
