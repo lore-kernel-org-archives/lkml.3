@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab3GIB0P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 21:26:15 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50534 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751672Ab3GIB0N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 21:26:13 -0400
-Date: Tue, 9 Jul 2013 03:26:11 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: kernel list <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
-Cc: joe.lawrence@stratus.com, myron.stowe@redhat.com, bhelgaas@google.com
-Subject: /sys/module/pcie_aspm/parameters/policy not writable?
-Message-ID: <20130709012611.GA22371@amd.pavel.ucw.cz>
+	id S1752137Ab3GIB35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 21:29:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:37592 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751780Ab3GIB3z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 8 Jul 2013 21:29:55 -0400
+Date: Tue, 9 Jul 2013 11:29:52 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Vince Weaver <vince@deater.net>, Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, acme@redhat.com, mingo@kernel.org,
+        vincent.weaver@maine.edu, Stephane Eranian <eranian@google.com>,
+        sukadev@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for perf
+Message-ID: <20130709012952.GA7185@concordia>
+References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
+ <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy>
+ <20130704125218.GA21134@concordia>
+ <20130704125700.GM18898@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130704125700.GM18898@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Jul 04, 2013 at 02:57:00PM +0200, Peter Zijlstra wrote:
+> On Thu, Jul 04, 2013 at 10:52:18PM +1000, Michael Ellerman wrote:
+> > I don't think it even needs libpfm4, just some csv files in tools/perf
+> > would do the trick.
+> 
+> Right; I think Stephane and Jiri are in favour of creating a 'new' project that
+> includes just the event definitions in a plain text format and a little library
+> with parser to be used by all interested parties.
 
-My thinkpad has rather high ping latencies... and perhaps it is due to
-PCIE ASPM.
+OK that would be great.
 
-Its help text says:
+The part that seems to be missing to make that work is we have no way of
+matching the PMU that appears in /sys with a list of events.
 
-CONFIG_PCIEASPM:
+Eg. on my system I have /sys/bus/event_source/devices/cpu - but there's
+nothing in there to identify that it's a Sandy Bridge.
 
-This enables OS control over PCI Express ASPM (Active State
-Power Management) and Clock Power Management. ASPM supports
-state L0/L0s/L1.
-...
-ASPM can be disabled or enabled at runtime via
-/sys/module/pcie_aspm/parameters/policy
+For the cpu you can obviously just detect what processor you're on with
+cpuid or whatever, but it's a bit of a hack. And that really doesn't
+work for non-cpu PMUs.
 
-So I tried setting the parameter, but it seems to be broken :-(
+So it seems to me we need to add an attribute to the PMU in sysfs so
+that we can identify it and match it up with a list of events?
 
-root@amd:/data/pavel# cat /sys/module/pcie_aspm/parameters/policy
-[default] performance powersave 
-root@amd:/data/pavel# echo performance > /sys/module/pcie_aspm/parameters/policy
-bash: echo: write error: Operation not permitted
-root@amd:/data/pavel# echo -n performance > /sys/module/pcie_aspm/parameters/policy
-bash: echo: write error: Operation not permitted
-root@amd:/data/pavel# ls -al /sys/module/pcie_aspm/parameters/policy
--rw-r--r-- 1 root root 4096 Jul  9 03:16 /sys/module/pcie_aspm/parameters/policy
-root@amd:/data/pavel# cat /sys/module/pcie_aspm/parameters/policy
-[default] performance powersave 
-root@amd:/data/pavel# echo powersave > /sys/module/pcie_aspm/parameters/policy
-bash: echo: write error: Operation not permitted
-root@amd:/data/pavel# echo -n powersave > /sys/module/pcie_aspm/parameters/policy
-bash: echo: write error: Operation not permitted
-root@amd:/data/pavel# echo -n default > /sys/module/pcie_aspm/parameters/policy
-bash: echo: write error: Operation not permitted
-
-Hmm:
-
-CONFIG_PCIEASPM_DEFAULT=y
-# CONFIG_PCIEASPM_POWERSAVE is not set                                                     
-# CONFIG_PCIEASPM_PERFORMANCE is not set                                                   
-
-Should we avoid displaying options that can't be selected?
-
-Thanks,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+cheers
