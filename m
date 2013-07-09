@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab3GIPcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:32:18 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:53589 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab3GIPcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:32:17 -0400
-Date: Tue, 9 Jul 2013 16:32:13 +0100
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Adam Lee <adam.lee@canonical.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
-        Wen-chien Jesse Sung <jesse.sung@canonical.com>,
-        AceLan Kao <acelan.kao@canonical.com>,
-        Tedd Ho-Jeong An <tedd.an@intel.com>,
-        Anthony Wong <anthony.wong@canonical.com>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] btusb: fix overflow return values
-Message-ID: <20130709153213.GC1772@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Adam Lee <adam.lee@canonical.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	linux-bluetooth@vger.kernel.org,
-	Wen-chien Jesse Sung <jesse.sung@canonical.com>,
-	AceLan Kao <acelan.kao@canonical.com>,
-	Tedd Ho-Jeong An <tedd.an@intel.com>,
-	Anthony Wong <anthony.wong@canonical.com>,
-	Johan Hedberg <johan.hedberg@gmail.com>,
-	open list <linux-kernel@vger.kernel.org>
-References: <1372941783-30657-1-git-send-email-adam.lee@canonical.com>
- <25CD2206-7B7B-4DAD-A714-A79976C9DB13@holtmann.org>
- <20130709025501.GA6369@adam-laptop>
+	id S1752176Ab3GIPgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:36:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48889 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751728Ab3GIPgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 11:36:03 -0400
+Message-ID: <51DC2DDA.6040408@suse.de>
+Date: Tue, 09 Jul 2013 17:35:54 +0200
+From: Alexander Graf <agraf@suse.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120306 Thunderbird/10.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130709025501.GA6369@adam-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 2/8] KVM: PPC: reserve a capability and ioctl numbers
+ for realmode VFIO
+References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru> <1372309356-28320-3-git-send-email-aik@ozlabs.ru>
+In-Reply-To: <1372309356-28320-3-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Adam,
+On 06/27/2013 07:02 AM, Alexey Kardashevskiy wrote:
+> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
+> ---
+>   include/uapi/linux/kvm.h |    2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+> index 970b1f5..0865c01 100644
+> --- a/include/uapi/linux/kvm.h
+> +++ b/include/uapi/linux/kvm.h
+> @@ -667,6 +667,7 @@ struct kvm_ppc_smmu_info {
+>   #define KVM_CAP_PPC_RTAS 91
+>   #define KVM_CAP_IRQ_XICS 92
+>   #define KVM_CAP_SPAPR_MULTITCE 93
+> +#define KVM_CAP_SPAPR_TCE_IOMMU 94
+>
+>   #ifdef KVM_CAP_IRQ_ROUTING
+>
+> @@ -923,6 +924,7 @@ struct kvm_s390_ucas_mapping {
+>   /* Available with KVM_CAP_PPC_ALLOC_HTAB */
+>   #define KVM_PPC_ALLOCATE_HTAB	  _IOWR(KVMIO, 0xa7, __u32)
+>   #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_spapr_tce)
+> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, struct kvm_create_spapr_tce_iommu)
 
-* Adam Lee <adam.lee@canonical.com> [2013-07-09 10:55:01 +0800]:
+Please order them by number.
 
-> On Mon, Jul 08, 2013 at 11:50:54AM -0700, Marcel Holtmann wrote:
-> > Hi Adam,
-> > 
-> > > PTR_ERR() returns a long type value, but btusb_setup_intel() and
-> > > btusb_setup_intel_patching() should return an int type value.
-> > > 
-> > > This bug makes the judgement "if (ret < 0)" not working on x86_64
-> > > architecture systems, leading to failure as below, even panic.
-> > > ...
-> > > For not affecting other modules, I choose to modify the return values
-> > > but not extend btusb_setup_intel() and btusb_setup_intel_patching()'s
-> > > return types. This is harmless, because the return values were only
-> > > used to comparing number 0.
-> > 
-> > there are tons of examples in various subsystems and drivers where we
-> > return PTR_ERR from a function calls returning int.
-> > 
-> > So I wonder what is actually going wrong here. If this is x86_64
-> > specific problem with PTR_ERR vs int, then we should have this problem
-> > everywhere in the kernel.
-> 
-> Hi, Marcel
-> 
-> I see you point, the difference between here and other subsystems are:
-> 
-> 1, it returns -PTR_ERR() here but all other places return PTR_ERR(), I
-> checked.
+Alex
 
-Please sending a patch fixing this. We got this right in other parts of the
-bluetooth subsystems but somehow we failed to check this when this code came
-in. And then another updating the checks if needed.
+>   /* Available with KVM_CAP_RMA */
+>   #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
+>   /* Available with KVM_CAP_PPC_HTAB_FD */
 
-	Gustavo
