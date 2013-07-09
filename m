@@ -1,68 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab3GIRT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:19:57 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48051 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab3GIRT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:19:56 -0400
-Date: Tue, 9 Jul 2013 13:19:09 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jan Beulich <JBeulich@suse.com>, Matt Wilson <msw@amazon.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        jeremy@goop.org, x86@kernel.org, tglx@linutronix.de,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com, mingo@redhat.com,
-        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
-Message-ID: <20130709171909.GA25586@phenom.dumpdata.com>
-References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com>
- <20130708192854.GF4927@phenom.dumpdata.com>
- <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>
- <51DB2134.9040909@zytor.com>
- <20130708205834.GA481@pd.tnic>
- <1373326534.1438.10.camel@x61.thuisdomein>
- <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
- <51DBDAB802000078000E37C1@nat28.tlf.novell.com>
- <20130709144840.GF24897@phenom.dumpdata.com>
- <20130709150554.GA27579@pd.tnic>
+	id S1752234Ab3GIRX5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:23:57 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52891 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751853Ab3GIRXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 13:23:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1029,1363158000"; 
+   d="scan'208";a="265986892"
+Date: Tue, 9 Jul 2013 10:24:57 -0700
+From: Jubin Mehta <jubin.mehta@intel.com>
+To: Dan Williams <djbw@fb.com>
+Cc: Vinod Koul <vinod.koul@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, Jon Mason <jon.mason@intel.com>
+Subject: Re: [PATCH v2] dmatest: masking tests for channel capabilities
+Message-ID: <20130709172456.GC9213@intel.com>
+References: <20130621234647.GA3763@intel.com>
+ <CAA9_cmePsWFfqmnEGB6XBJj7dsY7dSJtSLvy+s3NzVkttviRWQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130709150554.GA27579@pd.tnic>
+In-Reply-To: <CAA9_cmePsWFfqmnEGB6XBJj7dsY7dSJtSLvy+s3NzVkttviRWQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 05:05:54PM +0200, Borislav Petkov wrote:
-> On Tue, Jul 09, 2013 at 10:48:40AM -0400, Konrad Rzeszutek Wilk wrote:
-> > Then that should be discussed on grub2 to remove said check and modify
-> > the code so that it can properly work without regression.
+On Wed, Jun 26, 2013 at 01:47:07PM -0700, Dan Williams wrote:
+> On Fri, Jun 21, 2013 at 4:46 PM, Jubin Mehta <jubin.mehta@intel.com> wrote:
+> > The current dmatest module tests all the hardware capabilities (MEMCPY, XOR
+> > and PQ) supported by a particular DMA channel and these tests are performed
+> > concurrently by default. This patch allows the user to enable or disable the
+> > test performed for any particular capability. The mask bits for enabling the
+> > tests are set using the debugfs.
+> >
+> > Signed-off-by: Jubin Mehta <jubin.mehta@intel.com>
+> [..]
+> > diff --git a/drivers/dma/dmatest.c b/drivers/dma/dmatest.c
+> > index d8ce4ec..c152755 100644
+> > --- a/drivers/dma/dmatest.c
+> > +++ b/drivers/dma/dmatest.c
+> > @@ -23,6 +23,7 @@
+> >  #include <linux/debugfs.h>
+> >  #include <linux/uaccess.h>
+> >  #include <linux/seq_file.h>
+> > +#include <linux/string.h>
+> >
+> >  static unsigned int test_buf_size = 16384;
+> >  module_param(test_buf_size, uint, S_IRUGO);
+> > @@ -66,6 +67,11 @@ module_param(timeout, uint, S_IRUGO);
+> >  MODULE_PARM_DESC(timeout, "Transfer Timeout in msec (default: 3000), "
+> >                  "Pass -1 for infinite timeout");
+> >
+> > +static char test_cap_mask[20] = "copy,xor,pq";
+> > +module_param_string(cap_mask, test_cap_mask, sizeof(test_cap_mask), S_IRUGO);
 > 
-> Actually, the kernel patch removing that symbol should be applied so
-> that grub2 breaks faster. One can't possibly rely on kernel internals
-> for anything, as it is insanely insane (yep, the tautology is on purpose
-> :-)).
+> Let's just make this module parameter writable so we don't need to add
+> a new debugfs file.
+>
 
-I am not sure why you are advocating that path.
+I shall do that. But, instead of having just the cap_mask parameter as
+a writable module parameter, it would be great if we could have all
+the module parameters writable and just have run file (to trigger the
+test) and results file (to display the results of the test) in debugfs.
 
-My thinking is that what should be done to have some sense of history
-is that the patch in GRUB to not rely on kernel internals should be done.
-Then that git commit of that tree should be mentioned in this kernel patch.
+> The 'get' routine can also display the available testable operation
+> types.
+>
 
-This way one can nicely follow the trail of changes and see what the
-interdependencies are (or rather that they have been removed).
+The testable operation types depend on the dma channel under test.
+Thus, a 'get' routine cannot be used to obtain a default value for
+the module parameter 'cap_mask'.
 
-I wouldn't want GRUB2 to have regressions and stop generating the proper
-menu options. That smells of userspace regressions and I am not too
-keen to have Linus point this out to me.
-
-Once that is done we can follow up on this patch and perhaps also
-nicely convience the initial author of this patch to look at removing the
-CONFIG_XEN_DOM0 and replacing them with the two other CONFIG options
-that Jan and me have been discussing.
+--
+Jubin
+> > +MODULE_PARM_DESC(cap_mask, "Mask bits for different capability test "
+> > +                "(default: copy,xor,pq)");
+> > +
+> >  /* Maximum amount of mismatched bytes in buffer to print */
+> >  #define MAX_ERROR_COUNT                32
+> >
+> > @@ -164,6 +170,7 @@ struct dmatest_chan {
+> >   * @xor_sources:       number of xor source buffers
+> >   * @pq_sources:                number of p+q source buffers
+> >   * @timeout:           transfer timeout in msec, -1 for infinite timeout
+> > + * @cap_mask:          mask for different hardware capabilities tests
+> >   */
+> >  struct dmatest_params {
+> >         unsigned int    buf_size;
+> > @@ -175,6 +182,7 @@ struct dmatest_params {
+> >         unsigned int    xor_sources;
+> >         unsigned int    pq_sources;
+> >         int             timeout;
+> > +       char            cap_mask[128];
+> 
+> This can be the capability mask directly... see below:
+> 
+> >  };
+> >
+> >  /**
+> > @@ -883,11 +891,44 @@ static int dmatest_add_threads(struct dmatest_info *info,
+> >         return i;
+> >  }
+> >
+> > +static int dmatest_cap_check(struct dmatest_info *info,
+> > +               dma_cap_mask_t *test_cap_mask)
+> > +{
+> > +       struct dmatest_params   *params;
+> > +       char                    *cap;
+> > +       unsigned char c;
+> > +       int i;
+> > +
+> > +       params = &info->params;
+> > +       cap = (params->cap_mask);
+> > +
+> > +       for (i = 0; i < 3; i++) {
+> > +               if (!strncmp(cap, "copy", 4)) {
+> > +                       dma_cap_set(DMA_MEMCPY, *test_cap_mask);
+> > +                       cap += 4;
+> > +               } else if (!strncmp(cap, "xor", 3)) {
+> > +                       dma_cap_set(DMA_XOR, *test_cap_mask);
+> > +                       cap += 3;
+> > +               } else if (!strncmp(cap, "pq", 2)) {
+> > +                       dma_cap_set(DMA_PQ, *test_cap_mask);
+> > +                       cap += 2;
+> > +               } else {
+> > +                       return -1;
+> > +               }
+> > +               c = *cap++;
+> > +               if (c != ',')
+> > +                       break;
+> > +       }
+> > +       return 0;
+> > +}
+> 
+> We can run this routine when the capabilities are set to return error
+> on invalid capability masks directly.  Then we can set the
+> test_cap_mask before dmatest_add_channel().
+> 
+> > +
+> >  static int dmatest_add_channel(struct dmatest_info *info,
+> >                 struct dma_chan *chan)
+> >  {
+> >         struct dmatest_chan     *dtc;
+> >         struct dma_device       *dma_dev = chan->device;
+> > +       struct dmatest_params   *params;
+> > +       dma_cap_mask_t          test_cap_mask;
+> >         unsigned int            thread_count = 0;
+> >         int cnt;
+> >
+> > @@ -900,15 +941,28 @@ static int dmatest_add_channel(struct dmatest_info *info,
+> >         dtc->chan = chan;
+> >         INIT_LIST_HEAD(&dtc->threads);
+> >
+> > -       if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)) {
+> > +       params = &info->params;
+> > +
+> > +       dma_cap_zero(test_cap_mask);
+> > +       cnt = dmatest_cap_check(info, &test_cap_mask);
+> > +       if (cnt) {
+> > +               pr_warn("dmatest: Invalid Capability Mask Paramters\n");
+> > +               return -EINVAL;
+> > +       }
+> 
+> As above I think this too late to be validating the parameters.
+> 
+> > +
+> > +       /* Run dmatest threads for the supported and enabled capabilities */
+> > +       if (dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask)
+> > +           && dma_has_cap(DMA_MEMCPY, test_cap_mask)) {
+> >                 cnt = dmatest_add_threads(info, dtc, DMA_MEMCPY);
+> >                 thread_count += cnt > 0 ? cnt : 0;
+> >         }
+> > -       if (dma_has_cap(DMA_XOR, dma_dev->cap_mask)) {
+> > +       if (dma_has_cap(DMA_XOR, dma_dev->cap_mask)
+> > +           && dma_has_cap(DMA_XOR, test_cap_mask)) {
+> >                 cnt = dmatest_add_threads(info, dtc, DMA_XOR);
+> >                 thread_count += cnt > 0 ? cnt : 0;
+> >         }
+> > -       if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)) {
+> > +       if (dma_has_cap(DMA_PQ, dma_dev->cap_mask)
+> > +           && dma_has_cap(DMA_PQ, test_cap_mask)) {
+> >                 cnt = dmatest_add_threads(info, dtc, DMA_PQ);
+> >                 thread_count += cnt > 0 ? cnt : 0;
+> >         }
+> 
+> Could above be written simpler with one bitmap_and(test_cap_mask,
+> dma_dev->cap_mask, test_cap_mask) at the start and then
+> for_each_set_bit(test_cap_mask)?
+> 
+> 
+> --
+> Dan
