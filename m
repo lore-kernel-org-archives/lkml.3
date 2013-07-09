@@ -1,106 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab3GIHta (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:49:30 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3817 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab3GIHt1 (ORCPT
+	id S1752958Ab3GIHvT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:51:19 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:42567 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752651Ab3GIHvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 03:49:27 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 09 Jul 2013 00:49:22 -0700
-Message-ID: <51DBC058.2040904@nvidia.com>
-Date: Tue, 9 Jul 2013 15:48:40 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 9 Jul 2013 03:51:16 -0400
+Message-ID: <51DBC118.6030100@windriver.com>
+Date: Tue, 9 Jul 2013 15:51:52 +0800
+From: "tiejun.chen" <tiejun.chen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@gmail.com>
-CC: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        Matthew Longnecker <MLongnecker@nvidia.com>,
-        Alex Courbot <acourbot@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [lm-sensors] [PATCH 1/2] ARM: dt: t30 cardhu: add dt entry for
- lm90
-References: <1372928979-26938-1-git-send-email-wni@nvidia.com> <1372928979-26938-2-git-send-email-wni@nvidia.com> <51D70483.70203@wwwdotorg.org> <51DA6BD4.1040300@nvidia.com> <20130708095024.041a6d57@endymion.delvare> <51DA8805.50709@nvidia.com> <20130708131421.GB21638@roeck-us.net> <20130709062112.GC17499@mithrandir>
-In-Reply-To: <20130709062112.GC17499@mithrandir>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Bhushan Bharat-R65777 <R65777@freescale.com>
+CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [v2][PATCH 4/7] book3e/kexec/kdump: introduce a kexec kernel
+ flag
+References: <1371714797-7898-1-git-send-email-tiejun.chen@windriver.com> <1371714797-7898-5-git-send-email-tiejun.chen@windriver.com> <6A3DF150A5B70D4F9B66A25E3F7C888D070947A5@039-SN2MPN1-011.039d.mgd.msft.net>
+In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D070947A5@039-SN2MPN1-011.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.214]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 02:21 PM, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> 
-> On Mon, Jul 08, 2013 at 06:14:21AM -0700, Guenter Roeck wrote:
->> On Mon, Jul 08, 2013 at 05:36:05PM +0800, Wei Ni wrote:
->>> On 07/08/2013 03:50 PM, Jean Delvare wrote:
->>>> On Mon, 8 Jul 2013 15:35:48 +0800, Wei Ni wrote:
->>>>> On 07/06/2013 01:38 AM, Stephen Warren wrote:
->>>>>> On 07/04/2013 03:09 AM, Wei Ni wrote:
->>>>>>> Enable thermal sensor lm90 for t30 cardhu.
->>>>>>
->>>>>>> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
->>>>>>
->>>>>>> +		nct1008: nct1008 {
->>>>>>> +			compatible = "lm90,nct1008";
->>>>>>
->>>>>> "lm90" isn't a valid vendor prefix. I believe the value you want is
->>>>>> "onnn,nct1008". Same comment for patch 2/2.
->>>>>
->>>>> The lm90 doesn't support device tree very well.
->>>>
->>>> I doubt it, but if this is the case, then please fix it, instead of
->>>> working the problem around in a different place.
->>>>
->>>>> In the DT, we need to
->>>>> named as "lm90" so that the lm90 driver can be loaded,
->>>>
->>>> Not that I am an expert with regards to DT, but this doesn't make any
->>>> sense to me. AFAIK DT is about devices, not which drivers handle them.
->>>>
->>>>> and we also need
->>>>> to add "nct1008" to indicate this is the nct1008 device, so that the
->>>>> lm90 driver can be loaded with the right i2c_device_id->driver_data.
->>>>>
->>>>> I set the " compatible = "lm90,nct1008" ", this is the simplest way, and
->>>>> we doesn't need to change the lm90.c.
->>>>
->>>> There's no problem with changing the lm90 driver, if this is the right
->>>> thing to do.
->>>
->>> Ok, I will add DT support in the lm90.c in my next version patch.
->>>
->> Only if you can show that it is necessary.
-> 
-> It should work out of the box. As a matter of fact the same chip is used
-> on Tamonten and the DTS files use "onnn,nct1008". That used to work. If
-> it no longer does then that's a regression.
+On 07/02/2013 01:37 PM, Bhushan Bharat-R65777 wrote:
+>
+>
+>> -----Original Message-----
+>> From: Linuxppc-dev [mailto:linuxppc-dev-
+>> bounces+bharat.bhushan=freescale.com@lists.ozlabs.org] On Behalf Of Tiejun Chen
+>> Sent: Thursday, June 20, 2013 1:23 PM
+>> To: benh@kernel.crashing.org
+>> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+>> Subject: [v2][PATCH 4/7] book3e/kexec/kdump: introduce a kexec kernel flag
+>>
+>> We need to introduce a flag to indicate we're already running
+>> a kexec kernel then we can go proper path. For example, We
+>> shouldn't access spin_table from the bootloader to up any secondary
+>> cpu for kexec kernel, and kexec kernel already know how to jump to
+>> generic_secondary_smp_init.
+>>
+>> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+>> ---
 
-I synced the linux-next from:
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-and use the tag v3.10-rc7, but in the lm90.c it doesn't have DT support,
-such as "onnn,nct1008".
-I googled it and found there has patch:
-[PATCH] hwmon: (lm90) Add device tree support , which is in:
-http://lists.lm-sensors.org/pipermail/lm-sensors/2013-February/038099.html
-, but it didn't be merged into the linux-next.
+[snip]
 
-which git repository and branch should I use ?
+>> +++ b/arch/powerpc/platforms/85xx/smp.c
+>> @@ -150,6 +150,9 @@ static int __cpuinit smp_85xx_kick_cpu(int nr)
+>>   	int hw_cpu = get_hard_smp_processor_id(nr);
+>>   	int ioremappable;
+>>   	int ret = 0;
+>> +#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
+>> +	unsigned long *ptr;
+>> +#endif
+>
+> What about if we can remove the ifdef around *ptr ...
+>
+>>
+>>   	WARN_ON(nr < 0 || nr >= NR_CPUS);
+>>   	WARN_ON(hw_cpu < 0 || hw_cpu >= NR_CPUS);
+>> @@ -238,11 +241,22 @@ out:
+>>   #else
+>>   	smp_generic_kick_cpu(nr);
+>>
+>> +#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
+>> +	ptr  = (unsigned long *)((unsigned long)&__run_at_kexec);
+>
+> ... #endif here ...
+>
+>> +	/* We shouldn't access spin_table from the bootloader to up any
+>> +	 * secondary cpu for kexec kernel, and kexec kernel already
+>> +	 * know how to jump to generic_secondary_smp_init.
+>> +	 */
+>> +	if (!*ptr) {
+>> +#endif
+>
+> ... remove #endif ...
+>
+>>   	flush_spin_table(spin_table);
+>>   	out_be32(&spin_table->pir, hw_cpu);
+>>   	out_be64((u64 *)(&spin_table->addr_h),
+>>   	  __pa((u64)*((unsigned long long *)generic_secondary_smp_init)));
+>>   	flush_spin_table(spin_table);
+>> +#if defined(CONFIG_KEXEC) || defined(CONFIG_CRASH_DUMP)
+>> +	}
+>> +#endif
+>
+> --- remove above 3 lines
 
-Thanks.
-Wei.
+I'd like to try to address your comments next version.
 
-> 
-> Thierry
-> 
-> * Unknown Key
-> * 0x7F3EB3A1
-> 
+Thanks
 
+Tiejun
