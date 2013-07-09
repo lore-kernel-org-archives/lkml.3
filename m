@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab3GIV2I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 17:28:08 -0400
-Received: from mout.gmx.net ([212.227.17.22]:64868 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752843Ab3GIV2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 17:28:06 -0400
-Date: Tue, 9 Jul 2013 23:28:00 +0200
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [GIT PULL] parisc updates for v3.11
-Message-ID: <20130709212800.GA16807@p100.box>
+	id S1753523Ab3GIVbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 17:31:47 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:33723 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab3GIVbp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 17:31:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:F4GtQIcHDlUHbmxGyo/b12+a3IEfXbTESGIYIdiE21CsVwupY04
- ex8dHjlvK/sB353k0xegjCZWBwFvNreg+WZ0jdXcMNsh0mGWctavJEcmoiv1Olg1t/NPQl0
- koBdap44sReWe5CAeHd0iWi0RhukBQ6upw/1OKAOuC3DptWzo0EV/6e02MU03wqIYFkOY3+
- CZl5bexz2gEnsRMknSKzw==
+In-Reply-To: <CAAG0J9_FbJYRrR=8GgHCvMDSbwfwXic81TJfchnv5UM798RB_g@mail.gmail.com>
+References: <1373391071-6312-1-git-send-email-dianders@chromium.org>
+	<1373391071-6312-3-git-send-email-dianders@chromium.org>
+	<CAAG0J9_FbJYRrR=8GgHCvMDSbwfwXic81TJfchnv5UM798RB_g@mail.gmail.com>
+Date: Tue, 9 Jul 2013 14:31:43 -0700
+X-Google-Sender-Auth: 1zbIC1H6Zy6wv_txcRhWjefihtE
+Message-ID: <CAD=FV=X5vFqMWn+TP5wnAT02x88zhQqEAO0t5Y005+ZiBLmT4Q@mail.gmail.com>
+Subject: Re: [PATCH 2/5] mmc: dw_mmc: Add suspend/resume callbacks; disable
+ irq during suspend
+From: Doug Anderson <dianders@chromium.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+James,
 
-Please pull the latest parisc updates from
+On Tue, Jul 9, 2013 at 2:17 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> Hi Doug,
+>
+> On 9 July 2013 18:31, Doug Anderson <dianders@chromium.org> wrote:
+>> On some platforms (like exynos5420) the dw_mmc controller may be in a
+>> strange state after we wake up from sleep.  Add callbacks to allow for
+>> dealing with these quirks.  Prevent interrupts from firing when we're
+>> suspended since this strange state may cause interrupts to fire.
+>>
+>> In my case I saw the WAKEUP_INT interrupt firing upon resume and
+>> needed to add some code to handle this.
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>
+> Would it make sense to take advantage of the {suspend,resume}_noirq
+> power management callbacks to clear that WAKEUP_INT before interrupts
+> are re-enabled, rather than explicitly disabling and enabling the
+> interrupt at the suspend/resume stage?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-for-3.11
+That's a good suggestion.  Let me give it a shot and get back to you
+after I validate that it works.
 
-PA-RISC updates for v3.11 include a gcc miscompilation fix,
-gzip-compressed vmlinuz support, a fix in the PCI code for ATI FireGL
-support on c8000 machines, a fix to prevent that %sr1 is being clobbered
-and a few smaller optimizations and documentation updates.
-
-Thanks,
-Helge
-
-----------------------------------------------------------------
-Helge Deller (6):
-      parisc: fix LMMIO mismatch between PAT length and MASK register
-      parisc: more capabilities info in /proc/cpuinfo
-      parisc: document the shadow registers
-      parisc: switch to gzip-compressed vmlinuz kernel
-      parisc: optimize mtsp(0,sr) inline assembly
-      parisc: Fix gcc miscompilation in pa_memcpy()
-
-John David Anglin (1):
-      parisc: Ensure volatile space register %sr1 is not clobbered
-
- Documentation/parisc/registers          |  8 ++++
- arch/parisc/Makefile                    | 15 +++++--
- arch/parisc/defpalo.conf                |  8 ++--
- arch/parisc/include/asm/special_insns.h |  9 ++--
- arch/parisc/include/asm/tlbflush.h      |  5 ++-
- arch/parisc/install.sh                  |  6 +--
- arch/parisc/kernel/cache.c              |  2 +-
- arch/parisc/kernel/processor.c          | 19 ++++++--
- arch/parisc/lib/memcpy.c                | 79 +++++++++++++++++++++------------
- drivers/parisc/lba_pci.c                | 56 +++++++++++++++++++++++
- 10 files changed, 158 insertions(+), 49 deletions(-)
+-Doug
