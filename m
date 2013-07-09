@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab3GIQtA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 12:49:00 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:16837
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752113Ab3GIQs7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 12:48:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-Date: Tue, 9 Jul 2013 11:48:46 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH V2 1/2] DMA: Freescale: Add new 8-channel DMA engine
- device tree nodes
-To: <hongbo.zhang@freescale.com>
-CC: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <vakul@freescale.com>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-References: <1373005626-20726-1-git-send-email-hongbo.zhang@freescale.com>
-	<1373005626-20726-2-git-send-email-hongbo.zhang@freescale.com>
-In-Reply-To: <1373005626-20726-2-git-send-email-hongbo.zhang@freescale.com>
-	(from hongbo.zhang@freescale.com on Fri Jul  5 01:27:05 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1373388526.8183.191@snotra>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1752498Ab3GIQtr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 12:49:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56776 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752113Ab3GIQtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 12:49:46 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Renninger <trenn@suse.de>
+Subject: [PATCH 3/4] perf tools: Remove event types pushing from record command
+Date: Tue,  9 Jul 2013 18:48:58 +0200
+Message-Id: <1373388539-9347-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
+References: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2013 01:27:05 AM, hongbo.zhang@freescale.com wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
-> 
-> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this  
-> patch add
-> the device tree nodes for them.
-> 
-> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> ---
->  arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi   |   90  
-> +++++++++++++++++++++++++++
->  arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi   |   90  
-> +++++++++++++++++++++++++++
->  arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
->  3 files changed, 182 insertions(+), 2 deletions(-)
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+Removing event types data pushing from record command. It's
+no longer needed, because this data is ignored.
 
-Please update Documentation/devicetree/bindings/powerpc/fsl/dma.txt for  
-the new compatible and dgsr1.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Thomas Renninger <trenn@suse.de>
+---
+ tools/perf/builtin-record.c | 6 ------
+ 1 file changed, 6 deletions(-)
 
--Scott
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index ecca62e..1f5243c 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -904,7 +904,6 @@ const struct option record_options[] = {
+ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int err = -ENOMEM;
+-	struct perf_evsel *pos;
+ 	struct perf_evlist *evsel_list;
+ 	struct perf_record *rec = &record;
+ 	char errbuf[BUFSIZ];
+@@ -968,11 +967,6 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (perf_evlist__create_maps(evsel_list, &rec->opts.target) < 0)
+ 		usage_with_options(record_usage, record_options);
+ 
+-	list_for_each_entry(pos, &evsel_list->entries, node) {
+-		if (perf_header__push_event(pos->attr.config, perf_evsel__name(pos)))
+-			goto out_free_fd;
+-	}
+-
+ 	if (rec->opts.user_interval != ULLONG_MAX)
+ 		rec->opts.default_interval = rec->opts.user_interval;
+ 	if (rec->opts.user_freq != UINT_MAX)
+-- 
+1.7.11.7
+
