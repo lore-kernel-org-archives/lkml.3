@@ -1,124 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab3GIRGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:06:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51982 "EHLO mx2.suse.de"
+	id S1752744Ab3GIRHG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:07:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52001 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab3GIRGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:06:07 -0400
-Message-ID: <51DC42FC.8050206@suse.de>
-Date: Tue, 09 Jul 2013 19:06:04 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120306 Thunderbird/10.0.3
+	id S1751749Ab3GIRHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 13:07:00 -0400
+Date: Tue, 9 Jul 2013 19:06:56 +0200
+From: Jan Kara <jack@suse.cz>
+To: Maxim Patlasov <mpatlasov@parallels.com>
+Cc: akpm@linux-foundation.org, riel@redhat.com, jack@suse.cz,
+        dev@parallels.com, miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
+        bfoster@redhat.com, xemul@parallels.com, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, linux-mm@kvack.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, fengguang.wu@intel.com,
+        devel@openvz.org, mgorman@suse.de
+Subject: Re: [PATCH] mm: cleanup backing_dev_info foo_stamp fields
+Message-ID: <20130709170656.GB7256@quack.suse.cz>
+References: <20130705155018.3532.45042.stgit@maximpc.sw.ru>
 MIME-Version: 1.0
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 7/8] KVM: PPC: Add support for IOMMU in-kernel handling
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru> <1373123227-22969-8-git-send-email-aik@ozlabs.ru>
-In-Reply-To: <1373123227-22969-8-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130705155018.3532.45042.stgit@maximpc.sw.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2013 05:07 PM, Alexey Kardashevskiy wrote:
-> This allows the host kernel to handle H_PUT_TCE, H_PUT_TCE_INDIRECT
-> and H_STUFF_TCE requests without passing them to QEMU, which saves time
-> on switching to QEMU and back.
->
-> Both real and virtual modes are supported. First the kernel tries to
-> handle a TCE request in the real mode, if failed it passes it to
-> the virtual mode to complete the operation. If it a virtual mode
-> handler fails, a request is passed to the user mode.
->
-> This adds a new KVM_CAP_SPAPR_TCE_IOMMU ioctl to associate
-> a virtual PCI bus ID (LIOBN) with an IOMMU group which enables
-> in-kernel handling of IOMMU map/unmap. The external user API support
-> in VFIO is required.
->
-> Tests show that this patch increases transmission speed from 220MB/s
-> to 750..1020MB/s on 10Gb network (Chelsea CXGB3 10Gb ethernet card).
->
-> Signed-off-by: Paul Mackerras<paulus@samba.org>
-> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
->
+On Fri 05-07-13 19:50:41, Maxim Patlasov wrote:
+> State clearly that bw_time_stamp is measured in jiffies. Rename other
+> foo_stamp fields to reflect that they are in units of number-of-pages.
+> 
+> Reported-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
+
+								Honza
+
 > ---
->
-> Changes:
-> 2013/07/06:
-> * added realmode arch_spin_lock to protect TCE table from races
-> in real and virtual modes
-> * POWERPC IOMMU API is changed to support real mode
-> * iommu_take_ownership and iommu_release_ownership are protected by
-> iommu_table's locks
-> * VFIO external user API use rewritten
-> * multiple small fixes
->
-> 2013/06/27:
-> * tce_list page is referenced now in order to protect it from accident
-> invalidation during H_PUT_TCE_INDIRECT execution
-> * added use of the external user VFIO API
->
-> 2013/06/05:
-> * changed capability number
-> * changed ioctl number
-> * update the doc article number
->
-> 2013/05/20:
-> * removed get_user() from real mode handlers
-> * kvm_vcpu_arch::tce_tmp usage extended. Now real mode handler puts there
-> translated TCEs, tries realmode_get_page() on those and if it fails, it
-> passes control over the virtual mode handler which tries to finish
-> the request handling
-> * kvmppc_lookup_pte() now does realmode_get_page() protected by BUSY bit
-> on a page
-> * The only reason to pass the request to user mode now is when the user mode
-> did not register TCE table in the kernel, in all other cases the virtual mode
-> handler is expected to do the job
->
-> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
-> ---
->   Documentation/virtual/kvm/api.txt   |  26 ++++
->   arch/powerpc/include/asm/iommu.h    |   9 +-
->   arch/powerpc/include/asm/kvm_host.h |   3 +
->   arch/powerpc/include/asm/kvm_ppc.h  |   2 +
->   arch/powerpc/include/uapi/asm/kvm.h |   7 +
->   arch/powerpc/kernel/iommu.c         | 196 +++++++++++++++--------
->   arch/powerpc/kvm/book3s_64_vio.c    | 299 +++++++++++++++++++++++++++++++++++-
->   arch/powerpc/kvm/book3s_64_vio_hv.c | 129 ++++++++++++++++
->   arch/powerpc/kvm/powerpc.c          |  12 ++
->   9 files changed, 609 insertions(+), 74 deletions(-)
->
-> diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-> index 762c703..01b0dc2 100644
-> --- a/Documentation/virtual/kvm/api.txt
-> +++ b/Documentation/virtual/kvm/api.txt
-> @@ -2387,6 +2387,32 @@ slows operations a lot.
->   Unlike other capabilities of this section, this one is always enabled.
->
->
-> +4.87 KVM_CREATE_SPAPR_TCE_IOMMU
-> +
-> +Capability: KVM_CAP_SPAPR_TCE_IOMMU
-> +Architectures: powerpc
-> +Type: vm ioctl
-> +Parameters: struct kvm_create_spapr_tce_iommu (in)
-> +Returns: 0 on success, -1 on error
-> +
-> +struct kvm_create_spapr_tce_iommu {
-> +	__u64 liobn;
-> +	__u32 iommu_id;
-> +	__u32 flags;
-
-Your documentation is out of sync.
-
-Please also split this patch up. It's too long for review.
-
-
-Alex
-
+>  include/linux/backing-dev.h |    7 ++++---
+>  mm/backing-dev.c            |    2 +-
+>  mm/page-writeback.c         |    8 ++++----
+>  3 files changed, 9 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+> index c388155..ee7eb1a 100644
+> --- a/include/linux/backing-dev.h
+> +++ b/include/linux/backing-dev.h
+> @@ -73,9 +73,10 @@ struct backing_dev_info {
+>  
+>  	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
+>  
+> -	unsigned long bw_time_stamp;	/* last time write bw is updated */
+> -	unsigned long dirtied_stamp;
+> -	unsigned long written_stamp;	/* pages written at bw_time_stamp */
+> +	unsigned long bw_time_stamp;	/* last time (in jiffies) write bw
+> +					 * is updated */
+> +	unsigned long dirtied_nr_stamp;
+> +	unsigned long written_nr_stamp;	/* pages written at bw_time_stamp */
+>  	unsigned long write_bandwidth;	/* the estimated write bandwidth */
+>  	unsigned long avg_write_bandwidth; /* further smoothed write bw */
+>  
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 5025174..82efe7f 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -454,7 +454,7 @@ int bdi_init(struct backing_dev_info *bdi)
+>  	bdi->dirty_exceeded = 0;
+>  
+>  	bdi->bw_time_stamp = jiffies;
+> -	bdi->written_stamp = 0;
+> +	bdi->written_nr_stamp = 0;
+>  
+>  	bdi->balanced_dirty_ratelimit = INIT_BW;
+>  	bdi->dirty_ratelimit = INIT_BW;
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 4514ad7..088a8db 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -799,7 +799,7 @@ static void bdi_update_write_bandwidth(struct backing_dev_info *bdi,
+>  	 * write_bandwidth = ---------------------------------------------------
+>  	 *                                          period
+>  	 */
+> -	bw = written - bdi->written_stamp;
+> +	bw = written - bdi->written_nr_stamp;
+>  	bw *= HZ;
+>  	if (unlikely(elapsed > period)) {
+>  		do_div(bw, elapsed);
+> @@ -910,7 +910,7 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
+>  	 * The dirty rate will match the writeout rate in long term, except
+>  	 * when dirty pages are truncated by userspace or re-dirtied by FS.
+>  	 */
+> -	dirty_rate = (dirtied - bdi->dirtied_stamp) * HZ / elapsed;
+> +	dirty_rate = (dirtied - bdi->dirtied_nr_stamp) * HZ / elapsed;
+>  
+>  	pos_ratio = bdi_position_ratio(bdi, thresh, bg_thresh, dirty,
+>  				       bdi_thresh, bdi_dirty);
+> @@ -1066,8 +1066,8 @@ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
+>  	bdi_update_write_bandwidth(bdi, elapsed, written);
+>  
+>  snapshot:
+> -	bdi->dirtied_stamp = dirtied;
+> -	bdi->written_stamp = written;
+> +	bdi->dirtied_nr_stamp = dirtied;
+> +	bdi->written_nr_stamp = written;
+>  	bdi->bw_time_stamp = now;
+>  }
+>  
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
