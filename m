@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678Ab3GIRQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 13:16:03 -0400
-Received: from stranner.org ([5.135.166.179]:43105 "EHLO stranner.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752473Ab3GIRP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 13:15:58 -0400
-Message-ID: <51DC4541.8010409@stranner.org>
-Date: Tue, 09 Jul 2013 19:15:45 +0200
-From: Heimo Stranner <heimo@stranner.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1752616Ab3GIRT5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 13:19:57 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48051 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab3GIRT4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 13:19:56 -0400
+Date: Tue, 9 Jul 2013 13:19:09 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jan Beulich <JBeulich@suse.com>, Matt Wilson <msw@amazon.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        jeremy@goop.org, x86@kernel.org, tglx@linutronix.de,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com, mingo@redhat.com,
+        Paul Bolle <pebolle@tiscali.nl>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
+Message-ID: <20130709171909.GA25586@phenom.dumpdata.com>
+References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com>
+ <20130708192854.GF4927@phenom.dumpdata.com>
+ <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>
+ <51DB2134.9040909@zytor.com>
+ <20130708205834.GA481@pd.tnic>
+ <1373326534.1438.10.camel@x61.thuisdomein>
+ <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
+ <51DBDAB802000078000E37C1@nat28.tlf.novell.com>
+ <20130709144840.GF24897@phenom.dumpdata.com>
+ <20130709150554.GA27579@pd.tnic>
 MIME-Version: 1.0
-To: Steven Noonan <steven@uplinklabs.net>
-CC: linux-kernel@vger.kernel.org
-References: <1373023979-20537-1-git-send-email-artagnon@gmail.com> <1373151605.27613.9@driftwood> <478d866c-606e-42de-9779-6ae18d70e7f1@CO1EHSMHS014.ehs.local> <51DC4075.1000708@stranner.org> <CAKbGBLgrTtMfkg9VEiQ=5JPzJvCUa5bPUjPHVswZFxviY1BKdg@mail.gmail.com>
-In-Reply-To: <CAKbGBLgrTtMfkg9VEiQ=5JPzJvCUa5bPUjPHVswZFxviY1BKdg@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 178.190.210.148
-X-SA-Exim-Mail-From: heimo@stranner.org
-Subject: Re: [PATCH] menuconfig: Allow j/k to move down/up the menu
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on stranner.org)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709150554.GA27579@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-07-09 19:07, Steven Noonan wrote:
-> On Tue, Jul 9, 2013 at 9:55 AM, Heimo Stranner <heimo@stranner.org> wrote:
->>> Well, one advantage of these key bindings is, that you don't have to
->>> move your hands away from the base line. And as vim user I find myself
->>> using vim key sequences in all tools. I cannot even count how many
->>> processes I accidentally killed because I tried to scroll using 'k' in
->>> htop where it does 'kill'.
->>>
->>> In a nutshell: I'm all for vim key bindings everywhere!
->>>
->> I can't agree more!
->>
->> Because vim key bindings are rather common I can't see a problem if this
->> patch is applied.
-> The biggest problem I see is the conflict between j/k and the letter
-> shortcuts used to jump to specific menu items (the letter highlighted
-> in blue on each item). But I haven't ever used that functionality in
-> practice, so who knows.
-I haven't thought about that. Obviously you are right, "Kernel hacking"
-and "Kernel compression mode" just being two examples that use k which I
-found in a very quick search.
+On Tue, Jul 09, 2013 at 05:05:54PM +0200, Borislav Petkov wrote:
+> On Tue, Jul 09, 2013 at 10:48:40AM -0400, Konrad Rzeszutek Wilk wrote:
+> > Then that should be discussed on grub2 to remove said check and modify
+> > the code so that it can properly work without regression.
+> 
+> Actually, the kernel patch removing that symbol should be applied so
+> that grub2 breaks faster. One can't possibly rely on kernel internals
+> for anything, as it is insanely insane (yep, the tautology is on purpose
+> :-)).
+
+I am not sure why you are advocating that path.
+
+My thinking is that what should be done to have some sense of history
+is that the patch in GRUB to not rely on kernel internals should be done.
+Then that git commit of that tree should be mentioned in this kernel patch.
+
+This way one can nicely follow the trail of changes and see what the
+interdependencies are (or rather that they have been removed).
+
+I wouldn't want GRUB2 to have regressions and stop generating the proper
+menu options. That smells of userspace regressions and I am not too
+keen to have Linus point this out to me.
+
+Once that is done we can follow up on this patch and perhaps also
+nicely convience the initial author of this patch to look at removing the
+CONFIG_XEN_DOM0 and replacing them with the two other CONFIG options
+that Jan and me have been discussing.
