@@ -1,161 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab3GIIEj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:04:39 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:42906 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab3GIICu (ORCPT
+	id S1753836Ab3GIIFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:05:08 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:41640 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab3GIIEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:02:50 -0400
-From: Tiejun Chen <tiejun.chen@windriver.com>
-To: <benh@kernel.crashing.org>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
-Subject: [v3][PATCH 4/8] book3e/kexec/kdump: create a 1:1 TLB mapping
-Date: Tue, 9 Jul 2013 16:03:23 +0800
-Message-ID: <1373357007-30785-5-git-send-email-tiejun.chen@windriver.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
-References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
+	Tue, 9 Jul 2013 04:04:31 -0400
+X-AuditID: 85900ec0-d38c8b900000151e-21-51dbc40c752b
+Subject: [RFC PATCH] tracing/kprobe: Wait for disabling all running kprobe
+ handlers
+To: Steven Rostedt <rostedt@goodmis.org>
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
+        Jiri Olsa <jolsa@redhat.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Tue, 09 Jul 2013 17:01:45 +0900
+Message-ID: <20130709080145.7975.83164.stgit@mhiramat-M0-7522>
+In-Reply-To: <20130708142533.GA23749@redhat.com>
+References: <20130708142533.GA23749@redhat.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-book3e have no real MMU mode so we have to create a 1:1 TLB
-mapping to make sure we can access the real physical address.
-And correct something to support this pseudo real mode on book3e.
+Wait for disabling all running kprobe handlers when a kprobe
+event is disabled, since the caller, trace_remove_event_call()
+supposes that a removing event is disabled completely by
+disabling the event.
+With this change, ftrace can ensure that there is no running
+event handlers after disabling it.
 
-Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- arch/powerpc/kernel/head_64.S |    9 ++++---
- arch/powerpc/kernel/misc_64.S |   55 ++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 60 insertions(+), 4 deletions(-)
+ kernel/trace/trace_kprobe.c |   19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
-index 550f8fb..7dc56be 100644
---- a/arch/powerpc/kernel/head_64.S
-+++ b/arch/powerpc/kernel/head_64.S
-@@ -447,12 +447,12 @@ _STATIC(__after_prom_start)
- 	tovirt(r3,r3)			/* on booke, we already run at PAGE_OFFSET */
- #endif
- 	mr.	r4,r26			/* In some cases the loader may  */
-+#if defined(CONFIG_PPC_BOOK3E)
-+	tovirt(r4,r4)
-+#endif
- 	beq	9f			/* have already put us at zero */
- 	li	r6,0x100		/* Start offset, the first 0x100 */
- 					/* bytes were copied earlier.	 */
--#ifdef CONFIG_PPC_BOOK3E
--	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
--#endif
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 7ed6976..a9a4fe5 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -243,11 +243,11 @@ find_event_file_link(struct trace_probe *tp, struct ftrace_event_file *file)
+ static int
+ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ {
++	struct event_file_link *link = NULL;
++	int wait = 0;
+ 	int ret = 0;
  
- #ifdef CONFIG_RELOCATABLE
- /*
-@@ -495,6 +495,9 @@ _STATIC(__after_prom_start)
- p_end:	.llong	_end - _stext
- 
- 4:	/* Now copy the rest of the kernel up to _end */
-+#if defined(CONFIG_PPC_BOOK3E)
-+	tovirt(r26,r26)
-+#endif
- 	addis	r5,r26,(p_end - _stext)@ha
- 	ld	r5,(p_end - _stext)@l(r5)	/* get _end */
- 5:	bl	.copy_and_flush		/* copy the rest */
-diff --git a/arch/powerpc/kernel/misc_64.S b/arch/powerpc/kernel/misc_64.S
-index f1a7ce7..20cbb98 100644
---- a/arch/powerpc/kernel/misc_64.S
-+++ b/arch/powerpc/kernel/misc_64.S
-@@ -460,6 +460,49 @@ kexec_flag:
- 
- 
- #ifdef CONFIG_KEXEC
-+#ifdef CONFIG_PPC_BOOK3E
-+/* BOOK3E have no a real MMU mode so we have to setup the initial TLB
-+ * for a core to map v:0 to p:0 as 1:1. This current implementation
-+ * assume that 1G is enough for kexec.
-+ */
-+#include <asm/mmu.h>
-+kexec_create_tlb:
-+	/* Invalidate all TLBs to avoid any TLB conflict. */
-+	PPC_TLBILX_ALL(0,R0)
-+	sync
-+	isync
-+
-+	mfspr	r10,SPRN_TLB1CFG
-+	andi.	r10,r10,TLBnCFG_N_ENTRY	/* Extract # entries */
-+	subi	r10,r10,1		/* Often its always safe to use last */
-+	lis	r9,MAS0_TLBSEL(1)@h
-+	rlwimi	r9,r10,16,4,15		/* Setup MAS0 = TLBSEL | ESEL(r9) */
-+
-+/* Setup a temp mapping v:0 to p:0 as 1:1 and return to it.
-+ */
-+#ifdef CONFIG_SMP
-+#define M_IF_SMP	MAS2_M
-+#else
-+#define M_IF_SMP	0
-+#endif
-+	mtspr	SPRN_MAS0,r9
-+
-+	lis	r9,(MAS1_VALID|MAS1_IPROT)@h
-+	ori	r9,r9,(MAS1_TSIZE(BOOK3E_PAGESZ_1GB))@l
-+	mtspr	SPRN_MAS1,r9
-+
-+	LOAD_REG_IMMEDIATE(r9, 0x0 | M_IF_SMP)
-+	mtspr	SPRN_MAS2,r9
-+
-+	LOAD_REG_IMMEDIATE(r9, 0x0 | MAS3_SR | MAS3_SW | MAS3_SX)
-+	mtspr	SPRN_MAS3,r9
-+	li	r9,0
-+	mtspr	SPRN_MAS7,r9
-+
-+	tlbwe
-+	isync
-+	blr
-+#endif
- 
- /* kexec_smp_wait(void)
-  *
-@@ -473,6 +516,10 @@ kexec_flag:
-  */
- _GLOBAL(kexec_smp_wait)
- 	lhz	r3,PACAHWCPUID(r13)
-+#ifdef CONFIG_PPC_BOOK3E
-+	/* Create a 1:1 mapping. */
-+	bl	kexec_create_tlb
-+#endif
- 	bl	real_mode
- 
- 	li	r4,KEXEC_STATE_REAL_MODE
-@@ -489,6 +536,7 @@ _GLOBAL(kexec_smp_wait)
-  * don't overwrite r3 here, it is live for kexec_wait above.
-  */
- real_mode:	/* assume normal blr return */
-+#ifndef CONFIG_PPC_BOOK3E
- 1:	li	r9,MSR_RI
- 	li	r10,MSR_DR|MSR_IR
- 	mflr	r11		/* return address to SRR0 */
-@@ -500,7 +548,10 @@ real_mode:	/* assume normal blr return */
- 	mtspr	SPRN_SRR1,r10
- 	mtspr	SPRN_SRR0,r11
- 	rfid
+ 	if (file) {
+-		struct event_file_link *link;
 -
-+#else
-+	/* the real mode is nothing for book3e. */
-+	blr
-+#endif
+ 		link = find_event_file_link(tp, file);
+ 		if (!link) {
+ 			ret = -EINVAL;
+@@ -255,10 +255,7 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 		}
  
- /*
-  * kexec_sequence(newstack, start, image, control, clear_all())
-@@ -549,6 +600,8 @@ _GLOBAL(kexec_sequence)
- 	mtmsrd	r3,1
- #else
- 	wrteei	0
-+	/* Create a 1:1 mapping. */
-+	bl	kexec_create_tlb
- #endif
+ 		list_del_rcu(&link->list);
+-		/* synchronize with kprobe_trace_func/kretprobe_trace_func */
+-		synchronize_sched();
+-		kfree(link);
+-
++		wait = 1;
+ 		if (!list_empty(&tp->files))
+ 			goto out;
  
- 	/* copy dest pages, flush whole dest image */
--- 
-1.7.9.5
+@@ -271,8 +268,18 @@ disable_trace_probe(struct trace_probe *tp, struct ftrace_event_file *file)
+ 			disable_kretprobe(&tp->rp);
+ 		else
+ 			disable_kprobe(&tp->rp.kp);
++		wait = 1;
+ 	}
+  out:
++	if (wait) {
++		/*
++		 * synchronize with kprobe_trace_func/kretprobe_trace_func
++		 * to ensure disabled (all running handlers are finished)
++		 */
++		synchronize_sched();
++		kfree(link);	/* Ignored if link == NULL */
++	}
++
+ 	return ret;
+ }
+ 
 
