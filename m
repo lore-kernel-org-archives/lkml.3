@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab3GIOgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:36:02 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:52809 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab3GIOf7 (ORCPT
+	id S1753904Ab3GIOiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:38:07 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45003 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab3GIOiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:35:59 -0400
-Message-ID: <51DC1FCA.3060904@openvz.org>
-Date: Tue, 09 Jul 2013 18:35:54 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Vivek Goyal <vgoyal@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
-References: <20130708100046.14417.12932.stgit@zurg> <20130708170047.GA18600@mtj.dyndns.org> <20130708175201.GB9094@redhat.com> <20130708175607.GB18600@mtj.dyndns.org> <51DBC99F.4030301@openvz.org> <20130709125734.GA2478@htj.dyndns.org> <51DC0CE2.2050906@openvz.org> <20130709131605.GB2478@htj.dyndns.org> <20130709131646.GC2478@htj.dyndns.org> <51DC136E.6020901@openvz.org> <20130709134558.GD2478@htj.dyndns.org>
-In-Reply-To: <20130709134558.GD2478@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Jul 2013 10:38:04 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, linus.walleij@stericsson.com,
+        srinidhi.kasagar@stericsson.com, hi@hello.com,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH 1/3] DMA: shdma: (cosmetic) don't re-calculate a pointer
+Date: Tue,  9 Jul 2013 15:37:54 +0100
+Message-Id: <1373380677-450-2-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1373380677-450-1-git-send-email-lee.jones@linaro.org>
+References: <1373380677-450-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> On Tue, Jul 09, 2013 at 05:43:10PM +0400, Konstantin Khlebnikov wrote:
->> My concept it cgroup which would control io operation on vfs layer
->> for all filesystems.  It will account and manage IO operations. I've
->> found really lightweight technique for accounting and throttling
->> which don't introduce new locks or priority inversions (which is
->> major problem in all existing throttlers, including cpu cgroup rate
->> limiter) So, I've tried to keep code smaller, cleaner and saner as
->> possible while you guys are trying to push me into the block layer
->> =)
->
-> You're trying to implement QoS in the place where you don't have
-> control of the queue itself.  You aren't even managing the right type
-> of resource for disks which is time slice rather than iops or
-> bandwidth and by the time you implemented proper hierarchy support and
-> proportional control, yours isn't gonna be that simple either.  The
-> root problem is bdi failing to propagate pressure from the actual
-> queue upwards.  Fix that.
->
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-I'm not interested in QoS or proportional control. Let schedulers do it.
-I want just bandwidth control. I don't want to write a new scheduler
-or extend some of existing one. I want implement simple and lightweight
-accounting and add couple of throttlers on top of that.
-It can be easily done without violation of that hierarchical design.
+Use an existing pointer instead of retrieving it again.
 
-The same problem already has happened with cpu scheduler. It has really
-complicated rate limiter which is actually useless in the real world because
-it triggers all possible priority inversions since it puts bunch of tasks into
-deep sleep while some of them may hold kernel locks. Perfect.
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+---
+ drivers/dma/sh/shdma.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-QoS and scheduling policy are good thing, but rate-limiting must be separated
-and done only in places where it doesn't leads to these problems.
+diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
+index b70709b..a5a1887 100644
+--- a/drivers/dma/sh/shdma.c
++++ b/drivers/dma/sh/shdma.c
+@@ -729,7 +729,7 @@ static int sh_dmae_probe(struct platform_device *pdev)
+ 		goto eshdma;
+ 
+ 	/* platform data */
+-	shdev->pdata = pdev->dev.platform_data;
++	shdev->pdata = pdata;
+ 
+ 	if (pdata->chcr_offset)
+ 		shdev->chcr_offset = pdata->chcr_offset;
+-- 
+1.7.10.4
+
