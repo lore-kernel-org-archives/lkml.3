@@ -1,201 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752528Ab3GITPN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 15:15:13 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:41812 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752177Ab3GITPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 15:15:10 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.11-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20130709191509.49A24500B4B@whiskey.americas.sgi.com>
-Date: Tue,  9 Jul 2013 14:15:09 -0500 (CDT)
-From: bpm@sgi.com (Ben Myers)
+	id S1752606Ab3GITSz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 15:18:55 -0400
+Received: from dkim2.fusionio.com ([66.114.96.54]:33515 "EHLO
+	dkim2.fusionio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752280Ab3GITSw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 15:18:52 -0400
+X-ASG-Debug-ID: 1373397530-03d6a577cc22c620001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-btrfs@vger.kernel.org>
+Message-ID: <20130709191848.12026.56398@localhost.localdomain>
+From: Chris Mason <chris.mason@fusionio.com>
+User-Agent: alot/0.3.4
+Subject: [GIT PULL] Btrfs
+Date: Tue, 9 Jul 2013 15:18:48 -0400
+X-ASG-Orig-Subj: [GIT PULL] Btrfs
+X-Originating-IP: [10.101.1.160]
+X-Barracuda-Connect: cas2.int.fusionio.com[10.101.1.41]
+X-Barracuda-Start-Time: 1373397530
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0889 1.0000 -1.4596
+X-Barracuda-Spam-Score: -1.46
+X-Barracuda-Spam-Status: No, SCORE=-1.46 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.136285
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-   Please pull these XFS updates for 3.11-rc1.  This includes several bugfixes,
-   part of the work for project quotas and group quotas to be used together,
-   performance improvements for inode creation/deletion, buffer readahead, and
-   bulkstat, implementation of the inode change count, an inode create
-   transaction, and the removal of a bunch of dead code.  There are also some
-   duplicate commits that you already have from the 3.10-rc series.
+This Btrfs pull is available in two flavors:
 
-Thanks,
-	Ben
+First, my for-linus branch has it against all the btrfs pulls from 3.10:
 
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
+Or, with a merge commit on top of 3.10 (master branch):
 
-are available in the git repository at:
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git master
 
-  git://oss.sgi.com/xfs/xfs.git tags/for-linus-v3.11-rc1
+I did it this way because the 3.10 merge was pretty much empty and you
+probably don't want my merge commit at the top.
 
-for you to fetch changes up to 83e782e1a1cc0159888e58e14dfc8f3289663338:
+There's a trivial conflict with your current master involving a printk spelling
+fix, but these are otherwise clean and tested against your current tree.
 
-  xfs: Remove incore use of XFS_OQUOTA_ENFD and XFS_OQUOTA_CHKD (2013-06-28 17:39:22 -0500)
+These are the usual mixture of bugs, cleanups and performance fixes.  Miao has
+some really nice tuning of our crc code as well as our transaction commits.
 
-----------------------------------------------------------------
-xfs: update for 3.11-rc1
+Josef is peeling off more and more problems related to early enospc, and has a
+number of important bug fixes in here too.
 
-- part of the work to allow project quotas and group quotas to
-  be used together
-- inode change count
-- inode create transaction
-- block queue plugging in buffer readahead and bulkstat
-- ordered log vector support
-- removal of dead code in and around xfs_sync_inode_grab,
-  xfs_ialloc_get_rec, XFS_MOUNT_RETERR, XFS_ALLOCFREE_LOG_RES,
-  XFS_DIROP_LOG_RES, xfs_chash, ctl_table, and xfs_growfs_data_private
-- don't keep silent if sunit/swidth can not be changed via mount
-- fix a leak of remote symlink blocks into the filesystem when
-  xattrs are used on symlinks
-- fix for fiemap to return FIEMAP_EXTENT_UNKOWN flag on delay extents
-- part of a fix for xfs_fsr
-- disable speculative preallocation with small files
-- performance improvements for inode creates and deletes
+The stats below are against my for-linus branch.
 
-----------------------------------------------------------------
-Chandra Seetharaman (6):
-      xfs: Define a new function xfs_is_quota_inode()
-      xfs: Replace macro XFS_DQUOT_TREE with a function
-      xfs: Replace macro XFS_DQ_TO_QIP with a function
-      xfs: Code cleanup and removal of some typedef usage
-      xfs: Change xfs_dquot_acct to be a 2-dimensional array
-      xfs: Remove incore use of XFS_OQUOTA_ENFD and XFS_OQUOTA_CHKD
+Josef Bacik (27) commits (+865/-590):
+    Btrfs: move btrfs_truncate_page to btrfs_cont_expand instead of btrfs_truncate (+35/-12)
+    Btrfs: check for actual acls rather than just xattrs when caching no acl (+16/-2)
+    Btrfs: stop using try_to_writeback_inodes_sb_nr to flush delalloc (+4/-5)
+    Btrfs: fix not being able to find skinny extents during relocate (+27/-8)
+    Btrfs: exclude logged extents before replying when we are mixed (+99/-37)
+    Btrfs: only do the tree_mod_log_free_eb if this is our last ref (+2/-1)
+    Btrfs: make the chunk allocator completely tree lockless (+166/-169)
+    Btrfs: check if we can nocow if we don't have data space (+148/-26)
+    Btrfs: use a percpu to keep track of possibly pinned bytes (+66/-5)
+    Btrfs: unlock extent range on enospc in compressed submit (+5/-1)
+    Btrfs: make backref walking code handle skinny metadata (+25/-6)
+    Btrfs: add some missing iput()'s in btrfs_orphan_cleanup (+4/-1)
+    Btrfs: hold the tree mod lock in __tree_mod_log_rewind (+6/-4)
+    Btrfs: cleanup backref search commit root flag stuff (+16/-27)
+    Btrfs: free csums when we're done scrubbing an extent (+1/-0)
+    Btrfs: fix transaction throttling for delayed refs (+69/-18)
+    Btrfs: wake up delayed ref flushing waiters on abort (+1/-0)
+    Btrfs: stop waiting on current trans if we aborted (+11/-4)
+    Btrfs: wait ordered range before doing direct io (+9/-1)
+    Btrfs: put our inode if orphan cleanup fails (+3/-1)
+    Btrfs: cleanup orphaned root orphan item (+29/-2)
+    Btrfs: optimize read_block_for_search (+20/-27)
+    Btrfs: do not pin while under spin lock (+8/-4)
+    Btrfs: simplify unlink reservations (+50/-191)
+    Btrfs: optimize reada_for_balance (+9/-37)
+    Btrfs: fix estale with btrfs send (+35/-0)
+    Btrfs: do delay iput in sync_fs (+1/-1)
 
-Dave Chinner (43):
-      xfs: fix sub-page blocksize data integrity writes
-      xfs: fix rounding in xfs_free_file_space
-      xfs: Don't reference the EFI after it is freed
-      xfs: fix missing KM_NOFS tags to keep lockdep happy
-      xfs: xfs_da3_node_read_verify() doesn't handle XFS_ATTR3_LEAF_MAGIC
-      xfs: xfs_attr_shortform_allfit() does not handle attr3 format.
-      xfs: remote attribute lookups require the value length
-      xfs: avoid nesting transactions in xfs_qm_scall_setqlim()
-      xfs: remote attribute allocation may be contiguous
-      xfs: remote attribute read too short
-      xfs: remote attribute tail zeroing does too much
-      xfs: correctly map remote attr buffers during removal
-      xfs: fully initialise temp leaf in xfs_attr3_leaf_unbalance
-      xfs: fully initialise temp leaf in xfs_attr3_leaf_compact
-      xfs: rework remote attr CRCs
-      xfs: don't emit v5 superblock warnings on write
-      xfs: fix incorrect remote symlink block count
-      xfs: fix split buffer vector log recovery support
-      xfs: disable swap extents ioctl on CRC enabled filesystems
-      xfs: add fsgeom flag for v5 superblock support.
-      xfs: kill suid/sgid through the truncate path.
-      xfs: fix dir3 freespace block corruption
-      xfs: rework dquot CRCs
-      xfs: fix remote attribute invalidation for a leaf
-      xfs: fix log recovery transaction item reordering
-      xfs: inode unlinked list needs to recalculate the inode CRC
-      xfs: disable noattr2/attr2 mount options for CRC enabled filesystems
-      xfs: increase number of ACL entries for V5 superblocks
-      xfs: fix implicit padding in directory and attr CRC formats
-      xfs: ensure btree root split sets blkno correctly
-      xfs: don't shutdown log recovery on validation errors
-      xfs: add pluging for bulkstat readahead
-      xfs: plug directory buffer readahead
-      xfs: don't use speculative prealloc for small files
-      xfs: don't do IO when creating an new inode
-      xfs: xfs_ifree doesn't need to modify the inode buffer
-      xfs: Introduce ordered log vector support
-      xfs: Introduce an ordered buffer item
-      xfs: Inode create log items
-      xfs: Inode create transaction reservations
-      xfs: Inode create item recovery
-      xfs: Use inode create transaction
-      xfs: implement inode change count
+Miao Xie (24) commits (+1043/-797):
+    Btrfs: cleanup unnecessary assignment when cleaning up all the residual transaction (+1/-8)
+    Btrfs: don't flush the delalloc inodes in the while loop if flushoncommit is set (+18/-8)
+    Btrfs: just flush the delalloc inodes in the source tree before snapshot creation (+7/-9)
+    Btrfs: don't wait for all the writers circularly during the transaction commit (+65/-21)
+    Btrfs: remove unnecessary varient ->num_joined in btrfs_transaction structure (+1/-9)
+    Btrfs: make the cleaner complete early when the fs is going to be umounted (+7/-5)
+    Btrfs: remove the code for the impossible case in cleanup_transaction() (+6/-5)
+    Btrfs: make the snap/subv deletion end more early when the fs is R/O (+15/-14)
+    Btrfs: introduce grab/put functions for the root of the fs/file tree (+26/-3)
+    Btrfs: fix several potential problems in copy_nocow_pages_for_inode (+22/-1)
+    Btrfs: move the R/O check out of btrfs_clean_one_deleted_snapshot() (+9/-5)
+    Btrfs: fix oops when recovering the file data by scrub function (+1/-1)
+    Btrfs: remove the time check in btrfs_commit_transaction() (+6/-23)
+    Btrfs: remove unnecessary ->s_umount in cleaner_kthread() (+28/-12)
+    Btrfs: cleanup the code of copy_nocow_pages_for_inode() (+23/-25)
+    Btrfs: make the state of the transaction more readable (+116/-94)
+    Btrfs: cleanup the similar code of the fs root read (+228/-269)
+    Btrfs: cleanup redundant code in btrfs_submit_direct() (+1/-9)
+    Btrfs: introduce per-subvolume ordered extent list (+143/-58)
+    Btrfs: introduce per-subvolume delalloc inode list (+183/-67)
+    Btrfs: merge pending IO for tree log write back (+17/-6)
+    Btrfs: remove btrfs_sector_sum structure (+76/-142)
+    Btrfs: fix broken nocow after balance (+44/-0)
+    Btrfs: fix wrong mirror number tuning (+0/-3)
 
-Eric Sandeen (1):
-      xfs: check on-disk (not incore) btree root size in dfrag.c
+Liu Bo (8) commits (+65/-39):
+    Btrfs: check if leaf's parent exists before pushing items around (+1/-1)
+    Btrfs: kill replicate code in replay_one_buffer (+2/-7)
+    Btrfs: fix crash regarding to ulist_add_merge (+15/-0)
+    Btrfs: dont do log_removal in insert_new_root (+5/-5)
+    Btrfs: allow file data clone within a file (+19/-7)
+    Btrfs: remove unused code in btrfs_del_root (+0/-4)
+    Btrfs: update new flags for tracepoint (+23/-12)
+    Btrfs: remove useless copy in quota_ctl (+0/-3)
 
-Jan Kara (1):
-      xfs: Avoid pathological backwards allocation
+Stefan Behrens (4) commits (+3/-50):
+    Btrfs: cleanup, btrfs_read_fs_root_no_name() doesn't return NULL (+2/-8)
+    Btrfs: cleanup: don't check the same thing twice (+0/-27)
+    Btrfs: delete unused function (+0/-14)
+    Btrfs: fix a comment (+1/-1)
 
-Jeff Liu (1):
-      xfs: Remove struct xfs_chash from xfs_mount
+Jan Schmidt (4) commits (+168/-72):
+    Btrfs: fix memory patcher through fs_info->qgroup_ulist (+1/-1)
+    Btrfs: add ioctl to wait for qgroup rescan completion (+36/-0)
+    Btrfs: avoid double free of fs_info->qgroup_ulist (+6/-2)
+    Btrfs: fix qgroup rescan resume on mount (+125/-69)
 
-Jie Liu (7):
-      xfs: Remove redundant error variable from xfs_growfs_data_private()
-      xfs: Don't keep silent if sunit/swidth can not be changed via mount
-      xfs: return FIEMAP_EXTENT_UNKNOWN for delayed allocation extent
-      xfs: Remove two dead transaction log reservaion macros
-      xfs: Remove XFS_MOUNT_RETERR
-      xfs: Remove the left function variable from xfs_ialloc_get_rec()
-      xfs: Remove dead function prototype xfs_sync_inode_grab()
+David Sterba (4) commits (+92/-59):
+    btrfs: show compiled-in config features at module load time (+13/-6)
+    btrfs: move ifdef around sanity checks out of init_btrfs_fs (+3/-5)
+    btrfs: add debug check for extent_io range alignment (+27/-0)
+    btrfs: add prefix to sanity tests messages (+49/-48)
 
-Joe Perches (1):
-      xfs: Convert use of typedef ctl_table to struct ctl_table
+Thomas Meyer (2) commits (+2/-6):
+    Btrfs: Cocci spatch "ptr_ret.spatch" (+1/-4)
+    Btrfs: Cocci spatch "memdup.spatch" (+1/-2)
 
-Mark Tinguely (1):
-      xfs: fix the symbolic link assert in xfs_ifree
+Anand Jain (1) commits (+58/-31):
+    btrfs: device delete to get errors from the kernel
 
- Documentation/filesystems/xfs.txt |   3 +
- fs/xfs/Makefile                   |   1 +
- fs/xfs/xfs_acl.c                  |  31 +--
- fs/xfs/xfs_acl.h                  |  31 ++-
- fs/xfs/xfs_alloc.c                |  24 ++-
- fs/xfs/xfs_aops.c                 |  19 ++
- fs/xfs/xfs_attr_leaf.c            |  98 +++++----
- fs/xfs/xfs_attr_leaf.h            |   1 +
- fs/xfs/xfs_attr_remote.c          | 408 +++++++++++++++++++++++---------------
- fs/xfs/xfs_attr_remote.h          |  10 +
- fs/xfs/xfs_bmap_btree.h           |   2 +
- fs/xfs/xfs_btree.c                |  10 +
- fs/xfs/xfs_buf.c                  |   3 +-
- fs/xfs/xfs_buf_item.c             |  94 +++++----
- fs/xfs/xfs_buf_item.h             |   4 +-
- fs/xfs/xfs_da_btree.c             |   7 +-
- fs/xfs/xfs_dfrag.c                |  16 +-
- fs/xfs/xfs_dir2_format.h          |   4 +-
- fs/xfs/xfs_dir2_leaf.c            |   5 +-
- fs/xfs/xfs_dir2_node.c            |  13 +-
- fs/xfs/xfs_dquot.c                |  53 +++--
- fs/xfs/xfs_dquot.h                |   4 -
- fs/xfs/xfs_extfree_item.c         |   5 +-
- fs/xfs/xfs_fs.h                   |   1 +
- fs/xfs/xfs_fsops.c                |   6 +-
- fs/xfs/xfs_ialloc.c               |  74 +++++--
- fs/xfs/xfs_ialloc.h               |   8 +
- fs/xfs/xfs_icache.c               |   3 +-
- fs/xfs/xfs_icache.h               |   1 -
- fs/xfs/xfs_icreate_item.c         | 195 ++++++++++++++++++
- fs/xfs/xfs_icreate_item.h         |  52 +++++
- fs/xfs/xfs_inode.c                |  84 ++++----
- fs/xfs/xfs_iomap.c                |  13 ++
- fs/xfs/xfs_iops.c                 |  50 +++--
- fs/xfs/xfs_itable.c               |   5 +-
- fs/xfs/xfs_log.c                  |  22 +-
- fs/xfs/xfs_log.h                  |   5 +-
- fs/xfs/xfs_log_cil.c              |  77 ++++---
- fs/xfs/xfs_log_recover.c          | 218 +++++++++++++++++++-
- fs/xfs/xfs_mount.c                | 110 +++++++---
- fs/xfs/xfs_mount.h                |   4 -
- fs/xfs/xfs_qm.c                   | 215 +++++++++++---------
- fs/xfs/xfs_qm.h                   |  83 +++++---
- fs/xfs/xfs_qm_syscalls.c          |  91 +++++----
- fs/xfs/xfs_quota.h                |  49 +++--
- fs/xfs/xfs_quotaops.c             |   6 +-
- fs/xfs/xfs_sb.h                   |   6 +
- fs/xfs/xfs_super.c                |  50 +++--
- fs/xfs/xfs_symlink.c              |  71 +++++--
- fs/xfs/xfs_symlink.h              |   2 +-
- fs/xfs/xfs_sysctl.c               |  26 +--
- fs/xfs/xfs_trace.h                |   5 +
- fs/xfs/xfs_trans.c                | 118 +++++++----
- fs/xfs/xfs_trans.h                |  16 +-
- fs/xfs/xfs_trans_buf.c            |  34 +++-
- fs/xfs/xfs_trans_dquot.c          |  87 ++++----
- fs/xfs/xfs_trans_inode.c          |  11 +
- fs/xfs/xfs_vnodeops.c             |  19 +-
- 58 files changed, 1859 insertions(+), 804 deletions(-)
- create mode 100644 fs/xfs/xfs_icreate_item.c
- create mode 100644 fs/xfs/xfs_icreate_item.h
+Henrik Nordvik (1) commits (+1/-1):
+    Btrfs: fix check on same raid type flag twice
+
+Wei Yongjun (1) commits (+1/-1):
+    Btrfs: return error code in btrfs_check_trunc_cache_free_space()
+
+Jie Liu (1) commits (+2/-2):
+    btrfs: fix the code comments for LZO compression workspace
+
+Wang Shilong (1) commits (+43/-34):
+    Btrfs: introduce qgroup_ulist to avoid frequently allocating/freeing ulist
+
+Wang Sheng-Hui (1) commits (+1/-1):
+    Btrfs: fix the comment typo for btrfs_attach_transaction_barrier
+
+Tsutomu Itoh (1) commits (+90/-99):
+    Btrfs: cleanup unused arguments in send.c
+
+Andreas Philipp (1) commits (+2/-2):
+    Minor format cleanup.
+
+Total: (81) commits (+2436/-1784)
+
+ fs/btrfs/backref.c           |  72 ++++---
+ fs/btrfs/backref.h           |   2 -
+ fs/btrfs/ctree.c             | 120 ++++-------
+ fs/btrfs/ctree.h             | 105 +++++++--
+ fs/btrfs/delayed-inode.c     |  14 --
+ fs/btrfs/dev-replace.c       |   6 +-
+ fs/btrfs/disk-io.c           | 483 ++++++++++++++++++++++++-----------------
+ fs/btrfs/disk-io.h           |  32 ++-
+ fs/btrfs/export.c            |   5 -
+ fs/btrfs/extent-tree.c       | 315 +++++++++++++++++++++------
+ fs/btrfs/extent_io.c         |  41 +++-
+ fs/btrfs/extent_io.h         |   1 +
+ fs/btrfs/file-item.c         | 144 +++++--------
+ fs/btrfs/file.c              | 150 +++++++++++--
+ fs/btrfs/free-space-cache.c  | 103 ++++-----
+ fs/btrfs/free-space-cache.h  |   2 -
+ fs/btrfs/inode.c             | 501 +++++++++++++++++++------------------------
+ fs/btrfs/ioctl.c             |  74 ++++---
+ fs/btrfs/lzo.c               |   4 +-
+ fs/btrfs/ordered-data.c      | 128 +++++++----
+ fs/btrfs/ordered-data.h      |  27 +--
+ fs/btrfs/qgroup.c            | 283 +++++++++++++++---------
+ fs/btrfs/relocation.c        | 102 ++++++---
+ fs/btrfs/root-tree.c         | 201 +++++++----------
+ fs/btrfs/scrub.c             |  90 ++++----
+ fs/btrfs/send.c              | 235 +++++++++++---------
+ fs/btrfs/super.c             |  25 ++-
+ fs/btrfs/transaction.c       | 322 ++++++++++++++-------------
+ fs/btrfs/transaction.h       |  50 +++--
+ fs/btrfs/tree-log.c          |  41 ++--
+ fs/btrfs/ulist.c             |  15 ++
+ fs/btrfs/version.h           |   4 -
+ fs/btrfs/volumes.c           | 351 ++++++++++++++----------------
+ fs/btrfs/volumes.h           |   7 +-
+ include/trace/events/btrfs.h |  35 +--
+ include/uapi/linux/btrfs.h   |  42 +++-
+ 36 files changed, 2392 insertions(+), 1740 deletions(-)
