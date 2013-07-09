@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab3GIHMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:12:10 -0400
-Received: from relay-s04-hub002.domainlocalhost.com ([74.115.207.101]:44964
-	"EHLO relay-S04-HUB002.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752858Ab3GIHMH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 03:12:07 -0400
-Message-ID: <51DBB7C0.4010106@cypress.com>
-Date: Tue, 9 Jul 2013 10:12:00 +0300
-From: Ferruh Yigit <fery@cypress.com>
-Reply-To: <fery@cypress.com>
-Organization: Cypress
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753412Ab3GIHNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:13:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:55922 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab3GIHNH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 03:13:07 -0400
+Message-ID: <51DBB800.3010704@linutronix.de>
+Date: Tue, 09 Jul 2013 09:13:04 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.input,gmane.linux.kernel
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Javier Martinez Canillas <javier@dowhile0.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Input: cyttsp4 - SPI driver for Cypress TMA4XX touchscreen devices
-References: <20130704235117.733726609A1@gitolite.kernel.org> <CAMuHMdXS=35MVinOPNRKi=bAzVpqvL-QEm+QsciO1Xe-BYzc4Q@mail.gmail.com>
-In-Reply-To: <CAMuHMdXS=35MVinOPNRKi=bAzVpqvL-QEm+QsciO1Xe-BYzc4Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+CC: George Cherian <george.cherian@ti.com>, linux-usb@vger.kernel.org,
+        balbi@ti.com, linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        linux-omap@vger.kernel.org, kishon@ti.com
+Subject: Re: [PATCH 0/5] Add phy support for AM335X platform using Generic
+ PHy framework
+References: <1373280201-31785-1-git-send-email-george.cherian@ti.com> <51DB16A1.6010006@linutronix.de> <20130708203435.GB2596@localhost>
+In-Reply-To: <20130708203435.GB2596@localhost>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2013 10:15 PM, Geert Uytterhoeven wrote:
-> On Fri, Jul 5, 2013 at 1:51 AM, Linux Kernel Mailing List
-> <linux-kernel@vger.kernel.org> wrote:
->> +++ b/drivers/input/touchscreen/cyttsp4_spi.c
->
->> +static int cyttsp_spi_xfer(struct device *dev, u8 *xfer_buf,
->> +                          u8 op, u8 reg, u8 *buf, int length)
->> +{
->
->> +       if (reg > 255)
->
-> As "reg" is "u8", this is never true:
->
-> drivers/input/touchscreen/cyttsp4_spi.c: In function ‘cyttsp_spi_xfer’:
-> drivers/input/touchscreen/cyttsp4_spi.c:66: warning: comparison is
-> always false due to limited range of data type
->
->> +               wr_buf[0] = op + CY_SPI_A8_BIT;
->> +       else
->> +               wr_buf[0] = op;
->
-> Can the if-clause and the first branch just be removed, or is there a real bug
-> involved (e.g. wrong type for "reg")?
+On 07/08/2013 10:34 PM, Ezequiel Garcia wrote:
+> Hi,
 
-Yes there was a bug here, and already sent a patch for this, please
-check https://patchwork.kernel.org/patch/2820561/
+Hi,
 
-thanks,
-ferruh
+> On Mon, Jul 08, 2013 at 09:44:33PM +0200, Sebastian Andrzej Siewior wrote:
+> 
+>> We need two nodes each one with a glue layer and a musb child node. The
+>> instances crap in kernel has to vanish. Also that means your phy nodes
+>> are wrong. This is not musb with two ports but two musb instances each
+>> with one port.
+>>
+> 
+> I agree completely. The current DT representation looks definitely odd,
+> and we should be looking at improving it.
+> 
+> I wonder if this is now possible, given the DT is supposed to be stable ABI.
 
+I posted this [0] and Felipe + Benoit were pro change. I am still not
+sure if this is okay or just one glue layer per instance so I delay
+this until I am sure. Stable or not, what currently have in is beyond
+broken and it can't be fixed in kernel.
+I would add some code to check for the old nodes and give a proper
+warning and how to react. This should reduce the pain full search.
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+[0]
+http://git.breakpoint.cc/cgit.cgi/bigeasy/linux.git/commit/?h=am335x_usb&id=0a60cd77ee50edd8cd07cbd699ed67b2c4b2ab93
+
+Sebastian
