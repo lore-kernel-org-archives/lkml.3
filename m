@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab3GIXKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 19:10:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:16750 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab3GIXKc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 19:10:32 -0400
-Message-ID: <51DC983F.2010409@oracle.com>
-Date: Tue, 09 Jul 2013 19:09:51 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1753479Ab3GIXOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 19:14:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34252 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752509Ab3GIXOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 19:14:08 -0400
+Date: Wed, 10 Jul 2013 01:12:40 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Kay Sievers <kay@vrfy.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Lennart Poettering <lpoetter@redhat.com>,
+        Tim Hockin <thockin@hockin.org>, Michal Hocko <mhocko@suse.cz>,
+        Tejun Heo <tj@kernel.org>, Mike Galbraith <bitbucket@online.de>,
+        Li Zefan <lizefan@huawei.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        jpoimboe <jpoimboe@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: cgroup: status-quo and userland efforts
+In-Reply-To: <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1307100111410.4045@twin.jikos.cz>
+References: <CAAAKZwvP_7wBBYMmtFuiE2hZt=ByaLrnTyiR83CZr3OMip63Gg@mail.gmail.com> <20130625000118.GT1918@mtj.dyndns.org> <CAAAKZwt09k-qUwLCnMpAQeYJ-S0XtkjXe4=bJ-G_fcrkAqEzoA@mail.gmail.com> <20130626212047.GB4536@htj.dyndns.org> <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org> <1372391198.5989.110.camel@marge.simpson.net> <20130628040930.GC2500@htj.dyndns.org> <1372394950.5989.128.camel@marge.simpson.net> <20130628050138.GD2500@htj.dyndns.org> <20130628150513.GD5125@dhcp22.suse.cz>
+ <CAAAKZwtqYe-c0bfkgHFbzsOKVHifjTwkqcpci=uS1JwqS9TJHQ@mail.gmail.com> <51CE3CE0.9010506@redhat.com> <CAAAKZwuzhSzPj99HZW=KD4emGXZbcsjsUu=+TCpafhs9MKD2JA@mail.gmail.com> <51D08976.6040005@redhat.com> <alpine.DEB.2.02.1307030021480.4013@ionos.tec.linutronix.de>
+ <CAPXgP12AyogbFX_hPPmQD5GFG0-+_crsnHF3epDZSRds3-WNtQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
-        tglx@linutronix.de, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Subject: Re: timer: lockup in run_timer_softirq()
-References: <51DC902F.3070403@oracle.com> <20130709224706.GA13855@redhat.com> <51DC9379.9050408@oracle.com> <20130709230316.GB13855@redhat.com>
-In-Reply-To: <20130709230316.GB13855@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 07:03 PM, Dave Jones wrote:
-> On Tue, Jul 09, 2013 at 06:49:29PM -0400, Sasha Levin wrote:
->   > On 07/09/2013 06:47 PM, Dave Jones wrote:
->
->   > >   > [ 2536.500130] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run:
->   > >   > 697182.008 msecs
->   > >
->   > > I've been reporting these (and other traces) for a while https://lkml.org/lkml/2013/7/5/185 [1]
->   > > on bare-metal.
->   >
->   > Interesting. It's the first time I'm seeing these, but I haven't really changed
->   > anything in my configuration.
->   >
->   > Are you also seeing the "NMI handler took too long" messages?
->
-> Now that I look closer, one difference is you're seeing arch_trigger_all_cpu_backtrace_handler
-> in that message. I'm seeing them from perf_event_nmi_handler.
+On Wed, 3 Jul 2013, Kay Sievers wrote:
 
-perf huh? I also have this spew I'm currently working on, it seems related:
+> >> > But that's not my point.  It seems pretty easy to make this cgroup
+> >> > management (in "native mode") a library that can have either a thin
+> >> > veneer of a main() function, while also being usable by systemd.  The
+> >> > point is to solve all of the problems ONCE.  I'm trying to make the
+> >> > case that systemd itself should be focusing on features and policies
+> >> > and awesome APIs.
+> >>
+> >> You know, getting this all right isn't easy. If you want to do things
+> >> properly, then you need to propagate attribute changes between the units you
+> >> manage. You also need something like a scheduler, since a number of
+> >> controllers can only be configured under certain external conditions (for
+> >> example: the blkio or devices controller use major/minor parameters for
+> >> configuring per-device limits. Since major/minor assignments are pretty much
+> >> unpredictable these days -- and users probably want to configure things with
+> >> friendly and stable /dev/disk/by-id/* symlinks anyway -- this requires us to
+> >> wait for devices to show up before we can configure the parameters.) Soo...
+> >> you need a graph of units, where you can propagate things, and schedule things
+> >> based on some execution/event queue. And the propagation and scheduling are
+> >> closely intermingled.
+> >
+> > you are confusing policy and mechanisms.
+> >
+> >     The access to cgroupfs is mechanism.
+> >
+> >     The propagation of changes, the scheduling of cgroupfs access and
+> >     the correlation to external conditions are policy.
+> >
+> > What Tim is asking for is to have a common interface, i.e. a library
+> > which implements the low level access to the cgroupfs mechanism
+> > without imposing systemd defined policies to it (It might implement a
+> > set of common useful policies, but that's a different discussion).
+> >
+> > That's definitely not an unreasonable request, because he wants to
+> > implement his own set of policies which are not necessarily the same
+> > as those which are implemented by systemd.
+> >
+> > You are simply ignoring the fact, that Linux is used in other ways
+> > than those which you are focussed on. That's true for Google's way to
+> > manage its gazillion machines and that's equally true for the other
+> > end of the spectrum which is deep embedded or any other specialized
+> > use case. Just face it: running Linux on your laptop and on some RHT
+> > lab machines is covering about 1% of the use cases.
+> >
+> > Nevertheless you repeatedly claim, that systemd is the only way to
+> > deal with system startup and system management, is covering _ALL_ use
+> > cases and the interfaces you expose are sufficient.
+> >
+> > Did you ever work on specialized embedded or big data use cases? I
+> > really doubt that, but I might be wrong as usual.
+> >
+> > So I invite you to prove that you can beat an existing setup for an
+> > automotive use case with your magic systemd foo. I refund you fully,
+> > if you can beat the mark of a functional system less than 800ms after
+> > reset release on a 200MHz ARM machine. Functional is defined by the
+> > use case requirements and means:
+> >
+> >     - Basic cgroups management working
+> >     - GUI up and running
+> >     - Main communication interface (CAN bus) up and running
+> >
+> > The rest of the system is starting up after that including a more
+> > complex cgroup management.
+> >
+> > According to your claim that systemd is covering everything and some
+> > more, this should take you a few hours. I grant you a full week to
+> > work on that.
+> >
+> > The use case Tim is talking about is different, but has similar
+> > constraints which are completely driven by his particular use case
+> > scenario. I'm sure, that Tim can persuade his management to setup a
+> > similar contest to prove your expertise on the other extreme of the
+> > Linux world.
+> >
+> > Before answering please think about the relevance of your statements
+> > "getting this all right isn't easy", "something like a scheduler",
+> > "users probably want ..."  and "stable /dev/disk/by-id/* symlinks" in
+> > those contexts.
+> 
+> I don't think anybody needs your money.
+> 
+> But it's sure an improvement over last time when you wanted to use a
+> "Kantholz" to make your statement.
 
-[ 1443.380407] ------------[ cut here ]------------
-[ 1443.381713] WARNING: CPU: 20 PID: 49263 at kernel/lockdep.c:3552 check_flags+0x16b/0x220()
-[ 1443.383988] DEBUG_LOCKS_WARN_ON(current->softirqs_enabled)
-[ 1443.385452] Modules linked in:
-[ 1443.386459] CPU: 20 PID: 49263 Comm: trinity-child50 Tainted: G        W 
-3.10.0-next-20130709-sasha #3953
-[ 1443.388735]  0000000000000de0 ffff880805e03ab8 ffffffff84191329 ffffffff8519f386
-[ 1443.390082]  ffff880805e03b08 ffff880805e03af8 ffffffff811279cc ffffffff8519f386
-[ 1443.390082]  0000000000000000 ffff8807cf898000 ffffffff85a66940 0000000000000082
-[ 1443.390082] Call Trace:
-[ 1443.390082]  <IRQ>  [<ffffffff84191329>] dump_stack+0x52/0x87
-[ 1443.390082]  [<ffffffff811279cc>] warn_slowpath_common+0x8c/0xc0
-[ 1443.390082]  [<ffffffff81127ab6>] warn_slowpath_fmt+0x46/0x50
-[ 1443.390082]  [<ffffffff8419d649>] ? sub_preempt_count+0x9/0xf0
-[ 1443.390082]  [<ffffffff811a192b>] check_flags+0x16b/0x220
-[ 1443.390082]  [<ffffffff811a2ee7>] lock_is_held+0x77/0x110
-[ 1443.390082]  [<ffffffff8419d644>] ? sub_preempt_count+0x4/0xf0
-[ 1443.390082]  [<ffffffff8122dafe>] perf_tp_event+0xbe/0x450
-[ 1443.390082]  [<ffffffff8122de62>] ? perf_tp_event+0x422/0x450
-[ 1443.390082]  [<ffffffff8419d644>] ? sub_preempt_count+0x4/0xf0
-[ 1443.390082]  [<ffffffff812185f2>] perf_ftrace_function_call+0xc2/0xe0
-[ 1443.390082]  [<ffffffff811f8c78>] ? ftrace_ops_control_func+0xc8/0x140
-[ 1443.427495]  [<ffffffff8419d644>] ? sub_preempt_count+0x4/0xf0
-[ 1443.427495]  [<ffffffff81131917>] ? __local_bh_enable+0xc7/0xd0
-[ 1443.427495]  [<ffffffff811f8c78>] ftrace_ops_control_func+0xc8/0x140
-[ 1443.427495]  [<ffffffff841a1c3c>] ftrace_call+0x5/0x2f
-[ 1443.427495]  [<ffffffff841a1c3c>] ? ftrace_call+0x5/0x2f
-[ 1443.427495]  [<ffffffff81175b87>] ? vtime_account_irq_exit+0x67/0x80
-[ 1443.427495]  [<ffffffff8419d649>] ? sub_preempt_count+0x9/0xf0
-[ 1443.427495]  [<ffffffff8419d649>] ? sub_preempt_count+0x9/0xf0
-[ 1443.427495]  [<ffffffff8113185e>] ? __local_bh_enable+0xe/0xd0
-[ 1443.427495]  [<ffffffff8419d649>] ? sub_preempt_count+0x9/0xf0
-[ 1443.427495]  [<ffffffff81131917>] __local_bh_enable+0xc7/0xd0
-[ 1443.427495]  [<ffffffff81132d07>] __do_softirq+0x447/0x4d0
-[ 1443.427495]  [<ffffffff8419d649>] ? sub_preempt_count+0x9/0xf0
-[ 1443.427495]  [<ffffffff81132ed6>] irq_exit+0x86/0x120
-[ 1443.427495]  [<ffffffff841a43ea>] smp_apic_timer_interrupt+0x4a/0x60
-[ 1443.427495]  [<ffffffff841a2d32>] apic_timer_interrupt+0x72/0x80
-[ 1443.427495]  <EOI>  [<ffffffff81130542>] ? do_setitimer+0x242/0x2a0
-[ 1443.427495]  [<ffffffff8419871c>] ? _raw_spin_unlock_irq+0x4c/0x80
-[ 1443.427495]  [<ffffffff84198700>] ? _raw_spin_unlock_irq+0x30/0x80
-[ 1443.427495]  [<ffffffff81130542>] do_setitimer+0x242/0x2a0
-[ 1443.427495]  [<ffffffff811306fa>] alarm_setitimer+0x3a/0x70
-[ 1443.427495]  [<ffffffff8113b41e>] SyS_alarm+0xe/0x20
-[ 1443.427495]  [<ffffffff841a2240>] tracesys+0xdd/0xe2
-[ 1443.427495] ---[ end trace e3b9a6b9c7462a51 ]---
+Now how about the policy vs. mechanisms part of Thomas' e-mail?
+
+-- 
+Jiri Kosina
+SUSE Labs
+
