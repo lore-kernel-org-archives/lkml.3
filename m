@@ -1,144 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab3GIH40 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:56:26 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:6586 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab3GIH4L (ORCPT
+	id S1753564Ab3GIH5L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:57:11 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:27194 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab3GIH5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 03:56:11 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
-        <jiang.liu@huawei.com>, Yijing Wang <wangyijing@huawei.com>,
-        Oliver Neukum <oneukum@suse.de>, Paul Bolle <pebolle@tiscali.nl>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: [PATCH 1/2] PCI: introduce PCIe Device Serial NUmber Capability support
-Date: Tue, 9 Jul 2013 15:55:45 +0800
-Message-ID: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
+	Tue, 9 Jul 2013 03:57:06 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-78-51dbc250f170
+Message-id: <51DBC24F.5040202@samsung.com>
+Date: Tue, 09 Jul 2013 16:57:03 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com
+Subject: Re: [PATCH 0/6] cpufreq: Add 'load_table' debugfs file to show
+ colleced CPUs load
+References: <1373014001-17746-1-git-send-email-cw00.choi@samsung.com>
+ <CAKohpokzn4jrO3rr8pjzwd4Xn+0umOK-sMANV2Fj5xn6UhBHVg@mail.gmail.com>
+In-reply-to: <CAKohpokzn4jrO3rr8pjzwd4Xn+0umOK-sMANV2Fj5xn6UhBHVg@mail.gmail.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsWyRsSkWDfg0O1Ag/+HFCyeNv1gtzjb9Ibd
+	4vKuOWwWn3uPMFrcblzBZtG/sJfJYuNXDwd2jzvX9rB59G1ZxejxaHELo8fnTXIBLFFcNimp
+	OZllqUX6dglcGfsXixU85qk4d2caSwPjKa4uRk4OCQETiZYpN5kgbDGJC/fWs3UxcnEICSxl
+	lDjc2sIOU7Sl8TMjRGIRo8Smq49YIZxXjBLrt09iA6niFdCSePz9KAuIzSKgKvHw/WGwbjag
+	+P4XN8BqRAXCJFZOv8ICUS8o8WPyPSCbg0MEqOblzVSQmcwC0xklpv/YxQxSIywQI7H88Tew
+	eiGBHkaJBafEQWxOgWCJSS+esoLYzAI6Evtbp7FB2PISm9e8ZQYZJCFwil1i8992VoiDBCS+
+	TT4EtkxCQFZi0wFmiM8kJQ6uuMEygVFsFpKTZiEZOwvJ2AWMzKsYRVMLkguKk9KLTPWKE3OL
+	S/PS9ZLzczcxAmPt9L9nE3cw3j9gfYgxGWjlRGYp0eR8YKzmlcQbGpsZWZiamBobmVuakSas
+	JM6r3mIdKCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGRNX5Zh4BPDEO0lNeqwy9k72odupTE
+	spVV8QpzbYZxYV13xYRtikaflh+6qfFnA/eVjkyPQ9vcNp5jzFonFbjNouT/9+LIZbU8s096
+	CC+7zH104lKPuQ/Ku1/1LHtu6ZJ5SHs/o+Bd7+2RL9oTE44/VL16Pv5SMf/75aekdMs99X5u
+	MghjyHinxFKckWioxVxUnAgA8NiUGssCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jAd2AQ7cDDW6/krB42vSD3eJs0xt2
+	i8u75rBZfO49wmhxu3EFm0X/wl4mi41fPRzYPe5c28Pm0bdlFaPHo8UtjB6fN8kFsEQ1MNpk
+	pCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+AToumXmAF2gpFCWmFMK
+	FApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gADSSsYczYv1is4DFPxbk701gaGE9xdTFyckgI
+	mEhsafzMCGGLSVy4t56ti5GLQ0hgEaPEpquPWCGcV4wS67dPYgOp4hXQknj8/SgLiM0ioCrx
+	8P1hdhCbDSi+/8UNsBpRgTCJldOvsEDUC0r8mHwPyObgEAGqeXkzFWQms8B0RonpP3Yxg9QI
+	C8RILH/8DaxeSKCHUWLBKXEQm1MgWGLSi6esIDazgI7E/tZpbBC2vMTmNW+ZJzAKzEKyYhaS
+	sllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECI7kZ9I7GFc1WBxiFOBgVOLh/XD5
+	VqAQa2JZcWXuIUYJDmYlEd5FO28HCvGmJFZWpRblxxeV5qQWH2JMBobARGYp0eR8YJLJK4k3
+	NDYxM7I0Mje0MDI2J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQbG3HU1QRUztkg/cm45
+	tuT/5X/tbWs9eg8GTeQNVXsnVFb30WC/8tJnv+vmOj9gFGd769xXffeeTT5Do8gfr4evV06U
+	2XJEtkjpH9e2nSnAaFRamBoibrtKS3hF5CMpi6J3bwq0J9n42M40P+nF93P/x/1/C3MTyhtm
+	fYrZMiPV2mxehWf3rqtKLMUZiYZazEXFiQAK61bgKAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce PCIe Ext Capability Device Serial Number support,
-so we can use the unique device serial number to identify
-the physical device. During system suspend, if the PCIe
-device was removed and inserted a new same device, after
-system resume there is no good way to identify it, maybe
-Device Serial Number is a good choice if device support.
+On 07/09/2013 03:50 PM, Viresh Kumar wrote:
+> On 5 July 2013 14:16, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> Second, previous performance/powersave governor haven't calculated CPUs load
+>> becuase these governor didn't change CPU frequency according to CPUs load. But,
+>> load_table debugfs file always should indicate the collected CPUs data regardless
+>> of the kind of cpufreq governor. So, the patch3/4/5 implement that performance/
+>> powersave governor will check periodically CPUs load by calling dbs_check_cpu()
+>> with timer.
+> 
+> I raised a query on how can we call dbs_check_cpu() from
+> performance/powersave? Also, calling this routine will degrade
+> performance without any sense. So, I vote not for doing it.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: Paul Bolle <pebolle@tiscali.nl>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: linux-pci@vger.kernel.org
----
- drivers/pci/pci.c   |   33 +++++++++++++++++++++++++++++++++
- drivers/pci/pci.h   |    1 +
- drivers/pci/probe.c |    3 +++
- include/linux/pci.h |    4 ++++
- 4 files changed, 41 insertions(+), 0 deletions(-)
+You're right. The performance/powersave don't usually need calling operation
+of dbs_check_cpu(). Only, this patch aims at checking CPUs load on
+load_table debugfs file.
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index e37fea6..d08df2b 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -2048,6 +2048,39 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
- }
- 
- /**
-+ * pci_get_dsn - get device serial number
-+ * @dev: the PCI device
-+ * @sn: saved device serial number
-+ */
-+void pci_get_dsn(struct pci_dev *dev, u64 *sn)
-+{
-+	int pos;
-+	u32 lo, hi;
-+
-+	if (!pci_is_pcie(dev))
-+		goto out;
-+
-+	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
-+	if (!pos)
-+		goto out;
-+
-+	pci_read_config_dword(dev, pos + 4, &lo);
-+	pci_read_config_dword(dev, pos + 8, &hi);
-+	*sn = ((u64)hi << 32) | lo;
-+	return;
-+
-+out:
-+	*sn = 0;
-+	return;
-+}
-+EXPORT_SYMBOL(pci_get_dsn);
-+
-+void pci_dsn_init(struct pci_dev *dev)
-+{
-+	return pci_get_dsn(dev, &dev->sn);
-+}
-+
-+/**
-  * pci_configure_ari - enable or disable ARI forwarding
-  * @dev: the PCI device
-  *
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index 68678ed..f626006 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -202,6 +202,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
- 		    struct resource *res, unsigned int reg);
- int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
- void pci_configure_ari(struct pci_dev *dev);
-+void pci_dsn_init(struct pci_dev *dev);
- 
- /**
-  * pci_ari_enabled - query ARI forwarding status
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 46ada5c..d4c6e7e 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1322,6 +1322,9 @@ static void pci_init_capabilities(struct pci_dev *dev)
- 	/* Power Management */
- 	pci_pm_init(dev);
- 
-+	/* Device Serial Number */
-+	pci_dsn_init(dev);
-+
- 	/* Vital Product Data */
- 	pci_vpd_pci22_init(dev);
- 
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 0fd1f15..59cd205 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -342,6 +342,7 @@ struct pci_dev {
- 	struct list_head msi_list;
- 	struct kset *msi_kset;
- #endif
-+	u64 sn;		/* device serieal number, 0 if not support */
- 	struct pci_vpd *vpd;
- #ifdef CONFIG_PCI_ATS
- 	union {
-@@ -995,6 +996,9 @@ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
- ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
- int pci_vpd_truncate(struct pci_dev *dev, size_t size);
- 
-+/* Device Serial Number */
-+void pci_get_dsn(struct pci_dev *dev, u64 *sn);
-+
- /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
- resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
- void pci_bus_assign_resources(const struct pci_bus *bus);
--- 
-1.7.1
+I'm going to consider more efficient way than this patchset.
+For example, 
 
+But, following patctes haven't the dependency about upper description about performance/powersave.
+If user changes cpufreq governor from ondemand/conservative to performance/powersave,
+patch2 did reset all of the data for load_table.
+
+  cpufreq: Add debugfs directory for cpufreq
+  cpufreq: stats: Add 'load_table' debugfs file to show accumulated data of CPUs
+  Documentation: cpufreq: load_table: Update load_table debugfs file documentation
+
+So, I'd like you to review patch1,patch2, patch6. If you with that I resend patch1/2/6,
+I will resend new patchset incluing in patch1/2/6.
+
+Thanks,
+
+Best Regards,
+Chanwoo Choi
 
