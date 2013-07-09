@@ -1,133 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3GIOys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:54:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17189 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753864Ab3GIOyp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:54:45 -0400
-Date: Tue, 9 Jul 2013 10:54:30 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        cgroups@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Sha Zhengju <handai.szj@gmail.com>, devel@openvz.org,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
-Message-ID: <20130709145430.GB2237@redhat.com>
-References: <20130708175607.GB18600@mtj.dyndns.org>
- <51DBC99F.4030301@openvz.org>
- <20130709125734.GA2478@htj.dyndns.org>
- <51DC0CE2.2050906@openvz.org>
- <20130709131605.GB2478@htj.dyndns.org>
- <20130709131646.GC2478@htj.dyndns.org>
- <51DC136E.6020901@openvz.org>
- <20130709134558.GD2478@htj.dyndns.org>
- <20130709141833.GA2237@redhat.com>
- <20130709142908.GE2478@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754120Ab3GIOzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:55:09 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49536 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab3GIOzF convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:1>);
+	Tue, 9 Jul 2013 10:55:05 -0400
+Message-Id: <51DC406202000078000E39B2@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.2 
+Date: Tue, 09 Jul 2013 15:54:58 +0100
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Borislav Petkov" <bp@alien8.de>, "Matt Wilson" <msw@amazon.com>,
+        "Michael Opdenacker" <michael.opdenacker@free-electrons.com>,
+        <jeremy@goop.org>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <virtualization@lists.linux-foundation.org>,
+        <xen-devel@lists.xensource.com>, <mingo@redhat.com>,
+        "Paul Bolle" <pebolle@tiscali.nl>, <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
+References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com>
+ <20130708192854.GF4927@phenom.dumpdata.com>
+ <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>
+ <51DB2134.9040909@zytor.com> <20130708205834.GA481@pd.tnic>
+ <1373326534.1438.10.camel@x61.thuisdomein>
+ <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
+ <51DBDAB802000078000E37C1@nat28.tlf.novell.com>
+ <20130709144840.GF24897@phenom.dumpdata.com>
+In-Reply-To: <20130709144840.GF24897@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20130709142908.GE2478@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 07:29:08AM -0700, Tejun Heo wrote:
-> On Tue, Jul 09, 2013 at 10:18:33AM -0400, Vivek Goyal wrote:
-> > For implementing throttling one as such does not have to do time
-> > slice management on the queue.  For providing constructs like IOPS
-> > or bandwidth throttling, one just need to put one throttling knob 
-> > in the cgroup pipe irrespective of time slice management on the
-> > backing device/network.
+>>> On 09.07.13 at 16:48, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> Dom0 has been both - but there is nothing wrong with seperating these
+> two labels. And therein I was thinking that the 'hardware backend domain'
+> should be the introduced. I am not good with names so the best option
+> seems CONFIG_XEN_PRIVILIGED, but that sounds to be like 'controlling 
+> domain'.
 > 
-> We should be providing a comprehensive mechanism to be used from
-> userland, not something which serves pieces of specialized
-> requirements here and there.  blkio is already a mess with the
-> capability changing depending on which elevator is in use and
-> blk-throttle counting bios instead of merged requests making iops
-> control a bit silly.  We need to clean that up, not add more mess on
-> top.
+> Any good ideas for names? CONFIG_XEN_HARDWARE_DOMAIN ? 
+> CONFIG_XEN_PRIVILIGED_DOMAIN?
 
-It is not clear whether counting bio or counting request is right
-thing to do here. It depends where you are trying to throttle. For
-bio based drivers there is request and they need throttling mechanism
-too. So keeping it common for both, kind of makes sense.
+Following the naming in the hypervisor, CONFIG_XEN_HARDWARE_DOMAIN
+and CONFIG_XEN_CONTROL_DOMAIN would seem reasonable to me.
 
-> 
-> > Also time slice management is one way of managing the backend resource.
-> > CFQ did that and it works only for slow devices. For faster devices
-> > we anyway need some kind of token mechanism instead of keeping track
-> > of time.
-> 
-> No, it is the *right* resource to manage for rotating devices if you
-> want any sort of meaningful proportional resource distribution.  It's
-> not something one dreams up out of blue but something which arises
-> from the fundamental operating characteristics of the device.  For
-> SSDs, iops is good enough as their latency profile is consistent
-> enough but doing so with rotating disks doesn't yield anything useful.
+Jan
 
-Ok, so first of all you agree that time slice management is not a
-requirement for fast devices.
-
-Secondly, even for slow devices, time slice management practically works
-only if NCQ is not implemented in device or NCQ is not being used because
-CFQ is not dispatching more requests.
-
-So even in CFQ, time slice accounting works only for sequential IO.
-Anybody doing random IO, there is no notion of time slice. We allow
-dispatching requests from multiple queues at the same time and then
-we don't have a way to count time.
-
-So time slice management is a problem even on slow devices which implement
-NCQ. IIRC, in the beginning even CFQ as doing some kind of request
-management (and not time slice management). And later it switched to
-time slice management in an effort to provide better fairness (If somebody
-is doing random IO and seek takes more time the process should be
-accounted for it).
-
-But ideal time slice accounting requires driving a queue depth of 1
-and for any non-sequential IO, it kills performance.
-
-> 
-> > So I don't think trying to manage time slice is the requirement here.
-> 
-> For a cgroup resource controller, it *is* a frigging requirement to
-> control the right fundamental resource at the right place where the
-> resource resides and can be fully controlled.  Nobody should have any
-> other impression.
-
-Seriously, time slice accounting is one way of managing resource. Same
-disk resource can be divided proportionally by counting either iops
-or by counting amount of IO done (bandwidth).
-
-If we count iops or bandwidth, it might not be most fair way of doing
-things on rotational media but it also should provide more accurate
-results in case of NCQ. When multiple requests have been dispatched
-to disk we have no idea which request consumed how much of disk time.
-So there is no way to account it properly. Iops or bandwidth based
-accounting will work just fine even with NCQ.
-
-> 
-> > > and by the time you implemented proper hierarchy support and
-> > > proportional contnrol, yours isn't gonna be that simple either.
-> > 
-> > I suspect he is not plannnig to do any proportional control at that
-> > layer. Just throttling mechanism.
-> 
-> blkio should be able to do proportional control in general.  The fact
-> that we aren't able to do that except when cfq-iosched is in use is a
-> problem which needs to be fixed.  It's not a free-for-all pass for
-> creating more broken stuff.
-
-So you want this generic block layer proportional implementation to
-do time slice management?
-
-I thought we talked about this implementation to use some kind of token
-based mechanism so that it scales better on faster devices. And on slower
-devices one will continue to use CFQ.
-
-Thanks
-Vivek
