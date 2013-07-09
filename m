@@ -1,250 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3GIJMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 05:12:09 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:55465 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753167Ab3GIJMD convert rfc822-to-8bit (ORCPT
+	id S1753829Ab3GIJNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 05:13:53 -0400
+Received: from mail-db8lp0188.outbound.messaging.microsoft.com ([213.199.154.188]:5337
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753803Ab3GIJNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 05:12:03 -0400
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: "jg1.han@samsung.com" <jg1.han@samsung.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-CC: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH re-send] backlight: lp855x_bl: support new LP8555 device
-Thread-Topic: [PATCH re-send] backlight: lp855x_bl: support new LP8555 device
-Thread-Index: Ac58gvBFFgxDUPdBRRqk6xEM4o9OTg==
-Date: Tue, 9 Jul 2013 09:11:43 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F82E808C2@DQHE06.ent.ti.com>
-Accept-Language: en-US, ko-KR
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Jul 2013 05:13:50 -0400
+X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VS2(zz936eIzz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz17326ah8275dhz2dh87h2a8h668h839hd24he5bh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h13eah1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+From: Steven Miao <realmz6@kernel.org>
+To: <torvalds@linux-foundation.org>, <sfr@canb.auug.org.au>
+CC: <uclinux-dist-devel@blackfin.uclinux.org>, <linux-kernel@vger.kernel.org>
+Subject: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.11
+Date: Tue, 9 Jul 2013 17:15:30 +0800
+Message-ID: <1373361330-3946-1-git-send-email-realmz6@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LP8555 is one of LP855x family device.
-This device needs pre_init_device() and post_init_device() driver structure.
-It's same as LP8557, so the device configuration code is shared with LP8557.
-Backlight outputs are generated from dual DC-DC boost converters.
-It's configurable EPROM settings which are defined in the platform data.
+Hi Linus and Stephen,
 
-Driver documentation and device tree bindings are updated.
+I've signed up for an kernel.org account and moved the blackfin tree to kernel.org for convenience as some developers' suggestion. Pls update the url to:
+http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git
 
-Signed-off-by: Milo Kim <milo.kim@ti.com>
----
-This patch is re-sent with additional Cc lists.
+Hi Linus,
 
- Documentation/backlight/lp855x-driver.txt          |    5 ++--
- .../devicetree/bindings/video/backlight/lp855x.txt |   29 +++++++++++++++++++-
- drivers/video/backlight/Kconfig                    |    4 +--
- drivers/video/backlight/lp855x_bl.c                |   17 ++++++++++--
- include/linux/platform_data/lp855x.h               |   19 +++++++++++++
- 5 files changed, 67 insertions(+), 7 deletions(-)
+please pull blackfin updates for Linux 3.11, some minor changes for performance and bug fixes.
 
-diff --git a/Documentation/backlight/lp855x-driver.txt b/Documentation/backlight/lp855x-driver.txt
-index 1c732f0..01bce24 100644
---- a/Documentation/backlight/lp855x-driver.txt
-+++ b/Documentation/backlight/lp855x-driver.txt
-@@ -4,7 +4,8 @@ Kernel driver lp855x
- Backlight driver for LP855x ICs
- 
- Supported chips:
--	Texas Instruments LP8550, LP8551, LP8552, LP8553, LP8556 and LP8557
-+	Texas Instruments LP8550, LP8551, LP8552, LP8553, LP8555, LP8556 and
-+	LP8557
- 
- Author: Milo(Woogyom) Kim <milo.kim@ti.com>
- 
-@@ -24,7 +25,7 @@ Value : pwm based or register based
- 
- 2) chip_id
- The lp855x chip id.
--Value : lp8550/lp8551/lp8552/lp8553/lp8556/lp8557
-+Value : lp8550/lp8551/lp8552/lp8553/lp8555/lp8556/lp8557
- 
- Platform data for lp855x
- ------------------------
-diff --git a/Documentation/devicetree/bindings/video/backlight/lp855x.txt b/Documentation/devicetree/bindings/video/backlight/lp855x.txt
-index 1482103..96e83a5 100644
---- a/Documentation/devicetree/bindings/video/backlight/lp855x.txt
-+++ b/Documentation/devicetree/bindings/video/backlight/lp855x.txt
-@@ -2,7 +2,7 @@ lp855x bindings
- 
- Required properties:
-   - compatible: "ti,lp8550", "ti,lp8551", "ti,lp8552", "ti,lp8553",
--                "ti,lp8556", "ti,lp8557"
-+                "ti,lp8555", "ti,lp8556", "ti,lp8557"
-   - reg: I2C slave address (u8)
-   - dev-ctrl: Value of DEVICE CONTROL register (u8). It depends on the device.
- 
-@@ -15,6 +15,33 @@ Optional properties:
- 
- Example:
- 
-+	/* LP8555 */
-+	backlight@2c {
-+		compatible = "ti,lp8555";
-+		reg = <0x2c>;
-+
-+		dev-ctrl = /bits/ 8 <0x00>;
-+		pwm-period = <10000>;
-+
-+		/* 4V OV, 4 output LED0 string enabled */
-+		rom_14h {
-+			rom-addr = /bits/ 8 <0x14>;
-+			rom-val = /bits/ 8 <0xcf>;
-+		};
-+
-+		/* Heavy smoothing, 24ms ramp time step */
-+		rom_15h {
-+			rom-addr = /bits/ 8 <0x15>;
-+			rom-val = /bits/ 8 <0xc7>;
-+		};
-+
-+		/* 4 output LED1 string enabled */
-+		rom_19h {
-+			rom-addr = /bits/ 8 <0x19>;
-+			rom-val = /bits/ 8 <0x0f>;
-+		};
-+	};
-+
- 	/* LP8556 */
- 	backlight@2c {
- 		compatible = "ti,lp8556";
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index d5ab658..9d20953 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -388,8 +388,8 @@ config BACKLIGHT_LP855X
- 	tristate "Backlight driver for TI LP855X"
- 	depends on BACKLIGHT_CLASS_DEVICE && I2C
- 	help
--	  This supports TI LP8550, LP8551, LP8552, LP8553, LP8556 and LP8557
--	  backlight driver.
-+	  This supports TI LP8550, LP8551, LP8552, LP8553, LP8555, LP8556 and
-+	  LP8557 backlight driver.
- 
- config BACKLIGHT_LP8788
- 	tristate "Backlight driver for TI LP8788 MFD"
-diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backlight/lp855x_bl.c
-index a0e1e02..4abc09a 100644
---- a/drivers/video/backlight/lp855x_bl.c
-+++ b/drivers/video/backlight/lp855x_bl.c
-@@ -26,13 +26,15 @@
- #define LP8556_EPROM_START		0xA0
- #define LP8556_EPROM_END		0xAF
- 
--/* LP8557 Registers */
-+/* LP8555/7 Registers */
- #define LP8557_BL_CMD			0x00
- #define LP8557_BL_MASK			0x01
- #define LP8557_BL_ON			0x01
- #define LP8557_BL_OFF			0x00
- #define LP8557_BRIGHTNESS_CTRL		0x04
- #define LP8557_CONFIG			0x10
-+#define LP8555_EPROM_START		0x10
-+#define LP8555_EPROM_END		0x7A
- #define LP8557_EPROM_START		0x10
- #define LP8557_EPROM_END		0x1E
- 
-@@ -111,6 +113,10 @@ static bool lp855x_is_valid_rom_area(struct lp855x *lp, u8 addr)
- 		start = LP8556_EPROM_START;
- 		end = LP8556_EPROM_END;
- 		break;
-+	case LP8555:
-+		start = LP8555_EPROM_START;
-+		end = LP8555_EPROM_END;
-+		break;
- 	case LP8557:
- 		start = LP8557_EPROM_START;
- 		end = LP8557_EPROM_END;
-@@ -165,9 +171,14 @@ static int lp855x_configure(struct lp855x *lp)
- 	struct lp855x_platform_data *pd = lp->pdata;
- 
- 	switch (lp->chip_id) {
--	case LP8550 ... LP8556:
-+	case LP8550:
-+	case LP8551:
-+	case LP8552:
-+	case LP8553:
-+	case LP8556:
- 		lp->cfg = &lp855x_dev_cfg;
- 		break;
-+	case LP8555:
- 	case LP8557:
- 		lp->cfg = &lp8557_dev_cfg;
- 		break;
-@@ -470,6 +481,7 @@ static const struct of_device_id lp855x_dt_ids[] = {
- 	{ .compatible = "ti,lp8551", },
- 	{ .compatible = "ti,lp8552", },
- 	{ .compatible = "ti,lp8553", },
-+	{ .compatible = "ti,lp8555", },
- 	{ .compatible = "ti,lp8556", },
- 	{ .compatible = "ti,lp8557", },
- 	{ }
-@@ -481,6 +493,7 @@ static const struct i2c_device_id lp855x_ids[] = {
- 	{"lp8551", LP8551},
- 	{"lp8552", LP8552},
- 	{"lp8553", LP8553},
-+	{"lp8555", LP8555},
- 	{"lp8556", LP8556},
- 	{"lp8557", LP8557},
- 	{ }
-diff --git a/include/linux/platform_data/lp855x.h b/include/linux/platform_data/lp855x.h
-index ea32005..1b2ba24 100644
---- a/include/linux/platform_data/lp855x.h
-+++ b/include/linux/platform_data/lp855x.h
-@@ -40,6 +40,17 @@
- #define LP8553_PWM_CONFIG	LP8550_PWM_CONFIG
- #define LP8553_I2C_CONFIG	LP8550_I2C_CONFIG
- 
-+/* CONFIG register - LP8555 */
-+#define LP8555_PWM_STANDBY	BIT(7)
-+#define LP8555_PWM_FILTER	BIT(6)
-+#define LP8555_RELOAD_EPROM	BIT(3)	/* use it if EPROMs should be reset
-+					   when the backlight turns on */
-+#define LP8555_OFF_OPENLEDS	BIT(2)
-+#define LP8555_PWM_CONFIG	LP8555_PWM_ONLY
-+#define LP8555_I2C_CONFIG	LP8555_I2C_ONLY
-+#define LP8555_COMB1_CONFIG	LP8555_COMBINED1
-+#define LP8555_COMB2_CONFIG	LP8555_COMBINED2
-+
- /* DEVICE CONTROL register - LP8556 */
- #define LP8556_PWM_CONFIG	(LP8556_PWM_ONLY << BRT_MODE_SHFT)
- #define LP8556_COMB1_CONFIG	(LP8556_COMBINED1 << BRT_MODE_SHFT)
-@@ -65,6 +76,7 @@ enum lp855x_chip_id {
- 	LP8551,
- 	LP8552,
- 	LP8553,
-+	LP8555,
- 	LP8556,
- 	LP8557,
- };
-@@ -89,6 +101,13 @@ enum lp8553_brighntess_source {
- 	LP8553_I2C_ONLY = LP8550_I2C_ONLY,
- };
- 
-+enum lp8555_brightness_source {
-+	LP8555_PWM_ONLY,
-+	LP8555_I2C_ONLY,
-+	LP8555_COMBINED1,	/* Brightness register with shaped PWM */
-+	LP8555_COMBINED2,	/* PWM with shaped brightness register */
-+};
-+
- enum lp8556_brightness_source {
- 	LP8556_PWM_ONLY,
- 	LP8556_COMBINED1,	/* pwm + i2c before the shaper block */
--- 
-1.7.9.5
+The following changes since commit 8bb495e3f02401ee6f76d1b1d77f3ac9f079e376:
 
+  Linux 3.10 (2013-06-30 15:13:29 -0700)
 
-Best Regards,
-Milo
+are available in the git repository at:
+
+  http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git tags/blackfin-for-linus
+
+for you to fetch changes up to 150382a53d11256e5666c86525c8bf8d23684532:
+
+  smp: refine bf561 smpboot code (2013-07-09 15:50:38 +0800)
+
+----------------------------------------------------------------
+blackfin updates for Linux 3.11
+
+----------------------------------------------------------------
+Scott Jiang (1):
+      bf609: rename bfin6xx_spi to bfin_spi3
+
+Sonic Zhang (2):
+      kgdb: blackfin: include irq_regs.h in kgdb.c
+      bf609: add cpu revision 0.1
+
+Steven Miao (2):
+      bf609: stmmac: fix build after stmmac_mdio_bus_data changed
+      smp: refine bf561 smpboot code
+
+ arch/blackfin/Kconfig                              |    2 +-
+ .../include/asm/{bfin6xx_spi.h => bfin_spi3.h}     |    4 ++--
+ arch/blackfin/kernel/kgdb.c                        |    1 +
+ arch/blackfin/mach-bf561/smp.c                     |    7 +++----
+ arch/blackfin/mach-bf609/boards/ezkit.c            |   19 +++++++++----------
+ arch/blackfin/mach-common/smp.c                    |   18 ++++++++----------
+ 6 files changed, 24 insertions(+), 27 deletions(-)
+ rename arch/blackfin/include/asm/{bfin6xx_spi.h => bfin_spi3.h} (99%)
 
