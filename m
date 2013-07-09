@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab3GIPgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 11:36:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48889 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751728Ab3GIPgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 11:36:03 -0400
-Message-ID: <51DC2DDA.6040408@suse.de>
-Date: Tue, 09 Jul 2013 17:35:54 +0200
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.3) Gecko/20120306 Thunderbird/10.0.3
+	id S1752197Ab3GIPg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 11:36:57 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:47068 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab3GIPgy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 11:36:54 -0400
+Message-ID: <51DC2E0E.1050309@de.ibm.com>
+Date: Tue, 09 Jul 2013 17:36:46 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 2/8] KVM: PPC: reserve a capability and ioctl numbers
- for realmode VFIO
-References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru> <1372309356-28320-3-git-send-email-aik@ozlabs.ru>
-In-Reply-To: <1372309356-28320-3-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gleb Natapov <gleb@redhat.com>
+CC: Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Alexander Graf <agraf@suse.de>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] PF: Add FAULT_FLAG_RETRY_NOWAIT for guest fault
+References: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com> <1373378207-10451-2-git-send-email-dingel@linux.vnet.ibm.com> <20130709152346.GG24941@redhat.com>
+In-Reply-To: <20130709152346.GG24941@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13070915-0542-0000-0000-000005C257E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2013 07:02 AM, Alexey Kardashevskiy wrote:
-> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
-> ---
->   include/uapi/linux/kvm.h |    2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-> index 970b1f5..0865c01 100644
-> --- a/include/uapi/linux/kvm.h
-> +++ b/include/uapi/linux/kvm.h
-> @@ -667,6 +667,7 @@ struct kvm_ppc_smmu_info {
->   #define KVM_CAP_PPC_RTAS 91
->   #define KVM_CAP_IRQ_XICS 92
->   #define KVM_CAP_SPAPR_MULTITCE 93
-> +#define KVM_CAP_SPAPR_TCE_IOMMU 94
->
->   #ifdef KVM_CAP_IRQ_ROUTING
->
-> @@ -923,6 +924,7 @@ struct kvm_s390_ucas_mapping {
->   /* Available with KVM_CAP_PPC_ALLOC_HTAB */
->   #define KVM_PPC_ALLOCATE_HTAB	  _IOWR(KVMIO, 0xa7, __u32)
->   #define KVM_CREATE_SPAPR_TCE	  _IOW(KVMIO,  0xa8, struct kvm_create_spapr_tce)
-> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, struct kvm_create_spapr_tce_iommu)
+On 09/07/13 17:23, Gleb Natapov wrote:
+> On Tue, Jul 09, 2013 at 03:56:44PM +0200, Dominik Dingel wrote:
+>> In case of a fault retry exit sie64() with gmap_fault indication for the
+>> running thread set. This makes it possible to handle async page faults
+>> without the need for mm notifiers.
+>>
+>> Based on a patch from Martin Schwidefsky.
+>>
+> For that we will obviously need Christian and Cornelia ACKs. Or it can
+> go in via S390 tree.
+> 
 
-Please order them by number.
+>> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Alex
+Do you want me or Conny to apply these patches add a signoff and resend them?
+Otherwise I will review the s390 specific patches and ack them individually.
 
->   /* Available with KVM_CAP_RMA */
->   #define KVM_ALLOCATE_RMA	  _IOR(KVMIO,  0xa9, struct kvm_allocate_rma)
->   /* Available with KVM_CAP_PPC_HTAB_FD */
+Christian
+
+
 
