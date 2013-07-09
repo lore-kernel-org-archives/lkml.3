@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3GIN6l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:58:41 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:38474 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab3GIN6k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 09:58:40 -0400
-Date: Tue, 9 Jul 2013 06:23:59 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 2/7] nohz_full: Add rcu_dyntick data for
- scalable detection of all-idle state
-Message-ID: <20130709132359.GF16780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130709012934.GA26058@linux.vnet.ibm.com>
- <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1373333406-26979-2-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130709093728.GB17211@twins.programming.kicks-ass.net>
+	id S1753935Ab3GIN7P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:59:15 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39418 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488Ab3GIN7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 09:59:13 -0400
+Message-ID: <51DC1712.30401@ti.com>
+Date: Tue, 9 Jul 2013 16:58:42 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130709093728.GB17211@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070913-7408-0000-0000-000011DC4989
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: <balbi@ti.com>, <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH 4/6] USB: ehci-omap: Suspend the controller during
+ bus suspend
+References: <Pine.LNX.4.44L0.1306281346430.1047-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1306281346430.1047-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 11:37:28AM +0200, Peter Zijlstra wrote:
-> On Mon, Jul 08, 2013 at 06:30:01PM -0700, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > This commit adds fields to the rcu_dyntick structure that are used to
-> > detect idle CPUs.  These new fields differ from the existing ones in
-> > that the existing ones consider a CPU executing in user mode to be idle,
-> > where the new ones consider CPUs executing in user mode to be busy.
-> > The handling of these new fields is otherwise quite similar to that for
-> > the exiting fields.  This commit also adds the initialization required
-> > for these fields.
-> > 
-> > So, why is usermode execution treated differently, with RCU considering
-> > it a quiescent state equivalent to idle, while in contrast the new
-> > full-system idle state detection considers usermode execution to be
-> > non-idle?
-> > 
-> > It turns out that although one of RCU's quiescent states is usermode
-> > execution, it is not a full-system idle state.  This is because the
-> > purpose of the full-system idle state is not RCU, but rather determining
-> > when accurate timekeeping can safely be disabled.  Whenever accurate
-> > timekeeping is required in a CONFIG_NO_HZ_FULL kernel, at least one
-> > CPU must keep the scheduling-clock tick going.  If even one CPU is
-> > executing in user mode, accurate timekeeping is requires, particularly for
-> > architectures where gettimeofday() and friends do not enter the kernel.
-> > Only when all CPUs are really and truly idle can accurate timekeeping be
-> > disabled, allowing all CPUs to turn off the scheduling clock interrupt,
-> > thus greatly improving energy efficiency.
-> > 
-> > This naturally raises the question "Why is this code in RCU rather than in
-> > timekeeping?", and the answer is that RCU has the data and infrastructure
-> > to efficiently make this determination.
+On 06/28/2013 10:06 PM, Alan Stern wrote:
+> On Fri, 28 Jun 2013, Roger Quadros wrote:
 > 
-> but but but but... why doesn't the regular nohz code qualify? I'd think
-> that too would be tracking pretty much the same things, no?
+>>> That's not what I meant.  Never mind the pinctrl; I was asking about
+>>> the EHCI controller itself.  Under what circumstances does the
+>>> controller assert its wakeup signal?  And how do you tell it to stop
+>>> asserting that signal?
+>>
+>> I believe this would be through the EHCI Interrupt enable register (USBINTR).
+>> I'm not aware of any other mechanism.
+> 
+> That's strange, because ehci_suspend() sets the intr_enable register to 
+> 0.  So how do you ever get any wakeup interrupts at all?
+> 
+>> Right. It seems the external hub has signaled remote wakeup but the kernel doesn't
+>> resume the root hub's port it is connected to.
+>>
+>> By observing the detailed logs below you can see that the root hub does not generate
+>> an INTerrupt transaction to notify the port status change event. I've captured the pstatus
+>> and GetPortStatus info as well.
+> 
+> We don't need an interrupt.  The driver is supposed to detect the
+> remote wakeup sent by the external hub all by itself.
+> 
+>> Failing case
+>> ------------
+>>
+>> [   16.108032] usb usb1: usb auto-resume
+>> [   16.108062] ehci-omap 48064800.ehci: resume root hub
+>> [   16.108154] hub 1-0:1.0: hub_resume
+>> [   16.108398] ehci_hub_control GetPortStatus, port 1 temp = 0x1000
+>> [   16.108459] ehci_hub_control GetPortStatus, port 2 temp = 0x14c5
+> 
+> Here's where we should detect it.  Look at the GetPortStatus case in
+> ehci_hub_control(); the PORT_RESUME bit (0x0040) is set in temp, so the
+> "Remote Wakeup received?" code should run.  In particular, these lines
+> should run:
+> 
+> 			/* resume signaling for 20 msec */
+> 			ehci->reset_done[wIndex] = jiffies
+> 					+ msecs_to_jiffies(20);
+> 			usb_hcd_start_port_resume(&hcd->self, wIndex);
+> 			/* check the port again */
+> 			mod_timer(&ehci_to_hcd(ehci)->rh_timer,
+> 					ehci->reset_done[wIndex]);
+> 
+> Therefore 20 ms later, around timestamp 16.128459,
+> ehci_hub_status_data() should have been called.  At that time, the
+> root-hub port should have been fully resumed.
+> 
+>> [   16.108551] hub 1-0:1.0: port 2: status 0507 change 0000
+>> [   16.108612] ehci_hub_control GetPortStatus, port 3 temp = 0x1000
+>> [   16.108642] hub 1-0:1.0: hub_activate submitting urb
+>> [   16.109222] ehci_irq port 3 pstatus 0x1000
+>> [   16.109222] ehci_irq port 2 pstatus 0x14c5
+>> [   16.109252] ehci_irq port 1 pstatus 0x1000
+>> [   16.109374] hub 1-0:1.0: state 7 ports 3 chg 0000 evt 0000
+> 
+> But apparently nothing happened.  Why not?  Did the rh_timer get reset?  
+> Maybe you can find out what went wrong.
+> 
+> (Hmmm, we seem to be missing a
+> 
+> 			set_bit(wIndex, &ehci->resuming_ports);
+> 
+> line in there...)
+> 
 
-The regular nohz code is identifying which CPUs are idle, but is doing
-so on a CPU-by-CPU basis.  Before turning off system-wide timekeeping,
-we need to know that -all- of the CPUs are idle.  The regular nohz code
-does not do this.
+Right. This is indeed the problem. I've cooked up a patch for that and will send
+it separately in a moment.
 
-							Thanx, Paul
-
+cheers,
+-roger
