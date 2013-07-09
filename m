@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab3GIOYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 10:24:17 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13753 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab3GIOYQ (ORCPT
+	id S1753916Ab3GIOZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 10:25:59 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:39526 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803Ab3GIOZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 10:24:16 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 09 Jul 2013 07:23:31 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] irq: enable suspended EARLY_RESUME irqs forcefully if not resumed
-Date: Tue, 9 Jul 2013 20:02:23 +0530
-Message-ID: <1373380343-10143-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Tue, 9 Jul 2013 10:25:56 -0400
+From: Richard Genoud <richard.genoud@gmail.com>
+To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
+        Richard Genoud <richard.genoud@gmail.com>
+Subject: [PATCH v4 0/7] Sound support for at91sam9x5-wm8731 based boards
+Date: Tue,  9 Jul 2013 16:25:26 +0200
+Message-Id: <1373379933-32749-1-git-send-email-richard.genoud@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com>
+References: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When system enters into suspend, it disable all irqs in single
-function call. This disables EARLY_RESUME irqs also along with
-normal irqs.
+[I've just seen that I forgot to cc Uwe to the cover letter, sorry for that.]
 
-The EARLY_RESUME irqs get enabled in sys_core_ops->resume and
-non-EARLY_RESUME irqs get enabled in normal system resume path.
+Hi,
 
-When suspend_noirq failed or suspend is aborted for any reason,
-the EARLY_RESUME irqs do not get enabled as sys_core_ops->resume()
-call did not happen. It only enables the non-EARLY_RESUME irqs in normal
-disable for remaining life of system.
+This patchset add sound on the at91sam9x5ek board.
+It's based on Nicolas Ferre's work in the 2.6.39 atmel patch for sam9x5:
+https://github.com/linux4sam/linux-at91/commit/0aa157c9e71ccccf3abc30fa37eb5c95b392978d
 
-Add checks on normal irq_resume() whether EARLY_RESUME irqs have been
-enabled or not and if not then enable it forcefully.
+It needs Bo Chen's patchset on the generic dmaengine (topic/atmel branch
+on Mark's sound tree) and the SSC interrupts disabled (cf
+http://www.spinics.net/lists/arm-kernel/msg256901.html)
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- kernel/irq/pm.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Outstanding issue:
+If this machine driver will support more SoCs maybe we should name it differently.
 
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index cb228bf..e8a1427 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -13,6 +13,8 @@
- 
- #include "internals.h"
- 
-+static bool early_resume_irq_suspended;
-+
- /**
-  * suspend_device_irqs - disable all currently enabled interrupt lines
-  *
-@@ -37,6 +39,7 @@ void suspend_device_irqs(void)
- 	for_each_irq_desc(irq, desc)
- 		if (desc->istate & IRQS_SUSPENDED)
- 			synchronize_irq(irq);
-+	early_resume_irq_suspended = true;
- }
- EXPORT_SYMBOL_GPL(suspend_device_irqs);
- 
-@@ -67,6 +70,7 @@ static void resume_irqs(bool want_early)
- static void irq_pm_syscore_resume(void)
- {
- 	resume_irqs(true);
-+	early_resume_irq_suspended = false;
- }
- 
- static struct syscore_ops irq_pm_syscore_ops = {
-@@ -87,9 +91,15 @@ device_initcall(irq_pm_init_ops);
-  * Enable all non-%IRQF_EARLY_RESUME interrupt lines previously
-  * disabled by suspend_device_irqs() that have the IRQS_SUSPENDED flag
-  * set as well as those with %IRQF_FORCE_RESUME.
-+ * Also enable IRQF_EARLY_RESUME irqs if it is not enabled by syscore_ops
-+ * resume path.
-  */
- void resume_device_irqs(void)
- {
-+	if (early_resume_irq_suspended) {
-+		pr_err("%s: Resuming IRQF_EARLY_RESUME forcefully\n", __func__);
-+		irq_pm_syscore_resume();
-+	}
- 	resume_irqs(false);
- }
- EXPORT_SYMBOL_GPL(resume_device_irqs);
+
+It has been tested on at91sam9g35ek, and should work on g15, g25, x25 and x35 also.
+
+patches applies on next-20130708
+
+[I let the original signed-off from Nicolas and Uwe in place, I don't
+know if I should replace them by something like "originaly-signed-off-by"
+since the code has been changed.]
+
+Changes from v3:
+ * Remove the use of macros in device tree documentation.
+
+Changes from v2:
+ * Change atmel,sam9x5-audio-wm8731 to atmel,sam9x5-wm8731-audio for
+consistency with sam9g20 machine driver.
+ * Use the snd_pcm_hw_constraint() API as suggested by Mark and Lars-Peter.
+ * Remove the unnecessary snd_soc_dapm_sync() call as Lars-Peter suggested.
+ * Add documentation for machine driver DT binding.
+ * Update atmel-ssc DT binding documentation.
+ * Add GPL license instead of just the "GPL" word (hope that's ok !)
+
+Changes from v1-RFC:
+ * drop patches on SSC since Bo Chen already did the work
+ * reorder patches to have the machine driver first
+ * drop code already handled by the ASoC framework
+ * drop unneeded SND_ATMEL_SOC_PDC config selection
+ * use static snd_soc_card and  snd_soc_dai_link structures.
+
+Best regards,
+Richard.
+
+Nicolas Ferre (1):
+  sound: sam9x5_wm8731: machine driver for at91sam9x5 wm8731 boards
+
+Richard Genoud (6):
+  Documentation: DT: add sam9x5ek-wm8731 machine driver
+  Documentation: DT: update atmel SSC with DMA binding
+  ARM: AT91: DTS: sam9x5: add SSC DMA parameters
+  ARM: AT91: DTS: sam9x5ek: add WM8731 codec
+  ARM: AT91: DTS: sam9x5ek: add sound configuration
+  ARM: AT91: DTS: sam9x5ek: enable SSC
+
+ .../devicetree/bindings/misc/atmel-ssc.txt         |   20 +-
+ .../bindings/sound/atmel-sam9x5-wm8731-audio.txt   |   30 +++
+ arch/arm/boot/dts/at91sam9x5.dtsi                  |    3 +
+ arch/arm/boot/dts/at91sam9x5ek.dtsi                |   27 +++
+ sound/soc/atmel/Kconfig                            |   10 +
+ sound/soc/atmel/Makefile                           |    2 +
+ sound/soc/atmel/sam9x5_wm8731.c                    |  238 ++++++++++++++++++++
+ 7 files changed, 329 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/sound/atmel-sam9x5-wm8731-audio.txt
+ create mode 100644 sound/soc/atmel/sam9x5_wm8731.c
+
 -- 
-1.7.1.1
+1.7.10.4
+
 
