@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753135Ab3GIVR4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 17:17:56 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:49846 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab3GIVRx (ORCPT
+	id S1753502Ab3GIVSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 17:18:17 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:51899 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab3GIVSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 17:17:53 -0400
+	Tue, 9 Jul 2013 17:18:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH V3 2/3] clocksource: mmp: support CLOCKSOURCE OF DECLARE
+Date: Tue, 9 Jul 2013 23:16:20 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Neil Zhang <zhangwm@marvell.com>, grant.likely@linaro.org,
+        haojian.zhuang@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com> <1373352166-10064-3-git-send-email-zhangwm@marvell.com> <20130709181434.76f6216d@skate>
+In-Reply-To: <20130709181434.76f6216d@skate>
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-In-Reply-To: <1373391071-6312-3-git-send-email-dianders@chromium.org>
-References: <1373391071-6312-1-git-send-email-dianders@chromium.org>
-	<1373391071-6312-3-git-send-email-dianders@chromium.org>
-Date: Tue, 9 Jul 2013 22:17:51 +0100
-X-Google-Sender-Auth: w-SStYBBM5iWCT2BAjMfq9NbADg
-Message-ID: <CAAG0J9_FbJYRrR=8GgHCvMDSbwfwXic81TJfchnv5UM798RB_g@mail.gmail.com>
-Subject: Re: [PATCH 2/5] mmc: dw_mmc: Add suspend/resume callbacks; disable
- irq during suspend
-From: James Hogan <james.hogan@imgtec.com>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Chris Ball <cjb@laptop.org>, Olof Johansson <olof@lixom.net>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, linux-mmc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201307092316.20905.arnd@arndb.de>
+X-Provags-ID: V02:K0:Z/nDu/+jEFOS6qYT9S4Dvox3gkjXOVPazmYVN2CYqVz
+ NFIFhiCshnzQllRDOAw1BzOWXI/c4aqrI2dAV9MVITGy1FHpeS
+ hDgIRYcKPmgteEj20CRXrHUwY8KuZYFX2wQ1FP752p66iPiBOD
+ 2oXpjIUs5LFm4dOt6MwPnT0LlcnqMFFaQdMrn1+0VeanTRpe2s
+ 8lwdO7u1Cm7w8b9XZgA0l58Pj1HgKh27PCEzqY2d+MBDReSYHP
+ I28LhWnvVLs3VeCJR4N9QQRZ3LfaNQAGa7epoIVONsY2r1UHrk
+ 3+EXhHOXIIOlyJrLdS1gk/kOvtN1qDaRer+QlEbL7/Qga3HNrY
+ Ektd8+FdSxrq+lgQ/7No=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On Tuesday 09 July 2013, Thomas Petazzoni wrote:
+> Dear Neil Zhang,
+> 
+> On Tue, 9 Jul 2013 14:42:45 +0800, Neil Zhang wrote:
+> > support CLOCKSOURCE OF DECLARE for mmp timer.
+> > 
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > ---
+> >  arch/arm/mach-mmp/mmp-dt.c  |    5 ++---
+> >  arch/arm/mach-mmp/mmp2-dt.c |    3 +--
+> >  arch/arm/mach-mmp/time.c    |   15 ++-------------
+> >  3 files changed, 5 insertions(+), 18 deletions(-)
+> 
+> Maybe it would be good to take this opportunity to move
+> arch/arm/mach-mmp/time.c into drivers/clocksource/.
 
-On 9 July 2013 18:31, Doug Anderson <dianders@chromium.org> wrote:
-> On some platforms (like exynos5420) the dw_mmc controller may be in a
-> strange state after we wake up from sleep.  Add callbacks to allow for
-> dealing with these quirks.  Prevent interrupts from firing when we're
-> suspended since this strange state may cause interrupts to fire.
->
-> In my case I saw the WAKEUP_INT interrupt firing upon resume and
-> needed to add some code to handle this.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
++1
 
-Would it make sense to take advantage of the {suspend,resume}_noirq
-power management callbacks to clear that WAKEUP_INT before interrupts
-are re-enabled, rather than explicitly disabling and enabling the
-interrupt at the suspend/resume stage?
+Or we might want to have a more coordinated move of all clocksource
+drivers in arch/arm to drivers/clocksource now, as we have done for some
+other subsystems.
 
-Cheers
-James
+	Arnd
