@@ -1,69 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566Ab3GIIlJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:41:09 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:40378 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752701Ab3GIIlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:41:06 -0400
-X-Greylist: delayed 322 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Jul 2013 04:41:05 EDT
-Date: Tue, 9 Jul 2013 10:35:35 +0200
-From: Gianluca Anzolin <gianluca@sottospazio.it>
-To: jslaby@suse.cz
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix refcount leak in tty_port.c
-Message-ID: <20130709083535.GA30227@debian.seek.priv>
+	id S1753603Ab3GIInk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:43:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:54844 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab3GIInd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 04:43:33 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="wRRV7LY7NUeQGEoC"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <s5hmwpwuwjp.wl%tiwai@suse.de>
+References: <20130702192749.A2E7E660D9B@gitolite.kernel.org>
+	<20130706221401.GA3652@redhat.com>
+	<20130706223003.GA10697@kroah.com>
+	<s5h4nc5bewf.wl%tiwai@suse.de>
+	<CACVXFVN452nktR=JTTubnYwVkcDdoued0VysT1vA+2jHU1A3Gw@mail.gmail.com>
+	<s5hmwpwuwjp.wl%tiwai@suse.de>
+Date: Tue, 9 Jul 2013 16:43:30 +0800
+Message-ID: <CACVXFVNx7SA3rM46q4=7+7QU==EL3ukAeWcaBYruykfE6JPe8w@mail.gmail.com>
+Subject: Re: dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
+From: Ming Lei <ming.lei@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 9, 2013 at 1:33 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 9 Jul 2013 11:15:20 +0800,
+> Ming Lei wrote:
+>>
+>> On Mon, Jul 8, 2013 at 5:05 PM, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Sat, 6 Jul 2013 15:30:03 -0700,
+>> > Greg KH wrote:
+>> >>
+>> >> On Sat, Jul 06, 2013 at 06:14:01PM -0400, Dave Jones wrote:
+>> >> > On Tue, Jul 02, 2013 at 07:27:49PM +0000, Linux Kernel wrote:
+>> >> >  > Gitweb:     http://git.kernel.org/linus/;a=commit;h=d05c39ea67f5786a549ac9d672d2951992b658c6
+>> >> >  > Commit:     d05c39ea67f5786a549ac9d672d2951992b658c6
+>> >> >  > Parent:     a3b2c8c7aa1ca860edcf0b0afa371d9eb2269c3c
+>> >> >  > Author:     Takashi Iwai <tiwai@suse.de>
+>> >> >  > AuthorDate: Wed May 22 18:28:37 2013 +0200
+>> >> >  > Committer:  Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >> >  > CommitDate: Mon Jun 3 13:57:29 2013 -0700
+>> >> >  >
+>> >> >  >     dell_rbu: Select CONFIG_FW_LOADER_USER_HELPER explicitly
+>> >> >  >
+>> >> >  >     The usermode helper is mandatory for this driver.
+>> >> >  >
+>> >> >  >     Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> >> >  >     Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> >> >  > ---
+>> >> >  >  drivers/firmware/Kconfig |    1 +
+>> >> >  >  1 files changed, 1 insertions(+), 0 deletions(-)
+>> >> >  >
+>> >> >  > diff --git a/drivers/firmware/Kconfig b/drivers/firmware/Kconfig
+>> >> >  > index 9387630..0747872 100644
+>> >> >  > --- a/drivers/firmware/Kconfig
+>> >> >  > +++ b/drivers/firmware/Kconfig
+>> >> >  > @@ -64,6 +64,7 @@ config DELL_RBU
+>> >> >  >          tristate "BIOS update support for DELL systems via sysfs"
+>> >> >  >          depends on X86
+>> >> >  >          select FW_LOADER
+>> >> >  > +        select FW_LOADER_USER_HELPER
+>> >> >  >          help
+>> >> >  >           Say m if you want to have the option of updating the BIOS for your
+>> >> >  >           DELL system. Note you need a Dell OpenManage or Dell Update package (DUP)
+>> >> >
+>> >> >
+>> >> > This is pretty crappy. Now every distro kernel has to have that enabled,
+>> >> > which screws up for eg, the x86 microcode driver. (It takes 1 minute per cpu
+>> >> > when this is enabled).
+>> >>
+>> >> I'll let you and Takashi battle this one out, for some reason I thought
+>> >> he added it _because_ a distro kernel needed it...
+>> >
+>> > The reason is that dell_rbu driver requires it.  Without the kconfig
+>> > option, this driver won't work at all.  So, it's a right fix for
+>> > dell_rbu.
+>> >
+>> > AFAIK, the consensus in the kernel side is that this too long fw
+>> > loading time is basically a regression of user-space (udev or
+>> > whatever).  There is no change in the kernel behavior.  The problem
+>> > must exist even with the older kernels.
+>> >
+>> > But, looking at the development, we can't expect that udev will be
+>> > fixed soon, and this breakage persists already way too long.  Maybe a
+>> > better solution is to kill the fallback to udev for normal f/w loading
+>> > (i.e. for distro kernels).
+>> >
+>> > The patch below is an untested quick hack.  It adds a new Kconfig and
+>> > a new function request_firmware_via_user_helper().  Distro kernels may
+>> > set CONFIG_FW_LOADER_USER_HELPER_FALLBACK=n for avoiding 60 seconds
+>>
+>> I understand your proposed approach is basically equal to unset DELL_RBU,
+>> don't I?
+>>
+>> Actually if DELL_RBU is set, FW_LOADER_USER_HELPER is still set, and
+>> it won't avoid the fallback to loading from userspace.
+>
+> No, it changes the behavior.  The fallback is now checked explicitly
+> via #ifdef CONFIG_FW_LOADER_USER_HELPER_FALLBACK (this is the only
+> place where this kconfig is referred to).  The patch isn't great and
+> can be rewritten better, but the idea is to split the fallback
+> behavior (for normal drivers) and the firmware loading that mandates
+> the user-mode helper (for dell_rbu).
 
---wRRV7LY7NUeQGEoC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, sorry for missing that.
 
-Hello,
+>
+>
+>> > stall for non-existing firmware file access -- as distributions know
+>> > that the firmware files should be placed in the right path.
+>> >
+>> > Thoughts?
+>>
+>> I suggest not to introduce new config options in firmware loader any more,
+>> and the current options are too many already and it is very easy to trigger
+>> build problem, and introduce extra complexity to users at the same time.
+>
+> Yeah, I hate adding a new kconfig, too.  But, in this case, I couldn't
+> have other idea for solving in a reasonable amount of change.
 
-In linux 3.10 in the file drivers/tty/tty_port.c the function
-tty_port_tty_hangup may leak a tty reference:
+One approach I thought of is to introduce request_firmware_user()
+which should be used only in FW_ACTION_NOHOTPLUG situation,
+but allows CONFIG_FW_LOADER_USER_HELPER disabled.
 
-        struct tty_struct *tty = tty_port_tty_get(port);
+Actually from view of distribution, dell rbu has to be compiled in, then
+no code size can be saved any more, which means looks the introduced
+option in this patch isn't necessary.
 
-        if (tty && (!check_clocal || !C_CLOCAL(tty))) {
-                tty_hangup(tty);
-                tty_kref_put(tty);
-        }
+>
+>> About Dave's problem, I think distribution may not trigger it since
+>> cpu microcode
+>> should exist,
+>
+> It doesn't have to exist -- imagine a brand new CPU that is shipped
+> without errata (I guess it's the case Dave hit).
 
-If tty != NULL and the second condition is false we never call tty_kref_put and
-the reference is leaked.
+Yes, I mean other drivers(or most of drivers) may have not the situation
+to be afraid of.
 
-Fix by nesting two if statements.
+>
+>> so I am wondering if Dave can disable DELL_RBU to work around
+>> the problem in his system? Or fake a one byte microcode file to fool the driver?
+>
+> Well, the kernel cannot know whether the microcode f/w exists or not
+> beforehand.  It needs to probe.  And the probing itself stalls for 60
+> seconds...
 
-Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
+The driver can use request_firmware_no_wait() to work around it too...
 
---wRRV7LY7NUeQGEoC
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="tty_port.patch"
+>
+>> Also looks the problem should be handled inside x86 microcode driver because
+>> the usage is unique in x86 microcode driver. Other drivers either need one
+>> firmware or stop to work without a firmware, but this driver can work
+>> well no matter
+>> the firmware loading is satisfied or not.
+>
+> Not really specific to microcode driver.  Other drivers work without
+> the inquired firmware file.  For example, iwlwifi has a fallback
+> mechanism to fetch the old version of firmware.  If each probe of
+> non-existing firmware file stalls for 60 seconds, it may take really
+> long.
 
-diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index 121aeb9..2198f7d 100644
---- a/drivers/tty/tty_port.c
-+++ b/drivers/tty/tty_port.c
-@@ -256,8 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
- {
- 	struct tty_struct *tty = tty_port_tty_get(port);
- 
--	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
--		tty_hangup(tty);
-+	if (tty) {
-+		if (!check_clocal || !C_CLOCAL(tty))
-+			tty_hangup(tty);
- 		tty_kref_put(tty);
- 	}
- }
+I am wondering why people didn't complain the loading in iwlwifi, :-)
 
---wRRV7LY7NUeQGEoC--
+>
+>> Or could we force dell rbu to use uevent based loading now?
+>
+> .... only if we break dell_rbu user-space behavior.
+>
+> So, our options are:
+>
+> A. Ignore, with a hope that udev is/will be fixed.
+>
+> B. Break dell_rbu, rewrite dell_rbu driver code and user-space at the
+>    same time
+>
+> C. Split the user-space fallback and the mandatory user-space loading
+>    (as my patch does)
+
+
+
+Thanks,
+--
+Ming Lei
