@@ -1,47 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3GIHVJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 03:21:09 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49625 "EHLO
+	id S1753237Ab3GIH3o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 03:29:44 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:50008 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab3GIHVD (ORCPT
+	with ESMTP id S1752624Ab3GIH3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 03:21:03 -0400
-Message-ID: <51DBB9D1.4000202@ti.com>
-Date: Tue, 9 Jul 2013 12:50:49 +0530
+	Tue, 9 Jul 2013 03:29:40 -0400
+Message-ID: <51DBBBD6.8030906@ti.com>
+Date: Tue, 9 Jul 2013 12:59:26 +0530
 From: Sourav Poddar <sourav.poddar@ti.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
+To: <balbi@ti.com>
 CC: <broonie@kernel.org>, <spi-devel-general@lists.sourceforge.net>,
-        <grant.likely@linaro.org>, <balbi@ti.com>, <rnayak@ti.com>,
+        <grant.likely@linaro.org>, <rnayak@ti.com>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCHv3 2/3] drivers: spi: Add qspi flash controller
-References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com> <1373290980-17883-3-git-send-email-sourav.poddar@ti.com> <20130708203330.GA28322@kahuna>
-In-Reply-To: <20130708203330.GA28322@kahuna>
+References: <1373290980-17883-1-git-send-email-sourav.poddar@ti.com> <1373290980-17883-3-git-send-email-sourav.poddar@ti.com> <20130708143251.GG31221@arwen.pp.htv.fi>
+In-Reply-To: <20130708143251.GG31221@arwen.pp.htv.fi>
 Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 09 July 2013 02:03 AM, Nishanth Menon wrote:
-> On 19:12-20130708, Sourav Poddar wrote:
-> [..]
-> generic comment, given our historical mistakes of making drivers
-> specific to a SoC family, it never is.
+On Monday 08 July 2013 08:02 PM, Felipe Balbi wrote:
+> Hi,
 >
-> Now, ti-qspi in file name is a step in the right direction, but, rest
-> of the code(function names etc) is just married to DRA7 family of
-> processor, when it should not be.
->
-Make sense. Will change apis accordingly.
->> diff --git a/drivers/spi/spi-ti-qspi.c b/drivers/spi/spi-ti-qspi.c
->> new file mode 100644
->> index 0000000..430de9c
->> --- /dev/null
->> +++ b/drivers/spi/spi-ti-qspi.c
-> [...]
+> On Mon, Jul 08, 2013 at 07:12:59PM +0530, Sourav Poddar wrote:
 >> +static inline unsigned long dra7xxx_readl(struct dra7xxx_qspi *qspi,
 >> +		unsigned long reg)
 >> +{
@@ -69,6 +56,9 @@ Make sense. Will change apis accordingly.
 >> +		break;
 >> +	default:
 >> +		return -1;
+> return -EINVAL ? or some other error code ?
+>
+Ok.will change.
 >> +	}
 >> +}
 >> +
@@ -90,14 +80,6 @@ Make sense. Will change apis accordingly.
 >> +		break;
 >> +	}
 >> +}
-> Looks like a case to use regmap?
-> Dumb q: why cant we use regmap_spi? worst case, you should be able to
-> use mmio if regmap_spi cant be used. The commit message was not clear
-> about this.
->
-MMIO can be used as this controller supports memory mapped port, but that
-will be addition/enhancement on top of this.
-This driver is adding qspi controller read/write support in SPI mode.
 >> +
 >> +static int dra7xxx_qspi_setup(struct spi_device *spi)
 >> +{
@@ -110,20 +92,19 @@ This driver is adding qspi controller read/write support in SPI mode.
 >> +	if (!qspi->spi_max_frequency) {
 >> +		dev_err(qspi->dev, "spi max frequency not defined\n");
 >> +		return -1;
->> +	} else
->> +		clk_div = (clk_rate / qspi->spi_max_frequency) - 1;
-> did you run checkpatch --strict here?
-Didn,t do the strict, yes will add braces.
-> Also, would you prefer to use DIV_ROUND_UP?
+> same here
 >
 Ok.
+>> +	} else
+> this needs to have curly braces too, per CodingStyle
+>
+hmm..will change.
+>> +		clk_div = (clk_rate / qspi->spi_max_frequency) - 1;
 >> +
 >> +	dev_dbg(qspi->dev, "%s: hz: %d, clock divider %d\n", __func__,
 >> +			qspi->spi_max_frequency, clk_div);
 >> +
 >> +	pm_runtime_get_sync(qspi->dev);
-> error check?
-Will add.
 >> +
 >> +	clk_ctrl_reg = dra7xxx_readl(qspi, QSPI_SPI_CLOCK_CNTRL_REG);
 >> +
@@ -136,16 +117,12 @@ Will add.
 >> +		dev_dbg(qspi->dev, "%s: clock divider<  0, using /1 divider\n",
 >> +				__func__);
 >> +		clk_div = 1;
-> should you not fail here?
-May be yes.
 >> +	}
 >> +
 >> +	if (clk_div>  QSPI_CLK_DIV_MAX) {
 >> +		dev_dbg(qspi->dev, "%s: clock divider>%d , using /%d divider\n",
 >> +			__func__, QSPI_CLK_DIV_MAX, QSPI_CLK_DIV_MAX + 1);
 >> +		clk_div = QSPI_CLK_DIV_MAX;
-> should you not fail here?
-Yup.
 >> +	}
 >> +
 >> +	/* enable SCLK */
@@ -153,8 +130,6 @@ Yup.
 >> +
 >> +	pm_runtime_mark_last_busy(qspi->dev);
 >> +	pm_runtime_put_autosuspend(qspi->dev);
-> error check?
-Will add.
 >> +
 >> +	return 0;
 >> +}
@@ -164,9 +139,9 @@ Will add.
 >> +	struct dra7xxx_qspi *qspi = spi_master_get_devdata(master);
 >> +
 >> +	pm_runtime_get_sync(qspi->dev);
-> error check?
+> not going to check return value ?
+>
 Will add.
->> +
 >> +	return 0;
 >> +}
 >> +
@@ -176,9 +151,9 @@ Will add.
 >> +
 >> +	pm_runtime_mark_last_busy(qspi->dev);
 >> +	pm_runtime_put_autosuspend(qspi->dev);
-> error check?
-Will add.
->> +
+> what about on these two ?
+>
+Yes, will add error checking.
 >> +	return 0;
 >> +}
 >> +
@@ -195,6 +170,9 @@ Will add.
 >> +		dev_dbg(qspi->dev, "tx cmd %08x dc %08x data %02x\n",
 >> +			qspi->cmd | QSPI_WR_SNGL, qspi->dc, *txbuf);
 >> +		dra7xxx_writel(qspi, QSPI_WC_INT_EN, QSPI_INTR_ENABLE_SET_REG);
+> you should enable the interrupt as the last step. Also, why aren't you
+> using frame interrupt ?
+>
 >> +		dra7xxx_writel_data(qspi, *txbuf++, QSPI_SPI_DATA_REG, wlen);
 >> +		dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
 >> +		dra7xxx_writel(qspi, qspi->cmd | QSPI_WR_SNGL,
@@ -218,15 +196,15 @@ Will add.
 >> +		dev_dbg(qspi->dev, "rx cmd %08x dc %08x\n",
 >> +			qspi->cmd | QSPI_RD_SNGL, qspi->dc);
 >> +		dra7xxx_writel(qspi, QSPI_WC_INT_EN, QSPI_INTR_ENABLE_SET_REG);
+> ditto
+>
+hmm. will move this down.
 >> +		dra7xxx_writel(qspi, qspi->dc, QSPI_SPI_DC_REG);
 >> +		dra7xxx_writel(qspi, qspi->cmd | QSPI_RD_SNGL,
 >> +			QSPI_SPI_CMD_REG);
 >> +		wait_for_completion(&qspi->word_complete);
 >> +		*rxbuf++ = dra7xxx_readl_data(qspi, QSPI_SPI_DATA_REG, wlen);
-> *rxbuf =
 >> +		dev_dbg(qspi->dev, "rx done, read %02x\n", *(rxbuf-1));
-> rxbuf++ after dev_dbg?
-I am not sure, anywyas we are decrementing pointer during dev_dbg..
 >> +	}
 >> +
 >> +	return 0;
@@ -236,12 +214,8 @@ I am not sure, anywyas we are decrementing pointer during dev_dbg..
 >> +{
 >> +	if (t->tx_buf)
 >> +		qspi_write_msg(qspi, t);
-> what is the point of the function returning error when we dont use it?
-hmm..yes, will check for errors.
 >> +	if (t->rx_buf)
 >> +		qspi_read_msg(qspi, t);
-> what is the point of the function returning error when we dont use it?
-Same as above.
 >> +
 >> +	return 0;
 >> +}
@@ -266,6 +240,23 @@ Same as above.
 >> +		qspi->dc |= QSPI_CSPOL(spi->chip_select);
 >> +
 >> +	frame_length = DIV_ROUND_UP(m->frame_length * spi->bits_per_word,
+> why this multiplication ? Frame is not counted in bits but in number of
+> words. Which means that m->framelength / spi->bits_per_word should be
+> enough.
+Yes, got confused here. Will change.
+> Also, this actually brings up a mistake I made, if I read the TRM
+> correclty this time, frame length is nothing but the t->len which
+> renders patch 1 in this series unnecessary, my mistake.
+>
+If flen is t->len, then
+1.) yes patch 1 is useles.
+2.) frame interrupt will make more sense then.
+       Till now, we were using flen as sum of all transfers, because of 
+which
+        I was forced to check for word complete.
+
+     I will check on "flen" and will get back on frame interrupt with 
+experimental results.
 >> +				spi->bits_per_word);
 >> +
 >> +	frame_length = clamp(frame_length, 0, QSPI_FRAME_MAX);
@@ -274,20 +265,22 @@ Same as above.
 >> +	qspi->cmd = 0;
 >> +	qspi->cmd |= QSPI_EN_CS(spi->chip_select);
 >> +	qspi->cmd |= QSPI_FLEN(frame_length);
->> +
-> how does one ensure pm runtime has not disabled clocks in
-> background? e.g. long latency between transfers.
-As felipe also pointed out, in prepare transfer I will enable clocks which
-will get get disabled only during unprepare transfer. I dont know if we
-hit the above scenario.
-+ list_for_each_entry(t, &m->transfers, transfer_list) {
+> right, right, so far so good...
+>
+>> +	list_for_each_entry(t,&m->transfers, transfer_list) {
 >> +		qspi->cmd |= QSPI_WLEN(t->bits_per_word);
+> sure about this ? according to TRM a write of 0 means 1 bit, 1, means 2
+> bits, 2 means 3 bits, etc... So this should be t->bits_per_word - 1.
+>
+QSPI_WLEN is taking care of subtrating it by -1.
 >> +		qspi->cmd |= QSPI_WC_CMD_INT_EN;
->> +
+> ... but why are you still interrupting on every word ????
+>
+> as I said before, we want to interrupt on every frame. one spi_transfer
+> is one frame, if that frame has a length of 1MiB, I want to be
+> interrupted after 1MiB.
+
 >> +		qspi_transfer_msg(qspi, t);
-> error handling?
-Will add.
->> +
 >> +		m->actual_length += t->len;
 >> +
 >> +		if (list_is_last(&t->transfer_list,&m->transfers))
@@ -312,171 +305,16 @@ Will add.
 >> +
 >> +	spin_lock(&qspi->lock);
 >> +
-> what if autosuspend has triggered here? before ISR was scheduled?
-Similar understanding as above, autosuspend should get triggered only
-during unprepare.
 >> +	stat = dra7xxx_readl(qspi, QSPI_SPI_STATUS_REG);
 >> +	mask = dra7xxx_readl(qspi, QSPI_SPI_CMD_REG);
 >> +
 >> +	if ((stat&  QSPI_WC)&&  (mask&  QSPI_WC_CMD_INT_EN))
->> +		ret = IRQ_WAKE_THREAD;
->> +
->> +	spin_unlock(&qspi->lock);
->> +
->> +	return ret;
->> +}
->> +
->> +static irqreturn_t dra7xxx_qspi_threaded_isr(int this_irq, void *dev_id)
->> +{
->> +	struct dra7xxx_qspi *qspi = dev_id;
->> +	unsigned long flags;
->> +
->> +	spin_lock_irqsave(&qspi->lock, flags);
->> +
-> what if autosuspend has triggered here? before ISR was scheduled?
->> +	dra7xxx_writel(qspi, QSPI_WC_INT_DISABLE, QSPI_INTR_ENABLE_CLEAR_REG);
->> +	dra7xxx_writel(qspi, QSPI_WC_INT_DISABLE,
->> +			QSPI_INTR_STATUS_ENABLED_CLEAR);
->> +
->> +	complete(&qspi->word_complete);
->> +
->> +	spin_unlock_irqrestore(&qspi->lock, flags);
->> +
->> +	return IRQ_HANDLED;
->> +}
->> +
->> +static const struct of_device_id dra7xxx_qspi_match[] = {
->> +	{.compatible = "ti,dra7xxx-qspi" },
->> +	{},
->> +};
->> +MODULE_DEVICE_TABLE(of, dra7xxx_qspi_match);
->> +
->> +static int dra7xxx_qspi_probe(struct platform_device *pdev)
->> +{
->> +	struct  dra7xxx_qspi *qspi;
->> +	struct spi_master *master;
->> +	struct resource         *r;
->> +	struct device_node *np = pdev->dev.of_node;
->> +	u32 max_freq;
->> +	int ret = 0, num_cs, irq;
->> +
->> +	master = spi_alloc_master(&pdev->dev, sizeof(*qspi));
->> +	if (!master)
->> +		return -ENOMEM;
->> +
->> +	master->mode_bits = SPI_CPOL | SPI_CPHA;
->> +
->> +	master->num_chipselect = 1;
->> +	master->bus_num = -1;
->> +	master->setup = dra7xxx_qspi_setup;
->> +	master->prepare_transfer_hardware = dra7xxx_qspi_prepare_xfer;
->> +	master->transfer_one_message = dra7xxx_qspi_start_transfer_one;
->> +	master->unprepare_transfer_hardware = dra7xxx_qspi_unprepare_xfer;
->> +	master->dev.of_node = pdev->dev.of_node;
->> +	master->bits_per_word_mask = BIT(32 - 1) | BIT(16 - 1) | BIT(8 - 1);
->> +
->> +	if (!of_property_read_u32(np, "ti,spi-num-cs",&num_cs))
->> +		master->num_chipselect = num_cs;
->> +
->> +	platform_set_drvdata(pdev, master);
->> +
->> +	qspi = spi_master_get_devdata(master);
->> +	qspi->master = master;
->> +	qspi->dev =&pdev->dev;
->> +
->> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +	if (r == NULL) {
->> +		ret = -ENODEV;
->> +		goto free_master;
->> +	}
->> +
->> +	irq = platform_get_irq(pdev, 0);
->> +	if (irq<  0) {
->> +		dev_err(&pdev->dev, "no irq resource?\n");
->> +		return irq;
->> +	}
->> +
->> +	spin_lock_init(&qspi->lock);
->> +
->> +	qspi->base = devm_ioremap_resource(&pdev->dev, r);
->> +	if (IS_ERR(qspi->base)) {
->> +		ret = -ENOMEM;
->> +		goto free_master;
->> +	}
-> why not use devm_request_and_ioremap? Lock that region down so that no
-> two drivers can manage the same region?
->> +
->> +	ret = devm_request_threaded_irq(&pdev->dev, irq, dra7xxx_qspi_isr,
->> +		dra7xxx_qspi_threaded_isr, IRQF_NO_SUSPEND | IRQF_ONESHOT,
->> +			dev_name(&pdev->dev), qspi);
->> +	if (ret<  0) {
->> +		dev_err(&pdev->dev, "Failed to register ISR for IRQ %d\n",
->> +				irq);
->> +		goto free_master;
->> +	}
->> +
->> +	qspi->fclk = devm_clk_get(&pdev->dev, "fck");
->> +	if (IS_ERR(qspi->fclk)) {
->> +		ret = PTR_ERR(qspi->fclk);
->> +		dev_err(&pdev->dev, "could not get clk: %d\n", ret);
->> +	}
->> +
->> +	init_completion(&qspi->word_complete);
->> +
->> +	pm_runtime_use_autosuspend(&pdev->dev);
->> +	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
->> +	pm_runtime_enable(&pdev->dev);
->> +
->> +	if (!of_property_read_u32(np, "spi-max-frequency",&max_freq))
->> +		qspi->spi_max_frequency = max_freq;
->> +
->> +	ret = spi_register_master(master);
->> +	if (ret)
->> +		goto free_master;
->> +
->> +	return ret;
->> +
->> +free_master:
->> +	spi_master_put(master);
->> +	return ret;
->> +}
->> +
->> +static int dra7xxx_qspi_remove(struct platform_device *pdev)
->> +{
->> +	struct  dra7xxx_qspi *qspi = platform_get_drvdata(pdev);
->> +
->> +	spi_unregister_master(qspi->master);
->> +
->> +	return 0;
->> +}
->> +
->> +static struct platform_driver dra7xxx_qspi_driver = {
->> +	.probe	= dra7xxx_qspi_probe,
->> +	.remove	= dra7xxx_qspi_remove,
->> +	.driver = {
->> +		.name	= "ti,dra7xxx-qspi",
->> +		.owner	= THIS_MODULE,
->> +		.of_match_table = dra7xxx_qspi_match,
->> +	}
-> no need for pm_ops?
-Yes, we need to, I thought of sending that as  a seperate patch after this
-this one gets fixed.
-Would you prefer that I add it here?
->> +};
->> +
->> +module_platform_driver(dra7xxx_qspi_driver);
->> +
->> +MODULE_LICENSE("GPL");
-> GPL V2?
-Yes, will change.
->> +MODULE_DESCRIPTION("TI QSPI controller driver");
-> MODULE_AUTHOR?
-Will add.
->> -- 
->> 1.7.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> this is wrong, everytime you want to handle another IRQ bit, you will
+> have to update this line.
+>
+> 	if (stat&  mask)
+>
+> sounds like it's enough
+>
+Yes, correct will change.
 
