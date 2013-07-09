@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab3GIBVb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 21:21:31 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:11427 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab3GIBRl (ORCPT
+	id S1752199Ab3GIB0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 21:26:15 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50534 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751672Ab3GIB0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 21:17:41 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v6 03/14] dcache: Add a new helper function d_count() to return refcount
-Date: Mon,  8 Jul 2013 21:09:53 -0400
-Message-Id: <1373332204-10379-4-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com>
-References: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
+	Mon, 8 Jul 2013 21:26:13 -0400
+Date: Tue, 9 Jul 2013 03:26:11 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: kernel list <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Cc: joe.lawrence@stratus.com, myron.stowe@redhat.com, bhelgaas@google.com
+Subject: /sys/module/pcie_aspm/parameters/policy not writable?
+Message-ID: <20130709012611.GA22371@amd.pavel.ucw.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new helper function d_count() in dcache.h for
-returning the current reference count of the dentry object. It
-should be used by all the files outside of the core dcache.c and
-namei.c files.
+Hi!
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- include/linux/dcache.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+My thinkpad has rather high ping latencies... and perhaps it is due to
+PCIE ASPM.
 
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index f42dbe1..7c6bbf0 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -258,6 +258,16 @@ extern int have_submounts(struct dentry *);
- extern void d_rehash(struct dentry *);
- 
- /**
-+ * d_count - return the reference count in dentry
-+ * @entry: dentry pointer
-+ * Returns: current value of reference count
-+ */
-+static inline unsigned int d_count(struct dentry *entry)
-+{
-+	return entry->d_count;
-+}
-+
-+/**
-  * d_add - add dentry to hash queues
-  * @entry: dentry to add
-  * @inode: The inode to attach to this dentry
+Its help text says:
+
+CONFIG_PCIEASPM:
+
+This enables OS control over PCI Express ASPM (Active State
+Power Management) and Clock Power Management. ASPM supports
+state L0/L0s/L1.
+...
+ASPM can be disabled or enabled at runtime via
+/sys/module/pcie_aspm/parameters/policy
+
+So I tried setting the parameter, but it seems to be broken :-(
+
+root@amd:/data/pavel# cat /sys/module/pcie_aspm/parameters/policy
+[default] performance powersave 
+root@amd:/data/pavel# echo performance > /sys/module/pcie_aspm/parameters/policy
+bash: echo: write error: Operation not permitted
+root@amd:/data/pavel# echo -n performance > /sys/module/pcie_aspm/parameters/policy
+bash: echo: write error: Operation not permitted
+root@amd:/data/pavel# ls -al /sys/module/pcie_aspm/parameters/policy
+-rw-r--r-- 1 root root 4096 Jul  9 03:16 /sys/module/pcie_aspm/parameters/policy
+root@amd:/data/pavel# cat /sys/module/pcie_aspm/parameters/policy
+[default] performance powersave 
+root@amd:/data/pavel# echo powersave > /sys/module/pcie_aspm/parameters/policy
+bash: echo: write error: Operation not permitted
+root@amd:/data/pavel# echo -n powersave > /sys/module/pcie_aspm/parameters/policy
+bash: echo: write error: Operation not permitted
+root@amd:/data/pavel# echo -n default > /sys/module/pcie_aspm/parameters/policy
+bash: echo: write error: Operation not permitted
+
+Hmm:
+
+CONFIG_PCIEASPM_DEFAULT=y
+# CONFIG_PCIEASPM_POWERSAVE is not set                                                     
+# CONFIG_PCIEASPM_PERFORMANCE is not set                                                   
+
+Should we avoid displaying options that can't be selected?
+
+Thanks,
+									Pavel
 -- 
-1.7.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
