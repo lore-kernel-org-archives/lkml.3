@@ -1,122 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab3GICA7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 22:00:59 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:32791 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751564Ab3GICA4 (ORCPT
+	id S1752169Ab3GICP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 22:15:56 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:46816 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441Ab3GICPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 22:00:56 -0400
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC nohz_full 7/7] nohz_full: Force RCU's grace-period kthreads onto timekeeping CPU
-Date: Mon,  8 Jul 2013 18:30:06 -0700
-Message-Id: <1373333406-26979-7-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130709012934.GA26058@linux.vnet.ibm.com>
- <1373333406-26979-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	Mon, 8 Jul 2013 22:15:53 -0400
+Message-ID: <51DB724F.9050708@linux.vnet.ibm.com>
+Date: Tue, 09 Jul 2013 10:15:43 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Borislav Petkov <bp@alien8.de>,
+        Jiri Kosina <jkosina@suse.cz>, Tomasz Figa <t.figa@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [v3.10 regression] deadlock on cpu hotplug
+References: <1443144.WnBWEpaopK@amdc1032>
+In-Reply-To: <1443144.WnBWEpaopK@amdc1032>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070901-7282-0000-0000-00001912FE1D
+x-cbid: 13070902-4790-0000-0000-0000092C922B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Hi, Bartlomiej
 
-Because RCU's quiescent-state-forcing mechanism is used to drive the
-full-system-idle state machine, and because this mechanism is executed
-by RCU's grace-period kthreads, this commit forces these kthreads to
-run on the timekeeping CPU (tick_do_timer_cpu).  To do otherwise would
-mean that the RCU grace-period kthreads would force the system into
-non-idle state every time they drove the state machine, which would
-be just a bit on the futile side.
+On 07/08/2013 11:26 PM, Bartlomiej Zolnierkiewicz wrote:
+[snip]
+> 
+> # echo 0 > /sys/devices/system/cpu/cpu3/online
+> # echo 0 > /sys/devices/system/cpu/cpu2/online
+> # echo 0 > /sys/devices/system/cpu/cpu1/online
+> # while true;do echo 1 > /sys/devices/system/cpu/cpu1/online;echo 0 > /sys/devices/system/cpu/cpu1/online;done
+> 
+> The commit in question (2f7021a8) was merged in v3.10-rc5 as a fix for
+> commit 031299b ("cpufreq: governors: Avoid unnecessary per cpu timer
+> interrupts") which was causing a kernel warning to show up.
+> 
+> Michael/Viresh: do you have some idea how to fix the issue?
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/rcutree.c        |  1 +
- kernel/rcutree.h        |  1 +
- kernel/rcutree_plugin.h | 20 +++++++++++++++++++-
- 3 files changed, 21 insertions(+), 1 deletion(-)
+Thanks for the report :) would you like to take a try
+on below patch and see whether it solve the issue?
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 06cfd75..ad9a5ec 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1286,6 +1286,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
- 	struct rcu_data *rdp;
- 	struct rcu_node *rnp = rcu_get_root(rsp);
- 
-+	rcu_bind_gp_kthread();
- 	raw_spin_lock_irq(&rnp->lock);
- 	rsp->gp_flags = 0; /* Clear all flags: New grace period. */
- 
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 7326a3c..1602c21 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -558,6 +558,7 @@ static void rcu_sysidle_exit(struct rcu_dynticks *rdtp, int irq);
- static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
- 				  unsigned long *maxj);
- static bool is_sysidle_rcu_state(struct rcu_state *rsp);
-+static void rcu_bind_gp_kthread(void);
- static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
- 			       unsigned long maxj);
- static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index b47ffb0..a4d44c3 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -2544,7 +2544,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
- 	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
- 	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
- 		return;
--	/* WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu); */
-+	WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
- 
- 	/* Pick up current idle and NMI-nesting counter and check. */
- 	cur = atomic_read(&rdtp->dynticks_idle);
-@@ -2570,6 +2570,20 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index 5af40ad..aa05eaa 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -229,6 +229,8 @@ static void set_sampling_rate(struct dbs_data *dbs_data,
+        }
  }
  
- /*
-+ * Bind the grace-period kthread for the sysidle flavor of RCU to the
-+ * timekeeping CPU.
-+ */
-+static void rcu_bind_gp_kthread(void)
-+{
-+	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
++static struct lock_class_key j_cdbs_key;
 +
-+	if (cpu < 0 || cpu >= nr_cpu_ids)
-+		return;
-+	if (raw_smp_processor_id() != cpu)
-+		set_cpus_allowed_ptr(current, cpumask_of(cpu));
-+}
-+
-+/*
-  * Return a delay in jiffies based on the number of CPUs, rcu_node
-  * leaf fanout, and jiffies tick rate.  The idea is to allow larger
-  * systems more time to transition to full-idle state in order to
-@@ -2758,6 +2772,10 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
- 	return false;
- }
- 
-+static void rcu_bind_gp_kthread(void)
-+{
-+}
-+
- static void rcu_sysidle_report(struct rcu_state *rsp, int isidle,
- 			       unsigned long maxj)
+ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+                struct common_dbs_data *cdata, unsigned int event)
  {
--- 
-1.8.1.5
+@@ -366,6 +368,8 @@ int (struct cpufreq_policy *policy,
+                                        kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+ 
+                        mutex_init(&j_cdbs->timer_mutex);
++                       lockdep_set_class(&j_cdbs->timer_mutex, &j_cdbs_key);
++
+                        INIT_DEFERRABLE_WORK(&j_cdbs->work,
+                                             dbs_data->cdata->gov_dbs_timer);
+                }
+
+Regards,
+Michael Wang
+
+> 
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
