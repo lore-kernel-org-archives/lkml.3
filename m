@@ -1,97 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218Ab3GILWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 07:22:10 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32842 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab3GILWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 07:22:08 -0400
-Message-ID: <51DBF23F.20103@ti.com>
-Date: Tue, 9 Jul 2013 16:51:35 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753014Ab3GILYp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 07:24:45 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:61170 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab3GILYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 07:24:43 -0400
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux@arm.linux.org.uk>, <benoit.cousson@linaro.org>, <afzal@ti.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] arm: dts: AM43x: Add usb_otg_hs node
-References: <1373361446-30050-1-git-send-email-george.cherian@ti.com> <20130709102022.GH5552@arwen.pp.htv.fi>
-In-Reply-To: <20130709102022.GH5552@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAPM=9tzT3EaZm=BRxxQe8+u-VtE8_F72-6X9ZJbLgnX7XMV7Vw@mail.gmail.com>
+References: <CAPM=9twiAK18Ny7QMMZA+DHFB=wQ2pxg8rDV+vj91TJjd_e2fg@mail.gmail.com>
+	<CAPM=9tzT3EaZm=BRxxQe8+u-VtE8_F72-6X9ZJbLgnX7XMV7Vw@mail.gmail.com>
+Date: Tue, 9 Jul 2013 07:24:42 -0400
+Message-ID: <CA+5PVA53RUZ2hStEP1bRW1GY3uL2ZnbLQC8Bs+fV+s7oNZDKrw@mail.gmail.com>
+Subject: Re: sending SEGV to qemu crashes host kernel in Fedora 19
+From: Josh Boyer <jwboyer@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: qemu-devel@nongnu.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/9/2013 3:50 PM, Felipe Balbi wrote:
-> On Tue, Jul 09, 2013 at 02:47:26PM +0530, George Cherian wrote:
->> Adds device node for HS USB Host module for AM437x
+On Mon, Jul 8, 2013 at 9:11 PM, Dave Airlie <airlied@gmail.com> wrote:
+> On Tue, Jul 9, 2013 at 10:35 AM, Dave Airlie <airlied@gmail.com> wrote:
+>> Hi,
 >>
->> changes from v1
+>> F19
+>> kernel-3.9.8-300.fc19.x86_64
+>> qemu-kvm-1.4.2-4.fc19.x86_64
 >>
->> renamed synopsis to snps
->> removed flag tx-fifo-resize
-> the patch revision changes don't need to go to the commit log,
-> they should be placed after the tearline (---) and before the diffstat.
->
->> Signed-off-by: George Cherian <george.cherian@ti.com>
->> ---
->>   arch/arm/boot/dts/am4372.dtsi | 18 ++++++++++++++++++
->>   1 file changed, 18 insertions(+)
+>> If I start a complete F19 install in the guest and send the qemu
+>> process a SEGV signal, the host kernel starts giving me random kmalloc
+>> errors soon after, if I send a normal kill signal things seem fine.
 >>
->> diff --git a/arch/arm/boot/dts/am4372.dtsi b/arch/arm/boot/dts/am4372.dtsi
->> index ddc1df7..c9e0da8 100644
->> --- a/arch/arm/boot/dts/am4372.dtsi
->> +++ b/arch/arm/boot/dts/am4372.dtsi
->> @@ -64,5 +64,23 @@
->>   			compatible = "ti,am4372-counter32k","ti,omap-counter32k";
->>   			reg = <0x44e86000 0x40>;
->>   		};
->> +
->> +		usb_otg_hs1: am4372_dwc3@48380000 {
-> dtsi should always have status = "disabled"; no ?
+>> CPU is Intel(R) Core(TM) i7-3770 CPU @ 3.40GHz, on a HP 220z workstation.
+>>
+>> I initially blamed bad RAM but this reproduces everytime, and I
+>> swapped DIMMs around
+>>
+>> I haven't tested with upstream kernel/qemu yet, but I wondered if
+>> anyone else has seen this.
+>>
+>> I noticed this because some work I was doing was segfaulting my qemu
+>> and then my machine would die a few mins later.
 >
->> +			compatible = "ti,am437x-dwc3";
->> +			reg = <0x48380000 0x1ff>;
-> weird size, shouldn't this be 0x200 ?
-okay
->> +			interrupts = <GIC_SPI 172 IRQ_TYPE_LEVEL_HIGH>;
->> +			#address-cells = <1>;
->> +			#size-cells = <1>;
->> +			utmi-mode = <1>;
->> +			ranges;
->> +
->> +			dwc3@48390000 {
-> dtsi should always have status = "disabled"; no ?
-okay
+> Of course now I read my fedora kernel emails and notice vhost_net does
+> bad things,
 >
->> +				compatible = "snps,dwc3";
->> +				reg = <0x48390000 0xcfff>;
-> weird size, shouldn't this be 0xd000 then the size would be exactly
-> 52KiB
+> disabling vhost_net seems to make it work fine, hopefully the next
+> Fedora kernel will bring the magic fixes.
 
-okay
->> +				interrupts = <GIC_SPI  168 IRQ_TYPE_LEVEL_HIGH>;
->> +			};
->> +
->> +		};
->> +		
-> there two trailing tabs on this line.
->
-> Another thing: am437x has 4 instances of this IP, why are you adding
-> only one ?
+We hope so too.  3.9.9-302.fc19 in koji should contain the fixes we
+know about.  There's still another bug open that's tracking issues
+with Windows guest VMs and vhost-net.
 
-AM437x has got only 2 instances. I have verified only one on HAPS so 
-adding only one.
-
-> And why aren't you pasing the PHY nodes here ? The device
-> won't work without its PHYs.
-
-Yes true, again in HAPS I  didnt have any PHY configuration to be done.
->
-
-
--- 
--George
-
+josh
