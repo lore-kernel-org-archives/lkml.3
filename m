@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab3GIWuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 18:50:15 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46925 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452Ab3GIWuN (ORCPT
+	id S1753388Ab3GIXA2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 19:00:28 -0400
+Received: from violet.fr.zoreil.com ([92.243.8.30]:41795 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab3GIXA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 18:50:13 -0400
-Message-ID: <51DC9379.9050408@oracle.com>
-Date: Tue, 09 Jul 2013 18:49:29 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 9 Jul 2013 19:00:27 -0400
+Date: Wed, 10 Jul 2013 01:00:16 +0200
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: David Miller <davem@davemloft.net>
+Cc: hayeswang@realtek.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next] r8169: add a new chip for RTL8411
+Message-ID: <20130709230015.GA6843@electric-eye.fr.zoreil.com>
+References: <1373274541-1095-1-git-send-email-hayeswang@realtek.com>
+ <20130709.125305.1668056299963467935.davem@davemloft.net>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Tejun Heo <tj@kernel.org>,
-        tglx@linutronix.de, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Subject: Re: timer: lockup in run_timer_softirq()
-References: <51DC902F.3070403@oracle.com> <20130709224706.GA13855@redhat.com>
-In-Reply-To: <20130709224706.GA13855@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709.125305.1668056299963467935.davem@davemloft.net>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 06:47 PM, Dave Jones wrote:
-> On Tue, Jul 09, 2013 at 06:35:27PM -0400, Sasha Levin wrote:
->   > Hi all,
->   >
->   > While fuzzing with trinity inside a KVM tools guest running latest -next, I've
->   > stumbled on the following spew:
->   >
->   > [ 2536.440007] BUG: soft lockup - CPU#0 stuck for 23s! [trinity-child86:12368]
->   > [ 2536.440007] Call Trace:
->   > [ 2536.440007]  <IRQ>
->   > [ 2536.440007]  [<ffffffff8113d180>] run_timer_softirq+0x2d0/0x330
->   > [ 2536.440007]  [<ffffffff8113b400>] ? lock_timer_base+0x70/0x70
->   > [ 2536.440007]  [<ffffffff81132b21>] __do_softirq+0x261/0x4d0
->   > [ 2536.440007]  [<ffffffff81132ed6>] irq_exit+0x86/0x120
->   > [ 2536.440007]  [<ffffffff841a43ea>] smp_apic_timer_interrupt+0x4a/0x60
->   > [ 2536.440007]  [<ffffffff841a2d32>] apic_timer_interrupt+0x72/0x80
->   > [ 2536.440007]  <EOI>
->   > [ 2536.440007]  [<ffffffff84198ef7>] ? retint_restore_args+0x13/0x13
->   > [ 2536.440007]  [<ffffffff812355e5>] ? user_enter+0x135/0x150
->   > [ 2536.440007]  [<ffffffff81077d6d>] syscall_trace_leave+0x12d/0x160
->   > [ 2536.440007]  [<ffffffff841a2337>] int_check_syscall_exit_work+0x34/0x3d
->   > [ 2536.440007] Code: 01 fd 48 89 df e8 45 5b 8f fd e8 b0 f1 00 fd 48 83 3d 30 e6 8a 01 00 75 0e 0f
->   > 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 fb 66 66 90 <66> 66 90 bf 01 00 00 00 e8 17 4f 00 00 65 48 8b
->   > 04 25 88 d9 00
->   >
->   > While going through the NMI dump, I noticed that it's very incomplete, and full of:
->   >
->   > [ 2536.500130] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run:
->   > 697182.008 msecs
->
-> I've been reporting these (and other traces) for a while https://lkml.org/lkml/2013/7/5/185 [1]
-> on bare-metal.
->
-> I've not managed to find time yet to try and narrow down the exact combination
-> of trinity syscalls that causes this. Sometimes it happens quickly, sometimes
-> after a few hours (even when run with the same seeds, it seems variable)
+David Miller <davem@davemloft.net> :
+[...]
+> Francois, please review.
 
-Interesting. It's the first time I'm seeing these, but I haven't really changed
-anything in my configuration.
+The style is consistent with the driver.
 
-Are you also seeing the "NMI handler took too long" messages?
+The commit message may state that this 8411 chipset does not require
+any special action in rtl_link_chg_patch (whence differing from the
+previous "F" 8411).
 
+Most of the code shared by rtl_hw_start_8168g_2 and rtl_hw_start_8411_2
+is already factored out. There is not much to win here.
 
-Thanks,
-Sasha
+The new RTL_GIGA_MAC_VER_XY id is added in the required places.
 
+It builds.
+
+It's fine.
+
+-- 
+Ueimor
