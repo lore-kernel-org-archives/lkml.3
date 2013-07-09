@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3GIIHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:07:07 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:16420
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753686Ab3GIIG7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:06:59 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dIc89bh1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51DBC58D.90002@freescale.com>
-Date: Tue, 9 Jul 2013 16:10:53 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: <grant.likely@linaro.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <rob.herring@calxeda.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] of: match the compatible in the order set by the dts
- file
-References: <1373013818-11365-1-git-send-email-b32955@freescale.com> <20130709070541.GQ516@pengutronix.de> <51DBBFDA.70302@freescale.com> <20130709075124.GR516@pengutronix.de>
-In-Reply-To: <20130709075124.GR516@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+	id S1753752Ab3GIIHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:07:48 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:61298 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753531Ab3GIIHo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 04:07:44 -0400
+Message-ID: <1373357261.1633.4.camel@x61.thuisdomein>
+Subject: Re: [PATCH 2/2] PCI,pciehp: avoid add a device already exist during
+ pciehp_resume
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Rafael <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com,
+        Oliver Neukum <oneukum@suse.de>, Gu Zheng <guz.fnst@cn.fujitsu.com>
+Date: Tue, 09 Jul 2013 10:07:41 +0200
+In-Reply-To: <1373356564-21668-1-git-send-email-wangyijing@huawei.com>
+References: <1373356564-21668-1-git-send-email-wangyijing@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Jul 2013 08:07:41.0750 (UTC) FILETIME=[629B7560:01CE7C7B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年07月09日 15:51, Sascha Hauer 写道:
-> On Tue, Jul 09, 2013 at 03:46:34PM +0800, Huang Shijie wrote:
->> 于 2013年07月09日 15:05, Sascha Hauer 写道:
->>> Why don't you set the matching order in the driver the way you want it
->>> to be, i.e.:
->>>
->>> 	{ .compatible = "fsl,imx6q-uart", ... },
->>> 	{ .compatible = "fsl,imx21-uart", ... },
->>> 	{ .compatible = "fsl,imx1-uart", ... },
->>>
->> yes. i can set it like this.
->>
->> but this method looks like a ugly workaround.
-> If a driver has different ways of supporting a single device, then
-> putting the preferred or most feature rich on top doesn't look very ugly
-> to me.
-this method makes it much _coupled_ between the driver and the dts file.
+On Tue, 2013-07-09 at 15:56 +0800, Yijing Wang wrote:
+> Currently, pciehp_resume will call pciehp_enable_slot() to add
+> device if there is a device in the slot. But if the device was
+> present before suspend, it's no necessary to add again. Now in
+> such case, there is some uncomfortable message like
+> 
+>     pciehp 0000:00:1c.1:pcie04: Device 0000:03:00.0 already exists at 0000:03:00, cannot hot-add
+> 	pciehp 0000:00:1c.1:pcie04: Cannot add device at 0000:03:00
+> 
+> This problem was reported by Paul Bolle <pebolle@tiscali.nl>
+> The discussion link: http://comments.gmane.org/gmane.linux.kernel.pci/19876
+> 
+> We can use PCIe Device Serial Number to identify the device if
+> device support DSN.
+> 
+> currently:
+> 1. slot is empty before suspend, insert card during suspend.
+> 	In this case, is safe, pciehp will add device by check adapter
+> status register in pciehp_resume.
+> 
+> 2. slot is non empty before suspend, remove card during suspend.
+> 	Also be safe, pciehp will remove device by check adapter
+> status register in pciehp_resume.
+> 
+> 3. slot is non empty before suspend, remove card during suspend
+> and insert a new card.
+> 	Now pciehp just call pciehp_enable_slot() roughly. We should
+> remove the old card firstly, then add the new card.
+> 
+> 4. slot is non empty before suspend, no action during suspend.
+> 	We should do nothing in pciehp_resume, but we call
+> pciehp_enable_slot(), so some uncomfortable messages show like above.
+> In this case, we can improve it a little by add a guard
+> if (!list_empty(bus->devices)).
 
-IMHO, it's an unnecessary _burden_ to the driver programmer:
-    he should puts the most feature compatible on the top.
+Great!
 
-it's much graceful if we let the driver programmer be transparent about 
-this.
+I'm currently trying to bisect another problem, but hope to test this
+patch (and the preceding patch it apparently needs) in a few days.
+Please feel free to prod me if you think testing is needed but I'm
+taking to long to report back.
 
-thanks
-Huang Shijie
-
-
+Thanks!
 
 
-
-
+Paul Bolle
 
