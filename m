@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab3GIA04 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 8 Jul 2013 20:26:56 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:50813 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753419Ab3GIA0z (ORCPT
+	id S1753500Ab3GIA1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 8 Jul 2013 20:27:10 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:50353 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419Ab3GIA1G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 8 Jul 2013 20:26:55 -0400
-Message-ID: <51DB588C.8070000@gmail.com>
-Date: Tue, 09 Jul 2013 08:25:48 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Mon, 8 Jul 2013 20:27:06 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1373326534.1438.10.camel@x61.thuisdomein>
+References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com> <20130708192854.GF4927@phenom.dumpdata.com> <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com> <51DB2134.9040909@zytor.com> <20130708205834.GA481@pd.tnic> <1373326534.1438.10.camel@x61.thuisdomein>
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Chen Gang <gang.chen@asianux.com>, lig.fnst@cn.fujitsu.com,
-        chuansheng.liu@intel.com, Wang YanQing <udknight@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/smp.c: free related resources when failure occurs
- in hotplug_cfd()
-References: <51DA7D50.8010209@asianux.com> <20130708142605.GA2786@windriver.com>
-In-Reply-To: <20130708142605.GA2786@windriver.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Mon, 08 Jul 2013 20:26:15 -0400
+To: Paul Bolle <pebolle@tiscali.nl>, Borislav Petkov <bp@alien8.de>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Matt Wilson <msw@amazon.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        jeremy@goop.org, xen-devel@lists.xensource.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, mingo@redhat.com,
+        tglx@linutronix.de
+Message-ID: <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Paul Bolle <pebolle@tiscali.nl> wrote:
+>On Mon, 2013-07-08 at 22:58 +0200, Borislav Petkov wrote:
+>> On Mon, Jul 08, 2013 at 01:29:40PM -0700, H. Peter Anvin wrote:
+>> > What. The. Fuck.
+>> 
+>> This is just marvellous: grub2 has a bunch of scripts in /etc/grub.d
+>> which rely on the presence of kernel config files in /boot or / and
+>> greps them in order to do the menu entries based on the built-in
+>> features it finds in them.
+>
+>0) I've raised this issue a few months ago, but not on the LKML (see
+>http://thread.gmane.org/gmane.linux.kernel.virtualization/19126 ).
+>
+>1) And I also asked whether "userspace [can] require the build system
+>to
+>keep using some Kconfig symbol" (see
+>http://article.gmane.org/gmane.linux.kernel.virtualization/19129 ).
+>Peter and you clearly think userspace can't.
+>
+>2) But anyhow, unless that grub2 configuration file has changed, this
+>Kconfig symbol can still be dropped, because grub2's check for it is
+>actually superfluous.
+>
+>
+>Paul Bolle
 
+Not so fast please. Linus absolutely abhors breaking user space and I am not comfortable with that idea either. I am not sure if that falls in that category but I am sure we can rope him after rc0 madness has stopped. 
 
-On 07/08/2013 10:26 PM, Paul Gortmaker wrote:
-> [[PATCH] kernel/smp.c: free related resources when failure occurs in hotplug_cfd()] On 08/07/2013 (Mon 16:50) Chen Gang wrote:
-> 
->> > When failure occurs in hotplug_cfd(), need release related resources,
->> > or will cause memory leak.
->> > 
->> > Also beautify the related code.
-> No.  Please do not mix real fixes with trivial whitespace changes.
-> It makes it harder for the reviewer to find the actual fix, and it
-> makes the fix less portable to other releases (i.e. stable trees.)
-> 
+Could you explain to me please why the check in the scripts is superfluous?
 
-OH, at least, need delete white spaces.
+Especially as the grand plan is to get rid of CONFIG_XEN_DOM0 and more or less have a backend and fronted config option (since that makes more sense nowadays). And that would make the XEN_DOM0 be obsolete and the XEN_PRIV would be the one that turns a lot of the options needed to compile a kernel that can provide backend driver support. (I am hand waving here). 
 
-> Also, you say "beautify", but that is a matter of opinion.  You
-> shuffle around the tabs in your whitespace change, and yet even
-> then you don't manage to adapt it to the general coding style of
-> having multi-line args align with where the 1st arg starts.  So
-> you have done nothing but pollute the "git blame" history of that
-> file for other users.
-> 
+I recall (and thank you for pointing to the link) that this raised some questions that never got answered such as are there tools that check /proc/config.gz for example for features? Otherwise should that be eliminated as well? 
 
-OK, I will send patch v2 for it (which will remove the waste
-'beautifying' operation).
-
-> You might want to slow down on the quantity of patches you send,
-> and spend more time reading the comments from other people on
-> reviewed patches and learning some of the implicit requirements
-> from those.
-
-No, that only means I still need improving my patch sending.
-
-Hmm... for 'learning', I think: "learn with each other, never too old to
-learn, never stop learning", so we can learn from most of patches or
-replies which sent by many members.
-
-e.g. I understand that for beautifying code, I need more consideration:
-not only about coding style rules, but also the readers from 'git' and
-the reviewers from 'diff'.
-
->             I've noticed that you are already dangerously close
-> to annoying several key subsystem maintainers, and that is not
-> the right long term approach to working with the linux community.
-
-If no reply, I will(of cause) no reply either.
-
-Especially, every members' time resource is always expensive.
-
-
-Thanks.
 -- 
-Chen Gang
+Sent from my Android phone. Please excuse my brevity.
