@@ -1,47 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753796Ab3GIII7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:08:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:49645 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753218Ab3GIII5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:08:57 -0400
-Date: Tue, 9 Jul 2013 10:07:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>, jovi.zhangwei@huawei.com,
-        Jiri Olsa <jolsa@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH] tracing/kprobe: Wait for disabling all running
- kprobe handlers
-Message-ID: <20130709080744.GH25631@dyad.programming.kicks-ass.net>
-References: <20130708142533.GA23749@redhat.com>
- <20130709080145.7975.83164.stgit@mhiramat-M0-7522>
+	id S1753616Ab3GIINO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:13:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:10550 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753281Ab3GIINI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 04:13:08 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1026,1363104000"; 
+   d="scan'208";a="7830388"
+Message-ID: <51DBC547.4040308@cn.fujitsu.com>
+Date: Tue, 09 Jul 2013 16:09:43 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130709080145.7975.83164.stgit@mhiramat-M0-7522>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Yijing Wang <wangyijing@huawei.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Rafael <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com,
+        Oliver Neukum <oneukum@suse.de>, Paul Bolle <pebolle@tiscali.nl>
+Subject: Re: [PATCH 1/2] PCI: introduce PCIe Device Serial NUmber Capability
+ support
+References: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
+In-Reply-To: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/09 16:11:24,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/09 16:11:28,
+	Serialize complete at 2013/07/09 16:11:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 05:01:45PM +0900, Masami Hiramatsu wrote:
-> +	if (wait) {
-> +		/*
-> +		 * synchronize with kprobe_trace_func/kretprobe_trace_func
-> +		 * to ensure disabled (all running handlers are finished)
-> +		 */
-> +		synchronize_sched();
-> +		kfree(link);	/* Ignored if link == NULL */
-> +	}
+On 07/09/2013 03:55 PM, Yijing Wang wrote:
 
-What's not clear to me from this comment is if we're only waiting for kfree()?
-In that case shouldn't we use call_rcu() to free the thing? Or do we need the
-sync_sched() for other purposes as well?
+> Introduce PCIe Ext Capability Device Serial Number support,
+> so we can use the unique device serial number to identify
+> the physical device. During system suspend, if the PCIe
+> device was removed and inserted a new same device, after
+> system resume there is no good way to identify it, maybe
+> Device Serial Number is a good choice if device support.
+
+Nice idea!
+
+Regards,
+Gu
+
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+
+
+Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Oliver Neukum <oneukum@suse.de>
+> Cc: Paul Bolle <pebolle@tiscali.nl>
+> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/pci/pci.c   |   33 +++++++++++++++++++++++++++++++++
+>  drivers/pci/pci.h   |    1 +
+>  drivers/pci/probe.c |    3 +++
+>  include/linux/pci.h |    4 ++++
+>  4 files changed, 41 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index e37fea6..d08df2b 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -2048,6 +2048,39 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
+>  }
+>  
+>  /**
+> + * pci_get_dsn - get device serial number
+> + * @dev: the PCI device
+> + * @sn: saved device serial number
+> + */
+> +void pci_get_dsn(struct pci_dev *dev, u64 *sn)
+> +{
+> +	int pos;
+> +	u32 lo, hi;
+> +
+> +	if (!pci_is_pcie(dev))
+> +		goto out;
+> +
+> +	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
+> +	if (!pos)
+> +		goto out;
+> +
+> +	pci_read_config_dword(dev, pos + 4, &lo);
+> +	pci_read_config_dword(dev, pos + 8, &hi);
+> +	*sn = ((u64)hi << 32) | lo;
+> +	return;
+> +
+> +out:
+> +	*sn = 0;
+> +	return;
+> +}
+> +EXPORT_SYMBOL(pci_get_dsn);
+> +
+> +void pci_dsn_init(struct pci_dev *dev)
+> +{
+> +	return pci_get_dsn(dev, &dev->sn);
+> +}
+> +
+> +/**
+>   * pci_configure_ari - enable or disable ARI forwarding
+>   * @dev: the PCI device
+>   *
+> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> index 68678ed..f626006 100644
+> --- a/drivers/pci/pci.h
+> +++ b/drivers/pci/pci.h
+> @@ -202,6 +202,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+>  		    struct resource *res, unsigned int reg);
+>  int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
+>  void pci_configure_ari(struct pci_dev *dev);
+> +void pci_dsn_init(struct pci_dev *dev);
+>  
+>  /**
+>   * pci_ari_enabled - query ARI forwarding status
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 46ada5c..d4c6e7e 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1322,6 +1322,9 @@ static void pci_init_capabilities(struct pci_dev *dev)
+>  	/* Power Management */
+>  	pci_pm_init(dev);
+>  
+> +	/* Device Serial Number */
+> +	pci_dsn_init(dev);
+> +
+>  	/* Vital Product Data */
+>  	pci_vpd_pci22_init(dev);
+>  
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 0fd1f15..59cd205 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -342,6 +342,7 @@ struct pci_dev {
+>  	struct list_head msi_list;
+>  	struct kset *msi_kset;
+>  #endif
+> +	u64 sn;		/* device serieal number, 0 if not support */
+>  	struct pci_vpd *vpd;
+>  #ifdef CONFIG_PCI_ATS
+>  	union {
+> @@ -995,6 +996,9 @@ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
+>  ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
+>  int pci_vpd_truncate(struct pci_dev *dev, size_t size);
+>  
+> +/* Device Serial Number */
+> +void pci_get_dsn(struct pci_dev *dev, u64 *sn);
+> +
+>  /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
+>  resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
+>  void pci_bus_assign_resources(const struct pci_bus *bus);
+
+
