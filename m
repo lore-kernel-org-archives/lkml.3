@@ -1,234 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158Ab3GIKJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 06:09:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23095 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763Ab3GIKJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 06:09:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1027,1363158000"; 
-   d="scan'208";a="342645367"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH net-next v2] net/fs: change busy poll time accounting
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Tue, 09 Jul 2013 13:09:21 +0300
-Message-ID: <20130709100921.21602.46444.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1752929Ab3GIKJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 06:09:40 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:17499
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750763Ab3GIKJg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 06:09:36 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI9371I542Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
+From: Gong Yibin-B38343 <B38343@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
+Subject: RE: [PATCH v1] regulator: pfuze100: add pfuze100 regulator driver
+Thread-Topic: [PATCH v1] regulator: pfuze100: add pfuze100 regulator driver
+Thread-Index: AQHOfIk7QX8bab8jOkyNIGYBhE0pv5lcHQHg
+Date: Tue, 9 Jul 2013 10:08:38 +0000
+Message-ID: <95EEB29E288F544BAED903CDEA0C4C06010FCE61@039-SN1MPN1-005.039d.mgd.msft.net>
+References: <1373351880-26982-1-git-send-email-b38343@freescale.com>
+ <20130709094424.GQ27646@sirena.org.uk>
+In-Reply-To: <20130709094424.GQ27646@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.252.106]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I forgot to commit before sending, so I sent the wrong version.
-The previous version gets a warning in busy_loop_timeout().
+Thanks Mark. The pfuze driver refer to the mc13xxx regulator driver, so I didn't notice regulator core make some changes and some work have been done by regulator core. Sorry.. I will update the patch later.
 
-Suggested by Linus:
-Changed time accounting for busy-poll:
-- Make it microsecond based.
-- Use unsigned longs.
-- Revert back to use time_after instead of time_in_range.
-Reorder poll/select busy loop conditions:
-- Clear busy_flag after one time we can't busy-poll.
-- Only init busy_end if we actually are going to busy-poll.
-Added one more missing need_resched() test.
+-----Original Message-----
+From: Mark Brown [mailto:broonie@kernel.org] 
+Sent: Tuesday, July 09, 2013 5:44 PM
+To: Gong Yibin-B38343
+Cc: linux-kernel@vger.kernel.org; grant.likely@linaro.org; rob.herring@calxeda.com; lgirdwood@gmail.com
+Subject: Re: [PATCH v1] regulator: pfuze100: add pfuze100 regulator driver
 
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+On Tue, Jul 09, 2013 at 02:38:00PM +0800, Robin Gong wrote:
 
- fs/select.c           |   31 ++++++++++++++++++----------
- include/net/ll_poll.h |   55 ++++++++++++++++---------------------------------
- 2 files changed, 38 insertions(+), 48 deletions(-)
+I've not fully reviewed this, the major thing here is that the driver is not making use of the regmap helpers for anything - most of the code in this driver looks like it duplicates standard code available in the core.
 
-diff --git a/fs/select.c b/fs/select.c
-index 25cac5f..50a804b 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -403,8 +403,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 	int retval, i, timed_out = 0;
- 	unsigned long slack = 0;
- 	unsigned int busy_flag = net_busy_loop_on() ? POLL_BUSY_LOOP : 0;
--	u64 busy_start = busy_loop_start_time(busy_flag);
--	u64 busy_end = busy_loop_end_time();
-+	unsigned long busy_end = 0;
- 
- 	rcu_read_lock();
- 	retval = max_select_fd(n, fds);
-@@ -506,9 +505,15 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
- 		}
- 
- 		/* only if found POLL_BUSY_LOOP sockets && not out of time */
--		if (!need_resched() && can_busy_loop &&
--		    busy_loop_range(busy_start, busy_end))
--			continue;
-+		if (can_busy_loop && !need_resched()) {
-+			if (!busy_end) {
-+				busy_end = busy_loop_end_time();
-+				continue;
-+			}
-+			if (!busy_loop_timeout(busy_end))
-+				continue;
-+		}
-+		busy_flag = 0;
- 
- 		/*
- 		 * If this is the first loop and we have a timeout
-@@ -780,9 +785,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 	int timed_out = 0, count = 0;
- 	unsigned long slack = 0;
- 	unsigned int busy_flag = net_busy_loop_on() ? POLL_BUSY_LOOP : 0;
--	u64 busy_start = busy_loop_start_time(busy_flag);
--	u64 busy_end = busy_loop_end_time();
--
-+	unsigned long busy_end = 0;
- 
- 	/* Optimise the no-wait case */
- 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
-@@ -834,9 +837,15 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
- 			break;
- 
- 		/* only if found POLL_BUSY_LOOP sockets && not out of time */
--		if (!need_resched() && can_busy_loop &&
--		    busy_loop_range(busy_start, busy_end))
--			continue;
-+		if (can_busy_loop && !need_resched()) {
-+			if (!busy_end) {
-+				busy_end = busy_loop_end_time();
-+				continue;
-+			}
-+			if (!busy_loop_timeout(busy_end))
-+				continue;
-+		}
-+		busy_flag = 0;
- 
- 		/*
- 		 * If this is the first loop and we have a timeout
-diff --git a/include/net/ll_poll.h b/include/net/ll_poll.h
-index f14dd88..76f0340 100644
---- a/include/net/ll_poll.h
-+++ b/include/net/ll_poll.h
-@@ -47,7 +47,7 @@ static inline bool net_busy_loop_on(void)
-  * we only care that the average is bounded
-  */
- #ifdef CONFIG_DEBUG_PREEMPT
--static inline u64 busy_loop_sched_clock(void)
-+static inline u64 busy_loop_us_clock(void)
- {
- 	u64 rc;
- 
-@@ -55,37 +55,24 @@ static inline u64 busy_loop_sched_clock(void)
- 	rc = sched_clock();
- 	preempt_enable_no_resched_notrace();
- 
--	return rc;
-+	return rc >> 10;
- }
- #else /* CONFIG_DEBUG_PREEMPT */
--static inline u64 busy_loop_sched_clock(void)
-+static inline u64 busy_loop_us_clock(void)
- {
--	return sched_clock();
-+	return sched_clock() >> 10;
- }
- #endif /* CONFIG_DEBUG_PREEMPT */
- 
--/* we don't mind a ~2.5% imprecision so <<10 instead of *1000
-- * sk->sk_ll_usec is a u_int so this can't overflow
-- */
--static inline u64 sk_busy_loop_end_time(struct sock *sk)
-+static inline unsigned long sk_busy_loop_end_time(struct sock *sk)
- {
--	return (u64)ACCESS_ONCE(sk->sk_ll_usec) << 10;
-+	return busy_loop_us_clock() + ACCESS_ONCE(sk->sk_ll_usec);
- }
- 
--/* in poll/select we use the global sysctl_net_ll_poll value
-- * only call sched_clock() if enabled
-- */
--static inline u64 busy_loop_end_time(void)
--{
--	return (u64)ACCESS_ONCE(sysctl_net_ll_poll) << 10;
--}
--
--/* if flag is not set we don't need to know the time
-- * so we want to avoid a potentially expensive sched_clock()
-- */
--static inline u64 busy_loop_start_time(unsigned int flag)
-+/* in poll/select we use the global sysctl_net_ll_poll value */
-+static inline unsigned long busy_loop_end_time(void)
- {
--	return flag ? busy_loop_sched_clock() : 0;
-+	return busy_loop_us_clock() + ACCESS_ONCE(sysctl_net_ll_poll);
- }
- 
- static inline bool sk_can_busy_loop(struct sock *sk)
-@@ -94,12 +81,12 @@ static inline bool sk_can_busy_loop(struct sock *sk)
- 	       !need_resched() && !signal_pending(current);
- }
- 
--/* careful! time_in_range64 will evaluate now twice */
--static inline bool busy_loop_range(u64 start_time, u64 run_time)
-+
-+static inline bool busy_loop_timeout(unsigned long end_time)
- {
--	u64 now = busy_loop_sched_clock();
-+	unsigned long now = busy_loop_us_clock();
- 
--	return time_in_range64(now, start_time, start_time + run_time);
-+	return time_after(now, end_time);
- }
- 
- /* when used in sock_poll() nonblock is known at compile time to be true
-@@ -107,8 +94,7 @@ static inline bool busy_loop_range(u64 start_time, u64 run_time)
-  */
- static inline bool sk_busy_loop(struct sock *sk, int nonblock)
- {
--	u64 start_time = busy_loop_start_time(!nonblock);
--	u64 end_time = sk_busy_loop_end_time(sk);
-+	unsigned long end_time = !nonblock ? sk_busy_loop_end_time(sk) : 0;
- 	const struct net_device_ops *ops;
- 	struct napi_struct *napi;
- 	int rc = false;
-@@ -139,7 +125,7 @@ static inline bool sk_busy_loop(struct sock *sk, int nonblock)
- 					 LINUX_MIB_LOWLATENCYRXPACKETS, rc);
- 
- 	} while (!nonblock && skb_queue_empty(&sk->sk_receive_queue) &&
--		 busy_loop_range(start_time, end_time));
-+		 !need_resched() && !busy_loop_timeout(end_time));
- 
- 	rc = !skb_queue_empty(&sk->sk_receive_queue);
- out:
-@@ -165,12 +151,7 @@ static inline unsigned long net_busy_loop_on(void)
- 	return 0;
- }
- 
--static inline u64 busy_loop_start_time(unsigned int flag)
--{
--	return 0;
--}
--
--static inline u64 busy_loop_end_time(void)
-+static inline unsigned long busy_loop_end_time(void)
- {
- 	return 0;
- }
-@@ -193,9 +174,9 @@ static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
- {
- }
- 
--static inline bool busy_loop_range(u64 start_time, u64 run_time)
-+static inline bool busy_loop_timeout(unsigned long end_time)
- {
--	return false;
-+	return true;
- }
- 
- #endif /* CONFIG_NET_LL_RX_POLL */
+> @@ -45,6 +45,7 @@ obj-$(CONFIG_REGULATOR_MAX77693) += max77693.o
+>  obj-$(CONFIG_REGULATOR_MC13783) += mc13783-regulator.o
+>  obj-$(CONFIG_REGULATOR_MC13892) += mc13892-regulator.o
+>  obj-$(CONFIG_REGULATOR_MC13XXX_CORE) +=  mc13xxx-regulator-core.o
+> +obj-$(CONFIG_REGULATOR_PFUZE100) += pfuze100-regulator.o
+>  obj-$(CONFIG_REGULATOR_PALMAS) += palmas-regulator.o
+>  obj-$(CONFIG_REGULATOR_TPS51632) += tps51632-regulator.o
+>  obj-$(CONFIG_REGULATOR_PCAP) += pcap-regulator.o @@ -72,6 +73,7 @@ 
+> obj-$(CONFIG_REGULATOR_WM831X) += wm831x-ldo.o
+>  obj-$(CONFIG_REGULATOR_WM8350) += wm8350-regulator.o
+>  obj-$(CONFIG_REGULATOR_WM8400) += wm8400-regulator.o
+>  obj-$(CONFIG_REGULATOR_WM8994) += wm8994-regulator.o
+> +obj-$(CONFIG_REGULATOR_PFUZE100) += pfuze100-regulator.o
+
+This looks broken...
+
+> +++ b/drivers/regulator/pfuze-regulator.h
+> @@ -0,0 +1,110 @@
+
+Why is this a separate file?
+
+> +struct pfuze_regulator {
+> +	struct regulator_desc desc;
+> +	unsigned int reg;
+> +	unsigned int stby_reg;
+> +	unsigned char enable_bit;
+> +	unsigned char stby_bit;
+> +	unsigned char vsel_shift;
+> +	unsigned char vsel_mask;
+> +	unsigned char stby_vsel_shift;
+> +	unsigned char stby_vsel_mask;
+> +	int const *voltages;
+
+This pretty much all looks like you are duplicating standard framework features - things like the vsels for example.
+
+> +static const int pfuze100_sw1[] = {
+> +	300000, 325000, 350000, 375000, 400000, 425000, 450000, 475000,
+> +	500000, 525000, 550000, 575000, 600000, 625000, 650000, 675000,
+> +	700000, 725000, 750000, 775000, 800000, 825000, 850000, 875000,
+> +	900000, 925000, 950000, 975000, 1000000, 1025000, 1050000, 1075000,
+> +	1100000, 1125000, 1150000, 1175000, 1200000, 1225000, 1250000, 1275000,
+> +	1300000, 1325000, 1350000, 1375000, 1400000, 1425000, 1450000, 1475000,
+> +	1500000, 1525000, 1550000, 1575000, 1600000, 1625000, 1650000, 1675000,
+> +	1700000, 1725000, 1750000, 1775000, 1800000, 1825000, 1850000, 
+> +1875000, };
+
+This looks like a linear map, use one if you can.  Similarly for a bunch of the other tables (possibly all of them).
+
+> +#if defined(CONFIG_OF)
+> +static const struct of_device_id pfuze_dt_ids[] = {
+> +	{ .compatible = "fsl,pfuze100", .data = (void *)PFUZE_ID_PFUZE100},
+> +	{},
+> +};
+> +MODULE_DEVICE_TABLE(of, pfuze_dt_ids); #endif
+
+No need for ifdefs.
+
+> +static int pfuze100_regulator_enable(struct regulator_dev *rdev)
+
+You should be using the standard regmap helpers for this.
+
+> +int pfuze100_regulator_list_voltage(struct regulator_dev *rdev,
+> +				    unsigned selector)
+
+This too (even if you need to use the tables there are helpers for that too).
+
+> +static int pfuze100_regulator_sw_standby_enable(struct regulator_dev 
+> +*rdev) {
+> +	return 0;
+> +}
+> +static int pfuze100_regulator_sw_standby_disable(struct regulator_dev 
+> +*rdev) {
+> +	return 0;
+> +}
+> +static struct regulator_ops pfuze100_sw_regulator_ops = {
+
+Coding style and you shouldn't have any empty functions.
+
+> +#ifdef CONFIG_OF
+> +
+> +static int  pfuze_get_num_regulators_dt(struct device *dev) {
+
+You need to document any new device tree bindings.
+
+> +static struct regmap_config pfuze_regmap_config = {
+> +	.reg_bits = 8,
+> +	.val_bits = 8,
+> +
+> +	.max_register = PFUZE_NUMREGS,
+> +
+> +	.cache_type = REGCACHE_NONE,
+
+This is the defualt, though you should consider caching for performance reasons.
+
+> +subsys_initcall(pfuze100_regulator_init);
+
+Use module_i2c_driver() (and watch out for coding style).
 
