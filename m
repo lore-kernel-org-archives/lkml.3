@@ -1,161 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753616Ab3GIINO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:13:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:10550 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753281Ab3GIINI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:13:08 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1026,1363104000"; 
-   d="scan'208";a="7830388"
-Message-ID: <51DBC547.4040308@cn.fujitsu.com>
-Date: Tue, 09 Jul 2013 16:09:43 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1753749Ab3GIINf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:13:35 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:53783 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753661Ab3GIINc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 04:13:32 -0400
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Rafael <rjw@sisk.pl>,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com,
-        Oliver Neukum <oneukum@suse.de>, Paul Bolle <pebolle@tiscali.nl>
-Subject: Re: [PATCH 1/2] PCI: introduce PCIe Device Serial NUmber Capability
- support
-References: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/09 16:11:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/09 16:11:28,
-	Serialize complete at 2013/07/09 16:11:28
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CAMuHMdX0aP7jm=2vAO=Mg9b-RggynRq+BosvzGfqSRtnyue4+w@mail.gmail.com>
+References: <1368850897.18069.255@driftwood>
+	<CAMuHMdX0aP7jm=2vAO=Mg9b-RggynRq+BosvzGfqSRtnyue4+w@mail.gmail.com>
+Date: Tue, 9 Jul 2013 10:13:31 +0200
+X-Google-Sender-Auth: UCqp0wFNcFr6Onh-9t35Tkg7S7w
+Message-ID: <CAMuHMdUfBkL_YGEJo2VhfVYR99p3EsPHoVjtA+f_cgDEvumXpw@mail.gmail.com>
+Subject: Re: 3.10-rc1: commit ccdfcc398594 broke uClibc build.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 03:55 PM, Yijing Wang wrote:
+On Tue, Jul 9, 2013 at 10:02 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Widening the audience...
 
-> Introduce PCIe Ext Capability Device Serial Number support,
-> so we can use the unique device serial number to identify
-> the physical device. During system suspend, if the PCIe
-> device was removed and inserted a new same device, after
-> system resume there is no good way to identify it, maybe
-> Device Serial Number is a good choice if device support.
+Do, linux-net is no more...
 
-Nice idea!
+> On Sat, May 18, 2013 at 6:21 AM, Rob Landley <rob@landley.net> wrote:
+>> The #include <linux/kernel.h> added to include/uapi/linux/netlink.h causes
+>> the uClibc build to go:
+>>
+>> In file included from include/linux/kernel.h:4,
+>>                  from include/linux/netlink.h:4,
+>>                  from include/linux/rtnetlink.h:5,
+>>                  from libc/inet/netlinkaccess.h:27,
+>>                  from libc/inet/if_index.c:37:
+>> include/linux/sysinfo.h:8: error: expected specifier-qualifier-list before
+>> '__kernel_long_t'
+>> make: *** [libc/inet/if_index.o] Error 1
+>>
+>> If I comment out that line, it builds fine. The kernel builds (for my
+>> config) either way.
 
-Regards,
-Gu
+Gr{oetje,eeting}s,
 
-> 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Reviewed-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Paul Bolle <pebolle@tiscali.nl>
-> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/pci/pci.c   |   33 +++++++++++++++++++++++++++++++++
->  drivers/pci/pci.h   |    1 +
->  drivers/pci/probe.c |    3 +++
->  include/linux/pci.h |    4 ++++
->  4 files changed, 41 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index e37fea6..d08df2b 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -2048,6 +2048,39 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
->  }
->  
->  /**
-> + * pci_get_dsn - get device serial number
-> + * @dev: the PCI device
-> + * @sn: saved device serial number
-> + */
-> +void pci_get_dsn(struct pci_dev *dev, u64 *sn)
-> +{
-> +	int pos;
-> +	u32 lo, hi;
-> +
-> +	if (!pci_is_pcie(dev))
-> +		goto out;
-> +
-> +	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
-> +	if (!pos)
-> +		goto out;
-> +
-> +	pci_read_config_dword(dev, pos + 4, &lo);
-> +	pci_read_config_dword(dev, pos + 8, &hi);
-> +	*sn = ((u64)hi << 32) | lo;
-> +	return;
-> +
-> +out:
-> +	*sn = 0;
-> +	return;
-> +}
-> +EXPORT_SYMBOL(pci_get_dsn);
-> +
-> +void pci_dsn_init(struct pci_dev *dev)
-> +{
-> +	return pci_get_dsn(dev, &dev->sn);
-> +}
-> +
-> +/**
->   * pci_configure_ari - enable or disable ARI forwarding
->   * @dev: the PCI device
->   *
-> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-> index 68678ed..f626006 100644
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -202,6 +202,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
->  		    struct resource *res, unsigned int reg);
->  int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
->  void pci_configure_ari(struct pci_dev *dev);
-> +void pci_dsn_init(struct pci_dev *dev);
->  
->  /**
->   * pci_ari_enabled - query ARI forwarding status
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 46ada5c..d4c6e7e 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1322,6 +1322,9 @@ static void pci_init_capabilities(struct pci_dev *dev)
->  	/* Power Management */
->  	pci_pm_init(dev);
->  
-> +	/* Device Serial Number */
-> +	pci_dsn_init(dev);
-> +
->  	/* Vital Product Data */
->  	pci_vpd_pci22_init(dev);
->  
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 0fd1f15..59cd205 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -342,6 +342,7 @@ struct pci_dev {
->  	struct list_head msi_list;
->  	struct kset *msi_kset;
->  #endif
-> +	u64 sn;		/* device serieal number, 0 if not support */
->  	struct pci_vpd *vpd;
->  #ifdef CONFIG_PCI_ATS
->  	union {
-> @@ -995,6 +996,9 @@ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
->  ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
->  int pci_vpd_truncate(struct pci_dev *dev, size_t size);
->  
-> +/* Device Serial Number */
-> +void pci_get_dsn(struct pci_dev *dev, u64 *sn);
-> +
->  /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
->  resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
->  void pci_bus_assign_resources(const struct pci_bus *bus);
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
