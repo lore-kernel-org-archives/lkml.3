@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3GIKV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 06:21:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62400 "EHLO mx1.redhat.com"
+	id S1753071Ab3GIK0N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 06:26:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54717 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673Ab3GIKV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 06:21:56 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [PATCH net 2/2] macvtap: correctly linearize skb when zerocopy is used
-Date: Tue,  9 Jul 2013 18:10:51 +0800
-Message-Id: <1373364651-10474-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1373364651-10474-1-git-send-email-jasowang@redhat.com>
-References: <1373364651-10474-1-git-send-email-jasowang@redhat.com>
+	id S1750763Ab3GIK0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 06:26:10 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAMuHMdX0aP7jm=2vAO=Mg9b-RggynRq+BosvzGfqSRtnyue4+w@mail.gmail.com>
+References: <CAMuHMdX0aP7jm=2vAO=Mg9b-RggynRq+BosvzGfqSRtnyue4+w@mail.gmail.com> <1368850897.18069.255@driftwood>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: dhowells@redhat.com, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>, linux-net@vger.kernel.org
+Subject: Re: 3.10-rc1: commit ccdfcc398594 broke uClibc build.
+Date: Tue, 09 Jul 2013 11:25:53 +0100
+Message-ID: <6325.1373365553@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
-linearize parts of the skb to let the rest of iov to be fit in
-the frags, we need count copylen into linear when calling macvtap_alloc_skb()
-instead of partly counting it into data_len. Since this breaks
-zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
-be zero at beginning. This cause nr_frags to be increased wrongly without
-setting the correct frags.
+Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 
-This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-(macvtap: zerocopy: validate vectors before building skb).
+> The #include <linux/kernel.h> added to include/uapi/linux/netlink.h causes
+> the uClibc build to go:
+>
+> In file included from include/linux/kernel.h:4,
+>                  from include/linux/netlink.h:4,
+>                  from include/linux/rtnetlink.h:5,
+>                  from libc/inet/netlinkaccess.h:27,
+>                  from libc/inet/if_index.c:37:
+> > include/linux/sysinfo.h:8: error: expected specifier-qualifier-list before
+> > '__kernel_long_t'
+> > make: *** [libc/inet/if_index.o] Error 1
+> >
+> > If I comment out that line, it builds fine. The kernel builds (for my
+> > config) either way.
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
-This patch is needed for stable.
----
- drivers/net/macvtap.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Comment out which line?  Line 8 of include/linux/sysinfo.h or the new #include
+line?
 
-diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
-index f2c4a3b..b213020 100644
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -770,7 +770,8 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
- 		copylen = len;
- 
- 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
--				vnet_hdr.hdr_len, noblock, &err);
-+				zerocopy ? copylen : vnet_hdr.hdr_len,
-+				noblock, &err);
- 	if (!skb)
- 		goto err;
- 
--- 
-1.7.1
+Also, what arch are you compiling for?
 
+David
