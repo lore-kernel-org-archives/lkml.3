@@ -1,134 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752594Ab3GIQtw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 12:49:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752113Ab3GIQts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 12:49:48 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Renninger <trenn@suse.de>
-Subject: [PATCH 2/4] perf tools: Remove event types from perf data file
-Date: Tue,  9 Jul 2013 18:48:57 +0200
-Message-Id: <1373388539-9347-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
-References: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
+	id S1752645Ab3GIQuP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 12:50:15 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:38034 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab3GIQuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 12:50:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1373348531-31893-1-git-send-email-zhen-hual@hp.com>
+References: <1373348531-31893-1-git-send-email-zhen-hual@hp.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 9 Jul 2013 10:49:49 -0600
+Message-ID: <CAErSpo6pCrzCOuthrgD_+oRyw7ZhqztVSi=ti336s2h5xeH_uA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ia64/pci: set mmio decoding on for some host bridge
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing event types data storing/reading to/from perf
-data file as it's no longer needed. The only user of
-this data 'perf timechart' is switched to use traceevent
-library.
+On Mon, Jul 8, 2013 at 11:42 PM, Li, Zhen-Hua <zhen-hual@hp.com> wrote:
+> On some IA64 platforms with intel PCI bridge, for example, HP BL890c i2
+> with  Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+> when kernel tries to disable the mmio decoding on the PCI bridge devices,
+> kernel may crash.
+>
+> And in the comment of function quirk_mmio_always_on, it also says:
+> "But doing so (disable the mmio decoding) may cause problems on host bridge
+>  and perhaps other key system devices"
+>
+> So, for this PCI bridge,  dev->mmio_always_on bit should be set to 1.
+>
+> To avoid affecting the use of quirk_mmio_always_on, a new function is created.
+>
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>  drivers/pci/quirks.c    |   17 +++++++++++++++++
+>  include/linux/pci_ids.h |    1 +
+>  2 files changed, 18 insertions(+)
+>
+> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+> index e85d230..665af3e 100644
+> --- a/drivers/pci/quirks.c
+> +++ b/drivers/pci/quirks.c
+> @@ -44,6 +44,23 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
+>  DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+>                                 PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
+>
+> +#ifdef CONFIG_IA64
+> +/*
+> + * On some IA64 platforms, for some intel PCI bridge devices, for example,
+> + * the Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+> + * disable the mmio decoding on this device may cause system crash.
+> + * So dev->mmio_always_on bit should be set to 1.
+> + */
+> +static void quirk_mmio_on_intel_pcibridge(struct pci_dev *dev)
+> +{
+> +       dev->mmio_always_on = 1;
+> +}
+> +DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_VENDOR_ID_INTEL,
+> +                       PCI_DEVICE_ID_INTEL_5520_5550_X58,
+> +                       PCI_CLASS_BRIDGE_PCI,
+> +                       8, quirk_mmio_on_intel_pcibridge);
+> +#endif
+> +
+>  /* The Mellanox Tavor device gives false positive parity errors
+>   * Mark this device with a broken_parity_status, to allow
+>   * PCI scanning code to "skip" this now blacklisted device.
+> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+> index 3bed2e8..d8c60b7 100644
+> --- a/include/linux/pci_ids.h
+> +++ b/include/linux/pci_ids.h
+> @@ -2742,6 +2742,7 @@
+>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
+>  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
+>  #define PCI_DEVICE_ID_INTEL_82855PM_HB 0x3340
+> +#define PCI_DEVICE_ID_INTEL_5520_5550_X58       0x3408
+>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG4  0x3429
+>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG5  0x342a
+>  #define PCI_DEVICE_ID_INTEL_IOAT_TBG6  0x342b
+> --
+> 1.7.10.4
+>
 
-The event_types offset and size stays in the perf data
-file header but are ignored from now on.
+You need to figure out what the problem is, not just avoid it.  It's
+very unlikely that the problem is something unique to ia64.  In fact,
+I think it's very doubtful that the problem is even something unique
+to the 5520 root ports.  My guess is there's something special about
+the system you're testing.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Thomas Renninger <trenn@suse.de>
----
- tools/perf/util/header.c | 28 +---------------------------
- tools/perf/util/header.h |  3 +--
- 2 files changed, 2 insertions(+), 29 deletions(-)
+Evidently you have traffic going to a device behind the root port at
+the same time as we're trying to read the root port's BARs.  Linux
+should not generate traffic like that while we're enumerating the root
+port.  Does the problem happen on a root port with an iLO behind it?
+Can you collect "lspci -vvv" output and identify the root port where
+the problem occurs?
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index d12d79c..8862667 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2334,16 +2334,6 @@ int perf_session__write_header(struct perf_session *session,
- 		}
- 	}
- 
--	header->event_offset = lseek(fd, 0, SEEK_CUR);
--	header->event_size = trace_event_count * sizeof(struct perf_trace_event_type);
--	if (trace_events) {
--		err = do_write(fd, trace_events, header->event_size);
--		if (err < 0) {
--			pr_debug("failed to write perf header events\n");
--			return err;
--		}
--	}
--
- 	header->data_offset = lseek(fd, 0, SEEK_CUR);
- 
- 	if (at_exit) {
-@@ -2364,10 +2354,7 @@ int perf_session__write_header(struct perf_session *session,
- 			.offset = header->data_offset,
- 			.size	= header->data_size,
- 		},
--		.event_types = {
--			.offset = header->event_offset,
--			.size	= header->event_size,
--		},
-+		/* event_types is ignored, store zeros */
- 	};
- 
- 	memcpy(&f_header.adds_features, &header->adds_features, sizeof(header->adds_features));
-@@ -2614,8 +2601,6 @@ int perf_file_header__read(struct perf_file_header *header,
- 	memcpy(&ph->adds_features, &header->adds_features,
- 	       sizeof(ph->adds_features));
- 
--	ph->event_offset = header->event_types.offset;
--	ph->event_size   = header->event_types.size;
- 	ph->data_offset  = header->data.offset;
- 	ph->data_size	 = header->data.size;
- 	return 0;
-@@ -2839,17 +2824,6 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 
- 	symbol_conf.nr_events = nr_attrs;
- 
--	if (f_header.event_types.size) {
--		lseek(fd, f_header.event_types.offset, SEEK_SET);
--		trace_events = malloc(f_header.event_types.size);
--		if (trace_events == NULL)
--			return -ENOMEM;
--		if (perf_header__getbuffer64(header, fd, trace_events,
--					     f_header.event_types.size))
--			goto out_errno;
--		trace_event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
--	}
--
- 	perf_header__process_sections(header, fd, &session->pevent,
- 				      perf_file_section__process);
- 
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 2d1ca7d..298982f 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -45,6 +45,7 @@ struct perf_file_header {
- 	u64				attr_size;
- 	struct perf_file_section	attrs;
- 	struct perf_file_section	data;
-+	/* event_types is ignored */
- 	struct perf_file_section	event_types;
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- };
-@@ -88,8 +89,6 @@ struct perf_header {
- 	s64			attr_offset;
- 	u64			data_offset;
- 	u64			data_size;
--	u64			event_offset;
--	u64			event_size;
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- 	struct perf_session_env env;
- };
--- 
-1.7.11.7
-
+Bjorn
