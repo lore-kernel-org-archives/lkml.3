@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444Ab3GIN5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:57:38 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:39862 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab3GIN5H (ORCPT
+	id S1753984Ab3GIN6E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:58:04 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:41344 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab3GIN5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 09:57:07 -0400
+	Tue, 9 Jul 2013 09:57:06 -0400
 From: Dominik Dingel <dingel@linux.vnet.ibm.com>
 To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
 Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
@@ -21,517 +21,70 @@ Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
         linux-s390@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH 4/4] PF: Async page fault support on s390
-Date: Tue,  9 Jul 2013 15:56:47 +0200
-Message-Id: <1373378207-10451-5-git-send-email-dingel@linux.vnet.ibm.com>
+Subject: [PATCH v3 0/4] Enable async page faults on s390 
+Date: Tue,  9 Jul 2013 15:56:43 +0200
+Message-Id: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.2.2
-In-Reply-To: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
-References: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13070913-0542-0000-0000-000005C20800
+x-cbid: 13070913-3548-0000-0000-000005E2C3E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables async page faults for s390 kvm guests.
-It provides the userspace API to enable, disable or get the status of this
-feature. Also it includes the diagnose code, called by the guest to enable
-async page faults.
+Gleb, Paolo, 
 
-The async page faults will use an already existing guest interface for this
-purpose, as described in "CP Programming Services (SC24-6084)".
+based on the work from Martin and Carsten, this implementation enables async page faults.
+To the guest it will provide the pfault interface, but internally it uses the
+async page fault common code. 
 
-Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
----
- Documentation/s390/kvm.txt       |  24 ++++++++++
- arch/s390/include/asm/kvm_host.h |  22 +++++++++
- arch/s390/include/uapi/asm/kvm.h |  10 ++++
- arch/s390/kvm/Kconfig            |   2 +
- arch/s390/kvm/Makefile           |   2 +-
- arch/s390/kvm/diag.c             |  57 ++++++++++++++++++++++
- arch/s390/kvm/interrupt.c        |  38 ++++++++++++---
- arch/s390/kvm/kvm-s390.c         | 100 ++++++++++++++++++++++++++++++++++++++-
- arch/s390/kvm/kvm-s390.h         |   4 ++
- arch/s390/kvm/sigp.c             |   2 +
- include/uapi/linux/kvm.h         |   2 +
- 11 files changed, 254 insertions(+), 9 deletions(-)
+The inital submission and it's discussion can be followed on http://www.mail-archive.com/kvm@vger.kernel.org/msg63359.html . 
 
-diff --git a/Documentation/s390/kvm.txt b/Documentation/s390/kvm.txt
-index 85f3280..707b7e9 100644
---- a/Documentation/s390/kvm.txt
-+++ b/Documentation/s390/kvm.txt
-@@ -70,6 +70,30 @@ floating interrupts are:
- KVM_S390_INT_VIRTIO
- KVM_S390_INT_SERVICE
- 
-+ioctl:      KVM_S390_APF_ENABLE:
-+args:       none
-+This ioctl is used to enable the async page fault interface. So in a
-+host page fault case the host can now submit pfault tokens to the guest.
-+
-+ioctl:      KVM_S390_APF_DISABLE:
-+args:       none
-+This ioctl is used to disable the async page fault interface. From this point
-+on no new pfault tokens will be issued to the guest. Already existing async
-+page faults are not covered by this and will be normally handled.
-+
-+ioctl:      KVM_S390_APF_STATUS:
-+args:       none
-+This ioctl allows the userspace to get the current status of the APF feature.
-+The main purpose for this, is to ensure that no pfault tokens will be lost
-+during live migration or similar management operations.
-+The possible return values are:
-+KVM_S390_APF_DISABLED_NON_PENDING
-+KVM_S390_APF_DISABLED_PENDING
-+KVM_S390_APF_ENABLED_NON_PENDING
-+KVM_S390_APF_ENABLED_PENDING
-+Caution: if KVM_S390_APF is enabled the PENDING status could be already changed
-+as soon as the ioctl returns to userspace.
-+
- 3. ioctl calls to the kvm-vcpu file descriptor
- KVM does support the following ioctls on s390 that are common with other
- architectures and do behave the same:
-diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
-index 3238d40..ae75104 100644
---- a/arch/s390/include/asm/kvm_host.h
-+++ b/arch/s390/include/asm/kvm_host.h
-@@ -257,6 +257,10 @@ struct kvm_vcpu_arch {
- 		u64		stidp_data;
- 	};
- 	struct gmap *gmap;
-+#define KVM_S390_PFAULT_TOKEN_INVALID	(-1UL)
-+	unsigned long pfault_token;
-+	unsigned long pfault_select;
-+	unsigned long pfault_compare;
- };
- 
- struct kvm_vm_stat {
-@@ -274,6 +278,24 @@ struct kvm_arch{
- 	int css_support;
- };
- 
-+#define ASYNC_PF_PER_VCPU	64
-+struct kvm_vcpu;
-+struct kvm_async_pf;
-+struct kvm_arch_async_pf {
-+	unsigned long pfault_token;
-+};
-+
-+bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu);
-+
-+void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
-+			       struct kvm_async_pf *work);
-+
-+void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
-+				     struct kvm_async_pf *work);
-+
-+void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-+				 struct kvm_async_pf *work);
-+
- extern int sie64a(struct kvm_s390_sie_block *, u64 *);
- extern char sie_exit;
- #endif
-diff --git a/arch/s390/include/uapi/asm/kvm.h b/arch/s390/include/uapi/asm/kvm.h
-index d25da59..b6c83e0 100644
---- a/arch/s390/include/uapi/asm/kvm.h
-+++ b/arch/s390/include/uapi/asm/kvm.h
-@@ -57,4 +57,14 @@ struct kvm_sync_regs {
- #define KVM_REG_S390_EPOCHDIFF	(KVM_REG_S390 | KVM_REG_SIZE_U64 | 0x2)
- #define KVM_REG_S390_CPU_TIMER  (KVM_REG_S390 | KVM_REG_SIZE_U64 | 0x3)
- #define KVM_REG_S390_CLOCK_COMP (KVM_REG_S390 | KVM_REG_SIZE_U64 | 0x4)
-+
-+/* ioctls used for setting/getting status of APF on s390x */
-+#define KVM_S390_APF_ENABLE	1
-+#define KVM_S390_APF_DISABLE	2
-+#define KVM_S390_APF_STATUS	3
-+#define KVM_S390_APF_DISABLED_NON_PENDING	0
-+#define KVM_S390_APF_DISABLED_PENDING		1
-+#define KVM_S390_APF_ENABLED_NON_PENDING	2
-+#define KVM_S390_APF_ENABLED_PENDING		3
-+
- #endif
-diff --git a/arch/s390/kvm/Kconfig b/arch/s390/kvm/Kconfig
-index 70b46ea..4993eed 100644
---- a/arch/s390/kvm/Kconfig
-+++ b/arch/s390/kvm/Kconfig
-@@ -23,6 +23,8 @@ config KVM
- 	select ANON_INODES
- 	select HAVE_KVM_CPU_RELAX_INTERCEPT
- 	select HAVE_KVM_EVENTFD
-+	select KVM_ASYNC_PF
-+	select KVM_ASYNC_PF_DIRECT
- 	---help---
- 	  Support hosting paravirtualized guest machines using the SIE
- 	  virtualization capability on the mainframe. This should work
-diff --git a/arch/s390/kvm/Makefile b/arch/s390/kvm/Makefile
-index 40b4c64..63bfc28 100644
---- a/arch/s390/kvm/Makefile
-+++ b/arch/s390/kvm/Makefile
-@@ -7,7 +7,7 @@
- # as published by the Free Software Foundation.
- 
- KVM := ../../../virt/kvm
--common-objs = $(KVM)/kvm_main.o $(KVM)/eventfd.o
-+common-objs = $(KVM)/kvm_main.o $(KVM)/eventfd.o $(KVM)/async_pf.o
- 
- ccflags-y := -Ivirt/kvm -Iarch/s390/kvm
- 
-diff --git a/arch/s390/kvm/diag.c b/arch/s390/kvm/diag.c
-index 3074475..e54dc80 100644
---- a/arch/s390/kvm/diag.c
-+++ b/arch/s390/kvm/diag.c
-@@ -17,6 +17,7 @@
- #include "kvm-s390.h"
- #include "trace.h"
- #include "trace-s390.h"
-+#include "gaccess.h"
- 
- static int diag_release_pages(struct kvm_vcpu *vcpu)
- {
-@@ -46,6 +47,60 @@ static int diag_release_pages(struct kvm_vcpu *vcpu)
- 	return 0;
- }
- 
-+static int __diag_page_ref_service(struct kvm_vcpu *vcpu)
-+{
-+	struct prs_parm {
-+		u16 code;
-+		u16 subcode;
-+		u16 parm_len;
-+		u16 parm_version;
-+		u64 token_addr;
-+		u64 select_mask;
-+		u64 compare_mask;
-+		u64 zarch;
-+	};
-+	struct prs_parm parm;
-+	int rc;
-+	u16 rx = (vcpu->arch.sie_block->ipa & 0xf0) >> 4;
-+	u16 ry = (vcpu->arch.sie_block->ipa & 0x0f);
-+	if (copy_from_guest(vcpu, &parm, vcpu->run->s.regs.gprs[rx], sizeof(parm)))
-+		return kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
-+
-+	if (parm.parm_version != 2 || parm.parm_len < 0x5)
-+		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
-+
-+	switch (parm.subcode) {
-+	case 0: /* TOKEN */
-+		if ((parm.zarch >> 63) != 1 || parm.token_addr & 7 ||
-+		    (parm.compare_mask & parm.select_mask) != parm.compare_mask)
-+			return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
-+
-+		vcpu->arch.pfault_token = parm.token_addr;
-+		vcpu->arch.pfault_select = parm.select_mask;
-+		vcpu->arch.pfault_compare = parm.compare_mask;
-+		vcpu->run->s.regs.gprs[ry] = 0;
-+		rc = 0;
-+		break;
-+	case 1: /* CANCEL */
-+		if (vcpu->run->s.regs.gprs[rx] & 7)
-+			return kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
-+
-+		vcpu->run->s.regs.gprs[ry] = 0;
-+
-+		if (vcpu->arch.pfault_token == KVM_S390_PFAULT_TOKEN_INVALID)
-+			vcpu->run->s.regs.gprs[ry] = 1;
-+
-+		vcpu->arch.pfault_token = KVM_S390_PFAULT_TOKEN_INVALID;
-+		rc = 0;
-+		break;
-+	default:
-+		rc = -EOPNOTSUPP;
-+		break;
-+	}
-+
-+	return rc;
-+}
-+
- static int __diag_time_slice_end(struct kvm_vcpu *vcpu)
- {
- 	VCPU_EVENT(vcpu, 5, "%s", "diag time slice end");
-@@ -143,6 +198,8 @@ int kvm_s390_handle_diag(struct kvm_vcpu *vcpu)
- 		return __diag_time_slice_end(vcpu);
- 	case 0x9c:
- 		return __diag_time_slice_end_directed(vcpu);
-+	case 0x258:
-+		return __diag_page_ref_service(vcpu);
- 	case 0x308:
- 		return __diag_ipl_functions(vcpu);
- 	case 0x500:
-diff --git a/arch/s390/kvm/interrupt.c b/arch/s390/kvm/interrupt.c
-index 7f35cb3..4f9dd71 100644
---- a/arch/s390/kvm/interrupt.c
-+++ b/arch/s390/kvm/interrupt.c
-@@ -31,7 +31,7 @@ static int is_ioint(u64 type)
- 	return ((type & 0xfffe0000u) != 0xfffe0000u);
- }
- 
--static int psw_extint_disabled(struct kvm_vcpu *vcpu)
-+int psw_extint_disabled(struct kvm_vcpu *vcpu)
- {
- 	return !(vcpu->arch.sie_block->gpsw.mask & PSW_MASK_EXT);
- }
-@@ -78,11 +78,8 @@ static int __interrupt_is_deliverable(struct kvm_vcpu *vcpu,
- 			return 1;
- 		return 0;
- 	case KVM_S390_INT_SERVICE:
--		if (psw_extint_disabled(vcpu))
--			return 0;
--		if (vcpu->arch.sie_block->gcr[0] & 0x200ul)
--			return 1;
--		return 0;
-+	case KVM_S390_INT_PFAULT_INIT:
-+	case KVM_S390_INT_PFAULT_DONE:
- 	case KVM_S390_INT_VIRTIO:
- 		if (psw_extint_disabled(vcpu))
- 			return 0;
-@@ -150,6 +147,8 @@ static void __set_intercept_indicator(struct kvm_vcpu *vcpu,
- 	case KVM_S390_INT_EXTERNAL_CALL:
- 	case KVM_S390_INT_EMERGENCY:
- 	case KVM_S390_INT_SERVICE:
-+	case KVM_S390_INT_PFAULT_INIT:
-+	case KVM_S390_INT_PFAULT_DONE:
- 	case KVM_S390_INT_VIRTIO:
- 		if (psw_extint_disabled(vcpu))
- 			__set_cpuflag(vcpu, CPUSTAT_EXT_INT);
-@@ -223,6 +222,26 @@ static void __do_deliver_interrupt(struct kvm_vcpu *vcpu,
- 		rc |= put_guest(vcpu, inti->ext.ext_params,
- 				(u32 __user *)__LC_EXT_PARAMS);
- 		break;
-+	case KVM_S390_INT_PFAULT_INIT:
-+		rc  = put_guest(vcpu, 0x2603, (u16 __user *) __LC_EXT_INT_CODE);
-+		rc |= put_guest(vcpu, 0x0600, (u16 __user *) __LC_EXT_CPU_ADDR);
-+		rc |= copy_to_guest(vcpu, __LC_EXT_OLD_PSW,
-+				    &vcpu->arch.sie_block->gpsw, sizeof(psw_t));
-+		rc |= copy_from_guest(vcpu, &vcpu->arch.sie_block->gpsw,
-+				      __LC_EXT_NEW_PSW, sizeof(psw_t));
-+		rc |= put_guest(vcpu, inti->ext.ext_params2,
-+				(u64 __user *) __LC_EXT_PARAMS2);
-+		break;
-+	case KVM_S390_INT_PFAULT_DONE:
-+		rc  = put_guest(vcpu, 0x2603, (u16 __user *) __LC_EXT_INT_CODE);
-+		rc |= put_guest(vcpu, 0x0680, (u16 __user *) __LC_EXT_CPU_ADDR);
-+		rc |= copy_to_guest(vcpu, __LC_EXT_OLD_PSW,
-+				    &vcpu->arch.sie_block->gpsw, sizeof(psw_t));
-+		rc |= copy_from_guest(vcpu, &vcpu->arch.sie_block->gpsw,
-+				      __LC_EXT_NEW_PSW, sizeof(psw_t));
-+		rc |= put_guest(vcpu, inti->ext.ext_params2,
-+				(u64 __user *) __LC_EXT_PARAMS2);
-+		break;
- 	case KVM_S390_INT_VIRTIO:
- 		VCPU_EVENT(vcpu, 4, "interrupt: virtio parm:%x,parm64:%llx",
- 			   inti->ext.ext_params, inti->ext.ext_params2);
-@@ -357,7 +376,7 @@ static int __try_deliver_ckc_interrupt(struct kvm_vcpu *vcpu)
- 	return 1;
- }
- 
--static int kvm_cpu_has_interrupt(struct kvm_vcpu *vcpu)
-+int kvm_cpu_has_interrupt(struct kvm_vcpu *vcpu)
- {
- 	struct kvm_s390_local_interrupt *li = &vcpu->arch.local_int;
- 	struct kvm_s390_float_interrupt *fi = vcpu->arch.local_int.float_int;
-@@ -811,6 +830,11 @@ int kvm_s390_inject_vcpu(struct kvm_vcpu *vcpu,
- 		inti->type = s390int->type;
- 		inti->mchk.mcic = s390int->parm64;
- 		break;
-+	case KVM_S390_INT_PFAULT_INIT:
-+	case KVM_S390_INT_PFAULT_DONE:
-+		inti->type = s390int->type;
-+		inti->ext.ext_params2 = s390int->parm64;
-+		break;
- 	case KVM_S390_INT_VIRTIO:
- 	case KVM_S390_INT_SERVICE:
- 	case KVM_S390_INT_IO_MIN...KVM_S390_INT_IO_MAX:
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index 702daca..004f07d 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -145,6 +145,7 @@ int kvm_dev_ioctl_check_extension(long ext)
- #ifdef CONFIG_KVM_S390_UCONTROL
- 	case KVM_CAP_S390_UCONTROL:
- #endif
-+	case KVM_CAP_ASYNC_PF:
- 	case KVM_CAP_SYNC_REGS:
- 	case KVM_CAP_ONE_REG:
- 	case KVM_CAP_ENABLE_CAP:
-@@ -186,6 +187,33 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 	int r;
- 
- 	switch (ioctl) {
-+	case KVM_S390_APF_ENABLE:
-+		set_bit(1, &kvm->arch.gmap->pfault_enabled);
-+		r = 0;
-+		break;
-+	case KVM_S390_APF_DISABLE:
-+		clear_bit(1, &kvm->arch.gmap->pfault_enabled);
-+		r = 0;
-+		break;
-+	case KVM_S390_APF_STATUS: {
-+		bool pfaults_pending = false;
-+		unsigned int i;
-+		struct kvm_vcpu *vcpu;
-+		r = 0;
-+		if (test_bit(1, &kvm->arch.gmap->pfault_enabled))
-+			r += 2;
-+
-+		kvm_for_each_vcpu(i, vcpu, kvm) {
-+			spin_lock(&vcpu->async_pf.lock);
-+			if (vcpu->async_pf.queued > 0)
-+				pfaults_pending = true;
-+			spin_unlock(&vcpu->async_pf.lock);
-+		}
-+
-+		if (pfaults_pending)
-+			r += 1;
-+		break;
-+	}
- 	case KVM_S390_INTERRUPT: {
- 		struct kvm_s390_interrupt s390int;
- 
-@@ -264,6 +292,7 @@ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
- {
- 	VCPU_EVENT(vcpu, 3, "%s", "free cpu");
- 	trace_kvm_s390_destroy_vcpu(vcpu->vcpu_id);
-+	kvm_clear_async_pf_completion_queue(vcpu);
- 	if (!kvm_is_ucontrol(vcpu->kvm)) {
- 		clear_bit(63 - vcpu->vcpu_id,
- 			  (unsigned long *) &vcpu->kvm->arch.sca->mcn);
-@@ -313,6 +342,9 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
- /* Section: vcpu related */
- int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
- {
-+	vcpu->arch.pfault_token = KVM_S390_PFAULT_TOKEN_INVALID;
-+	kvm_clear_async_pf_completion_queue(vcpu);
-+	kvm_async_pf_wakeup_all(vcpu);
- 	if (kvm_is_ucontrol(vcpu->kvm)) {
- 		vcpu->arch.gmap = gmap_alloc(current->mm);
- 		if (!vcpu->arch.gmap)
-@@ -691,10 +723,75 @@ static void kvm_arch_fault_in_sync(struct kvm_vcpu *vcpu)
- 	up_read(&mm->mmap_sem);
- }
- 
-+static void __kvm_inject_pfault_token(struct kvm_vcpu *vcpu, bool start_token,
-+				      unsigned long token)
-+{
-+	struct kvm_s390_interrupt inti;
-+	inti.type = start_token ? KVM_S390_INT_PFAULT_INIT :
-+				  KVM_S390_INT_PFAULT_DONE;
-+	inti.parm64 = token;
-+	if (kvm_s390_inject_vcpu(vcpu, &inti))
-+		WARN(1, "pfault interrupt injection failed");
-+}
-+
-+void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
-+				     struct kvm_async_pf *work)
-+{
-+	__kvm_inject_pfault_token(vcpu, true, work->arch.pfault_token);
-+}
-+
-+void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-+				 struct kvm_async_pf *work)
-+{
-+	__kvm_inject_pfault_token(vcpu, false, work->arch.pfault_token);
-+}
-+
-+void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
-+			       struct kvm_async_pf *work)
-+{
-+	/* s390 will always inject the page directly */
-+}
-+
-+bool kvm_arch_can_inject_async_page_present(struct kvm_vcpu *vcpu)
-+{
-+	/*
-+	 * s390 will always inject the page directly,
-+	 * but we still want check_async_completion to cleanup
-+	 */
-+	return true;
-+}
-+
-+static int kvm_arch_setup_async_pf(struct kvm_vcpu *vcpu)
-+{
-+	hva_t hva = gmap_fault(current->thread.gmap_addr, vcpu->arch.gmap);
-+	struct kvm_arch_async_pf arch;
-+
-+	if (vcpu->arch.pfault_token == KVM_S390_PFAULT_TOKEN_INVALID)
-+		return 0;
-+	if ((vcpu->arch.sie_block->gpsw.mask & vcpu->arch.pfault_select) !=
-+	    vcpu->arch.pfault_compare)
-+		return 0;
-+	if (psw_extint_disabled(vcpu))
-+		return 0;
-+	if (kvm_cpu_has_interrupt(vcpu))
-+		return 0;
-+	if (!(vcpu->arch.sie_block->gcr[0] & 0x200ul))
-+		return 0;
-+
-+	if (copy_from_guest(vcpu, &arch.pfault_token, vcpu->arch.pfault_token, 8)) {
-+		/* already in error case, insert the interrupt and return 0 */
-+		int ign = kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
-+		return ign - ign;
-+	}
-+	return kvm_setup_async_pf(vcpu, current->thread.gmap_addr, hva, &arch);
-+}
-+
- static int __vcpu_run(struct kvm_vcpu *vcpu)
- {
- 	int rc;
- 
-+	kvm_check_async_pf_completion(vcpu);
-+
- 	memcpy(&vcpu->arch.sie_block->gg14, &vcpu->run->s.regs.gprs[14], 16);
- 
- 	if (need_resched())
-@@ -725,7 +822,8 @@ static int __vcpu_run(struct kvm_vcpu *vcpu)
- 		if (kvm_is_ucontrol(vcpu->kvm)) {
- 			rc = SIE_INTERCEPT_UCONTROL;
- 		} else if (current->thread.gmap_pfault) {
--			kvm_arch_fault_in_sync(vcpu);
-+			if (!kvm_arch_setup_async_pf(vcpu))
-+				kvm_arch_fault_in_sync(vcpu);
- 			current->thread.gmap_pfault = 0;
- 			rc = 0;
- 		} else {
-diff --git a/arch/s390/kvm/kvm-s390.h b/arch/s390/kvm/kvm-s390.h
-index 028ca9f..d0f4d2a 100644
---- a/arch/s390/kvm/kvm-s390.h
-+++ b/arch/s390/kvm/kvm-s390.h
-@@ -148,4 +148,8 @@ void exit_sie_sync(struct kvm_vcpu *vcpu);
- /* implemented in diag.c */
- int kvm_s390_handle_diag(struct kvm_vcpu *vcpu);
- 
-+/* implemented in interrupt.c */
-+int kvm_cpu_has_interrupt(struct kvm_vcpu *vcpu);
-+int psw_extint_disabled(struct kvm_vcpu *vcpu);
-+
- #endif
-diff --git a/arch/s390/kvm/sigp.c b/arch/s390/kvm/sigp.c
-index bec398c..768c3f3 100644
---- a/arch/s390/kvm/sigp.c
-+++ b/arch/s390/kvm/sigp.c
-@@ -187,6 +187,8 @@ static int __sigp_set_arch(struct kvm_vcpu *vcpu, u32 parameter)
- {
- 	int rc;
- 
-+	vcpu->arch.pfault_token = KVM_S390_PFAULT_TOKEN_INVALID;
-+
- 	switch (parameter & 0xff) {
- 	case 0:
- 		rc = SIGP_CC_NOT_OPERATIONAL;
-diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
-index acccd08..fae432c 100644
---- a/include/uapi/linux/kvm.h
-+++ b/include/uapi/linux/kvm.h
-@@ -413,6 +413,8 @@ struct kvm_s390_psw {
- #define KVM_S390_PROGRAM_INT		0xfffe0001u
- #define KVM_S390_SIGP_SET_PREFIX	0xfffe0002u
- #define KVM_S390_RESTART		0xfffe0003u
-+#define KVM_S390_INT_PFAULT_INIT	0xfffe0004u
-+#define KVM_S390_INT_PFAULT_DONE	0xfffe0005u
- #define KVM_S390_MCHK			0xfffe1000u
- #define KVM_S390_INT_VIRTIO		0xffff2603u
- #define KVM_S390_INT_SERVICE		0xffff2401u
+There is a slight modification for common code to move from a pull to a push based approch on s390. 
+As s390 we don't want to wait till we leave the guest state to queue the notification interrupts.
+
+To use this feature the controlling userspace hase to enable the capability.
+With that knob we can later on disable this feature for live migration.
+
+v2 -> v3
+ - Reworked the architecture specific parts, to only provide on addtional
+   implementation
+ - Renamed function to kvm_async_page_present_(sync|async)
+ - Fixing KVM_HVA_ERR_BAD handling
+
+v1 -> v2:
+ - Adding other architecture backends
+ - Adding documentation for the ioctl
+ - Improving the overall error handling
+ - Reducing the needed modifications on the common code
+
+
+Dominik Dingel (4):
+  PF: Add FAULT_FLAG_RETRY_NOWAIT for guest fault
+  PF: Make KVM_HVA_ERR_BAD usable on s390
+  PF: Provide additional direct page notification
+  PF: Async page fault support on s390
+
+ Documentation/s390/kvm.txt        |  24 +++++++++
+ arch/s390/include/asm/kvm_host.h  |  22 ++++++++
+ arch/s390/include/asm/pgtable.h   |   2 +
+ arch/s390/include/asm/processor.h |   1 +
+ arch/s390/include/uapi/asm/kvm.h  |  10 ++++
+ arch/s390/kvm/Kconfig             |   2 +
+ arch/s390/kvm/Makefile            |   2 +-
+ arch/s390/kvm/diag.c              |  57 ++++++++++++++++++++
+ arch/s390/kvm/interrupt.c         |  38 ++++++++++---
+ arch/s390/kvm/kvm-s390.c          | 111 ++++++++++++++++++++++++++++++++++++++
+ arch/s390/kvm/kvm-s390.h          |   4 ++
+ arch/s390/kvm/sigp.c              |   2 +
+ arch/s390/mm/fault.c              |  26 +++++++--
+ arch/x86/kvm/mmu.c                |   2 +-
+ include/linux/kvm_host.h          |  16 +++++-
+ include/uapi/linux/kvm.h          |   2 +
+ virt/kvm/Kconfig                  |   4 ++
+ virt/kvm/async_pf.c               |  22 ++++++--
+ 18 files changed, 330 insertions(+), 17 deletions(-)
+
 -- 
 1.8.2.2
 
