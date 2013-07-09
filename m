@@ -1,125 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3GIUdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 16:33:25 -0400
-Received: from mail-ea0-f170.google.com ([209.85.215.170]:61150 "EHLO
-	mail-ea0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab3GIUdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 16:33:23 -0400
-Date: Tue, 9 Jul 2013 22:33:22 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        David Airlie <airlied@linux.ie>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Mika Kuoppala <mika.kuoppala@intel.com>
-Subject: Re: [PATCH] Revert "drm/i915: unconditionally use mt forcewake on
- hsw/ivb"
-Message-ID: <20130709203322.GC18285@phenom.ffwll.local>
-Mail-Followup-To: Guenter Roeck <linux@roeck-us.net>,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Mika Kuoppala <mika.kuoppala@intel.com>
-References: <1373400849-30351-1-git-send-email-linux@roeck-us.net>
+	id S1753459Ab3GIUjf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 16:39:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38230 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751945Ab3GIUjc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 16:39:32 -0400
+From: Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH 0/3] [SCSI] megaraid: Remove local (struct pci_dev) pdev's
+To: megaraidlinux@lsi.com, JBottomley@parallels.com
+Cc: linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 09 Jul 2013 14:39:27 -0600
+Message-ID: <20130709203927.31676.35169.stgit@amt.stowe>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373400849-30351-1-git-send-email-linux@roeck-us.net>
-X-Operating-System: Linux phenom 3.10.0-rc5+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 01:14:09PM -0700, Guenter Roeck wrote:
-> This reverts commit 36ec8f877481449bdfa072e6adf2060869e2b970.
-> 
-> The commit results in repeated 'Timed out waiting for forcewake old ack
-> to clear' messages on a Supermicro C7H61 board (BIOS version 2.00 and 2.00b)
-> with i7-3770K CPU. It ultimately results in a hangup if the system is highly
-> loaded. Reverting the commit fixes the issue.
-> 
-> While I understand that this should be fixed in the BIOS, a more recent BIOS
-> is not available fron the vendor. If/since no better solution is not available,
-> reverting the patch seems to be the way to go (otherwise me and others with
-> the same problem won't be able to run the upstream kernel on affected boards).
-> 
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> Cc: Mika Kuoppala <mika.kuoppala@intel.com>
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Is the "megaraid" driver still actively used and maintained?  I originally
+posted this series on 06.07.2013 and after receiving no comments, pinged
+the list again on 06.17.2013 and still received no comments/feedback.
 
-Can you please add the bugzilla link here?
-
-> ---
->  drivers/gpu/drm/i915/intel_pm.c |   31 +++++++++++++++++++++++++++----
->  1 file changed, 27 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-> index aa01128..5bae9ba 100644
-> --- a/drivers/gpu/drm/i915/intel_pm.c
-> +++ b/drivers/gpu/drm/i915/intel_pm.c
-> @@ -4510,12 +4510,35 @@ void intel_gt_init(struct drm_device *dev)
->  	if (IS_VALLEYVIEW(dev)) {
->  		dev_priv->gt.force_wake_get = vlv_force_wake_get;
->  		dev_priv->gt.force_wake_put = vlv_force_wake_put;
-> -	} else if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev)) {
-> -		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_mt_get;
-> -		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_mt_put;
-
-Please keep the unconditional use of mt forcewake for haswell, afaik we
-don't have any reports that there are still broken BIOS out there.
+Trying again as I believe there is a real issue here, which I'd like
+confirmation on, and we really should remove the local copy/usage of
+'struct pci_dev' that this driver currently maintains.
 
 
-> -	} else if (IS_GEN6(dev)) {
-> +	} else if (INTEL_INFO(dev)->gen >= 6) {
->  		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
->  		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
-> +
-> +		/* IVB configs may use multi-threaded forcewake */
-> +		if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev)) {
-> +			u32 ecobus;
-> +
-> +			/* A small trick here - if the bios hasn't configured
-> +			 * MT forcewake, and if the device is in RC6, then
-> +			 * force_wake_mt_get will not wake the device and the
-> +			 * ECOBUS read will return zero. Which will be
-> +			 * (correctly) interpreted by the test below as MT
-> +			 * forcewake being disabled.
-> +			 */
-> +			mutex_lock(&dev->struct_mutex);
-> +			__gen6_gt_force_wake_mt_get(dev_priv);
-> +			ecobus = I915_READ_NOTRACE(ECOBUS);
-> +			__gen6_gt_force_wake_mt_put(dev_priv);
-> +			mutex_unlock(&dev->struct_mutex);
-> +
-> +			if (ecobus & FORCEWAKE_MT_ENABLE) {
-> +				DRM_DEBUG_KMS("Using MT version of forcewake\n");
-> +				dev_priv->gt.force_wake_get =
-> +					__gen6_gt_force_wake_mt_get;
-> +				dev_priv->gt.force_wake_put =
-> +					__gen6_gt_force_wake_mt_put;
-> +			}
+While the megaraid device itself may be 64-bit DMA capable, 32-bit address
+restricted DMA buffers are apparently required for "internal commands" as
+is denoted by a couple of comments - "For all internal commands, the
+buffer must be allocated in <4GB address range" - within the driver.
 
-This needs a DRM_INFO warning if MT forcewake is not available telling the
-user telling the user that this might result in hangs with recent DDX
-version, e.g.: "No MT forcewake available on Ivybridge, this can result in
-issues when using vblank-synced partial screen updates."
+If the device is 64-bit DMA capable then, once it is setup, any subsequent
+DMA allocations for "internal commands" would not be properly restricted
+due to megaraid_probe_one() having called pci_set_dma_mask() on pdev with
+DMA_BIT_MASK(64).  The driver attempts to solve this by using
+make_local_pdev() to dynamically create local pci_dev structures which are
+then set and used for allocating 32-bit address space restricted DMA
+buffers[1] but I don't believe that the implementation works as intended.
 
-Thanks, Daniel
 
-> +		}
->  	}
->  	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
->  			  intel_gen6_powersave_work);
-> -- 
-> 1.7.9.7
-> 
+Assume that the megaraid device is 64-bit DMA capable.  While probing the
+device and attaching the megaraid driver, pci_set_dma_mask() is called
+with the "originating pdev" and a DMA_BIT_MASK of 64.  As a result, any
+subsequent dynamic DMA related allocations associated with the
+"originating pdev" will acquire 64-bit based buffers, which do not meet
+the addressing restrictions for internal commands.
+
+  megaraid_probe_one(struct pci_dev *pdev, ...)
+      ...
+      pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+
+As mentioned, the driver attempts to solve this by using make_local_pdev()
+to dynamically create local pci_dev structures - "local pdev's" - which
+are set with a DMA_BIT_MASK of 32.
+
+  make_local_pdev
+      alloc_pci_dev
+      memcpy
+      pci_set_dma_mask
+          dma_set_mask
+              *dev->dma_mask = mask;
+
+The "local pdev" is then used in allocating a DMA buffer in an attempt to
+meet the < 4 GB restriction.
+
+For a 64-bit DMA capable device, the "originating pdev" will have its
+'dma_mask' set to 0xffffffffffffffff after the driver attaches.
+Subsequently, when an internal command is initiated, make_local_pdev() is
+called.  make_local_pdev() uses the PCI's core to allocate a "local pdev"
+and then copies the "originating pdev" content into the newly allocated
+"local pdev".  As a result of copying the "originating pdev" content into
+the "local pdev", pdev->dev.dma_mask will be pointing back to the
+"originating pdev's" 'dma_mask' member, not the "local pdev's" as
+intended.  Thus, when make_local_pdev() calls pci_set_dma_mask() in an
+attempt to set the "local pdev's" DMA mask to 32 it will instead overwrite
+the "originating pdev's" DMA mask.  Thus, after any user initiated
+commands are issued, all subsequent DMA allocations will be 32-bit
+restricted from that point onward regardless of whether they are internal
+commands or otherwise.
+
+
+This patch fixes the issue by removing the setup of DMA_BIT_MASK to 64 in
+megaraid_probe_one(), leaving the driver with default 32-bit DMA
+capabilities, as it currently ends up in such a state anyway after any
+internal commands are initiated.
+
+
+[1] It seems strange that both mega_buffer/buf_dma_handle and
+    make_local_pdev() both exist for internal commands but this has been
+    the case for a long time - at least since 2.6.12-rc2.  Perhaps there
+    is some coalescing that could be done.
+---
+Myron Stowe (3):
+      [SCSI] megaraid: Remove 64-bit DMA related dead code
+      [SCSI] megaraid: Remove local pdev's
+      [SCSI] megaraid: Remove 64-bit DMA_BIT_MASK capability
+
+
+ drivers/scsi/megaraid.c |  152 ++++++++---------------------------------------
+ drivers/scsi/megaraid.h |    1 
+ 2 files changed, 27 insertions(+), 126 deletions(-)
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
