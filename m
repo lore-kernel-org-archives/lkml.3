@@ -1,182 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752918Ab3GIFkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 01:40:21 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:56942 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab3GIFkS (ORCPT
+	id S1752904Ab3GIFnu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 01:43:50 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:22051 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab3GIFnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 01:40:18 -0400
-Message-ID: <51DBA239.9000303@ozlabs.ru>
-Date: Tue, 09 Jul 2013 15:40:09 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 3/8] vfio: add external user support
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru>  <1373123227-22969-4-git-send-email-aik@ozlabs.ru> <1373320371.2602.159.camel@ul30vt.home>
-In-Reply-To: <1373320371.2602.159.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+	Tue, 9 Jul 2013 01:43:49 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] ia64/pci: set mmio decoding on for some host bridge
+Date: Tue,  9 Jul 2013 13:42:11 +0800
+Message-Id: <1373348531-31893-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 07:52 AM, Alex Williamson wrote:
-> On Sun, 2013-07-07 at 01:07 +1000, Alexey Kardashevskiy wrote:
->> VFIO is designed to be used via ioctls on file descriptors
->> returned by VFIO.
->>
->> However in some situations support for an external user is required.
->> The first user is KVM on PPC64 (SPAPR TCE protocol) which is going to
->> use the existing VFIO groups for exclusive access in real/virtual mode
->> on a host to avoid passing map/unmap requests to the user space which
->> would made things pretty slow.
->>
->> The proposed protocol includes:
->>
->> 1. do normal VFIO init stuff such as opening a new container, attaching
->> group(s) to it, setting an IOMMU driver for a container. When IOMMU is
->> set for a container, all groups in it are considered ready to use by
->> an external user.
->>
->> 2. pass a fd of the group we want to accelerate to KVM. KVM calls
->> vfio_group_get_external_user() to verify if the group is initialized,
->> IOMMU is set for it and increment the container user counter to prevent
->> the VFIO group from disposal prior to KVM exit.
->> The current TCE IOMMU driver marks the whole IOMMU table as busy when
->> IOMMU is set for a container what prevents other DMA users from
->> allocating from it so it is safe to grant user space access to it.
->>
->> 3. KVM calls vfio_external_user_iommu_id() to obtian an IOMMU ID which
->> KVM uses to get an iommu_group struct for later use.
->>
->> 4. When KVM is finished, it calls vfio_group_put_external_user() to
->> release the VFIO group by decrementing the container user counter.
->> Everything gets released.
->>
->> The "vfio: Limit group opens" patch is also required for the consistency.
->>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> ---
->> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
->> index c488da5..57aa191 100644
->> --- a/drivers/vfio/vfio.c
->> +++ b/drivers/vfio/vfio.c
->> @@ -1370,6 +1370,62 @@ static const struct file_operations vfio_device_fops = {
->>  };
->>  
->>  /**
->> + * External user API, exported by symbols to be linked dynamically.
->> + *
->> + * The protocol includes:
->> + *  1. do normal VFIO init operation:
->> + *	- opening a new container;
->> + *	- attaching group(s) to it;
->> + *	- setting an IOMMU driver for a container.
->> + * When IOMMU is set for a container, all groups in it are
->> + * considered ready to use by an external user.
->> + *
->> + * 2. The user space passed a group fd which we want to accelerate in
->> + * KVM. KVM uses vfio_group_get_external_user() to verify that:
->> + *	- the group is initialized;
->> + *	- IOMMU is set for it.
->> + * Then vfio_group_get_external_user() increments the container user
->> + * counter to prevent the VFIO group from disposal prior to KVM exit.
->> + *
->> + * 3. KVM calls vfio_external_user_iommu_id() to know an IOMMU ID which
->> + * KVM uses to get an iommu_group struct for later use.
->> + *
->> + * 4. When KVM is finished, it calls vfio_group_put_external_user() to
->> + * release the VFIO group by decrementing the container user counter.
-> 
-> nit, the interface is for any external user, not just kvm.
+On some IA64 platforms with intel PCI bridge, for example, HP BL890c i2
+with  Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
+when kernel tries to disable the mmio decoding on the PCI bridge devices,
+kernel may crash.
 
-s/KVM/An external user/ ?
-Or add "the description below uses KVM just as an example of an external user"?
+And in the comment of function quirk_mmio_always_on, it also says:
+"But doing so (disable the mmio decoding) may cause problems on host bridge
+ and perhaps other key system devices"
 
+So, for this PCI bridge,  dev->mmio_always_on bit should be set to 1.
 
->> + */
->> +struct vfio_group *vfio_group_get_external_user(struct file *filep)
->> +{
->> +	struct vfio_group *group = filep->private_data;
->> +
->> +	if (filep->f_op != &vfio_group_fops)
->> +		return NULL;
-> 
-> ERR_PTR(-EINVAL)
-> 
-> There also needs to be a vfio_group_get(group) here and put in error
-> cases.
+To avoid affecting the use of quirk_mmio_always_on, a new function is created.
 
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ drivers/pci/quirks.c    |   17 +++++++++++++++++
+ include/linux/pci_ids.h |    1 +
+ 2 files changed, 18 insertions(+)
 
-Is that because I do not hold a reference to the file anymore?
-
-
->> +
->> +	if (!atomic_inc_not_zero(&group->container_users))
->> +		return NULL;
-> 
-> ERR_PTR(-EINVAL)
-> 
->> +
->> +	if (!group->container->iommu_driver ||
->> +			!vfio_group_viable(group)) {
->> +		atomic_dec(&group->container_users);
->> +		return NULL;
-> 
-> ERR_PTR(-EINVAL)
-> 
->> +	}
->> +
->> +	return group;
->> +}
->> +EXPORT_SYMBOL_GPL(vfio_group_get_external_user);
->> +
->> +void vfio_group_put_external_user(struct vfio_group *group)
->> +{
->> +	vfio_group_try_dissolve_container(group);
-> 
-> And a vfio_group_put(group) here
-> 
->> +}
->> +EXPORT_SYMBOL_GPL(vfio_group_put_external_user);
->> +
->> +int vfio_external_user_iommu_id(struct vfio_group *group)
->> +{
->> +	return iommu_group_id(group->iommu_group);
->> +}
->> +EXPORT_SYMBOL_GPL(vfio_external_user_iommu_id);
->> +
->> +/**
->>   * Module/class support
->>   */
->>  static char *vfio_devnode(struct device *dev, umode_t *mode)
->> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
->> index ac8d488..24579a0 100644
->> --- a/include/linux/vfio.h
->> +++ b/include/linux/vfio.h
->> @@ -90,4 +90,11 @@ extern void vfio_unregister_iommu_driver(
->>  	TYPE tmp;						\
->>  	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
->>  
->> +/*
->> + * External user API
->> + */
->> +extern struct vfio_group *vfio_group_get_external_user(struct file *filep);
->> +extern void vfio_group_put_external_user(struct vfio_group *group);
->> +extern int vfio_external_user_iommu_id(struct vfio_group *group);
->> +
->>  #endif /* VFIO_H */
-> 
-> 
-> 
-
-
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index e85d230..665af3e 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -44,6 +44,23 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
+ 				PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
+ 
++#ifdef CONFIG_IA64
++/*
++ * On some IA64 platforms, for some intel PCI bridge devices, for example,
++ * the Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
++ * disable the mmio decoding on this device may cause system crash.
++ * So dev->mmio_always_on bit should be set to 1.
++ */
++static void quirk_mmio_on_intel_pcibridge(struct pci_dev *dev)
++{
++	dev->mmio_always_on = 1;
++}
++DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_VENDOR_ID_INTEL,
++			PCI_DEVICE_ID_INTEL_5520_5550_X58,
++			PCI_CLASS_BRIDGE_PCI,
++			8, quirk_mmio_on_intel_pcibridge);
++#endif
++
+ /* The Mellanox Tavor device gives false positive parity errors
+  * Mark this device with a broken_parity_status, to allow
+  * PCI scanning code to "skip" this now blacklisted device.
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 3bed2e8..d8c60b7 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2742,6 +2742,7 @@
+ #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
+ #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
+ #define PCI_DEVICE_ID_INTEL_82855PM_HB	0x3340
++#define PCI_DEVICE_ID_INTEL_5520_5550_X58       0x3408
+ #define PCI_DEVICE_ID_INTEL_IOAT_TBG4	0x3429
+ #define PCI_DEVICE_ID_INTEL_IOAT_TBG5	0x342a
+ #define PCI_DEVICE_ID_INTEL_IOAT_TBG6	0x342b
 -- 
-Alexey
+1.7.10.4
+
