@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab3GINYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 09:24:36 -0400
-Received: from slimlogic.co.uk ([89.16.172.20]:57688 "EHLO slimlogic.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753655Ab3GINYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 09:24:33 -0400
-X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Jul 2013 09:24:33 EDT
-Date: Tue, 9 Jul 2013 14:17:07 +0100
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: cw00.choi@samsung.com, myungjoo.ham@samsung.com,
-        devicetree-discuss@lists.ozlabs.org, rob@landley.net,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, kishon@ti.com
-Subject: Re: [PATCH 0/4] extcon: palmas: clean-up/fixes and suspend/resume
- susupport.
-Message-ID: <20130709131707.GA2078@mint>
-References: <1373375064-12012-1-git-send-email-ldewangan@nvidia.com>
+	id S1753884Ab3GIN1i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 09:27:38 -0400
+Received: from mail-ye0-f169.google.com ([209.85.213.169]:64498 "EHLO
+	mail-ye0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753820Ab3GIN1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 09:27:37 -0400
+Date: Tue, 9 Jul 2013 10:19:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Al Cooper <alcooperx@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@infradead.org,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@gmail.com>,
+        David Ahern <dsahern@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Build failure when python-devel not installed
+Message-ID: <20130709131926.GA3260@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373375064-12012-1-git-send-email-ldewangan@nvidia.com>
+X-Url: http://acmel.wordpress.com
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Whole series looks good to me.
+Hi,
 
-Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
+	While trying to build perf on a freshly installed Fedora 18
+machine I couldn't do it if python-devel isn't installed.
 
-On Tue, Jul 09, 2013 at 06:34:20PM +0530, Laxman Dewangan wrote:
-> This patch series does following:
-> - Remove unused member from extcon palmas structure.
-> - Fix to support of detecting cable properly with multiple insert/removal.
-> - Add support for suspend/resume functionlaity and wakup from suspend.
-> - Option to select/de-select the ID or VBUS detection.
-> 
-> Laxman Dewangan (4):
->   extcon: palmas: remove unused member from palams_usb structure
->   extcon: palmas: enable ID_GND and ID_FLOAT detection always
->   extcon: palams: add support for suspend/resume
->   extcon: palmas: Option to disable ID/VBUS detection based on platform
-> 
->  .../devicetree/bindings/extcon/extcon-palmas.txt   |    2 +
->  drivers/extcon/extcon-palmas.c                     |  111 ++++++++++++++------
->  include/linux/mfd/palmas.h                         |    9 +-
->  3 files changed, 86 insertions(+), 36 deletions(-)
-> 
+	The expected behaviour is for a warning to be emitted and the
+build to continue.
+
+	I bisected it down to:
+
+commit 31160d7feab786c991780d7f0ce2755a469e0e5e
+"perf tools: Fix GNU make v3.80 compatibility issue"
+    
+	If I revert this changeset, everything works as expected, I get:
+
+config/Makefile:319: The path '/usr/bin/python-config' is not executable.
+config/Makefile:323: No python-config tool was found
+config/Makefile:323: Python support will not be built
+
+and I get a perf binary with no python support.
+
+	When python-devel is not installed and I have the above cset, I
+get:
+
+    CHK gtk2
+    CHK -DHAVE_GTK_INFO_BAR
+    CHK perl
+config/Makefile:319: The path '/usr/bin/python-config' is not executable.
+config/Makefile:319: *** Please set 'PYTHON_CONFIG' appropriately.  Stop.
+make: Leaving directory `/home/acme/git/linux/tools/perf'
+[acme@sandy linux]$ 
+
+	Can you take a look at this?
+
+	Jiri, this brings another situation to be tested on the 'cd
+tools/perf ; make -f tools/make' suite: removing/installing packages
+needed to build with some feature to check that it just warns the user
+that such feature won't be included instead of stopping the build :-)
+
+- Arnaldo
