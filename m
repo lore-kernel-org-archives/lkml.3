@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419Ab3GIICP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 04:02:15 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:61177 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752821Ab3GIICI (ORCPT
+	id S1753620Ab3GIICu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 04:02:50 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:42893 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753505Ab3GIICp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 04:02:08 -0400
+	Tue, 9 Jul 2013 04:02:45 -0400
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <benh@kernel.crashing.org>
+CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: [v3][PATCH 0/8] powerpc/book3e: support kexec and kdump
+Date: Tue, 9 Jul 2013 16:03:19 +0800
+Message-ID: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <1368850897.18069.255@driftwood>
-References: <1368850897.18069.255@driftwood>
-Date: Tue, 9 Jul 2013 10:02:06 +0200
-X-Google-Sender-Auth: u9Wi_N7jcOylGW365sTsshQi7fA
-Message-ID: <CAMuHMdX0aP7jm=2vAO=Mg9b-RggynRq+BosvzGfqSRtnyue4+w@mail.gmail.com>
-Subject: Re: 3.10-rc1: commit ccdfcc398594 broke uClibc build.
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rob Landley <rob@landley.net>, Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>, linux-net@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Widening the audience...
+This patchset is used to support kexec and kdump on book3e.
 
-On Sat, May 18, 2013 at 6:21 AM, Rob Landley <rob@landley.net> wrote:
-> The #include <linux/kernel.h> added to include/uapi/linux/netlink.h causes
-> the uClibc build to go:
->
-> In file included from include/linux/kernel.h:4,
->                  from include/linux/netlink.h:4,
->                  from include/linux/rtnetlink.h:5,
->                  from libc/inet/netlinkaccess.h:27,
->                  from libc/inet/if_index.c:37:
-> include/linux/sysinfo.h:8: error: expected specifier-qualifier-list before
-> '__kernel_long_t'
-> make: *** [libc/inet/if_index.o] Error 1
->
-> If I comment out that line, it builds fine. The kernel builds (for my
-> config) either way.
+Tested on fsl-p5040 DS.
 
-Gr{oetje,eeting}s,
+v3:
 
-                        Geert
+* add one patch to rename interrupt_end_book3e with __end_interrupts
+  then we can have a unique lable for book3e and book3s.
+* add some comments for "book3e/kexec/kdump: enable kexec for kernel"
+* clean "book3e/kexec/kdump: introduce a kexec kernel flag"
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+v2:
+* rebase on merge branch
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+v1:
+* improve some patch head
+* rebase on next branch with patch 7
+
+----------------------------------------------------------------
+Tiejun Chen (8):
+      powerpc/book3e: rename interrupt_end_book3e with __end_interrupts
+      powerpc/book3e: support CONFIG_RELOCATABLE
+      book3e/kexec/kdump: enable kexec for kernel
+      book3e/kexec/kdump: create a 1:1 TLB mapping
+      book3e/kexec/kdump: introduce a kexec kernel flag
+      book3e/kexec/kdump: implement ppc64 kexec specfic
+      book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
+      book3e/kexec/kdump: recover "r4 = 0" to create the initial TLB
+
+ arch/powerpc/Kconfig                     |    2 +-
+ arch/powerpc/include/asm/exception-64e.h |   11 +++
+ arch/powerpc/include/asm/page.h          |    2 +
+ arch/powerpc/include/asm/smp.h           |    1 +
+ arch/powerpc/kernel/exceptions-64e.S     |   26 +++++-
+ arch/powerpc/kernel/head_64.S            |   48 +++++++++-
+ arch/powerpc/kernel/machine_kexec_64.c   |  148 +++++++++++++++++-------------
+ arch/powerpc/kernel/misc_64.S            |   67 +++++++++++++-
+ arch/powerpc/platforms/85xx/smp.c        |   33 ++++++-
+ 9 files changed, 257 insertions(+), 81 deletions(-)
+
+ arch/powerpc/kernel/exceptions-64e.S |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+Tiejun
