@@ -1,192 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753678Ab3GILik (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 07:38:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33455 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753448Ab3GILif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 07:38:35 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>
-CC: <kishon@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <ruchika@ti.com>,
-        Roger Quadros <rogerq@ti.com>
-Subject: [PATCH] usb: phy: omap-usb3: Improve DPLL parameter lookup code
-Date: Tue, 9 Jul 2013 14:38:31 +0300
-Message-ID: <1373369911-14538-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753760Ab3GILvh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 07:51:37 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24291 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554Ab3GILvf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 07:51:35 -0400
+X-AuditID: cbfee61a-b7f3b6d000006edd-b6-51dbf945f8e2
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>, Borislav Petkov <bp@alien8.de>,
+        Jiri Kosina <jkosina@suse.cz>, Tomasz Figa <t.figa@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: Re: [v3.10 regression] deadlock on cpu hotplug
+Date: Tue, 09 Jul 2013 13:51:19 +0200
+Message-id: <1754044.EVIH1UZj6p@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.5.0-rc2+; KDE/4.8.5; i686; ; )
+In-reply-to: <51DB724F.9050708@linux.vnet.ibm.com>
+References: <1443144.WnBWEpaopK@amdc1032> <51DB724F.9050708@linux.vnet.ibm.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t9jQV3Xn7cDDf6+NLL4vOEfm8XuOYtZ
+	LC7vmsNm8bn3CKPF4xVv2S3Wz3jNYrHxq4fFoadzWBw4PL639rF4LN7zksnjzrU9bB4PDm1m
+	8ejbsorR48yCI+wenzfJBbBHcdmkpOZklqUW6dslcGU0HNzJUrBPtOL7kyNMDYwHBLoYOTkk
+	BEwkTrT0MEPYYhIX7q1n62Lk4hASmM4osaGrCSwhJNDCJDHlijOIzSZgJTGxfRUjiC0ioCux
+	6/czsAZmgd+MEievd7KAJIQFrCUWfNnJBGKzCKhKrL2zCGwQr4CmxM31n9lBbFEBe4lt794C
+	NXNwcAoYSWyekQSxy19i1qJj7BDlghI/Jt8DG8ksIC+xb/9UVghbR2J/6zS2CYwCs5CUzUJS
+	NgtJ2QJG5lWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwRHwTGoH48oGi0OMAhyMSjy8Hy7f
+	ChRiTSwrrsw9xCjBwawkwrto5+1AId6UxMqq1KL8+KLSnNTiQ4zSHCxK4rwHWq0DhQTSE0tS
+	s1NTC1KLYLJMHJxSDYxG12a+CA+w3as88abgr4USS21FjKbUzc6f+XfTRWUfX79gA9crT7gm
+	H9bVPbdacpeecJfwg7DMA7/lktc4RF9rj5IManGSmq+nWbQk4X2xZuC6HeK6mS1z2DqaHTmU
+	HrY5fQ8K43N5IZRXpBBq9/XBj2XuTI/MDkzRkpyzLuVz1YJPh9gYjZRYijMSDbWYi4oTAUHs
+	O/98AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use a mapping table (dpll_map) to match the possible system clock rates
-to the appropriate DPLL parameters.
 
-Introduce a function "omap_usb3_get_dpll_params()" that will
-return the matching DPLL parameters for the given clock rate.
+Hi,
 
-Also, bail out on phy init if DPLL locking fails.
+On Tuesday, July 09, 2013 10:15:43 AM Michael Wang wrote:
+> Hi, Bartlomiej
+> 
+> On 07/08/2013 11:26 PM, Bartlomiej Zolnierkiewicz wrote:
+> [snip]
+> > 
+> > # echo 0 > /sys/devices/system/cpu/cpu3/online
+> > # echo 0 > /sys/devices/system/cpu/cpu2/online
+> > # echo 0 > /sys/devices/system/cpu/cpu1/online
+> > # while true;do echo 1 > /sys/devices/system/cpu/cpu1/online;echo 0 > /sys/devices/system/cpu/cpu1/online;done
+> > 
+> > The commit in question (2f7021a8) was merged in v3.10-rc5 as a fix for
+> > commit 031299b ("cpufreq: governors: Avoid unnecessary per cpu timer
+> > interrupts") which was causing a kernel warning to show up.
+> > 
+> > Michael/Viresh: do you have some idea how to fix the issue?
+> 
+> Thanks for the report :) would you like to take a try
+> on below patch and see whether it solve the issue?
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
----
- drivers/usb/phy/phy-omap-usb3.c |   87 +++++++++++++++++----------------------
- 1 files changed, 38 insertions(+), 49 deletions(-)
+It doesn't help and unfortunately it just can't help as it only
+addresses lockdep functionality while the issue is not a lockdep
+problem but a genuine locking problem. CPU hot-unplug invokes
+_cpu_down() which calls cpu_hotplug_begin() which in turn takes
+&cpu_hotplug.lock. The lock is then hold during __cpu_notify()
+call. Notifier chain goes up to cpufreq_governor_dbs() which for
+CPUFREQ_GOV_STOP event does gov_cancel_work(). This function
+flushes pending work and waits for it to finish. The all above
+happens in one kernel thread. At the same time the other kernel
+thread is doing the work we are waiting to complete and it also
+happens to do gov_queue_work() which calls get_online_cpus().
+Then the code tries to take &cpu_hotplug.lock which is already
+held by the first thread and deadlocks.
 
-diff --git a/drivers/usb/phy/phy-omap-usb3.c b/drivers/usb/phy/phy-omap-usb3.c
-index efe6e14..fc15694 100644
---- a/drivers/usb/phy/phy-omap-usb3.c
-+++ b/drivers/usb/phy/phy-omap-usb3.c
-@@ -27,7 +27,6 @@
- #include <linux/delay.h>
- #include <linux/usb/omap_control_usb.h>
- 
--#define	NUM_SYS_CLKS		6
- #define	PLL_STATUS		0x00000004
- #define	PLL_GO			0x00000008
- #define	PLL_CONFIGURATION1	0x0000000C
-@@ -57,26 +56,32 @@
-  */
- # define PLL_IDLE_TIME  100;
- 
--enum sys_clk_rate {
--	CLK_RATE_UNDEFINED = -1,
--	CLK_RATE_12MHZ,
--	CLK_RATE_16MHZ,
--	CLK_RATE_19MHZ,
--	CLK_RATE_20MHZ,
--	CLK_RATE_26MHZ,
--	CLK_RATE_38MHZ
-+struct usb_dpll_map {
-+	unsigned long rate;
-+	struct usb_dpll_params params;
- };
- 
--static struct usb_dpll_params omap_usb3_dpll_params[NUM_SYS_CLKS] = {
--	{1250, 5, 4, 20, 0},		/* 12 MHz */
--	{3125, 20, 4, 20, 0},		/* 16.8 MHz */
--	{1172, 8, 4, 20, 65537},	/* 19.2 MHz */
--	{1250, 12, 4, 20, 0},		/* 26 MHz */
--	{3125, 47, 4, 20, 92843},	/* 38.4 MHz */
--	{1000, 7, 4, 10, 0},            /* 20 MHz */
--
-+static struct usb_dpll_map dpll_map[] = {
-+	{12000000, {1250, 5, 4, 20, 0} },	/* 12 MHz */
-+	{16800000, {3125, 20, 4, 20, 0} },	/* 16.8 MHz */
-+	{19200000, {1172, 8, 4, 20, 65537} },	/* 19.2 MHz */
-+	{20000000, {1000, 7, 4, 10, 0} },	/* 20 MHz */
-+	{26000000, {1250, 12, 4, 20, 0} },	/* 26 MHz */
-+	{38400000, {3125, 47, 4, 20, 92843} },	/* 38.4 MHz */
- };
- 
-+static struct usb_dpll_params *omap_usb3_get_dpll_params(unsigned long rate)
-+{
-+	int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(dpll_map); i++) {
-+		if (rate == dpll_map[i].rate)
-+			return &dpll_map[i].params;
-+	}
-+
-+	return 0;
-+}
-+
- static int omap_usb3_suspend(struct usb_phy *x, int suspend)
- {
- 	struct omap_usb *phy = phy_to_omapusb(x);
-@@ -116,26 +121,6 @@ static int omap_usb3_suspend(struct usb_phy *x, int suspend)
- 	return 0;
- }
- 
--static inline enum sys_clk_rate __get_sys_clk_index(unsigned long rate)
--{
--	switch (rate) {
--	case 12000000:
--		return CLK_RATE_12MHZ;
--	case 16800000:
--		return CLK_RATE_16MHZ;
--	case 19200000:
--		return CLK_RATE_19MHZ;
--	case 20000000:
--		return CLK_RATE_20MHZ;
--	case 26000000:
--		return CLK_RATE_26MHZ;
--	case 38400000:
--		return CLK_RATE_38MHZ;
--	default:
--		return CLK_RATE_UNDEFINED;
--	}
--}
--
- static void omap_usb_dpll_relock(struct omap_usb *phy)
- {
- 	u32		val;
-@@ -155,39 +140,39 @@ static int omap_usb_dpll_lock(struct omap_usb *phy)
- {
- 	u32			val;
- 	unsigned long		rate;
--	enum sys_clk_rate	clk_index;
--
--	rate		= clk_get_rate(phy->sys_clk);
--	clk_index	= __get_sys_clk_index(rate);
-+	struct usb_dpll_params *dpll_params;
- 
--	if (clk_index == CLK_RATE_UNDEFINED) {
--		pr_err("dpll cannot be locked for sys clk freq:%luHz\n", rate);
-+	rate = clk_get_rate(phy->sys_clk);
-+	dpll_params = omap_usb3_get_dpll_params(rate);
-+	if (!dpll_params) {
-+		dev_err(phy->dev,
-+			  "No DPLL configuration for %lu Hz SYS CLK\n", rate);
- 		return -EINVAL;
- 	}
- 
- 	val = omap_usb_readl(phy->pll_ctrl_base, PLL_CONFIGURATION1);
- 	val &= ~PLL_REGN_MASK;
--	val |= omap_usb3_dpll_params[clk_index].n << PLL_REGN_SHIFT;
-+	val |= dpll_params->n << PLL_REGN_SHIFT;
- 	omap_usb_writel(phy->pll_ctrl_base, PLL_CONFIGURATION1, val);
- 
- 	val = omap_usb_readl(phy->pll_ctrl_base, PLL_CONFIGURATION2);
- 	val &= ~PLL_SELFREQDCO_MASK;
--	val |= omap_usb3_dpll_params[clk_index].freq << PLL_SELFREQDCO_SHIFT;
-+	val |= dpll_params->freq << PLL_SELFREQDCO_SHIFT;
- 	omap_usb_writel(phy->pll_ctrl_base, PLL_CONFIGURATION2, val);
- 
- 	val = omap_usb_readl(phy->pll_ctrl_base, PLL_CONFIGURATION1);
- 	val &= ~PLL_REGM_MASK;
--	val |= omap_usb3_dpll_params[clk_index].m << PLL_REGM_SHIFT;
-+	val |= dpll_params->m << PLL_REGM_SHIFT;
- 	omap_usb_writel(phy->pll_ctrl_base, PLL_CONFIGURATION1, val);
- 
- 	val = omap_usb_readl(phy->pll_ctrl_base, PLL_CONFIGURATION4);
- 	val &= ~PLL_REGM_F_MASK;
--	val |= omap_usb3_dpll_params[clk_index].mf << PLL_REGM_F_SHIFT;
-+	val |= dpll_params->mf << PLL_REGM_F_SHIFT;
- 	omap_usb_writel(phy->pll_ctrl_base, PLL_CONFIGURATION4, val);
- 
- 	val = omap_usb_readl(phy->pll_ctrl_base, PLL_CONFIGURATION3);
- 	val &= ~PLL_SD_MASK;
--	val |= omap_usb3_dpll_params[clk_index].sd << PLL_SD_SHIFT;
-+	val |= dpll_params->sd << PLL_SD_SHIFT;
- 	omap_usb_writel(phy->pll_ctrl_base, PLL_CONFIGURATION3, val);
- 
- 	omap_usb_dpll_relock(phy);
-@@ -198,8 +183,12 @@ static int omap_usb_dpll_lock(struct omap_usb *phy)
- static int omap_usb3_init(struct usb_phy *x)
- {
- 	struct omap_usb	*phy = phy_to_omapusb(x);
-+	int ret;
-+
-+	ret = omap_usb_dpll_lock(phy);
-+	if (ret)
-+		return ret;
- 
--	omap_usb_dpll_lock(phy);
- 	omap_control_usb3_phy_power(phy->control_dev, 1);
- 
- 	return 0;
--- 
-1.7.4.1
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 5af40ad..aa05eaa 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -229,6 +229,8 @@ static void set_sampling_rate(struct dbs_data *dbs_data,
+>         }
+>  }
+>  
+> +static struct lock_class_key j_cdbs_key;
+> +
+>  int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>                 struct common_dbs_data *cdata, unsigned int event)
+>  {
+> @@ -366,6 +368,8 @@ int (struct cpufreq_policy *policy,
+>                                         kcpustat_cpu(j).cpustat[CPUTIME_NICE];
+>  
+>                         mutex_init(&j_cdbs->timer_mutex);
+> +                       lockdep_set_class(&j_cdbs->timer_mutex, &j_cdbs_key);
+> +
+>                         INIT_DEFERRABLE_WORK(&j_cdbs->work,
+>                                              dbs_data->cdata->gov_dbs_timer);
+>                 }
+> 
+> Regards,
+> Michael Wang
 
