@@ -1,168 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580Ab3GJSSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 14:18:23 -0400
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:65489 "EHLO
+	id S1754753Ab3GJSV5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 14:21:57 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:44882 "EHLO
 	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab3GJSSW (ORCPT
+	with ESMTP id S1753767Ab3GJSV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 14:18:22 -0400
-Date: Wed, 10 Jul 2013 11:18:20 -0700
+	Wed, 10 Jul 2013 14:21:56 -0400
+Date: Wed, 10 Jul 2013 11:21:54 -0700
 From: Guenter Roeck <linux@roeck-us.net>
 To: Wei Ni <wni@nvidia.com>
 Cc: khali@linux-fr.org, swarren@wwwdotorg.org, thierry.reding@gmail.com,
         lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
         linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] hwmon: (lm90) add support to handle IRQ.
-Message-ID: <20130710181820.GB22430@roeck-us.net>
+Subject: Re: [PATCH v2 1/3] hwmon: (lm90) split set&show temp as common codes
+Message-ID: <20130710182154.GC22430@roeck-us.net>
 References: <1373455539-2831-1-git-send-email-wni@nvidia.com>
- <1373455539-2831-3-git-send-email-wni@nvidia.com>
+ <1373455539-2831-2-git-send-email-wni@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373455539-2831-3-git-send-email-wni@nvidia.com>
+In-Reply-To: <1373455539-2831-2-git-send-email-wni@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 07:25:38PM +0800, Wei Ni wrote:
-> When the temperature exceed the limit range value,
-> the driver can handle the interrupt.
+On Wed, Jul 10, 2013 at 07:25:37PM +0800, Wei Ni wrote:
+> Split set&show temp codes as common functions, so we can use it directly when
+> implement linux thermal framework.
 > 
 > Signed-off-by: Wei Ni <wni@nvidia.com>
 > ---
->  drivers/hwmon/lm90.c |   77 +++++++++++++++++++++++++++++++++++++++++---------
->  1 file changed, 64 insertions(+), 13 deletions(-)
+>  drivers/hwmon/lm90.c |  118 ++++++++++++++++++++++++++++++++------------------
+>  1 file changed, 75 insertions(+), 43 deletions(-)
 > 
 > diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
-> index 2cb7f8e..88ff362 100644
+> index 8eeb141..2cb7f8e 100644
 > --- a/drivers/hwmon/lm90.c
 > +++ b/drivers/hwmon/lm90.c
-> @@ -89,6 +89,7 @@
->  #include <linux/err.h>
->  #include <linux/mutex.h>
->  #include <linux/sysfs.h>
-> +#include <linux/interrupt.h>
->  
->  /*
->   * Addresses to scan
-> @@ -179,6 +180,19 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
->  #define LM90_HAVE_TEMP3		(1 << 6) /* 3rd temperature sensor	*/
->  #define LM90_HAVE_BROKEN_ALERT	(1 << 7) /* Broken alert		*/
->  
-> +/* LM90 status */
-> +#define LM90_LTHRM	(1 << 0)	/* local THERM limit tripped */
-> +#define LM90_RTHRM	(1 << 1)	/* remote THERM limit tripped */
-> +#define LM90_OPEN	(1 << 2)	/* remote is an open circuit */
-> +#define LM90_RLOW	(1 << 3)	/* remote low temp limit tripped */
-> +#define LM90_RHIGH	(1 << 4)	/* remote high temp limit tripped */
-> +#define LM90_LLOW	(1 << 5)	/* local low temp limit tripped */
-> +#define LM90_LHIGH	(1 << 6)	/* local high temp limit tripped */
-> +#define LM90_BUSY	(1 << 7)	/* ADC is converting */
-> +
-> +#define MAX6696_RLOW	(1 << 3)	/* remote2 low temp limit tripped */
-> +#define MAX6696_RHIGH	(1 << 4)	/* remote2 high temp limit tripped */
-> +
->  /*
->   * Driver data (common to all clients)
+> @@ -702,29 +702,37 @@ static u16 temp_to_u16_adt7461(struct lm90_data *data, long val)
+>   * Sysfs stuff
 >   */
-> @@ -1423,6 +1437,43 @@ static void lm90_init_client(struct i2c_client *client)
->  		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+>  
+> -static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
+> -			  char *buf)
+> +static int read_temp8(struct device *dev, int index)
+>  {
+> -	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> -	struct lm90_data *data = lm90_update_device(dev);
+>  	int temp;
+> +	struct lm90_data *data = lm90_update_device(dev);
+>  
+Why this reordering of variables ?
+
+>  	if (data->kind == adt7461)
+> -		temp = temp_from_u8_adt7461(data, data->temp8[attr->index]);
+> +		temp = temp_from_u8_adt7461(data, data->temp8[index]);
+>  	else if (data->kind == max6646)
+> -		temp = temp_from_u8(data->temp8[attr->index]);
+> +		temp = temp_from_u8(data->temp8[index]);
+>  	else
+> -		temp = temp_from_s8(data->temp8[attr->index]);
+> +		temp = temp_from_s8(data->temp8[index]);
+>  
+>  	/* +16 degrees offset for temp2 for the LM99 */
+> -	if (data->kind == lm99 && attr->index == 3)
+> +	if (data->kind == lm99 && index == 3)
+>  		temp += 16000;
+>  
+> +	return temp;
+> +}
+> +
+> +static ssize_t show_temp8(struct device *dev, struct device_attribute *devattr,
+> +			  char *buf)
+> +{
+> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> +	int temp;
+> +
+> +	temp = read_temp8(dev, attr->index);
+> +
+>  	return sprintf(buf, "%d\n", temp);
+
+Might as well simplify with
+	return sprintf(buf, "%d\n", read_temp8(dev, attr->index));
+
 >  }
 >  
-> +static void lm90_alarm_status(struct i2c_client *client,
-> +			      u8 alarms, u8 alarms_max6696)
-> +{
-If you are introdcing a function to evaluate the alarm status, you might as well
-copy the register reads as well as the mask evaluations into this function.
-
-If you don't want to see the "Everything ok" output if nothing is wrong, it can
-return a boolean indicating if a status bit was set. This way the calling code
-can also more easily determine if it should return IRQ_NONE or IRQ_HANDLED.
-
-> +	if (alarms & (LM90_LLOW | LM90_LHIGH | LM90_LTHRM))
-> +		dev_warn(&client->dev,
-> +			 "temp%d out of range, please check!\n", 1);
-> +	if (alarms & (LM90_RLOW | LM90_RHIGH | LM90_RTHRM))
-> +		dev_warn(&client->dev,
-> +			 "temp%d out of range, please check!\n", 2);
-> +	if (alarms & LM90_OPEN)
-> +		dev_warn(&client->dev,
-> +			 "temp%d diode open, please check!\n", 2);
-> +
-> +	if (alarms_max6696 & (MAX6696_RLOW | MAX6696_RHIGH))
-> +		dev_warn(&client->dev,
-> +			 "temp%d out of range, please check!\n", 3);
-> +}
-> +
-> +static irqreturn_t lm90_irq_thread(int irq, void *dev_id)
-> +{
-> +	struct lm90_data *data = dev_id;
-> +	struct i2c_client *client = to_i2c_client(data->hwmon_dev->parent);
-> +	u8 alarms, alarms_max6696 = 0;
-> +
-Please stick with alarms2 instead of alarms_max6696 as in the original code.
-
-> +	lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
-> +
-> +	if (data->kind == max6696)
-> +		lm90_read_reg(client, MAX6696_REG_R_STATUS2, &alarms_max6696);
-> +
-> +	if ((alarms & 0x7f) == 0 && (alarms_max6696 & 0xfe) == 0) {
-> +		return IRQ_NONE;
-> +	} else {
-
-That else statement is unnecessary.
-
-> +		lm90_alarm_status(client, alarms, alarms_max6696);
-> +		return IRQ_HANDLED;
-> +	}
-> +}
-> +
->  static int lm90_probe(struct i2c_client *client,
->  		      const struct i2c_device_id *id)
+> -static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+> -			 const char *buf, size_t count)
+> +static void write_temp8(struct device *dev, int index, long val)
 >  {
-> @@ -1499,6 +1550,18 @@ static int lm90_probe(struct i2c_client *client,
->  		goto exit_remove_files;
->  	}
+>  	static const u8 reg[8] = {
+>  		LM90_REG_W_LOCAL_LOW,
+> @@ -737,60 +745,76 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+>  		MAX6659_REG_W_REMOTE_EMERG,
+>  	};
 >  
-> +	if (client->irq >= 0) {
-> +		dev_dbg(dev, "lm90 IRQ: %d\n", client->irq);
-> +		err = devm_request_threaded_irq(dev, client->irq,
-> +						NULL, lm90_irq_thread,
-> +						IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-> +						"lm90", data);
-> +		if (err < 0) {
-> +			dev_err(dev, "cannot request interrupt\n");
-> +			goto exit_remove_files;
-> +		}
-> +	}
-> +
->  	return 0;
->  
->  exit_remove_files:
-> @@ -1532,19 +1595,7 @@ static void lm90_alert(struct i2c_client *client, unsigned int flag)
->  	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
->  		dev_info(&client->dev, "Everything OK\n");
->  	} else {
-> -		if (alarms & 0x61)
-> -			dev_warn(&client->dev,
-> -				 "temp%d out of range, please check!\n", 1);
-> -		if (alarms & 0x1a)
-> -			dev_warn(&client->dev,
-> -				 "temp%d out of range, please check!\n", 2);
-> -		if (alarms & 0x04)
-> -			dev_warn(&client->dev,
-> -				 "temp%d diode open, please check!\n", 2);
+> -	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+>  	struct i2c_client *client = to_i2c_client(dev);
+>  	struct lm90_data *data = i2c_get_clientdata(client);
+> -	int nr = attr->index;
+> -	long val;
+> -	int err;
 > -
-> -		if (alarms2 & 0x18)
-> -			dev_warn(&client->dev,
-> -				 "temp%d out of range, please check!\n", 3);
-> +		lm90_alarm_status(client, alarms, alarms2);
+> -	err = kstrtol(buf, 10, &val);
+> -	if (err < 0)
+> -		return err;
 >  
->  		/*
->  		 * Disable ALERT# output, because these chips don't implement
+>  	/* +16 degrees offset for temp2 for the LM99 */
+> -	if (data->kind == lm99 && attr->index == 3)
+> +	if (data->kind == lm99 && index == 3)
+>  		val -= 16000;
+>  
+>  	mutex_lock(&data->update_lock);
+>  	if (data->kind == adt7461)
+> -		data->temp8[nr] = temp_to_u8_adt7461(data, val);
+> +		data->temp8[index] = temp_to_u8_adt7461(data, val);
+>  	else if (data->kind == max6646)
+> -		data->temp8[nr] = temp_to_u8(val);
+> +		data->temp8[index] = temp_to_u8(val);
+>  	else
+> -		data->temp8[nr] = temp_to_s8(val);
+> +		data->temp8[index] = temp_to_s8(val);
+>  
+> -	lm90_select_remote_channel(client, data, nr >= 6);
+> -	i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
+> +	lm90_select_remote_channel(client, data, index >= 6);
+> +	i2c_smbus_write_byte_data(client, reg[index], data->temp8[index]);
+>  	lm90_select_remote_channel(client, data, 0);
+>  
+>  	mutex_unlock(&data->update_lock);
+> +}
+> +
+> +static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+> +			 const char *buf, size_t count)
+> +{
+> +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> +	int index = attr->index;
+> +	long val;
+> +	int err;
+> +
+> +	err = kstrtol(buf, 10, &val);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	write_temp8(dev, index, val);
+> +
+>  	return count;
+>  }
+>  
+> -static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+> -			   char *buf)
+> +static int read_temp11(struct device *dev, int index)
+>  {
+> -	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> -	struct lm90_data *data = lm90_update_device(dev);
+>  	int temp;
+> +	struct lm90_data *data = lm90_update_device(dev);
+>  
+Another unnecessary variable reorder.
+
+>  	if (data->kind == adt7461)
+> -		temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
+> +		temp = temp_from_u16_adt7461(data, data->temp11[index]);
+>  	else if (data->kind == max6646)
+> -		temp = temp_from_u16(data->temp11[attr->index]);
+> +		temp = temp_from_u16(data->temp11[index]);
+>  	else
+> -		temp = temp_from_s16(data->temp11[attr->index]);
+> +		temp = temp_from_s16(data->temp11[index]);
+>  
+>  	/* +16 degrees offset for temp2 for the LM99 */
+> -	if (data->kind == lm99 &&  attr->index <= 2)
+> +	if (data->kind == lm99 &&  index <= 2)
+>  		temp += 16000;
+>  
+> +	return temp;
+> +}
+> +
+> +static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+> +			   char *buf)
+> +{
+> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> +	int temp;
+> +
+> +	temp = read_temp11(dev, attr->index);
+> +
+>  	return sprintf(buf, "%d\n", temp);
+
+Same simplification as above.
+
+>  }
+>  
+> -static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+> -			  const char *buf, size_t count)
+> +static void write_temp11(struct device *dev, int nr, int index, long val)
+>  {
+>  	struct {
+>  		u8 high;
+> @@ -804,17 +828,8 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>  		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
+>  	};
+>  
+> -	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+>  	struct i2c_client *client = to_i2c_client(dev);
+>  	struct lm90_data *data = i2c_get_clientdata(client);
+> -	int nr = attr->nr;
+> -	int index = attr->index;
+> -	long val;
+> -	int err;
+> -
+> -	err = kstrtol(buf, 10, &val);
+> -	if (err < 0)
+> -		return err;
+>  
+>  	/* +16 degrees offset for temp2 for the LM99 */
+>  	if (data->kind == lm99 && index <= 2)
+> @@ -839,6 +854,23 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+>  	lm90_select_remote_channel(client, data, 0);
+>  
+>  	mutex_unlock(&data->update_lock);
+> +}
+> +
+> +static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+> +			  const char *buf, size_t count)
+> +{
+> +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> +	int nr = attr->nr;
+> +	int index = attr->index;
+> +	long val;
+> +	int err;
+> +
+> +	err = kstrtol(buf, 10, &val);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	write_temp11(dev, nr, index, val);
+> +
+>  	return count;
+>  }
+>  
 > -- 
 > 1.7.9.5
 > 
