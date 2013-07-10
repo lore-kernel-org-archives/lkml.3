@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752493Ab3GJF6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 01:58:42 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42991 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab3GJF6l (ORCPT
+	id S1751463Ab3GJGDf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 02:03:35 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:59500 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3GJGDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 01:58:41 -0400
+	Wed, 10 Jul 2013 02:03:33 -0400
+Message-ID: <51DCF92F.6090409@openvz.org>
+Date: Wed, 10 Jul 2013 10:03:27 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
 MIME-Version: 1.0
-In-Reply-To: <201307092316.20905.arnd@arndb.de>
-References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
-	<1373352166-10064-3-git-send-email-zhangwm@marvell.com>
-	<20130709181434.76f6216d@skate>
-	<201307092316.20905.arnd@arndb.de>
-Date: Wed, 10 Jul 2013 13:58:39 +0800
-Message-ID: <CAN1soZyFztVR1XSw9bDS5JexK0Mdbpr6yevatVf+MnBohwCj1Q@mail.gmail.com>
-Subject: Re: [PATCH V3 2/3] clocksource: mmp: support CLOCKSOURCE OF DECLARE
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Neil Zhang <zhangwm@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
+        "devel@openvz.org" <devel@openvz.org>,
+        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
+        Michal Hocko <mhocko@suse.cz>
+Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
+References: <20130708095928.14058.26736.stgit@zurg> <CAFj3OHVtVGDnWHqNBRZH+LNtzDrbk8PO0fKLwFscZAWCJRW9oA@mail.gmail.com>
+In-Reply-To: <CAFj3OHVtVGDnWHqNBRZH+LNtzDrbk8PO0fKLwFscZAWCJRW9oA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 5:16 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 09 July 2013, Thomas Petazzoni wrote:
->> Dear Neil Zhang,
->>
->> On Tue, 9 Jul 2013 14:42:45 +0800, Neil Zhang wrote:
->> > support CLOCKSOURCE OF DECLARE for mmp timer.
+Sha Zhengju wrote:
+> Hi,
+>
+> On Mon, Jul 8, 2013 at 5:59 PM, Konstantin Khlebnikov
+> <khlebnikov@openvz.org>  wrote:
+>> >  This is proof of concept, just basic functionality for IO controller.
+>> >  This cgroup will control filesystem usage on vfs layer, it's main goal is
+>> >  bandwidth control. It's supposed to be much more lightweight than memcg/blkio.
 >> >
->> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
->> > ---
->> >  arch/arm/mach-mmp/mmp-dt.c  |    5 ++---
->> >  arch/arm/mach-mmp/mmp2-dt.c |    3 +--
->> >  arch/arm/mach-mmp/time.c    |   15 ++-------------
->> >  3 files changed, 5 insertions(+), 18 deletions(-)
->>
->> Maybe it would be good to take this opportunity to move
->> arch/arm/mach-mmp/time.c into drivers/clocksource/.
->
-> +1
->
-> Or we might want to have a more coordinated move of all clocksource
-> drivers in arch/arm to drivers/clocksource now, as we have done for some
-> other subsystems.
->
->         Arnd
+>> >  This patch shows easy way for accounting pages in dirty/writeback state in
+>> >  per-inode manner. This is easier that doing this in memcg in per-page manner.
+>> >  Main idea is in keeping on each inode pointer (->i_fsio) to cgroup which owns
+>> >  dirty data in that inode. It's settled by fsio_account_page_dirtied() when
+>> >  first dirty tag appears in the inode. Relying to mapping tags gives us locking
+>> >  for free, this patch doesn't add any new locks to hot paths.
+> While referring to dirty/writeback numbers, what I care about is 'how
+> many dirties in how many memory' and later may use the proportion to
+> decide throttling or something else. So if you are talking about nr of
+> dirty pages without memcg's amount of memory, I don't see the meaning
+> of a single number.
 
-I already sent some patches on this. But I didn't get response yet. I'll rebase
-them and send them again. I hope that they could be merged in this cycle.
+I'm planning to add some thresholds or limits to fsio cgroup -- how many dirty pages
+this cgroup may have. memcg is completely different thing: memcg controls data storage
+while fsio controls data flows. Memcg already handles too much, I just don't want add
+yet another unrelated stuff into it. Otherwise we will end with one single controller
+which would handle all possible resources, because they all related in some cases.
 
-Regards
-Haojian
+>
+> What's more, counting dirty/writeback stats in per-node manner can
+> bring inaccuracy in some situations: considering two tasks from
+> different fsio cgroups are dirtying one file concurrently but may only
+> be counting in one fsio stats, or a task is moved to another fsio
+> cgroup after dirtrying one file. As talking about task moving, it is
+> the root cause of adding memcg locks in page stat routines, since
+> there's a race window between 'modify cgroup owner' and 'update stats
+> using cgroup pointer'. But if you are going to handle task move or
+> take care of ->i_fsio for better accuracy in future, I'm afraid you
+> will also need some synchronization mechanism in hot paths. Maybe also
+> a new lock or mapping->tree_lock(which is already hot enough) IMHO.
+
+Yes, per-inode accounting is less accurate. But this approach works really
+well in the real life. I don't want add new locks and loose performance just
+to fix accuracy for some artificial cases.
+
+to Tejun:
+BTW I don't like that volatility of task's cgroup ponters. I'd like to forbid
+moving tasks between cgroups except for 'current', existing behavior can be
+kept with help of task_work: instead external change of task->cgroups we can
+schedule task_work into it in and change that pointer in the 'current' context.
+That will save us a lot of rcu_lock/unlock and atomic operations in grabbing
+temporary pointers to current cgroup because current->cgroups will be stable.
+I don't think that external cross-cgroup task migration is really performance
+critical. Currently I don't know what to do with kernel threads and workqueues,
+but any way this problem doesn't look unsolvable.
+
