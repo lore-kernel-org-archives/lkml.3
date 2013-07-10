@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab3GJO2p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:28:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20638 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753537Ab3GJO2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:28:44 -0400
-Date: Wed, 10 Jul 2013 16:28:21 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 09/19] perf ftrace: Add 'record' sub-command
-Message-ID: <20130710142821.GC5931@krava.brq.redhat.com>
-References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
- <1372230862-15861-10-git-send-email-namhyung@kernel.org>
+	id S1754565Ab3GJO3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:29:54 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:41309 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750736Ab3GJO3w convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:29:52 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dIc89bh148cI1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275ch17326ah8275bh8275dhz2dh87h2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 10 Jul 2013 22:30:53 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Vincent =?iso-8859-1?Q?Stehl=E9?= <vincent.stehle@freescale.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>, <trivial@kernel.org>
+Subject: Re: [PATCH linux-next] ARM: imx: fix imx_init_l2cache storage class
+Message-ID: <20130710143051.GA24654@S2101-09.ap.freescale.net>
+References: <1373449546-1040-1-git-send-email-vincent.stehle@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1372230862-15861-10-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1373449546-1040-1-git-send-email-vincent.stehle@freescale.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 04:14:12PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+Vincent,
 
-SNIP
+Sorry.  I was not aware of that imx_v6_v7_defconfig does not have
+CACHE_L2X0 enabled, so I did not catch it with my testing.  Thanks for
+fixing it.
 
-> +
-> +static int create_perf_directory(struct perf_ftrace *ftrace)
-> +{
-> +	int err;
-> +	char buf[PATH_MAX];
-> +	struct stat statbuf;
-> +
-> +	scnprintf(buf, sizeof(buf), "%s.dir", ftrace->dirname);
-> +
-> +	if (stat(buf, &statbuf) == 0) {
-> +		/* same name already exists - rename to *.old.dir */
-> +		char *old_name = malloc(strlen(buf) + 5);
-> +		if (old_name == NULL)
-> +			return -1;
-> +
-> +		scnprintf(old_name, strlen(buf) + 5,
-> +			  "%s.old.dir", ftrace->dirname);
-> +
-> +		if (remove_directory(old_name) < 0) {
-> +			perror("rmdir");
-> +			return -1;
-> +		}
-> +
-> +		if (rename(buf, old_name) < 0) {
-> +			perror("rename");
-> +			free(old_name);
-> +			return -1;
-> +		}
-> +
-> +		free(old_name);
-> +	}
-> +
-> +	err = mkdir(buf, 0755);
-> +	if (err < 0) {
-> +		perror("mkdir");
-> +		return -1;
-> +	}
-> +
-> +	strcat(buf, "/perf.header");
-> +
-> +	err = open(buf, O_RDWR | O_CREAT | O_TRUNC, 0644);
-> +	return err;
-> +}
+On Wed, Jul 10, 2013 at 11:45:46AM +0200, Vincent Stehlé wrote:
+> Commit 879ec1ceeac21285d62606c1e96520887efcd9bc makes imx_init_l2cache a common
+> function and updates the header declaration accordingly. Fix function storage
+> class, too.
+> 
+The commit ID is not stable, and I dropped it and applied the patch.
 
-nitpick.. should this be rather be called create_perf_header,
-which calls create_perf_directory inside?
+Shawn
 
-jirka
+> This fixes the following compilation error:
+> 
+>   arch/arm/mach-imx/system.c:101:123: error: static declaration of ‘imx_init_l2cache’ follows non-static declaration
+>   In file included from arch/arm/mach-imx/system.c:32:0:
+>   arch/arm/mach-imx/common.h:165:13: note: previous declaration of ‘imx_init_l2cache’ was here
+>   arch/arm/mach-imx/system.c:101:123: warning: ‘imx_init_l2cache’ defined but not used [-Wunused-function]
+> 
+> Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Sascha Hauer <kernel@pengutronix.de>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: trivial@kernel.org
+> ---
+> 
+> 
+> Hi,
+> 
+> Linux next-20130710 breaks compilation of ARM multi_v7_defconfig. This patch fixes it.
+> 
+> (Note: this patch is necessary for the link, too: http://www.spinics.net/lists/kernel/msg1563777.html)
+> 
+> Best regards,
+> 
+> V.
+> 
+> 
+>  arch/arm/mach-imx/system.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-imx/system.c b/arch/arm/mach-imx/system.c
+> index e5592ca..64ff37e 100644
+> --- a/arch/arm/mach-imx/system.c
+> +++ b/arch/arm/mach-imx/system.c
+> @@ -98,7 +98,7 @@ void __init mxc_arch_reset_init_dt(void)
+>  }
+>  
+>  #ifdef CONFIG_CACHE_L2X0
+> -static void __init imx_init_l2cache(void)
+> +void __init imx_init_l2cache(void)
+>  {
+>  	void __iomem *l2x0_base;
+>  	struct device_node *np;
+> -- 
+> 1.7.10.4
+> 
+> 
+> 
+
