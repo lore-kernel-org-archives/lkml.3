@@ -1,129 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab3GJLA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:00:27 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:45085 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab3GJLA0 (ORCPT
+	id S1754445Ab3GJLAo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:00:44 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:39271 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076Ab3GJLAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:00:26 -0400
-Date: Wed, 10 Jul 2013 13:00:17 +0200
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, kexec@lists.infradead.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-Message-ID: <20130710130017.468e0bdf@holzheu>
-In-Reply-To: <51DD2E5A.1030200@jp.fujitsu.com>
-References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com>
-	<1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com>
-	<51DA4ED9.60903@jp.fujitsu.com>
-	<20130708112839.498ccfc6@holzheu>
-	<20130708142826.GA9094@redhat.com>
-	<51DBA47C.8090708@jp.fujitsu.com>
-	<20130710104252.479a0f92@holzheu>
-	<51DD2E5A.1030200@jp.fujitsu.com>
-Organization: IBM
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071010-4966-0000-0000-0000063FB388
+	Wed, 10 Jul 2013 07:00:43 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>
+Subject: [PATCH 0/2] virtio tools: build failure
+Date: Wed, 10 Jul 2013 16:26:58 +0530
+Message-Id: <1373453820-22517-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.3.2.736.g869de25
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Jul 2013 18:50:18 +0900
-HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
+Hi,
 
-[snip]
+This is actually a bug report.  As you can see, I tried fixing the
+build but failed.  The problem is that the vringh_test target was
+added by:
 
-> (2013/07/10 17:42), Michael Holzheu wrote:
-> > My suggestion is to add the WARN_ONCE() for #ifndef CONFIG_S390. This has the same
-> > effect as your suggestion for all architectures besides of s390. And for s390 we
-> > take the risk that a programming error would result in poor /proc/vmcore
-> > performance.
-> >
-> 
-> If you want to avoid looking up vmcore_list that takes linear time w.r.t. the number
-> of the elements, you can still calculate the range of offsets in /proc/vmcore
-> corresponding to HSA during /proc/vmcore initialization.
-> 
-> Also, could you tell me how often and how much the HSA region is during crash dumping?
-> I guess the read to HSA is done mainly during early part of crash dumping process only.
-> According to the code, it appears at most 64MiB only. Then, I feel performance is not
-> a big issue.
+  1515c5c (tools/virtio: add vring_test, 2013-03-20)
 
-Currently it is 32 MiB and normally it is read only once.
+but then
 
-> 
-> Also, cost of WARN_ONCE() is one memory access only in the 2nd and later calls. I don't
-> think it too much overhead...
+  f558a84 (Add missing module license tag to vring helpers, 2013-05-03)
 
-I was more concerned about in_valid_fault_range(). But I was most concerned the additional
-interface that introduces more complexity to the code. And that just to implement a
-sanity check that in our opinion we don't really need.
+broke the build by adding a MODULE_LICENSE that is undefined for the
+purposes of virtio tools.  I tried moving the definition of
+MODULE_LICENSE from virtio.h to module.h, but then the build failed
+with multiple __MODULE_LICENSE_name declarations.  After trying
+several things, I decided to revert f558a84: that builds vringh
+successfully.  Unfortunately, vhost_test doesn't build with tons of
+errors:
 
-And what makes it even worse:
+make -C `pwd`/../.. M=`pwd`/vhost_test
+make[1]: Entering directory `/home/artagnon/src/linux'
+  CC [M]  /home/artagnon/src/linux/tools/virtio/vhost_test/vhost_test.o
+In file included from /home/artagnon/src/linux/tools/virtio/vhost_test/vhost_test.c:1:0:
+drivers/vhost/test.c: In function ‘handle_vq’:
+drivers/vhost/test.c:41:31: warning: initialization from incompatible pointer type [enabled by default]
+  struct vhost_virtqueue *vq = &n->dev.vqs[VHOST_TEST_VQ];
+                               ^
+drivers/vhost/test.c: In function ‘vhost_test_open’:
+drivers/vhost/test.c:112:2: warning: passing argument 2 of ‘vhost_dev_init’ from incompatible pointer type [enabled by default]
+  r = vhost_dev_init(dev, n->vqs, VHOST_TEST_VQ_MAX);
+  ^
+In file included from drivers/vhost/test.c:21:0,
+                 from /home/artagnon/src/linux/tools/virtio/vhost_test/vhost_test.c:1:
+drivers/vhost/vhost.c:283:6: note: expected ‘struct vhost_virtqueue **’ but argument is of type ‘struct vhost_virtqueue *’
+ long vhost_dev_init(struct vhost_dev *dev,
+      ^
+In file included from /home/artagnon/src/linux/tools/virtio/vhost_test/vhost_test.c:1:0:
+drivers/vhost/test.c: In function ‘vhost_test_flush_vq’:
+drivers/vhost/test.c:143:37: error: request for member ‘poll’ in something not a structure or union
+  vhost_poll_flush(&n->dev.vqs[index].poll);
+                                     ^
+drivers/vhost/test.c: In function ‘vhost_test_ioctl’:
+drivers/vhost/test.c:271:14: error: ‘VHOST_NET_FEATURES’ undeclared (first use in this function)
+   features = VHOST_NET_FEATURES;
+              ^
+drivers/vhost/test.c:271:14: note: each undeclared identifier is reported only once for each function it appears in
+make[2]: *** [/home/artagnon/src/linux/tools/virtio/vhost_test/vhost_test.o] Error 1
+make[1]: *** [_module_/home/artagnon/src/linux/tools/virtio/vhost_test] Error 2
+make[1]: Leaving directory `/home/artagnon/src/linux'
+make: *** [mod] Error 2
 
-With the current patch series this check is only relevant for s390 :-)
+I just gave up trying to fix the build, and thought I should atleast
+submit a bug report.  Maybe I'm missing something?
 
-> 
-> > So, at least for this patch series I would implement the fault handler as follows:
-> >
-> > static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> > {
-> > ...
-> >          char *buf;
-> >          int rc;
-> >
-> > #ifndef CONFIG_S390
-> >          WARN_ONCE(1, "vmcore: Unexpected call of mmap_vmcore_fault()");
-> > #endif
-> >          page = find_or_create_page(mapping, index, GFP_KERNEL);
-> >
-> > At this point I have to tell you that we plan another vmcore patch series where
-> > the fault handler might be called also for other architectures. But I think we
-> > should *then* discuss your issue again.
-> >
-> 
-> Could you explain the plan in more detail? Or I cannot review correctly since I don't
-> know whether there's really usecase of this generic fault handler for other
-> architectures.
-> This is the issue for architectures other than s390, not mine; now we
-> don't need it at all.
+Thanks.
 
-I would have preferred to do the things one after the other. Otherwise I fear
-that this discussion will never come to an end. This patch series is needed
-to get zfcpdump running with /proc/vmcore. And for that reason the patch series
-makes sense for itself.
+Ramkumar Ramachandra (2):
+  virtio tools: strip bad include-path from Makefile
+  virtio tools: add .gitignore
 
-But FYI:
+ tools/virtio/.gitignore | 3 +++
+ tools/virtio/Makefile   | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+ create mode 100644 tools/virtio/.gitignore
 
-The other patch series deals with the problem that we have additional
-information for s390 that we want to include in /proc/vmcore. We have a one
-byte storage key per memory page. This storage keys are stored in the
-s390 firmware and can be read using a s390 specific machine instruction.
-We plan to put that information into the ELF notes section. For a 1 TiB
-dump we will have 256 MiB storage keys.
-
-Currently the notes section is preallocated in vmcore.c. Because we do
-not want to preallocate so much memory we would like to read the notes
-section on demand. Similar to the HSA memory for zfcpdump. To get this
-work with your mmap code, we would then also use the fault handler to
-get the notes sections on demand. Our current patch does this for all
-notes and therefore also the other architectures would then use the
-fault handler.
-
-One advantage for the common code is that no additional memory has
-to be allocated for the notes buffer.
-
-The storage key patch series is currently not final because it depends
-on the zfcpdump patch series. 
-
-Michael
+-- 
+1.8.3.2.736.g869de25
 
