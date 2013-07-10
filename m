@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab3GJD7s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 23:59:48 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:54220 "EHLO mail.skyhub.de"
+	id S1754439Ab3GJD7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 23:59:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:45226 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754366Ab3GJD7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 23:59:46 -0400
-Date: Wed, 10 Jul 2013 05:59:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacob Shin <jacob.w.shin@gmail.com>
-Cc: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Jacob Shin <jacob.shin@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        suravee.suthikulpanit@amd.com
-Subject: Re: early microcode on amd is broken when no initramfs provided
-Message-ID: <20130710035931.GB14873@pd.tnic>
-References: <20130709183601.5d567a83@fem.tu-ilmenau.de>
- <20130709184722.GA27570@pd.tnic>
- <CAOPg7FsgstsjEpVVQERr6m0fYcSko0Q8PcDkq5XrRNX=2QVNmg@mail.gmail.com>
+	id S1754159Ab3GJD7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 23:59:12 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kees Cook <keescook@chromium.org>, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        James Hogan <james.hogan@imgtec.com>, linux-mtd@lists.infradead.org
+Subject: Re: [RESEND][PATCH] mtd: refactor call to request_module
+In-Reply-To: <20130708130512.GA24315@www.outflux.net>
+References: <20130708130512.GA24315@www.outflux.net>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Wed, 10 Jul 2013 12:40:35 +0930
+Message-ID: <87hag3cdp0.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAOPg7FsgstsjEpVVQERr6m0fYcSko0Q8PcDkq5XrRNX=2QVNmg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 10:53:31PM -0500, Jacob Shin wrote:
-> I won't have access to a box for a while, Boris or Suravee, could you
-> please try and reproduce it and get the stack trace when you get the
-> chance?
+Kees Cook <keescook@chromium.org> writes:
+> This reduces the size of the stack frame when calling request_module().
+> Performing the sprintf before the call is not needed.
 >
-> So sorry,
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-No worries, Jacob, I'm on it. Take your time. :)
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks,
+Rusty.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+> ---
+>  drivers/mtd/chips/gen_probe.c |    4 +---
+>  1 file changed, 1 insertion(+), 3 deletions(-)
+>
+> diff --git a/drivers/mtd/chips/gen_probe.c b/drivers/mtd/chips/gen_probe.c
+> index 74dbb6b..ffb36ba 100644
+> --- a/drivers/mtd/chips/gen_probe.c
+> +++ b/drivers/mtd/chips/gen_probe.c
+> @@ -211,9 +211,7 @@ static inline struct mtd_info *cfi_cmdset_unknown(struct map_info *map,
+>  
+>  	probe_function = __symbol_get(probename);
+>  	if (!probe_function) {
+> -		char modname[sizeof("cfi_cmdset_%4.4X")];
+> -		sprintf(modname, "cfi_cmdset_%4.4X", type);
+> -		request_module(modname);
+> +		request_module("cfi_cmdset_%4.4X", type);
+>  		probe_function = __symbol_get(probename);
+>  	}
+>  
+> -- 
+> 1.7.9.5
+>
+>
+> -- 
+> Kees Cook
+> Chrome OS Security
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
