@@ -1,759 +1,1197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753195Ab3GJHZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 03:25:33 -0400
-Received: from ozlabs.org ([203.10.76.45]:52853 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430Ab3GJHZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 03:25:10 -0400
-From: Michael Neuling <mikey@neuling.org>
-To: Bharat Bhushan <r65777@freescale.com>
-cc: linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, scottwood@freescale.com, agraf@suse.de,
-        Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Subject: Re: [PATCH 2/2] powerpc: move debug registers in a structure
-In-reply-to: <1372918546-15075-3-git-send-email-Bharat.Bhushan@freescale.com>
-References: <1372918546-15075-1-git-send-email-Bharat.Bhushan@freescale.com> <1372918546-15075-3-git-send-email-Bharat.Bhushan@freescale.com>
-Comments: In-reply-to Bharat Bhushan <r65777@freescale.com>
-   message dated "Thu, 04 Jul 2013 11:45:46 +0530."
-X-Mailer: MH-E 8.2; nmh 1.5; GNU Emacs 23.4.1
-Date: Wed, 10 Jul 2013 17:25:08 +1000
-Message-ID: <21883.1373441108@ale.ozlabs.ibm.com>
+	id S1751765Ab3GJH1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 03:27:40 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:57642 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751087Ab3GJH1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 03:27:38 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Jason Cooper <jason@lakedaemon.net>
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 10 Jul 2013 00:25:17 -0700
+Subject: RE: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+Thread-Topic: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+Thread-Index: Ac58orejsd1rpSmgSLmTIux6xlHTEwAm700Q
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE3DBC97FA8F@SC-VEXCH4.marvell.com>
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
+ <1373352166-10064-2-git-send-email-zhangwm@marvell.com>
+ <20130709124900.GG11908@titan.lakedaemon.net>
+In-Reply-To: <20130709124900.GG11908@titan.lakedaemon.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6A7Rr7g015216
 
-Bharat Bhushan <r65777@freescale.com> wrote:
+Jason,
 
-> This way we can use same data type struct with KVM and
-> also help in using other debug related function.
-> 
-> Signed-off-by: Bharat Bhushan <bharat.bhushan@freescale.com>
+> -----Original Message-----
+> From: Jason Cooper [mailto:jason@lakedaemon.net]
+> Sent: 2013Äê7ÔÂ9ÈÕ 20:49
+> To: Neil Zhang
+> Cc: grant.likely@linaro.org; haojian.zhuang@gmail.com; arnd@arndb.de;
+> devicetree-discuss@lists.ozlabs.org; linux-kernel@vger.kernel.org;
+> linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+>
+> Neil,
+>
+> On Tue, Jul 09, 2013 at 02:42:44PM +0800, Neil Zhang wrote:
+> > The documented vendor prefix for Marvell is 'marvell', not 'mrvl', so
+> > let's change it.
+> >
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > ---
+> >  .../devicetree/bindings/arm/mrvl/intc.txt          |   16 +++---
+> >  .../devicetree/bindings/arm/mrvl/mrvl.txt          |    6 +-
+> >  .../devicetree/bindings/arm/mrvl/timer.txt         |    4 +-
+> >  Documentation/devicetree/bindings/i2c/i2c-pxa.txt  |   14 +++---
+> >  .../devicetree/bindings/mmc/sdhci-pxa.txt          |    8 ++--
+> >  .../devicetree/bindings/rtc/sa1100-rtc.txt         |    4 +-
+> >  .../devicetree/bindings/serial/mrvl-serial.txt     |    2 +-
+> >  arch/arm/boot/dts/mmp2-brownstone.dts              |    2 +-
+> >  arch/arm/boot/dts/mmp2.dtsi                        |   56
+> ++++++++++----------
+> >  arch/arm/boot/dts/pxa168-aspenite.dts              |    2 +-
+> >  arch/arm/boot/dts/pxa168.dtsi                      |   24
+> ++++----
+> >  arch/arm/boot/dts/pxa2xx.dtsi                      |   16 +++---
+> >  arch/arm/boot/dts/pxa3xx.dtsi                      |    2 +-
+> >  arch/arm/boot/dts/pxa910-dkb.dts                   |    2 +-
+> >  arch/arm/boot/dts/pxa910.dtsi                      |   27
+> +++++-----
+> >  arch/arm/mach-mmp/irq.c                            |   16
+> +++---
+> >  arch/arm/mach-mmp/mmp-dt.c                         |   28
+> +++++-----
+> >  arch/arm/mach-mmp/mmp2-dt.c                        |   16
+> +++---
+> >  arch/arm/mach-mmp/time.c                           |    2 +-
+> >  arch/arm/mach-pxa/pxa-dt.c                         |   14
+> +++---
+> >  drivers/i2c/busses/i2c-pxa.c                       |   10 ++--
+> >  drivers/mmc/host/sdhci-pxav2.c                     |    4 +-
+> >  drivers/mmc/host/sdhci-pxav3.c                     |    4 +-
+> >  drivers/rtc/rtc-sa1100.c                           |    4 +-
+> >  drivers/tty/serial/pxa.c                           |    4 +-
+> >  25 files changed, 144 insertions(+), 143 deletions(-)
+>
+> I agree with the need to change, however, this has been in the binding
+> documentation since v3.5.  I wish we had caught this when we decided
+> against using stock ticker symbols (not all stock markets use alphabetical
+> abbreviated names, not all companies are listed on any stock exchange).
+>
+> To do this properly, the drivers are going to have to be compatible with the
+> old and the new names, and the binding docs updated to reflect the legacy
+> name and the preferred name.
+>
+Do you mean it's better to support both legacy and preferred name at the same time?
 
-Acked-by: Michael Neuling <mikey@neuling.org>
+> thx,
+>
+> Jason.
+>
+> > diff --git a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > index 8b53273..ad27548 100644
+> > --- a/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > +++ b/Documentation/devicetree/bindings/arm/mrvl/intc.txt
+> > @@ -1,8 +1,8 @@
+> >  * Marvell MMP Interrupt controller
+> >
+> >  Required properties:
+> > -- compatible : Should be "mrvl,mmp-intc", "mrvl,mmp2-intc" or
+> > -  "mrvl,mmp2-mux-intc"
+> > +- compatible : Should be "marvell,mmp-intc", "marvell,mmp2-intc" or
+> > +  "marvell,mmp2-mux-intc"
+> >  - reg : Address and length of the register set of the interrupt controller.
+> >    If the interrupt controller is intc, address and length means the range
+> >    of the whold interrupt controller. If the interrupt controller is
+> > mux-intc, @@ -15,28 +15,28 @@ Required properties:
+> >  - interrupt-controller : Identifies the node as an interrupt controller.
+> >  - #interrupt-cells : Specifies the number of cells needed to encode an
+> >    interrupt source.
+> > -- mrvl,intc-nr-irqs : Specifies the number of interrupts in the
+> > interrupt
+> > +- marvell,intc-nr-irqs : Specifies the number of interrupts in the
+> > +interrupt
+> >    controller.
+> > -- mrvl,clr-mfp-irq : Specifies the interrupt that needs to clear MFP
+> > edge
+> > +- marvell,clr-mfp-irq : Specifies the interrupt that needs to clear
+> > +MFP edge
+> >    detection first.
+> >
+> >  Example:
+> >     intc: interrupt-controller@d4282000 {
+> > -           compatible = "mrvl,mmp2-intc";
+> > +           compatible = "marvell,mmp2-intc";
+> >             interrupt-controller;
+> >             #interrupt-cells = <1>;
+> >             reg = <0xd4282000 0x1000>;
+> > -           mrvl,intc-nr-irqs = <64>;
+> > +           marvell,intc-nr-irqs = <64>;
+> >     };
+> >
+> >     intcmux4@d4282150 {
+> > -           compatible = "mrvl,mmp2-mux-intc";
+> > +           compatible = "marvell,mmp2-mux-intc";
+> >             interrupts = <4>;
+> >             interrupt-controller;
+> >             #interrupt-cells = <1>;
+> >             reg = <0x150 0x4>, <0x168 0x4>;
+> >             reg-names = "mux status", "mux mask";
+> > -           mrvl,intc-nr-irqs = <2>;
+> > +           marvell,intc-nr-irqs = <2>;
+> >     };
+> >
+> >  * Marvell Orion Interrupt controller
+> > diff --git a/Documentation/devicetree/bindings/arm/mrvl/mrvl.txt
+> > b/Documentation/devicetree/bindings/arm/mrvl/mrvl.txt
+> > index 117d741..87f1d42 100644
+> > --- a/Documentation/devicetree/bindings/arm/mrvl/mrvl.txt
+> > +++ b/Documentation/devicetree/bindings/arm/mrvl/mrvl.txt
+> > @@ -3,12 +3,12 @@ Marvell Platforms Device Tree Bindings
+> >
+> >  PXA168 Aspenite Board
+> >  Required root node properties:
+> > -   - compatible = "mrvl,pxa168-aspenite", "mrvl,pxa168";
+> > +   - compatible = "marvell,pxa168-aspenite", "marvell,pxa168";
+> >
+> >  PXA910 DKB Board
+> >  Required root node properties:
+> > -   - compatible = "mrvl,pxa910-dkb";
+> > +   - compatible = "marvell,pxa910-dkb";
+> >
+> >  MMP2 Brownstone Board
+> >  Required root node properties:
+> > -   - compatible = "mrvl,mmp2-brownstone";
+> > +   - compatible = "marvell,mmp2-brownstone";
+> > diff --git a/Documentation/devicetree/bindings/arm/mrvl/timer.txt
+> > b/Documentation/devicetree/bindings/arm/mrvl/timer.txt
+> > index 9a6e251..1304526 100644
+> > --- a/Documentation/devicetree/bindings/arm/mrvl/timer.txt
+> > +++ b/Documentation/devicetree/bindings/arm/mrvl/timer.txt
+> > @@ -1,13 +1,13 @@
+> >  * Marvell MMP Timer controller
+> >
+> >  Required properties:
+> > -- compatible : Should be "mrvl,mmp-timer".
+> > +- compatible : Should be "marvell,mmp-timer".
+> >  - reg : Address and length of the register set of timer controller.
+> >  - interrupts : Should be the interrupt number.
+> >
+> >  Example:
+> >     timer0: timer@d4014000 {
+> > -           compatible = "mrvl,mmp-timer";
+> > +           compatible = "marvell,mmp-timer";
+> >             reg = <0xd4014000 0x100>;
+> >             interrupts = <13>;
+> >     };
+> > diff --git a/Documentation/devicetree/bindings/i2c/i2c-pxa.txt
+> > b/Documentation/devicetree/bindings/i2c/i2c-pxa.txt
+> > index 12b78ac..34fdf5d 100644
+> > --- a/Documentation/devicetree/bindings/i2c/i2c-pxa.txt
+> > +++ b/Documentation/devicetree/bindings/i2c/i2c-pxa.txt
+> > @@ -3,9 +3,9 @@
+> >  Required properties :
+> >
+> >   - reg : Offset and length of the register set for the device
+> > - - compatible : should be "mrvl,mmp-twsi" where mmp is the name of a
+> > + - compatible : should be "marvell,mmp-twsi" where mmp is the name of
+> > + a
+> >     compatible processor, e.g. pxa168, pxa910, mmp2, mmp3.
+> > -   For the pxa2xx/pxa3xx, an additional node "mrvl,pxa-i2c" is required
+> > +   For the pxa2xx/pxa3xx, an additional node "marvell,pxa-i2c" is
+> > + required
+> >     as shown in the example below.
+> >
+> >  Recommended properties :
+> > @@ -14,20 +14,20 @@ Recommended properties :
+> >   - interrupt-parent : the phandle for the interrupt controller that
+> >     services interrupts for this device. If the parent is the default
+> >     interrupt controller in device tree, it could be ignored.
+> > - - mrvl,i2c-polling : Disable interrupt of i2c controller. Polling
+> > + - marvell,i2c-polling : Disable interrupt of i2c controller. Polling
+> >     status register of i2c controller instead.
+> > - - mrvl,i2c-fast-mode : Enable fast mode of i2c controller.
+> > + - marvell,i2c-fast-mode : Enable fast mode of i2c controller.
+> >
+> >  Examples:
+> >     twsi1: i2c@d4011000 {
+> > -           compatible = "mrvl,mmp-twsi";
+> > +           compatible = "marvell,mmp-twsi";
+> >             reg = <0xd4011000 0x1000>;
+> >             interrupts = <7>;
+> > -           mrvl,i2c-fast-mode;
+> > +           marvell,i2c-fast-mode;
+> >     };
+> >
+> >     twsi2: i2c@d4025000 {
+> > -           compatible = "mrvl,mmp-twsi";
+> > +           compatible = "marvell,mmp-twsi";
+> >             reg = <0xd4025000 0x1000>;
+> >             interrupts = <58>;
+> >     };
+> > diff --git a/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
+> > b/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
+> > index dbe98a3..d603a3e 100644
+> > --- a/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
+> > +++ b/Documentation/devicetree/bindings/mmc/sdhci-pxa.txt
+> > @@ -4,18 +4,18 @@ This file documents differences between the core
+> > properties in mmc.txt  and the properties used by the sdhci-pxav2 and
+> sdhci-pxav3 drivers.
+> >
+> >  Required properties:
+> > -- compatible: Should be "mrvl,pxav2-mmc" or "mrvl,pxav3-mmc".
+> > +- compatible: Should be "marvell,pxav2-mmc" or "marvell,pxav3-mmc".
+> >
+> >  Optional properties:
+> > -- mrvl,clk-delay-cycles: Specify a number of cycles to delay for tuning.
+> > +- marvell,clk-delay-cycles: Specify a number of cycles to delay for tuning.
+> >
+> >  Example:
+> >
+> >  sdhci@d4280800 {
+> > -   compatible = "mrvl,pxav3-mmc";
+> > +   compatible = "marvell,pxav3-mmc";
+> >     reg = <0xd4280800 0x800>;
+> >     bus-width = <8>;
+> >     interrupts = <27>;
+> >     non-removable;
+> > -   mrvl,clk-delay-cycles = <31>;
+> > +   marvell,clk-delay-cycles = <31>;
+> >  };
+> > diff --git a/Documentation/devicetree/bindings/rtc/sa1100-rtc.txt
+> > b/Documentation/devicetree/bindings/rtc/sa1100-rtc.txt
+> > index 0cda19a..886fe15 100644
+> > --- a/Documentation/devicetree/bindings/rtc/sa1100-rtc.txt
+> > +++ b/Documentation/devicetree/bindings/rtc/sa1100-rtc.txt
+> > @@ -1,7 +1,7 @@
+> >  * Marvell Real Time Clock controller
+> >
+> >  Required properties:
+> > -- compatible: should be "mrvl,sa1100-rtc"
+> > +- compatible: should be "marvell,sa1100-rtc"
+> >  - reg: physical base address of the controller and length of memory
+> mapped
+> >    region.
+> >  - interrupts: Should be two. The first interrupt number is the rtc
+> > alarm @@ -10,7 +10,7 @@ Required properties:
+> >
+> >  Example:
+> >     rtc: rtc@d4010000 {
+> > -           compatible = "mrvl,mmp-rtc";
+> > +           compatible = "marvell,mmp-rtc";
+> >             reg = <0xd4010000 0x1000>;
+> >             interrupts = <5>, <6>;
+> >             interrupt-name = "rtc 1Hz", "rtc alarm"; diff --git
+> > a/Documentation/devicetree/bindings/serial/mrvl-serial.txt
+> > b/Documentation/devicetree/bindings/serial/mrvl-serial.txt
+> > index d744340..659d35e 100644
+> > --- a/Documentation/devicetree/bindings/serial/mrvl-serial.txt
+> > +++ b/Documentation/devicetree/bindings/serial/mrvl-serial.txt
+> > @@ -1,4 +1,4 @@
+> >  PXA UART controller
+> >
+> >  Required properties:
+> > -- compatible : should be "mrvl,mmp-uart" or "mrvl,pxa-uart".
+> > +- compatible : should be "marvell,mmp-uart" or "marvell,pxa-uart".
+> > diff --git a/arch/arm/boot/dts/mmp2-brownstone.dts
+> > b/arch/arm/boot/dts/mmp2-brownstone.dts
+> > index 7f70a39..26abfde 100644
+> > --- a/arch/arm/boot/dts/mmp2-brownstone.dts
+> > +++ b/arch/arm/boot/dts/mmp2-brownstone.dts
+> > @@ -12,7 +12,7 @@
+> >
+> >  / {
+> >     model = "Marvell MMP2 Brownstone Development Board";
+> > -   compatible = "mrvl,mmp2-brownstone", "mrvl,mmp2";
+> > +   compatible = "marvell,mmp2-brownstone", "marvell,mmp2";
+> >
+> >     chosen {
+> >             bootargs = "console=ttyS2,38400 root=/dev/nfs
+> > nfsroot=192.168.1.100:/nfsroot/
+> > ip=192.168.1.101:192.168.1.100::255.255.255.0::eth0:on";
+> > diff --git a/arch/arm/boot/dts/mmp2.dtsi b/arch/arm/boot/dts/mmp2.dtsi
+> > index 4e8b08c..ac13654 100644
+> > --- a/arch/arm/boot/dts/mmp2.dtsi
+> > +++ b/arch/arm/boot/dts/mmp2.dtsi
+> > @@ -32,128 +32,128 @@
+> >             };
+> >
+> >             axi@d4200000 {  /* AXI */
+> > -                   compatible = "mrvl,axi-bus", "simple-bus";
+> > +                   compatible = "marvell,axi-bus", "simple-bus";
+> >                     #address-cells = <1>;
+> >                     #size-cells = <1>;
+> >                     reg = <0xd4200000 0x00200000>;
+> >                     ranges;
+> >
+> >                     intc: interrupt-controller@d4282000 {
+> > -                           compatible = "mrvl,mmp2-intc";
+> > +                           compatible = "marvell,mmp2-intc";
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0xd4282000 0x1000>;
+> > -                           mrvl,intc-nr-irqs = <64>;
+> > +                           marvell,intc-nr-irqs = <64>;
+> >                     };
+> >
+> >                     intcmux4: interrupt-controller@d4282150 {
+> > -                           compatible = "mrvl,mmp2-mux-intc";
+> > +                           compatible = "marvell,mmp2-mux-intc";
+> >                             interrupts = <4>;
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0x150 0x4>, <0x168 0x4>;
+> >                             reg-names = "mux status", "mux mask";
+> > -                           mrvl,intc-nr-irqs = <2>;
+> > +                           marvell,intc-nr-irqs = <2>;
+> >                     };
+> >
+> >                     intcmux5: interrupt-controller@d4282154 {
+> > -                           compatible = "mrvl,mmp2-mux-intc";
+> > +                           compatible = "marvell,mmp2-mux-intc";
+> >                             interrupts = <5>;
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0x154 0x4>, <0x16c 0x4>;
+> >                             reg-names = "mux status", "mux mask";
+> > -                           mrvl,intc-nr-irqs = <2>;
+> > -                           mrvl,clr-mfp-irq = <1>;
+> > +                           marvell,intc-nr-irqs = <2>;
+> > +                           marvell,clr-mfp-irq = <1>;
+> >                     };
+> >
+> >                     intcmux9: interrupt-controller@d4282180 {
+> > -                           compatible = "mrvl,mmp2-mux-intc";
+> > +                           compatible = "marvell,mmp2-mux-intc";
+> >                             interrupts = <9>;
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0x180 0x4>, <0x17c 0x4>;
+> >                             reg-names = "mux status", "mux mask";
+> > -                           mrvl,intc-nr-irqs = <3>;
+> > +                           marvell,intc-nr-irqs = <3>;
+> >                     };
+> >
+> >                     intcmux17: interrupt-controller@d4282158 {
+> > -                           compatible = "mrvl,mmp2-mux-intc";
+> > +                           compatible = "marvell,mmp2-mux-intc";
+> >                             interrupts = <17>;
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0x158 0x4>, <0x170 0x4>;
+> >                             reg-names = "mux status", "mux mask";
+> > -                           mrvl,intc-nr-irqs = <5>;
+> > +                           marvell,intc-nr-irqs = <5>;
+> >                     };
+> >
+> >                     intcmux35: interrupt-controller@d428215c {
+> > -                           compatible = "mrvl,mmp2-mux-intc";
+> > +                           compatible = "marvell,mmp2-mux-intc";
+> >                             interrupts = <35>;
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0x15c 0x4>, <0x174 0x4>;
+> >                             reg-names = "mux status", "mux mask";
+> > -                           mrvl,intc-nr-irqs = <15>;
+> > +                           marvell,intc-nr-irqs = <15>;
+> >                     };
+> >
+> >                     intcmux51: interrupt-controller@d4282160 {
+> > -                           compatible = "mrvl,mmp2-mux-intc";
+> > +                           compatible = "marvell,mmp2-mux-intc";
+> >                             interrupts = <51>;
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0x160 0x4>, <0x178 0x4>;
+> >                             reg-names = "mux status", "mux mask";
+> > -                           mrvl,intc-nr-irqs = <2>;
+> > +                           marvell,intc-nr-irqs = <2>;
+> >                     };
+> >
+> >                     intcmux55: interrupt-controller@d4282188 {
+> > -                           compatible = "mrvl,mmp2-mux-intc";
+> > +                           compatible = "marvell,mmp2-mux-intc";
+> >                             interrupts = <55>;
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0x188 0x4>, <0x184 0x4>;
+> >                             reg-names = "mux status", "mux mask";
+> > -                           mrvl,intc-nr-irqs = <2>;
+> > +                           marvell,intc-nr-irqs = <2>;
+> >                     };
+> >             };
+> >
+> >             apb@d4000000 {  /* APB */
+> > -                   compatible = "mrvl,apb-bus", "simple-bus";
+> > +                   compatible = "marvell,apb-bus", "simple-bus";
+> >                     #address-cells = <1>;
+> >                     #size-cells = <1>;
+> >                     reg = <0xd4000000 0x00200000>;
+> >                     ranges;
+> >
+> >                     timer0: timer@d4014000 {
+> > -                           compatible = "mrvl,mmp-timer";
+> > +                           compatible = "marvell,mmp-timer";
+> >                             reg = <0xd4014000 0x100>;
+> >                             interrupts = <13>;
+> >                     };
+> >
+> >                     uart1: uart@d4030000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4030000 0x1000>;
+> >                             interrupts = <27>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart2: uart@d4017000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4017000 0x1000>;
+> >                             interrupts = <28>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart3: uart@d4018000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4018000 0x1000>;
+> >                             interrupts = <24>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart4: uart@d4016000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4016000 0x1000>;
+> >                             interrupts = <46>;
+> >                             status = "disabled";
+> > @@ -198,24 +198,24 @@
+> >                     };
+> >
+> >                     twsi1: i2c@d4011000 {
+> > -                           compatible = "mrvl,mmp-twsi";
+> > +                           compatible = "marvell,mmp-twsi";
+> >                             reg = <0xd4011000 0x1000>;
+> >                             interrupts = <7>;
+> >                             #address-cells = <1>;
+> >                             #size-cells = <0>;
+> > -                           mrvl,i2c-fast-mode;
+> > +                           marvell,i2c-fast-mode;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     twsi2: i2c@d4025000 {
+> > -                           compatible = "mrvl,mmp-twsi";
+> > +                           compatible = "marvell,mmp-twsi";
+> >                             reg = <0xd4025000 0x1000>;
+> >                             interrupts = <58>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     rtc: rtc@d4010000 {
+> > -                           compatible = "mrvl,mmp-rtc";
+> > +                           compatible = "marvell,mmp-rtc";
+> >                             reg = <0xd4010000 0x1000>;
+> >                             interrupts = <1 0>;
+> >                             interrupt-names = "rtc 1Hz", "rtc alarm"; diff --git
+> > a/arch/arm/boot/dts/pxa168-aspenite.dts
+> > b/arch/arm/boot/dts/pxa168-aspenite.dts
+> > index e762fac..1e2ac17 100644
+> > --- a/arch/arm/boot/dts/pxa168-aspenite.dts
+> > +++ b/arch/arm/boot/dts/pxa168-aspenite.dts
+> > @@ -12,7 +12,7 @@
+> >
+> >  / {
+> >     model = "Marvell PXA168 Aspenite Development Board";
+> > -   compatible = "mrvl,pxa168-aspenite", "mrvl,pxa168";
+> > +   compatible = "marvell,pxa168-aspenite", "marvell,pxa168";
+> >
+> >     chosen {
+> >             bootargs = "console=ttyS0,115200 root=/dev/nfs
+> > nfsroot=192.168.1.100:/nfsroot/
+> > ip=192.168.1.101:192.168.1.100::255.255.255.0::eth0:on";
+> > diff --git a/arch/arm/boot/dts/pxa168.dtsi
+> > b/arch/arm/boot/dts/pxa168.dtsi index 975dad2..c08f5fc 100644
+> > --- a/arch/arm/boot/dts/pxa168.dtsi
+> > +++ b/arch/arm/boot/dts/pxa168.dtsi
+> > @@ -26,51 +26,51 @@
+> >             ranges;
+> >
+> >             axi@d4200000 {  /* AXI */
+> > -                   compatible = "mrvl,axi-bus", "simple-bus";
+> > +                   compatible = "marvell,axi-bus", "simple-bus";
+> >                     #address-cells = <1>;
+> >                     #size-cells = <1>;
+> >                     reg = <0xd4200000 0x00200000>;
+> >                     ranges;
+> >
+> >                     intc: interrupt-controller@d4282000 {
+> > -                           compatible = "mrvl,mmp-intc";
+> > +                           compatible = "marvell,mmp-intc";
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0xd4282000 0x1000>;
+> > -                           mrvl,intc-nr-irqs = <64>;
+> > +                           marvell,intc-nr-irqs = <64>;
+> >                     };
+> >
+> >             };
+> >
+> >             apb@d4000000 {  /* APB */
+> > -                   compatible = "mrvl,apb-bus", "simple-bus";
+> > +                   compatible = "marvell,apb-bus", "simple-bus";
+> >                     #address-cells = <1>;
+> >                     #size-cells = <1>;
+> >                     reg = <0xd4000000 0x00200000>;
+> >                     ranges;
+> >
+> >                     timer0: timer@d4014000 {
+> > -                           compatible = "mrvl,mmp-timer";
+> > +                           compatible = "marvell,mmp-timer";
+> >                             reg = <0xd4014000 0x100>;
+> >                             interrupts = <13>;
+> >                     };
+> >
+> >                     uart1: uart@d4017000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4017000 0x1000>;
+> >                             interrupts = <27>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart2: uart@d4018000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4018000 0x1000>;
+> >                             interrupts = <28>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart3: uart@d4026000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4026000 0x1000>;
+> >                             interrupts = <29>;
+> >                             status = "disabled";
+> > @@ -107,22 +107,22 @@
+> >                     };
+> >
+> >                     twsi1: i2c@d4011000 {
+> > -                           compatible = "mrvl,mmp-twsi";
+> > +                           compatible = "marvell,mmp-twsi";
+> >                             reg = <0xd4011000 0x1000>;
+> >                             interrupts = <7>;
+> > -                           mrvl,i2c-fast-mode;
+> > +                           marvell,i2c-fast-mode;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     twsi2: i2c@d4025000 {
+> > -                           compatible = "mrvl,mmp-twsi";
+> > +                           compatible = "marvell,mmp-twsi";
+> >                             reg = <0xd4025000 0x1000>;
+> >                             interrupts = <58>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     rtc: rtc@d4010000 {
+> > -                           compatible = "mrvl,mmp-rtc";
+> > +                           compatible = "marvell,mmp-rtc";
+> >                             reg = <0xd4010000 0x1000>;
+> >                             interrupts = <5 6>;
+> >                             interrupt-names = "rtc 1Hz", "rtc alarm"; diff --git
+> > a/arch/arm/boot/dts/pxa2xx.dtsi b/arch/arm/boot/dts/pxa2xx.dtsi index
+> > a5e90f0..c426b1e 100644
+> > --- a/arch/arm/boot/dts/pxa2xx.dtsi
+> > +++ b/arch/arm/boot/dts/pxa2xx.dtsi
+> > @@ -47,7 +47,7 @@
+> >             };
+> >
+> >             gpio: gpio@40e00000 {
+> > -                   compatible = "mrvl,pxa-gpio";
+> > +                   compatible = "marvell,pxa-gpio";
+> >                     #address-cells = <0x1>;
+> >                     #size-cells = <0x1>;
+> >                     reg = <0x40e00000 0x10000>;
+> > @@ -76,35 +76,35 @@
+> >             };
+> >
+> >             ffuart: uart@40100000 {
+> > -                   compatible = "mrvl,pxa-uart";
+> > +                   compatible = "marvell,pxa-uart";
+> >                     reg = <0x40100000 0x30>;
+> >                     interrupts = <22>;
+> >                     status = "disabled";
+> >             };
+> >
+> >             btuart: uart@40200000 {
+> > -                   compatible = "mrvl,pxa-uart";
+> > +                   compatible = "marvell,pxa-uart";
+> >                     reg = <0x40200000 0x30>;
+> >                     interrupts = <21>;
+> >                     status = "disabled";
+> >             };
+> >
+> >             stuart: uart@40700000 {
+> > -                   compatible = "mrvl,pxa-uart";
+> > +                   compatible = "marvell,pxa-uart";
+> >                     reg = <0x40700000 0x30>;
+> >                     interrupts = <20>;
+> >                     status = "disabled";
+> >             };
+> >
+> >             hwuart: uart@41100000 {
+> > -                   compatible = "mrvl,pxa-uart";
+> > +                   compatible = "marvell,pxa-uart";
+> >                     reg = <0x41100000 0x30>;
+> >                     interrupts = <7>;
+> >                     status = "disabled";
+> >             };
+> >
+> >             pxai2c1: i2c@40301680 {
+> > -                   compatible = "mrvl,pxa-i2c";
+> > +                   compatible = "marvell,pxa-i2c";
+> >                     reg = <0x40301680 0x30>;
+> >                     interrupts = <18>;
+> >                     #address-cells = <0x1>;
+> > @@ -113,14 +113,14 @@
+> >             };
+> >
+> >             usb0: ohci@4c000000 {
+> > -                   compatible = "mrvl,pxa-ohci";
+> > +                   compatible = "marvell,pxa-ohci";
+> >                     reg = <0x4c000000 0x10000>;
+> >                     interrupts = <3>;
+> >                     status = "disabled";
+> >             };
+> >
+> >             mmc0: mmc@41100000 {
+> > -                   compatible = "mrvl,pxa-mmc";
+> > +                   compatible = "marvell,pxa-mmc";
+> >                     reg = <0x41100000 0x1000>;
+> >                     interrupts = <23>;
+> >                     status = "disabled";
+> > diff --git a/arch/arm/boot/dts/pxa3xx.dtsi
+> > b/arch/arm/boot/dts/pxa3xx.dtsi index f9d92da..0798031 100644
+> > --- a/arch/arm/boot/dts/pxa3xx.dtsi
+> > +++ b/arch/arm/boot/dts/pxa3xx.dtsi
+> > @@ -7,7 +7,7 @@
+> >
+> >     pxabus {
+> >             pwri2c: i2c@40f500c0 {
+> > -                   compatible = "mrvl,pwri2c";
+> > +                   compatible = "marvell,pwri2c";
+> >                     reg = <0x40f500c0 0x30>;
+> >                     interrupts = <6>;
+> >                     #address-cells = <0x1>;
+> > diff --git a/arch/arm/boot/dts/pxa910-dkb.dts
+> > b/arch/arm/boot/dts/pxa910-dkb.dts
+> > index 595492a..7384254 100644
+> > --- a/arch/arm/boot/dts/pxa910-dkb.dts
+> > +++ b/arch/arm/boot/dts/pxa910-dkb.dts
+> > @@ -12,7 +12,7 @@
+> >
+> >  / {
+> >     model = "Marvell PXA910 DKB Development Board";
+> > -   compatible = "mrvl,pxa910-dkb", "mrvl,pxa910";
+> > +   compatible = "marvell,pxa910-dkb", "marvell,pxa910";
+> >
+> >     chosen {
+> >             bootargs = "console=ttyS0,115200 root=/dev/nfs
+> > nfsroot=192.168.1.100:/nfsroot/
+> > ip=192.168.1.101:192.168.1.100::255.255.255.0::eth0:on";
+> > diff --git a/arch/arm/boot/dts/pxa910.dtsi
+> > b/arch/arm/boot/dts/pxa910.dtsi index 0247c62..b5594a0 100644
+> > --- a/arch/arm/boot/dts/pxa910.dtsi
+> > +++ b/arch/arm/boot/dts/pxa910.dtsi
+> > @@ -31,58 +31,59 @@
+> >             };
+> >
+> >             axi@d4200000 {  /* AXI */
+> > -                   compatible = "mrvl,axi-bus", "simple-bus";
+> > +                   compatible = "marvell,axi-bus", "simple-bus";
+> >                     #address-cells = <1>;
+> >                     #size-cells = <1>;
+> >                     reg = <0xd4200000 0x00200000>;
+> >                     ranges;
+> >
+> >                     intc: interrupt-controller@d4282000 {
+> > -                           compatible = "mrvl,mmp-intc";
+> > +                           compatible = "marvell,mmp-intc";
+> >                             interrupt-controller;
+> >                             #interrupt-cells = <1>;
+> >                             reg = <0xd4282000 0x1000>;
+> > -                           mrvl,intc-nr-irqs = <64>;
+> > +                           marvell,intc-nr-irqs = <64>;
+> > +
+> >                     };
+> >
+> >             };
+> >
+> >             apb@d4000000 {  /* APB */
+> > -                   compatible = "mrvl,apb-bus", "simple-bus";
+> > +                   compatible = "marvell,apb-bus", "simple-bus";
+> >                     #address-cells = <1>;
+> >                     #size-cells = <1>;
+> >                     reg = <0xd4000000 0x00200000>;
+> >                     ranges;
+> >
+> >                     timer0: timer@d4014000 {
+> > -                           compatible = "mrvl,mmp-timer";
+> > +                           compatible = "marvell,mmp-timer";
+> >                             reg = <0xd4014000 0x100>;
+> >                             interrupts = <13>;
+> >                     };
+> >
+> >                     timer1: timer@d4016000 {
+> > -                           compatible = "mrvl,mmp-timer";
+> > +                           compatible = "marvell,mmp-timer";
+> >                             reg = <0xd4016000 0x100>;
+> >                             interrupts = <29>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart1: uart@d4017000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4017000 0x1000>;
+> >                             interrupts = <27>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart2: uart@d4018000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4018000 0x1000>;
+> >                             interrupts = <28>;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     uart3: uart@d4036000 {
+> > -                           compatible = "mrvl,mmp-uart";
+> > +                           compatible = "marvell,mmp-uart";
+> >                             reg = <0xd4036000 0x1000>;
+> >                             interrupts = <59>;
+> >                             status = "disabled";
+> > @@ -119,17 +120,17 @@
+> >                     };
+> >
+> >                     twsi1: i2c@d4011000 {
+> > -                           compatible = "mrvl,mmp-twsi";
+> > +                           compatible = "marvell,mmp-twsi";
+> >                             #address-cells = <1>;
+> >                             #size-cells = <0>;
+> >                             reg = <0xd4011000 0x1000>;
+> >                             interrupts = <7>;
+> > -                           mrvl,i2c-fast-mode;
+> > +                           marvell,i2c-fast-mode;
+> >                             status = "disabled";
+> >                     };
+> >
+> >                     twsi2: i2c@d4037000 {
+> > -                           compatible = "mrvl,mmp-twsi";
+> > +                           compatible = "marvell,mmp-twsi";
+> >                             #address-cells = <1>;
+> >                             #size-cells = <0>;
+> >                             reg = <0xd4037000 0x1000>;
+> > @@ -138,7 +139,7 @@
+> >                     };
+> >
+> >                     rtc: rtc@d4010000 {
+> > -                           compatible = "mrvl,mmp-rtc";
+> > +                           compatible = "marvell,mmp-rtc";
+> >                             reg = <0xd4010000 0x1000>;
+> >                             interrupts = <5 6>;
+> >                             interrupt-names = "rtc 1Hz", "rtc alarm"; diff --git
+> > a/arch/arm/mach-mmp/irq.c b/arch/arm/mach-mmp/irq.c index
+> > 3c71246..a7a53611 100644
+> > --- a/arch/arm/mach-mmp/irq.c
+> > +++ b/arch/arm/mach-mmp/irq.c
+> > @@ -327,13 +327,13 @@ void __init mmp2_init_icu(void)
+> >
+> >  #ifdef CONFIG_OF
+> >  static const struct of_device_id intc_ids[] __initconst = {
+> > -   { .compatible = "mrvl,mmp-intc", .data = &mmp_conf },
+> > -   { .compatible = "mrvl,mmp2-intc", .data = &mmp2_conf },
+> > +   { .compatible = "marvell,mmp-intc", .data = &mmp_conf },
+> > +   { .compatible = "marvell,mmp2-intc", .data = &mmp2_conf },
+> >     {}
+> >  };
+> >
+> >  static const struct of_device_id mmp_mux_irq_match[] __initconst = {
+> > -   { .compatible = "mrvl,mmp2-mux-intc" },
+> > +   { .compatible = "marvell,mmp2-mux-intc" },
+> >     {}
+> >  };
+> >
+> > @@ -352,10 +352,10 @@ int __init mmp2_mux_init(struct device_node
+> *parent)
+> >             if (!node)
+> >                     break;
+> >             of_id = of_match_node(&mmp_mux_irq_match[0], node);
+> > -           ret = of_property_read_u32(node, "mrvl,intc-nr-irqs",
+> > +           ret = of_property_read_u32(node, "marvell,intc-nr-irqs",
+> >                                        &nr_irqs);
+> >             if (ret) {
+> > -                   pr_err("Not found mrvl,intc-nr-irqs property\n");
+> > +                   pr_err("Not found marvell,intc-nr-irqs property\n");
+> >                     ret = -EINVAL;
+> >                     goto err;
+> >             }
+> > @@ -385,7 +385,7 @@ int __init mmp2_mux_init(struct device_node
+> *parent)
+> >                     ret = irq_base;
+> >                     goto err;
+> >             }
+> > -           if (!of_property_read_u32(node, "mrvl,clr-mfp-irq",
+> > +           if (!of_property_read_u32(node, "marvell,clr-mfp-irq",
+> >                                       &mfp_irq)) {
+> >                     icu_data[i].clr_mfp_irq_base = irq_base;
+> >                     icu_data[i].clr_mfp_hwirq = mfp_irq; @@ -424,9 +424,9 @@
+> void
+> > __init mmp_dt_irq_init(void)
+> >     of_id = of_match_node(intc_ids, node);
+> >     conf = of_id->data;
+> >
+> > -   ret = of_property_read_u32(node, "mrvl,intc-nr-irqs", &nr_irqs);
+> > +   ret = of_property_read_u32(node, "marvell,intc-nr-irqs", &nr_irqs);
+> >     if (ret) {
+> > -           pr_err("Not found mrvl,intc-nr-irqs property\n");
+> > +           pr_err("Not found marvell,intc-nr-irqs property\n");
+> >             return;
+> >     }
+> >
+> > diff --git a/arch/arm/mach-mmp/mmp-dt.c
+> b/arch/arm/mach-mmp/mmp-dt.c
+> > index b37915d..62c5adb 100644
+> > --- a/arch/arm/mach-mmp/mmp-dt.c
+> > +++ b/arch/arm/mach-mmp/mmp-dt.c
+> > @@ -23,24 +23,24 @@ extern void __init mmp_dt_irq_init(void);  extern
+> > void __init mmp_dt_init_timer(void);
+> >
+> >  static const struct of_dev_auxdata pxa168_auxdata_lookup[] __initconst
+> = {
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4026000, "pxa2xx-uart.2",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4017000, "pxa2xx-uart.0",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4018000, "pxa2xx-uart.1",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4026000, "pxa2xx-uart.2",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1",
+> > +NULL),
+> >     OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp-gpio",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-rtc", 0xd4010000, "sa1100-rtc",
+> NULL),
+> >     {}
+> >  };
+> >
+> >  static const struct of_dev_auxdata pxa910_auxdata_lookup[] __initconst
+> = {
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.1",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4036000, "pxa2xx-uart.2",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4037000, "pxa2xx-i2c.1",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4017000, "pxa2xx-uart.0",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4018000, "pxa2xx-uart.1",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4036000, "pxa2xx-uart.2",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-twsi", 0xd4037000, "pxa2xx-i2c.1",
+> > +NULL),
+> >     OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp-gpio",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-rtc", 0xd4010000, "sa1100-rtc",
+> NULL),
+> >     {}
+> >  };
+> >
+> > @@ -57,8 +57,8 @@ static void __init pxa910_dt_init(void)  }
+> >
+> >  static const char *mmp_dt_board_compat[] __initdata = {
+> > -   "mrvl,pxa168-aspenite",
+> > -   "mrvl,pxa910-dkb",
+> > +   "marvell,pxa168-aspenite",
+> > +   "marvell,pxa910-dkb",
+> >     NULL,
+> >  };
+> >
+> > diff --git a/arch/arm/mach-mmp/mmp2-dt.c
+> b/arch/arm/mach-mmp/mmp2-dt.c
+> > index 4ac2567..6523ecf 100644
+> > --- a/arch/arm/mach-mmp/mmp2-dt.c
+> > +++ b/arch/arm/mach-mmp/mmp2-dt.c
+> > @@ -25,14 +25,14 @@ extern void __init mmp_dt_irq_init(void);  extern
+> > void __init mmp_dt_init_timer(void);
+> >
+> >  static const struct of_dev_auxdata mmp2_auxdata_lookup[] __initconst
+> = {
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4030000, "pxa2xx-uart.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4017000, "pxa2xx-uart.1",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4018000, "pxa2xx-uart.2",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-uart", 0xd4016000, "pxa2xx-uart.3",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4030000, "pxa2xx-uart.0",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4017000, "pxa2xx-uart.1",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4018000, "pxa2xx-uart.2",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-uart", 0xd4016000, "pxa2xx-uart.3",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-twsi", 0xd4011000, "pxa2xx-i2c.0",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-twsi", 0xd4025000, "pxa2xx-i2c.1",
+> > +NULL),
+> >     OF_DEV_AUXDATA("marvell,mmp-gpio", 0xd4019000, "mmp2-gpio",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,mmp-rtc", 0xd4010000, "sa1100-rtc", NULL),
+> > +   OF_DEV_AUXDATA("marvell,mmp-rtc", 0xd4010000, "sa1100-rtc",
+> NULL),
+> >     {}
+> >  };
+> >
+> > @@ -43,7 +43,7 @@ static void __init mmp2_dt_init(void)  }
+> >
+> >  static const char *mmp2_dt_board_compat[] __initdata = {
+> > -   "mrvl,mmp2-brownstone",
+> > +   "marvell,mmp2-brownstone",
+> >     NULL,
+> >  };
+> >
+> > diff --git a/arch/arm/mach-mmp/time.c b/arch/arm/mach-mmp/time.c
+> index
+> > 7ac41e8..67e7d5c 100644
+> > --- a/arch/arm/mach-mmp/time.c
+> > +++ b/arch/arm/mach-mmp/time.c
+> > @@ -208,7 +208,7 @@ void __init timer_init(int irq)
+> >
+> >  #ifdef CONFIG_OF
+> >  static struct of_device_id mmp_timer_dt_ids[] = {
+> > -   { .compatible = "mrvl,mmp-timer", },
+> > +   { .compatible = "marvell,mmp-timer", },
+> >     {}
+> >  };
+> >
+> > diff --git a/arch/arm/mach-pxa/pxa-dt.c b/arch/arm/mach-pxa/pxa-dt.c
+> > index 3835979..b679367 100644
+> > --- a/arch/arm/mach-pxa/pxa-dt.c
+> > +++ b/arch/arm/mach-pxa/pxa-dt.c
+> > @@ -23,15 +23,15 @@
+> >  extern void __init pxa3xx_dt_init_irq(void);
+> >
+> >  static const struct of_dev_auxdata pxa3xx_auxdata_lookup[] __initconst
+> = {
+> > -   OF_DEV_AUXDATA("mrvl,pxa-uart",         0x40100000,
+> "pxa2xx-uart.0", NULL),
+> > -   OF_DEV_AUXDATA("mrvl,pxa-uart",         0x40200000,
+> "pxa2xx-uart.1", NULL),
+> > -   OF_DEV_AUXDATA("mrvl,pxa-uart",         0x40700000,
+> "pxa2xx-uart.2", NULL),
+> > -   OF_DEV_AUXDATA("mrvl,pxa-uart",         0x41600000,
+> "pxa2xx-uart.3", NULL),
+> > +   OF_DEV_AUXDATA("marvell,pxa-uart",      0x40100000,
+> "pxa2xx-uart.0", NULL),
+> > +   OF_DEV_AUXDATA("marvell,pxa-uart",      0x40200000,
+> "pxa2xx-uart.1", NULL),
+> > +   OF_DEV_AUXDATA("marvell,pxa-uart",      0x40700000,
+> "pxa2xx-uart.2", NULL),
+> > +   OF_DEV_AUXDATA("marvell,pxa-uart",      0x41600000,
+> "pxa2xx-uart.3", NULL),
+> >     OF_DEV_AUXDATA("marvell,pxa-mmc",       0x41100000, "pxa2xx-mci.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,pxa-gpio",         0x40e00000, "pxa-gpio",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,pxa-gpio",      0x40e00000, "pxa-gpio",
+> NULL),
+> >     OF_DEV_AUXDATA("marvell,pxa-ohci",      0x4c000000, "pxa27x-ohci",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,pxa-i2c",          0x40301680, "pxa2xx-i2c.0",
+> NULL),
+> > -   OF_DEV_AUXDATA("mrvl,pwri2c",           0x40f500c0, "pxa3xx-i2c.1",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,pxa-i2c",       0x40301680, "pxa2xx-i2c.0",
+> NULL),
+> > +   OF_DEV_AUXDATA("marvell,pwri2c",        0x40f500c0, "pxa3xx-i2c.1",
+> NULL),
+> >     OF_DEV_AUXDATA("marvell,pxa3xx-nand",   0x43100000, "pxa3xx-nand",
+> NULL),
+> >     {}
+> >  };
+> > diff --git a/drivers/i2c/busses/i2c-pxa.c
+> > b/drivers/i2c/busses/i2c-pxa.c index fbafed2..6f2b17d 100644
+> > --- a/drivers/i2c/busses/i2c-pxa.c
+> > +++ b/drivers/i2c/busses/i2c-pxa.c
+> > @@ -1040,9 +1040,9 @@ static const struct i2c_algorithm
+> > i2c_pxa_pio_algorithm = {  };
+> >
+> >  static struct of_device_id i2c_pxa_dt_ids[] = {
+> > -   { .compatible = "mrvl,pxa-i2c", .data = (void *)REGS_PXA2XX },
+> > -   { .compatible = "mrvl,pwri2c", .data = (void *)REGS_PXA3XX },
+> > -   { .compatible = "mrvl,mmp-twsi", .data = (void *)REGS_PXA2XX },
+> > +   { .compatible = "marvell,pxa-i2c", .data = (void *)REGS_PXA2XX },
+> > +   { .compatible = "marvell,pwri2c", .data = (void *)REGS_PXA3XX },
+> > +   { .compatible = "marvell,mmp-twsi", .data = (void *)REGS_PXA2XX },
+> >     {}
+> >  };
+> >  MODULE_DEVICE_TABLE(of, i2c_pxa_dt_ids); @@ -1060,9 +1060,9 @@
+> static
+> > int i2c_pxa_probe_dt(struct platform_device *pdev, struct pxa_i2c *i2c,
+> >     /* For device tree we always use the dynamic or alias-assigned ID */
+> >     i2c->adap.nr = -1;
+> >
+> > -   if (of_get_property(np, "mrvl,i2c-polling", NULL))
+> > +   if (of_get_property(np, "marvell,i2c-polling", NULL))
+> >             i2c->use_pio = 1;
+> > -   if (of_get_property(np, "mrvl,i2c-fast-mode", NULL))
+> > +   if (of_get_property(np, "marvell,i2c-fast-mode", NULL))
+> >             i2c->fast_mode = 1;
+> >     *i2c_types = (u32)(of_id->data);
+> >     return 0;
+> > diff --git a/drivers/mmc/host/sdhci-pxav2.c
+> > b/drivers/mmc/host/sdhci-pxav2.c index 6a3f702..1dd6500 100644
+> > --- a/drivers/mmc/host/sdhci-pxav2.c
+> > +++ b/drivers/mmc/host/sdhci-pxav2.c
+> > @@ -120,7 +120,7 @@ static const struct sdhci_ops pxav2_sdhci_ops = {
+> > #ifdef CONFIG_OF  static const struct of_device_id
+> > sdhci_pxav2_of_match[] = {
+> >     {
+> > -           .compatible = "mrvl,pxav2-mmc",
+> > +           .compatible = "marvell,pxav2-mmc",
+> >     },
+> >     {},
+> >  };
+> > @@ -144,7 +144,7 @@ static struct sdhci_pxa_platdata
+> *pxav2_get_mmc_pdata(struct device *dev)
+> >     if (bus_width == 8)
+> >             pdata->flags |= PXA_FLAG_SD_8_BIT_CAPABLE_SLOT;
+> >
+> > -   of_property_read_u32(np, "mrvl,clk-delay-cycles", &clk_delay_cycles);
+> > +   of_property_read_u32(np, "marvell,clk-delay-cycles",
+> > +&clk_delay_cycles);
+> >     if (clk_delay_cycles > 0) {
+> >             pdata->clk_delay_sel = 1;
+> >             pdata->clk_delay_cycles = clk_delay_cycles; diff --git
+> > a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+> > index 1ae358e..a88974b 100644
+> > --- a/drivers/mmc/host/sdhci-pxav3.c
+> > +++ b/drivers/mmc/host/sdhci-pxav3.c
+> > @@ -185,7 +185,7 @@ static struct sdhci_pltfm_data sdhci_pxav3_pdata
+> =
+> > {  #ifdef CONFIG_OF  static const struct of_device_id
+> > sdhci_pxav3_of_match[] = {
+> >     {
+> > -           .compatible = "mrvl,pxav3-mmc",
+> > +           .compatible = "marvell,pxav3-mmc",
+> >     },
+> >     {},
+> >  };
+> > @@ -201,7 +201,7 @@ static struct sdhci_pxa_platdata
+> *pxav3_get_mmc_pdata(struct device *dev)
+> >     if (!pdata)
+> >             return NULL;
+> >
+> > -   of_property_read_u32(np, "mrvl,clk-delay-cycles", &clk_delay_cycles);
+> > +   of_property_read_u32(np, "marvell,clk-delay-cycles",
+> > +&clk_delay_cycles);
+> >     if (clk_delay_cycles > 0)
+> >             pdata->clk_delay_cycles = clk_delay_cycles;
+> >
+> > diff --git a/drivers/rtc/rtc-sa1100.c b/drivers/rtc/rtc-sa1100.c index
+> > 0f7adeb..307dd37 100644
+> > --- a/drivers/rtc/rtc-sa1100.c
+> > +++ b/drivers/rtc/rtc-sa1100.c
+> > @@ -339,8 +339,8 @@ static SIMPLE_DEV_PM_OPS(sa1100_rtc_pm_ops,
+> > sa1100_rtc_suspend,
+> >
+> >  #ifdef CONFIG_OF
+> >  static struct of_device_id sa1100_rtc_dt_ids[] = {
+> > -   { .compatible = "mrvl,sa1100-rtc", },
+> > -   { .compatible = "mrvl,mmp-rtc", },
+> > +   { .compatible = "marvell,sa1100-rtc", },
+> > +   { .compatible = "marvell,mmp-rtc", },
+> >     {}
+> >  };
+> >  MODULE_DEVICE_TABLE(of, sa1100_rtc_dt_ids); diff --git
+> > a/drivers/tty/serial/pxa.c b/drivers/tty/serial/pxa.c index
+> > 05f504e..cb1a439 100644
+> > --- a/drivers/tty/serial/pxa.c
+> > +++ b/drivers/tty/serial/pxa.c
+> > @@ -852,8 +852,8 @@ static const struct dev_pm_ops
+> serial_pxa_pm_ops =
+> > {  #endif
+> >
+> >  static struct of_device_id serial_pxa_dt_ids[] = {
+> > -   { .compatible = "mrvl,pxa-uart", },
+> > -   { .compatible = "mrvl,mmp-uart", },
+> > +   { .compatible = "marvell,pxa-uart", },
+> > +   { .compatible = "marvell,mmp-uart", },
+> >     {}
+> >  };
+> >  MODULE_DEVICE_TABLE(of, serial_pxa_dt_ids);
+> > --
+> > 1.7.4.1
+> >
+> >
 
-> ---
->  arch/powerpc/include/asm/processor.h |   38 +++++----
->  arch/powerpc/include/asm/reg_booke.h |    8 +-
->  arch/powerpc/kernel/asm-offsets.c    |    2 +-
->  arch/powerpc/kernel/process.c        |   42 +++++-----
->  arch/powerpc/kernel/ptrace.c         |  154 +++++++++++++++++-----------------
->  arch/powerpc/kernel/ptrace32.c       |    2 +-
->  arch/powerpc/kernel/signal_32.c      |    6 +-
->  arch/powerpc/kernel/traps.c          |   35 ++++----
->  8 files changed, 147 insertions(+), 140 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/processor.h b/arch/powerpc/include/asm/processor.h
-> index 47a35b0..9e9aa26 100644
-> --- a/arch/powerpc/include/asm/processor.h
-> +++ b/arch/powerpc/include/asm/processor.h
-> @@ -147,22 +147,7 @@ typedef struct {
->  #define TS_FPR(i) fpr[i][TS_FPROFFSET]
->  #define TS_TRANS_FPR(i) transact_fpr[i][TS_FPROFFSET]
->  
-> -struct thread_struct {
-> -	unsigned long	ksp;		/* Kernel stack pointer */
-> -	unsigned long	ksp_limit;	/* if ksp <= ksp_limit stack overflow */
-> -
-> -#ifdef CONFIG_PPC64
-> -	unsigned long	ksp_vsid;
-> -#endif
-> -	struct pt_regs	*regs;		/* Pointer to saved register state */
-> -	mm_segment_t	fs;		/* for get_fs() validation */
-> -#ifdef CONFIG_BOOKE
-> -	/* BookE base exception scratch space; align on cacheline */
-> -	unsigned long	normsave[8] ____cacheline_aligned;
-> -#endif
-> -#ifdef CONFIG_PPC32
-> -	void		*pgdir;		/* root of page-table tree */
-> -#endif
-> +struct debug_reg {
->  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
->  	/*
->  	 * The following help to manage the use of Debug Control Registers
-> @@ -199,6 +184,27 @@ struct thread_struct {
->  	unsigned long	dvc2;
->  #endif
->  #endif
-> +};
-> +
-> +struct thread_struct {
-> +	unsigned long	ksp;		/* Kernel stack pointer */
-> +	unsigned long	ksp_limit;	/* if ksp <= ksp_limit stack overflow */
-> +
-> +#ifdef CONFIG_PPC64
-> +	unsigned long	ksp_vsid;
-> +#endif
-> +	struct pt_regs	*regs;		/* Pointer to saved register state */
-> +	mm_segment_t	fs;		/* for get_fs() validation */
-> +#ifdef CONFIG_BOOKE
-> +	/* BookE base exception scratch space; align on cacheline */
-> +	unsigned long	normsave[8] ____cacheline_aligned;
-> +#endif
-> +#ifdef CONFIG_PPC32
-> +	void		*pgdir;		/* root of page-table tree */
-> +#endif
-> +	/* Debug Registers */
-> +	struct debug_reg debug;
-> +
->  	/* FP and VSX 0-31 register set */
->  	double		fpr[32][TS_FPRWIDTH] __attribute__((aligned(16)));
->  	struct {
-> diff --git a/arch/powerpc/include/asm/reg_booke.h b/arch/powerpc/include/asm/reg_booke.h
-> index b417de3..455dc89 100644
-> --- a/arch/powerpc/include/asm/reg_booke.h
-> +++ b/arch/powerpc/include/asm/reg_booke.h
-> @@ -381,7 +381,7 @@
->  #define DBCR0_IA34T	0x00004000	/* Instr Addr 3-4 range Toggle */
->  #define DBCR0_FT	0x00000001	/* Freeze Timers on debug event */
->  
-> -#define dbcr_iac_range(task)	((task)->thread.dbcr0)
-> +#define dbcr_iac_range(task)	((task)->thread.debug.dbcr0)
->  #define DBCR_IAC12I	DBCR0_IA12			/* Range Inclusive */
->  #define DBCR_IAC12X	(DBCR0_IA12 | DBCR0_IA12X)	/* Range Exclusive */
->  #define DBCR_IAC12MODE	(DBCR0_IA12 | DBCR0_IA12X)	/* IAC 1-2 Mode Bits */
-> @@ -395,7 +395,7 @@
->  #define DBCR1_DAC1W	0x20000000	/* DAC1 Write Debug Event */
->  #define DBCR1_DAC2W	0x10000000	/* DAC2 Write Debug Event */
->  
-> -#define dbcr_dac(task)	((task)->thread.dbcr1)
-> +#define dbcr_dac(task)	((task)->thread.debug.dbcr1)
->  #define DBCR_DAC1R	DBCR1_DAC1R
->  #define DBCR_DAC1W	DBCR1_DAC1W
->  #define DBCR_DAC2R	DBCR1_DAC2R
-> @@ -441,7 +441,7 @@
->  #define DBCR0_CRET	0x00000020	/* Critical Return Debug Event */
->  #define DBCR0_FT	0x00000001	/* Freeze Timers on debug event */
->  
-> -#define dbcr_dac(task)	((task)->thread.dbcr0)
-> +#define dbcr_dac(task)	((task)->thread.debug.dbcr0)
->  #define DBCR_DAC1R	DBCR0_DAC1R
->  #define DBCR_DAC1W	DBCR0_DAC1W
->  #define DBCR_DAC2R	DBCR0_DAC2R
-> @@ -475,7 +475,7 @@
->  #define DBCR1_IAC34MX	0x000000C0	/* Instr Addr 3-4 range eXclusive */
->  #define DBCR1_IAC34AT	0x00000001	/* Instr Addr 3-4 range Toggle */
->  
-> -#define dbcr_iac_range(task)	((task)->thread.dbcr1)
-> +#define dbcr_iac_range(task)	((task)->thread.debug.dbcr1)
->  #define DBCR_IAC12I	DBCR1_IAC12M	/* Range Inclusive */
->  #define DBCR_IAC12X	DBCR1_IAC12MX	/* Range Exclusive */
->  #define DBCR_IAC12MODE	DBCR1_IAC12MX	/* IAC 1-2 Mode Bits */
-> diff --git a/arch/powerpc/kernel/asm-offsets.c b/arch/powerpc/kernel/asm-offsets.c
-> index c7e8afc..d56727c 100644
-> --- a/arch/powerpc/kernel/asm-offsets.c
-> +++ b/arch/powerpc/kernel/asm-offsets.c
-> @@ -113,7 +113,7 @@ int main(void)
->  #endif /* CONFIG_SPE */
->  #endif /* CONFIG_PPC64 */
->  #if defined(CONFIG_4xx) || defined(CONFIG_BOOKE)
-> -	DEFINE(THREAD_DBCR0, offsetof(struct thread_struct, dbcr0));
-> +	DEFINE(THREAD_DBCR0, offsetof(struct thread_struct, debug.dbcr0));
->  #endif
->  #ifdef CONFIG_KVM_BOOK3S_32_HANDLER
->  	DEFINE(THREAD_KVM_SVCPU, offsetof(struct thread_struct, kvm_shadow_vcpu));
-> diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-> index 19b8733..f8ae5e3 100644
-> --- a/arch/powerpc/kernel/process.c
-> +++ b/arch/powerpc/kernel/process.c
-> @@ -312,28 +312,28 @@ static DEFINE_PER_CPU(struct arch_hw_breakpoint, current_brk);
->   */
->  static void set_debug_reg_defaults(struct thread_struct *thread)
->  {
-> -	thread->iac1 = thread->iac2 = 0;
-> +	thread->debug.iac1 = thread->debug.iac2 = 0;
->  #if CONFIG_PPC_ADV_DEBUG_IACS > 2
-> -	thread->iac3 = thread->iac4 = 0;
-> +	thread->debug.iac3 = thread->debug.iac4 = 0;
->  #endif
-> -	thread->dac1 = thread->dac2 = 0;
-> +	thread->debug.dac1 = thread->debug.dac2 = 0;
->  #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
-> -	thread->dvc1 = thread->dvc2 = 0;
-> +	thread->debug.dvc1 = thread->debug.dvc2 = 0;
->  #endif
-> -	thread->dbcr0 = 0;
-> +	thread->debug.dbcr0 = 0;
->  #ifdef CONFIG_BOOKE
->  	/*
->  	 * Force User/Supervisor bits to b11 (user-only MSR[PR]=1)
->  	 */
-> -	thread->dbcr1 = DBCR1_IAC1US | DBCR1_IAC2US |
-> +	thread->debug.dbcr1 = DBCR1_IAC1US | DBCR1_IAC2US |
->  			DBCR1_IAC3US | DBCR1_IAC4US;
->  	/*
->  	 * Force Data Address Compare User/Supervisor bits to be User-only
->  	 * (0b11 MSR[PR]=1) and set all other bits in DBCR2 register to be 0.
->  	 */
-> -	thread->dbcr2 = DBCR2_DAC1US | DBCR2_DAC2US;
-> +	thread->debug.dbcr2 = DBCR2_DAC1US | DBCR2_DAC2US;
->  #else
-> -	thread->dbcr1 = 0;
-> +	thread->debug.dbcr1 = 0;
->  #endif
->  }
->  
-> @@ -346,22 +346,22 @@ static void prime_debug_regs(struct thread_struct *thread)
->  	 */
->  	mtmsr(mfmsr() & ~MSR_DE);
->  
-> -	mtspr(SPRN_IAC1, thread->iac1);
-> -	mtspr(SPRN_IAC2, thread->iac2);
-> +	mtspr(SPRN_IAC1, thread->debug.iac1);
-> +	mtspr(SPRN_IAC2, thread->debug.iac2);
->  #if CONFIG_PPC_ADV_DEBUG_IACS > 2
-> -	mtspr(SPRN_IAC3, thread->iac3);
-> -	mtspr(SPRN_IAC4, thread->iac4);
-> +	mtspr(SPRN_IAC3, thread->debug.iac3);
-> +	mtspr(SPRN_IAC4, thread->debug.iac4);
->  #endif
-> -	mtspr(SPRN_DAC1, thread->dac1);
-> -	mtspr(SPRN_DAC2, thread->dac2);
-> +	mtspr(SPRN_DAC1, thread->debug.dac1);
-> +	mtspr(SPRN_DAC2, thread->debug.dac2);
->  #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
-> -	mtspr(SPRN_DVC1, thread->dvc1);
-> -	mtspr(SPRN_DVC2, thread->dvc2);
-> +	mtspr(SPRN_DVC1, thread->debug.dvc1);
-> +	mtspr(SPRN_DVC2, thread->debug.dvc2);
->  #endif
-> -	mtspr(SPRN_DBCR0, thread->dbcr0);
-> -	mtspr(SPRN_DBCR1, thread->dbcr1);
-> +	mtspr(SPRN_DBCR0, thread->debug.dbcr0);
-> +	mtspr(SPRN_DBCR1, thread->debug.dbcr1);
->  #ifdef CONFIG_BOOKE
-> -	mtspr(SPRN_DBCR2, thread->dbcr2);
-> +	mtspr(SPRN_DBCR2, thread->debug.dbcr2);
->  #endif
->  }
->  /*
-> @@ -371,8 +371,8 @@ static void prime_debug_regs(struct thread_struct *thread)
->   */
->  static void switch_booke_debug_regs(struct thread_struct *new_thread)
->  {
-> -	if ((current->thread.dbcr0 & DBCR0_IDM)
-> -		|| (new_thread->dbcr0 & DBCR0_IDM))
-> +	if ((current->thread.debug.dbcr0 & DBCR0_IDM)
-> +		|| (new_thread->debug.dbcr0 & DBCR0_IDM))
->  			prime_debug_regs(new_thread);
->  }
->  #else	/* !CONFIG_PPC_ADV_DEBUG_REGS */
-> diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-> index 64f7bd5..9bb0b8a 100644
-> --- a/arch/powerpc/kernel/ptrace.c
-> +++ b/arch/powerpc/kernel/ptrace.c
-> @@ -854,8 +854,8 @@ void user_enable_single_step(struct task_struct *task)
->  
->  	if (regs != NULL) {
->  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
-> -		task->thread.dbcr0 &= ~DBCR0_BT;
-> -		task->thread.dbcr0 |= DBCR0_IDM | DBCR0_IC;
-> +		task->thread.debug.dbcr0 &= ~DBCR0_BT;
-> +		task->thread.debug.dbcr0 |= DBCR0_IDM | DBCR0_IC;
->  		regs->msr |= MSR_DE;
->  #else
->  		regs->msr &= ~MSR_BE;
-> @@ -871,8 +871,8 @@ void user_enable_block_step(struct task_struct *task)
->  
->  	if (regs != NULL) {
->  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
-> -		task->thread.dbcr0 &= ~DBCR0_IC;
-> -		task->thread.dbcr0 = DBCR0_IDM | DBCR0_BT;
-> +		task->thread.debug.dbcr0 &= ~DBCR0_IC;
-> +		task->thread.debug.dbcr0 = DBCR0_IDM | DBCR0_BT;
->  		regs->msr |= MSR_DE;
->  #else
->  		regs->msr &= ~MSR_SE;
-> @@ -894,16 +894,16 @@ void user_disable_single_step(struct task_struct *task)
->  		 * And, after doing so, if all debug flags are off, turn
->  		 * off DBCR0(IDM) and MSR(DE) .... Torez
->  		 */
-> -		task->thread.dbcr0 &= ~DBCR0_IC;
-> +		task->thread.debug.dbcr0 &= ~DBCR0_IC;
->  		/*
->  		 * Test to see if any of the DBCR_ACTIVE_EVENTS bits are set.
->  		 */
-> -		if (!DBCR_ACTIVE_EVENTS(task->thread.dbcr0,
-> -					task->thread.dbcr1)) {
-> +		if (!DBCR_ACTIVE_EVENTS(task->thread.debug.dbcr0,
-> +					task->thread.debug.dbcr1)) {
->  			/*
->  			 * All debug events were off.....
->  			 */
-> -			task->thread.dbcr0 &= ~DBCR0_IDM;
-> +			task->thread.debug.dbcr0 &= ~DBCR0_IDM;
->  			regs->msr &= ~MSR_DE;
->  		}
->  #else
-> @@ -1031,14 +1031,14 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
->  	 */
->  
->  	/* DAC's hold the whole address without any mode flags */
-> -	task->thread.dac1 = data & ~0x3UL;
-> +	task->thread.debug.dac1 = data & ~0x3UL;
->  
-> -	if (task->thread.dac1 == 0) {
-> +	if (task->thread.debug.dac1 == 0) {
->  		dbcr_dac(task) &= ~(DBCR_DAC1R | DBCR_DAC1W);
-> -		if (!DBCR_ACTIVE_EVENTS(task->thread.dbcr0,
-> -					task->thread.dbcr1)) {
-> +		if (!DBCR_ACTIVE_EVENTS(task->thread.debug.dbcr0,
-> +					task->thread.debug.dbcr1)) {
->  			task->thread.regs->msr &= ~MSR_DE;
-> -			task->thread.dbcr0 &= ~DBCR0_IDM;
-> +			task->thread.debug.dbcr0 &= ~DBCR0_IDM;
->  		}
->  		return 0;
->  	}
-> @@ -1050,7 +1050,7 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
->  
->  	/* Set the Internal Debugging flag (IDM bit 1) for the DBCR0
->  	   register */
-> -	task->thread.dbcr0 |= DBCR0_IDM;
-> +	task->thread.debug.dbcr0 |= DBCR0_IDM;
->  
->  	/* Check for write and read flags and set DBCR0
->  	   accordingly */
-> @@ -1080,10 +1080,10 @@ static long set_instruction_bp(struct task_struct *child,
->  			      struct ppc_hw_breakpoint *bp_info)
->  {
->  	int slot;
-> -	int slot1_in_use = ((child->thread.dbcr0 & DBCR0_IAC1) != 0);
-> -	int slot2_in_use = ((child->thread.dbcr0 & DBCR0_IAC2) != 0);
-> -	int slot3_in_use = ((child->thread.dbcr0 & DBCR0_IAC3) != 0);
-> -	int slot4_in_use = ((child->thread.dbcr0 & DBCR0_IAC4) != 0);
-> +	int slot1_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC1) != 0);
-> +	int slot2_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC2) != 0);
-> +	int slot3_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC3) != 0);
-> +	int slot4_in_use = ((child->thread.debug.dbcr0 & DBCR0_IAC4) != 0);
->  
->  	if (dbcr_iac_range(child) & DBCR_IAC12MODE)
->  		slot2_in_use = 1;
-> @@ -1102,9 +1102,9 @@ static long set_instruction_bp(struct task_struct *child,
->  		/* We need a pair of IAC regsisters */
->  		if ((!slot1_in_use) && (!slot2_in_use)) {
->  			slot = 1;
-> -			child->thread.iac1 = bp_info->addr;
-> -			child->thread.iac2 = bp_info->addr2;
-> -			child->thread.dbcr0 |= DBCR0_IAC1;
-> +			child->thread.debug.iac1 = bp_info->addr;
-> +			child->thread.debug.iac2 = bp_info->addr2;
-> +			child->thread.debug.dbcr0 |= DBCR0_IAC1;
->  			if (bp_info->addr_mode ==
->  					PPC_BREAKPOINT_MODE_RANGE_EXCLUSIVE)
->  				dbcr_iac_range(child) |= DBCR_IAC12X;
-> @@ -1113,9 +1113,9 @@ static long set_instruction_bp(struct task_struct *child,
->  #if CONFIG_PPC_ADV_DEBUG_IACS > 2
->  		} else if ((!slot3_in_use) && (!slot4_in_use)) {
->  			slot = 3;
-> -			child->thread.iac3 = bp_info->addr;
-> -			child->thread.iac4 = bp_info->addr2;
-> -			child->thread.dbcr0 |= DBCR0_IAC3;
-> +			child->thread.debug.iac3 = bp_info->addr;
-> +			child->thread.debug.iac4 = bp_info->addr2;
-> +			child->thread.debug.dbcr0 |= DBCR0_IAC3;
->  			if (bp_info->addr_mode ==
->  					PPC_BREAKPOINT_MODE_RANGE_EXCLUSIVE)
->  				dbcr_iac_range(child) |= DBCR_IAC34X;
-> @@ -1135,30 +1135,30 @@ static long set_instruction_bp(struct task_struct *child,
->  			 */
->  			if (slot2_in_use || (slot3_in_use == slot4_in_use)) {
->  				slot = 1;
-> -				child->thread.iac1 = bp_info->addr;
-> -				child->thread.dbcr0 |= DBCR0_IAC1;
-> +				child->thread.debug.iac1 = bp_info->addr;
-> +				child->thread.debug.dbcr0 |= DBCR0_IAC1;
->  				goto out;
->  			}
->  		}
->  		if (!slot2_in_use) {
->  			slot = 2;
-> -			child->thread.iac2 = bp_info->addr;
-> -			child->thread.dbcr0 |= DBCR0_IAC2;
-> +			child->thread.debug.iac2 = bp_info->addr;
-> +			child->thread.debug.dbcr0 |= DBCR0_IAC2;
->  #if CONFIG_PPC_ADV_DEBUG_IACS > 2
->  		} else if (!slot3_in_use) {
->  			slot = 3;
-> -			child->thread.iac3 = bp_info->addr;
-> -			child->thread.dbcr0 |= DBCR0_IAC3;
-> +			child->thread.debug.iac3 = bp_info->addr;
-> +			child->thread.debug.dbcr0 |= DBCR0_IAC3;
->  		} else if (!slot4_in_use) {
->  			slot = 4;
-> -			child->thread.iac4 = bp_info->addr;
-> -			child->thread.dbcr0 |= DBCR0_IAC4;
-> +			child->thread.debug.iac4 = bp_info->addr;
-> +			child->thread.debug.dbcr0 |= DBCR0_IAC4;
->  #endif
->  		} else
->  			return -ENOSPC;
->  	}
->  out:
-> -	child->thread.dbcr0 |= DBCR0_IDM;
-> +	child->thread.debug.dbcr0 |= DBCR0_IDM;
->  	child->thread.regs->msr |= MSR_DE;
->  
->  	return slot;
-> @@ -1168,49 +1168,49 @@ static int del_instruction_bp(struct task_struct *child, int slot)
->  {
->  	switch (slot) {
->  	case 1:
-> -		if ((child->thread.dbcr0 & DBCR0_IAC1) == 0)
-> +		if ((child->thread.debug.dbcr0 & DBCR0_IAC1) == 0)
->  			return -ENOENT;
->  
->  		if (dbcr_iac_range(child) & DBCR_IAC12MODE) {
->  			/* address range - clear slots 1 & 2 */
-> -			child->thread.iac2 = 0;
-> +			child->thread.debug.iac2 = 0;
->  			dbcr_iac_range(child) &= ~DBCR_IAC12MODE;
->  		}
-> -		child->thread.iac1 = 0;
-> -		child->thread.dbcr0 &= ~DBCR0_IAC1;
-> +		child->thread.debug.iac1 = 0;
-> +		child->thread.debug.dbcr0 &= ~DBCR0_IAC1;
->  		break;
->  	case 2:
-> -		if ((child->thread.dbcr0 & DBCR0_IAC2) == 0)
-> +		if ((child->thread.debug.dbcr0 & DBCR0_IAC2) == 0)
->  			return -ENOENT;
->  
->  		if (dbcr_iac_range(child) & DBCR_IAC12MODE)
->  			/* used in a range */
->  			return -EINVAL;
-> -		child->thread.iac2 = 0;
-> -		child->thread.dbcr0 &= ~DBCR0_IAC2;
-> +		child->thread.debug.iac2 = 0;
-> +		child->thread.debug.dbcr0 &= ~DBCR0_IAC2;
->  		break;
->  #if CONFIG_PPC_ADV_DEBUG_IACS > 2
->  	case 3:
-> -		if ((child->thread.dbcr0 & DBCR0_IAC3) == 0)
-> +		if ((child->thread.debug.dbcr0 & DBCR0_IAC3) == 0)
->  			return -ENOENT;
->  
->  		if (dbcr_iac_range(child) & DBCR_IAC34MODE) {
->  			/* address range - clear slots 3 & 4 */
-> -			child->thread.iac4 = 0;
-> +			child->thread.debug.iac4 = 0;
->  			dbcr_iac_range(child) &= ~DBCR_IAC34MODE;
->  		}
-> -		child->thread.iac3 = 0;
-> -		child->thread.dbcr0 &= ~DBCR0_IAC3;
-> +		child->thread.debug.iac3 = 0;
-> +		child->thread.debug.dbcr0 &= ~DBCR0_IAC3;
->  		break;
->  	case 4:
-> -		if ((child->thread.dbcr0 & DBCR0_IAC4) == 0)
-> +		if ((child->thread.debug.dbcr0 & DBCR0_IAC4) == 0)
->  			return -ENOENT;
->  
->  		if (dbcr_iac_range(child) & DBCR_IAC34MODE)
->  			/* Used in a range */
->  			return -EINVAL;
-> -		child->thread.iac4 = 0;
-> -		child->thread.dbcr0 &= ~DBCR0_IAC4;
-> +		child->thread.debug.iac4 = 0;
-> +		child->thread.debug.dbcr0 &= ~DBCR0_IAC4;
->  		break;
->  #endif
->  	default:
-> @@ -1240,18 +1240,18 @@ static int set_dac(struct task_struct *child, struct ppc_hw_breakpoint *bp_info)
->  			dbcr_dac(child) |= DBCR_DAC1R;
->  		if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
->  			dbcr_dac(child) |= DBCR_DAC1W;
-> -		child->thread.dac1 = (unsigned long)bp_info->addr;
-> +		child->thread.debug.dac1 = (unsigned long)bp_info->addr;
->  #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
->  		if (byte_enable) {
-> -			child->thread.dvc1 =
-> +			child->thread.debug.dvc1 =
->  				(unsigned long)bp_info->condition_value;
-> -			child->thread.dbcr2 |=
-> +			child->thread.debug.dbcr2 |=
->  				((byte_enable << DBCR2_DVC1BE_SHIFT) |
->  				 (condition_mode << DBCR2_DVC1M_SHIFT));
->  		}
->  #endif
->  #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
-> -	} else if (child->thread.dbcr2 & DBCR2_DAC12MODE) {
-> +	} else if (child->thread.debug.dbcr2 & DBCR2_DAC12MODE) {
->  		/* Both dac1 and dac2 are part of a range */
->  		return -ENOSPC;
->  #endif
-> @@ -1261,19 +1261,19 @@ static int set_dac(struct task_struct *child, struct ppc_hw_breakpoint *bp_info)
->  			dbcr_dac(child) |= DBCR_DAC2R;
->  		if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
->  			dbcr_dac(child) |= DBCR_DAC2W;
-> -		child->thread.dac2 = (unsigned long)bp_info->addr;
-> +		child->thread.debug.dac2 = (unsigned long)bp_info->addr;
->  #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
->  		if (byte_enable) {
-> -			child->thread.dvc2 =
-> +			child->thread.debug.dvc2 =
->  				(unsigned long)bp_info->condition_value;
-> -			child->thread.dbcr2 |=
-> +			child->thread.debug.dbcr2 |=
->  				((byte_enable << DBCR2_DVC2BE_SHIFT) |
->  				 (condition_mode << DBCR2_DVC2M_SHIFT));
->  		}
->  #endif
->  	} else
->  		return -ENOSPC;
-> -	child->thread.dbcr0 |= DBCR0_IDM;
-> +	child->thread.debug.dbcr0 |= DBCR0_IDM;
->  	child->thread.regs->msr |= MSR_DE;
->  
->  	return slot + 4;
-> @@ -1285,32 +1285,32 @@ static int del_dac(struct task_struct *child, int slot)
->  		if ((dbcr_dac(child) & (DBCR_DAC1R | DBCR_DAC1W)) == 0)
->  			return -ENOENT;
->  
-> -		child->thread.dac1 = 0;
-> +		child->thread.debug.dac1 = 0;
->  		dbcr_dac(child) &= ~(DBCR_DAC1R | DBCR_DAC1W);
->  #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
-> -		if (child->thread.dbcr2 & DBCR2_DAC12MODE) {
-> -			child->thread.dac2 = 0;
-> -			child->thread.dbcr2 &= ~DBCR2_DAC12MODE;
-> +		if (child->thread.debug.dbcr2 & DBCR2_DAC12MODE) {
-> +			child->thread.debug.dac2 = 0;
-> +			child->thread.debug.dbcr2 &= ~DBCR2_DAC12MODE;
->  		}
-> -		child->thread.dbcr2 &= ~(DBCR2_DVC1M | DBCR2_DVC1BE);
-> +		child->thread.debug.dbcr2 &= ~(DBCR2_DVC1M | DBCR2_DVC1BE);
->  #endif
->  #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
-> -		child->thread.dvc1 = 0;
-> +		child->thread.debug.dvc1 = 0;
->  #endif
->  	} else if (slot == 2) {
->  		if ((dbcr_dac(child) & (DBCR_DAC2R | DBCR_DAC2W)) == 0)
->  			return -ENOENT;
->  
->  #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
-> -		if (child->thread.dbcr2 & DBCR2_DAC12MODE)
-> +		if (child->thread.debug.dbcr2 & DBCR2_DAC12MODE)
->  			/* Part of a range */
->  			return -EINVAL;
-> -		child->thread.dbcr2 &= ~(DBCR2_DVC2M | DBCR2_DVC2BE);
-> +		child->thread.debug.dbcr2 &= ~(DBCR2_DVC2M | DBCR2_DVC2BE);
->  #endif
->  #if CONFIG_PPC_ADV_DEBUG_DVCS > 0
-> -		child->thread.dvc2 = 0;
-> +		child->thread.debug.dvc2 = 0;
->  #endif
-> -		child->thread.dac2 = 0;
-> +		child->thread.debug.dac2 = 0;
->  		dbcr_dac(child) &= ~(DBCR_DAC2R | DBCR_DAC2W);
->  	} else
->  		return -EINVAL;
-> @@ -1352,22 +1352,22 @@ static int set_dac_range(struct task_struct *child,
->  			return -EIO;
->  	}
->  
-> -	if (child->thread.dbcr0 &
-> +	if (child->thread.debug.dbcr0 &
->  	    (DBCR0_DAC1R | DBCR0_DAC1W | DBCR0_DAC2R | DBCR0_DAC2W))
->  		return -ENOSPC;
->  
->  	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_READ)
-> -		child->thread.dbcr0 |= (DBCR0_DAC1R | DBCR0_IDM);
-> +		child->thread.debug.dbcr0 |= (DBCR0_DAC1R | DBCR0_IDM);
->  	if (bp_info->trigger_type & PPC_BREAKPOINT_TRIGGER_WRITE)
-> -		child->thread.dbcr0 |= (DBCR0_DAC1W | DBCR0_IDM);
-> -	child->thread.dac1 = bp_info->addr;
-> -	child->thread.dac2 = bp_info->addr2;
-> +		child->thread.debug.dbcr0 |= (DBCR0_DAC1W | DBCR0_IDM);
-> +	child->thread.debug.dac1 = bp_info->addr;
-> +	child->thread.debug.dac2 = bp_info->addr2;
->  	if (mode == PPC_BREAKPOINT_MODE_RANGE_INCLUSIVE)
-> -		child->thread.dbcr2  |= DBCR2_DAC12M;
-> +		child->thread.debug.dbcr2  |= DBCR2_DAC12M;
->  	else if (mode == PPC_BREAKPOINT_MODE_RANGE_EXCLUSIVE)
-> -		child->thread.dbcr2  |= DBCR2_DAC12MX;
-> +		child->thread.debug.dbcr2  |= DBCR2_DAC12MX;
->  	else	/* PPC_BREAKPOINT_MODE_MASK */
-> -		child->thread.dbcr2  |= DBCR2_DAC12MM;
-> +		child->thread.debug.dbcr2  |= DBCR2_DAC12MM;
->  	child->thread.regs->msr |= MSR_DE;
->  
->  	return 5;
-> @@ -1507,9 +1507,9 @@ static long ppc_del_hwdebug(struct task_struct *child, long data)
->  		rc = del_dac(child, (int)data - 4);
->  
->  	if (!rc) {
-> -		if (!DBCR_ACTIVE_EVENTS(child->thread.dbcr0,
-> -					child->thread.dbcr1)) {
-> -			child->thread.dbcr0 &= ~DBCR0_IDM;
-> +		if (!DBCR_ACTIVE_EVENTS(child->thread.debug.dbcr0,
-> +					child->thread.debug.dbcr1)) {
-> +			child->thread.debug.dbcr0 &= ~DBCR0_IDM;
->  			child->thread.regs->msr &= ~MSR_DE;
->  		}
->  	}
-> @@ -1691,7 +1691,7 @@ long arch_ptrace(struct task_struct *child, long request,
->  		if (addr > 0)
->  			break;
->  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
-> -		ret = put_user(child->thread.dac1, datalp);
-> +		ret = put_user(child->thread.debug.dac1, datalp);
->  #else
->  		dabr_fake = ((child->thread.hw_brk.address & (~HW_BRK_TYPE_DABR)) |
->  			     (child->thread.hw_brk.type & HW_BRK_TYPE_DABR));
-> diff --git a/arch/powerpc/kernel/ptrace32.c b/arch/powerpc/kernel/ptrace32.c
-> index f51599e..18c7c65 100644
-> --- a/arch/powerpc/kernel/ptrace32.c
-> +++ b/arch/powerpc/kernel/ptrace32.c
-> @@ -269,7 +269,7 @@ long compat_arch_ptrace(struct task_struct *child, compat_long_t request,
->  		if (addr > 0)
->  			break;
->  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
-> -		ret = put_user(child->thread.dac1, (u32 __user *)data);
-> +		ret = put_user(child->thread.debug.dac1, (u32 __user *)data);
->  #else
->  		dabr_fake = (
->  			(child->thread.hw_brk.address & (~HW_BRK_TYPE_DABR)) |
-> diff --git a/arch/powerpc/kernel/signal_32.c b/arch/powerpc/kernel/signal_32.c
-> index 0f83122..f5be6f1 100644
-> --- a/arch/powerpc/kernel/signal_32.c
-> +++ b/arch/powerpc/kernel/signal_32.c
-> @@ -1300,7 +1300,7 @@ int sys_debug_setcontext(struct ucontext __user *ctx,
->  	unsigned char tmp;
->  	unsigned long new_msr = regs->msr;
->  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
-> -	unsigned long new_dbcr0 = current->thread.dbcr0;
-> +	unsigned long new_dbcr0 = current->thread.debug.dbcr0;
->  #endif
->  
->  	for (i=0; i<ndbg; i++) {
-> @@ -1315,7 +1315,7 @@ int sys_debug_setcontext(struct ucontext __user *ctx,
->  			} else {
->  				new_dbcr0 &= ~DBCR0_IC;
->  				if (!DBCR_ACTIVE_EVENTS(new_dbcr0,
-> -						current->thread.dbcr1)) {
-> +						current->thread.debug.dbcr1)) {
->  					new_msr &= ~MSR_DE;
->  					new_dbcr0 &= ~DBCR0_IDM;
->  				}
-> @@ -1350,7 +1350,7 @@ int sys_debug_setcontext(struct ucontext __user *ctx,
->  	   the user is really doing something wrong. */
->  	regs->msr = new_msr;
->  #ifdef CONFIG_PPC_ADV_DEBUG_REGS
-> -	current->thread.dbcr0 = new_dbcr0;
-> +	current->thread.debug.dbcr0 = new_dbcr0;
->  #endif
->  
->  	if (!access_ok(VERIFY_READ, ctx, sizeof(*ctx))
-> diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
-> index bf33c22..1998685 100644
-> --- a/arch/powerpc/kernel/traps.c
-> +++ b/arch/powerpc/kernel/traps.c
-> @@ -352,8 +352,8 @@ static inline int check_io_access(struct pt_regs *regs)
->  #define REASON_TRAP		ESR_PTR
->  
->  /* single-step stuff */
-> -#define single_stepping(regs)	(current->thread.dbcr0 & DBCR0_IC)
-> -#define clear_single_step(regs)	(current->thread.dbcr0 &= ~DBCR0_IC)
-> +#define single_stepping(regs)	(current->thread.debug.dbcr0 & DBCR0_IC)
-> +#define clear_single_step(regs)	(current->thread.debug.dbcr0 &= ~DBCR0_IC)
->  
->  #else
->  /* On non-4xx, the reason for the machine check or program
-> @@ -1485,7 +1485,7 @@ static void handle_debug(struct pt_regs *regs, unsigned long debug_status)
->  	if (debug_status & (DBSR_DAC1R | DBSR_DAC1W)) {
->  		dbcr_dac(current) &= ~(DBCR_DAC1R | DBCR_DAC1W);
->  #ifdef CONFIG_PPC_ADV_DEBUG_DAC_RANGE
-> -		current->thread.dbcr2 &= ~DBCR2_DAC12MODE;
-> +		current->thread.debug.dbcr2 &= ~DBCR2_DAC12MODE;
->  #endif
->  		do_send_trap(regs, mfspr(SPRN_DAC1), debug_status, TRAP_HWBKPT,
->  			     5);
-> @@ -1496,24 +1496,24 @@ static void handle_debug(struct pt_regs *regs, unsigned long debug_status)
->  			     6);
->  		changed |= 0x01;
->  	}  else if (debug_status & DBSR_IAC1) {
-> -		current->thread.dbcr0 &= ~DBCR0_IAC1;
-> +		current->thread.debug.dbcr0 &= ~DBCR0_IAC1;
->  		dbcr_iac_range(current) &= ~DBCR_IAC12MODE;
->  		do_send_trap(regs, mfspr(SPRN_IAC1), debug_status, TRAP_HWBKPT,
->  			     1);
->  		changed |= 0x01;
->  	}  else if (debug_status & DBSR_IAC2) {
-> -		current->thread.dbcr0 &= ~DBCR0_IAC2;
-> +		current->thread.debug.dbcr0 &= ~DBCR0_IAC2;
->  		do_send_trap(regs, mfspr(SPRN_IAC2), debug_status, TRAP_HWBKPT,
->  			     2);
->  		changed |= 0x01;
->  	}  else if (debug_status & DBSR_IAC3) {
-> -		current->thread.dbcr0 &= ~DBCR0_IAC3;
-> +		current->thread.debug.dbcr0 &= ~DBCR0_IAC3;
->  		dbcr_iac_range(current) &= ~DBCR_IAC34MODE;
->  		do_send_trap(regs, mfspr(SPRN_IAC3), debug_status, TRAP_HWBKPT,
->  			     3);
->  		changed |= 0x01;
->  	}  else if (debug_status & DBSR_IAC4) {
-> -		current->thread.dbcr0 &= ~DBCR0_IAC4;
-> +		current->thread.debug.dbcr0 &= ~DBCR0_IAC4;
->  		do_send_trap(regs, mfspr(SPRN_IAC4), debug_status, TRAP_HWBKPT,
->  			     4);
->  		changed |= 0x01;
-> @@ -1523,19 +1523,20 @@ static void handle_debug(struct pt_regs *regs, unsigned long debug_status)
->  	 * Check all other debug flags and see if that bit needs to be turned
->  	 * back on or not.
->  	 */
-> -	if (DBCR_ACTIVE_EVENTS(current->thread.dbcr0, current->thread.dbcr1))
-> +	if (DBCR_ACTIVE_EVENTS(current->thread.debug.dbcr0,
-> +	    current->thread.debug.dbcr1))
->  		regs->msr |= MSR_DE;
->  	else
->  		/* Make sure the IDM flag is off */
-> -		current->thread.dbcr0 &= ~DBCR0_IDM;
-> +		current->thread.debug.dbcr0 &= ~DBCR0_IDM;
->  
->  	if (changed & 0x01)
-> -		mtspr(SPRN_DBCR0, current->thread.dbcr0);
-> +		mtspr(SPRN_DBCR0, current->thread.debug.dbcr0);
->  }
->  
->  void __kprobes DebugException(struct pt_regs *regs, unsigned long debug_status)
->  {
-> -	current->thread.dbsr = debug_status;
-> +	current->thread.debug.dbsr = debug_status;
->  
->  	/* Hack alert: On BookE, Branch Taken stops on the branch itself, while
->  	 * on server, it stops on the target of the branch. In order to simulate
-> @@ -1552,8 +1553,8 @@ void __kprobes DebugException(struct pt_regs *regs, unsigned long debug_status)
->  
->  		/* Do the single step trick only when coming from userspace */
->  		if (user_mode(regs)) {
-> -			current->thread.dbcr0 &= ~DBCR0_BT;
-> -			current->thread.dbcr0 |= DBCR0_IDM | DBCR0_IC;
-> +			current->thread.debug.dbcr0 &= ~DBCR0_BT;
-> +			current->thread.debug.dbcr0 |= DBCR0_IDM | DBCR0_IC;
->  			regs->msr |= MSR_DE;
->  			return;
->  		}
-> @@ -1581,13 +1582,13 @@ void __kprobes DebugException(struct pt_regs *regs, unsigned long debug_status)
->  			return;
->  
->  		if (user_mode(regs)) {
-> -			current->thread.dbcr0 &= ~DBCR0_IC;
-> -			if (DBCR_ACTIVE_EVENTS(current->thread.dbcr0,
-> -					       current->thread.dbcr1))
-> +			current->thread.debug.dbcr0 &= ~DBCR0_IC;
-> +			if (DBCR_ACTIVE_EVENTS(current->thread.debug.dbcr0,
-> +					       current->thread.debug.dbcr1))
->  				regs->msr |= MSR_DE;
->  			else
->  				/* Make sure the IDM bit is off */
-> -				current->thread.dbcr0 &= ~DBCR0_IDM;
-> +				current->thread.debug.dbcr0 &= ~DBCR0_IDM;
->  		}
->  
->  		_exception(SIGTRAP, regs, TRAP_TRACE, regs->nip);
-> -- 
-> 1.7.0.4
-> 
-> 
+Best Regards,
+Neil Zhang
+
+
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
