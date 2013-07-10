@@ -1,103 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab3GJK2G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:28:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:58217 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753460Ab3GJK2E (ORCPT
+	id S1754101Ab3GJKa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:30:29 -0400
+Received: from forward3h.mail.yandex.net ([84.201.187.148]:42197 "EHLO
+	forward3h.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201Ab3GJKa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:28:04 -0400
-Date: Wed, 10 Jul 2013 11:27:24 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: J Keerthy <j-keerthy@ti.com>, mturquette@linaro.org, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        lgirdwood@gmail.com, t-kristo@ti.com, wim@iguana.be,
-        gg@slimlogic.co.uk, Ian Lartey <ian@slimlogic.co.uk>
-Message-ID: <20130710102724.GC24508@sirena.org.uk>
-References: <1370261333-5121-1-git-send-email-j-keerthy@ti.com>
- <20130603141851.GG3370@gmail.com>
+	Wed, 10 Jul 2013 06:30:28 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] sched: Skip update_rq_clock() in enqueue_task() following right after dequeue_task()
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lMM8JwqTlfDpEaS6"
-Content-Disposition: inline
-In-Reply-To: <20130603141851.GG3370@gmail.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.118
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] mfd: DT bindings for the palmas family MFD
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Message-Id: <41561373452224@web22h.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 10 Jul 2013 14:30:24 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add new flag ENQUEUE_NO_CLK to skip microscopic rq->clock update.
 
---lMM8JwqTlfDpEaS6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This update is less even than in places where skip_clock_update is used.
 
-On Mon, Jun 03, 2013 at 03:18:51PM +0100, Lee Jones wrote:
-> On Mon, 03 Jun 2013, J Keerthy wrote:
-
-> > +	       optional chip specific regulator fields :-
-> > +	       ti,warm-reset - maintain voltage during warm reset(boolean)
-
-> Pushing the boat out a bit here, but is it possible to reuse
-> 'regulator-always-on' for this?
-
-This sounds more like "don't reset over reboot" than "never change the
-enable state".
-
-> > +	       ti,roof-floor - control voltage selection by pin(boolean)
-
-> Is this the same as a GPIO regulator?
-
-> If so, you might not need to add superfluous vendor specific properties.
-
-Lots of regulators have the ability to do things like switch between
-programmable voltages based on GPIOs (enabling a fast change to a known
-voltage) - the roof-floor naming sounds like this.  Usually there's also
-register based element for selecting the voltage.
-
-> See: Documentation/devicetree/bindings/regulator/gpio-regulator.txt
-
-> > +	       ti,sleep-mode - mode to adopt in pmic sleep 0 - off, 1 - auto,
-> > +	       2 - eco, 3 - forced pwm
-
-> I've seen lots of sleep-mode properties, can't we define a generic
-> one?
-
-We should make some of this more standard (at least things like
-voltages) but the whole concept of what sleep mode is is at best fuzzy.
-You typically need different selections for suspend to RAM and suspend
-to disk, plus often the suspend configuration is dynamic depending on
-what the system is doing since suspend is just CPU suspend not system
-suspend and there's also some changes that might happen depending on
-which wake sources are currently available.
-
---lMM8JwqTlfDpEaS6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR3TcEAAoJELSic+t+oim9e6YP/iYgEoPUxH/OaBtTO5O3hYid
-RZ/mIrqY68dIOBRQ50vRmLY1FlauXeQCRKTALvgX6yBlPjAuYhpJBnEIp9hxZqR9
-sZuSG8RBseeKJGxtswfwLWWes2fO9RTfT2a4cqvtc32fmzu0/0bAxKqz/CtHkKIj
-trGvd/RUFjBuZzPPuAZ+L4Cx8vX40NunK9jWsoR02NcH3Z06SOsa7ztYm7ORjvj+
-qdxD+y5/2mNdt211YQbwHSTTPcfyLJdlxrrJTxaUTfHYML+SvWEh//8OFFBKKdua
-s4Rwrf1X56aSalHKW0o1VnSsoDJmadMoc1GeOYsKrUZD5p8zW8BkMMYkjXyGkCSr
-CJ0M79o8IkXUolKoWUiX+S+lelO7I8j0iu0mzssJsC4Tf8+OJwtBAz6waPvuJlrN
-ez+fqsR3yEXSc5UuGRfzZFNYa1+SYcA8Ma4AITR+iwnGc9TOegBCI3NE9XvQZa/i
-VIGE9+M3OVYM+XxrNLjKkw4QD27dRz8/RExH7PgumC1liFU+Nvmainx2mqaomwXN
-Tl0WYaZEQ1Gu9pv7MHb/ywBbD93M7gzgD6jtOzYiGUogSE+HmbeediDblLtGvTbh
-Sfm9JVWRhlt7aLHNsx3YLKHvFmRuhY+48pJrZtNZBBtmcspeBDvXNqCY65eImVbW
-awRLEklN7Az8Ea6n0PYK
-=UQsC
------END PGP SIGNATURE-----
-
---lMM8JwqTlfDpEaS6--
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/sched/core.c  |   12 +++++++-----
+ kernel/sched/sched.h |    1 +
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9d06ad6..0b99057 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -764,7 +764,9 @@ static void set_load_weight(struct task_struct *p)
+ 
+ static void enqueue_task(struct rq *rq, struct task_struct *p, int flags)
+ {
+-	update_rq_clock(rq);
++	if (!(flags & ENQUEUE_NO_CLK))
++		update_rq_clock(rq);
++
+ 	sched_info_queued(p);
+ 	p->sched_class->enqueue_task(rq, p, flags);
+ }
+@@ -3107,7 +3109,7 @@ void set_user_nice(struct task_struct *p, long nice)
+ 	delta = p->prio - old_prio;
+ 
+ 	if (on_rq) {
+-		enqueue_task(rq, p, 0);
++		enqueue_task(rq, p, ENQUEUE_NO_CLK);
+ 		/*
+ 		 * If the task increased its priority or is running and
+ 		 * lowered its priority, then reschedule its CPU:
+@@ -3414,7 +3416,7 @@ recheck:
+ 	if (running)
+ 		p->sched_class->set_curr_task(rq);
+ 	if (on_rq)
+-		enqueue_task(rq, p, 0);
++		enqueue_task(rq, p, ENQUEUE_NO_CLK);
+ 
+ 	check_class_changed(rq, p, prev_class, oldprio);
+ 	task_rq_unlock(rq, p, &flags);
+@@ -6562,7 +6564,7 @@ static void normalize_task(struct rq *rq, struct task_struct *p)
+ 		dequeue_task(rq, p, 0);
+ 	__setscheduler(rq, p, SCHED_NORMAL, 0);
+ 	if (on_rq) {
+-		enqueue_task(rq, p, 0);
++		enqueue_task(rq, p, ENQUEUE_NO_CLK);
+ 		resched_task(rq->curr);
+ 	}
+ 
+@@ -6777,7 +6779,7 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		tsk->sched_class->set_curr_task(rq);
+ 	if (on_rq)
+-		enqueue_task(rq, tsk, 0);
++		enqueue_task(rq, tsk, ENQUEUE_NO_CLK);
+ 
+ 	task_rq_unlock(rq, tsk, &flags);
+ }
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index ef0a7b2..4b8dfd7 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -957,6 +957,7 @@ static const u32 prio_to_wmult[40] = {
+ #else
+ #define ENQUEUE_WAKING		0
+ #endif
++#define ENQUEUE_NO_CLK		8	/* skip update_rq_clock() */
+ 
+ #define DEQUEUE_SLEEP		1
+ 
