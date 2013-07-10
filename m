@@ -1,103 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab3GJMzv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 08:55:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:10903 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab3GJMzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 08:55:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1036,1363158000"; 
-   d="scan'208";a="266389244"
-Date: Wed, 10 Jul 2013 16:01:16 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] i2c-designware: configure *CNT values from ACPI
-Message-ID: <20130710130116.GC4898@intel.com>
-References: <1373283927-21677-1-git-send-email-mika.westerberg@linux.intel.com>
- <1373283927-21677-2-git-send-email-mika.westerberg@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373283927-21677-2-git-send-email-mika.westerberg@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754184Ab3GJM6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 08:58:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24401 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab3GJM6N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 08:58:13 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=mY5AGG0wUPsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=x45eBLDEq7QA:10 a=9eVWKDxGWOiRCeP2OfoA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373461091.7458.55.camel@gandalf.local.home>
+Subject: Re: timer: lockup in run_timer_softirq()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+Date: Wed, 10 Jul 2013 08:58:11 -0400
+In-Reply-To: <20130710124245.GT25631@dyad.programming.kicks-ass.net>
+References: <51DC902F.3070403@oracle.com>
+	 <20130709224706.GA13855@redhat.com> <51DC9379.9050408@oracle.com>
+	 <20130709230316.GB13855@redhat.com> <51DC983F.2010409@oracle.com>
+	 <20130710095210.GD17211@twins.programming.kicks-ass.net>
+	 <1373459254.7458.49.camel@gandalf.local.home>
+	 <20130710124245.GT25631@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 08, 2013 at 02:45:27PM +0300, Mika Westerberg wrote:
-> Some Intel LPSS I2C devices make the *CNT values available from ACPI
-> namespace in similar way than the SDA hold value. These values allow
-> platform/BIOS to specify the most accurate *CNT values for the device
-> driver to use.
-> 
-> So change the ACPI part of the driver to use these values if they exists
-> and otherwise use the default method based solely on the input clock speed.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> ---
-> This applies on top of following patch which is not yet in i2c tree:
-> 
-> http://permalink.gmane.org/gmane.linux.drivers.i2c/15754
-> 
->  drivers/i2c/busses/i2c-designware-platdrv.c | 25 +++++++++++++++++++++----
->  1 file changed, 21 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
-> index c7cfdac..a1488df 100644
-> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
-> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
-> @@ -59,7 +59,6 @@ static int dw_i2c_acpi_configure(struct platform_device *pdev)
->  	struct dw_i2c_dev *dev = platform_get_drvdata(pdev);
->  	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
->  	acpi_handle handle = ACPI_HANDLE(&pdev->dev);
-> -	acpi_string name;
->  
->  	if (!handle)
->  		return -ENODEV;
-> @@ -68,14 +67,32 @@ static int dw_i2c_acpi_configure(struct platform_device *pdev)
->  	dev->tx_fifo_depth = 32;
->  	dev->rx_fifo_depth = 32;
->  
-> -	name = dev->master_cfg & DW_IC_CON_SPEED_FAST ? "FMCN" : "SSCN";
-> -	if (ACPI_SUCCESS(acpi_evaluate_object(handle, name, NULL, &buf))) {
-> +	/* Standard speed configuration */
-> +	if (ACPI_SUCCESS(acpi_evaluate_object(handle, "SSCN", NULL, &buf))) {
->  		union acpi_object *obj = (union acpi_object *)buf.pointer;
->  
->  		if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 3) {
->  			const union acpi_object *objs = obj->package.elements;
->  
-> -			dev->sda_hold_time = (u32)objs[2].integer.value;
-> +			dev->ss_hcnt = (u16)objs[0].integer.value;
-> +			dev->ss_lcnt = (u16)objs[1].integer.value;
-> +			if (!(dev->master_cfg & DW_IC_CON_SPEED_FAST))
-> +				dev->sda_hold_time = (u32)objs[2].integer.value;
-> +		}
-> +
-> +		kfree(buf.pointer);
-> +	}
-> +	/* Fast speed configuration */
-> +	if (ACPI_SUCCESS(acpi_evaluate_object(handle, "FMCN", NULL, &buf))) {
+On Wed, 2013-07-10 at 14:42 +0200, Peter Zijlstra wrote:
 
-There is a problem with the above as it reuses buf from the previous call.
-I'll post a new revision of the patches with this fixed.
+> but but but preempt_disable_notrace() isn't an rcu_read_lock().. You can only
+> do that for rcu_sched.
 
-> +		union acpi_object *obj = (union acpi_object *)buf.pointer;
-> +
-> +		if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 3) {
-> +			const union acpi_object *objs = obj->package.elements;
-> +
-> +			dev->fs_hcnt = (u16)objs[0].integer.value;
-> +			dev->fs_lcnt = (u16)objs[1].integer.value;
-> +			if (dev->master_cfg & DW_IC_CON_SPEED_FAST)
-> +				dev->sda_hold_time = (u32)objs[2].integer.value;
->  		}
->  
->  		kfree(buf.pointer);
-> -- 
-> 1.8.3.2
+Right. And not even rcu_sched is safe, as function tracing can trace
+functions out of rcu scope. That's why I had to add that code to do a
+schedule_on_each_cpu() in ftrace.
+
+> 
+> Anyway, I don't see a nice way out of this mess :/ the entire perf core uses
+> regular RCU and converting all that is going to me a nasty big patch.
+
+There is an easier way. We can add a way to have perf not trace specific
+functions. Now there's already infrastructure there to pick and choose
+what to trace and what not to for individual function tracing users like
+perf. The trick will be how to annotate them.
+
+If there's a way to mark a function without moving it to a section, this
+would be possible. Perhaps similar to EXPORT_SYMBOL(). We could add a
+PERF_NOTRACE().
+
+static void __local_bh_enable()
+{
+	[...]
+}
+PERF_NOTRACE(__local_bh_enable);
+
+And add these to a black list of functions that perf should not trace.
+
+How's that sound?
+
+-- Steve
+
+
