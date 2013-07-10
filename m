@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab3GJBUh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 21:20:37 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:7038 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734Ab3GJBUg convert rfc822-to-8bit (ORCPT
+	id S1753734Ab3GJBYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 21:24:22 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:43386 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab3GJBYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 21:20:36 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1032,1363104000"; 
-   d="scan'208";a="7841101"
-Message-ID: <51DCB6DB.3070209@cn.fujitsu.com>
-Date: Wed, 10 Jul 2013 09:20:27 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Michal Hocko <mhocko@suse.cz>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Support multiple pages allocation
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com> <20130703152824.GB30267@dhcp22.suse.cz> <51D44890.4080003@gmail.com> <51D44AE7.1090701@gmail.com> <20130704042450.GA7132@lge.com> <20130704100044.GB7833@dhcp22.suse.cz> <20130710003142.GA2152@lge.com>
-In-Reply-To: <20130710003142.GA2152@lge.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/10 09:18:47,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/10 09:18:55
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Jul 2013 21:24:21 -0400
+Date: Wed, 10 Jul 2013 11:24:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the ceph tree with Linus' tree
+Message-Id: <20130710112410.f786035ff9202e773aa052c9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__10_Jul_2013_11_24_10_+1000_tPnNSp4hLpCG_7Dw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/7/10 8:31, Joonsoo Kim 写道:
-> On Thu, Jul 04, 2013 at 12:00:44PM +0200, Michal Hocko wrote:
->> On Thu 04-07-13 13:24:50, Joonsoo Kim wrote:
->>> On Thu, Jul 04, 2013 at 12:01:43AM +0800, Zhang Yanfei wrote:
->>>> On 07/03/2013 11:51 PM, Zhang Yanfei wrote:
->>>>> On 07/03/2013 11:28 PM, Michal Hocko wrote:
->>>>>> On Wed 03-07-13 17:34:15, Joonsoo Kim wrote:
->>>>>> [...]
->>>>>>> For one page allocation at once, this patchset makes allocator slower than
->>>>>>> before (-5%). 
->>>>>>
->>>>>> Slowing down the most used path is a no-go. Where does this slow down
->>>>>> come from?
->>>>>
->>>>> I guess, it might be: for one page allocation at once, comparing to the original
->>>>> code, this patch adds two parameters nr_pages and pages and will do extra checks
->>>>> for the parameter nr_pages in the allocation path.
->>>>>
->>>>
->>>> If so, adding a separate path for the multiple allocations seems better.
->>>
->>> Hello, all.
->>>
->>> I modify the code for optimizing one page allocation via likely macro.
->>> I attach a new one at the end of this mail.
->>>
->>> In this case, performance degradation for one page allocation at once is -2.5%.
->>> I guess, remained overhead comes from two added parameters.
->>> Is it unreasonable cost to support this new feature?
->>
->> Which benchmark you are using for this testing?
-> 
-> I use my own module which do allocation repeatedly.
-> 
->>
->>> I think that readahead path is one of the most used path, so this penalty looks
->>> endurable. And after supporting this feature, we can find more use cases.
->>
->> What about page faults? I would oppose that page faults are _much_ more
->> frequent than read ahead so you really cannot slow them down.
-> 
-> You mean page faults for anon?
-> Yes. I also think that it is much more frequent than read ahead.
-> Before futher discussion, I will try to add a separate path
-> for the multiple allocations.
+--Signature=_Wed__10_Jul_2013_11_24_10_+1000_tPnNSp4hLpCG_7Dw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Some days ago, I was thinking that this multiple allocation behaviour
-may be useful for vmalloc allocations. So I think it is worth trying.
+Hi Sage,
 
-> 
-> Thanks.
-> 
->>
->> [...]
->> -- 
->> Michal Hocko
->> SUSE Labs
->>
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Today's linux-next merge of the ceph tree got conflicts in
+drivers/block/rbd.c and net/ceph/osd_client.c because the ceph tree was
+rebased before being sent to Linus and it looks like one patch
+was dropped and several more added.
 
+I just used the upstream version of the cpeh tree for today - please
+clean up.
 
--- 
-Thanks.
-Zhang Yanfei
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__10_Jul_2013_11_24_10_+1000_tPnNSp4hLpCG_7Dw
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR3Le+AAoJEECxmPOUX5FEMnAP/RWupw9nqMIwZYq8ERQkGNwu
+O2F8fnHTJLQGbI1LF7wW7FdFOMuWauAvoJfouJ5M3hGybc9MjueLVcSDjvh0/9a/
+HIpKS3vJ22S2+O7EmjNlctehm3s5KEgS3pEunzyJ+lkr50BqE6v5+fyN+r4ZaaHZ
+msI/vhu2/3A85u1YYgdLiZy/4D7oILgLNtNE7nWncpbPRbWUxF/wbsXDQ2tT9eMN
+wdButTA8Dp7Veg+Px4BscT5SsiE221wRTqHS2uPQ0KYMeWNj6o53VgL5vbmZ3YiX
+J4YAsl28hTJxVQYmIGf6PWG6imlKwm5n19+lLj+XFyagYJPv3nW13TvoqTJyy4uz
+USPRO5cd3rqTdRjoKKZcJgBX5IjcMDG9bw8fLCUCC+IjR8qM/LciNT+eDTx3qW20
+cx3O5PMziTCT5Kxo/aMh+5DYiceoXXb/qeNpL+5xcxGoo/g/FgGWLdo5pkY783G2
+QAjSr7PWfhCcDmc1lckcgiFOvm0SIMsDGyvuJyft/9CQhY0oxl5ppfPXuIS9pJpO
+mZoXJ/e+hRzYf5C31wqCvzQXn1P6JjJNZvRmSsSj00fcY0YYTL/R3xkqjohUNtEr
+PggT7mgvoSO2aqm5EB6oQfFVIVcaFkadzVh+bzVr2kUnz5Pal9Vk3aLXbJcgQl9A
+ZW0Q+J2iln0GV32EgNd/
+=rvz4
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__10_Jul_2013_11_24_10_+1000_tPnNSp4hLpCG_7Dw--
