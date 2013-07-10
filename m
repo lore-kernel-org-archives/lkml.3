@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159Ab3GJSxZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 14:53:25 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:58068 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751300Ab3GJSxY (ORCPT
+	id S1754523Ab3GJSzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 14:55:15 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36324 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754102Ab3GJSzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 14:53:24 -0400
-Message-ID: <51DDADA0.8010706@linaro.org>
-Date: Wed, 10 Jul 2013 19:53:20 +0100
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 10 Jul 2013 14:55:13 -0400
+Date: Wed, 10 Jul 2013 19:52:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Ashish Sangwan <ashishsangwan2@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm@lists.infradead.org" <linux-arm@lists.infradead.org>
+Subject: Re: Seg fault occurs when running statically compiled binary from
+	kernel using call_usermodehelper
+Message-ID: <20130710185200.GX24642@n2100.arm.linux.org.uk>
+References: <CAOiN93mGTu9w9rVNCrbbH1sccXY9VJhaCmg+dS7Rk9mMgKHBaA@mail.gmail.com> <CAOiN93=Nx77RkbNuEJMV617MjV5+GmorF0G3vyLy1SwQcuCs+g@mail.gmail.com> <CAOiN93nH9fyHoz4yrZmJ-OKCy6ogdt5bYartXCBgP5eHMUBPdw@mail.gmail.com> <20130710163410.GA30514@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, lkml <linux-kernel@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH] MAINTAINERS: Add Daniel as maintainer for drivers/clocksource
-References: <51DDA797.4030200@linaro.org> <1373482211.14604.62.camel@joe-AO722>
-In-Reply-To: <1373482211.14604.62.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130710163410.GA30514@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 07:50 PM, Joe Perches wrote:
-> On Wed, 2013-07-10 at 19:27 +0100, John Stultz wrote:
->> I've been doing a bad job at managing the drivers/clocksource directory,
->> so Daniel has been helping with review and patch queuing for the clocksource
->> and clockevent drivers, so add him formally to the MAINTAINERS list.
->>
->> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Signed-off-by: John Stultz <john.stultz@linaro.org>
->> ---
->>    MAINTAINERS | 6 ++++++
->>    1 file changed, 6 insertions(+)
->>
->> diff --git a/MAINTAINERS b/MAINTAINERS
->> index 5be702c..460c996 100644
->> --- a/MAINTAINERS
->> +++ b/MAINTAINERS
->> @@ -7014,6 +7014,12 @@ F:	include/uapi/linux/timex.h
->>    F:	kernel/time/clocksource.c
->>    F:	kernel/time/time*.c
->>    F:	kernel/time/ntp.c
->> +
->> +CLOCKSOURCE, CLOCKEVENT DRIVERS
->> +M:	Daniel Lezcano <daniel.lezcano@linaro.org>
->> +M:	Thomas Gleixner <tglx@linutronix.de>
->> +T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers/core
->> +S:	Supported
->>    F:	drivers/clocksource
-> Sections in alphabetical order please.
-Ah, sorry about that!
-> Does this even apply?
-> It looks more like an interdiff.
-Crud. On the road, so I may be having mail client issues. I'll sort this 
-out before resending.
+On Wed, Jul 10, 2013 at 05:34:11PM +0100, Will Deacon wrote:
+> Ok, I've finally got to the bottom of this, but I'm not sure on the best way
+> to fix it.
 
-> Should the F: include/linux/clocksource.h
-> and F: kernel/time/clocksource.c entries
-> above this be moved too?
+I don't think you have!  You need to look back at the older ARM kernels
+to really get to the bottom of this...
 
-No, I'm still covering the core clocksource code, just passing the 
-drivers off to Daniel.
+> The issue is that libc expects r0 to contain a function pointer
+> to be invoked at exit (rtld_fini), to clean up after a dynamic linker. If
+> this pointer is NULL, then it is ignored. We actually zero this pointer in
+> our ELF_PLAT_INIT macro.
+> 
+> At the same time, we have this strange code called next from the ARM ELF
+> loader:
+> 
+> 	regs->ARM_r2 = stack[2];	/* r2 (envp) */			\
+> 	regs->ARM_r1 = stack[1];	/* r1 (argv) */			\
+> 	regs->ARM_r0 = stack[0];	/* r0 (argc) */			\
+> 
+> which puts argc into r0.
 
-thanks for the quick review!
--john
+You're sort of right.  It dates from the days when we had a.out binaries,
+those required argc, argv and envp in r0/r1/r2 - and ARM kernels carried
+this hack in  binfmt_aout.c to make it work in conjunction with the above:
 
+static int load_aout_binary(struct linux_binprm * bprm)
+{
+...
+        start_thread(regs, ex.a_entry, current->mm->start_stack);
+#ifndef __arm__
+        return 0;
+#else
+        return regs->ARM_r0;
+#endif
+}
+
+ELF, on the other hand, never had that hack - ELF has always been zero
+in r0, and it's always retrieved the argc/argv/envp off the stack.
+
+As the above hack got dropped from the kernel (I don't think it ever made
+it into mainline), I think we should be safe getting rid of this
+initialization of regs->ARM_r0 to r2, leaving them all as zeros.
+
+We should probably also remove the selection of HAVE_AOUT from
+arch/arm/Kconfig too as this definitely won't work with any recent
+kernel (certainly not without binfmt_aout.c hacked in the above way.)
