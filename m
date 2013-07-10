@@ -1,158 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829Ab3GJV6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 17:58:14 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:53194 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab3GJV6M (ORCPT
+	id S1754889Ab3GJWEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 18:04:44 -0400
+Received: from mail-pa0-f67.google.com ([209.85.220.67]:44940 "EHLO
+	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402Ab3GJWEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 17:58:12 -0400
+	Wed, 10 Jul 2013 18:04:42 -0400
+Date: Wed, 10 Jul 2013 15:04:41 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, oliver+list@schinagl.nl, khali@linux-fr.org
+Subject: Re: Driver core and sysfs changes for attribute groups
+Message-ID: <20130710220441.GA21611@roeck-us.net>
+References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
-References: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 10 Jul 2013 15:57:51 -0600
-Message-ID: <CAErSpo6L8W40JBjNfE+bf_HWaW5be0VLdK+YyN3+J+05--ukyA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PCI: introduce PCIe Device Serial NUmber Capability support
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Oliver Neukum <oneukum@suse.de>,
-        Paul Bolle <pebolle@tiscali.nl>, Gu Zheng <guz.fnst@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 9, 2013 at 1:55 AM, Yijing Wang <wangyijing@huawei.com> wrote:
-> Introduce PCIe Ext Capability Device Serial Number support,
-> so we can use the unique device serial number to identify
-> the physical device. During system suspend, if the PCIe
-> device was removed and inserted a new same device, after
-> system resume there is no good way to identify it, maybe
-> Device Serial Number is a good choice if device support.
->
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Cc: Oliver Neukum <oneukum@suse.de>
-> Cc: Paul Bolle <pebolle@tiscali.nl>
-> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/pci/pci.c   |   33 +++++++++++++++++++++++++++++++++
->  drivers/pci/pci.h   |    1 +
->  drivers/pci/probe.c |    3 +++
->  include/linux/pci.h |    4 ++++
->  4 files changed, 41 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> index e37fea6..d08df2b 100644
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -2048,6 +2048,39 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
->  }
->
->  /**
-> + * pci_get_dsn - get device serial number
-> + * @dev: the PCI device
-> + * @sn: saved device serial number
-> + */
-> +void pci_get_dsn(struct pci_dev *dev, u64 *sn)
+On Wed, Jul 10, 2013 at 01:05:08PM -0700, Greg Kroah-Hartman wrote:
+> Hi all,
+> 
+> Guenter and Oliver have been pointing out a few limitations of the
+> driver core's ability to create files properly (i.e. in a way that
+> doesn't race with userspace.)  The driver core allows this, but it
+> doesn't export that ability to drivers very easily, and for binary
+> files, not at all.
+> 
+> So here's a set of 6 patches that I'll be queueing up to go to Linus in
+> time for 3.11 so that people can start using them in their driver
+> subsystems.  It adds some new macros to make using attributes and
+> attribute groups easier, adds binary file capabilities to attribute
+> groups, and finally, lets subsystems (like platform drivers) set a
+> attribute group for when their device is created.
+> 
+> If anyone has any problems with these patches, please let me know.
+> 
+> Guenter, I've tweaked your original patch a bit, changing the name of
+> the function and putting the kernel doc comments in the correct place so
+> the build doesn't complain about it.
+> 
+I like it - thanks a lot for picking that up. I think there are several
+drivers who could and should use the new API call (gpio, infiniband/umad,
+c2port, ptp, scsi/osst, android/timed_output, asus_oled are some examples).
 
-How about:
+For hwmon, I ended up having to handle device creation internally after all.
+Reason is that I also had to set device->type to a new hwmon device type.
+That in turn was necessary to be able to support the hwmon 'name' attribute
+properly (it has to be optional, meaning I could not use class->dev_attrs but
+had to use device_type->groups instead). I hope I can send out a revised
+series of patches soon .. only I'll leave for pto next week and I am bugged
+down with other work right now, so it may have to wait until after I return.
 
-    u64 pci_device_serial_number(struct pci_dev *dev)
+Wonder if it would make sense to support a core driver API call for that
+purpose as well - ie one that not only has the additional groups argument,
+but one that (also ?) accepts a pointer to the the device type. I didn't spend
+any time tracking down potential users, though, so I may be off track here.
 
-"get" suggests reference counting, which isn't happening here.  And
-why pass a pointer to a return value when we can just as easily return
-it directly?
+> I also have a set of follow-on patches, about 50+ big so far, that goes
+> through the kernel and converts different drivers and subsystems to
+> properly use attribute groups, instead of open-coding binary files and
+> attributes.  Those patches will be sent out later, and will be for 3.12
+> as they aren't needed at the moment, this infrastructure changes are
+> needed first.
+> 
+Wow ... you really got into cleanup mode!
 
-> +{
-> +       int pos;
-> +       u32 lo, hi;
-> +
-> +       if (!pci_is_pcie(dev))
-> +               goto out;
-> +
-> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
-> +       if (!pos)
-> +               goto out;
-> +
-> +       pci_read_config_dword(dev, pos + 4, &lo);
-> +       pci_read_config_dword(dev, pos + 8, &hi);
-> +       *sn = ((u64)hi << 32) | lo;
-> +       return;
-> +
-> +out:
-> +       *sn = 0;
-> +       return;
-> +}
-> +EXPORT_SYMBOL(pci_get_dsn);
-> +
-> +void pci_dsn_init(struct pci_dev *dev)
-> +{
-> +       return pci_get_dsn(dev, &dev->sn);
-> +}
-> +
-> +/**
->   * pci_configure_ari - enable or disable ARI forwarding
->   * @dev: the PCI device
->   *
-> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-> index 68678ed..f626006 100644
-> --- a/drivers/pci/pci.h
-> +++ b/drivers/pci/pci.h
-> @@ -202,6 +202,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
->                     struct resource *res, unsigned int reg);
->  int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
->  void pci_configure_ari(struct pci_dev *dev);
-> +void pci_dsn_init(struct pci_dev *dev);
->
->  /**
->   * pci_ari_enabled - query ARI forwarding status
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index 46ada5c..d4c6e7e 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -1322,6 +1322,9 @@ static void pci_init_capabilities(struct pci_dev *dev)
->         /* Power Management */
->         pci_pm_init(dev);
->
-> +       /* Device Serial Number */
-> +       pci_dsn_init(dev);
-
-    dev->sn = pci_serial_number(dev);
-
-Obvious, no comment or wrapper function needed.
-
-> +
->         /* Vital Product Data */
->         pci_vpd_pci22_init(dev);
->
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 0fd1f15..59cd205 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -342,6 +342,7 @@ struct pci_dev {
->         struct list_head msi_list;
->         struct kset *msi_kset;
->  #endif
-> +       u64 sn;         /* device serieal number, 0 if not support */
->         struct pci_vpd *vpd;
->  #ifdef CONFIG_PCI_ATS
->         union {
-> @@ -995,6 +996,9 @@ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
->  ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
->  int pci_vpd_truncate(struct pci_dev *dev, size_t size);
->
-> +/* Device Serial Number */
-> +void pci_get_dsn(struct pci_dev *dev, u64 *sn);
-> +
->  /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
->  resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
->  void pci_bus_assign_resources(const struct pci_bus *bus);
-> --
-> 1.7.1
->
->
+Thanks,
+Guenter
