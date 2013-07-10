@@ -1,100 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab3GJREZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 13:04:25 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:56142 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110Ab3GJREY (ORCPT
+	id S1754595Ab3GJRGD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 13:06:03 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:35782 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab3GJRGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 13:04:24 -0400
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu <Valdis.Kletnieks@vt.edu> 0 pass
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: next-20130709 DMAR issues
-From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1373475702_3260P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 10 Jul 2013 13:01:42 -0400
-Message-ID: <29624.1373475702@turing-police.cc.vt.edu>
+	Wed, 10 Jul 2013 13:06:00 -0400
+Date: Wed, 10 Jul 2013 10:05:53 -0700
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Wei Ni <wni@nvidia.com>
+Cc: khali@linux-fr.org, swarren@wwwdotorg.org, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] hwmon: (lm90) add support to handle IRQ.
+Message-ID: <20130710170552.GA15665@dhcp-172-17-186-34.nvidia.com>
+References: <1373455539-2831-1-git-send-email-wni@nvidia.com>
+ <1373455539-2831-3-git-send-email-wni@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J/dobhs11T7y2rNN"
+Content-Disposition: inline
+In-Reply-To: <1373455539-2831-3-git-send-email-wni@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1373475702_3260P
+
+--J/dobhs11T7y2rNN
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dell Latitude E6530.
+On Wed, Jul 10, 2013 at 07:25:38PM +0800, Wei Ni wrote:
+> When the temperature exceed the limit range value,
+> the driver can handle the interrupt.
+>=20
+> Signed-off-by: Wei Ni <wni@nvidia.com>
+> ---
+>  drivers/hwmon/lm90.c |   77 +++++++++++++++++++++++++++++++++++++++++---=
+------
+>  1 file changed, 64 insertions(+), 13 deletions(-)
+>=20
+> diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+> index 2cb7f8e..88ff362 100644
+> --- a/drivers/hwmon/lm90.c
+> +++ b/drivers/hwmon/lm90.c
+> @@ -89,6 +89,7 @@
+>  #include <linux/err.h>
+>  #include <linux/mutex.h>
+>  #include <linux/sysfs.h>
+> +#include <linux/interrupt.h>
+> =20
+>  /*
+>   * Addresses to scan
+> @@ -179,6 +180,19 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max=
+6659, adt7461, max6680,
+>  #define LM90_HAVE_TEMP3		(1 << 6) /* 3rd temperature sensor	*/
+>  #define LM90_HAVE_BROKEN_ALERT	(1 << 7) /* Broken alert		*/
+> =20
+> +/* LM90 status */
+> +#define LM90_LTHRM	(1 << 0)	/* local THERM limit tripped */
+> +#define LM90_RTHRM	(1 << 1)	/* remote THERM limit tripped */
+> +#define LM90_OPEN	(1 << 2)	/* remote is an open circuit */
+> +#define LM90_RLOW	(1 << 3)	/* remote low temp limit tripped */
+> +#define LM90_RHIGH	(1 << 4)	/* remote high temp limit tripped */
+> +#define LM90_LLOW	(1 << 5)	/* local low temp limit tripped */
+> +#define LM90_LHIGH	(1 << 6)	/* local high temp limit tripped */
+> +#define LM90_BUSY	(1 << 7)	/* ADC is converting */
+> +
+> +#define MAX6696_RLOW	(1 << 3)	/* remote2 low temp limit tripped */
+> +#define MAX6696_RHIGH	(1 << 4)	/* remote2 high temp limit tripped */
 
-Seeing a new error message crop up in next-0709 that wasn't there with 0703.
-Particularly odd, last person to touch dmar.c was on 05/20/2013, so no smoking
-guns there...
+I think this is a nice cleanup, but I'll leave it up to Guenter or Jean
+to decide if they want to have this. One problem with the above is that
+it's not immediately clear which register contains these bits. That's
+often solved by using the register name as prefix but that will in turn
+make the names for these bits rather long:
 
-egrep -i 'dmar|linux ver' /var/log/messages  gives me:
+	#define LM90_REG_R_STATUS_LTHRM	(1 << 0)
+	...
 
-Jul  9 21:47:15 turing-police kernel: [    0.000000] Linux version 3.10.0-next-20130703 (valdis@turing-police.cc.vt.edu) (gcc version 4.8.1 20130612 (Red Hat 4.8.1-2) (GCC) ) #99 SMP PREEMPT Wed Jul 3 17:40:09 EDT 2013
-Jul  9 21:47:15 turing-police kernel: [    0.000000] ACPI: DMAR 00000000cb7fd298 00080 (v01 INTEL      SNB  00000001 INTL 00000001)
-Jul  9 21:47:15 turing-police kernel: [    0.021530] dmar: Host address width 36
-Jul  9 21:47:15 turing-police kernel: [    0.021536] dmar: DRHD base: 0x000000fed90000 flags: 0x1
-Jul  9 21:47:15 turing-police kernel: [    0.021569] dmar: IOMMU 0: reg_base_addr fed90000 ver 1:0 cap c9008020660262 ecap f0105a
-Jul  9 21:47:15 turing-police kernel: [    0.021576] dmar: RMRR base: 0x000000ce761000 end: 0x000000ce780fff
-Jul  9 21:47:15 turing-police kernel: [    1.023235] DMAR: No ATSR found
+Perhaps something like
 
-That's what it usually says.  But now I have:
+	#define LM90_STATUS_LTHRM	(1 << 0)
 
-Jul 10 12:20:19 turing-police kernel: [    0.000000] Linux version 3.10.0-next-20130709 (valdis@turing-police.cc.vt.edu) (gcc version 4.8.1 20130612 (Red Hat 4.8.1-2) (GCC) ) #100 SMP PREEMPT Tue Jul 9 16:01:59 EDT 2013
-Jul 10 12:20:19 turing-police kernel: [    0.000000] ACPI: DMAR 00000000cb7fd298 00080 (v01 INTEL      SNB  00000001 INTL 00000001)
-Jul 10 12:20:19 turing-police kernel: [    0.021453] dmar: Host address width 36
-Jul 10 12:20:19 turing-police kernel: [    0.021456] dmar: DRHD base: 0x000000fed90000 flags: 0x1
-Jul 10 12:20:19 turing-police kernel: [    0.021485] dmar: IOMMU 0: reg_base_addr fed90000 ver 1:0 cap c9008020660262 ecap f0105a
-Jul 10 12:20:19 turing-police kernel: [    0.021487] dmar: RMRR base: 0x000000ce761000 end: 0x000000ce780fff
-Jul 10 12:20:19 turing-police kernel: [    0.021575] dmar: DRHD: handling fault status reg 2
-Jul 10 12:20:19 turing-police kernel: [    0.021583] dmar: DMAR:[DMA Read] Request device [00:1f.2] fault addr ce71d000
-Jul 10 12:20:19 turing-police kernel: [    0.021583] DMAR:[fault reason 06] PTE Read access is not set
-Jul 10 12:20:19 turing-police kernel: [    1.034643] DMAR: No ATSR found
+would be a good compromise?
 
-Now I have 3 extra messages talking about handling a fault status.  lspci says 00:1f.2 is:
+Also if Guenter and Jean agree that this is a nice cleanup, it should
+probably go into a separate patch since it isn't directly related to the
+IRQ support.
 
-00:1f.2 SATA controller: Intel Corporation 7 Series Chipset Family 6-port SATA Controller [AHCI mode] (rev 04)
+>  /*
+>   * Driver data (common to all clients)
+>   */
+> @@ -1423,6 +1437,43 @@ static void lm90_init_client(struct i2c_client *cl=
+ient)
+>  		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+>  }
+> =20
+> +static void lm90_alarm_status(struct i2c_client *client,
+> +			      u8 alarms, u8 alarms_max6696)
+> +{
+> +	if (alarms & (LM90_LLOW | LM90_LHIGH | LM90_LTHRM))
+> +		dev_warn(&client->dev,
+> +			 "temp%d out of range, please check!\n", 1);
+> +	if (alarms & (LM90_RLOW | LM90_RHIGH | LM90_RTHRM))
+> +		dev_warn(&client->dev,
+> +			 "temp%d out of range, please check!\n", 2);
+> +	if (alarms & LM90_OPEN)
+> +		dev_warn(&client->dev,
+> +			 "temp%d diode open, please check!\n", 2);
+> +
+> +	if (alarms_max6696 & (MAX6696_RLOW | MAX6696_RHIGH))
+> +		dev_warn(&client->dev,
+> +			 "temp%d out of range, please check!\n", 3);
+> +}
+> +
+> +static irqreturn_t lm90_irq_thread(int irq, void *dev_id)
+> +{
+> +	struct lm90_data *data =3D dev_id;
+> +	struct i2c_client *client =3D to_i2c_client(data->hwmon_dev->parent);
+> +	u8 alarms, alarms_max6696 =3D 0;
+> +
+> +	lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
+> +
+> +	if (data->kind =3D=3D max6696)
+> +		lm90_read_reg(client, MAX6696_REG_R_STATUS2, &alarms_max6696);
+> +
+> +	if ((alarms & 0x7f) =3D=3D 0 && (alarms_max6696 & 0xfe) =3D=3D 0) {
+> +		return IRQ_NONE;
 
-I found similar in a thread here: http://lkml.indiana.edu/hypermail/linux/kernel/1212.1/02319.html
-which ended with Don Dutile saying:
+For non-MAX6696 chips this will evaluate to:
 
-"DMAR table does not have an entry for this device to this region.
-Once the driver reconfigs/resets the device to stop polling bios-boot
-cmd rings and use (new) OS (dma-mapped) rings, there's a period of time
-during this transition that the hw is babbling away to an area that is no
-longer mapped."
+	if ((alarms & 0x7f) =3D=3D 0 && (0 & 0xfe) =3D=3D 0)
 
-But I'm not convinced this is the same issue - why did it change between 0703 and 0709,
-when I haven't updated the firmware. No relevant .config changes between the two, either.
+and therefore be true for any value of "alarms" and therefore always
+result in IRQ_NONE being returned.
 
-If this doesn't ring any bells, I'l go do the bisect thing...
+One other thing that slightly bugs me about this is that it's a little
+tedious to pass alarms_max6696 around like this. Suppose yet another
+slightly different variant is supported by this chip in the future,
+it's possible it will require another alarms_XYZ variable that has to be
+passed around. I don't have a better suggestion though, so maybe it can
+remain like this and be rewritten at some point should the need arise.
 
---==_Exmh_1373475702_3260P
-Content-Type: application/pgp-signature
+Thierry
+
+--J/dobhs11T7y2rNN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIVAwUBUd2TdgdmEQWDXROgAQLJ9BAAuG3chvJ4sANi5ws/mNJAFiDVowSh047T
-xwt7zI9DmGQSVrDXssHgeVMqSFvi2e4WFx7zLMGwxn3KaEVNAv2h/oHUx8X1z0vX
-A4vCGSEPQ5BMjXkFac3M1wEMsdimAsAuoEQ2qOjhB6eapaW7MmzENc+XSGt5aK9w
-WUW028rUE1KEQuvq8yGgUqPxgP666XTifvdZY1aIMtVxroyTSduxTmLiQ7dUWMDM
-ZGHxGX3zzGlIDw+vsfDmhIXlzlwtWGuQEG6NbeMT1AzVIoRxpg05fKmogzGQr0dE
-K//kgkVx+ec3ugLe8YVQdMbqi/YHyMArrKekEMolyuc11VD3w1hhfvKmLGOnSBKH
-4s0aS3fwDc4zQS/O5IieQA6N/fS5osYeyKkmwhJ6oif0qG0rjMyeKwfB8XZs3FvU
-jvs6u6/Y0n22SastUvsL0XK0heYf4R+jPgLzkpwrVsRgFcJhVLrqNgrJN43Xc8o2
-6RsAMPKx8etrgDMk79n6UuBnLJSmI5IAeu/O8vS9sMq4WtRK2i5fEi4+TXa3fMxA
-C6/FZiR3gtMcHkA5d5krBPOLaWslkyT8DDWWhpvIxrUqLunrth/QokRneaUoyRdA
-tAoUhCzkwSqM7+PDy/05UoFRnUdgESrWSlwtEbvvlLFEkVvfqOMQP4UAjCpgmdxD
-h4fHMWoF13w=
-=ygyP
+iQIcBAEBAgAGBQJR3ZRwAAoJEN0jrNd/PrOhkMcP/0AcwDcLGTcyrfM1aGo8t6+L
+WIYvzldk2EcCbk657ZCmA7BKv1oG3bF4/nkKJ+/TWGYpDFMcg0LtCNkFLkPNxHwg
+wCuzwwaAU4j2t//y2Q//DThYOkE4JbC3LclXwOuAn10LS6L5ll5vL2NybrlMv1/4
+THT+299PB0BPt3WUtzusPKzEb61K3+5PR7P7mEbBAuYSpE0HLl9kBhELYsvJ4m0l
+wrJ765PHdotKOWKjtNdeeuxmfi5HeeGrc26v8EhqXFPBdJjZVoL4d8T8X0KAZ3zA
+AX5tXqo81h9c3H86sqUPgIx1M633uI7wco9lrYt4rSN41IP0PDc2fvVhXiXIsxXm
+8yT4lagR3qwn1WKJwDMb0RdCeQ94bPKNeiWIC7NXxBpD3wDYeTCEp95GzIu8f6ub
+rCekujrx+jloG8FJQHp3JOMsyJ80IfdB4lIapjEOm2SVQsjdb2dpU2dk0X3wEB2m
+ZEga6P3u5dc6/QmnrtqFcpLpxYmbXONTnX7m2Gc0kCok7sP+YMwCfeWEhvNVgeRN
+C9mY8lWRy1ZB96IxcTKj9uV9Oa1u06ON2MugsVAqE2Rwfb2tfWm4P++/rj70dPAB
+ly8XCyM3yuLpDktaDXLUgs/QTPD4puQPDpCK3C7ic0qIsTuj6zCDkFSQQD+yue97
+As+cmvnRgFJVJ6l7H/xU
+=w7Yo
 -----END PGP SIGNATURE-----
 
---==_Exmh_1373475702_3260P--
+--J/dobhs11T7y2rNN--
