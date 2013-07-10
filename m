@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab3GJPlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 11:41:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60773 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753948Ab3GJPlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 11:41:11 -0400
-Date: Wed, 10 Jul 2013 11:40:29 -0400
-From: Dave Jones <davej@redhat.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Yet more softlockups.
-Message-ID: <20130710154029.GB11309@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-References: <20130704015525.GA8486@redhat.com>
- <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
- <20130705143821.GB325@redhat.com>
- <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de>
- <20130705160043.GF325@redhat.com>
- <20130706072408.GA14865@gmail.com>
- <20130710151324.GA11309@redhat.com>
- <20130710152015.GA757@x4>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130710152015.GA757@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754768Ab3GJPmS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 11:42:18 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:44565 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753948Ab3GJPmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 11:42:15 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: Olof Johansson <olof@lixom.net>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 1/5] mmc: dw_mmc: Invalidate cache of current_speed after suspend/resume
+Date: Wed, 10 Jul 2013 08:42:02 -0700
+Message-Id: <1373470926-19314-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1373470926-19314-1-git-send-email-dianders@chromium.org>
+References: <1373411961-23812-1-git-send-email-dianders@chromium.org>
+ <1373470926-19314-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 05:20:15PM +0200, Markus Trippelsdorf wrote:
- > On 2013.07.10 at 11:13 -0400, Dave Jones wrote:
- > > I get this right after booting..
- > > 
- > > [  114.516619] perf samples too long (4262 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
- > 
- > You can disable this warning by:
- > 
- > echo 0 > /proc/sys/kernel/perf_cpu_time_max_percent
+The dw_mmc driver keeps a cache of the current slot->clock in order to
+avoid doing a whole lot of work every time set_ios() is called.
+However, after suspend/resume the register values are bogus so we need
+to ensure that the cached value is invalidated.
 
-Yes, but why is this even being run when I'm not running perf ?
+In many cases we got by without this since the core mmc code fiddles
+with the clock a lot.  If we've got a card present we're probably
+running it at something like 50MHz and the core will temporarily
+switch us to 400kHz after resume.  One case that didn't work (for me)
+is the case of having no card in the slot.  The slot is initted to
+400kHz at boot time.  After suspend/resume the slot thinks it's still
+at 400kHz (due to the cache) so doesn't adjust timing.  When it tries
+to send the command at probe time it just times out and gets left in a
+bad state.
 
-The only NMI source running should be the watchdog.
+Invalidating the current_speed also means that we don't need to call:
+  dw_mci_setup_bus(slot, true);
+...to force an update of the clock in the case when the slot was left
+powered.
 
-	Dave
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+Changes in v3: None
+Changes in v2:
+- Fix typo (some -> come)
+- Use ~0 instead of 0xFFFFFFFF; add comment about value
+
+ drivers/mmc/host/dw_mmc.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index bc3a1bc..7a5ce6a 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -2488,13 +2488,19 @@ int dw_mci_resume(struct dw_mci *host)
+ 		   DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
+ 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
+ 
++	/*
++	 * Invalidate the 'current_speed' value since CLKDIV has come up in
++	 * default state and our cache is incorrect; set to something we know
++	 * slot->clock won't be.
++	 */
++	host->current_speed = ~0;
++
+ 	for (i = 0; i < host->num_slots; i++) {
+ 		struct dw_mci_slot *slot = host->slot[i];
+ 		if (!slot)
+ 			continue;
+ 		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER) {
+ 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+-			dw_mci_setup_bus(slot, true);
+ 		}
+ 
+ 		ret = mmc_resume_host(host->slot[i]->mmc);
+-- 
+1.8.3
 
