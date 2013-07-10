@@ -1,206 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab3GJLz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:55:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49853 "EHLO mga09.intel.com"
+	id S1754525Ab3GJLzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:55:53 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18096 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab3GJLzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:55:25 -0400
+	id S1754469Ab3GJLzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 07:55:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,1035,1363158000"; 
-   d="scan'208";a="363093863"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH net-next 2/3] net: rename ll methods to busy-poll
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Jonathan Corbet <corbet@lwn.net>, e1000-devel@lists.sourceforge.net,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Amir Vadai <amirv@mellanox.com>, Eric Dumazet <erdnetdev@gmail.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 10 Jul 2013 14:55:08 +0300
-Message-ID: <20130710115508.12715.59756.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130710115459.12715.80492.stgit@ladj378.jer.intel.com>
-References: <20130710115459.12715.80492.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="343302186"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH 1/5] pinctrl-baytrail: fix indentations
+Date: Wed, 10 Jul 2013 14:55:36 +0300
+Message-Id: <1373457340-16666-2-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373457340-16666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1373457340-16666-1-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename ndo_ll_poll to ndo_busy_poll.
-Rename sk_mark_ll to sk_mark_napi_id.
-Rename skb_mark_ll to skb_mark_napi_id.
-Correct all useres of these functions.
-Update comments and defines  in include/net/busy_poll.h
+There are two minor issues with indentation in the code. This patch fixes them.
+No functional changes.
 
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
 ---
+ drivers/pinctrl/Kconfig            | 2 +-
+ drivers/pinctrl/pinctrl-baytrail.c | 1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    2 +-
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |    2 +-
- drivers/net/ethernet/mellanox/mlx4/en_rx.c      |    2 +-
- include/net/busy_poll.h                         |   18 ++++++++++--------
- net/ipv4/tcp_ipv4.c                             |    2 +-
- net/ipv4/udp.c                                  |    2 +-
- net/ipv6/tcp_ipv6.c                             |    2 +-
- net/ipv6/udp.c                                  |    2 +-
- 8 files changed, 17 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index 05b6b4e..3353efe 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -990,7 +990,7 @@ reuse_rx:
- 			__vlan_hwaccel_put_tag(skb, htons(ETH_P_8021Q),
- 					       le16_to_cpu(cqe_fp->vlan_tag));
- 
--		skb_mark_ll(skb, &fp->napi);
-+		skb_mark_napi_id(skb, &fp->napi);
- 
- 		if (bnx2x_fp_ll_polling(fp))
- 			netif_receive_skb(skb);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 047ebaa..1967df3 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -1978,7 +1978,7 @@ static int ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
- 		}
- 
- #endif /* IXGBE_FCOE */
--		skb_mark_ll(skb, &q_vector->napi);
-+		skb_mark_napi_id(skb, &q_vector->napi);
- 		ixgbe_rx_skb(q_vector, skb);
- 
- 		/* update budget accounting */
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_rx.c b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-index 90746d3..dec455c 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-@@ -767,7 +767,7 @@ int mlx4_en_process_rx_cq(struct net_device *dev, struct mlx4_en_cq *cq, int bud
- 					       timestamp);
- 		}
- 
--		skb_mark_ll(skb, &cq->napi);
-+		skb_mark_napi_id(skb, &cq->napi);
- 
- 		/* Push it up the stack */
- 		netif_receive_skb(skb);
-diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
-index 76f0340..ab71831 100644
---- a/include/net/busy_poll.h
-+++ b/include/net/busy_poll.h
-@@ -1,5 +1,5 @@
- /*
-- * Low Latency Sockets
-+ * net busy poll support
-  * Copyright(c) 2013 Intel Corporation.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-@@ -21,8 +21,8 @@
-  * e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  */
- 
--#ifndef _LINUX_NET_LL_POLL_H
--#define _LINUX_NET_LL_POLL_H
-+#ifndef _LINUX_NET_BUSY_POLL_H
-+#define _LINUX_NET_BUSY_POLL_H
- 
- #include <linux/netdevice.h>
- #include <net/ip.h>
-@@ -134,13 +134,14 @@ out:
- }
- 
- /* used in the NIC receive handler to mark the skb */
--static inline void skb_mark_ll(struct sk_buff *skb, struct napi_struct *napi)
-+static inline void skb_mark_napi_id(struct sk_buff *skb,
-+				    struct napi_struct *napi)
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 5a8ad51..bc830af 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -61,7 +61,7 @@ config PINCTRL_AT91
+ config PINCTRL_BAYTRAIL
+ 	bool "Intel Baytrail GPIO pin control"
+ 	depends on GPIOLIB && ACPI && X86
+-        select IRQ_DOMAIN
++	select IRQ_DOMAIN
+ 	help
+ 	  driver for memory mapped GPIO functionality on Intel Baytrail
+ 	  platforms. Supports 3 banks with 102, 28 and 44 gpios.
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index e9d735d..fccf72e 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -516,6 +516,7 @@ static int byt_gpio_remove(struct platform_device *pdev)
  {
- 	skb->napi_id = napi->napi_id;
- }
- 
- /* used in the protocol hanlder to propagate the napi_id to the socket */
--static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
-+static inline void sk_mark_napi_id(struct sock *sk, struct sk_buff *skb)
- {
- 	sk->sk_napi_id = skb->napi_id;
- }
-@@ -166,11 +167,12 @@ static inline bool sk_busy_poll(struct sock *sk, int nonblock)
- 	return false;
- }
- 
--static inline void skb_mark_ll(struct sk_buff *skb, struct napi_struct *napi)
-+static inline void skb_mark_napi_id(struct sk_buff *skb,
-+				    struct napi_struct *napi)
- {
- }
- 
--static inline void sk_mark_ll(struct sock *sk, struct sk_buff *skb)
-+static inline void sk_mark_napi_id(struct sock *sk, struct sk_buff *skb)
- {
- }
- 
-@@ -180,4 +182,4 @@ static inline bool busy_loop_timeout(unsigned long end_time)
- }
- 
- #endif /* CONFIG_NET_LL_RX_POLL */
--#endif /* _LINUX_NET_LL_POLL_H */
-+#endif /* _LINUX_NET_BUSY_POLL_H */
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 3a261b4..b299da5 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1994,7 +1994,7 @@ process:
- 	if (sk_filter(sk, skb))
- 		goto discard_and_relse;
- 
--	sk_mark_ll(sk, skb);
-+	sk_mark_napi_id(sk, skb);
- 	skb->dev = NULL;
- 
- 	bh_lock_sock_nested(sk);
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index bcc0ff2..a0d7151 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1713,7 +1713,7 @@ int __udp4_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
- 	if (sk != NULL) {
- 		int ret;
- 
--		sk_mark_ll(sk, skb);
-+		sk_mark_napi_id(sk, skb);
- 		ret = udp_queue_rcv_skb(sk, skb);
- 		sock_put(sk);
- 
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 345bd92..6e1649d 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1499,7 +1499,7 @@ process:
- 	if (sk_filter(sk, skb))
- 		goto discard_and_relse;
- 
--	sk_mark_ll(sk, skb);
-+	sk_mark_napi_id(sk, skb);
- 	skb->dev = NULL;
- 
- 	bh_lock_sock_nested(sk);
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index 40e7203..f405815 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -844,7 +844,7 @@ int __udp6_lib_rcv(struct sk_buff *skb, struct udp_table *udptable,
- 	if (sk != NULL) {
- 		int ret;
- 
--		sk_mark_ll(sk, skb);
-+		sk_mark_napi_id(sk, skb);
- 		ret = udpv6_queue_rcv_skb(sk, skb);
- 		sock_put(sk);
- 
+ 	struct byt_gpio *vg = platform_get_drvdata(pdev);
+ 	int err;
++
+ 	pm_runtime_disable(&pdev->dev);
+ 	err = gpiochip_remove(&vg->chip);
+ 	if (err)
+-- 
+1.8.3.2
 
