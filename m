@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821Ab3GJRZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 13:25:27 -0400
-Received: from sam.nabble.com ([216.139.236.26]:59168 "EHLO sam.nabble.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754712Ab3GJRZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 13:25:26 -0400
-Date: Wed, 10 Jul 2013 10:25:26 -0700 (PDT)
-From: hyphop <email2tema@gmail.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1373477126220-681610.post@n7.nabble.com>
-In-Reply-To: <CA+55aFyscOeZUPaYj_-QYgjADPD59+=c5aMvtpPEnd1tmpUGiA@mail.gmail.com>
-References: <494703114.34959.1360492995961.JavaMail.mail@webmail19> <CA+55aFyscOeZUPaYj_-QYgjADPD59+=c5aMvtpPEnd1tmpUGiA@mail.gmail.com>
-Subject: Re: Abysmal HDD/USB write speed after sleep on a UEFI system
+	id S1754816Ab3GJR1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 13:27:38 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:33502 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754712Ab3GJR1h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 13:27:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130710015936.GC13855@redhat.com>
+References: <51DCBE24.3030406@gmail.com>
+	<20130710015936.GC13855@redhat.com>
+Date: Wed, 10 Jul 2013 13:27:36 -0400
+Message-ID: <CAJzLF9=vWCd2JZTNG0dX4YmLAc=B05x-+bZgU0RaSZCaR5D38g@mail.gmail.com>
+Subject: Re: [REGRESSION] x86 vmalloc issue from recent 3.10.0+ commit
+From: "Michael L. Semon" <mlsemon35@gmail.com>
+To: Dave Jones <davej@redhat.com>, "Michael L. Semon" <mlsemon35@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        d.hatayama@jp.fujitsu.com, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello
-i have same problem. low write speed after system sleep 
+Thanks.  I'll re-review this, anyway, and re-bisect if time allows.
+The kernel/SGI-XFS combo pulled last night did much better in this
+regard.  The problem is down to a different and single backtrace about
+vmalloc, and the PC is controllable now.  The old git was moved to a
+different folder, though, in case it's still needed.
 
-kernel 3.9.9
+Michael
 
-i can see it HDD SATA & USB disks to
-
-i try to make another test  
-
-before sleep i make  file /tmp/test ( /tmp mounted as tmpfs size=8G, i have
-16G memory in my system )
-
-dd if=/dev/zero bs=1M count=1000 of=/tmp/test 
- ~ 3,2 GB/s
-cryptsetup luksFormat /tmp/test
-cryptsetup luksOpen /tmp/test test
-
-dd if=/dev/zero bs=1M count=1000 of=/dev/mapper/test
- ~ 465 GB/s good speed 
-
-after sleep
-
-dd if=/dev/zero bs=1M count=1000 of=/dev/mapper/test
- ~ 5MB/s ooops (((( very slow
-
-but if write directly in /tmp i can see 
-
-dd if=/dev/zero bs=1M count=1000 of=/tmp/test2
- ~ 3,2 GB/s
-
-I can see this is not hardware problem (NOT SATA OR USB) i think is kernel
-BUG, i i dont have this problem on previous kernel 3.4
-
-Best regards, 
-
-Tema
-
-
-
-
-
-
---
-View this message in context: http://linux-kernel.2935.n7.nabble.com/Abysmal-HDD-USB-write-speed-after-sleep-on-a-UEFI-system-tp598586p681610.html
-Sent from the Linux Kernel mailing list archive at Nabble.com.
+On Tue, Jul 9, 2013 at 9:59 PM, Dave Jones <davej@redhat.com> wrote:
+> On Tue, Jul 09, 2013 at 09:51:32PM -0400, Michael L. Semon wrote:
+>
+>  > kernel: [ 2580.395592] vmap allocation for size 20480 failed: use vmalloc=<size> to increase size.
+>  > kernel: [ 2580.395761] vmalloc: allocation failure: 16384 bytes
+>
+> I was seeing a lot of these recently too.
+> (Though I also saw memory corruption afterwards possibly caused by
+>  a broken fallback path somewhere when that vmalloc fails)
+>
+> http://comments.gmane.org/gmane.linux.kernel.mm/102895
+>
+>         Dave
+>
