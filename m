@@ -1,120 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab3GJGMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 02:12:14 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.246]:27592 "EHLO
-	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752111Ab3GJGMM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 02:12:12 -0400
-Message-ID: <51DCFB24.4080107@atmel.com>
-Date: Wed, 10 Jul 2013 14:11:48 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753057Ab3GJGM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 02:12:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2821 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750710Ab3GJGM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 02:12:58 -0400
+Date: Wed, 10 Jul 2013 09:14:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Jason Wang <jasowang@redhat.com>, Cong Wang <amwang@redhat.com>,
+        Amos Kong <akong@redhat.com>, Dave Jones <davej@redhat.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio-net: put virtio net header inline with data
+Message-ID: <20130710061407.GC19759@redhat.com>
+References: <20130708101259.GA16074@redhat.com>
+ <871u78eavc.fsf@rustcorp.com.au>
+ <20130709051824.GA3234@redhat.com>
+ <87vc4kcfzg.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <alsa-devel@alsa-project.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v4 1/7] sound: sam9x5_wm8731: machine driver for at91sam9x5
- wm8731 boards
-References: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com> <1373379933-32749-1-git-send-email-richard.genoud@gmail.com> <1373379933-32749-2-git-send-email-richard.genoud@gmail.com>
-In-Reply-To: <1373379933-32749-2-git-send-email-richard.genoud@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87vc4kcfzg.fsf@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+On Tue, Jul 09, 2013 at 05:38:51PM +0930, Rusty Russell wrote:
+> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> > On Tue, Jul 09, 2013 at 11:46:23AM +0930, Rusty Russell wrote:
+> >> "Michael S. Tsirkin" <mst@redhat.com> writes:
+> >> > For small packets we can simplify xmit processing
+> >> > by linearizing buffers with the header:
+> >> > most packets seem to have enough head room
+> >> > we can use for this purpose.
+> >> > Since existing hypervisors require that header
+> >> > is the first s/g element, we need a feature bit
+> >> > for this.
+> >> >
+> >> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> >> > ---
+> >> >
+> >> > Note: this needs to be applied on top of patch
+> >> > defining VIRTIO_F_ANY_LAYOUT - bit to be
+> >> > selected by Rusty.
+> >> >
+> >> > The following patch should work for any definition of
+> >> > VIRTIO_F_ANY_LAYOUT - I used bit 31 for testing.
+> >> > Rusty, could you please pick a valid bit for VIRTIO_F_ANY_LAYOUT
+> >> > and squeeze this patch into 3.11?
+> >> 
+> >> Sorry, it's too late.
+> >> 
+> >> First, I've been a bit lax in sending patches via DaveM, and this is
+> >> definitely his territory (ie. more net than virtio).
+> >
+> > Let's do this: I'll send a patch series, you ack and we see
+> > what happens?
+> 
+> If you convince DaveM, I won't object :)
+> 
+> >> Secondly, it needs baking and testing time.
+> >> 
+> >> Cheers,
+> >> Rusty.
+> >
+> > I did some testing on this.  But proper testing just isn't happening out
+> > of tree.
+> 
+> But it will get into linux-next for the *next* merge window.
+> 
+> Cheers,
+> Rusty.
 
-On 7/9/2013 22:25, Richard Genoud wrote:
-[snip]
+Okay. Can you put it on virtio-next then?
+I don't see it there ...
 
-> +#include <linux/module.h>
-> +#include <linux/moduleparam.h>
-> +#include <linux/kernel.h>
-> +#include <linux/clk.h>
-> +#include <linux/timer.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/i2c.h>
-> +
-> +#include <linux/atmel-ssc.h>
-> +
-> +#include <sound/core.h>
-> +#include <sound/pcm.h>
-> +#include <sound/pcm_params.h>
-> +#include <sound/soc.h>
-> +
-> +#include <asm/mach-types.h>
-> +#include <mach/hardware.h>
-> +#include <mach/gpio.h>
-> +
-> +#include "../codecs/wm8731.h"
-> +#include "atmel-pcm.h"
-> +#include "atmel_ssc_dai.h"
-
-I think some of the header file include is not needed. I keep them as 
-simple as following:
----8>---
-#include <linux/clk.h>
-#include <linux/module.h>
-#include <linux/of.h>
-#include <linux/of_device.h>
-#include <linux/pinctrl/consumer.h>
-
-#include <sound/soc.h>
-
-#include "../codecs/wm8731.h"
-#include "atmel_ssc_dai.h"
----<8---
-
-> +#define MCLK_RATE 12288000
-> +
-> +#define DRV_NAME "sam9x5-snd-wm8731"
-> +
-> +/*
-> + * Authorized rates are:
-> + * Rate = MCLK_RATE / (n * 2)
-> + * Where n is in [1..4095]
-> + * (cf register SSC_CMR)
-> + */
-> +static unsigned int rates[] = {
-> +	8000,
-> +	16000,
-> +	32000,
-> +	48000,
-> +	64000,
-> +	96000,
-> +};
-
-This is decided by the codec, while not ssc when ssc in slave mode.
-
-> +static struct snd_pcm_hw_constraint_list hw_rates = {
-> +	.count = ARRAY_SIZE(rates),
-> +	.list = rates,
-> +};
-> +
-
-[snip]
-
-> +
-> +	at91sam9x5ek_dai.dai_fmt = snd_soc_of_parse_daifmt(np, "atmel,");
-
-We can put this into at91sam9x5ek_dai directly, not need to parse it 
-then. example as following:
----8>---
-.dai_fmt = SND_SOC_DAIFMT_I2S
-                 | SND_SOC_DAIFMT_NB_NF
-                 | SND_SOC_DAIFMT_CBM_CFM,
----<8---
-
-Best Regards,
-Bo Shen
-
+-- 
+MST
