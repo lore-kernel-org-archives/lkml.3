@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755149Ab3GJTVH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 15:21:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56886 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941Ab3GJTUD (ORCPT
+	id S1755168Ab3GJTVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 15:21:34 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44413 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754977Ab3GJTVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 15:20:03 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <ak@linux.intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <peterz@infradead.org>, zheng.z.yan@intel.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 19/23] perf stat: Fix per-socket output bug for uncore events
-Date: Wed, 10 Jul 2013 16:19:19 -0300
-Message-Id: <1373483963-19277-20-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1373483963-19277-1-git-send-email-acme@infradead.org>
-References: <1373483963-19277-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by merlin.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 10 Jul 2013 15:21:31 -0400
+Date: Wed, 10 Jul 2013 12:21:30 -0700 (PDT)
+Message-Id: <20130710.122130.1380851842199973691.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] IDE
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
 
-This patch fixes a problem reported by Andi Kleen on perf
-stat when measuring uncore events:
+Just a few small things:
 
- # perf stat --per-socket -e uncore_pcu/event=0x0/ -I1000  -a sleep 2
+1) module_platform_driver_probe() conversions from Jingoo Han.
 
-It would not report counts for the second socket. That was due to a
-cpu mapping bug in print_aggr().
+2) module_pci_driver() conversion from Libo Chen.
 
-This patch also fixes the socket numbering bug for <not counted>
-events.
+3) PIO size calculation fix from Steven J. Hill.
 
-Reported-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Tested-by: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: zheng.z.yan@intel.com
-Link: http://lkml.kernel.org/r/20130705170645.GA32519@quad
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-stat.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+Please pull, thanks a lot!
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 95768af..352fbd7 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -924,7 +924,7 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- static void print_aggr(char *prefix)
- {
- 	struct perf_evsel *counter;
--	int cpu, s, s2, id, nr;
-+	int cpu, cpu2, s, s2, id, nr;
- 	u64 ena, run, val;
- 
- 	if (!(aggr_map || aggr_get_id))
-@@ -936,7 +936,8 @@ static void print_aggr(char *prefix)
- 			val = ena = run = 0;
- 			nr = 0;
- 			for (cpu = 0; cpu < perf_evsel__nr_cpus(counter); cpu++) {
--				s2 = aggr_get_id(evsel_list->cpus, cpu);
-+				cpu2 = perf_evsel__cpus(counter)->map[cpu];
-+				s2 = aggr_get_id(evsel_list->cpus, cpu2);
- 				if (s2 != id)
- 					continue;
- 				val += counter->counts->cpu[cpu].val;
-@@ -948,7 +949,7 @@ static void print_aggr(char *prefix)
- 				fprintf(output, "%s", prefix);
- 
- 			if (run == 0 || ena == 0) {
--				aggr_printout(counter, cpu, nr);
-+				aggr_printout(counter, id, nr);
- 
- 				fprintf(output, "%*s%s%*s",
- 					csv_output ? 0 : 18,
--- 
-1.8.1.4
+The following changes since commit 47b3bc907328db968bc9b43c41f48f8d1e140750:
 
+  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip (2013-03-07 15:57:38 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/ide.git master
+
+for you to fetch changes up to 1581208b2f0643eebfa7a3fbe5bad831c0bb7f0e:
+
+  ide: Fix IDE PIO size calculation (2013-07-10 12:09:10 -0700)
+
+----------------------------------------------------------------
+Jingoo Han (3):
+      ide: tx4938ide: use module_platform_driver_probe()
+      ide: tx4939ide: use module_platform_driver_probe()
+      ide: gayle: use module_platform_driver_probe()
+
+Libo Chen (1):
+      drivers/ide/delkin_cb: Convert to module_pci_driver
+
+Steven J. Hill (1):
+      ide: Fix IDE PIO size calculation
+
+ drivers/ide/delkin_cb.c    | 13 +------------
+ drivers/ide/gayle.c        | 15 +--------------
+ drivers/ide/ide-taskfile.c |  5 ++---
+ drivers/ide/tx4938ide.c    | 13 +------------
+ drivers/ide/tx4939ide.c    | 13 +------------
+ 5 files changed, 6 insertions(+), 53 deletions(-)
