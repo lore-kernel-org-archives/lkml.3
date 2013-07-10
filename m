@@ -1,40 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab3GJJzJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 05:55:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44698 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab3GJJzF (ORCPT
+	id S1754168Ab3GJJzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 05:55:38 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:51695 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753999Ab3GJJzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 05:55:05 -0400
-Date: Wed, 10 Jul 2013 11:54:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Subject: Re: timer: lockup in run_timer_softirq()
-Message-ID: <20130710095459.GE17211@twins.programming.kicks-ass.net>
-References: <51DC902F.3070403@oracle.com>
+	Wed, 10 Jul 2013 05:55:36 -0400
+X-AuditID: 9c93016f-b7bdeae000000e34-41-51dd2f9667d9
+Date: Wed, 10 Jul 2013 18:55:33 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Support multiple pages allocation
+Message-ID: <20130710095533.GA5557@lge.com>
+References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130703152824.GB30267@dhcp22.suse.cz>
+ <51D44890.4080003@gmail.com>
+ <51D44AE7.1090701@gmail.com>
+ <20130704042450.GA7132@lge.com>
+ <20130704100044.GB7833@dhcp22.suse.cz>
+ <20130710003142.GA2152@lge.com>
+ <20130710091703.GD4437@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51DC902F.3070403@oracle.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130710091703.GD4437@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 06:35:27PM -0400, Sasha Levin wrote:
-> While going through the NMI dump, I noticed that it's very incomplete, and full of:
+On Wed, Jul 10, 2013 at 11:17:03AM +0200, Michal Hocko wrote:
+> On Wed 10-07-13 09:31:42, Joonsoo Kim wrote:
+> > On Thu, Jul 04, 2013 at 12:00:44PM +0200, Michal Hocko wrote:
+> > > On Thu 04-07-13 13:24:50, Joonsoo Kim wrote:
+> > > > On Thu, Jul 04, 2013 at 12:01:43AM +0800, Zhang Yanfei wrote:
+> > > > > On 07/03/2013 11:51 PM, Zhang Yanfei wrote:
+> > > > > > On 07/03/2013 11:28 PM, Michal Hocko wrote:
+> > > > > >> On Wed 03-07-13 17:34:15, Joonsoo Kim wrote:
+> > > > > >> [...]
+> > > > > >>> For one page allocation at once, this patchset makes allocator slower than
+> > > > > >>> before (-5%). 
+> > > > > >>
+> > > > > >> Slowing down the most used path is a no-go. Where does this slow down
+> > > > > >> come from?
+> > > > > > 
+> > > > > > I guess, it might be: for one page allocation at once, comparing to the original
+> > > > > > code, this patch adds two parameters nr_pages and pages and will do extra checks
+> > > > > > for the parameter nr_pages in the allocation path.
+> > > > > > 
+> > > > > 
+> > > > > If so, adding a separate path for the multiple allocations seems better.
+> > > > 
+> > > > Hello, all.
+> > > > 
+> > > > I modify the code for optimizing one page allocation via likely macro.
+> > > > I attach a new one at the end of this mail.
+> > > > 
+> > > > In this case, performance degradation for one page allocation at once is -2.5%.
+> > > > I guess, remained overhead comes from two added parameters.
+> > > > Is it unreasonable cost to support this new feature?
+> > > 
+> > > Which benchmark you are using for this testing?
+> > 
+> > I use my own module which do allocation repeatedly.
 > 
-> [ 2536.500130] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler)
-> took too long to run: 697182.008 msecs
+> I am not sure this microbenchmark will tell us much. Allocations are
+> usually not short lived so the longer time might get amortized.
+> If you want to use the multi page allocation for read ahead then try to
+> model your numbers on read-ahead workloads.
 
-Now I would actually expect arch_trigger_all_cpu_backtrace_handler() to
-issue this warning, that said, ~700 seconds is a bit long, I'm fairly
-sure it didn't actually take that long, you'd have noticed your vm being
-'away' for 10+ minutes I'd think, no?
+Of couse. In later, I will get the result on read-ahead workloads or
+vmalloc workload which is recommended by Zhang.
 
+I think, without this microbenchmark, we cannot know this modification's
+performance effect to single page allocation accurately. Because the impact
+to single page allocation is relatively small and it is easily hidden by
+other factors.
 
-There's something entirely fishy with that stuff, let me to stare at it.
+Now, I tried several implementation for this feature and found that
+separate path also makes single page allocation slower (-1.0~-1.5%).
+I didn't find any reason except the fact that
+text size of page_alloc.o is 1500 bytes more than before.
 
+Before
+   text    data     bss     dec     hex filename
+  34466    1389     640   36495    8e8f mm/page_alloc.o
+
+sep
+   text    data     bss     dec     hex filename
+  36074    1413     640   38127    94ef mm/page_alloc.o
+
+Not yet posted implementation which pass two more arguments to
+__alloc_pages_nodemask() also makes single page allocation
+(-1.0~-1.5%) slower. So in later, I will work with this implementation,
+not separate path implementation.
+
+Thanks for comment!
+
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
