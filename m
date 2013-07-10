@@ -1,62 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755033Ab3GJU1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 16:27:33 -0400
-Received: from 1wt.eu ([62.212.114.60]:34517 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754391Ab3GJU1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 16:27:32 -0400
-Date: Wed, 10 Jul 2013 22:27:29 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: "Rich, Jason" <jason.rich@tekcomms.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Panic at _blk_run_queue on 2.6.32
-Message-ID: <20130710202729.GA18877@1wt.eu>
-References: <636295BFF4A001418A00F46569A2CD2B161CE88B@US-PLNO-EXM01-P.global.tektronix.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <636295BFF4A001418A00F46569A2CD2B161CE88B@US-PLNO-EXM01-P.global.tektronix.net>
-User-Agent: Mutt/1.4.2.3i
+	id S1755183Ab3GJU1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 16:27:53 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:35725 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754862Ab3GJU1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 16:27:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <51DCCE3E.9090503@huawei.com>
+References: <1373356564-21668-1-git-send-email-wangyijing@huawei.com>
+ <CAErSpo51x7Q6cFnJ-8RfmikDh3FtCWyjy9tYouH=sjkXdNPo7Q@mail.gmail.com> <51DCCE3E.9090503@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 10 Jul 2013 14:27:27 -0600
+Message-ID: <CAErSpo6G5JUEJu=++gAg9dkHu8Jrbv9NKALwDp4eGKosXg6cbg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] PCI,pciehp: avoid add a device already exist during pciehp_resume
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
+        Oliver Neukum <oneukum@suse.de>, Gu Zheng <guz.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On Tue, Jul 9, 2013 at 9:00 PM, Yijing Wang <wangyijing@huawei.com> wrote:
+> Hi Bjorn,
+>    Thanks for your review and comments!
+>
+>>> We can use PCIe Device Serial Number to identify the device if
+>>> device support DSN.
+>>
+>> I think I like the idea of this, especially because the Microsoft PCI
+>> Hardware Compliance Test apparently requires DSN for hot-pluggable
+>> PCIe devices [1], so it should be pretty universal.
+>>
+>> [1] http://www.techtalkz.com/microsoft-device-drivers-dtm/341362-dtm-pcihct-test-violates-pci-express-base-specification-revision-1-a.html
+>>
+>>> currently:
+>>> 1. slot is empty before suspend, insert card during suspend.
+>>>         In this case, is safe, pciehp will add device by check adapter
+>>> status register in pciehp_resume.
+>>
+>> Your patch doesn't change anything here.
+>
+> Yes, I only to make some changes for case 3/4.
+>
+>>
+>>> 2. slot is non empty before suspend, remove card during suspend.
+>>>         Also be safe, pciehp will remove device by check adapter
+>>> status register in pciehp_resume.
+>>
+>> Your patch doesn't change anything here.  (But I think the driver
+>> .remove() method will try to poke at the non-existent device; see
+>> below.)
+>
+> I'm not sure the result of driver .remove() method to poke at the non-existent device.
+> If driver .remove() method cannot detect the real device, remove action will be block ?
+> If the slot support surprise hot remove, this action maybe safe. right?
 
-On Tue, Jul 09, 2013 at 05:42:29PM +0000, Rich, Jason wrote:
-> Greetings,
-> I've recently encountered an issue where multiple hosts are failing to boot up about 1/5 of the time.  So far I have confirmed this
-> issue on three seperate host machines.  The issue presents itself after updating 2.6.32.39 to patch 50 and patch 61.
-> Both patch levels result in the failure described below.  Since this occurs on multiple hosts, I feel I can safely rule out hardware.
+If there's no device, config space accesses performed by .remove()
+will fail (reads will return -1 data or error; writes will be
+dropped).  MMIO or I/O port accesses may fail with machine checks or
+similar bad things.  But I don't see a way around that except by
+fixing drivers as we encounter issues like that.
 
-First, thank you for your very detailed report. Do you think you could narrow
-this down to a specific kernel version ? Given that there are exactly 10
-versions between .39 and .50, I think that a version-level bisect would take
-3 or 4 builds (so probably around 20 reboots).
+Since you're not changing anything here, I don't think we should worry
+about it for now.
 
-It would help us spot the faulty patch. Right now, there are 546 patches
-between .39 and .50 so it's quite hard to find the culprit, even with your
-full trace. That does not mean we'll immediately spot it, maybe a deeper
-bisect will be needed, but it should be easier.
+> If the slot does not support surprise hot remove, but the device was already removed,
+> we seem to have no other way to clean the stale data related to the old device.
+>
+> Now if we check adapter status in slot and found adapter is non existent, pciehp resume
+> call pciehp_disable_slot() , in pciehp_disable_slot() function, we will check latch status,
+> I guess this case latch is open(because slot is empty), this action will abort.
+> But I have no platform to test it.
+>
+>>
+>>> 3. slot is non empty before suspend, remove card during suspend
+>>> and insert a new card.
+>>>         Now pciehp just call pciehp_enable_slot() roughly. We should
+>>> remove the old card firstly, then add the new card.
+>>
+>> With your patch, I think we'll call the old driver's .remove() method
+>> on the new device.  This seems bad; see below.
+>
+> Ah, this is issue.
+> What about power off slot first, then call the old driver's remove() method
+> will not touch the new physical device. After the old driver's remove() cleanup,
+> we call pciehp_enable_slot() to power on and enable the new device.
 
-> It is also of note that I have not seen this behavior on the 3.4.26 kernel, or on any of my 32bit hosts.  
+Turning off power to the slot seems like a reasonable approach.  Then
+we can run the old .remove() method in basically the same way we would
+in case 2.
 
-This is a good news, because we're probably missing one fix from a more
-recent version that addressed a similar regression and that we might
-backport into 2.6.32.62.
+>> With your patch, if we remove and reinsert the same device while
+>> suspended, we do nothing because the DSN didn't change.  Previously we
+>> called pciehp_enable_slot().  I don't know if we need to do anything
+>> here or not.
+>
+> Mainly to avoid the redundant device add, the same like the changes for case 4
 
-> That said, I have to support this software release (which runs on the 2.6 kernel) for at least another two years.  
+I don't know whether it's redundant or not.  Obviously if we remove
+and reinsert a device, we lose *all* state that was in the device.  If
+we lose everything even if the card stayed inserted the whole time we
+were suspended, we must already deal with that and the "add" would be
+redundant.  But if the state of the card is different if it got pulled
+and reinserted, the "add" would be necessary.
 
-Be careful on this point, 2.6.32 is planned for EOL next year :
+>>> 4. slot is non empty before suspend, no action during suspend.
+>>>         We should do nothing in pciehp_resume, but we call
+>>> pciehp_enable_slot(), so some uncomfortable messages show like above.
+>>> In this case, we can improve it a little by add a guard
+>>> if (!list_empty(bus->devices)).
+>>
+>> This is the common case.  Previously we called pciehp_enable_slot(),
+>> and with your patch we do nothing.  I think that seems sensible, but
+>> this part should be split into a separate patch.  That way we can keep
+>> the benefit of this change even if we trip over something with the
+>> other changes.
+>
+> OK, I will split this changes into a new patch.
 
-   https://www.kernel.org/category/releases.html
-
-You might want to consider migrating to a supported distro kernel or
-to 3.2 instead. That said, if you follow carefully the updates from
-later kernels, you might prefer to maintain your own backports of
-the patches that are relevant to your usage.
-
-Best regards,
-Willy
-
+Actually, without your DSN changes, I don't think we can distinguish
+this from case 3.  So I doubt it really could be split out.
