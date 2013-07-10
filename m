@@ -1,56 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab3GJOeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:34:31 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:48941
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754423Ab3GJOe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:34:29 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: Matt Fleming <matt.fleming@intel.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>
-Subject: Re: [REGRESSION] "UEFI: Don't pass boot services regions to
- SetVirtualAddressMap()" breaks macbook efi boot
-Thread-Topic: [REGRESSION] "UEFI: Don't pass boot services regions to
- SetVirtualAddressMap()" breaks macbook efi boot
-Thread-Index: AQHOfWFmAn+4E7lsoEaLg7g6V1YplZld+kuA
-Date: Wed, 10 Jul 2013 14:34:06 +0000
-Message-ID: <1373466845.24233.19.camel@x230.lan>
-References: <51DD46AD.2010800@canonical.com>
-In-Reply-To: <51DD46AD.2010800@canonical.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-x-forefront-prvs: 0903DD1D85
-x-forefront-antispam-report: SFV:NSPM;SFS:(377424004)(24454002)(189002)(199002)(51704005)(79102001)(53806001)(4396001)(80022001)(31966008)(16406001)(77982001)(74662001)(81542001)(56776001)(47736001)(81342001)(59766001)(54356001)(49866001)(50986001)(46102001)(54316002)(74876001)(69226001)(83072001)(74366001)(65816001)(63696002)(47446002)(56816003)(74706001)(77096001)(76796001)(36756003)(76482001)(76786001)(51856001)(33646001)(47976001)(74502001);DIR:OUT;SFP:;SCL:1;SRVR:BY2PR05MB221;H:BY2PR05MB222.namprd05.prod.outlook.com;CLIP:10.255.84.4;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <5DDF843518DDC5429C22E7CFB9DD5E2B@namprd05.prod.outlook.com>
+	id S1754633Ab3GJOgF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:36:05 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:51463 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab3GJOgB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:36:01 -0400
+Message-ID: <51DD714D.4080001@profitbricks.com>
+Date: Wed, 10 Jul 2013 16:35:57 +0200
+From: Sebastian Riemer <sebastian.riemer@profitbricks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+To: Roland Dreier <roland@kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: Re: [GIT PULL] please pull infiniband.git
+References: <1373391385-4978-1-git-send-email-roland@kernel.org>
+In-Reply-To: <1373391385-4978-1-git-send-email-roland@kernel.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6AEYZ2E017438
 
-On Wed, 2013-07-10 at 13:34 +0200, Maarten Lankhorst wrote:
-> Hey,
+Hi Roland,
+
+I've checked the commits on that tag and the following commit is not
+what we've agreed on:
+
+commit 086f44f58855ae18bab19fb794cce6c6d2c6143b
+Author: Bart Van Assche <bvanassche@acm.org>
+
+    IB/srp: Avoid skipping srp_reset_host() after a transport error
+
+Together with the following commit this results in the wrong return code
+if transport_offline (SUCCESS instead of FAST_IO_FAIL):
+
+commit 99e1c1398f44a056b16e78122133988c82b66d97
+Author: Bart Van Assche <bvanassche@acm.org>
+
+    IB/srp: Fail I/O fast if target offline
+
+
+Resulting code:
+1755         if (srp_send_tsk_mgmt(target, req->index, scmnd->device->lun,
+1756                               SRP_TSK_ABORT_TASK) == 0 ||
+1757             target->transport_offline)
+1758                 ret = SUCCESS;
+1759         else if (target->transport_offline)
+1760                 ret = FAST_IO_FAIL;
+1761         else
+1762                 ret = FAILED;
+
+This doesn't make sense. The check for transport_offline has to be
+removed for the SUCCESS case! I've already told that on linux-rdma.
+
+Cheers,
+Sebastian
+
+
+On 09.07.2013 19:36, Roland Dreier wrote:
+> Hi Linus,
 > 
-> It seems that in the merge window my macbook pro stopped working at some point. I looked for suspicious
-> efi related commits, and found that reverting commit 1acba98f810a14b1255e34bc620594f83de37e36 worked,
-> letting my macbook pro boot succesfully.
+> Please pull from
 > 
-> Is there anything I can do to help diagnose this issue?
+>     git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+> 
+> ----------------------------------------------------------------
+> 
+> Main batch of InfiniBand/RDMA changes for 3.11 merge window:
+> 
+>  - AF_IB (native IB addressing) for CMA from Sean Hefty
+>  - New mlx5 driver for Mellanox Connect-IB adapters
+>  - SRP fixes from Bart Van Assche
+>  - qib HW driver updates
+>  - Resurrection of ocrdma HW driver development
+>  - uverbs conversion to create fds with O_CLOEXEC set
+>  - Other small changes and fixes
+> 
+> ----------------------------------------------------------------
+> Bart Van Assche (5):
+>       IB/srp: Avoid skipping srp_reset_host() after a transport error
+>       IB/srp: Skip host settle delay
+>       IB/srp: Fail I/O fast if target offline
+>       IB/srp: Maintain a single connection per I_T nexus
+>       IB/srp: Make HCA completion vector configurable
+> 
+> Dan Carpenter (1):
+>       RDMA/cxgb3: Timeout condition is never true
+> 
+> Dotan Barak (1):
+>       IB/srp: Fix remove_one crash due to resource exhaustion
+> 
+> Eli Cohen (1):
+>       mlx5: Add driver for Mellanox Connect-IB adapters
+> 
+> Gottumukkala, Naresh (1):
+>       RDMA/ocrdma: Remove use_cnt for queues
+> 
+> Jack Morgenstein (1):
+>       IB/core: Add reserved values to enums for low-level driver use
+> 
+> Mike Marciniszyn (6):
+>       IB/qib: Add DCA support
+>       IB/qib: Remove atomic_inc_not_zero() from QP RCU
+>       IB/qib: Optimize CQ callbacks
+>       IB/qib: Convert opcode counters to per-context
+>       IB/qib: Add per-context stats interface
+>       IB/qib: Add qp_stats debug file
+> 
+> Mitko Haralanov (1):
+>       IB/qib: New transmitter tunning settings for Dell 1.1 backplane
+> 
+> Naresh Gottumukkala (5):
+>       RDMA/ocrdma: Use MCC_CREATE_EXT_V1 for MCC create
+>       RDMA/ocrdma: Replace ocrdma_err with pr_err
+>       RDMA/ocrdma: Set bad_wr in error case
+>       RDMA/ocrdma: Change macros to inline funtions
+>       RDMA/ocrdma: Reorg structures to avoid padding
+> 
+> Ramkrishna Vepa (2):
+>       IB/qib: Add optional NUMA affinity
+>       IB/qib: Add dual-rail NUMA awareness for PSM processes
+> 
+> Roland Dreier (5):
+>       mlx5: Fix parameter type of health_handler_t
+>       IB/mlx5: Make profile[] static in main.c
+>       mlx5_core: Fixes for sparse warnings
+>       IB/uverbs: Use get_unused_fd_flags(O_CLOEXEC) instead of get_unused_fd()
+>       Merge branches 'af_ib', 'cxgb4', 'misc', 'mlx5', 'ocrdma', 'qib' and 'srp' into for-next
+> 
+> Sean Hefty (28):
+>       RDMA/cma: Define native IB address
+>       RDMA/cma: Allow enabling reuseaddr in any state
+>       RDMA/cma: Include AF_IB in loopback and any address checks
+>       IB/addr: Add AF_IB support to ip_addr_size
+>       RDMA/cma: Update port reservation to support AF_IB
+>       RDMA/cma: Allow user to specify AF_IB when binding
+>       RDMA/cma: Do not modify sa_family when setting loopback address
+>       RDMA/cma: Add helper functions to return id address information
+>       RDMA/cma: Restrict AF_IB loopback to binding to IB devices only
+>       RDMA/cma: Verify that source and dest sa_family are the same
+>       RDMA/cma: Add support for AF_IB to rdma_resolve_addr()
+>       RDMA/cma: Add support for AF_IB to rdma_resolve_route()
+>       RDMA/cma: Add support for AF_IB to cma_get_service_id()
+>       RDMA/cma: Remove unused SDP related code
+>       RDMA/cma: Merge cma_get/save_net_info
+>       RDMA/cma: Expose private data when using AF_IB
+>       RDMA/cma: Set qkey for AF_IB
+>       RDMA/cma: Only listen on IB devices when using AF_IB
+>       RDMA/ucma: Support querying for AF_IB addresses
+>       IB/sa: Export function to pack a path record into wire format
+>       RDMA/ucma: Support querying when IB paths are not reversible
+>       RDMA/cma: Export cma_get_service_id()
+>       RDMA/ucma: Add ability to query GID addresses
+>       RDMA/ucma: Name changes to indicate only IP addresses supported
+>       RDMA/ucma: Allow user space to bind to AF_IB
+>       RDMA/ucma: Allow user space to pass AF_IB into resolve
+>       RDMA/ucma: Allow user space to specify AF_IB when joining multicast
+>       RDMA/cma: Export AF_IB statistics
+> 
+> Vinit Agnihotri (1):
+>       IB/qib: Update minor version number
+> 
+> Vu Pham (1):
+>       IB/srp: Bump driver version and release date
+> 
+> Wei Yongjun (3):
+>       IB/ehca: Fix error return code in ehca_create_slab_caches()
+>       RDMA/ocrdma: Fix error return code in ocrdma_set_create_qp_rq_cmd()
+>       IB/core: Fix error return code in add_port()
+> 
+>  Documentation/ABI/stable/sysfs-driver-ib_srp        |    7 +
+>  MAINTAINERS                                         |   22 ++
+>  drivers/infiniband/Kconfig                          |    1 +
+>  drivers/infiniband/Makefile                         |    1 +
+>  drivers/infiniband/core/addr.c                      |   20 +-
+>  drivers/infiniband/core/cma.c                       |  906 ++++++++++++++++++++++++++++++++++-------------------------
+>  drivers/infiniband/core/sa_query.c                  |    6 +
+>  drivers/infiniband/core/sysfs.c                     |    8 +-
+>  drivers/infiniband/core/ucma.c                      |  321 ++++++++++++++++++---
+>  drivers/infiniband/core/uverbs_cmd.c                |    4 +-
+>  drivers/infiniband/hw/cxgb3/iwch_qp.c               |    3 +-
+>  drivers/infiniband/hw/ehca/ehca_main.c              |    1 +
+>  drivers/infiniband/hw/mlx5/Kconfig                  |   10 +
+>  drivers/infiniband/hw/mlx5/Makefile                 |    3 +
+>  drivers/infiniband/hw/mlx5/ah.c                     |   92 ++++++
+>  drivers/infiniband/hw/mlx5/cq.c                     |  843 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/infiniband/hw/mlx5/doorbell.c               |  100 +++++++
+>  drivers/infiniband/hw/mlx5/mad.c                    |  139 +++++++++
+>  drivers/infiniband/hw/mlx5/main.c                   | 1504 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/infiniband/hw/mlx5/mem.c                    |  162 +++++++++++
+>  drivers/infiniband/hw/mlx5/mlx5_ib.h                |  545 +++++++++++++++++++++++++++++++++++
+>  drivers/infiniband/hw/mlx5/mr.c                     | 1007 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/infiniband/hw/mlx5/qp.c                     | 2524 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/infiniband/hw/mlx5/srq.c                    |  473 +++++++++++++++++++++++++++++++
+>  drivers/infiniband/hw/mlx5/user.h                   |  121 ++++++++
+>  drivers/infiniband/hw/ocrdma/ocrdma.h               |   63 +++--
+>  drivers/infiniband/hw/ocrdma/ocrdma_hw.c            |   86 +++---
+>  drivers/infiniband/hw/ocrdma/ocrdma_main.c          |    6 +-
+>  drivers/infiniband/hw/ocrdma/ocrdma_sli.h           |   35 +--
+>  drivers/infiniband/hw/ocrdma/ocrdma_verbs.c         |  135 ++++-----
+>  drivers/infiniband/hw/qib/Kconfig                   |    8 +
+>  drivers/infiniband/hw/qib/Makefile                  |    1 +
+>  drivers/infiniband/hw/qib/qib.h                     |   61 ++--
+>  drivers/infiniband/hw/qib/qib_common.h              |    2 +-
+>  drivers/infiniband/hw/qib/qib_cq.c                  |   67 ++++-
+>  drivers/infiniband/hw/qib/qib_debugfs.c             |  283 +++++++++++++++++++
+>  drivers/infiniband/hw/qib/qib_debugfs.h             |   45 +++
+>  drivers/infiniband/hw/qib/qib_driver.c              |    1 -
+>  drivers/infiniband/hw/qib/qib_file_ops.c            |  176 ++++++++----
+>  drivers/infiniband/hw/qib/qib_iba6120.c             |   10 +
+>  drivers/infiniband/hw/qib/qib_iba7220.c             |   10 +
+>  drivers/infiniband/hw/qib/qib_iba7322.c             |  393 +++++++++++++++++++++++---
+>  drivers/infiniband/hw/qib/qib_init.c                |  139 +++++++--
+>  drivers/infiniband/hw/qib/qib_qp.c                  |  123 +++++++-
+>  drivers/infiniband/hw/qib/qib_verbs.c               |    8 +-
+>  drivers/infiniband/hw/qib/qib_verbs.h               |   33 ++-
+>  drivers/infiniband/ulp/srp/ib_srp.c                 |   90 +++++-
+>  drivers/infiniband/ulp/srp/ib_srp.h                 |    1 +
+>  drivers/net/ethernet/mellanox/Kconfig               |    1 +
+>  drivers/net/ethernet/mellanox/Makefile              |    1 +
+>  drivers/net/ethernet/mellanox/mlx5/core/Kconfig     |   18 ++
+>  drivers/net/ethernet/mellanox/mlx5/core/Makefile    |    5 +
+>  drivers/net/ethernet/mellanox/mlx5/core/alloc.c     |  238 ++++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/cmd.c       | 1515 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/cq.c        |  224 +++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/debugfs.c   |  587 ++++++++++++++++++++++++++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/eq.c        |  521 ++++++++++++++++++++++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/fw.c        |  185 ++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/health.c    |  227 +++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/mad.c       |   78 ++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/main.c      |  475 +++++++++++++++++++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/mcg.c       |  106 +++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/mlx5_core.h |   73 +++++
+>  drivers/net/ethernet/mellanox/mlx5/core/mr.c        |  136 +++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/pagealloc.c |  435 ++++++++++++++++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/pd.c        |  101 +++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/port.c      |  104 +++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/qp.c        |  301 ++++++++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/srq.c       |  223 +++++++++++++++
+>  drivers/net/ethernet/mellanox/mlx5/core/uar.c       |  223 +++++++++++++++
+>  include/linux/mlx5/cmd.h                            |   51 ++++
+>  include/linux/mlx5/cq.h                             |  165 +++++++++++
+>  include/linux/mlx5/device.h                         |  893 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mlx5/doorbell.h                       |   79 ++++++
+>  include/linux/mlx5/driver.h                         |  769 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mlx5/qp.h                             |  467 ++++++++++++++++++++++++++++++
+>  include/linux/mlx5/srq.h                            |   41 +++
+>  include/linux/socket.h                              |    2 +
+>  include/rdma/ib.h                                   |   89 ++++++
+>  include/rdma/ib_addr.h                              |    6 +-
+>  include/rdma/ib_sa.h                                |    7 +
+>  include/rdma/ib_verbs.h                             |   35 ++-
+>  include/rdma/rdma_cm.h                              |   13 +
+>  include/uapi/rdma/rdma_user_cm.h                    |   73 ++++-
+>  84 files changed, 18267 insertions(+), 799 deletions(-)
+>  create mode 100644 drivers/infiniband/hw/mlx5/Kconfig
+>  create mode 100644 drivers/infiniband/hw/mlx5/Makefile
+>  create mode 100644 drivers/infiniband/hw/mlx5/ah.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/cq.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/doorbell.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/mad.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/main.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/mem.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/mlx5_ib.h
+>  create mode 100644 drivers/infiniband/hw/mlx5/mr.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/qp.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/srq.c
+>  create mode 100644 drivers/infiniband/hw/mlx5/user.h
+>  create mode 100644 drivers/infiniband/hw/qib/qib_debugfs.c
+>  create mode 100644 drivers/infiniband/hw/qib/qib_debugfs.h
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/Kconfig
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/Makefile
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/alloc.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/cmd.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/cq.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/debugfs.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/eq.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/fw.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/health.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/mad.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/main.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/mcg.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/mlx5_core.h
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/mr.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/pagealloc.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/pd.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/port.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/qp.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/srq.c
+>  create mode 100644 drivers/net/ethernet/mellanox/mlx5/core/uar.c
+>  create mode 100644 include/linux/mlx5/cmd.h
+>  create mode 100644 include/linux/mlx5/cq.h
+>  create mode 100644 include/linux/mlx5/device.h
+>  create mode 100644 include/linux/mlx5/doorbell.h
+>  create mode 100644 include/linux/mlx5/driver.h
+>  create mode 100644 include/linux/mlx5/qp.h
+>  create mode 100644 include/linux/mlx5/srq.h
+>  create mode 100644 include/rdma/ib.h
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Well bother. Yeah, reverting this is the right thing to do for now -
-I'll spend some time looking into it more closely later in the week.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
