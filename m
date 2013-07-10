@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871Ab3GJTT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 15:19:58 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56836 "EHLO
+	id S1755134Ab3GJTWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 15:22:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56863 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754676Ab3GJTTz (ORCPT
+	with ESMTP id S1754862Ab3GJTT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 15:19:55 -0400
+	Wed, 10 Jul 2013 15:19:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 09/23] perf record: Remove -f/--force option
-Date: Wed, 10 Jul 2013 16:19:09 -0300
-Message-Id: <1373483963-19277-10-git-send-email-acme@infradead.org>
+Subject: [PATCH 14/23] perf tools: Fix parse_events_terms() segfault on error path
+Date: Wed, 10 Jul 2013 16:19:14 -0300
+Message-Id: <1373483963-19277-15-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373483963-19277-1-git-send-email-acme@infradead.org>
 References: <1373483963-19277-1-git-send-email-acme@infradead.org>
@@ -29,152 +30,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-It no longer have any affect on the processing and is marked as obsolete
-anyway.
+On the error path, 'data.terms' may not have been initialised.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/n/tip-tvwyspiqr4getzfib2lw06ty@git.kernel.org
-Link: http://lkml.kernel.org/r/1372307120-737-1-git-send-email-namhyung@kernel.org
-[ combined patch removing the -f usage in various sub-commands, such as 'perf sched', etc, by Namhyung Kim ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1372944040-32690-5-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/examples.txt    | 4 ++--
- tools/perf/Documentation/perf-record.txt | 4 ----
- tools/perf/builtin-kmem.c                | 2 +-
- tools/perf/builtin-lock.c                | 2 +-
- tools/perf/builtin-record.c              | 3 ---
- tools/perf/builtin-sched.c               | 1 -
- tools/perf/builtin-timechart.c           | 4 ++--
- 7 files changed, 6 insertions(+), 14 deletions(-)
+ tools/perf/util/parse-events.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/Documentation/examples.txt b/tools/perf/Documentation/examples.txt
-index 77f9527..a4e3921 100644
---- a/tools/perf/Documentation/examples.txt
-+++ b/tools/perf/Documentation/examples.txt
-@@ -66,7 +66,7 @@ Furthermore, these tracepoints can be used to sample the workload as
- well. For example the page allocations done by a 'git gc' can be
- captured the following way:
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 6c8bb0f..d8dcb8d 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -860,7 +860,8 @@ int parse_events_terms(struct list_head *terms, const char *str)
+ 		return 0;
+ 	}
  
-- titan:~/git> perf record -f -e kmem:mm_page_alloc -c 1 ./git gc
-+ titan:~/git> perf record -e kmem:mm_page_alloc -c 1 ./git gc
-  Counting objects: 1148, done.
-  Delta compression using up to 2 threads.
-  Compressing objects: 100% (450/450), done.
-@@ -120,7 +120,7 @@ Furthermore, call-graph sampling can be done too, of page
- allocations - to see precisely what kind of page allocations there
- are:
+-	parse_events__free_terms(data.terms);
++	if (data.terms)
++		parse_events__free_terms(data.terms);
+ 	return ret;
+ }
  
-- titan:~/git> perf record -f -g -e kmem:mm_page_alloc -c 1 ./git gc
-+ titan:~/git> perf record -g -e kmem:mm_page_alloc -c 1 ./git gc
-  Counting objects: 1148, done.
-  Delta compression using up to 2 threads.
-  Compressing objects: 100% (450/450), done.
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 7e32580..e297b74 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -70,10 +70,6 @@ OPTIONS
- --no-delay::
- 	Collect data without buffering.
- 
---f::
----force::
--	Overwrite existing data file. (deprecated)
--
- -c::
- --count=::
- 	Event period to sample.
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 46878da..0259502 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -708,7 +708,7 @@ static int parse_line_opt(const struct option *opt __maybe_unused,
- static int __cmd_record(int argc, const char **argv)
- {
- 	const char * const record_args[] = {
--	"record", "-a", "-R", "-f", "-c", "1",
-+	"record", "-a", "-R", "-c", "1",
- 	"-e", "kmem:kmalloc",
- 	"-e", "kmem:kmalloc_node",
- 	"-e", "kmem:kfree",
-diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
-index 4258300..76543a4 100644
---- a/tools/perf/builtin-lock.c
-+++ b/tools/perf/builtin-lock.c
-@@ -878,7 +878,7 @@ static int __cmd_report(void)
- static int __cmd_record(int argc, const char **argv)
- {
- 	const char *record_args[] = {
--		"record", "-R", "-f", "-m", "1024", "-c", "1",
-+		"record", "-R", "-m", "1024", "-c", "1",
- 	};
- 	unsigned int rec_argc, i, j;
- 	const char **rec_argv;
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 2990570..ecca62e 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -74,7 +74,6 @@ struct perf_record {
- 	int			realtime_prio;
- 	bool			no_buildid;
- 	bool			no_buildid_cache;
--	bool			force;
- 	long			samples;
- 	off_t			post_processing_offset;
- };
-@@ -856,8 +855,6 @@ const struct option record_options[] = {
- 			    "system-wide collection from all CPUs"),
- 	OPT_STRING('C', "cpu", &record.opts.target.cpu_list, "cpu",
- 		    "list of cpus to monitor"),
--	OPT_BOOLEAN('f', "force", &record.force,
--			"overwrite existing data file (deprecated)"),
- 	OPT_U64('c', "count", &record.opts.user_interval, "event period to sample"),
- 	OPT_STRING('o', "output", &record.output_name, "file",
- 		    "output file name"),
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index 2da2a6c..fed9ae4 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -1632,7 +1632,6 @@ static int __cmd_record(int argc, const char **argv)
- 		"record",
- 		"-a",
- 		"-R",
--		"-f",
- 		"-m", "1024",
- 		"-c", "1",
- 		"-e", "sched:sched_switch",
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index ab4cf232..4536a92 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -1005,7 +1005,7 @@ static int __cmd_record(int argc, const char **argv)
- {
- #ifdef SUPPORT_OLD_POWER_EVENTS
- 	const char * const record_old_args[] = {
--		"record", "-a", "-R", "-f", "-c", "1",
-+		"record", "-a", "-R", "-c", "1",
- 		"-e", "power:power_start",
- 		"-e", "power:power_end",
- 		"-e", "power:power_frequency",
-@@ -1014,7 +1014,7 @@ static int __cmd_record(int argc, const char **argv)
- 	};
- #endif
- 	const char * const record_new_args[] = {
--		"record", "-a", "-R", "-f", "-c", "1",
-+		"record", "-a", "-R", "-c", "1",
- 		"-e", "power:cpu_frequency",
- 		"-e", "power:cpu_idle",
- 		"-e", "sched:sched_wakeup",
 -- 
 1.8.1.4
 
