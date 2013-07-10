@@ -1,126 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab3GJXA7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 19:00:59 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:51861 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755047Ab3GJXA6 (ORCPT
+	id S1755199Ab3GJXCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 19:02:50 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:62634 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306Ab3GJXCs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 19:00:58 -0400
-Date: Wed, 10 Jul 2013 16:00:57 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, oliver+list@schinagl.nl, khali@linux-fr.org
-Subject: Re: [PATCH 5/6] sysfs: add support for binary attributes in groups
-Message-ID: <20130710230057.GA16510@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Jul 2013 19:02:48 -0400
+X-AuditID: cbfec37d-b7f036d000004805-17-51dde816cb8e
+From: Shuah Khan <shuah.kh@samsung.com>
+To: =?iso-8859-1?Q?Peter_H=FCwe?= <PeterHuewe@gmx.de>
+Cc: "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "key@linux.vnet.ibm.com" <key@linux.vnet.ibm.com>,
+        "mail@srajiv.net" <mail@srajiv.net>,
+        "tpmdd@selhorst.net" <tpmdd@selhorst.net>,
+        "tpmdd@sirrix.com" <tpmdd@sirrix.com>,
+        "matthew.garrett@nebula.com" <matthew.garrett@nebula.com>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [tpmdd-devel] [PATCH 3/4] tpm: Convert tpm_tis driver to use
+ dev_pm_ops from legacy pm_ops
+Thread-topic: [tpmdd-devel] [PATCH 3/4] tpm: Convert tpm_tis driver to use
+ dev_pm_ops from legacy pm_ops
+Thread-index: AQHOfSNvkGU/clZYN0+5ktv00oxarA==
+Date: Wed, 10 Jul 2013 23:02:45 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61738933@sisaex02sj>
+References: <1373429409-3944-1-git-send-email-shuah.kh@samsung.com>
+ <201307110051.04726.PeterHuewe@gmx.de>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=iso-8859-1
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsVy+t9hP12xF3cDDVb+NrZYcvEqu8WSpgyL
+	WRtvsFtc3jWHzeLDooVsFh8/2Vi83feT3WL1nhfMFo9XvGW32N/ZwWjx9aeDRcvvN0wWm/tv
+	slr8f/+HxYHPY+esu+weHz7GeSzYVOqxZ+JJNo/Fe14yeTw4tJnFY/eCz0weC680M3k8vpjs
+	0XTwDLvHvSMHmTymz/vJ5PF5k1wAbxSXTUpqTmZZapG+XQJXRu/rR8wFL7gres+sZm1gPM/Z
+	xcjJISFgItG4Zw0jhC0mceHeejYQW0hgGaPE59PcXYxcQHYvk8T3GYuYIZz5jBLf93cxg1Sx
+	CahLfH69g72LkYNDRMBU4ka/HUgNs8A3VolvHa/BJgkLZErM/P4eqiZL4kB7DUhYREBPYs29
+	Z0wgNouAqsSSJzvAjuAVsJeYevs41BE5EpsftILFGYGO+35qDVg9s4C4RHPrTRaIowUkluw5
+	zwxhi0q8fPyPFWSVhICixPbVVhDlOhK9378xQ9jaEk/eXWCFWCUo8WPyPZYJjGKzkEydhaRl
+	FpKWWUhaFjCyrGIUKy1OLihOSk+tMNErTswtLs1L10vOz93ECEkLtTsY73+1OcQowMGoxMOr
+	EXs3UIg1say4MvcQowQHs5II78kpQCHelMTKqtSi/Pii0pzU4kOMTBycUg2MinfaFP/VM80v
+	kAvflzF3IsvyA5OcI284vVB699bwREnw0UTjkNxVuo8lw6UZww4umXBNdZ5owrJCrZqpNzc7
+	R79nzDHTip/aWbdLTSguxuiuOwND9aVXW0rnbXvgvfnZhnitz/dzjd/JR3r88o/XlDb6+OTb
+	Qw2XLy9yfmg+nDBB9PBbRnUxJZbijERDLeai4kQAtDc4FukCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 01:05:13PM -0700, Greg Kroah-Hartman wrote:
-> groups should be able to support binary attributes, just like it
-> supports "normal" attributes.  This lets us only handle one type of
-> structure, groups, throughout the driver core and subsystems, making
-> binary attributes a "full fledged" part of the driver model, and not
-> something just "tacked on".
-> 
-> Reported-by: Oliver Schinagl <oliver+list@schinagl.nl>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  fs/sysfs/group.c      | 18 ++++++++++++++++--
->  include/linux/sysfs.h |  4 ++--
->  2 files changed, 18 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-> index aec3d5c..d8d8a8f 100644
-> --- a/fs/sysfs/group.c
-> +++ b/fs/sysfs/group.c
-> @@ -20,16 +20,19 @@ static void remove_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
->  			 const struct attribute_group *grp)
->  {
->  	struct attribute *const* attr;
-> -	int i;
-> +	struct bin_attribute *const* bin_attr;
+On 07/10/2013 04:43 PM, Peter Hüwe wrote:
+> Hi,
+>
+> thanks for your patch
+>>   static struct pnp_device_id tpm_pnp_tbl[] = {
+>>   	{"PNP0C31", 0},		/* TPM */
+>>   	{"ATM1200", 0},		/* Atmel */
+>> @@ -835,9 +834,12 @@ static struct pnp_driver tis_pnp_driver = {
+>>   	.name = "tpm_tis",
+>>   	.id_table = tpm_pnp_tbl,
+>>   	.probe = tpm_tis_pnp_init,
+>> -	.suspend = tpm_tis_pnp_suspend,
+>> -	.resume = tpm_tis_pnp_resume,
+>>   	.remove = tpm_tis_pnp_remove,
+>> +#ifdef CONFIG_PM_SLEEP
+>> +	.driver	= {
+>> +		.pm = &tpm_tis_pm,
+>> +	},
+>> +#endif
+>>   };
+>
+>
+> I don't think the #if CONFIG_PM_SLEEP is required here.
+>
+> Thanks,
+> Peter
+>
 
-checkpatch doesn't like the above and similar declarations below.
+tpm_tis_resume() is defined originally in CONFIG_PM_SLEEP scope. I can 
+make the change to have tpm_tis_resume() not be in CONFIG_PM_SLEEP scope 
+and remove this CONFIG_PM_SLEEP when defining .pm. That does make sense 
+looking at tpm_pm_suspend() and tpm_pm_resume() which are defined 
+without CONFIG_PM_SLEEP scope. Sounds like the right approach? I will 
+redo the patch and send v2.
 
-Yes, I know, nitpick, just saying ;).
+I find that the use of CONFIG_PM, CONFIG_PM_SLEEP, and CONFIG_PM_RUNTIME 
+are not very consistent. :)
 
->  
-> -	for (i = 0, attr = grp->attrs; *attr; i++, attr++)
-> +	for (attr = grp->attrs; *attr; attr++)
->  		sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
-> +	for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
-> +		sysfs_remove_bin_file(kobj, *bin_attr);
->  }
->  
->  static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
->  			const struct attribute_group *grp, int update)
->  {
->  	struct attribute *const* attr;
-> +	struct bin_attribute *const* bin_attr;
->  	int error = 0, i;
->  
->  	for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
-> @@ -52,6 +55,17 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
->  	}
->  	if (error)
->  		remove_files(dir_sd, kobj, grp);
+-- Shuah
 
-You might want to abort here if there was an error.
-
-> +
-> +	for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++) {
-
-What happens here if grp->bin_attrs is NULL ? Doesn't that cause a NULL
-reference when accessing *bin_attr ?
-
-[ The problem didn't exist before since attr was supposed to be non-NULL.
-  It may now be a problem if only bin_attr is provided, ie if there are
-  only binary attribute files.
-  Or maybe I am just tired and there is no problem... ]
-
-> +		if (update)
-> +			sysfs_remove_bin_file(kobj, *bin_attr);
-> +		error = sysfs_create_bin_file(kobj, *bin_attr);
-> +		if (error)
-> +			break;
-> +	}
-> +	if (error)
-> +		remove_files(dir_sd, kobj, grp);
-> +
->  	return error;
->  }
->  
-> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-> index d50a96b..2c3b6a3 100644
-> --- a/include/linux/sysfs.h
-> +++ b/include/linux/sysfs.h
-> @@ -21,6 +21,7 @@
->  
->  struct kobject;
->  struct module;
-> +struct bin_attribute;
->  enum kobj_ns_type;
->  
->  struct attribute {
-> @@ -59,10 +60,9 @@ struct attribute_group {
->  	umode_t			(*is_visible)(struct kobject *,
->  					      struct attribute *, int);
->  	struct attribute	**attrs;
-> +	struct bin_attribute	**bin_attrs;
->  };
->  
-> -
-> -
->  /**
->   * Use these macros to make defining attributes easier. See include/linux/device.h
->   * for examples..
-> -- 
-> 1.8.3.rc0.20.gb99dd2e
-> 
-> 
+Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
+America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
