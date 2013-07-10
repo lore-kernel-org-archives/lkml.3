@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab3GJVAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 17:00:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45403 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754991Ab3GJVAs (ORCPT
+	id S1755322Ab3GJVDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 17:03:15 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34504 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991Ab3GJVDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 17:00:48 -0400
-Date: Wed, 10 Jul 2013 14:00:47 -0700 (PDT)
-Message-Id: <20130710.140047.2169280084001618173.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Jul 2013 17:03:13 -0400
+Message-ID: <51DDCC01.1090104@pengutronix.de>
+Date: Wed, 10 Jul 2013 23:02:57 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130518 Icedove/17.0.5
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-kernel@vger.kernel.org, Wolfgang Grandegger <wg@grandegger.com>,
+        AnilKumar Ch <anilkumar@ti.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Tony Lindgren <tony@atomide.com>, Jingoo Han <jg1.han@samsung.com>,
+        linux-can@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 07/12] drivers/net/can/c_can: don't use devm_pinctrl_get_select_default()
+ in probe
+References: <1373471889-18107-1-git-send-email-wsa@the-dreams.de> <1373471889-18107-7-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1373471889-18107-7-git-send-email-wsa@the-dreams.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2GEBQRHRHUWQHPQCAISEH"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2GEBQRHRHUWQHPQCAISEH
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Four bug fixes:
+On 07/10/2013 05:57 PM, Wolfram Sang wrote:
+> Since commit ab78029 (drivers/pinctrl: grab default handles from device=
+ core),
+> we can rely on device core for setting the default pins. Compile tested=
+ only.
+>=20
+> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13=
+)
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-1) Enable snoop tags properly on Sparc32/LEON, from Andreas Larsson
+Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
 
-2) strcpy() length check fix from Chen Gang.
+Who takes care of this patch/patch series?
 
-3) Forgotten unregister_netdev() in sunvnet driver, from Dave Kleikamp.
-
-4) Fix broken assembler offsets used in vm_area_struct accesses on
-   sparc32, from Olivier DANET.
-
-Please pull, thanks a lot!
-
-The following changes since commit bfffbea1aaeeb1eb6500c83ff9653416daa5b490:
-
-  Merge tag 'mmc-updates-for-3.11-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2013-07-10 11:16:00 -0700)
-
-are available in the git repository at:
+Marc
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+------enig2GEBQRHRHUWQHPQCAISEH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-for you to fetch changes up to 961246b4ed8da3bcf4ee1eb9147f341013553e3c:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
 
-  [PATCH] sparc32: vm_area_struct access for old Sun SPARCs. (2013-07-10 13:56:10 -0700)
+iEYEARECAAYFAlHdzAEACgkQjTAFq1RaXHNxuwCfU22mQey9fGPWB0I1SWFaBJ7x
+M70AnR9WXSzupvQ4/lraplY5fhqhJXl6
+=7O5d
+-----END PGP SIGNATURE-----
 
-----------------------------------------------------------------
-Andreas Larsson (1):
-      sparc32, leon: Require separate snoop tags set to regard snooping to be enabled
-
-Chen Gang (1):
-      arch: sparc: kernel: check the memory length before use strcpy().
-
-Dave Kleikamp (1):
-      sunvnet: vnet_port_remove must call unregister_netdev
-
-Olivier DANET (1):
-      sparc32: vm_area_struct access for old Sun SPARCs.
-
- arch/sparc/include/asm/leon.h      |  2 +-
- arch/sparc/kernel/asm-offsets.c    |  2 ++
- arch/sparc/kernel/ds.c             | 10 ++++++++++
- arch/sparc/mm/hypersparc.S         |  8 ++++----
- arch/sparc/mm/swift.S              |  8 ++++----
- arch/sparc/mm/tsunami.S            |  6 +++---
- arch/sparc/mm/viking.S             | 10 +++++-----
- drivers/net/ethernet/sun/sunvnet.c |  2 ++
- 8 files changed, 31 insertions(+), 17 deletions(-)
+------enig2GEBQRHRHUWQHPQCAISEH--
