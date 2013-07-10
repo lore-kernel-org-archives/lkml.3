@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751065Ab3GJEYP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 00:24:15 -0400
-Received: from mail-gh0-f179.google.com ([209.85.160.179]:57117 "EHLO
-	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3GJEYO (ORCPT
+	id S1751565Ab3GJEgA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 00:36:00 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35140 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828Ab3GJEf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 00:24:14 -0400
-Message-ID: <51DCE1EA.60404@gmail.com>
-Date: Tue, 09 Jul 2013 22:24:10 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: Greg KH <greg@kroah.com>, kernel list <linux-kernel@vger.kernel.org>,
-        joe.lawrence@stratus.com, myron.stowe@redhat.com, bhelgaas@google.com
-Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
-References: <20130709012611.GA22371@amd.pavel.ucw.cz> <20130709041321.GA30555@kroah.com> <20130709094906.GA3870@amd.pavel.ucw.cz>
-In-Reply-To: <20130709094906.GA3870@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 10 Jul 2013 00:35:58 -0400
+Date: Tue, 09 Jul 2013 21:35:55 -0700 (PDT)
+Message-Id: <20130709.213555.1037822981842851807.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFwgYoGKRLde_4KBnUr1nENpwdahJv8+wHJ502HcGJW1pA@mail.gmail.com>
+References: <20130709.145325.1363244885668360965.davem@davemloft.net>
+	<CA+55aFwgYoGKRLde_4KBnUr1nENpwdahJv8+wHJ502HcGJW1pA@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 03:49 AM, Pavel Machek wrote:
-> On Mon 2013-07-08 21:13:21, Greg KH wrote:
->> On Tue, Jul 09, 2013 at 03:26:11AM +0200, Pavel Machek wrote:
->>> Hi!
->>>
->>> My thinkpad has rather high ping latencies... and perhaps it is due to
->>> PCIE ASPM.
->>
->> Why would that be the problem?  The odds that the PCIE bus is the issue
->> seems strange to me.
->
-> Aha: I guess that's why the file is not writable:
->
-> pavel@amd:~$ dmesg | grep -i aspm
-> ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 9 Jul 2013 19:50:41 -0700
 
-IIRC, this message is somewhat misleading. When that FADT flag is set by 
-the BIOS, the kernel doesn't so much disable ASPM as disable the 
-kernel's control over ASPM. I believe this was to match Windows behavior.
+> Now, I'm all for making descriptive merge commit messages, including
+> improving on the summary line. So by all means write those nice merge
+> messages with explanations. I think something like
+> 
+>     dc3d807d6fd9 Merge "openvswitch: gre tunneling support."
+> 
+> would have been a *fine* summary line, for example, and quite possibly
+> better than the default kind of git merge summary lines (ie "Merge
+> branch 'openswitch'"). So I'm not against playing with merge messages
+> per se, it's literally this "cannot tell it's a merge any more in the
+> summary" that I thing is a problem.
 
-> e1000e 0000:02:00.0: Disabling ASPM L0s L1
-
-And given that, I think this message may also be misleading, as the 
-kernel won't touch the device's ASPM state. Force-enabling ASPM may 
-actually be allowing the driver to disable ASPM on the device.
-
-I seem to recall a recent thread on this about another device.. maybe we 
-need to allow drivers to explicitly disable ASPM if it's enabled even if 
-the FADT flag is set?
-
-> pavel@amd:~$ cat /sys/module/pcie_aspm/parameters/policy
-> [default] performance powersave
-> pavel@amd:~$
-> root@amd:~# echo -n performance >
-> /sys/module/pcie_aspm/parameters/policy
-> -su: echo: write error: Operation not permitted
-> root@amd:~#
->
-> But:
-> 1) it should not list unavailable options
->
-> 2) operation not permitted seems like wrong error code for
-> operation not supported.
->
-> 									Pavel
->
-
+Ok, I'll use that format in the future.  I was actually trying to add
+more information, not less. :-) But yeah that header line has to
+mention that it's a merge, for sure.
