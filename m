@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3GJTEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 15:04:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:41010 "HELO
+	id S1754609Ab3GJTIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 15:08:46 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:41028 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754482Ab3GJTEJ (ORCPT
+	with SMTP id S1754374Ab3GJTIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 15:04:09 -0400
-Date: Wed, 10 Jul 2013 15:04:08 -0400 (EDT)
+	Wed, 10 Jul 2013 15:08:44 -0400
+Date: Wed, 10 Jul 2013 15:08:43 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: Roger Quadros <rogerq@ti.com>
@@ -16,9 +16,9 @@ cc: gregkh@linuxfoundation.org, <balbi@ti.com>,
         <tony@atomide.com>, <ruslan.bilovol@ti.com>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/6] USB: ehci-omap: Implement suspend/resume
-In-Reply-To: <1373473405-27589-1-git-send-email-rogerq@ti.com>
-Message-ID: <Pine.LNX.4.44L0.1307101446270.1215-100000@iolanthe.rowland.org>
+Subject: Re: [PATCH 5/6] USB: Support wakeup IRQ for suspended controllers
+In-Reply-To: <1373473393-27552-1-git-send-email-rogerq@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1307101504220.1215-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,68 +27,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 10 Jul 2013, Roger Quadros wrote:
 
-> Call ehci_suspend/resume() during runtime suspend/resume
-> as well as system suspend/resume.
+> Some platforms e.g. ehci-omap can generate an interrupt
+> (i.e. remote wakeup) even when the controller is suspended i.e.
+> HW_ACCESSIBLE is cleared.
 > 
-> Use a flag "bound" to indicate that the HCD structures are valid.
-> This is only true between usb_add_hcd() and usb_remove_hcd() calls.
+> Introduce a flag "has_wakeup_irq" in struct usb_hcd to indicate
+> such cases.
 > 
-> The flag can be used by omap_ehci_runtime_suspend/resume() handlers
-> to avoid calling ehci_suspend/resume() when we are no longer bound
-> to the HCD e.g. during probe() and remove();
+> We tackle this case by disabling the IRQ, scheduling a
+> hub resume and enabling back the IRQ after the controller has
+> resumed. This ensures that the IRQ handler runs only after the
+> controller is accessible.
 
-> @@ -293,15 +301,67 @@ static const struct of_device_id omap_ehci_dt_ids[] = {
->  
->  MODULE_DEVICE_TABLE(of, omap_ehci_dt_ids);
->  
-> +static int omap_ehci_suspend(struct device *dev)
-> +{
-> +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-> +
-> +	dev_dbg(dev, "%s\n", __func__);
-> +
-> +	return ehci_suspend(hcd, true);
-> +}
-> +
-> +static int omap_ehci_resume(struct device *dev)
-> +{
-> +	struct usb_hcd *hcd = dev_get_drvdata(dev);
-> +
-> +	dev_dbg(dev, "%s\n", __func__);
-> +
-> +	return ehci_resume(hcd, false);
-> +}
+Oh yes, one more thing...
 
-There are three problems here.  The first is very simple: the wakeup 
-settings are messed up.  Wakeup is supposed to be enabled always for
-runtime suspend, whereas it is controlled by device_may_wakeup() for
-system suspend.  You reversed them.
+> @@ -132,6 +134,7 @@ struct usb_hcd {
+>  	unsigned		wireless:1;	/* Wireless USB HCD */
+>  	unsigned		authorized_default:1;
+>  	unsigned		has_tt:1;	/* Integrated TT in root hub */
+> +	unsigned		has_wakeup_irq:1; /* Can IRQ when suspended */
 
-The other two problems are both related to the interaction between
-system PM and runtime PM.  Suppose the controller is already runtime
-suspended when the system goes to sleep.  Because it is runtime
-suspended, it is enabled for wakeup.  But device_may_wakeup() could
-return false; if this happens then you have to do a runtime-resume in
-omap_ehci_suspend() before calling ehci_suspend(), so that the
-controller can be suspended again with wakeups disabled.  (Or you could
-choose an alternative method for accomplishing the same result, such as
-disabling the wakeup signal from the pad without going through a whole
-EHCI resume/suspend cycle.)  Conversely, if device_may_wakeup() returns
-true then you shouldn't do anything at all, because the controller is
-already suspended with the correct wakeup setting.
-
-For the third problem, suppose the controller was runtime suspended
-when the system went to sleep.  When the system wakes up, the
-controller will become active, so you have to inform the runtime PM
-core about its change of state.  Basically, if omap_ehci_resume() sees
-that ehci_resume() returned 0 then it must do:
-
-	pm_runtime_disable(dev);
-	pm_runtime_set_active(dev);
-	pm_runtime_enable(dev);
-
-All of these issues are discussed (among lots of other material) in 
-Documentation/power/runtime_pm.txt.
+Please add a highly visible comment here, warning that has_wakeup_irq
+should never be set on systems with shared IRQs.  Having both would ...
+well, it would indicate a really bad system design.
 
 Alan Stern
 
