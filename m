@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab3GJJJw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 05:09:52 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49400 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178Ab3GJJJv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 05:09:51 -0400
-Date: Wed, 10 Jul 2013 10:07:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Michal Simek <monstr@monstr.eu>, Grant Likely <grant.likely@linaro.org>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130710090703.GD3179@sirena.org.uk>
-References: <348754a6cc4e7e05c7062d1b8b681638870a6894.1373385910.git.michal.simek@xilinx.com>
+	id S1753803Ab3GJJRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 05:17:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49359 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752964Ab3GJJRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 05:17:08 -0400
+Date: Wed, 10 Jul 2013 11:17:03 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Support multiple pages allocation
+Message-ID: <20130710091703.GD4437@dhcp22.suse.cz>
+References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130703152824.GB30267@dhcp22.suse.cz>
+ <51D44890.4080003@gmail.com>
+ <51D44AE7.1090701@gmail.com>
+ <20130704042450.GA7132@lge.com>
+ <20130704100044.GB7833@dhcp22.suse.cz>
+ <20130710003142.GA2152@lge.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="EP0wieDxd4TSJjHq"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <348754a6cc4e7e05c7062d1b8b681638870a6894.1373385910.git.michal.simek@xilinx.com>
-X-Cookie: Your domestic life may be harmonious.
+In-Reply-To: <20130710003142.GA2152@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.118
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] spi/xilinx: Simplify irq allocation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 10-07-13 09:31:42, Joonsoo Kim wrote:
+> On Thu, Jul 04, 2013 at 12:00:44PM +0200, Michal Hocko wrote:
+> > On Thu 04-07-13 13:24:50, Joonsoo Kim wrote:
+> > > On Thu, Jul 04, 2013 at 12:01:43AM +0800, Zhang Yanfei wrote:
+> > > > On 07/03/2013 11:51 PM, Zhang Yanfei wrote:
+> > > > > On 07/03/2013 11:28 PM, Michal Hocko wrote:
+> > > > >> On Wed 03-07-13 17:34:15, Joonsoo Kim wrote:
+> > > > >> [...]
+> > > > >>> For one page allocation at once, this patchset makes allocator slower than
+> > > > >>> before (-5%). 
+> > > > >>
+> > > > >> Slowing down the most used path is a no-go. Where does this slow down
+> > > > >> come from?
+> > > > > 
+> > > > > I guess, it might be: for one page allocation at once, comparing to the original
+> > > > > code, this patch adds two parameters nr_pages and pages and will do extra checks
+> > > > > for the parameter nr_pages in the allocation path.
+> > > > > 
+> > > > 
+> > > > If so, adding a separate path for the multiple allocations seems better.
+> > > 
+> > > Hello, all.
+> > > 
+> > > I modify the code for optimizing one page allocation via likely macro.
+> > > I attach a new one at the end of this mail.
+> > > 
+> > > In this case, performance degradation for one page allocation at once is -2.5%.
+> > > I guess, remained overhead comes from two added parameters.
+> > > Is it unreasonable cost to support this new feature?
+> > 
+> > Which benchmark you are using for this testing?
+> 
+> I use my own module which do allocation repeatedly.
 
---EP0wieDxd4TSJjHq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Tue, Jul 09, 2013 at 06:05:16PM +0200, Michal Simek wrote:
-> Use devm_request_irq() for irq allocation which
-> simplify driver code.
-
-Applied, thanks.
-
---EP0wieDxd4TSJjHq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR3SQ0AAoJELSic+t+oim9dxQP+wYCC2OZUf0Fz6a2aL7rgjXB
-DC4o/u/5OtrKhWkJitDVJSTZ4MNEKdejJp+CUQwzCC1hp5CFc8VXS3IlETIEMxcy
-bBv3QXtKUQ5DBOmLkYr+tVXt4W0Dr1is2Ct+xkGvOE1qDVZyZbSaMeFp25vwtN4P
-mfgWZP7mOrC+4V0+TNIrQZJ+6IVx44NZyanxyARki9EJM3XcoapIv6GVQkHc7PK3
-W4/ipix6iYj9W17TpHiZ7dkze7f1wGTupNOLB81ssgn3G2zwd2KhVf1UNuqsBgyj
-3ZHDneVCKULbKO5cCbYjI4vWKLG93GxsVDVbMeikd5Sjfj3ECXHxZrEGwvmCPajE
-9FOoQPGNG7E1N+Y0MAYB2Evxgb94yom6uNxW96kAgth05m+i+odB3WFmyQzCPKWH
-WYt4zbpqs5vGuqNvq0T7gG3CqWojEaZE2fXfw2EFEoCQj4wLRXRUhy7CkMGvoC8R
-YAM8dn10mom7vEHI2UOhs9HIU87SLE19yz8mBmu5wemK3qsnuDQZynYHzHMV3shC
-75hZwstS5VyW77oVD1DhxbZuuruUlc5nSIjvaNyYx89g+kE8cV89FepF5YUmaZDy
-YJaSFQBEiU9JCNBBvRUr97r7gnXyTkZ8YxwvOl8TSAi+7EBEte16c89Nrf+yf/hO
-feQ4fVvi6k/PlEwgYm+X
-=lWyL
------END PGP SIGNATURE-----
-
---EP0wieDxd4TSJjHq--
+I am not sure this microbenchmark will tell us much. Allocations are
+usually not short lived so the longer time might get amortized.
+If you want to use the multi page allocation for read ahead then try to
+model your numbers on read-ahead workloads.
+-- 
+Michal Hocko
+SUSE Labs
