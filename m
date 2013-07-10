@@ -1,449 +1,773 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126Ab3GJKEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:04:54 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58325 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3GJKEw (ORCPT
+	id S1754261Ab3GJKFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:05:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50877 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753971Ab3GJKF2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:04:52 -0400
-From: Stephen Mell <sub.atomic.fusion@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Rientjes <rientjes@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        David Howells <dhowells@redhat.com>, yan <clouds.yan@gmail.com>,
-        Joonsoo Kim <js1304@gmail.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Kent Overstreet <koverstreet@google.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: [PATCH] proc: move mount options out of pid_namespace
-Date: Wed, 10 Jul 2013 10:05:36 +0000
-Message-ID: <1465435.WPuDKSaIme@pegasus>
-User-Agent: KMail/4.9.5 (Linux/3.9.3; KDE/4.9.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 10 Jul 2013 06:05:28 -0400
+Subject: Re: [PATCH 6/8] KVM: PPC: Add support for multiple-TCE hcalls
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=US-ASCII
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <51DCEA76.9070808@ozlabs.ru>
+Date: Wed, 10 Jul 2013 12:05:18 +0200
+Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <D10E7B99-3A7C-4275-9A49-3CB15598E705@suse.de>
+References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru> <1373123227-22969-7-git-send-email-aik@ozlabs.ru> <51DC4228.7010607@suse.de> <51DCEA76.9070808@ozlabs.ru>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the proc mount options hidepid and pidgid are stored on the pid_namespace struct that serves as proc's superblock info. As a result, mounting proc from the same pid namespace with different mount options will change the behaviour of any existing mounts.
 
-This patch creates a new struct, proc_sb_info, which contains the mount options and a reference to to the pid namespace. This should enable a future patch to make the pid namespace a mount option.
+On 10.07.2013, at 07:00, Alexey Kardashevskiy wrote:
 
-Signed-off-by: Stephen Mell <sub.atomic.fusion@gmail.com>
+> On 07/10/2013 03:02 AM, Alexander Graf wrote:
+>> On 07/06/2013 05:07 PM, Alexey Kardashevskiy wrote:
+>>> This adds real mode handlers for the H_PUT_TCE_INDIRECT and
+>>> H_STUFF_TCE hypercalls for QEMU emulated devices such as IBMVIO
+>>> devices or emulated PCI.  These calls allow adding multiple entries
+>>> (up to 512) into the TCE table in one call which saves time on
+>>> transition to/from real mode.
+>> 
+>> We don't mention QEMU explicitly in KVM code usually.
+>> 
+>>> This adds a tce_tmp cache to kvm_vcpu_arch to save valid TCEs
+>>> (copied from user and verified) before writing the whole list into
+>>> the TCE table. This cache will be utilized more in the upcoming
+>>> VFIO/IOMMU support to continue TCE list processing in the virtual
+>>> mode in the case if the real mode handler failed for some reason.
+>>> 
+>>> This adds a guest physical to host real address converter
+>>> and calls the existing H_PUT_TCE handler. The converting function
+>>> is going to be fully utilized by upcoming VFIO supporting patches.
+>>> 
+>>> This also implements the KVM_CAP_PPC_MULTITCE capability,
+>>> so in order to support the functionality of this patch, QEMU
+>>> needs to query for this capability and set the "hcall-multi-tce"
+>>> hypertas property only if the capability is present, otherwise
+>>> there will be serious performance degradation.
+>> 
+>> Same as above. But really you're only giving recommendations here. What's
+>> the point? Please describe what the benefit of this patch is, not what some
+>> other random subsystem might do with the benefits it brings.
+>> 
+>>> 
+>>> Signed-off-by: Paul Mackerras<paulus@samba.org>
+>>> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
+>>> 
+>>> ---
+>>> Changelog:
+>>> 2013/07/06:
+>>> * fixed number of wrong get_page()/put_page() calls
+>>> 
+>>> 2013/06/27:
+>>> * fixed clear of BUSY bit in kvmppc_lookup_pte()
+>>> * H_PUT_TCE_INDIRECT does realmode_get_page() now
+>>> * KVM_CAP_SPAPR_MULTITCE now depends on CONFIG_PPC_BOOK3S_64
+>>> * updated doc
+>>> 
+>>> 2013/06/05:
+>>> * fixed mistype about IBMVIO in the commit message
+>>> * updated doc and moved it to another section
+>>> * changed capability number
+>>> 
+>>> 2013/05/21:
+>>> * added kvm_vcpu_arch::tce_tmp
+>>> * removed cleanup if put_indirect failed, instead we do not even start
+>>> writing to TCE table if we cannot get TCEs from the user and they are
+>>> invalid
+>>> * kvmppc_emulated_h_put_tce is split to kvmppc_emulated_put_tce
+>>> and kvmppc_emulated_validate_tce (for the previous item)
+>>> * fixed bug with failthrough for H_IPI
+>>> * removed all get_user() from real mode handlers
+>>> * kvmppc_lookup_pte() added (instead of making lookup_linux_pte public)
+>>> 
+>>> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
+>>> ---
+>>>  Documentation/virtual/kvm/api.txt       |  25 +++
+>>>  arch/powerpc/include/asm/kvm_host.h     |   9 ++
+>>>  arch/powerpc/include/asm/kvm_ppc.h      |  16 +-
+>>>  arch/powerpc/kvm/book3s_64_vio.c        | 154 ++++++++++++++++++-
+>>>  arch/powerpc/kvm/book3s_64_vio_hv.c     | 260
+>>> ++++++++++++++++++++++++++++----
+>>>  arch/powerpc/kvm/book3s_hv.c            |  41 ++++-
+>>>  arch/powerpc/kvm/book3s_hv_rmhandlers.S |   6 +
+>>>  arch/powerpc/kvm/book3s_pr_papr.c       |  37 ++++-
+>>>  arch/powerpc/kvm/powerpc.c              |   3 +
+>>>  9 files changed, 517 insertions(+), 34 deletions(-)
+>>> 
+>>> diff --git a/Documentation/virtual/kvm/api.txt
+>>> b/Documentation/virtual/kvm/api.txt
+>>> index 6365fef..762c703 100644
+>>> --- a/Documentation/virtual/kvm/api.txt
+>>> +++ b/Documentation/virtual/kvm/api.txt
+>>> @@ -2362,6 +2362,31 @@ calls by the guest for that service will be passed
+>>> to userspace to be
+>>>  handled.
+>>> 
+>>> 
+>>> +4.86 KVM_CAP_PPC_MULTITCE
+>>> +
+>>> +Capability: KVM_CAP_PPC_MULTITCE
+>>> +Architectures: ppc
+>>> +Type: vm
+>>> +
+>>> +This capability means the kernel is capable of handling hypercalls
+>>> +H_PUT_TCE_INDIRECT and H_STUFF_TCE without passing those into the user
+>>> +space. This significanly accelerates DMA operations for PPC KVM guests.
+>> 
+>> significanly? Please run this through a spell checker.
+>> 
+>>> +The user space should expect that its handlers for these hypercalls
+>> 
+>> s/The//
+>> 
+>>> +are not going to be called.
+>> 
+>> Is user space guaranteed they will not be called? Or can it still happen?
+> 
+> ... if user space previously registered LIOBN in KVM (via
+> KVM_CREATE_SPAPR_TCE or similar calls).
+> 
+> ok?
+
+How about this?
+
+The hypercalls mentioned above may or may not be processed successfully in the kernel based fast path. If they can not be handled by the kernel, they will get passed on to user space. So user space still has to have an implementation for these despite the in kernel acceleration.
+
 ---
- fs/proc/base.c                | 41 ++++++++++++++++++------------
- fs/proc/inode.c               | 10 ++++----
- fs/proc/internal.h            |  8 ++++++
- fs/proc/root.c                | 58 +++++++++++++++++++++++++------------------
- fs/proc/self.c                | 10 +++++---
- include/linux/pid_namespace.h |  3 ---
- 6 files changed, 78 insertions(+), 52 deletions(-)
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 1485e38..db119ef 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -584,13 +584,13 @@ int proc_setattr(struct dentry *dentry, struct iattr *attr)
-  * May current process learn task's sched/cmdline info (for hide_pid_min=1)
-  * or euid/egid (for hide_pid_min=2)?
-  */
--static bool has_pid_permissions(struct pid_namespace *pid,
-+static bool has_pid_permissions(struct proc_sb_info *fsi,
- 				 struct task_struct *task,
- 				 int hide_pid_min)
- {
--	if (pid->hide_pid < hide_pid_min)
-+	if (fsi->hide_pid < hide_pid_min)
- 		return true;
--	if (in_group_p(pid->pid_gid))
-+	if (in_group_p(fsi->pid_gid))
- 		return true;
- 	return ptrace_may_access(task, PTRACE_MODE_READ);
- }
-@@ -598,18 +598,18 @@ static bool has_pid_permissions(struct pid_namespace *pid,
- 
- static int proc_pid_permission(struct inode *inode, int mask)
- {
--	struct pid_namespace *pid = inode->i_sb->s_fs_info;
-+	struct proc_sb_info *fsi = inode->i_sb->s_fs_info;
- 	struct task_struct *task;
- 	bool has_perms;
- 
- 	task = get_proc_task(inode);
- 	if (!task)
- 		return -ESRCH;
--	has_perms = has_pid_permissions(pid, task, 1);
-+	has_perms = has_pid_permissions(fsi, task, 1);
- 	put_task_struct(task);
- 
- 	if (!has_perms) {
--		if (pid->hide_pid == 2) {
-+		if (fsi->hide_pid == 2) {
- 			/*
- 			 * Let's make getdents(), stat(), and open()
- 			 * consistent with each other.  If a process
-@@ -670,12 +670,14 @@ static const struct file_operations proc_info_file_operations = {
- static int proc_single_show(struct seq_file *m, void *v)
- {
- 	struct inode *inode = m->private;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 	struct pid *pid;
- 	struct task_struct *task;
- 	int ret;
- 
--	ns = inode->i_sb->s_fs_info;
-+	fsi = inode->i_sb->s_fs_info;
-+	ns = fsi->ns;
- 	pid = proc_pid(inode);
- 	task = get_pid_task(pid, PIDTYPE_PID);
- 	if (!task)
-@@ -1574,7 +1576,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 	struct inode *inode = dentry->d_inode;
- 	struct task_struct *task;
- 	const struct cred *cred;
--	struct pid_namespace *pid = dentry->d_sb->s_fs_info;
-+	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
- 
- 	generic_fillattr(inode, stat);
- 
-@@ -1583,7 +1585,7 @@ int pid_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
- 	stat->gid = GLOBAL_ROOT_GID;
- 	task = pid_task(proc_pid(inode), PIDTYPE_PID);
- 	if (task) {
--		if (!has_pid_permissions(pid, task, 2)) {
-+		if (!has_pid_permissions(fsi, task, 2)) {
- 			rcu_read_unlock();
- 			/*
- 			 * This doesn't prevent learning whether PID exists,
-@@ -2111,7 +2113,7 @@ static int proc_timers_open(struct inode *inode, struct file *file)
- 		return -ENOMEM;
- 
- 	tp->pid = proc_pid(inode);
--	tp->ns = inode->i_sb->s_fs_info;
-+	tp->ns = inode->i_sb->s_fs_info->ns;
- 	return 0;
- }
- 
-@@ -2800,13 +2802,15 @@ struct dentry *proc_pid_lookup(struct inode *dir, struct dentry * dentry, unsign
- 	int result = 0;
- 	struct task_struct *task;
- 	unsigned tgid;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 
- 	tgid = name_to_int(dentry);
- 	if (tgid == ~0U)
- 		goto out;
- 
--	ns = dentry->d_sb->s_fs_info;
-+	fsi = dentry->d_sb->s_fs_info;
-+	ns = fsi->ns;
- 	rcu_read_lock();
- 	task = find_task_by_pid_ns(tgid, ns);
- 	if (task)
-@@ -2870,14 +2874,15 @@ retry:
- int proc_pid_readdir(struct file *file, struct dir_context *ctx)
- {
- 	struct tgid_iter iter;
--	struct pid_namespace *ns = file->f_dentry->d_sb->s_fs_info;
-+	struct proc_sb_info *fsi = file->f_dentry->d_sb->s_fs_info;
-+	struct pid_namespace *ns = fsi->ns;
- 	loff_t pos = ctx->pos;
- 
- 	if (pos >= PID_MAX_LIMIT + TGID_OFFSET)
- 		return 0;
- 
- 	if (pos == TGID_OFFSET - 1) {
--		struct inode *inode = ns->proc_self->d_inode;
-+		struct inode *inode = fsi->proc_self->d_inode;
- 		if (!dir_emit(ctx, "self", 4, inode->i_ino, DT_LNK))
- 			return 0;
- 		iter.tgid = 0;
-@@ -2890,7 +2895,7 @@ int proc_pid_readdir(struct file *file, struct dir_context *ctx)
- 	     iter.tgid += 1, iter = next_tgid(ns, iter)) {
- 		char name[PROC_NUMBUF];
- 		int len;
--		if (!has_pid_permissions(ns, iter.task, 2))
-+		if (!has_pid_permissions(fsi, iter.task, 2))
- 			continue;
- 
- 		len = snprintf(name, sizeof(name), "%d", iter.tgid);
-@@ -3045,6 +3050,7 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
- 	struct task_struct *task;
- 	struct task_struct *leader = get_proc_task(dir);
- 	unsigned tid;
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 
- 	if (!leader)
-@@ -3054,7 +3060,8 @@ static struct dentry *proc_task_lookup(struct inode *dir, struct dentry * dentry
- 	if (tid == ~0U)
- 		goto out;
- 
--	ns = dentry->d_sb->s_fs_info;
-+	fsi = dentry->d_sb->s_fs_info;
-+	ns = fsi->ns;
- 	rcu_read_lock();
- 	task = find_task_by_pid_ns(tid, ns);
- 	if (task)
-@@ -3148,6 +3155,7 @@ static int proc_task_readdir(struct file *file, struct dir_context *ctx)
- {
- 	struct task_struct *leader = NULL;
- 	struct task_struct *task = get_proc_task(file_inode(file));
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 	int tid;
- 
-@@ -3169,7 +3177,8 @@ static int proc_task_readdir(struct file *file, struct dir_context *ctx)
- 	/* f_version caches the tgid value that the last readdir call couldn't
- 	 * return. lseek aka telldir automagically resets f_version to 0.
- 	 */
--	ns = file->f_dentry->d_sb->s_fs_info;
-+	fsi = file->f_dentry->d_sb->s_fs_info;
-+	ns = fsi->ns;
- 	tid = (int)file->f_version;
- 	file->f_version = 0;
- 	for (task = first_tid(leader, tid, ctx->pos - 2, ns);
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 073aea6..148737d 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -110,12 +110,12 @@ void __init proc_init_inodecache(void)
- static int proc_show_options(struct seq_file *seq, struct dentry *root)
- {
- 	struct super_block *sb = root->d_sb;
--	struct pid_namespace *pid = sb->s_fs_info;
-+	struct proc_sb_info *fsi = sb->s_fs_info;
- 
--	if (!gid_eq(pid->pid_gid, GLOBAL_ROOT_GID))
--		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, pid->pid_gid));
--	if (pid->hide_pid != 0)
--		seq_printf(seq, ",hidepid=%u", pid->hide_pid);
-+	if (!gid_eq(fsi->pid_gid, GLOBAL_ROOT_GID))
-+		seq_printf(seq, ",gid=%u", from_kgid_munged(&init_user_ns, fsi->pid_gid));
-+	if (fsi->hide_pid != 0)
-+		seq_printf(seq, ",hidepid=%u", fsi->hide_pid);
- 
- 	return 0;
- }
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 651d09a..885f542 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -29,6 +29,14 @@ struct mempolicy;
-  * /proc file has a parent, but "subdir" is NULL for all
-  * non-directory entries).
-  */
-+
-+struct proc_sb_info {
-+	struct pid_namespace *ns;
-+	struct dentry *proc_self;
-+	kgid_t pid_gid;
-+	int hide_pid;
-+};
-+
- struct proc_dir_entry {
- 	unsigned int low_ino;
- 	umode_t mode;
-diff --git a/fs/proc/root.c b/fs/proc/root.c
-index 229e366..f8e97d6 100644
---- a/fs/proc/root.c
-+++ b/fs/proc/root.c
-@@ -20,6 +20,7 @@
- #include <linux/mount.h>
- #include <linux/pid_namespace.h>
- #include <linux/parser.h>
-+#include <linux/slab.h>
- 
- #include "internal.h"
- 
-@@ -31,10 +32,9 @@ static int proc_test_super(struct super_block *sb, void *data)
- static int proc_set_super(struct super_block *sb, void *data)
- {
- 	int err = set_anon_super(sb, NULL);
--	if (!err) {
--		struct pid_namespace *ns = (struct pid_namespace *)data;
--		sb->s_fs_info = get_pid_ns(ns);
--	}
-+	if (!err)
-+		sb->s_fs_info = (struct proc_sb_info *)data;
-+
- 	return err;
- }
- 
-@@ -48,7 +48,7 @@ static const match_table_t tokens = {
- 	{Opt_err, NULL},
- };
- 
--static int proc_parse_options(char *options, struct pid_namespace *pid)
-+static int proc_parse_options(char *options, struct proc_sb_info *fsi)
- {
- 	char *p;
- 	substring_t args[MAX_OPT_ARGS];
-@@ -68,7 +68,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
- 		case Opt_gid:
- 			if (match_int(&args[0], &option))
- 				return 0;
--			pid->pid_gid = make_kgid(current_user_ns(), option);
-+			fsi->pid_gid = make_kgid(current_user_ns(), option);
- 			break;
- 		case Opt_hidepid:
- 			if (match_int(&args[0], &option))
-@@ -77,7 +77,7 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
- 				pr_err("proc: hidepid value must be between 0 and 2.\n");
- 				return 0;
- 			}
--			pid->hide_pid = option;
-+			fsi->hide_pid = option;
- 			break;
- 		default:
- 			pr_err("proc: unrecognized mount option \"%s\" "
-@@ -91,36 +91,44 @@ static int proc_parse_options(char *options, struct pid_namespace *pid)
- 
- int proc_remount(struct super_block *sb, int *flags, char *data)
- {
--	struct pid_namespace *pid = sb->s_fs_info;
--	return !proc_parse_options(data, pid);
-+	struct proc_sb_info *fsi = sb->s_fs_info;
-+	return !proc_parse_options(data, fsi);
- }
- 
- static struct dentry *proc_mount(struct file_system_type *fs_type,
- 	int flags, const char *dev_name, void *data)
- {
- 	int err;
-+	struct proc_sb_info *fsi;
- 	struct super_block *sb;
--	struct pid_namespace *ns;
- 	char *options;
- 
-+	fsi = kzalloc(sizeof(struct proc_sb_info), GFP_KERNEL);
-+	if (!fsi)
-+		return ERR_PTR(-ENOMEM);
-+
-+	sb = sget(fs_type, proc_test_super, proc_set_super, flags, fsi);
-+	if (IS_ERR(sb))
-+		return ERR_CAST(sb);
-+
- 	if (flags & MS_KERNMOUNT) {
--		ns = (struct pid_namespace *)data;
-+		fsi->ns = (struct pid_namespace *)data;
-+		get_pid_ns(fsi->ns);
- 		options = NULL;
- 	} else {
--		ns = task_active_pid_ns(current);
--		options = data;
--
- 		if (!current_user_ns()->may_mount_proc)
- 			return ERR_PTR(-EPERM);
--	}
- 
--	sb = sget(fs_type, proc_test_super, proc_set_super, flags, ns);
--	if (IS_ERR(sb))
--		return ERR_CAST(sb);
-+		options = data;
-+		if (!proc_parse_options(options, fsi)) {
-+			deactivate_locked_super(sb);
-+			return ERR_PTR(-EINVAL);
-+		}
- 
--	if (!proc_parse_options(options, ns)) {
--		deactivate_locked_super(sb);
--		return ERR_PTR(-EINVAL);
-+		if (!fsi->ns) {
-+			fsi->ns = task_active_pid_ns(current);
-+			get_pid_ns(fsi->ns);
-+		}
- 	}
- 
- 	if (!sb->s_root) {
-@@ -138,13 +146,15 @@ static struct dentry *proc_mount(struct file_system_type *fs_type,
- 
- static void proc_kill_sb(struct super_block *sb)
- {
-+	struct proc_sb_info *fsi;
- 	struct pid_namespace *ns;
- 
--	ns = (struct pid_namespace *)sb->s_fs_info;
--	if (ns->proc_self)
--		dput(ns->proc_self);
-+	fsi = (struct proc_sb_info *)sb->s_fs_info;
-+	ns = (struct pid_namespace *)fsi->ns;
-+	dput(fsi->proc_self);
- 	kill_anon_super(sb);
- 	put_pid_ns(ns);
-+	kfree(fsi);
- }
- 
- static struct file_system_type proc_fs_type = {
-diff --git a/fs/proc/self.c b/fs/proc/self.c
-index 6b6a993..ff4a2e2 100644
---- a/fs/proc/self.c
-+++ b/fs/proc/self.c
-@@ -10,7 +10,8 @@
- static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
- 			      int buflen)
- {
--	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
-+	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
-+	struct pid_namespace *ns = fsi->ns;
- 	pid_t tgid = task_tgid_nr_ns(current, ns);
- 	char tmp[PROC_NUMBUF];
- 	if (!tgid)
-@@ -21,7 +22,8 @@ static int proc_self_readlink(struct dentry *dentry, char __user *buffer,
- 
- static void *proc_self_follow_link(struct dentry *dentry, struct nameidata *nd)
- {
--	struct pid_namespace *ns = dentry->d_sb->s_fs_info;
-+	struct proc_sb_info *fsi = dentry->d_sb->s_fs_info;
-+	struct pid_namespace *ns = fsi->ns;
- 	pid_t tgid = task_tgid_nr_ns(current, ns);
- 	char *name = ERR_PTR(-ENOENT);
- 	if (tgid) {
-@@ -55,7 +57,7 @@ static unsigned self_inum;
- int proc_setup_self(struct super_block *s)
- {
- 	struct inode *root_inode = s->s_root->d_inode;
--	struct pid_namespace *ns = s->s_fs_info;
-+	struct proc_sb_info *fsi = s->s_fs_info;
- 	struct dentry *self;
- 	
- 	mutex_lock(&root_inode->i_mutex);
-@@ -82,7 +84,7 @@ int proc_setup_self(struct super_block *s)
- 		pr_err("proc_fill_super: can't allocate /proc/self\n");
- 		return PTR_ERR(self);
- 	}
--	ns->proc_self = self;
-+	fsi->proc_self = self;
- 	return 0;
- }
- 
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index e277266..6185386 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -31,15 +31,12 @@ struct pid_namespace {
- 	struct pid_namespace *parent;
- #ifdef CONFIG_PROC_FS
- 	struct vfsmount *proc_mnt;
--	struct dentry *proc_self;
- #endif
- #ifdef CONFIG_BSD_PROCESS_ACCT
- 	struct bsd_acct_struct *bacct;
- #endif
- 	struct user_namespace *user_ns;
- 	struct work_struct proc_work;
--	kgid_t pid_gid;
--	int hide_pid;
- 	int reboot;	/* group exit code if this pidns was rebooted */
- 	unsigned int proc_inum;
- };
+
+The target audience for this documentation is user space KVM API users. Someone developing kvm tool for example. They want to know implications specific CAPs have.
+
+> 
+> There is also KVM_CREATE_SPAPR_TCE_IOMMU but it is not in the kernel yet
+> and may never get there.
+> 
+> 
+>>> +In order to enable H_PUT_TCE_INDIRECT and H_STUFF_TCE use in the guest,
+>>> +the user space might have to advertise it for the guest. For example,
+>>> +IBM pSeries guest starts using them if "hcall-multi-tce" is present in
+>>> +the "ibm,hypertas-functions" device-tree property.
+>> 
+>> This paragraph describes sPAPR. That's fine, but please document it as
+>> such. Also please check your grammar.
+> 
+>>> +
+>>> +Without this capability, only H_PUT_TCE is handled by the kernel and
+>>> +therefore the use of H_PUT_TCE_INDIRECT and H_STUFF_TCE is not recommended
+>>> +unless the capability is present as passing hypercalls to the userspace
+>>> +slows operations a lot.
+>>> +
+>>> +Unlike other capabilities of this section, this one is always enabled.
+>> 
+>> Why? Wouldn't that confuse older user space?
+> 
+> 
+> How? Old user space won't check for this capability and won't tell the
+> guest to use it (via "hcall-multi-tce"). Old H_PUT_TCE is still there.
+> 
+> If the guest always uses H_PUT_TCE_INDIRECT/H_STUFF_TCE no matter what,
+> then it is its problem - it won't work now anyway as neither QEMU nor host
+> kernel supports these calls.
+
+Always assume that you are a kernel developer without knowledge of any user space code using your interfaces. So there is the theoretical possibility that there is a user space client out there that implements H_PUT_TCE_INDIRECT and advertises hcall-multi-tce to the guest. Would that client break? If so, we should definitely have the CAP disabled by default.
+
+But really, it's also as much about consistency as anything else. If we leave everything as is and always extend functionality by enabling new CAPs, we're pretty much guaranteed that we don't break anything by accident. It also makes debugging easier because you can for example disable this particular feature to see whether something has bad side effects.
+
+> 
+> 
+> 
+>>> +
+>>> +
+>>>  5. The kvm_run structure
+>>>  ------------------------
+>>> 
+>>> diff --git a/arch/powerpc/include/asm/kvm_host.h
+>>> b/arch/powerpc/include/asm/kvm_host.h
+>>> index af326cd..20d04bd 100644
+>>> --- a/arch/powerpc/include/asm/kvm_host.h
+>>> +++ b/arch/powerpc/include/asm/kvm_host.h
+>>> @@ -180,6 +180,7 @@ struct kvmppc_spapr_tce_table {
+>>>      struct kvm *kvm;
+>>>      u64 liobn;
+>>>      u32 window_size;
+>>> +    struct { struct { unsigned long put, indir, stuff; } rm, vm; } stat;
+>> 
+>> You don't need this.
+>> 
+>>>      struct page *pages[0];
+>>>  };
+>>> 
+>>> @@ -609,6 +610,14 @@ struct kvm_vcpu_arch {
+>>>      spinlock_t tbacct_lock;
+>>>      u64 busy_stolen;
+>>>      u64 busy_preempt;
+>>> +
+>>> +    unsigned long *tce_tmp_hpas;    /* TCE cache for TCE_PUT_INDIRECT
+>>> hcall */
+>>> +    enum {
+>>> +        TCERM_NONE,
+>>> +        TCERM_GETPAGE,
+>>> +        TCERM_PUTTCE,
+>>> +        TCERM_PUTLIST,
+>>> +    } tce_rm_fail;            /* failed stage of request processing */
+>>>  #endif
+>>>  };
+>>> 
+>>> diff --git a/arch/powerpc/include/asm/kvm_ppc.h
+>>> b/arch/powerpc/include/asm/kvm_ppc.h
+>>> index a5287fe..fa722a0 100644
+>>> --- a/arch/powerpc/include/asm/kvm_ppc.h
+>>> +++ b/arch/powerpc/include/asm/kvm_ppc.h
+>>> @@ -133,8 +133,20 @@ extern int kvmppc_pseries_do_hcall(struct kvm_vcpu
+>>> *vcpu);
+>>> 
+>>>  extern long kvm_vm_ioctl_create_spapr_tce(struct kvm *kvm,
+>>>                  struct kvm_create_spapr_tce *args);
+>>> -extern long kvmppc_h_put_tce(struct kvm_vcpu *vcpu, unsigned long liobn,
+>>> -                 unsigned long ioba, unsigned long tce);
+>>> +extern struct kvmppc_spapr_tce_table *kvmppc_find_tce_table(
+>>> +        struct kvm_vcpu *vcpu, unsigned long liobn);
+>>> +extern long kvmppc_emulated_validate_tce(unsigned long tce);
+>>> +extern void kvmppc_emulated_put_tce(struct kvmppc_spapr_tce_table *tt,
+>>> +        unsigned long ioba, unsigned long tce);
+>>> +extern long kvmppc_vm_h_put_tce(struct kvm_vcpu *vcpu,
+>>> +        unsigned long liobn, unsigned long ioba,
+>>> +        unsigned long tce);
+>>> +extern long kvmppc_vm_h_put_tce_indirect(struct kvm_vcpu *vcpu,
+>>> +        unsigned long liobn, unsigned long ioba,
+>>> +        unsigned long tce_list, unsigned long npages);
+>>> +extern long kvmppc_vm_h_stuff_tce(struct kvm_vcpu *vcpu,
+>>> +        unsigned long liobn, unsigned long ioba,
+>>> +        unsigned long tce_value, unsigned long npages);
+>>>  extern long kvm_vm_ioctl_allocate_rma(struct kvm *kvm,
+>>>                  struct kvm_allocate_rma *rma);
+>>>  extern struct kvmppc_linear_info *kvm_alloc_rma(void);
+>>> diff --git a/arch/powerpc/kvm/book3s_64_vio.c
+>>> b/arch/powerpc/kvm/book3s_64_vio.c
+>>> index b2d3f3b..99bf4e5 100644
+>>> --- a/arch/powerpc/kvm/book3s_64_vio.c
+>>> +++ b/arch/powerpc/kvm/book3s_64_vio.c
+>>> @@ -14,6 +14,7 @@
+>>>   *
+>>>   * Copyright 2010 Paul Mackerras, IBM Corp.<paulus@au1.ibm.com>
+>>>   * Copyright 2011 David Gibson, IBM Corporation<dwg@au1.ibm.com>
+>>> + * Copyright 2013 Alexey Kardashevskiy, IBM Corporation<aik@au1.ibm.com>
+>>>   */
+>>> 
+>>>  #include<linux/types.h>
+>>> @@ -36,8 +37,10 @@
+>>>  #include<asm/ppc-opcode.h>
+>>>  #include<asm/kvm_host.h>
+>>>  #include<asm/udbg.h>
+>>> +#include<asm/iommu.h>
+>>> +#include<asm/tce.h>
+>>> 
+>>> -#define TCES_PER_PAGE    (PAGE_SIZE / sizeof(u64))
+>>> +#define ERROR_ADDR      ((void *)~(unsigned long)0x0)
+>>> 
+>>>  static long kvmppc_stt_npages(unsigned long window_size)
+>>>  {
+>>> @@ -50,6 +53,20 @@ static void release_spapr_tce_table(struct
+>>> kvmppc_spapr_tce_table *stt)
+>>>      struct kvm *kvm = stt->kvm;
+>>>      int i;
+>>> 
+>>> +#define __SV(x) stt->stat.x
+>>> +#define __SVD(x) (__SV(rm.x)?(__SV(rm.x)-__SV(vm.x)):0)
+>>> +    pr_debug("%s stat for liobn=%llx\n"
+>>> +            "--------------- realmode ----- virtmode ---\n"
+>>> +            "put_tce       %10ld     %10ld\n"
+>>> +            "put_tce_indir %10ld     %10ld\n"
+>>> +            "stuff_tce     %10ld     %10ld\n",
+>>> +            __func__, stt->liobn,
+>>> +            __SVD(put), __SV(vm.put),
+>>> +            __SVD(indir), __SV(vm.indir),
+>>> +            __SVD(stuff), __SV(vm.stuff));
+>>> +#undef __SVD
+>>> +#undef __SV
+>> 
+>> All of these stat points should just be trace points. You can do the
+>> statistic gathering from user space then.
+>> 
+>>> +
+>>>      mutex_lock(&kvm->lock);
+>>>      list_del(&stt->list);
+>>>      for (i = 0; i<  kvmppc_stt_npages(stt->window_size); i++)
+>>> @@ -148,3 +165,138 @@ fail:
+>>>      }
+>>>      return ret;
+>>>  }
+>>> +
+>>> +/* Converts guest physical address to host virtual address */
+>>> +static void __user *kvmppc_vm_gpa_to_hva_and_get(struct kvm_vcpu *vcpu,
+>> 
+>> Please don't distinguish _vm versions. They're the normal case. _rm ones
+>> are the special ones.
+>> 
+>>> +        unsigned long gpa, struct page **pg)
+>>> +{
+>>> +    unsigned long hva, gfn = gpa>>  PAGE_SHIFT;
+>>> +    struct kvm_memory_slot *memslot;
+>>> +
+>>> +    memslot = search_memslots(kvm_memslots(vcpu->kvm), gfn);
+>>> +    if (!memslot)
+>>> +        return ERROR_ADDR;
+>>> +
+>>> +    hva = __gfn_to_hva_memslot(memslot, gfn) + (gpa&  ~PAGE_MASK);
+>> 
+>> s/+/|/
+>> 
+>>> +
+>>> +    if (get_user_pages_fast(hva&  PAGE_MASK, 1, 0, pg) != 1)
+>>> +        return ERROR_ADDR;
+>>> +
+>>> +    return (void *) hva;
+>>> +}
+>>> +
+>>> +long kvmppc_vm_h_put_tce(struct kvm_vcpu *vcpu,
+>>> +        unsigned long liobn, unsigned long ioba,
+>>> +        unsigned long tce)
+>>> +{
+>>> +    long ret;
+>>> +    struct kvmppc_spapr_tce_table *tt;
+>>> +
+>>> +    tt = kvmppc_find_tce_table(vcpu, liobn);
+>>> +    /* Didn't find the liobn, put it to userspace */
+>> 
+>> Unclear comment.
+> 
+> 
+> What detail is missing?
+
+Grammar wise "it" in the second half of the sentence refers to liobn. So you "put" the "liobn to userspace". That sentence doesn't make any sense.
+
+What you really want to say is:
+
+  /* Couldn't find the liobn. Something went wrong. Let user space handle the hypercall. That has better ways of dealing with errors. */
+
+> 
+> 
+>>> +    if (!tt)
+>>> +        return H_TOO_HARD;
+>>> +
+>>> +    ++tt->stat.vm.put;
+>>> +
+>>> +    if (ioba>= tt->window_size)
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    ret = kvmppc_emulated_validate_tce(tce);
+>>> +    if (ret)
+>>> +        return ret;
+>>> +
+>>> +    kvmppc_emulated_put_tce(tt, ioba, tce);
+>>> +
+>>> +    return H_SUCCESS;
+>>> +}
+>>> +
+>>> +long kvmppc_vm_h_put_tce_indirect(struct kvm_vcpu *vcpu,
+>>> +        unsigned long liobn, unsigned long ioba,
+>>> +        unsigned long tce_list, unsigned long npages)
+>>> +{
+>>> +    struct kvmppc_spapr_tce_table *tt;
+>>> +    long i, ret = H_SUCCESS;
+>>> +    unsigned long __user *tces;
+>>> +    struct page *pg = NULL;
+>>> +
+>>> +    tt = kvmppc_find_tce_table(vcpu, liobn);
+>>> +    /* Didn't find the liobn, put it to userspace */
+>>> +    if (!tt)
+>>> +        return H_TOO_HARD;
+>>> +
+>>> +    ++tt->stat.vm.indir;
+>>> +
+>>> +    /*
+>>> +     * The spec says that the maximum size of the list is 512 TCEs so
+>>> +     * so the whole table addressed resides in 4K page
+>> 
+>> so so?
+>> 
+>>> +     */
+>>> +    if (npages>  512)
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    if (tce_list&  ~IOMMU_PAGE_MASK)
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    if ((ioba + (npages<<  IOMMU_PAGE_SHIFT))>  tt->window_size)
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    tces = kvmppc_vm_gpa_to_hva_and_get(vcpu, tce_list,&pg);
+>>> +    if (tces == ERROR_ADDR)
+>>> +        return H_TOO_HARD;
+>>> +
+>>> +    if (vcpu->arch.tce_rm_fail == TCERM_PUTLIST)
+>>> +        goto put_list_page_exit;
+>>> +
+>>> +    for (i = 0; i<  npages; ++i) {
+>>> +        if (get_user(vcpu->arch.tce_tmp_hpas[i], tces + i)) {
+>>> +            ret = H_PARAMETER;
+>>> +            goto put_list_page_exit;
+>>> +        }
+>>> +
+>>> +        ret = kvmppc_emulated_validate_tce(vcpu->arch.tce_tmp_hpas[i]);
+>>> +        if (ret)
+>>> +            goto put_list_page_exit;
+>>> +    }
+>>> +
+>>> +    for (i = 0; i<  npages; ++i)
+>>> +        kvmppc_emulated_put_tce(tt, ioba + (i<<  IOMMU_PAGE_SHIFT),
+>>> +                vcpu->arch.tce_tmp_hpas[i]);
+>>> +put_list_page_exit:
+>>> +    if (pg)
+>>> +        put_page(pg);
+>>> +
+>>> +    if (vcpu->arch.tce_rm_fail != TCERM_NONE) {
+>>> +        vcpu->arch.tce_rm_fail = TCERM_NONE;
+>>> +        if (pg&&  !PageCompound(pg))
+>>> +            put_page(pg); /* finish pending realmode_put_page() */
+>>> +    }
+>>> +
+>>> +    return ret;
+>>> +}
+>>> +
+>>> +long kvmppc_vm_h_stuff_tce(struct kvm_vcpu *vcpu,
+>>> +        unsigned long liobn, unsigned long ioba,
+>>> +        unsigned long tce_value, unsigned long npages)
+>>> +{
+>>> +    struct kvmppc_spapr_tce_table *tt;
+>>> +    long i, ret;
+>>> +
+>>> +    tt = kvmppc_find_tce_table(vcpu, liobn);
+>>> +    /* Didn't find the liobn, put it to userspace */
+>>> +    if (!tt)
+>>> +        return H_TOO_HARD;
+>>> +
+>>> +    ++tt->stat.vm.stuff;
+>>> +
+>>> +    if ((ioba + (npages<<  IOMMU_PAGE_SHIFT))>  tt->window_size)
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    ret = kvmppc_emulated_validate_tce(tce_value);
+>>> +    if (ret || (tce_value&  (TCE_PCI_WRITE | TCE_PCI_READ)))
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    for (i = 0; i<  npages; ++i, ioba += IOMMU_PAGE_SIZE)
+>>> +        kvmppc_emulated_put_tce(tt, ioba, tce_value);
+>>> +
+>>> +    return H_SUCCESS;
+>>> +}
+>>> diff --git a/arch/powerpc/kvm/book3s_64_vio_hv.c
+>>> b/arch/powerpc/kvm/book3s_64_vio_hv.c
+>>> index 30c2f3b..cd3e6f9 100644
+>>> --- a/arch/powerpc/kvm/book3s_64_vio_hv.c
+>>> +++ b/arch/powerpc/kvm/book3s_64_vio_hv.c
+>>> @@ -14,6 +14,7 @@
+>>>   *
+>>>   * Copyright 2010 Paul Mackerras, IBM Corp.<paulus@au1.ibm.com>
+>>>   * Copyright 2011 David Gibson, IBM Corporation<dwg@au1.ibm.com>
+>>> + * Copyright 2013 Alexey Kardashevskiy, IBM Corporation<aik@au1.ibm.com>
+>>>   */
+>>> 
+>>>  #include<linux/types.h>
+>>> @@ -35,42 +36,243 @@
+>>>  #include<asm/ppc-opcode.h>
+>>>  #include<asm/kvm_host.h>
+>>>  #include<asm/udbg.h>
+>>> +#include<asm/iommu.h>
+>>> +#include<asm/tce.h>
+>>> 
+>>>  #define TCES_PER_PAGE    (PAGE_SIZE / sizeof(u64))
+>>> +#define ERROR_ADDR      (~(unsigned long)0x0)
+>>> 
+>>> -/* WARNING: This will be called in real-mode on HV KVM and virtual
+>>> - *          mode on PR KVM
+>> 
+>> What's wrong with the warning?
+> 
+> 
+> It belongs to kvmppc_h_put_tce() which is not called in virtual mode anymore.
+
+I thought the comment applied to the whole file before? Hrm. Maybe I misread it then.
+
+> It is technically correct for kvmppc_find_tce_table() though. Should I put
+> this comment before every function which may be called from real and
+> virtual modes?
+
+Yes, please. Otherwise someone might stick an access to a non-linear address in there by accident.
+
+> 
+> 
+> 
+>>> +/*
+>>> + * Finds a TCE table descriptor by LIOBN
+>>>   */
+>>> +struct kvmppc_spapr_tce_table *kvmppc_find_tce_table(struct kvm_vcpu *vcpu,
+>>> +        unsigned long liobn)
+>>> +{
+>>> +    struct kvmppc_spapr_tce_table *tt;
+>>> +
+>>> +    list_for_each_entry(tt,&vcpu->kvm->arch.spapr_tce_tables, list) {
+>>> +        if (tt->liobn == liobn)
+>>> +            return tt;
+>>> +    }
+>>> +
+>>> +    return NULL;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(kvmppc_find_tce_table);
+>>> +
+>>> +#ifdef DEBUG
+>>> +/*
+>>> + * Lets user mode disable realmode handlers by putting big number
+>>> + * in the bottom value of LIOBN
+>> 
+>> What? Seriously? Just don't enable the CAP.
+> 
+> 
+> It is under DEBUG. It really, really helps to be able to disable real mode
+> handlers without reboot. Ok, no debug code, I'll remove.
+
+Debug code is good, but #ifdefs are bad. For you, an #ifdef reads like "code that doesn't do any hard when disabled". For me, #ifdefs read "code that definitely breaks because nobody turns the #define on".
+
+So please, avoid #ifdef'ed code whenever possible. Switching the CAP on and off is a much better debug approach in this case.
+
+> 
+> 
+>>> + */
+>>> +#define kvmppc_find_tce_table(a, b) \
+>>> +        ((((b)&0xffff)>10000)?NULL:kvmppc_find_tce_table((a), (b)))
+>>> +#endif
+>>> +
+>>> +/*
+>>> + * Validates TCE address.
+>>> + * At the moment only flags are validated as other checks will
+>>> significantly slow
+>>> + * down or can make it even impossible to handle TCE requests in real mode.
+>> 
+>> What?
+> 
+> 
+> What is missing here (besides good english)?
+
+What badness could slip through by not validating everything?
+
+> 
+> 
+>>> + */
+>>> +long kvmppc_emulated_validate_tce(unsigned long tce)
+>> 
+>> I don't like the naming scheme. Please turn this around and make it
+>> kvmppc_tce_validate().
+> 
+> 
+> Oh. "Like"... Ok.
+
+Yes. Like.
+
+> 
+> 
+>>> +{
+>>> +    if (tce&  ~(IOMMU_PAGE_MASK | TCE_PCI_WRITE | TCE_PCI_READ))
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    return H_SUCCESS;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(kvmppc_emulated_validate_tce);
+>>> +
+>>> +/*
+>>> + * Handles TCE requests for QEMU emulated devices.
+>> 
+>> We still don't mention QEMU in KVM code. And does it really matter whether
+>> they're emulated by QEMU? Devices could also be emulated by KVM.
+>> 
+>>> + * Puts guest TCE values to the table and expects QEMU to convert them
+>>> + * later in a QEMU device implementation.
+>>> + * Called in both real and virtual modes.
+>>> + * Cannot fail so kvmppc_emulated_validate_tce must be called before it.
+>>> + */
+>>> +void kvmppc_emulated_put_tce(struct kvmppc_spapr_tce_table *tt,
+>> 
+>> kvmppc_tce_put()
+>> 
+>>> +        unsigned long ioba, unsigned long tce)
+>>> +{
+>>> +    unsigned long idx = ioba>>  SPAPR_TCE_SHIFT;
+>>> +    struct page *page;
+>>> +    u64 *tbl;
+>>> +
+>>> +    /*
+>>> +     * Note on the use of page_address() in real mode,
+>>> +     *
+>>> +     * It is safe to use page_address() in real mode on ppc64 because
+>>> +     * page_address() is always defined as lowmem_page_address()
+>>> +     * which returns __va(PFN_PHYS(page_to_pfn(page))) which is arithmetial
+>>> +     * operation and does not access page struct.
+>>> +     *
+>>> +     * Theoretically page_address() could be defined different
+>>> +     * but either WANT_PAGE_VIRTUAL or HASHED_PAGE_VIRTUAL
+>>> +     * should be enabled.
+>>> +     * WANT_PAGE_VIRTUAL is never enabled on ppc32/ppc64,
+>>> +     * HASHED_PAGE_VIRTUAL could be enabled for ppc32 only and only
+>>> +     * if CONFIG_HIGHMEM is defined. As CONFIG_SPARSEMEM_VMEMMAP
+>>> +     * is not expected to be enabled on ppc32, page_address()
+>>> +     * is safe for ppc32 as well.
+>>> +     */
+>>> +#if defined(HASHED_PAGE_VIRTUAL) || defined(WANT_PAGE_VIRTUAL)
+>>> +#error TODO: fix to avoid page_address() here
+>>> +#endif
+>> 
+>> Can you extract the text above, the check and the page_address call into a
+>> simple wrapper function?
+> 
+> 
+> Is this function also too big? Sorry, I do not understand the comment.
+
+All of the comment and #if here only deal with the fact that you have a real mode hack to call page_address() that happens to work under specific circumstances.
+
+There's nothing kvmppc_tce_put() specific about this. The page_address() code happens to get called here, sure. But if I read the kvmppc_tce_put() function I don't care about these details - I want to understand the code flow that ends up writing the TCE.
+
+> 
+> 
+>>> +    page = tt->pages[idx / TCES_PER_PAGE];
+>>> +    tbl = (u64 *)page_address(page);
+>>> +
+>>> +    /* udbg_printf("tce @ %p\n",&tbl[idx % TCES_PER_PAGE]); */
+>> 
+>> This is not an RFC, is it?
+> 
+> 
+> Any debug code is prohibited? Ok, I'll remove.
+
+Debug code that requires code changes is prohibited, yes. Debug code that is runtime switchable (pr_debug, trace points, etc) are allowed.
+
+> 
+> 
+>>> +    tbl[idx % TCES_PER_PAGE] = tce;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(kvmppc_emulated_put_tce);
+>>> +
+>>> +#ifdef CONFIG_KVM_BOOK3S_64_HV
+>>> +/*
+>>> + * Converts guest physical address to host physical address.
+>>> + * Tries to increase page counter via realmode_get_page() and
+>>> + * returns ERROR_ADDR if failed.
+>>> + */
+>>> +static unsigned long kvmppc_rm_gpa_to_hpa_and_get(struct kvm_vcpu *vcpu,
+>>> +        unsigned long gpa, struct page **pg)
+>>> +{
+>>> +    struct kvm_memory_slot *memslot;
+>>> +    pte_t *ptep, pte;
+>>> +    unsigned long hva, hpa = ERROR_ADDR;
+>>> +    unsigned long gfn = gpa>>  PAGE_SHIFT;
+>>> +    unsigned shift = 0;
+>>> +
+>>> +    memslot = search_memslots(kvm_memslots(vcpu->kvm), gfn);
+>>> +    if (!memslot)
+>>> +        return ERROR_ADDR;
+>>> +
+>>> +    hva = __gfn_to_hva_memslot(memslot, gfn);
+>>> +
+>>> +    ptep = find_linux_pte_or_hugepte(vcpu->arch.pgdir, hva,&shift);
+>>> +    if (!ptep || !pte_present(*ptep))
+>>> +        return ERROR_ADDR;
+>>> +    pte = *ptep;
+>>> +
+>>> +    if (((gpa&  TCE_PCI_WRITE) || pte_write(pte))&&  !pte_dirty(pte))
+>>> +        return ERROR_ADDR;
+>>> +
+>>> +    if (!pte_young(pte))
+>>> +        return ERROR_ADDR;
+>>> +
+>>> +    if (!shift)
+>>> +        shift = PAGE_SHIFT;
+>>> +
+>>> +    /* Put huge pages handling to the virtual mode */
+>>> +    if (shift>  PAGE_SHIFT)
+>>> +        return ERROR_ADDR;
+>>> +
+>>> +    *pg = realmode_pfn_to_page(pte_pfn(pte));
+>>> +    if (!*pg || realmode_get_page(*pg))
+>>> +        return ERROR_ADDR;
+>>> +
+>>> +    /* pte_pfn(pte) returns address aligned to pg_size */
+>>> +    hpa = (pte_pfn(pte)<<  PAGE_SHIFT) + (gpa&  ((1<<  shift) - 1));
+>>> +
+>>> +    if (unlikely(pte_val(pte) != pte_val(*ptep))) {
+>>> +        hpa = ERROR_ADDR;
+>>> +        realmode_put_page(*pg);
+>>> +        *pg = NULL;
+>>> +    }
+>>> +
+>>> +    return hpa;
+>>> +}
+>>> +
+>>>  long kvmppc_h_put_tce(struct kvm_vcpu *vcpu, unsigned long liobn,
+>>>                unsigned long ioba, unsigned long tce)
+>>>  {
+>>> -    struct kvm *kvm = vcpu->kvm;
+>>> -    struct kvmppc_spapr_tce_table *stt;
+>>> -
+>>> -    /* udbg_printf("H_PUT_TCE(): liobn=0x%lx ioba=0x%lx, tce=0x%lx\n", */
+>>> -    /*         liobn, ioba, tce); */
+>>> -
+>>> -    list_for_each_entry(stt,&kvm->arch.spapr_tce_tables, list) {
+>>> -        if (stt->liobn == liobn) {
+>>> -            unsigned long idx = ioba>>  SPAPR_TCE_SHIFT;
+>>> -            struct page *page;
+>>> -            u64 *tbl;
+>>> -
+>>> -            /* udbg_printf("H_PUT_TCE: liobn 0x%lx =>  stt=%p 
+>>> window_size=0x%x\n", */
+>>> -            /*         liobn, stt, stt->window_size); */
+>>> -            if (ioba>= stt->window_size)
+>>> -                return H_PARAMETER;
+>>> -
+>>> -            page = stt->pages[idx / TCES_PER_PAGE];
+>>> -            tbl = (u64 *)page_address(page);
+>>> -
+>>> -            /* FIXME: Need to validate the TCE itself */
+>>> -            /* udbg_printf("tce @ %p\n",&tbl[idx % TCES_PER_PAGE]); */
+>>> -            tbl[idx % TCES_PER_PAGE] = tce;
+>>> -            return H_SUCCESS;
+>>> -        }
+>>> +    long ret;
+>>> +    struct kvmppc_spapr_tce_table *tt = kvmppc_find_tce_table(vcpu, liobn);
+>>> +
+>>> +    if (!tt)
+>>> +        return H_TOO_HARD;
+>>> +
+>>> +    ++tt->stat.rm.put;
+>>> +
+>>> +    if (ioba>= tt->window_size)
+>>> +        return H_PARAMETER;
+>>> +
+>>> +    ret = kvmppc_emulated_validate_tce(tce);
+>>> +    if (!ret)
+>>> +        kvmppc_emulated_put_tce(tt, ioba, tce);
+>>> +
+>>> +    return ret;
+>>> +}
+>>> +
+>>> +long kvmppc_h_put_tce_indirect(struct kvm_vcpu *vcpu,
+>> 
+>> So the _vm version is the normal one and this is the _rm version? If so,
+>> please mark it as such. Is there any way to generate both from the same
+>> source? The way it's now there is a lot of duplicate code.
+> 
+> 
+> I tried, looked very ugly. If you insist, I will do so.
+
+If it looks ugly better don't. I just want to make sure you explored the option. But please keep the naming scheme consistent.
+
+
+Alex
 
