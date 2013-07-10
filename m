@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab3GJUyk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 16:54:40 -0400
-Received: from fieldses.org ([174.143.236.118]:35962 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754908Ab3GJUyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 16:54:39 -0400
-Date: Wed, 10 Jul 2013 16:54:34 -0400
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Anvin <hpa@zytor.com>
-Subject: Re: scheduling while atomic & hang.
-Message-ID: <20130710205434.GC22305@fieldses.org>
-References: <20130704015525.GA8486@redhat.com>
- <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
- <20130704074902.GA32211@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130704074902.GA32211@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+	id S1755269Ab3GJVAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 17:00:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:45403 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991Ab3GJVAs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 17:00:48 -0400
+Date: Wed, 10 Jul 2013 14:00:47 -0700 (PDT)
+Message-Id: <20130710.140047.2169280084001618173.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 04, 2013 at 03:49:02AM -0400, Dave Jones wrote:
-> I don't use the auto config, because I end up filling up /boot
-> unless I go through and clean them out by hand every time I install
-> a new one (which I do probably a dozen or so times a day).
-> Is there some easy way to prune old builds I'm missing ?
 
-I run this by hand every now and then.  I'm probably doing it all wrong.
+Four bug fixes:
 
---b.
+1) Enable snoop tags properly on Sparc32/LEON, from Andreas Larsson
 
-#!/bin/bash
+2) strcpy() length check fix from Chen Gang.
 
-# because I use CONFIG_LOCALVERSION_AUTO, not the same version again and
-# again, /boot and /lib/modules/ eventually fill up.
-# Dumb script to purge that stuff:
+3) Forgotten unregister_netdev() in sunvnet driver, from Dave Kleikamp.
 
-ssh "root@$1" '
+4) Fix broken assembler offsets used in vm_area_struct accesses on
+   sparc32, from Olivier DANET.
 
-for f in $(ls /lib/modules); do
-        if rpm -qf "/lib/modules/$f" >/dev/null; then
-                echo "keeping $f (installed from rpm)"
-        elif [ $(uname -r) = "$f" ]; then
-                echo "keeping $f (running kernel) "
-        else
-                echo "removing $f"
-                rm -f "/boot/initramfs-$f.img" "/boot/System.map-$f"
-                rm -f "/boot/vmlinuz-$f"   "/boot/config-$f"
-                rm -rf "/lib/modules/$f"
-                new-kernel-pkg --remove $f
-        fi
-done
-'
+Please pull, thanks a lot!
+
+The following changes since commit bfffbea1aaeeb1eb6500c83ff9653416daa5b490:
+
+  Merge tag 'mmc-updates-for-3.11-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc (2013-07-10 11:16:00 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to 961246b4ed8da3bcf4ee1eb9147f341013553e3c:
+
+  [PATCH] sparc32: vm_area_struct access for old Sun SPARCs. (2013-07-10 13:56:10 -0700)
+
+----------------------------------------------------------------
+Andreas Larsson (1):
+      sparc32, leon: Require separate snoop tags set to regard snooping to be enabled
+
+Chen Gang (1):
+      arch: sparc: kernel: check the memory length before use strcpy().
+
+Dave Kleikamp (1):
+      sunvnet: vnet_port_remove must call unregister_netdev
+
+Olivier DANET (1):
+      sparc32: vm_area_struct access for old Sun SPARCs.
+
+ arch/sparc/include/asm/leon.h      |  2 +-
+ arch/sparc/kernel/asm-offsets.c    |  2 ++
+ arch/sparc/kernel/ds.c             | 10 ++++++++++
+ arch/sparc/mm/hypersparc.S         |  8 ++++----
+ arch/sparc/mm/swift.S              |  8 ++++----
+ arch/sparc/mm/tsunami.S            |  6 +++---
+ arch/sparc/mm/viking.S             | 10 +++++-----
+ drivers/net/ethernet/sun/sunvnet.c |  2 ++
+ 8 files changed, 31 insertions(+), 17 deletions(-)
