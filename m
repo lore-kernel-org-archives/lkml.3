@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751369Ab3GJGwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 02:52:40 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18055 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3GJGwj (ORCPT
+	id S1751615Ab3GJGzT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 02:55:19 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1837 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751038Ab3GJGzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 02:52:39 -0400
+	Wed, 10 Jul 2013 02:55:18 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 09 Jul 2013 23:53:09 -0700
+	by hqnvupgp08.nvidia.com on Tue, 09 Jul 2013 23:54:42 -0700
+Message-ID: <51DD0757.8060406@nvidia.com>
+Date: Wed, 10 Jul 2013 12:33:51 +0530
 From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <thierry.reding@gmail.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V3] ARM: tegra: enable gpio-keys on dalmore
-Date: Wed, 10 Jul 2013 12:30:43 +0530
-Message-ID: <1373439643-16633-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Thierry Reding <thierry.reding@gmail.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] ARM: tegra: enable gpio-keys on dalmore
+References: <1373102069-5641-1-git-send-email-ldewangan@nvidia.com> <20130709060447.GA17499@mithrandir>
+In-Reply-To: <20130709060447.GA17499@mithrandir>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dalmore have the keys mounted on board which are connected
-to different pins of Tegra.
-
-Add the keys entry in DTS file to enable key functionality.
-This will enable KEY_POWER, KEY_HOME, KEY_VOLUMEUP and
-KEY_VOLUMEDOWN.
-
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- Reorder the nodes
-
-Changes from V2:
-- Remove unwanted line insertion.
-- Rename VolumeUP/Volume down lables.
-
- arch/arm/boot/dts/tegra114-dalmore.dts |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/boot/dts/tegra114-dalmore.dts b/arch/arm/boot/dts/tegra114-dalmore.dts
-index cb640eb..a42bfa4 100644
---- a/arch/arm/boot/dts/tegra114-dalmore.dts
-+++ b/arch/arm/boot/dts/tegra114-dalmore.dts
-@@ -883,6 +883,35 @@
- 		};
- 	};
- 
-+	gpio-keys {
-+		compatible = "gpio-keys";
-+
-+		home {
-+			label = "Home";
-+			gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
-+			linux,code = <102>; /* KEY_HOME */
-+		};
-+
-+		power {
-+			label = "Power";
-+			gpios = <&gpio TEGRA_GPIO(Q, 0) GPIO_ACTIVE_LOW>;
-+			linux,code = <116>; /* KEY_POWER */
-+			gpio-key,wakeup;
-+		};
-+
-+		volume_down {
-+			label = "Volume Down";
-+			gpios = <&gpio TEGRA_GPIO(R, 1) GPIO_ACTIVE_LOW>;
-+			linux,code = <114>; /* KEY_VOLUMEDOWN */
-+		};
-+
-+		volume_up {
-+			label = "Volume Up";
-+			gpios = <&gpio TEGRA_GPIO(R, 2) GPIO_ACTIVE_LOW>;
-+			linux,code = <115>; /* KEY_VOLUMEUP */
-+		};
-+	};
-+
- 	regulators {
- 		compatible = "simple-bus";
- 		#address-cells = <1>;
--- 
-1.7.1.1
+On Tuesday 09 July 2013 11:34 AM, Thierry Reding wrote:
+> * PGP Signed by an unknown key
+>
+> On Sat, Jul 06, 2013 at 02:44:29PM +0530, Laxman Dewangan wrote:
+>> D
+>> +
+>> +		home {
+>> +			label = "Home";
+>> +			gpios = <&gpio TEGRA_GPIO(I, 5) GPIO_ACTIVE_LOW>;
+>> +			linux,code = <102>; /* KEY_HOME */
+> I wonder if these should maybe go into a header file as well so that
+> symbolic names can be used. That'll make the value self-descriptive and
+> allow the comment to be dropped.
+>
+Currently there is no header for input.h in dt-binding include. We need 
+to add them first and then use it.
+Probably it can be done along with all cleanups on dts file atleast for 
+Tegra.
+I can start this if no one faster than me for this activity but for this 
+patch, I like to go on legacy way.
 
