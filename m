@@ -1,64 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab3GJUFy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 16:05:54 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3702 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685Ab3GJUFv (ORCPT
+	id S1755306Ab3GJUGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 16:06:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54605 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755264Ab3GJUFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 16:05:51 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=bNh-01dxsqBwXLLuizUA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373486749.7458.68.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.0.85-rt113
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Wed, 10 Jul 2013 16:05:49 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Jul 2013 16:05:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: oliver+list@schinagl.nl, linux@roeck-us.net, khali@linux-fr.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 6/6] driver core: Introduce device_create_groups
+Date: Wed, 10 Jul 2013 13:05:14 -0700
+Message-Id: <1373486714-14531-7-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
+References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Guenter Roeck <linux@roeck-us.net>
 
-Dear RT Folks,
+From: Guenter Roeck <linux@roeck-us.net>
 
-I'm pleased to announce the 3.0.85-rt113 stable release.
+device_create_groups lets callers create devices as well as associated
+sysfs attributes with a single call. This avoids race conditions seen
+if sysfs attributes on new devices are created later.
 
+[fixed up comment block placement and add checks for printk buffer
+formats - gregkh]
 
-This release is just an update to the new stable 3.0.85 version
-and no RT specific changes have been made.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/core.c    | 111 ++++++++++++++++++++++++++++++++++++-------------
+ include/linux/device.h |   5 +++
+ 2 files changed, 88 insertions(+), 28 deletions(-)
 
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  branch: v3.0-rt
-  Head SHA1: dc7b8ef1e1b68014c9e5d6b9522f4b3fc3d8fcfc
-
-
-Or to build 3.0.85-rt113 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.85.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.85-rt113.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
-
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index dc3ea23..a8aae18 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1667,34 +1667,11 @@ static void device_create_release(struct device *dev)
+ 	kfree(dev);
+ }
+ 
+-/**
+- * device_create_vargs - creates a device and registers it with sysfs
+- * @class: pointer to the struct class that this device should be registered to
+- * @parent: pointer to the parent struct device of this new device, if any
+- * @devt: the dev_t for the char device to be added
+- * @drvdata: the data to be added to the device for callbacks
+- * @fmt: string for the device's name
+- * @args: va_list for the device's name
+- *
+- * This function can be used by char device classes.  A struct device
+- * will be created in sysfs, registered to the specified class.
+- *
+- * A "dev" file will be created, showing the dev_t for the device, if
+- * the dev_t is not 0,0.
+- * If a pointer to a parent struct device is passed in, the newly created
+- * struct device will be a child of that device in sysfs.
+- * The pointer to the struct device will be returned from the call.
+- * Any further sysfs files that might be required can be created using this
+- * pointer.
+- *
+- * Returns &struct device pointer on success, or ERR_PTR() on error.
+- *
+- * Note: the struct class passed to this function must have previously
+- * been created with a call to class_create().
+- */
+-struct device *device_create_vargs(struct class *class, struct device *parent,
+-				   dev_t devt, void *drvdata, const char *fmt,
+-				   va_list args)
++static struct device *
++device_create_groups_vargs(struct class *class, struct device *parent,
++			   dev_t devt, void *drvdata,
++			   const struct attribute_group **groups,
++			   const char *fmt, va_list args)
+ {
+ 	struct device *dev = NULL;
+ 	int retval = -ENODEV;
+@@ -1711,6 +1688,7 @@ struct device *device_create_vargs(struct class *class, struct device *parent,
+ 	dev->devt = devt;
+ 	dev->class = class;
+ 	dev->parent = parent;
++	dev->groups = groups;
+ 	dev->release = device_create_release;
+ 	dev_set_drvdata(dev, drvdata);
+ 
+@@ -1728,6 +1706,39 @@ error:
+ 	put_device(dev);
+ 	return ERR_PTR(retval);
+ }
++
++/**
++ * device_create_vargs - creates a device and registers it with sysfs
++ * @class: pointer to the struct class that this device should be registered to
++ * @parent: pointer to the parent struct device of this new device, if any
++ * @devt: the dev_t for the char device to be added
++ * @drvdata: the data to be added to the device for callbacks
++ * @fmt: string for the device's name
++ * @args: va_list for the device's name
++ *
++ * This function can be used by char device classes.  A struct device
++ * will be created in sysfs, registered to the specified class.
++ *
++ * A "dev" file will be created, showing the dev_t for the device, if
++ * the dev_t is not 0,0.
++ * If a pointer to a parent struct device is passed in, the newly created
++ * struct device will be a child of that device in sysfs.
++ * The pointer to the struct device will be returned from the call.
++ * Any further sysfs files that might be required can be created using this
++ * pointer.
++ *
++ * Returns &struct device pointer on success, or ERR_PTR() on error.
++ *
++ * Note: the struct class passed to this function must have previously
++ * been created with a call to class_create().
++ */
++struct device *device_create_vargs(struct class *class, struct device *parent,
++				   dev_t devt, void *drvdata, const char *fmt,
++				   va_list args)
++{
++	return device_create_groups_vargs(class, parent, devt, drvdata, NULL,
++					  fmt, args);
++}
+ EXPORT_SYMBOL_GPL(device_create_vargs);
+ 
+ /**
+@@ -1767,6 +1778,50 @@ struct device *device_create(struct class *class, struct device *parent,
+ }
+ EXPORT_SYMBOL_GPL(device_create);
+ 
++/**
++ * device_create_with_groups - creates a device and registers it with sysfs
++ * @class: pointer to the struct class that this device should be registered to
++ * @parent: pointer to the parent struct device of this new device, if any
++ * @devt: the dev_t for the char device to be added
++ * @drvdata: the data to be added to the device for callbacks
++ * @groups: NULL-terminated list of attribute groups to be created
++ * @fmt: string for the device's name
++ *
++ * This function can be used by char device classes.  A struct device
++ * will be created in sysfs, registered to the specified class.
++ * Additional attributes specified in the groups parameter will also
++ * be created automatically.
++ *
++ * A "dev" file will be created, showing the dev_t for the device, if
++ * the dev_t is not 0,0.
++ * If a pointer to a parent struct device is passed in, the newly created
++ * struct device will be a child of that device in sysfs.
++ * The pointer to the struct device will be returned from the call.
++ * Any further sysfs files that might be required can be created using this
++ * pointer.
++ *
++ * Returns &struct device pointer on success, or ERR_PTR() on error.
++ *
++ * Note: the struct class passed to this function must have previously
++ * been created with a call to class_create().
++ */
++struct device *device_create_with_groups(struct class *class,
++					 struct device *parent, dev_t devt,
++					 void *drvdata,
++					 const struct attribute_group **groups,
++					 const char *fmt, ...)
++{
++	va_list vargs;
++	struct device *dev;
++
++	va_start(vargs, fmt);
++	dev = device_create_groups_vargs(class, parent, devt, drvdata, groups,
++					 fmt, vargs);
++	va_end(vargs);
++	return dev;
++}
++EXPORT_SYMBOL_GPL(device_create_with_groups);
++
+ static int __match_devt(struct device *dev, const void *data)
+ {
+ 	const dev_t *devt = data;
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 1d546a0..dce20e4 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -928,6 +928,11 @@ extern __printf(5, 6)
+ struct device *device_create(struct class *cls, struct device *parent,
+ 			     dev_t devt, void *drvdata,
+ 			     const char *fmt, ...);
++extern __printf(6, 7)
++struct device *device_create_with_groups(struct class *cls,
++			     struct device *parent, dev_t devt, void *drvdata,
++			     const struct attribute_group **groups,
++			     const char *fmt, ...);
+ extern void device_destroy(struct class *cls, dev_t devt);
+ 
+ /*
+-- 
+1.8.3.rc0.20.gb99dd2e
 
