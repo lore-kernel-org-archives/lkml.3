@@ -1,282 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3GJBvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 21:51:43 -0400
-Received: from mail-yh0-f53.google.com ([209.85.213.53]:51546 "EHLO
+	id S1754116Ab3GJBwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 21:52:30 -0400
+Received: from mail-yh0-f53.google.com ([209.85.213.53]:43973 "EHLO
 	mail-yh0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545Ab3GJBvl (ORCPT
+	with ESMTP id S1754024Ab3GJBw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 21:51:41 -0400
-Message-ID: <51DCBE24.3030406@gmail.com>
-Date: Tue, 09 Jul 2013 21:51:32 -0400
-From: "Michael L. Semon" <mlsemon35@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 9 Jul 2013 21:52:28 -0400
+Message-ID: <51DCBE49.9000806@gmail.com>
+Date: Wed, 10 Jul 2013 09:52:09 +0800
+From: Sam Ben <sam.bennn@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-CC: d.hatayama@jp.fujitsu.com, akpm@linux-foundation.org
-Subject: [REGRESSION] x86 vmalloc issue from recent 3.10.0+ commit
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+        Alex Shi <alex.shi@intel.com>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Turner <pjt@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH v3 1/2] sched: smart wake-affine foundation
+References: <51D50024.10902@linux.vnet.ibm.com> <51D50057.9000809@linux.vnet.ibm.com> <51D8C4F7.2010603@gmail.com> <51DA25A4.2050803@linux.vnet.ibm.com>
+In-Reply-To: <51DA25A4.2050803@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!  I'm doing volunteer testing of xfstests and was sent here to 
-ask about this issue.  I apologize in advance if the problem has 
-already been solved...
+On 07/08/2013 10:36 AM, Michael Wang wrote:
+> Hi, Sam
+>
+> On 07/07/2013 09:31 AM, Sam Ben wrote:
+>> On 07/04/2013 12:55 PM, Michael Wang wrote:
+>>> wake-affine stuff is always trying to pull wakee close to waker, by
+>>> theory,
+>>> this will bring benefit if waker's cpu cached hot data for wakee, or the
+>>> extreme ping-pong case.
+>> What's the meaning of ping-pong case?
+> PeterZ explained it well in here:
+>
+> 	https://lkml.org/lkml/2013/3/7/332
+>
+> And you could try to compare:
+> 	taskset 1 perf bench sched pipe
+> with
+> 	perf bench sched pipe
 
-I've been testing XFS from various git kernels on 32-bit Pentium 4 
-and Pentium III PCs.  There was an issue with xfstests test xfs/167, 
-which is one of many tests that run a lot of instances of the 
-program "fsstress" to try to break something.  Usually, the test 
-passes, but this time, the Pentium 4 got stuck in a loop, and the 
-Pentium III had processes killed but didn't seem to have resources 
-released back to the system.
+Why sched pipe is special?
 
-The solution was to bisect the kernel to find the problem commit, 
-get a patch out of it, then use the patch to reverse the commit.
-
-The kernel git used was pulled on July 7.  SGI's xfs-oss/master was 
-updated as well, and these additional XFS patches were applied:
-
-    xfs: clean up unused codes at xfs_bulkstat()
-    xfs: dquot log reservations are too small
-    xfs: remove local fork format handling from xfs_bmapi_write()
-    xfs: update mount options documentation
-
-Hopefully, such merging and patching won't be needed to reproduce the 
-problem on your end.  The problem is 100% reproducible here.
-
-The rest of this letter is supplementary data from the Pentium 4 PC.
-
-Thanks!
-
-Michael
-
-The partition used in the test was this (from `gdisk /dev/sdb`):
-
-   5        70189056        90046463   9.5 GiB     8300  gScratchDev
-
-The original/fixed test behaviors look like this to xfstests:
-
-root@plbearer:/var/lib/xfstests# ./check xfs/167
-FSTYP         -- xfs (debug)
-PLATFORM      -- Linux/i686 plbearer 3.10.0+
-MKFS_OPTIONS  -- -f -bsize=4096 /dev/sdb5
-MOUNT_OPTIONS -- /dev/sdb5 /mnt/xfstests-scratch
-
-xfs/167 922s ... 891s
-Ran: xfs/167
-Passed all 1 tests
-
-On a failing test, the hard drive light dies after a while, and it's 
-impossible to switch framebuffer consoles (i915).  This is the 
-beginning of the infinite loop started by hitting Alt-Shift-SysRq-e-
-i-e-i-s-u-s, captured over netconsole (the first SysRq-s seems to be 
-the trigger):
-
-logger: run xfstest xfs/167
-kernel: [ 2497.774818] XFS (sdb5): Version 5 superblock detected. This kernel has EXPERIMENTAL support enabled!
-kernel: [ 2497.774818] Use of these features in this kernel is at your own risk!
-kernel: [ 2497.862312] XFS (sdb5): Mounting Filesystem
-kernel: [ 2580.395592] vmap allocation for size 20480 failed: use vmalloc=<size> to increase size.
-kernel: [ 2580.395761] vmalloc: allocation failure: 16384 bytes
-kernel: [ 2580.395769] fsstress: page allocation failure: order:0, mode:0x80d2
-kernel: [ 2580.395776] CPU: 0 PID: 6262 Comm: fsstress Not tainted 3.10.0+ #1
-kernel: [ 2580.395781] Hardware name: Dell Computer Corporation Dimension 2350/07W080, BIOS A01 12/17/2002
-kernel: [ 2580.395785]  00000001 00000001 c50b3bfc c14825b2 c50b3c24 c10a1c6c c15c1f70 ee319bb4
-kernel: [ 2580.395802]  00000000 000080d2 c50b3c38 c15c34a4 c50b3c14 fffa0000 c50b3c54 c10c3243
-kernel: [ 2580.395817]  000080d2 00000000 c15c34a4 00004000 c6bffb50 00004000 c6bffb80 f06f0000
-kernel: [ 2580.395832] Call Trace:
-kernel: [ 2580.395847]  [<c14825b2>] dump_stack+0x16/0x18
-kernel: [ 2580.395859]  [<c10a1c6c>] warn_alloc_failed+0xb4/0xe7
-kernel: [ 2580.395868]  [<c10c3243>] __vmalloc_node_range+0x16d/0x1cf
-kernel: [ 2580.395875]  [<c10c32ed>] __vmalloc_node+0x48/0x4f
-kernel: [ 2580.395884]  [<c118c061>] ? kmem_zalloc_greedy+0x21/0x2c
-kernel: [ 2580.395890]  [<c10c3386>] vzalloc+0x30/0x32
-kernel: [ 2580.395897]  [<c118c061>] ? kmem_zalloc_greedy+0x21/0x2c
-kernel: [ 2580.395904]  [<c118c061>] kmem_zalloc_greedy+0x21/0x2c
-kernel: [ 2580.395913]  [<c11846d4>] xfs_bulkstat+0x12a/0x94b
-kernel: [ 2580.395921]  [<c1063d14>] ? lock_release_non_nested+0xa0/0x2b7
-kernel: [ 2580.395931]  [<c10bae81>] ? might_fault+0x7c/0x9b
-kernel: [ 2580.395938]  [<c10bae4e>] ? might_fault+0x49/0x9b
-kernel: [ 2580.395945]  [<c10bae98>] ? might_fault+0x93/0x9b
-kernel: [ 2580.395954]  [<c1232930>] ? _copy_from_user+0x3f/0x57
-kernel: [ 2580.395961]  [<c117f6a8>] xfs_ioc_bulkstat+0xba/0x15a
-kernel: [ 2580.395968]  [<c1184570>] ? xfs_bulkstat_one_int+0x2ff/0x2ff
-kernel: [ 2580.395975]  [<c11809dc>] xfs_file_ioctl+0x6b9/0xa0d
-kernel: [ 2580.395984]  [<c10e123a>] ? dput+0x2d/0x263
-kernel: [ 2580.395990]  [<c10e1426>] ? dput+0x219/0x263
-kernel: [ 2580.395999]  [<c1488c3e>] ? _raw_spin_unlock+0x22/0x30
-kernel: [ 2580.396006]  [<c10e1426>] ? dput+0x219/0x263
-kernel: [ 2580.396013]  [<c10e85fc>] ? mntput+0x1d/0x28
-kernel: [ 2580.396022]  [<c10d7745>] ? terminate_walk+0x63/0x66
-kernel: [ 2580.396030]  [<c10d9f7c>] ? do_last+0x1a9/0xbfa
-kernel: [ 2580.396036]  [<c10d8a2e>] ? link_path_walk+0x54/0x6c2
-kernel: [ 2580.396044]  [<c10daa7c>] ? path_openat+0xaf/0x515
-kernel: [ 2580.396053]  [<c10e690f>] ? __fd_install+0x1f/0x4a
-kernel: [ 2580.396060]  [<c1180323>] ? xfs_ioc_getbmapx+0x9b/0x9b
-kernel: [ 2580.396068]  [<c10de220>] do_vfs_ioctl+0x2f6/0x4cc
-kernel: [ 2580.396076]  [<c10e6930>] ? __fd_install+0x40/0x4a
-kernel: [ 2580.396083]  [<c1488c3e>] ? _raw_spin_unlock+0x22/0x30
-kernel: [ 2580.396090]  [<c10d7cd9>] ? final_putname+0x1d/0x36
-kernel: [ 2580.396097]  [<c10d7cd9>] ? final_putname+0x1d/0x36
-kernel: [ 2580.396104]  [<c10d7e4c>] ? putname+0x23/0x2f
-kernel: [ 2580.396112]  [<c10cecdb>] ? do_sys_open+0x17d/0x1d8
-kernel: [ 2580.396120]  [<c14895ab>] ? restore_all+0xf/0xf
-kernel: [ 2580.396127]  [<c10de435>] SyS_ioctl+0x3f/0x6a
-kernel: [ 2580.396135]  [<c1489578>] syscall_call+0x7/0xb
-kernel: [ 2580.396138] Mem-Info:
-kernel: [ 2580.396143] DMA per-cpu:
-kernel: [ 2580.396148] CPU    0: hi:    0, btch:   1 usd:   0
-kernel: [ 2580.396151] Normal per-cpu:
-kernel: [ 2580.396155] CPU    0: hi:  186, btch:  31 usd:  45
-kernel: [ 2580.396164] active_anon:5918 inactive_anon:1747 isolated_anon:0
-kernel: [ 2580.396164]  active_file:11120 inactive_file:62706 isolated_file:0
-kernel: [ 2580.396164]  unevictable:0 dirty:3201 writeback:1689 unstable:0
-kernel: [ 2580.396164]  free:38741 slab_reclaimable:11386 slab_unreclaimable:3333
-kernel: [ 2580.396164]  mapped:982 shmem:295 pagetables:580 bounce:0
-kernel: [ 2580.396164]  free_cma:0
-kernel: [ 2580.396182] DMA free:15848kB min:72kB low:88kB high:108kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15992kB managed:15852kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:4kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-kernel: [ 2580.396186] lowmem_reserve[]: 0 730 730
-kernel: [ 2580.396203] Normal free:139116kB min:3420kB low:4272kB high:5128kB active_anon:23672kB inactive_anon:6988kB active_file:44480kB inactive_file:250824kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:768960kB managed:748696kB mlocked:0kB dirty:12804kB writeback:6756kB mapped:3928kB shmem:1180kB slab_reclaimable:45544kB slab_unreclaimable:13328kB kernel_stack:2056kB pagetables:2320kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-kernel: [ 2580.396207] lowmem_reserve[]: 0 0 0
-kernel: [ 2580.396216] DMA: 0*4kB 1*8kB (M) 0*16kB 1*32kB (M) 1*64kB (M) 1*128kB (M) 1*256kB (M) 0*512kB 1*1024kB (M) 1*2048kB (M) 3*4096kB (MR) = 15848kB
-kernel: [ 2580.396252] Normal: 1*4kB (E) 1*8kB (U) 2*16kB (EM) 0*32kB 3*64kB (UEM) 1*128kB (M) 2*256kB (UE) 0*512kB 1*1024kB (U) 1*2048kB (E) 33*4096kB (MR) = 139116kB
-kernel: [ 2580.396288] 75189 total pagecache pages
-kernel: [ 2580.396294] 1068 pages in swap cache
-kernel: [ 2580.396298] Swap cache stats: add 155872, delete 154804, find 15597/15818
-kernel: [ 2580.396302] Free swap  = 604708kB
-kernel: [ 2580.396306] Total swap = 616444kB
-kernel: [ 2580.400379] 196335 pages RAM
-kernel: [ 2580.400391] 5200 pages reserved
-kernel: [ 2580.400395] 337314 pages shared
-
-# GIT BISECT LOG
-
-# bad: [ebb823f3e2a3a45f212950a40dd04ba171b7583c] xfs: clean up unused codes at xfs_bulkstat()
-# good: [8bb495e3f02401ee6f76d1b1d77f3ac9f079e376] Linux 3.10
-git bisect start 'ebb823f3e2a3a45f212950a40dd04ba171b7583c' 'v3.10'
-# good: [f0bb4c0ab064a8aeeffbda1cee380151a594eaab] Merge branch 'perf-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
-git bisect good f0bb4c0ab064a8aeeffbda1cee380151a594eaab
-# good: [862f0012549110d6f2586bf54b52ed4540cbff3a] Merge tag 'pci-v3.11-changes' of git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci
-git bisect good 862f0012549110d6f2586bf54b52ed4540cbff3a
-# bad: [1286da8bc009cb2aee7f285e94623fc974c0c983] Merge tag 'sound-3.11' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound
-git bisect bad 1286da8bc009cb2aee7f285e94623fc974c0c983
-# bad: [dd04b452f532ca100f7c557295ffcbc049c77171] idr: print a stack dump after ida_remove warning
-git bisect bad dd04b452f532ca100f7c557295ffcbc049c77171
-# bad: [5cb0656b62ff1199763764e4f6b4c06d30d5d0f5] ipw2200: convert __list_for_each usage to list_for_each
-git bisect bad 5cb0656b62ff1199763764e4f6b4c06d30d5d0f5
-# bad: [abd1b6d65fc49b7b95724c94a4e5892a3b3fc618] mm/tile: use common help functions to free reserved pages
-git bisect bad abd1b6d65fc49b7b95724c94a4e5892a3b3fc618
-# good: [3664033c56f211a3dcf28d9d68c604ed447d8d79] mm/page_alloc: rename setup_pagelist_highmark() to match naming of pageset_set_batch()
-git bisect good 3664033c56f211a3dcf28d9d68c604ed447d8d79
-# good: [cef2ac3f6c8ab532e49cf69d05f540931ad8ee64] vmalloc: make find_vm_area check in range
-git bisect good cef2ac3f6c8ab532e49cf69d05f540931ad8ee64
-# bad: [9bde916bc73255dcee3d8aded990443675daa707] mm/nommu.c: add additional check for vread() just like vwrite() has done
-git bisect bad 9bde916bc73255dcee3d8aded990443675daa707
-# bad: [f968ef1c55199301e98c28fe7dfa8ace05ecdb96] memcg: update TODO list in Documentation
-git bisect bad f968ef1c55199301e98c28fe7dfa8ace05ecdb96
-# bad: [ef9e78fd2753213ea01d77f7a76a9cb6ad0f50a7] vmcore: allow user process to remap ELF note segment buffer
-git bisect bad ef9e78fd2753213ea01d77f7a76a9cb6ad0f50a7
-# bad: [087350c9dcf1b38c597b31d7761f7366e2866e6b] vmcore: allocate ELF note segment in the 2nd kernel vmalloc memory
-git bisect bad 087350c9dcf1b38c597b31d7761f7366e2866e6b
-# bad: [e69e9d4aee712a22665f008ae0550bb3d7c7f7c1] vmalloc: introduce remap_vmalloc_range_partial
-git bisect bad e69e9d4aee712a22665f008ae0550bb3d7c7f7c1
-# first bad commit: [e69e9d4aee712a22665f008ae0550bb3d7c7f7c1] vmalloc: introduce remap_vmalloc_range_partial
-
-# PATCH INFO
-
->From e69e9d4aee712a22665f008ae0550bb3d7c7f7c1 Mon Sep 17 00:00:00 2001
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Date: Wed, 3 Jul 2013 15:02:18 -0700
-Subject: [PATCH] vmalloc: introduce remap_vmalloc_range_partial
-
-We want to allocate ELF note segment buffer on the 2nd kernel in vmalloc
-space and remap it to user-space in order to reduce the risk that memory
-allocation fails on system with huge number of CPUs and so with huge ELF
-note segment that exceeds 11-order block size.
-
-Although there's already remap_vmalloc_range for the purpose of
-remapping vmalloc memory to user-space, we need to specify user-space
-range via vma.
- Mmap on /proc/vmcore needs to remap range across multiple objects, so
-the interface that requires vma to cover full range is problematic.
-
-This patch introduces remap_vmalloc_range_partial that receives user-space
-range as a pair of base address and size and can be used for mmap on
-/proc/vmcore case.
-
-remap_vmalloc_range is rewritten using remap_vmalloc_range_partial.
-
-[akpm@linux-foundation.org: use PAGE_ALIGNED()]
-Signed-off-by: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-Cc: Lisa Mitchell <lisa.mitchell@hp.com>
-Cc: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
----
-
-# VERSION INFO (`ver_linux` from LTP, after passing xfstests xfs/167):
-
-NAME=Slackware
-VERSION="14.0"
-ID=slackware
-VERSION_ID=14.0
-PRETTY_NAME="Slackware 14.0"
-ANSI_COLOR="0;34"
-CPE_NAME="cpe:/o:slackware:slackware_linux:14.0"
-HOME_URL="http://slackware.com/"
-SUPPORT_URL="http://www.linuxquestions.org/questions/slackware-14/"
-BUG_REPORT_URL="http://www.linuxquestions.org/questions/slackware-14/"
-Linux plbearer 3.10.0+ #13 Tue Jul 9 10:56:45 EDT 2013 i686 Intel(R) Pentium(R) 4 CPU 1.80GHz GenuineIntel GNU/Linux
- 
-Gnu C                  gcc (GCC) 4.8.1
-Gnu make               3.82
-util-linux             linux 2.21.2
-mount                  linux 2.21.2 (with libblkid support)
-modutils               12
-e2fsprogs              1.42.8
-PPP                    2.4.5
-Linux C Library        > libc.2.17
-Dynamic linker (ldd)   2.17
-Linux C++ Library      6.0.18
-Procps                 3.2.8
-Net-tools              1.60
-iproute2              iproute2-ss130221
-Kbd                    1.15.3
-Sh-utils               8.21
-
-free reports:
-             total       used       free     shared    buffers     cached
-Mem:        764548     755164       9384          0        736     646508
--/+ buffers/cache:     107920     656628
-Swap:       616444          0     616444
-
-/proc/cpuinfo
-processor	: 0
-vendor_id	: GenuineIntel
-cpu family	: 15
-model		: 2
-model name	: Intel(R) Pentium(R) 4 CPU 1.80GHz
-stepping	: 7
-microcode	: 0x24
-cpu MHz		: 1794.187
-cache size	: 512 KB
-fdiv_bug	: no
-f00f_bug	: no
-coma_bug	: no
-fpu		: yes
-fpu_exception	: yes
-cpuid level	: 2
-wp		: yes
-flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe pebs bts cid
-bogomips	: 3589.88
-clflush size	: 64
-cache_alignment	: 128
-address sizes	: 36 bits physical, 32 bits virtual
-power management:
+>
+> to confirm it ;-)
+>
+> Regards,
+> Michael Wang
+>
+>>> And testing show it could benefit hackbench 15% at most.
+>>>
+>>> However, the whole stuff is somewhat blindly and time-consuming, some
+>>> workload therefore suffer.
+>>>
+>>> And testing show it could damage pgbench 50% at most.
+>>>
+>>> Thus, wake-affine stuff should be more smart, and realise when to stop
+>>> it's thankless effort.
+>>>
+>>> This patch introduced 'nr_wakee_switch', which will be increased each
+>>> time the task switch it's wakee.
+>>>
+>>> So a high 'nr_wakee_switch' means the task has more than one wakee, and
+>>> bigger the number, higher the wakeup frequency.
+>>>
+>>> Now when making the decision on whether to pull or not, pay attention on
+>>> the wakee with a high 'nr_wakee_switch', pull such task may benefit
+>>> wakee,
+>>> but also imply that waker will face cruel competition later, it could be
+>>> very cruel or very fast depends on the story behind 'nr_wakee_switch',
+>>> whatever, waker therefore suffer.
+>>>
+>>> Furthermore, if waker also has a high 'nr_wakee_switch', imply that
+>>> multiple
+>>> tasks rely on it, then waker's higher latency will damage all of them,
+>>> pull
+>>> wakee seems to be a bad deal.
+>>>
+>>> Thus, when 'waker->nr_wakee_switch / wakee->nr_wakee_switch' become
+>>> higher
+>>> and higher, the deal seems to be worse and worse.
+>>>
+>>> The patch therefore help wake-affine stuff to stop it's work when:
+>>>
+>>>      wakee->nr_wakee_switch > factor &&
+>>>      waker->nr_wakee_switch > (factor * wakee->nr_wakee_switch)
+>>>
+>>> The factor here is the node-size of current-cpu, so bigger node will lead
+>>> to more pull since the trial become more severe.
+>>>
+>>> After applied the patch, pgbench show 40% improvement at most.
+>>>
+>>> Test:
+>>>      Tested with 12 cpu X86 server and tip 3.10.0-rc7.
+>>>
+>>>      pgbench            base    smart
+>>>
+>>>      | db_size | clients |  tps  |    |  tps  |
+>>>      +---------+---------+-------+   +-------+
+>>>      | 22 MB   |       1 | 10598 |   | 10796 |
+>>>      | 22 MB   |       2 | 21257 |   | 21336 |
+>>>      | 22 MB   |       4 | 41386 |   | 41622 |
+>>>      | 22 MB   |       8 | 51253 |   | 57932 |
+>>>      | 22 MB   |      12 | 48570 |   | 54000 |
+>>>      | 22 MB   |      16 | 46748 |   | 55982 | +19.75%
+>>>      | 22 MB   |      24 | 44346 |   | 55847 | +25.93%
+>>>      | 22 MB   |      32 | 43460 |   | 54614 | +25.66%
+>>>      | 7484 MB |       1 |  8951 |   |  9193 |
+>>>      | 7484 MB |       2 | 19233 |   | 19240 |
+>>>      | 7484 MB |       4 | 37239 |   | 37302 |
+>>>      | 7484 MB |       8 | 46087 |   | 50018 |
+>>>      | 7484 MB |      12 | 42054 |   | 48763 |
+>>>      | 7484 MB |      16 | 40765 |   | 51633 | +26.66%
+>>>      | 7484 MB |      24 | 37651 |   | 52377 | +39.11%
+>>>      | 7484 MB |      32 | 37056 |   | 51108 | +37.92%
+>>>      | 15 GB   |       1 |  8845 |   |  9104 |
+>>>      | 15 GB   |       2 | 19094 |   | 19162 |
+>>>      | 15 GB   |       4 | 36979 |   | 36983 |
+>>>      | 15 GB   |       8 | 46087 |   | 49977 |
+>>>      | 15 GB   |      12 | 41901 |   | 48591 |
+>>>      | 15 GB   |      16 | 40147 |   | 50651 | +26.16%
+>>>      | 15 GB   |      24 | 37250 |   | 52365 | +40.58%
+>>>      | 15 GB   |      32 | 36470 |   | 50015 | +37.14%
+>>>
+>>> CC: Ingo Molnar <mingo@kernel.org>
+>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>> CC: Mike Galbraith <efault@gmx.de>
+>>> Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+>>> ---
+>>>    include/linux/sched.h |    3 +++
+>>>    kernel/sched/fair.c   |   47
+>>> +++++++++++++++++++++++++++++++++++++++++++++++
+>>>    2 files changed, 50 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/include/linux/sched.h b/include/linux/sched.h
+>>> index 178a8d9..1c996c7 100644
+>>> --- a/include/linux/sched.h
+>>> +++ b/include/linux/sched.h
+>>> @@ -1041,6 +1041,9 @@ struct task_struct {
+>>>    #ifdef CONFIG_SMP
+>>>        struct llist_node wake_entry;
+>>>        int on_cpu;
+>>> +    struct task_struct *last_wakee;
+>>> +    unsigned long nr_wakee_switch;
+>>> +    unsigned long last_switch_decay;
+>>>    #endif
+>>>        int on_rq;
+>>>    diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>> index c61a614..a4ddbf5 100644
+>>> --- a/kernel/sched/fair.c
+>>> +++ b/kernel/sched/fair.c
+>>> @@ -2971,6 +2971,23 @@ static unsigned long cpu_avg_load_per_task(int
+>>> cpu)
+>>>        return 0;
+>>>    }
+>>>    +static void record_wakee(struct task_struct *p)
+>>> +{
+>>> +    /*
+>>> +     * Rough decay(wiping) for cost saving, don't worry
+>>> +     * about the boundary, really active task won't care
+>>> +     * the loose.
+>>> +     */
+>>> +    if (jiffies > current->last_switch_decay + HZ) {
+>>> +        current->nr_wakee_switch = 0;
+>>> +        current->last_switch_decay = jiffies;
+>>> +    }
+>>> +
+>>> +    if (current->last_wakee != p) {
+>>> +        current->last_wakee = p;
+>>> +        current->nr_wakee_switch++;
+>>> +    }
+>>> +}
+>>>      static void task_waking_fair(struct task_struct *p)
+>>>    {
+>>> @@ -2991,6 +3008,7 @@ static void task_waking_fair(struct task_struct *p)
+>>>    #endif
+>>>          se->vruntime -= min_vruntime;
+>>> +    record_wakee(p);
+>>>    }
+>>>      #ifdef CONFIG_FAIR_GROUP_SCHED
+>>> @@ -3109,6 +3127,28 @@ static inline unsigned long
+>>> effective_load(struct task_group *tg, int cpu,
+>>>      #endif
+>>>    +static int wake_wide(struct task_struct *p)
+>>> +{
+>>> +    int factor = nr_cpus_node(cpu_to_node(smp_processor_id()));
+>>> +
+>>> +    /*
+>>> +     * Yeah, it's the switching-frequency, could means many wakee or
+>>> +     * rapidly switch, use factor here will just help to automatically
+>>> +     * adjust the loose-degree, so bigger node will lead to more pull.
+>>> +     */
+>>> +    if (p->nr_wakee_switch > factor) {
+>>> +        /*
+>>> +         * wakee is somewhat hot, it needs certain amount of cpu
+>>> +         * resource, so if waker is far more hot, prefer to leave
+>>> +         * it alone.
+>>> +         */
+>>> +        if (current->nr_wakee_switch > (factor * p->nr_wakee_switch))
+>>> +            return 1;
+>>> +    }
+>>> +
+>>> +    return 0;
+>>> +}
+>>> +
+>>>    static int wake_affine(struct sched_domain *sd, struct task_struct
+>>> *p, int sync)
+>>>    {
+>>>        s64 this_load, load;
+>>> @@ -3118,6 +3158,13 @@ static int wake_affine(struct sched_domain *sd,
+>>> struct task_struct *p, int sync)
+>>>        unsigned long weight;
+>>>        int balanced;
+>>>    +    /*
+>>> +     * If we wake multiple tasks be careful to not bounce
+>>> +     * ourselves around too much.
+>>> +     */
+>>> +    if (wake_wide(p))
+>>> +        return 0;
+>>> +
+>>>        idx      = sd->wake_idx;
+>>>        this_cpu  = smp_processor_id();
+>>>        prev_cpu  = task_cpu(p);
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
 
