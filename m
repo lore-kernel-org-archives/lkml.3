@@ -1,96 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3GJVpX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 17:45:23 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:48630 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752571Ab3GJVpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 17:45:22 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Yuan-Hsin Chen <yhchen@faraday-tech.com>, Felipe Balbi <balbi@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] usb: gadget: fotg210-udc: Remove bogus __init/__exit annotations
-Date: Wed, 10 Jul 2013 23:45:16 +0200
-Message-Id: <1373492716-14684-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754869Ab3GJVrB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 17:47:01 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60733 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754189Ab3GJVrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 17:47:00 -0400
+Message-ID: <1373492818.14604.75.camel@joe-AO722>
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
+ patching
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
+Date: Wed, 10 Jul 2013 14:46:58 -0700
+In-Reply-To: <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+	 <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz>
+	 <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When builtin (CONFIG_USB_FOTG210_UDC=y):
+On Wed, 2013-07-10 at 23:31 +0200, Jiri Kosina wrote:
+> Introduce a method for run-time instrucntion patching on a live SMP kernel 
+> based on int3 breakpoint, completely avoiding the need for stop_machine().
 
-  LD      drivers/usb/gadget/built-in.o
-WARNING: drivers/usb/gadget/built-in.o(.data+0xbf8): Section mismatch in reference from the variable fotg210_driver to the function .init.text:fotg210_udc_probe()
-The variable fotg210_driver references
-the function __init fotg210_udc_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+Yet more trivia:
 
-  LD      drivers/usb/built-in.o
-WARNING: drivers/usb/built-in.o(.data+0x14684): Section mismatch in reference from the variable fotg210_driver to the function .init.text:fotg210_udc_probe()
-The variable fotg210_driver references
-the function __init fotg210_udc_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+instruction typo
 
-  LD      drivers/built-in.o
-WARNING: drivers/built-in.o(.data+0x8b0c8): Section mismatch in reference from the variable fotg210_driver to the function .init.text:fotg210_udc_probe()
-The variable fotg210_driver references
-the function __init fotg210_udc_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+> The way this is achieved:
+> 
+>         - add a int3 trap to the address that will be patched
+>         - sync cores
+>         - update all but the first byte of the patched range
+>         - sync cores
+>         - replalace the first byte (int3) by the first byte of
 
-  CHK     include/generated/uapi/linux/version.h
-  LINK    vmlinux
-  LD      vmlinux.o
-  MODPOST vmlinux.o
-WARNING: vmlinux.o(.data+0xc6730): Section mismatch in reference from the variable fotg210_driver to the function .init.text:fotg210_udc_probe()
-The variable fotg210_driver references
-the function __init fotg210_udc_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+replace typo
 
-  GEN     .version
-  CHK     include/generated/compile.h
-  UPD     include/generated/compile.h
-  CC      init/version.o
-  LD      init/built-in.o
-`.exit.text' referenced in section `.data' of drivers/built-in.o: defined in discarded section `.exit.text' of drivers/built-in.o
-make[3]: *** [vmlinux] Error 1
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+[]
+> +static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
+> +{
+> +       struct die_args *args = data;
+> +       struct pt_regs *regs = args->regs;
+> +
+> +       /* bp_patching_in_progress */
+> +       smp_rmb();
+> +
+> +       if (likely(!bp_patching_in_progress))
+> +               return NOTIFY_DONE;
+> +
+> +       /* we are not interested in non-int3 faults and ring > 0 faults */
+> +       if (val != DIE_INT3 || !regs || user_mode_vm(regs)
+> +                           || (unsigned long) bp_int3_addr != regs->ip)
+> +               return NOTIFY_DONE;
+> +
+> +       /* set up the specified breakpoint handler */
+> +       args->regs->ip = (unsigned long) bp_int3_handler;
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/usb/gadget/fotg210-udc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Probably better to use regs->ip as that's what's used
+in the test above.
 
-diff --git a/drivers/usb/gadget/fotg210-udc.c b/drivers/usb/gadget/fotg210-udc.c
-index cce5535..10cd18d 100644
---- a/drivers/usb/gadget/fotg210-udc.c
-+++ b/drivers/usb/gadget/fotg210-udc.c
-@@ -1074,7 +1074,7 @@ static struct usb_gadget_ops fotg210_gadget_ops = {
- 	.udc_stop		= fotg210_udc_stop,
- };
- 
--static int __exit fotg210_udc_remove(struct platform_device *pdev)
-+static int fotg210_udc_remove(struct platform_device *pdev)
- {
- 	struct fotg210_udc *fotg210 = dev_get_drvdata(&pdev->dev);
- 
-@@ -1088,7 +1088,7 @@ static int __exit fotg210_udc_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int __init fotg210_udc_probe(struct platform_device *pdev)
-+static int fotg210_udc_probe(struct platform_device *pdev)
- {
- 	struct resource *res, *ires;
- 	struct fotg210_udc *fotg210 = NULL;
--- 
-1.7.9.5
+I'd also change the test to order the regs->ip first
+
+	if (val != DIE_INT3 || !regs || user_mode_vm(regs) ||
+	    regs->ip != (unsigned long) bp_int3_addr)
+		return NOTIFY_DONE;
+
+	regs->ip = (unsigned long) bp_int3_handler;
+
+> +/*
+> + * text_poke_bp() -- update instructions on live kernel on SMP
+> + * @addr:      address to patch
+> + * @opcode:    opcode of new instruction
+> + * @len:       length to copy
+> + * @handler:   address to jump to when the temporary breakpoint is hit
+> + *
+
+kernel-doc?
+
+> +
+> + * Modify multi-byte instruction by using int3 breakpoint on SMP.
+> + * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
+> + * and achieve the synchronization using int3 breakpoint.
+> + *
+> + * The way it is done:
+> + *     - add a int3 trap to the address that will be patched
+> + *     - sync cores
+> + *     - update all but the first byte of the patched range
+> + *     - sync cores
+> + *     - replalace the first byte (int3) by the first byte of
+
+same typo
+
+> +       /*
+> +        * corresponding read barrier in int3 notifier for
+> +        * making sure the in_progress flags is correctly ordered wrt.
+> +        * patching */
+
+Some might care about the comment style.
+	/*
+	 * foo
+	 */
+
+
 
