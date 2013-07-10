@@ -1,120 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab3GJGIQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 02:08:16 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:16587 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752997Ab3GJGH7 (ORCPT
+	id S1752311Ab3GJGHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 02:07:54 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19237 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab3GJGHx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 02:07:59 -0400
+	Wed, 10 Jul 2013 02:07:53 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Tue, 09 Jul 2013 23:08:37 -0700
+	by hqnvupgp07.nvidia.com on Tue, 09 Jul 2013 23:08:27 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <cw00.choi@samsung.com>, <myungjoo.ham@samsung.com>
 CC: <devicetree-discuss@lists.ozlabs.org>, <rob@landley.net>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <kishon@ti.com>, <gg@slimlogic.co.uk>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH V2 3/4] extcon: palams: add support for suspend/resume
-Date: Wed, 10 Jul 2013 11:45:58 +0530
-Message-ID: <1373436959-32444-4-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH V2 0/4] extcon: palmas: clean-up/fixes and suspend/resume susupport
+Date: Wed, 10 Jul 2013 11:45:55 +0530
+Message-ID: <1373436959-32444-1-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1373436959-32444-1-git-send-email-ldewangan@nvidia.com>
-References: <1373436959-32444-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add suspend/resume callbacks and support for wakeup from
-suspend on USB HOST or USB Device cable insertion or removal.
+This patch series does following:
+- Remove unused member from extcon palmas structure.
+- Fix to support of detecting cable properly with multiple insert/removal.
+- Add support for suspend/resume functionlaity and wakup from suspend.
+- Option to select/de-select the ID or VBUS detection.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-Acked-by: Graeme Gregory <gg@slimlogic.co.uk>
----
-No changes from V1.
+Changes from V1:
+- Correct the display message.
+- Add ack from Graeme
 
- drivers/extcon/extcon-palmas.c |   38 +++++++++++++++++++++++++++++++++++---
- 1 files changed, 35 insertions(+), 3 deletions(-)
+Laxman Dewangan (4):
+  extcon: palmas: remove unused member from palams_usb structure
+  extcon: palmas: enable ID_GND and ID_FLOAT detection always
+  extcon: palams: add support for suspend/resume
+  extcon: palmas: Option to disable ID/VBUS detection based on platform
 
-diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
-index 33254d9..dc7ebf3 100644
---- a/drivers/extcon/extcon-palmas.c
-+++ b/drivers/extcon/extcon-palmas.c
-@@ -182,7 +182,8 @@ static int palmas_usb_probe(struct platform_device *pdev)
- 
- 	status = devm_request_threaded_irq(palmas_usb->dev, palmas_usb->id_irq,
- 			NULL, palmas_id_irq_handler,
--			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-+			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING |
-+			IRQF_ONESHOT | IRQF_EARLY_RESUME,
- 			"palmas_usb_id", palmas_usb);
- 	if (status < 0) {
- 		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
-@@ -192,7 +193,8 @@ static int palmas_usb_probe(struct platform_device *pdev)
- 
- 	status = devm_request_threaded_irq(palmas_usb->dev,
- 			palmas_usb->vbus_irq, NULL, palmas_vbus_irq_handler,
--			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING,
-+			IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING |
-+			IRQF_ONESHOT | IRQF_EARLY_RESUME,
- 			"palmas_usb_vbus", palmas_usb);
- 	if (status < 0) {
- 		dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
-@@ -201,7 +203,7 @@ static int palmas_usb_probe(struct platform_device *pdev)
- 	}
- 
- 	palmas_enable_irq(palmas_usb);
--
-+	device_set_wakeup_capable(&pdev->dev, true);
- 	return 0;
- 
- fail_extcon:
-@@ -219,6 +221,35 @@ static int palmas_usb_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM_SLEEP
-+static int palmas_usb_suspend(struct device *dev)
-+{
-+	struct palmas_usb *palmas_usb = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev)) {
-+		enable_irq_wake(palmas_usb->vbus_irq);
-+		enable_irq_wake(palmas_usb->id_irq);
-+	}
-+	return 0;
-+}
-+
-+static int palmas_usb_resume(struct device *dev)
-+{
-+	struct palmas_usb *palmas_usb = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev)) {
-+		disable_irq_wake(palmas_usb->vbus_irq);
-+		disable_irq_wake(palmas_usb->id_irq);
-+	}
-+	return 0;
-+};
-+#endif
-+
-+static const struct dev_pm_ops palmas_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(palmas_usb_suspend,
-+				palmas_usb_resume)
-+};
-+
- static struct of_device_id of_palmas_match_tbl[] = {
- 	{ .compatible = "ti,palmas-usb", },
- 	{ .compatible = "ti,twl6035-usb", },
-@@ -232,6 +263,7 @@ static struct platform_driver palmas_usb_driver = {
- 		.name = "palmas-usb",
- 		.of_match_table = of_palmas_match_tbl,
- 		.owner = THIS_MODULE,
-+		.pm = &palmas_pm_ops,
- 	},
- };
- 
--- 
-1.7.1.1
+ .../devicetree/bindings/extcon/extcon-palmas.txt   |    2 +
+ drivers/extcon/extcon-palmas.c                     |  111 ++++++++++++++------
+ include/linux/mfd/palmas.h                         |    9 +-
+ 3 files changed, 86 insertions(+), 36 deletions(-)
 
