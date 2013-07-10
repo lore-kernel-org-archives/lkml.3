@@ -1,71 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab3GJXpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 19:45:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35761 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754110Ab3GJXpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 19:45:12 -0400
-Message-ID: <51DDF1FB.5010709@zytor.com>
-Date: Wed, 10 Jul 2013 16:44:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755074Ab3GJXpq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 19:45:46 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:39535 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab3GJXpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 19:45:44 -0400
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Steven Rostedt <rostedt@goodmis.org>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] What to do when a maintainer
- is no longer available
-References: <1373489151.7458.80.camel@gandalf.local.home> <20130710222206.GE28076@thunk.org>
-In-Reply-To: <20130710222206.GE28076@thunk.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1373497956-8770-1-git-send-email-taysom@chromium.org>
+References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
+Date: Wed, 10 Jul 2013 16:45:42 -0700
+Message-ID: <CAKwO_5FoiOAMCF9-zauboB4VvNb5DNsdM91xzW0exexE8qbrqg@mail.gmail.com>
+Subject: Re: [PATCH] fs: sync: fixed performance regression
+From: Paul Taysom <taysom@google.com>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, sonnyrao@chromium.org
+Content-Type: multipart/mixed; boundary=e89a8fb1f56c33f54b04e130e039
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 03:22 PM, Theodore Ts'o wrote:
-> 
-> I agree this is an important thing to do, but I'm hesitant about
-> having someone formally annointed as "the successor".  Information in
-> the MAINTAINERS file can get stale, and removing someone who may not
-> have as much time, and so has become a bit inactive, and replacing him
-> or her with someone who might be more active, is a political act which
-> can cause feelings to be hurt or otherwise lead to drama.
-> 
-> It's for the same reason that we don't have a formally designated
-> "core team", although people have a pretty good idea who the core
-> developers are.
-> 
-> That being said, maintainers would be well advised to make sure there
-> are other people who know enough that they could take over if
-> something unfortunate happens, and there are a number of ways helping
-> that process along, including delegating as much as possible in terms
-> of code reviews, etc., to other subsystem developers.
-> 
->> I rather have something in place before it happens. Unfortunately, it
->> will happen. It's just a matter of time.
-> 
-> It's happened already; for example, when Leonard Zubkoff passed
-> away in an unfortunate helicopter accident.
-> 
+--e89a8fb1f56c33f54b04e130e039
+Content-Type: text/plain; charset=ISO-8859-1
 
-I agree with Ted here... this has not in general been a huge problem
-(neither with untimely death nor with other reasons to depart the kernel
-community.)  In some ways we are much worse off with the "hanger-on":
-the maintainer who is still "officially" in charge but not doing what is
-needed.  From personal experience I can say that that phenomenon gets
-even worse for the "designated successor" scenario: as the "designated
-successor" isn't actually doing the work, it is not at all clear that
-they will be capable of shouldering the burden at the particular time
-the main maintainer departs.  I had a (non-kernel, but Open Source)
-project where I made the mistake of appointing a successor, and found
-that the successor in effect prevented anything useful from getting
-done... just not enough pressure to not fork the project, and so it died
-a long, slow death.  Five years later there still was not a new release,
-and no one was interested in the project anymore.
+On Wed, Jul 10, 2013 at 4:12 PM, Paul Taysom <taysom@chromium.org> wrote:
+> The following commit introduced a 10x regression for
+> syncing inodes in ext4 with relatime enabled where just
+> the atime had been modified.
+>
+>     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
+>     Author: Jan Kara <jack@suse.cz>
+>     Date:   Tue Jul 3 16:45:34 2012 +0200
+>     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
+>
+>     See also: http://www.kernelhub.org/?msg=93100&p=2
+>
+> Fixed by putting back in the call to writeback_inodes_sb.
+>
+> I'll attach the test in a reply to this e-mail.
+>
+> The test starts by creating 512 files, syncing, reading one byte
+> from each of those files, syncing, and then deleting each file
+> and syncing. The time to do each sync is printed. The process
+> is then repeated for 1024 files and then the next power of
+> two up to 262144 files.
+>
+> Note, when running the test, the slow down doesn't always happen
+> but most of the tests will show a slow down.
+>
+> In response to crbug.com/240422
+>
+> Signed-off-by: Paul Taysom <taysom@chromium.org>
+> ---
+>  fs/sync.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> diff --git a/fs/sync.c b/fs/sync.c
+> index 905f3f6..55c3316 100644
+> --- a/fs/sync.c
+> +++ b/fs/sync.c
+> @@ -73,6 +73,12 @@ static void sync_inodes_one_sb(struct super_block *sb, void *arg)
+>                 sync_inodes_sb(sb);
+>  }
+>
+> +static void writeback_inodes_one_sb(struct super_block *sb, void *arg)
+> +{
+> +       if (!(sb->s_flags & MS_RDONLY))
+> +               writeback_inodes_sb(sb, WB_REASON_SYNC);
+> +}
+> +
+>  static void sync_fs_one_sb(struct super_block *sb, void *arg)
+>  {
+>         if (!(sb->s_flags & MS_RDONLY) && sb->s_op->sync_fs)
+> @@ -104,6 +110,7 @@ SYSCALL_DEFINE0(sync)
+>         int nowait = 0, wait = 1;
+>
+>         wakeup_flusher_threads(0, WB_REASON_SYNC);
+> +       iterate_supers(writeback_inodes_one_sb, NULL);
+>         iterate_supers(sync_inodes_one_sb, NULL);
+>         iterate_supers(sync_fs_one_sb, &nowait);
+>         iterate_supers(sync_fs_one_sb, &wait);
+> --
+> 1.8.3
+>
+Try this again but in plaintext mode. Attaching test results and test
+program. Tests were run on a Pixel x86 with SSD storage.
 
-	-hpa
+--e89a8fb1f56c33f54b04e130e039
+Content-Type: text/x-csrc; charset=US-ASCII; name="syncperf.c"
+Content-Disposition: attachment; filename="syncperf.c"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hiz6ecfk0
 
+LyoKICogQ29weXJpZ2h0IChjKSAyMDEzIFRoZSBDaHJvbWl1bSBPUyBBdXRob3JzLiBBbGwgcmln
+aHRzIHJlc2VydmVkLgogKiBVc2Ugb2YgdGhpcyBzb3VyY2UgY29kZSBpcyBnb3Zlcm5lZCBieSBh
+IEJTRC1zdHlsZSBsaWNlbnNlIHRoYXQgY2FuIGJlCiAqIGZvdW5kIGluIHRoZSBMSUNFTlNFIGZp
+bGUuCiAqLwoKLyoKICogRG9lcyB0aW1lIHRlc3Qgb2Ygc3luYyBmb3IgY3JlYXRpbmcsIHJlYWRp
+bmcgYW5kIGRlbGV0aW5nIGZpbGVzLgogKgogKiBUbyBjb21waWxlOgogKiAgIGNjIHN5bmNwZXJm
+LmMgLXJsdCAtbyBzeW5jcGVyZgogKgogKiBUbyBydW4sIGNkIHRvIGEgZGlyZWN0b3J5IG9uIHZv
+bHVtZSB3aGVyZSB0ZXN0IHNob3VsZCBydW4uCiAqICAgc3luY3BlcmYKICoKICogVGhlIHN5bmNw
+ZXJmIHdpbGwgY3JlYXRlIHRoZSBkaXJlY3RvcnkgInN5bmN0ZXN0ZGlyIiBhbmQgZG8KICogc2V2
+ZXJhbCB0ZXN0IHJ1bnMgY3JlYXRpbmcgdHdpY2UgYXMgbWFueSBmaWxlcyBlYWNoIHRpbWUuCiAq
+CiAqIFRoZSB0ZXN0IHByaW50cyB0aGUgdGltZSB0byBzeW5jIGFmdGVyIGNyZWF0aW5nIHRoZSBm
+aWxlcywKICogYWZ0ZXIgcmVhZGluZyB0aGUgZmlsZXMgYW5kIGFmdGVyIGRlbGV0aW5nIHRoZSBm
+aWxlcy4KICoKICogVGhlcmUgd2lsbCBiZSBzb21lIHJ1bnMsIHdoZXJlIHRoZSByZWFkIHN5bmMg
+dGltZSBpcwogKiBmYXN0IGV2ZW50IG9uIHN5c3RlbXMgdGhhdCBleGhpYml0IHRoZSBwcm9ibGVt
+LgogKgogKiBXaGVuIHRoZSB0ZXN0cyBmaW5pc2hlcywgaXQgY2xlYW5zIHVwICJzeW5jdGVzdGRp
+ciIuCiAqLwoKI2luY2x1ZGUgPHN5cy90eXBlcy5oPgojaW5jbHVkZSA8c3lzL3N0YXQuaD4KI2lu
+Y2x1ZGUgPGVycm5vLmg+CiNpbmNsdWRlIDxmY250bC5oPgojaW5jbHVkZSA8c3RkaW50Lmg+CiNp
+bmNsdWRlIDxzdGRpby5oPgojaW5jbHVkZSA8c3RkbGliLmg+CiNpbmNsdWRlIDx0aW1lLmg+CiNp
+bmNsdWRlIDx1bmlzdGQuaD4KCmVudW0gewlNQVhfTkFNRSA9IDEyLAoJRklMRV9TSVpFID0gMSA8
+PCAxNCwKCUJZVEVTX1RPX1JFQUQgPSAxLAoJTlVNX1NUQVJUX0ZJTEVTID0gMSA8PCA5LAoJTlVN
+X0ZJTEVTID0gMSA8PCAxOCB9OwoKc3RydWN0IGZpbGUgewoJY2hhciBuYW1lW01BWF9OQU1FXTsK
+fTsKCnN0cnVjdCBmaWxlICpGaWxlOwoKc3RhdGljIGlubGluZSB1aW50NjRfdCBuc2Vjcyh2b2lk
+KQp7CglzdHJ1Y3QgdGltZXNwZWMJdDsKCgljbG9ja19nZXR0aW1lKENMT0NLX1JFQUxUSU1FLCAm
+dCk7CglyZXR1cm4gKHVpbnQ2NF90KXQudHZfc2VjICogMTAwMDAwMDAwMFVMTCArIHQudHZfbnNl
+YzsKfQoKc3RhdGljIHZvaWQgZmlsbCh1aW50OF90ICpidWYsIGludCBuKQp7CglpbnQgaTsKCglm
+b3IgKGkgPSAwOyBpIDwgbjsgaSsrKQoJCWJ1ZltpXSA9IHJhbmQoKTsKfQoKc3RhdGljIHZvaWQg
+Y3JlYXRlZmlsZXMoaW50IG51bV9maWxlcykKewoJdWludDhfdCBidWZbRklMRV9TSVpFXTsKCWlu
+dCBmZDsKCWludCBpOwoKCWZpbGwoYnVmLCBzaXplb2YoYnVmKSk7Cglmb3IgKGkgPSAwOyBpIDwg
+bnVtX2ZpbGVzOyBpKyspIHsKCQlzbnByaW50ZihGaWxlW2ldLm5hbWUsIE1BWF9OQU1FLCAiZiVk
+IiwgaSk7CgkJZmQgPSBjcmVhdChGaWxlW2ldLm5hbWUsIDA2MDApOwoJCWlmICh3cml0ZShmZCwg
+YnVmLCBzaXplb2YoYnVmKSkgPT0gLTEpCgkJCXBlcnJvcigid3JpdGUiKTsKCQljbG9zZShmZCk7
+Cgl9Cn0KCnN0YXRpYyB2b2lkIHVubGlua2ZpbGVzKGludCBudW1fZmlsZXMpCnsKCWludCBpOwoK
+CWZvciAoaSA9IDA7IGkgPCBudW1fZmlsZXM7IGkrKykKCQl1bmxpbmsoRmlsZVtpXS5uYW1lKTsK
+fQoKc3RhdGljIHZvaWQgcmVhZGZpbGVzKGludCBudW1fZmlsZXMpCnsKCXVpbnQ4X3QgYnVmW0JZ
+VEVTX1RPX1JFQURdOwoJaW50IGZkOwoJaW50IGk7CgoJZm9yIChpID0gMDsgaSA8IG51bV9maWxl
+czsgaSsrKSB7CgkJZmQgPSBvcGVuKEZpbGVbaV0ubmFtZSwgT19SRE9OTFkpOwoJCWlmIChyZWFk
+KGZkLCBidWYsIEJZVEVTX1RPX1JFQUQpID09IC0xKQoJCQlwZXJyb3IoInJlYWQiKTsKCQljbG9z
+ZShmZCk7Cgl9Cn0KCnN0YXRpYyB2b2lkIHRpbWVfc3luYyhjb25zdCBjaGFyICpsYWJlbCwgaW50
+IG4pCnsKCXVpbnQ2NF90IHN0YXJ0OwoJdWludDY0X3QgZmluaXNoOwoKCXN0YXJ0ID0gbnNlY3Mo
+KTsKCXN5bmMoKTsKCWZpbmlzaCA9IG5zZWNzKCk7CglwcmludGYoIiUxMHMgJThkLiAlMTAuMmYg
+bXNcbiIsCgkJbGFiZWwsIG4sIChkb3VibGUpKGZpbmlzaCAtIHN0YXJ0KS8xMDAwMDAwLjApOwp9
+Cgp2b2lkIGNyc3luY2RlbChpbnQgbikKewoJY3JlYXRlZmlsZXMobik7Cgl0aW1lX3N5bmMoImNy
+ZWF0ZSIsIG4pOwoJcmVhZGZpbGVzKG4pOwoJdGltZV9zeW5jKCJyZWFkIiwgbik7Cgl1bmxpbmtm
+aWxlcyhuKTsKCXRpbWVfc3luYygidW5saW5rIiwgbik7Cn0KCnN0YXRpYyB2b2lkIGNsZWFudXAo
+Y29uc3QgY2hhciAqZGlyKQp7CgljaGFyCWNtZFsxMDI0XTsKCglpZiAoY2hkaXIoIi4uIikgPT0g
+LTEpCgkJcGVycm9yKGRpcik7CglzbnByaW50ZihjbWQsIHNpemVvZihjbWQpLCAicm0gLWZyICVz
+IiwgZGlyKTsKCWlmIChzeXN0ZW0oY21kKSA9PSAtMSkKCQlwZXJyb3IoY21kKTsKfQoKc3RhdGlj
+IHZvaWQgc2V0dXAoY29uc3QgY2hhciAqZGlyKQp7Cglta2RpcihkaXIsIDA3MDApOwoJaWYgKGNo
+ZGlyKGRpcikgPT0gLTEpCgkJcGVycm9yKGRpcik7CglzeW5jKCk7CglGaWxlID0gbWFsbG9jKHNp
+emVvZigqRmlsZSkgKiBOVU1fRklMRVMpOwp9CgppbnQgbWFpbihpbnQgYXJnYywgY2hhciAqYXJn
+dltdKQp7CgljaGFyICpkaXIgPSAic3luY3Rlc3RkaXIiOwoJaW50IGk7CgoJc2V0dXAoZGlyKTsK
+CS8qCgkgKiBOdW1iZXIgb2YgZmlsZXMgZ3Jvd3MgYnkgcG93ZXJzIG9mIHR3byB1bnRpbCB0aGUK
+CSAqIHNwZWNpZmllZCBudW1iZXIgb2YgZmlsZXMgaXMgcmVhY2hlZC4KCSAqIFN0YXJ0IHdpdGgg
+YSBsYXJnZSBlbm91Z2ggbnVtYmVyIHRvIHNraXAgbm9pc2UuCgkgKi8KCWZvciAoaSA9IE5VTV9T
+VEFSVF9GSUxFUzsgaSA8PSBOVU1fRklMRVM7IGkgPDw9IDEpCgkJY3JzeW5jZGVsKGkpOwoJY2xl
+YW51cChkaXIpOwoJcmV0dXJuIDA7Cn0K
+--e89a8fb1f56c33f54b04e130e039
+Content-Type: application/octet-stream; name="syncperf.results"
+Content-Disposition: attachment; filename="syncperf.results"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hiz6ecg41
 
+VGVzdHMgd2VyZSBydW4gb24gYSBleHQ0IGZpbGUgc3lzdGVtIHdpdGggcmVsYXRpbWUuCi9kZXYv
+c2RhMSBvbiAvaG9tZSB0eXBlIGV4dDQgKHJ3LG5vZGV2LHJlbGF0aW1lLGNvbW1pdD02MDAsZGF0
+YT1vcmRlcmVkKQoKMy44IFdpdGhvdXQgRml4OgpMaW51eCBsb2NhbGhvc3QgMy44LjExICM2IFNN
+UCBUdWUgSnVsIDkgMDg6NDI6NDMgUERUIDIwMTMgeDg2XzY0IEludGVsKFIpIENvcmUoVE0pIGk1
+LTM0MjdVIENQVSBAIDEuODBHSHogR2VudWluZUludGVsIEdOVS9MaW51eAojIHN5bmNwZXJmCiAg
+ICBjcmVhdGUgICAgICA1MTIuICAgICAyMTkuMjIgbXMKICAgICAgcmVhZCAgICAgIDUxMi4gICAg
+IDEwNi4yMSBtcwogICAgdW5saW5rICAgICAgNTEyLiAgICAgICA1LjA0IG1zCiAgICBjcmVhdGUg
+ICAgIDEwMjQuICAgICA3NTUuMDIgbXMKICAgICAgcmVhZCAgICAgMTAyNC4gICAgICAgNS45MSBt
+cwogICAgdW5saW5rICAgICAxMDI0LiAgICAgICA5LjcyIG1zCiAgICBjcmVhdGUgICAgIDIwNDgu
+ICAgICA2MzAuMzggbXMKICAgICAgcmVhZCAgICAgMjA0OC4gICAgICAyMy41MyBtcwogICAgdW5s
+aW5rICAgICAyMDQ4LiAgICAgIDE5Ljc4IG1zCiAgICBjcmVhdGUgICAgIDQwOTYuICAgIDExODIu
+NTIgbXMKICAgICAgcmVhZCAgICAgNDA5Ni4gICAgICAyMi4xMSBtcwogICAgdW5saW5rICAgICA0
+MDk2LiAgICAgIDQ2LjgyIG1zCiAgICBjcmVhdGUgICAgIDgxOTIuICAgIDI0NzEuMTcgbXMKICAg
+ICAgcmVhZCAgICAgODE5Mi4gICAxNjQwMS4wMiBtcwogICAgdW5saW5rICAgICA4MTkyLiAgICAg
+IDg3LjU0IG1zCiAgICBjcmVhdGUgICAgMTYzODQuICAgIDM5NjEuOTEgbXMKICAgICAgcmVhZCAg
+ICAxNjM4NC4gICAgIDI1NC43MyBtcwogICAgdW5saW5rICAgIDE2Mzg0LiAgICAgMzY0LjIwIG1z
+CiAgICBjcmVhdGUgICAgMzI3NjguICAgIDgyODIuNDUgbXMKICAgICAgcmVhZCAgICAzMjc2OC4g
+ICAgIDYwNC4xNyBtcwogICAgdW5saW5rICAgIDMyNzY4LiAgICAgNTMzLjEzIG1zCiAgICBjcmVh
+dGUgICAgNjU1MzYuICAgMTQyNTkuMDcgbXMKICAgICAgcmVhZCAgICA2NTUzNi4gIDEzMjYwMC4z
+OCBtcwogICAgdW5saW5rICAgIDY1NTM2LiAgICAxMjEwLjYyIG1zCiAgICBjcmVhdGUgICAxMzEw
+NzIuICAgMjY5ODEuOTYgbXMKICAgICAgcmVhZCAgIDEzMTA3Mi4gIDI2Nzk0Ny41NCBtcwogICAg
+dW5saW5rICAgMTMxMDcyLiAgICAgOTE4Ljg2IG1zCiAgICBjcmVhdGUgICAyNjIxNDQuICAgMjkx
+MTAuMDcgbXMKICAgICAgcmVhZCAgIDI2MjE0NC4gICAgMjAyOS4zMSBtcwogICAgdW5saW5rICAg
+MjYyMTQ0LiAgICAyMDE3LjE2IG1zCgozLjggV2l0aCBGaXg6CkxpbnV4IGxvY2FsaG9zdCAzLjgu
+MTEgIzcgU01QIFR1ZSBKdWwgOSAxMzozOToyOCBQRFQgMjAxMyB4ODZfNjQgSW50ZWwoUikgQ29y
+ZShUTSkgaTUtMzQyN1UgQ1BVIEAgMS44MEdIeiBHZW51aW5lSW50ZWwgR05VL0xpbnV4CiMgc3lu
+Y3BlcmYKICAgIGNyZWF0ZSAgICAgIDUxMi4gICAgIDE3MS43NCBtcwogICAgICByZWFkICAgICAg
+NTEyLiAgICAgIDI1LjA0IG1zCiAgICB1bmxpbmsgICAgICA1MTIuICAgICAgIDQuNzQgbXMKICAg
+IGNyZWF0ZSAgICAgMTAyNC4gICAgMTEyOS41NyBtcwogICAgICByZWFkICAgICAxMDI0LiAgICAg
+IDI2Ljk0IG1zCiAgICB1bmxpbmsgICAgIDEwMjQuICAgICAgMTQuODcgbXMKICAgIGNyZWF0ZSAg
+ICAgMjA0OC4gICAgMTQ3Ny40MiBtcwogICAgICByZWFkICAgICAyMDQ4LiAgICAgIDE3LjQ0IG1z
+CiAgICB1bmxpbmsgICAgIDIwNDguICAgICAgMjMuMjAgbXMKICAgIGNyZWF0ZSAgICAgNDA5Ni4g
+ICAgMTE5OS4zNSBtcwogICAgICByZWFkICAgICA0MDk2LiAgICAgIDMxLjUzIG1zCiAgICB1bmxp
+bmsgICAgIDQwOTYuICAgICAgMzIuMDYgbXMKICAgIGNyZWF0ZSAgICAgODE5Mi4gICAgMTY4Ny43
+MCBtcwogICAgICByZWFkICAgICA4MTkyLiAgICAgMzM0LjQzIG1zCiAgICB1bmxpbmsgICAgIDgx
+OTIuICAgICAxMjMuNDYgbXMKICAgIGNyZWF0ZSAgICAxNjM4NC4gICAgMjkzMC43OCBtcwogICAg
+ICByZWFkICAgIDE2Mzg0LiAgICAgMTk2LjYyIG1zCiAgICB1bmxpbmsgICAgMTYzODQuICAgICAy
+ODQuNjMgbXMKICAgIGNyZWF0ZSAgICAzMjc2OC4gICAgNjYwMS43MiBtcwogICAgICByZWFkICAg
+IDMyNzY4LiAgICAgNzUzLjgzIG1zCiAgICB1bmxpbmsgICAgMzI3NjguICAgICA5OTMuNDQgbXMK
+ICAgIGNyZWF0ZSAgICA2NTUzNi4gICAxMzAyNi4xMSBtcwogICAgICByZWFkICAgIDY1NTM2LiAg
+ICAxODIyLjk4IG1zCiAgICB1bmxpbmsgICAgNjU1MzYuICAgIDE0OTguODggbXMKICAgIGNyZWF0
+ZSAgIDEzMTA3Mi4gICAyMDA5Ni4xMCBtcwogICAgICByZWFkICAgMTMxMDcyLiAgICAyMjMxLjM0
+IG1zCiAgICB1bmxpbmsgICAxMzEwNzIuICAgIDEzMjMuMzcgbXMKICAgIGNyZWF0ZSAgIDI2MjE0
+NC4gICAxOTUwMS43MyBtcwogICAgICByZWFkICAgMjYyMTQ0LiAgICAxNzI5LjUxIG1zCiAgICB1
+bmxpbmsgICAyNjIxNDQuICAgIDMxMDQuNTkgbXMKCjMuMjAgMiBXaXRob3V0IEZpeDogSWxsdXN0
+cmF0ZXMgdmFyaWF0aW9ucyBpbiBydW5zCkxpbnV4IChub25lKSAzLjEwLjAgIzEgU01QIFdlZCBK
+dWwgMTAgMTE6MjA6MTMgUERUIDIwMTMgeDg2XzY0IEludGVsKFIpIENvcmUoVE0pIGk1LTM0MjdV
+IENQVSBAIDEuODBHSHogR2VudWluZUludGVsIEdOVS9MaW51eAojIHN5bmNwZXJmCiAgICBjcmVh
+dGUgICAgICA1MTIuICAgICA2NjYuODAgbXMKICAgICAgcmVhZCAgICAgIDUxMi4gICAgICAxMy43
+OSBtcwogICAgdW5saW5rICAgICAgNTEyLiAgICAgICA2LjE2IG1zCiAgICBjcmVhdGUgICAgIDEw
+MjQuICAgICA1MjQuNjkgbXMKICAgICAgcmVhZCAgICAgMTAyNC4gICAgIDE0MC42MCBtcwogICAg
+dW5saW5rICAgICAxMDI0LiAgICAgIDM1LjA4IG1zCiAgICBjcmVhdGUgICAgIDIwNDguICAgICA5
+NTIuNTMgbXMKICAgICAgcmVhZCAgICAgMjA0OC4gICAgNDQ2MS40MSBtcwogICAgdW5saW5rICAg
+ICAyMDQ4LiAgICAgIDIxLjU4IG1zCiAgICBjcmVhdGUgICAgIDQwOTYuICAgIDEzMjcuNzIgbXMK
+ICAgICAgcmVhZCAgICAgNDA5Ni4gICAgICAzNi40OCBtcwogICAgdW5saW5rICAgICA0MDk2LiAg
+ICAgIDI5LjU1IG1zCiAgICBjcmVhdGUgICAgIDgxOTIuICAgIDI3MjguMDYgbXMKICAgICAgcmVh
+ZCAgICAgODE5Mi4gICAxNzQyMi4wOCBtcwogICAgdW5saW5rICAgICA4MTkyLiAgICAgMTYxLjcy
+IG1zCiAgICBjcmVhdGUgICAgMTYzODQuICAgIDMxOTkuNzIgbXMKICAgICAgcmVhZCAgICAxNjM4
+NC4gICAzMzA3MC40NSBtcwogICAgdW5saW5rICAgIDE2Mzg0LiAgICAgMjAzLjc2IG1zCiAgICBj
+cmVhdGUgICAgMzI3NjguICAgIDc5OTUuNDcgbXMKICAgICAgcmVhZCAgICAzMjc2OC4gICAgIDkx
+Ni4xNCBtcwogICAgdW5saW5rICAgIDMyNzY4LiAgICAgNzgzLjIzIG1zCiAgICBjcmVhdGUgICAg
+NjU1MzYuICAgMTY1NDMuMTIgbXMKICAgICAgcmVhZCAgICA2NTUzNi4gIDEzNDUxOS4yOCBtcwog
+ICAgdW5saW5rICAgIDY1NTM2LiAgICAgODkzLjMyIG1zCiAgICBjcmVhdGUgICAxMzEwNzIuICAg
+MjI1MzAuNTQgbXMKICAgICAgcmVhZCAgIDEzMTA3Mi4gICAgMjA2NC45MSBtcwogICAgdW5saW5r
+ICAgMTMxMDcyLiAgICAxMTY2LjAxIG1zCiAgICBjcmVhdGUgICAyNjIxNDQuICAgMjUxMjUuOTMg
+bXMKICAgICAgcmVhZCAgIDI2MjE0NC4gICAgMzA1Ni4wMCBtcwogICAgdW5saW5rICAgMjYyMTQ0
+LiAgICAyMTQ2LjQ1IG1zCiMgc3luY3BlcmYKICAgIGNyZWF0ZSAgICAgIDUxMi4gICAgIDE0MC4w
+MyBtcwogICAgICByZWFkICAgICAgNTEyLiAgICAgICA1LjE1IG1zCiAgICB1bmxpbmsgICAgICA1
+MTIuICAgICAgIDQuOTQgbXMKICAgIGNyZWF0ZSAgICAgMTAyNC4gICAgIDU1OC43OCBtcwogICAg
+ICByZWFkICAgICAxMDI0LiAgICAgICA5Ljg4IG1zCiAgICB1bmxpbmsgICAgIDEwMjQuICAgICAg
+MTQuMTUgbXMKICAgIGNyZWF0ZSAgICAgMjA0OC4gICAgIDk0Ny4xMCBtcwogICAgICByZWFkICAg
+ICAyMDQ4LiAgICA0MTI1LjY3IG1zCiAgICB1bmxpbmsgICAgIDIwNDguICAgICAgMjEuNjYgbXMK
+ICAgIGNyZWF0ZSAgICAgNDA5Ni4gICAgMTA1MC42OSBtcwogICAgICByZWFkICAgICA0MDk2LiAg
+ICA4MjU0LjgzIG1zCiAgICB1bmxpbmsgICAgIDQwOTYuICAgICAgMzkuMDMgbXMKICAgIGNyZWF0
+ZSAgICAgODE5Mi4gICAgMTM5OC45MiBtcwogICAgICByZWFkICAgICA4MTkyLiAgICAgMzgyLjA3
+IG1zCiAgICB1bmxpbmsgICAgIDgxOTIuICAgICAgODUuMjQgbXMKICAgIGNyZWF0ZSAgICAxNjM4
+NC4gICAgNDAyOS42NSBtcwogICAgICByZWFkICAgIDE2Mzg0LiAgIDMyNjg4LjgwIG1zCiAgICB1
+bmxpbmsgICAgMTYzODQuICAgICAxNjguMzIgbXMKICAgIGNyZWF0ZSAgICAzMjc2OC4gICAgODk3
+NS4wNSBtcwogICAgICByZWFkICAgIDMyNzY4LiAgIDcwMTY3LjQwIG1zCiAgICB1bmxpbmsgICAg
+MzI3NjguICAgICAxODcuMDUgbXMKICAgIGNyZWF0ZSAgICA2NTUzNi4gICAxMDAwOC45NyBtcwog
+ICAgICByZWFkICAgIDY1NTM2LiAgMTM1NzMyLjU3IG1zCiAgICB1bmxpbmsgICAgNjU1MzYuICAg
+ICA5MDUuMDIgbXMKICAgIGNyZWF0ZSAgIDEzMTA3Mi4gICAxODc3Ny4yNSBtcwogICAgICByZWFk
+ICAgMTMxMDcyLiAgMjY4ODA5LjY3IG1zCiAgICB1bmxpbmsgICAxMzEwNzIuICAgICA4NTQuMTcg
+bXMKICAgIGNyZWF0ZSAgIDI2MjE0NC4gICAxNjk3MC4zOCBtcwogICAgICByZWFkICAgMjYyMTQ0
+LiAgICAxOTE4LjkzIG1zCiAgICB1bmxpbmsgICAyNjIxNDQuICAgIDE5NDcuNjAgbXMKCjMuMTAg
+V2l0aCBGaXgKTGludXggKG5vbmUpIDMuMTAuMCsgIzEgU01QIFdlZCBKdWwgMTAgMTI6MDc6NTIg
+UERUIDIwMTMgeDg2XzY0IEludGVsKFIpIENvcmUoVE0pIGk1LTM0MjdVIENQVSBAIDEuODBHSHog
+R2VudWluZUludGVsIEdOVS9MaW51eAojIHN5bmNwZXJmCiAgICBjcmVhdGUgICAgICA1MTIuICAg
+ICAxOTcuNjQgbXMKICAgICAgcmVhZCAgICAgIDUxMi4gICAgICAgNy45MSBtcwogICAgdW5saW5r
+ICAgICAgNTEyLiAgICAgIDE1LjU0IG1zCiAgICBjcmVhdGUgICAgIDEwMjQuICAgICA2NjMuNDQg
+bXMKICAgICAgcmVhZCAgICAgMTAyNC4gICAgICAyMy4yNSBtcwogICAgdW5saW5rICAgICAxMDI0
+LiAgICAgIDE3LjIzIG1zCiAgICBjcmVhdGUgICAgIDIwNDguICAgICA5MTkuNTggbXMKICAgICAg
+cmVhZCAgICAgMjA0OC4gICAgICAzNC4zNCBtcwogICAgdW5saW5rICAgICAyMDQ4LiAgICAgIDE2
+Ljc2IG1zCiAgICBjcmVhdGUgICAgIDQwOTYuICAgICA5NjEuMjUgbXMKICAgICAgcmVhZCAgICAg
+NDA5Ni4gICAgICA4Ni4wOSBtcwogICAgdW5saW5rICAgICA0MDk2LiAgICAgMzI3LjM4IG1zCiAg
+ICBjcmVhdGUgICAgIDgxOTIuICAgIDE5MjAuMzUgbXMKICAgICAgcmVhZCAgICAgODE5Mi4gICAg
+IDI3OC43NyBtcwogICAgdW5saW5rICAgICA4MTkyLiAgICAgIDUzLjUxIG1zCiAgICBjcmVhdGUg
+ICAgMTYzODQuICAgIDQ1MDYuMTQgbXMKICAgICAgcmVhZCAgICAxNjM4NC4gICAgICA5OS4wOSBt
+cwogICAgdW5saW5rICAgIDE2Mzg0LiAgICAgNTE4LjQ1IG1zCiAgICBjcmVhdGUgICAgMzI3Njgu
+ICAgIDg2NjMuOTcgbXMKICAgICAgcmVhZCAgICAzMjc2OC4gICAgIDY0Mi43NyBtcwogICAgdW5s
+aW5rICAgIDMyNzY4LiAgICAgNjIwLjUzIG1zCiAgICBjcmVhdGUgICAgNjU1MzYuICAgMTM4MDQu
+MjAgbXMKICAgICAgcmVhZCAgICA2NTUzNi4gICAgMTQ3OS4xNCBtcwogICAgdW5saW5rICAgIDY1
+NTM2LiAgICAxNTM1LjY1IG1zCiAgICBjcmVhdGUgICAxMzEwNzIuICAgMjI5ODEuNzQgbXMKICAg
+ICAgcmVhZCAgIDEzMTA3Mi4gICAgMTcwMi4xMiBtcwogICAgdW5saW5rICAgMTMxMDcyLiAgICAg
+ODk1LjI2IG1zCiAgICBjcmVhdGUgICAyNjIxNDQuICAgMjE3NzEuMzkgbXMKICAgICAgcmVhZCAg
+IDI2MjE0NC4gICAgMzA0OC45OCBtcwogICAgdW5saW5rICAgMjYyMTQ0LiAgICAyMTU3Ljk0IG1z
+Cg==
+--e89a8fb1f56c33f54b04e130e039--
