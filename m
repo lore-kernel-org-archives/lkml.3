@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754349Ab3GJKmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:42:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51929 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab3GJKmI convert rfc822-to-8bit (ORCPT
+	id S1754384Ab3GJKm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:42:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45776 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754357Ab3GJKmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:42:08 -0400
-Subject: Re: [PATCH 8/8] KVM: PPC: Add hugepage support for IOMMU in-kernel handling
-Mime-Version: 1.0 (Apple Message framework v1278)
+	Wed, 10 Jul 2013 06:42:23 -0400
+Date: Wed, 10 Jul 2013 12:40:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        Andrew Jones <drjones@redhat.com>, mingo@redhat.com,
+        ouyang@cs.pitt.edu, habanero@linux.vnet.ibm.com, jeremy@goop.org,
+        x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
+        pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        xen-devel@lists.xensource.com, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
+        chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+Message-ID: <20130710104047.GP25631@dyad.programming.kicks-ass.net>
+References: <20130601192125.5966.35563.sendpatchset@codeblue>
+ <1372171802.3804.30.camel@oc2024037011.ibm.com>
+ <51CAAA26.4090204@linux.vnet.ibm.com>
+ <20130626113744.GA6300@hawk.usersys.redhat.com>
+ <20130626125240.GY18508@redhat.com>
+ <51CAEF45.3010203@linux.vnet.ibm.com>
+ <20130626161130.GB18152@redhat.com>
+ <51CB2AD9.5060508@linux.vnet.ibm.com>
+ <51DBD3C2.2040807@linux.vnet.ibm.com>
+ <20130710103325.GP24941@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <D5AD40B0-B069-4BAD-90E0-3ECE2FE81038@suse.de>
-Date: Wed, 10 Jul 2013 12:42:04 +0200
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <BEA4EEEE-D485-4574-A32B-31F2FA3319C5@suse.de>
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru> <1373123227-22969-9-git-send-email-aik@ozlabs.ru> <51DC4923.5010501@suse.de> <51DC9CDA.3070906@ozlabs.ru> <778C7C81-5F7F-4E21-8B72-92F336002F9E@suse.de> <1373452753.19894.19.camel@pasglop> <D5AD40B0-B069-4BAD-90E0-3ECE2FE81038@suse.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-X-Mailer: Apple Mail (2.1278)
+Content-Disposition: inline
+In-Reply-To: <20130710103325.GP24941@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 10, 2013 at 01:33:25PM +0300, Gleb Natapov wrote:
 
-On 10.07.2013, at 12:40, Alexander Graf wrote:
+Here's an idea, trim the damn email ;-) -- not only directed at gleb.
 
-> 
-> On 10.07.2013, at 12:39, Benjamin Herrenschmidt wrote:
-> 
->> On Wed, 2013-07-10 at 12:33 +0200, Alexander Graf wrote:
->>> 
->>> It's not exactly obvious that you're calling it with writing == 1 :).
->>> Can you create a new local variable "is_write" in the calling
->>> function, set that to 1 before the call to get_user_pages_fast and
->>> pass it in instead of the 1? The compiler should easily optimize all
->>> of that away, but it makes the code by far easier to read.
->> 
->> Ugh ?
->> 
->> Nobody else does that .... (look at futex :-)
-> 
-> Yeah, that's fortunately code that I don't have to read :).
+> > Ingo, Gleb,
+> > 
+> > From the results perspective, Andrew Theurer, Vinod's test results are
+> > pro-pvspinlock.
+> > Could you please help me to know what will make it a mergeable
+> > candidate?.
+> > 
+> I need to spend more time reviewing it :) The problem with PV interfaces
+> is that they are easy to add but hard to get rid of if better solution
+> (HW or otherwise) appears.
 
-The "proper" alternative would be to pass an enum for read/write into the function rather than an int. But that'd be a pretty controversial, big change that I'd rather not put on Alexey. With a local variable we're nicely self-contained readable ;)
+How so? Just make sure the registration for the PV interface is optional; that
+is, allow it to fail. A guest that fails the PV setup will either have to try
+another PV interface or fall back to 'native'.
 
+> > I agree that Jiannan's Preemptable Lock idea is promising and we could
+> > evaluate that  approach, and make the best one get into kernel and also
+> > will carry on discussion with Jiannan to improve that patch.
+> That would be great. The work is stalled from what I can tell.
 
-Alex
-
+I absolutely hated that stuff because it wrecked the native code.
