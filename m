@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753529Ab3GJFSD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 01:18:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab3GJFSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 01:18:01 -0400
-Message-ID: <51DCEE7F.6080608@redhat.com>
-Date: Wed, 10 Jul 2013 13:17:51 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753449Ab3GJFVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 01:21:23 -0400
+Received: from mail-db8lp0187.outbound.messaging.microsoft.com ([213.199.154.187]:58344
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751050Ab3GJFVW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 01:21:22 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zcb8kz9371I542I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
+From: Bhushan Bharat-R65777 <R65777@freescale.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        Wood Scott-B07421 <B07421@freescale.com>
+CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [v3][PATCH 7/8] book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
+Thread-Topic: [v3][PATCH 7/8] book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
+Thread-Index: AQHOfHvB67E2WQz92U6o+48z0f/BepldYUNQ
+Date: Wed, 10 Jul 2013 05:20:24 +0000
+Message-ID: <6A3DF150A5B70D4F9B66A25E3F7C888D070AE138@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com>
+ <1373357007-30785-8-git-send-email-tiejun.chen@windriver.com>
+In-Reply-To: <1373357007-30785-8-git-send-email-tiejun.chen@windriver.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.14.2]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net 2/2] macvtap: correctly linearize skb when zerocopy
- is used
-References: <1373364651-10474-1-git-send-email-jasowang@redhat.com> <1373364651-10474-2-git-send-email-jasowang@redhat.com> <20130709103514.GC14321@redhat.com>
-In-Reply-To: <20130709103514.GC14321@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 06:35 PM, Michael S. Tsirkin wrote:
-> On Tue, Jul 09, 2013 at 06:10:51PM +0800, Jason Wang wrote:
->> Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
->> linearize parts of the skb to let the rest of iov to be fit in
->> the frags, we need count copylen into linear when calling macvtap_alloc_skb()
->> instead of partly counting it into data_len. Since this breaks
->> zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
->> be zero at beginning. This cause nr_frags to be increased wrongly without
->> setting the correct frags.
->>
->> This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
->> (macvtap: zerocopy: validate vectors before building skb).
->>
->> Cc: Michael S. Tsirkin <mst@redhat.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->> This patch is needed for stable.
->> ---
->>  drivers/net/macvtap.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/macvtap.c b/drivers/net/macvtap.c
->> index f2c4a3b..b213020 100644
->> --- a/drivers/net/macvtap.c
->> +++ b/drivers/net/macvtap.c
->> @@ -770,7 +770,8 @@ static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
->>  		copylen = len;
->>  
->>  	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
->> -				vnet_hdr.hdr_len, noblock, &err);
->> +				zerocopy ? copylen : vnet_hdr.hdr_len,
->> +				noblock, &err);
->>  	if (!skb)
->>  		goto err;
-> Same comment as for tun - let's add code for the if statement above.
-> Thanks!
->
 
-Sure, I will post v2.
 
-Thanks
->> -- 
->> 1.7.1
+> -----Original Message-----
+> From: Linuxppc-dev [mailto:linuxppc-dev-
+> bounces+bharat.bhushan=freescale.com@lists.ozlabs.org] On Behalf Of Tiejun Chen
+> Sent: Tuesday, July 09, 2013 1:33 PM
+> To: benh@kernel.crashing.org
+> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+> Subject: [v3][PATCH 7/8] book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
+> 
+> Book3e is always aligned 1GB to create TLB so we should
+> use (KERNELBASE - MEMORY_START) as VIRT_PHYS_OFFSET to
+> get __pa/__va properly while boot kdump.
+> 
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> ---
+>  arch/powerpc/include/asm/page.h |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
+> index 988c812..5b00081 100644
+> --- a/arch/powerpc/include/asm/page.h
+> +++ b/arch/powerpc/include/asm/page.h
+> @@ -112,6 +112,8 @@ extern long long virt_phys_offset;
+>  /* See Description below for VIRT_PHYS_OFFSET */
+>  #ifdef CONFIG_RELOCATABLE_PPC32
+>  #define VIRT_PHYS_OFFSET virt_phys_offset
+> +#elif defined(CONFIG_PPC_BOOK3E_64)
+> +#define VIRT_PHYS_OFFSET (KERNELBASE - MEMORY_START)
+
+Can you please explain this code a bit more. I am not understanding this part:)
+
+-Bharat
+
+>  #else
+>  #define VIRT_PHYS_OFFSET (KERNELBASE - PHYSICAL_START)
+>  #endif
 > --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 1.7.9.5
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+
 
