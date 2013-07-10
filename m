@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939Ab3GJWgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 18:36:46 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54230 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754528Ab3GJWgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 18:36:45 -0400
-Message-ID: <1373495803.14604.88.camel@joe-AO722>
-Subject: [PATCH] MAINTAINERS: dynamic debug: Jason's not there...
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jason Baron <jbaron@akamai.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Jul 2013 15:36:43 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754971Ab3GJWjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 18:39:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49429 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754695Ab3GJWjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 18:39:12 -0400
+Date: Thu, 11 Jul 2013 00:39:07 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
+ patching
+In-Reply-To: <51DDD3E9.6090601@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1307110036000.25858@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <51DDD3E9.6090601@linux.intel.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-He must be too, umm, busy to update his own bouncing
-email address too.
+On Wed, 10 Jul 2013, H. Peter Anvin wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
+> > If any CPU instruction execution would collide with the patching,
+> > it'd be trapped by the int3 breakpoint and redirected to the provided
+> > "handler" (which would typically mean just skipping over the patched
+> > region, acting as "nop" has been there, in case we are doing nop -> jump
+> > and jump -> nop transitions).
+> > 
+> 
+> I'm wondering if it would be easier/more general to just return to the
+> instruction.  The "more general" bit would allow this to be used for
+> other things, like alternatives, and perhaps eventually dynamic call
+> patching.
 
-poke - prod...
+Interesting idea ... This should be very easily done by just setting the 
+"handler" to the exact address that is being patched, and it'll work 
+exactly the way you are proposing, no?
 
- MAINTAINERS | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Returning to the instruction will, in effect, be a busy-wait for the
+> faulted CPU until the patch is complete; more or less what stop_machine
+> would do, but only for a CPU which actually strays into the affected region.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index e51d018..3c81917 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2875,7 +2875,7 @@ F:	drivers/media/usb/dvb-usb-v2/dvb_usb*
- F:	drivers/media/usb/dvb-usb-v2/usb_urb.c
- 
- DYNAMIC DEBUG
--M:	Jason Baron <jbaron@redhat.com>
-+M:	Jason Baron <jbaron@akamai.com>
- S:	Maintained
- F:	lib/dynamic_debug.c
- F:	include/linux/dynamic_debug.h
+Exactly ... so the special case I am introducing for jump labels in 2/2 
+(i.e. implicitly behaving like there was a nop) is an optimized one, but 
+can be easily turned into busy loop by just redirecting the "handler" one 
+instruction back in cases where it'd be desirable.
 
-
+-- 
+Jiri Kosina
+SUSE Labs
