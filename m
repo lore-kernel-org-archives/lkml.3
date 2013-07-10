@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab3GJMlq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 08:41:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31554 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab3GJMlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 08:41:45 -0400
-Date: Wed, 10 Jul 2013 15:42:53 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH 1/2] virtio tools: strip bad include-path from Makefile
-Message-ID: <20130710124253.GA12645@redhat.com>
-References: <1373453820-22517-1-git-send-email-artagnon@gmail.com>
- <1373453820-22517-2-git-send-email-artagnon@gmail.com>
- <20130710121521.GB11386@redhat.com>
- <CALkWK0k49QDWcupnhhgDh4WVP-xT1f2rvDkteChZyjWo48u9qw@mail.gmail.com>
+	id S1754260Ab3GJMni (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 08:43:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48474 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab3GJMnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 08:43:37 -0400
+Date: Wed, 10 Jul 2013 14:42:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+Subject: Re: timer: lockup in run_timer_softirq()
+Message-ID: <20130710124245.GT25631@dyad.programming.kicks-ass.net>
+References: <51DC902F.3070403@oracle.com>
+ <20130709224706.GA13855@redhat.com>
+ <51DC9379.9050408@oracle.com>
+ <20130709230316.GB13855@redhat.com>
+ <51DC983F.2010409@oracle.com>
+ <20130710095210.GD17211@twins.programming.kicks-ass.net>
+ <1373459254.7458.49.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALkWK0k49QDWcupnhhgDh4WVP-xT1f2rvDkteChZyjWo48u9qw@mail.gmail.com>
+In-Reply-To: <1373459254.7458.49.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 05:50:04PM +0530, Ramkumar Ramachandra wrote:
-> Michael S. Tsirkin wrote:
-> >> CFLAGS contains a mysterious "-I ../../usr/include", but no such path
-> >> exists in the linux tree.  The line was originally introduced in
-> >> 4e53f78e (tools/virtio: virtio_test tool, 2010-11-29), but no such path
-> >> existed in the tree even then.
-> >
-> > It exists if you do make headers_install.
+On Wed, Jul 10, 2013 at 08:27:34AM -0400, Steven Rostedt wrote:
+> On Wed, 2013-07-10 at 11:52 +0200, Peter Zijlstra wrote:
 > 
-> I see.  Why do we need these (or userspace headers) when /include
-> exists in the linux tree though?
-
-This is usespace code so it needs the cleaned-up version from
-usr/include, not the internal kernel one.
-
-> > So it's handy for old distos where userspace headers don't
-> > exist or are out of date.
+> > Fun.. :-) we trace __local_bh_enable() and hit a ftrace callback between
+> > telling lockdep we enabled softirqs and actually doing so.
+> > 
+> > I'm just a tad confused by the trace; it says we go:
+> >   lock_is_held()
+> >     check_flags()
+> > 
+> > Looking at perf_tp_event() this would most likely be from:
+> > 
+> >   ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
 > 
-> I thought userspace headers (linux-kernel-headers package in my
-> distribution) are used for building kernel modules that exist as
-> independent projects outside the linux tree (?).
+> Function tracing should not be treated as a normal trace point. It is
+> much more invasive, and there's things that one should be weary about
+> when using it.
 
-userspace headers are for userspace, not for external modules.
-I don't know what does your distro puts in a linux-kernel-headers
-package.
+Clearly.. yet someone forgot this when merging ced39002 :/
 
--- 
-MST
+> > 
+> > Where the lock_is_held() would be from rcu_dereference_check()'s
+> > rcu_read_lock_sched_held(). However, by there we've already passed
+> > rcu_read_lock() which includes rcu_lock_acquire() -> lock_acquire() ->
+> > check_flags(). So it should've triggered there.
+> > 
+> > Ideally we'd not trace __local_bh_enable() at all, seeing as how any RCU usage
+> > in there would be bound to trigger this.
+> 
+> I find it very useful to trace __local_bh_enable(). I also trace RCU
+> calls.
+> 
+> When using function tracing, you need to use
+> rcu_dereference_raw_notrace().
+> 
+> Also, function tracing callbacks should avoid rcu_read_lock(), as that's
+> traced as well. You can use preempt_disable_notrace() for rcu usage.
+
+but but but preempt_disable_notrace() isn't an rcu_read_lock().. You can only
+do that for rcu_sched.
+
+Anyway, I don't see a nice way out of this mess :/ the entire perf core uses
+regular RCU and converting all that is going to me a nasty big patch.
