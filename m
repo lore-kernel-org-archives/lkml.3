@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab3GJPer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 11:34:47 -0400
-Received: from jacques.telenet-ops.be ([195.130.132.50]:32839 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab3GJPeo (ORCPT
+	id S1754601Ab3GJPjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 11:39:06 -0400
+Received: from smtpauth12.mfg.siteprotect.com ([64.26.60.150]:60930 "EHLO
+	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753897Ab3GJPjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 11:34:44 -0400
-Message-ID: <51DD7F10.1040104@acm.org>
-Date: Wed, 10 Jul 2013 17:34:40 +0200
-From: Bart Van Assche <bvanassche@acm.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Roland Dreier <roland@kernel.org>
-CC: Sebastian Riemer <sebastian.riemer@profitbricks.com>,
+	Wed, 10 Jul 2013 11:39:04 -0400
+Date: Wed, 10 Jul 2013 11:39:50 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Dave Jones <davej@redhat.com>
+cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
-Subject: Re: [GIT PULL] please pull infiniband.git
-References: <1373391385-4978-1-git-send-email-roland@kernel.org> <51DD714D.4080001@profitbricks.com> <CAG4TOxNeJWDWdZv+8nXzE1ektybkTEX0xNYh_S64-Gh4ocTD_A@mail.gmail.com>
-In-Reply-To: <CAG4TOxNeJWDWdZv+8nXzE1ektybkTEX0xNYh_S64-Gh4ocTD_A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Yet more softlockups.
+In-Reply-To: <20130710151324.GA11309@redhat.com>
+Message-ID: <alpine.DEB.2.02.1307101137160.2022@pianoman.cluster.toy>
+References: <20130704015525.GA8486@redhat.com> <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com> <20130705143821.GB325@redhat.com> <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de> <20130705160043.GF325@redhat.com>
+ <20130706072408.GA14865@gmail.com> <20130710151324.GA11309@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A02020A.51DD8018.004F,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/13 16:38, Roland Dreier wrote:
-> On Wed, Jul 10, 2013 at 7:35 AM, Sebastian Riemer
-> <sebastian.riemer@profitbricks.com> wrote:
->>
->> I've checked the commits on that tag and the following commit is not
->> what we've agreed on:
->
-> Sorry about that.  The discussion was long and complex and I probably
-> made a mistake in aplying the patches.  Please me send a patch to fix
-> the driver to what it should be, and I will merge it ASAP.
+On Wed, 10 Jul 2013, Dave Jones wrote:
 
-I will send such a patch in reply to this e-mail but without CC-ing the 
-LKML. Sebastian, if you could review that patch, that would be appreciated.
+> Something is really fucked up in the kernel side of perf.
+> I get this right after booting..
+> 
+> [  114.516619] perf samples too long (4262 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+> 
+> That's before I even get a chance to log in, so I'm pretty sure perf isn't even being run.
+> 
+> And this is just booting up my desktop, not fuzzing.
 
-Bart.
+This is probably related to the problem described in the thread
+   perf: fix interrupt handler timing harness
+   http://comments.gmane.org/gmane.linux.kernel/1520775
+which in theory has a fix.  Not sure why it'd trigger during boot.
+NMI watchdog?
+
+Vince
 
