@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab3GJM1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 08:27:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24362 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab3GJM1h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 08:27:37 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=mY5AGG0wUPsA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=x45eBLDEq7QA:10 a=oYh8eL3xjYd5ljICvmcA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373459254.7458.49.camel@gandalf.local.home>
-Subject: Re: timer: lockup in run_timer_softirq()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Date: Wed, 10 Jul 2013 08:27:34 -0400
-In-Reply-To: <20130710095210.GD17211@twins.programming.kicks-ass.net>
-References: <51DC902F.3070403@oracle.com>
-	 <20130709224706.GA13855@redhat.com> <51DC9379.9050408@oracle.com>
-	 <20130709230316.GB13855@redhat.com> <51DC983F.2010409@oracle.com>
-	 <20130710095210.GD17211@twins.programming.kicks-ass.net>
+	id S1754547Ab3GJM2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 08:28:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55794 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754509Ab3GJM2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 08:28:45 -0400
+Subject: Re: [PATCH 2/3] firmware/dmi_scan: Fix most checkpatch errors and
+ warnings
+From: Jean Delvare <jdelvare@suse.de>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1373386794.14604.14.camel@joe-AO722>
+References: <1373384438.4391.6.camel@chaos.site>
+	 <1373384574.4391.9.camel@chaos.site>  <1373386794.14604.14.camel@joe-AO722>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+Organization: Suse Linux
+Date: Wed, 10 Jul 2013 14:28:25 +0200
+Message-ID: <1373459305.4399.27.camel@chaos.site>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-10 at 11:52 +0200, Peter Zijlstra wrote:
+Hi Joe,
 
-> Fun.. :-) we trace __local_bh_enable() and hit a ftrace callback between
-> telling lockdep we enabled softirqs and actually doing so.
+Le Tuesday 09 July 2013 à 09:19 -0700, Joe Perches a écrit :
+> On Tue, 2013-07-09 at 17:42 +0200, Jean Delvare wrote:
+> > Fix all errors and trivial warnings reported by checkpatch for file
+> > drivers/firmware/dmi_scan.c.
 > 
-> I'm just a tad confused by the trace; it says we go:
->   lock_is_held()
->     check_flags()
+> trivia:
 > 
-> Looking at perf_tp_event() this would most likely be from:
+> > +++ linux-3.11-rc0/drivers/firmware/dmi_scan.c	2013-07-09 16:08:13.979592957 +0200
+> > @@ -63,7 +63,7 @@ static char * __init dmi_string(const st
+> >  	if (str != NULL)
+> >  		strcpy(str, bp);
+> >  	else
+> > -		printk(KERN_ERR "dmi_string: cannot allocate %Zu bytes.\n", len);
+> > +		pr_err("dmi_string: cannot allocate %Zu bytes.\n", len);
 > 
->   ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
-
-Function tracing should not be treated as a normal trace point. It is
-much more invasive, and there's things that one should be weary about
-when using it.
-
+> If the function name is used in every printk, it might
+> be better to add
 > 
-> Where the lock_is_held() would be from rcu_dereference_check()'s
-> rcu_read_lock_sched_held(). However, by there we've already passed
-> rcu_read_lock() which includes rcu_lock_acquire() -> lock_acquire() ->
-> check_flags(). So it should've triggered there.
+> #define pr_fmt(fmt) "%s: " fmt, __func__
 > 
-> Ideally we'd not trace __local_bh_enable() at all, seeing as how any RCU usage
-> in there would be bound to trigger this.
+> before any #include
 
-I find it very useful to trace __local_bh_enable(). I also trace RCU
-calls.
+No, only error messages include the function name, debug and info
+messages do not.
 
-When using function tracing, you need to use
-rcu_dereference_raw_notrace().
+> If not, then I suggest removing the embedded function names
+> and writing these as
+> 		pr_err("%s: etc...", __func__, etc...);
+> 
+> This eliminates any possible function name mismatch.
 
-Also, function tracing callbacks should avoid rcu_read_lock(), as that's
-traced as well. You can use preempt_disable_notrace() for rcu usage.
+I had considered this too, but stepped back after finding out that this
+change would increase the binary size. It's hard to sell such a change
+then when it's only fixing a theoretical problem.
 
--- Steve
+> > @@ -217,7 +220,7 @@ static void __init dmi_save_one_device(i
+> >  
+> >  	dev = dmi_alloc(sizeof(*dev) + strlen(name) + 1);
+> >  	if (!dev) {
+> > -		printk(KERN_ERR "dmi_save_one_device: out of memory.\n");
+> > +		pr_err("dmi_save_one_device: out of memory.\n");
+> 
+> OOM messages generally aren't useful.
+> 
+> dmi_alloc is either a trivial front-end to kmalloc,
+> and kmalloc already does a dump_stack() when OOM, or
+> for x86, dmi_alloc uses extend_brk which BUGs when
+> unsuccessful.
 
+Fair enough, I'll send a separate patch for this in a minute.
+
+-- 
+Jean Delvare
+Suse L3
 
