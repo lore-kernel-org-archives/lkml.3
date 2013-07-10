@@ -1,129 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab3GJISV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 04:18:21 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:57626 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3GJISR (ORCPT
+	id S1752808Ab3GJITu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 04:19:50 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:38918 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab3GJITs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 04:18:17 -0400
-Message-ID: <51DD18BD.9090201@de.ibm.com>
-Date: Wed, 10 Jul 2013 10:18:05 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 10 Jul 2013 04:19:48 -0400
 MIME-Version: 1.0
-To: Dominik Dingel <dingel@linux.vnet.ibm.com>
-CC: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Alexander Graf <agraf@suse.de>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] PF: Async page fault support on s390
-References: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com> <1373378207-10451-5-git-send-email-dingel@linux.vnet.ibm.com>
-In-Reply-To: <1373378207-10451-5-git-send-email-dingel@linux.vnet.ibm.com>
+In-Reply-To: <20130709124900.GG11908@titan.lakedaemon.net>
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
+	<1373352166-10064-2-git-send-email-zhangwm@marvell.com>
+	<20130709124900.GG11908@titan.lakedaemon.net>
+Date: Wed, 10 Jul 2013 16:19:46 +0800
+Message-ID: <CAN1soZxiOh6TpbUOCUzK8gNwmvjbT3ihkUWaw8tuZ7md+NVA2g@mail.gmail.com>
+Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Neil Zhang <zhangwm@marvell.com>, Grant Likely <grant.likely@linaro.org>,
+        Bergmann Arnd <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071008-8372-0000-0000-0000068925E6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/13 15:56, Dominik Dingel wrote:
-> This patch enables async page faults for s390 kvm guests.
-> It provides the userspace API to enable, disable or get the status of this
-> feature. Also it includes the diagnose code, called by the guest to enable
-> async page faults.
-> 
-> The async page faults will use an already existing guest interface for this
-> purpose, as described in "CP Programming Services (SC24-6084)".
-> 
-> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+On Tue, Jul 9, 2013 at 8:49 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> Neil,
+>
+> On Tue, Jul 09, 2013 at 02:42:44PM +0800, Neil Zhang wrote:
+>> The documented vendor prefix for Marvell is 'marvell', not 'mrvl', so
+>> let's change it.
+>>
+>> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+>> ---
+>>  .../devicetree/bindings/arm/mrvl/intc.txt          |   16 +++---
+>>  .../devicetree/bindings/arm/mrvl/mrvl.txt          |    6 +-
+>>  .../devicetree/bindings/arm/mrvl/timer.txt         |    4 +-
+>>  Documentation/devicetree/bindings/i2c/i2c-pxa.txt  |   14 +++---
+>>  .../devicetree/bindings/mmc/sdhci-pxa.txt          |    8 ++--
+>>  .../devicetree/bindings/rtc/sa1100-rtc.txt         |    4 +-
+>>  .../devicetree/bindings/serial/mrvl-serial.txt     |    2 +-
+>>  arch/arm/boot/dts/mmp2-brownstone.dts              |    2 +-
+>>  arch/arm/boot/dts/mmp2.dtsi                        |   56 ++++++++++----------
+>>  arch/arm/boot/dts/pxa168-aspenite.dts              |    2 +-
+>>  arch/arm/boot/dts/pxa168.dtsi                      |   24 ++++----
+>>  arch/arm/boot/dts/pxa2xx.dtsi                      |   16 +++---
+>>  arch/arm/boot/dts/pxa3xx.dtsi                      |    2 +-
+>>  arch/arm/boot/dts/pxa910-dkb.dts                   |    2 +-
+>>  arch/arm/boot/dts/pxa910.dtsi                      |   27 +++++-----
+>>  arch/arm/mach-mmp/irq.c                            |   16 +++---
+>>  arch/arm/mach-mmp/mmp-dt.c                         |   28 +++++-----
+>>  arch/arm/mach-mmp/mmp2-dt.c                        |   16 +++---
+>>  arch/arm/mach-mmp/time.c                           |    2 +-
+>>  arch/arm/mach-pxa/pxa-dt.c                         |   14 +++---
+>>  drivers/i2c/busses/i2c-pxa.c                       |   10 ++--
+>>  drivers/mmc/host/sdhci-pxav2.c                     |    4 +-
+>>  drivers/mmc/host/sdhci-pxav3.c                     |    4 +-
+>>  drivers/rtc/rtc-sa1100.c                           |    4 +-
+>>  drivers/tty/serial/pxa.c                           |    4 +-
+>>  25 files changed, 144 insertions(+), 143 deletions(-)
+>
+> I agree with the need to change, however, this has been in the binding
+> documentation since v3.5.  I wish we had caught this when we decided
+> against using stock ticker symbols (not all stock markets use
+> alphabetical abbreviated names, not all companies are listed on any
+> stock exchange).
+>
+> To do this properly, the drivers are going to have to be compatible with
+> the old and the new names, and the binding docs updated to reflect the
+> legacy name and the preferred name.
+>
 
-Re-reading this patch again, found some thing that you should take 
-care of (nothing major, just small details). Sorry for not seeing them
-earlier.
+It's better to only use the new names.
 
-[...]
-> +	case 1: /* CANCEL */
-> +		if (vcpu->run->s.regs.gprs[rx] & 7)
-> +			return kvm_s390_inject_program_int(vcpu, PGM_ADDRESSING);
-> +
-> +		vcpu->run->s.regs.gprs[ry] = 0;
-> +
-> +		if (vcpu->arch.pfault_token == KVM_S390_PFAULT_TOKEN_INVALID)
-> +			vcpu->run->s.regs.gprs[ry] = 1;
-> +
-> +		vcpu->arch.pfault_token = KVM_S390_PFAULT_TOKEN_INVALID;
-> +		rc = 0;
-> +		break;
+Neil,
 
-Dont we need a kvm_clear_async_pf_completion_queue(vcpu) or similar here as well?
-The cancel function is supposed to purge all outstanding requests (those were no 
-completion signal was made pending yet)
+Could you split your patches according to different subsystem?
 
-[...]
-> @@ -264,6 +292,7 @@ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
->  {
->  	VCPU_EVENT(vcpu, 3, "%s", "free cpu");
->  	trace_kvm_s390_destroy_vcpu(vcpu->vcpu_id);
-> +	kvm_clear_async_pf_completion_queue(vcpu);
->  	if (!kvm_is_ucontrol(vcpu->kvm)) {
->  		clear_bit(63 - vcpu->vcpu_id,
->  			  (unsigned long *) &vcpu->kvm->arch.sca->mcn);
-> @@ -313,6 +342,9 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
->  /* Section: vcpu related */
->  int kvm_arch_vcpu_init(struct kvm_vcpu *vcpu)
->  {
-> +	vcpu->arch.pfault_token = KVM_S390_PFAULT_TOKEN_INVALID;
-> +	kvm_clear_async_pf_completion_queue(vcpu);
-> +	kvm_async_pf_wakeup_all(vcpu);
->  	if (kvm_is_ucontrol(vcpu->kvm)) {
->  		vcpu->arch.gmap = gmap_alloc(current->mm);
->  		if (!vcpu->arch.gmap)
-
-We should also reset pfault handling for CPU reset, no?
-
-> @@ -691,10 +723,75 @@ static void kvm_arch_fault_in_sync(struct kvm_vcpu *vcpu)
->  	up_read(&mm->mmap_sem);
->  }
-> 
-> +static void __kvm_inject_pfault_token(struct kvm_vcpu *vcpu, bool start_token,
-> +				      unsigned long token)
-> +{
-> +	struct kvm_s390_interrupt inti;
-> +	inti.type = start_token ? KVM_S390_INT_PFAULT_INIT :
-> +				  KVM_S390_INT_PFAULT_DONE;
-> +	inti.parm64 = token;
-> +	if (kvm_s390_inject_vcpu(vcpu, &inti))
-> +		WARN(1, "pfault interrupt injection failed");
-> +}
-
-The PFAULT_DONE is architectured as a floating interrupt (can happen
-on other CPUs).
-
-[...]
-> --- a/arch/s390/kvm/sigp.c
-> +++ b/arch/s390/kvm/sigp.c
-> @@ -187,6 +187,8 @@ static int __sigp_set_arch(struct kvm_vcpu *vcpu, u32 parameter)
->  {
->  	int rc;
-> 
-> +	vcpu->arch.pfault_token = KVM_S390_PFAULT_TOKEN_INVALID;
-> +
-
-sigp set architecture affects all cpus, so we must reset pfault via
-kvm_for_each_vcpu, I guess.
-
-Otherwise patch looks good. I guess only one more iteration
-Christian
-
-
-
+Regards
+Haojian
