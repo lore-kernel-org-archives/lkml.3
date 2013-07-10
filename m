@@ -1,92 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab3GJClA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 22:41:00 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:52427 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278Ab3GJCk7 (ORCPT
+	id S1754122Ab3GJCuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 22:50:44 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:36039 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725Ab3GJCum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 22:40:59 -0400
-Message-ID: <51DCC9B0.9090507@linux.vnet.ibm.com>
-Date: Wed, 10 Jul 2013 10:40:48 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 9 Jul 2013 22:50:42 -0400
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        Jiri Kosina <jkosina@suse.cz>, Tomasz Figa <t.figa@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [v3.10 regression] deadlock on cpu hotplug
-References: <1443144.WnBWEpaopK@amdc1032> <51DB724F.9050708@linux.vnet.ibm.com> <1754044.EVIH1UZj6p@amdc1032>
-In-Reply-To: <1754044.EVIH1UZj6p@amdc1032>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071002-9264-0000-0000-00000418CF99
+In-Reply-To: <20130709.145325.1363244885668360965.davem@davemloft.net>
+References: <20130709.145325.1363244885668360965.davem@davemloft.net>
+Date: Tue, 9 Jul 2013 19:50:41 -0700
+X-Google-Sender-Auth: HGgiw1I_bFJJGNisO6n6mAetBbE
+Message-ID: <CA+55aFwgYoGKRLde_4KBnUr1nENpwdahJv8+wHJ502HcGJW1pA@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 07:51 PM, Bartlomiej Zolnierkiewicz wrote:
-[snip]
-> 
-> It doesn't help and unfortunately it just can't help as it only
-> addresses lockdep functionality while the issue is not a lockdep
-> problem but a genuine locking problem. CPU hot-unplug invokes
-> _cpu_down() which calls cpu_hotplug_begin() which in turn takes
-> &cpu_hotplug.lock. The lock is then hold during __cpu_notify()
-> call. Notifier chain goes up to cpufreq_governor_dbs() which for
-> CPUFREQ_GOV_STOP event does gov_cancel_work(). This function
-> flushes pending work and waits for it to finish. The all above
-> happens in one kernel thread. At the same time the other kernel
-> thread is doing the work we are waiting to complete and it also
-> happens to do gov_queue_work() which calls get_online_cpus().
-> Then the code tries to take &cpu_hotplug.lock which is already
-> held by the first thread and deadlocks.
+On Tue, Jul 9, 2013 at 2:53 PM, David Miller <davem@davemloft.net> wrote:
+>
+> This is a re-do of the net-next pull request for the current merge
+> window.  The only difference from the one I made the other day is that
+> this has Eliezer's interface renames and the timeout handling changes
+> made based upon your feedback, as well as a few bug fixes that have
+> trickeled in.
 
-Hmm...I think I get your point, some thread hold the lock and
-flush some work which also try to hold the same lock, correct?
+David, what the heck are you doing?
 
-Ok, that's a problem, let's figure out a good way to solve it :)
+Take a look at commit e1d6fbc3dedb, for example.
 
-Regards,
-Michael Wang
+That's a *merge* commit that you have done using "git merge --no-ff"
+or something equivalent. Fine.
 
+But what is *not* fine is how you've then edited the message to make
+the commit log look like it's not a merge at all!
 
+There's another one in dc3d807d6fd9. Again, it's a merge, but you
+wouldn't know if from the commit message.
 
+You seem to do this non-ff thing on purpose, since there are also
+things like commit b0b02c77d7aa, but there at least you make it clear
+it's a merge. I'm not a huge fan of non-ff merges, but I do see the
+advantages of maintainers being able to separate that part of the
+history and giving an added "overall summary" merge commit message, so
+I'm ok with that part, and I've considered it myself. We can even
+discuss making it some recommended thing if people really like it
+widely.
 
-> 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
-> 
->> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
->> index 5af40ad..aa05eaa 100644
->> --- a/drivers/cpufreq/cpufreq_governor.c
->> +++ b/drivers/cpufreq/cpufreq_governor.c
->> @@ -229,6 +229,8 @@ static void set_sampling_rate(struct dbs_data *dbs_data,
->>         }
->>  }
->>  
->> +static struct lock_class_key j_cdbs_key;
->> +
->>  int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->>                 struct common_dbs_data *cdata, unsigned int event)
->>  {
->> @@ -366,6 +368,8 @@ int (struct cpufreq_policy *policy,
->>                                         kcpustat_cpu(j).cpustat[CPUTIME_NICE];
->>  
->>                         mutex_init(&j_cdbs->timer_mutex);
->> +                       lockdep_set_class(&j_cdbs->timer_mutex, &j_cdbs_key);
->> +
->>                         INIT_DEFERRABLE_WORK(&j_cdbs->work,
->>                                              dbs_data->cdata->gov_dbs_timer);
->>                 }
->>
->> Regards,
->> Michael Wang
-> 
+But the summary lines absolutely needs to spell out that it's a merge.
+You can't just make a merge look like it's some kind of normal commit.
+Because in many contexts it really is not otherwise all that
+noticeable that they are merges.
 
+Seriously. Those commits now have TOTALLY MISLEADING summary messages.
+Think about what they look like in shortlogs etc one-liner summary
+formats ("git log --oneline" etc).
+
+So the summary message for a merge needs to mention that it's a merge.
+Not this insane "try to make merges look like non-merge commits" thing
+you've done. There is zero upside to editing away the merge part of
+the message. Plus now they look totally different from your other
+merges, for no good reasons.
+
+Looking around, you've apparently done this before: commit
+912df2628bd1 back in January did it too. I didn't catch it back then.
+But now there's two new ones. See which ones stand out by doing
+
+    git log --oneline --merges --author=davem
+
+(There's a few oddball ones by other people too, most from the early
+days in 2005 when we didn't have good git workflows. Some much more
+recent dubious ones too, so you're not _entirely_ alone here, there's
+one from Linville too, for example)
+
+Now, I'm all for making descriptive merge commit messages, including
+improving on the summary line. So by all means write those nice merge
+messages with explanations. I think something like
+
+    dc3d807d6fd9 Merge "openvswitch: gre tunneling support."
+
+would have been a *fine* summary line, for example, and quite possibly
+better than the default kind of git merge summary lines (ie "Merge
+branch 'openswitch'"). So I'm not against playing with merge messages
+per se, it's literally this "cannot tell it's a merge any more in the
+summary" that I thing is a problem.
+
+I'm going to pull it, because trying to fix this is too damn painful,
+but I really *really* want to see merges with summary messages that
+make it clear that they are merges (ie they spell out that "Merge"
+part). If you want to improve them by extending on the branch name
+etc, go wild.  But don't break "git shortlog" or "git log --oneline"
+etc.
+
+                  Linus
