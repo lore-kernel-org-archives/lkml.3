@@ -1,64 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab3GJOvc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:51:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56099 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752792Ab3GJOva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:51:30 -0400
-Message-ID: <1373467888.14604.32.camel@joe-AO722>
-Subject: Re: [PATCH] firmware/dmi_scan: Drop OOM messages
-From: Joe Perches <joe@perches.com>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Wed, 10 Jul 2013 07:51:28 -0700
-In-Reply-To: <1373460424.4399.45.camel@chaos.site>
-References: <1373460424.4399.45.camel@chaos.site>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754500Ab3GJOwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:52:33 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:36440 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab3GJOwb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:52:31 -0400
+Date: Wed, 10 Jul 2013 10:52:24 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
+Cc: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC 4/4] xen-block: introduce a new request type to unmap
+ grants
+Message-ID: <20130710145224.GC11007@phenom.dumpdata.com>
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
+ <1373288607-1876-5-git-send-email-roger.pau@citrix.com>
+ <20130708194152.GJ4927@phenom.dumpdata.com>
+ <51DD271B.3010408@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <51DD271B.3010408@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-even more trivial...
+On Wed, Jul 10, 2013 at 11:19:23AM +0200, Roger Pau Monné wrote:
+> On 08/07/13 21:41, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Jul 08, 2013 at 03:03:27PM +0200, Roger Pau Monne wrote:
+> >> Right now blkfront has no way to unmap grant refs, if using persistent
+> >> grants once a grant is used blkfront cannot assure if blkback will
+> >> have this grant mapped or not. To solve this problem, a new request
+> >> type (BLKIF_OP_UNMAP) that allows requesting blkback to unmap certain
+> >> grants is introduced.
+> > 
+> > I don't think this is the right way of doing it. It is a new operation
+> > (BLKIF_OP_UNMAP) that has nothing to do with READ/WRITE. All it is
+> > is just some way for the frontend to say: unmap this grant if you can.
+> > 
+> > As such I would think a better mechanism would be to have a new
+> > grant mechanism that can say: 'I am done with this grant you can
+> > remove it' - that is called to the hypervisor. The hypervisor
+> > can then figure out whether it is free or not and lazily delete it.
+> > (And the guest would be notified when it is freed).
+> 
+> I have a patch that I think implements something quite similar to what 
+> you describe, but it doesn't require any new patch to the hypervisor 
+> side. From blkfront we can check what grants blkback has chosen to 
+> persistently map and only keep those.
+> 
+> This is different from my previous approach, were blkfront could 
+> specifically request blkback to unmap certain grants, but it still 
+> prevents blkfront from hoarding all grants (unless blkback is 
+> persistently mapping every possible grant). With this patch the number 
+> of persistent grants in blkfront will be the same as in blkback, so 
+> basically the backend can control how many grants will be persistently 
+> mapped. 
 
-On Wed, 2013-07-10 at 14:47 +0200, Jean Delvare wrote:
-> +++ linux-3.11-rc0/drivers/firmware/dmi_scan.c	2013-07-10 14:11:56.544792703 +0200
-> @@ -62,8 +62,6 @@ static const char * __init dmi_string(co
->  	str = dmi_alloc(len);
->  	if (str != NULL)
-[]
-> @@ -219,10 +217,8 @@ static void __init dmi_save_one_device(i
->  	dev = dmi_alloc(sizeof(*dev) + strlen(name) + 1);
-> +	if (!dev)
->  		return;
-[]
-> @@ -258,10 +254,8 @@ static void __init dmi_save_oem_strings_
->  		dev = dmi_alloc(sizeof(*dev));
-> +		if (!dev)
->  			break;
-[]
-> @@ -277,18 +271,14 @@ static void __init dmi_save_ipmi_device(
->  	data = dmi_alloc(dm->length);
-> +	if (data == NULL)
->  		return;
-[]
->  	dev = dmi_alloc(sizeof(*dev));
-> +	if (!dev)
->  		return;
-[]
-> @@ -303,10 +293,9 @@ static void __init dmi_save_dev_onboard(
->  	onboard_dev = dmi_alloc(sizeof(*onboard_dev) + strlen(name) + 1);
-> +	if (!onboard_dev)
->  		return;
+Nice. So in effect we cache the recently used grants. Nice.
 
-It'd also be nice to use the same test style
-in all 6 uses.
-
-	if (!foo)
-
-
+> 
+> ---
+> >From 1ede72ba10a7ec13d57ba6d2af54e86a099d7125 Mon Sep 17 00:00:00 2001
+> From: Roger Pau Monne <roger.pau@citrix.com>
+> Date: Wed, 10 Jul 2013 10:22:19 +0200
+> Subject: [PATCH RFC] xen-blkfront: revoke foreign access for grants not
+>  mapped by the backend
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> There's no need to keep the foreign access in a grant if it is not
+> persistently mapped by the backend. This allows us to free grants that
+> are not mapped by the backend, thus preventing blkfront from hoarding
+> all grants.
+> 
+> The main effect of this is that blkfront will only persistently map
+> the same grants as the backend, and it will always try to use grants
+> that are already mapped by the backend. Also the number of persistent
+> grants in blkfront is the same as in blkback (and is controlled by the
+> value in blkback).
+> 
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/block/xen-blkfront.c |   33 +++++++++++++++++++++++++++++----
+>  1 files changed, 29 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 3d445c0..6ba88c1 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -1022,13 +1022,38 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
+>  	}
+>  	/* Add the persistent grant into the list of free grants */
+>  	for (i = 0; i < nseg; i++) {
+> -		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
+> -		info->persistent_gnts_c++;
+> +		if (gnttab_query_foreign_access(s->grants_used[i]->gref)) {
+> +			/*
+> +			 * If the grant is still mapped by the backend (the
+> +			 * backend has chosen to make this grant persistent)
+> +			 * we add it at the head of the list, so it will be
+> +			 * reused first.
+> +			 */
+> +			list_add(&s->grants_used[i]->node, &info->persistent_gnts);
+> +			info->persistent_gnts_c++;
+> +		} else {
+> +			/*
+> +			 * If the grant is not mapped by the backend we end the
+> +			 * foreign access and add it to the tail of the list,
+> +			 * so it will not be picked again unless we run out of
+> +			 * persistent grants.
+> +			 */
+> +			gnttab_end_foreign_access(s->grants_used[i]->gref, 0, 0UL);
+> +			s->grants_used[i]->gref = GRANT_INVALID_REF;
+> +			list_add_tail(&s->grants_used[i]->node, &info->persistent_gnts);
+> +		}
+>  	}
+>  	if (s->req.operation == BLKIF_OP_INDIRECT) {
+>  		for (i = 0; i < INDIRECT_GREFS(nseg); i++) {
+> -			list_add(&s->indirect_grants[i]->node, &info->persistent_gnts);
+> -			info->persistent_gnts_c++;
+> +			if (gnttab_query_foreign_access(s->indirect_grants[i]->gref)) {
+> +				list_add(&s->indirect_grants[i]->node, &info->persistent_gnts);
+> +				info->persistent_gnts_c++;
+> +			} else {
+> +				gnttab_end_foreign_access(s->indirect_grants[i]->gref, 0, 0UL);
+> +				s->indirect_grants[i]->gref = GRANT_INVALID_REF;
+> +				list_add_tail(&s->indirect_grants[i]->node,
+> +				              &info->persistent_gnts);
+> +			}
+>  		}
+>  	}
+>  }
+> -- 
+> 1.7.7.5 (Apple Git-26)
+> 
