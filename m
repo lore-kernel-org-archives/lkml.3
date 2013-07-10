@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab3GJT0q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 15:26:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57064 "EHLO
+	id S1755187Ab3GJT0t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 15:26:49 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57070 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754364Ab3GJT0o (ORCPT
+	with ESMTP id S1754374Ab3GJT0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 15:26:44 -0400
+	Wed, 10 Jul 2013 15:26:47 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Hitoshi Mitake <h.mitake@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 04/23] perf bench: Fix memory allocation fail check in mem{set,cpy} workloads
-Date: Wed, 10 Jul 2013 16:19:04 -0300
-Message-Id: <1373483963-19277-5-git-send-email-acme@infradead.org>
+Subject: [PATCH 17/23] perf evsel: Fix missing increment in sample parsing
+Date: Wed, 10 Jul 2013 16:19:17 -0300
+Message-Id: <1373483963-19277-18-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373483963-19277-1-git-send-email-acme@infradead.org>
 References: <1373483963-19277-1-git-send-email-acme@infradead.org>
@@ -27,54 +30,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+From: Adrian Hunter <adrian.hunter@intel.com>
 
-Addresses of allocated memory areas saved to '*src' and '*dst', so we
-need to check them for NULL, not 'src' and 'dst'.
+The final sample format bit used to be PERF_SAMPLE_STACK_USER which
+neglected to do a final increment of the array pointer.  The result is
+that the following parsing might start at the wrong place.
 
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Acked-by: Hitoshi Mitake <mitake.hitoshi@lab.ntt.co.jp>
-Cc: Hitoshi Mitake <h.mitake@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1370518503-4230-1-git-send-email-kirill.shutemov@linux.intel.com
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1372944040-32690-16-git-send-email-adrian.hunter@intel.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/bench/mem-memcpy.c | 4 ++--
- tools/perf/bench/mem-memset.c | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ tools/perf/util/evsel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/bench/mem-memcpy.c b/tools/perf/bench/mem-memcpy.c
-index 93c83e3..25fd3f1 100644
---- a/tools/perf/bench/mem-memcpy.c
-+++ b/tools/perf/bench/mem-memcpy.c
-@@ -111,11 +111,11 @@ static double timeval2double(struct timeval *ts)
- static void alloc_mem(void **dst, void **src, size_t length)
- {
- 	*dst = zalloc(length);
--	if (!dst)
-+	if (!*dst)
- 		die("memory allocation failed - maybe length is too large?\n");
- 
- 	*src = zalloc(length);
--	if (!src)
-+	if (!*src)
- 		die("memory allocation failed - maybe length is too large?\n");
- }
- 
-diff --git a/tools/perf/bench/mem-memset.c b/tools/perf/bench/mem-memset.c
-index c6e4bc5..4a2f120 100644
---- a/tools/perf/bench/mem-memset.c
-+++ b/tools/perf/bench/mem-memset.c
-@@ -111,7 +111,7 @@ static double timeval2double(struct timeval *ts)
- static void alloc_mem(void **dst, size_t length)
- {
- 	*dst = zalloc(length);
--	if (!dst)
-+	if (!*dst)
- 		die("memory allocation failed - maybe length is too large?\n");
- }
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index df99ebe..c9c7494 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1170,7 +1170,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		} else {
+ 			data->user_stack.data = (char *)array;
+ 			array += size / sizeof(*array);
+-			data->user_stack.size = *array;
++			data->user_stack.size = *array++;
+ 		}
+ 	}
  
 -- 
 1.8.1.4
