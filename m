@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754761Ab3GJVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 17:54:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42691 "EHLO mx1.redhat.com"
+	id S1754788Ab3GJV4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 17:56:39 -0400
+Received: from mga14.intel.com ([143.182.124.37]:11410 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754310Ab3GJVyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 17:54:55 -0400
-Date: Wed, 10 Jul 2013 17:54:14 -0400
-From: Dave Jones <davej@redhat.com>
-To: Vince Weaver <vince@deater.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Yet more softlockups.
-Message-ID: <20130710215414.GA25959@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Vince Weaver <vince@deater.net>, Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-References: <20130704015525.GA8486@redhat.com>
- <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
- <20130705143821.GB325@redhat.com>
- <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de>
- <20130705160043.GF325@redhat.com>
- <20130706072408.GA14865@gmail.com>
- <20130710151324.GA11309@redhat.com>
- <alpine.DEB.2.02.1307101137160.2022@pianoman.cluster.toy>
+	id S1754402Ab3GJV4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 17:56:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1038,1363158000"; 
+   d="scan'208";a="329548177"
+Message-ID: <51DDD894.3050408@linux.intel.com>
+Date: Wed, 10 Jul 2013 14:56:36 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307101137160.2022@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Borislav Petkov <bp@alien8.de>
+CC: Jiri Kosina <jkosina@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction patching
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <51DDD3E9.6090601@linux.intel.com> <20130710214848.GB14879@pd.tnic>
+In-Reply-To: <20130710214848.GB14879@pd.tnic>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 11:39:50AM -0400, Vince Weaver wrote:
- > On Wed, 10 Jul 2013, Dave Jones wrote:
- > 
- > > Something is really fucked up in the kernel side of perf.
- > > I get this right after booting..
- > > 
- > > [  114.516619] perf samples too long (4262 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
- > > 
- > > That's before I even get a chance to log in, so I'm pretty sure perf isn't even being run.
- > > 
- > > And this is just booting up my desktop, not fuzzing.
- > 
- > This is probably related to the problem described in the thread
- >    perf: fix interrupt handler timing harness
- >    http://comments.gmane.org/gmane.linux.kernel/1520775
- > which in theory has a fix.  Not sure why it'd trigger during boot.
+On 07/10/2013 02:48 PM, Borislav Petkov wrote:
+> On Wed, Jul 10, 2013 at 02:36:41PM -0700, H. Peter Anvin wrote:
+>> I'm wondering if it would be easier/more general to just return to the
+>> instruction. The "more general" bit would allow this to be used for
+>> other things, like alternatives, and perhaps eventually dynamic call
+>> patching.
+> 
+> Well, the aspect of not using stop_machine in alternatives is a don't
+> care because there we do text_poke_early on the BSP anyway. However,
+> there we toggle interrupts so it would probably be interesting to see
+> whether a non-interrupt-disabling variant would be faster.
+> 
+>> Returning to the instruction will, in effect, be a busy-wait for
+>> the faulted CPU until the patch is complete; more or less what
+>> stop_machine would do, but only for a CPU which actually strays into
+>> the affected region.
+> 
+> Oh, something like we patch in a two-byte jump first:
+> 
+> 1:
+> 	jmp 1b
+> 
+> until we finish patching the rest? Ha, interesting :).
+> 
 
-Bah. That's not it either.
+No, the idea is that the affected CPU will simply execute int3 -> iret
+ad nauseam until the first byte is repatched, at that point execution
+will resume normally.
 
-[ 1903.293233] perf samples too long (2514 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
-[ 1903.295248] INFO: NMI handler (perf_event_nmi_handler) took too long to run: 19498.002 msecs
-
-	Dave
-
+	-hpa
 
