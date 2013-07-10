@@ -1,343 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3GJVSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 17:18:51 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:37320 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754862Ab3GJVSs (ORCPT
+	id S1755340Ab3GJVTh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 17:19:37 -0400
+Received: from mailout.scc.kit.edu ([129.13.185.202]:56678 "EHLO
+	mailout.scc.kit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276Ab3GJVTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 17:18:48 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-input@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] usb: USB host support should depend on HAS_DMA
-Date: Wed, 10 Jul 2013 23:18:32 +0200
-Message-Id: <1373491112-15593-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 10 Jul 2013 17:19:35 -0400
+X-Greylist: delayed 1682 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Jul 2013 17:19:35 EDT
+Message-ID: <51DDC972.3010005@student.kit.edu>
+Date: Wed, 10 Jul 2013 22:52:02 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIFPDvG5rZW5iZXJn?= 
+	<christian.suenkenberg@student.kit.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130702 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jonas Heinrich <onny@project-insanity.org>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [Bisected] 3.7-rc1 can't resume (still present in 3.9)
+References: <20130218155439.GA902@onny> <cfd96a3d-5834-4687-b9de-9f044f43b588@email.android.com> <20130223131856.GA682@onny> <51293A8B.5060107@zytor.com> <20130320143257.GA473@onny> <20130501170118.GB488@onny> <518151DD.106@zytor.com>
+In-Reply-To: <518151DD.106@zytor.com>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: multipart/signed; protocol="application/pkcs7-signature";
+	micalg=sha1; boundary="------------ms090607060904090108010905"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+--------------ms090607060904090108010905
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-drivers/built-in.o: In function `usb_hcd_unmap_urb_setup_for_dma':
-drivers/usb/core/hcd.c:1361: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `usb_hcd_unmap_urb_for_dma':
-drivers/usb/core/hcd.c:1393: undefined reference to `dma_unmap_sg'
-drivers/usb/core/hcd.c:1398: undefined reference to `dma_unmap_page'
-drivers/usb/core/hcd.c:1403: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `usb_hcd_map_urb_for_dma':
-drivers/usb/core/hcd.c:1445: undefined reference to `dma_map_single'
-drivers/usb/core/hcd.c:1450: undefined reference to `dma_mapping_error'
-drivers/usb/core/hcd.c:1480: undefined reference to `dma_map_sg'
-drivers/usb/core/hcd.c:1495: undefined reference to `dma_map_page'
-drivers/usb/core/hcd.c:1501: undefined reference to `dma_mapping_error'
-drivers/usb/core/hcd.c:1507: undefined reference to `dma_map_single'
-drivers/usb/core/hcd.c:1512: undefined reference to `dma_mapping_error'
-drivers/built-in.o: In function `hcd_buffer_free':
-drivers/usb/core/buffer.c:146: undefined reference to `dma_pool_free'
-drivers/usb/core/buffer.c:150: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `hcd_buffer_destroy':
-drivers/usb/core/buffer.c:90: undefined reference to `dma_pool_destroy'
-drivers/built-in.o: In function `hcd_buffer_create':
-drivers/usb/core/buffer.c:65: undefined reference to `dma_pool_create'
-drivers/built-in.o: In function `hcd_buffer_alloc':
-drivers/usb/core/buffer.c:120: undefined reference to `dma_pool_alloc'
-drivers/usb/core/buffer.c:122: undefined reference to `dma_alloc_coherent'
-,,,
+Hello,
 
-Commit d9ea21a779278da06d0cbe989594bf542ed213d7 ("usb: host: make
-USB_ARCH_HAS_?HCI obsolete") allowed to enable USB on platforms with
-NO_DMA=y, and exposed several input and media USB drivers that just select
-USB if USB_ARCH_HAS_HCD, without checking HAS_DMA.
+On 05/01/2013 07:33 PM, H. Peter Anvin wrote:
+> On 05/01/2013 10:01 AM, Jonas Heinrich wrote:
+>> Hello, I tried the newest kernel, 3.9 today but the bug is still
+>> present. Applying the attached patch solves the bug for me.
+>>
+>> Best regards, Jonas Heinrich
+>=20
+> Okay... WTF is going on here?  Does pmode_behavior just not get set up
+> correctly?  Since it seems you can get it to wake up with your patch,
+> perhaps we can get read out the value of pmode_behavior and print it...=
 
-Fix the former by making USB depend on HAS_DMA.
 
-To fix the latter, instead of adding lots of "depends on HAS_DMA", make
-those drivers depend on USB, instead of depending on USB_ARCH_HAS_HCD and
-selecting USB.  Drivers for other busses (e.g. MOUSE_SYNAPTICS_I2C) already
-handle this in a similar way.
+indeed, arch/x86/kernel/acpi/sleep.c tries an rdmsr_safe(MSR_EFER, ...)
+and sets WAKEUP_BEHAVIOR_RESTORE_EFER bit on success, however,
+on 90 nm Pentium M (Family 6, Model 13), reading an invalid MSR
+is not guaranteed to trap, see Erratum X4 in "Intel=C2=AE Pentium=C2=AE M=
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/input/joystick/Kconfig    |    3 +--
- drivers/input/misc/Kconfig        |   15 +++++----------
- drivers/input/mouse/Kconfig       |    9 +++------
- drivers/input/tablet/Kconfig      |   15 +++++----------
- drivers/input/touchscreen/Kconfig |    3 +--
- drivers/media/rc/Kconfig          |   21 +++++++--------------
- drivers/usb/Kconfig               |    2 +-
- 7 files changed, 23 insertions(+), 45 deletions(-)
+Processor on 90 nm Process with 2-MB L2 Cache and Intel=C2=AE Processor A=
+100
+and A110 on 90 nm process with 512-KB L2 Cache Specification Update".
+On Jonas' T43, which has an affected Pentium M without EFER,
+rdmsr_safe(MSR_EFER, ...) succeeds and WAKEUP_BEHAVIOR_RESTORE_EFER
+gets set, while on resume the corresponding wrmsr traps and thus resume
+fails.
 
-diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
-index 56eb471..d7e36fb 100644
---- a/drivers/input/joystick/Kconfig
-+++ b/drivers/input/joystick/Kconfig
-@@ -278,8 +278,7 @@ config JOYSTICK_JOYDUMP
- 
- config JOYSTICK_XPAD
- 	tristate "X-Box gamepad support"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use the X-Box pad with your computer.
- 	  Make sure to say Y to "Joystick support" (CONFIG_INPUT_JOYDEV)
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 0b541cd..00cdecb 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -286,8 +286,7 @@ config INPUT_ATLAS_BTNS
- 
- config INPUT_ATI_REMOTE2
- 	tristate "ATI / Philips USB RF remote control"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use an ATI or Philips USB RF remote control.
- 	  These are RF remotes with USB receivers.
-@@ -301,8 +300,7 @@ config INPUT_ATI_REMOTE2
- 
- config INPUT_KEYSPAN_REMOTE
- 	tristate "Keyspan DMR USB remote control"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use a Keyspan DMR USB remote control.
- 	  Currently only the UIA-11 type of receiver has been tested.  The tag
-@@ -333,8 +331,7 @@ config INPUT_KXTJ9_POLLED_MODE
- 
- config INPUT_POWERMATE
- 	tristate "Griffin PowerMate and Contour Jog support"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use Griffin PowerMate or Contour Jog devices.
- 	  These are aluminum dials which can measure clockwise and anticlockwise
-@@ -349,8 +346,7 @@ config INPUT_POWERMATE
- 
- config INPUT_YEALINK
- 	tristate "Yealink usb-p1k voip phone"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to enable keyboard and LCD functions of the
- 	  Yealink usb-p1k usb phones. The audio part is enabled by the generic
-@@ -364,8 +360,7 @@ config INPUT_YEALINK
- 
- config INPUT_CM109
- 	tristate "C-Media CM109 USB I/O Controller"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to enable keyboard and buzzer functions of the
- 	  C-Media CM109 usb phones. The audio part is enabled by the generic
-diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
-index effa9c5..90f8c0b 100644
---- a/drivers/input/mouse/Kconfig
-+++ b/drivers/input/mouse/Kconfig
-@@ -161,8 +161,7 @@ config MOUSE_SERIAL
- 
- config MOUSE_APPLETOUCH
- 	tristate "Apple USB Touchpad support"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use an Apple USB Touchpad.
- 
-@@ -182,8 +181,7 @@ config MOUSE_APPLETOUCH
- 
- config MOUSE_BCM5974
- 	tristate "Apple USB BCM5974 Multitouch trackpad support"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you have an Apple USB BCM5974 Multitouch
- 	  trackpad.
-@@ -346,8 +344,7 @@ config MOUSE_SYNAPTICS_I2C
- 
- config MOUSE_SYNAPTICS_USB
- 	tristate "Synaptics USB device support"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use a Synaptics USB touchpad or pointing
- 	  stick.
-diff --git a/drivers/input/tablet/Kconfig b/drivers/input/tablet/Kconfig
-index bed7cbf..8e27600 100644
---- a/drivers/input/tablet/Kconfig
-+++ b/drivers/input/tablet/Kconfig
-@@ -13,8 +13,7 @@ if INPUT_TABLET
- 
- config TABLET_USB_ACECAD
- 	tristate "Acecad Flair tablet support (USB)"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use the USB version of the Acecad Flair
- 	  tablet.  Make sure to say Y to "Mouse support"
-@@ -26,8 +25,7 @@ config TABLET_USB_ACECAD
- 
- config TABLET_USB_AIPTEK
- 	tristate "Aiptek 6000U/8000U and Genius G_PEN tablet support (USB)"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use the USB version of the Aiptek 6000U,
- 	  Aiptek 8000U or Genius G-PEN 560 tablet.  Make sure to say Y to
-@@ -51,8 +49,7 @@ config TABLET_USB_GTCO
- 
- config TABLET_USB_HANWANG
- 	tristate "Hanwang Art Master III tablet support (USB)"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use the USB version of the Hanwang Art
- 	  Master III tablet.
-@@ -62,8 +59,7 @@ config TABLET_USB_HANWANG
- 
- config TABLET_USB_KBTAB
- 	tristate "KB Gear JamStudio tablet support (USB)"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  Say Y here if you want to use the USB version of the KB Gear
- 	  JamStudio tablet.  Make sure to say Y to "Mouse support"
-@@ -75,9 +71,8 @@ config TABLET_USB_KBTAB
- 
- config TABLET_USB_WACOM
- 	tristate "Wacom Intuos/Graphire tablet support (USB)"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	select POWER_SUPPLY
--	select USB
- 	select NEW_LEDS
- 	select LEDS_CLASS
- 	help
-diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
-index 3b9758b..a889c52 100644
---- a/drivers/input/touchscreen/Kconfig
-+++ b/drivers/input/touchscreen/Kconfig
-@@ -689,8 +689,7 @@ config TOUCHSCREEN_WM97XX_ZYLONITE
- 
- config TOUCHSCREEN_USB_COMPOSITE
- 	tristate "USB Touchscreen Driver"
--	depends on USB_ARCH_HAS_HCD
--	select USB
-+	depends on USB
- 	help
- 	  USB Touchscreen driver for:
- 	  - eGalax Touchkit USB (also includes eTurboTouch CT-410/510/700)
-diff --git a/drivers/media/rc/Kconfig b/drivers/media/rc/Kconfig
-index 5a79c33..ee59842 100644
---- a/drivers/media/rc/Kconfig
-+++ b/drivers/media/rc/Kconfig
-@@ -126,9 +126,8 @@ if RC_DEVICES
- 
- config RC_ATI_REMOTE
- 	tristate "ATI / X10 based USB RF remote controls"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	depends on RC_CORE
--	select USB
- 	help
- 	   Say Y here if you want to use an X10 based USB remote control.
- 	   These are RF remotes with USB receivers.
-@@ -159,9 +158,8 @@ config IR_ENE
- 
- config IR_IMON
- 	tristate "SoundGraph iMON Receiver and Display"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	depends on RC_CORE
--	select USB
- 	---help---
- 	   Say Y here if you want to use a SoundGraph iMON (aka Antec Veris)
- 	   IR Receiver and/or LCD/VFD/VGA display.
-@@ -171,9 +169,8 @@ config IR_IMON
- 
- config IR_MCEUSB
- 	tristate "Windows Media Center Ed. eHome Infrared Transceiver"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	depends on RC_CORE
--	select USB
- 	---help---
- 	   Say Y here if you want to use a Windows Media Center Edition
- 	   eHome Infrared Transceiver.
-@@ -221,9 +218,8 @@ config IR_NUVOTON
- 
- config IR_REDRAT3
- 	tristate "RedRat3 IR Transceiver"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	depends on RC_CORE
--	select USB
- 	---help---
- 	   Say Y here if you want to use a RedRat3 Infrared Transceiver.
- 
-@@ -232,9 +228,8 @@ config IR_REDRAT3
- 
- config IR_STREAMZAP
- 	tristate "Streamzap PC Remote IR Receiver"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	depends on RC_CORE
--	select USB
- 	---help---
- 	   Say Y here if you want to use a Streamzap PC Remote
- 	   Infrared Receiver.
-@@ -261,9 +256,8 @@ config IR_WINBOND_CIR
- 
- config IR_IGUANA
- 	tristate "IguanaWorks USB IR Transceiver"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	depends on RC_CORE
--	select USB
- 	---help---
- 	   Say Y here if you want to use the IguanaWorks USB IR Transceiver.
- 	   Both infrared receive and send are supported. If you want to
-@@ -277,9 +271,8 @@ config IR_IGUANA
- 
- config IR_TTUSBIR
- 	tristate "TechnoTrend USB IR Receiver"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB
- 	depends on RC_CORE
--	select USB
- 	select NEW_LEDS
- 	select LEDS_CLASS
- 	---help---
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index 73f62ca..c530ad9 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -33,7 +33,7 @@ config USB_ARCH_HAS_HCD
- # ARM SA1111 chips have a non-PCI based "OHCI-compatible" USB host interface.
- config USB
- 	tristate "Support for Host-side USB"
--	depends on USB_ARCH_HAS_HCD
-+	depends on USB_ARCH_HAS_HCD && HAS_DMA
- 	select NLS  # for UTF-8 strings
- 	---help---
- 	  Universal Serial Bus (USB) is a specification for a serial bus
--- 
-1.7.9.5
+The pre-3.7 code snippet incidentally catched this by not restoring
+EFER when it would be restored to all 0s.
 
+HTH,
+Christian
+
+
+--------------ms090607060904090108010905
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIO0zCC
+BCEwggMJoAMCAQICAgDHMA0GCSqGSIb3DQEBBQUAMHExCzAJBgNVBAYTAkRFMRwwGgYDVQQK
+ExNEZXV0c2NoZSBUZWxla29tIEFHMR8wHQYDVQQLExZULVRlbGVTZWMgVHJ1c3QgQ2VudGVy
+MSMwIQYDVQQDExpEZXV0c2NoZSBUZWxla29tIFJvb3QgQ0EgMjAeFw0wNjEyMTkxMDI5MDBa
+Fw0xOTA2MzAyMzU5MDBaMFoxCzAJBgNVBAYTAkRFMRMwEQYDVQQKEwpERk4tVmVyZWluMRAw
+DgYDVQQLEwdERk4tUEtJMSQwIgYDVQQDExtERk4tVmVyZWluIFBDQSBHbG9iYWwgLSBHMDEw
+ggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDpm8NnhfkNrvWNVMOWUDU9YuluTO2U
+1wBblSJ01CDrNI/W7MAxBAuZgeKmFNJSoCgjhIt0iQReW+DieMF4yxbLKDU5ey2QRdDtoAB6
+fL9KDhsAw4bpXCsxEXsM84IkQ4wcOItqaACa7txPeKvSxhObdq3u3ibo7wGvdA/BCaL2a869
+080UME/15eOkyGKbghoDJzANAmVgTe3RCSMqljVYJ9N2xnG2kB3E7f81hn1vM7PbD8URwoqD
+oZRdQWvY0hD1TP3KUazZve+Sg7va64sWVlZDz+HVEz2mHycwzUlU28kTNJpxdcVs6qcLmPkh
+nSevPqM5OUhqjK3JmfvDEvK9AgMBAAGjgdkwgdYwcAYDVR0fBGkwZzBloGOgYYZfaHR0cDov
+L3BraS50ZWxlc2VjLmRlL2NnaS1iaW4vc2VydmljZS9hZl9Eb3dubG9hZEFSTC5jcmw/LWNy
+bF9mb3JtYXQ9WF81MDkmLWlzc3Vlcj1EVF9ST09UX0NBXzIwHQYDVR0OBBYEFEm3xs/oPR9/
+6kR7Eyn38QpwPt5kMB8GA1UdIwQYMBaAFDHDeRu69VPXF+CJei0XbAqzK50zMA4GA1UdDwEB
+/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgECMA0GCSqGSIb3DQEBBQUAA4IBAQA74Vp3wEgX
+3KkY7IGvWonwvSiSpspZGBJw7Cjy565/lizn8l0ZMfYTK3S9vYCyufdnyTmieTvhERHua3iR
+M347XyYndVNljjNj7s9zw7CSI0khUHUjoR8Y4pSFPT8z6XcgjaK95qGFKUD2P3MyWA0Ja6ba
+hWzAP7uNZmRWJE6uDT8yNQFb6YyC2XJZT7GGhfF0hVblw/hc843uR7NTBXDn5U2KaYMo4RMJ
+hp5eyOpYHgwf+aTUWgRo/Sg+iwK2WLX2oSw3VwBnqyNojWOl75lrXP1LVvarQIc01BGSbOyH
+xQoLBzNytG8MHVQs2FHHzL8w00Ny8TK/jM5JY6gA9/IcMIIFRjCCBC6gAwIBAgIEDM34pzAN
+BgkqhkiG9w0BAQUFADBaMQswCQYDVQQGEwJERTETMBEGA1UEChMKREZOLVZlcmVpbjEQMA4G
+A1UECxMHREZOLVBLSTEkMCIGA1UEAxMbREZOLVZlcmVpbiBQQ0EgR2xvYmFsIC0gRzAxMB4X
+DTA4MDgyMjA4Mzg0N1oXDTE5MDYzMDAwMDAwMFowgb8xCzAJBgNVBAYTAkRFMRswGQYDVQQI
+ExJCYWRlbi1XdWVydHRlbWJlcmcxEjAQBgNVBAcTCUthcmxzcnVoZTEqMCgGA1UEChMhS2Fy
+bHNydWhlIEluc3RpdHV0ZSBvZiBUZWNobm9sb2d5MScwJQYDVQQLEx5TdGVpbmJ1Y2ggQ2Vu
+dHJlIGZvciBDb21wdXRpbmcxDzANBgNVBAMTBktJVC1DQTEZMBcGCSqGSIb3DQEJARYKY2FA
+a2l0LmVkdTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMyyqIqJooBBUSkvbR08
+HQh6NNE+tqNErubDBemoGj8A803wg+1xvXqkhO1vnBABp5U++7xgD5uLlTcOb/F4UFrJBBy9
+QCnThzCb+eqG+94Iw6m8LjWqCKor9lKwNCUit7vzNAOCd0r0iNCYV2/xcK8tHSHw3mGXgvwf
+Y0F9j14nUEg9nd5kPq0Aw9iQHDuYnOz3A8NVTpXpTCziQTCZJQYETDsC+nynQN2svAmAV3V1
+HJRe/AD6idy/6HN0EtAIOPlE1px14NFS4SZqUk/F4vD8pxSz/YUwbCGK4IH37V9bcbQmA8NN
+NKBtFLqX19ovuQn32lRwSW/Cz3Hj+zSRP3MCAwEAAaOCAawwggGoMBIGA1UdEwEB/wQIMAYB
+Af8CAQEwCwYDVR0PBAQDAgEGMB0GA1UdDgQWBBQfdGX0mh169jHp32EbcysNbdAzSTAfBgNV
+HSMEGDAWgBRJt8bP6D0ff+pEexMp9/EKcD7eZDAVBgNVHREEDjAMgQpjYUBraXQuZWR1MIGI
+BgNVHR8EgYAwfjA9oDugOYY3aHR0cDovL2NkcDEucGNhLmRmbi5kZS9nbG9iYWwtcm9vdC1j
+YS9wdWIvY3JsL2NhY3JsLmNybDA9oDugOYY3aHR0cDovL2NkcDIucGNhLmRmbi5kZS9nbG9i
+YWwtcm9vdC1jYS9wdWIvY3JsL2NhY3JsLmNybDCBogYIKwYBBQUHAQEEgZUwgZIwRwYIKwYB
+BQUHMAKGO2h0dHA6Ly9jZHAxLnBjYS5kZm4uZGUvZ2xvYmFsLXJvb3QtY2EvcHViL2NhY2Vy
+dC9jYWNlcnQuY3J0MEcGCCsGAQUFBzAChjtodHRwOi8vY2RwMi5wY2EuZGZuLmRlL2dsb2Jh
+bC1yb290LWNhL3B1Yi9jYWNlcnQvY2FjZXJ0LmNydDANBgkqhkiG9w0BAQUFAAOCAQEA3VY+
+HB+O1KHl4DmkBIAUadE91YKUM8REbrN04c513wXPZVMZ5YBy/9qy1q/REmwAZP9dYLpnRWav
+SoDxTBqzJ4EQcaCzQVY2HwowmoKCuP5u1XXUCwOOBzpxAcR+4OzgWi0tF2XKpqeCjH7B/KMa
+tPreUfgtsMuTETS6RjYJU91B0Fz/wdSix5jF+0fLkkifsVhPz75IAWatkux3SxOpiYgPoTtj
++wCIbFpdjyzYCe+2L/Wr3DpdOnsDkff2oKnWTey7KXKH5wUkmFEihspVPIMRZkGGwGL34kL3
+cF1TIEvlJhuiG6UFemtA+D8MQOocag8Od9DzUfBZacNWr0VDlzCCBWAwggRIoAMCAQICBBEO
+BtswDQYJKoZIhvcNAQEFBQAwgb8xCzAJBgNVBAYTAkRFMRswGQYDVQQIExJCYWRlbi1XdWVy
+dHRlbWJlcmcxEjAQBgNVBAcTCUthcmxzcnVoZTEqMCgGA1UEChMhS2FybHNydWhlIEluc3Rp
+dHV0ZSBvZiBUZWNobm9sb2d5MScwJQYDVQQLEx5TdGVpbmJ1Y2ggQ2VudHJlIGZvciBDb21w
+dXRpbmcxDzANBgNVBAMTBktJVC1DQTEZMBcGCSqGSIb3DQEJARYKY2FAa2l0LmVkdTAeFw0x
+MDExMjUxNjA1MzJaFw0xMzExMjQxNjA1MzJaMFkxCzAJBgNVBAYTAkRFMSowKAYDVQQKEyFL
+YXJsc3J1aGUgSW5zdGl0dXRlIG9mIFRlY2hub2xvZ3kxHjAcBgNVBAMTFUNocmlzdGlhbiBT
+dWVua2VuYmVyZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAN1YfA6Atgg7mzBh
+9KC9KWejBOhCu2KOueOUw7WviE76LGze0lxaSyvXsO5rW/cUJ5Xxwc4bQkP/8vl1gId3lbXT
+GwX8rlyZ7vT5YASRyzZ9VJse/YNwvoNZthp1CGCnrM+9PJtX27uXbRKTn9DKYnHsrFUWbWC7
+lUX3NwZQ+/wyVGCjj8zzi7A7qnXHSK673jgV4P1K6hOen5f1slBfUVeM9fYfjxdKlSORfIuH
+BqJ3yEtJWlBuC5l/w86kj45s3n5E5NOsYCyILwdMCoYCEIYh9dS6wz4Mlvvpts2+XUi5SMiN
+4PfHcd7ibGqoJoy/u3MzctiSDOdw/EWSTuOJwucCAwEAAaOCAccwggHDMAkGA1UdEwQCMAAw
+CwYDVR0PBAQDAgXgMCkGA1UdJQQiMCAGCCsGAQUFBwMCBggrBgEFBQcDBAYKKwYBBAGCNxQC
+AjAdBgNVHQ4EFgQUDKYXE4QfTWOSSLOZeAiNubitbKQwHwYDVR0jBBgwFoAUH3Rl9JodevYx
+6d9hG3MrDW3QM0kwMAYDVR0RBCkwJ4ElY2hyaXN0aWFuLnN1ZW5rZW5iZXJnQHN0dWRlbnQu
+a2l0LmVkdTB3BgNVHR8EcDBuMDWgM6Axhi9odHRwOi8vY2RwMS5wY2EuZGZuLmRlL2tpdC1j
+YS9wdWIvY3JsL2NhY3JsLmNybDA1oDOgMYYvaHR0cDovL2NkcDIucGNhLmRmbi5kZS9raXQt
+Y2EvcHViL2NybC9jYWNybC5jcmwwgZIGCCsGAQUFBwEBBIGFMIGCMD8GCCsGAQUFBzAChjNo
+dHRwOi8vY2RwMS5wY2EuZGZuLmRlL2tpdC1jYS9wdWIvY2FjZXJ0L2NhY2VydC5jcnQwPwYI
+KwYBBQUHMAKGM2h0dHA6Ly9jZHAyLnBjYS5kZm4uZGUva2l0LWNhL3B1Yi9jYWNlcnQvY2Fj
+ZXJ0LmNydDANBgkqhkiG9w0BAQUFAAOCAQEAcQpxG3nq8fKYV9Jnkgn4MugbF8hoGZSJKugz
+TQKFU1f+7vfmCG9mOhBgZgRWRWHohL1Jv28dfpbiVGNIFkZdFsn8596oM9Z9E9oiIRXRD3uH
+mCAZ2xtaiU2KKuCjOdhSr79DqA7pypbPzk+/D6w2ixPRnFOud2fqrBWdCRXj/qWvz+9ZUWI4
+2cSzs9YMt62xOBYGfAKFyTMkGniUPmzXjpP+mNjZcBLFjy+kdLk1tbM1o7gWeR/NiJJBJa31
+425DQgBkLlIiE59JFwfVof16JdhAZMZd+JFU/1L4rgzFCogMtHE/vMHn/Oii5Hgp3NiLvRHG
+2fdAOUv15goRpL1jEzGCBHkwggR1AgEBMIHIMIG/MQswCQYDVQQGEwJERTEbMBkGA1UECBMS
+QmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUxKjAoBgNVBAoTIUthcmxz
+cnVoZSBJbnN0aXR1dGUgb2YgVGVjaG5vbG9neTEnMCUGA1UECxMeU3RlaW5idWNoIENlbnRy
+ZSBmb3IgQ29tcHV0aW5nMQ8wDQYDVQQDEwZLSVQtQ0ExGTAXBgkqhkiG9w0BCQEWCmNhQGtp
+dC5lZHUCBBEOBtswCQYFKw4DAhoFAKCCAoUwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAc
+BgkqhkiG9w0BCQUxDxcNMTMwNzEwMjA1MjAyWjAjBgkqhkiG9w0BCQQxFgQU7C5zy9Tev3lu
+sQbtHn6xnvIPyIMwbAYJKoZIhvcNAQkPMV8wXTALBglghkgBZQMEASowCwYJYIZIAWUDBAEC
+MAoGCCqGSIb3DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzAN
+BggqhkiG9w0DAgIBKDCB2QYJKwYBBAGCNxAEMYHLMIHIMIG/MQswCQYDVQQGEwJERTEbMBkG
+A1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUxKjAoBgNVBAoT
+IUthcmxzcnVoZSBJbnN0aXR1dGUgb2YgVGVjaG5vbG9neTEnMCUGA1UECxMeU3RlaW5idWNo
+IENlbnRyZSBmb3IgQ29tcHV0aW5nMQ8wDQYDVQQDEwZLSVQtQ0ExGTAXBgkqhkiG9w0BCQEW
+CmNhQGtpdC5lZHUCBBEOBtswgdsGCyqGSIb3DQEJEAILMYHLoIHIMIG/MQswCQYDVQQGEwJE
+RTEbMBkGA1UECBMSQmFkZW4tV3VlcnR0ZW1iZXJnMRIwEAYDVQQHEwlLYXJsc3J1aGUxKjAo
+BgNVBAoTIUthcmxzcnVoZSBJbnN0aXR1dGUgb2YgVGVjaG5vbG9neTEnMCUGA1UECxMeU3Rl
+aW5idWNoIENlbnRyZSBmb3IgQ29tcHV0aW5nMQ8wDQYDVQQDEwZLSVQtQ0ExGTAXBgkqhkiG
+9w0BCQEWCmNhQGtpdC5lZHUCBBEOBtswDQYJKoZIhvcNAQEBBQAEggEAD06rgZHg9g8YF41l
+Oytnex86M7g6mGII1VdUa83diij1yi6wjgCoWG5hFy9Y2D98CSD04abhpqRMb37/kj0dRfWr
+lExONYVVwl6gsoOKb0SaTgFW7a7XUTbViOPpKhmKhZHbARFq5szZBHq2xZuhAX2uQStZ6cqX
+MIYNyy//w6h0Xb+bvf7ytFbRMKhVRmc0rJMWMRPdytHOQf1zZkMYQXiIQqsBp3jtl1k9zw2e
+MwszySoQEiNmp1/m23z3J+bYsH5izOkQisDaKptP67ynU+ndXOBZsB9dtOcwbVC2fUefI41T
+ESvCVkTjm2m2E4WAeLU8p3E9LYvRGRSH9LhQjgAAAAAAAA==
+--------------ms090607060904090108010905--
