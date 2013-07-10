@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192Ab3GJKfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:35:40 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:26239 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752561Ab3GJKfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:35:37 -0400
-Message-ID: <51DD38F5.2030101@imgtec.com>
-Date: Wed, 10 Jul 2013 11:35:33 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754242Ab3GJKgB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:36:01 -0400
+Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:32960 "EHLO
+	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753545Ab3GJKf5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 06:35:57 -0400
+Message-ID: <51DD370C.20902@st.com>
+Date: Wed, 10 Jul 2013 11:27:24 +0100
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
+Reply-To: srinivas.kandagatla@st.com
+Organization: STMicroelectronics
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] metag architecture fix
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
+        linux-kernel@vger.kernel.org, Stuart Menefy <stuart.menefy@st.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v1 0/4] ARM: STi fixes and ethernet support
+References: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com> <201307090956.03191.arnd@arndb.de> <51DBE718.2080007@st.com> <201307092315.06131.arnd@arndb.de>
+In-Reply-To: <201307092315.06131.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_07_10_11_35_34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Arnd,
+On 09/07/13 22:15, Arnd Bergmann wrote:
+>> For DT case, At the moment I think callbacks at MACH level is one
+>> > possible solution. But am open for any discussions.
+> Ok, so a PHY driver might not be the best place to put this, but it's
+> one option, since the PHY driver already has to know about the
+> interface speed you are setting.
+> 
+> Having a global "*_setup_ethernet" callback is definitely not the
+> right way to go. Please describe what the function actually does
+> so we can come up with the right subsystem to move that functionality
+> to. If you are setting clocks, you should use the clock subsystem,
+> for taking the device out of reset, you should use the reset controller
+> subsystem and for setting up the phy, you should use the phy subsystem,
+> etc.
 
-Please pull this single arch/metag fix for a network checksum bug
-(discovered after you merged the other metag changes).
+The purpose of this callback is to do three things.
 
-Thanks
-James
+	1> Configuring the MAC signals to select particular PHY interface mode.
+MAC signals(wires) are wired up to this Ethernet Configuration register.
 
-The following changes since commit 8bb495e3f02401ee6f76d1b1d77f3ac9f079e376:
+	2> Select synchronisation clock for data lines retiming. On High speed
+interfaces track length/layouts on the boards can directly influence the
+signal quality and introduce bit shifts or other errors. So SoC has
+additional logic to retime these signals and improve the data
+reliability. As there is possibility of multiple clock sources (MAC,
+PHY) a correct choice of synchronization clock is made in Ethernet
+configuration register. For 125 Mhz clock in Gbit mode, reference clock
+is provided by the PHY in other case like 100bit and 10bit, 50MHz, 25MHz
+clocks is provide by the MAC.
+So this bits depend/driven based on the PHYMODEs and Link Speed.
 
-  Linux 3.10 (2013-06-30 15:13:29 -0700)
+	3> Ethernet Soft reset in Ethernet control register.
+		Which can probably go into via reset controller driver.
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jhogan/metag.git tags/metag-fixes-for-v3.11-1
+For point 1 and 2, there is no subsystem in the kernel which can
+accommodate these kind of SOC specific bits setup. Am not sure if other
+platforms have similar SoC setup use cases?
 
-for you to fetch changes up to d903bca9bc542bd6d60019f9f761be15ad79c956:
+For point 3, I can go for reset controller API.
 
-  metag: checksum.h: fix carry in csum_tcpudp_nofold (2013-07-09 11:09:17 +0100)
+Just for your reference (Sorry and Please ignore if Its too detailed),
+Ethernet configuration register looks like:
+Bit to configure signals connected to MAC.
+	[5] ENMII1: when 1, MII mode
+		when 0, Reverse MII mode
+	[4:2] MII1_PHY_SEL:
+		000: GMII/MII (default)
+		001: RGMII
+		010: SGMII
+		100: RMII
 
-----------------------------------------------------------------
-arch/metag fixes for v3.11
+Bit to configure retiming clock for retiming data lines:
+	[8] ETH1_SEL_TX_RETIMING_CLK: Selection of the clock used to retime TX data
+		0: clock selected by ETH1_SEL_TXCLK_NOT_CLK125 bit
+		1: clock fed to or provided by MII_PHYCLK depending
+		on eth1_sel_internal_notext_phyclk setting
+	[7] ETH1_SEL_INTERNAL_NOTEXT_PHYCLK: Selection of internal clock or
+external clock from MII_PHYCLK for retiming in RMII mode
+		0: external clock (Beware that eth1_sel_tx_retiming_clk
+		bit must also be programmed).
+		1: internal clock (from clockgenA)
+	[6] ETH1_SEL_TXCLK_NOT_CLK125: Selection of the clock used to
+	retime TX data
+		0: MII1_CLK_125 (beware that eth1_sel_tx_retiming_clk bit must also be
+programmed)
+		1: MII1_TXCLK
 
-This is just a single fix to fix bad UDP checksums sometimes being
-generated to IP addresses *.*.255.255.
-
-----------------------------------------------------------------
-James Hogan (1):
-      metag: checksum.h: fix carry in csum_tcpudp_nofold
-
- arch/metag/include/asm/checksum.h | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/arch/metag/include/asm/checksum.h b/arch/metag/include/asm/checksum.h
-index 999bf76..08dd1cc 100644
---- a/arch/metag/include/asm/checksum.h
-+++ b/arch/metag/include/asm/checksum.h
-@@ -64,7 +64,8 @@ static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
- 					__wsum sum)
- {
- 	unsigned long len_proto = (proto + len) << 8;
--	asm ("ADD    %0, %0, %1\n"
-+	asm ("ADDS   %0, %0, %1\n"
-+	     "ADDCS  %0, %0, #1\n"
- 	     "ADDS   %0, %0, %2\n"
- 	     "ADDCS  %0, %0, #1\n"
- 	     "ADDS   %0, %0, %3\n"
-
+Thanks,
+srini
