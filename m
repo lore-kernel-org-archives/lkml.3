@@ -1,182 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab3GJRMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 13:12:43 -0400
-Received: from mail.windriver.com ([147.11.1.11]:47490 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab3GJRMl (ORCPT
+	id S1754780Ab3GJRN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 13:13:29 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:62826 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402Ab3GJRN1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 13:12:41 -0400
-Date: Wed, 10 Jul 2013 13:12:13 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <clark.williams@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH RT 6/6] vtime: Convert vtime_seqlock into
- raw_spinlock_t and seqcount combo
-Message-ID: <20130710171212.GA13553@windriver.com>
-References: <20130626192806.107564905@goodmis.org>
- <20130626193050.529670718@goodmis.org>
+	Wed, 10 Jul 2013 13:13:27 -0400
+Date: Wed, 10 Jul 2013 10:13:20 -0700
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Wei Ni <wni@nvidia.com>
+Cc: khali@linux-fr.org, swarren@wwwdotorg.org, linux@roeck-us.net,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] ARM: dt: t30 cardhu: add dt entry for nct1008
+Message-ID: <20130710171319.GB15665@dhcp-172-17-186-34.nvidia.com>
+References: <1373455798-2944-1-git-send-email-wni@nvidia.com>
+ <1373455798-2944-2-git-send-email-wni@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="eAbsdosE1cNLO4uF"
 Content-Disposition: inline
-In-Reply-To: <20130626193050.529670718@goodmis.org>
+In-Reply-To: <1373455798-2944-2-git-send-email-wni@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[[RFC][PATCH RT 6/6] vtime: Convert vtime_seqlock into raw_spinlock_t and seqcount combo] On 26/06/2013 (Wed 15:28) Steven Rostedt wrote:
 
-> The vtime seqlock needs to be taken in true interrupt context on -rt.
-> The normal seqlocks are converted to mutexes when PREEMPT_RT_FULL is
-> enabled, which will break the vtime code as the calls are done from
-> interrupt context.
-> 
-> Convert the vtime seqlock into the raw_spinlock_t and seqcount combo
-> that can be done in interrupt context.
+--eAbsdosE1cNLO4uF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Alternatively, we could revive the raw seqlock patch from Thomas?
+On Wed, Jul 10, 2013 at 07:29:57PM +0800, Wei Ni wrote:
+> Enable thermal sensor nct1008 for t30 cardhu.
 
-https://lkml.org/lkml/2010/2/17/238
+Nit: "Tegra30 Cardhu"
 
-Below is a version updating it to 3.8.x-RT.  One downside is that
-current mainline kernels have raw_seqcount_begin() function, which has
-nothing to do with preempt-rt, so the seqcount function namespace can
-get confusing unless we rename raw_seqcount_begin to something that
-doesn't sound RT-ish.
+> diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+[...]
+>  				};
+>  			};
+>  		};
+> +
+> +		nct1008: nct1008 {
 
-Paul.
---
+I don't think it's very likely that this chip will need to be referenced
+by a phandle, in which case the "nct1008:" label can be dropped. Even if
+it was used at some point in the future, it's better to add it at that
+time.
 
-diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
-index 939ea1a..5a3f6fd 100644
---- a/include/linux/seqlock.h
-+++ b/include/linux/seqlock.h
-@@ -185,6 +185,11 @@ static inline void write_seqcount_barrier(seqcount_t *s)
- 
- typedef struct {
- 	struct seqcount seqcount;
-+	raw_spinlock_t lock;
-+} raw_seqlock_t;
-+
-+typedef struct {
-+	struct seqcount seqcount;
- 	spinlock_t lock;
- } seqlock_t;
- 
-@@ -192,6 +197,21 @@ typedef struct {
-  * These macros triggered gcc-3.x compile-time problems.  We think these are
-  * OK now.  Be cautious.
-  */
-+#define __RAW_SEQLOCK_UNLOCKED(lockname)			\
-+	{							\
-+		.seqcount = SEQCNT_ZERO,			\
-+		.lock =	__RAW_SPIN_LOCK_UNLOCKED(lockname)	\
-+	}
-+
-+#define raw_seqlock_init(x)					\
-+	do {							\
-+		seqcount_init(&(x)->seqcount);			\
-+		raw_spin_lock_init(&(x)->lock);			\
-+	} while (0)
-+
-+#define DEFINE_RAW_SEQLOCK(x) \
-+		raw_seqlock_t x = __RAW_SEQLOCK_UNLOCKED(x)
-+
- #define __SEQLOCK_UNLOCKED(lockname)			\
- 	{						\
- 		.seqcount = SEQCNT_ZERO,		\
-@@ -210,6 +230,11 @@ typedef struct {
- /*
-  * Read side functions for starting and finalizing a read side section.
-  */
-+static inline unsigned read_raw_seqbegin(const raw_seqlock_t *sl)
-+{
-+	return read_seqcount_begin(&sl->seqcount);
-+}
-+
- #ifndef CONFIG_PREEMPT_RT_FULL
- static inline unsigned read_seqbegin(const seqlock_t *sl)
- {
-@@ -238,6 +263,11 @@ repeat:
- }
- #endif
- 
-+static inline unsigned read_raw_seqretry(const raw_seqlock_t *sl, unsigned start)
-+{
-+	return read_seqcount_retry(&sl->seqcount, start);
-+}
-+
- static inline unsigned read_seqretry(const seqlock_t *sl, unsigned start)
- {
- 	return read_seqcount_retry(&sl->seqcount, start);
-@@ -248,6 +278,64 @@ static inline unsigned read_seqretry(const seqlock_t *sl, unsigned start)
-  * Acts like a normal spin_lock/unlock.
-  * Don't need preempt_disable() because that is in the spin_lock already.
-  */
-+static inline void write_raw_seqlock(raw_seqlock_t *sl)
-+{
-+	raw_spin_lock(&sl->lock);
-+	__write_seqcount_begin(&sl->seqcount);
-+}
-+
-+static inline void write_raw_sequnlock(raw_seqlock_t *sl)
-+{
-+	__write_seqcount_end(&sl->seqcount);
-+	raw_spin_unlock(&sl->lock);
-+}
-+
-+static inline void write_raw_seqlock_bh(raw_seqlock_t *sl)
-+{
-+	raw_spin_lock_bh(&sl->lock);
-+	__write_seqcount_begin(&sl->seqcount);
-+}
-+
-+static inline void write_raw_sequnlock_bh(raw_seqlock_t *sl)
-+{
-+	__write_seqcount_end(&sl->seqcount);
-+	raw_spin_unlock_bh(&sl->lock);
-+}
-+
-+static inline void write_raw_seqlock_irq(raw_seqlock_t *sl)
-+{
-+	raw_spin_lock_irq(&sl->lock);
-+	__write_seqcount_begin(&sl->seqcount);
-+}
-+
-+static inline void write_raw_sequnlock_irq(raw_seqlock_t *sl)
-+{
-+	__write_seqcount_end(&sl->seqcount);
-+	raw_spin_unlock_irq(&sl->lock);
-+}
-+
-+static inline unsigned long __write_raw_seqlock_irqsave(raw_seqlock_t *sl)
-+{
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&sl->lock, flags);
-+	__write_seqcount_begin(&sl->seqcount);
-+	return flags;
-+}
-+
-+#define write_raw_seqlock_irqsave(lock, flags)				\
-+	do { flags = __write_raw_seqlock_irqsave(lock); } while (0)
-+
-+static inline void
-+write_raw_sequnlock_irqrestore(raw_seqlock_t *sl, unsigned long flags)
-+{
-+	__write_seqcount_end(&sl->seqcount);
-+	raw_spin_unlock_irqrestore(&sl->lock, flags);
-+}
-+
-+/*
-+ * non raw versions
-+ */
- static inline void write_seqlock(seqlock_t *sl)
- {
- 	spin_lock(&sl->lock);
+Thierry
+
+--eAbsdosE1cNLO4uF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR3ZYvAAoJEN0jrNd/PrOhbrkP/2e6u1DFpkaI19FxiXu1zh38
+Wk1hbEfwC0UA/v2Pmxfo3yVtCpu7vgj8bm3tJ/qUVdLs2r1xmAdbBc7AhfN2qnat
+OcX1OnnZ734R9Ob6/Em8hAZOwjnVYbBtzqFLBEkgPGDD84hog6VdltUZX+WzFZtJ
+S+mfYgBkxap0/8bYZniPwOVvGyFBvLuKNJRwyGz6mGmjNkmmj672QyCDa/LaIBFr
+FvHvhsLtHfkn8re36COyO0ZRKB3/dwZbjkr6ccJcQYSgLuYo5oGaoOHu41O2iqd2
+saGIf1nyy5OhVtjINI4pJkk+DeX2mem5ggnYPy8Kg/HoyS68VcpzbCANYMjZwKG/
+0cMNw1ckRoWIZ144AaCS8xbt+4SB9L8vNCRQ1gmWRxZVUy/goUNEca1N3W65vNgB
+Iva5bMXxShU8nem/W/hiFux7MMmTlo4ymax3R0XpazQF6BObKfqSqqTZK1BkmTsx
+R2lsqdTJw9qNHStAHyKxxlWABbdyizC0ErOTvxH4QatVpnYvBT0f1pWZFVslxII6
+tY94zV0v7HI/dY3c8C+lpPl7Suz6U0PEjffS0FIB5c511WmHyAMDYtZVs45r/4xI
+ODYPQYKRhob0ekv0oeyK3eUu66rWdY96qwSiI9lKI+unXvkXQwfpujWvbPcQsu8z
+w8fPMJQBoSFAwdM0wIPh
+=e6gy
+-----END PGP SIGNATURE-----
+
+--eAbsdosE1cNLO4uF--
