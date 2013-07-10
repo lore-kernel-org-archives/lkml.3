@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab3GJPmb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 11:42:31 -0400
-Received: from mail-gg0-f202.google.com ([209.85.161.202]:36664 "EHLO
-	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab3GJPmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 11:42:16 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Ball <cjb@laptop.org>
-Cc: Olof Johansson <olof@lixom.net>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Grant Grundler <grundler@chromium.org>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Doug Anderson <dianders@chromium.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 5/5] mmc: dw_mmc: Set timeout to max upon resume
-Date: Wed, 10 Jul 2013 08:42:06 -0700
-Message-Id: <1373470926-19314-6-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.8.3
-In-Reply-To: <1373470926-19314-1-git-send-email-dianders@chromium.org>
-References: <1373411961-23812-1-git-send-email-dianders@chromium.org>
- <1373470926-19314-1-git-send-email-dianders@chromium.org>
+	id S1754763Ab3GJPqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 11:46:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14275 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753948Ab3GJPqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 11:46:18 -0400
+Date: Wed, 10 Jul 2013 11:45:40 -0400
+From: Dave Jones <davej@redhat.com>
+To: Vince Weaver <vince@deater.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Yet more softlockups.
+Message-ID: <20130710154540.GC11309@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Vince Weaver <vince@deater.net>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
+References: <20130704015525.GA8486@redhat.com>
+ <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
+ <20130705143821.GB325@redhat.com>
+ <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de>
+ <20130705160043.GF325@redhat.com>
+ <20130706072408.GA14865@gmail.com>
+ <20130710151324.GA11309@redhat.com>
+ <alpine.DEB.2.02.1307101137160.2022@pianoman.cluster.toy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1307101137160.2022@pianoman.cluster.toy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The TMOUT register is initted to 0xffffffff at probe time but isn't
-initted after suspend/resume.  Add an init of this value.
+On Wed, Jul 10, 2013 at 11:39:50AM -0400, Vince Weaver wrote:
+ > On Wed, 10 Jul 2013, Dave Jones wrote:
+ > 
+ > > Something is really fucked up in the kernel side of perf.
+ > > I get this right after booting..
+ > > 
+ > > [  114.516619] perf samples too long (4262 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+ > > 
+ > > That's before I even get a chance to log in, so I'm pretty sure perf isn't even being run.
+ > > 
+ > > And this is just booting up my desktop, not fuzzing.
+ > 
+ > This is probably related to the problem described in the thread
+ >    perf: fix interrupt handler timing harness
+ >    http://comments.gmane.org/gmane.linux.kernel/1520775
+ > which in theory has a fix.  Not sure why it'd trigger during boot.
 
-No problems were observed without this (it will also get initted in
-__dw_mci_start_request if there is data to send), but it makes the
-register dump before and after suspend clean.
+Ah, missed that thread. Thanks for the pointer. That looks important,
+and might actually explain some of the other oddness I've been seeing.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Seungwon Jeon <tgih.jun@samsung.com>
----
-Changes in v3: None
-Changes in v2: None
+ > NMI watchdog?
 
- drivers/mmc/host/dw_mmc.c | 3 +++
- 1 file changed, 3 insertions(+)
+likely.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index be095b7..d2c5db3 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -2482,6 +2482,9 @@ int dw_mci_resume(struct dw_mci *host)
- 	/* Restore the old value at FIFOTH register */
- 	mci_writel(host, FIFOTH, host->fifoth_val);
- 
-+	/* Put in max timeout */
-+	mci_writel(host, TMOUT, 0xFFFFFFFF);
-+
- 	mci_writel(host, RINTSTS, 0xFFFFFFFF);
- 	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
- 		   SDMMC_INT_TXDR | SDMMC_INT_RXDR |
--- 
-1.8.3
+	Davek
+
 
