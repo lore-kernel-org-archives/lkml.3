@@ -1,61 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab3GJV4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 17:56:39 -0400
-Received: from mga14.intel.com ([143.182.124.37]:11410 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab3GJV4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 17:56:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1038,1363158000"; 
-   d="scan'208";a="329548177"
-Message-ID: <51DDD894.3050408@linux.intel.com>
-Date: Wed, 10 Jul 2013 14:56:36 -0700
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754829Ab3GJV6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 17:58:14 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:53194 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab3GJV6M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 17:58:12 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Jiri Kosina <jkosina@suse.cz>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction patching
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <51DDD3E9.6090601@linux.intel.com> <20130710214848.GB14879@pd.tnic>
-In-Reply-To: <20130710214848.GB14879@pd.tnic>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
+References: <1373356545-45944-1-git-send-email-wangyijing@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 10 Jul 2013 15:57:51 -0600
+Message-ID: <CAErSpo6L8W40JBjNfE+bf_HWaW5be0VLdK+YyN3+J+05--ukyA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] PCI: introduce PCIe Device Serial NUmber Capability support
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Oliver Neukum <oneukum@suse.de>,
+        Paul Bolle <pebolle@tiscali.nl>, Gu Zheng <guz.fnst@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 02:48 PM, Borislav Petkov wrote:
-> On Wed, Jul 10, 2013 at 02:36:41PM -0700, H. Peter Anvin wrote:
->> I'm wondering if it would be easier/more general to just return to the
->> instruction. The "more general" bit would allow this to be used for
->> other things, like alternatives, and perhaps eventually dynamic call
->> patching.
-> 
-> Well, the aspect of not using stop_machine in alternatives is a don't
-> care because there we do text_poke_early on the BSP anyway. However,
-> there we toggle interrupts so it would probably be interesting to see
-> whether a non-interrupt-disabling variant would be faster.
-> 
->> Returning to the instruction will, in effect, be a busy-wait for
->> the faulted CPU until the patch is complete; more or less what
->> stop_machine would do, but only for a CPU which actually strays into
->> the affected region.
-> 
-> Oh, something like we patch in a two-byte jump first:
-> 
-> 1:
-> 	jmp 1b
-> 
-> until we finish patching the rest? Ha, interesting :).
-> 
+On Tue, Jul 9, 2013 at 1:55 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> Introduce PCIe Ext Capability Device Serial Number support,
+> so we can use the unique device serial number to identify
+> the physical device. During system suspend, if the PCIe
+> device was removed and inserted a new same device, after
+> system resume there is no good way to identify it, maybe
+> Device Serial Number is a good choice if device support.
+>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: Oliver Neukum <oneukum@suse.de>
+> Cc: Paul Bolle <pebolle@tiscali.nl>
+> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/pci/pci.c   |   33 +++++++++++++++++++++++++++++++++
+>  drivers/pci/pci.h   |    1 +
+>  drivers/pci/probe.c |    3 +++
+>  include/linux/pci.h |    4 ++++
+>  4 files changed, 41 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index e37fea6..d08df2b 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -2048,6 +2048,39 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
+>  }
+>
+>  /**
+> + * pci_get_dsn - get device serial number
+> + * @dev: the PCI device
+> + * @sn: saved device serial number
+> + */
+> +void pci_get_dsn(struct pci_dev *dev, u64 *sn)
 
-No, the idea is that the affected CPU will simply execute int3 -> iret
-ad nauseam until the first byte is repatched, at that point execution
-will resume normally.
+How about:
 
-	-hpa
+    u64 pci_device_serial_number(struct pci_dev *dev)
 
+"get" suggests reference counting, which isn't happening here.  And
+why pass a pointer to a return value when we can just as easily return
+it directly?
+
+> +{
+> +       int pos;
+> +       u32 lo, hi;
+> +
+> +       if (!pci_is_pcie(dev))
+> +               goto out;
+> +
+> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
+> +       if (!pos)
+> +               goto out;
+> +
+> +       pci_read_config_dword(dev, pos + 4, &lo);
+> +       pci_read_config_dword(dev, pos + 8, &hi);
+> +       *sn = ((u64)hi << 32) | lo;
+> +       return;
+> +
+> +out:
+> +       *sn = 0;
+> +       return;
+> +}
+> +EXPORT_SYMBOL(pci_get_dsn);
+> +
+> +void pci_dsn_init(struct pci_dev *dev)
+> +{
+> +       return pci_get_dsn(dev, &dev->sn);
+> +}
+> +
+> +/**
+>   * pci_configure_ari - enable or disable ARI forwarding
+>   * @dev: the PCI device
+>   *
+> diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+> index 68678ed..f626006 100644
+> --- a/drivers/pci/pci.h
+> +++ b/drivers/pci/pci.h
+> @@ -202,6 +202,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
+>                     struct resource *res, unsigned int reg);
+>  int pci_resource_bar(struct pci_dev *dev, int resno, enum pci_bar_type *type);
+>  void pci_configure_ari(struct pci_dev *dev);
+> +void pci_dsn_init(struct pci_dev *dev);
+>
+>  /**
+>   * pci_ari_enabled - query ARI forwarding status
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index 46ada5c..d4c6e7e 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -1322,6 +1322,9 @@ static void pci_init_capabilities(struct pci_dev *dev)
+>         /* Power Management */
+>         pci_pm_init(dev);
+>
+> +       /* Device Serial Number */
+> +       pci_dsn_init(dev);
+
+    dev->sn = pci_serial_number(dev);
+
+Obvious, no comment or wrapper function needed.
+
+> +
+>         /* Vital Product Data */
+>         pci_vpd_pci22_init(dev);
+>
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index 0fd1f15..59cd205 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -342,6 +342,7 @@ struct pci_dev {
+>         struct list_head msi_list;
+>         struct kset *msi_kset;
+>  #endif
+> +       u64 sn;         /* device serieal number, 0 if not support */
+>         struct pci_vpd *vpd;
+>  #ifdef CONFIG_PCI_ATS
+>         union {
+> @@ -995,6 +996,9 @@ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
+>  ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
+>  int pci_vpd_truncate(struct pci_dev *dev, size_t size);
+>
+> +/* Device Serial Number */
+> +void pci_get_dsn(struct pci_dev *dev, u64 *sn);
+> +
+>  /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
+>  resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
+>  void pci_bus_assign_resources(const struct pci_bus *bus);
+> --
+> 1.7.1
+>
+>
