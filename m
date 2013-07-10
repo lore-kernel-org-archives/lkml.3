@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab3GJOrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:47:45 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:33272 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3GJOro (ORCPT
+	id S1754694Ab3GJOsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:48:20 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29016 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095Ab3GJOsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:47:44 -0400
-Date: Wed, 10 Jul 2013 10:46:41 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>,
-        michael.opdenacker@free-electrons.com
-Cc: Matt Wilson <msw@amazon.com>, Borislav Petkov <bp@alien8.de>,
-        jeremy@goop.org, xen-devel@lists.xensource.com,
-        Jan Beulich <JBeulich@suse.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        x86@kernel.org, Paul Bolle <pebolle@tiscali.nl>,
-        virtualization@lists.linux-foundation.org, mingo@redhat.com,
-        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
-Message-ID: <20130710144641.GA11007@phenom.dumpdata.com>
-References: <51DB2134.9040909@zytor.com>
- <20130708205834.GA481@pd.tnic>
- <1373326534.1438.10.camel@x61.thuisdomein>
- <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
- <51DBDAB802000078000E37C1@nat28.tlf.novell.com>
- <20130709144840.GF24897@phenom.dumpdata.com>
- <20130709150554.GA27579@pd.tnic>
- <1382658288.20130710003458@eikelenboom.it>
- <20130710061932.GB13671@u109add4315675089e695.ant.amazon.com>
- <1619064548.20130710094134@eikelenboom.it>
+	Wed, 10 Jul 2013 10:48:19 -0400
+Message-ID: <51DD740C.5090000@oracle.com>
+Date: Wed, 10 Jul 2013 10:47:40 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1619064548.20130710094134@eikelenboom.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
+        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
+Subject: Re: timer: lockup in run_timer_softirq()
+References: <51DC902F.3070403@oracle.com> <20130710095459.GE17211@twins.programming.kicks-ass.net>
+In-Reply-To: <20130710095459.GE17211@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So it would be nice to have at least some time to address this with upstream grub and the main distributions to patch their grub.
+On 07/10/2013 05:54 AM, Peter Zijlstra wrote:
+> On Tue, Jul 09, 2013 at 06:35:27PM -0400, Sasha Levin wrote:
+>> While going through the NMI dump, I noticed that it's very incomplete, and full of:
+>>
+>> [ 2536.500130] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler)
+>> took too long to run: 697182.008 msecs
+>
+> Now I would actually expect arch_trigger_all_cpu_backtrace_handler() to
+> issue this warning, that said, ~700 seconds is a bit long, I'm fairly
+> sure it didn't actually take that long, you'd have noticed your vm being
+> 'away' for 10+ minutes I'd think, no?
+>
+>
+> There's something entirely fishy with that stuff, let me to stare at it.
 
-<nods> Sounds quite sensible. Michael would you be OK doing this?
+Yeah, it didn't actually hang that long - that number is bogus.
+
+
+Thanks,
+Sasha
+
