@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab3GJByv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 21:54:51 -0400
-Received: from mail-ye0-f170.google.com ([209.85.213.170]:34092 "EHLO
-	mail-ye0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3GJByu convert rfc822-to-8bit (ORCPT
+	id S1754124Ab3GJBzY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 21:55:24 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:49593 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754069Ab3GJBzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 21:54:50 -0400
-Date: Tue, 09 Jul 2013 20:54:45 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [GIT] Networking
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <CA+55aFxbipsZFC2iQsVchstOP_7mR48sUbo96LEJ4kxtZWQDKQ@mail.gmail.com>
-	(from torvalds@linux-foundation.org on Tue Jul  9 12:32:56 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1373421285.27613.36@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+	Tue, 9 Jul 2013 21:55:23 -0400
+From: Simon Horman <horms@verge.net.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>, kexec@lists.infradead.org,
+        Eric Biederman <ebiederm@xmission.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] kexec: return error of machine_kexec() fails
+Date: Wed, 10 Jul 2013 10:54:56 +0900
+Message-Id: <1373421296-6112-1-git-send-email-horms@verge.net.au>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 12:32:56 PM, Linus Torvalds wrote:
-> On Mon, Jul 8, 2013 at 7:29 PM, Rob Landley <rob@landley.net> wrote:
-> >
-> > Um, does that mean I should have cc'd you on the initmpfs patch  
-> series
-> > back before the merge window opened?
-> 
-> So I personally don't tend to care about that kind of patch-series -
-> it doesn't really add new features to basic code unlike the polling
-> changes.
+From: Stephen Warren <swarren@nvidia.com>
 
-I tried to be as non-intrusive as possible while mucking about with  
-early boot code on all targets. :)
+Prior to commit 3ab8352 "kexec jump", if machine_kexec() returned,
+sys_reboot() would return -EINVAL. This patch restores this behaviour
+for the non-KEXEC_JUMP case, where machine_kexec() is not expected to
+return.
 
-> But I suspect for something like that series, the people to
-> cc are Al Viro and Hugh Dickins because they maintain vfs adn tmpfs
-> respectively.. That said, I think neither really cares.deeply, and
-> this looks like a "Andrew" patch-series if only because it's so random
-> ;)
+This situation can occur on ARM, where kexec requires disabling all but
+one CPU using CPU hotplug. However, if hotplug isn't supported by the
+particular HW the kernel is running on, then kexec cannot succeed.
 
-All three were cc'd by get_maintainer.pl, but none of 'em seem to have  
-noticed.
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Will Deacon <will.deacon@arm.com>
+Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Acked-by: Simon Horman <horms@verge.net.au>
+---
+ kernel/kexec.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-The embedded community continues to have strange needs, but they make  
-sense to us. (And oddly enough to the supercomputer folks, who are  
-basically "embedded with money".)
+Andrew, could you consider picking up this patch?
 
-Thanks,
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 59f7b55..bde1190 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -1702,6 +1702,8 @@ int kernel_kexec(void)
+ 		pm_restore_console();
+ 		unlock_system_sleep();
+ 	}
++#else
++	error = -EINVAL;
+ #endif
+ 
+  Unlock:
+-- 
+1.8.2.1
 
-Rob
