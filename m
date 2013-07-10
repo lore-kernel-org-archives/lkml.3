@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab3GJOR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:17:27 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:33128 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab3GJORZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:17:25 -0400
-Message-ID: <51DD6CED.6080001@ozlabs.ru>
-Date: Thu, 11 Jul 2013 00:17:17 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	id S1754335Ab3GJOSq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:18:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13892 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab3GJOSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:18:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1036,1363158000"; 
+   d="scan'208";a="368053827"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH v2] socket.7: add description for SO_BUSY_POLL
+To: Micahel Kerrisk <mtk.manpages@gmail.com>
+Cc: linux-man@vger.kernel.org, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 10 Jul 2013 17:18:35 +0300
+Message-ID: <20130710141835.15799.61657.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 2/8] KVM: PPC: reserve a capability and ioctl numbers
- for realmode VFIO
-References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru> <1372309356-28320-3-git-send-email-aik@ozlabs.ru> <51DC2DDA.6040408@suse.de> <51DC9E32.8040109@ozlabs.ru> <E8E3A724-7045-4B8F-BE29-29BAB41D68C2@suse.de>
-In-Reply-To: <E8E3A724-7045-4B8F-BE29-29BAB41D68C2@suse.de>
-Content-Type: text/plain; charset=KOI8-R
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 08:27 PM, Alexander Graf wrote:
-> 
-> On 10.07.2013, at 01:35, Alexey Kardashevskiy wrote:
-> 
->> On 07/10/2013 01:35 AM, Alexander Graf wrote:
->>> On 06/27/2013 07:02 AM, Alexey Kardashevskiy wrote:
->>>> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
->>>> ---
->>>>  include/uapi/linux/kvm.h |    2 ++
->>>>  1 file changed, 2 insertions(+)
->>>>
->>>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
->>>> index 970b1f5..0865c01 100644
->>>> --- a/include/uapi/linux/kvm.h
->>>> +++ b/include/uapi/linux/kvm.h
->>>> @@ -667,6 +667,7 @@ struct kvm_ppc_smmu_info {
->>>>  #define KVM_CAP_PPC_RTAS 91
->>>>  #define KVM_CAP_IRQ_XICS 92
->>>>  #define KVM_CAP_SPAPR_MULTITCE 93
->>>> +#define KVM_CAP_SPAPR_TCE_IOMMU 94
->>>>
->>>>  #ifdef KVM_CAP_IRQ_ROUTING
->>>>
->>>> @@ -923,6 +924,7 @@ struct kvm_s390_ucas_mapping {
->>>>  /* Available with KVM_CAP_PPC_ALLOC_HTAB */
->>>>  #define KVM_PPC_ALLOCATE_HTAB      _IOWR(KVMIO, 0xa7, __u32)
->>>>  #define KVM_CREATE_SPAPR_TCE      _IOW(KVMIO,  0xa8, struct
->>>> kvm_create_spapr_tce)
->>>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, struct
->>>> kvm_create_spapr_tce_iommu)
->>>
->>> Please order them by number.
->>
->> Oh. Again :( We have had this discussion with Scott Wood here already.
->> Where _exactly_ do you want me to put it?
-> 
-> 8 lines further down. With a comment saying when it's available. Also why is it af, not ad?
+Add description for the SO_BUSY_POLL socket option to the socket(7) manpage.
 
+v2
+fixed typos reported by Rasmus Villemoes
 
-0xad and 0xae are taken.
-Where should I have commented this? In the commit message? Or in the patch
-itself?
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+---
 
+ man7/socket.7 |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
->> Many sections, not really ordered. Thank you.
-> 
-> They should all be ordered inside of their own categories.
+diff --git a/man7/socket.7 b/man7/socket.7
+index f2213eb..5edcb09 100644
+--- a/man7/socket.7
++++ b/man7/socket.7
+@@ -694,6 +694,31 @@ for details on control messages.
+ Gets the socket type as an integer (e.g.,
+ .BR SOCK_STREAM ).
+ This socket option is read-only.
++.TP
++.B SO_BUSY_POLL
++Sets the approximate time in microseconds to busy poll on a blocking receive
++when there is no data. Increasing this value requires
++.BR CAP_NET_ADMIN . 
++The default for this option is controlled by the
++.I /proc/sys/net/core/busy_read
++file. 
++
++The value in the  
++.I /proc/sys/net/core/busy_poll
++file determines how long 
++.BR select (2)
++and 
++.BR poll (2)
++will busy poll when they operate on sockets with 
++.BR SO_BUSY_POLL
++set and no events to report are found.
++
++In both cases busy polling will only be done when the socket last received data
++from a network device that supports this option.
++
++While busy polling may improve latency of some applications, care must be
++taken when using it since this will increase both CPU utilization and power usage.
++
+ .SS Signals
+ When writing onto a connection-oriented socket that has been shut down
+ (by the local or the remote end)
 
-
--- 
-Alexey
