@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846Ab3GJCgS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 22:36:18 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:27929 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754376Ab3GJCgQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 22:36:16 -0400
-X-Spam-Score: -100.8
-Message-ID: <51DCC867.70408@asianux.com>
-Date: Wed, 10 Jul 2013 10:35:19 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	id S1754827Ab3GJChV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 22:37:21 -0400
+Received: from ozlabs.org ([203.10.76.45]:37374 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754376Ab3GJChT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 22:37:19 -0400
+Date: Wed, 10 Jul 2013 12:37:16 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, acme@redhat.com, mingo@kernel.org,
+        Stephane Eranian <eranian@google.com>, sukadev@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for perf
+Message-ID: <20130710023715.GC7491@concordia>
+References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com>
+ <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com>
+ <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy>
+ <20130704125218.GA21134@concordia>
+ <20130704125700.GM18898@dyad.programming.kicks-ass.net>
+ <20130709012952.GA7185@concordia>
+ <alpine.DEB.2.10.1307082204550.26280@vincent-weaver-1.um.maine.edu>
+ <20130709033402.GA8543@concordia>
+ <alpine.DEB.2.10.1307091113010.675@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, khali@linux-fr.org,
-        David.Woodhouse@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/params.c: print failure information instead of
- 'KOBJ_ADD' to user space, when sysfs_create_file() fails.
-References: <51DB8597.4090101@asianux.com> <87y59gcg17.fsf@rustcorp.com.au> <51DCC426.3010606@gmail.com>
-In-Reply-To: <51DCC426.3010606@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1307091113010.675@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 10:17 AM, Chen Gang F T wrote:
-> On 07/09/2013 04:07 PM, Rusty Russell wrote:
->> Chen Gang <gang.chen@asianux.com> writes:
->>> When sysfs_create_file() fails, recommend to print the related failure
->>> information. And it is useless to still 'KOBJ_ADD' to user space.
->>>
->>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
->>
->> sysfs_create_file() should not fail during boot, should it?
->>
+On Tue, Jul 09, 2013 at 11:20:50AM -0400, Vince Weaver wrote:
+> On Tue, 9 Jul 2013, Michael Ellerman wrote:
 > 
-> Hmm..., please reference locate_module_kobject() in "kernel/params.c",
-> which is an '__init' function, and also call sysfs_create_file(), it
-> processes the related error.
+> > On Mon, Jul 08, 2013 at 10:24:34PM -0400, Vince Weaver wrote:
+> > > why is it a hack to use cpuid?
+> > 
+> > Because you're assuming that the PMU the kernel has exposed is for the
+> > cpu you happen to be executing on.
+> > 
+> > But the real issue is with PMUs that are not in the CPU - there is no
+> > easy way for userspace to detect them and determine which event list it
+> > should be consulting.
 > 
-> So I recommend to get the check too in version_sysfs_builtin().
+> what kind of devices are you talking about?  
+
+GPUs, PCI host bridges, memory controllers, PCI attached accelerators,
+strange devices on non standard buses, you name it.
+
+> If they have kernel/perf_event support then they'd be putting a
+> directory entry with a unique name into
+> /sys/bus/event_source/devices/, right?
+
+Yes. But although the name is unique it's not sufficient to actually
+identify the list of events.
+
+For example the CPU PMU is called "cpu" on most architectures, so userspace
+needs to work out which exact CPU it is - and I know that's possible,
+but it means the "simple little" event parsing library is not so simple
+anymore.
+
+Then imagine you have a GPU on PCI which registers its PMU as "gpu" -
+how do you work out which GPU it is? Userspace can probably work it out
+by trawling through sysfs and finding the vendor and device ids and
+matching that with a lookup table. The library just got less simple
+again.
+
+Now say you have a PMU in your memory controller, it's not represented
+in sysfs except for the PMU. Which memory controller is it? Maybe you
+can infer it from the CPU you're on, but maybe you can't.
+
+> > This whole thread is about making the event list not the kernel's job?
 > 
+> Yes.  This has been debated forever here; I'm firmly in the "event lists 
+> should be entirely in userspace" camp but that's not the majority 
+> position.
 
-Oh, also for locate_module_kobject(), if !CONFIG_MODULES, when error
-occurs, it still print the information about "Adding module".
+Yes we agree on the event list being in userspace, you can stop trying
+to convince me.
 
-Hmm..., do we need call kobject_get() before kobject_put() in failure
-processing block ?
+What shouldn't be in userspace is the logic to detect which PMUs are
+available on the system.
 
-
-740                 mk = kzalloc(sizeof(struct module_kobject), GFP_KERNEL);
-741                 BUG_ON(!mk);
-742 
-743                 mk->mod = THIS_MODULE;
-744                 mk->kobj.kset = module_kset;
-745                 err = kobject_init_and_add(&mk->kobj, &module_ktype, NULL,
-746                                            "%s", name);
-747 #ifdef CONFIG_MODULES
-748                 if (!err)
-749                         err = sysfs_create_file(&mk->kobj, &module_uevent.attr);
-750 #endif
-751                 if (err) {
-752                         kobject_put(&mk->kobj);
-753                         pr_crit("Adding module '%s' to sysfs failed (%d), the system may be unstable.\n",
-754                                 name, err);
-755                         return NULL;
-756                 }
-757 
-758                 /* So that we hold reference in both cases. */
-759                 kobject_get(&mk->kobj);
-760         }
-761 
-762         return mk;
-763 }
-
-
-> Thanks.
-> 
->> Cheers,
->> Rusty.
->>
->>> ---
->>>  kernel/params.c |    8 +++++++-
->>>  1 files changed, 7 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/kernel/params.c b/kernel/params.c
->>> index 440e65d..f5299c1 100644
->>> --- a/kernel/params.c
->>> +++ b/kernel/params.c
->>> @@ -845,7 +845,13 @@ static void __init version_sysfs_builtin(void)
->>>  		mk = locate_module_kobject(vattr->module_name);
->>>  		if (mk) {
->>>  			err = sysfs_create_file(&mk->kobj, &vattr->mattr.attr);
->>> -			kobject_uevent(&mk->kobj, KOBJ_ADD);
->>> +			if (err)
->>> +				printk(KERN_WARNING
->>> +				       "%s (%d): sysfs_create_file fail for %s, err: %d\n",
->>> +				       __FILE__, __LINE__,
->>> +				       vattr->module_name, err);
->>> +			else
->>> +				kobject_uevent(&mk->kobj, KOBJ_ADD);
->>>  			kobject_put(&mk->kobj);
->>>  		}
->>>  	}
->>> -- 
->>> 1.7.7.6
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
-> 
-
-
--- 
-Chen Gang
+cheers
