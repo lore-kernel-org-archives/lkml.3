@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab3GJD7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 23:59:40 -0400
-Received: from ozlabs.org ([203.10.76.45]:45226 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754159Ab3GJD7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 23:59:12 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kees Cook <keescook@chromium.org>, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        James Hogan <james.hogan@imgtec.com>, linux-mtd@lists.infradead.org
-Subject: Re: [RESEND][PATCH] mtd: refactor call to request_module
-In-Reply-To: <20130708130512.GA24315@www.outflux.net>
-References: <20130708130512.GA24315@www.outflux.net>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 10 Jul 2013 12:40:35 +0930
-Message-ID: <87hag3cdp0.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1750970Ab3GJEJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 00:09:48 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:38222
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750710Ab3GJEJr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 00:09:47 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: rafael.j.wysocki@intel.com, bhelgaas@google.com, a.zummo@towertech.it,
+        key@linux.vnet.ibm.com, mail@srajiv.net, tpmdd@selhorst.net,
+        tpmdd@sirrix.com, matthew.garrett@nebula.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com, tpmdd-devel@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH 1/4] pnp: Change pnp bus pm_ops to invoke pnp driver dev_pm_ops if specified
+Date: Tue,  9 Jul 2013 22:09:26 -0600
+Message-Id: <1373429366-3870-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook <keescook@chromium.org> writes:
-> This reduces the size of the stack frame when calling request_module().
-> Performing the sprintf before the call is not needed.
->
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+pnp_bus_suspend() and pnp_bus_resume() invoke legacy pm_ops from
+pnp_driver. Changed pnp_bus_suspend() and pnp_bus_resume() to check
+if pnp driver has dev_pm_ops and call. If dev_pm_ops don't exist, then
+call use legacy pm_ops. Without this change, pnp_driver dev_pm_ops will
+not get called.
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/pnp/driver.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
-Thanks,
-Rusty.
+diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
+index 00e9403..c3f9e89 100644
+--- a/drivers/pnp/driver.c
++++ b/drivers/pnp/driver.c
+@@ -163,6 +163,13 @@ static int pnp_bus_suspend(struct device *dev, pm_message_t state)
+ 	if (!pnp_drv)
+ 		return 0;
+ 
++	if (pnp_drv->driver.pm && pnp_drv->driver.pm->suspend) {
++		error = pnp_drv->driver.pm->suspend(dev);
++		suspend_report_result(pnp_drv->driver.pm->suspend, error);
++		if (error)
++			return error;
++	}
++
+ 	if (pnp_drv->suspend) {
+ 		error = pnp_drv->suspend(pnp_dev, state);
+ 		if (error)
+@@ -201,6 +208,12 @@ static int pnp_bus_resume(struct device *dev)
+ 			return error;
+ 	}
+ 
++	if (pnp_drv->driver.pm && pnp_drv->driver.pm->resume) {
++		error = pnp_drv->driver.pm->resume(dev);
++		if (error)
++			return error;
++	}
++
+ 	if (pnp_drv->resume) {
+ 		error = pnp_drv->resume(pnp_dev);
+ 		if (error)
+-- 
+1.7.10.4
 
-> ---
->  drivers/mtd/chips/gen_probe.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/drivers/mtd/chips/gen_probe.c b/drivers/mtd/chips/gen_probe.c
-> index 74dbb6b..ffb36ba 100644
-> --- a/drivers/mtd/chips/gen_probe.c
-> +++ b/drivers/mtd/chips/gen_probe.c
-> @@ -211,9 +211,7 @@ static inline struct mtd_info *cfi_cmdset_unknown(struct map_info *map,
->  
->  	probe_function = __symbol_get(probename);
->  	if (!probe_function) {
-> -		char modname[sizeof("cfi_cmdset_%4.4X")];
-> -		sprintf(modname, "cfi_cmdset_%4.4X", type);
-> -		request_module(modname);
-> +		request_module("cfi_cmdset_%4.4X", type);
->  		probe_function = __symbol_get(probename);
->  	}
->  
-> -- 
-> 1.7.9.5
->
->
-> -- 
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
