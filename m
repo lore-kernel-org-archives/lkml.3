@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab3GJR1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 13:27:38 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:33502 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712Ab3GJR1h (ORCPT
+	id S1754847Ab3GJR2i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 13:28:38 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:34513 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754712Ab3GJR2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 13:27:37 -0400
+	Wed, 10 Jul 2013 13:28:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130710015936.GC13855@redhat.com>
-References: <51DCBE24.3030406@gmail.com>
-	<20130710015936.GC13855@redhat.com>
-Date: Wed, 10 Jul 2013 13:27:36 -0400
-Message-ID: <CAJzLF9=vWCd2JZTNG0dX4YmLAc=B05x-+bZgU0RaSZCaR5D38g@mail.gmail.com>
-Subject: Re: [REGRESSION] x86 vmalloc issue from recent 3.10.0+ commit
-From: "Michael L. Semon" <mlsemon35@gmail.com>
-To: Dave Jones <davej@redhat.com>, "Michael L. Semon" <mlsemon35@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        d.hatayama@jp.fujitsu.com, akpm@linux-foundation.org
+In-Reply-To: <51DC7A80.9030201@wwwdotorg.org>
+References: <1372940714-12470-1-git-send-email-dh.herrmann@gmail.com>
+	<51DC7A80.9030201@wwwdotorg.org>
+Date: Wed, 10 Jul 2013 19:28:36 +0200
+Message-ID: <CANq1E4S0WnG1SAPefCJ5sp-GR1etWZDPnP6bGHy-G+LUpqTmQQ@mail.gmail.com>
+Subject: Re: [PATCH v2 00/14] Platform Framebuffers and SimpleDRM
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Peter Jones <pjones@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        x86@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.  I'll re-review this, anyway, and re-bisect if time allows.
-The kernel/SGI-XFS combo pulled last night did much better in this
-regard.  The problem is down to a different and single backtrace about
-vmalloc, and the PC is controllable now.  The old git was moved to a
-different folder, though, in case it's still needed.
+Hi
 
-Michael
+On Tue, Jul 9, 2013 at 11:02 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 07/04/2013 06:25 AM, David Herrmann wrote:
+>> Hi
+>>
+>> This series changes the way we handle firmware framebuffers on x86 systems. On
+>> other architectures the recently introduced "simple-framebuffer"
+>> platform-devices provide a sane and proper way to handle firmware framebuffers.
+>> So why not use it on x86, too?
+>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+>
+> (This time I didn't see any issue with the FB content being blank; I
+> must have forgotten a console= command-line parameter or something the
+> last time around)
 
-On Tue, Jul 9, 2013 at 9:59 PM, Dave Jones <davej@redhat.com> wrote:
-> On Tue, Jul 09, 2013 at 09:51:32PM -0400, Michael L. Semon wrote:
->
->  > kernel: [ 2580.395592] vmap allocation for size 20480 failed: use vmalloc=<size> to increase size.
->  > kernel: [ 2580.395761] vmalloc: allocation failure: 16384 bytes
->
-> I was seeing a lot of these recently too.
-> (Though I also saw memory corruption afterwards possibly caused by
->  a broken fallback path somewhere when that vmalloc fails)
->
-> http://comments.gmane.org/gmane.linux.kernel.mm/102895
->
->         Dave
->
+I think I had some error in the pseudo_palette handling (which I now
+copied from simplefb.c), but I am not sure why it didn't work in v1.
+Thanks a lot for testing!
+
+Regards
+David
