@@ -1,78 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab3GJNuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 09:50:04 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:43854 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab3GJNuC (ORCPT
+	id S1754346Ab3GJNyj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 09:54:39 -0400
+Received: from smtp-fw-2101.amazon.com ([72.21.196.25]:61885 "EHLO
+	smtp-fw-2101.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab3GJNyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 09:50:02 -0400
-Date: Wed, 10 Jul 2013 22:49:56 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH] kvm: reset arch memslot info on memslot creation
-Message-Id: <20130710224956.b7a44f39c151148afa5a47ba@gmail.com>
-In-Reply-To: <20130710082439.GA1482@redhat.com>
-References: <20130710082439.GA1482@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Jul 2013 09:54:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1036,1363132800"; 
+   d="scan'208";a="580878472"
+Message-ID: <51DD6792.8040502@amazon.de>
+Date: Wed, 10 Jul 2013 15:54:26 +0200
+From: "Egger, Christoph" <chegger@amazon.de>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH RFC 4/4] xen-block: introduce a new request
+ type to unmap grants
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com> <1373288607-1876-5-git-send-email-roger.pau@citrix.com> <20130708194152.GJ4927@phenom.dumpdata.com> <51DD271B.3010408@citrix.com>
+In-Reply-To: <51DD271B.3010408@citrix.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Jul 2013 11:24:39 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> On x86, kvm_arch_create_memslot assumes that rmap/lpage_info for the
-> slot are zeroed out: if they weren't, error handling code after out_free
-> label will free memory which wasn't allocated here.
-> This always happens to be the case because on KVM_MR_DELETE we clear the
-> whole arch structure.  So there's no bug, but it's cleaner not to rely
-> on this here.
-
-Yes, the assumption is that the function is called only with zero-sized slots.
-Since changing the size is not allowed, DELETE-CREATE is the only case we
-care about.
-
-But isn't it possible to make it explicit that zero-sized slots have always
-zero-cleared contents instead?  Otherwise, there would be many troubles.
-
-	Takuya
-
+On 10.07.13 11:19, Roger Pau Monné wrote:
+> On 08/07/13 21:41, Konrad Rzeszutek Wilk wrote:
+>> On Mon, Jul 08, 2013 at 03:03:27PM +0200, Roger Pau Monne wrote:
+>>> Right now blkfront has no way to unmap grant refs, if using persistent
+>>> grants once a grant is used blkfront cannot assure if blkback will
+>>> have this grant mapped or not. To solve this problem, a new request
+>>> type (BLKIF_OP_UNMAP) that allows requesting blkback to unmap certain
+>>> grants is introduced.
+>>
+>> I don't think this is the right way of doing it. It is a new operation
+>> (BLKIF_OP_UNMAP) that has nothing to do with READ/WRITE. All it is
+>> is just some way for the frontend to say: unmap this grant if you can.
+>>
+>> As such I would think a better mechanism would be to have a new
+>> grant mechanism that can say: 'I am done with this grant you can
+>> remove it' - that is called to the hypervisor. The hypervisor
+>> can then figure out whether it is free or not and lazily delete it.
+>> (And the guest would be notified when it is freed).
 > 
-> Make the code more robust by clearing the rmap/lpage_info explicitly.
+> I have a patch that I think implements something quite similar to what 
+> you describe, but it doesn't require any new patch to the hypervisor 
+> side. From blkfront we can check what grants blkback has chosen to 
+> persistently map and only keep those.
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> This is different from my previous approach, were blkfront could 
+> specifically request blkback to unmap certain grants, but it still 
+> prevents blkfront from hoarding all grants (unless blkback is 
+> persistently mapping every possible grant). With this patch the number 
+> of persistent grants in blkfront will be the same as in blkback, so 
+> basically the backend can control how many grants will be persistently 
+> mapped. 
+
+According to your blog
+http://blog.xen.org/index.php/2012/11/23/improving-block-protocol-scalability-with-persistent-grants/
+persistent grants in the frontend gives an benefit even when the backend does not support
+persistent grants. Is this still the case with this patch?
+
+Christoph
+
+
 > ---
->  arch/x86/kvm/x86.c | 4 ++++
->  1 file changed, 4 insertions(+)
+> From 1ede72ba10a7ec13d57ba6d2af54e86a099d7125 Mon Sep 17 00:00:00 2001
+> From: Roger Pau Monne <roger.pau@citrix.com>
+> Date: Wed, 10 Jul 2013 10:22:19 +0200
+> Subject: [PATCH RFC] xen-blkfront: revoke foreign access for grants not
+>  mapped by the backend
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
 > 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index e8ba99c..96e6eb4 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -6922,6 +6922,10 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
->  {
->  	int i;
->  
-> +	/* Reset in case slot had some rmap/lpage_info. */
-> +	memset(&slot->arch.rmap, 0, sizeof slot->arch.rmap);
-> +	memset(&slot->arch.lpage_info, 0, sizeof slot->arch.lpage_info);
-> +
->  	for (i = 0; i < KVM_NR_PAGE_SIZES; ++i) {
->  		unsigned long ugfn;
->  		int lpages;
-> -- 
-> MST
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> There's no need to keep the foreign access in a grant if it is not
+> persistently mapped by the backend. This allows us to free grants that
+> are not mapped by the backend, thus preventing blkfront from hoarding
+> all grants.
+> 
+> The main effect of this is that blkfront will only persistently map
+> the same grants as the backend, and it will always try to use grants
+> that are already mapped by the backend. Also the number of persistent
+> grants in blkfront is the same as in blkback (and is controlled by the
+> value in blkback).
+> 
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/block/xen-blkfront.c |   33 +++++++++++++++++++++++++++++----
+>  1 files changed, 29 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 3d445c0..6ba88c1 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -1022,13 +1022,38 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
+>  	}
+>  	/* Add the persistent grant into the list of free grants */
+>  	for (i = 0; i < nseg; i++) {
+> -		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
+> -		info->persistent_gnts_c++;
+> +		if (gnttab_query_foreign_access(s->grants_used[i]->gref)) {
+> +			/*
+> +			 * If the grant is still mapped by the backend (the
+> +			 * backend has chosen to make this grant persistent)
+> +			 * we add it at the head of the list, so it will be
+> +			 * reused first.
+> +			 */
+> +			list_add(&s->grants_used[i]->node, &info->persistent_gnts);
+> +			info->persistent_gnts_c++;
+> +		} else {
+> +			/*
+> +			 * If the grant is not mapped by the backend we end the
+> +			 * foreign access and add it to the tail of the list,
+> +			 * so it will not be picked again unless we run out of
+> +			 * persistent grants.
+> +			 */
+> +			gnttab_end_foreign_access(s->grants_used[i]->gref, 0, 0UL);
+> +			s->grants_used[i]->gref = GRANT_INVALID_REF;
+> +			list_add_tail(&s->grants_used[i]->node, &info->persistent_gnts);
+> +		}
+>  	}
+>  	if (s->req.operation == BLKIF_OP_INDIRECT) {
+>  		for (i = 0; i < INDIRECT_GREFS(nseg); i++) {
+> -			list_add(&s->indirect_grants[i]->node, &info->persistent_gnts);
+> -			info->persistent_gnts_c++;
+> +			if (gnttab_query_foreign_access(s->indirect_grants[i]->gref)) {
+> +				list_add(&s->indirect_grants[i]->node, &info->persistent_gnts);
+> +				info->persistent_gnts_c++;
+> +			} else {
+> +				gnttab_end_foreign_access(s->indirect_grants[i]->gref, 0, 0UL);
+> +				s->indirect_grants[i]->gref = GRANT_INVALID_REF;
+> +				list_add_tail(&s->indirect_grants[i]->node,
+> +				              &info->persistent_gnts);
+> +			}
+>  		}
+>  	}
+>  }
+> 
 
-
--- 
-Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
