@@ -1,110 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab3GJOIj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:08:39 -0400
-Received: from ip-78-102-49-28.net.upcbroadband.cz ([78.102.49.28]:64953 "EHLO
-	emu.suse.cz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754046Ab3GJOIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:08:37 -0400
-Date: Wed, 10 Jul 2013 16:08:30 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Julia.Lawall@lip6.fr, keescook@chromium.org, nicolas.palix@imag.fr,
-        strnape1@fel.cvut.cz, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] coccinelle updates for v3.11-rc1
-Message-ID: <20130710140830.GA32360@emu.suse.cz>
+	id S1754637Ab3GJOIx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:08:53 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:43099 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab3GJOIw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:08:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130710122433.GO11908@titan.lakedaemon.net>
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
+	<1373352166-10064-2-git-send-email-zhangwm@marvell.com>
+	<20130709124900.GG11908@titan.lakedaemon.net>
+	<CAN1soZxiOh6TpbUOCUzK8gNwmvjbT3ihkUWaw8tuZ7md+NVA2g@mail.gmail.com>
+	<20130710122433.GO11908@titan.lakedaemon.net>
+Date: Wed, 10 Jul 2013 22:08:50 +0800
+Message-ID: <CAN1soZzMvront1-jcBW6-uRKNs0OZNGnmiOjKGZSM28bViB_8A@mail.gmail.com>
+Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Neil Zhang <zhangwm@marvell.com>, Grant Likely <grant.likely@linaro.org>,
+        Bergmann Arnd <arnd@arndb.de>, devicetree-discuss@lists.ozlabs.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, Jul 10, 2013 at 8:24 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Wed, Jul 10, 2013 at 04:19:46PM +0800, Haojian Zhuang wrote:
+>> On Tue, Jul 9, 2013 at 8:49 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+>> > Neil,
+>> >
+>> > On Tue, Jul 09, 2013 at 02:42:44PM +0800, Neil Zhang wrote:
+>> >> The documented vendor prefix for Marvell is 'marvell', not 'mrvl', so
+>> >> let's change it.
+>> >>
+>> >> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+>> >> ---
+>> >>  .../devicetree/bindings/arm/mrvl/intc.txt          |   16 +++---
+>> >>  .../devicetree/bindings/arm/mrvl/mrvl.txt          |    6 +-
+>> >>  .../devicetree/bindings/arm/mrvl/timer.txt         |    4 +-
+>> >>  Documentation/devicetree/bindings/i2c/i2c-pxa.txt  |   14 +++---
+>> >>  .../devicetree/bindings/mmc/sdhci-pxa.txt          |    8 ++--
+>> >>  .../devicetree/bindings/rtc/sa1100-rtc.txt         |    4 +-
+>> >>  .../devicetree/bindings/serial/mrvl-serial.txt     |    2 +-
+>> >>  arch/arm/boot/dts/mmp2-brownstone.dts              |    2 +-
+>> >>  arch/arm/boot/dts/mmp2.dtsi                        |   56 ++++++++++----------
+>> >>  arch/arm/boot/dts/pxa168-aspenite.dts              |    2 +-
+>> >>  arch/arm/boot/dts/pxa168.dtsi                      |   24 ++++----
+>> >>  arch/arm/boot/dts/pxa2xx.dtsi                      |   16 +++---
+>> >>  arch/arm/boot/dts/pxa3xx.dtsi                      |    2 +-
+>> >>  arch/arm/boot/dts/pxa910-dkb.dts                   |    2 +-
+>> >>  arch/arm/boot/dts/pxa910.dtsi                      |   27 +++++-----
+>> >>  arch/arm/mach-mmp/irq.c                            |   16 +++---
+>> >>  arch/arm/mach-mmp/mmp-dt.c                         |   28 +++++-----
+>> >>  arch/arm/mach-mmp/mmp2-dt.c                        |   16 +++---
+>> >>  arch/arm/mach-mmp/time.c                           |    2 +-
+>> >>  arch/arm/mach-pxa/pxa-dt.c                         |   14 +++---
+>> >>  drivers/i2c/busses/i2c-pxa.c                       |   10 ++--
+>> >>  drivers/mmc/host/sdhci-pxav2.c                     |    4 +-
+>> >>  drivers/mmc/host/sdhci-pxav3.c                     |    4 +-
+>> >>  drivers/rtc/rtc-sa1100.c                           |    4 +-
+>> >>  drivers/tty/serial/pxa.c                           |    4 +-
+>> >>  25 files changed, 144 insertions(+), 143 deletions(-)
+>> >
+>> > I agree with the need to change, however, this has been in the binding
+>> > documentation since v3.5.  I wish we had caught this when we decided
+>> > against using stock ticker symbols (not all stock markets use
+>> > alphabetical abbreviated names, not all companies are listed on any
+>> > stock exchange).
+>> >
+>> > To do this properly, the drivers are going to have to be compatible with
+>> > the old and the new names, and the binding docs updated to reflect the
+>> > legacy name and the preferred name.
+>> >
+>>
+>> It's better to only use the new names.
+>
+> In the dts{i}, yes.  But we don't want to break systems in the field
+> with "mrvl,..." compatible strings.  Therefore, at least the drivers
+> need an extra compatible string to support "mrvl,...".
+>
+> If it had just been since v3.9, it'd be different/simpler.  However,
+> several vendors have opted to use kernels newer than v3.5, which makes
+> this scenario a real possibility.
+>
+> thx,
+>
+> Jason.
 
-the misc branch is reserved for Coccinelle this time:
+Is there any vendor using DT for this Marvell chip? I think the answer is no.
+Only Marvell guys are still moving to DT. They didn't deliver their kernel
+as reference. So there's no problem on this.
 
-- 'report' is the default mode
-- MAINTAINERS update for Coccinelle
-- documentation udate
-- use new option format for spatch(1)
-- J=<n> variable to mimic make -j for coccicheck
-- check for missing pci_free_consistent() calls
-
-There are some patches for rpm-pkg and deb-pkg waiting for the 3.12-rc1
-merge window.
-
-Michal
-
-The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
-
-  Linux 3.10-rc1 (2013-05-11 17:14:08 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git misc
-
-for you to fetch changes up to ec97946ed038f4b3faa587bc76152b198805b0c4:
-
-  Coccinelle: Update information about the minimal version required (2013-07-03 22:58:20 +0200)
-
-----------------------------------------------------------------
-Julia Lawall (1):
-      scripts/coccinelle: check for field address argument to kfree
-
-Kees Cook (1):
-      coccicheck: span checks across CPUs
-
-Nicolas Palix (6):
-      Coccinelle: Make 'report' the default mode
-      Coccinelle: Update the Coccinelle section of MAINTAINERS
-      Coccinelle: Update section of MAINTAINERS
-      Coccinelle: Update the documentation
-      Coccinelle: Update the options used to the new option scheme
-      Coccinelle: Update information about the minimal version required
-
-strnape1@fel.cvut.cz (1):
-      scripts: Coccinelle script for pci_free_consistent()
-
- Documentation/coccinelle.txt                       | 63 +++++++++++-------
- MAINTAINERS                                        |  3 +
- scripts/coccicheck                                 | 76 ++++++++++++++++------
- .../coccinelle/api/alloc/drop_kmalloc_cast.cocci   |  2 +-
- scripts/coccinelle/api/alloc/kzalloc-simple.cocci  |  2 +-
- scripts/coccinelle/api/d_find_alias.cocci          |  2 +-
- .../coccinelle/api/devm_request_and_ioremap.cocci  |  2 +-
- scripts/coccinelle/api/kstrdup.cocci               |  2 +-
- scripts/coccinelle/api/memdup.cocci                |  2 +-
- scripts/coccinelle/api/memdup_user.cocci           |  2 +-
- scripts/coccinelle/api/ptr_ret.cocci               |  2 +-
- scripts/coccinelle/api/simple_open.cocci           |  2 +-
- scripts/coccinelle/free/devm_free.cocci            |  2 +-
- scripts/coccinelle/free/kfree.cocci                |  2 +-
- scripts/coccinelle/free/kfreeaddr.cocci            | 32 +++++++++
- scripts/coccinelle/free/pci_free_consistent.cocci  | 52 +++++++++++++++
- scripts/coccinelle/iterators/fen.cocci             |  2 +-
- scripts/coccinelle/iterators/itnull.cocci          |  2 +-
- .../coccinelle/iterators/list_entry_update.cocci   |  2 +-
- scripts/coccinelle/iterators/use_after_iter.cocci  |  2 +-
- scripts/coccinelle/locks/call_kern.cocci           |  2 +-
- scripts/coccinelle/locks/double_lock.cocci         |  2 +-
- scripts/coccinelle/locks/flags.cocci               |  2 +-
- scripts/coccinelle/locks/mini_lock.cocci           |  2 +-
- scripts/coccinelle/misc/boolinit.cocci             |  2 +-
- scripts/coccinelle/misc/cstptr.cocci               |  2 +-
- scripts/coccinelle/misc/doubleinit.cocci           |  2 +-
- scripts/coccinelle/misc/ifaddr.cocci               |  2 +-
- scripts/coccinelle/misc/ifcol.cocci                |  2 +-
- scripts/coccinelle/misc/noderef.cocci              |  2 +-
- scripts/coccinelle/misc/orplus.cocci               |  2 +-
- scripts/coccinelle/misc/warn.cocci                 |  2 +-
- scripts/coccinelle/null/eno.cocci                  |  2 +-
- scripts/coccinelle/null/kmerr.cocci                |  2 +-
- scripts/coccinelle/tests/doublebitand.cocci        |  2 +-
- scripts/coccinelle/tests/doubletest.cocci          |  2 +-
- scripts/coccinelle/tests/odd_ptr_err.cocci         |  2 +-
- 37 files changed, 215 insertions(+), 75 deletions(-)
- create mode 100644 scripts/coccinelle/free/kfreeaddr.cocci
- create mode 100644 scripts/coccinelle/free/pci_free_consistent.cocci
+Regards
+Haojian
