@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3GJOSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:18:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51081 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754147Ab3GJOSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:18:45 -0400
-Date: Wed, 10 Jul 2013 16:18:20 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 06/19] perf ftrace: Add support for --pid option
-Message-ID: <20130710141820.GA5931@krava.brq.redhat.com>
-References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
- <1372230862-15861-7-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372230862-15861-7-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754649Ab3GJOUa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:20:30 -0400
+Received: from smtp26.sms.unimo.it ([155.185.44.26]:36136 "EHLO
+	smtp26.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab3GJOU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:20:29 -0400
+X-Greylist: delayed 2016 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Jul 2013 10:20:29 EDT
+From: Paolo Valente <paolo.valente@unimore.it>
+To: Jamal Hadi Salim <jhs@mojatatu.com>,
+        "David S. Miller" <davem@davemloft.net>, shemminger@vyatta.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, fchecconi@gmail.com,
+        rizzo@iet.unipi.it, David Laight <David.Laight@ACULAB.COM>,
+        Paolo Valente <paolo.valente@unimore.it>
+Subject: [PATCH 0/2]  pkt_sched: sch_qfq: efficiency and codestyle improvements
+Date: Wed, 10 Jul 2013 15:46:07 +0200
+Message-Id: <1373463969-11285-1-git-send-email-paolo.valente@unimore.it>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <20130305.235006.1904081547083683406.davem@davemloft.net>
+References: <20130305.235006.1904081547083683406.davem@davemloft.net>
+UNIMORE-X-SA-Score: -2.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 04:14:09PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+Hi,
+this patchset tries to address the two issues raised by Dave in
+http://marc.info/?l=linux-kernel&m=136254542019113&w=2
+
+The first of these issues has been also raised by
+David Laight:
+http://marc.info/?l=linux-kernel&m=136256446624557&w=2
+
+> Although two topics for possibly resolving later:
 > 
-> The -p (--pid) option enables to trace existing process by its pid.
+> 1) That 1ULL bit mask fix is quite expensive on 32-bit, it would
+>     probably be cheaper to test for that case using a helper function
+>     that nops out on 64-bit.  Although this is not so important.
+> 
+I have tried to find a simple solution, based on the properties of the mask.
+It is in the first patch.
 
-hi,
-I can't get any output from -p for live subcommand:
+> 2) That static inline forward declaration is ugly, better to remove
+>     the inline tag (let the compiler handle it) or move the function
+>     above all the call sites.
+> 
+Done by the second patch.
 
-[jolsa@krava perf]$ pgrep yes
-6443
-[jolsa@krava perf]$ sudo ./perf ftrace live -p `pgrep yes`
+Paolo Valente (2):
+  pkt_sched: sch_qfq: improve efficiency of make_eligible
+  pkt_sched: sch_qfq: remove forward declaration of qfq_update_agg_ts
 
-jirka
+ net/sched/sch_qfq.c | 127 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 63 insertions(+), 64 deletions(-)
+
+-- 
+1.8.1.2
+
