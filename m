@@ -1,17 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573Ab3GJTv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 15:51:59 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:57019 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab3GJTv6 (ORCPT
+	id S1754837Ab3GJTwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 15:52:39 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:55764 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300Ab3GJTwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 15:51:58 -0400
+	Wed, 10 Jul 2013 15:52:38 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Joe Perches <joe@perches.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Olof Johansson <olof@lixom.net>
 Subject: [PATCH] MAINTAINERS: Add Daniel as maintainer for CLOCKSOURCE and CLOCKEVENT Drivers
-Date: Wed, 10 Jul 2013 20:51:54 +0100
-Message-Id: <1373485914-16398-1-git-send-email-john.stultz@linaro.org>
+Date: Wed, 10 Jul 2013 20:52:28 +0100
+Message-Id: <1373485948-16441-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
