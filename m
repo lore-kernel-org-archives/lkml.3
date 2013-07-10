@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab3GJS2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 14:28:19 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:50574 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755089Ab3GJS2R (ORCPT
+	id S1755089Ab3GJS3h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 14:29:37 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:61388 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab3GJS3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 14:28:17 -0400
-Date: Wed, 10 Jul 2013 20:28:15 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-Message-ID: <20130710182815.GA362@x4>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com>
- <20130506095124.GA22041@pd.tnic>
- <CAMuHMdWH9w5fj6HRXi+9QcBJym4dukAFsPVGZVqSSk3yTZJUcA@mail.gmail.com>
- <20130710093642.GC14873@pd.tnic>
+	Wed, 10 Jul 2013 14:29:36 -0400
+Message-ID: <51DDA7FB.1000801@gmail.com>
+Date: Thu, 11 Jul 2013 02:29:15 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130710093642.GC14873@pd.tnic>
+To: rjw@sisk.pl, lenb@kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI: Use early_memremap() instead of early_ioremap()
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.07.10 at 11:36 +0200, Borislav Petkov wrote:
-> On Wed, Jul 10, 2013 at 10:12:46AM +0200, Geert Uytterhoeven wrote:
-> > >> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> > >> index a0ab6d7..c9bfbb0 100644
-> > >> --- a/scripts/Makefile.lib
-> > >> +++ b/scripts/Makefile.lib
-> > >> @@ -313,7 +313,7 @@ cmd_lzo = (cat $(filter-out FORCE,$^) | \
-> > >>
-> > >>  quiet_cmd_lz4 = LZ4     $@
-> > >>  cmd_lz4 = (cat $(filter-out FORCE,$^) | \
-> > >> -     lz4demo -c1 stdin stdout && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
-> > >> +     lz4c -l -c1 stdin stdout && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
-> > >
-> > > You probably want to check for the presence of lz4c on the system and
-> > > bail with an informative message if absent.
-> > 
-> > Yep, x86_64-randconfig
-> > (http://kisskb.ellerman.id.au/kisskb/buildresult/9110794/):
-> > 
-> >   LZ4     arch/x86/boot/compressed/vmlinux.bin.lz4
-> > /bin/sh: lz4c: command not found
-> 
-> Sure, it had to be 2 months and to hit upstream for there still to be no
-> fix. Geez...
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-Well, there's also no hand-holding when lzop is missing for LZO.
-And the error message is clear enough. No?
+The mapping of acpi_tables_addr is obviously ordinary memory, so
+use early_memremap() rather than early_iormeap().
 
-BTW speaking of introductory-level patches, what about the following
-one:
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+---
+ drivers/acpi/osl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Now that lz4 kernel compression is available, add *.lz4 to .gitignore
-
-diff --git a/.gitignore b/.gitignore
-index 3b8b9b3..7e9932e 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -29,6 +29,7 @@ modules.builtin
- *.bz2
- *.lzma
- *.xz
-+*.lz4
- *.lzo
- *.patch
- *.gcno
-
-
+diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+index 6ab2c35..8961e6e 100644
+--- a/drivers/acpi/osl.c
++++ b/drivers/acpi/osl.c
+@@ -644,7 +644,7 @@ void __init acpi_initrd_override(void *data, size_t size)
+ 	memblock_reserve(acpi_tables_addr, all_tables_size);
+ 	arch_reserve_mem_area(acpi_tables_addr, all_tables_size);
+ 
+-	p = early_ioremap(acpi_tables_addr, all_tables_size);
++	p = early_memremap(acpi_tables_addr, all_tables_size);
+ 
+ 	for (no = 0; no < table_nr; no++) {
+ 		memcpy(p + total_offset, early_initrd_files[no].data,
 -- 
-Markus
+1.7.1
