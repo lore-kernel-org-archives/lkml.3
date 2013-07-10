@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab3GJMni (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 08:43:38 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48474 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3GJMnh (ORCPT
+	id S1754446Ab3GJMnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 08:43:52 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:41519 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754345Ab3GJMnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 08:43:37 -0400
-Date: Wed, 10 Jul 2013 14:42:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Subject: Re: timer: lockup in run_timer_softirq()
-Message-ID: <20130710124245.GT25631@dyad.programming.kicks-ass.net>
-References: <51DC902F.3070403@oracle.com>
- <20130709224706.GA13855@redhat.com>
- <51DC9379.9050408@oracle.com>
- <20130709230316.GB13855@redhat.com>
- <51DC983F.2010409@oracle.com>
- <20130710095210.GD17211@twins.programming.kicks-ass.net>
- <1373459254.7458.49.camel@gandalf.local.home>
+	Wed, 10 Jul 2013 08:43:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373459254.7458.49.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20130710122523.GA357@x4>
+References: <20130709.145325.1363244885668360965.davem@davemloft.net>
+	<20130710122523.GA357@x4>
+Date: Wed, 10 Jul 2013 08:43:50 -0400
+Message-ID: <CA+5PVA5AT0OLNi-=x91ks5AbigymE3BDmdoEiiNOeRoGFCFQfg@mail.gmail.com>
+Subject: Re: [GIT] Networking
+From: Josh Boyer <jwboyer@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 08:27:34AM -0400, Steven Rostedt wrote:
-> On Wed, 2013-07-10 at 11:52 +0200, Peter Zijlstra wrote:
-> 
-> > Fun.. :-) we trace __local_bh_enable() and hit a ftrace callback between
-> > telling lockdep we enabled softirqs and actually doing so.
-> > 
-> > I'm just a tad confused by the trace; it says we go:
-> >   lock_is_held()
-> >     check_flags()
-> > 
-> > Looking at perf_tp_event() this would most likely be from:
-> > 
-> >   ctx = rcu_dereference(task->perf_event_ctxp[perf_sw_context]);
-> 
-> Function tracing should not be treated as a normal trace point. It is
-> much more invasive, and there's things that one should be weary about
-> when using it.
+On Wed, Jul 10, 2013 at 8:25 AM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2013.07.09 at 14:53 -0700, David Miller wrote:
+>>
+>> Alexey Brodkin (2):
+>>       ethernet/arc/arc_emac - Add new driver
+>>       arc_emac: fix compile-time errors & warnings on PPC64
+>
+> This driver defaults to y for no reason:
+>
+> +config NET_VENDOR_ARC
+> +       bool "ARC devices"
+> +       default y
 
-Clearly.. yet someone forgot this when merging ced39002 :/
+That's the option to enable the ARC vendor, not the driver.  The
+driver config option is ARC_EMAC.  All of the other ethernet vendors
+also default to y, so I don't think this is out of line.
 
-> > 
-> > Where the lock_is_held() would be from rcu_dereference_check()'s
-> > rcu_read_lock_sched_held(). However, by there we've already passed
-> > rcu_read_lock() which includes rcu_lock_acquire() -> lock_acquire() ->
-> > check_flags(). So it should've triggered there.
-> > 
-> > Ideally we'd not trace __local_bh_enable() at all, seeing as how any RCU usage
-> > in there would be bound to trigger this.
-> 
-> I find it very useful to trace __local_bh_enable(). I also trace RCU
-> calls.
-> 
-> When using function tracing, you need to use
-> rcu_dereference_raw_notrace().
-> 
-> Also, function tracing callbacks should avoid rcu_read_lock(), as that's
-> traced as well. You can use preempt_disable_notrace() for rcu usage.
-
-but but but preempt_disable_notrace() isn't an rcu_read_lock().. You can only
-do that for rcu_sched.
-
-Anyway, I don't see a nice way out of this mess :/ the entire perf core uses
-regular RCU and converting all that is going to me a nasty big patch.
+josh
