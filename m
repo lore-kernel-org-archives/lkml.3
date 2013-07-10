@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab3GJWxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 18:53:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21479 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754110Ab3GJWxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 18:53:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1039,1363158000"; 
-   d="scan'208";a="368099842"
-Message-ID: <51DDE5BA.9020800@intel.com>
-Date: Wed, 10 Jul 2013 15:52:42 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754872Ab3GJW5F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 18:57:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:38271 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab3GJW5E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 18:57:04 -0400
+Date: Wed, 10 Jul 2013 23:57:00 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-fbdev@vger.kernel.org
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] vga16fb: Remove unused variable
+Message-ID: <20130710225659.GA14107@hercules>
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [RFC PATCH 1/5] mm, page_alloc: support multiple pages allocation
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com> <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2013 01:34 AM, Joonsoo Kim wrote:
-> -		if (page)
-> +		do {
-> +			page = buffered_rmqueue(preferred_zone, zone, order,
-> +							gfp_mask, migratetype);
-> +			if (!page)
-> +				break;
-> +
-> +			if (!nr_pages) {
-> +				count++;
-> +				break;
-> +			}
-> +
-> +			pages[count++] = page;
-> +			if (count >= *nr_pages)
-> +				break;
-> +
-> +			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
-> +			if (!zone_watermark_ok(zone, order, mark,
-> +					classzone_idx, alloc_flags))
-> +				break;
-> +		} while (1);
+Fix build warning of unused variable:
 
-I'm really surprised this works as well as it does.  Calling
-buffered_rmqueue() a bunch of times enables/disables interrupts a bunch
-of times, and mucks with the percpu pages lists a whole bunch.
-buffered_rmqueue() is really meant for _single_ pages, not to be called
-a bunch of times in a row.
+drivers/video/vga16fb.c:1268:26: warning: unused variable ‘dev’ [-Wunused-variable]
 
-Why not just do a single rmqueue_bulk() call?
+Signed-off-by: Luis Henriques<luis.henriques@canonical.com>
+---
+ drivers/video/vga16fb.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+index 830ded4..2827333 100644
+--- a/drivers/video/vga16fb.c
++++ b/drivers/video/vga16fb.c
+@@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+ 
+ static void vga16fb_destroy(struct fb_info *info)
+ {
+-	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
+ 	iounmap(info->screen_base);
+ 	fb_dealloc_cmap(&info->cmap);
+ 	/* XXX unshare VGA regions */
+-- 
+1.8.1.2
