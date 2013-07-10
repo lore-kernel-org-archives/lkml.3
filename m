@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab3GJK1S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:27:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51473 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430Ab3GJK1Q convert rfc822-to-8bit (ORCPT
+	id S1754119Ab3GJK2K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:28:10 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:48677 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753460Ab3GJK2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:27:16 -0400
-Subject: Re: [PATCH 2/8] KVM: PPC: reserve a capability and ioctl numbers for realmode VFIO
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=US-ASCII
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <51DC9E32.8040109@ozlabs.ru>
-Date: Wed, 10 Jul 2013 12:27:12 +0200
-Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <E8E3A724-7045-4B8F-BE29-29BAB41D68C2@suse.de>
-References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru> <1372309356-28320-3-git-send-email-aik@ozlabs.ru> <51DC2DDA.6040408@suse.de> <51DC9E32.8040109@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-X-Mailer: Apple Mail (2.1278)
+	Wed, 10 Jul 2013 06:28:07 -0400
+Date: Wed, 10 Jul 2013 11:28:03 +0100
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Adam Lee <adam8157@gmail.com>
+Cc: linux-bluetooth@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Wen-chien Jesse Sung <jesse.sung@canonical.com>,
+        AceLan Kao <acelan.kao@canonical.com>,
+        Tedd Ho-Jeong An <tedd.an@intel.com>,
+        Anthony Wong <anthony.wong@canonical.com>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] btusb: fix wrong use of PTR_ERR()
+Message-ID: <20130710102803.GA2952@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Adam Lee <adam8157@gmail.com>, linux-bluetooth@vger.kernel.org,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Wen-chien Jesse Sung <jesse.sung@canonical.com>,
+	AceLan Kao <acelan.kao@canonical.com>,
+	Tedd Ho-Jeong An <tedd.an@intel.com>,
+	Anthony Wong <anthony.wong@canonical.com>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	open list <linux-kernel@vger.kernel.org>
+References: <20130709153213.GC1772@joana>
+ <20130710020212.GA16015@adam-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130710020212.GA16015@adam-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Adam,
 
-On 10.07.2013, at 01:35, Alexey Kardashevskiy wrote:
+* Adam Lee <adam8157@gmail.com> [2013-07-10 10:02:12 +0800]:
 
-> On 07/10/2013 01:35 AM, Alexander Graf wrote:
->> On 06/27/2013 07:02 AM, Alexey Kardashevskiy wrote:
->>> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
->>> ---
->>>  include/uapi/linux/kvm.h |    2 ++
->>>  1 file changed, 2 insertions(+)
->>> 
->>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
->>> index 970b1f5..0865c01 100644
->>> --- a/include/uapi/linux/kvm.h
->>> +++ b/include/uapi/linux/kvm.h
->>> @@ -667,6 +667,7 @@ struct kvm_ppc_smmu_info {
->>>  #define KVM_CAP_PPC_RTAS 91
->>>  #define KVM_CAP_IRQ_XICS 92
->>>  #define KVM_CAP_SPAPR_MULTITCE 93
->>> +#define KVM_CAP_SPAPR_TCE_IOMMU 94
->>> 
->>>  #ifdef KVM_CAP_IRQ_ROUTING
->>> 
->>> @@ -923,6 +924,7 @@ struct kvm_s390_ucas_mapping {
->>>  /* Available with KVM_CAP_PPC_ALLOC_HTAB */
->>>  #define KVM_PPC_ALLOCATE_HTAB      _IOWR(KVMIO, 0xa7, __u32)
->>>  #define KVM_CREATE_SPAPR_TCE      _IOW(KVMIO,  0xa8, struct
->>> kvm_create_spapr_tce)
->>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, struct
->>> kvm_create_spapr_tce_iommu)
->> 
->> Please order them by number.
+> PTR_ERR() returns a signed long type value which is limited by IS_ERR(),
+> it must be a negative number whose range is [-MAX_ERRNO, 0).
 > 
-> Oh. Again :( We have had this discussion with Scott Wood here already.
-> Where _exactly_ do you want me to put it?
+> The bug here returns negative numbers as error codes, then check it by
+> "if (ret < 0)", but -PTR_ERR() is actually positive. The wrong use here
+> leads to failure as below, even panic.
+> 
+> [   12.958920] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   14.961765] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   16.964688] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   20.954501] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   22.957358] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   30.948922] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   32.951780] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   40.943359] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   42.946219] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   50.937812] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   52.940670] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   60.932236] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   62.935092] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   70.926688] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   72.929545] Bluetooth: hci0 command 0xfc8e tx timeout
+> [   80.921111] Bluetooth: hci0 sending Intel patch command (0xfc8e) failed (-110)
+> [   82.923969] Bluetooth: hci0 command 0xfc2f tx timeout
+> [   90.915542] Bluetooth: hci0 sending Intel patch command (0xfc2f) failed (-110)
+> [   92.918406] Bluetooth: hci0 command 0xfc11 tx timeout
+> [  100.909955] Bluetooth: hci0 sending Intel patch command (0xfc11) failed (-110)
+> [  102.912858] Bluetooth: hci0 command 0xfc60 tx timeout
+> [  110.904394] Bluetooth: hci0 sending Intel patch command (0xfc60) failed (-110)
+> [  112.907293] Bluetooth: hci0 command 0xfc11 tx timeout
+> [  120.898831] Bluetooth: hci0 exiting Intel manufacturer mode failed (-110)
+> [  120.904757] bluetoothd[1030]: segfault at 4 ip 00007f8b2eb55236 sp 00007fff53ff6920 error 4 in bluetoothd[7f8b2eaff000+cb000]
+> 
+> Signed-off-by: Adam Lee <adam.lee@canonical.com>
+> ---
+>  drivers/bluetooth/btusb.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
 
-8 lines further down. With a comment saying when it's available. Also why is it af, not ad?
+Patch has been applied to bluetooth.git. Thanks.
 
-> Many sections, not really ordered. Thank you.
-
-They should all be ordered inside of their own categories.
-
-
-Alex
-
+	Gustavo
