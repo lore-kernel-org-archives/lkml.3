@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab3GJLQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:16:47 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:35207 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754323Ab3GJLQo (ORCPT
+	id S1754543Ab3GJLTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:19:22 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:47227 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3GJLTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:16:44 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Airlie <airlied@linux.ie>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 3/3] drm/edid: Make edid_load() return a void *
-Date: Wed, 10 Jul 2013 13:16:36 +0200
-Message-Id: <1373454996-21706-3-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373454996-21706-1-git-send-email-geert@linux-m68k.org>
-References: <1373454996-21706-1-git-send-email-geert@linux-m68k.org>
+	Wed, 10 Jul 2013 07:19:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130710111128.GB15989@e103687>
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+	<1373385338-12983-2-git-send-email-morten.rasmussen@arm.com>
+	<51DCC287.40808@linux.intel.com>
+	<20130710111128.GB15989@e103687>
+Date: Wed, 10 Jul 2013 13:19:18 +0200
+Message-ID: <CAKfTPtDAHBT1==WGL+7ULAB0VR1Pv5a6aPrgGPuQk6HE4hXTFw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 1/9] sched: Introduce power scheduler
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always use "void *" for arbitrary memory buffers, as this allows to drop
-casts in assignments.
+On 10 July 2013 13:11, Morten Rasmussen <morten.rasmussen@arm.com> wrote:
+> On Wed, Jul 10, 2013 at 03:10:15AM +0100, Arjan van de Ven wrote:
+>> On 7/9/2013 8:55 AM, Morten Rasmussen wrote:
+>> > +   mod_delayed_work_on(schedule_cpu(), system_wq, &dwork,
+>> > +                           msecs_to_jiffies(INTERVAL));
+>>
+>> so thinking about this more, this really really should not be a work queue.
+>> a work queue will cause a large number of context switches for no reason
+>> (on Intel and AMD you can switch P state from interrupt context, and I'm pretty sure
+>> that holds for many ARM as well)
+>
+> Agree. I should have made it clear this is only a temporary solution. I
+> would prefer to tie the power scheduler to the existing scheduler tick
+> instead so we don't wake up cpus unnecessarily. nohz may be able handle
+> that for us. Also, currently the power scheduler updates all cpus.
+> Going forward this would change to per cpu updates and partial updates
+> of the global view to improve scalability.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/gpu/drm/drm_edid_load.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+For the packing tasks patches, we are using the periodic load balance
+sequence to update the activity like it is done for the cpu_power. I
+have planned to update the packing patches to see how it can cooperate
+with Morten patches as it has similar needs.
 
-diff --git a/drivers/gpu/drm/drm_edid_load.c b/drivers/gpu/drm/drm_edid_load.c
-index 9be3467..d1daf34 100644
---- a/drivers/gpu/drm/drm_edid_load.c
-+++ b/drivers/gpu/drm/drm_edid_load.c
-@@ -133,7 +133,7 @@ static u8 generic_edid[GENERIC_EDIDS][128] = {
- 	},
- };
- 
--static u8 *edid_load(struct drm_connector *connector, char *name,
-+static void *edid_load(struct drm_connector *connector, char *name,
- 			const char *connector_name)
- {
- 	const struct firmware *fw;
-@@ -263,7 +263,7 @@ int drm_load_edid_firmware(struct drm_connector *connector)
- 	if (*last == '\n')
- 		*last = '\0';
- 
--	edid = (struct edid *) edid_load(connector, edidname, connector_name);
-+	edid = edid_load(connector, edidname, connector_name);
- 	if (IS_ERR_OR_NULL(edid))
- 		return 0;
- 
--- 
-1.7.9.5
-
+>
+>>
+>> and in addition, it causes some really nasty cases, especially around real time tasks.
+>> Your workqueue will schedule a kernel thread, which will run
+>> BEHIND real time tasks, and such real time task will then never be able to start running at a higher performance.
+>>
+>> (and with the delta between lowest and highest performance sometimes being 10x or more,
+>> the real time task will be running SLOW... quite possible longer than several milliseconds)
+>>
+>> and all for no good reason; a normal timer running in irq context would be much better for this kind of thing!
+>>
+>>
+>
