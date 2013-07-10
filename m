@@ -1,47 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab3GJWOf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 18:14:35 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42034 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447Ab3GJWOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 18:14:34 -0400
-Date: Thu, 11 Jul 2013 00:14:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Jiri Kosina <jkosina@suse.cz>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
- patching
-Message-ID: <20130710221417.GD9140@pd.tnic>
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
- <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz>
- <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>
- <51DDD3E9.6090601@linux.intel.com>
- <20130710214848.GB14879@pd.tnic>
- <51DDD894.3050408@linux.intel.com>
+	id S1754665Ab3GJWSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 18:18:15 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:33127 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab3GJWSO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 18:18:14 -0400
+Date: Wed, 10 Jul 2013 15:18:12 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, oliver+list@schinagl.nl, khali@linux-fr.org
+Subject: Re: [PATCH 7/6] driver core: add default groups to struct class
+Message-ID: <20130710221812.GA22366@roeck-us.net>
+References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
+ <20130710220531.GA4210@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51DDD894.3050408@linux.intel.com>
+In-Reply-To: <20130710220531.GA4210@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 02:56:36PM -0700, H. Peter Anvin wrote:
-> No, the idea is that the affected CPU will simply execute int3 -> iret
-> ad nauseam until the first byte is repatched, at that point execution
-> will resume normally.
+On Wed, Jul 10, 2013 at 03:05:31PM -0700, Greg Kroah-Hartman wrote:
+> 
+> We should be using groups, not attribute lists, for classes to allow
+> subdirectories, and soon, binary files.  Groups are just more flexible
+> overall, so add them.
+> 
+> The dev_attrs list will go away after all in-kernel users are converted
+> to use dev_groups.
+> 
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Ok, that sounds simple enough. I just hope we don't unearth some silly
-cross-modifying code snafus in some CPUs with it. :-)
+Nice one ... that solves my problem.
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks!
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Guenter
+
+> ---
+> Forgot this one in the series, it adds support to classes for groups, so
+> that we can handle binary attributes properly for them as well.
+> 
+>  drivers/base/core.c    |    8 +++++++-
+>  include/linux/device.h |    4 +++-
+>  2 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -528,9 +528,12 @@ static int device_add_attrs(struct devic
+>  	int error;
+>  
+>  	if (class) {
+> -		error = device_add_attributes(dev, class->dev_attrs);
+> +		error = device_add_groups(dev, class->dev_groups);
+>  		if (error)
+>  			return error;
+> +		error = device_add_attributes(dev, class->dev_attrs);
+> +		if (error)
+> +			goto err_remove_class_groups;
+>  		error = device_add_bin_attributes(dev, class->dev_bin_attrs);
+>  		if (error)
+>  			goto err_remove_class_attrs;
+> @@ -563,6 +566,9 @@ static int device_add_attrs(struct devic
+>   err_remove_class_attrs:
+>  	if (class)
+>  		device_remove_attributes(dev, class->dev_attrs);
+> + err_remove_class_groups:
+> +	if (class)
+> +		device_remove_groups(dev, class->dev_groups);
+>  
+>  	return error;
+>  }
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -313,6 +313,7 @@ int subsys_virtual_register(struct bus_t
+>   * @name:	Name of the class.
+>   * @owner:	The module owner.
+>   * @class_attrs: Default attributes of this class.
+> + * @dev_groups:	Default attributes of the devices that belong to the class.
+>   * @dev_attrs:	Default attributes of the devices belong to the class.
+>   * @dev_bin_attrs: Default binary attributes of the devices belong to the class.
+>   * @dev_kobj:	The kobject that represents this class and links it into the hierarchy.
+> @@ -342,7 +343,8 @@ struct class {
+>  	struct module		*owner;
+>  
+>  	struct class_attribute		*class_attrs;
+> -	struct device_attribute		*dev_attrs;
+> +	struct device_attribute		*dev_attrs;	/* use dev_groups instead */
+> +	const struct attribute_group	**dev_groups;
+>  	struct bin_attribute		*dev_bin_attrs;
+>  	struct kobject			*dev_kobj;
+>  
+> 
