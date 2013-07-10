@@ -1,71 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab3GJKm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:42:26 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:45776 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754357Ab3GJKmX (ORCPT
+	id S1754405Ab3GJKm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:42:29 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:45256 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360Ab3GJKm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:42:23 -0400
-Date: Wed, 10 Jul 2013 12:40:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        Andrew Jones <drjones@redhat.com>, mingo@redhat.com,
-        ouyang@cs.pitt.edu, habanero@linux.vnet.ibm.com, jeremy@goop.org,
-        x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
-        pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        xen-devel@lists.xensource.com, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
-        chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-Message-ID: <20130710104047.GP25631@dyad.programming.kicks-ass.net>
-References: <20130601192125.5966.35563.sendpatchset@codeblue>
- <1372171802.3804.30.camel@oc2024037011.ibm.com>
- <51CAAA26.4090204@linux.vnet.ibm.com>
- <20130626113744.GA6300@hawk.usersys.redhat.com>
- <20130626125240.GY18508@redhat.com>
- <51CAEF45.3010203@linux.vnet.ibm.com>
- <20130626161130.GB18152@redhat.com>
- <51CB2AD9.5060508@linux.vnet.ibm.com>
- <51DBD3C2.2040807@linux.vnet.ibm.com>
- <20130710103325.GP24941@redhat.com>
+	Wed, 10 Jul 2013 06:42:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130710103325.GP24941@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAOiN93=Nx77RkbNuEJMV617MjV5+GmorF0G3vyLy1SwQcuCs+g@mail.gmail.com>
+References: <CAOiN93mGTu9w9rVNCrbbH1sccXY9VJhaCmg+dS7Rk9mMgKHBaA@mail.gmail.com>
+	<CAOiN93=Nx77RkbNuEJMV617MjV5+GmorF0G3vyLy1SwQcuCs+g@mail.gmail.com>
+Date: Wed, 10 Jul 2013 19:42:25 +0900
+Message-ID: <CAOiN93nH9fyHoz4yrZmJ-OKCy6ogdt5bYartXCBgP5eHMUBPdw@mail.gmail.com>
+Subject: Re: Seg fault occurs when running statically compiled binary from
+ kernel using call_usermodehelper
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-arm@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        Ashish Sangwan <a.sangwan@samsung.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 01:33:25PM +0300, Gleb Natapov wrote:
+Any heads up on this?
 
-Here's an idea, trim the damn email ;-) -- not only directed at gleb.
+or could someone just advice what can we do to debug this?
 
-> > Ingo, Gleb,
-> > 
-> > From the results perspective, Andrew Theurer, Vinod's test results are
-> > pro-pvspinlock.
-> > Could you please help me to know what will make it a mergeable
-> > candidate?.
-> > 
-> I need to spend more time reviewing it :) The problem with PV interfaces
-> is that they are easy to add but hard to get rid of if better solution
-> (HW or otherwise) appears.
+The ret_from_fork currently looks like following:
+/*
+ * This is how we return from a fork.
+ */
+ENTRY(ret_from_fork)
+        bl      schedule_tail
+        cmp     r5, #0
+        movne   r0, r4
+        adrne   lr, BSYM(1f)
+        movne   pc, r5
+1:      get_thread_info tsk
+        b       ret_slow_syscall
+ENDPROC(ret_from_fork)
 
-How so? Just make sure the registration for the PV interface is optional; that
-is, allow it to fail. A guest that fails the PV setup will either have to try
-another PV interface or fall back to 'native'.
+Is this a real issue? Because we are getting this just for static binaries.
 
-> > I agree that Jiannan's Preemptable Lock idea is promising and we could
-> > evaluate that  approach, and make the best one get into kernel and also
-> > will carry on discussion with Jiannan to improve that patch.
-> That would be great. The work is stalled from what I can tell.
-
-I absolutely hated that stuff because it wrecked the native code.
+On Mon, Jul 8, 2013 at 10:46 AM, Ashish Sangwan
+<ashishsangwan2@gmail.com> wrote:
+> Forget to mention, we are using ARM
+>
+> On Mon, Jul 8, 2013 at 10:45 AM, Ashish Sangwan
+> <ashishsangwan2@gmail.com> wrote:
+>> On kernel version 3.8.13, when we try to execute a statically compiled
+>> binary from kernel, it is giving segfault:
+>>
+>> insmod /mnt/module2.ko
+>> [   35.560000] sample.static: unhandled page fault (11) at 0x00000000,
+>> code 0x80000007
+>> [   36.440000] Pid: 257, comm:        sample.static
+>> [   36.444000] CPU: 3    Tainted: G        W  O  (3.8.13+ #35)
+>> [   36.448000] PC is at 0x0
+>> [   36.452000] LR is at 0xa420
+>> [   36.456000] pc : [<00000000>]    lr : [<0000a420>]    psr: 60000030
+>> [   36.456000] sp : beb30d70  ip : 00000004  fp : 00000000
+>> [   36.464000] r10: 0000a004  r9 : 0000a0a4  r8 : 00000001
+>> [   36.472000] r7 : 00000001  r6 : 0008be5c  r5 : 00000000  r4 : 0008ce80
+>> [   36.476000] r3 : 00000001  r2 : 00000001  r1 : 00000000  r0 : 00000000
+>> [   36.484000] Flags: nZCv  IRQs on  FIQs on  Mode USER_32  ISA Thumb
+>> Segment user
+>> [   36.492000] Control: 10c53c7d  Table: 7b1f806a  DAC: 00000015
+>> [   36.496000] Backtrace:
+>> [   36.500000] [<c00171f8>] (dump_backtrace+0x0/0x11c) from
+>> [<c03e8a54>] (dump_stack+0x20/0x24)
+>> [   36.508000]  r6:e514dd80 r5:00000000 r4:e5175fb0 r3:271ae511
+>> [   36.516000] [<c03e8a34>] (dump_stack+0x0/0x24) from [<c0014174>]
+>> (show_regs+0x58/0x5c)
+>> [   36.524000] [<c001411c>] (show_regs+0x0/0x5c) from [<c001794c>]
+>> (show_info+0xe0/0x14c)
+>> [   36.532000]  r4:00000000 r3:00000000
+>> [   36.532000] [<c001786c>] (show_info+0x0/0x14c) from [<c001dfb4>]
+>> (__do_user_fault+0x78/0xc8)
+>> [   36.540000]  r7:80000007 r6:0000000b r5:00000000 r4:e514dd80
+>> [   36.548000] [<c001df3c>] (__do_user_fault+0x0/0xc8) from
+>> [<c03f4574>] (do_page_fault+0x360/0x3d4)
+>> [   36.556000] [<c03f4214>] (do_page_fault+0x0/0x3d4) from
+>> [<c0008470>] (do_PrefetchAbort+0x44/0xa8)
+>> [   36.564000] [<c000842c>] (do_PrefetchAbort+0x0/0xa8) from
+>> [<c03f2bbc>] (ret_from_exception+0x0/0x10)
+>> [   36.572000] Exception stack(0xe5175fb0 to 0xe5175ff8)
+>> [   36.960000] do_init_module: 'module2'->init suspiciously returned
+>> 11, it should follow 0/-E convention
+>> [   36.960000] do_init_module: loading module anyway...
+>> [   36.964000] Backtrace:
+>> [   36.968000] [<c00171f8>] (dump_backtrace+0x0/0x11c) from
+>> [<c03e8a54>] (dump_stack+0x20/0x24)
+>> [   36.972000]  r6:bf000090 r5:bf00009c r4:e51d7f48 r3:00000000
+>> [   36.980000] [<c03e8a34>] (dump_stack+0x0/0x24) from [<c008ae88>]
+>> (load_module+0x1a90/0x1eb4)
+>> [   36.984000] [<c00893f8>] (load_module+0x0/0x1eb4) from [<c008b3b0>]
+>> (sys_init_module+0xe8/0xf8)
+>> [   36.988000] [<c008b2c8>] (sys_init_module+0x0/0xf8) from
+>> [<c0012dc0>] (ret_fast_syscall+0x0/0x48)
+>> [   36.992000]  r6:bea51a14 r5:bea51b7c r4:00006ee4
+>> [   36.996000] module2 mod ld
+>>
+>> module2.c =>
+>> #include <linux/module.h>
+>> #include <linux/init.h>
+>> #include <linux/kmod.h>
+>> MODULE_LICENSE( "GPL" );
+>> static int test( void )
+>> {
+>>   char *argv[] = { "/mnt/sample.static", NULL };
+>>   static char *envp[] = {
+>>         "HOME=/",
+>>         "TERM=linux",
+>>         "PATH=/sbin:/bin:/usr/sbin:/usr/bin", NULL };
+>>   return call_usermodehelper(argv[0], argv, envp, UMH_WAIT_PROC );
+>> }
+>> static int __init mod_entry_func( void )
+>> {
+>>   return test();
+>> }
+>>
+>> static void __exit mod_exit_func( void )
+>> {
+>>   return;
+>> }
+>> module_init( mod_entry_func );
+>> module_exit( mod_exit_func );
+>>
+>>
+>> sample.static is a simple "Hello_world" program.
+>>
+>> However, there is no problem in executing dynamically compiled binaries.
+>>
+>> When we revert commit 9fff2fa0db911b0b75ec1f9bec72460c0a676ef5 (arm:
+>> switch to saner kernel_execve() semantics), there is no problem.
+>>
+>> OR
+>>
+>> for kernel 3.8.13 (which is just a plain revert when arch specific
+>> kernel_execve was present), then also no problem =>
+>>
+>> diff --git a/kernel/kmod.c b/kernel/kmod.c
+>> index 0023a87..9cf6e15 100644
+>> --- a/kernel/kmod.c
+>> +++ b/kernel/kmod.c
+>> @@ -184,6 +184,10 @@ static int ____call_usermodehelper(void *data)
+>>         struct subprocess_info *sub_info = data;
+>>         struct cred *new;
+>>         int retval;
+>> +#ifdef ARM
+>> +       struct pt_regs regs;
+>> +       struct pt_regs *curr_ptr;
+>> +#endif
+>>         spin_lock_irq(&current->sighand->siglock);
+>>         flush_signal_handlers(current, 1);
+>> @@ -222,6 +226,36 @@ static int ____call_usermodehelper(void *data)
+>>         retval = do_execve(sub_info->path,
+>>                            (const char __user *const __user *)sub_info->argv,
+>>                            (const char __user *const __user *)sub_info->envp);
+>> +
+>> +#ifdef ARM
+>> +       if (retval)
+>> +               goto fail;
+>> +       curr_ptr = current_pt_regs();
+>> +       memcpy(&regs, curr_ptr, sizeof(struct pt_regs));
+>> +       /*
+>> +        * Save argc to the register structure for userspace.
+>> +        */
+>> +       regs.ARM_r0 = retval;
+>> +
+>> +       /*
+>> +        * We were successful.  We won't be returning to our caller, but
+>> +        * instead to user space by manipulating the kernel stack.
+>> +        */
+>> +       asm(    "add    r0, %0, %1\n\t"
+>> +               "mov    r1, %2\n\t"
+>> +               "mov    r2, %3\n\t"
+>> +               "bl     memmove\n\t"    /* copy regs to top of stack */
+>> +               "mov    r8, #0\n\t"     /* not a syscall */
+>> +               "mov    r9, %0\n\t"     /* thread structure */
+>> +               "mov    sp, r0\n\t"     /* reposition stack pointer */
+>> +               "b      ret_to_user"
+>> +               :
+>> +               : "r" (current_thread_info()),
+>> +                 "Ir" (THREAD_START_SP - sizeof(regs)),
+>> +                 "r" (&regs),
+>> +                 "Ir" (sizeof(regs))
+>> +               : "r0", "r1", "r2", "r3", "r8", "r9", "ip", "lr", "memory");
+>> +#endif
+>>         if (!retval)
+>>                 return 0;
+>> --
+>>
+>> Please suggest a proper solution.
+>>
+>> Regards,
+>> Ashish
