@@ -1,248 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab3GJONc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:13:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11864 "EHLO mga02.intel.com"
+	id S1754629Ab3GJOPI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:15:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48011 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754465Ab3GJONa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:13:30 -0400
+	id S1751434Ab3GJOPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:15:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,1036,1363158000"; 
-   d="scan'208";a="363150842"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH net-next v3 1/3] net: rename include/net/ll_poll.h to
- include/net/busy_poll.h
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Jonathan Corbet <corbet@lwn.net>, e1000-devel@lists.sourceforge.net,
-        Eilon Greenstein <eilong@broadcom.com>,
-        Amir Vadai <amirv@mellanox.com>, Eric Dumazet <erdnetdev@gmail.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 10 Jul 2013 17:13:17 +0300
-Message-ID: <20130710141316.15596.61446.stgit@ladj378.jer.intel.com>
-In-Reply-To: <20130710141307.15596.47242.stgit@ladj378.jer.intel.com>
-References: <20130710141307.15596.47242.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+   d="scan'208";a="367818855"
+Date: Wed, 10 Jul 2013 17:20:15 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-designware: configure SDA hold time from ACPI
+Message-ID: <20130710142015.GD4898@intel.com>
+References: <1372845160-32625-1-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372845160-32625-1-git-send-email-mika.westerberg@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename the file and correct all the places where it is included.
+On Wed, Jul 03, 2013 at 12:52:40PM +0300, Mika Westerberg wrote:
+> Some Intel LPSS I2C devices make the SDA hold time parameter available via
+> SSCN (standard mode) and FMCN (fast mode) ACPI methods. If we find that
+> such method exist, we evaluate it and pass the returned SDA hold value to
+> the i2c-designware core analogous to Device Tree.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
-
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    2 
- drivers/net/ethernet/intel/ixgbe/ixgbe.h        |    2 
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c  |    2 
- drivers/net/ethernet/mellanox/mlx4/en_rx.c      |    2 
- fs/select.c                                     |    2 
- include/net/busy_poll.h                         |  183 +++++++++++++++++++++++
- include/net/ll_poll.h                           |  183 -----------------------
- net/core/datagram.c                             |    2 
- net/core/sock.c                                 |    2 
- net/core/sysctl_net_core.c                      |    2 
- net/ipv4/tcp.c                                  |    2 
- net/ipv4/tcp_ipv4.c                             |    2 
- net/ipv4/udp.c                                  |    2 
- net/ipv6/tcp_ipv6.c                             |    2 
- net/ipv6/udp.c                                  |    2 
- net/socket.c                                    |    2 
- 16 files changed, 197 insertions(+), 197 deletions(-)
- create mode 100644 include/net/busy_poll.h
- delete mode 100644 include/net/ll_poll.h
-
-diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-index ec3aa1d..05b6b4e 100644
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c
-@@ -24,7 +24,7 @@
- #include <net/tcp.h>
- #include <net/ipv6.h>
- #include <net/ip6_checksum.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- #include <linux/prefetch.h>
- #include "bnx2x_cmn.h"
- #include "bnx2x_init.h"
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe.h b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-index fb098b4..7be725c 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe.h
-@@ -52,7 +52,7 @@
- #include <linux/dca.h>
- #endif
- 
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- #ifdef CONFIG_NET_LL_RX_POLL
- #define LL_EXTENDED_STATS
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-index caf2047..0fb2438 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -38,7 +38,7 @@
- #include <linux/slab.h>
- #include <linux/hash.h>
- #include <net/ip.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- #include <linux/mlx4/driver.h>
- #include <linux/mlx4/device.h>
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_rx.c b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-index 76997b9..90746d3 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_rx.c
-@@ -31,7 +31,7 @@
-  *
-  */
- 
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- #include <linux/mlx4/cq.h>
- #include <linux/slab.h>
- #include <linux/mlx4/qp.h>
-diff --git a/fs/select.c b/fs/select.c
-index 50a804b..ebd2d58 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -27,7 +27,7 @@
- #include <linux/rcupdate.h>
- #include <linux/hrtimer.h>
- #include <linux/sched/rt.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- #include <asm/uaccess.h>
- 
-diff --git a/include/net/ll_poll.h b/include/net/busy_poll.h
-similarity index 100%
-rename from include/net/ll_poll.h
-rename to include/net/busy_poll.h
-diff --git a/net/core/datagram.c b/net/core/datagram.c
-index 6e9ab31..8ab48cd 100644
---- a/net/core/datagram.c
-+++ b/net/core/datagram.c
-@@ -56,7 +56,7 @@
- #include <net/sock.h>
- #include <net/tcp_states.h>
- #include <trace/events/skb.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- /*
-  *	Is a socket 'connection oriented' ?
-diff --git a/net/core/sock.c b/net/core/sock.c
-index ab06b71..9bfe83f 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -139,7 +139,7 @@
- #include <net/tcp.h>
- #endif
- 
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- static DEFINE_MUTEX(proto_list_mutex);
- static LIST_HEAD(proto_list);
-diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index afc677e..1a298cb 100644
---- a/net/core/sysctl_net_core.c
-+++ b/net/core/sysctl_net_core.c
-@@ -19,7 +19,7 @@
- #include <net/ip.h>
- #include <net/sock.h>
- #include <net/net_ratelimit.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- static int one = 1;
- 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 15cbfa9..5423223 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -279,7 +279,7 @@
- 
- #include <asm/uaccess.h>
- #include <asm/ioctls.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- int sysctl_tcp_fin_timeout __read_mostly = TCP_FIN_TIMEOUT;
- 
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 35675e4..3a261b4 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -75,7 +75,7 @@
- #include <net/netdma.h>
- #include <net/secure_seq.h>
- #include <net/tcp_memcontrol.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- #include <linux/inet.h>
- #include <linux/ipv6.h>
-diff --git a/net/ipv4/udp.c b/net/ipv4/udp.c
-index 6b270e5..bcc0ff2 100644
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -109,7 +109,7 @@
- #include <trace/events/udp.h>
- #include <linux/static_key.h>
- #include <trace/events/skb.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- #include "udp_impl.h"
- 
- struct udp_table udp_table __read_mostly;
-diff --git a/net/ipv6/tcp_ipv6.c b/net/ipv6/tcp_ipv6.c
-index 5cffa5c..345bd92 100644
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -63,7 +63,7 @@
- #include <net/inet_common.h>
- #include <net/secure_seq.h>
- #include <net/tcp_memcontrol.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- #include <asm/uaccess.h>
- 
-diff --git a/net/ipv6/udp.c b/net/ipv6/udp.c
-index b6f3143..40e7203 100644
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -46,7 +46,7 @@
- #include <net/ip6_checksum.h>
- #include <net/xfrm.h>
- #include <net/inet6_hashtables.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- #include <linux/proc_fs.h>
- #include <linux/seq_file.h>
-diff --git a/net/socket.c b/net/socket.c
-index 45afa64..6a3e9a3 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -104,7 +104,7 @@
- #include <linux/route.h>
- #include <linux/sockios.h>
- #include <linux/atalk.h>
--#include <net/ll_poll.h>
-+#include <net/busy_poll.h>
- 
- #ifdef CONFIG_NET_LL_RX_POLL
- unsigned int sysctl_net_ll_read __read_mostly;
-
+Please disregard this patch. I'll send a new one that combines both setting of
+SDA hold time and *CNT values from ACPI.
