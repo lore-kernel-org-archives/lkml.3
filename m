@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab3GJGDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 02:03:35 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:59500 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3GJGDd (ORCPT
+	id S1752447Ab3GJGEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 02:04:16 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:37472 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab3GJGEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 02:03:33 -0400
-Message-ID: <51DCF92F.6090409@openvz.org>
-Date: Wed, 10 Jul 2013 10:03:27 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130119 Firefox/10.0.11esrpre Iceape/2.7.12
+	Wed, 10 Jul 2013 02:04:14 -0400
+Date: Wed, 10 Jul 2013 08:04:14 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, linux-kernel@vger.kernel.org,
+        Mika Kuoppala <mika.kuoppala@intel.com>
+Subject: Re: [Intel-gfx] [PATCH v2] Partially revert "drm/i915:
+ unconditionally use mt forcewake on hsw/ivb"
+Message-ID: <20130710060414.GF18285@phenom.ffwll.local>
+Mail-Followup-To: Guenter Roeck <linux@roeck-us.net>,
+	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+	David Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+	Mika Kuoppala <mika.kuoppala@intel.com>
+References: <1373410831-1347-1-git-send-email-linux@roeck-us.net>
 MIME-Version: 1.0
-To: Sha Zhengju <handai.szj@gmail.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Vivek Goyal <vgoyal@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        "devel@openvz.org" <devel@openvz.org>,
-        "cgroups@vger.kernel.org" <cgroups@vger.kernel.org>,
-        Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH RFC] fsio: filesystem io accounting cgroup
-References: <20130708095928.14058.26736.stgit@zurg> <CAFj3OHVtVGDnWHqNBRZH+LNtzDrbk8PO0fKLwFscZAWCJRW9oA@mail.gmail.com>
-In-Reply-To: <CAFj3OHVtVGDnWHqNBRZH+LNtzDrbk8PO0fKLwFscZAWCJRW9oA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373410831-1347-1-git-send-email-linux@roeck-us.net>
+X-Operating-System: Linux phenom 3.10.0-rc5+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sha Zhengju wrote:
-> Hi,
->
-> On Mon, Jul 8, 2013 at 5:59 PM, Konstantin Khlebnikov
-> <khlebnikov@openvz.org>  wrote:
->> >  This is proof of concept, just basic functionality for IO controller.
->> >  This cgroup will control filesystem usage on vfs layer, it's main goal is
->> >  bandwidth control. It's supposed to be much more lightweight than memcg/blkio.
->> >
->> >  This patch shows easy way for accounting pages in dirty/writeback state in
->> >  per-inode manner. This is easier that doing this in memcg in per-page manner.
->> >  Main idea is in keeping on each inode pointer (->i_fsio) to cgroup which owns
->> >  dirty data in that inode. It's settled by fsio_account_page_dirtied() when
->> >  first dirty tag appears in the inode. Relying to mapping tags gives us locking
->> >  for free, this patch doesn't add any new locks to hot paths.
-> While referring to dirty/writeback numbers, what I care about is 'how
-> many dirties in how many memory' and later may use the proportion to
-> decide throttling or something else. So if you are talking about nr of
-> dirty pages without memcg's amount of memory, I don't see the meaning
-> of a single number.
-
-I'm planning to add some thresholds or limits to fsio cgroup -- how many dirty pages
-this cgroup may have. memcg is completely different thing: memcg controls data storage
-while fsio controls data flows. Memcg already handles too much, I just don't want add
-yet another unrelated stuff into it. Otherwise we will end with one single controller
-which would handle all possible resources, because they all related in some cases.
-
->
-> What's more, counting dirty/writeback stats in per-node manner can
-> bring inaccuracy in some situations: considering two tasks from
-> different fsio cgroups are dirtying one file concurrently but may only
-> be counting in one fsio stats, or a task is moved to another fsio
-> cgroup after dirtrying one file. As talking about task moving, it is
-> the root cause of adding memcg locks in page stat routines, since
-> there's a race window between 'modify cgroup owner' and 'update stats
-> using cgroup pointer'. But if you are going to handle task move or
-> take care of ->i_fsio for better accuracy in future, I'm afraid you
-> will also need some synchronization mechanism in hot paths. Maybe also
-> a new lock or mapping->tree_lock(which is already hot enough) IMHO.
-
-Yes, per-inode accounting is less accurate. But this approach works really
-well in the real life. I don't want add new locks and loose performance just
-to fix accuracy for some artificial cases.
-
-to Tejun:
-BTW I don't like that volatility of task's cgroup ponters. I'd like to forbid
-moving tasks between cgroups except for 'current', existing behavior can be
-kept with help of task_work: instead external change of task->cgroups we can
-schedule task_work into it in and change that pointer in the 'current' context.
-That will save us a lot of rcu_lock/unlock and atomic operations in grabbing
-temporary pointers to current cgroup because current->cgroups will be stable.
-I don't think that external cross-cgroup task migration is really performance
-critical. Currently I don't know what to do with kernel threads and workqueues,
-but any way this problem doesn't look unsolvable.
-
+On Tue, Jul 09, 2013 at 04:00:31PM -0700, Guenter Roeck wrote:
+> This patch partially reverts commit 36ec8f877481449bdfa072e6adf2060869e2b970 for
+> IvyBridge CPUs.
+> 
+> The original commit results in repeated 'Timed out waiting for forcewake old
+> ack to clear' messages on a Supermicro C7H61 board (BIOS version 2.00 and 2.00b)
+> with i7-3770K CPU. It ultimately results in a hangup if the system is highly
+> loaded. Reverting the commit for IvyBridge CPUs fixes the issue.
+> 
+> Issue a warning if the CPU is IvyBridge and mt forcewake is disabled, since
+> this condition can result in secondary issues.
+> 
+> Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60541
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Mika Kuoppala <mika.kuoppala@intel.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Picked up for -fixes, thanks for the patch.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
