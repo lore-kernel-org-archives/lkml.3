@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3GJLax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:30:53 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10111 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab3GJLav (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:30:51 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 10 Jul 2013 04:30:40 -0700
-From: Wei Ni <wni@nvidia.com>
-To: <khali@linux-fr.org>, <swarren@wwwdotorg.org>, <linux@roeck-us.net>,
-        <thierry.reding@gmail.com>
-CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, Wei Ni <wni@nvidia.com>
-Subject: [PATCH v2 1/2] ARM: dt: t30 cardhu: add dt entry for nct1008
-Date: Wed, 10 Jul 2013 19:29:57 +0800
-Message-ID: <1373455798-2944-2-git-send-email-wni@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373455798-2944-1-git-send-email-wni@nvidia.com>
-References: <1373455798-2944-1-git-send-email-wni@nvidia.com>
-X-NVConfidentiality: public
+	id S1754452Ab3GJLbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:31:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54525 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753735Ab3GJLbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 07:31:34 -0400
+Date: Wed, 10 Jul 2013 14:29:24 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Andrew Jones <drjones@redhat.com>,
+        mingo@redhat.com, ouyang@cs.pitt.edu, habanero@linux.vnet.ibm.com,
+        jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
+        pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        xen-devel@lists.xensource.com, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
+        chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
+        riel@redhat.com, virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+Message-ID: <20130710112924.GT24941@redhat.com>
+References: <20130626113744.GA6300@hawk.usersys.redhat.com>
+ <20130626125240.GY18508@redhat.com>
+ <51CAEF45.3010203@linux.vnet.ibm.com>
+ <20130626161130.GB18152@redhat.com>
+ <51CB2AD9.5060508@linux.vnet.ibm.com>
+ <51DBD3C2.2040807@linux.vnet.ibm.com>
+ <20130710103325.GP24941@redhat.com>
+ <20130710104047.GP25631@dyad.programming.kicks-ass.net>
+ <20130710104717.GR24941@redhat.com>
+ <51DD455D.4000701@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51DD455D.4000701@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable thermal sensor nct1008 for t30 cardhu.
+On Wed, Jul 10, 2013 at 04:58:29PM +0530, Raghavendra K T wrote:
+> On 07/10/2013 04:17 PM, Gleb Natapov wrote:
+> >On Wed, Jul 10, 2013 at 12:40:47PM +0200, Peter Zijlstra wrote:
+> >>On Wed, Jul 10, 2013 at 01:33:25PM +0300, Gleb Natapov wrote:
+> >>
+> >>Here's an idea, trim the damn email ;-) -- not only directed at gleb.
+> >>
+> >Good idea.
+> >
+> >>>>Ingo, Gleb,
+> >>>>
+> >>>> From the results perspective, Andrew Theurer, Vinod's test results are
+> >>>>pro-pvspinlock.
+> >>>>Could you please help me to know what will make it a mergeable
+> >>>>candidate?.
+> >>>>
+> >>>I need to spend more time reviewing it :) The problem with PV interfaces
+> >>>is that they are easy to add but hard to get rid of if better solution
+> >>>(HW or otherwise) appears.
+> >>
+> >>How so? Just make sure the registration for the PV interface is optional; that
+> >>is, allow it to fail. A guest that fails the PV setup will either have to try
+> >>another PV interface or fall back to 'native'.
+> >>
+> >We have to carry PV around for live migration purposes. PV interface
+> >cannot disappear under a running guest.
+> >
+> 
+> IIRC, The only requirement was running state of the vcpu to be retained.
+> This was addressed by
+> [PATCH RFC V10 13/18] kvm : Fold pv_unhalt flag into GET_MP_STATE
+> ioctl to aid migration.
+> 
+> I would have to know more if I missed something here.
+> 
+I was not talking about the state that has to be migrated, but
+HV<->guest interface that has to be preserved after migration.
 
-Signed-off-by: Wei Ni <wni@nvidia.com>
----
- arch/arm/boot/dts/tegra30-cardhu.dtsi |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-index f65b53d..3d568a1 100644
---- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
-+++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
-@@ -286,6 +286,13 @@
- 				};
- 			};
- 		};
-+
-+		nct1008: nct1008 {
-+			compatible = "onnn,nct1008";
-+			reg = <0x4c>;
-+			interrupt-parent = <&gpio>;
-+			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
-+		};
- 	};
- 
- 	spi@7000da00 {
--- 
-1.7.9.5
-
+--
+			Gleb.
