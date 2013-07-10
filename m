@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab3GJOWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:22:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17522 "EHLO mx1.redhat.com"
+	id S1754646Ab3GJO2p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:28:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20638 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754516Ab3GJOWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:22:38 -0400
-Date: Wed, 10 Jul 2013 16:22:19 +0200
+	id S1753537Ab3GJO2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:28:44 -0400
+Date: Wed, 10 Jul 2013 16:28:21 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Namhyung Kim <namhyung@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -17,44 +17,69 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 15/19] perf tools: Add document for perf-ftrace command
-Message-ID: <20130710142218.GB5931@krava.brq.redhat.com>
+Subject: Re: [PATCH 09/19] perf ftrace: Add 'record' sub-command
+Message-ID: <20130710142821.GC5931@krava.brq.redhat.com>
 References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
- <1372230862-15861-16-git-send-email-namhyung@kernel.org>
+ <1372230862-15861-10-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1372230862-15861-16-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1372230862-15861-10-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 26, 2013 at 04:14:18PM +0900, Namhyung Kim wrote:
+On Wed, Jun 26, 2013 at 04:14:12PM +0900, Namhyung Kim wrote:
 > From: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
 
 SNIP
 
-> +OPTIONS
-> +-------
-> +<command>...::
-> +	Any command you can specify in a shell.
 > +
-> +-t::
-> +--tracer=::
-> +        The ftrace tracer to be used (default: function_graph).
-> +	Currently only 'function' and 'function_graph' are supported.
-> +        Used by 'live' and 'record' subcommands only.
+> +static int create_perf_directory(struct perf_ftrace *ftrace)
+> +{
+> +	int err;
+> +	char buf[PATH_MAX];
+> +	struct stat statbuf;
+> +
+> +	scnprintf(buf, sizeof(buf), "%s.dir", ftrace->dirname);
+> +
+> +	if (stat(buf, &statbuf) == 0) {
+> +		/* same name already exists - rename to *.old.dir */
+> +		char *old_name = malloc(strlen(buf) + 5);
+> +		if (old_name == NULL)
+> +			return -1;
+> +
+> +		scnprintf(old_name, strlen(buf) + 5,
+> +			  "%s.old.dir", ftrace->dirname);
+> +
+> +		if (remove_directory(old_name) < 0) {
+> +			perror("rmdir");
+> +			return -1;
+> +		}
+> +
+> +		if (rename(buf, old_name) < 0) {
+> +			perror("rename");
+> +			free(old_name);
+> +			return -1;
+> +		}
+> +
+> +		free(old_name);
+> +	}
+> +
+> +	err = mkdir(buf, 0755);
+> +	if (err < 0) {
+> +		perror("mkdir");
+> +		return -1;
+> +	}
+> +
+> +	strcat(buf, "/perf.header");
+> +
+> +	err = open(buf, O_RDWR | O_CREAT | O_TRUNC, 0644);
+> +	return err;
+> +}
 
-hum, 'live' subcommand  supports whatever is available in
-'available_tracers' file, right?
-
-and displays whatever gets into 'trace' .. which I think
-is useful and should stay like that
+nitpick.. should this be rather be called create_perf_header,
+which calls create_perf_directory inside?
 
 jirka
