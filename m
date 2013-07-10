@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab3GJWs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 18:48:59 -0400
-Received: from mail-pb0-f65.google.com ([209.85.160.65]:53099 "EHLO
-	mail-pb0-f65.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754600Ab3GJWs6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 18:48:58 -0400
-Date: Wed, 10 Jul 2013 15:48:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, oliver+list@schinagl.nl, khali@linux-fr.org
-Subject: Re: [PATCH 2/6] sysfs.h: add ATTRIBUTE_GROUPS() macro
-Message-ID: <20130710224856.GA21305@roeck-us.net>
+	id S1754905Ab3GJWxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 18:53:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21479 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754110Ab3GJWxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 18:53:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1039,1363158000"; 
+   d="scan'208";a="368099842"
+Message-ID: <51DDE5BA.9020800@intel.com>
+Date: Wed, 10 Jul 2013 15:52:42 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [RFC PATCH 1/5] mm, page_alloc: support multiple pages allocation
+References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com> <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
+In-Reply-To: <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 01:05:10PM -0700, Greg Kroah-Hartman wrote:
-> To make it easier for driver subsystems to work with attribute groups,
-> create the ATTRIBUTE_GROUPS macro to remove some of the repetitive
-> typing for the most common use for attribute groups.
-> 
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  include/linux/sysfs.h | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-> index 9cd20c8..f62ff01 100644
-> --- a/include/linux/sysfs.h
-> +++ b/include/linux/sysfs.h
-> @@ -94,6 +94,15 @@ struct attribute_group {
->  #define __ATTR_IGNORE_LOCKDEP	__ATTR
->  #endif
->  
-> +#define ATTRIBUTE_GROUPS(name)					\
-
-Would it be possible to add is_visible as additional argument ?
-
-Thanks,
-Guenter
-
-> +static const struct attribute_group name##_group = {		\
-> +	.attrs = name##_attrs,					\
-> +};								\
-> +static const struct attribute_group *name##_groups[] = {	\
-> +	&name##_group,						\
-> +	NULL,							\
-> +}
+On 07/03/2013 01:34 AM, Joonsoo Kim wrote:
+> -		if (page)
+> +		do {
+> +			page = buffered_rmqueue(preferred_zone, zone, order,
+> +							gfp_mask, migratetype);
+> +			if (!page)
+> +				break;
 > +
->  #define attr_name(_attr) (_attr).attr.name
->  
->  struct file;
-> -- 
-> 1.8.3.rc0.20.gb99dd2e
-> 
-> 
+> +			if (!nr_pages) {
+> +				count++;
+> +				break;
+> +			}
+> +
+> +			pages[count++] = page;
+> +			if (count >= *nr_pages)
+> +				break;
+> +
+> +			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
+> +			if (!zone_watermark_ok(zone, order, mark,
+> +					classzone_idx, alloc_flags))
+> +				break;
+> +		} while (1);
+
+I'm really surprised this works as well as it does.  Calling
+buffered_rmqueue() a bunch of times enables/disables interrupts a bunch
+of times, and mucks with the percpu pages lists a whole bunch.
+buffered_rmqueue() is really meant for _single_ pages, not to be called
+a bunch of times in a row.
+
+Why not just do a single rmqueue_bulk() call?
