@@ -1,40 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629Ab3GJOPI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:15:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48011 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab3GJOPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:15:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1036,1363158000"; 
-   d="scan'208";a="367818855"
-Date: Wed, 10 Jul 2013 17:20:15 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Christian Ruppert <christian.ruppert@abilis.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c-designware: configure SDA hold time from ACPI
-Message-ID: <20130710142015.GD4898@intel.com>
-References: <1372845160-32625-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1754632Ab3GJOR1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:17:27 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:33128 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754222Ab3GJORZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:17:25 -0400
+Message-ID: <51DD6CED.6080001@ozlabs.ru>
+Date: Thu, 11 Jul 2013 00:17:17 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372845160-32625-1-git-send-email-mika.westerberg@linux.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Graf <agraf@suse.de>
+CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>,
+        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 2/8] KVM: PPC: reserve a capability and ioctl numbers
+ for realmode VFIO
+References: <1372309356-28320-1-git-send-email-aik@ozlabs.ru> <1372309356-28320-3-git-send-email-aik@ozlabs.ru> <51DC2DDA.6040408@suse.de> <51DC9E32.8040109@ozlabs.ru> <E8E3A724-7045-4B8F-BE29-29BAB41D68C2@suse.de>
+In-Reply-To: <E8E3A724-7045-4B8F-BE29-29BAB41D68C2@suse.de>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 03, 2013 at 12:52:40PM +0300, Mika Westerberg wrote:
-> Some Intel LPSS I2C devices make the SDA hold time parameter available via
-> SSCN (standard mode) and FMCN (fast mode) ACPI methods. If we find that
-> such method exist, we evaluate it and pass the returned SDA hold value to
-> the i2c-designware core analogous to Device Tree.
+On 07/10/2013 08:27 PM, Alexander Graf wrote:
 > 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> On 10.07.2013, at 01:35, Alexey Kardashevskiy wrote:
+> 
+>> On 07/10/2013 01:35 AM, Alexander Graf wrote:
+>>> On 06/27/2013 07:02 AM, Alexey Kardashevskiy wrote:
+>>>> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
+>>>> ---
+>>>>  include/uapi/linux/kvm.h |    2 ++
+>>>>  1 file changed, 2 insertions(+)
+>>>>
+>>>> diff --git a/include/uapi/linux/kvm.h b/include/uapi/linux/kvm.h
+>>>> index 970b1f5..0865c01 100644
+>>>> --- a/include/uapi/linux/kvm.h
+>>>> +++ b/include/uapi/linux/kvm.h
+>>>> @@ -667,6 +667,7 @@ struct kvm_ppc_smmu_info {
+>>>>  #define KVM_CAP_PPC_RTAS 91
+>>>>  #define KVM_CAP_IRQ_XICS 92
+>>>>  #define KVM_CAP_SPAPR_MULTITCE 93
+>>>> +#define KVM_CAP_SPAPR_TCE_IOMMU 94
+>>>>
+>>>>  #ifdef KVM_CAP_IRQ_ROUTING
+>>>>
+>>>> @@ -923,6 +924,7 @@ struct kvm_s390_ucas_mapping {
+>>>>  /* Available with KVM_CAP_PPC_ALLOC_HTAB */
+>>>>  #define KVM_PPC_ALLOCATE_HTAB      _IOWR(KVMIO, 0xa7, __u32)
+>>>>  #define KVM_CREATE_SPAPR_TCE      _IOW(KVMIO,  0xa8, struct
+>>>> kvm_create_spapr_tce)
+>>>> +#define KVM_CREATE_SPAPR_TCE_IOMMU _IOW(KVMIO,  0xaf, struct
+>>>> kvm_create_spapr_tce_iommu)
+>>>
+>>> Please order them by number.
+>>
+>> Oh. Again :( We have had this discussion with Scott Wood here already.
+>> Where _exactly_ do you want me to put it?
+> 
+> 8 lines further down. With a comment saying when it's available. Also why is it af, not ad?
 
-Please disregard this patch. I'll send a new one that combines both setting of
-SDA hold time and *CNT values from ACPI.
+
+0xad and 0xae are taken.
+Where should I have commented this? In the commit message? Or in the patch
+itself?
+
+
+>> Many sections, not really ordered. Thank you.
+> 
+> They should all be ordered inside of their own categories.
+
+
+-- 
+Alexey
