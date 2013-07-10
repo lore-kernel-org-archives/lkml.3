@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab3GJBOw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 21:14:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64866 "EHLO song.cn.fujitsu.com"
+	id S1754002Ab3GJBUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 21:20:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:7038 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753735Ab3GJBOv convert rfc822-to-8bit (ORCPT
+	id S1753734Ab3GJBUg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 21:14:51 -0400
+	Tue, 9 Jul 2013 21:20:36 -0400
 X-IronPort-AV: E=Sophos;i="4.87,1032,1363104000"; 
-   d="scan'208";a="7840983"
-Message-ID: <51DCB585.9030105@cn.fujitsu.com>
-Date: Wed, 10 Jul 2013 09:14:45 +0800
+   d="scan'208";a="7841101"
+Message-ID: <51DCB6DB.3070209@cn.fujitsu.com>
+Date: Wed, 10 Jul 2013 09:20:27 +0800
 From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Eric Biederman <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH REPOST] kexec: return error of machine_kexec() fails
-References: <1373386597-3884-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1373386597-3884-1-git-send-email-swarren@wwwdotorg.org>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+CC: Michal Hocko <mhocko@suse.cz>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/5] Support multiple pages allocation
+References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com> <20130703152824.GB30267@dhcp22.suse.cz> <51D44890.4080003@gmail.com> <51D44AE7.1090701@gmail.com> <20130704042450.GA7132@lge.com> <20130704100044.GB7833@dhcp22.suse.cz> <20130710003142.GA2152@lge.com>
+In-Reply-To: <20130710003142.GA2152@lge.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/10 09:13:05,
+ 2013/07/10 09:18:47,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/10 09:13:09
+ 2013/07/10 09:18:55
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013/7/10 0:16, Stephen Warren 写道:
-> From: Stephen Warren <swarren@nvidia.com>
+于 2013/7/10 8:31, Joonsoo Kim 写道:
+> On Thu, Jul 04, 2013 at 12:00:44PM +0200, Michal Hocko wrote:
+>> On Thu 04-07-13 13:24:50, Joonsoo Kim wrote:
+>>> On Thu, Jul 04, 2013 at 12:01:43AM +0800, Zhang Yanfei wrote:
+>>>> On 07/03/2013 11:51 PM, Zhang Yanfei wrote:
+>>>>> On 07/03/2013 11:28 PM, Michal Hocko wrote:
+>>>>>> On Wed 03-07-13 17:34:15, Joonsoo Kim wrote:
+>>>>>> [...]
+>>>>>>> For one page allocation at once, this patchset makes allocator slower than
+>>>>>>> before (-5%). 
+>>>>>>
+>>>>>> Slowing down the most used path is a no-go. Where does this slow down
+>>>>>> come from?
+>>>>>
+>>>>> I guess, it might be: for one page allocation at once, comparing to the original
+>>>>> code, this patch adds two parameters nr_pages and pages and will do extra checks
+>>>>> for the parameter nr_pages in the allocation path.
+>>>>>
+>>>>
+>>>> If so, adding a separate path for the multiple allocations seems better.
+>>>
+>>> Hello, all.
+>>>
+>>> I modify the code for optimizing one page allocation via likely macro.
+>>> I attach a new one at the end of this mail.
+>>>
+>>> In this case, performance degradation for one page allocation at once is -2.5%.
+>>> I guess, remained overhead comes from two added parameters.
+>>> Is it unreasonable cost to support this new feature?
+>>
+>> Which benchmark you are using for this testing?
 > 
-> Prior to commit 3ab8352 "kexec jump", if machine_kexec() returned,
-> sys_reboot() would return -EINVAL. This patch restores this behaviour
-> for the non-KEXEC_JUMP case, where machine_kexec() is not expected to
-> return.
+> I use my own module which do allocation repeatedly.
 > 
-> This situation can occur on ARM, where kexec requires disabling all but
-> one CPU using CPU hotplug. However, if hotplug isn't supported by the
-> particular HW the kernel is running on, then kexec cannot succeed.
+>>
+>>> I think that readahead path is one of the most used path, so this penalty looks
+>>> endurable. And after supporting this feature, we can find more use cases.
+>>
+>> What about page faults? I would oppose that page faults are _much_ more
+>> frequent than read ahead so you really cannot slow them down.
+> 
+> You mean page faults for anon?
+> Yes. I also think that it is much more frequent than read ahead.
+> Before futher discussion, I will try to add a separate path
+> for the multiple allocations.
 
-I don't have an ARM machine, but I believe you are right by reading the
-code. So
-
-Acked-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Some days ago, I was thinking that this multiple allocation behaviour
+may be useful for vmalloc allocations. So I think it is worth trying.
 
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> Acked-by: Will Deacon <will.deacon@arm.com>
-> ---
->  kernel/kexec.c | 2 ++
->  1 file changed, 2 insertions(+)
+> Thanks.
 > 
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index 59f7b55..bde1190 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1702,6 +1702,8 @@ int kernel_kexec(void)
->  		pm_restore_console();
->  		unlock_system_sleep();
->  	}
-> +#else
-> +	error = -EINVAL;
->  #endif
->  
->   Unlock:
+>>
+>> [...]
+>> -- 
+>> Michal Hocko
+>> SUSE Labs
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
 
 
