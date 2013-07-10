@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab3GJAHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 20:07:19 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46730 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab3GJAHR (ORCPT
+	id S1753983Ab3GJASc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 20:18:32 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:55345 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab3GJASb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 20:07:17 -0400
-Date: Wed, 10 Jul 2013 10:07:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: linux-next: reminder
-Message-Id: <20130710100707.d79b5df2a826faf1caecf3b4@canb.auug.org.au>
-In-Reply-To: <20130702170957.17c3173584fcdef073bf4a6b@canb.auug.org.au>
-References: <20130702170957.17c3173584fcdef073bf4a6b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__10_Jul_2013_10_07_07_+1000_5YEmap8dJcpi_bIS"
+	Tue, 9 Jul 2013 20:18:31 -0400
+Date: Tue, 9 Jul 2013 17:18:28 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at drivers/iommu/dmar.c:484 warn_invalid_dmar with
+ Intel Motherboard
+Message-ID: <20130710001828.GA32072@roeck-us.net>
+References: <20130709202406.GA11867@roeck-us.net>
+ <CAErSpo6Ma1TnBP-UGGhWFN1rj48y+yTS=VmVw_s30_FWgjfdpg@mail.gmail.com>
+ <20130709223106.GA16429@roeck-us.net>
+ <20130709232252.GB2676@sequoia2.sous-sol.org>
+ <20130709234331.GA10833@roeck-us.net>
+ <20130710000511.GC2676@sequoia2.sous-sol.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130710000511.GC2676@sequoia2.sous-sol.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__10_Jul_2013_10_07_07_+1000_5YEmap8dJcpi_bIS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jul 09, 2013 at 05:05:11PM -0700, Chris Wright wrote:
+> * Guenter Roeck (linux@roeck-us.net) wrote:
+> > On Tue, Jul 09, 2013 at 04:22:52PM -0700, Chris Wright wrote:
+> > > * Guenter Roeck (linux@roeck-us.net) wrote:
+> > > > On Tue, Jul 09, 2013 at 03:05:39PM -0600, Bjorn Helgaas wrote:
+> > > > > [+cc Joerg, David, iommu list]
+> > > > > 
+> > > > > On Tue, Jul 9, 2013 at 2:24 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > > > > > I started seeing this problem after updating the BIOS trying fix another issue,
+> > > > > > though I may have missed it earlier.
+> > > > > >
+> > > > > > I understand this is a BIOS bug. Would be great if someone can pass this on
+> > > > > > to Intel BIOS engineers.
+> > > > > 
+> > > > > Maybe.  It'd be nice if Linux handled it better, though.
+> > > > > 
+> > > > If anyone has an idea how to do that, I'll be happy to write a patch.
+> > > 
+> > > I'm not sure there's much you can do.  The BIOS is saying there's a DMAR
+> > > unit, and then saying the registers are at addr 0x0.  The kernel is
+> > > simply warning you about the invalid DMAR table entry.
+> > > 
+> > > One thing I've seen is the BIOS zeroing the base register address when
+> > > VT-d is disabled in BIOS.  So, Guenter, a "fix" may be simply enabling
+> > > VT-d in the BIOS.
+> >
+> > Ah, yes, I think I may have that disabled. I'll check it tonight.
+> > 
+> > Does that really warrant a traceback, or would a warning message be more
+> > appropriate (possibly telling the user to enable VT-d) ?
+> 
+> Bottom line, the BIOS is providing what we're seeing as invalid tables.
+> If it's a BIOS attempt to disable VT-d is hard to glean from invalid
+> tables, and not all BIOS give interface to enable/disable VT-d.
+> 
+> It is a warning message, BTW.  Guess I'd be inclined to leave as it is.
+> 
+I meant warning as in pr_warn or dev_warn, not WARNING as in traceback.
+Keep in mind that a casual user doesn't expect to see a traceback and will tend
+to get alarmed. Several bugs have been filed against this "issue" in various
+distributions, which is not surprising given the alarmist message.
+What is the point of that ?
 
-Hi all,
-
-On Tue, 2 Jul 2013 17:09:57 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> We are in the merge window, so please do not add anything to your
-> linux-next included branches that is not destined for v3.11 until after
-> v3.11-rc1 is released.
-
-No, really :-(
-
-i.e. maintainers should be saying "No" to any "features" that were not
-ready before the merge window opened (even when the maintainer and the
-developer are the same person) ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__10_Jul_2013_10_07_07_+1000_5YEmap8dJcpi_bIS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR3KWvAAoJEECxmPOUX5FEm8gP/0Yu3Ux5S5OXGPnLykUZLUIx
-4QZND6heNFM0KxDLQkAwVrhTfmDwzCynFZ7x55QZT2N4sAOfIeXQpO/ZNWLpq8Vh
-DS4lT58MyjW9n+N5hJ/NlSBKimtGfhX76wfhUbE8e1MNvysunlcB6BnP2cbUuNSi
-rF59uAQ9WEmAW9Cg4TILPsxqq/1KlFQefUbcOHIHiPQennT3vlG2N8XUJw1NPDlo
-9NfsUmQtSod4C0olMTK7HKVzVA1NIXCUh6C/J+2U0Z2tGa3h5HfVKhkXgt9di0N/
-eSlceL938QRmh1zkf1417r68uBAOeu8scu0lbgXE6Hi6X9DLaZCyzZ3AD8ytc4rx
-7w4aI7sQ/Dp0aVPp/E7A8vRdUidxEcI/oO3q2Q2ld50afzGVcAQ4tMLyrQqY77MY
-Q8Sb3e1FIGrKhl4rSYq+J6IY2W6yX8NDatkOfuogw/M389204T6nC2Ukh4RTWET9
-3pWUluOsHIgRx+WbDzAw20FeR5o+hJHNuL66Y/k6MG8ipDKHDRtBsWDlElzaOJvS
-iDCi7opDn+DSfR508aD0DUyaLsnow5H/zmmRs9liwO5ZewSATYIfOZcjFSl8qxrr
-GYv9+2f87jj0yv9dQ599rMjWuwqI6nSKnfo+oC+r6KT52suwHG4315IzftJ9cmcS
-RmIOXZ8N5r5WGOd5+B6E
-=GaWk
------END PGP SIGNATURE-----
-
---Signature=_Wed__10_Jul_2013_10_07_07_+1000_5YEmap8dJcpi_bIS--
+Guenter
