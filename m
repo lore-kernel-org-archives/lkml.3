@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab3GJLau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:30:50 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:7404 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab3GJLas (ORCPT
+	id S1754677Ab3GJLax (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:30:53 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10111 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754044Ab3GJLav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:30:48 -0400
+	Wed, 10 Jul 2013 07:30:51 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 10 Jul 2013 04:29:08 -0700
+	by hqnvupgp07.nvidia.com on Wed, 10 Jul 2013 04:30:40 -0700
 From: Wei Ni <wni@nvidia.com>
 To: <khali@linux-fr.org>, <swarren@wwwdotorg.org>, <linux@roeck-us.net>,
         <thierry.reding@gmail.com>
 CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
         <linux-tegra@vger.kernel.org>, Wei Ni <wni@nvidia.com>
-Subject: [PATCH v2 0/2] Enable lm90 in Tegra30 and Tegra114.
-Date: Wed, 10 Jul 2013 19:29:56 +0800
-Message-ID: <1373455798-2944-1-git-send-email-wni@nvidia.com>
+Subject: [PATCH v2 1/2] ARM: dt: t30 cardhu: add dt entry for nct1008
+Date: Wed, 10 Jul 2013 19:29:57 +0800
+Message-ID: <1373455798-2944-2-git-send-email-wni@nvidia.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373455798-2944-1-git-send-email-wni@nvidia.com>
+References: <1373455798-2944-1-git-send-email-wni@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -25,26 +27,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable thermal sensor lm90 for Tegra30 Cardhu and Tegra114 Dalmore.
+Enable thermal sensor nct1008 for t30 cardhu.
 
-This series is v2, previous version patches:
-[RFC 1/9]: http://thread.gmane.org/gmane.linux.power-management.general/31056
-[v1]: http://thread.gmane.org/gmane.linux.ports.tegra/11713/
+Signed-off-by: Wei Ni <wni@nvidia.com>
+---
+ arch/arm/boot/dts/tegra30-cardhu.dtsi |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-Changes from v1:
-1. add vendor strings "onnn" for nct1008 node.
-
-Changes from RFC:
-1. Enable it for Tegra114 Dalmore.
-
-Wei Ni (2):
-  ARM: dt: t30 cardhu: add dt entry for nct1008
-  ARM: dt: t114 dalmore: add dt entry for nct1008
-
- arch/arm/boot/dts/tegra114-dalmore.dts |    7 +++++++
- arch/arm/boot/dts/tegra30-cardhu.dtsi  |    7 +++++++
- 2 files changed, 14 insertions(+)
-
+diff --git a/arch/arm/boot/dts/tegra30-cardhu.dtsi b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+index f65b53d..3d568a1 100644
+--- a/arch/arm/boot/dts/tegra30-cardhu.dtsi
++++ b/arch/arm/boot/dts/tegra30-cardhu.dtsi
+@@ -286,6 +286,13 @@
+ 				};
+ 			};
+ 		};
++
++		nct1008: nct1008 {
++			compatible = "onnn,nct1008";
++			reg = <0x4c>;
++			interrupt-parent = <&gpio>;
++			interrupts = <TEGRA_GPIO(CC, 2) IRQ_TYPE_LEVEL_LOW>;
++		};
+ 	};
+ 
+ 	spi@7000da00 {
 -- 
 1.7.9.5
 
