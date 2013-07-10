@@ -1,93 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757Ab3GJRMd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 13:12:33 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:57926 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab3GJRMb convert rfc822-to-8bit (ORCPT
+	id S1754794Ab3GJRMn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 13:12:43 -0400
+Received: from mail.windriver.com ([147.11.1.11]:47490 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402Ab3GJRMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 13:12:31 -0400
-Date: Wed, 10 Jul 2013 19:12:28 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kalle Valo <kvalo@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: ath10k: mac80211 driver for Qualcomm Atheros 802.11ac CQA98xx
- devices
-In-Reply-To: <20130710022602.1F6F16609DE@gitolite.kernel.org>
-Message-ID: <alpine.DEB.2.02.1307101859360.29717@ayla.of.borg>
-References: <20130710022602.1F6F16609DE@gitolite.kernel.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 10 Jul 2013 13:12:41 -0400
+Date: Wed, 10 Jul 2013 13:12:13 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <clark.williams@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH RT 6/6] vtime: Convert vtime_seqlock into
+ raw_spinlock_t and seqcount combo
+Message-ID: <20130710171212.GA13553@windriver.com>
+References: <20130626192806.107564905@goodmis.org>
+ <20130626193050.529670718@goodmis.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130626193050.529670718@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Jul 2013, Linux Kernel Mailing List wrote:
-> --- /dev/null
-> +++ b/drivers/net/wireless/ath/ath10k/hw.h
+[[RFC][PATCH RT 6/6] vtime: Convert vtime_seqlock into raw_spinlock_t and seqcount combo] On 26/06/2013 (Wed 15:28) Steven Rostedt wrote:
 
-> +#define SUPPORTED_FW_MAJOR	1
-> +#define SUPPORTED_FW_MINOR	0
-> +#define SUPPORTED_FW_RELEASE	0
-> +#define SUPPORTED_FW_BUILD	629
+> The vtime seqlock needs to be taken in true interrupt context on -rt.
+> The normal seqlocks are converted to mutexes when PREEMPT_RT_FULL is
+> enabled, which will break the vtime code as the calls are done from
+> interrupt context.
+> 
+> Convert the vtime seqlock into the raw_spinlock_t and seqcount combo
+> that can be done in interrupt context.
 
-> +static int ath10k_check_fw_version(struct ath10k *ar)
-> +{
-> +	char version[32];
-> +
-> +	if (ar->fw_version_major >= SUPPORTED_FW_MAJOR &&
-> +	    ar->fw_version_minor >= SUPPORTED_FW_MINOR &&
-> +	    ar->fw_version_release >= SUPPORTED_FW_RELEASE &&
-> +	    ar->fw_version_build >= SUPPORTED_FW_BUILD)
-> +		return 0;
+Alternatively, we could revive the raw seqlock patch from Thomas?
 
-My attention got triggered by:
+https://lkml.org/lkml/2010/2/17/238
 
-drivers/net/wireless/ath/ath10k/core.c: In function ‘ath10k_check_fw_version’:
-drivers/net/wireless/ath/ath10k/core.c:79: warning: comparison is always true due to limited range of data type
+Below is a version updating it to 3.8.x-RT.  One downside is that
+current mainline kernels have raw_seqcount_begin() function, which has
+nothing to do with preempt-rt, so the seqcount function namespace can
+get confusing unless we rename raw_seqcount_begin to something that
+doesn't sound RT-ish.
 
-as an u16 is always larger or equal than zero. Not much you can do to
-silence that warning, though.
-
-However, I don't think the version check is correct.
-Shouldn't it stop checking later fields if an exact match is found in an
-earlier field?
-
-I.e.
-
-	if (ar->fw_version_major > SUPPORTED_FW_MAJOR ||
-	    (ar->fw_version_major == SUPPORTED_FW_MAJOR &&
-	     ar->fw_version_minor > SUPPORTED_FW_MINOR) ||
-	     ...) { ... }
-
-Currently e.g. (major, minor) = (3, 0) is considered older than (2, 1).
-
-Or perhaps minor is never reset to zero when major is increased? In that
-case, the check is correct, but IMHO it's a bit silly to split the version
-number in seperate fields.
-
-> +	snprintf(version, sizeof(version), "%u.%u.%u.%u",
-> +		 SUPPORTED_FW_MAJOR, SUPPORTED_FW_MINOR,
-> +		 SUPPORTED_FW_RELEASE, SUPPORTED_FW_BUILD);
-> +
-> +	ath10k_warn("WARNING: Firmware version %s is not officially supported.\n",
-> +		    ar->hw->wiphy->fw_version);
-> +	ath10k_warn("Please upgrade to version %s (or newer)\n", version);
-> +
-> +	return 0;
-> +}
-
-Gr{oetje,eeting}s,
-
-						Geert
-
+Paul.
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+diff --git a/include/linux/seqlock.h b/include/linux/seqlock.h
+index 939ea1a..5a3f6fd 100644
+--- a/include/linux/seqlock.h
++++ b/include/linux/seqlock.h
+@@ -185,6 +185,11 @@ static inline void write_seqcount_barrier(seqcount_t *s)
+ 
+ typedef struct {
+ 	struct seqcount seqcount;
++	raw_spinlock_t lock;
++} raw_seqlock_t;
++
++typedef struct {
++	struct seqcount seqcount;
+ 	spinlock_t lock;
+ } seqlock_t;
+ 
+@@ -192,6 +197,21 @@ typedef struct {
+  * These macros triggered gcc-3.x compile-time problems.  We think these are
+  * OK now.  Be cautious.
+  */
++#define __RAW_SEQLOCK_UNLOCKED(lockname)			\
++	{							\
++		.seqcount = SEQCNT_ZERO,			\
++		.lock =	__RAW_SPIN_LOCK_UNLOCKED(lockname)	\
++	}
++
++#define raw_seqlock_init(x)					\
++	do {							\
++		seqcount_init(&(x)->seqcount);			\
++		raw_spin_lock_init(&(x)->lock);			\
++	} while (0)
++
++#define DEFINE_RAW_SEQLOCK(x) \
++		raw_seqlock_t x = __RAW_SEQLOCK_UNLOCKED(x)
++
+ #define __SEQLOCK_UNLOCKED(lockname)			\
+ 	{						\
+ 		.seqcount = SEQCNT_ZERO,		\
+@@ -210,6 +230,11 @@ typedef struct {
+ /*
+  * Read side functions for starting and finalizing a read side section.
+  */
++static inline unsigned read_raw_seqbegin(const raw_seqlock_t *sl)
++{
++	return read_seqcount_begin(&sl->seqcount);
++}
++
+ #ifndef CONFIG_PREEMPT_RT_FULL
+ static inline unsigned read_seqbegin(const seqlock_t *sl)
+ {
+@@ -238,6 +263,11 @@ repeat:
+ }
+ #endif
+ 
++static inline unsigned read_raw_seqretry(const raw_seqlock_t *sl, unsigned start)
++{
++	return read_seqcount_retry(&sl->seqcount, start);
++}
++
+ static inline unsigned read_seqretry(const seqlock_t *sl, unsigned start)
+ {
+ 	return read_seqcount_retry(&sl->seqcount, start);
+@@ -248,6 +278,64 @@ static inline unsigned read_seqretry(const seqlock_t *sl, unsigned start)
+  * Acts like a normal spin_lock/unlock.
+  * Don't need preempt_disable() because that is in the spin_lock already.
+  */
++static inline void write_raw_seqlock(raw_seqlock_t *sl)
++{
++	raw_spin_lock(&sl->lock);
++	__write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_raw_sequnlock(raw_seqlock_t *sl)
++{
++	__write_seqcount_end(&sl->seqcount);
++	raw_spin_unlock(&sl->lock);
++}
++
++static inline void write_raw_seqlock_bh(raw_seqlock_t *sl)
++{
++	raw_spin_lock_bh(&sl->lock);
++	__write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_raw_sequnlock_bh(raw_seqlock_t *sl)
++{
++	__write_seqcount_end(&sl->seqcount);
++	raw_spin_unlock_bh(&sl->lock);
++}
++
++static inline void write_raw_seqlock_irq(raw_seqlock_t *sl)
++{
++	raw_spin_lock_irq(&sl->lock);
++	__write_seqcount_begin(&sl->seqcount);
++}
++
++static inline void write_raw_sequnlock_irq(raw_seqlock_t *sl)
++{
++	__write_seqcount_end(&sl->seqcount);
++	raw_spin_unlock_irq(&sl->lock);
++}
++
++static inline unsigned long __write_raw_seqlock_irqsave(raw_seqlock_t *sl)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&sl->lock, flags);
++	__write_seqcount_begin(&sl->seqcount);
++	return flags;
++}
++
++#define write_raw_seqlock_irqsave(lock, flags)				\
++	do { flags = __write_raw_seqlock_irqsave(lock); } while (0)
++
++static inline void
++write_raw_sequnlock_irqrestore(raw_seqlock_t *sl, unsigned long flags)
++{
++	__write_seqcount_end(&sl->seqcount);
++	raw_spin_unlock_irqrestore(&sl->lock, flags);
++}
++
++/*
++ * non raw versions
++ */
+ static inline void write_seqlock(seqlock_t *sl)
+ {
+ 	spin_lock(&sl->lock);
