@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab3GJNaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 09:30:06 -0400
-Received: from plane.gmane.org ([80.91.229.3]:34222 "EHLO plane.gmane.org"
+	id S1754128Ab3GJNm0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 09:42:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49149 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab3GJNaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 09:30:04 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: Re: [PATCH] socket.7: add description for SO_BUSY_POLL
-Date: Wed, 10 Jul 2013 12:55:19 +0000
-Organization: D03
-Message-ID: <u0lr4f6h8w8.fsf@orc05.imf.au.dk>
-References: <20130710121745.13118.86907.stgit@ladj378.jer.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Complaints-To: usenet@ger.gmane.org
-Cc: linux-man@vger.kernel.org, netdev@vger.kernel.org
-X-Gmane-NNTP-Posting-Host: orc05.imf.au.dk
-User-Agent: Gnus/5.1002 (Gnus v5.10.2) Emacs/21.3 (gnu/linux)
-Cancel-Lock: sha1:vLfgczfn14rM3xP3Hi4P1NXMAII=
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+	id S1752430Ab3GJNmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 09:42:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1036,1363158000"; 
+   d="scan'208";a="367804981"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v1.5] pinctrl-baytrail: change lvl to level
+Date: Wed, 10 Jul 2013 16:42:14 +0300
+Message-Id: <1373463734-20154-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373457340-16666-3-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1373457340-16666-3-git-send-email-andriy.shevchenko@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eliezer Tamir <eliezer.tamir@linux.intel.com> writes:
+Additionally remove trailing whitespace when print triggering type.
 
-> +While busy polling my improve latency of some application, care must be
-> +taken when using it since this will increase both CPU utilization power usage.
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+---
+ drivers/pinctrl/pinctrl-baytrail.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-s/my/may/; missing 'and' before 'power usage'. [And should
-'application' be plural?]
-
-Rasmus
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index fccf72e..f3d3053 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -294,9 +294,9 @@ static void byt_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ 			   val & BYT_LEVEL ? "hi" : "lo",
+ 			   vg->range->pins[i], offs,
+ 			   conf0 & 0x7,
+-			   conf0 & BYT_TRIG_NEG ? "fall " : "",
+-			   conf0 & BYT_TRIG_POS ? "rise " : "",
+-			   conf0 & BYT_TRIG_LVL ? "lvl " : "");
++			   conf0 & BYT_TRIG_NEG ? " fall" : "",
++			   conf0 & BYT_TRIG_POS ? " rise" : "",
++			   conf0 & BYT_TRIG_LVL ? " level" : "");
+ 	}
+ 	spin_unlock_irqrestore(&vg->lock, flags);
+ }
+-- 
+1.8.3.2
 
