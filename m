@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab3GJKBC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:01:02 -0400
-Received: from mx-out.ocsa-data.net ([194.36.166.37]:61241 "EHLO
-	mx-out.ocsa-data.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab3GJKBA (ORCPT
+	id S1754256Ab3GJKBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:01:20 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58693 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab3GJKBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:01:00 -0400
+	Wed, 10 Jul 2013 06:01:19 -0400
+Date: Wed, 10 Jul 2013 11:00:20 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org
+Message-ID: <20130710100020.GA24508@sirena.org.uk>
+References: <1373372929-17800-1-git-send-email-richard.genoud@gmail.com>
+ <1373379933-32749-1-git-send-email-richard.genoud@gmail.com>
+ <1373379933-32749-2-git-send-email-richard.genoud@gmail.com>
+ <20130709145917.GA27646@sirena.org.uk>
+ <CACQ1gAgHuAcBAAgYaP-n9grrM6X0L9b1mFFfkRg0HH_RnRuXMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Wed, 10 Jul 2013 12:00:57 +0200
-From: Yann Droneaud <ydroneaud@opteya.com>
-To: Ben Myers <bpm@sgi.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, ydroneaud@opteya.com
-Subject: Re: [PATCH 10/13] xfs: use =?UTF-8?Q?get=5Funused=5Ffd=5Fflags=28?=
- =?UTF-8?Q?=30=29=20instead=20of=20get=5Funused=5Ffd=28=29?=
-Organization: OPTEYA
-In-Reply-To: <20130709205321.GV20932@sgi.com>
-References: <cover.1372777600.git.ydroneaud@opteya.com>
- <8d21b76c621dbfc59b2dbbfc933f96170835304d.1372777600.git.ydroneaud@opteya.com>
- <20130708224133.GA23250@sgi.com> <20130709205321.GV20932@sgi.com>
-Message-ID: <70a3a6971c3127226563e9538ae53bec@meuh.org>
-User-Agent: Roundcube Webmail/0.9.2
-X-abuse-contact: abuse@ocsa-data.net
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <CACQ1gAgHuAcBAAgYaP-n9grrM6X0L9b1mFFfkRg0HH_RnRuXMg@mail.gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.118
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 1/7] sound: sam9x5_wm8731: machine driver for
+ at91sam9x5 wm8731 boards
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-Le 09.07.2013 22:53, Ben Myers a écrit :
-> On Mon, Jul 08, 2013 at 05:41:33PM -0500, Ben Myers wrote:
->> On Tue, Jul 02, 2013 at 06:39:34PM +0200, Yann Droneaud wrote:
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> > diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
->> > index 5e99968..dc5b659 100644
->> > --- a/fs/xfs/xfs_ioctl.c
->> > +++ b/fs/xfs/xfs_ioctl.c
->> > @@ -248,7 +248,7 @@ xfs_open_by_handle(
->> >  		goto out_dput;
->> >  	}
->> >
->> > -	fd = get_unused_fd();
->> > +	fd = get_unused_fd_flags(0);
->> 
->> O_CLOEXEC should be fine in this case.
->> 
->> Reviewed-by: Ben Myers <bpm@sgi.com>
-> 
-> Applied at git://oss.sgi.com/xfs/xfs.git.  Looks like I was wrong about
-> O_CLOEXEC being ok here.  There may be applications which 
-> open_by_handle then
-> fork/exec and expect to still be able to use that file descriptor.
-> 
+On Wed, Jul 10, 2013 at 11:25:37AM +0200, Richard Genoud wrote:
+> 2013/7/9 Mark Brown <broonie@kernel.org>:
 
-OK, it's very important to not cause regression here.
+> > Shouldn't the SSC driver be enforcing this constraint if it comes from
+> > the SSC hardware?  If the clock is reprogrammable the usual convention
+> > for drivers is to not constrain if the clock is set to zero so a machine
+> > driver could remove the constraint.
 
-For the record, xfs_open_by_handle() is not related to 
-open_by_handle_at() syscall.
+> Actually, my comment is buggy here (or at least, unrelated to the
+> authorized rates).
+> The "MCLK_RATE" is the master clock of the wm8731 codec (a 12.288MHz crystal).
+> According to the datasheet of wm8731, when a 12.288 crystal is used,
+> the authorized rates are 8, 32, 48 and 96kHz (I have to remove 16 and
+> 64kHz).
 
-It's an ioctl (XFS_IOC_OPEN_BY_HANDLE) which is used by xfsprogs's 
-libhandle
-in functions open_by_fshandle() and open_by_handle().
+> So, is this the right place for the rates ?
 
-http://sources.debian.net/src/xfsprogs/3.1.9/libhandle/handle.c?hl=284#L284
-http://sources.debian.net/src/xfsprogs/3.1.9/libhandle/handle.c?hl=308#L308
+No, the CODEC driver should be enforcing the restrictions if that's
+where they come from.
 
-According to codesearch.debian.org, libhandle's open_by_handle() is only 
-used
-by xfsdump
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-http://sources.debian.net/src/xfsdump/3.1.1/restore/tree.c?hl=2534#L2534
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-So there's no many *known* users of this features ... but it's more 
-important
-not to break *unknown* users of it.
+iQIcBAEBAgAGBQJR3TCsAAoJELSic+t+oim96l4QAIBNdsDlUYqOzzE2DqS09ARC
+LGwnmmxhDThgOEgKOlgaRVz215VBl7h+IB77pwGYwesWkMJlW7PhC3ES2fPmM/9i
+aRkDx+2DKeRPjNJS2uvfmKo+ueF4PQEBkCsnHmbKphgmUA+LIkzp4bRarzKxqOqE
+uL7g682JHdUvD3wYSvVg2w8AoOCRZzLsdIUNeIkK8WKLcrK9OWBJwKagO5JpF1m7
+ZInX+d+5u0Sf13wOFk41fEtMKVzGKUuuji6HaPX4KUJsHufEHHLfhpE1Lan0Ag8y
+g2/e+7g89QNIyJ9gt8SCTI0yf2B7ObdIfnzct++S5puhAlsOAgQ0/imPXtFIGQt8
+w9ezl0Az8EcLkiU9U3/uEUT7Jcd6wi9nBaTCdnv3IexxJbO/JEs+K+qrSlwi9e/H
+q8oPbw0Q9iJ3C2BLMVsVizezwpOo5bPbg5Xh7wZwroe5Ddf+6N2HpmAIn9HgbWne
+yDC++oc/+xw7NWXLMUE0ZCSvCs7ebqoI37HAcM6638foCIP9Pe12jAJqmfRvpGfG
+kSLeKy9cvuATNYySk/8iPPHAbh0Vi6ITZtjvcTKYt86nmKvpsD84bEaSihZD3GC3
+hk5iTG2oYdImrGGnzLwOpazpcm0aPOhB5YRB7xzoyQmpzZWXzpyOYpweODnd3A8l
+ScFk6Lu0rf3WnDaFHOjV
+=bPxQ
+-----END PGP SIGNATURE-----
 
-BTW, thanks for the review and applying.
-
-Regards.
-
--- 
-Yann Droneaud
-OPTEYA
-
+--XsQoSWH+UP9D9v3l--
