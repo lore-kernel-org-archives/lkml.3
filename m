@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab3GJGLD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 02:11:03 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:53478 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751982Ab3GJGLB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 02:11:01 -0400
-Message-ID: <1373436657.7970.1.camel@dabdike>
-Subject: Re: [PATCH 0/3] [SCSI] megaraid: Remove local (struct pci_dev)
- pdev's
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: adam radford <aradford@gmail.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>, linux-pci@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Jul 2013 07:10:57 +0100
-In-Reply-To: <CAHtARFHbEz8UQUjh5cPSFYDxqW93EmFz7aiQ=91hfkDj0fCWdQ@mail.gmail.com>
-References: <20130709203927.31676.35169.stgit@amt.stowe>
-	 <1373404695.18560.17.camel@dabdike>
-	 <CAHtARFHbEz8UQUjh5cPSFYDxqW93EmFz7aiQ=91hfkDj0fCWdQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753351Ab3GJGL4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 02:11:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42878 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750696Ab3GJGLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 02:11:55 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [RFC 0/4] perf tools: Remove event types data
+Date: Wed, 10 Jul 2013 08:11:48 +0200
+Message-ID: <1500509.qlU7PPnHQq@hammer82.arch.suse.de>
+User-Agent: KMail/4.8.5 (Linux/3.4.47-2.38-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
+References: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-09 at 15:12 -0700, adam radford wrote:
-> On Tue, Jul 9, 2013 at 2:18 PM, James Bottomley
-> > Adam, you do drive by coding on this for LSI ... ack or reject, please.
+On Tuesday, July 09, 2013 06:48:55 PM Jiri Olsa wrote:
+> hi,
+> following up on the 'perf timechart' FIXME note and changing
+> its tracepoint match not to use event types data.
 
-> I have just now located my box of MegaRAID Parallel SCSI controllers.
-> I will review and test the patch series from Myron and respond by next Monday.
+Looks sane and pretty straight forward.
+Still I am not that deep involved in perf to give a Reviewed-by: quickly...
 
-Thanks,
+#define SUPPORT_OLD_POWER_EVENTS
+could also vanish, maybe with the next round.
 
-James
-
-
+         Thomas
