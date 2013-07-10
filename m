@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab3GJQXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 12:23:36 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33333 "EHLO bear.ext.ti.com"
+	id S1755015Ab3GJQXq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 12:23:46 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:50250 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754792Ab3GJQXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 12:23:34 -0400
+	id S1754756Ab3GJQXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 12:23:40 -0400
 From: Roger Quadros <rogerq@ti.com>
 To: <stern@rowland.harvard.edu>
 CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>,
@@ -13,10 +13,10 @@ CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>,
         <tony@atomide.com>, <ruslan.bilovol@ti.com>,
         <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Roger Quadros <rogerq@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
-Subject: [PATCH 4/6] mfd: omap-usb-host: Put pins in IDLE state on suspend
-Date: Wed, 10 Jul 2013 19:23:00 +0300
-Message-ID: <1373473380-27515-1-git-send-email-rogerq@ti.com>
+        Roger Quadros <rogerq@ti.com>
+Subject: [PATCH 5/6] USB: Support wakeup IRQ for suspended controllers
+Date: Wed, 10 Jul 2013 19:23:13 +0300
+Message-ID: <1373473393-27552-1-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1373473081-27181-1-git-send-email-rogerq@ti.com>
 References: <1373473081-27181-1-git-send-email-rogerq@ti.com>
@@ -26,97 +26,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to support wake up from suspend use the pinctrl
-framework to put the USB host pins in IDLE state during suspend.
+Some platforms e.g. ehci-omap can generate an interrupt
+(i.e. remote wakeup) even when the controller is suspended i.e.
+HW_ACCESSIBLE is cleared.
 
-CC: Samuel Ortiz <sameo@linux.intel.com>
+Introduce a flag "has_wakeup_irq" in struct usb_hcd to indicate
+such cases.
+
+We tackle this case by disabling the IRQ, scheduling a
+hub resume and enabling back the IRQ after the controller has
+resumed. This ensures that the IRQ handler runs only after the
+controller is accessible.
+
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |   22 ++++++++++++++++++++++
- 1 files changed, 22 insertions(+), 0 deletions(-)
+ drivers/usb/core/hcd.c  |   21 ++++++++++++++++++++-
+ include/linux/usb/hcd.h |    3 +++
+ 2 files changed, 23 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index fb2b3d8..3734d16 100644
---- a/drivers/mfd/omap-usb-host.c
-+++ b/drivers/mfd/omap-usb-host.c
-@@ -31,6 +31,7 @@
- #include <linux/of.h>
- #include <linux/of_platform.h>
- #include <linux/err.h>
-+#include <linux/pinctrl/consumer.h>
- 
- #include "omap-usb.h"
- 
-@@ -111,6 +112,7 @@ struct usbhs_hcd_omap {
- 	struct usbhs_omap_platform_data	*pdata;
- 
- 	u32				usbhs_rev;
-+	bool				no_idle;
- };
- /*-------------------------------------------------------------------------*/
- 
-@@ -325,6 +327,7 @@ static int usbhs_runtime_resume(struct device *dev)
- 
- 	dev_dbg(dev, "usbhs_runtime_resume\n");
- 
-+	pinctrl_pm_select_default_state(dev);
- 	omap_tll_enable(pdata);
- 
- 	if (!IS_ERR(omap->ehci_logic_fck))
-@@ -378,6 +381,12 @@ static int usbhs_runtime_suspend(struct device *dev)
- 
- 	dev_dbg(dev, "usbhs_runtime_suspend\n");
- 
-+	if (omap->no_idle) {
-+		dev_dbg(dev, "%s: Not suspending as IDLE pins not available\n",
-+					__func__);
-+		return -EBUSY;
+diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
+index 014dc99..933d8f1 100644
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -2161,6 +2161,11 @@ static void hcd_resume_work(struct work_struct *work)
+ 	usb_lock_device(udev);
+ 	usb_remote_wakeup(udev);
+ 	usb_unlock_device(udev);
++	if (HCD_IRQ_DISABLED(hcd)) {
++		/* We can now process IRQs so enable IRQ */
++		clear_bit(HCD_FLAG_IRQ_DISABLED, &hcd->flags);
++		enable_irq(hcd->irq);
 +	}
-+
- 	for (i = 0; i < omap->nports; i++) {
- 		switch (pdata->port_mode[i]) {
- 		case OMAP_EHCI_PORT_MODE_HSIC:
-@@ -401,6 +410,7 @@ static int usbhs_runtime_suspend(struct device *dev)
- 		clk_disable(omap->ehci_logic_fck);
- 
- 	omap_tll_disable(pdata);
-+	pinctrl_pm_select_idle_state(dev);
- 
- 	return 0;
  }
-@@ -608,6 +618,14 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
  
-+	if (!dev->pins || !dev->pins->idle_state) {
-+		/* If IDLE pins are not available, we can't remote wakeup,
-+		 * so prevent idling in that case.
+ /**
+@@ -2248,7 +2253,21 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd)
+ 	 */
+ 	local_irq_save(flags);
+ 
+-	if (unlikely(HCD_DEAD(hcd) || !HCD_HW_ACCESSIBLE(hcd)))
++	if (unlikely(HCD_DEAD(hcd)))
++		rc = IRQ_NONE;
++	else if (unlikely(!HCD_HW_ACCESSIBLE(hcd) && hcd->has_wakeup_irq)) {
++		/*
++		 * We got a wakeup interrupt while the controller was
++		 * suspending or suspended.  We can't handle it now, so
++		 * disable the IRQ and resume the root hub (and hence
++		 * the controller too).
 +		 */
-+		omap->no_idle = true;
-+		dev_info(dev, "No IDLE pins so runtime idle disabled\n");
-+	}
++		disable_irq_nosync(hcd->irq);
++		set_bit(HCD_FLAG_IRQ_DISABLED, &hcd->flags);
++		usb_hcd_resume_root_hub(hcd);
 +
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	omap->uhh_base = devm_ioremap_resource(dev, res);
- 	if (IS_ERR(omap->uhh_base))
-@@ -796,6 +814,8 @@ static int usbhs_omap_probe(struct platform_device *pdev)
- 		}
- 	}
++		rc = IRQ_HANDLED;
++	} else if (unlikely(!HCD_HW_ACCESSIBLE(hcd)))
+ 		rc = IRQ_NONE;
+ 	else if (hcd->driver->irq(hcd) == IRQ_NONE)
+ 		rc = IRQ_NONE;
+diff --git a/include/linux/usb/hcd.h b/include/linux/usb/hcd.h
+index 1e88377..5eb9f85 100644
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -110,6 +110,7 @@ struct usb_hcd {
+ #define HCD_FLAG_WAKEUP_PENDING		4	/* root hub is resuming? */
+ #define HCD_FLAG_RH_RUNNING		5	/* root hub is running? */
+ #define HCD_FLAG_DEAD			6	/* controller has died? */
++#define HCD_FLAG_IRQ_DISABLED		7	/* Interrupt was disabled */
  
-+	pinctrl_pm_select_default_state(dev);
-+
- 	return 0;
+ 	/* The flags can be tested using these macros; they are likely to
+ 	 * be slightly faster than test_bit().
+@@ -120,6 +121,7 @@ struct usb_hcd {
+ #define HCD_WAKEUP_PENDING(hcd)	((hcd)->flags & (1U << HCD_FLAG_WAKEUP_PENDING))
+ #define HCD_RH_RUNNING(hcd)	((hcd)->flags & (1U << HCD_FLAG_RH_RUNNING))
+ #define HCD_DEAD(hcd)		((hcd)->flags & (1U << HCD_FLAG_DEAD))
++#define HCD_IRQ_DISABLED(hcd)	((hcd)->flags & (1U << HCD_FLAG_IRQ_DISABLED))
  
- err_alloc:
-@@ -872,6 +892,8 @@ static int usbhs_omap_remove(struct platform_device *pdev)
+ 	/* Flags that get set only during HCD registration or removal. */
+ 	unsigned		rh_registered:1;/* is root hub registered? */
+@@ -132,6 +134,7 @@ struct usb_hcd {
+ 	unsigned		wireless:1;	/* Wireless USB HCD */
+ 	unsigned		authorized_default:1;
+ 	unsigned		has_tt:1;	/* Integrated TT in root hub */
++	unsigned		has_wakeup_irq:1; /* Can IRQ when suspended */
  
- 	/* remove children */
- 	device_for_each_child(&pdev->dev, NULL, usbhs_omap_remove_child);
-+	pinctrl_pm_select_idle_state(&pdev->dev);
-+
- 	return 0;
- }
- 
+ 	unsigned int		irq;		/* irq allocated */
+ 	void __iomem		*regs;		/* device memory/io */
 -- 
 1.7.4.1
 
