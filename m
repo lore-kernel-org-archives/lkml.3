@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab3GJOSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:18:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13892 "EHLO mga01.intel.com"
+	id S1754588Ab3GJOSw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:18:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51081 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab3GJOSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:18:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1036,1363158000"; 
-   d="scan'208";a="368053827"
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-Subject: [PATCH v2] socket.7: add description for SO_BUSY_POLL
-To: Micahel Kerrisk <mtk.manpages@gmail.com>
-Cc: linux-man@vger.kernel.org, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eliezer Tamir <eliezer@tamir.org.il>
-Date: Wed, 10 Jul 2013 17:18:35 +0300
-Message-ID: <20130710141835.15799.61657.stgit@ladj378.jer.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1754147Ab3GJOSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:18:45 -0400
+Date: Wed, 10 Jul 2013 16:18:20 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 06/19] perf ftrace: Add support for --pid option
+Message-ID: <20130710141820.GA5931@krava.brq.redhat.com>
+References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
+ <1372230862-15861-7-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372230862-15861-7-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add description for the SO_BUSY_POLL socket option to the socket(7) manpage.
+On Wed, Jun 26, 2013 at 04:14:09PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> The -p (--pid) option enables to trace existing process by its pid.
 
-v2
-fixed typos reported by Rasmus Villemoes
+hi,
+I can't get any output from -p for live subcommand:
 
-Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
----
+[jolsa@krava perf]$ pgrep yes
+6443
+[jolsa@krava perf]$ sudo ./perf ftrace live -p `pgrep yes`
 
- man7/socket.7 |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
-
-diff --git a/man7/socket.7 b/man7/socket.7
-index f2213eb..5edcb09 100644
---- a/man7/socket.7
-+++ b/man7/socket.7
-@@ -694,6 +694,31 @@ for details on control messages.
- Gets the socket type as an integer (e.g.,
- .BR SOCK_STREAM ).
- This socket option is read-only.
-+.TP
-+.B SO_BUSY_POLL
-+Sets the approximate time in microseconds to busy poll on a blocking receive
-+when there is no data. Increasing this value requires
-+.BR CAP_NET_ADMIN . 
-+The default for this option is controlled by the
-+.I /proc/sys/net/core/busy_read
-+file. 
-+
-+The value in the  
-+.I /proc/sys/net/core/busy_poll
-+file determines how long 
-+.BR select (2)
-+and 
-+.BR poll (2)
-+will busy poll when they operate on sockets with 
-+.BR SO_BUSY_POLL
-+set and no events to report are found.
-+
-+In both cases busy polling will only be done when the socket last received data
-+from a network device that supports this option.
-+
-+While busy polling may improve latency of some applications, care must be
-+taken when using it since this will increase both CPU utilization and power usage.
-+
- .SS Signals
- When writing onto a connection-oriented socket that has been shut down
- (by the local or the remote end)
-
+jirka
