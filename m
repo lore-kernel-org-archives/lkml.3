@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab3GJP7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 11:59:23 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:39474 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab3GJP7P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 11:59:15 -0400
-Message-ID: <51DD848E.4050206@ahsoftware.de>
-Date: Wed, 10 Jul 2013 17:58:06 +0200
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Srinivas Pandruvada <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH 0/4] iio: hid-sensor: add module alias for autoload
-References: <1373445120-5407-1-git-send-email-holler@ahsoftware.de> <51DD7D78.2020506@linux.intel.com>
-In-Reply-To: <51DD7D78.2020506@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754909Ab3GJP7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 11:59:49 -0400
+Received: from sauhun.de ([89.238.76.85]:44348 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754056Ab3GJP7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 11:59:45 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        netdev@vger.kernel.org
+Subject: [PATCH 08/12] drivers/net/ethernet/cadence: don't use devm_pinctrl_get_select_default() in probe
+Date: Wed, 10 Jul 2013 16:57:43 +0100
+Message-Id: <1373471889-18107-8-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1373471889-18107-1-git-send-email-wsa@the-dreams.de>
+References: <1373471889-18107-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 10.07.2013 17:27, schrieb Srinivas Pandruvada:
-> Hi,
->
-> There was no intention to prevent auto loading. Did you get chance to
-> test these changes?
+Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+we can rely on device core for setting the default pins. Compile tested only.
 
-Sure, I always test patches before I send them out.
+Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
+ drivers/net/ethernet/cadence/at91_ether.c |   11 -----------
+ 1 file changed, 11 deletions(-)
 
-Ok, I haven't tested the changes with the iio HID drivers (I don't have 
-any commercial HID sensor hub, so I've just compile tested these patches 
-here, double reading them), but I've tested the similiar changes with a 
-patch for rtc-hid-sensor-time I've send out yesterday. (sorry, no link, 
-lkml.org seems dead, just search for "rtc-hid-sensor-time: add module 
-alias")
+diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
+index 3f19571..bb5d63f 100644
+--- a/drivers/net/ethernet/cadence/at91_ether.c
++++ b/drivers/net/ethernet/cadence/at91_ether.c
+@@ -29,7 +29,6 @@
+ #include <linux/of.h>
+ #include <linux/of_device.h>
+ #include <linux/of_net.h>
+-#include <linux/pinctrl/consumer.h>
+ 
+ #include "macb.h"
+ 
+@@ -309,7 +308,6 @@ static int __init at91ether_probe(struct platform_device *pdev)
+ 	struct resource *regs;
+ 	struct net_device *dev;
+ 	struct phy_device *phydev;
+-	struct pinctrl *pinctrl;
+ 	struct macb *lp;
+ 	int res;
+ 	u32 reg;
+@@ -319,15 +317,6 @@ static int __init at91ether_probe(struct platform_device *pdev)
+ 	if (!regs)
+ 		return -ENOENT;
+ 
+-	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+-	if (IS_ERR(pinctrl)) {
+-		res = PTR_ERR(pinctrl);
+-		if (res == -EPROBE_DEFER)
+-			return res;
+-
+-		dev_warn(&pdev->dev, "No pinctrl provided\n");
+-	}
+-
+ 	dev = alloc_etherdev(sizeof(struct macb));
+ 	if (!dev)
+ 		return -ENOMEM;
+-- 
+1.7.10.4
 
-It works just fine. An example output is now
-
-Jul  9 19:27:21 dockstar3 kernel: [    5.124444] rtc_hid_sensor_time 
-HID-SENSOR-2000a0.0: milliseconds supported
-Jul  9 19:27:21 dockstar3 kernel: [    5.132864] rtc_hid_sensor_time 
-HID-SENSOR-2000a0.0: rtc core: setting system clock to 2013-07-09 
-17:26:51:328000 UTC (1373390811)
-Jul  9 19:27:21 dockstar3 kernel: [    5.146105] rtc_hid_sensor_time 
-HID-SENSOR-2000a0.0: rtc core: registered hid-sensor-time as rtc0
-
-Before the output was e.g.
-
-HID-SENSOR-2000a0 HID-SENSOR-2000a0.0: rtc core: registered 
-hid-sensor-time as rtc0
-
-instead of the above with the descriptive rtc_hid_sensor_time.
-
-Automatic loading of modules works too and it works on ARM, Intel and 
-AMD as module or static linked. ;)
-
-Regards,
-
-Alexander Holler
