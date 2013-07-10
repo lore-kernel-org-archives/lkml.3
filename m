@@ -1,106 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab3GJQew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 12:34:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58190 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754095Ab3GJQev (ORCPT
+	id S1754726Ab3GJQiZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 12:38:25 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49368 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754056Ab3GJQiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 12:34:51 -0400
-Date: Wed, 10 Jul 2013 17:34:11 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Ashish Sangwan <ashishsangwan2@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-        Ashish Sangwan <a.sangwan@samsung.com>,
-        "linux-arm@lists.infradead.org" <linux-arm@lists.infradead.org>
-Subject: Re: Seg fault occurs when running statically compiled binary from
- kernel using call_usermodehelper
-Message-ID: <20130710163410.GA30514@mudshark.cambridge.arm.com>
-References: <CAOiN93mGTu9w9rVNCrbbH1sccXY9VJhaCmg+dS7Rk9mMgKHBaA@mail.gmail.com>
- <CAOiN93=Nx77RkbNuEJMV617MjV5+GmorF0G3vyLy1SwQcuCs+g@mail.gmail.com>
- <CAOiN93nH9fyHoz4yrZmJ-OKCy6ogdt5bYartXCBgP5eHMUBPdw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOiN93nH9fyHoz4yrZmJ-OKCy6ogdt5bYartXCBgP5eHMUBPdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Jul 2013 12:38:24 -0400
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Mark Brown <broonie@kernel.org>, Grant Likely <grant.likely@linaro.org>
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] spi: revert master->setup function removal for altera and nuc900
+Date: Wed, 10 Jul 2013 10:38:18 -0600
+Message-Id: <1373474298-13470-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 11:42:25AM +0100, Ashish Sangwan wrote:
-> Any heads up on this?
-> 
-> or could someone just advice what can we do to debug this?
-> 
-> The ret_from_fork currently looks like following:
-> /*
->  * This is how we return from a fork.
->  */
-> ENTRY(ret_from_fork)
->         bl      schedule_tail
->         cmp     r5, #0
->         movne   r0, r4
->         adrne   lr, BSYM(1f)
->         movne   pc, r5
-> 1:      get_thread_info tsk
->         b       ret_slow_syscall
-> ENDPROC(ret_from_fork)
-> 
-> Is this a real issue? Because we are getting this just for static binaries.
+From: Stephen Warren <swarren@nvidia.com>
 
-Ok, I've finally got to the bottom of this, but I'm not sure on the best way
-to fix it. The issue is that libc expects r0 to contain a function pointer
-to be invoked at exit (rtld_fini), to clean up after a dynamic linker. If
-this pointer is NULL, then it is ignored. We actually zero this pointer in
-our ELF_PLAT_INIT macro.
+Commit 24778be "spi: convert drivers to use bits_per_word_mask" removed
+what appeared to be redundant code from many drivers. However, it
+appears that in the spi-bitbang case, these functions are required by
+the spi-bitbang core, even if they don't do anything. Restore them.
 
-At the same time, we have this strange code called next from the ARM ELF
-loader:
+For 3.12, the spi-bitbang core should be adjusted not to require these
+callbacks to exist if they don't need to do anything.
 
-	regs->ARM_r2 = stack[2];	/* r2 (envp) */			\
-	regs->ARM_r1 = stack[1];	/* r1 (argv) */			\
-	regs->ARM_r0 = stack[0];	/* r0 (argc) */			\
+This is the equivalent of Michal Simek's patch "spi/xilinx: Revert
+master->setup function removal", applied to other affected drivers.
 
-which puts argc into r0. Usually this gets overwritten by the return value
-of execve (0), so everything hangs together. With kernel threads this is
-different since we do the exec from ____call_usermodehelper on the stack and
-then return to the new application via ret_from_fork, which takes the
-slowpath; popping r0 from pt_regs and making argc visible to the library.
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+Sorry, I suck:-(
 
-When the application exits and libc starts running its exit functions, we
-jump to hyperspace.
+ drivers/spi/spi-altera.c | 12 ++++++++++++
+ drivers/spi/spi-nuc900.c | 13 +++++++++++++
+ 2 files changed, 25 insertions(+)
 
-My inclination would be to remove the stack popping above (patch below),
-but it's a user-visible change and I'm not sure if something like OABI
-requires it.
-
-Will
-
---->8
-
-diff --git a/arch/arm/include/asm/processor.h b/arch/arm/include/asm/processor.h
-index 06e7d50..413f387 100644
---- a/arch/arm/include/asm/processor.h
-+++ b/arch/arm/include/asm/processor.h
-@@ -54,7 +54,6 @@ struct thread_struct {
+diff --git a/drivers/spi/spi-altera.c b/drivers/spi/spi-altera.c
+index 8a6bb37..81b9adb 100644
+--- a/drivers/spi/spi-altera.c
++++ b/drivers/spi/spi-altera.c
+@@ -103,6 +103,16 @@ static void altera_spi_chipsel(struct spi_device *spi, int value)
+ 	}
+ }
  
- #define start_thread(regs,pc,sp)                                       \
- ({                                                                     \
--       unsigned long *stack = (unsigned long *)sp;                     \
-        memset(regs->uregs, 0, sizeof(regs->uregs));                    \
-        if (current->personality & ADDR_LIMIT_32BIT)                    \
-                regs->ARM_cpsr = USR_MODE;                              \
-@@ -65,9 +64,6 @@ struct thread_struct {
-        regs->ARM_cpsr |= PSR_ENDSTATE;                                 \
-        regs->ARM_pc = pc & ~1;         /* pc */                        \
-        regs->ARM_sp = sp;              /* sp */                        \
--       regs->ARM_r2 = stack[2];        /* r2 (envp) */                 \
--       regs->ARM_r1 = stack[1];        /* r1 (argv) */                 \
--       regs->ARM_r0 = stack[0];        /* r0 (argc) */                 \
-        nommu_start_thread(regs);                                       \
- })
++static int altera_spi_setupxfer(struct spi_device *spi, struct spi_transfer *t)
++{
++	return 0;
++}
++
++static int altera_spi_setup(struct spi_device *spi)
++{
++	return 0;
++}
++
+ static inline unsigned int hw_txbyte(struct altera_spi *hw, int count)
+ {
+ 	if (hw->tx) {
+@@ -221,6 +231,7 @@ static int altera_spi_probe(struct platform_device *pdev)
+ 	master->bus_num = pdev->id;
+ 	master->num_chipselect = 16;
+ 	master->mode_bits = SPI_CS_HIGH;
++	master->setup = altera_spi_setup;
  
+ 	hw = spi_master_get_devdata(master);
+ 	platform_set_drvdata(pdev, hw);
+@@ -229,6 +240,7 @@ static int altera_spi_probe(struct platform_device *pdev)
+ 	hw->bitbang.master = spi_master_get(master);
+ 	if (!hw->bitbang.master)
+ 		return err;
++	hw->bitbang.setup_transfer = altera_spi_setupxfer;
+ 	hw->bitbang.chipselect = altera_spi_chipsel;
+ 	hw->bitbang.txrx_bufs = altera_spi_txrx;
+ 
+diff --git a/drivers/spi/spi-nuc900.c b/drivers/spi/spi-nuc900.c
+index 2ad3d74..150d854 100644
+--- a/drivers/spi/spi-nuc900.c
++++ b/drivers/spi/spi-nuc900.c
+@@ -174,6 +174,17 @@ static void nuc900_spi_gobusy(struct nuc900_spi *hw)
+ 	spin_unlock_irqrestore(&hw->lock, flags);
+ }
+ 
++static int nuc900_spi_setupxfer(struct spi_device *spi,
++				 struct spi_transfer *t)
++{
++	return 0;
++}
++
++static int nuc900_spi_setup(struct spi_device *spi)
++{
++	return 0;
++}
++
+ static inline unsigned int hw_txbyte(struct nuc900_spi *hw, int count)
+ {
+ 	return hw->tx ? hw->tx[count] : 0;
+@@ -366,8 +377,10 @@ static int nuc900_spi_probe(struct platform_device *pdev)
+ 	master->num_chipselect     = hw->pdata->num_cs;
+ 	master->bus_num            = hw->pdata->bus_num;
+ 	hw->bitbang.master         = hw->master;
++	hw->bitbang.setup_transfer = nuc900_spi_setupxfer;
+ 	hw->bitbang.chipselect     = nuc900_spi_chipsel;
+ 	hw->bitbang.txrx_bufs      = nuc900_spi_txrx;
++	hw->bitbang.master->setup  = nuc900_spi_setup;
+ 
+ 	hw->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (hw->res == NULL) {
+-- 
+1.8.1.5
+
