@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754694Ab3GJOsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:48:20 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29016 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab3GJOsT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:48:19 -0400
-Message-ID: <51DD740C.5090000@oracle.com>
-Date: Wed, 10 Jul 2013 10:47:40 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Subject: Re: timer: lockup in run_timer_softirq()
-References: <51DC902F.3070403@oracle.com> <20130710095459.GE17211@twins.programming.kicks-ass.net>
-In-Reply-To: <20130710095459.GE17211@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754683Ab3GJOvc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:51:32 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:56099 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752792Ab3GJOva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:51:30 -0400
+Message-ID: <1373467888.14604.32.camel@joe-AO722>
+Subject: Re: [PATCH] firmware/dmi_scan: Drop OOM messages
+From: Joe Perches <joe@perches.com>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 10 Jul 2013 07:51:28 -0700
+In-Reply-To: <1373460424.4399.45.camel@chaos.site>
+References: <1373460424.4399.45.camel@chaos.site>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 05:54 AM, Peter Zijlstra wrote:
-> On Tue, Jul 09, 2013 at 06:35:27PM -0400, Sasha Levin wrote:
->> While going through the NMI dump, I noticed that it's very incomplete, and full of:
->>
->> [ 2536.500130] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler)
->> took too long to run: 697182.008 msecs
->
-> Now I would actually expect arch_trigger_all_cpu_backtrace_handler() to
-> issue this warning, that said, ~700 seconds is a bit long, I'm fairly
-> sure it didn't actually take that long, you'd have noticed your vm being
-> 'away' for 10+ minutes I'd think, no?
->
->
-> There's something entirely fishy with that stuff, let me to stare at it.
+even more trivial...
 
-Yeah, it didn't actually hang that long - that number is bogus.
+On Wed, 2013-07-10 at 14:47 +0200, Jean Delvare wrote:
+> +++ linux-3.11-rc0/drivers/firmware/dmi_scan.c	2013-07-10 14:11:56.544792703 +0200
+> @@ -62,8 +62,6 @@ static const char * __init dmi_string(co
+>  	str = dmi_alloc(len);
+>  	if (str != NULL)
+[]
+> @@ -219,10 +217,8 @@ static void __init dmi_save_one_device(i
+>  	dev = dmi_alloc(sizeof(*dev) + strlen(name) + 1);
+> +	if (!dev)
+>  		return;
+[]
+> @@ -258,10 +254,8 @@ static void __init dmi_save_oem_strings_
+>  		dev = dmi_alloc(sizeof(*dev));
+> +		if (!dev)
+>  			break;
+[]
+> @@ -277,18 +271,14 @@ static void __init dmi_save_ipmi_device(
+>  	data = dmi_alloc(dm->length);
+> +	if (data == NULL)
+>  		return;
+[]
+>  	dev = dmi_alloc(sizeof(*dev));
+> +	if (!dev)
+>  		return;
+[]
+> @@ -303,10 +293,9 @@ static void __init dmi_save_dev_onboard(
+>  	onboard_dev = dmi_alloc(sizeof(*onboard_dev) + strlen(name) + 1);
+> +	if (!onboard_dev)
+>  		return;
 
+It'd also be nice to use the same test style
+in all 6 uses.
 
-Thanks,
-Sasha
+	if (!foo)
+
 
