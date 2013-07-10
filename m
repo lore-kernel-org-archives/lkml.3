@@ -1,62 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525Ab3GJLzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:55:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18096 "EHLO mga02.intel.com"
+	id S1754567Ab3GJL4E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:56:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:63167 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754469Ab3GJLzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:55:51 -0400
+	id S1754531Ab3GJL4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 07:56:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,1035,1363158000"; 
-   d="scan'208";a="343302186"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH 1/5] pinctrl-baytrail: fix indentations
-Date: Wed, 10 Jul 2013 14:55:36 +0300
-Message-Id: <1373457340-16666-2-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1373457340-16666-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1373457340-16666-1-git-send-email-andriy.shevchenko@linux.intel.com>
+   d="scan'208";a="367754954"
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Subject: [PATCH net-next 3/3] net: rename busy poll socket op and globals
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Jonathan Corbet <corbet@lwn.net>, e1000-devel@lists.sourceforge.net,
+        Eilon Greenstein <eilong@broadcom.com>,
+        Amir Vadai <amirv@mellanox.com>, Eric Dumazet <erdnetdev@gmail.com>,
+        Willem de Bruijn <willemb@google.com>,
+        Eliezer Tamir <eliezer@tamir.org.il>
+Date: Wed, 10 Jul 2013 14:55:18 +0300
+Message-ID: <20130710115518.12715.14118.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130710115459.12715.80492.stgit@ladj378.jer.intel.com>
+References: <20130710115459.12715.80492.stgit@ladj378.jer.intel.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two minor issues with indentation in the code. This patch fixes them.
-No functional changes.
+Rename LL_SO to BUSY_POLL_SO
+Rename sysctl_net_ll_{read,poll} to sysctl_busy_{read,poll}
+Fix up users of these variables.
+Fix documentation for sysctl.
 
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+a patch for the socket.7  man page will follow separately,
+because of limitations of my mail setup.
+
+Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
 ---
- drivers/pinctrl/Kconfig            | 2 +-
- drivers/pinctrl/pinctrl-baytrail.c | 1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
-index 5a8ad51..bc830af 100644
---- a/drivers/pinctrl/Kconfig
-+++ b/drivers/pinctrl/Kconfig
-@@ -61,7 +61,7 @@ config PINCTRL_AT91
- config PINCTRL_BAYTRAIL
- 	bool "Intel Baytrail GPIO pin control"
- 	depends on GPIOLIB && ACPI && X86
--        select IRQ_DOMAIN
-+	select IRQ_DOMAIN
- 	help
- 	  driver for memory mapped GPIO functionality on Intel Baytrail
- 	  platforms. Supports 3 banks with 102, 28 and 44 gpios.
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-index e9d735d..fccf72e 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -516,6 +516,7 @@ static int byt_gpio_remove(struct platform_device *pdev)
+ Documentation/sysctl/net.txt           |   17 +++++++++--------
+ arch/alpha/include/uapi/asm/socket.h   |    2 +-
+ arch/avr32/include/uapi/asm/socket.h   |    2 +-
+ arch/cris/include/uapi/asm/socket.h    |    2 +-
+ arch/frv/include/uapi/asm/socket.h     |    2 +-
+ arch/h8300/include/uapi/asm/socket.h   |    2 +-
+ arch/ia64/include/uapi/asm/socket.h    |    2 +-
+ arch/m32r/include/uapi/asm/socket.h    |    2 +-
+ arch/mips/include/uapi/asm/socket.h    |    2 +-
+ arch/mn10300/include/uapi/asm/socket.h |    2 +-
+ arch/parisc/include/uapi/asm/socket.h  |    2 +-
+ arch/powerpc/include/uapi/asm/socket.h |    2 +-
+ arch/s390/include/uapi/asm/socket.h    |    2 +-
+ arch/sparc/include/uapi/asm/socket.h   |    2 +-
+ arch/xtensa/include/uapi/asm/socket.h  |    2 +-
+ include/net/busy_poll.h                |    8 ++++----
+ include/uapi/asm-generic/socket.h      |    2 +-
+ net/core/sock.c                        |    6 +++---
+ net/core/sysctl_net_core.c             |    8 ++++----
+ net/socket.c                           |    4 ++--
+ 20 files changed, 37 insertions(+), 36 deletions(-)
+
+diff --git a/Documentation/sysctl/net.txt b/Documentation/sysctl/net.txt
+index 7323b88..2ac378f 100644
+--- a/Documentation/sysctl/net.txt
++++ b/Documentation/sysctl/net.txt
+@@ -50,26 +50,27 @@ The maximum number of packets that kernel can handle on a NAPI interrupt,
+ it's a Per-CPU variable.
+ Default: 64
+ 
+-low_latency_read
++busy_read
+ ----------------
+ Low latency busy poll timeout for socket reads. (needs CONFIG_NET_LL_RX_POLL)
+ Approximate time in us to busy loop waiting for packets on the device queue.
+-This sets the default value of the SO_LL socket option.
+-Can be set or overridden per socket by setting socket option SO_LL, which is
+-the preferred method of enabling.
+-If you need to enable the feature globally via sysctl, a value of 50 is recommended.
++This sets the default value of the SO_BUSY_POLL socket option.
++Can be set or overridden per socket by setting socket option SO_BUSY_POLL,
++which is the preferred method of enabling. If you need to enable the feature
++globally via sysctl, a value of 50 is recommended.
+ Will increase power usage.
+ Default: 0 (off)
+ 
+-low_latency_poll
++busy_poll
+ ----------------
+ Low latency busy poll timeout for poll and select. (needs CONFIG_NET_LL_RX_POLL)
+ Approximate time in us to busy loop waiting for events.
+ Recommended value depends on the number of sockets you poll on.
+ For several sockets 50, for several hundreds 100.
+ For more than that you probably want to use epoll.
+-Note that only sockets with SO_LL set will be busy polled, so you want to either
+-selectively set SO_LL on those sockets or set sysctl.net.low_latency_read globally.
++Note that only sockets with SO_BUSY_POLL set will be busy polled,
++so you want to either selectively set SO_BUSY_POLL on those sockets or set
++sysctl.net.busy_read globally.
+ Will increase power usage.
+ Default: 0 (off)
+ 
+diff --git a/arch/alpha/include/uapi/asm/socket.h b/arch/alpha/include/uapi/asm/socket.h
+index 4885825..467de01 100644
+--- a/arch/alpha/include/uapi/asm/socket.h
++++ b/arch/alpha/include/uapi/asm/socket.h
+@@ -81,6 +81,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL			46
+ 
+ #endif /* _UAPI_ASM_SOCKET_H */
+diff --git a/arch/avr32/include/uapi/asm/socket.h b/arch/avr32/include/uapi/asm/socket.h
+index 79b6179..11c4259 100644
+--- a/arch/avr32/include/uapi/asm/socket.h
++++ b/arch/avr32/include/uapi/asm/socket.h
+@@ -74,6 +74,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* __ASM_AVR32_SOCKET_H */
+diff --git a/arch/cris/include/uapi/asm/socket.h b/arch/cris/include/uapi/asm/socket.h
+index 47b1ec5..eb723e5 100644
+--- a/arch/cris/include/uapi/asm/socket.h
++++ b/arch/cris/include/uapi/asm/socket.h
+@@ -76,7 +76,7 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _ASM_SOCKET_H */
+ 
+diff --git a/arch/frv/include/uapi/asm/socket.h b/arch/frv/include/uapi/asm/socket.h
+index dbc0852..f0cb1c3 100644
+--- a/arch/frv/include/uapi/asm/socket.h
++++ b/arch/frv/include/uapi/asm/socket.h
+@@ -74,7 +74,7 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _ASM_SOCKET_H */
+ 
+diff --git a/arch/h8300/include/uapi/asm/socket.h b/arch/h8300/include/uapi/asm/socket.h
+index a38d38a..9490758 100644
+--- a/arch/h8300/include/uapi/asm/socket.h
++++ b/arch/h8300/include/uapi/asm/socket.h
+@@ -74,6 +74,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _ASM_SOCKET_H */
+diff --git a/arch/ia64/include/uapi/asm/socket.h b/arch/ia64/include/uapi/asm/socket.h
+index d3358b7..556d070 100644
+--- a/arch/ia64/include/uapi/asm/socket.h
++++ b/arch/ia64/include/uapi/asm/socket.h
+@@ -83,6 +83,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _ASM_IA64_SOCKET_H */
+diff --git a/arch/m32r/include/uapi/asm/socket.h b/arch/m32r/include/uapi/asm/socket.h
+index 44aaf46..24be7c8 100644
+--- a/arch/m32r/include/uapi/asm/socket.h
++++ b/arch/m32r/include/uapi/asm/socket.h
+@@ -74,6 +74,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _ASM_M32R_SOCKET_H */
+diff --git a/arch/mips/include/uapi/asm/socket.h b/arch/mips/include/uapi/asm/socket.h
+index 6a07992..61c01f0 100644
+--- a/arch/mips/include/uapi/asm/socket.h
++++ b/arch/mips/include/uapi/asm/socket.h
+@@ -92,6 +92,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _UAPI_ASM_SOCKET_H */
+diff --git a/arch/mn10300/include/uapi/asm/socket.h b/arch/mn10300/include/uapi/asm/socket.h
+index db80fd3..e2a2b203 100644
+--- a/arch/mn10300/include/uapi/asm/socket.h
++++ b/arch/mn10300/include/uapi/asm/socket.h
+@@ -74,6 +74,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _ASM_SOCKET_H */
+diff --git a/arch/parisc/include/uapi/asm/socket.h b/arch/parisc/include/uapi/asm/socket.h
+index f866fff..71700e6 100644
+--- a/arch/parisc/include/uapi/asm/socket.h
++++ b/arch/parisc/include/uapi/asm/socket.h
+@@ -73,7 +73,7 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	0x4026
+ 
+-#define SO_LL			0x4027
++#define SO_BUSY_POLL		0x4027
+ 
+ /* O_NONBLOCK clashes with the bits used for socket types.  Therefore we
+  * have to define SOCK_NONBLOCK to a different value here.
+diff --git a/arch/powerpc/include/uapi/asm/socket.h b/arch/powerpc/include/uapi/asm/socket.h
+index 405fb09..a6d7446 100644
+--- a/arch/powerpc/include/uapi/asm/socket.h
++++ b/arch/powerpc/include/uapi/asm/socket.h
+@@ -81,6 +81,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif	/* _ASM_POWERPC_SOCKET_H */
+diff --git a/arch/s390/include/uapi/asm/socket.h b/arch/s390/include/uapi/asm/socket.h
+index 0c5105fb..9249449 100644
+--- a/arch/s390/include/uapi/asm/socket.h
++++ b/arch/s390/include/uapi/asm/socket.h
+@@ -80,6 +80,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* _ASM_SOCKET_H */
+diff --git a/arch/sparc/include/uapi/asm/socket.h b/arch/sparc/include/uapi/asm/socket.h
+index b46c3fa..4e1d66c 100644
+--- a/arch/sparc/include/uapi/asm/socket.h
++++ b/arch/sparc/include/uapi/asm/socket.h
+@@ -70,7 +70,7 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	0x0029
+ 
+-#define SO_LL			0x0030
++#define SO_BUSY_POLL		0x0030
+ 
+ /* Security levels - as per NRL IPv6 - don't actually do anything */
+ #define SO_SECURITY_AUTHENTICATION		0x5001
+diff --git a/arch/xtensa/include/uapi/asm/socket.h b/arch/xtensa/include/uapi/asm/socket.h
+index b21ace4..c114483 100644
+--- a/arch/xtensa/include/uapi/asm/socket.h
++++ b/arch/xtensa/include/uapi/asm/socket.h
+@@ -85,6 +85,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif	/* _XTENSA_SOCKET_H */
+diff --git a/include/net/busy_poll.h b/include/net/busy_poll.h
+index ab71831..23e4515 100644
+--- a/include/net/busy_poll.h
++++ b/include/net/busy_poll.h
+@@ -30,8 +30,8 @@
+ #ifdef CONFIG_NET_LL_RX_POLL
+ 
+ struct napi_struct;
+-extern unsigned int sysctl_net_ll_read __read_mostly;
+-extern unsigned int sysctl_net_ll_poll __read_mostly;
++extern unsigned int sysctl_net_busy_read __read_mostly;
++extern unsigned int sysctl_net_busy_poll __read_mostly;
+ 
+ /* return values from ndo_ll_poll */
+ #define LL_FLUSH_FAILED		-1
+@@ -39,7 +39,7 @@ extern unsigned int sysctl_net_ll_poll __read_mostly;
+ 
+ static inline bool net_busy_loop_on(void)
  {
- 	struct byt_gpio *vg = platform_get_drvdata(pdev);
- 	int err;
-+
- 	pm_runtime_disable(&pdev->dev);
- 	err = gpiochip_remove(&vg->chip);
- 	if (err)
--- 
-1.8.3.2
+-	return sysctl_net_ll_poll;
++	return sysctl_net_busy_poll;
+ }
+ 
+ /* a wrapper to make debug_smp_processor_id() happy
+@@ -72,7 +72,7 @@ static inline unsigned long sk_busy_loop_end_time(struct sock *sk)
+ /* in poll/select we use the global sysctl_net_ll_poll value */
+ static inline unsigned long busy_loop_end_time(void)
+ {
+-	return busy_loop_us_clock() + ACCESS_ONCE(sysctl_net_ll_poll);
++	return busy_loop_us_clock() + ACCESS_ONCE(sysctl_net_busy_poll);
+ }
+ 
+ static inline bool sk_can_busy_loop(struct sock *sk)
+diff --git a/include/uapi/asm-generic/socket.h b/include/uapi/asm-generic/socket.h
+index ca3a20d..f04b69b 100644
+--- a/include/uapi/asm-generic/socket.h
++++ b/include/uapi/asm-generic/socket.h
+@@ -76,6 +76,6 @@
+ 
+ #define SO_SELECT_ERR_QUEUE	45
+ 
+-#define SO_LL			46
++#define SO_BUSY_POLL		46
+ 
+ #endif /* __ASM_GENERIC_SOCKET_H */
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 9bfe83f..548d716 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -901,7 +901,7 @@ set_rcvbuf:
+ 		break;
+ 
+ #ifdef CONFIG_NET_LL_RX_POLL
+-	case SO_LL:
++	case SO_BUSY_POLL:
+ 		/* allow unprivileged users to decrease the value */
+ 		if ((val > sk->sk_ll_usec) && !capable(CAP_NET_ADMIN))
+ 			ret = -EPERM;
+@@ -1171,7 +1171,7 @@ int sock_getsockopt(struct socket *sock, int level, int optname,
+ 		break;
+ 
+ #ifdef CONFIG_NET_LL_RX_POLL
+-	case SO_LL:
++	case SO_BUSY_POLL:
+ 		v.val = sk->sk_ll_usec;
+ 		break;
+ #endif
+@@ -2294,7 +2294,7 @@ void sock_init_data(struct socket *sock, struct sock *sk)
+ 
+ #ifdef CONFIG_NET_LL_RX_POLL
+ 	sk->sk_napi_id		=	0;
+-	sk->sk_ll_usec		=	sysctl_net_ll_read;
++	sk->sk_ll_usec		=	sysctl_net_busy_read;
+ #endif
+ 
+ 	/*
+diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
+index 1a298cb..6609686 100644
+--- a/net/core/sysctl_net_core.c
++++ b/net/core/sysctl_net_core.c
+@@ -300,15 +300,15 @@ static struct ctl_table net_core_table[] = {
+ #endif /* CONFIG_NET_FLOW_LIMIT */
+ #ifdef CONFIG_NET_LL_RX_POLL
+ 	{
+-		.procname	= "low_latency_poll",
+-		.data		= &sysctl_net_ll_poll,
++		.procname	= "busy_poll",
++		.data		= &sysctl_net_busy_poll,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
+ 	{
+-		.procname	= "low_latency_read",
+-		.data		= &sysctl_net_ll_read,
++		.procname	= "busy_read",
++		.data		= &sysctl_net_busy_read,
+ 		.maxlen		= sizeof(unsigned int),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+diff --git a/net/socket.c b/net/socket.c
+index 6a3e9a3..829b460 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -107,8 +107,8 @@
+ #include <net/busy_poll.h>
+ 
+ #ifdef CONFIG_NET_LL_RX_POLL
+-unsigned int sysctl_net_ll_read __read_mostly;
+-unsigned int sysctl_net_ll_poll __read_mostly;
++unsigned int sysctl_net_busy_read __read_mostly;
++unsigned int sysctl_net_busy_poll __read_mostly;
+ #endif
+ 
+ static int sock_no_open(struct inode *irrelevant, struct file *dontcare);
 
