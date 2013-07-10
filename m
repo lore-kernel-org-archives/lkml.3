@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab3GJMxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 08:53:21 -0400
-Received: from hermes.synopsys.com ([198.182.44.81]:48321 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab3GJMxS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 08:53:18 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        David Miller <davem@davemloft.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "Alexey Brodkin" <Alexey.Brodkin@synopsys.com>
-Subject: Re: [GIT] Networking
-Thread-Topic: [GIT] Networking
-Thread-Index: AQHOfWie2owvXUhnK0C+FiKBsSAxWw==
-Date: Wed, 10 Jul 2013 12:52:04 +0000
-Message-ID: <4881796E12491D4BB15146FE0209CE643F61BD3D@DE02WEMBXB.internal.synopsys.com>
-References: <20130709.145325.1363244885668360965.davem@davemloft.net>
-	<20130710122523.GA357@x4>
- <CA+5PVA5AT0OLNi-=x91ks5AbigymE3BDmdoEiiNOeRoGFCFQfg@mail.gmail.com>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.225.15.131]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754285Ab3GJMzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 08:55:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:10903 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752561Ab3GJMzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 08:55:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.87,1036,1363158000"; 
+   d="scan'208";a="266389244"
+Date: Wed, 10 Jul 2013 16:01:16 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-i2c@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Christian Ruppert <christian.ruppert@abilis.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] i2c-designware: configure *CNT values from ACPI
+Message-ID: <20130710130116.GC4898@intel.com>
+References: <1373283927-21677-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1373283927-21677-2-git-send-email-mika.westerberg@linux.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373283927-21677-2-git-send-email-mika.westerberg@linux.intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 04:43 PM, Josh Boyer wrote:
-> On Wed, Jul 10, 2013 at 8:25 AM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
->> +config NET_VENDOR_ARC
->> +       bool "ARC devices"
->> +       default y
->
-> That's the option to enable the ARC vendor, not the driver.  The
-> driver config option is ARC_EMAC.  All of the other ethernet vendors
-> also default to y, so I don't think this is out of line.
+On Mon, Jul 08, 2013 at 02:45:27PM +0300, Mika Westerberg wrote:
+> Some Intel LPSS I2C devices make the *CNT values available from ACPI
+> namespace in similar way than the SDA hold value. These values allow
+> platform/BIOS to specify the most accurate *CNT values for the device
+> driver to use.
+> 
+> So change the ACPI part of the driver to use these values if they exists
+> and otherwise use the default method based solely on the input clock speed.
+> 
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+> This applies on top of following patch which is not yet in i2c tree:
+> 
+> http://permalink.gmane.org/gmane.linux.drivers.i2c/15754
+> 
+>  drivers/i2c/busses/i2c-designware-platdrv.c | 25 +++++++++++++++++++++----
+>  1 file changed, 21 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+> index c7cfdac..a1488df 100644
+> --- a/drivers/i2c/busses/i2c-designware-platdrv.c
+> +++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+> @@ -59,7 +59,6 @@ static int dw_i2c_acpi_configure(struct platform_device *pdev)
+>  	struct dw_i2c_dev *dev = platform_get_drvdata(pdev);
+>  	struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER };
+>  	acpi_handle handle = ACPI_HANDLE(&pdev->dev);
+> -	acpi_string name;
+>  
+>  	if (!handle)
+>  		return -ENODEV;
+> @@ -68,14 +67,32 @@ static int dw_i2c_acpi_configure(struct platform_device *pdev)
+>  	dev->tx_fifo_depth = 32;
+>  	dev->rx_fifo_depth = 32;
+>  
+> -	name = dev->master_cfg & DW_IC_CON_SPEED_FAST ? "FMCN" : "SSCN";
+> -	if (ACPI_SUCCESS(acpi_evaluate_object(handle, name, NULL, &buf))) {
+> +	/* Standard speed configuration */
+> +	if (ACPI_SUCCESS(acpi_evaluate_object(handle, "SSCN", NULL, &buf))) {
+>  		union acpi_object *obj = (union acpi_object *)buf.pointer;
+>  
+>  		if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 3) {
+>  			const union acpi_object *objs = obj->package.elements;
+>  
+> -			dev->sda_hold_time = (u32)objs[2].integer.value;
+> +			dev->ss_hcnt = (u16)objs[0].integer.value;
+> +			dev->ss_lcnt = (u16)objs[1].integer.value;
+> +			if (!(dev->master_cfg & DW_IC_CON_SPEED_FAST))
+> +				dev->sda_hold_time = (u32)objs[2].integer.value;
+> +		}
+> +
+> +		kfree(buf.pointer);
+> +	}
+> +	/* Fast speed configuration */
+> +	if (ACPI_SUCCESS(acpi_evaluate_object(handle, "FMCN", NULL, &buf))) {
 
-Correct I noticed that all other vendors are enabled by default.
+There is a problem with the above as it reuses buf from the previous call.
+I'll post a new revision of the patches with this fixed.
 
-And as for arc_emac driver itself it's "tristate "ARC EMAC support"". So 
-not selected by default.
-
--Alexey
+> +		union acpi_object *obj = (union acpi_object *)buf.pointer;
+> +
+> +		if (obj->type == ACPI_TYPE_PACKAGE && obj->package.count == 3) {
+> +			const union acpi_object *objs = obj->package.elements;
+> +
+> +			dev->fs_hcnt = (u16)objs[0].integer.value;
+> +			dev->fs_lcnt = (u16)objs[1].integer.value;
+> +			if (dev->master_cfg & DW_IC_CON_SPEED_FAST)
+> +				dev->sda_hold_time = (u32)objs[2].integer.value;
+>  		}
+>  
+>  		kfree(buf.pointer);
+> -- 
+> 1.8.3.2
