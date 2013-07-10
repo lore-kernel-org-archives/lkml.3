@@ -1,92 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab3GJABW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 20:01:22 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36262 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753342Ab3GJABV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 20:01:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] ACPI / scan: Always call acpi_bus_scan() for bus check notifications
-Date: Wed, 10 Jul 2013 02:11:05 +0200
-Message-ID: <19368029.jaCH7i2zvY@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1373398362.24916.4.camel@misato.fc.hp.com>
-References: <2230821.QbNohsyO0O@vostro.rjw.lan> <1373398362.24916.4.camel@misato.fc.hp.com>
+	id S1753928Ab3GJAGZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 20:06:25 -0400
+Received: from sous-sol.org ([216.99.217.87]:47509 "EHLO sequoia2.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753382Ab3GJAGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 20:06:24 -0400
+Date: Tue, 9 Jul 2013 17:05:11 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Chris Wright <chrisw@sous-sol.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: at drivers/iommu/dmar.c:484 warn_invalid_dmar with
+ Intel Motherboard
+Message-ID: <20130710000511.GC2676@sequoia2.sous-sol.org>
+References: <20130709202406.GA11867@roeck-us.net>
+ <CAErSpo6Ma1TnBP-UGGhWFN1rj48y+yTS=VmVw_s30_FWgjfdpg@mail.gmail.com>
+ <20130709223106.GA16429@roeck-us.net>
+ <20130709232252.GB2676@sequoia2.sous-sol.org>
+ <20130709234331.GA10833@roeck-us.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709234331.GA10833@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 09, 2013 01:32:42 PM Toshi Kani wrote:
-> On Mon, 2013-07-08 at 02:10 +0200, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+* Guenter Roeck (linux@roeck-us.net) wrote:
+> On Tue, Jul 09, 2013 at 04:22:52PM -0700, Chris Wright wrote:
+> > * Guenter Roeck (linux@roeck-us.net) wrote:
+> > > On Tue, Jul 09, 2013 at 03:05:39PM -0600, Bjorn Helgaas wrote:
+> > > > [+cc Joerg, David, iommu list]
+> > > > 
+> > > > On Tue, Jul 9, 2013 at 2:24 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > > > > I started seeing this problem after updating the BIOS trying fix another issue,
+> > > > > though I may have missed it earlier.
+> > > > >
+> > > > > I understand this is a BIOS bug. Would be great if someone can pass this on
+> > > > > to Intel BIOS engineers.
+> > > > 
+> > > > Maybe.  It'd be nice if Linux handled it better, though.
+> > > > 
+> > > If anyone has an idea how to do that, I'll be happy to write a patch.
 > > 
-> > An ACPI_NOTIFY_BUS_CHECK notification means that we should scan the
-> > entire namespace starting from the given handle even if the device
-> > represented by that handle is present (other devices below it may
-> > just have been added).
+> > I'm not sure there's much you can do.  The BIOS is saying there's a DMAR
+> > unit, and then saying the registers are at addr 0x0.  The kernel is
+> > simply warning you about the invalid DMAR table entry.
 > > 
-> > For this reason, modify acpi_scan_bus_device_check() to always run
-> > acpi_bus_scan() if the notification being handled is of type
-> > ACPI_NOTIFY_BUS_CHECK.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Cc: 3.10+ <stable@vger.kernel.org>
+> > One thing I've seen is the BIOS zeroing the base register address when
+> > VT-d is disabled in BIOS.  So, Guenter, a "fix" may be simply enabling
+> > VT-d in the BIOS.
+>
+> Ah, yes, I think I may have that disabled. I'll check it tonight.
 > 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> But, I think we need the additional patch below.
+> Does that really warrant a traceback, or would a warning message be more
+> appropriate (possibly telling the user to enable VT-d) ?
 
-Yes, I think you're right.
+Bottom line, the BIOS is providing what we're seeing as invalid tables.
+If it's a BIOS attempt to disable VT-d is hard to glean from invalid
+tables, and not all BIOS give interface to enable/disable VT-d.
 
-Thanks,
-Rafael
+It is a warning message, BTW.  Guess I'd be inclined to leave as it is.
 
-
-
-> =====
-> From: Toshi Kani <toshi.kani@hp.com>
-> Subject: [PATCH] ACPI: Do not call attach() if device is attached
-> 
-> attach() of ACPI scan handlers does not expect to be called multiple
-> times on a same device.  Also, the attached handler may not be changed
-> without calling its detach().  Change acpi_scan_attach_handler() not
-> to call attach() when the given device is already attached.
-> 
-> Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> ---
->  drivers/acpi/scan.c |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-> index 20757e0..2b9e867 100644
-> --- a/drivers/acpi/scan.c
-> +++ b/drivers/acpi/scan.c
-> @@ -1885,6 +1885,9 @@ static int acpi_scan_attach_handler(struct
-> acpi_device *device)
->  	struct acpi_hardware_id *hwid;
->  	int ret = 0;
->  
-> +	if (device->handler)
-> +		return 1;
-> +
->  	list_for_each_entry(hwid, &device->pnp.ids, list) {
->  		const struct acpi_device_id *devid;
->  		struct acpi_scan_handler *handler;
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+thanks,
+-chris
