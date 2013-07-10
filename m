@@ -1,143 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3GJOwd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:52:33 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36440 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab3GJOwb convert rfc822-to-8bit (ORCPT
+	id S1754324Ab3GJOxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:53:39 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:51692 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab3GJOxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:52:31 -0400
-Date: Wed, 10 Jul 2013 10:52:24 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Roger Pau =?iso-8859-1?Q?Monn=E9?= <roger.pau@citrix.com>
-Cc: xen-devel@lists.xen.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 4/4] xen-block: introduce a new request type to unmap
- grants
-Message-ID: <20130710145224.GC11007@phenom.dumpdata.com>
-References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>
- <1373288607-1876-5-git-send-email-roger.pau@citrix.com>
- <20130708194152.GJ4927@phenom.dumpdata.com>
- <51DD271B.3010408@citrix.com>
+	Wed, 10 Jul 2013 10:53:38 -0400
+Date: Wed, 10 Jul 2013 16:52:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: mtosatti@redhat.com, mingo@redhat.com, gleb@redhat.com,
+        glommer@parallels.com, tglx@linutronix.de, jeremy@goop.org,
+        rostedt@goodmis.org, linux-kernel@vger.kernel.org
+Subject: Re: sched: add notifier for cross-cpu migrations
+Message-ID: <20130710145238.GW25631@dyad.programming.kicks-ass.net>
+References: <20130710103440.GO25631@dyad.programming.kicks-ass.net>
+ <20130710143902.GA28514@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51DD271B.3010408@citrix.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20130710143902.GA28514@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 11:19:23AM +0200, Roger Pau Monné wrote:
-> On 08/07/13 21:41, Konrad Rzeszutek Wilk wrote:
-> > On Mon, Jul 08, 2013 at 03:03:27PM +0200, Roger Pau Monne wrote:
-> >> Right now blkfront has no way to unmap grant refs, if using persistent
-> >> grants once a grant is used blkfront cannot assure if blkback will
-> >> have this grant mapped or not. To solve this problem, a new request
-> >> type (BLKIF_OP_UNMAP) that allows requesting blkback to unmap certain
-> >> grants is introduced.
+On Wed, Jul 10, 2013 at 04:39:02PM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > Hi,
 > > 
-> > I don't think this is the right way of doing it. It is a new operation
-> > (BLKIF_OP_UNMAP) that has nothing to do with READ/WRITE. All it is
-> > is just some way for the frontend to say: unmap this grant if you can.
+> > I just stumbled over commit 582b336ec2 and had a massive WTF moment.
 > > 
-> > As such I would think a better mechanism would be to have a new
-> > grant mechanism that can say: 'I am done with this grant you can
-> > remove it' - that is called to the hypervisor. The hypervisor
-> > can then figure out whether it is free or not and lazily delete it.
-> > (And the guest would be notified when it is freed).
+> > The Changelog -- empty!
+> > The Implementation -- complete crap!
+> > 
+> > fail^2.
+> > 
+> > A git grep later I find its x86_64 paravirt only.. for this we add 
+> > unconditional crap to the scheduler?
+> > 
+> > At the _very_ least this should have been wrapped in a static_key and 
+> > the changelog should have given some clue as to the what and why of this 
+> > code.
 > 
-> I have a patch that I think implements something quite similar to what 
-> you describe, but it doesn't require any new patch to the hypervisor 
-> side. From blkfront we can check what grants blkback has chosen to 
-> persistently map and only keep those.
+> My bad for letting it slip through...
 > 
-> This is different from my previous approach, were blkfront could 
-> specifically request blkback to unmap certain grants, but it still 
-> prevents blkfront from hoarding all grants (unless blkback is 
-> persistently mapping every possible grant). With this patch the number 
-> of persistent grants in blkfront will be the same as in blkback, so 
-> basically the backend can control how many grants will be persistently 
-> mapped. 
+> Marcelo, mind implementing the suggestions from Peter?
 
-Nice. So in effect we cache the recently used grants. Nice.
+So ideally we'd kill the entire notifier, notifiers make it far too easy for
+others to use -- and I don't want silent users of stuff like this.
 
-> 
-> ---
-> >From 1ede72ba10a7ec13d57ba6d2af54e86a099d7125 Mon Sep 17 00:00:00 2001
-> From: Roger Pau Monne <roger.pau@citrix.com>
-> Date: Wed, 10 Jul 2013 10:22:19 +0200
-> Subject: [PATCH RFC] xen-blkfront: revoke foreign access for grants not
->  mapped by the backend
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=UTF-8
-> Content-Transfer-Encoding: 8bit
-> 
-> There's no need to keep the foreign access in a grant if it is not
-> persistently mapped by the backend. This allows us to free grants that
-> are not mapped by the backend, thus preventing blkfront from hoarding
-> all grants.
-> 
-> The main effect of this is that blkfront will only persistently map
-> the same grants as the backend, and it will always try to use grants
-> that are already mapped by the backend. Also the number of persistent
-> grants in blkfront is the same as in blkback (and is controlled by the
-> value in blkback).
-> 
-> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/block/xen-blkfront.c |   33 +++++++++++++++++++++++++++++----
->  1 files changed, 29 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-> index 3d445c0..6ba88c1 100644
-> --- a/drivers/block/xen-blkfront.c
-> +++ b/drivers/block/xen-blkfront.c
-> @@ -1022,13 +1022,38 @@ static void blkif_completion(struct blk_shadow *s, struct blkfront_info *info,
->  	}
->  	/* Add the persistent grant into the list of free grants */
->  	for (i = 0; i < nseg; i++) {
-> -		list_add(&s->grants_used[i]->node, &info->persistent_gnts);
-> -		info->persistent_gnts_c++;
-> +		if (gnttab_query_foreign_access(s->grants_used[i]->gref)) {
-> +			/*
-> +			 * If the grant is still mapped by the backend (the
-> +			 * backend has chosen to make this grant persistent)
-> +			 * we add it at the head of the list, so it will be
-> +			 * reused first.
-> +			 */
-> +			list_add(&s->grants_used[i]->node, &info->persistent_gnts);
-> +			info->persistent_gnts_c++;
-> +		} else {
-> +			/*
-> +			 * If the grant is not mapped by the backend we end the
-> +			 * foreign access and add it to the tail of the list,
-> +			 * so it will not be picked again unless we run out of
-> +			 * persistent grants.
-> +			 */
-> +			gnttab_end_foreign_access(s->grants_used[i]->gref, 0, 0UL);
-> +			s->grants_used[i]->gref = GRANT_INVALID_REF;
-> +			list_add_tail(&s->grants_used[i]->node, &info->persistent_gnts);
-> +		}
->  	}
->  	if (s->req.operation == BLKIF_OP_INDIRECT) {
->  		for (i = 0; i < INDIRECT_GREFS(nseg); i++) {
-> -			list_add(&s->indirect_grants[i]->node, &info->persistent_gnts);
-> -			info->persistent_gnts_c++;
-> +			if (gnttab_query_foreign_access(s->indirect_grants[i]->gref)) {
-> +				list_add(&s->indirect_grants[i]->node, &info->persistent_gnts);
-> +				info->persistent_gnts_c++;
-> +			} else {
-> +				gnttab_end_foreign_access(s->indirect_grants[i]->gref, 0, 0UL);
-> +				s->indirect_grants[i]->gref = GRANT_INVALID_REF;
-> +				list_add_tail(&s->indirect_grants[i]->node,
-> +				              &info->persistent_gnts);
-> +			}
->  		}
->  	}
->  }
-> -- 
-> 1.7.7.5 (Apple Git-26)
-> 
+Ideally I'd see a direct callback:
+
+  pvclock_migration_callback(t, new_cpu);
+
+That compiles to 'do { } while (0);' for kernels without CONFIG_PARAVIRT.  Then
+for paravirt it would use a static_key to get a real callback only if there's a
+pvclock user.
+
+Something like:
+
+#define pvclock_migration_callback(_t, _cpu)			\
+do {								\
+	if (static_key_false(&pvclock_key))			\
+		__pvclock_migration_callback((_t), (_cpu));	\
+} while (0)
+
+NOTE: static_key_false() doesn't test false, it assumes the default is false
+and makes the function call the out-of-line jump -- horridly confusing function
+name.
+
+Your pvclock muck would do:
+
+ static_key_slow_inc() -- for every new user and,
+ static_key_slow_dec() -- for every user gone.
+
+Its a reference count scheme, so that when there's no users there is only a 5
+byte nop.
