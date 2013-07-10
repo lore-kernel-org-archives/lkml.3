@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751862Ab3GJEj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 00:39:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751061Ab3GJEj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 00:39:56 -0400
-Date: Wed, 10 Jul 2013 12:39:53 +0800
-From: Asias He <asias@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH 2/2] virtio_net: fix race in RX VQ processing
-Message-ID: <20130710043953.GB5962@hj.localdomain>
-References: <1373274069-4301-1-git-send-email-mst@redhat.com>
- <1373274069-4301-3-git-send-email-mst@redhat.com>
- <51DB8362.4020405@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51DB8362.4020405@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751903Ab3GJEl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 00:41:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35213 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750768Ab3GJEl5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 00:41:57 -0400
+Date: Tue, 09 Jul 2013 21:41:56 -0700 (PDT)
+Message-Id: <20130709.214156.1738814737075691376.davem@davemloft.net>
+To: eliezer.tamir@linux.intel.com
+Cc: corbet@lwn.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        dwmw2@infradead.org, eliezer@tamir.org.il
+Subject: Re: [PATCH net-next] net: rename low latency sockets functions to
+ busy poll
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <51DCD50C.6070606@linux.intel.com>
+References: <20130709162514.062f1361@lwn.net>
+	<20130709.160611.636749585237773459.davem@davemloft.net>
+	<51DCD50C.6070606@linux.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 09, 2013 at 11:28:34AM +0800, Jason Wang wrote:
-> On 07/08/2013 05:04 PM, Michael S. Tsirkin wrote:
-> > virtio net called virtqueue_enable_cq on RX path after napi_complete, so
-> > with NAPI_STATE_SCHED clear - outside the implicit napi lock.
-> > This violates the requirement to synchronize virtqueue_enable_cq wrt
-> > virtqueue_add_buf.  In particular, used event can move backwards,
-> > causing us to lose interrupts.
-> > In a debug build, this can trigger panic within START_USE.
-> >
-> > Jason Wang reports that he can trigger the races artificially,
-> > by adding udelay() in virtqueue_enable_cb() after virtio_mb().
-> >
-> > However, we must call napi_complete to clear NAPI_STATE_SCHED before
-> > polling the virtqueue for used buffers, otherwise napi_schedule_prep in
-> > a callback will fail, causing us to lose RX events.
-> >
-> > To fix, call virtqueue_enable_cb_prepare with NAPI_STATE_SCHED
-> > set (under napi lock), later call virtqueue_poll with
-> > NAPI_STATE_SCHED clear (outside the lock).
-> >
-> > Reported-by: Jason Wang <jasowang@redhat.com>
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Date: Wed, 10 Jul 2013 06:29:16 +0300
 
-Acked-by: Asias He <asias@redhat.com>
-
-> > ---
+> If the following names changes are acceptable I will try to send out
+> a patch today.
 > 
-> Tested-by: Jason Wang <jasowang@redhat.com>
-> Acked-by: Jason Wang <jasowang@redhat.com>
-> >  drivers/net/virtio_net.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > index 5305bd1..fbdd79a 100644
-> > --- a/drivers/net/virtio_net.c
-> > +++ b/drivers/net/virtio_net.c
-> > @@ -622,8 +622,9 @@ again:
-> >  
-> >  	/* Out of packets? */
-> >  	if (received < budget) {
-> > +		unsigned r = virtqueue_enable_cb_prepare(rq->vq);
-> >  		napi_complete(napi);
-> > -		if (unlikely(!virtqueue_enable_cb(rq->vq)) &&
-> > +		if (unlikely(virtqueue_poll(rq->vq, r)) &&
-> >  		    napi_schedule_prep(napi)) {
-> >  			virtqueue_disable_cb(rq->vq);
-> >  			__napi_schedule(napi);
-> 
-> _______________________________________________
-> Virtualization mailing list
-> Virtualization@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/virtualization
+> 1. include/net/ll_poll.h -> include/net/busy_poll.h
 
--- 
-Asias
+Agreed.
+
+> 2. ndo_ll_poll -> ndo_busy_poll
+> 
+> - not technically accurate since the ndo callback does not itself busy
+> poll, it's just used to implement it.
+
+I think this name change is accurate, it expresses the two elements of
+what it does.  It's busy waiting, in that it's doing a synchronous
+scan of the device's RX queue, and it's polling just like NAPI polling
+does.
+
+> maybe ndo_napi_id_poll? or ndo_id_poll? I don't really like any of them,
+> so a suggestion would be nice.
+
+This would make it sound like it's some new version of the existing
+NAPI poll.
+
+Well... what would be great would be to come up with some single
+interface that drivers can implement rather than having to have
+both napi->poll and netdevice_ops->ndo_ll_poll().  But that's a task
+for a later date.
+
+Therefore, ndo_busy_poll is probably best for now.
+
+> 3. sysctl_net_ll_{read,poll} -> sysctl_net_busy_{read,poll}
+> - along with matching file name changes.
+
+Agreed.
+
+> 4. {sk,skb}_mark_ll -> {sk,skb}_mark_napi_id
+
+Agreed.
+
+> 5. LL_SO -> BUSY_POLL_SO
+
+Agreed.
+
+> Did I miss anything?
+
+Nope, looks complete.  And also do the manpage update.
