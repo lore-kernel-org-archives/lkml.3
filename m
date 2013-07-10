@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750970Ab3GJEJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 00:09:48 -0400
-Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:38222
-	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750710Ab3GJEJr (ORCPT
+	id S1751342Ab3GJEKE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 00:10:04 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:46209 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751087Ab3GJEJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 00:09:47 -0400
+	Wed, 10 Jul 2013 00:09:59 -0400
 From: Shuah Khan <shuah.kh@samsung.com>
 To: rafael.j.wysocki@intel.com, bhelgaas@google.com, a.zummo@towertech.it,
         key@linux.vnet.ibm.com, mail@srajiv.net, tpmdd@selhorst.net,
@@ -14,56 +14,65 @@ To: rafael.j.wysocki@intel.com, bhelgaas@google.com, a.zummo@towertech.it,
 Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
         rtc-linux@googlegroups.com, tpmdd-devel@lists.sourceforge.net,
         platform-driver-x86@vger.kernel.org, shuahkhan@gmail.com
-Subject: [PATCH 1/4] pnp: Change pnp bus pm_ops to invoke pnp driver dev_pm_ops if specified
-Date: Tue,  9 Jul 2013 22:09:26 -0600
-Message-Id: <1373429366-3870-1-git-send-email-shuah.kh@samsung.com>
+Subject: [PATCH 2/4] rtc: convert rtc-cmos to dev_pm_ops from legacy pm_ops
+Date: Tue,  9 Jul 2013 22:09:53 -0600
+Message-Id: <1373429393-3907-1-git-send-email-shuah.kh@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pnp_bus_suspend() and pnp_bus_resume() invoke legacy pm_ops from
-pnp_driver. Changed pnp_bus_suspend() and pnp_bus_resume() to check
-if pnp driver has dev_pm_ops and call. If dev_pm_ops don't exist, then
-call use legacy pm_ops. Without this change, pnp_driver dev_pm_ops will
-not get called.
+Convert drivers/rtc/rtc-cmos to use dev_pm_ops instead of legacy pm_ops.
+This patch depends on pnp driver bus ops change to invoke pnp_driver
+dev_pm_ops.
 
 Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- drivers/pnp/driver.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/rtc/rtc-cmos.c |   24 +++++-------------------
+ 1 file changed, 5 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
-index 00e9403..c3f9e89 100644
---- a/drivers/pnp/driver.c
-+++ b/drivers/pnp/driver.c
-@@ -163,6 +163,13 @@ static int pnp_bus_suspend(struct device *dev, pm_message_t state)
- 	if (!pnp_drv)
- 		return 0;
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index be06d71..24e733c 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -1018,23 +1018,6 @@ static void __exit cmos_pnp_remove(struct pnp_dev *pnp)
+ 	cmos_do_remove(&pnp->dev);
+ }
  
-+	if (pnp_drv->driver.pm && pnp_drv->driver.pm->suspend) {
-+		error = pnp_drv->driver.pm->suspend(dev);
-+		suspend_report_result(pnp_drv->driver.pm->suspend, error);
-+		if (error)
-+			return error;
-+	}
-+
- 	if (pnp_drv->suspend) {
- 		error = pnp_drv->suspend(pnp_dev, state);
- 		if (error)
-@@ -201,6 +208,12 @@ static int pnp_bus_resume(struct device *dev)
- 			return error;
- 	}
+-#ifdef	CONFIG_PM
+-
+-static int cmos_pnp_suspend(struct pnp_dev *pnp, pm_message_t mesg)
+-{
+-	return cmos_suspend(&pnp->dev);
+-}
+-
+-static int cmos_pnp_resume(struct pnp_dev *pnp)
+-{
+-	return cmos_resume(&pnp->dev);
+-}
+-
+-#else
+-#define	cmos_pnp_suspend	NULL
+-#define	cmos_pnp_resume		NULL
+-#endif
+-
+ static void cmos_pnp_shutdown(struct pnp_dev *pnp)
+ {
+ 	if (system_state == SYSTEM_POWER_OFF && !cmos_poweroff(&pnp->dev))
+@@ -1060,8 +1043,11 @@ static struct pnp_driver cmos_pnp_driver = {
  
-+	if (pnp_drv->driver.pm && pnp_drv->driver.pm->resume) {
-+		error = pnp_drv->driver.pm->resume(dev);
-+		if (error)
-+			return error;
-+	}
-+
- 	if (pnp_drv->resume) {
- 		error = pnp_drv->resume(pnp_dev);
- 		if (error)
+ 	/* flag ensures resume() gets called, and stops syslog spam */
+ 	.flags		= PNP_DRIVER_RES_DO_NOT_CHANGE,
+-	.suspend	= cmos_pnp_suspend,
+-	.resume		= cmos_pnp_resume,
++#ifdef CONFIG_PM_SLEEP
++	.driver		= {
++			.pm = &cmos_pm_ops,
++	},
++#endif
+ };
+ 
+ #endif	/* CONFIG_PNP */
 -- 
 1.7.10.4
 
