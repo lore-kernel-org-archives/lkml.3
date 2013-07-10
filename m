@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab3GJCSR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 22:18:17 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:46452 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab3GJCSQ (ORCPT
+	id S1754191Ab3GJCUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 22:20:37 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:41073 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab3GJCUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 22:18:16 -0400
-Message-ID: <51DCC426.3010606@gmail.com>
-Date: Wed, 10 Jul 2013 10:17:10 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 9 Jul 2013 22:20:36 -0400
+Message-ID: <51DCC48E.8050003@huawei.com>
+Date: Wed, 10 Jul 2013 10:18:54 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Chen Gang <gang.chen@asianux.com>, khali@linux-fr.org,
-        David.Woodhouse@intel.com,
+To: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@redhat.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Jens Axboe <axboe@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Dumazet <edumazet@google.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/params.c: print failure information instead of
- 'KOBJ_ADD' to user space, when sysfs_create_file() fails.
-References: <51DB8597.4090101@asianux.com> <87y59gcg17.fsf@rustcorp.com.au>
-In-Reply-To: <87y59gcg17.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: [PATCH V2] relay: fix timer madness
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 04:07 PM, Rusty Russell wrote:
-> Chen Gang <gang.chen@asianux.com> writes:
->> When sysfs_create_file() fails, recommend to print the related failure
->> information. And it is useless to still 'KOBJ_ADD' to user space.
->>
->> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> 
-> sysfs_create_file() should not fail during boot, should it?
-> 
+When I'm using ktap script to tracing all event tracepoints by relay
+transport, without this patch, the system will hang in few seconds.
 
-Hmm..., please reference locate_module_kobject() in "kernel/params.c",
-which is an '__init' function, and also call sysfs_create_file(), it
-processes the related error.
+I found the original patch discussion in 2007.
+http://marc.info/?l=linux-kernel&m=118544794717162&w=2
+(In that mail thread, the patch didn't fix that problem, but it fix
+the problem I encountered now)
 
-So I recommend to get the check too in version_sysfs_builtin().
+Changed from v1:
+mod timer interval changed from jiffies+1 to HZ/10, as Ingo suggested.
 
-Thanks.
+Original patch changelog from Ingo in 2007:
 
-> Cheers,
-> Rusty.
-> 
->> ---
->>  kernel/params.c |    8 +++++++-
->>  1 files changed, 7 insertions(+), 1 deletions(-)
->>
->> diff --git a/kernel/params.c b/kernel/params.c
->> index 440e65d..f5299c1 100644
->> --- a/kernel/params.c
->> +++ b/kernel/params.c
->> @@ -845,7 +845,13 @@ static void __init version_sysfs_builtin(void)
->>  		mk = locate_module_kobject(vattr->module_name);
->>  		if (mk) {
->>  			err = sysfs_create_file(&mk->kobj, &vattr->mattr.attr);
->> -			kobject_uevent(&mk->kobj, KOBJ_ADD);
->> +			if (err)
->> +				printk(KERN_WARNING
->> +				       "%s (%d): sysfs_create_file fail for %s, err: %d\n",
->> +				       __FILE__, __LINE__,
->> +				       vattr->module_name, err);
->> +			else
->> +				kobject_uevent(&mk->kobj, KOBJ_ADD);
->>  			kobject_put(&mk->kobj);
->>  		}
->>  	}
->> -- 
->> 1.7.7.6
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Remove timer calls (!!!) from deep within the tracing infrastructure.
+This was totally bogus code that can cause lockups and worse.
+Poll the buffer every 2 jiffies for now.
 
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Dumazet <edumazet@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/relay.c |   14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
 
+diff --git a/kernel/relay.c b/kernel/relay.c
+index b91488b..87af4ce 100644
+--- a/kernel/relay.c
++++ b/kernel/relay.c
+@@ -339,6 +339,10 @@ static void wakeup_readers(unsigned long data)
+ {
+ 	struct rchan_buf *buf = (struct rchan_buf *)data;
+ 	wake_up_interruptible(&buf->read_wait);
++	/*
++	 * Stupid polling for now:
++	 */
++	mod_timer(&buf->timer, HZ / 10);
+ }
+
+ /**
+@@ -356,6 +360,7 @@ static void __relay_reset(struct rchan_buf *buf, unsigned int init)
+ 		init_waitqueue_head(&buf->read_wait);
+ 		kref_init(&buf->kref);
+ 		setup_timer(&buf->timer, wakeup_readers, (unsigned long)buf);
++		mod_timer(&buf->timer, HZ / 10);
+ 	} else
+ 		del_timer_sync(&buf->timer);
+
+@@ -739,15 +744,6 @@ size_t relay_switch_subbuf(struct rchan_buf *buf, size_t length)
+ 		else
+ 			buf->early_bytes += buf->chan->subbuf_size -
+ 					    buf->padding[old_subbuf];
+-		smp_mb();
+-		if (waitqueue_active(&buf->read_wait))
+-			/*
+-			 * Calling wake_up_interruptible() from here
+-			 * will deadlock if we happen to be logging
+-			 * from the scheduler (trying to re-grab
+-			 * rq->lock), so defer it.
+-			 */
+-			mod_timer(&buf->timer, jiffies + 1);
+ 	}
+
+ 	old = buf->data;
 -- 
-Chen Gang
+1.7.9.7
+
+
