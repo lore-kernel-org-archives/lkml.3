@@ -1,129 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab3GJJuj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 05:50:39 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33970 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3GJJui (ORCPT
+	id S1753980Ab3GJJvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 05:51:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53671 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab3GJJve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 05:50:38 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.9
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-2
-Message-ID: <51DD2E5A.1030200@jp.fujitsu.com>
-Date: Wed, 10 Jul 2013 18:50:18 +0900
-From: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 10 Jul 2013 05:51:34 -0400
+Date: Wed, 10 Jul 2013 10:19:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Nishanth Menon <nm@ti.com>
+Cc: =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Taras Kondratiuk <taras@ti.com>
+Message-ID: <20130710091952.GF3179@sirena.org.uk>
+References: <20130704154105.GD27646@sirena.org.uk>
+ <20130705135507.GA17439@kahuna>
+ <20130705140828.GA27646@sirena.org.uk>
+ <51D6DD3A.1030002@ti.com>
+ <20130705165235.GC27646@sirena.org.uk>
+ <51D70356.30707@ti.com>
+ <20130705174727.GF27646@sirena.org.uk>
+ <51DAF55C.5040502@ti.com>
+ <20130709152954.GF27646@sirena.org.uk>
+ <51DC3487.2080503@ti.com>
 MIME-Version: 1.0
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-CC: Vivek Goyal <vgoyal@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, kexec@lists.infradead.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Jan Willeke <willeke@de.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 3/5] vmcore: Introduce remap_oldmem_pfn_range()
-References: <1372707159-10425-1-git-send-email-holzheu@linux.vnet.ibm.com> <1372707159-10425-4-git-send-email-holzheu@linux.vnet.ibm.com> <51DA4ED9.60903@jp.fujitsu.com> <20130708112839.498ccfc6@holzheu> <20130708142826.GA9094@redhat.com> <51DBA47C.8090708@jp.fujitsu.com> <20130710104252.479a0f92@holzheu>
-In-Reply-To: <20130710104252.479a0f92@holzheu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="3yNHWXBV/QO9xKNm"
+Content-Disposition: inline
+In-Reply-To: <51DC3487.2080503@ti.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.118
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH V2 1/8] regulator: Introduce OMAP regulator to
+ control PMIC over VC/VP
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/10 17:42), Michael Holzheu wrote:
-> Hello Hatayama,
->
-> On Tue, 09 Jul 2013 14:49:48 +0900
-> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
->
->> (2013/07/08 23:28), Vivek Goyal wrote:
->>> On Mon, Jul 08, 2013 at 11:28:39AM +0200, Michael Holzheu wrote:
->>>> On Mon, 08 Jul 2013 14:32:09 +0900
->>>> HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com> wrote:
->
-> [snip]
->
->>> I personally perfer not to special case it for s390 only and let the
->>> handler be generic.
->>>
->>> If there is a bug in remap_old_pfn_range(), only side affect is that
->>> we will fault in the page when it is accessed and that will be slow. BUG()
->>> sounds excessive. At max it could be WARN_ONCE().
->>>
->>> In regular cases for x86, this path should not even hit. So special casing
->>> it to detect issues with remap_old_pfn_range() does not sound very good
->>> to me. I would rather leave it as it is and if there are bugs and mmap()
->>> slows down, then somebody needs to debug it.
->>>
->>
->> I agree to WARN_ONCE(). Then, we can notice bug at least if it occurs.
->>
->> Interface is like this?
->>
->> [generic]
->>
->> bool __weak in_valid_fault_range(pgoff_t pgoff)
->> {
->>       return false;
->> }
->>
->> [s390]
->>
->> bool in_valid_fault_range(pgoff_t pgoff)
->> {
->>       loff_t offset = pgoff << PAGE_CACHE_SHIFT;
->>       u64 paddr = vmcore_offset_to_paddr(offset);
->>
->>       return paddr < ZFCPDUMP_HSA_SIZE;
->> }
->>
->> assuming vmcore_offset_to_paddr() that looks up vmcore_list and returns physical
->> address corresponding to given offset of vmcore. I guess this could return error
->> value if there's no entry corresponding to given offset in vmcore_list.
->
-> I think this is too much code (and overhead) just for checking the correctness the
-> kdump mmap implementation.
->
-> My suggestion is to add the WARN_ONCE() for #ifndef CONFIG_S390. This has the same
-> effect as your suggestion for all architectures besides of s390. And for s390 we
-> take the risk that a programming error would result in poor /proc/vmcore
-> performance.
->
 
-If you want to avoid looking up vmcore_list that takes linear time w.r.t. the number
-of the elements, you can still calculate the range of offsets in /proc/vmcore
-corresponding to HSA during /proc/vmcore initialization.
+--3yNHWXBV/QO9xKNm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Also, could you tell me how often and how much the HSA region is during crash dumping?
-I guess the read to HSA is done mainly during early part of crash dumping process only.
-According to the code, it appears at most 64MiB only. Then, I feel performance is not
-a big issue.
+On Tue, Jul 09, 2013 at 11:04:23AM -0500, Nishanth Menon wrote:
+> On 07/09/2013 10:29 AM, Mark Brown wrote:
 
-Also, cost of WARN_ONCE() is one memory access only in the 2nd and later calls. I don't
-think it too much overhead...
+> >This seems like something we should be able to cope with by for example
+> >adding a bus for the custom PMIC interface or otherwise finding a way to
 
-> So, at least for this patch series I would implement the fault handler as follows:
->
-> static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-> {
-> ...
->          char *buf;
->          int rc;
->
-> #ifndef CONFIG_S390
->          WARN_ONCE(1, "vmcore: Unexpected call of mmap_vmcore_fault()");
-> #endif
->          page = find_or_create_page(mapping, index, GFP_KERNEL);
->
-> At this point I have to tell you that we plan another vmcore patch series where
-> the fault handler might be called also for other architectures. But I think we
-> should *then* discuss your issue again.
->
+> I had considered introducing a custom bus for custom PMIC interface,
+> but as you stated below, standard regulators will probably need some
+> custom monkeying around.
 
-Could you explain the plan in more detail? Or I cannot review correctly since I don't
-know whether there's really usecase of this generic fault handler for other
-architectures. This is the issue for architectures other than s390, not mine; now we
-don't need it at all.
+We should just be able to use the platform bus here.
 
--- 
-Thanks.
-HATAYAMA, Daisuke
+> >get to the data at runtime based on the compatible string.  This would
+> >need some custom code in the regulators but would have the advantage of
+> >keeping the data the same at least.  Hrm.
 
+> Ofcourse,this will be to add custom set/get_voltage implementation
+> using this "custom API" which we discussed was'nt that good an idea.
+
+No, if the regulator isn't being interacted with directly then it
+doesn't need to export any operations - just data.  The operations would
+come from the magic SoC hardware that controls the regulator.  The code
+in the drivers should be very small, if it isn't there's no point in
+doing this.
+
+> >>between PMICs? yep, twl4030 does 4mV/uSec, 6030 can do 6mV/uSec,
+> >>TPS62361 can do 32mV/uSec, TWL6035/37 does 0.220mV/uSec
+
+> >Those are ramp rates, they're not I2C I/O limits.  Ramp rates we already
+> >know about.  I think what you're saying here is that this latency value
+> >is actually about worst case ramp times?
+
+> Arrgh.. my bad. I confused ramp time with I2C transfer timeout
+> parameter. I know that I2C bus can be held[1] by PMIC as long as it
+> is busy. Some custom ASIC can do some weird stuff I suppose. I dont
+> seem to have clear data points in the sketchy TRMs for 6030/2 ,
+> 6035, 5030, for these other than to state it is i2c specification
+> compliant (/me grumbles). So, I just have emperical value which is a
+> bit conservative and seem to work on the devices.
+
+OK, no problem - like we said further up the thread I think adding
+something to get the data
+
+--3yNHWXBV/QO9xKNm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR3Sc1AAoJELSic+t+oim9LgcP/A9peqE0jmK5KWGZ6iw7kK0J
+8KEbz1Y2DU19fY0Bn6QNW4xbQv0hDbJcH/nGAx/QwvcoPHfLnwbCQJNmeiKfHWGH
+yFU76STMGLdDCC5vGSUrAayMQl4M2/3s+0jxYd1FVhRFoIfXYIC9QNl8oowQG5BR
+ilWKlWIlstwYVR/Vlwq7k4ovejxGL7Pwb2l0gnKsOYKh+ElAC4nPWSVk9R6biOa+
+uclgxbo58sAUZKQIR7oaS9+7UGtuYRl8JDJYtF81NdZnOIiTKzNl6KLrnEFgRxzJ
+Q9RhDybgn81dSH+iouml3Fj1p4jK6fqaDymeBuXGEdd5CWAVhrjzu/4F7S1S/43V
++kc9fBccC0Pn2ls3WzFKZ9HrJZYPhyY2NOBMcj69EyKNCLMFI2HXVPEwzc0AdMWn
+ea0CbyGin5Go8WMQHmpNfIL7f92QdhXVa6jl0NAZUAd6ZPfEcbqIFlqzoqM/O0Lp
+O+Y3nHK4Q63jCvxTygN1O/7fjauma7gxeq4PZqrF8mV4blKhCXMmAp/TtzLQPL0X
++VyYvcWIULXyfSrsz057Eqnsnwb9Mq8DI6qMem4COYM7TnV+rbGeiM9p2RGezBvo
+F2XGXgdGLBrVXUND24eVw6N2VXmXMgs3qkVWQZom8PKVNu8Dgmhy2E2dJa3Dbn8J
+AmZ6xaf87FMC0qX5S/fc
+=aaQ8
+-----END PGP SIGNATURE-----
+
+--3yNHWXBV/QO9xKNm--
