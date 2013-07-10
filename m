@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab3GJNzF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 09:55:05 -0400
-Received: from ip-78-102-49-28.net.upcbroadband.cz ([78.102.49.28]:64277 "EHLO
+	id S1754512Ab3GJNzS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 09:55:18 -0400
+Received: from ip-78-102-49-28.net.upcbroadband.cz ([78.102.49.28]:62051 "EHLO
 	emu.suse.cz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751434Ab3GJNzD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 09:55:03 -0400
-X-Greylist: delayed 930 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Jul 2013 09:55:03 EDT
-Date: Wed, 10 Jul 2013 15:55:01 +0200
+	id S1754442Ab3GJNzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 09:55:12 -0400
+Date: Wed, 10 Jul 2013 15:37:42 +0200
 From: Michal Marek <mmarek@suse.cz>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: arve@android.com, chauplac@gmail.com, dirk@gouders.net,
-        keescook@chromium.org, sedat.dilek@gmail.com, yann.morin.1998@free.fr,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] kconfig changes for v3.11-rc1
-Message-ID: <20130710135501.GA31038@emu.suse.cz>
+Cc: JBeulich@suse.com, dt.tangr@gmail.com, geert@linux-m68k.org,
+        james.hogan@imgtec.com, lists@nerdbynature.de,
+        mike.marciniszyn@intel.com, nicolas.dichtel@6wind.com,
+        robert.richter@calxeda.com, yselkowitz@users.sourceforge.net,
+        zzs0213@gmail.com, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] kbuild changes for v3.11-rc1
+Message-ID: <20130710133742.GA29368@emu.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
@@ -26,20 +28,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-please pull these kconfig commit for v3.11-rc1:
+please pull the kbuild bits for v3.11-rc1:
 
-- dependency solver fix for make defconfig
-- randconfig fixes, one of which had to be reverted again
-- more user-friendly sorting of search results
-- hex and range keywords support longs
-- fix for [mn]conf not to rely on particular behavior of the LINES and
-  COLS variables
-- cleanup of magic constants in kconfig/lxdialog
-- [mn]conf formatting fixes
-- fix for scripts/config's help text in our-of-tree usage (under a
-  different name)
+- fix for make headers_install argv explosion with too long path
+- scripts/setlocalversion does not call git update-index needlessly
+- fix for the src.rpm produced by make rpm-pkg. The new make image_name
+  can be useful also for other packaging tools.
+- scripts/mod/devicetable-offsets.o is not rebuilt during each make run
+- make modules_install dependency fix
+- scripts/sortextable portability fix
+- fix for kbuild to generate the output directory for all object files
+  in subdirs.
+- a couple of minor fixes
 
 Michal
+
 
 The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
@@ -47,59 +50,51 @@ The following changes since commit f722406faae2d073cc1d01063d1123c35425939e:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kconfig
+  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild.git kbuild
 
-for you to fetch changes up to b57caaaed2bd127fe656e6c145970ed6a05c0125:
+for you to fetch changes up to 4d47dde47f7dd95042fa56283d948f50dd4b509c:
 
-  kconfig: allow "hex" and "range" to support longs (2013-06-29 15:30:17 +0200)
+  kbuild: create directory for dir/file.o (2013-07-03 22:47:08 +0200)
 
 ----------------------------------------------------------------
-Arve Hjønnevåg (1):
-      kconfig: Fix defconfig when one choice menu selects options that another choice menu depends on
+Christian Kujau (1):
+      scripts/setlocalversion on write-protected source tree
 
-Clement Chauplannaz (1):
-      scripts/config: replace hard-coded script name by a dynamic value
+Daniel Tang (1):
+      Fix a build warning in scripts/mod/file2alias.c
 
-Dirk Gouders (4):
-      kconfig/lxdialog: handle newline characters in print_autowrap()
-      mconf: use function calls instead of ncurses' variables LINES and COLS
-      nconf: use function calls instead of ncurses' variables LINES and COLS
-      mconf/nconf: mark empty menus/menuconfigs different from non-empty ones
+Geert Uytterhoeven (1):
+      scripts/mod: Spelling s/DEVICEVTABLE/DEVICETABLE/
 
-Kees Cook (1):
-      kconfig: allow "hex" and "range" to support longs
+James Hogan (1):
+      Makefile.lib: align DTB quiet_cmd
 
-Sedat Dilek (2):
-      kconfig/lxdialog: Add definitions for mininimum (re)size values
-      kconfig/lxdialog: Use new mininimum resize definitions in conf_choice()
+Jan Beulich (1):
+      improve modalias building
 
-Yann E. MORIN (8):
-      kconfig/conf: fix randconfig setting multiple symbols in a choice
-      kconfig/conf: accept a base-16 seed for randconfig
-      kconfig/conf: print the seed used to initialise the RNG for randconfig
-      kconfig: sort found symbols by relevance
-      kconfig/[mn]conf: make it explicit in the search box that a regexp is possible
-      kconfig: loop as long as we changed some symbols in randconfig
-      kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG
-      Revert "kconfig: fix randomising choice entries in presence of KCONFIG_ALLCONFIG"
+Mike Marciniszyn (1):
+      kbuild: fix error when building from src rpm
 
- Documentation/kbuild/kconfig.txt     | 13 +++++
- scripts/config                       | 12 +++--
- scripts/kconfig/conf.c               |  6 ++-
- scripts/kconfig/confdata.c           | 33 +++++++++---
- scripts/kconfig/expr.h               |  3 ++
- scripts/kconfig/lkc.h                |  3 +-
- scripts/kconfig/lkc_proto.h          |  1 +
- scripts/kconfig/lxdialog/checklist.c |  8 +--
- scripts/kconfig/lxdialog/dialog.h    | 14 +++++
- scripts/kconfig/lxdialog/inputbox.c  |  8 +--
- scripts/kconfig/lxdialog/menubox.c   |  6 +--
- scripts/kconfig/lxdialog/textbox.c   |  6 +--
- scripts/kconfig/lxdialog/util.c      | 46 ++++++++++-------
- scripts/kconfig/lxdialog/yesno.c     |  8 +--
- scripts/kconfig/mconf.c              | 21 ++++----
- scripts/kconfig/menu.c               | 16 ++++++
- scripts/kconfig/nconf.c              | 39 ++++++++------
- scripts/kconfig/nconf.gui.c          | 20 ++++----
- scripts/kconfig/symbol.c             | 99 +++++++++++++++++++++++++++++++-----
- 19 files changed, 262 insertions(+), 100 deletions(-)
+Nicolas Dichtel (1):
+      kbuild: fix make headers_install when path is too long
+
+Robert Richter (1):
+      Makefile: Fix install error with make -j option
+
+Yaakov Selkowitz (1):
+      tools/include: use stdint types for user-space byteshift headers
+
+å¼ å¿ å±± (1):
+      kbuild: create directory for dir/file.o
+
+ Makefile                           |  8 ++++++--
+ scripts/Makefile.headersinst       | 20 ++++++++++++++------
+ scripts/Makefile.lib               |  4 ++--
+ scripts/headers_install.sh         |  7 +++++--
+ scripts/mod/Makefile               | 15 +++++----------
+ scripts/mod/file2alias.c           | 10 ++++++----
+ scripts/package/mkspec             |  1 +
+ scripts/setlocalversion            |  3 ---
+ tools/include/tools/be_byteshift.h | 34 +++++++++++++++++-----------------
+ tools/include/tools/le_byteshift.h | 34 +++++++++++++++++-----------------
+ 10 files changed, 73 insertions(+), 63 deletions(-)
