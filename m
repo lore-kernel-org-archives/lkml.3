@@ -1,200 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab3GJHMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 03:12:05 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:44752 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659Ab3GJHMD (ORCPT
+	id S1753618Ab3GJHZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 03:25:55 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:34195 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753320Ab3GJHZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 03:12:03 -0400
-Message-ID: <51DD08E1.8040307@hp.com>
-Date: Wed, 10 Jul 2013 15:10:25 +0800
-From: ZhenHua <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130117 Thunderbird/19.0
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: Re: [PATCH 1/1] ia64/pci: set mmio decoding on for some host bridge
-References: <1373348531-31893-1-git-send-email-zhen-hual@hp.com> <CAErSpo6pCrzCOuthrgD_+oRyw7ZhqztVSi=ti336s2h5xeH_uA@mail.gmail.com>
-In-Reply-To: <CAErSpo6pCrzCOuthrgD_+oRyw7ZhqztVSi=ti336s2h5xeH_uA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Jul 2013 03:25:36 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Stephen Warren <swarren@wwwdotorg.org>, Michal Simek <monstr@monstr.eu>,
+        Grant Likely <grant.likely@linaro.org>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v1] spi/xilinx: Revert master->setup function removal
+Date: Wed, 10 Jul 2013 09:25:28 +0200
+Message-Id: <adbc806cd75b1c1ffd6382dc1dae425c71a93168.1373441121.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-28369-1373441129-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-On the system that this bug happens,  an MCA event is generated while 
-kernel crashed:
-     Transaction Address: memory write to address 0x00000ae041428 (LMMIO 
-- SBL Blade 1 SFW DDR Memory)
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-I guess the there is some module trying to visit the address 
-0x00000ae041428 right after this line is run:
-      pci_write_config_word(dev, PCI_COMMAND,
-                         orig_cmd & ~(PCI_COMMAND_MEMORY | PCI_COMMAND_IO));
+--=_mimegpg-monstr-desktop-28369-1373441129-0001
+
+master->setup() must be initialized to be able
+to successfully run spi_bitbang_start()
+and satisfy if/else logic there.
+
+"spi: convert drivers to use bits_per_word_mask"
+(sha1: 24778be20f87d5aadb19624fc768b3159fa43efc)
+
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+Based on the latest Linus tree.
+
+---
+ drivers/spi/spi-xilinx.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
+index fb56fcf..09a9428 100644
+--- a/drivers/spi/spi-xilinx.c
++++ b/drivers/spi/spi-xilinx.c
+@@ -233,6 +233,21 @@ static int xilinx_spi_setup_transfer(struct spi_device *spi,
+ 	return 0;
+ }
+
++static int xilinx_spi_setup(struct spi_device *spi)
++{
++	/* always return 0, we can not check the number of bits.
++	 * There are cases when SPI setup is called before any driver is
++	 * there, in that case the SPI core defaults to 8 bits, which we
++	 * do not support in some cases. But if we return an error, the
++	 * SPI device would not be registered and no driver can get hold of it
++	 * When the driver is there, it will call SPI setup again with the
++	 * correct number of bits per transfer.
++	 * If a driver setups with the wrong bit number, it will fail when
++	 * it tries to do a transfer
++	 */
++	return 0;
++}
++
+ static void xilinx_spi_fill_tx_fifo(struct xilinx_spi *xspi)
+ {
+ 	u8 sr;
+@@ -360,6 +375,7 @@ struct spi_master *xilinx_spi_init(struct device *dev, struct resource *mem,
+ 	xspi->bitbang.chipselect = xilinx_spi_chipselect;
+ 	xspi->bitbang.setup_transfer = xilinx_spi_setup_transfer;
+ 	xspi->bitbang.txrx_bufs = xilinx_spi_txrx_bufs;
++	xspi->bitbang.master->setup = xilinx_spi_setup;
+ 	init_completion(&xspi->done);
+
+ 	if (!request_mem_region(mem->start, resource_size(mem),
+--
+1.8.2.3
 
 
-The output of lspci -vvv is followed.
-40:01.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express 
-Root Port 1 (rev 22) (prog-if 00 [Normal decode])
-         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- 
-ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-         Latency: 0, Cache Line Size: 64 bytes
-         Bus: primary=40, secondary=41, subordinate=41, sec-latency=0
-         I/O behind bridge: 0000f000-00000fff
-         Memory behind bridge: ae000000-af8fffff
-         Prefetchable memory behind bridge: 
-fffffffffff00000-00000000000fffff
-         Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- 
-<TAbort- <MAbort- <SERR- <PERR-
-         BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-                 PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-         Capabilities: [40] Subsystem: Intel Corporation 5520/5500/X58 
-I/O Hub PCI Express Root Port 1
-         Capabilities: [60] Message Signalled Interrupts: Mask+ 64bit- 
-Count=1/2 Enable+
-                 Address: fee00000  Data: 4046
-                 Masking: 00000002  Pending: 00000000
-         Capabilities: [90] Express (v2) Root Port (Slot-), MSI 00
-                 DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s 
-<64ns, L1 <1us
-                         ExtTag+ RBE+ FLReset-
-                 DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+ 
-Unsupported+
-                         RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-                         MaxPayload 128 bytes, MaxReadReq 128 bytes
-                 DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- 
-AuxPwr- TransPend-
-                 LnkCap: Port #0, Speed 5GT/s, Width x2, ASPM L0s L1, 
-Latency L0 <512ns, L1 <64us
-                         ClockPM- Suprise+ LLActRep+ BwNot+
-                 LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- 
-CommClk-
-                         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-                 LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ 
-DLActive+ BWMgmt- ABWMgmt-
-                 RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- 
-PMEIntEna+ CRSVisible-
-                 RootCap: CRSVisible-
-                 RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-                 DevCap2: Completion Timeout: Range BCD, TimeoutDis+ ARIFwd+
-                 DevCtl2: Completion Timeout: 260ms to 900ms, 
-TimeoutDis- ARIFwd-
-                 LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- 
-SpeedDis-, Selectable De-emphasis: -3.5dB
-                          Transmit Margin: Normal Operating Range, 
-EnterModifiedCompliance- ComplianceSOS-
-                          Compliance De-emphasis: -6dB
-                 LnkSta2: Current De-emphasis Level: -3.5dB
-         Capabilities: [e0] Power Management version 3
-                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA 
-PME(D0+,D1-,D2-,D3hot+,D3cold+)
-                 Status: D0 PME-Enable- DSel=0 DScale=0 PME-
-         Capabilities: [100] Advanced Error Reporting
-                 UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- 
-UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-                 UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- 
-UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-                 UESvrt: DLP+ SDES+ TLP+ FCP+ CmpltTO- CmpltAbrt- 
-UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq+ ACSViol-
-                 CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- 
-NonFatalErr-
-                 CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- 
-NonFatalErr+
-                 AERCap: First Error Pointer: 00, GenCap- CGenEn- 
-ChkCap- ChkEn-
-         Capabilities: [150] Access Control Services
-                 ACSCap: SrcValid+ TransBlk+ ReqRedir+ CmpltRedir+ 
-UpstreamFwd+ EgressCtrl- DirectTrans-
-                 ACSCtl: SrcValid- TransBlk- ReqRedir- CmpltRedir- 
-UpstreamFwd- EgressCtrl- DirectTrans-
-         Capabilities: [160] Vendor Specific Information <?>
-         Kernel driver in use: pcieport
-         Kernel modules: shpchp
+--=_mimegpg-monstr-desktop-28369-1373441129-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
 
-Thanks
-ZhenHua
-On 07/10/2013 12:49 AM, Bjorn Helgaas wrote:
-> On Mon, Jul 8, 2013 at 11:42 PM, Li, Zhen-Hua <zhen-hual@hp.com> wrote:
->> On some IA64 platforms with intel PCI bridge, for example, HP BL890c i2
->> with  Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
->> when kernel tries to disable the mmio decoding on the PCI bridge devices,
->> kernel may crash.
->>
->> And in the comment of function quirk_mmio_always_on, it also says:
->> "But doing so (disable the mmio decoding) may cause problems on host bridge
->>   and perhaps other key system devices"
->>
->> So, for this PCI bridge,  dev->mmio_always_on bit should be set to 1.
->>
->> To avoid affecting the use of quirk_mmio_always_on, a new function is created.
->>
->> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->> ---
->>   drivers/pci/quirks.c    |   17 +++++++++++++++++
->>   include/linux/pci_ids.h |    1 +
->>   2 files changed, 18 insertions(+)
->>
->> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
->> index e85d230..665af3e 100644
->> --- a/drivers/pci/quirks.c
->> +++ b/drivers/pci/quirks.c
->> @@ -44,6 +44,23 @@ static void quirk_mmio_always_on(struct pci_dev *dev)
->>   DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_ANY_ID, PCI_ANY_ID,
->>                                  PCI_CLASS_BRIDGE_HOST, 8, quirk_mmio_always_on);
->>
->> +#ifdef CONFIG_IA64
->> +/*
->> + * On some IA64 platforms, for some intel PCI bridge devices, for example,
->> + * the Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port,
->> + * disable the mmio decoding on this device may cause system crash.
->> + * So dev->mmio_always_on bit should be set to 1.
->> + */
->> +static void quirk_mmio_on_intel_pcibridge(struct pci_dev *dev)
->> +{
->> +       dev->mmio_always_on = 1;
->> +}
->> +DECLARE_PCI_FIXUP_CLASS_EARLY(PCI_VENDOR_ID_INTEL,
->> +                       PCI_DEVICE_ID_INTEL_5520_5550_X58,
->> +                       PCI_CLASS_BRIDGE_PCI,
->> +                       8, quirk_mmio_on_intel_pcibridge);
->> +#endif
->> +
->>   /* The Mellanox Tavor device gives false positive parity errors
->>    * Mark this device with a broken_parity_status, to allow
->>    * PCI scanning code to "skip" this now blacklisted device.
->> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
->> index 3bed2e8..d8c60b7 100644
->> --- a/include/linux/pci_ids.h
->> +++ b/include/linux/pci_ids.h
->> @@ -2742,6 +2742,7 @@
->>   #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
->>   #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
->>   #define PCI_DEVICE_ID_INTEL_82855PM_HB 0x3340
->> +#define PCI_DEVICE_ID_INTEL_5520_5550_X58       0x3408
->>   #define PCI_DEVICE_ID_INTEL_IOAT_TBG4  0x3429
->>   #define PCI_DEVICE_ID_INTEL_IOAT_TBG5  0x342a
->>   #define PCI_DEVICE_ID_INTEL_IOAT_TBG6  0x342b
->> --
->> 1.7.10.4
->>
-> You need to figure out what the problem is, not just avoid it.  It's
-> very unlikely that the problem is something unique to ia64.  In fact,
-> I think it's very doubtful that the problem is even something unique
-> to the 5520 root ports.  My guess is there's something special about
-> the system you're testing.
->
-> Evidently you have traffic going to a device behind the root port at
-> the same time as we're trying to read the root port's BARs.  Linux
-> should not generate traffic like that while we're enumerating the root
-> port.  Does the problem happen on a root port with an iLO behind it?
-> Can you collect "lspci -vvv" output and identify the root port where
-> the problem occurs?
->
-> Bjorn
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEABECAAYFAlHdDGkACgkQykllyylKDCHcpQCgmjSH4h4C8R2jfQmhHvTg5EWq
+oWMAn3J7kh49efUS7H7y8BzzqkeoUmWW
+=cJ2D
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-28369-1373441129-0001--
