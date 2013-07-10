@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab3GJFjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 01:39:12 -0400
-Received: from mail.windriver.com ([147.11.1.11]:53894 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3GJFjL (ORCPT
+	id S1753918Ab3GJFjz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 01:39:55 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:45837 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab3GJFjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 01:39:11 -0400
-Message-ID: <51DCF3A1.6050101@windriver.com>
-Date: Wed, 10 Jul 2013 13:39:45 +0800
-From: "tiejun.chen" <tiejun.chen@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 10 Jul 2013 01:39:54 -0400
 MIME-Version: 1.0
-To: Bhushan Bharat-R65777 <R65777@freescale.com>
-CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [v3][PATCH 1/8] powerpc/book3e: rename interrupt_end_book3e with
- __end_interrupts
-References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com> <1373357007-30785-2-git-send-email-tiejun.chen@windriver.com> <6A3DF150A5B70D4F9B66A25E3F7C888D070AE11F@039-SN2MPN1-011.039d.mgd.msft.net>
-In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D070AE11F@039-SN2MPN1-011.039d.mgd.msft.net>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.162.214]
+In-Reply-To: <51DCDF1C.1000208@linux.vnet.ibm.com>
+References: <1443144.WnBWEpaopK@amdc1032>
+	<51DB724F.9050708@linux.vnet.ibm.com>
+	<1754044.EVIH1UZj6p@amdc1032>
+	<51DC0B0D.9070201@linux.vnet.ibm.com>
+	<51DCDF1C.1000208@linux.vnet.ibm.com>
+Date: Wed, 10 Jul 2013 11:09:53 +0530
+Message-ID: <CAKohpokbo+X5bEYweBuSqr5bkdRsb-XHT7SrMWybwAvkfDsGBQ@mail.gmail.com>
+Subject: Re: [v3.10 regression] deadlock on cpu hotplug
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Borislav Petkov <bp@alien8.de>, Jiri Kosina <jkosina@suse.cz>,
+        Tomasz Figa <t.figa@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 01:17 PM, Bhushan Bharat-R65777 wrote:
+On 10 July 2013 09:42, Michael Wang <wangyun@linux.vnet.ibm.com> wrote:
+> I'm not sure what is supposed after notify CPUFREQ_GOV_STOP event, if it
+> is in order to stop queued work and prevent follow work happen again,
+> then it failed to, and we need some method to stop queue work again when
+> CPUFREQ_GOV_STOP notified, like some flag in policy which will be
+> checked before re-queue work in work.
 >
->
->> -----Original Message-----
->> From: Linuxppc-dev [mailto:linuxppc-dev-
->> bounces+bharat.bhushan=freescale.com@lists.ozlabs.org] On Behalf Of Tiejun Chen
->> Sent: Tuesday, July 09, 2013 1:33 PM
->> To: benh@kernel.crashing.org
->> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
->> Subject: [v3][PATCH 1/8] powerpc/book3e: rename interrupt_end_book3e with
->> __end_interrupts
->>
->> We can rename 'interrupt_end_book3e' with '__end_interrupts' then book3s/book3e
->> can share this unique label to make sure we can use this conveniently.
->
-> I think we can be consistent with start and end names, no?
+> But if the event is just to sync the queued work but not prevent follow
+> work happen, then things will become tough...we need confirm.
 
-Are you saying to rename 'interrupt_base_book3e' with '__base_interrupts' here? 
-But seems optional since book3s have no this similar start label, so I'd like to 
-keep that as original now.
-
-Lets listen other comments firstly.
-
-Tiejun
-
+After GOV_STOP, until the time GOV_START is called, we shouldn't be
+queuing any work.
