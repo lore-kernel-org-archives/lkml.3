@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab3GJFoM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 01:44:12 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54521 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab3GJFoL (ORCPT
+	id S1752114Ab3GJFpX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 01:45:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:54679 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab3GJFpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 01:44:11 -0400
-Message-ID: <51DCF49D.5010107@ti.com>
-Date: Wed, 10 Jul 2013 11:13:57 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 10 Jul 2013 01:45:22 -0400
+Message-ID: <51DCF518.4090105@windriver.com>
+Date: Wed, 10 Jul 2013 13:46:00 +0800
+From: "tiejun.chen" <tiejun.chen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: Kishon Vijay Abraham I <kishon@ti.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 0/5] Add phy support for AM335X platform using Generic
- PHy framework
-References: <1373280201-31785-1-git-send-email-george.cherian@ti.com> <51DB16A1.6010006@linutronix.de> <51DBA23A.8000505@ti.com> <51DBF59F.1030109@ti.com> <51DCE979.8010108@ti.com> <20130710052343.GA15674@arwen.pp.htv.fi>
-In-Reply-To: <20130710052343.GA15674@arwen.pp.htv.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Bhushan Bharat-R65777 <R65777@freescale.com>
+CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        Wood Scott-B07421 <B07421@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [v3][PATCH 7/8] book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
+References: <1373357007-30785-1-git-send-email-tiejun.chen@windriver.com> <1373357007-30785-8-git-send-email-tiejun.chen@windriver.com> <6A3DF150A5B70D4F9B66A25E3F7C888D070AE138@039-SN2MPN1-011.039d.mgd.msft.net>
+In-Reply-To: <6A3DF150A5B70D4F9B66A25E3F7C888D070AE138@039-SN2MPN1-011.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.162.214]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/10/2013 10:53 AM, Felipe Balbi wrote:
-> On Wed, Jul 10, 2013 at 10:26:25AM +0530, George Cherian wrote:
->> On 7/9/2013 5:05 PM, Kishon Vijay Abraham I wrote:
->>> Hi,
->>>
->>> On Tuesday 09 July 2013 11:10 AM, George Cherian wrote:
->>>> On 7/9/2013 1:14 AM, Sebastian Andrzej Siewior wrote:
->>>>> On 07/08/2013 12:43 PM, George Cherian wrote:
->>>>>> This patch series adds phy support for AM335X platform.
->>>>>> This patch series is based on Generic PHY framework [1].
->>>>>>
->>>>>>
->>>>>> This series has
->>>>>>      - adds dual musb instances support for am335x platform (just for testing)
->>>>>>      - adds phy-amxxxx-usb driver used in AMxxxx platforms
->>>>>>      - adds dt  bindings for the phys
->>>>>>      - removes usb-phy and replaced with generic phy apis in glue layer
->>>>> No, I don't like this all. You did the one thing I tried to avoid while
->>>>> posting my quick-and-dirty phy driver recently: You duplicated a lot of
->>>>> code which can be served by the nop driver and added only power
->>>>> on/power off callbacks.
->>>> I wanted to add phy wakeup control also, but currently phy_ops  dont have an op
->>>> for wkup_ctrl
->>>> Kishon, Can we add one?
->>> Since this should be a capability of the PHY, can't we have wkup_ctrl always
->>> enabled if the PHY has such a capability?
->> No, we cant have wakeup always enabled. Normally we enable it only
->> when we go to low power states and
->> if the user needs USB a wakeup source.
+On 07/10/2013 01:20 PM, Bhushan Bharat-R65777 wrote:
+>
+>
+>> -----Original Message-----
+>> From: Linuxppc-dev [mailto:linuxppc-dev-
+>> bounces+bharat.bhushan=freescale.com@lists.ozlabs.org] On Behalf Of Tiejun Chen
+>> Sent: Tuesday, July 09, 2013 1:33 PM
+>> To: benh@kernel.crashing.org
+>> Cc: linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
+>> Subject: [v3][PATCH 7/8] book3e/kexec/kdump: redefine VIRT_PHYS_OFFSET
 >>
->> So how about enable/disable  phy wakeup from phy suspend/resume?
-> you should use something like so on your ->suspend() or
-> ->runtime_suspend() method
+>> Book3e is always aligned 1GB to create TLB so we should
+>> use (KERNELBASE - MEMORY_START) as VIRT_PHYS_OFFSET to
+>> get __pa/__va properly while boot kdump.
+>>
+>> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+>> ---
+>>   arch/powerpc/include/asm/page.h |    2 ++
+>>   1 file changed, 2 insertions(+)
+>>
+>> diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
+>> index 988c812..5b00081 100644
+>> --- a/arch/powerpc/include/asm/page.h
+>> +++ b/arch/powerpc/include/asm/page.h
+>> @@ -112,6 +112,8 @@ extern long long virt_phys_offset;
+>>   /* See Description below for VIRT_PHYS_OFFSET */
+>>   #ifdef CONFIG_RELOCATABLE_PPC32
+>>   #define VIRT_PHYS_OFFSET virt_phys_offset
+>> +#elif defined(CONFIG_PPC_BOOK3E_64)
+>> +#define VIRT_PHYS_OFFSET (KERNELBASE - MEMORY_START)
 >
-> static int my_phy_{suspend,runtime_suspend}(struct device *dev)
-> {
-> 	struct my_phy *phy = dev_get_drvdata(dev);
->
-> 	if (device_may_wakeup(dev))
-> 		my_phy_enable_wakeup(phy);
->
-> 	return 0;
-> }
+> Can you please explain this code a bit more. I am not understanding this part:)
 
-Makes sense. will do it in v2.
->>> or if it needs more user control,
->>> should we implement a sysfs entry to enable wakeup?
-> that already exists ;-)
->
+Nothing is special, we only need to redefine this to make sure __va()/__pa() can 
+work well for BOOk3E-64 in BOOKE case:
 
+#ifdef CONFIG_BOOKE
+#define __va(x) ((void *)(unsigned long)((phys_addr_t)(x) + VIRT_PHYS_OFFSET))
+#define __pa(x) ((unsigned long)(x) - VIRT_PHYS_OFFSET)
 
--- 
--George
+And the arch/powerpc/include/asm/page.h file has more descriptions inline :)
 
+Tiejun
