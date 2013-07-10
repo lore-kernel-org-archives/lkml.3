@@ -1,224 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179Ab3GJDCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 23:02:24 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:14529 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab3GJDCW (ORCPT
+	id S1754247Ab3GJDCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 23:02:51 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:65420 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627Ab3GJDCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 23:02:22 -0400
-Message-ID: <51DCCE3E.9090503@huawei.com>
-Date: Wed, 10 Jul 2013 11:00:14 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 9 Jul 2013 23:02:50 -0400
+Message-ID: <51DCCE96.9050600@gmail.com>
+Date: Wed, 10 Jul 2013 11:01:42 +0800
+From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Paul Bolle <pebolle@tiscali.nl>,
-        Oliver Neukum <oneukum@suse.de>, Gu Zheng <guz.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH 2/2] PCI,pciehp: avoid add a device already exist during
- pciehp_resume
-References: <1373356564-21668-1-git-send-email-wangyijing@huawei.com> <CAErSpo51x7Q6cFnJ-8RfmikDh3FtCWyjy9tYouH=sjkXdNPo7Q@mail.gmail.com>
-In-Reply-To: <CAErSpo51x7Q6cFnJ-8RfmikDh3FtCWyjy9tYouH=sjkXdNPo7Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Chen Gang <gang.chen@asianux.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, khali@linux-fr.org,
+        David.Woodhouse@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/params.c: print failure information instead of
+ 'KOBJ_ADD' to user space, when sysfs_create_file() fails.
+References: <51DB8597.4090101@asianux.com> <87y59gcg17.fsf@rustcorp.com.au> <51DCC426.3010606@gmail.com> <51DCC867.70408@asianux.com>
+In-Reply-To: <51DCC867.70408@asianux.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-   Thanks for your review and comments!
-
->> We can use PCIe Device Serial Number to identify the device if
->> device support DSN.
-> 
-> I think I like the idea of this, especially because the Microsoft PCI
-> Hardware Compliance Test apparently requires DSN for hot-pluggable
-> PCIe devices [1], so it should be pretty universal.
-> 
-> [1] http://www.techtalkz.com/microsoft-device-drivers-dtm/341362-dtm-pcihct-test-violates-pci-express-base-specification-revision-1-a.html
-> 
->> currently:
->> 1. slot is empty before suspend, insert card during suspend.
->>         In this case, is safe, pciehp will add device by check adapter
->> status register in pciehp_resume.
-> 
-> Your patch doesn't change anything here.
-
-Yes, I only to make some changes for case 3/4.
-
-> 
->> 2. slot is non empty before suspend, remove card during suspend.
->>         Also be safe, pciehp will remove device by check adapter
->> status register in pciehp_resume.
-> 
-> Your patch doesn't change anything here.  (But I think the driver
-> .remove() method will try to poke at the non-existent device; see
-> below.)
-
-I'm not sure the result of driver .remove() method to poke at the non-existent device.
-If driver .remove() method cannot detect the real device, remove action will be block ?
-If the slot support surprise hot remove, this action maybe safe. right?
-
-If the slot does not support surprise hot remove, but the device was already removed,
-we seem to have no other way to clean the stale data related to the old device.
-
-Now if we check adapter status in slot and found adapter is non existent, pciehp resume
-call pciehp_disable_slot() , in pciehp_disable_slot() function, we will check latch status,
-I guess this case latch is open(because slot is empty), this action will abort.
-But I have no platform to test it.
-
-> 
->> 3. slot is non empty before suspend, remove card during suspend
->> and insert a new card.
->>         Now pciehp just call pciehp_enable_slot() roughly. We should
->> remove the old card firstly, then add the new card.
-> 
-> With your patch, I think we'll call the old driver's .remove() method
-> on the new device.  This seems bad; see below.
-
-Ah, this is issue.
-What about power off slot first, then call the old driver's remove() method
-will not touch the new physical device. After the old driver's remove() cleanup,
-we call pciehp_enable_slot() to power on and enable the new device.
-
-> 
-> With your patch, if we remove and reinsert the same device while
-> suspended, we do nothing because the DSN didn't change.  Previously we
-> called pciehp_enable_slot().  I don't know if we need to do anything
-> here or not.
-
-Mainly to avoid the redundant device add, the same like the changes for case 4
-
-> 
->> 4. slot is non empty before suspend, no action during suspend.
->>         We should do nothing in pciehp_resume, but we call
->> pciehp_enable_slot(), so some uncomfortable messages show like above.
->> In this case, we can improve it a little by add a guard
->> if (!list_empty(bus->devices)).
-> 
-> This is the common case.  Previously we called pciehp_enable_slot(),
-> and with your patch we do nothing.  I think that seems sensible, but
-> this part should be split into a separate patch.  That way we can keep
-> the benefit of this change even if we trip over something with the
-> other changes.
-
-OK, I will split this changes into a new patch.
-
-> 
->> Reported-by: Paul Bolle <pebolle@tiscali.nl>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> Cc: Paul Bolle <pebolle@tiscali.nl>
->> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
->> Cc: Oliver Neukum <oneukum@suse.de>
->> Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
->> Cc: linux-pci@vger.kernel.org
->> ---
->>  drivers/pci/hotplug/pciehp_core.c |   38 +++++++++++++++++++++++++++++++++---
->>  1 files changed, 34 insertions(+), 4 deletions(-)
+On 07/10/2013 10:35 AM, Chen Gang wrote:
+> On 07/10/2013 10:17 AM, Chen Gang F T wrote:
+>> On 07/09/2013 04:07 PM, Rusty Russell wrote:
+>>> Chen Gang <gang.chen@asianux.com> writes:
+>>>> When sysfs_create_file() fails, recommend to print the related failure
+>>>> information. And it is useless to still 'KOBJ_ADD' to user space.
+>>>>
+>>>> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+>>>
+>>> sysfs_create_file() should not fail during boot, should it?
+>>>
 >>
->> diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
->> index 7d72c5e..d01e093 100644
->> --- a/drivers/pci/hotplug/pciehp_core.c
->> +++ b/drivers/pci/hotplug/pciehp_core.c
->> @@ -291,6 +291,28 @@ static void pciehp_remove(struct pcie_device *dev)
->>  }
+>> Hmm..., please reference locate_module_kobject() in "kernel/params.c",
+>> which is an '__init' function, and also call sysfs_create_file(), it
+>> processes the related error.
 >>
->>  #ifdef CONFIG_PM
->> +
->> +/* If device support Device Serial Numner, use DSN
+>> So I recommend to get the check too in version_sysfs_builtin().
+>>
 > 
-> s/support/supports/
-> s/Numner/Number/
-> Use conventional comment style:
->   /*
->    * If device ...
->    */
+> Oh, also for locate_module_kobject(), if !CONFIG_MODULES, when error
+> occurs, it still print the information about "Adding module".
 > 
 
-Will update, thanks.
 
-
->> + * to identify the device
->> + */
->> +static bool device_in_slot_is_changed(struct pci_bus *pbus)
->> +{
->> +       u64 old_dsn, new_dsn;
->> +       struct pci_dev *pdev;
->> +
->> +       pdev = pci_get_slot(pbus, PCI_DEVFN(0, 0));
+> Hmm..., do we need call kobject_get() before kobject_put() in failure
+> processing block ?
 > 
-> pci_get_slot() can fail.
 
-Will add failure return check, thanks.
+Oh, sorry for what I said for kobject_get/put() items above, it is
+incorrect.
 
-> 
->> +       old_dsn = pdev->sn;
->> +
->> +       /* get func 0 device serial number */
->> +       pci_get_dsn(pdev, &new_dsn);
->> +       if (status) {
->> +               if (list_empty(&pbus->devices))
->> +                       pciehp_enable_slot(slot);
->> +               else if (device_in_slot_is_changed(pbus)) {
->> +                       pciehp_disable_slot(slot);
-> 
-> pciehp_disable_slot() ultimately calls the .remove() method for the
-> device that has already been removed.  That method is likely to poke
-> at the device, which will do something unexpected because the new
-> device is likely to be completely different.
+What about the diff below for kobject_get() ?
 
-Yes, this is a really issue, so what about firstly power off the slot before call
-.remove() method for the old device.
+-------------------------------diff begin-------------------------------
 
-> 
-> I think the call path is this:
-> 
->     pciehp_resume
->       pciehp_disable_slot
->         remove_board
->           pciehp_unconfigure_device
->             pci_stop_and_remove_bus_device
->               pci_stop_bus_device
->                 pci_stop_dev
->                   device_del
->                     bus_remove_device
->                       device_release_driver
->                         __device_release_driver
->                           pci_device_remove     # pci_bus_type.remove
->                             dev->driver->remove
-> 
-> I think we already had this problem for case 2 (card removed while
-> suspended), but at least in that case, the driver .remove() method
-> doesn't have a device to poke at, so it's less likely to do something
-> bad.
+diff --git a/kernel/params.c b/kernel/params.c
+index 440e65d..ef8d720 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -754,11 +754,11 @@ static struct module_kobject * __init locate_module_kobject(const char *name)
+ 				name, err);
+ 			return NULL;
+ 		}
+-
+-		/* So that we hold reference in both cases. */
+-		kobject_get(&mk->kobj);
+ 	}
+ 
++	/* So that we hold reference in both cases. */
++	kobject_get(&mk->kobj);
++
+ 	return mk;
+ }
 
-Agree.
+-------------------------------diff end---------------------------------
+
+And it also need add additional kobject_put(), if we really need
+process the failure in version_sysfs_builtin().
+
+Thanks.
 
 > 
->> +                       pciehp_enable_slot(slot);
->> +               }
->> +       } else {
->> +               if (!list_empty(&pbus->devices))
->> +                       pciehp_disable_slot(slot);
->> +       }
->>         return 0;
->>  }
->>  #endif /* PM */
->> --
->> 1.7.1
+> 740                 mk = kzalloc(sizeof(struct module_kobject), GFP_KERNEL);
+> 741                 BUG_ON(!mk);
+> 742 
+> 743                 mk->mod = THIS_MODULE;
+> 744                 mk->kobj.kset = module_kset;
+> 745                 err = kobject_init_and_add(&mk->kobj, &module_ktype, NULL,
+> 746                                            "%s", name);
+> 747 #ifdef CONFIG_MODULES
+> 748                 if (!err)
+> 749                         err = sysfs_create_file(&mk->kobj, &module_uevent.attr);
+> 750 #endif
+> 751                 if (err) {
+> 752                         kobject_put(&mk->kobj);
+> 753                         pr_crit("Adding module '%s' to sysfs failed (%d), the system may be unstable.\n",
+> 754                                 name, err);
+> 755                         return NULL;
+> 756                 }
+> 757 
+> 758                 /* So that we hold reference in both cases. */
+> 759                 kobject_get(&mk->kobj);
+> 760         }
+> 761 
+> 762         return mk;
+> 763 }
+> 
+> 
+>> Thanks.
+>>
+>>> Cheers,
+>>> Rusty.
+>>>
+>>>> ---
+>>>>  kernel/params.c |    8 +++++++-
+>>>>  1 files changed, 7 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/kernel/params.c b/kernel/params.c
+>>>> index 440e65d..f5299c1 100644
+>>>> --- a/kernel/params.c
+>>>> +++ b/kernel/params.c
+>>>> @@ -845,7 +845,13 @@ static void __init version_sysfs_builtin(void)
+>>>>  		mk = locate_module_kobject(vattr->module_name);
+>>>>  		if (mk) {
+>>>>  			err = sysfs_create_file(&mk->kobj, &vattr->mattr.attr);
+>>>> -			kobject_uevent(&mk->kobj, KOBJ_ADD);
+>>>> +			if (err)
+>>>> +				printk(KERN_WARNING
+>>>> +				       "%s (%d): sysfs_create_file fail for %s, err: %d\n",
+>>>> +				       __FILE__, __LINE__,
+>>>> +				       vattr->module_name, err);
+>>>> +			else
+>>>> +				kobject_uevent(&mk->kobj, KOBJ_ADD);
+>>>>  			kobject_put(&mk->kobj);
+>>>>  		}
+>>>>  	}
+>>>> -- 
+>>>> 1.7.7.6
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
 >>
 >>
 > 
-> .
 > 
 
 
 -- 
-Thanks!
-Yijing
-
+Chen Gang
