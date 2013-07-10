@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755035Ab3GJQX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 12:23:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37802 "EHLO mx2.suse.de"
+	id S1754997Ab3GJQZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 12:25:11 -0400
+Received: from gmmr2.centrum.cz ([46.255.227.252]:57034 "EHLO gmmr2.centrum.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754712Ab3GJQXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 12:23:54 -0400
-Subject: Re: [PATCH] dmi_scan: Add comments on dmi_present() and the loop
- in dmi_scan_machine()
-From: Jean Delvare <jdelvare@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, Zhenzhong Duan <zhenzhong.duan@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1373466723.24446.10.camel@deadeye.wl.decadent.org.uk>
-References: <1373466723.24446.10.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Wed, 10 Jul 2013 18:23:35 +0200
-Message-ID: <1373473415.4399.53.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1754864Ab3GJQZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 12:25:09 -0400
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=5D_memcg=3A_do_not_trap_chargers_with_full_callstack_on_OOM?=
+Date: Wed, 10 Jul 2013 18:25:06 +0200
+From: "azurIt" <azurit@pobox.sk>
+Cc: =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        <righi.andrea@gmail.com>
+References: <20130619132614.GC16457@dhcp22.suse.cz>, <20130622220958.D10567A4@pobox.sk>, <20130624201345.GA21822@cmpxchg.org>, <20130628120613.6D6CAD21@pobox.sk>, <20130705181728.GQ17812@cmpxchg.org>, <20130705210246.11D2135A@pobox.sk>, <20130705191854.GR17812@cmpxchg.org>, <20130708014224.50F06960@pobox.sk>, <20130709131029.GH20281@dhcp22.suse.cz>, <20130709151921.5160C199@pobox.sk> <20130709135450.GI20281@dhcp22.suse.cz>
+In-Reply-To: <20130709135450.GI20281@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
+MIME-Version: 1.0
+Message-Id: <20130710182506.F25DF461@pobox.sk>
+X-Maser: oho
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+>> Now i realized that i forgot to remove UID from that cgroup before
+>> trying to remove it, so cgroup cannot be removed anyway (we are using
+>> third party cgroup called cgroup-uid from Andrea Righi, which is able
+>> to associate all user's processes with target cgroup). Look here for
+>> cgroup-uid patch:
+>> https://www.develer.com/~arighi/linux/patches/cgroup-uid/cgroup-uid-v8.patch
+>> 
+>> ANYWAY, i'm 101% sure that 'tasks' file was empty and 'under_oom' was
+>> permanently '1'.
+>
+>This is really strange. Could you post the whole diff against stable
+>tree you are using (except for grsecurity stuff and the above cgroup-uid
+>patch)?
 
-Le Wednesday 10 July 2013 à 15:32 +0100, Ben Hutchings a écrit :
-> My previous refactoring in commit 79bae42d51a5 resulted in slightly
-> tricky code (though I think it's more elegant).  Explain what it's
-> doing.
 
-You are being very nice to me, not sure I deserve it ;-)
+Here are all patches which i applied to kernel 3.2.48 in my last test:
+http://watchdog.sk/lkml/patches3/
 
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  drivers/firmware/dmi_scan.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
+Patches marked as 7-* are from Johannes. I'm appling them in order except the grsecurity - it goes as first.
+
+azur
+
+
+
+
+>Btw. the bellow patch might help us to point to the exit path which
+>leaves wait_on_memcg without mem_cgroup_oom_synchronize:
+>---
+>diff --git a/kernel/exit.c b/kernel/exit.c
+>index e6e01b9..ad472e0 100644
+>--- a/kernel/exit.c
+>+++ b/kernel/exit.c
+>@@ -895,6 +895,7 @@ NORET_TYPE void do_exit(long code)
 > 
-> diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-> index b95159b..4fdb377 100644
-> --- a/drivers/firmware/dmi_scan.c
-> +++ b/drivers/firmware/dmi_scan.c
-> @@ -419,6 +419,13 @@ static void __init dmi_format_ids(char *buf, size_t len)
->  			    dmi_get_system_info(DMI_BIOS_DATE));
->  }
->  
-> +/*
-> + * Check for DMI/SMBIOS headers in the system firmware image.  Any
-> + * SMBIOS header must start 16 bytes before the DMI header, so take a
-> + * 32 byte buffer and check for DMI at offset 16 and SMBIOS at offset
-> + * 0.  If the DMI header is present, set dmi_ver accordingly (SMBIOS
-> + * takes precedence) and return 0.  Otherwise return 1.
-> + */
->  static int __init dmi_present(const u8 *buf)
->  {
->  	int smbios_ver;
-> @@ -506,6 +513,13 @@ void __init dmi_scan_machine(void)
->  		if (p == NULL)
->  			goto error;
->  
-> +		/*
-> +		 * Iterate over all possible DMI header addresses q.
-> +		 * Maintain the 32 bytes around q in buf.  On the
-> +		 * first iteration, substitute zero for the
-> +		 * out-of-range bytes so there is no chance of falsely
-> +		 * detecting an SMBIOS header.
-> +		 */
->  		memset(buf, 0, 16);
->  		for (q = p; q < p + 0x10000; q += 16) {
->  			memcpy_fromio(buf + 16, q, 16);
+> 	profile_task_exit(tsk);
 > 
-
-Yes, I like it, good idea.
-
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-
--- 
-Jean Delvare
-Suse L3
-
+>+	WARN_ON(current->memcg_oom.wait_on_memcg);
+> 	WARN_ON(blk_needs_flush_plug(tsk));
+> 
+> 	if (unlikely(in_interrupt()))
+>-- 
+>Michal Hocko
+>SUSE Labs
+>
