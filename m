@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755030Ab3GJSHx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 14:07:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43539 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754886Ab3GJSHv (ORCPT
+	id S1755038Ab3GJSIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 14:08:12 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:40704 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754995Ab3GJSIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 14:07:51 -0400
-Date: Wed, 10 Jul 2013 11:07:48 -0700 (PDT)
-Message-Id: <20130710.110748.586660361286840099.davem@davemloft.net>
-To: markus@trippelsdorf.de
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey.Brodkin@synopsys.com
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130710122523.GA357@x4>
-References: <20130709.145325.1363244885668360965.davem@davemloft.net>
-	<20130710122523.GA357@x4>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Jul 2013 14:08:10 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] x86/ia32: remove unused argument in macro
+Date: Wed, 10 Jul 2013 23:34:28 +0530
+Message-Id: <1373479468-7175-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.8.3.2.736.g869de25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-Date: Wed, 10 Jul 2013 14:25:23 +0200
+3fe26fa (x86: get rid of pt_regs argument in sigreturn variants,
+2012-11-12) changed the body of PTREGSCALL to drop arg, and updated the
+callsites; unfortunately, it forgot to update the macro argument list,
+leaving an unused argument.  Fix this.
 
-> On 2013.07.09 at 14:53 -0700, David Miller wrote:
->> 
->> Alexey Brodkin (2):
->>       ethernet/arc/arc_emac - Add new driver
->>       arc_emac: fix compile-time errors & warnings on PPC64
-> 
-> This driver defaults to y for no reason:
-> 
-> +config NET_VENDOR_ARC
-> +       bool "ARC devices"
-> +       default y
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ Trivial.
 
-That doesn't enable the driver, it enables Kconfig options for drivers
-for that vendor.  If this is off, the user won't even be offered the
-Kconfig option for the driver.
+ arch/x86/ia32/ia32entry.S | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This is consistent with how we handle the other vendor guards for
-networking driver Kconfigs.
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 474dc1b..4299eb0 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -452,7 +452,7 @@ ia32_badsys:
+ 
+ 	CFI_ENDPROC
+ 	
+-	.macro PTREGSCALL label, func, arg
++	.macro PTREGSCALL label, func
+ 	ALIGN
+ GLOBAL(\label)
+ 	leaq \func(%rip),%rax
+-- 
+1.8.3.2.736.g869de25
+
