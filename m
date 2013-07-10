@@ -1,124 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab3GJJ4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 05:56:11 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61973 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999Ab3GJJ4J (ORCPT
+	id S1754194Ab3GJJ5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 05:57:38 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:50281 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201Ab3GJJ5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 05:56:09 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-30-51dd2fb7f36a
-Date: Wed, 10 Jul 2013 18:56:06 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>, Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Support multiple pages allocation
-Message-ID: <20130710095606.GB5557@lge.com>
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130703152824.GB30267@dhcp22.suse.cz>
- <51D44890.4080003@gmail.com>
- <51D44AE7.1090701@gmail.com>
- <20130704042450.GA7132@lge.com>
- <20130704100044.GB7833@dhcp22.suse.cz>
- <20130710003142.GA2152@lge.com>
- <51DCB6DB.3070209@cn.fujitsu.com>
+	Wed, 10 Jul 2013 05:57:36 -0400
+Date: Wed, 10 Jul 2013 11:57:33 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: linux-kernel@vger.kernel.org
+Cc: Borislav Petkov <bp@alien8.de>
+Subject: EDAC lockdep splat
+Message-ID: <20130710095733.GA356@x4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51DCB6DB.3070209@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 09:20:27AM +0800, Zhang Yanfei wrote:
-> 于 2013/7/10 8:31, Joonsoo Kim 写道:
-> > On Thu, Jul 04, 2013 at 12:00:44PM +0200, Michal Hocko wrote:
-> >> On Thu 04-07-13 13:24:50, Joonsoo Kim wrote:
-> >>> On Thu, Jul 04, 2013 at 12:01:43AM +0800, Zhang Yanfei wrote:
-> >>>> On 07/03/2013 11:51 PM, Zhang Yanfei wrote:
-> >>>>> On 07/03/2013 11:28 PM, Michal Hocko wrote:
-> >>>>>> On Wed 03-07-13 17:34:15, Joonsoo Kim wrote:
-> >>>>>> [...]
-> >>>>>>> For one page allocation at once, this patchset makes allocator slower than
-> >>>>>>> before (-5%). 
-> >>>>>>
-> >>>>>> Slowing down the most used path is a no-go. Where does this slow down
-> >>>>>> come from?
-> >>>>>
-> >>>>> I guess, it might be: for one page allocation at once, comparing to the original
-> >>>>> code, this patch adds two parameters nr_pages and pages and will do extra checks
-> >>>>> for the parameter nr_pages in the allocation path.
-> >>>>>
-> >>>>
-> >>>> If so, adding a separate path for the multiple allocations seems better.
-> >>>
-> >>> Hello, all.
-> >>>
-> >>> I modify the code for optimizing one page allocation via likely macro.
-> >>> I attach a new one at the end of this mail.
-> >>>
-> >>> In this case, performance degradation for one page allocation at once is -2.5%.
-> >>> I guess, remained overhead comes from two added parameters.
-> >>> Is it unreasonable cost to support this new feature?
-> >>
-> >> Which benchmark you are using for this testing?
-> > 
-> > I use my own module which do allocation repeatedly.
-> > 
-> >>
-> >>> I think that readahead path is one of the most used path, so this penalty looks
-> >>> endurable. And after supporting this feature, we can find more use cases.
-> >>
-> >> What about page faults? I would oppose that page faults are _much_ more
-> >> frequent than read ahead so you really cannot slow them down.
-> > 
-> > You mean page faults for anon?
-> > Yes. I also think that it is much more frequent than read ahead.
-> > Before futher discussion, I will try to add a separate path
-> > for the multiple allocations.
-> 
-> Some days ago, I was thinking that this multiple allocation behaviour
-> may be useful for vmalloc allocations. So I think it is worth trying.
+While debugging an unrelated issue I came across the following lockdep
+splat:
 
-Yeh! I think so!
+...
+Jul 10 11:38:00 x4 kernel: AMD64 EDAC driver v3.4.0
+Jul 10 11:38:00 x4 kernel: EDAC amd64: DRAM ECC enabled.
+Jul 10 11:38:00 x4 kernel: EDAC amd64: F10h detected (node 0).
+Jul 10 11:38:00 x4 kernel: EDAC MC: DCT0 chip selects:
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 0:  1024MB 1:  1024MB
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 2:  1024MB 3:  1024MB
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 4:     0MB 5:     0MB
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 6:     0MB 7:     0MB
+Jul 10 11:38:00 x4 kernel: EDAC MC: DCT1 chip selects:
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 0:  1024MB 1:  1024MB
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 2:  1024MB 3:  1024MB
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 4:     0MB 5:     0MB
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MC: 6:     0MB 7:     0MB
+Jul 10 11:38:00 x4 kernel: EDAC amd64: using x4 syndromes.
+Jul 10 11:38:00 x4 kernel: EDAC amd64: MCT channel count: 2
+Jul 10 11:38:00 x4 kernel: EDAC amd64: CS0: Unbuffered DDR3 RAM
+Jul 10 11:38:00 x4 kernel: EDAC amd64: CS1: Unbuffered DDR3 RAM
+Jul 10 11:38:00 x4 kernel: EDAC amd64: CS2: Unbuffered DDR3 RAM
+Jul 10 11:38:00 x4 kernel: EDAC amd64: CS3: Unbuffered DDR3 RAM
+Jul 10 11:38:00 x4 kernel: BUG: key ffff8802169693f8 not in .data!
+Jul 10 11:38:00 x4 kernel: ------------[ cut here ]------------
+Jul 10 11:38:00 x4 kernel: WARNING: CPU: 3 PID: 1 at kernel/lockdep.c:2987 lockdep_init_map+0x45e/0x490()
+Jul 10 11:38:00 x4 kernel: sda: unknown partition table
+Jul 10 11:38:00 x4 kernel: DEBUG_LOCKS_WARN_ON(1)
+Jul 10 11:38:00 x4 kernel: CPU: 3 PID: 1 Comm: swapper/0 Not tainted 3.10.0-08587-g496322b #34
+Jul 10 11:38:00 x4 kernel: Hardware name: System manufacturer System Product Name/M4A78T-E, BIOS 3503    04/13/2011
+Jul 10 11:38:00 x4 kernel: 0000000000000009 ffff880216885ac8 ffffffff815a9e66 ffff880216885b10
+Jul 10 11:38:00 x4 kernel: ffff880216885b00 ffffffff810627ad ffff8802155b1910 ffff8802169693f8
+Jul 10 11:38:00 x4 kernel: sd 1:0:0:0: [sda] Attached SCSI disk
+Jul 10 11:38:00 x4 kernel: 0000000000000000 0000000000000000 ffff88021559c400 ffff880216885b60
+Jul 10 11:38:00 x4 kernel: Call Trace:
+Jul 10 11:38:00 x4 kernel: [<ffffffff815a9e66>] dump_stack+0x45/0x56
+Jul 10 11:38:00 x4 kernel: [<ffffffff810627ad>] warn_slowpath_common+0x7d/0xb0
+Jul 10 11:38:00 x4 kernel: [<ffffffff81062857>] warn_slowpath_fmt+0x47/0x50
+Jul 10 11:38:00 x4 kernel: [<ffffffff810a588e>] lockdep_init_map+0x45e/0x490
+Jul 10 11:38:00 x4 kernel: [<ffffffff810a3096>] debug_mutex_init+0x36/0x50
+Jul 10 11:38:00 x4 kernel: [<ffffffff8108526d>] __mutex_init+0x5d/0x70
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c8235>] bus_register+0x175/0x2e0
+Jul 10 11:38:00 x4 kernel: [<ffffffff8146c3d3>] edac_create_sysfs_mci_device+0x53/0x530
+Jul 10 11:38:00 x4 kernel: [<ffffffff8146a303>] edac_mc_add_mc+0xf3/0x250
+Jul 10 11:38:00 x4 kernel: [<ffffffff81471424>] amd64_probe_one_instance+0x734/0xfa0
+Jul 10 11:38:00 x4 kernel: [<ffffffff8126182c>] pci_device_probe+0x9c/0xe0
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c90a1>] driver_probe_device+0x71/0x230
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c9363>] __driver_attach+0xa3/0xb0
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c92c0>] ? __device_attach+0x60/0x60
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c7403>] bus_for_each_dev+0x63/0xa0
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c8fb9>] driver_attach+0x19/0x20
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c7ee0>] bus_add_driver+0x1d0/0x260
+Jul 10 11:38:00 x4 kernel: [<ffffffff81ab62f6>] ? mce_amd_init+0x15d/0x15d
+Jul 10 11:38:00 x4 kernel: [<ffffffff813c9921>] driver_register+0x71/0x150
+Jul 10 11:38:00 x4 kernel: [<ffffffff81255206>] ? __raw_spin_lock_init+0x36/0x60
+Jul 10 11:38:00 x4 kernel: [<ffffffff81ab62f6>] ? mce_amd_init+0x15d/0x15d
+Jul 10 11:38:00 x4 kernel: [<ffffffff8126190b>] __pci_register_driver+0x5b/0x60
+Jul 10 11:38:00 x4 kernel: [<ffffffff81ab63a5>] amd64_edac_init+0xaf/0x191
+Jul 10 11:38:00 x4 kernel: [<ffffffff81ab62f6>] ? mce_amd_init+0x15d/0x15d
+Jul 10 11:38:00 x4 kernel: [<ffffffff81a95d61>] do_one_initcall+0x7f/0x10d
+Jul 10 11:38:00 x4 kernel: [<ffffffff81080838>] ? parse_args+0x1f8/0x330
+Jul 10 11:38:00 x4 kernel: [<ffffffff81a95efc>] kernel_init_freeable+0x10d/0x18d
+Jul 10 11:38:00 x4 kernel: [<ffffffff81a957ad>] ? do_early_param+0x88/0x88
+Jul 10 11:38:00 x4 kernel: [<ffffffff815a1cb0>] ? rest_init+0xc0/0xc0
+Jul 10 11:38:00 x4 kernel: [<ffffffff815a1cb9>] kernel_init+0x9/0x180
+Jul 10 11:38:00 x4 kernel: [<ffffffff815b20ac>] ret_from_fork+0x7c/0xb0
+Jul 10 11:38:00 x4 kernel: [<ffffffff815a1cb0>] ? rest_init+0xc0/0xc0
+Jul 10 11:38:00 x4 kernel: ---[ end trace 7de9b5e7ff84ed1b ]---
+Jul 10 11:38:00 x4 kernel: EDAC MC0: Giving out device to 'amd64_edac' 'F10h': DEV 0000:00:18.2
+Jul 10 11:38:00 x4 kernel: EDAC PCI0: Giving out device to module 'amd64_edac' controller 'EDAC PCI controller': DEV '0000:00:18.2' (POLLED)
+...
 
-Thanks.
-
-> 
-> > 
-> > Thanks.
-> > 
-> >>
-> >> [...]
-> >> -- 
-> >> Michal Hocko
-> >> SUSE Labs
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
-> 
-> 
-> -- 
-> Thanks.
-> Zhang Yanfei
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+-- 
+Markus
