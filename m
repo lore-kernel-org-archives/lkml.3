@@ -1,276 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab3GJLUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:20:43 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:45061 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753735Ab3GJLUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:20:41 -0400
-Message-ID: <51DD445C.5070801@linux.vnet.ibm.com>
-Date: Wed, 10 Jul 2013 16:54:12 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1754440Ab3GJLXe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:23:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53324 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754324Ab3GJLXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 07:23:31 -0400
+Date: Wed, 10 Jul 2013 13:23:27 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups@vger.kernel.org
+Subject: Re: [patch] mm, memcg: add oom killer delay
+Message-ID: <20130710112327.GF4437@dhcp22.suse.cz>
+References: <20130605093937.GK15997@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306051657001.29626@chino.kir.corp.google.com>
+ <20130610142321.GE5138@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306111321360.32688@chino.kir.corp.google.com>
+ <20130612202348.GA17282@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306121408490.24902@chino.kir.corp.google.com>
+ <20130613151602.GG23070@dhcp22.suse.cz>
+ <alpine.DEB.2.02.1306131508300.8686@chino.kir.corp.google.com>
+ <51BA6A2A.3060107@jp.fujitsu.com>
+ <alpine.DEB.2.02.1306140254590.8780@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Andrew Jones <drjones@redhat.com>, mingo@redhat.com, ouyang@cs.pitt.edu,
-        habanero@linux.vnet.ibm.com, jeremy@goop.org, x86@kernel.org,
-        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
-        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
-        chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-References: <20130601192125.5966.35563.sendpatchset@codeblue> <1372171802.3804.30.camel@oc2024037011.ibm.com> <51CAAA26.4090204@linux.vnet.ibm.com> <20130626113744.GA6300@hawk.usersys.redhat.com> <20130626125240.GY18508@redhat.com> <51CAEF45.3010203@linux.vnet.ibm.com> <20130626161130.GB18152@redhat.com> <51CB2AD9.5060508@linux.vnet.ibm.com> <51DBD3C2.2040807@linux.vnet.ibm.com> <20130710103325.GP24941@redhat.com>
-In-Reply-To: <20130710103325.GP24941@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071011-2674-0000-0000-000009BF04F7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306140254590.8780@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 04:03 PM, Gleb Natapov wrote:
-> On Tue, Jul 09, 2013 at 02:41:30PM +0530, Raghavendra K T wrote:
->> On 06/26/2013 11:24 PM, Raghavendra K T wrote:
->>> On 06/26/2013 09:41 PM, Gleb Natapov wrote:
->>>> On Wed, Jun 26, 2013 at 07:10:21PM +0530, Raghavendra K T wrote:
->>>>> On 06/26/2013 06:22 PM, Gleb Natapov wrote:
->>>>>> On Wed, Jun 26, 2013 at 01:37:45PM +0200, Andrew Jones wrote:
->>>>>>> On Wed, Jun 26, 2013 at 02:15:26PM +0530, Raghavendra K T wrote:
->>>>>>>> On 06/25/2013 08:20 PM, Andrew Theurer wrote:
->>>>>>>>> On Sun, 2013-06-02 at 00:51 +0530, Raghavendra K T wrote:
->>>>>>>>>> This series replaces the existing paravirtualized spinlock
->>>>>>>>>> mechanism
->>>>>>>>>> with a paravirtualized ticketlock mechanism. The series provides
->>>>>>>>>> implementation for both Xen and KVM.
->>>>>>>>>>
->>>>>>>>>> Changes in V9:
->>>>>>>>>> - Changed spin_threshold to 32k to avoid excess halt exits that are
->>>>>>>>>>     causing undercommit degradation (after PLE handler
->>>>>>>>>> improvement).
->>>>>>>>>> - Added  kvm_irq_delivery_to_apic (suggested by Gleb)
->>>>>>>>>> - Optimized halt exit path to use PLE handler
->>>>>>>>>>
->>>>>>>>>> V8 of PVspinlock was posted last year. After Avi's suggestions
->>>>>>>>>> to look
->>>>>>>>>> at PLE handler's improvements, various optimizations in PLE
->>>>>>>>>> handling
->>>>>>>>>> have been tried.
->>>>>>>>>
->>>>>>>>> Sorry for not posting this sooner.  I have tested the v9
->>>>>>>>> pv-ticketlock
->>>>>>>>> patches in 1x and 2x over-commit with 10-vcpu and 20-vcpu VMs.  I
->>>>>>>>> have
->>>>>>>>> tested these patches with and without PLE, as PLE is still not
->>>>>>>>> scalable
->>>>>>>>> with large VMs.
->>>>>>>>>
->>>>>>>>
->>>>>>>> Hi Andrew,
->>>>>>>>
->>>>>>>> Thanks for testing.
->>>>>>>>
->>>>>>>>> System: x3850X5, 40 cores, 80 threads
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> 1x over-commit with 10-vCPU VMs (8 VMs) all running dbench:
->>>>>>>>> ----------------------------------------------------------
->>>>>>>>>                         Total
->>>>>>>>> Configuration                Throughput(MB/s)    Notes
->>>>>>>>>
->>>>>>>>> 3.10-default-ple_on            22945            5% CPU in host
->>>>>>>>> kernel, 2% spin_lock in guests
->>>>>>>>> 3.10-default-ple_off            23184            5% CPU in host
->>>>>>>>> kernel, 2% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_on            22895            5% CPU in host
->>>>>>>>> kernel, 2% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_off            23051            5% CPU in host
->>>>>>>>> kernel, 2% spin_lock in guests
->>>>>>>>> [all 1x results look good here]
->>>>>>>>
->>>>>>>> Yes. The 1x results look too close
->>>>>>>>
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> 2x over-commit with 10-vCPU VMs (16 VMs) all running dbench:
->>>>>>>>> -----------------------------------------------------------
->>>>>>>>>                         Total
->>>>>>>>> Configuration                Throughput        Notes
->>>>>>>>>
->>>>>>>>> 3.10-default-ple_on             6287            55% CPU  host
->>>>>>>>> kernel, 17% spin_lock in guests
->>>>>>>>> 3.10-default-ple_off             1849            2% CPU in host
->>>>>>>>> kernel, 95% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_on             6691            50% CPU in host
->>>>>>>>> kernel, 15% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_off            16464            8% CPU in host
->>>>>>>>> kernel, 33% spin_lock in guests
->>>>>>>>
->>>>>>>> I see 6.426% improvement with ple_on
->>>>>>>> and 161.87% improvement with ple_off. I think this is a very good
->>>>>>>> sign
->>>>>>>>   for the patches
->>>>>>>>
->>>>>>>>> [PLE hinders pv-ticket improvements, but even with PLE off,
->>>>>>>>>   we still off from ideal throughput (somewhere >20000)]
->>>>>>>>>
->>>>>>>>
->>>>>>>> Okay, The ideal throughput you are referring is getting around
->>>>>>>> atleast
->>>>>>>> 80% of 1x throughput for over-commit. Yes we are still far away from
->>>>>>>> there.
->>>>>>>>
->>>>>>>>>
->>>>>>>>> 1x over-commit with 20-vCPU VMs (4 VMs) all running dbench:
->>>>>>>>> ----------------------------------------------------------
->>>>>>>>>                         Total
->>>>>>>>> Configuration                Throughput        Notes
->>>>>>>>>
->>>>>>>>> 3.10-default-ple_on            22736            6% CPU in host
->>>>>>>>> kernel, 3% spin_lock in guests
->>>>>>>>> 3.10-default-ple_off            23377            5% CPU in host
->>>>>>>>> kernel, 3% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_on            22471            6% CPU in host
->>>>>>>>> kernel, 3% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_off            23445            5% CPU in host
->>>>>>>>> kernel, 3% spin_lock in guests
->>>>>>>>> [1x looking fine here]
->>>>>>>>>
->>>>>>>>
->>>>>>>> I see ple_off is little better here.
->>>>>>>>
->>>>>>>>>
->>>>>>>>> 2x over-commit with 20-vCPU VMs (8 VMs) all running dbench:
->>>>>>>>> ----------------------------------------------------------
->>>>>>>>>                         Total
->>>>>>>>> Configuration                Throughput        Notes
->>>>>>>>>
->>>>>>>>> 3.10-default-ple_on             1965            70% CPU in host
->>>>>>>>> kernel, 34% spin_lock in guests
->>>>>>>>> 3.10-default-ple_off              226            2% CPU in host
->>>>>>>>> kernel, 94% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_on             1942            70% CPU in host
->>>>>>>>> kernel, 35% spin_lock in guests
->>>>>>>>> 3.10-pvticket-ple_off             8003            11% CPU in host
->>>>>>>>> kernel, 70% spin_lock in guests
->>>>>>>>> [quite bad all around, but pv-tickets with PLE off the best so far.
->>>>>>>>>   Still quite a bit off from ideal throughput]
->>>>>>>>
->>>>>>>> This is again a remarkable improvement (307%).
->>>>>>>> This motivates me to add a patch to disable ple when pvspinlock is
->>>>>>>> on.
->>>>>>>> probably we can add a hypercall that disables ple in kvm init patch.
->>>>>>>> but only problem I see is what if the guests are mixed.
->>>>>>>>
->>>>>>>>   (i.e one guest has pvspinlock support but other does not. Host
->>>>>>>> supports pv)
->>>>>>>
->>>>>>> How about reintroducing the idea to create per-kvm ple_gap,ple_window
->>>>>>> state. We were headed down that road when considering a dynamic
->>>>>>> window at
->>>>>>> one point. Then you can just set a single guest's ple_gap to zero,
->>>>>>> which
->>>>>>> would lead to PLE being disabled for that guest. We could also revisit
->>>>>>> the dynamic window then.
->>>>>>>
->>>>>> Can be done, but lets understand why ple on is such a big problem.
->>>>>> Is it
->>>>>> possible that ple gap and SPIN_THRESHOLD are not tuned properly?
->>>>>>
->>>>>
->>>>> The one obvious reason I see is commit awareness inside the guest. for
->>>>> under-commit there is no necessity to do PLE, but unfortunately we do.
->>>>>
->>>>> atleast we return back immediately in case of potential undercommits,
->>>>> but we still incur vmexit delay.
->>>> But why do we? If SPIN_THRESHOLD will be short enough (or ple windows
->>>> long enough) to not generate PLE exit we will not go into PLE handler
->>>> at all, no?
->>>>
->>>
->>> Yes. you are right. dynamic ple window was an attempt to solve it.
->>>
->>> Probelm is, reducing the SPIN_THRESHOLD is resulting in excess halt
->>> exits in under-commits and increasing ple_window may be sometimes
->>> counter productive as it affects other busy-wait constructs such as
->>> flush_tlb AFAIK.
->>> So if we could have had a dynamically changing SPIN_THRESHOLD too, that
->>> would be nice.
->>>
->>
->> Gleb, Andrew,
->> I tested with the global ple window change (similar to what I posted
->> here https://lkml.org/lkml/2012/11/11/14 ),
-> This does not look global. It changes PLE per vcpu.
->
->> But did not see good result. May be it is good to go with per VM
->> ple_window.
->>
->> Gleb,
->> Can you elaborate little more on what you have in mind regarding per
->> VM ple_window. (maintaining part of it as a per vm variable is clear
->> to
->>   me), but is it that we have to load that every time of guest entry?
->>
-> Only when it changes, shouldn't be to often no?
->
->> I 'll try that idea next.
->>
->> Ingo, Gleb,
->>
->>  From the results perspective, Andrew Theurer, Vinod's test results are
->> pro-pvspinlock.
->> Could you please help me to know what will make it a mergeable
->> candidate?.
->>
-> I need to spend more time reviewing it :) The problem with PV interfaces
-> is that they are easy to add but hard to get rid of if better solution
-> (HW or otherwise) appears.
+On Fri 14-06-13 03:12:52, David Rientjes wrote:
+> On Fri, 14 Jun 2013, Kamezawa Hiroyuki wrote:
+> 
+> > Reading your discussion, I think I understand your requirements.
+> > The problem is that I can't think you took into all options into
+> > accounts and found the best way is this new oom_delay. IOW, I can't
+> > convice oom-delay is the best way to handle your issue.
+> > 
+> 
+> Ok, let's talk about it.
+> 
+> > Your requeirement is
+> >  - Allowing userland oom-handler within local memcg.
+> > 
+> 
+> Another requirement:
+> 
+>  - Allow userland oom handler for global oom conditions.
+> 
+> Hopefully that's hooked into memcg because the functionality is already 
+> there, we can simply duplicate all of the oom functionality that we'll be 
+> adding for the root memcg.
 
-Infact Avi had acked the whole V8 series, but delayed for seeing how
-PLE improvement would affect it.
+I understand this and that's why I mentioned enabling oom_control for
+root memcg at LSF. I liked the idea at the time but the more I think
+about it the more I am scared about all the consequences. Maybe my fear
+is not justified as in-kernel (scripting or module registering its own
+handler) would be fragile in a similar ways. I would like to see this
+being discussed before we go enable memcg way.
 
-The only addition from that series has been
-1. tuning the SPIN_THRESHOLD to 32k (from 2k)
-and
-2. the halt handler now calls vcpu_on_spin to take the advantage of PLE 
-improvements. (this can also go as an independent patch into kvm)
+I _do_ agree that we really _want_ a way to provide a customer oom
+handler.
 
-The rationale for making SPIN_THERSHOLD 32k needs big explanation.
-Before PLE improvements, as you know,
-kvm undercommit scenario was very worse in ple enabled cases. (compared 
-to ple disabled cases).
-pvspinlock patches behaved equally bad in undercommit. Both had similar 
-reason so at the end there was no degradation w.r.t base.
+> > Considering straightforward, the answer should be
+> >  - Allowing oom-handler daemon out of memcg's control by its limit.
+> >    (For example, a flag/capability for a task can archive this.)
+> >    Or attaching some *fixed* resource to the task rather than cgroup.
+> > 
+> >    Allow to set task->secret_saving=20M.
+> > 
+> 
+> Exactly!
 
-The reason for bad performance in PLE case was unneeded vcpu iteration 
-in ple handler resulting in high yield_to calls and double run queue locks.
-With pvspinlock applied, same villain role was played by excessive halt 
-exits.
+I thought your users are untrusted so you cannot give them any
+additional reserves. Or is this only about the root cgroup?
 
-But after ple handler improved, we needed to throttle unnecessary halts
-in undercommit for pvspinlock to be on par with 1x result.
+> First of all, thanks very much for taking an interest in our usecase and 
+> discussing it with us.
+> 
+> I didn't propose what I referred to earlier in the thread as "memcg 
+> reserves" because I thought it was going to be a more difficult battle.  
+> The fact that you brought it up first actually makes me think it's less 
+> insane :)
 
->
->> I agree that Jiannan's Preemptable Lock idea is promising and we could
->> evaluate that  approach, and make the best one get into kernel and also
->> will carry on discussion with Jiannan to improve that patch.
-> That would be great. The work is stalled from what I can tell.
+reserves for oom handler doesn't sound like a bad idea but it assumes
+that the handler is trusted.
 
-Jiannan is trying to improve that. and also 'am helping with testing
-etc internally too.
-Despite of being a great idea some how, hardcoded TIMEOUT to delay
-the checking the lock availability is somehow not working great, and
-still seeing some softlockups. AFAIK, Linus also hated TIMEOUT idea
-in Rik's spinlock backoff patches because it is difficult to tune on 
-baremetal and can have some adverse effect on virtualization too.
+> We do indeed want memcg reserves and I have patches to add it if you'd 
+> like to see that first.  It ensures that this userspace oom handler can 
+> actually do some work in determining which process to kill.  The reserve 
+> is a fraction of true memory reserves (the space below the per-zone min 
+> watermarks) which is dependent on min_free_kbytes.  This does indeed 
+> become more difficult with true and complete kmem charging.  That "work" 
+> could be opening the tasks file (which allocates the pidlist within the 
+> kernel),
 
+I am not familiar with details why it has to allocate memory but I guess
+we need to read tasks file without any in-kernel allocations.
+
+> checking /proc/pid/status for rss,
+
+This doesn't require in kernel allocation AFAICS.
+
+> checking for how long a process has been running, checking for tid,
+> sending a signal to drop caches, etc.
+> 
+> We'd also like to do this for global oom conditions, which makes it even 
+> more interesting.  I was thinking of using a fraction of memory reserves 
+> as the oom killer currently does (that memory below the min watermark) for 
+> these purposes.
+> 
+> Memory charging is simply bypassed for these oom handlers (we only grant 
+> access to those waiting on the memory.oom_control eventfd) up to 
+> memory.limit_in_bytes + (min_free_kbytes / 4), for example.  I don't think 
+> this is entirely insane because these oom handlers should lead to future 
+> memory freeing, just like TIF_MEMDIE processes.
+> 
+> > Going back to your patch, what's confusing is your approach.
+> > Why the problem caused by the amount of memory should be solved by
+> > some dealy, i.e. the amount of time ?
+> > 
+> > This exchanging sounds confusing to me.
+> > 
+> 
+> Even with all of the above (which is not actually that invasive of a 
+> patch), I still think we need memory.oom_delay_millisecs. 
+
+I am still not convinced. I have already mentioned that this can be
+handled from userspace.
+A simple watchdog which sits on oom_control eventfd which triggers
+timer (and reschedule it on a new event while there is one scheduled
+already) which reads oom_control to check under_oom before it enables
+in-kernel oom handling again doesn't need any memory allocation so there
+is nothing to prevent it from resurrecting the system. So I really do
+not see a reason for a new knob.
+
+> I probably made a mistake in describing what that is addressing if it
+> seems like it's trying to address any of the above.
+> 
+> If a userspace oom handler fails to respond even with access to those 
+> "memcg reserves", the kernel needs to kill within that memcg.  Do we do 
+> that above a set time period (this patch) or when the reserves are 
+> completely exhausted?  That's debatable, but if we are to allow it for 
+> global oom conditions as well then my opinion was to make it as safe as 
+> possible; today, we can't disable the global oom killer from userspace and 
+> I don't think we should ever allow it to be disabled.  I think we should 
+> allow userspace a reasonable amount of time to respond and then kill if it 
+> is exceeded.
+
+I don't know. I like the way how we can say we are under control here
+and take all the consequences. The scheme you are proposing. You have
+some time and you better handle the situation under that time or we will
+take over sounds weird to me. We have traditionally allowed users to
+shoot their heads expecting they know what they are doing. Why we should
+differ here?
+
+> For the global oom case, we want to have a priority-based memcg selection.
+> Select the lowest priority top-level memcg and kill within it.  
+
+Yes that makes sense as zillions of other heuristics. E.g. kill whole
+groups as they might loose any point if one of their process is killed.
+
+> If it has an oom notifier, send it a signal to kill something.  If
+> it fails to react, kill something after memory.oom_delay_millisecs
+> has elapsed.  If there isn't a userspace oom notifier, kill something
+> within that lowest priority memcg.
+> 
+> The bottomline with my approach is that I don't believe there is ever a 
+> reason for an oom memcg to remain oom indefinitely.  That's why I hate 
+> memory.oom_control == 1 and I think for the global notification it would 
+> be deemed a nonstarter since you couldn't even login to the machine.
+> 
+> > I'm not against what you finally want to do, but I don't like the fix.
+> > 
+> 
+> I'm thrilled to hear that, and I hope we can work to make userspace oom 
+> handling more effective.
+> 
+> What do you think about that above?
+
+I think the idea about reserves is worth considering. This, however,
+requires a stronger trust model for oom handlers. Maybe we can grant
+reserves only to processes with some capability, dunno.
+
+I also think that we should explore/discuss other options for custom oom
+handling than hooking into memcg oom_control. I do see why oom_control
+is a good fit for you (and I thought about it as well - it is really
+ironic that I thought you would hate the idea when I mentioned that at
+LSF) but once we allow that we will have to live with that for ever
+which might turn out to be problem so better not hurry there.
+
+Finally, I still do not like the "you have this amount of time and
+handle that or we will take over" approach so I cannot support you with
+your delay knob. If one wants to play with fire he has to take all the
+consequences and unless you really convince me that this is not doable I
+will stick with this.
+-- 
+Michal Hocko
+SUSE Labs
