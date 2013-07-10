@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab3GJM2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 08:28:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55794 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754509Ab3GJM2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 08:28:45 -0400
-Subject: Re: [PATCH 2/3] firmware/dmi_scan: Fix most checkpatch errors and
- warnings
-From: Jean Delvare <jdelvare@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1373386794.14604.14.camel@joe-AO722>
-References: <1373384438.4391.6.camel@chaos.site>
-	 <1373384574.4391.9.camel@chaos.site>  <1373386794.14604.14.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Wed, 10 Jul 2013 14:28:25 +0200
-Message-ID: <1373459305.4399.27.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1754356Ab3GJMgQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 08:36:16 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:64769 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753758Ab3GJMgP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 08:36:15 -0400
+Message-ID: <51DD553B.1080701@intel.com>
+Date: Wed, 10 Jul 2013 13:36:11 +0100
+From: Matt Fleming <matt.fleming@intel.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Dave Young <dyoung@redhat.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>
+Subject: Re: uefi boot hang (bisected)
+References: <51DD00DB.3010107@redhat.com>
+In-Reply-To: <51DD00DB.3010107@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+On 10/07/13 07:36, Dave Young wrote:
+> Another problem is: With this patch applied I tried noefi boot, but
+> kernel paniced, looks like efivar_init depends on efi runtime. Below
+> patches works for me about noefi boot though I'm not sure if it's a
+> right fix, please review.
 
-Le Tuesday 09 July 2013 à 09:19 -0700, Joe Perches a écrit :
-> On Tue, 2013-07-09 at 17:42 +0200, Jean Delvare wrote:
-> > Fix all errors and trivial warnings reported by checkpatch for file
-> > drivers/firmware/dmi_scan.c.
-> 
-> trivia:
-> 
-> > +++ linux-3.11-rc0/drivers/firmware/dmi_scan.c	2013-07-09 16:08:13.979592957 +0200
-> > @@ -63,7 +63,7 @@ static char * __init dmi_string(const st
-> >  	if (str != NULL)
-> >  		strcpy(str, bp);
-> >  	else
-> > -		printk(KERN_ERR "dmi_string: cannot allocate %Zu bytes.\n", len);
-> > +		pr_err("dmi_string: cannot allocate %Zu bytes.\n", len);
-> 
-> If the function name is used in every printk, it might
-> be better to add
-> 
-> #define pr_fmt(fmt) "%s: " fmt, __func__
-> 
-> before any #include
+It makes more sense to check in efivars.c, since none of that file can
+function without runtime serivces.
 
-No, only error messages include the function name, debug and info
-messages do not.
+Could you try the following patch?
 
-> If not, then I suggest removing the embedded function names
-> and writing these as
-> 		pr_err("%s: etc...", __func__, etc...);
-> 
-> This eliminates any possible function name mismatch.
+---
 
-I had considered this too, but stepped back after finding out that this
-change would increase the binary size. It's hard to sell such a change
-then when it's only fixing a theoretical problem.
-
-> > @@ -217,7 +220,7 @@ static void __init dmi_save_one_device(i
-> >  
-> >  	dev = dmi_alloc(sizeof(*dev) + strlen(name) + 1);
-> >  	if (!dev) {
-> > -		printk(KERN_ERR "dmi_save_one_device: out of memory.\n");
-> > +		pr_err("dmi_save_one_device: out of memory.\n");
-> 
-> OOM messages generally aren't useful.
-> 
-> dmi_alloc is either a trivial front-end to kmalloc,
-> and kmalloc already does a dump_stack() when OOM, or
-> for x86, dmi_alloc uses extend_brk which BUGs when
-> unsuccessful.
-
-Fair enough, I'll send a separate patch for this in a minute.
-
--- 
-Jean Delvare
-Suse L3
-
+diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
+index 8bd1bb6..8a7432a 100644
+--- a/drivers/firmware/efi/efivars.c
++++ b/drivers/firmware/efi/efivars.c
+@@ -583,6 +583,9 @@ int efivars_sysfs_init(void)
+ 	struct kobject *parent_kobj = efivars_kobject();
+ 	int error = 0;
+ 
++	if (!efi_enabled(EFI_RUNTIME_SERVICES))
++		return -ENODEV;
++
+ 	/* No efivars has been registered yet */
+ 	if (!parent_kobj)
+ 		return 0;
