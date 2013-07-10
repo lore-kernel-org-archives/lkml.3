@@ -1,43 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab3GKKbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:31:14 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:47183 "EHLO
+	id S1755698Ab3GKKdd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:33:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43736 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868Ab3GKKbM (ORCPT
+	with ESMTP id S1751357Ab3GKKdc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:31:12 -0400
-Date: Thu, 11 Jul 2013 11:30:07 +0100
+	Thu, 11 Jul 2013 06:33:32 -0400
+Date: Wed, 10 Jul 2013 16:47:12 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Nick Dyer <nick.dyer@itdev.co.uk>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Message-ID: <20130711103007.GH24508@sirena.org.uk>
-References: <20130607154134.GU31367@sirena.org.uk>
- <51B20630.7000304@itdev.co.uk>
- <20130607164700.GW31367@sirena.org.uk>
- <51B6FE69.6060505@itdev.co.uk>
- <20130611114727.GY1403@sirena.org.uk>
- <51B7151F.5070307@itdev.co.uk>
- <20130619185909.GG1403@sirena.org.uk>
- <51C47C50.8000606@itdev.co.uk>
- <20130702101125.GD27646@sirena.org.uk>
- <51DE61B5.1000600@itdev.co.uk>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it, arm@kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20130710154712.GG24508@sirena.org.uk>
+References: <1373464848-28146-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZYOWEO2dMm2Af3e3"
+	protocol="application/pgp-signature"; boundary="3607uds81ZQvwCD0"
 Content-Disposition: inline
-In-Reply-To: <51DE61B5.1000600@itdev.co.uk>
+In-Reply-To: <1373464848-28146-1-git-send-email-jonas.jensen@gmail.com>
 X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 193.120.41.118
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
- via sysfs
+Subject: Re: [PATCH] rtc: Add MOXA ART RTC driver
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -45,63 +31,104 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ZYOWEO2dMm2Af3e3
+--3607uds81ZQvwCD0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jul 11, 2013 at 08:41:41AM +0100, Nick Dyer wrote:
-> Mark Brown wrote:
-> > On Fri, Jun 21, 2013 at 09:16:16AM -0700, Nick Dyer wrote:
+On Wed, Jul 10, 2013 at 04:00:48PM +0200, Jonas Jensen wrote:
 
-> >> For some operations it does. For example updating the whole chip config
-> >> (which is a common thing to want to do), it would turn a couple of write
-> >> operations into ~20 on recent chips.
+> +++ b/drivers/rtc/Makefile
+> @@ -77,6 +77,7 @@ obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
+>  obj-$(CONFIG_RTC_DRV_MAX77686)	+= rtc-max77686.o
+>  obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
+>  obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
+> +obj-$(CONFIG_RTC_DRV_MOXART)	+= rtc-moxart.o
+>  obj-$(CONFIG_RTC_DRV_MPC5121)	+= rtc-mpc5121.o
 
-> > Is that really happening on peformance critical paths other than initial
-> > power up (which could be handled more neatly anyway).
+It'd be good to keep this sorted.
 
-> Well, you're right that we could probably add more API for performance
-> critical stuff. But that wasn't your original question.
+> +struct rtc_plat_data {
 
-You probably don't need another API here - for example, if the driver
-understands that the device is powered off and knows enugh about what
-the device is doing to understand that it doesn't need to be running
-then it could for example cache what is being written then flush in a
-more optimal fashion.
+This is a bit confusing - normally platform data is data passed in by
+the platform as part of device registration, not runtime data.
 
-> > If absoluely nobody has used the separate wakeup pin then the hardware
-> > designers are wasting a pin there...  my point isn't that nobody would
-> > use the reference design it's that some boards will have the separate
-> > signal.
+> +	struct rtc_device *rtc;
+> +};
+> +
+> +static spinlock_t rtc_lock;
 
-> That's entirely hypothetical, and you're wasting our time until you can
-> actually point to such hardware, happy to write patches to support that
-> mode of operation as well if you do.
+Why is this global not part of the runtime data?  Not that anyone is
+likely to have two RTCs in the one system but still...
 
-See above - it's not just about the possibility that someone might have
-done a better job with the hardware design, better power management is
-just a good idea in general.
+> +u8 moxart_rtc_read_byte(void)
+> +{
+> +	int i;
+> +	u8 data = 0;
+> +
+> +	for (i = 0; i < 8; i++) {
+> +		gpio_set_value(GPIO_RTC_SCLK, GPIO_EM1240_LOW);
+> +		udelay(GPIO_RTC_DELAY_TIME);
+> +		gpio_set_value(GPIO_RTC_SCLK, GPIO_EM1240_HIGH);
+> +		if (gpio_get_value(GPIO_RTC_DATA))
+> +			data |= (1 << i);
+> +		udelay(GPIO_RTC_DELAY_TIME);
 
---ZYOWEO2dMm2Af3e3
+This looks wrong, although I expect it's probably fine - you're reading
+the value with no delay after setting the GPIO high.  I assume the
+hardware actually strobes the data out on the the high to low transition
+but in that case I'd expect the get to be before the raise.  Either that
+or some delay after the raise just to make sure.
+
+It's also very odd seeing the constants for _LOW and _HIGH, these should
+just be booleans.
+
+> +static int moxart_rtc_ioctl(struct device *dev, unsigned int cmd,
+> +	unsigned long arg)
+> +{
+> +	switch (cmd) {
+> +	default:
+> +		return -ENOIOCTLCMD;
+> +	}
+> +
+> +	return 0;
+> +}
+
+Why not just remove this function?
+
+> + out:
+> +	if (pdata->rtc)
+> +		rtc_device_unregister(pdata->rtc);
+> +	devm_kfree(&pdev->dev, pdata);
+
+devm_kfree() isn't needed, the main point of devm_ is to avoid having to
+explicitly free things.
+
+> +	gpio_free(GPIO_RTC_DATA);
+> +	gpio_free(GPIO_RTC_SCLK);
+> +	gpio_free(GPIO_RTC_RESET);
+
+Use devm_gpio_request().
+
+--3607uds81ZQvwCD0
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR3oknAAoJELSic+t+oim9/bsP/ilw0qFkGwIJfT5AI2kWcG+M
-SWtyqjuPjOZP2XsKCemiyi0/KeyAf2gHGP6hxkTDUZMKZKJ78DqQ/2T6FeixKdcP
-iBtVUEJam9vDDByWMe48L0WEjiVTase8PuFevshloj8xQ9GELTl2G7wCWO13m/pL
-prUcj339B+CXQKGyukZ2S04EP3Vvo20vSrkiOXdQOS3+i6vXRnke+ggadVWeTMTU
-R692ZIwW5ZrT0C/CT/5sVvUPNiLXT71esLqNMF/s1z6LrUxXAuPnjmb3BkFTpIf7
-ENUY1qDfcQibr3pF6JWVIZJ3EYkTczuxJRPQbnOsvAvTJBLA35uK1QUZB9ZDeGL5
-y5fOwiiY8/HRxcLqWMC/tHHLON6KC8SurwJNihPAh8SkrG85EYULosKpGUEXmYdJ
-6X9Kzatv59uxBmb3ktsQR1QQd7RKjBIQp5/oq+IbX0ixaQBCXGziqpvyFn4Q+Ftd
-RL/MyV2UnMqLL0jJC51VoTurm8SXdIpAV0mMXS/ctrIqY4GSJQBJ1eO3aLhUtnO3
-CQP5Mk7YF4NzcKrPKxuJiL2RzFoV2NjUbn7xzDitmU+jVNib8lSYvtFFfDqAdvKR
-+YNejmPeKN4SmSmy4cTbt5x80I4EenquSUWQNUo/OG6i3ltovpOkt2WQpjCI6/hd
-GkEE04O3oZy88DnlCRDi
-=YGIN
+iQIcBAEBAgAGBQJR3YH8AAoJELSic+t+oim9zRkP/iml1pL7a1fKYjiStiQtyK8E
+0i2eqtjl84hqsjsVkpCEcYSaSYAqYi9eid1HjvKUh8KxrE7fwPsp025RperacRgI
+agjQ1jEVbp/G684k/x+eNkJZwhtp2NaqLg27mbqgCmp9Dzm8CgeL1T20/Uer3Rlw
+3fHjlnuI9Wp2a8ISofeE30nMgoeX5Ir5IYoccOuC0+Rp04Fx3LJbPS7kpYCNb9k2
+j8NhbhpAraBn4zFfc0a9EcSveXVlfxGxFyTaJE2D6/p9HCxRv4Oo7F2UCl2B/TDZ
+pClYdCobkcT6OWCzQXK+VEiUlzpVNOJC9dPwsAnn0UQnk3dA9B3JccGZo7nBclvE
+Jjm+QkXqfUGjVd75rsdDHR/QudjiovjcitPP7IUWHLPwuJ3BuwuqRspZkcyIw847
+6llcQzLB+F0DNzEl0dq2VEFNjA4/46CC0hoEuJkV8Q8U3jJNg/L6i8r0mHhy69KO
+1Fht5z6kW4AIzFUbpDgFRg5+Bg+IbyRcmA6L7GyyqKqWjGS3qunMUvFROyvxd6eA
+gGivghPtefNSsYeL5BdVSCsZ6tXSrcejWDcMayEVSsjWjrGcHY6kDT//PZ5kke3V
+KSNtKTuMS2y1S4PeuTzTLHLY2/NJqfF9Dwo7o/rm8BsCdoulvUYtXcCf51E2s72K
+gJHw/UaIxn274V0VbguM
+=N4Bl
 -----END PGP SIGNATURE-----
 
---ZYOWEO2dMm2Af3e3--
+--3607uds81ZQvwCD0--
