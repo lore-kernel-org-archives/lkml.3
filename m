@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab3GJPaI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 11:30:08 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:44846 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754415Ab3GJPaG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 11:30:06 -0400
-MIME-Version: 1.0
-X-Originating-IP: [93.172.62.57]
-In-Reply-To: <CAK=WgbbJesp2Yg0mXOyxzhnQxwvoNLdt7GsY5v2yN+SAc2=WZQ@mail.gmail.com>
-References: <CAK=WgbbJesp2Yg0mXOyxzhnQxwvoNLdt7GsY5v2yN+SAc2=WZQ@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 10 Jul 2013 18:29:44 +0300
-Message-ID: <CAK=WgbYHzYdSsuFa0K=q8iUS3ykXy-5=XifxweCx8Uqrg-CYAg@mail.gmail.com>
-Subject: Re: [GIT PULL] remoteproc fixes
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Suman Anna <s-anna@ti.com>, Thomas Meyer <thomas@m3y3r.de>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754770Ab3GJPeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 11:34:13 -0400
+Received: from sauhun.de ([89.238.76.85]:54463 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754755Ab3GJPeM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 11:34:12 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>
+Subject: [RFC 1/2] sched: replace INIT_COMPLETION with reinit_completion
+Date: Wed, 10 Jul 2013 16:33:56 +0100
+Message-Id: <1373470437-16908-2-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1373470437-16908-1-git-send-email-wsa@the-dreams.de>
+References: <1373470437-16908-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the lists this time
+For the casual device driver writer, it is hard to remember when to use
+init_completion (to init a completion structure) or INIT_COMPLETION (to
+*reinit* a completion structure). Furthermore, while all other completion
+functions exepct a pointer as a parameter, INIT_COMPLETION does not. To make it
+easier to remember which function to use and to make code more readable,
+introduce a new inline function with the proper name and consistent argument
+type. Update the kernel-doc for init_completion while we are here.
 
-On Wed, Jul 10, 2013 at 6:17 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab82d:
->
->   Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
->
-> are available in the git repository at:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
-> tags/remoteproc-3.11-fixes
->
-> for you to fetch changes up to 95cee62cb4776a65229a6b6d5969be56589d95c1:
->
->   remoteproc: Cocci spatch "memdup.spatch" (2013-07-01 17:23:58 +0300)
->
-> ----------------------------------------------------------------
-> Trivial remoteproc fixes by Suman Anna, Wei Yongjun and Thomas Meyer.
->
-> ----------------------------------------------------------------
-> Suman Anna (3):
->       remoteproc: fix checkpatch errors in remoteproc code
->       remoteproc/omap: fix a sparse warning
->       remoteproc: free carveout memories only after unmapping them
->
-> Thomas Meyer (1):
->       remoteproc: Cocci spatch "memdup.spatch"
->
-> Wei Yongjun (1):
->       remoteproc: fix error return code in rproc_fw_boot()
->
->  drivers/remoteproc/remoteproc_core.c          | 24 ++++++++++++------------
->  drivers/remoteproc/remoteproc_debugfs.c       |  3 +--
->  drivers/remoteproc/remoteproc_internal.h      |  4 ++--
->  include/linux/platform_data/remoteproc-omap.h |  2 +-
->  4 files changed, 16 insertions(+), 17 deletions(-)
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
+---
+ include/linux/completion.h |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/completion.h b/include/linux/completion.h
+index 3cd574d..7a1a587 100644
+--- a/include/linux/completion.h
++++ b/include/linux/completion.h
+@@ -65,7 +65,7 @@ struct completion {
+ 
+ /**
+  * init_completion - Initialize a dynamically allocated completion
+- * @x:  completion structure that is to be initialized
++ * @x:  pointer to completion structure that is to be initialized
+  *
+  * This inline function will initialize a dynamically created completion
+  * structure.
+@@ -76,6 +76,18 @@ static inline void init_completion(struct completion *x)
+ 	init_waitqueue_head(&x->wait);
+ }
+ 
++/**
++ * reinit_completion - reinitialize a completion structure
++ * @x:  pointer to completion structure that is to be reinitialized
++ *
++ * This inline function should be used to reinitialize a completion structure so it can
++ * be reused. This is especially important after complete_all() is used.
++ */
++static inline void reinit_completion(struct completion *x)
++{
++	x->done = 0;
++}
++
+ extern void wait_for_completion(struct completion *);
+ extern void wait_for_completion_io(struct completion *);
+ extern int wait_for_completion_interruptible(struct completion *x);
+-- 
+1.7.10.4
+
