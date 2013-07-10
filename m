@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab3GJG5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 02:57:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22638 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038Ab3GJG5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 02:57:43 -0400
-X-AuditID: cbfee691-b7fef6d000002d62-3d-51dd05e58ec7
-Message-id: <51DD05E5.6030102@samsung.com>
-Date: Wed, 10 Jul 2013 15:57:41 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: myungjoo.ham@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        rob@landley.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kishon@ti.com, gg@slimlogic.co.uk
-Subject: Re: [PATCH V2 0/4] extcon: palmas: clean-up/fixes and suspend/resume
- susupport
-References: <1373436959-32444-1-git-send-email-ldewangan@nvidia.com>
-In-reply-to: <1373436959-32444-1-git-send-email-ldewangan@nvidia.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsWyRsSkUPcp691Ag/kntS0OzH7IatG/xcXi
-	wtMeNoul+1azWCxsW8JicXnXHDaL240r2CzWvZzO4sDh8Wr1TFaP8zMWMnr0Nr9j8+jbsorR
-	Y+qUv4wex29sZ/L4vEkugD2KyyYlNSezLLVI3y6BK2PywgksBYfZKvZ/nMjSwDiLtYuRk0NC
-	wERi4paLTBC2mMSFe+vZuhi5OIQEljJK3HrewgRTtONGFztEYjqjxM7/96CcV4wS7Tu3g1Xx
-	CmhJHGv4DDSWg4NFQFXi+mlfkDAbUHj/ixtsILaoQJjEyulXWCDKBSV+TL4HZosA1Xw78I8Z
-	ZCazwCZGiVXTZjGDJIQFIiUm/5gHdqqQgIvEgU8HGEFsTgFXiUWb3rCD2MwCOhL7W6exQdjy
-	EpvXvAUbJCHwkl3i5asPYEUsAgIS3yYfYgE5TkJAVmLTAWaIzyQlDq64wTKBUWwWkptmIRk7
-	C8nYBYzMqxhFUwuSC4qT0otM9YoTc4tL89L1kvNzNzECo/L0v2cTdzDeP2B9iDEZaOVEZinR
-	5HxgVOeVxBsamxlZmJqYGhuZW5qRJqwkzqveYh0oJJCeWJKanZpakFoUX1Sak1p8iJGJg1Oq
-	gbEzU+WW0YZ5Lsez59Z0HuIQCP5UwfT8Vl5+ueOrXWwr89fKz3sy19QkOefP9Sw/941Hsne6
-	urbde205+evnKSecphps4042sU0O3NwpGmfn2dR3KOtRFRvnSUX+SeqB82rF73htXmnXGXso
-	9k8IC5fR5tCqprqvd48JzWD94P1P7IBh7Nfna5RYijMSDbWYi4oTAfFgq6bgAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd2nrHcDDWYuVbE4MPshq0X/FheL
-	C0972CyW7lvNYrGwbQmLxeVdc9gsbjeuYLNY93I6iwOHx6vVM1k9zs9YyOjR2/yOzaNvyypG
-	j6lT/jJ6HL+xncnj8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWF
-	vMTcVFslF58AXbfMHKCrlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZ
-	kxdOYCk4zFax/+NElgbGWaxdjJwcEgImEjtudLFD2GISF+6tZ+ti5OIQEpjOKLHz/z12COcV
-	o0T7zu1MIFW8AloSxxo+A3VzcLAIqEpcP+0LEmYDCu9/cYMNxBYVCJNYOf0KC0S5oMSPyffA
-	bBGgmm8H/jGDzGQW2MQosWraLGaQhLBApMTkH/PALhIScJE48OkAI4jNKeAqsWjTG7DrmAV0
-	JPa3TmODsOUlNq95yzyBUWAWkh2zkJTNQlK2gJF5FaNoakFyQXFSeq6RXnFibnFpXrpecn7u
-	JkZwzD+T3sG4qsHiEKMAB6MSD+8BhTuBQqyJZcWVuYcYJTiYlUR4/10CCvGmJFZWpRblxxeV
-	5qQWH2JMBobARGYp0eR8YDrKK4k3NDYxM7I0Mje0MDI2J01YSZz3YKt1oJBAemJJanZqakFq
-	EcwWJg5OqQZGg7p34ke9f95xcnjeu4F5zs7bz8okrvocjRHc+W0J846H3zSErGe+XMq8XHvq
-	fLOsZ33/WNMDrhgsfbjalPfEjXPBvnq2R2/ltkfU3r6vzKae0bbw8I8Apfvf/ZStCvY9Y0xL
-	bdpi8P/r8c1RL02j+hLPpLS7fn1xcEZd6Y0pPAG5r0qPhHW0KLEUZyQaajEXFScCAAwV6Sk9	AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752542Ab3GJG5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 02:57:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44059 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751196Ab3GJG5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 02:57:52 -0400
+Date: Wed, 10 Jul 2013 08:57:49 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] mm: Honor min_free_kbytes set by user
+Message-ID: <20130710065749.GA4437@dhcp22.suse.cz>
+References: <1372954036-16988-1-git-send-email-mhocko@suse.cz>
+ <1372954239.1886.40.camel@joe-AO722>
+ <20130704161641.GD7833@dhcp22.suse.cz>
+ <20130704162005.GE7833@dhcp22.suse.cz>
+ <alpine.LRH.2.00.1307100139220.4045@twin.jikos.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1307100139220.4045@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 03:15 PM, Laxman Dewangan wrote:
-> This patch series does following:
-> - Remove unused member from extcon palmas structure.
-> - Fix to support of detecting cable properly with multiple insert/removal.
-> - Add support for suspend/resume functionlaity and wakup from suspend.
-> - Option to select/de-select the ID or VBUS detection.
+On Wed 10-07-13 01:40:06, Jiri Kosina wrote:
+> On Thu, 4 Jul 2013, Michal Hocko wrote:
+[...]
+> > >From 5f089c0b2a57ff6c08710ac9698d65aede06079f Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Thu, 4 Jul 2013 17:15:54 +0200
+> > Subject: [PATCH] mm: Honor min_free_kbytes set by user
+> > 
+> > min_free_kbytes is updated during memory hotplug (by init_per_zone_wmark_min)
+> > currently which is right thing to do in most cases but this could be
+> > unexpected if admin increased the value to prevent from allocation
+> > failures and the new min_free_kbytes would be decreased as a result of
+> > memory hotadd.
+> > 
+> > This patch saves the user defined value and allows updating
+> > min_free_kbytes only if it is higher than the saved one.
+> > 
+> > A warning is printed when the new value is ignored.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  mm/page_alloc.c | 24 +++++++++++++++++-------
+> >  1 file changed, 17 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 22c528e..9c011fc 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -204,6 +204,7 @@ static char * const zone_names[MAX_NR_ZONES] = {
+> >  };
+> >  
+> >  int min_free_kbytes = 1024;
+> > +int user_min_free_kbytes;
 > 
-> Changes from V1:
-> - Correct the display message.
-> - Add ack from Graeme
-> 
-> Laxman Dewangan (4):
->   extcon: palmas: remove unused member from palams_usb structure
->   extcon: palmas: enable ID_GND and ID_FLOAT detection always
->   extcon: palams: add support for suspend/resume
->   extcon: palmas: Option to disable ID/VBUS detection based on platform
-> 
+> Minor nit: any reason this can't be static?
 
-Patch 1/2/3 is only applied on extcon-linus branch.
+Yes, it can and should be static. Care to queue a fix in your trivial
+tree? I can post a fix if you want.
 
-I replied about patch4.
-
-Thanks,
-Chanwoo Choi
-
+Thanks
+-- 
+Michal Hocko
+SUSE Labs
