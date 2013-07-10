@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab3GJFxm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 01:53:42 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:61587 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab3GJFxl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 01:53:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <51DC365E.7000900@metafoo.de>
-References: <1373383278-3339-1-git-send-email-cristian.bercaru@freescale.com>
-	<51DC365E.7000900@metafoo.de>
-Date: Wed, 10 Jul 2013 07:53:41 +0200
-X-Google-Sender-Auth: d_sLdFIl-hUrIoVUg4Y4RwIf_jA
-Message-ID: <CAAxaTiN+4u1CYYOzw1Bu-gcyQ6+Db-Yk7DWdHOq6GRatfvHW7w@mail.gmail.com>
-Subject: Re: [Cocci] [PATCH] invoke arguments the right way in coccinelle script
-From: Nicolas Palix <nicolas.palix@imag.fr>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Cristian Bercaru <cristian.bercaru@freescale.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Coccinelle <cocci@systeme.lip6.fr>
-Content-Type: text/plain; charset=UTF-8
+	id S1752644Ab3GJFyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 01:54:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751173Ab3GJFyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 01:54:20 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH v2 net 1/2] tuntap: correctly linearize skb when zerocopy is used
+Date: Wed, 10 Jul 2013 13:43:27 +0800
+Message-Id: <1373435008-19407-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Cristian,
+Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
+linearize parts of the skb to let the rest of iov to be fit in
+the frags, we need count copylen into linear when calling tun_alloc_skb()
+instead of partly counting it into data_len. Since this breaks
+zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
+be zero at beginning. This cause nr_frags to be increased wrongly without
+setting the correct frags.
 
-You need Coccinelle version 1.0.0-rc11 or above. I think the minimal
-required version
-is about one year old.
+This bug were introduced from 0690899b4d4501b3505be069b9a687e68ccbe15b
+(tun: experimental zero copy tx support)
 
-For more information see Documentation/coccinelle.txt which have been updated.
-If you prefer to stick to your current version, the commits to revert
-are the following ones
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+- This patch is needed for stable.
+- Changes from v1: introduce a local variable to track linear size
+---
+ drivers/net/tun.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-ec97946ed038f4b3faa587bc76152b198805b0c4
-93f14468491747d6d3efd0b3a42785b1d51a127a
-
-Regards,
-
-
-On Tue, Jul 9, 2013 at 6:12 PM, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 07/09/2013 05:21 PM, Cristian Bercaru wrote:
->> Because the command line arguments were invoked incorrectly
->> 'make coccicheck' failed to run 'irqf_oneshot.cocci' and all tests that
->> followed. Fixed that.
->>
->> Signed-off-by: Cristian Bercaru <cristian.bercaru@freescale.com>
->
-> Time to update your coccinelle installation ;)
->
-> --no-include is support in new versions and is prefered over -no_includes
->
->> ---
->>  scripts/coccinelle/misc/irqf_oneshot.cocci | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/scripts/coccinelle/misc/irqf_oneshot.cocci b/scripts/coccinelle/misc/irqf_oneshot.cocci
->> index 6cfde94..5cca680 100644
->> --- a/scripts/coccinelle/misc/irqf_oneshot.cocci
->> +++ b/scripts/coccinelle/misc/irqf_oneshot.cocci
->> @@ -4,7 +4,7 @@
->>  //
->>  // Confidence: Good
->>  // Comments:
->> -// Options: --no-includes
->> +// Options: -no_includes
->>
->>  virtual patch
->>  virtual context
->
-> _______________________________________________
-> Cocci mailing list
-> Cocci@systeme.lip6.fr
-> https://systeme.lip6.fr/mailman/listinfo/cocci
-
-
-
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 9c61f87..c3cb60b 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1044,7 +1044,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ {
+ 	struct tun_pi pi = { 0, cpu_to_be16(ETH_P_IP) };
+ 	struct sk_buff *skb;
+-	size_t len = total_len, align = NET_SKB_PAD;
++	size_t len = total_len, align = NET_SKB_PAD, linear;
+ 	struct virtio_net_hdr gso = { 0 };
+ 	int offset = 0;
+ 	int copylen;
+@@ -1108,10 +1108,13 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 			copylen = gso.hdr_len;
+ 		if (!copylen)
+ 			copylen = GOODCOPY_LEN;
+-	} else
++		linear = copylen;
++	} else {
+ 		copylen = len;
++		linear = gso.hdr_len;
++	}
+ 
+-	skb = tun_alloc_skb(tfile, align, copylen, gso.hdr_len, noblock);
++	skb = tun_alloc_skb(tfile, align, copylen, linear, noblock);
+ 	if (IS_ERR(skb)) {
+ 		if (PTR_ERR(skb) != -EAGAIN)
+ 			tun->dev->stats.rx_dropped++;
 -- 
-Nicolas Palix
-Tel: +33 4 76 51 46 27
-http://membres-liglab.imag.fr/palix/
+1.7.1
+
