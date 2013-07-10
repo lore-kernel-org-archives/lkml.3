@@ -1,176 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab3GJOVi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:21:38 -0400
-Received: from smtp26.sms.unimo.it ([155.185.44.26]:36159 "EHLO
-	smtp26.sms.unimo.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab3GJOVg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:21:36 -0400
-From: Paolo Valente <paolo.valente@unimore.it>
-To: Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>, shemminger@vyatta.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, fchecconi@gmail.com,
-        rizzo@iet.unipi.it, David Laight <David.Laight@ACULAB.COM>,
-        Paolo Valente <paolo.valente@unimore.it>
-Subject: [PATCH 2/2] pkt_sched: sch_qfq: remove forward declaration of qfq_update_agg_ts
-Date: Wed, 10 Jul 2013 15:46:09 +0200
-Message-Id: <1373463969-11285-3-git-send-email-paolo.valente@unimore.it>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1373463969-11285-1-git-send-email-paolo.valente@unimore.it>
-References: <20130305.235006.1904081547083683406.davem@davemloft.net>
- <1373463969-11285-1-git-send-email-paolo.valente@unimore.it>
-UNIMORE-X-SA-Score: -2.9
+	id S1754704Ab3GJOWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:22:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17522 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab3GJOWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:22:38 -0400
+Date: Wed, 10 Jul 2013 16:22:19 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 15/19] perf tools: Add document for perf-ftrace command
+Message-ID: <20130710142218.GB5931@krava.brq.redhat.com>
+References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
+ <1372230862-15861-16-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372230862-15861-16-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes the forward declaration of qfq_update_agg_ts, by moving
-the definition of the function above its first call. This patch also
-removes a useless forward declaration of qfq_schedule_agg.
+On Wed, Jun 26, 2013 at 04:14:18PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
 
-Reported-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Paolo Valente <paolo.valente@unimore.it>
----
- net/sched/sch_qfq.c | 118 ++++++++++++++++++++++++----------------------------
- 1 file changed, 55 insertions(+), 63 deletions(-)
+SNIP
 
-diff --git a/net/sched/sch_qfq.c b/net/sched/sch_qfq.c
-index 2a0ed50..0025ebe 100644
---- a/net/sched/sch_qfq.c
-+++ b/net/sched/sch_qfq.c
-@@ -1010,9 +1010,61 @@ static inline void charge_actual_service(struct qfq_aggregate *agg)
- 	agg->F = agg->S + (u64)service_received * agg->inv_w;
- }
- 
--static inline void qfq_update_agg_ts(struct qfq_sched *q,
--				     struct qfq_aggregate *agg,
--				     enum update_reason reason);
-+/* Assign a reasonable start time for a new aggregate in group i.
-+ * Admissible values for \hat(F) are multiples of \sigma_i
-+ * no greater than V+\sigma_i . Larger values mean that
-+ * we had a wraparound so we consider the timestamp to be stale.
-+ *
-+ * If F is not stale and F >= V then we set S = F.
-+ * Otherwise we should assign S = V, but this may violate
-+ * the ordering in EB (see [2]). So, if we have groups in ER,
-+ * set S to the F_j of the first group j which would be blocking us.
-+ * We are guaranteed not to move S backward because
-+ * otherwise our group i would still be blocked.
-+ */
-+static void qfq_update_start(struct qfq_sched *q, struct qfq_aggregate *agg)
-+{
-+	unsigned long mask;
-+	u64 limit, roundedF;
-+	int slot_shift = agg->grp->slot_shift;
-+
-+	roundedF = qfq_round_down(agg->F, slot_shift);
-+	limit = qfq_round_down(q->V, slot_shift) + (1ULL << slot_shift);
-+
-+	if (!qfq_gt(agg->F, q->V) || qfq_gt(roundedF, limit)) {
-+		/* timestamp was stale */
-+		mask = mask_from(q->bitmaps[ER], agg->grp->index);
-+		if (mask) {
-+			struct qfq_group *next = qfq_ffs(q, mask);
-+			if (qfq_gt(roundedF, next->F)) {
-+				if (qfq_gt(limit, next->F))
-+					agg->S = next->F;
-+				else /* preserve timestamp correctness */
-+					agg->S = limit;
-+				return;
-+			}
-+		}
-+		agg->S = q->V;
-+	} else  /* timestamp is not stale */
-+		agg->S = agg->F;
-+}
-+
-+/* Update the timestamps of agg before scheduling/rescheduling it for
-+ * service.  In particular, assign to agg->F its maximum possible
-+ * value, i.e., the virtual finish time with which the aggregate
-+ * should be labeled if it used all its budget once in service.
-+ */
-+static inline void
-+qfq_update_agg_ts(struct qfq_sched *q,
-+		    struct qfq_aggregate *agg, enum update_reason reason)
-+{
-+	if (reason != requeue)
-+		qfq_update_start(q, agg);
-+	else /* just charge agg for the service received */
-+		agg->S = agg->F;
-+
-+	agg->F = agg->S + (u64)agg->budgetmax * agg->inv_w;
-+}
- 
- static void qfq_schedule_agg(struct qfq_sched *q, struct qfq_aggregate *agg);
- 
-@@ -1135,66 +1187,6 @@ static struct qfq_aggregate *qfq_choose_next_agg(struct qfq_sched *q)
- 	return agg;
- }
- 
--/*
-- * Assign a reasonable start time for a new aggregate in group i.
-- * Admissible values for \hat(F) are multiples of \sigma_i
-- * no greater than V+\sigma_i . Larger values mean that
-- * we had a wraparound so we consider the timestamp to be stale.
-- *
-- * If F is not stale and F >= V then we set S = F.
-- * Otherwise we should assign S = V, but this may violate
-- * the ordering in EB (see [2]). So, if we have groups in ER,
-- * set S to the F_j of the first group j which would be blocking us.
-- * We are guaranteed not to move S backward because
-- * otherwise our group i would still be blocked.
-- */
--static void qfq_update_start(struct qfq_sched *q, struct qfq_aggregate *agg)
--{
--	unsigned long mask;
--	u64 limit, roundedF;
--	int slot_shift = agg->grp->slot_shift;
--
--	roundedF = qfq_round_down(agg->F, slot_shift);
--	limit = qfq_round_down(q->V, slot_shift) + (1ULL << slot_shift);
--
--	if (!qfq_gt(agg->F, q->V) || qfq_gt(roundedF, limit)) {
--		/* timestamp was stale */
--		mask = mask_from(q->bitmaps[ER], agg->grp->index);
--		if (mask) {
--			struct qfq_group *next = qfq_ffs(q, mask);
--			if (qfq_gt(roundedF, next->F)) {
--				if (qfq_gt(limit, next->F))
--					agg->S = next->F;
--				else /* preserve timestamp correctness */
--					agg->S = limit;
--				return;
--			}
--		}
--		agg->S = q->V;
--	} else  /* timestamp is not stale */
--		agg->S = agg->F;
--}
--
--/*
-- * Update the timestamps of agg before scheduling/rescheduling it for
-- * service.  In particular, assign to agg->F its maximum possible
-- * value, i.e., the virtual finish time with which the aggregate
-- * should be labeled if it used all its budget once in service.
-- */
--static inline void
--qfq_update_agg_ts(struct qfq_sched *q,
--		    struct qfq_aggregate *agg, enum update_reason reason)
--{
--	if (reason != requeue)
--		qfq_update_start(q, agg);
--	else /* just charge agg for the service received */
--		agg->S = agg->F;
--
--	agg->F = agg->S + (u64)agg->budgetmax * agg->inv_w;
--}
--
--static void qfq_schedule_agg(struct qfq_sched *, struct qfq_aggregate *);
--
- static int qfq_enqueue(struct sk_buff *skb, struct Qdisc *sch)
- {
- 	struct qfq_sched *q = qdisc_priv(sch);
--- 
-1.8.1.2
+> +OPTIONS
+> +-------
+> +<command>...::
+> +	Any command you can specify in a shell.
+> +
+> +-t::
+> +--tracer=::
+> +        The ftrace tracer to be used (default: function_graph).
+> +	Currently only 'function' and 'function_graph' are supported.
+> +        Used by 'live' and 'record' subcommands only.
 
+hum, 'live' subcommand  supports whatever is available in
+'available_tracers' file, right?
+
+and displays whatever gets into 'trace' .. which I think
+is useful and should stay like that
+
+jirka
