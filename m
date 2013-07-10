@@ -1,94 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab3GJNBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 09:01:23 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:42951 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab3GJNAJ (ORCPT
+	id S1754438Ab3GJNAC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 09:00:02 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:39351 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754128Ab3GJM77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 09:00:09 -0400
-From: Dominik Dingel <dingel@linux.vnet.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Xiantao Zhang <xiantao.zhang@intel.com>,
-        Alexander Graf <agraf@suse.de>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>
-Subject: [PATCH v4 0/4] Enable async page faults on s390 
-Date: Wed, 10 Jul 2013 14:59:51 +0200
-Message-Id: <1373461195-27628-1-git-send-email-dingel@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.2
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071012-0342-0000-0000-0000058B39B7
+	Wed, 10 Jul 2013 08:59:59 -0400
+From: =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+To: linux-kernel@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-omap@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, Nishanth Menon <nm@ti.com>,
+        Pavel Machek <pavel@ucw.cz>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ivaylo Dimitrov <freemangordon@abv.bg>,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>
+Subject: [PATCH v2 1/2] ARM: OMAP: Add secure function omap_smc3() which calling instruction smc #1
+Date: Wed, 10 Jul 2013 14:59:04 +0200
+Message-Id: <1373461145-9812-2-git-send-email-pali.rohar@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1373461145-9812-1-git-send-email-pali.rohar@gmail.com>
+References: <1362044548-5398-1-git-send-email-pali.rohar@gmail.com>
+ <1373461145-9812-1-git-send-email-pali.rohar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gleb, Paolo, 
+Other secure functions omap_smc1() and omap_smc2() calling instruction smc #0
+but Nokia RX-51 board needs to call smc #1 for PPA access.
 
-based on the work from Martin and Carsten, this implementation enables async page faults.
-To the guest it will provide the pfault interface, but internally it uses the
-async page fault common code. 
+Signed-off-by: Ivaylo Dimitrov <freemangordon@abv.bg>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+---
+ arch/arm/mach-omap2/omap-secure.h |    1 +
+ arch/arm/mach-omap2/omap-smc.S    |   22 +++++++++++++++++++++-
+ 2 files changed, 22 insertions(+), 1 deletion(-)
 
-The inital submission and it's discussion can be followed on http://www.mail-archive.com/kvm@vger.kernel.org/msg63359.html . 
-
-There is a slight modification for common code to move from a pull to a push based approch on s390. 
-As s390 we don't want to wait till we leave the guest state to queue the notification interrupts.
-
-To use this feature the controlling userspace hase to enable the capability.
-With that knob we can later on disable this feature for live migration.
-
-v3 -> v4
- - Change "done" interrupts from local to floating
- - Add a comment for clarification
- - Change KVM_HAVE_ERR_BAD to move s390 implementation to s390 backend 
-
-v2 -> v3
- - Reworked the architecture specific parts, to only provide on addtional
-   implementation
- - Renamed function to kvm_async_page_present_(sync|async)
- - Fixing KVM_HVA_ERR_BAD handling
-
-v1 -> v2:
- - Adding other architecture backends
- - Adding documentation for the ioctl
- - Improving the overall error handling
- - Reducing the needed modifications on the common code
-
-Dominik Dingel (4):
-  PF: Add FAULT_FLAG_RETRY_NOWAIT for guest fault
-  PF: Make KVM_HVA_ERR_BAD usable on s390
-  PF: Provide additional direct page notification
-  PF: Async page fault support on s390
-
- Documentation/s390/kvm.txt        |  24 ++++++++
- arch/s390/include/asm/kvm_host.h  |  30 ++++++++++
- arch/s390/include/asm/pgtable.h   |   2 +
- arch/s390/include/asm/processor.h |   1 +
- arch/s390/include/uapi/asm/kvm.h  |  10 ++++
- arch/s390/kvm/Kconfig             |   2 +
- arch/s390/kvm/Makefile            |   2 +-
- arch/s390/kvm/diag.c              |  63 ++++++++++++++++++++
- arch/s390/kvm/interrupt.c         |  43 +++++++++++---
- arch/s390/kvm/kvm-s390.c          | 118 ++++++++++++++++++++++++++++++++++++++
- arch/s390/kvm/kvm-s390.h          |   4 ++
- arch/s390/kvm/sigp.c              |   6 ++
- arch/s390/mm/fault.c              |  26 +++++++--
- arch/x86/kvm/mmu.c                |   2 +-
- include/linux/kvm_host.h          |  10 +++-
- include/uapi/linux/kvm.h          |   2 +
- virt/kvm/Kconfig                  |   4 ++
- virt/kvm/async_pf.c               |  22 ++++++-
- 18 files changed, 354 insertions(+), 17 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
+index 0e72917..c4586f4 100644
+--- a/arch/arm/mach-omap2/omap-secure.h
++++ b/arch/arm/mach-omap2/omap-secure.h
+@@ -51,6 +51,7 @@
+ extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
+ 				u32 arg1, u32 arg2, u32 arg3, u32 arg4);
+ extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
++extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
+ extern phys_addr_t omap_secure_ram_mempool_base(void);
+ extern int omap_secure_ram_reserve_memblock(void);
+ 
+diff --git a/arch/arm/mach-omap2/omap-smc.S b/arch/arm/mach-omap2/omap-smc.S
+index f6441c1..5c02b8d 100644
+--- a/arch/arm/mach-omap2/omap-smc.S
++++ b/arch/arm/mach-omap2/omap-smc.S
+@@ -1,9 +1,11 @@
+ /*
+- * OMAP44xx secure APIs file.
++ * OMAP34xx and OMAP44xx secure APIs file.
+  *
+  * Copyright (C) 2010 Texas Instruments, Inc.
+  * Written by Santosh Shilimkar <santosh.shilimkar@ti.com>
+  *
++ * Copyright (C) 2012 Ivaylo Dimitrov <freemangordon@abv.bg>
++ * Copyright (C) 2013 Pali Rohár <pali.rohar@gmail.com>
+  *
+  * This program is free software,you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License version 2 as
+@@ -54,6 +56,24 @@ ENTRY(omap_smc2)
+ 	ldmfd   sp!, {r4-r12, pc}
+ ENDPROC(omap_smc2)
+ 
++/**
++ * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag, u32 pargs)
++ * Low level common routine for secure HAL and PPA APIs via smc #1
++ * r0 - @service_id: Secure Service ID
++ * r1 - @process_id: Process ID
++ * r2 - @flag: Flag to indicate the criticality of operation
++ * r3 - @pargs: Physical address of parameter list
++ */
++ENTRY(omap_smc3)
++	stmfd	sp!, {r4-r12, lr}
++	mov	r12, r0		@ Copy the secure service ID
++	mov	r6, #0xff	@ Indicate new Task call
++	dsb
++	dmb
++	smc	#1		@ call PPA service
++	ldmfd	sp!, {r4-r12, pc}
++ENDPROC(omap_smc3)
++
+ ENTRY(omap_modify_auxcoreboot0)
+ 	stmfd   sp!, {r1-r12, lr}
+ 	ldr	r12, =0x104
 -- 
-1.8.2.2
+1.7.10.4
 
