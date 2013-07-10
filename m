@@ -1,69 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab3GJFVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 01:21:30 -0400
-Received: from mga14.intel.com ([143.182.124.37]:63077 "EHLO mga14.intel.com"
+	id S1753701Ab3GJFYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 01:24:09 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54720 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab3GJFVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 01:21:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1033,1363158000"; 
-   d="scan'208";a="329121179"
-Message-ID: <51DCEF51.3080503@linux.intel.com>
-Date: Wed, 10 Jul 2013 08:21:21 +0300
-From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1750924Ab3GJFYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 01:24:07 -0400
+Date: Wed, 10 Jul 2013 08:23:43 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        <linux-usb@vger.kernel.org>, <balbi@ti.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 0/5] Add phy support for AM335X platform using Generic
+ PHy framework
+Message-ID: <20130710052343.GA15674@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1373280201-31785-1-git-send-email-george.cherian@ti.com>
+ <51DB16A1.6010006@linutronix.de>
+ <51DBA23A.8000505@ti.com>
+ <51DBF59F.1030109@ti.com>
+ <51DCE979.8010108@ti.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: corbet@lwn.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        dwmw2@infradead.org, eliezer@tamir.org.il
-Subject: Re: [PATCH net-next] net: rename low latency sockets functions to
- busy poll
-References: <20130709162514.062f1361@lwn.net> <20130709.160611.636749585237773459.davem@davemloft.net> <51DCD50C.6070606@linux.intel.com> <20130709.214156.1738814737075691376.davem@davemloft.net>
-In-Reply-To: <20130709.214156.1738814737075691376.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HlL+5n6rz5pIUxbD"
+Content-Disposition: inline
+In-Reply-To: <51DCE979.8010108@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2013 07:41, David Miller wrote:
-> From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
-> Date: Wed, 10 Jul 2013 06:29:16 +0300
-> 
->> If the following names changes are acceptable I will try to send out
->> a patch today.
+--HlL+5n6rz5pIUxbD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> 2. ndo_ll_poll -> ndo_busy_poll
->>
->> - not technically accurate since the ndo callback does not itself busy
->> poll, it's just used to implement it.
-> 
-> I think this name change is accurate, it expresses the two elements of
-> what it does.  It's busy waiting, in that it's doing a synchronous
-> scan of the device's RX queue, and it's polling just like NAPI polling
-> does.
+On Wed, Jul 10, 2013 at 10:26:25AM +0530, George Cherian wrote:
+> On 7/9/2013 5:05 PM, Kishon Vijay Abraham I wrote:
+> >Hi,
+> >
+> >On Tuesday 09 July 2013 11:10 AM, George Cherian wrote:
+> >>On 7/9/2013 1:14 AM, Sebastian Andrzej Siewior wrote:
+> >>>On 07/08/2013 12:43 PM, George Cherian wrote:
+> >>>>This patch series adds phy support for AM335X platform.
+> >>>>This patch series is based on Generic PHY framework [1].
+> >>>>
+> >>>>
+> >>>>This series has
+> >>>>     - adds dual musb instances support for am335x platform (just for=
+ testing)
+> >>>>     - adds phy-amxxxx-usb driver used in AMxxxx platforms
+> >>>>     - adds dt  bindings for the phys
+> >>>>     - removes usb-phy and replaced with generic phy apis in glue lay=
+er
+> >>>No, I don't like this all. You did the one thing I tried to avoid while
+> >>>posting my quick-and-dirty phy driver recently: You duplicated a lot of
+> >>>code which can be served by the nop driver and added only power
+> >>>on/power off callbacks.
+> >>I wanted to add phy wakeup control also, but currently phy_ops  dont ha=
+ve an op
+> >>for wkup_ctrl
+> >>Kishon, Can we add one?
+> >Since this should be a capability of the PHY, can't we have wkup_ctrl al=
+ways
+> >enabled if the PHY has such a capability?
+>=20
+> No, we cant have wakeup always enabled. Normally we enable it only
+> when we go to low power states and
+> if the user needs USB a wakeup source.
+>=20
+> So how about enable/disable  phy wakeup from phy suspend/resume?
 
-OK
+you should use something like so on your ->suspend() or
+->runtime_suspend() method
 
-> Well... what would be great would be to come up with some single
-> interface that drivers can implement rather than having to have
-> both napi->poll and netdevice_ops->ndo_ll_poll().  But that's a task
-> for a later date.
-> 
-> Therefore, ndo_busy_poll is probably best for now.
+static int my_phy_{suspend,runtime_suspend}(struct device *dev)
+{
+	struct my_phy *phy =3D dev_get_drvdata(dev);
 
-I will think about this, maybe we could even unify ndo_poll_controller.
-It seems like said unified method would have to have an extra parameter
-that would indicate from which context it was called:
-1. from napi poll (bh)
-2. from poll controller (with interrupts disabled)
-3. from busy poll (user context)
--of course not for today.
+	if (device_may_wakeup(dev))
+		my_phy_enable_wakeup(phy);
 
-> Nope, looks complete.  And also do the manpage update.
+	return 0;
+}
 
-Where do I find the repository for the manpages?
+> >or if it needs more user control,
+> >should we implement a sysfs entry to enable wakeup?
 
+that already exists ;-)
 
+--=20
+balbi
+
+--HlL+5n6rz5pIUxbD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR3O/fAAoJEIaOsuA1yqREX9UQAIrHwsVyJYPwkTCDoaW6GSPM
+Kl2XLM4QDo0pFCEGNV1g/lIYxsGVIDACh6OMDpn6P5c8CRWlEpfoFadn/9KiurCc
+qZ6zjlsf04zQ4mpL84hmN5FjKLd1i8ewwuz3nktLz+kDJvBR5SJAuA1gsn3cE0Qv
+7q7jV0zhOl7mU+YQlyiTswJvsRGrgMHudjbbzuVvrT1b8uqcc/QXFpyI9FDLoTje
+V2R5lJaun/el6KLjjz9wAxO7SO7g2bQfrkxaEWFCBHGuD0iMQsZ9rbIB7oBoyNNR
+jJocIOukuDAznR2ASRnNgq2mn7AeoGpRuTfBFPEPPnLKCjqR/QhPcQ6loVgDI/J2
+Hm65HynqIvvtGA+3EfBi+hQFcN96Pk9A/LUWd2vCstTj1jARYVrnf4UEbUMIeyAV
+5sQSoqbi+vj0x3UeNe6oKB3UFOC50nktzBtho6gPA76eaQhEn/0VujqqZQlYpaqP
+JDlX4Mpa6WzK2r7DO0vXYEVXfKpH21nvrjPux/6cmPk5ZvFodt/1UDRoMiPuFQ1G
+7iNmwYDrU9KdCCMwN40VKBTnrZGOrcZmv+7CoD7c0OEEQmyHeIDeEbL0p7XrqeTd
+Ohw4oJCaVNE2os54y+a2Fey0+mosmRRlPiHSyR2rgTEwfXFbbjOy5fbW7PCe2m/G
+p3oztTOTpcvK+n659hOU
+=m1pC
+-----END PGP SIGNATURE-----
+
+--HlL+5n6rz5pIUxbD--
