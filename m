@@ -1,121 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab3GJMSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 08:18:55 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36824 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab3GJMSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 08:18:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: [GIT PULL] More ACPI and power management updates for v3.11-rc1
-Date: Wed, 10 Jul 2013 14:28:37 +0200
-Message-ID: <17863900.yRJhKtHykF@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+	id S1754136Ab3GJMUi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 08:20:38 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:18084 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751173Ab3GJMUh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 08:20:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18mKA2Ok26lq57qKssYsiI9uTXyah1a2Mo=
+Date: Wed, 10 Jul 2013 08:20:23 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Neil Zhang <zhangwm@marvell.com>
+Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "haojian.zhuang@gmail.com" <haojian.zhuang@gmail.com>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+Message-ID: <20130710122023.GN11908@titan.lakedaemon.net>
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
+ <1373352166-10064-2-git-send-email-zhangwm@marvell.com>
+ <20130709124900.GG11908@titan.lakedaemon.net>
+ <175CCF5F49938B4D99B2E3EF7F558EBE3DBC97FA8F@SC-VEXCH4.marvell.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE3DBC97FA8F@SC-VEXCH4.marvell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Neil,
 
-Please pull from the git repository at
+On Wed, Jul 10, 2013 at 12:25:17AM -0700, Neil Zhang wrote:
+> Jason,
+> 
+> > -----Original Message-----
+> > From: Jason Cooper [mailto:jason@lakedaemon.net]
+> > Sent: 2013年7月9日 20:49
+> > To: Neil Zhang
+> > Cc: grant.likely@linaro.org; haojian.zhuang@gmail.com; arnd@arndb.de;
+> > devicetree-discuss@lists.ozlabs.org; linux-kernel@vger.kernel.org;
+> > linux-arm-kernel@lists.infradead.org
+> > Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+> >
+> > Neil,
+> >
+> > On Tue, Jul 09, 2013 at 02:42:44PM +0800, Neil Zhang wrote:
+> > > The documented vendor prefix for Marvell is 'marvell', not 'mrvl', so
+> > > let's change it.
+> > >
+> > > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > > ---
+> > >  .../devicetree/bindings/arm/mrvl/intc.txt          |   16 +++---
+> > >  .../devicetree/bindings/arm/mrvl/mrvl.txt          |    6 +-
+> > >  .../devicetree/bindings/arm/mrvl/timer.txt         |    4 +-
+> > >  Documentation/devicetree/bindings/i2c/i2c-pxa.txt  |   14 +++---
+> > >  .../devicetree/bindings/mmc/sdhci-pxa.txt          |    8 ++--
+> > >  .../devicetree/bindings/rtc/sa1100-rtc.txt         |    4 +-
+> > >  .../devicetree/bindings/serial/mrvl-serial.txt     |    2 +-
+> > >  arch/arm/boot/dts/mmp2-brownstone.dts              |    2 +-
+> > >  arch/arm/boot/dts/mmp2.dtsi                        |   56
+> > ++++++++++----------
+> > >  arch/arm/boot/dts/pxa168-aspenite.dts              |    2 +-
+> > >  arch/arm/boot/dts/pxa168.dtsi                      |   24
+> > ++++----
+> > >  arch/arm/boot/dts/pxa2xx.dtsi                      |   16 +++---
+> > >  arch/arm/boot/dts/pxa3xx.dtsi                      |    2 +-
+> > >  arch/arm/boot/dts/pxa910-dkb.dts                   |    2 +-
+> > >  arch/arm/boot/dts/pxa910.dtsi                      |   27
+> > +++++-----
+> > >  arch/arm/mach-mmp/irq.c                            |   16
+> > +++---
+> > >  arch/arm/mach-mmp/mmp-dt.c                         |   28
+> > +++++-----
+> > >  arch/arm/mach-mmp/mmp2-dt.c                        |   16
+> > +++---
+> > >  arch/arm/mach-mmp/time.c                           |    2 +-
+> > >  arch/arm/mach-pxa/pxa-dt.c                         |   14
+> > +++---
+> > >  drivers/i2c/busses/i2c-pxa.c                       |   10 ++--
+> > >  drivers/mmc/host/sdhci-pxav2.c                     |    4 +-
+> > >  drivers/mmc/host/sdhci-pxav3.c                     |    4 +-
+> > >  drivers/rtc/rtc-sa1100.c                           |    4 +-
+> > >  drivers/tty/serial/pxa.c                           |    4 +-
+> > >  25 files changed, 144 insertions(+), 143 deletions(-)
+> >
+> > I agree with the need to change, however, this has been in the binding
+> > documentation since v3.5.  I wish we had caught this when we decided
+> > against using stock ticker symbols (not all stock markets use alphabetical
+> > abbreviated names, not all companies are listed on any stock exchange).
+> >
+> > To do this properly, the drivers are going to have to be compatible with the
+> > old and the new names, and the binding docs updated to reflect the legacy
+> > name and the preferred name.
+> >
+> Do you mean it's better to support both legacy and preferred name at the same time?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.11-rc1-more
+Please keep in mind that the DT is supposed to be tied to the hardware,
+*not* the kernel.  iow, a dtb comes with a board, and the user/OS
+upgrades the kernel as needed w/o upgrading or changing the dtb.
 
-to receive additional ACPI and power management updates for v3.11-rc1 with
-top-most commit d8851b4b0c1e7cf6cae829d060510437d2d320ee
+So the question you need to ask yourself is: Are there any users (since
+v3.5) that are doing this?  If so, they have "mrvl,..." compatible
+strings in their dtbs.  You don't want to break their systems on kernel
+upgrade, right?
 
-  Merge branch 'pm-tools'
+So you can change the binding to say the correct string is
+"marvell,...", but that driver X must have an extra compatible entry for
+"mrvl,..." so as not to break dtbs generated from v3.5 to v3.10.
 
-on top of commit f991fae5c6d42dfc5029150b05a78cf3f6c18cc9
+You might even be able to get away with just adding a comment beside the
+"mrvl,..." string in the driver.
 
-  Merge tag 'pm+acpi-3.11-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm
+Does that make sense?
 
-These are fixes collected since the 3.10 release (most importantly, a fix
-for a recent cpufreq regression), a couple of trivial cleanups and a cpupower
-tool update that missed the opening of the merge window by a whisker.
+thx,
 
-Specifics:
-
- - Fix for a recent cpufreq regression that caused WARN() to trigger
-   overzealously in a couple of places and spam the kernel log with
-   useless garbage as a result.  From Viresh Kumar.
-
- - ACPI dock fix removing a discrepancy between the definition of
-   acpi_dock_init(), which says that the function returns int, and
-   its header in the header file, which says that it is a void
-   function.  The function is now defined as void too.
-
- - ACPI PM fix for failures to update device power states as needed,
-   for example, during resume from system suspend, because the old
-   state was deeper than the new one, but the new one is not D0.
-
- - Fix for two debug messages in the ACPI power resources code that
-   don't have a newline at the end and make the kernel log difficult
-   to read.  From Mika Westerberg.
-
- - Two ACPI cleanups from Naresh Bhat and Haicheng Li.
-
- - cpupower updates from Thomas Renninger, including Intel Haswell
-   support improvements and a new idle-set subcommand among other
-   things.
-
-Thanks!
-
-
----------------
-
-Haicheng Li (1):
-      ACPI / scan: remove unused LIST_HEAD(acpi_device_list)
-
-Mika Westerberg (1):
-      ACPI / power: add missing newline to debug messages
-
-Naresh Bhat (1):
-      ACPI / fan: Initialize acpi_state variable
-
-Rafael J. Wysocki (2):
-      ACPI / PM: Fix corner case in acpi_bus_update_power()
-      ACPI / dock: Actually define acpi_dock_init() as void
-
-Thomas Renninger (5):
-      cpupower: Make idlestate usage unsigned
-      cpupower: Implement disabling of cstate interface
-      cpupower: Introduce idle-set subcommand and C-state enabling/disabling
-      cpupower: Haswell also supports the C-states introduced with SandyBridge
-      cpupower: Add Haswell family 0x45 specific idle monitor to show PC8,9,10 states
-
-Viresh Kumar (1):
-      cpufreq: Fix serialization of frequency transitions
-
----------------
-
- drivers/acpi/device_pm.c                                |   23 ++-
- drivers/acpi/dock.c                                     |    7 +-
- drivers/acpi/fan.c                                      |    2 +-
- drivers/acpi/power.c                                    |    4 +-
- drivers/acpi/scan.c                                     |    1 -
- drivers/cpufreq/cpufreq.c                               |    7 +-
- include/linux/cpufreq.h                                 |    2 +-
- tools/power/cpupower/Makefile                           |    4 +-
- tools/power/cpupower/man/cpupower-monitor.1             |   10 +-
- tools/power/cpupower/utils/builtin.h                    |    1 +
- tools/power/cpupower/utils/cpuidle-info.c               |   24 ++-
- tools/power/cpupower/utils/cpuidle-set.c                |  118 ++++++++++++++
- tools/power/cpupower/utils/cpupower.c                   |   13 +-
- tools/power/cpupower/utils/helpers/sysfs.c              |  118 +++++++++++++-
- tools/power/cpupower/utils/helpers/sysfs.h              |   10 +-
- tools/power/cpupower/utils/idle_monitor/hsw_ext_idle.c  |  196 +++++++++++++++++++++++
- .../power/cpupower/utils/idle_monitor/idle_monitors.def |    1 +
- tools/power/cpupower/utils/idle_monitor/snb_idle.c      |    4 +
- 18 files changed, 502 insertions(+), 43 deletions(-)
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jason.
