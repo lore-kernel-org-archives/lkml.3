@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754355Ab3GJD52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Jul 2013 23:57:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41964 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab3GJD50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Jul 2013 23:57:26 -0400
-Date: Tue, 9 Jul 2013 20:57:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Eric Dumazet <edumazet@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] relay: fix timer madness
-Message-Id: <20130709205755.aca39829.akpm@linux-foundation.org>
-In-Reply-To: <51DCD6F6.2080802@huawei.com>
-References: <51DCC48E.8050003@huawei.com>
-	<51DCD6F6.2080802@huawei.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754297Ab3GJD6t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Jul 2013 23:58:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54287 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753545Ab3GJD6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Jul 2013 23:58:48 -0400
+Message-ID: <51DCDB37.204@zytor.com>
+Date: Tue, 09 Jul 2013 20:55:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Sander Eikelenboom <linux@eikelenboom.it>
+CC: Borislav Petkov <bp@alien8.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, jeremy@goop.org,
+        xen-devel@lists.xensource.com, Jan Beulich <JBeulich@suse.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        x86@kernel.org, Paul Bolle <pebolle@tiscali.nl>,
+        virtualization@lists.linux-foundation.org, mingo@redhat.com,
+        Matt Wilson <msw@amazon.com>, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
+References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com> <20130708192854.GF4927@phenom.dumpdata.com> <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com> <51DB2134.9040909@zytor.com> <20130708205834.GA481@pd.tnic> <1373326534.1438.10.camel@x61.thuisdomein> <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com> <51DBDAB802000078000E37C1@nat28.tlf.novell.com> <20130709144840.GF24897@phenom.dumpdata.com> <20130709150554.GA27579@pd.tnic> <1382658288.20130710003458@eikelenboom.it>
+In-Reply-To: <1382658288.20130710003458@eikelenboom.it>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Jul 2013 11:37:26 +0800 Li Zefan <lizefan@huawei.com> wrote:
-
-> On 2013/7/10 10:18, zhangwei(Jovi) wrote:
-> > When I'm using ktap script to tracing all event tracepoints by relay
-> > transport, without this patch, the system will hang in few seconds.
-> > 
-> > I found the original patch discussion in 2007.
-> > http://marc.info/?l=linux-kernel&m=118544794717162&w=2
-> > (In that mail thread, the patch didn't fix that problem, but it fix
-> > the problem I encountered now)
-> > 
-> > Changed from v1:
-> > mod timer interval changed from jiffies+1 to HZ/10, as Ingo suggested.
-> > 
-> > Original patch changelog from Ingo in 2007:
-> > 
-> > Remove timer calls (!!!) from deep within the tracing infrastructure.
-> > This was totally bogus code that can cause lockups and worse.
-> > Poll the buffer every 2 jiffies for now.
-> > 
-> > Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> > Signed-off-by: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > Cc: Jens Axboe <axboe@kernel.dk>
-> > Cc: Al Viro <viro@zeniv.linux.org.uk>
-> > Cc: Eric Dumazet <edumazet@google.com>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+On 07/09/2013 03:34 PM, Sander Eikelenboom wrote:
 > 
-> I don't think this patch should have Andrew's signed-off-by?
+> Grub does this in it's update script to prevent adding a xen + kernel combination that has no chance of booting when dom0 support has not been configured in the kernel.
+> That doesn't seem to be a unreasonable thought.
+> 
 
-I guess not, unless it was taken from -mm, which would be odd, as I
-have the old version.
+Except it does it backwards.  The test it uses is sufficient but not
+necessary.
 
-v1 has been in my tree for a few months - Ingo requested some updates
-but nothing happened and I have not checked whether v2 addresses his
-requests.
+	-hpa
+
 
