@@ -1,94 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab3GJNOh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 09:14:37 -0400
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:48851 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab3GJNOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 09:14:36 -0400
-Message-ID: <51DD5E32.8030603@monstr.eu>
-Date: Wed, 10 Jul 2013 15:14:26 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1754357Ab3GJNST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 09:18:19 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:3747 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372Ab3GJNSR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 09:18:17 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <51DD5F05.6030206@broadcom.com>
+Date: Wed, 10 Jul 2013 15:17:57 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze changes for 3.11
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2LTEQMCDDACEVUFKDTMJG"
+To: "Eliezer Tamir" <eliezer.tamir@linux.intel.com>
+cc: "David Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Don Skidmore" <donald.c.skidmore@intel.com>,
+        "Jonathan Corbet" <corbet@lwn.net>, e1000-devel@lists.sourceforge.net,
+        "Eilon Greenstein" <eilong@broadcom.com>,
+        "Amir Vadai" <amirv@mellanox.com>,
+        "Eric Dumazet" <erdnetdev@gmail.com>,
+        "Willem de Bruijn" <willemb@google.com>,
+        "Eliezer Tamir" <eliezer@tamir.org.il>
+Subject: Re: [PATCH net-next v2 1/3] net: rename include/net/ll_poll.h
+ to include/net/busy_poll.h
+References: <20130710121349.12906.85078.stgit@ladj378.jer.intel.com>
+In-Reply-To: <20130710121349.12906.85078.stgit@ladj378.jer.intel.com>
+X-WSS-ID: 7DC382221R042727223-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2LTEQMCDDACEVUFKDTMJG
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 07/10/2013 02:13 PM, Eliezer Tamir wrote:
+> Rename the file and correct all the places where it is included.
+>
+> Signed-off-by: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+> ---
+>
+>   drivers/net/ethernet/broadcom/bnx2x/bnx2x_cmn.c |    2
+>   drivers/net/ethernet/intel/ixgbe/ixgbe.h        |    2
+>   drivers/net/ethernet/mellanox/mlx4/en_netdev.c  |    2
+>   drivers/net/ethernet/mellanox/mlx4/en_rx.c      |    2
+>   fs/select.c                                     |    2
+>   include/net/busy_poll.h                         |  183 +++++++++++++++++++++++
+>   include/net/ll_poll.h                           |  183 -----------------------
+>   net/core/datagram.c                             |    2
+>   net/core/sock.c                                 |    2
+>   net/core/sysctl_net_core.c                      |    2
+>   net/ipv4/tcp.c                                  |    2
+>   net/ipv4/tcp_ipv4.c                             |    2
+>   net/ipv4/udp.c                                  |    2
+>   net/ipv6/tcp_ipv6.c                             |    2
+>   net/ipv6/udp.c                                  |    2
+>   net/socket.c                                    |    2
+>   16 files changed, 197 insertions(+), 197 deletions(-)
+>   create mode 100644 include/net/busy_poll.h
+>   delete mode 100644 include/net/ll_poll.h
 
-Hi Linus,
+Did you use -M command line option with 'git format-patch'?
 
-this Microblaze merge window is quite minimal.
-I have also added to my branch one xilinx systemace sparse fix
-because haven't got any reply from block maintainer.
-
-Thanks,
-Michal
-
-
-The following changes since commit 9e895ace5d82df8929b16f58e9f515f6d54ab8=
-2d:
-
-  Linux 3.10-rc7 (2013-06-22 09:47:31 -1000)
-
-are available in the git repository at:
-
-  git://git.monstr.eu/linux-2.6-microblaze.git next
-
-for you to fetch changes up to 4937a269cb063915d50e47c68493679b7fe0ffb7:
-
-  xilinx systemace: Fix sparse warnings (2013-07-10 07:47:12 +0200)
-
-----------------------------------------------------------------
-Graeme Smecher (1):
-      microblaze: Don't mark arch_kgdb_ops as const.
-
-Michal Simek (3):
-      microblaze: Enable KGDB in defconfig
-      microblaze: Move __NR_syscalls from uapi
-      xilinx systemace: Fix sparse warnings
-
- arch/microblaze/configs/mmu_defconfig     | 4 +++-
- arch/microblaze/include/asm/unistd.h      | 3 +++
- arch/microblaze/include/uapi/asm/unistd.h | 2 --
- arch/microblaze/kernel/kgdb.c             | 2 +-
- drivers/block/xsysace.c                   | 4 ++--
- 5 files changed, 9 insertions(+), 6 deletions(-)
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Gr. AvS
 
 
 
-------enig2LTEQMCDDACEVUFKDTMJG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlHdXjIACgkQykllyylKDCFcLgCfZ2gr6U1/jrvirPAlpJWCyUP8
-bosAoIRxe5BCHDMv7rGEXcVi+QOAIH8N
-=RBq7
------END PGP SIGNATURE-----
-
-------enig2LTEQMCDDACEVUFKDTMJG--
