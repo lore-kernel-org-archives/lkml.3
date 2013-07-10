@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242Ab3GJKgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 06:36:01 -0400
-Received: from eu1sys200aog123.obsmtp.com ([207.126.144.155]:32960 "EHLO
-	eu1sys200aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753545Ab3GJKf5 (ORCPT
+	id S1754090Ab3GJKjJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 06:39:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51805 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752561Ab3GJKjG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 06:35:57 -0400
-Message-ID: <51DD370C.20902@st.com>
-Date: Wed, 10 Jul 2013 11:27:24 +0100
-From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
-Reply-To: srinivas.kandagatla@st.com
-Organization: STMicroelectronics
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Russell King <linux@arm.linux.org.uk>, kernel@stlinux.com,
-        linux-kernel@vger.kernel.org, Stuart Menefy <stuart.menefy@st.com>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v1 0/4] ARM: STi fixes and ethernet support
-References: <1373271301-11060-1-git-send-email-srinivas.kandagatla@st.com> <201307090956.03191.arnd@arndb.de> <51DBE718.2080007@st.com> <201307092315.06131.arnd@arndb.de>
-In-Reply-To: <201307092315.06131.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Jul 2013 06:39:06 -0400
+Subject: Re: [PATCH 3/4] PF: Provide additional direct page notification
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=US-ASCII
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <51DC33E7.1030404@de.ibm.com>
+Date: Wed, 10 Jul 2013 12:39:01 +0200
+Cc: Dominik Dingel <dingel@linux.vnet.ibm.com>, Gleb Natapov <gleb@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7BIT
+Message-Id: <282EB214-206B-4A04-9830-D97679C9F4EC@suse.de>
+References: <1373378207-10451-1-git-send-email-dingel@linux.vnet.ibm.com> <1373378207-10451-4-git-send-email-dingel@linux.vnet.ibm.com> <51DC33E7.1030404@de.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-On 09/07/13 22:15, Arnd Bergmann wrote:
->> For DT case, At the moment I think callbacks at MACH level is one
->> > possible solution. But am open for any discussions.
-> Ok, so a PHY driver might not be the best place to put this, but it's
-> one option, since the PHY driver already has to know about the
-> interface speed you are setting.
+
+On 09.07.2013, at 18:01, Christian Borntraeger wrote:
+
+> On 09/07/13 15:56, Dominik Dingel wrote:
+>> By setting a Kconfig option, the architecture can control when
+>> guest notifications will be presented by the apf backend.
+>> So there is the default batch mechanism, working as before, where the vcpu thread
+>> should pull in this information. On the other hand there is now the direct
+>> mechanism, this will directly push the information to the guest.
+>> 
+>> Still the vcpu thread should call check_completion to cleanup leftovers,
+>> that leaves most of the common code untouched.
+>> 
+>> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
 > 
-> Having a global "*_setup_ethernet" callback is definitely not the
-> right way to go. Please describe what the function actually does
-> so we can come up with the right subsystem to move that functionality
-> to. If you are setting clocks, you should use the clock subsystem,
-> for taking the device out of reset, you should use the reset controller
-> subsystem and for setting up the phy, you should use the phy subsystem,
-> etc.
+> Acked-by: Christian Borntraeger <borntraeger@de.ibm.com> 
+> for the "why". We want to use the existing architectured interface.
 
-The purpose of this callback is to do three things.
-
-	1> Configuring the MAC signals to select particular PHY interface mode.
-MAC signals(wires) are wired up to this Ethernet Configuration register.
-
-	2> Select synchronisation clock for data lines retiming. On High speed
-interfaces track length/layouts on the boards can directly influence the
-signal quality and introduce bit shifts or other errors. So SoC has
-additional logic to retime these signals and improve the data
-reliability. As there is possibility of multiple clock sources (MAC,
-PHY) a correct choice of synchronization clock is made in Ethernet
-configuration register. For 125 Mhz clock in Gbit mode, reference clock
-is provided by the PHY in other case like 100bit and 10bit, 50MHz, 25MHz
-clocks is provide by the MAC.
-So this bits depend/driven based on the PHYMODEs and Link Speed.
-
-	3> Ethernet Soft reset in Ethernet control register.
-		Which can probably go into via reset controller driver.
+Shouldn't this be a runtime option?
 
 
-For point 1 and 2, there is no subsystem in the kernel which can
-accommodate these kind of SOC specific bits setup. Am not sure if other
-platforms have similar SoC setup use cases?
+Alex
 
-For point 3, I can go for reset controller API.
-
-Just for your reference (Sorry and Please ignore if Its too detailed),
-Ethernet configuration register looks like:
-Bit to configure signals connected to MAC.
-	[5] ENMII1: when 1, MII mode
-		when 0, Reverse MII mode
-	[4:2] MII1_PHY_SEL:
-		000: GMII/MII (default)
-		001: RGMII
-		010: SGMII
-		100: RMII
-
-Bit to configure retiming clock for retiming data lines:
-	[8] ETH1_SEL_TX_RETIMING_CLK: Selection of the clock used to retime TX data
-		0: clock selected by ETH1_SEL_TXCLK_NOT_CLK125 bit
-		1: clock fed to or provided by MII_PHYCLK depending
-		on eth1_sel_internal_notext_phyclk setting
-	[7] ETH1_SEL_INTERNAL_NOTEXT_PHYCLK: Selection of internal clock or
-external clock from MII_PHYCLK for retiming in RMII mode
-		0: external clock (Beware that eth1_sel_tx_retiming_clk
-		bit must also be programmed).
-		1: internal clock (from clockgenA)
-	[6] ETH1_SEL_TXCLK_NOT_CLK125: Selection of the clock used to
-	retime TX data
-		0: MII1_CLK_125 (beware that eth1_sel_tx_retiming_clk bit must also be
-programmed)
-		1: MII1_TXCLK
-
-Thanks,
-srini
