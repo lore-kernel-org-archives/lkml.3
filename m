@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3GJO3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 10:29:54 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:41309 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750736Ab3GJO3w convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 10:29:52 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dIc89bh148cI1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275ch17326ah8275bh8275dhz2dh87h2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 10 Jul 2013 22:30:53 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Vincent =?iso-8859-1?Q?Stehl=E9?= <vincent.stehle@freescale.com>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>, <trivial@kernel.org>
-Subject: Re: [PATCH linux-next] ARM: imx: fix imx_init_l2cache storage class
-Message-ID: <20130710143051.GA24654@S2101-09.ap.freescale.net>
-References: <1373449546-1040-1-git-send-email-vincent.stehle@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <1373449546-1040-1-git-send-email-vincent.stehle@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: sigmatel.com
+	id S1754255Ab3GJOcM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 10:32:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:58002 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750736Ab3GJOcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 10:32:10 -0400
+Message-ID: <1373466723.24446.10.camel@deadeye.wl.decadent.org.uk>
+Subject: [PATCH] dmi_scan: Add comments on dmi_present() and the loop in
+ dmi_scan_machine()
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: Zhenzhong Duan <zhenzhong.duan@oracle.com>,
+        Jean Delvare <jdelvare@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Wed, 10 Jul 2013 15:32:03 +0100
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-3+/4yJABrccuHl5npLuW"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vincent,
 
-Sorry.  I was not aware of that imx_v6_v7_defconfig does not have
-CACHE_L2X0 enabled, so I did not catch it with my testing.  Thanks for
-fixing it.
+--=-3+/4yJABrccuHl5npLuW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Jul 10, 2013 at 11:45:46AM +0200, Vincent Stehlé wrote:
-> Commit 879ec1ceeac21285d62606c1e96520887efcd9bc makes imx_init_l2cache a common
-> function and updates the header declaration accordingly. Fix function storage
-> class, too.
-> 
-The commit ID is not stable, and I dropped it and applied the patch.
+My previous refactoring in commit 79bae42d51a5 resulted in slightly
+tricky code (though I think it's more elegant).  Explain what it's
+doing.
 
-Shawn
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/firmware/dmi_scan.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-> This fixes the following compilation error:
-> 
->   arch/arm/mach-imx/system.c:101:123: error: static declaration of ‘imx_init_l2cache’ follows non-static declaration
->   In file included from arch/arm/mach-imx/system.c:32:0:
->   arch/arm/mach-imx/common.h:165:13: note: previous declaration of ‘imx_init_l2cache’ was here
->   arch/arm/mach-imx/system.c:101:123: warning: ‘imx_init_l2cache’ defined but not used [-Wunused-function]
-> 
-> Signed-off-by: Vincent Stehlé <vincent.stehle@freescale.com>
-> Cc: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Sascha Hauer <kernel@pengutronix.de>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: trivial@kernel.org
-> ---
-> 
-> 
-> Hi,
-> 
-> Linux next-20130710 breaks compilation of ARM multi_v7_defconfig. This patch fixes it.
-> 
-> (Note: this patch is necessary for the link, too: http://www.spinics.net/lists/kernel/msg1563777.html)
-> 
-> Best regards,
-> 
-> V.
-> 
-> 
->  arch/arm/mach-imx/system.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-imx/system.c b/arch/arm/mach-imx/system.c
-> index e5592ca..64ff37e 100644
-> --- a/arch/arm/mach-imx/system.c
-> +++ b/arch/arm/mach-imx/system.c
-> @@ -98,7 +98,7 @@ void __init mxc_arch_reset_init_dt(void)
->  }
->  
->  #ifdef CONFIG_CACHE_L2X0
-> -static void __init imx_init_l2cache(void)
-> +void __init imx_init_l2cache(void)
->  {
->  	void __iomem *l2x0_base;
->  	struct device_node *np;
-> -- 
-> 1.7.10.4
-> 
-> 
-> 
+diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+index b95159b..4fdb377 100644
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -419,6 +419,13 @@ static void __init dmi_format_ids(char *buf, size_t le=
+n)
+ 			    dmi_get_system_info(DMI_BIOS_DATE));
+ }
+=20
++/*
++ * Check for DMI/SMBIOS headers in the system firmware image.  Any
++ * SMBIOS header must start 16 bytes before the DMI header, so take a
++ * 32 byte buffer and check for DMI at offset 16 and SMBIOS at offset
++ * 0.  If the DMI header is present, set dmi_ver accordingly (SMBIOS
++ * takes precedence) and return 0.  Otherwise return 1.
++ */
+ static int __init dmi_present(const u8 *buf)
+ {
+ 	int smbios_ver;
+@@ -506,6 +513,13 @@ void __init dmi_scan_machine(void)
+ 		if (p =3D=3D NULL)
+ 			goto error;
+=20
++		/*
++		 * Iterate over all possible DMI header addresses q.
++		 * Maintain the 32 bytes around q in buf.  On the
++		 * first iteration, substitute zero for the
++		 * out-of-range bytes so there is no chance of falsely
++		 * detecting an SMBIOS header.
++		 */
+ 		memset(buf, 0, 16);
+ 		for (q =3D p; q < p + 0x10000; q +=3D 16) {
+ 			memcpy_fromio(buf + 16, q, 16);
 
+
+--=-3+/4yJABrccuHl5npLuW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUd1wY+e/yOyVhhEJAQpazxAAr/c9irAQguOseBQMVOUHXbGYMyHMq/SA
+sjJmpbMuWzFQVlTeqiRe6llX87+XMWzxXa4lXQubLTrWj2lcwJ2vVA2rUPSab1FW
+EDY7rulLxBjkPWT2ZuJiWkJziJ4eyaorAyy3XwKAXmrdXBVgwU4rqPa2uC5Xjx+f
+v/fwtOZUzJKf+0d5zrCU5ozRE9c3R7k5/glKiCPpGKe59c/L5Kiane9kPNrUxgii
+Zp8WZgM6kKesfchAbp3GTnY4O0rR7mgxiyXR5/6tIh5OMuXNa2AGXg1t1LW6no+R
+Tzib5WazbR2I03lIgOP3wpzZqKxjqE0phpf8o8/jk6TlcjcteAK6GJXq99oJiwS/
+S+wRTknL4X8hTLcXHzRhp4z0ZiGvbQ6FqikHPvZBNXCe7UqKlpi439rNT3LxtxHa
+Pe4BO/APcJ+eJoniGSCnZeub9TdP8biDBh57Ucj4Q0owuI/35DxyrTENSnmoreEH
+szYwPRF9eCovK1O4myBIma1VIueiZuAHh1TdtOYd/M/irmSqk6vDJDfW3jt9zaZu
+U2tgSiZCZTDRQSYQAG2+UFsVUX4KYLrI1NPqYxiK82ZZPxyd75o81xX98Gbg6lYn
+rlfcKkduTvPnQ4r2g6iVVGWJ0mBTZf592lI7yQZA+ZNPWVIyKHCoHG1iKOpafm6l
+k+wKAsjGuhc=
+=tT7/
+-----END PGP SIGNATURE-----
+
+--=-3+/4yJABrccuHl5npLuW--
