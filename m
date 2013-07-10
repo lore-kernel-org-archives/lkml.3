@@ -1,83 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3GJLY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 07:24:57 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:46116 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754508Ab3GJLYz (ORCPT
+	id S1754575Ab3GJL0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 07:26:40 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:7338 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395Ab3GJL0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 07:24:55 -0400
-Message-ID: <51DD455D.4000701@linux.vnet.ibm.com>
-Date: Wed, 10 Jul 2013 16:58:29 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	Wed, 10 Jul 2013 07:26:39 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 10 Jul 2013 04:24:57 -0700
+From: Wei Ni <wni@nvidia.com>
+To: <khali@linux-fr.org>, <swarren@wwwdotorg.org>, <linux@roeck-us.net>,
+        <thierry.reding@gmail.com>
+CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Wei Ni <wni@nvidia.com>
+Subject: [PATCH v2 2/3] hwmon: (lm90) add support to handle IRQ.
+Date: Wed, 10 Jul 2013 19:25:38 +0800
+Message-ID: <1373455539-2831-3-git-send-email-wni@nvidia.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373455539-2831-1-git-send-email-wni@nvidia.com>
+References: <1373455539-2831-1-git-send-email-wni@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Andrew Jones <drjones@redhat.com>,
-        mingo@redhat.com, ouyang@cs.pitt.edu, habanero@linux.vnet.ibm.com,
-        jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com, hpa@zytor.com,
-        pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        xen-devel@lists.xensource.com, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
-        chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stephan.diestelhorst@amd.com,
-        riel@redhat.com, virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-References: <1372171802.3804.30.camel@oc2024037011.ibm.com> <51CAAA26.4090204@linux.vnet.ibm.com> <20130626113744.GA6300@hawk.usersys.redhat.com> <20130626125240.GY18508@redhat.com> <51CAEF45.3010203@linux.vnet.ibm.com> <20130626161130.GB18152@redhat.com> <51CB2AD9.5060508@linux.vnet.ibm.com> <51DBD3C2.2040807@linux.vnet.ibm.com> <20130710103325.GP24941@redhat.com> <20130710104047.GP25631@dyad.programming.kicks-ass.net> <20130710104717.GR24941@redhat.com>
-In-Reply-To: <20130710104717.GR24941@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071011-2674-0000-0000-000009BF0873
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 04:17 PM, Gleb Natapov wrote:
-> On Wed, Jul 10, 2013 at 12:40:47PM +0200, Peter Zijlstra wrote:
->> On Wed, Jul 10, 2013 at 01:33:25PM +0300, Gleb Natapov wrote:
->>
->> Here's an idea, trim the damn email ;-) -- not only directed at gleb.
->>
-> Good idea.
->
->>>> Ingo, Gleb,
->>>>
->>>>  From the results perspective, Andrew Theurer, Vinod's test results are
->>>> pro-pvspinlock.
->>>> Could you please help me to know what will make it a mergeable
->>>> candidate?.
->>>>
->>> I need to spend more time reviewing it :) The problem with PV interfaces
->>> is that they are easy to add but hard to get rid of if better solution
->>> (HW or otherwise) appears.
->>
->> How so? Just make sure the registration for the PV interface is optional; that
->> is, allow it to fail. A guest that fails the PV setup will either have to try
->> another PV interface or fall back to 'native'.
->>
-> We have to carry PV around for live migration purposes. PV interface
-> cannot disappear under a running guest.
->
+When the temperature exceed the limit range value,
+the driver can handle the interrupt.
 
-IIRC, The only requirement was running state of the vcpu to be retained.
-This was addressed by
-[PATCH RFC V10 13/18] kvm : Fold pv_unhalt flag into GET_MP_STATE ioctl 
-to aid migration.
+Signed-off-by: Wei Ni <wni@nvidia.com>
+---
+ drivers/hwmon/lm90.c |   77 +++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 64 insertions(+), 13 deletions(-)
 
-I would have to know more if I missed something here.
-
->>>> I agree that Jiannan's Preemptable Lock idea is promising and we could
->>>> evaluate that  approach, and make the best one get into kernel and also
->>>> will carry on discussion with Jiannan to improve that patch.
->>> That would be great. The work is stalled from what I can tell.
->>
->> I absolutely hated that stuff because it wrecked the native code.
-> Yes, the idea was to hide it from native code behind PV hooks.
->
+diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+index 2cb7f8e..88ff362 100644
+--- a/drivers/hwmon/lm90.c
++++ b/drivers/hwmon/lm90.c
+@@ -89,6 +89,7 @@
+ #include <linux/err.h>
+ #include <linux/mutex.h>
+ #include <linux/sysfs.h>
++#include <linux/interrupt.h>
+ 
+ /*
+  * Addresses to scan
+@@ -179,6 +180,19 @@ enum chips { lm90, adm1032, lm99, lm86, max6657, max6659, adt7461, max6680,
+ #define LM90_HAVE_TEMP3		(1 << 6) /* 3rd temperature sensor	*/
+ #define LM90_HAVE_BROKEN_ALERT	(1 << 7) /* Broken alert		*/
+ 
++/* LM90 status */
++#define LM90_LTHRM	(1 << 0)	/* local THERM limit tripped */
++#define LM90_RTHRM	(1 << 1)	/* remote THERM limit tripped */
++#define LM90_OPEN	(1 << 2)	/* remote is an open circuit */
++#define LM90_RLOW	(1 << 3)	/* remote low temp limit tripped */
++#define LM90_RHIGH	(1 << 4)	/* remote high temp limit tripped */
++#define LM90_LLOW	(1 << 5)	/* local low temp limit tripped */
++#define LM90_LHIGH	(1 << 6)	/* local high temp limit tripped */
++#define LM90_BUSY	(1 << 7)	/* ADC is converting */
++
++#define MAX6696_RLOW	(1 << 3)	/* remote2 low temp limit tripped */
++#define MAX6696_RHIGH	(1 << 4)	/* remote2 high temp limit tripped */
++
+ /*
+  * Driver data (common to all clients)
+  */
+@@ -1423,6 +1437,43 @@ static void lm90_init_client(struct i2c_client *client)
+ 		i2c_smbus_write_byte_data(client, LM90_REG_W_CONFIG1, config);
+ }
+ 
++static void lm90_alarm_status(struct i2c_client *client,
++			      u8 alarms, u8 alarms_max6696)
++{
++	if (alarms & (LM90_LLOW | LM90_LHIGH | LM90_LTHRM))
++		dev_warn(&client->dev,
++			 "temp%d out of range, please check!\n", 1);
++	if (alarms & (LM90_RLOW | LM90_RHIGH | LM90_RTHRM))
++		dev_warn(&client->dev,
++			 "temp%d out of range, please check!\n", 2);
++	if (alarms & LM90_OPEN)
++		dev_warn(&client->dev,
++			 "temp%d diode open, please check!\n", 2);
++
++	if (alarms_max6696 & (MAX6696_RLOW | MAX6696_RHIGH))
++		dev_warn(&client->dev,
++			 "temp%d out of range, please check!\n", 3);
++}
++
++static irqreturn_t lm90_irq_thread(int irq, void *dev_id)
++{
++	struct lm90_data *data = dev_id;
++	struct i2c_client *client = to_i2c_client(data->hwmon_dev->parent);
++	u8 alarms, alarms_max6696 = 0;
++
++	lm90_read_reg(client, LM90_REG_R_STATUS, &alarms);
++
++	if (data->kind == max6696)
++		lm90_read_reg(client, MAX6696_REG_R_STATUS2, &alarms_max6696);
++
++	if ((alarms & 0x7f) == 0 && (alarms_max6696 & 0xfe) == 0) {
++		return IRQ_NONE;
++	} else {
++		lm90_alarm_status(client, alarms, alarms_max6696);
++		return IRQ_HANDLED;
++	}
++}
++
+ static int lm90_probe(struct i2c_client *client,
+ 		      const struct i2c_device_id *id)
+ {
+@@ -1499,6 +1550,18 @@ static int lm90_probe(struct i2c_client *client,
+ 		goto exit_remove_files;
+ 	}
+ 
++	if (client->irq >= 0) {
++		dev_dbg(dev, "lm90 IRQ: %d\n", client->irq);
++		err = devm_request_threaded_irq(dev, client->irq,
++						NULL, lm90_irq_thread,
++						IRQF_TRIGGER_LOW | IRQF_ONESHOT,
++						"lm90", data);
++		if (err < 0) {
++			dev_err(dev, "cannot request interrupt\n");
++			goto exit_remove_files;
++		}
++	}
++
+ 	return 0;
+ 
+ exit_remove_files:
+@@ -1532,19 +1595,7 @@ static void lm90_alert(struct i2c_client *client, unsigned int flag)
+ 	if ((alarms & 0x7f) == 0 && (alarms2 & 0xfe) == 0) {
+ 		dev_info(&client->dev, "Everything OK\n");
+ 	} else {
+-		if (alarms & 0x61)
+-			dev_warn(&client->dev,
+-				 "temp%d out of range, please check!\n", 1);
+-		if (alarms & 0x1a)
+-			dev_warn(&client->dev,
+-				 "temp%d out of range, please check!\n", 2);
+-		if (alarms & 0x04)
+-			dev_warn(&client->dev,
+-				 "temp%d diode open, please check!\n", 2);
+-
+-		if (alarms2 & 0x18)
+-			dev_warn(&client->dev,
+-				 "temp%d out of range, please check!\n", 3);
++		lm90_alarm_status(client, alarms, alarms2);
+ 
+ 		/*
+ 		 * Disable ALERT# output, because these chips don't implement
+-- 
+1.7.9.5
 
