@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932123Ab3GKWCD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:02:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43092 "EHLO
+	id S1756837Ab3GKWCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:02:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43100 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756609Ab3GKWBt (ORCPT
+	with ESMTP id S1756623Ab3GKWBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:49 -0400
+	Thu, 11 Jul 2013 18:01:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Seyfried <stefan.seyfried@googlemail.com>,
-        Wang YanQing <udknight@gmail.com>
-Subject: [ 13/19] Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
-Date: Thu, 11 Jul 2013 15:01:30 -0700
-Message-Id: <20130711214832.134614351@linuxfoundation.org>
+        Rick Macklem <rmacklem@uoguelph.ca>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 15/19] nfsd4: fix decoding of compounds across page boundaries
+Date: Thu, 11 Jul 2013 15:01:32 -0700
+Message-Id: <20130711214832.348997226@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
 References: <20130711214830.611455274@linuxfoundation.org>
@@ -27,35 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 828c6a102b1f2b8583fadc0e779c46b31d448f0b upstream.
+commit 247500820ebd02ad87525db5d9b199e5b66f6636 upstream.
 
-This reverts commit 8d2f8cd424ca0b99001f3ff4f5db87c4e525f366.
+A freebsd NFSv4.0 client was getting rare IO errors expanding a tarball.
+A network trace showed the server returning BAD_XDR on the final getattr
+of a getattr+write+getattr compound.  The final getattr started on a
+page boundary.
 
-As reported by Stefan, this device already works with the parport_serial
-driver, so the 8250_pci driver should not also try to grab it as well.
+I believe the Linux client ignores errors on the post-write getattr, and
+that that's why we haven't seen this before.
 
-Reported-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
-Cc: Wang YanQing <udknight@gmail.com>
+Reported-by: Rick Macklem <rmacklem@uoguelph.ca>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |    4 ----
- 1 file changed, 4 deletions(-)
+ fs/nfsd/nfs4xdr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -4797,10 +4797,6 @@ static struct pci_device_id serial_pci_t
- 		PCI_VENDOR_ID_IBM, 0x0299,
- 		0, 0, pbn_b0_bt_2_115200 },
- 
--	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
--		0x1000, 0x0012,
--		0, 0, pbn_b0_bt_2_115200 },
--
- 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
- 		0xA000, 0x1000,
- 		0, 0, pbn_b0_1_115200 },
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -162,8 +162,8 @@ static __be32 *read_buf(struct nfsd4_com
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
++	argp->p = page_address(argp->pagelist[0]);
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
 
 
