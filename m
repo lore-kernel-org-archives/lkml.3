@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab3GKJtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 05:49:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37565 "EHLO mx2.suse.de"
+	id S932157Ab3GKJtX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 05:49:23 -0400
+Received: from plane.gmane.org ([80.91.229.3]:46489 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932129Ab3GKJrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 05:47:12 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 11/16] sched: Check current->mm before allocating NUMA faults
-Date: Thu, 11 Jul 2013 10:46:55 +0100
-Message-Id: <1373536020-2799-12-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1373536020-2799-1-git-send-email-mgorman@suse.de>
-References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
+	id S1754432Ab3GKJtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 05:49:21 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?UTF-8?B?RMOibmllbA==?= Fraga <fragabr@gmail.com>
+Subject: 3.10.0: Full dynticks = high load
+Date: Thu, 11 Jul 2013 06:49:04 -0300
+Organization: http://www.youtube.com/DanielFragaBR
+Message-ID: <krlv29$jbp$1@ger.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 177.102.3.30
+X-Newsreader: Claws Mail 3.9.0cvs128 (GTK+ 2.24.14; x86_64-unknown-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_numa_placement checks current->mm but after buffers for faults
-have already been uselessly allocated. Move the check earlier.
+	I upgraded to kernel 3.10.0 and decided to try the new "Full
+dynticks system (tickless)" option, but now the system load is always
+at 1 or above.
 
-[peterz@infradead.org: Identified the problem]
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- kernel/sched/fair.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+	Using the previous "Idle dynticks system (tickless idle)" solves
+the problem, so it seems the new Full dynticks code is causing this.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 0d4e516..54702c9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -834,8 +834,6 @@ static void task_numa_placement(struct task_struct *p)
- 	int seq, nid, max_nid = 0;
- 	unsigned long max_faults = 0;
- 
--	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
--		return;
- 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
- 	if (p->numa_scan_seq == seq)
- 		return;
-@@ -912,6 +910,10 @@ void task_numa_fault(int last_nid, int node, int pages, bool migrated)
- 	if (!sched_feat_numa(NUMA))
- 		return;
- 
-+	/* for example, ksmd faulting in a user's mm */
-+	if (!p->mm)
-+		return;
-+
- 	/* For now, do not attempt to detect private/shared accesses */
- 	priv = 1;
- 
+	Maybe Ingo Molnar can help to debug this (I put this in Power
+Management, but if it should be in other area, please change).
+
+My desktop is:
+Asus P8Z68-V Pro/Gen3
+Core i7 2700k
+8GB RAM
+
+	Feel free to suggest how can I debug this to help you. I can try
+patches if you want.
+
+	Thank you.
+
 -- 
-1.8.1.4
+Linux 3.10.0: Unicycling Gorilla
+http://www.youtube.com/DanielFragaBR
+http://www.libertarios.org.br
+
 
