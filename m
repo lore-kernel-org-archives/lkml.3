@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3GKNH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:07:58 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62928 "EHLO mga01.intel.com"
+	id S1756103Ab3GKNII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:08:08 -0400
+Received: from mga11.intel.com ([192.55.52.93]:11844 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756016Ab3GKNHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:07:55 -0400
+	id S1754734Ab3GKNID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 09:08:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,1043,1363158000"; 
-   d="scan'208";a="368612917"
+   d="scan'208";a="368612960"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V5 03/12] perf tools: add pid to struct thread
-Date: Thu, 11 Jul 2013 16:12:12 +0300
-Message-Id: <1373548341-24119-4-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V5 05/12] perf tools: tidy up sample parsing overflow checking
+Date: Thu, 11 Jul 2013 16:12:14 +0300
+Message-Id: <1373548341-24119-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
 References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
@@ -29,117 +29,202 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record pid on struct thread.  The member is named 'pid_'
-to avoid confusion with the 'tid' member which was previously
-named 'pid'.
+The size of data retrieved from a sample event must be
+validated to ensure it does not go past the end of the
+event.  That was being done sporadically and without
+considering integer overflows.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/util/machine.c | 16 +++++++++++-----
- tools/perf/util/thread.c  |  3 ++-
- tools/perf/util/thread.h  |  3 ++-
- 3 files changed, 15 insertions(+), 7 deletions(-)
+ tools/perf/util/evsel.c | 101 ++++++++++++++++++++++++++++++------------------
+ 1 file changed, 63 insertions(+), 38 deletions(-)
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index f9f9d63..67ba572 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -233,7 +233,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
- 	return;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 724b75a..febff21 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1114,24 +1114,38 @@ static int perf_evsel__parse_id_sample(const struct perf_evsel *evsel,
+ 	return 0;
  }
  
--static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
-+static struct thread *__machine__findnew_thread(struct machine *machine,
-+						pid_t pid, pid_t tid,
- 						bool create)
+-static bool sample_overlap(const union perf_event *event,
+-			   const void *offset, u64 size)
++static inline bool overflow_one(const void *endp, const void *offset)
  {
- 	struct rb_node **p = &machine->threads.rb_node;
-@@ -245,8 +246,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	 * so most of the time we dont have to look up
- 	 * the full rbtree:
- 	 */
--	if (machine->last_match && machine->last_match->tid == tid)
-+	if (machine->last_match && machine->last_match->tid == tid) {
-+		if (pid && pid != machine->last_match->pid_)
-+			machine->last_match->pid_ = pid;
- 		return machine->last_match;
-+	}
+-	const void *base = event;
+-
+-	if (offset + size > base + event->header.size)
+-		return true;
++	return offset + sizeof(u64) > endp;
++}
  
- 	while (*p != NULL) {
- 		parent = *p;
-@@ -254,6 +258,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+-	return false;
++static inline bool overflow(const void *endp, u16 max_size, const void *offset,
++			    u64 size)
++{
++	return size > max_size || offset + size > endp;
+ }
  
- 		if (th->tid == tid) {
- 			machine->last_match = th;
-+			if (pid && pid != th->pid_)
-+				th->pid_ = pid;
- 			return th;
++#define OVERFLOW_CHECK_ONE(offset)				\
++	do {							\
++		if (overflow_one(endp, (offset)))		\
++			return -EFAULT;				\
++	} while (0)
++
++#define OVERFLOW_CHECK(offset, size)				\
++	do {							\
++		if (overflow(endp, max_size, (offset), (size)))	\
++			return -EFAULT;				\
++	} while (0)
++
+ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			     struct perf_sample *data)
+ {
+ 	u64 type = evsel->attr.sample_type;
+-	u64 regs_user = evsel->attr.sample_regs_user;
+ 	bool swapped = evsel->needs_swap;
+ 	const u64 *array;
++	u16 max_size = event->header.size;
++	const void *endp = (void *)event + max_size;
++	u64 sz;
+ 
+ 	/*
+ 	 * used for cross-endian analysis. See git commit 65014ab3
+@@ -1153,6 +1167,11 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	array = event->sample.array;
+ 
++	/*
++	 * sample_size is based on PERF_SAMPLE_MASK which includes up to
++	 * PERF_SAMPLE_PERIOD.  After that overflow_one() or overflow() must be
++	 * used to check the format does not go past the end of the event.
++	 */
+ 	if (evsel->sample_size + sizeof(event->header) > event->header.size)
+ 		return -EFAULT;
+ 
+@@ -1221,20 +1240,19 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_CALLCHAIN) {
+-		if (sample_overlap(event, array, sizeof(data->callchain->nr)))
+-			return -EFAULT;
+-
+-		data->callchain = (struct ip_callchain *)array;
++		const u64 max_callchain_nr = UINT64_MAX / sizeof(u64);
+ 
+-		if (sample_overlap(event, array, data->callchain->nr))
++		OVERFLOW_CHECK_ONE(array);
++		data->callchain = (struct ip_callchain *)array++;
++		if (data->callchain->nr > max_callchain_nr)
+ 			return -EFAULT;
+-
+-		array += 1 + data->callchain->nr;
++		sz = data->callchain->nr * sizeof(u64);
++		OVERFLOW_CHECK(array, sz);
++		array = (void*)array + sz;
+ 	}
+ 
+ 	if (type & PERF_SAMPLE_RAW) {
+-		const u64 *pdata;
+-
++		OVERFLOW_CHECK_ONE(array);
+ 		u.val64 = *array;
+ 		if (WARN_ONCE(swapped,
+ 			      "Endianness of raw data not corrected!\n")) {
+@@ -1243,65 +1261,72 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 			u.val32[0] = bswap_32(u.val32[0]);
+ 			u.val32[1] = bswap_32(u.val32[1]);
  		}
+-
+-		if (sample_overlap(event, array, sizeof(u32)))
+-			return -EFAULT;
+-
+ 		data->raw_size = u.val32[0];
+-		pdata = (void *) array + sizeof(u32);
++		array = (void *)array + sizeof(u32);
  
-@@ -266,7 +272,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
- 	if (!create)
- 		return NULL;
+-		if (sample_overlap(event, pdata, data->raw_size))
+-			return -EFAULT;
+-
+-		data->raw_data = (void *) pdata;
+-
+-		array = (void *)array + data->raw_size + sizeof(u32);
++		OVERFLOW_CHECK(array, data->raw_size);
++		data->raw_data = (void *)array;
++		array = (void *)array + data->raw_size;
+ 	}
  
--	th = thread__new(tid);
-+	th = thread__new(pid, tid);
- 	if (th != NULL) {
- 		rb_link_node(&th->rb_node, parent, p);
- 		rb_insert_color(&th->rb_node, &machine->threads);
-@@ -278,12 +284,12 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+ 	if (type & PERF_SAMPLE_BRANCH_STACK) {
+-		u64 sz;
++		const u64 max_branch_nr = UINT64_MAX / sizeof(struct branch_entry);
  
- struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, true);
-+	return __machine__findnew_thread(machine, 0, tid, true);
- }
+-		data->branch_stack = (struct branch_stack *)array;
+-		array++; /* nr */
++		OVERFLOW_CHECK_ONE(array);
++		data->branch_stack = (struct branch_stack *)array++;
  
- struct thread *machine__find_thread(struct machine *machine, pid_t tid)
- {
--	return __machine__findnew_thread(machine, tid, false);
-+	return __machine__findnew_thread(machine, 0, tid, false);
- }
++		if (data->branch_stack->nr > max_branch_nr)
++			return -EFAULT;
+ 		sz = data->branch_stack->nr * sizeof(struct branch_entry);
+-		sz /= sizeof(u64);
+-		array += sz;
++		OVERFLOW_CHECK(array, sz);
++		array = (void *)array + sz;
+ 	}
  
- int machine__process_comm_event(struct machine *machine, union perf_event *event)
-diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 6feeb88..e3d4a55 100644
---- a/tools/perf/util/thread.c
-+++ b/tools/perf/util/thread.c
-@@ -7,12 +7,13 @@
- #include "util.h"
- #include "debug.h"
+ 	if (type & PERF_SAMPLE_REGS_USER) {
++		u64 avail;
++
+ 		/* First u64 tells us if we have any regs in sample. */
+-		u64 avail = *array++;
++		OVERFLOW_CHECK_ONE(array);
++		avail = *array++;
  
--struct thread *thread__new(pid_t tid)
-+struct thread *thread__new(pid_t pid, pid_t tid)
- {
- 	struct thread *self = zalloc(sizeof(*self));
+ 		if (avail) {
++			u64 regs_user = evsel->attr.sample_regs_user;
++
++			sz = hweight_long(regs_user) * sizeof(u64);
++			OVERFLOW_CHECK(array, sz);
+ 			data->user_regs.regs = (u64 *)array;
+-			array += hweight_long(regs_user);
++			array = (void *)array + sz;
+ 		}
+ 	}
  
- 	if (self != NULL) {
- 		map_groups__init(&self->mg);
-+		self->pid_ = pid;
- 		self->tid = tid;
- 		self->ppid = -1;
- 		self->comm = malloc(32);
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 0fe1f9c..fc464bc 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -12,6 +12,7 @@ struct thread {
- 		struct list_head node;
- 	};
- 	struct map_groups	mg;
-+	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
- 	char			shortname[3];
-@@ -24,7 +25,7 @@ struct thread {
+ 	if (type & PERF_SAMPLE_STACK_USER) {
+-		u64 size = *array++;
++		OVERFLOW_CHECK_ONE(array);
++		sz = *array++;
  
- struct machine;
+ 		data->user_stack.offset = ((char *)(array - 1)
+ 					  - (char *) event);
  
--struct thread *thread__new(pid_t tid);
-+struct thread *thread__new(pid_t pid, pid_t tid);
- void thread__delete(struct thread *self);
+-		if (!size) {
++		if (!sz) {
+ 			data->user_stack.size = 0;
+ 		} else {
++			OVERFLOW_CHECK(array, sz);
+ 			data->user_stack.data = (char *)array;
+-			array += size / sizeof(*array);
++			array = (void *)array + sz;
++			OVERFLOW_CHECK_ONE(array);
+ 			data->user_stack.size = *array++;
+ 		}
+ 	}
  
- int thread__set_comm(struct thread *self, const char *comm);
+ 	data->weight = 0;
+ 	if (type & PERF_SAMPLE_WEIGHT) {
++		OVERFLOW_CHECK_ONE(array);
+ 		data->weight = *array;
+ 		array++;
+ 	}
+ 
+ 	data->data_src = PERF_MEM_DATA_SRC_NONE;
+ 	if (type & PERF_SAMPLE_DATA_SRC) {
++		OVERFLOW_CHECK_ONE(array);
+ 		data->data_src = *array;
+ 		array++;
+ 	}
 -- 
 1.7.11.7
 
