@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932760Ab3GKOZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:25:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42937 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932719Ab3GKOZv (ORCPT
+	id S932817Ab3GKOrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:47:12 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:41711 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756125Ab3GKOrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:51 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 27/98] ALSA: hda - Cache the MUX selection for generic HDMI
-Date: Thu, 11 Jul 2013 15:23:57 +0100
-Message-Id: <1373552708-15235-28-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 11 Jul 2013 10:47:08 -0400
+Message-ID: <51DEC56A.4050001@akamai.com>
+Date: Thu, 11 Jul 2013 10:47:06 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jason Baron <jbaron@redhat.com>, Borislav Petkov <bpetkov@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction patching
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>  <51DDD3E9.6090601@linux.intel.com> <1373553344.17876.13.camel@gandalf.local.home>
+In-Reply-To: <1373553344.17876.13.camel@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.17 -stable review patch.  If anyone has any objections, please let me know.
+On 07/11/2013 10:35 AM, Steven Rostedt wrote:
+> On Wed, 2013-07-10 at 14:36 -0700, H. Peter Anvin wrote:
+>> On 07/10/2013 02:31 PM, Jiri Kosina wrote:
+>>> If any CPU instruction execution would collide with the patching,
+>>> it'd be trapped by the int3 breakpoint and redirected to the provided
+>>> "handler" (which would typically mean just skipping over the patched
+>>> region, acting as "nop" has been there, in case we are doing nop -> jump
+>>> and jump -> nop transitions).
+>>>
+>> I'm wondering if it would be easier/more general to just return to the
+>> instruction.  The "more general" bit would allow this to be used for
+>> other things, like alternatives, and perhaps eventually dynamic call
+>> patching.
+>>
+>> Returning to the instruction will, in effect, be a busy-wait for the
+>> faulted CPU until the patch is complete; more or less what stop_machine
+>> would do, but only for a CPU which actually strays into the affected region.
+>>
+> Wont work for ftrace, as it patches all functions, it even patches
+> functions used to do the changes. Thus, it would cause a deadlock if a
+> breakpoint were to spin till the changes were finished.
+>
+> -- Steve
+>
+>
 
-------------------
+I'm not sure this works for jump labels either. Some tracepoints (which
+use jump_labels) have interrupts disabled across them. Thus, they will
+spin with interrupts disabled, while we are trying to issue an IPI.
 
-From: Takashi Iwai <tiwai@suse.de>
+Thanks,
 
-commit bddee96b5d0db869f47b195fe48c614ca824203c upstream.
+-Jason
 
-When a selection to a converter MUX is changed in hdmi_pcm_open(), it
-should be cached so that the given connection can be restored properly
-at PM resume.  We need just to replace the corresponding
-snd_hda_codec_write() call with snd_hda_codec_write_cache().
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- sound/pci/hda/patch_hdmi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 45e3102..2af1285 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -910,7 +910,7 @@ static int hdmi_pcm_open(struct hda_pcm_stream *hinfo,
- 	per_cvt->assigned = 1;
- 	hinfo->nid = per_cvt->cvt_nid;
- 
--	snd_hda_codec_write(codec, per_pin->pin_nid, 0,
-+	snd_hda_codec_write_cache(codec, per_pin->pin_nid, 0,
- 			    AC_VERB_SET_CONNECT_SEL,
- 			    mux_idx);
- 	snd_hda_spdif_ctls_assign(codec, pin_idx, per_cvt->cvt_nid);
--- 
-1.8.1.2
 
