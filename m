@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932332Ab3GKPap (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 11:30:45 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:44661 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756154Ab3GKP3I (ORCPT
+	id S1756242Ab3GKPld (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 11:41:33 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:65036 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755842Ab3GKPlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 11:29:08 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
-   d="scan'208";a="34685933"
-Message-ID: <51DECEC3.7090306@citrix.com>
-Date: Thu, 11 Jul 2013 16:26:59 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Thu, 11 Jul 2013 11:41:31 -0400
+Date: Thu, 11 Jul 2013 08:41:22 -0700
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Mohit KUMAR <Mohit.KUMAR@st.com>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Sean Cross'" <xobs@kosagi.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+Message-ID: <20130711154121.GC2198@dhcp-172-17-186-34.nvidia.com>
+References: <001201ce7dfa$716b3370$54419a50$@samsung.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH RFC 4/4] xen-block: introduce a new request
- type to unmap grants
-References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>	<1373288607-1876-5-git-send-email-roger.pau@citrix.com>	<20130708194152.GJ4927@phenom.dumpdata.com> <51DD271B.3010408@citrix.com> <51DEB795.3000602@citrix.com> <51DECB4D.4020009@citrix.com>
-In-Reply-To: <51DECB4D.4020009@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4jXrM3lyYWu4nBt5"
+Content-Disposition: inline
+In-Reply-To: <001201ce7dfa$716b3370$54419a50$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/13 16:12, Roger Pau Monné wrote:
-> On 11/07/13 15:48, David Vrabel wrote:
->> On 10/07/13 10:19, Roger Pau Monné wrote:
->>>
->>> >From 1ede72ba10a7ec13d57ba6d2af54e86a099d7125 Mon Sep 17 00:00:00 2001
->>> From: Roger Pau Monne <roger.pau@citrix.com>
->>> Date: Wed, 10 Jul 2013 10:22:19 +0200
->>> Subject: [PATCH RFC] xen-blkfront: revoke foreign access for grants not
->>>  mapped by the backend
->>> MIME-Version: 1.0
->>> Content-Type: text/plain; charset=UTF-8
->>> Content-Transfer-Encoding: 8bit
->>>
->>> There's no need to keep the foreign access in a grant if it is not
->>> persistently mapped by the backend. This allows us to free grants that
->>> are not mapped by the backend, thus preventing blkfront from hoarding
->>> all grants.
->>>
->>> The main effect of this is that blkfront will only persistently map
->>> the same grants as the backend, and it will always try to use grants
->>> that are already mapped by the backend. Also the number of persistent
->>> grants in blkfront is the same as in blkback (and is controlled by the
->>> value in blkback).
->>
->> Does this place in implicit requirement on the behaviour of the backend.
->>  i.e., the backend must persistently map the first N grants and always
->> unmap the remainder?  If so, this should be clearly documented.
-> 
-> No, the backend can persistently map whatever grants it wants, and in
-> fact we have a LRU in the backend that keeps unmapping a certain amount
-> of grants that have not been used over a period of time.
 
-I don't see a mechanism by which the frontend can notice that the
-backend has unmapped an unused grant.  It can only notice when a request
-using that grant is completed.
+--4jXrM3lyYWu4nBt5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> It also seems odd to have the backend decide how much frontend resource
->> can be consumed at anyone time.  It's not clear how the backend is
->> supposed to know how many persistent grants it should hang on to.
-> 
-> blkfront has to at least persistently map the same grants as the
-> backend. blkfront could persistently map all grants, but then we will
-> have grant shortage, and I doubt there's much performance gain from
-> persistently mapping grants in blkfront but not blkback (since the
-> biggest performance penalty comes from the unmapping done in blkback and
-> TLB flush involved).
+On Thu, Jul 11, 2013 at 02:49:43PM +0900, Jingoo Han wrote:
+[...]
+> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
+[...]
+>  obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
+>  obj-$(CONFIG_PCIE_DW) += pcie-designware.o
+> +obj-$(CONFIG_PCI_EXYNOS) += pcie-exynos.o
 
-I'm saying that the frontend needs to be able to set a cap on the number
-of persistent grants kept by the backend.  If other demands on a
-domain's grant table resource means it can only spare G grants for a
-particular frontend it needs to be able to ensure this (with the
-cooperation of the backend).
+I think we should keep these sorted alphabetically. Also Tegra and
+Marvell are PCIe controllers but they still use the pci- prefix instead
+of pcie-. Perhaps it'd be good to keep consistency here? I initially
+chose pci- because from a software point of view it doesn't matter all
+that much whether it's PCI or PCIe and because the drivers are part of
+the PCI subsystem. However if Exynos now uses the pcie- prefix it makes
+it look like Tegra and Marvell are plain old PCI.
 
-David
+Thierry
+
+--4jXrM3lyYWu4nBt5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR3tIhAAoJEN0jrNd/PrOhCCMP/iGDcDc81Sii7T3D2sYloq4s
+uzIcMm0j0eVD2q6B3vPjZRSV7KiMMLxRHw3HeKGSlLc5xNXGquacI3uh2MImqe1K
+f6Zb6F52DvuzJ1c2Y2yWqzYTEA+X80T/zb2i0fM5R4dB4Ijf0V+R1dFpV0+IWR9x
+S2BJM9dHJ9xrWZ1tf6h+oBFPq0bq5QTNfB5V8j6GkG9SCC8fnvsfPTa8jh5zkv2k
+jiN28T4vAiRj8Xn67X47SZ3bfdvqBUQpKE9i35+F5pULF9K1d9oxqIRLzRMd7hw6
+TLpYv09h7fMhHjfOp9kGA9jf9CFbiIM795RmEfgEcsqoRX+wd0cltmGkb3Pt2Cai
+edB9RF6aXWO1CYrdDF4JRa3OyjZqlSgmWW0rHR6lBlyTFW57FK4OdFUe/wzBUOyD
+996hU8vi33vCkLwSKerKi1CC9qpoq7SVxGoB+JcGzBZIuZIQVjBkGssGPMLJhswf
+vFmujloMw62uSsw4Yb+T6+qYdxb+shKdlY7Ml7aX/RelhWO5K0FpKxCWa/cc6/UF
+i696/K1xFO9Xkm8sQa+bi9/Prql01p8bL+Hq+bymco/tIfC/rK2DsgoXHRPFHie0
+X23RiKHxUDMr1pOMiYjUG3a721Z4YdL86P6X8n57R5l3yDRYwKex+lN0AeSt+9O/
+R8YFMVAW6NYbfZiS72y5
+=ezQU
+-----END PGP SIGNATURE-----
+
+--4jXrM3lyYWu4nBt5--
