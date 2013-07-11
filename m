@@ -1,84 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab3GKBFL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 21:05:11 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:63231 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754046Ab3GKBFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 21:05:09 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-38-51de04c4350a
-Date: Thu, 11 Jul 2013 10:05:10 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/5] Support multiple pages allocation
-Message-ID: <20130711010510.GC7756@lge.com>
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
- <20130703152824.GB30267@dhcp22.suse.cz>
- <51D44890.4080003@gmail.com>
- <51D44AE7.1090701@gmail.com>
- <20130704042450.GA7132@lge.com>
- <20130704100044.GB7833@dhcp22.suse.cz>
- <20130710003142.GA2152@lge.com>
- <20130710091703.GD4437@dhcp22.suse.cz>
- <20130710095533.GA5557@lge.com>
- <20130710112737.GG4437@dhcp22.suse.cz>
+	id S1755522Ab3GKBXH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 21:23:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23828 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755063Ab3GKBXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 21:23:05 -0400
+Date: Wed, 10 Jul 2013 22:21:57 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, gleb@redhat.com, glommer@parallels.com,
+        tglx@linutronix.de, jeremy@goop.org, rostedt@goodmis.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] remove sched notifier for cross-cpu migrations
+Message-ID: <20130711012157.GA21489@amt.cnet>
+References: <20130710103440.GO25631@dyad.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130710112737.GG4437@dhcp22.suse.cz>
+In-Reply-To: <20130710103440.GO25631@dyad.programming.kicks-ass.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 01:27:37PM +0200, Michal Hocko wrote:
-> On Wed 10-07-13 18:55:33, Joonsoo Kim wrote:
-> > On Wed, Jul 10, 2013 at 11:17:03AM +0200, Michal Hocko wrote:
-> > > On Wed 10-07-13 09:31:42, Joonsoo Kim wrote:
-> > > > On Thu, Jul 04, 2013 at 12:00:44PM +0200, Michal Hocko wrote:
-> [...]
-> > > > > Which benchmark you are using for this testing?
-> > > > 
-> > > > I use my own module which do allocation repeatedly.
-> > > 
-> > > I am not sure this microbenchmark will tell us much. Allocations are
-> > > usually not short lived so the longer time might get amortized.
-> > > If you want to use the multi page allocation for read ahead then try to
-> > > model your numbers on read-ahead workloads.
-> > 
-> > Of couse. In later, I will get the result on read-ahead workloads or
-> > vmalloc workload which is recommended by Zhang.
-> > 
-> > I think, without this microbenchmark, we cannot know this modification's
-> > performance effect to single page allocation accurately. Because the impact
-> > to single page allocation is relatively small and it is easily hidden by
-> > other factors.
-> 
-> The main thing is whether the numbers you get from an artificial
-> microbenchmark matter at all. You might see a regression which cannot be
-> hit in practice because other effects are of magnitude more significant.
 
-Okay. I will keep this in mind.
+Linux as a guest on KVM hypervisor, the only user of the pvclock      
+vsyscall interface, does not require notification on task migration 
+because:
 
-Thanks for your comment.
+1. cpu ID number maps 1:1 to per-CPU pvclock time info.
+2. per-CPU pvclock time info is updated if the
+   underlying CPU changes.
+3. that version is increased whenever underlying CPU 
+   changes.
 
-> -- 
-> Michal Hocko
-> SUSE Labs
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Which is sufficient to guarantee nanoseconds counter
+is calculated properly.
+
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+
+diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
+index 109a9dd..be8269b 100644
+--- a/arch/x86/include/asm/pvclock.h
++++ b/arch/x86/include/asm/pvclock.h
+@@ -93,7 +93,6 @@ unsigned __pvclock_read_cycles(const struct pvclock_vcpu_time_info *src,
+ 
+ struct pvclock_vsyscall_time_info {
+ 	struct pvclock_vcpu_time_info pvti;
+-	u32 migrate_count;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+ #define PVTI_SIZE sizeof(struct pvclock_vsyscall_time_info)
+diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+index 2cb9470..a16bae3 100644
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -128,46 +128,7 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall_clock,
+ 	set_normalized_timespec(ts, now.tv_sec, now.tv_nsec);
+ }
+ 
+-static struct pvclock_vsyscall_time_info *pvclock_vdso_info;
+-
+-static struct pvclock_vsyscall_time_info *
+-pvclock_get_vsyscall_user_time_info(int cpu)
+-{
+-	if (!pvclock_vdso_info) {
+-		BUG();
+-		return NULL;
+-	}
+-
+-	return &pvclock_vdso_info[cpu];
+-}
+-
+-struct pvclock_vcpu_time_info *pvclock_get_vsyscall_time_info(int cpu)
+-{
+-	return &pvclock_get_vsyscall_user_time_info(cpu)->pvti;
+-}
+-
+ #ifdef CONFIG_X86_64
+-static int pvclock_task_migrate(struct notifier_block *nb, unsigned long l,
+-			        void *v)
+-{
+-	struct task_migration_notifier *mn = v;
+-	struct pvclock_vsyscall_time_info *pvti;
+-
+-	pvti = pvclock_get_vsyscall_user_time_info(mn->from_cpu);
+-
+-	/* this is NULL when pvclock vsyscall is not initialized */
+-	if (unlikely(pvti == NULL))
+-		return NOTIFY_DONE;
+-
+-	pvti->migrate_count++;
+-
+-	return NOTIFY_DONE;
+-}
+-
+-static struct notifier_block pvclock_migrate = {
+-	.notifier_call = pvclock_task_migrate,
+-};
+-
+ /*
+  * Initialize the generic pvclock vsyscall state.  This will allocate
+  * a/some page(s) for the per-vcpu pvclock information, set up a
+@@ -181,17 +142,12 @@ int __init pvclock_init_vsyscall(struct pvclock_vsyscall_time_info *i,
+ 
+ 	WARN_ON (size != PVCLOCK_VSYSCALL_NR_PAGES*PAGE_SIZE);
+ 
+-	pvclock_vdso_info = i;
+-
+ 	for (idx = 0; idx <= (PVCLOCK_FIXMAP_END-PVCLOCK_FIXMAP_BEGIN); idx++) {
+ 		__set_fixmap(PVCLOCK_FIXMAP_BEGIN + idx,
+ 			     __pa(i) + (idx*PAGE_SIZE),
+ 			     PAGE_KERNEL_VVAR);
+ 	}
+ 
+-
+-	register_task_migration_notifier(&pvclock_migrate);
+-
+ 	return 0;
+ }
+ #endif
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index c74436e..72074d5 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -85,15 +85,18 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 	cycle_t ret;
+ 	u64 last;
+ 	u32 version;
+-	u32 migrate_count;
+ 	u8 flags;
+ 	unsigned cpu, cpu1;
+ 
+ 
+ 	/*
+-	 * When looping to get a consistent (time-info, tsc) pair, we
+-	 * also need to deal with the possibility we can switch vcpus,
+-	 * so make sure we always re-fetch time-info for the current vcpu.
++	 * Note: hypervisor must guarantee that:
++	 * 1. cpu ID number maps 1:1 to per-CPU pvclock time info.
++	 * 2. that per-CPU pvclock time info is updated if the
++	 *    underlying CPU changes.
++	 * 3. that version is increased whenever underlying CPU
++	 *    changes.
++	 *
+ 	 */
+ 	do {
+ 		cpu = __getcpu() & VGETCPU_CPU_MASK;
+@@ -104,8 +107,6 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 
+ 		pvti = get_pvti(cpu);
+ 
+-		migrate_count = pvti->migrate_count;
+-
+ 		version = __pvclock_read_cycles(&pvti->pvti, &ret, &flags);
+ 
+ 		/*
+@@ -117,8 +118,7 @@ static notrace cycle_t vread_pvclock(int *mode)
+ 		cpu1 = __getcpu() & VGETCPU_CPU_MASK;
+ 	} while (unlikely(cpu != cpu1 ||
+ 			  (pvti->pvti.version & 1) ||
+-			  pvti->pvti.version != version ||
+-			  pvti->migrate_count != migrate_count));
++			  pvti->pvti.version != version));
+ 
+ 	if (unlikely(!(flags & PVCLOCK_TSC_STABLE_BIT)))
+ 		*mode = VCLOCK_NONE;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 178a8d9..217ce4b 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -107,14 +107,6 @@ extern unsigned long this_cpu_load(void);
+ extern void calc_global_load(unsigned long ticks);
+ extern void update_cpu_load_nohz(void);
+ 
+-/* Notifier for when a task gets migrated to a new CPU */
+-struct task_migration_notifier {
+-	struct task_struct *task;
+-	int from_cpu;
+-	int to_cpu;
+-};
+-extern void register_task_migration_notifier(struct notifier_block *n);
+-
+ extern unsigned long get_parent_ip(unsigned long addr);
+ 
+ extern void dump_cpu_task(int cpu);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index e8b3350..122e499 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -974,13 +974,6 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
+ 		rq->skip_clock_update = 1;
+ }
+ 
+-static ATOMIC_NOTIFIER_HEAD(task_migration_notifier);
+-
+-void register_task_migration_notifier(struct notifier_block *n)
+-{
+-	atomic_notifier_chain_register(&task_migration_notifier, n);
+-}
+-
+ #ifdef CONFIG_SMP
+ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ {
+@@ -1011,18 +1004,10 @@ void set_task_cpu(struct task_struct *p, unsigned int new_cpu)
+ 	trace_sched_migrate_task(p, new_cpu);
+ 
+ 	if (task_cpu(p) != new_cpu) {
+-		struct task_migration_notifier tmn;
+-
+ 		if (p->sched_class->migrate_task_rq)
+ 			p->sched_class->migrate_task_rq(p, new_cpu);
+ 		p->se.nr_migrations++;
+ 		perf_sw_event(PERF_COUNT_SW_CPU_MIGRATIONS, 1, NULL, 0);
+-
+-		tmn.task = p;
+-		tmn.from_cpu = task_cpu(p);
+-		tmn.to_cpu = new_cpu;
+-
+-		atomic_notifier_call_chain(&task_migration_notifier, 0, &tmn);
+ 	}
+ 
+ 	__set_task_cpu(p, new_cpu);
+
+
