@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab3GKOks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:40:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43112 "EHLO
+	id S933271Ab3GKOlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:41:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43107 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927Ab3GKO0d (ORCPT
+	with ESMTP id S932079Ab3GKO0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:33 -0400
+	Thu, 11 Jul 2013 10:26:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
+Cc: Ben Hutchings <ben@decadent.org.uk>,
         James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 60/98] aacraid: Fix for arrays are going offline in the system. System hangs
-Date: Thu, 11 Jul 2013 15:24:30 +0100
-Message-Id: <1373552708-15235-61-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 59/98] [SCSI] sd: Fix parsing of 'temporary ' cache mode prefix
+Date: Thu, 11 Jul 2013 15:24:29 +0100
+Message-Id: <1373552708-15235-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit c5bebd829dd95602c15f8da8cc50fa938b5e0254 upstream.
+commit 2ee3e26c673e75c05ef8b914f54fadee3d7b9c88 upstream.
 
-One of the customer had reported that the set of raid logical arrays will
-become unavailable (I/O offline) after a long hours of IO stress test.  The OS
-wouldn`t be accessible afterwards and require a hard reset.
+Commit 39c60a0948cc '[SCSI] sd: fix array cache flushing bug causing
+performance problems' added temp as a pointer to "temporary " and used
+sizeof(temp) - 1 as its length.  But sizeof(temp) is the size of the
+pointer, not the size of the string constant.  Change temp to a static
+array so that sizeof() does what was intended.
 
-This driver patch has a fix for race condition between the doorbell and the
-circular buffer. The driver is modified to do an extra read after clearing the
-doorbell in case there had been a completion posted during the small timing
-window.
-
-With this fix, we ran IO stress for ~13 days. There were no IO failures.
-
-Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/aacraid/src.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/sd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/aacraid/src.c b/drivers/scsi/aacraid/src.c
-index 7628206..4de2612 100644
---- a/drivers/scsi/aacraid/src.c
-+++ b/drivers/scsi/aacraid/src.c
-@@ -101,6 +101,9 @@ static irqreturn_t aac_src_intr_message(int irq, void *dev_id)
- 			struct list_head *entry;
- 			int send_it = 0;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 45518b7..3977faa 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -141,7 +141,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 	char *buffer_data;
+ 	struct scsi_mode_data data;
+ 	struct scsi_sense_hdr sshdr;
+-	const char *temp = "temporary ";
++	static const char temp[] = "temporary ";
+ 	int len;
  
-+			src_writel(dev, MUnit.ODR_C, bellbits);
-+			src_readl(dev, MUnit.ODR_C);
-+
- 			if (dev->sync_fib) {
- 				our_interrupt = 1;
- 				if (dev->sync_fib->callback)
+ 	if (sdp->type != TYPE_DISK)
 -- 
 1.8.1.2
 
