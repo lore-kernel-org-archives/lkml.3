@@ -1,180 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab3GKI5i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 04:57:38 -0400
-Received: from mail-ye0-f173.google.com ([209.85.213.173]:55731 "EHLO
-	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755588Ab3GKI5f (ORCPT
+	id S1755929Ab3GKJBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 05:01:45 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:41008 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab3GKJBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 04:57:35 -0400
-Message-ID: <51DE7377.1060503@ozlabs.ru>
-Date: Thu, 11 Jul 2013 18:57:27 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 11 Jul 2013 05:01:42 -0400
+Date: Thu, 11 Jul 2013 12:01:13 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
+Message-ID: <20130711090113.GB4181@swordfish.minsk.epam.com>
+References: <20130625211544.GA2270@swordfish>
+ <51D10899.1080501@linux.vnet.ibm.com>
+ <20130710231305.GA4046@swordfish>
+ <51DE1BE1.3090707@linux.vnet.ibm.com>
+ <20130711082225.GA4181@swordfish.minsk.epam.com>
+ <51DE7120.5040106@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Alexander Graf <agraf@suse.de>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 8/8] KVM: PPC: Add hugepage support for IOMMU in-kernel
- handling
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru> <1373123227-22969-9-git-send-email-aik@ozlabs.ru> <51DC4923.5010501@suse.de>
-In-Reply-To: <51DC4923.5010501@suse.de>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51DE7120.5040106@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 03:32 AM, Alexander Graf wrote:
-> On 07/06/2013 05:07 PM, Alexey Kardashevskiy wrote:
->> This adds special support for huge pages (16MB).  The reference
->> counting cannot be easily done for such pages in real mode (when
->> MMU is off) so we added a list of huge pages.  It is populated in
->> virtual mode and get_page is called just once per a huge page.
->> Real mode handlers check if the requested page is huge and in the list,
->> then no reference counting is done, otherwise an exit to virtual mode
->> happens.  The list is released at KVM exit.  At the moment the fastest
->> card available for tests uses up to 9 huge pages so walking through this
->> list is not very expensive.  However this can change and we may want
->> to optimize this.
->>
->> Signed-off-by: Paul Mackerras<paulus@samba.org>
->> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
->>
->> ---
->>
->> Changes:
->> 2013/06/27:
->> * list of huge pages replaces with hashtable for better performance
+On (07/11/13 16:47), Michael Wang wrote:
+> On 07/11/2013 04:22 PM, Sergey Senozhatsky wrote:
+> [snip]
+> >>
+> > 
+> > Hello Michael,
+> > nice job! works fine for me.
+> > 
+> > Reported-and-Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 > 
-> So the only thing your patch description really talks about is not true
-> anymore?
+> Thanks for the test :)
 > 
->> * spinlock removed from real mode and only protects insertion of new
->> huge [ages descriptors into the hashtable
->>
->> 2013/06/05:
->> * fixed compile error when CONFIG_IOMMU_API=n
->>
->> 2013/05/20:
->> * the real mode handler now searches for a huge page by gpa (used to be pte)
->> * the virtual mode handler prints warning if it is called twice for the same
->> huge page as the real mode handler is expected to fail just once - when a
->> huge
->> page is not in the list yet.
->> * the huge page is refcounted twice - when added to the hugepage list and
->> when used in the virtual mode hcall handler (can be optimized but it will
->> make the patch less nice).
->>
->> Signed-off-by: Alexey Kardashevskiy<aik@ozlabs.ru>
->> ---
->>   arch/powerpc/include/asm/kvm_host.h |  25 +++++++++
->>   arch/powerpc/kernel/iommu.c         |   6 ++-
->>   arch/powerpc/kvm/book3s_64_vio.c    | 104
->> +++++++++++++++++++++++++++++++++---
->>   arch/powerpc/kvm/book3s_64_vio_hv.c |  21 ++++++--
->>   4 files changed, 146 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/powerpc/include/asm/kvm_host.h
->> b/arch/powerpc/include/asm/kvm_host.h
->> index 53e61b2..a7508cf 100644
->> --- a/arch/powerpc/include/asm/kvm_host.h
->> +++ b/arch/powerpc/include/asm/kvm_host.h
->> @@ -30,6 +30,7 @@
->>   #include<linux/kvm_para.h>
->>   #include<linux/list.h>
->>   #include<linux/atomic.h>
->> +#include<linux/hashtable.h>
->>   #include<asm/kvm_asm.h>
->>   #include<asm/processor.h>
->>   #include<asm/page.h>
->> @@ -182,10 +183,34 @@ struct kvmppc_spapr_tce_table {
->>       u32 window_size;
->>       struct iommu_group *grp;        /* used for IOMMU groups */
->>       struct vfio_group *vfio_grp;        /* used for IOMMU groups */
->> +    DECLARE_HASHTABLE(hash_tab, ilog2(64));    /* used for IOMMU groups */
->> +    spinlock_t hugepages_write_lock;    /* used for IOMMU groups */
->>       struct { struct { unsigned long put, indir, stuff; } rm, vm; } stat;
->>       struct page *pages[0];
->>   };
->>
->> +/*
->> + * The KVM guest can be backed with 16MB pages.
->> + * In this case, we cannot do page counting from the real mode
->> + * as the compound pages are used - they are linked in a list
->> + * with pointers as virtual addresses which are inaccessible
->> + * in real mode.
->> + *
->> + * The code below keeps a 16MB pages list and uses page struct
->> + * in real mode if it is already locked in RAM and inserted into
->> + * the list or switches to the virtual mode where it can be
->> + * handled in a usual manner.
->> + */
->> +#define KVMPPC_SPAPR_HUGEPAGE_HASH(gpa)    hash_32(gpa>>  24, 32)
->> +
->> +struct kvmppc_spapr_iommu_hugepage {
->> +    struct hlist_node hash_node;
->> +    unsigned long gpa;    /* Guest physical address */
->> +    unsigned long hpa;    /* Host physical address */
->> +    struct page *page;    /* page struct of the very first subpage */
->> +    unsigned long size;    /* Huge page size (always 16MB at the moment) */
->> +};
->> +
->>   struct kvmppc_linear_info {
->>       void        *base_virt;
->>       unsigned long     base_pfn;
->> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
->> index 51678ec..e0b6eca 100644
->> --- a/arch/powerpc/kernel/iommu.c
->> +++ b/arch/powerpc/kernel/iommu.c
->> @@ -999,7 +999,8 @@ int iommu_free_tces(struct iommu_table *tbl, unsigned
->> long entry,
->>               if (!pg) {
->>                   ret = -EAGAIN;
->>               } else if (PageCompound(pg)) {
->> -                ret = -EAGAIN;
->> +                /* Hugepages will be released at KVM exit */
->> +                ret = 0;
->>               } else {
->>                   if (oldtce&  TCE_PCI_WRITE)
->>                       SetPageDirty(pg);
->> @@ -1009,6 +1010,9 @@ int iommu_free_tces(struct iommu_table *tbl,
->> unsigned long entry,
->>               struct page *pg = pfn_to_page(oldtce>>  PAGE_SHIFT);
->>               if (!pg) {
->>                   ret = -EAGAIN;
->> +            } else if (PageCompound(pg)) {
->> +                /* Hugepages will be released at KVM exit */
->> +                ret = 0;
->>               } else {
->>                   if (oldtce&  TCE_PCI_WRITE)
->>                       SetPageDirty(pg);
->> diff --git a/arch/powerpc/kvm/book3s_64_vio.c
->> b/arch/powerpc/kvm/book3s_64_vio.c
->> index 2b51f4a..c037219 100644
->> --- a/arch/powerpc/kvm/book3s_64_vio.c
->> +++ b/arch/powerpc/kvm/book3s_64_vio.c
->> @@ -46,6 +46,40 @@
->>
->>   #define ERROR_ADDR      ((void *)~(unsigned long)0x0)
->>
->> +#ifdef CONFIG_IOMMU_API
+> Borislav may also doing some testing, let's wait for few days and see
+> whether there are any point we missed.
 > 
-> Can't you just make CONFIG_IOMMU_API mandatory in Kconfig?
+> And we should also thanks Srivatsa for catching the root issue ;-)
 
+Sure, many thanks to everyone.
+I'll perform some additional testing.
 
-Where exactly (it is rather SPAPR_TCE_IOMMU but does not really matter)?
-Select it on KVM_BOOK3S_64? CONFIG_KVM_BOOK3S_64_HV?
-CONFIG_KVM_BOOK3S_64_PR? PPC_BOOK3S_64?
+	-ss
 
-I am trying to imagine a configuration where we really do not want
-IOMMU_API. Ben mentioned PPC32 and embedded PPC64 and that's it so any of
-BOOK3S (KVM_BOOK3S_64 is the best) should be fine, no?
-
-
-
--- 
-Alexey
+> Regards,
+> Michael Wang
+> 
+> > 
+> > 
+> > 	-ss
+> > 
+> >> Regards,
+> >> Michael Wang
+> >>
+> >> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> >> index dc9b72e..a64b544 100644
+> >> --- a/drivers/cpufreq/cpufreq_governor.c
+> >> +++ b/drivers/cpufreq/cpufreq_governor.c
+> >> @@ -178,13 +178,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+> >>  {
+> >>  	int i;
+> >>  
+> >> +	if (dbs_data->queue_stop)
+> >> +		return;
+> >> +
+> >>  	if (!all_cpus) {
+> >>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+> >>  	} else {
+> >> -		get_online_cpus();
+> >>  		for_each_cpu(i, policy->cpus)
+> >>  			__gov_queue_work(i, dbs_data, delay);
+> >> -		put_online_cpus();
+> >>  	}
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(gov_queue_work);
+> >> @@ -193,12 +194,27 @@ static inline void gov_cancel_work(struct dbs_data *dbs_data,
+> >>  		struct cpufreq_policy *policy)
+> >>  {
+> >>  	struct cpu_dbs_common_info *cdbs;
+> >> -	int i;
+> >> +	int i, round = 2;
+> >>  
+> >> +	dbs_data->queue_stop = 1;
+> >> +redo:
+> >> +	round--;
+> >>  	for_each_cpu(i, policy->cpus) {
+> >>  		cdbs = dbs_data->cdata->get_cpu_cdbs(i);
+> >>  		cancel_delayed_work_sync(&cdbs->work);
+> >>  	}
+> >> +
+> >> +	/*
+> >> +	 * Since there is no lock to prvent re-queue the
+> >> +	 * cancelled work, some early cancelled work might
+> >> +	 * have been queued again by later cancelled work.
+> >> +	 *
+> >> +	 * Flush the work again with dbs_data->queue_stop
+> >> +	 * enabled, this time there will be no survivors.
+> >> +	 */
+> >> +	if (round)
+> >> +		goto redo;
+> >> +	dbs_data->queue_stop = 0;
+> >>  }
+> >>  
+> >>  /* Will return if we need to evaluate cpu load again or not */
+> >> diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+> >> index e16a961..9116135 100644
+> >> --- a/drivers/cpufreq/cpufreq_governor.h
+> >> +++ b/drivers/cpufreq/cpufreq_governor.h
+> >> @@ -213,6 +213,7 @@ struct dbs_data {
+> >>  	unsigned int min_sampling_rate;
+> >>  	int usage_count;
+> >>  	void *tuners;
+> >> +	int queue_stop;
+> >>  
+> >>  	/* dbs_mutex protects dbs_enable in governor start/stop */
+> >>  	struct mutex mutex;
+> >>
+> >>>
+> >>> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> >>>
+> >>> ---
+> >>>
+> >>>  drivers/cpufreq/cpufreq.c          |  5 +----
+> >>>  drivers/cpufreq/cpufreq_governor.c | 17 +++++++++++------
+> >>>  drivers/cpufreq/cpufreq_stats.c    |  2 +-
+> >>>  3 files changed, 13 insertions(+), 11 deletions(-)
+> >>>
+> >>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> >>> index 6a015ad..f8aacf1 100644
+> >>> --- a/drivers/cpufreq/cpufreq.c
+> >>> +++ b/drivers/cpufreq/cpufreq.c
+> >>> @@ -1943,13 +1943,10 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+> >>>  		case CPU_ONLINE:
+> >>>  			cpufreq_add_dev(dev, NULL);
+> >>>  			break;
+> >>> -		case CPU_DOWN_PREPARE:
+> >>> +		case CPU_POST_DEAD:
+> >>>  		case CPU_UP_CANCELED_FROZEN:
+> >>>  			__cpufreq_remove_dev(dev, NULL);
+> >>>  			break;
+> >>> -		case CPU_DOWN_FAILED:
+> >>> -			cpufreq_add_dev(dev, NULL);
+> >>> -			break;
+> >>>  		}
+> >>>  	}
+> >>>  	return NOTIFY_OK;
+> >>> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> >>> index 4645876..681d5d6 100644
+> >>> --- a/drivers/cpufreq/cpufreq_governor.c
+> >>> +++ b/drivers/cpufreq/cpufreq_governor.c
+> >>> @@ -125,7 +125,11 @@ static inline void __gov_queue_work(int cpu, struct dbs_data *dbs_data,
+> >>>  		unsigned int delay)
+> >>>  {
+> >>>  	struct cpu_dbs_common_info *cdbs = dbs_data->cdata->get_cpu_cdbs(cpu);
+> >>> -
+> >>> +	/* cpu offline might block existing gov_queue_work() user,
+> >>> +	 * unblocking it after CPU_DEAD and before CPU_POST_DEAD.
+> >>> +	 * thus potentially we can hit offlined CPU */
+> >>> +	if (unlikely(cpu_is_offline(cpu)))
+> >>> +		return;
+> >>>  	mod_delayed_work_on(cpu, system_wq, &cdbs->work, delay);
+> >>>  }
+> >>>
+> >>> @@ -133,15 +137,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+> >>>  		unsigned int delay, bool all_cpus)
+> >>>  {
+> >>>  	int i;
+> >>> -
+> >>> +	get_online_cpus();
+> >>>  	if (!all_cpus) {
+> >>>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+> >>>  	} else {
+> >>> -		get_online_cpus();
+> >>>  		for_each_cpu(i, policy->cpus)
+> >>>  			__gov_queue_work(i, dbs_data, delay);
+> >>> -		put_online_cpus();
+> >>>  	}
+> >>> +	put_online_cpus();
+> >>>  }
+> >>>  EXPORT_SYMBOL_GPL(gov_queue_work);
+> >>>
+> >>> @@ -354,8 +357,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+> >>>  		/* Initiate timer time stamp */
+> >>>  		cpu_cdbs->time_stamp = ktime_get();
+> >>>
+> >>> -		gov_queue_work(dbs_data, policy,
+> >>> -				delay_for_sampling_rate(sampling_rate), true);
+> >>> +		/* hotplug lock already held */
+> >>> +		for_each_cpu(j, policy->cpus)
+> >>> +			__gov_queue_work(j, dbs_data,
+> >>> +				delay_for_sampling_rate(sampling_rate));
+> >>>  		break;
+> >>>
+> >>>  	case CPUFREQ_GOV_STOP:
+> >>> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> >>> index cd9e817..833816e 100644
+> >>> --- a/drivers/cpufreq/cpufreq_stats.c
+> >>> +++ b/drivers/cpufreq/cpufreq_stats.c
+> >>> @@ -355,7 +355,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+> >>>  	case CPU_DOWN_PREPARE:
+> >>>  		cpufreq_stats_free_sysfs(cpu);
+> >>>  		break;
+> >>> -	case CPU_DEAD:
+> >>> +	case CPU_POST_DEAD:
+> >>>  		cpufreq_stats_free_table(cpu);
+> >>>  		break;
+> >>>  	case CPU_UP_CANCELED_FROZEN:
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>> Please read the FAQ at  http://www.tux.org/lkml/
+> >>>
+> >>
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
