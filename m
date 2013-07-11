@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab3GKKxu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:53:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40073 "EHLO mx2.suse.de"
+	id S1755953Ab3GKKyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:54:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40092 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755807Ab3GKKxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:53:48 -0400
-Date: Thu, 11 Jul 2013 12:53:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paul Taysom <taysom@chromium.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, sonnyrao@chromium.org
-Subject: Re: [PATCH] fs: sync: fixed performance regression
-Message-ID: <20130711105346.GA5349@quack.suse.cz>
-References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
+	id S1755913Ab3GKKyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 06:54:12 -0400
+Date: Thu, 11 Jul 2013 12:54:08 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
+ patching
+In-Reply-To: <alpine.LNX.2.00.1307111204000.29788@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1307111251240.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <51DDD3E9.6090601@linux.intel.com> <alpine.LNX.2.00.1307111204000.29788@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373497956-8770-1-git-send-email-taysom@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-07-13 16:12:36, Paul Taysom wrote:
-> The following commit introduced a 10x regression for
-> syncing inodes in ext4 with relatime enabled where just
-> the atime had been modified.
-> 
->     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
->     Author: Jan Kara <jack@suse.cz>
->     Date:   Tue Jul 3 16:45:34 2012 +0200
->     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
-> 
->     See also: http://www.kernelhub.org/?msg=93100&p=2
-> 
-> Fixed by putting back in the call to writeback_inodes_sb.
-> 
-> I'll attach the test in a reply to this e-mail.
-> 
-> The test starts by creating 512 files, syncing, reading one byte
-> from each of those files, syncing, and then deleting each file
-> and syncing. The time to do each sync is printed. The process
-> is then repeated for 1024 files and then the next power of
-> two up to 262144 files.
-> 
-> Note, when running the test, the slow down doesn't always happen
-> but most of the tests will show a slow down.
-> 
-> In response to crbug.com/240422
-> 
-> Signed-off-by: Paul Taysom <taysom@chromium.org>
-  Thanks for report. Rather than blindly reverting the change, I'd like to
-understand why you see so huge regression. As the changelog in the patch
-says, flusher thread should be doing async writeback equivalent to the
-removed one because it gets woken via wakeup_flusher_threads(). But my
-guess is that for some reason we end up doing all the writeback from
-sync_inodes_one_sb(). I'll try to reproduce your results and investigate...
+On Thu, 11 Jul 2013, Jiri Kosina wrote:
 
-								Honza
+> > Returning to the instruction will, in effect, be a busy-wait for the 
+> > faulted CPU until the patch is complete; more or less what stop_machine 
+> > would do, but only for a CPU which actually strays into the affected 
+> > region.
+> 
+> To be honest, I fail to see a clear advantage ... we don't avoid any extra 
+> IPI by it, and wrt. "correctness", the end result is the same.
 
-> ---
->  fs/sync.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/fs/sync.c b/fs/sync.c
-> index 905f3f6..55c3316 100644
-> --- a/fs/sync.c
-> +++ b/fs/sync.c
-> @@ -73,6 +73,12 @@ static void sync_inodes_one_sb(struct super_block *sb, void *arg)
->  		sync_inodes_sb(sb);
->  }
->  
-> +static void writeback_inodes_one_sb(struct super_block *sb, void *arg)
-> +{
-> +	if (!(sb->s_flags & MS_RDONLY))
-> +		writeback_inodes_sb(sb, WB_REASON_SYNC);
-> +}
-> +
->  static void sync_fs_one_sb(struct super_block *sb, void *arg)
->  {
->  	if (!(sb->s_flags & MS_RDONLY) && sb->s_op->sync_fs)
-> @@ -104,6 +110,7 @@ SYSCALL_DEFINE0(sync)
->  	int nowait = 0, wait = 1;
->  
->  	wakeup_flusher_threads(0, WB_REASON_SYNC);
-> +	iterate_supers(writeback_inodes_one_sb, NULL);
->  	iterate_supers(sync_inodes_one_sb, NULL);
->  	iterate_supers(sync_fs_one_sb, &nowait);
->  	iterate_supers(sync_fs_one_sb, &wait);
-> -- 
-> 1.8.3
-> 
+Ok, after some offline discussion, my understanding is that with this 
+proposal you are willing to make this usable in a more general way than 
+just simple nop -> jump -> nop patching.
+
+That makes sense, but I'd propose to have a different independent 
+interface for this if needed (text_poke_bp_busy() ... ?) in parallel to 
+the text_poke_bp() as is in my patchset, due to the obvious extra cycles 
+it's bringing.
+
+Thanks,
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jiri Kosina
+SUSE Labs
