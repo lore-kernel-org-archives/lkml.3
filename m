@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362Ab3GKB47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 21:56:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41552 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754210Ab3GKB46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 21:56:58 -0400
-Message-ID: <51DE1111.7040809@redhat.com>
-Date: Thu, 11 Jul 2013 09:57:37 +0800
-From: Dave Young <dyoung@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1755374Ab3GKCAS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 22:00:18 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:61066 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754922Ab3GKCAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 22:00:16 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgonALgQ3lF5LD3k/2dsb2JhbABagwkygm2qfwKOVIUsBAGBDhd0giMBAQU6HCMQCAMUBAklDwUlAyETCYgFDbdBFo4AGwEUgR0HgwlsA5dZgSqQIYMjKoE1
+Date: Thu, 11 Jul 2013 12:00:12 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, sonnyrao@chromium.org
+Subject: Re: [PATCH] fs: sync: fixed performance regression
+Message-ID: <20130711020012.GA5652@dastard>
+References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
 MIME-Version: 1.0
-To: Matt Fleming <matt.fleming@intel.com>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>
-Subject: Re: uefi boot hang (bisected)
-References: <51DD00DB.3010107@redhat.com> <51DD553B.1080701@intel.com>
-In-Reply-To: <51DD553B.1080701@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373497956-8770-1-git-send-email-taysom@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 08:36 PM, Matt Fleming wrote:
-> On 10/07/13 07:36, Dave Young wrote:
->> Another problem is: With this patch applied I tried noefi boot, but
->> kernel paniced, looks like efivar_init depends on efi runtime. Below
->> patches works for me about noefi boot though I'm not sure if it's a
->> right fix, please review.
+On Wed, Jul 10, 2013 at 04:12:36PM -0700, Paul Taysom wrote:
+> The following commit introduced a 10x regression for
+> syncing inodes in ext4 with relatime enabled where just
+> the atime had been modified.
 > 
-> It makes more sense to check in efivars.c, since none of that file can
-> function without runtime serivces.
+>     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
+>     Author: Jan Kara <jack@suse.cz>
+>     Date:   Tue Jul 3 16:45:34 2012 +0200
+>     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
 > 
-> Could you try the following patch?
-
-It works, thanks for the patch.
-
-Tested-by: Dave Young <dyoung@redhat.com>
-
+>     See also: http://www.kernelhub.org/?msg=93100&p=2
 > 
-> ---
+> Fixed by putting back in the call to writeback_inodes_sb.
 > 
-> diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
-> index 8bd1bb6..8a7432a 100644
-> --- a/drivers/firmware/efi/efivars.c
-> +++ b/drivers/firmware/efi/efivars.c
-> @@ -583,6 +583,9 @@ int efivars_sysfs_init(void)
->  	struct kobject *parent_kobj = efivars_kobject();
->  	int error = 0;
->  
-> +	if (!efi_enabled(EFI_RUNTIME_SERVICES))
-> +		return -ENODEV;
-> +
->  	/* No efivars has been registered yet */
->  	if (!parent_kobj)
->  		return 0;
+> I'll attach the test in a reply to this e-mail.
 > 
+> The test starts by creating 512 files, syncing, reading one byte
+> from each of those files, syncing, and then deleting each file
+> and syncing. The time to do each sync is printed. The process
+> is then repeated for 1024 files and then the next power of
+> two up to 262144 files.
+> 
+> Note, when running the test, the slow down doesn't always happen
+> but most of the tests will show a slow down.
 
+Can you please check if the patch attached to this mail:
 
+http://marc.info/?l=linux-kernel&m=137276874025813&w=2
+
+Fixes your problem?
+
+Cheers,
+
+Dave.
 -- 
-Thanks
-Dave
-
-
+Dave Chinner
+david@fromorbit.com
