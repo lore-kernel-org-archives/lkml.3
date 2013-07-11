@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab3GKWMO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:12:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43194 "EHLO
+	id S1756880Ab3GKWLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:11:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43182 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756883Ab3GKWL0 (ORCPT
+	with ESMTP id S1756511Ab3GKWLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:11:26 -0400
+	Thu, 11 Jul 2013 18:11:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 10/11] SCSI: sd: Fix parsing of temporary  cache mode prefix
-Date: Thu, 11 Jul 2013 15:11:10 -0700
-Message-Id: <20130711220546.735167776@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 06/11] crypto: sanitize argument for format string
+Date: Thu, 11 Jul 2013 15:11:06 -0700
+Message-Id: <20130711220546.280951373@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
 References: <20130711220545.542911892@linuxfoundation.org>
@@ -27,34 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Kees Cook <keescook@chromium.org>
 
-commit 2ee3e26c673e75c05ef8b914f54fadee3d7b9c88 upstream.
+commit 1c8fca1d92e14859159a82b8a380d220139b7344 upstream.
 
-Commit 39c60a0948cc '[SCSI] sd: fix array cache flushing bug causing
-performance problems' added temp as a pointer to "temporary " and used
-sizeof(temp) - 1 as its length.  But sizeof(temp) is the size of the
-pointer, not the size of the string constant.  Change temp to a static
-array so that sizeof() does what was intended.
+The template lookup interface does not provide a way to use format
+strings, so make sure that the interface cannot be abused accidentally.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ crypto/algapi.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -140,7 +140,7 @@ sd_store_cache_type(struct device *dev,
- 	char *buffer_data;
- 	struct scsi_mode_data data;
- 	struct scsi_sense_hdr sshdr;
--	const char *temp = "temporary ";
-+	static const char temp[] = "temporary ";
- 	int len;
+--- a/crypto/algapi.c
++++ b/crypto/algapi.c
+@@ -512,7 +512,8 @@ static struct crypto_template *__crypto_
  
- 	if (sdp->type != TYPE_DISK)
+ struct crypto_template *crypto_lookup_template(const char *name)
+ {
+-	return try_then_request_module(__crypto_lookup_template(name), name);
++	return try_then_request_module(__crypto_lookup_template(name), "%s",
++				       name);
+ }
+ EXPORT_SYMBOL_GPL(crypto_lookup_template);
+ 
 
 
