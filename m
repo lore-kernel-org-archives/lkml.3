@@ -1,43 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab3GKTdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 15:33:40 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:51542 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750879Ab3GKTdj (ORCPT
+	id S1756082Ab3GKTls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 15:41:48 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:61486 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab3GKTlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 15:33:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <51def42d.829c420a.642f.5775@mx.google.com>
-References: <51def42d.829c420a.642f.5775@mx.google.com>
-Date: Thu, 11 Jul 2013 12:33:38 -0700
-X-Google-Sender-Auth: iN5Det72gPes8ot0U68kRHaw0o0
-Message-ID: <CA+55aFxqXHvDqWO7rqqL6PExsEXn6kfUKRnPFsg89SRq_a74Hw@mail.gmail.com>
-Subject: Re: [GIT PULL] xtensa: patchset for v3.11-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Chris Zankel <chris@zankel.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 11 Jul 2013 15:41:45 -0400
+From: Dragos Foianu <dragos.foianu@gmail.com>
+To: wensong@linux-vs.org
+Cc: horms@verge.net.au, ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
+        kadlec@blackhole.kfki.hu, davem@davemloft.net, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, Dragos Foianu <dragos.foianu@gmail.com>
+Subject: [PATCH] ipvs: fixed style errors and warnings in ip_vs_conn
+Date: Thu, 11 Jul 2013 22:41:35 +0300
+Message-Id: <1373571695-24933-1-git-send-email-dragos.foianu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 11:06 AM,  <chris@zankel.net> wrote:
-> Hi Linus,
->
-> Would be great if you could pull the Xtensa tree. Some of the changes were
-> dependent on the timers-core patchset, hence the 'merge' message
-> (I think that's the right way to do it?)
+found with the help of checkpatch.pl
 
-Grr. I hate it when people do this. Your merge message sucks. It just
-says "Merge branch .." without explaining what the merge does and
-*why* it does it.
+Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
+---
+ net/netfilter/ipvs/ip_vs_conn.c |   28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
 
-We have a policy of good commit messages in the kernel.  That is
-*doubly* true for cross-subsystem merges that can be so much harder to
-understand, and really need very explicit reasons for existing in the
-first place.
+diff --git a/net/netfilter/ipvs/ip_vs_conn.c b/net/netfilter/ipvs/ip_vs_conn.c
+index 4c8e5c0..4927a52 100644
+--- a/net/netfilter/ipvs/ip_vs_conn.c
++++ b/net/netfilter/ipvs/ip_vs_conn.c
+@@ -77,8 +77,7 @@ static unsigned int ip_vs_conn_rnd __read_mostly;
+ #define CT_LOCKARRAY_SIZE  (1<<CT_LOCKARRAY_BITS)
+ #define CT_LOCKARRAY_MASK  (CT_LOCKARRAY_SIZE-1)
+ 
+-struct ip_vs_aligned_lock
+-{
++struct ip_vs_aligned_lock {
+ 	spinlock_t	l;
+ } __attribute__((__aligned__(SMP_CACHE_BYTES)));
+ 
+@@ -395,7 +394,7 @@ struct ip_vs_conn *ip_vs_ct_in_get(const struct ip_vs_conn_param *p)
+ struct ip_vs_conn *ip_vs_conn_out_get(const struct ip_vs_conn_param *p)
+ {
+ 	unsigned int hash;
+-	struct ip_vs_conn *cp, *ret=NULL;
++	struct ip_vs_conn *cp, *ret = NULL;
+ 
+ 	/*
+ 	 *	Check for "full" addressed entries
+@@ -680,11 +679,10 @@ static inline void ip_vs_unbind_dest(struct ip_vs_conn *cp)
+ 	if (!(cp->flags & IP_VS_CONN_F_TEMPLATE)) {
+ 		/* It is a normal connection, so decrease the inactconns
+ 		   or activeconns counter */
+-		if (cp->flags & IP_VS_CONN_F_INACTIVE) {
++		if (cp->flags & IP_VS_CONN_F_INACTIVE)
+ 			atomic_dec(&dest->inactconns);
+-		} else {
++		else
+ 			atomic_dec(&dest->activeconns);
+-		}
+ 	} else {
+ 		/* It is a persistent connection/template, so decrease
+ 		   the persistent connection counter */
+@@ -817,7 +815,7 @@ static void ip_vs_conn_expire(unsigned long data)
+ 		return;
+ 	}
+ 
+-  expire_later:
++expire_later:
+ 	IP_VS_DBG(7, "delayed: conn->refcnt=%d conn->n_control=%d\n",
+ 		  atomic_read(&cp->refcnt),
+ 		  atomic_read(&cp->n_control));
+@@ -988,7 +986,7 @@ static void *ip_vs_conn_seq_start(struct seq_file *seq, loff_t *pos)
+ 
+ 	iter->l = NULL;
+ 	rcu_read_lock();
+-	return *pos ? ip_vs_conn_array(seq, *pos - 1) :SEQ_START_TOKEN;
++	return *pos ? ip_vs_conn_array(seq, *pos - 1) : SEQ_START_TOKEN;
+ }
+ 
+ static void *ip_vs_conn_seq_next(struct seq_file *seq, void *v, loff_t *pos)
+@@ -1189,10 +1187,13 @@ static inline int todrop_entry(struct ip_vs_conn *cp)
+ 	/* Don't drop the entry if its number of incoming packets is not
+ 	   located in [0, 8] */
+ 	i = atomic_read(&cp->in_pkts);
+-	if (i > 8 || i < 0) return 0;
++	if (i > 8 || i < 0)
++		return 0;
+ 
+-	if (!todrop_rate[i]) return 0;
+-	if (--todrop_counter[i] > 0) return 0;
++	if (!todrop_rate[i])
++		return 0;
++	if (--todrop_counter[i] > 0)
++		return 0;
+ 
+ 	todrop_counter[i] = todrop_rate[i];
+ 	return 1;
+@@ -1218,7 +1219,7 @@ void ip_vs_random_dropentry(struct net *net)
+ 			if (!ip_vs_conn_net_eq(cp, net))
+ 				continue;
+ 			if (cp->protocol == IPPROTO_TCP) {
+-				switch(cp->state) {
++				switch (cp->state) {
+ 				case IP_VS_TCP_S_SYN_RECV:
+ 				case IP_VS_TCP_S_SYNACK:
+ 					break;
+@@ -1357,9 +1358,8 @@ int __init ip_vs_conn_init(void)
+ 	for (idx = 0; idx < ip_vs_conn_tab_size; idx++)
+ 		INIT_HLIST_HEAD(&ip_vs_conn_tab[idx]);
+ 
+-	for (idx = 0; idx < CT_LOCKARRAY_SIZE; idx++)  {
++	for (idx = 0; idx < CT_LOCKARRAY_SIZE; idx++) 
+ 		spin_lock_init(&__ip_vs_conntbl_lock_array[idx].l);
+-	}
+ 
+ 	/* calculate the random value for connection hash */
+ 	get_random_bytes(&ip_vs_conn_rnd, sizeof(ip_vs_conn_rnd));
+-- 
+1.7.10.4
 
-I've pulled this, but please avoid doing things like this in the future..
-
-              Linus
