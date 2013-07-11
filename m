@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab3GKOdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:33:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43204 "EHLO
+	id S933005Ab3GKO0t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:26:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43097 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932919Ab3GKO0w (ORCPT
+	with ESMTP id S932920Ab3GKO03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:52 -0400
+	Thu, 11 Jul 2013 10:26:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 77/98] vgacon.c: add cond reschedule points in vgacon_do_font_op
-Date: Thu, 11 Jul 2013 15:24:47 +0100
-Message-Id: <1373552708-15235-78-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 57/98] [SCSI] mpt2sas: Fix for device scan following host reset could get stuck in a infinite loop
+Date: Thu, 11 Jul 2013 15:24:27 +0100
+Message-Id: <1373552708-15235-58-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,70 +28,256 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
 
-commit 7e6d72c15ff4cc0c27573901bb05f9eddbd71ed4 upstream.
+commit 6241f22ca12a26ee149cbe31b27bac97dbdc8bc4 upstream.
 
-Booting a 64-vcpu KVM guest, with CONFIG_PREEMPT_VOLUNTARY,
-can result in a soft lockup:
+Modified device scan routine so each configuration page read breaks from the
+while loop when the ioc_status is not equal to MPI2_IOCSTATUS_SUCCESS.
 
-BUG: soft lockup - CPU#41 stuck for 67s! [setfont:1505]
- RIP: 0010:[<ffffffff812c48da>]
-[<ffffffff812c48da>] vgacon_do_font_op.clone.0+0x1ba/0x550
-
-This is due to the 8192 (cmapsz) IO operations taking longer than expected
-due to lock contention in QEMU.
-
-Add conditional resched points in between writes allowing other tasks to
-execute.
-
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+[jejb: checkpatch fixes]
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/video/console/vgacon.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c | 122 +++++++++++++++++++++++++++++++++--
+ 1 file changed, 117 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
-index 5855d17..0dd6d96 100644
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -1124,11 +1124,15 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+index e6d2e69..9cfe117 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -7092,12 +7092,15 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 	struct _sas_device *sas_device;
+ 	struct _sas_node *expander_device;
+ 	static struct _raid_device *raid_device;
++	u8 retry_count;
+ 	unsigned long flags;
  
- 	if (arg) {
- 		if (set)
--			for (i = 0; i < cmapsz; i++)
-+			for (i = 0; i < cmapsz; i++) {
- 				vga_writeb(arg[i], charmap + i);
-+				cond_resched();
-+			}
- 		else
--			for (i = 0; i < cmapsz; i++)
-+			for (i = 0; i < cmapsz; i++) {
- 				arg[i] = vga_readb(charmap + i);
-+				cond_resched();
-+			}
+ 	printk(MPT2SAS_INFO_FMT "scan devices: start\n", ioc->name);
  
- 		/*
- 		 * In 512-character mode, the character map is not contiguous if
-@@ -1139,11 +1143,15 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
- 			charmap += 2 * cmapsz;
- 			arg += cmapsz;
- 			if (set)
--				for (i = 0; i < cmapsz; i++)
-+				for (i = 0; i < cmapsz; i++) {
- 					vga_writeb(arg[i], charmap + i);
-+					cond_resched();
-+				}
- 			else
--				for (i = 0; i < cmapsz; i++)
-+				for (i = 0; i < cmapsz; i++) {
- 					arg[i] = vga_readb(charmap + i);
-+					cond_resched();
-+				}
+ 	_scsih_sas_host_refresh(ioc);
+ 
++	printk(MPT2SAS_INFO_FMT "\tscan devices: expanders start\n",
++		ioc->name);
+ 	/* expanders */
+ 	handle = 0xFFFF;
+ 	while (!(mpt2sas_config_get_expander_pg0(ioc, &mpi_reply, &expander_pg0,
+@@ -7106,6 +7109,13 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 		    MPI2_IOCSTATUS_MASK;
+ 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
+ 			break;
++		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
++			printk(MPT2SAS_INFO_FMT "\tbreak from expander scan: "
++				"ioc_status(0x%04x), loginfo(0x%08x)\n",
++				ioc->name, ioc_status,
++				le32_to_cpu(mpi_reply.IOCLogInfo));
++			break;
++		}
+ 		handle = le16_to_cpu(expander_pg0.DevHandle);
+ 		spin_lock_irqsave(&ioc->sas_node_lock, flags);
+ 		expander_device = mpt2sas_scsih_expander_find_by_sas_address(
+@@ -7114,13 +7124,26 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 		if (expander_device)
+ 			_scsih_refresh_expander_links(ioc, expander_device,
+ 			    handle);
+-		else
++		else {
++			printk(MPT2SAS_INFO_FMT "\tBEFORE adding expander: "
++				"handle (0x%04x), sas_addr(0x%016llx)\n",
++				ioc->name, handle, (unsigned long long)
++				le64_to_cpu(expander_pg0.SASAddress));
+ 			_scsih_expander_add(ioc, handle);
++			printk(MPT2SAS_INFO_FMT "\tAFTER adding expander: "
++				"handle (0x%04x), sas_addr(0x%016llx)\n",
++				ioc->name, handle, (unsigned long long)
++				le64_to_cpu(expander_pg0.SASAddress));
++		}
+ 	}
+ 
++	printk(MPT2SAS_INFO_FMT "\tscan devices: expanders complete\n",
++		ioc->name);
++
+ 	if (!ioc->ir_firmware)
+ 		goto skip_to_sas;
+ 
++	printk(MPT2SAS_INFO_FMT "\tscan devices phys disk start\n", ioc->name);
+ 	/* phys disk */
+ 	phys_disk_num = 0xFF;
+ 	while (!(mpt2sas_config_get_phys_disk_pg0(ioc, &mpi_reply,
+@@ -7130,6 +7153,13 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 		    MPI2_IOCSTATUS_MASK;
+ 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
+ 			break;
++		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
++			printk(MPT2SAS_INFO_FMT "\tbreak from phys disk scan:"
++				"ioc_status(0x%04x), loginfo(0x%08x)\n",
++				ioc->name, ioc_status,
++				le32_to_cpu(mpi_reply.IOCLogInfo));
++			break;
++		}
+ 		phys_disk_num = pd_pg0.PhysDiskNum;
+ 		handle = le16_to_cpu(pd_pg0.DevHandle);
+ 		spin_lock_irqsave(&ioc->sas_device_lock, flags);
+@@ -7141,17 +7171,46 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 		    &sas_device_pg0, MPI2_SAS_DEVICE_PGAD_FORM_HANDLE,
+ 		    handle) != 0)
+ 			continue;
++		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
++			MPI2_IOCSTATUS_MASK;
++		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
++			printk(MPT2SAS_INFO_FMT "\tbreak from phys disk scan "
++				"ioc_status(0x%04x), loginfo(0x%08x)\n",
++				ioc->name, ioc_status,
++				le32_to_cpu(mpi_reply.IOCLogInfo));
++			break;
++		}
+ 		parent_handle = le16_to_cpu(sas_device_pg0.ParentDevHandle);
+ 		if (!_scsih_get_sas_address(ioc, parent_handle,
+ 		    &sas_address)) {
++			printk(MPT2SAS_INFO_FMT "\tBEFORE adding phys disk: "
++				" handle (0x%04x), sas_addr(0x%016llx)\n",
++				ioc->name, handle, (unsigned long long)
++				le64_to_cpu(sas_device_pg0.SASAddress));
+ 			mpt2sas_transport_update_links(ioc, sas_address,
+ 			    handle, sas_device_pg0.PhyNum,
+ 			    MPI2_SAS_NEG_LINK_RATE_1_5);
+ 			set_bit(handle, ioc->pd_handles);
+-			_scsih_add_device(ioc, handle, 0, 1);
++			retry_count = 0;
++			/* This will retry adding the end device.
++			* _scsih_add_device() will decide on retries and
++			* return "1" when it should be retried
++			*/
++			while (_scsih_add_device(ioc, handle, retry_count++,
++				1)) {
++					ssleep(1);
++			}
++			printk(MPT2SAS_INFO_FMT "\tAFTER adding phys disk: "
++				" handle (0x%04x), sas_addr(0x%016llx)\n",
++				ioc->name, handle, (unsigned long long)
++				le64_to_cpu(sas_device_pg0.SASAddress));
  		}
  	}
  
++	printk(MPT2SAS_INFO_FMT "\tscan devices: phys disk complete\n",
++		ioc->name);
++
++	printk(MPT2SAS_INFO_FMT "\tscan devices: volumes start\n", ioc->name);
+ 	/* volumes */
+ 	handle = 0xFFFF;
+ 	while (!(mpt2sas_config_get_raid_volume_pg1(ioc, &mpi_reply,
+@@ -7160,6 +7219,13 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 		    MPI2_IOCSTATUS_MASK;
+ 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
+ 			break;
++		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
++			printk(MPT2SAS_INFO_FMT "\tbreak from volume scan: "
++				"ioc_status(0x%04x), loginfo(0x%08x)\n",
++				ioc->name, ioc_status,
++				le32_to_cpu(mpi_reply.IOCLogInfo));
++			break;
++		}
+ 		handle = le16_to_cpu(volume_pg1.DevHandle);
+ 		spin_lock_irqsave(&ioc->raid_device_lock, flags);
+ 		raid_device = _scsih_raid_device_find_by_wwid(ioc,
+@@ -7171,18 +7237,38 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 		    &volume_pg0, MPI2_RAID_VOLUME_PGAD_FORM_HANDLE, handle,
+ 		     sizeof(Mpi2RaidVolPage0_t)))
+ 			continue;
++		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
++			MPI2_IOCSTATUS_MASK;
++		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
++			printk(MPT2SAS_INFO_FMT "\tbreak from volume scan: "
++				"ioc_status(0x%04x), loginfo(0x%08x)\n",
++				ioc->name, ioc_status,
++				le32_to_cpu(mpi_reply.IOCLogInfo));
++			break;
++		}
+ 		if (volume_pg0.VolumeState == MPI2_RAID_VOL_STATE_OPTIMAL ||
+ 		    volume_pg0.VolumeState == MPI2_RAID_VOL_STATE_ONLINE ||
+ 		    volume_pg0.VolumeState == MPI2_RAID_VOL_STATE_DEGRADED) {
+ 			memset(&element, 0, sizeof(Mpi2EventIrConfigElement_t));
+ 			element.ReasonCode = MPI2_EVENT_IR_CHANGE_RC_ADDED;
+ 			element.VolDevHandle = volume_pg1.DevHandle;
++			printk(MPT2SAS_INFO_FMT "\tBEFORE adding volume: "
++				" handle (0x%04x)\n", ioc->name,
++				volume_pg1.DevHandle);
+ 			_scsih_sas_volume_add(ioc, &element);
++			printk(MPT2SAS_INFO_FMT "\tAFTER adding volume: "
++				" handle (0x%04x)\n", ioc->name,
++				volume_pg1.DevHandle);
+ 		}
+ 	}
+ 
++	printk(MPT2SAS_INFO_FMT "\tscan devices: volumes complete\n",
++		ioc->name);
++
+  skip_to_sas:
+ 
++	printk(MPT2SAS_INFO_FMT "\tscan devices: end devices start\n",
++		ioc->name);
+ 	/* sas devices */
+ 	handle = 0xFFFF;
+ 	while (!(mpt2sas_config_get_sas_device_pg0(ioc, &mpi_reply,
+@@ -7192,6 +7278,13 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 		    MPI2_IOCSTATUS_MASK;
+ 		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
+ 			break;
++		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
++			printk(MPT2SAS_INFO_FMT "\tbreak from end device scan:"
++				" ioc_status(0x%04x), loginfo(0x%08x)\n",
++				ioc->name, ioc_status,
++				le32_to_cpu(mpi_reply.IOCLogInfo));
++				break;
++		}
+ 		handle = le16_to_cpu(sas_device_pg0.DevHandle);
+ 		if (!(_scsih_is_end_device(
+ 		    le32_to_cpu(sas_device_pg0.DeviceInfo))))
+@@ -7204,12 +7297,31 @@ _scsih_scan_for_devices_after_reset(struct MPT2SAS_ADAPTER *ioc)
+ 			continue;
+ 		parent_handle = le16_to_cpu(sas_device_pg0.ParentDevHandle);
+ 		if (!_scsih_get_sas_address(ioc, parent_handle, &sas_address)) {
++			printk(MPT2SAS_INFO_FMT "\tBEFORE adding end device: "
++				"handle (0x%04x), sas_addr(0x%016llx)\n",
++				ioc->name, handle, (unsigned long long)
++				le64_to_cpu(sas_device_pg0.SASAddress));
+ 			mpt2sas_transport_update_links(ioc, sas_address, handle,
+ 			    sas_device_pg0.PhyNum, MPI2_SAS_NEG_LINK_RATE_1_5);
+-			_scsih_add_device(ioc, handle, 0, 0);
++			retry_count = 0;
++			/* This will retry adding the end device.
++			 * _scsih_add_device() will decide on retries and
++			 * return "1" when it should be retried
++			 */
++			while (_scsih_add_device(ioc, handle, retry_count++,
++				0)) {
++					ssleep(1);
++			}
++			printk(MPT2SAS_INFO_FMT "\tAFTER adding end device: "
++				"handle (0x%04x), sas_addr(0x%016llx)\n",
++				ioc->name, handle, (unsigned long long)
++				le64_to_cpu(sas_device_pg0.SASAddress));
+ 		}
+ 	}
+ 
++	printk(MPT2SAS_INFO_FMT "\tscan devices: end devices complete\n",
++		ioc->name);
++
+ 	printk(MPT2SAS_INFO_FMT "scan devices: complete\n", ioc->name);
+ }
+ 
+@@ -8061,8 +8173,8 @@ _scsih_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	if (max_sectors != 0xFFFF) {
+ 		if (max_sectors < 64) {
+ 			shost->max_sectors = 64;
+-			printk(MPT2SAS_WARN_FMT "Invalid value %d passed "\
+-			    "for max_sectors, range is 64 to 32767. Assigning "\
++			printk(MPT2SAS_WARN_FMT "Invalid value %d passed "
++			    "for max_sectors, range is 64 to 32767. Assigning "
+ 			    "value of 64.\n", ioc->name, max_sectors);
+ 		} else if (max_sectors > 32767) {
+ 			shost->max_sectors = 32767;
 -- 
 1.8.1.2
 
