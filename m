@@ -1,185 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab3GKWUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:20:50 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:56091 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757172Ab3GKWUj (ORCPT
+	id S1757302Ab3GKWUz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:20:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43311 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757125Ab3GKWUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Jul 2013 18:20:39 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 7/8] cpufreq: Preserve policy structure across suspend/resume
-To: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
-        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
-        lantianyu1986@gmail.com, dirk.brandewie@gmail.com
-Cc: stern@rowland.harvard.edu,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Jul 2013 03:47:08 +0530
-Message-ID: <20130711221704.547.64296.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071122-5140-0000-0000-00000381CAB4
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 0/8] 3.0.86-stable review
+Date: Thu, 11 Jul 2013 15:20:29 -0700
+Message-Id: <20130711221931.216612791@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To perform light-weight cpu-init and teardown in the cpufreq subsystem
-during suspend/resume, we need to separate out the 2 main functionalities
-of the cpufreq CPU hotplug callbacks, as outlined below:
+This is the start of the stable review cycle for the 3.0.86 release.
+There are 8 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-1. Init/tear-down of core cpufreq and CPU-specific components, which are
-   critical to the correct functioning of the cpufreq subsystem.
+Responses should be made by Sat Jul 13 22:18:05 UTC 2013.
+Anything received after that time might be too late.
 
-2. Init/tear-down of cpufreq sysfs files during suspend/resume.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.86-rc1.gz
+and the diffstat can be found below.
 
-The first part requires accurate updates to the policy structure such as
-its ->cpus and ->related_cpus masks, whereas the second part requires that
-the policy->kobj structure is not released or re-initialized during
-suspend/resume.
+thanks,
 
-To handle both these requirements, we need to allow updates to the policy
-structure throughout suspend/resume, but prevent the structure from getting
-freed up. Also, we must have a mechanism by which the cpu-up callbacks can
-restore the policy structure, without allocating things afresh. (That also
-helps avoid memory leaks).
+greg k-h
 
-To achieve this, we use 2 schemes:
-a. Use a fallback per-cpu storage area for preserving the policy structures
-   during suspend, so that they can be restored during resume appropriately.
+-------------
+Pseudo-Shortlog of commits:
 
-b. Use the 'frozen' flag to determine when to free or allocate the policy
-   structure vs when to restore the policy from the saved fallback storage.
-   Thus we can successfully preserve the structure across suspend/resume.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.86-rc1
 
-Effectively, this helps us complete the separation of the 'light-weight'
-and the 'full' init/tear-down sequences in the cpufreq subsystem, so that
-this can be made use of in the suspend/resume scenario.
+Ben Hutchings <ben@decadent.org.uk>
+    SCSI: sd: Fix parsing of 'temporary ' cache mode prefix
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+J. Bruce Fields <bfields@redhat.com>
+    nfsd4: fix decoding of compounds across page boundaries
 
- drivers/cpufreq/cpufreq.c |   69 ++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 52 insertions(+), 17 deletions(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 1128753..15ced5f 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -44,6 +44,7 @@
-  */
- static struct cpufreq_driver *cpufreq_driver;
- static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
-+static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data_fallback);
- static DEFINE_RWLOCK(cpufreq_driver_lock);
- static DEFINE_MUTEX(cpufreq_governor_lock);
- 
-@@ -942,6 +943,20 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
- }
- #endif
- 
-+static struct cpufreq_policy *cpufreq_policy_restore(unsigned int cpu)
-+{
-+	struct cpufreq_policy *policy;
-+	unsigned long flags;
-+
-+	write_lock_irqsave(&cpufreq_driver_lock, flags);
-+
-+	policy = per_cpu(cpufreq_cpu_data_fallback, cpu);
-+
-+	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
-+	return policy;
-+}
-+
- static struct cpufreq_policy *cpufreq_policy_alloc(void)
- {
- 	struct cpufreq_policy *policy;
-@@ -1019,7 +1034,12 @@ static int __cpufreq_add_dev(struct device *dev, struct subsys_interface *sif,
- 		goto module_out;
- 	}
- 
--	policy = cpufreq_policy_alloc();
-+	if (frozen)
-+		/* Restore the saved policy when doing light-weight init */
-+		policy = cpufreq_policy_restore(cpu);
-+	else
-+		policy = cpufreq_policy_alloc();
-+
- 	if (!policy)
- 		goto nomem_out;
- 
-@@ -1199,6 +1219,10 @@ static int __cpufreq_remove_dev(struct device *dev,
- 	data = per_cpu(cpufreq_cpu_data, cpu);
- 	per_cpu(cpufreq_cpu_data, cpu) = NULL;
- 
-+	/* Save the policy somewhere when doing a light-weight tear-down */
-+	if (frozen)
-+		per_cpu(cpufreq_cpu_data_fallback, cpu) = data;
-+
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
- 	if (!data) {
-@@ -1239,29 +1263,40 @@ static int __cpufreq_remove_dev(struct device *dev,
- 	if ((cpus == 1) && (cpufreq_driver->target))
- 		__cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
- 
--	pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
--	cpufreq_cpu_put(data);
-+	if (!frozen) {
-+		pr_debug("%s: removing link, cpu: %d\n", __func__, cpu);
-+		cpufreq_cpu_put(data);
-+	}
- 
- 	/* If cpu is last user of policy, free policy */
- 	if (cpus == 1) {
--		lock_policy_rwsem_read(cpu);
--		kobj = &data->kobj;
--		cmp = &data->kobj_unregister;
--		unlock_policy_rwsem_read(cpu);
--		kobject_put(kobj);
--
--		/* we need to make sure that the underlying kobj is actually
--		 * not referenced anymore by anybody before we proceed with
--		 * unloading.
--		 */
--		pr_debug("waiting for dropping of refcount\n");
--		wait_for_completion(cmp);
--		pr_debug("wait complete\n");
-+		if (!frozen) {
-+			lock_policy_rwsem_read(cpu);
-+			kobj = &data->kobj;
-+			cmp = &data->kobj_unregister;
-+			unlock_policy_rwsem_read(cpu);
-+			kobject_put(kobj);
-+
-+			/*
-+			 * We need to make sure that the underlying kobj is
-+			 * actually not referenced anymore by anybody before we
-+			 * proceed with unloading.
-+			 */
-+			pr_debug("waiting for dropping of refcount\n");
-+			wait_for_completion(cmp);
-+			pr_debug("wait complete\n");
-+		}
- 
-+		/*
-+		 * Perform the ->exit() even during light-weight tear-down,
-+		 * since this is a core component, and is essential for the
-+		 * the subsequent light-weight ->init() to succeed.
-+		 */
- 		if (cpufreq_driver->exit)
- 			cpufreq_driver->exit(data);
- 
--		cpufreq_policy_free(data);
-+		if (!frozen)
-+			cpufreq_policy_free(data);
- 
- 	} else if (cpufreq_driver->target) {
- 		__cpufreq_governor(data, CPUFREQ_GOV_START);
+Kees Cook <keescook@chromium.org>
+    crypto: sanitize argument for format string
+
+Kees Cook <keescook@chromium.org>
+    block: do not pass disk names as format strings
+
+Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+    hpfs: better test for errors
+
+Jonathan Salwan <jonathan.salwan@gmail.com>
+    drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
+
+Tyler Hicks <tyhicks@canonical.com>
+    libceph: Fix NULL pointer dereference in auth client code
+
+
+-------------
+
+Diffstat:
+
+ MAINTAINERS                | 1 +
+ Makefile                   | 4 ++--
+ block/genhd.c              | 2 +-
+ crypto/algapi.c            | 3 ++-
+ drivers/block/nbd.c        | 3 ++-
+ drivers/cdrom/cdrom.c      | 2 +-
+ drivers/scsi/osd/osd_uld.c | 2 +-
+ drivers/scsi/sd.c          | 2 +-
+ fs/hpfs/map.c              | 3 ++-
+ fs/hpfs/super.c            | 8 +++++++-
+ fs/nfsd/nfs4xdr.c          | 2 +-
+ net/ceph/auth_none.c       | 6 ++++++
+ 12 files changed, 27 insertions(+), 11 deletions(-)
+
 
