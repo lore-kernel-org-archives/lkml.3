@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab3GKWOG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:14:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43171 "EHLO
+	id S1756940Ab3GKWO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:14:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43157 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756700Ab3GKWLW (ORCPT
+	with ESMTP id S1756746Ab3GKWLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:11:22 -0400
+	Thu, 11 Jul 2013 18:11:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: [ 03/11] charger-manager: Ensure event is not used as format string
-Date: Thu, 11 Jul 2013 15:11:03 -0700
-Message-Id: <20130711220545.981905096@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: [ 00/11] 3.4.53-stable review
+Date: Thu, 11 Jul 2013 15:11:00 -0700
+Message-Id: <20130711220545.542911892@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
-References: <20130711220545.542911892@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.4.53 release.
+There are 11 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sat Jul 13 22:04:03 UTC 2013.
+Anything received after that time might be too late.
 
-From: Kees Cook <keescook@chromium.org>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.53-rc1.gz
+and the diffstat can be found below.
 
-commit 3594f4c0d7bc51e3a7e6d73c44e368ae079e42f3 upstream.
+thanks,
 
-The exposed interface for cm_notify_event() could result in the event msg
-string being parsed as a format string. Make sure it is only used as a
-literal string.
+greg k-h
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Anton Vorontsov <cbou@mail.ru>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Anton Vorontsov <anton@enomsg.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- drivers/power/charger-manager.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.4.53-rc1
 
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -330,7 +330,7 @@ static void uevent_notify(struct charger
- 	strncpy(env_str, event, UEVENT_BUF_SIZE);
- 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
- 
--	dev_info(cm->dev, event);
-+	dev_info(cm->dev, "%s", event);
- }
- 
- /**
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Revert "sched: Add missing call to calc_load_exit_idle()"
+
+Ben Hutchings <ben@decadent.org.uk>
+    SCSI: sd: Fix parsing of 'temporary ' cache mode prefix
+
+J. Bruce Fields <bfields@redhat.com>
+    nfsd4: fix decoding of compounds across page boundaries
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
+
+Kees Cook <keescook@chromium.org>
+    crypto: sanitize argument for format string
+
+Kees Cook <keescook@chromium.org>
+    block: do not pass disk names as format strings
+
+Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+    hpfs: better test for errors
+
+Kees Cook <keescook@chromium.org>
+    charger-manager: Ensure event is not used as format string
+
+Jonathan Salwan <jonathan.salwan@gmail.com>
+    drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
+
+Tyler Hicks <tyhicks@canonical.com>
+    libceph: Fix NULL pointer dereference in auth client code
+
+
+-------------
+
+Diffstat:
+
+ MAINTAINERS                        | 1 +
+ Makefile                           | 4 ++--
+ block/genhd.c                      | 2 +-
+ crypto/algapi.c                    | 3 ++-
+ drivers/block/nbd.c                | 3 ++-
+ drivers/cdrom/cdrom.c              | 2 +-
+ drivers/power/charger-manager.c    | 2 +-
+ drivers/scsi/osd/osd_uld.c         | 2 +-
+ drivers/scsi/sd.c                  | 2 +-
+ drivers/tty/serial/8250/8250_pci.c | 4 ----
+ fs/hpfs/map.c                      | 3 ++-
+ fs/hpfs/super.c                    | 8 +++++++-
+ fs/nfsd/nfs4xdr.c                  | 2 +-
+ kernel/time/tick-sched.c           | 1 -
+ net/ceph/auth_none.c               | 6 ++++++
+ 15 files changed, 28 insertions(+), 17 deletions(-)
 
 
