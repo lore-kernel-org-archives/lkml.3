@@ -1,124 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab3GKTyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 15:54:41 -0400
-Received: from smtp-out.abv.bg ([194.153.145.70]:42288 "EHLO smtp-out.abv.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752331Ab3GKTyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 15:54:39 -0400
-X-Greylist: delayed 637 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Jul 2013 15:54:39 EDT
-DomainKey-Signature: a=rsa-sha1; s=smtp-out; d=abv.bg; c=simple; q=dns;
-	b=xKCs+bNSMIg9pbmyk40UylY35E9J+9bYro8nLoggj/In7dML0YOZNT1xLemjNcAwS
-	hweWU7XdFd440tdsoUlTkqFObB5BN11Hn6X1LGoxmw+o4NV9d30yfyjUIGpsPzmgNWy
-	+hncT5S8sJqbqUQLBc819bW/R5LeNaGR5si+YN8=
-Date: Thu, 11 Jul 2013 22:43:59 +0300 (EEST)
-From: =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: pali.rohar@gmail.com, linux-kernel@vger.kernel.org, tony@atomide.com,
-        aaro.koskinen@iki.fi, nm@ti.com, linux@arm.linux.org.uk,
-        pdeschrijver@nvidia.com, santosh.shilimkar@ti.com, pavel@ucw.cz,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <531356997.66774.1373571839852.JavaMail.apache@mail81.abv.bg>
-Subject: Re: [PATCH v2 1/2] ARM: OMAP: Add secure function omap_smc3() which calling instruction smc #1
-MIME-Version: 1.0
+	id S1756481Ab3GKTzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 15:55:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26746 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756081Ab3GKTy6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 15:54:58 -0400
+X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=s37gdL-KhCUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=P1PPt9p6O00A:10 a=eSDXXFJvoOXYmkEMY6QA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373572497.17876.60.camel@gandalf.local.home>
+Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based
+ breakpoint instead of stop_machine()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jason Baron <jbaron@akamai.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mathieu.desnoyers@efficios.com
+Date: Thu, 11 Jul 2013 15:54:57 -0400
+In-Reply-To: <alpine.LNX.2.00.1307112122020.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+	  <51DDDFB3.3020004@akamai.com>
+	  <alpine.LNX.2.00.1307110159490.25858@pobox.suse.cz>
+	 <1373560944.17876.41.camel@gandalf.local.home>
+	 <alpine.LNX.2.00.1307112122020.29788@pobox.suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Priority: 3
-X-Mailer: AbvMail 1.0
-X-Originating-IP: 130.204.50.168
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Thu, 2013-07-11 at 21:23 +0200, Jiri Kosina wrote:
+
+> > Thus you would need to do something like:
+> 
+> Yup, I have been looking at the ftrace implementation and came to this 
+> conclusion; thanks for confirmation.
+> That's exactly why I wanted to postpone converting ftrace before agreement 
+> on text_poke_bp() is reached and jump labels are converted.
+
+Note, there's also debug output that ftrace prints when things go wrong.
+As really strange things can happen when things don't work, those debug
+prints are crucial, and I don't want to lose them.
+
+But we'll discuss that after we get this first round in.
+
+-- Steve
 
 
-
-
- >-------- Оригинално писмо --------
- >От:  Dave Martin 
- >Относно: Re: [PATCH v2 1/2] ARM: OMAP: Add secure function omap_smc3() which
- calling instruction smc #1
- >До: Pali Rohár 
- >Изпратено на: Сряда, 2013, Юли 10 20:45:26 EEST
- >
- >
- >On Wed, Jul 10, 2013 at 02:59:04PM +0200, Pali Rohár wrote:
- >> Other secure functions omap_smc1() and omap_smc2() calling instruction smc #0
- >> but Nokia RX-51 board needs to call smc #1 for PPA access.
- >> 
- >> Signed-off-by: Ivaylo Dimitrov 
- >> Signed-off-by: Pali Rohár 
- >> ---
- >>  arch/arm/mach-omap2/omap-secure.h |    1 +
- >>  arch/arm/mach-omap2/omap-smc.S    |   22 +++++++++++++++++++++-
- >>  2 files changed, 22 insertions(+), 1 deletion(-)
- >> 
- >> diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
- >> index 0e72917..c4586f4 100644
- >> --- a/arch/arm/mach-omap2/omap-secure.h
- >> +++ b/arch/arm/mach-omap2/omap-secure.h
- >> @@ -51,6 +51,7 @@
- >>  extern u32 omap_secure_dispatcher(u32 idx, u32 flag, u32 nargs,
- >>  				u32 arg1, u32 arg2, u32 arg3, u32 arg4);
- >>  extern u32 omap_smc2(u32 id, u32 falg, u32 pargs);
- >> +extern u32 omap_smc3(u32 id, u32 process, u32 flag, u32 pargs);
- >>  extern phys_addr_t omap_secure_ram_mempool_base(void);
- >>  extern int omap_secure_ram_reserve_memblock(void);
- >>  
- >> diff --git a/arch/arm/mach-omap2/omap-smc.S b/arch/arm/mach-omap2/omap-smc.S
- >> index f6441c1..5c02b8d 100644
- >> --- a/arch/arm/mach-omap2/omap-smc.S
- >> +++ b/arch/arm/mach-omap2/omap-smc.S
- >> @@ -1,9 +1,11 @@
- >>  /*
- >> - * OMAP44xx secure APIs file.
- >> + * OMAP34xx and OMAP44xx secure APIs file.
- >>   *
- >>   * Copyright (C) 2010 Texas Instruments, Inc.
- >>   * Written by Santosh Shilimkar 
- >>   *
- >> + * Copyright (C) 2012 Ivaylo Dimitrov 
- >> + * Copyright (C) 2013 Pali Rohár 
- >>   *
- >>   * This program is free software,you can redistribute it and/or modify
- >>   * it under the terms of the GNU General Public License version 2 as
- >> @@ -54,6 +56,24 @@ ENTRY(omap_smc2)
- >>  	ldmfd   sp!, {r4-r12, pc}
- >>  ENDPROC(omap_smc2)
- >>  
- >> +/**
- >> + * u32 omap_smc3(u32 service_id, u32 process_id, u32 flag, u32 pargs)
- >> + * Low level common routine for secure HAL and PPA APIs via smc #1
- >> + * r0 - @service_id: Secure Service ID
- >> + * r1 - @process_id: Process ID
- >> + * r2 - @flag: Flag to indicate the criticality of operation
- >> + * r3 - @pargs: Physical address of parameter list
- >> + */
- >> +ENTRY(omap_smc3)
- >> +	stmfd	sp!, {r4-r12, lr}
- >
- >You don't need to save/restore r12.  The ABI allows it to be clobbered
- >across function calls.
- >
- >> +	mov	r12, r0		@ Copy the secure service ID
- >> +	mov	r6, #0xff	@ Indicate new Task call
- >> +	dsb
- >> +	dmb
- >
- >dsb synchronises a superset of what dmb synchronises, so the dmb here is
- >not useful.
- >
- >In any case, any code calling this must flush the region addressed by
- >r3 beforehand anyway, which will include a dsb as part of its semantics
- >-- this is how you call it from rx51_secure_dispatcher().
- >
- >So I think the dsb may not be needed here (?)
- >
- >Cheers
- >---Dave
- >
- >
-
-Could be, but I wonder why almost all the kernel code(I am aware of) that uses SMC and is written by TI, is storing r12 and is using both DSB and DMB. See arch/arm/mach-omap2/sleep34xx.S or arch/arm/mach-omap2/omap-smc.S for examples. I'd rather play it safe and leave it that way, unless someone confirms the other code using SMC has extra DSB/DMB instructions too. I wouldn't risk passing invalid/stale data to the Secure Monitor to just save 8 bytes and barriers in a performance non-critical code which will be called only a couple of times during the boot-up process. r12 save/restore is a legacy from omap_smc2 in omap-smc.S, so I guess it can go away without much of a trouble.
