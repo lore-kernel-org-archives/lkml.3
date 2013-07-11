@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab3GKAaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:30:11 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37532 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754658Ab3GKAaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:30:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH] ACPI / scan: Always call acpi_bus_scan() for bus check notifications
-Date: Thu, 11 Jul 2013 02:39:55 +0200
-Message-ID: <8128042.hqqjriutNl@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1373500106.24916.13.camel@misato.fc.hp.com>
-References: <2230821.QbNohsyO0O@vostro.rjw.lan> <6189099.QeK4PsCIFb@vostro.rjw.lan> <1373500106.24916.13.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755381Ab3GKAbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:31:19 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:56503 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab3GKAbS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 20:31:18 -0400
+Date: Thu, 11 Jul 2013 10:31:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alasdair G Kergon <agk@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: rebase of the device-mapper quilt series
+Message-Id: <20130711103116.72f41606b87698b476c4d371@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__11_Jul_2013_10_31_16_+1000_MASO/j1d+9a7kKO."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 10, 2013 05:48:26 PM Toshi Kani wrote:
-> On Thu, 2013-07-11 at 00:45 +0200, Rafael J. Wysocki wrote:
-> > On Wednesday, July 10, 2013 02:11:05 AM Rafael J. Wysocki wrote:
-> > > On Tuesday, July 09, 2013 01:32:42 PM Toshi Kani wrote:
-> > > > On Mon, 2013-07-08 at 02:10 +0200, Rafael J. Wysocki wrote:
-> > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > 
-> > > > > An ACPI_NOTIFY_BUS_CHECK notification means that we should scan the
-> > > > > entire namespace starting from the given handle even if the device
-> > > > > represented by that handle is present (other devices below it may
-> > > > > just have been added).
-> > > > > 
-> > > > > For this reason, modify acpi_scan_bus_device_check() to always run
-> > > > > acpi_bus_scan() if the notification being handled is of type
-> > > > > ACPI_NOTIFY_BUS_CHECK.
-> > > > > 
-> > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > > > > Cc: 3.10+ <stable@vger.kernel.org>
-> > > > 
-> > > > Acked-by: Toshi Kani <toshi.kani@hp.com>
-> > > > 
-> > > > But, I think we need the additional patch below.
-> > > 
-> > > Yes, I think you're right.
-> > 
-> > That said I'd prefer to put the check into acpi_bus_device_attach() like in
-> > the appended patch.
-> 
-> That's fine by me.  
-> 
-> Acked-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Just a minor point, though.  Isn't it a bit inconsistent with
-> device_attach(), which checks dev->driver inside the function?
+--Signature=_Thu__11_Jul_2013_10_31_16_+1000_MASO/j1d+9a7kKO.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well, device_attach() may be called from different places while this is
-the only place where acpi_scan_attach_handler() is called.
+Hi Alasdair,
 
-The check in acpi_bus_device_attach() is easier to follow to me, because
-it clearly means "we don't need to do anything more if there's a handler",
-while the check in acpi_scan_attach_handler() makes you wonder "why do we
-need to return 1 in that case?" and then you need to go to the caller and
-look at the check of the return value to see "ah, because we don't want
-that device_attach() to be called then!".
+Why have you just rebased the device-mapper series
+(http://people.redhat.com/agk/patches/linux/editing/)?  You have
+just invalidated your testing and made it likely that Linus will blast
+you if you ask him to pull your patches.  Your whole series was already
+based after v3.10 (i.e. released or rebased after the merge window
+opened), so why move it again?
 
-> That said, I am OK with either way.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Cool. :-)
+--Signature=_Thu__11_Jul_2013_10_31_16_+1000_MASO/j1d+9a7kKO.
+Content-Type: application/pgp-signature
 
-Thanks,
-Rafael
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBCAAGBQJR3fzUAAoJEECxmPOUX5FEbNoP/3Ns76k+ryn9rAq1XvBtH+5h
+z6uAMDVRH3LeVVjWqjOMn+zdtu+zvcHDjly4Bf1JOYTdBet6a5461MUemJNk0Pf8
+Ok0jBaGBjzKXhQL8wW9vpvW4BMCtvWErIINeAAS2gZbKwRdfqec8A4mQY4yOZ/2e
+TW9EAAux70lWV8KsZgUhs7+qpDuaBNQsuN+JBA8Exok6vw4GZyEB3/E7VxOp9uW/
+cV9dUE5Yd260TizZajKkH7Yhos/jyDWv4xcSfzvkxeC7vXiTbKIqQldHVAuFx/KF
+BPVrTmACxyC7y02wWcrya+/vqtZ7+EleibDGlMQrUhbeQY465qivyGaiovDY4y7f
++cC0ZM1g00xUiJDllicatX6L2hpM/0XUm7E8fAuiV6hiSZW5f4LnepMB1BoDdL5Q
+xz2f8dF2S4YB3iwB9I7KddP97l1jOoJz1AdKNosTDzrt0eFom4F1hne8iPbB5zpv
+aKDbYIvtDps+yG7ITseWk/YEakoNwARHw+fKVqhdwmfFbuoiEfcHw+tst+hOTO4/
+/VxPKc65+P+vFuAa95xpatNaCD3f7JCQ9aiiHdx7gZ1eVUIhqcMV41yzMwa55FT2
+W75ZXcQ4fhV0SNge52Hbj5ZrLf+iM2sdFvFL/4Kjq9djA+mqbbozg5fIZ3HbRcxD
+x3ImZR8owTI097ZpPr7N
+=6rxs
+-----END PGP SIGNATURE-----
 
-> > ---
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Subject: ACPI / scan: Do not try to attach scan handlers to devices having them
-> > 
-> > In acpi_bus_device_attach(), if there is an ACPI device object
-> > for the given handle and that device object has a scan handler
-> > attached to it already, there's nothing more to do for that handle
-> > and the function should just return success immediately.  Make
-> > that happen.
-> > 
-> > Reported-by: Toshi Kani <toshi.kani@hp.com>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/scan.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > Index: linux-pm/drivers/acpi/scan.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/scan.c
-> > +++ linux-pm/drivers/acpi/scan.c
-> > @@ -1984,6 +1984,9 @@ static acpi_status acpi_bus_device_attac
-> >  	if (acpi_bus_get_device(handle, &device))
-> >  		return AE_CTRL_DEPTH;
-> >  
-> > +	if (device->handler)
-> > +		return AE_OK;
-> > +
-> >  	ret = acpi_scan_attach_handler(device);
-> >  	if (ret)
-> >  		return ret > 0 ? AE_OK : AE_CTRL_DEPTH;
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--Signature=_Thu__11_Jul_2013_10_31_16_+1000_MASO/j1d+9a7kKO.--
