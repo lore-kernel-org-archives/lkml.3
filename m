@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933121Ab3GKO1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:27:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43259 "EHLO
+	id S933141Ab3GKO1S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:27:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43299 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019Ab3GKO1G (ORCPT
+	with ESMTP id S933019Ab3GKO1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:27:06 -0400
+	Thu, 11 Jul 2013 10:27:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
+Cc: Ben Hutchings <ben@decadent.org.uk>, Matt Fleming <matt.fleming@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 87/98] efi_pstore: Check remaining space with QueryVariableInfo() before writing data
-Date: Thu, 11 Jul 2013 15:24:57 +0100
-Message-Id: <1373552708-15235-88-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 95/98] x86/efi: Fix dummy variable buffer allocation
+Date: Thu, 11 Jul 2013 15:25:05 +0100
+Message-Id: <1373552708-15235-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,87 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seiji Aguchi <seiji.aguchi@hds.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit d80a361d779a9f19498943d1ca84243209cd5647 upstream.
+commit b8cb62f82103083a6e8fa5470bfe634a2c06514d upstream.
 
-[Issue]
+1. Check for allocation failure
+2. Clear the buffer contents, as they may actually be written to flash
+3. Don't leak the buffer
 
-As discussed in a thread below, Running out of space in EFI isn't a well-tested scenario.
-And we wouldn't expect all firmware to handle it gracefully.
-http://marc.info/?l=linux-kernel&m=134305325801789&w=2
+Compile-tested only.
 
-On the other hand, current efi_pstore doesn't check a remaining space of storage at writing time.
-Therefore, efi_pstore may not work if it tries to write a large amount of data.
+[ Tested successfully on my buggy ASUS machine - Matt ]
 
-[Patch Description]
-
-To avoid handling the situation above, this patch checks if there is a space enough to log with
-QueryVariableInfo() before writing data.
-
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Mike Waychison <mikew@google.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/firmware/efivars.c | 18 ++++++++++++++++++
- include/linux/efi.h        |  1 +
- 2 files changed, 19 insertions(+)
+ arch/x86/platform/efi/efi.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index 303bc8e..3c8fd0f 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -710,12 +710,29 @@ static int efi_pstore_write(enum pstore_type_id type,
- 	struct efivars *efivars = psi->data;
- 	struct efivar_entry *entry, *found = NULL;
- 	int i, ret = 0;
-+	u64 storage_space, remaining_space, max_variable_size;
-+	efi_status_t status = EFI_NOT_FOUND;
- 
- 	sprintf(stub_name, "dump-type%u-%u-", type, part);
- 	sprintf(name, "%s%lu", stub_name, get_seconds());
- 
- 	spin_lock(&efivars->lock);
- 
-+	/*
-+	 * Check if there is a space enough to log.
-+	 * size: a size of logging data
-+	 * DUMP_NAME_LEN * 2: a maximum size of variable name
-+	 */
-+	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
-+						   &storage_space,
-+						   &remaining_space,
-+						   &max_variable_size);
-+	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
-+		spin_unlock(&efivars->lock);
-+		*id = part;
-+		return -ENOSPC;
-+	}
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 2c990b5..ca4e1ad 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -1024,7 +1024,10 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 		 * that by attempting to use more space than is available.
+ 		 */
+ 		unsigned long dummy_size = remaining_size + 1024;
+-		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
++		void *dummy = kzalloc(dummy_size, GFP_ATOMIC);
 +
- 	for (i = 0; i < DUMP_NAME_LEN; i++)
- 		efi_name[i] = stub_name[i];
++		if (!dummy)
++			return EFI_OUT_OF_RESOURCES;
  
-@@ -1220,6 +1237,7 @@ efivars_init(void)
- 	ops.get_variable = efi.get_variable;
- 	ops.set_variable = efi.set_variable;
- 	ops.get_next_variable = efi.get_next_variable;
-+	ops.query_variable_info = efi.query_variable_info;
- 	error = register_efivars(&__efivars, &ops, efi_kobj);
- 	if (error)
- 		goto err_put;
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index eee8b0b..8554af9 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -652,6 +652,7 @@ struct efivar_operations {
- 	efi_get_variable_t *get_variable;
- 	efi_get_next_variable_t *get_next_variable;
- 	efi_set_variable_t *set_variable;
-+	efi_query_variable_info_t *query_variable_info;
- };
+ 		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+ 					  EFI_VARIABLE_NON_VOLATILE |
+@@ -1044,6 +1047,8 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
+ 					 0, dummy);
+ 		}
  
- struct efivars {
++		kfree(dummy);
++
+ 		/*
+ 		 * The runtime code may now have triggered a garbage collection
+ 		 * run, so check the variable info again
 -- 
 1.8.1.2
 
