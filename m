@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab3GKWLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:11:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43208 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902Ab3GKWL1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756900Ab3GKWL1 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Jul 2013 18:11:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43192 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756511Ab3GKWLZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 18:11:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 05/11] block: do not pass disk names as format strings
-Date: Thu, 11 Jul 2013 15:11:05 -0700
-Message-Id: <20130711220546.176243070@linuxfoundation.org>
+        Rick Macklem <rmacklem@uoguelph.ca>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 09/11] nfsd4: fix decoding of compounds across page boundaries
+Date: Thu, 11 Jul 2013 15:11:09 -0700
+Message-Id: <20130711220546.614092348@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
 References: <20130711220545.542911892@linuxfoundation.org>
@@ -28,62 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
+commit 247500820ebd02ad87525db5d9b199e5b66f6636 upstream.
 
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
+A freebsd NFSv4.0 client was getting rare IO errors expanding a tarball.
+A network trace showed the server returning BAD_XDR on the final getattr
+of a getattr+write+getattr compound.  The final getattr started on a
+page boundary.
 
-CVE-2013-2851
+I believe the Linux client ignores errors on the post-write getattr, and
+that that's why we haven't seen this before.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Rick Macklem <rmacklem@uoguelph.ca>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c              |    2 +-
- drivers/block/nbd.c        |    3 ++-
- drivers/scsi/osd/osd_uld.c |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ fs/nfsd/nfs4xdr.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -518,7 +518,7 @@ static void register_disk(struct gendisk
- 
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -666,7 +666,8 @@ static int __nbd_ioctl(struct block_devi
- 
- 		mutex_unlock(&nbd->tx_lock);
- 
--		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
-+		thread = kthread_create(nbd_thread, nbd, "%s",
-+					nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
- 			return PTR_ERR(thread);
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -465,7 +465,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -161,8 +161,8 @@ static __be32 *read_buf(struct nfsd4_com
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
++	argp->p = page_address(argp->pagelist[0]);
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
 
 
