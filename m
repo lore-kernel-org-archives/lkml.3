@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab3GKKn1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:43:27 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49250 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755590Ab3GKKn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:43:26 -0400
-Date: Thu, 11 Jul 2013 12:43:07 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Konrad Vrba <konrad.vrba@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Error 2: No rule to make target kernel/timeconst.pl
-Message-ID: <20130711104307.GB28131@pd.tnic>
-References: <CAF2Nc0xVKS+aL0CXdDFQHSapvRxM35KZkjeKeigQ7X43+2NVBA@mail.gmail.com>
+	id S932190Ab3GKKnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:43:40 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:43522 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755786Ab3GKKne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 06:43:34 -0400
+Date: Thu, 11 Jul 2013 11:43:27 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: J Keerthy <j-keerthy@ti.com>
+Cc: linux-omap@vger.kernel.org, grant.likely@secretlab.ca, broonie@kernel.org,
+        ldewangan@nvidia.com, sameo@linux.intel.com, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, gg@slimlogic.co.uk
+Subject: Re: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
+Message-ID: <20130711104327.GE25601@gmail.com>
+References: <1371726289-10042-1-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAF2Nc0xVKS+aL0CXdDFQHSapvRxM35KZkjeKeigQ7X43+2NVBA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1371726289-10042-1-git-send-email-j-keerthy@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 12:28:20PM +0200, Konrad Vrba wrote:
-> Hello,
-> I have following error while compiling new stable kernel 3.10:
+On Thu, 20 Jun 2013, J Keerthy wrote:
+
+> Add TPS659038 documentation under Palmas.
 > 
->   CC      kernel/fork.o
->   CC      kernel/exec_domain.o
->   CC      kernel/panic.o
->   CC      kernel/printk.o
->   CC      kernel/cpu.o
->   CC      kernel/exit.o
->   CC      kernel/itimer.o
-> make[1]: *** No rule to make target `kernel/timeconst.pl', needed by
-> `kernel/timeconst.h'.  Stop.
-> make: *** [kernel] Error 2
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/palmas.txt |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> Could somebody please advise how to fix this ?
+> diff --git a/Documentation/devicetree/bindings/mfd/palmas.txt b/Documentation/devicetree/bindings/mfd/palmas.txt
+> index 7bcd59c..89cb773 100644
+> --- a/Documentation/devicetree/bindings/mfd/palmas.txt
+> +++ b/Documentation/devicetree/bindings/mfd/palmas.txt
+> @@ -5,6 +5,7 @@ twl6035 (palmas)
+>  twl6037 (palmas)
+>  tps65913 (palmas)
+>  tps65914 (palmas)
+> +tps659038
+>  
+>  Required properties:
+>  - compatible : Should be from the list
+> @@ -14,6 +15,7 @@ Required properties:
+>    ti,tps65913
+>    ti,tps65914
+>    ti,tps80036
+> +  ti,tps659038
+>  and also the generic series names
+>    ti,palmas
+>  - interrupt-controller : palmas has its own internal IRQs
 
-Can you save your config first, cleanup the build dir from kbuild stuff:
-
-make mrproper
-
-and then try building again?
-
-FWIW, 3.10 and later builds just fine here.
+Applied.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
