@@ -1,126 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab3GKTls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 15:41:48 -0400
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:61486 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab3GKTlp (ORCPT
+	id S1756047Ab3GKTmo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 15:42:44 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:54501 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab3GKTmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 15:41:45 -0400
-From: Dragos Foianu <dragos.foianu@gmail.com>
-To: wensong@linux-vs.org
-Cc: horms@verge.net.au, ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
-        kadlec@blackhole.kfki.hu, davem@davemloft.net, netdev@vger.kernel.org,
-        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org, Dragos Foianu <dragos.foianu@gmail.com>
-Subject: [PATCH] ipvs: fixed style errors and warnings in ip_vs_conn
-Date: Thu, 11 Jul 2013 22:41:35 +0300
-Message-Id: <1373571695-24933-1-git-send-email-dragos.foianu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 11 Jul 2013 15:42:42 -0400
+X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Jul 2013 15:42:42 EDT
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Ralf Baechle <ralf@linux-mips.org>, cpufreq@vger.kernel.org,
+        Julia Lawall <Julia.Lawall@lip6.fr>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, stable@vger.kernel.org
+Subject: [PATCH] MIPS: loongson2: cpufreq: fix broken cpufreq
+Date: Thu, 11 Jul 2013 22:34:41 +0300
+Message-Id: <1373571281-4457-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-found with the help of checkpatch.pl
+Commit 42913c799 (MIPS: Loongson2: Use clk API instead of direct
+dereferences) broke the cpufreq functionality on Loongson2 boards:
+clk_set_rate() is called before the CPU frequency table is initialized,
+and therefore will always fail.
 
-Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
+Fix by moving the clk_set_rate() after the table initialization.
+Tested on Lemote FuLoong mini-PC.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: stable@vger.kernel.org
 ---
- net/netfilter/ipvs/ip_vs_conn.c |   28 ++++++++++++++--------------
- 1 file changed, 14 insertions(+), 14 deletions(-)
+ drivers/cpufreq/loongson2_cpufreq.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/net/netfilter/ipvs/ip_vs_conn.c b/net/netfilter/ipvs/ip_vs_conn.c
-index 4c8e5c0..4927a52 100644
---- a/net/netfilter/ipvs/ip_vs_conn.c
-+++ b/net/netfilter/ipvs/ip_vs_conn.c
-@@ -77,8 +77,7 @@ static unsigned int ip_vs_conn_rnd __read_mostly;
- #define CT_LOCKARRAY_SIZE  (1<<CT_LOCKARRAY_BITS)
- #define CT_LOCKARRAY_MASK  (CT_LOCKARRAY_SIZE-1)
- 
--struct ip_vs_aligned_lock
--{
-+struct ip_vs_aligned_lock {
- 	spinlock_t	l;
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
-@@ -395,7 +394,7 @@ struct ip_vs_conn *ip_vs_ct_in_get(const struct ip_vs_conn_param *p)
- struct ip_vs_conn *ip_vs_conn_out_get(const struct ip_vs_conn_param *p)
- {
- 	unsigned int hash;
--	struct ip_vs_conn *cp, *ret=NULL;
-+	struct ip_vs_conn *cp, *ret = NULL;
- 
- 	/*
- 	 *	Check for "full" addressed entries
-@@ -680,11 +679,10 @@ static inline void ip_vs_unbind_dest(struct ip_vs_conn *cp)
- 	if (!(cp->flags & IP_VS_CONN_F_TEMPLATE)) {
- 		/* It is a normal connection, so decrease the inactconns
- 		   or activeconns counter */
--		if (cp->flags & IP_VS_CONN_F_INACTIVE) {
-+		if (cp->flags & IP_VS_CONN_F_INACTIVE)
- 			atomic_dec(&dest->inactconns);
--		} else {
-+		else
- 			atomic_dec(&dest->activeconns);
--		}
- 	} else {
- 		/* It is a persistent connection/template, so decrease
- 		   the persistent connection counter */
-@@ -817,7 +815,7 @@ static void ip_vs_conn_expire(unsigned long data)
- 		return;
+diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
+index d539127..f92b02a 100644
+--- a/drivers/cpufreq/loongson2_cpufreq.c
++++ b/drivers/cpufreq/loongson2_cpufreq.c
+@@ -118,11 +118,6 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		clk_put(cpuclk);
+ 		return -EINVAL;
  	}
- 
--  expire_later:
-+expire_later:
- 	IP_VS_DBG(7, "delayed: conn->refcnt=%d conn->n_control=%d\n",
- 		  atomic_read(&cp->refcnt),
- 		  atomic_read(&cp->n_control));
-@@ -988,7 +986,7 @@ static void *ip_vs_conn_seq_start(struct seq_file *seq, loff_t *pos)
- 
- 	iter->l = NULL;
- 	rcu_read_lock();
--	return *pos ? ip_vs_conn_array(seq, *pos - 1) :SEQ_START_TOKEN;
-+	return *pos ? ip_vs_conn_array(seq, *pos - 1) : SEQ_START_TOKEN;
- }
- 
- static void *ip_vs_conn_seq_next(struct seq_file *seq, void *v, loff_t *pos)
-@@ -1189,10 +1187,13 @@ static inline int todrop_entry(struct ip_vs_conn *cp)
- 	/* Don't drop the entry if its number of incoming packets is not
- 	   located in [0, 8] */
- 	i = atomic_read(&cp->in_pkts);
--	if (i > 8 || i < 0) return 0;
-+	if (i > 8 || i < 0)
-+		return 0;
- 
--	if (!todrop_rate[i]) return 0;
--	if (--todrop_counter[i] > 0) return 0;
-+	if (!todrop_rate[i])
-+		return 0;
-+	if (--todrop_counter[i] > 0)
-+		return 0;
- 
- 	todrop_counter[i] = todrop_rate[i];
- 	return 1;
-@@ -1218,7 +1219,7 @@ void ip_vs_random_dropentry(struct net *net)
- 			if (!ip_vs_conn_net_eq(cp, net))
- 				continue;
- 			if (cp->protocol == IPPROTO_TCP) {
--				switch(cp->state) {
-+				switch (cp->state) {
- 				case IP_VS_TCP_S_SYN_RECV:
- 				case IP_VS_TCP_S_SYNACK:
- 					break;
-@@ -1357,9 +1358,8 @@ int __init ip_vs_conn_init(void)
- 	for (idx = 0; idx < ip_vs_conn_tab_size; idx++)
- 		INIT_HLIST_HEAD(&ip_vs_conn_tab[idx]);
- 
--	for (idx = 0; idx < CT_LOCKARRAY_SIZE; idx++)  {
-+	for (idx = 0; idx < CT_LOCKARRAY_SIZE; idx++) 
- 		spin_lock_init(&__ip_vs_conntbl_lock_array[idx].l);
+-	ret = clk_set_rate(cpuclk, rate);
+-	if (ret) {
+-		clk_put(cpuclk);
+-		return ret;
 -	}
  
- 	/* calculate the random value for connection hash */
- 	get_random_bytes(&ip_vs_conn_rnd, sizeof(ip_vs_conn_rnd));
+ 	/* clock table init */
+ 	for (i = 2;
+@@ -130,6 +125,12 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	     i++)
+ 		loongson2_clockmod_table[i].frequency = (rate * i) / 8;
+ 
++	ret = clk_set_rate(cpuclk, rate);
++	if (ret) {
++		clk_put(cpuclk);
++		return ret;
++	}
++
+ 	policy->cur = loongson2_cpufreq_get(policy->cpu);
+ 
+ 	cpufreq_frequency_table_get_attr(&loongson2_clockmod_table[0],
 -- 
-1.7.10.4
+1.8.3.1
 
