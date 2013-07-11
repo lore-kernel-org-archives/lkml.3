@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab3GKOs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:48:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42920 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab3GKOZr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932689Ab3GKOZr (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Jul 2013 10:25:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42884 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932531Ab3GKOZj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 10:25:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Shane Huang <shane.huang@amd.com>, Tejun Heo <tj@kernel.org>,
+Cc: Ben Hutchings <ben@decadent.org.uk>, 709647@bugs.debian.org,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 23/98] ahci: remove pmp link online check in FBS EH
-Date: Thu, 11 Jul 2013 15:23:53 +0100
-Message-Id: <1373552708-15235-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 14/98] genirq: Fix can_request_irq() for IRQs without an action
+Date: Thu, 11 Jul 2013 15:23:44 +0100
+Message-Id: <1373552708-15235-15-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,36 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
+commit 2779db8d37d4b542d9ca2575f5f178dbeaca6c86 upstream.
 
-ata_link_online() check in ahci_error_intr() is unnecessary, it should
-be removed otherwise may lead to lockup with FBS enabled PMP.
-http://marc.info/?l=linux-ide&m=137050421603272&w=2
+Commit 02725e7471b8 ('genirq: Use irq_get/put functions'),
+inadvertently changed can_request_irq() to return 0 for IRQs that have
+no action.  This causes pcibios_lookup_irq() to select only IRQs that
+already have an action with IRQF_SHARED set, or to fail if there are
+none.  Change can_request_irq() to return 1 for IRQs that have no
+action (if the first two conditions are met).
 
-Reported-by: Yu Liu <liuyu.ac@gmail.com>
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is>
+Tested-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is> (against 3.2)
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: 709647@bugs.debian.org
+Link: http://bugs.debian.org/709647
+Link: http://lkml.kernel.org/r/1372383630.23847.40.camel@deadeye.wl.decadent.org.uk
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/ata/libahci.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/irq/manage.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index f9eaa82..47a1fb8 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1543,8 +1543,7 @@ static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
- 		u32 fbs = readl(port_mmio + PORT_FBS);
- 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index b4c6385..a561ed3 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -554,9 +554,9 @@ int can_request_irq(unsigned int irq, unsigned long irqflags)
+ 		return 0;
  
--		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
--		    ata_link_online(&ap->pmp_link[pmp])) {
-+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
- 			link = &ap->pmp_link[pmp];
- 			fbs_need_dec = true;
- 		}
+ 	if (irq_settings_can_request(desc)) {
+-		if (desc->action)
+-			if (irqflags & desc->action->flags & IRQF_SHARED)
+-				canrequest =1;
++		if (!desc->action ||
++		    irqflags & desc->action->flags & IRQF_SHARED)
++			canrequest = 1;
+ 	}
+ 	irq_put_desc_unlock(desc, flags);
+ 	return canrequest;
 -- 
 1.8.1.2
 
