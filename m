@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756197Ab3GKOiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:38:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43156 "EHLO
+	id S933028Ab3GKOip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:38:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43138 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932968Ab3GKO0n (ORCPT
+	with ESMTP id S932953Ab3GKO0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:43 -0400
+	Thu, 11 Jul 2013 10:26:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Jan Kara <jack@suse.cz>, Benjamin LaHaise <bcrl@kvack.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 68/98] b43: ensue that BCMA is "y" when B43 is "y"
-Date: Thu, 11 Jul 2013 15:24:38 +0100
-Message-Id: <1373552708-15235-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 66/98] ext3: fix data=journal fast mount/umount hang
+Date: Thu, 11 Jul 2013 15:24:36 +0100
+Message-Id: <1373552708-15235-67-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,48 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hauke Mehrtens <hauke@hauke-m.de>
+From: Jan Kara <jack@suse.cz>
 
-commit 693026ef2e751fd94d2e6c71028e68343cc875d5 upstream.
+commit e643692138cfa33528f054b071ba2583509bb217 upstream.
 
-When b43 gets build into the kernel and it should use bcma we have to
-ensure that bcma was also build into the kernel and not as a module.
-In this patch this is also done for SSB, although you can not
-build b43 without ssb support for now.
+In data=journal mode, if we unmount the file system before a
+transaction has a chance to complete, when the journal inode is being
+evicted, we can end up calling into log_wait_commit() for the
+last transaction, after the journalling machinery has been shut down.
+That triggers the WARN_ONCE in __log_start_commit().
 
-This fixes a build problem reported by Randy Dunlap in
-5187EB95.2060605@infradead.org
+Arguably we should adjust ext3_should_journal_data() to return FALSE
+for the journal inode, but the only place it matters is
+ext3_evict_inode(), and so it's to save a bit of CPU time, and to make
+the patch much more obviously correct by inspection(tm), we'll fix it
+by explicitly not trying to waiting for a journal commit when we are
+evicting the journal inode, since it's guaranteed to never succeed in
+this case.
 
-Reported-By: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This can be easily replicated via:
+
+     mount -t ext3 -o data=journal /dev/vdb /vdb ; umount /vdb
+
+This is a port of ext4 fix from Ted Ts'o.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Benjamin LaHaise <bcrl@kvack.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/b43/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ext3/inode.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/b43/Kconfig b/drivers/net/wireless/b43/Kconfig
-index 3876c7e..af40211 100644
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -28,7 +28,7 @@ config B43
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 4a84e75..7da1b7e 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -218,7 +218,8 @@ void ext3_evict_inode (struct inode *inode)
+ 	 */
+ 	if (inode->i_nlink && ext3_should_journal_data(inode) &&
+ 	    EXT3_SB(inode->i_sb)->s_journal &&
+-	    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode))) {
++	    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode)) &&
++	    inode->i_ino != EXT3_JOURNAL_INO) {
+ 		tid_t commit_tid = atomic_read(&ei->i_datasync_tid);
+ 		journal_t *journal = EXT3_SB(inode->i_sb)->s_journal;
  
- config B43_BCMA
- 	bool "Support for BCMA bus"
--	depends on B43 && BCMA
-+	depends on B43 && (BCMA = y || BCMA = B43)
- 	default y
- 
- config B43_BCMA_EXTRA
-@@ -39,7 +39,7 @@ config B43_BCMA_EXTRA
- 
- config B43_SSB
- 	bool
--	depends on B43 && SSB
-+	depends on B43 && (SSB = y || SSB = B43)
- 	default y
- 
- # Auto-select SSB PCI-HOST support, if possible
 -- 
 1.8.1.2
 
