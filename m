@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab3GKP3I (ORCPT <rfc822;w@1wt.eu>);
+	id S932332Ab3GKPap (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 11:30:45 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:44661 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756154Ab3GKP3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Jul 2013 11:29:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755976Ab3GKP3G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 11:29:06 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH 3/5] perf tools: Remove event types from perf data file
-Date: Thu, 11 Jul 2013 17:28:31 +0200
-Message-Id: <1373556513-3000-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1373556513-3000-1-git-send-email-jolsa@redhat.com>
-References: <1373556513-3000-1-git-send-email-jolsa@redhat.com>
+X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
+   d="scan'208";a="34685933"
+Message-ID: <51DECEC3.7090306@citrix.com>
+Date: Thu, 11 Jul 2013 16:26:59 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH RFC 4/4] xen-block: introduce a new request
+ type to unmap grants
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>	<1373288607-1876-5-git-send-email-roger.pau@citrix.com>	<20130708194152.GJ4927@phenom.dumpdata.com> <51DD271B.3010408@citrix.com> <51DEB795.3000602@citrix.com> <51DECB4D.4020009@citrix.com>
+In-Reply-To: <51DECB4D.4020009@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing event types data storing/reading to/from perf
-data file as it's no longer needed. The only user of
-this data 'perf timechart' was switched to use tracepoints
-handler callbacks.
+On 11/07/13 16:12, Roger Pau Monné wrote:
+> On 11/07/13 15:48, David Vrabel wrote:
+>> On 10/07/13 10:19, Roger Pau Monné wrote:
+>>>
+>>> >From 1ede72ba10a7ec13d57ba6d2af54e86a099d7125 Mon Sep 17 00:00:00 2001
+>>> From: Roger Pau Monne <roger.pau@citrix.com>
+>>> Date: Wed, 10 Jul 2013 10:22:19 +0200
+>>> Subject: [PATCH RFC] xen-blkfront: revoke foreign access for grants not
+>>>  mapped by the backend
+>>> MIME-Version: 1.0
+>>> Content-Type: text/plain; charset=UTF-8
+>>> Content-Transfer-Encoding: 8bit
+>>>
+>>> There's no need to keep the foreign access in a grant if it is not
+>>> persistently mapped by the backend. This allows us to free grants that
+>>> are not mapped by the backend, thus preventing blkfront from hoarding
+>>> all grants.
+>>>
+>>> The main effect of this is that blkfront will only persistently map
+>>> the same grants as the backend, and it will always try to use grants
+>>> that are already mapped by the backend. Also the number of persistent
+>>> grants in blkfront is the same as in blkback (and is controlled by the
+>>> value in blkback).
+>>
+>> Does this place in implicit requirement on the behaviour of the backend.
+>>  i.e., the backend must persistently map the first N grants and always
+>> unmap the remainder?  If so, this should be clearly documented.
+> 
+> No, the backend can persistently map whatever grants it wants, and in
+> fact we have a LRU in the backend that keeps unmapping a certain amount
+> of grants that have not been used over a period of time.
 
-The event_types offset and size stay in the perf data
-file header but are ignored from now on.
+I don't see a mechanism by which the frontend can notice that the
+backend has unmapped an unused grant.  It can only notice when a request
+using that grant is completed.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/header.c | 28 +---------------------------
- tools/perf/util/header.h |  3 +--
- 2 files changed, 2 insertions(+), 29 deletions(-)
+>> It also seems odd to have the backend decide how much frontend resource
+>> can be consumed at anyone time.  It's not clear how the backend is
+>> supposed to know how many persistent grants it should hang on to.
+> 
+> blkfront has to at least persistently map the same grants as the
+> backend. blkfront could persistently map all grants, but then we will
+> have grant shortage, and I doubt there's much performance gain from
+> persistently mapping grants in blkfront but not blkback (since the
+> biggest performance penalty comes from the unmapping done in blkback and
+> TLB flush involved).
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index d12d79c..8862667 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -2334,16 +2334,6 @@ int perf_session__write_header(struct perf_session *session,
- 		}
- 	}
- 
--	header->event_offset = lseek(fd, 0, SEEK_CUR);
--	header->event_size = trace_event_count * sizeof(struct perf_trace_event_type);
--	if (trace_events) {
--		err = do_write(fd, trace_events, header->event_size);
--		if (err < 0) {
--			pr_debug("failed to write perf header events\n");
--			return err;
--		}
--	}
--
- 	header->data_offset = lseek(fd, 0, SEEK_CUR);
- 
- 	if (at_exit) {
-@@ -2364,10 +2354,7 @@ int perf_session__write_header(struct perf_session *session,
- 			.offset = header->data_offset,
- 			.size	= header->data_size,
- 		},
--		.event_types = {
--			.offset = header->event_offset,
--			.size	= header->event_size,
--		},
-+		/* event_types is ignored, store zeros */
- 	};
- 
- 	memcpy(&f_header.adds_features, &header->adds_features, sizeof(header->adds_features));
-@@ -2614,8 +2601,6 @@ int perf_file_header__read(struct perf_file_header *header,
- 	memcpy(&ph->adds_features, &header->adds_features,
- 	       sizeof(ph->adds_features));
- 
--	ph->event_offset = header->event_types.offset;
--	ph->event_size   = header->event_types.size;
- 	ph->data_offset  = header->data.offset;
- 	ph->data_size	 = header->data.size;
- 	return 0;
-@@ -2839,17 +2824,6 @@ int perf_session__read_header(struct perf_session *session, int fd)
- 
- 	symbol_conf.nr_events = nr_attrs;
- 
--	if (f_header.event_types.size) {
--		lseek(fd, f_header.event_types.offset, SEEK_SET);
--		trace_events = malloc(f_header.event_types.size);
--		if (trace_events == NULL)
--			return -ENOMEM;
--		if (perf_header__getbuffer64(header, fd, trace_events,
--					     f_header.event_types.size))
--			goto out_errno;
--		trace_event_count =  f_header.event_types.size / sizeof(struct perf_trace_event_type);
--	}
--
- 	perf_header__process_sections(header, fd, &session->pevent,
- 				      perf_file_section__process);
- 
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 2d1ca7d..298982f 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -45,6 +45,7 @@ struct perf_file_header {
- 	u64				attr_size;
- 	struct perf_file_section	attrs;
- 	struct perf_file_section	data;
-+	/* event_types is ignored */
- 	struct perf_file_section	event_types;
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- };
-@@ -88,8 +89,6 @@ struct perf_header {
- 	s64			attr_offset;
- 	u64			data_offset;
- 	u64			data_size;
--	u64			event_offset;
--	u64			event_size;
- 	DECLARE_BITMAP(adds_features, HEADER_FEAT_BITS);
- 	struct perf_session_env env;
- };
--- 
-1.7.11.7
+I'm saying that the frontend needs to be able to set a cap on the number
+of persistent grants kept by the backend.  If other demands on a
+domain's grant table resource means it can only spare G grants for a
+particular frontend it needs to be able to ensure this (with the
+cooperation of the backend).
 
+David
