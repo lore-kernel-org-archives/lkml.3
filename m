@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab3GKWO2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:14:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43157 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746Ab3GKWLO (ORCPT
+	id S1756902Ab3GKWO5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:14:57 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:39340 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755642Ab3GKWOz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:11:14 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/11] 3.4.53-stable review
-Date: Thu, 11 Jul 2013 15:11:00 -0700
-Message-Id: <20130711220545.542911892@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-User-Agent: quilt/0.60-5.1.1
+	Thu, 11 Jul 2013 18:14:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
+References: <20130711214830.611455274@linuxfoundation.org>
+Date: Thu, 11 Jul 2013 18:14:54 -0400
+Message-ID: <CA+5PVA6xk6dR51=b6EDHTbP8XGD=tmwbHz-+dW=1_8fofq47hw@mail.gmail.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Josh Boyer <jwboyer@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.53 release.
-There are 11 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+On Thu, Jul 11, 2013 at 6:01 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> <rant>
+>   I'm sitting on top of over 170 more patches that have been marked for
+>   the stable releases right now that are not included in this set of
+>   releases.  The fact that there are this many patches for stable stuff
+>   that are waiting to be merged through the main -rc1 merge window cycle
+>   is worrying to me.
 
-Responses should be made by Sat Jul 13 22:04:03 UTC 2013.
-Anything received after that time might be too late.
+Very much agreed.
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.53-rc1.gz
-and the diffstat can be found below.
+>   Why are subsystem maintainers holding on to fixes that are
+>   _supposedly_ affecting all users?  I mean, 21 powerpc core changes
+>   that I don't see until a -rc1 merge?  It's as if developers don't
+>   expect people to use a .0 release and are relying on me to get the
+>   fixes they have burried in their trees out to users.  That's not that
+>   nice.  6 "core" iscsi-target fixes?  That's the sign of either a
+>   broken subsystem maintainer, or a lack of understanding what the
+>   normal -rc kernel releases are supposed to be for.
 
-thanks,
+This is the kind of stuff I was alluding to on the ksummit-discuss
+list.  I was beginning to think we were the only ones noticing so I'm
+glad you're speaking up.
 
-greg k-h
+>   So, I've picked through the patches and dug out only those that I've
+>   "guessed" at being more important than others for the 3.10.1 release.
+>   I'll get to the rest of these after 3.11-rc1 is out, and eventually
+>   they will make it into the stable releases, but I am going to be much
+>   more strict as to what is being added (carriage return changes for
+>   debug messages, really ACPI developers?)
 
--------------
-Pseudo-Shortlog of commits:
+That's very much appreciated, Greg.  Thanks.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.53-rc1
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Revert "sched: Add missing call to calc_load_exit_idle()"
-
-Ben Hutchings <ben@decadent.org.uk>
-    SCSI: sd: Fix parsing of 'temporary ' cache mode prefix
-
-J. Bruce Fields <bfields@redhat.com>
-    nfsd4: fix decoding of compounds across page boundaries
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
-
-Kees Cook <keescook@chromium.org>
-    crypto: sanitize argument for format string
-
-Kees Cook <keescook@chromium.org>
-    block: do not pass disk names as format strings
-
-Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-    hpfs: better test for errors
-
-Kees Cook <keescook@chromium.org>
-    charger-manager: Ensure event is not used as format string
-
-Jonathan Salwan <jonathan.salwan@gmail.com>
-    drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-
-Tyler Hicks <tyhicks@canonical.com>
-    libceph: Fix NULL pointer dereference in auth client code
-
-
--------------
-
-Diffstat:
-
- MAINTAINERS                        | 1 +
- Makefile                           | 4 ++--
- block/genhd.c                      | 2 +-
- crypto/algapi.c                    | 3 ++-
- drivers/block/nbd.c                | 3 ++-
- drivers/cdrom/cdrom.c              | 2 +-
- drivers/power/charger-manager.c    | 2 +-
- drivers/scsi/osd/osd_uld.c         | 2 +-
- drivers/scsi/sd.c                  | 2 +-
- drivers/tty/serial/8250/8250_pci.c | 4 ----
- fs/hpfs/map.c                      | 3 ++-
- fs/hpfs/super.c                    | 8 +++++++-
- fs/nfsd/nfs4xdr.c                  | 2 +-
- kernel/time/tick-sched.c           | 1 -
- net/ceph/auth_none.c               | 6 ++++++
- 15 files changed, 28 insertions(+), 17 deletions(-)
-
-
+josh
