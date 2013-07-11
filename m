@@ -1,65 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab3GKMhf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 08:37:35 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59833 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755858Ab3GKMhd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 08:37:33 -0400
-Message-ID: <1373546233.19894.85.camel@pasglop>
-Subject: Re: [PATCH 8/8] KVM: PPC: Add hugepage support for IOMMU in-kernel
- handling
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Alexander Graf <agraf@suse.de>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Date: Thu, 11 Jul 2013 22:37:13 +1000
-In-Reply-To: <902F79B9-BB81-40A0-865D-94E7108DAC5E@suse.de>
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru>
-	 <1373123227-22969-9-git-send-email-aik@ozlabs.ru>
-	 <51DC4923.5010501@suse.de> <51DE7377.1060503@ozlabs.ru>
-	 <902F79B9-BB81-40A0-865D-94E7108DAC5E@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932364Ab3GKMj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 08:39:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43134 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755858Ab3GKMjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 08:39:55 -0400
+Date: Thu, 11 Jul 2013 14:39:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 16/16] sched: Select least loaded CPU on preferred NUMA
+ node
+Message-ID: <20130711123902.GI25631@dyad.programming.kicks-ass.net>
+References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
+ <1373536020-2799-17-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373536020-2799-17-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-11 at 11:52 +0200, Alexander Graf wrote:
-> > Where exactly (it is rather SPAPR_TCE_IOMMU but does not really
-> matter)?
-> > Select it on KVM_BOOK3S_64? CONFIG_KVM_BOOK3S_64_HV?
-> > CONFIG_KVM_BOOK3S_64_PR? PPC_BOOK3S_64?
-> 
-> I'd say the most logical choice would be to check the Makefile and see
-> when it gets compiled. For those cases we want it enabled.
+On Thu, Jul 11, 2013 at 10:47:00AM +0100, Mel Gorman wrote:
+> +++ b/kernel/sched/fair.c
+> @@ -841,29 +841,81 @@ static unsigned int task_scan_max(struct task_struct *p)
+>   */
+>  unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
+>  
+> +static unsigned long source_load(int cpu, int type);
+> +static unsigned long target_load(int cpu, int type);
+> +static unsigned long power_of(int cpu);
+> +static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
+> +
+> +static int task_numa_find_cpu(struct task_struct *p, int nid)
+> +{
+> +	int node_cpu = cpumask_first(cpumask_of_node(nid));
+> +	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
+> +	unsigned long src_load, dst_load;
+> +	unsigned long min_load = ULONG_MAX;
+> +	struct task_group *tg = task_group(p);
+> +	s64 src_eff_load, dst_eff_load;
+> +	struct sched_domain *sd;
+> +	unsigned long weight;
+> +	int imbalance_pct, idx = -1;
+>  
+> +	/* No harm being optimistic */
+> +	if (idle_cpu(node_cpu))
+> +		return node_cpu;
+>  
+> +	/*
+> +	 * Find the lowest common scheduling domain covering the nodes of both
+> +	 * the CPU the task is currently running on and the target NUMA node.
+> +	 */
+>  	rcu_read_lock();
+> +	for_each_domain(src_cpu, sd) {
+> +		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
+> +			/*
+> +			 * busy_idx is used for the load decision as it is the
+> +			 * same index used by the regular load balancer for an
+> +			 * active cpu.
+> +			 */
+> +			idx = sd->busy_idx;
+> +			imbalance_pct = sd->imbalance_pct;
+> +			break;
+>  		}
+>  	}
+>  	rcu_read_unlock();
+>  
+> +	if (WARN_ON_ONCE(idx == -1))
+> +		return src_cpu;
+> +
+> +	/*
+> +	 * XXX the below is mostly nicked from wake_affine(); we should
+> +	 * see about sharing a bit if at all possible; also it might want
+> +	 * some per entity weight love.
+> +	 */
+> +	weight = p->se.load.weight;
+> + 
+> +	src_load = source_load(src_cpu, idx);
+> +
+> +	src_eff_load = 100 + (imbalance_pct - 100) / 2;
+> +	src_eff_load *= power_of(src_cpu);
+> +	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
+> +
+> +	for_each_cpu(cpu, cpumask_of_node(nid)) {
+> +		dst_load = target_load(cpu, idx);
+> +
+> +		/* If the CPU is idle, use it */
+> +		if (!dst_load)
+> +			return dst_cpu;
+> +
+> +		/* Otherwise check the target CPU load */
+> +		dst_eff_load = 100;
+> +		dst_eff_load *= power_of(cpu);
+> +		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
 
-What *what* gets compiled ? You know our Makefile, it's crap :-)
+So the missing part is:
 
-We enable built-in things when CONFIG_KVM=m (which means you cannot take
-a kernel build with CONFIG_KVM not set, enable CONFIG_KVM=m, and just
-build the module, it won't work).
+		/*
+		 * Do not allow the destination CPU to be loaded significantly
+		 * more than the CPU we came from.
+		 */
+		if (dst_eff_load <= src_eff_load)
+			continue;
 
-We could use KVM_BOOK3S_64 maybe ?
+> +
+> +		if (dst_load < min_load) {
+> +			min_load = dst_load;
+> +			dst_cpu = cpu;
+> +		}
+> + 	}
+> +
+> +	return dst_cpu;
+>  }
 
-> > I am trying to imagine a configuration where we really do not want
-> > IOMMU_API. Ben mentioned PPC32 and embedded PPC64 and that's it so
-> any of
-> > BOOK3S (KVM_BOOK3S_64 is the best) should be fine, no?
-> 
-> book3s_32 doesn't want this, but any book3s_64 implementation could
-> potentially use it, yes. That's pretty much what the Makefile tells
-> you too :).
+This is almost a big fat NOP. It did a scan for the least loaded cpu and now it
+still does. It also doesn't cure the problem Srikar saw where we kept migrating
+all tasks back to the one node with all the memory.
 
-Not really no. But that would do. You could have give a more useful
-answer in the first place though rather than stringing him along.
+Task migration must be subject to fairness limits; otherwise there's nothing
+avoiding heaping all tasks on a single pile.
 
-Cheers,
-Ben.
+One thing we could do to maybe relax things a little bit is take away the
+effective_load() term in the src_eff_load() computation. That way we compare
+the current src load to the future dst load, instead of using the future load
+for both.
 
-
+But we must put a limit on the migration.
