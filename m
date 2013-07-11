@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab3GKAg2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:36:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56614 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab3GKAg0 (ORCPT
+	id S1755492Ab3GKAgh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:36:37 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56868 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755270Ab3GKAgf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:36:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: oliver+list@schinagl.nl, linux@roeck-us.net, khali@linux-fr.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 2/7] sysfs.h: add ATTRIBUTE_GROUPS() macro
-Date: Wed, 10 Jul 2013 17:36:00 -0700
-Message-Id: <1373502965-1683-3-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
- <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 10 Jul 2013 20:36:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgonAM/83VF5LD3k/2dsb2JhbABagwkygm2qfQKOVIUsBAGBDhd0giMBAQUyASMjEAgDDgoJJQ8FJQMhE4gODbdJFox6gQgugR0Hg3UDl1mBKoh4hymDIyo
+Date: Thu, 11 Jul 2013 10:36:29 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Yann Droneaud <ydroneaud@opteya.com>
+Cc: Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 10/13] xfs: use get_unused_fd_flags(0) instead of
+ get_unused_fd()
+Message-ID: <20130711003629.GS3438@dastard>
+References: <cover.1372777600.git.ydroneaud@opteya.com>
+ <8d21b76c621dbfc59b2dbbfc933f96170835304d.1372777600.git.ydroneaud@opteya.com>
+ <20130708224133.GA23250@sgi.com>
+ <20130709205321.GV20932@sgi.com>
+ <70a3a6971c3127226563e9538ae53bec@meuh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <70a3a6971c3127226563e9538ae53bec@meuh.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make it easier for driver subsystems to work with attribute groups,
-create the ATTRIBUTE_GROUPS macro to remove some of the repetitive
-typing for the most common use for attribute groups.
+On Wed, Jul 10, 2013 at 12:00:57PM +0200, Yann Droneaud wrote:
+> Hi,
+> 
+> Le 09.07.2013 22:53, Ben Myers a écrit :
+> >On Mon, Jul 08, 2013 at 05:41:33PM -0500, Ben Myers wrote:
+> >>On Tue, Jul 02, 2013 at 06:39:34PM +0200, Yann Droneaud wrote:
+> 
+> >>> diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
+> >>> index 5e99968..dc5b659 100644
+> >>> --- a/fs/xfs/xfs_ioctl.c
+> >>> +++ b/fs/xfs/xfs_ioctl.c
+> >>> @@ -248,7 +248,7 @@ xfs_open_by_handle(
+> >>>  		goto out_dput;
+> >>>  	}
+> >>>
+> >>> -	fd = get_unused_fd();
+> >>> +	fd = get_unused_fd_flags(0);
+> >>
+> >>O_CLOEXEC should be fine in this case.
+> >>
+> >>Reviewed-by: Ben Myers <bpm@sgi.com>
+> >
+> >Applied at git://oss.sgi.com/xfs/xfs.git.  Looks like I was wrong about
+> >O_CLOEXEC being ok here.  There may be applications which
+> >open_by_handle then
+> >fork/exec and expect to still be able to use that file descriptor.
+> >
+> 
+> OK, it's very important to not cause regression here.
+> 
+> For the record, xfs_open_by_handle() is not related to
+> open_by_handle_at() syscall.
+> 
+> It's an ioctl (XFS_IOC_OPEN_BY_HANDLE) which is used by xfsprogs's
+> libhandle
+> in functions open_by_fshandle() and open_by_handle().
+> 
+> http://sources.debian.net/src/xfsprogs/3.1.9/libhandle/handle.c?hl=284#L284
+> http://sources.debian.net/src/xfsprogs/3.1.9/libhandle/handle.c?hl=308#L308
+> 
+> According to codesearch.debian.org, libhandle's open_by_handle() is
+> only used
+> by xfsdump
+> 
+> http://sources.debian.net/src/xfsdump/3.1.1/restore/tree.c?hl=2534#L2534
+> 
+> So there's no many *known* users of this features ... but it's more
+> important
+> not to break *unknown* users of it.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/sysfs.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+There are commercial products (i.e. proprietary, closed source) that
+use it. SGI has one (DMF) and there are a couple of other backup
+programs that have used it in the past, too.
 
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index 9cd20c8..f62ff01 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -94,6 +94,15 @@ struct attribute_group {
- #define __ATTR_IGNORE_LOCKDEP	__ATTR
- #endif
- 
-+#define ATTRIBUTE_GROUPS(name)					\
-+static const struct attribute_group name##_group = {		\
-+	.attrs = name##_attrs,					\
-+};								\
-+static const struct attribute_group *name##_groups[] = {	\
-+	&name##_group,						\
-+	NULL,							\
-+}
-+
- #define attr_name(_attr) (_attr).attr.name
- 
- struct file;
+Cheers,
+
+Dave.
 -- 
-1.8.3.rc0.20.gb99dd2e
-
+Dave Chinner
+david@fromorbit.com
