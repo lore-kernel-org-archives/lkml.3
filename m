@@ -1,34 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588Ab3GKTDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 15:03:20 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:58633 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab3GKTDR (ORCPT
+	id S1756600Ab3GKTP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 15:15:58 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:54885 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751610Ab3GKTP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 15:03:17 -0400
-Date: Thu, 11 Jul 2013 12:03:16 -0700 (PDT)
-Message-Id: <20130711.120316.1417691971019693577.davem@davemloft.net>
-To: camelia.groza@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] inet: fix spacing in assignment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1373525751-9724-1-git-send-email-camelia.groza@gmail.com>
-References: <1373525751-9724-1-git-send-email-camelia.groza@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 15:15:56 -0400
+From: Dragos Foianu <dragos.foianu@gmail.com>
+To: wensong@linux-vs.org
+Cc: horms@verge.net.au, ja@ssi.bg, pablo@netfilter.org, kaber@trash.net,
+        kadlec@blackhole.kfki.hu, davem@davemloft.net, netdev@vger.kernel.org,
+        lvs-devel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-kernel@vger.kernel.org, Dragos Foianu <dragos.foianu@gmail.com>
+Subject: [PATCH] ipvs: fixed style errors in ip_vs_dh
+Date: Thu, 11 Jul 2013 22:15:44 +0300
+Message-Id: <1373570144-4785-1-git-send-email-dragos.foianu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Camelia Groza <camelia.groza@gmail.com>
-Date: Thu, 11 Jul 2013 09:55:51 +0300
+found with the help of checkpatch.pl
 
-> Found using checkpatch.pl
-> 
-> Signed-off-by: Camelia Groza <camelia.groza@gmail.com>
+Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
+---
+ net/netfilter/ipvs/ip_vs_dh.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-Applied.
+diff --git a/net/netfilter/ipvs/ip_vs_dh.c b/net/netfilter/ipvs/ip_vs_dh.c
+index c3b8454..8ab2fc8 100644
+--- a/net/netfilter/ipvs/ip_vs_dh.c
++++ b/net/netfilter/ipvs/ip_vs_dh.c
+@@ -110,7 +110,7 @@ ip_vs_dh_reassign(struct ip_vs_dh_state *s, struct ip_vs_service *svc)
+ 	b = &s->buckets[0];
+ 	p = &svc->destinations;
+ 	empty = list_empty(p);
+-	for (i=0; i<IP_VS_DH_TAB_SIZE; i++) {
++	for (i = 0; i < IP_VS_DH_TAB_SIZE; i++) {
+ 		dest = rcu_dereference_protected(b->dest, 1);
+ 		if (dest)
+ 			ip_vs_dest_put(dest);
+@@ -142,7 +142,7 @@ static void ip_vs_dh_flush(struct ip_vs_dh_state *s)
+ 	struct ip_vs_dest *dest;
+ 
+ 	b = &s->buckets[0];
+-	for (i=0; i<IP_VS_DH_TAB_SIZE; i++) {
++	for (i = 0; i < IP_VS_DH_TAB_SIZE; i++) {
+ 		dest = rcu_dereference_protected(b->dest, 1);
+ 		if (dest) {
+ 			ip_vs_dest_put(dest);
+@@ -244,8 +244,7 @@ ip_vs_dh_schedule(struct ip_vs_service *svc, const struct sk_buff *skb,
+ /*
+  *      IPVS DH Scheduler structure
+  */
+-static struct ip_vs_scheduler ip_vs_dh_scheduler =
+-{
++static struct ip_vs_scheduler ip_vs_dh_scheduler = {
+ 	.name =			"dh",
+ 	.refcnt =		ATOMIC_INIT(0),
+ 	.module =		THIS_MODULE,
+-- 
+1.7.10.4
+
