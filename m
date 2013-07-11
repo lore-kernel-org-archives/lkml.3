@@ -1,59 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab3GKNVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:21:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45545 "EHLO mx2.suse.de"
+	id S1755797Ab3GKNXG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:23:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45575 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755118Ab3GKNVw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:21:52 -0400
-Subject: Re: [PATCH 6/8] KVM: PPC: Add support for multiple-TCE hcalls
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=US-ASCII
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <51DEAF60.2000902@ozlabs.ru>
-Date: Thu, 11 Jul 2013 15:21:46 +0200
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Content-Transfer-Encoding: 7BIT
-Message-Id: <996F5EDD-9C1A-4920-8D5C-D7561AA00769@suse.de>
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru>  <1373123227-22969-7-git-send-email-aik@ozlabs.ru>  <51DC4228.7010607@suse.de> <51DCEA76.9070808@ozlabs.ru>  <D10E7B99-3A7C-4275-9A49-3CB15598E705@suse.de> <51DE3ECB.7080803@ozlabs.ru>  <43E93931-F213-47CC-ADCF-D3A6D6BC4372@suse.de> <51DE8EE9.2000508@ozlabs.ru>  <C6BC1E27-4C9C-4A18-A64A-052202DA64B5@suse.de>  <1373546368.19894.87.camel@pasglop>  <4133424D-B105-4CB1-A72A-4F47A6184DC7@suse.de> <1373547480.19894.102.camel@pasglop> <51DEAF60.2000902@ozlabs.ru>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-X-Mailer: Apple Mail (2.1278)
+	id S1755118Ab3GKNXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 09:23:03 -0400
+Date: Thu, 11 Jul 2013 15:23:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130711132300.GG21667@dhcp22.suse.cz>
+References: <20130701081056.GA4072@dastard>
+ <20130702092200.GB16815@dhcp22.suse.cz>
+ <20130702121947.GE14996@dastard>
+ <20130702124427.GG16815@dhcp22.suse.cz>
+ <20130703112403.GP14996@dastard>
+ <20130704163643.GF7833@dhcp22.suse.cz>
+ <20130708125352.GC20149@dhcp22.suse.cz>
+ <20130710023138.GO3438@dastard>
+ <20130710080605.GC4437@dhcp22.suse.cz>
+ <20130711022634.GZ3438@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130711022634.GZ3438@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 11.07.2013, at 15:13, Alexey Kardashevskiy wrote:
-
-> On 07/11/2013 10:58 PM, Benjamin Herrenschmidt wrote:
->> On Thu, 2013-07-11 at 14:51 +0200, Alexander Graf wrote:
->>> I don't like bloat usually. But Alexey even had an #ifdef DEBUG in
->>> there to selectively disable in-kernel handling of multi-TCE. Not
->>> calling ENABLE_CAP would give him exactly that without ugly #ifdefs in
->>> the kernel.
->> 
->> I don't see much point in disabling it... but ok, if that's a valuable
->> feature, then shoot some VM level ENABLE_CAP (please don't iterate all
->> VCPUs, that's gross).
+On Thu 11-07-13 12:26:34, Dave Chinner wrote:
+> On Wed, Jul 10, 2013 at 10:06:05AM +0200, Michal Hocko wrote:
+> > On Wed 10-07-13 12:31:39, Dave Chinner wrote:
+> > [...]
+> > > > 20761 [<ffffffffa0305fdd>] xlog_grant_head_wait+0xdd/0x1a0 [xfs]
+> > > > [<ffffffffa0306166>] xlog_grant_head_check+0xc6/0xe0 [xfs]
+> > > > [<ffffffffa030627f>] xfs_log_reserve+0xff/0x240 [xfs]
+> > > > [<ffffffffa0302ac4>] xfs_trans_reserve+0x234/0x240 [xfs]
+> > > > [<ffffffffa02c5999>] xfs_create+0x1a9/0x5c0 [xfs]
+> > > > [<ffffffffa02bccca>] xfs_vn_mknod+0x8a/0x1a0 [xfs]
+> > > > [<ffffffffa02bce0e>] xfs_vn_create+0xe/0x10 [xfs]
+> > > > [<ffffffff811763dd>] vfs_create+0xad/0xd0
+> > > > [<ffffffff81177e68>] lookup_open+0x1b8/0x1d0
+> > > > [<ffffffff8117815e>] do_last+0x2de/0x780
+> > > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > > > [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
+> > > > [<ffffffffffffffff>] 0xffffffffffffffff
+> > > 
+> > > That's an XFS log space issue, indicating that it has run out of
+> > > space in IO the log and it is waiting for more to come free. That
+> > > requires IO completion to occur.
+> > >
+> > > > [276962.652076] INFO: task xfs-data/sda9:930 blocked for more than 480 seconds.
+> > > > [276962.652087] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > > > [276962.652093] xfs-data/sda9   D ffff88001ffb9cc8     0   930      2 0x00000000
+> > > 
+> > > Oh, that's why. This is the IO completion worker...
+> > 
+> > But that task doesn't seem to be stuck anymore (at least lockup watchdog
+> > doesn't report it anymore and I have already rebooted to test with ext3
+> > :/). I am sorry if the these lockups logs were more confusing than
+> > helpful, but they happened _long_ time ago and the system obviously
+> > recovered from them. I am pasting only the traces for processes in D
+> > state here again for reference.
 > 
-> No use for me whatsoever as I only want to disable real more handlers and
-> keep virtual mode handlers enabled (sometime, for debug only) and this
-> capability is not about that - I can easily just not enable it in QEMU with
-> the exactly the same effect.
+> Right, there are various triggers that can get XFS out of the
+> situation - it takes something to kick the log or metadata writeback
+> and that can make space in the log free up and hence things get
+> moving again. The problem will be that once in this low memory state
+> everything in the filesystem will back up on slow memory allocation
+> and it might take minutes to clear the backlog of IO completions....
 > 
-> So please, fellas, decide whether I should iterate vcpu's or add ENABLE_CAP
-> per KVM. Thanks.
+> > 20757 [<ffffffffa0305fdd>] xlog_grant_head_wait+0xdd/0x1a0 [xfs]
+> > [<ffffffffa0306166>] xlog_grant_head_check+0xc6/0xe0 [xfs]
+> > [<ffffffffa030627f>] xfs_log_reserve+0xff/0x240 [xfs]
+> > [<ffffffffa0302ac4>] xfs_trans_reserve+0x234/0x240 [xfs]
+> 
+> That is the stack of a process waiting for log space to come
+> available.
+> 
+> > We are wating for page under writeback but neither of the 2 paths starts
+> > in xfs code. So I do not think waiting for PageWriteback causes a
+> > deadlock here.
+> 
+> The problem is this: the page that we are waiting for IO on is in
+> the IO completion queue, but the IO compeltion requires memory
+> allocation to complete the transaction. That memory allocation is
+> causing memcg reclaim, which then waits for IO completion on another
+> page, which may or may not end up in the same IO completion queue.
+> The CMWQ can continue to process new Io completions - up to a point
+> - so slow progress will be made. In the worst case, it can deadlock.
 
-Thinking hard about this it might actually be ok to not have an ENABLE_CAP for this, if kernel code always works properly, because from the guest's point of view nothing changes - it either gets handled by kernel or by user space. And user space either handles it or doesn't, so it's ok.
+OK, I thought something like that was going on but I just wanted to be
+sure that I didn't manage to confuse you by the lockup messages.
+> 
+> GFP_NOFS allocation is the mechanism by which filesystems are
+> supposed to be able to avoid this recursive deadlock...
 
-Just leave it out this time. But be very weary of adding new features without an ENABLE_CAP switch. They might be guest visible changes.
+Yes.
 
+> > [...]
+> > > ... is running IO completion work and trying to commit a transaction
+> > > that is blocked in memory allocation which is waiting for IO
+> > > completion. It's disappeared up it's own fundamental orifice.
+> > > 
+> > > Ok, this has absolutely nothing to do with the LRU changes - this is
+> > > a pre-existing XFS/mm interaction problem from around 3.2. The
+> > > question is now this: how the hell do I get memory allocation to not
+> > > block waiting on IO completion here? This is already being done in
+> > > GFP_NOFS allocation context here....
+> > 
+> > Just for reference. wait_on_page_writeback is issued only for memcg
+> > reclaim because there is no other throttling mechanism to prevent from
+> > too many dirty pages on the list, thus pre-mature OOM killer. See
+> > e62e384e9d (memcg: prevent OOM with too many dirty pages) for more
+> > details. The original patch relied on may_enter_fs but that check
+> > disappeared by later changes by c3b94f44fc (memcg: further prevent OOM
+> > with too many dirty pages).
+> 
+> Aye. That's the exact code I was looking at yesterday and wondering
+> "how the hell is waiting on page writeback valid in GFP_NOFS
+> context?". It seems that memcg reclaim is intentionally ignoring
+> GFP_NOFS to avoid OOM issues.  That's a memcg implementation problem,
+> not a filesystem or LRU infrastructure problem....
 
-Alex
+Agreed and until we have a proper per memcg dirty memory throttling we
+will always be in a workaround mode. Which is sad but that is the
+reality...
 
+I am CCing Hugh (the discussion was long and started with a different
+issue but the above should tell about the current xfs hang. It seems
+that c3b94f44fc make xfs hang).
+-- 
+Michal Hocko
+SUSE Labs
