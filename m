@@ -1,341 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab3GKQPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:15:13 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40146 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932183Ab3GKQPK (ORCPT
+	id S932686Ab3GKQPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:15:49 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:42570 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183Ab3GKQPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:15:10 -0400
-Subject: [PATCH 07/16] fuse: Trust kernel i_mtime only -v2
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, miklos@szeredi.hu, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, devel@openvz.org
-Date: Thu, 11 Jul 2013 20:14:59 +0400
-Message-ID: <20130711161238.29253.10753.stgit@maximpc.sw.ru>
-In-Reply-To: <20130629174446.20175.25189.stgit@maximpc.sw.ru>
-References: <20130629174446.20175.25189.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Thu, 11 Jul 2013 12:15:47 -0400
+Message-ID: <1373559305.24916.14.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / scan: Always call acpi_bus_scan() for bus check
+ notifications
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Thu, 11 Jul 2013 10:15:05 -0600
+In-Reply-To: <8128042.hqqjriutNl@vostro.rjw.lan>
+References: <2230821.QbNohsyO0O@vostro.rjw.lan>
+	 <6189099.QeK4PsCIFb@vostro.rjw.lan>
+	 <1373500106.24916.13.camel@misato.fc.hp.com>
+	 <8128042.hqqjriutNl@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the kernel maintain i_mtime locally:
- - clear S_NOCMTIME
- - implement i_op->update_time()
- - flush mtime on fsync and last close
- - update i_mtime explicitly on truncate and fallocate
+On Thu, 2013-07-11 at 02:39 +0200, Rafael J. Wysocki wrote:
+> On Wednesday, July 10, 2013 05:48:26 PM Toshi Kani wrote:
+> > On Thu, 2013-07-11 at 00:45 +0200, Rafael J. Wysocki wrote:
+> > > On Wednesday, July 10, 2013 02:11:05 AM Rafael J. Wysocki wrote:
+> > > > On Tuesday, July 09, 2013 01:32:42 PM Toshi Kani wrote:
+> > > > > On Mon, 2013-07-08 at 02:10 +0200, Rafael J. Wysocki wrote:
+> > > > > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > 
+> > > > > > An ACPI_NOTIFY_BUS_CHECK notification means that we should scan the
+> > > > > > entire namespace starting from the given handle even if the device
+> > > > > > represented by that handle is present (other devices below it may
+> > > > > > just have been added).
+> > > > > > 
+> > > > > > For this reason, modify acpi_scan_bus_device_check() to always run
+> > > > > > acpi_bus_scan() if the notification being handled is of type
+> > > > > > ACPI_NOTIFY_BUS_CHECK.
+> > > > > > 
+> > > > > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > > > > Cc: 3.10+ <stable@vger.kernel.org>
+> > > > > 
+> > > > > Acked-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > 
+> > > > > But, I think we need the additional patch below.
+> > > > 
+> > > > Yes, I think you're right.
+> > > 
+> > > That said I'd prefer to put the check into acpi_bus_device_attach() like in
+> > > the appended patch.
+> > 
+> > That's fine by me.  
+> > 
+> > Acked-by: Toshi Kani <toshi.kani@hp.com>
+> > 
+> > Just a minor point, though.  Isn't it a bit inconsistent with
+> > device_attach(), which checks dev->driver inside the function?
+> 
+> Well, device_attach() may be called from different places while this is
+> the only place where acpi_scan_attach_handler() is called.
+> 
+> The check in acpi_bus_device_attach() is easier to follow to me, because
+> it clearly means "we don't need to do anything more if there's a handler",
+> while the check in acpi_scan_attach_handler() makes you wonder "why do we
+> need to return 1 in that case?" and then you need to go to the caller and
+> look at the check of the return value to see "ah, because we don't want
+> that device_attach() to be called then!".
 
-Fuse inode flag FUSE_I_MTIME_DIRTY serves as indication that local i_mtime
-should be flushed to the server eventually.
+Sounds good to me.
 
-Changed in v2 (thanks to Brian):
- - renamed FUSE_I_MTIME_UPDATED to FUSE_I_MTIME_DIRTY
- - simplified fuse_set_mtime_local()
- - abandoned optimizations: clearing the flag on some operations (like
-   direct write) is doable, but may lead to unexpected changes of
-   user-visible mtime.
+Thanks,
+-Toshi
 
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
----
- fs/fuse/dir.c    |  109 ++++++++++++++++++++++++++++++++++++++++++++++++------
- fs/fuse/file.c   |   30 +++++++++++++--
- fs/fuse/fuse_i.h |    6 ++-
- fs/fuse/inode.c  |   13 +++++-
- 4 files changed, 138 insertions(+), 20 deletions(-)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index b755884..b834e46 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -854,8 +854,11 @@ static void fuse_fillattr(struct inode *inode, struct fuse_attr *attr,
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 
- 	/* see the comment in fuse_change_attributes() */
--	if (fc->writeback_cache && S_ISREG(inode->i_mode))
-+	if (fc->writeback_cache && S_ISREG(inode->i_mode)) {
- 		attr->size = i_size_read(inode);
-+		attr->mtime = inode->i_mtime.tv_sec;
-+		attr->mtimensec = inode->i_mtime.tv_nsec;
-+	}
- 
- 	stat->dev = inode->i_sb->s_dev;
- 	stat->ino = attr->ino;
-@@ -1565,6 +1568,82 @@ void fuse_release_nowrite(struct inode *inode)
- 	spin_unlock(&fc->lock);
- }
- 
-+static void fuse_setattr_fill(struct fuse_conn *fc, struct fuse_req *req,
-+			      struct inode *inode,
-+			      struct fuse_setattr_in *inarg_p,
-+			      struct fuse_attr_out *outarg_p)
-+{
-+	req->in.h.opcode = FUSE_SETATTR;
-+	req->in.h.nodeid = get_node_id(inode);
-+	req->in.numargs = 1;
-+	req->in.args[0].size = sizeof(*inarg_p);
-+	req->in.args[0].value = inarg_p;
-+	req->out.numargs = 1;
-+	if (fc->minor < 9)
-+		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
-+	else
-+		req->out.args[0].size = sizeof(*outarg_p);
-+	req->out.args[0].value = outarg_p;
-+}
-+
-+/*
-+ * Flush inode->i_mtime to the server
-+ */
-+int fuse_flush_mtime(struct file *file, bool nofail)
-+{
-+	struct inode *inode = file->f_mapping->host;
-+	struct fuse_inode *fi = get_fuse_inode(inode);
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+	struct fuse_req *req = NULL;
-+	struct fuse_setattr_in inarg;
-+	struct fuse_attr_out outarg;
-+	int err;
-+
-+	if (nofail) {
-+		req = fuse_get_req_nofail_nopages(fc, file);
-+	} else {
-+		req = fuse_get_req_nopages(fc);
-+		if (IS_ERR(req))
-+			return PTR_ERR(req);
-+	}
-+
-+	memset(&inarg, 0, sizeof(inarg));
-+	memset(&outarg, 0, sizeof(outarg));
-+
-+	inarg.valid |= FATTR_MTIME;
-+	inarg.mtime = inode->i_mtime.tv_sec;
-+	inarg.mtimensec = inode->i_mtime.tv_nsec;
-+
-+	fuse_setattr_fill(fc, req, inode, &inarg, &outarg);
-+	fuse_request_send(fc, req);
-+	err = req->out.h.error;
-+	fuse_put_request(fc, req);
-+
-+	if (!err)
-+		clear_bit(FUSE_I_MTIME_DIRTY, &fi->state);
-+
-+	return err;
-+}
-+
-+/*
-+ * S_NOCMTIME is clear, so we need to update inode->i_mtime manually.
-+ */
-+static void fuse_set_mtime_local(struct iattr *iattr, struct inode *inode)
-+{
-+	unsigned ivalid = iattr->ia_valid;
-+	struct fuse_inode *fi = get_fuse_inode(inode);
-+
-+	if ((ivalid & ATTR_MTIME) && (ivalid & ATTR_MTIME_SET)) {
-+		/* client fs has just set mtime to iattr->ia_mtime */
-+		inode->i_mtime = iattr->ia_mtime;
-+		clear_bit(FUSE_I_MTIME_DIRTY, &fi->state);
-+	} else if ((ivalid & ATTR_MTIME) || (ivalid & ATTR_SIZE)) {
-+		/* client fs doesn't know that we're updating i_mtime */
-+		inode->i_mtime = current_fs_time(inode->i_sb);
-+		set_bit(FUSE_I_MTIME_DIRTY, &fi->state);
-+	}
-+}
-+
- /*
-  * Set attributes, and at the same time refresh them.
-  *
-@@ -1621,17 +1700,7 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 		inarg.valid |= FATTR_LOCKOWNER;
- 		inarg.lock_owner = fuse_lock_owner_id(fc, current->files);
- 	}
--	req->in.h.opcode = FUSE_SETATTR;
--	req->in.h.nodeid = get_node_id(inode);
--	req->in.numargs = 1;
--	req->in.args[0].size = sizeof(inarg);
--	req->in.args[0].value = &inarg;
--	req->out.numargs = 1;
--	if (fc->minor < 9)
--		req->out.args[0].size = FUSE_COMPAT_ATTR_OUT_SIZE;
--	else
--		req->out.args[0].size = sizeof(outarg);
--	req->out.args[0].value = &outarg;
-+	fuse_setattr_fill(fc, req, inode, &inarg, &outarg);
- 	fuse_request_send(fc, req);
- 	err = req->out.h.error;
- 	fuse_put_request(fc, req);
-@@ -1648,6 +1717,10 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 	}
- 
- 	spin_lock(&fc->lock);
-+	/* the kernel maintains i_mtime locally */
-+	if (fc->writeback_cache && S_ISREG(inode->i_mode))
-+		fuse_set_mtime_local(attr, inode);
-+
- 	fuse_change_attributes_common(inode, &outarg.attr,
- 				      attr_timeout(&outarg));
- 	oldsize = inode->i_size;
-@@ -1872,6 +1945,17 @@ static int fuse_removexattr(struct dentry *entry, const char *name)
- 	return err;
- }
- 
-+static int fuse_update_time(struct inode *inode, struct timespec *now,
-+			    int flags)
-+{
-+	if (flags & S_MTIME) {
-+		inode->i_mtime = *now;
-+		set_bit(FUSE_I_MTIME_DIRTY, &get_fuse_inode(inode)->state);
-+		BUG_ON(!S_ISREG(inode->i_mode));
-+	}
-+	return 0;
-+}
-+
- static const struct inode_operations fuse_dir_inode_operations = {
- 	.lookup		= fuse_lookup,
- 	.mkdir		= fuse_mkdir,
-@@ -1911,6 +1995,7 @@ static const struct inode_operations fuse_common_inode_operations = {
- 	.getxattr	= fuse_getxattr,
- 	.listxattr	= fuse_listxattr,
- 	.removexattr	= fuse_removexattr,
-+	.update_time	= fuse_update_time,
- };
- 
- static const struct inode_operations fuse_symlink_inode_operations = {
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 98bc0d0..09a9eeb 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -291,6 +291,9 @@ static int fuse_open(struct inode *inode, struct file *file)
- 
- static int fuse_release(struct inode *inode, struct file *file)
- {
-+	if (test_bit(FUSE_I_MTIME_DIRTY, &get_fuse_inode(inode)->state))
-+		fuse_flush_mtime(file, true);
-+
- 	fuse_release_common(file, FUSE_RELEASE);
- 
- 	/* return value is ignored by VFS */
-@@ -458,6 +461,12 @@ int fuse_fsync_common(struct file *file, loff_t start, loff_t end,
- 
- 	fuse_sync_writes(inode);
- 
-+	if (test_bit(FUSE_I_MTIME_DIRTY, &get_fuse_inode(inode)->state)) {
-+		int err = fuse_flush_mtime(file, false);
-+		if (err)
-+			goto out;
-+	}
-+
- 	req = fuse_get_req_nopages(fc);
- 	if (IS_ERR(req)) {
- 		err = PTR_ERR(req);
-@@ -948,16 +957,21 @@ static size_t fuse_send_write(struct fuse_req *req, struct fuse_io_priv *io,
- 	return req->misc.write.out.size;
- }
- 
--void fuse_write_update_size(struct inode *inode, loff_t pos)
-+bool fuse_write_update_size(struct inode *inode, loff_t pos)
- {
- 	struct fuse_conn *fc = get_fuse_conn(inode);
- 	struct fuse_inode *fi = get_fuse_inode(inode);
-+	bool ret = false;
- 
- 	spin_lock(&fc->lock);
- 	fi->attr_version = ++fc->attr_version;
--	if (pos > inode->i_size)
-+	if (pos > inode->i_size) {
- 		i_size_write(inode, pos);
-+		ret = true;
-+	}
- 	spin_unlock(&fc->lock);
-+
-+	return ret;
- }
- 
- static size_t fuse_send_write_pages(struct fuse_req *req, struct file *file,
-@@ -2553,8 +2567,16 @@ static long fuse_file_fallocate(struct file *file, int mode, loff_t offset,
- 		goto out;
- 
- 	/* we could have extended the file */
--	if (!(mode & FALLOC_FL_KEEP_SIZE))
--		fuse_write_update_size(inode, offset + length);
-+	if (!(mode & FALLOC_FL_KEEP_SIZE)) {
-+		bool changed = fuse_write_update_size(inode, offset + length);
-+
-+		if (changed && fc->writeback_cache) {
-+			struct fuse_inode *fi = get_fuse_inode(inode);
-+
-+			inode->i_mtime = current_fs_time(inode->i_sb);
-+			set_bit(FUSE_I_MTIME_DIRTY, &fi->state);
-+		}
-+	}
- 
- 	if (mode & FALLOC_FL_PUNCH_HOLE)
- 		truncate_pagecache_range(inode, offset, offset + length - 1);
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index a0062a0..c192e6f 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -115,6 +115,8 @@ struct fuse_inode {
- enum {
- 	/** Advise readdirplus  */
- 	FUSE_I_ADVISE_RDPLUS,
-+	/** i_mtime has been updated locally; a flush to userspace needed */
-+	FUSE_I_MTIME_DIRTY,
- };
- 
- struct fuse_conn;
-@@ -867,7 +869,9 @@ long fuse_ioctl_common(struct file *file, unsigned int cmd,
- unsigned fuse_file_poll(struct file *file, poll_table *wait);
- int fuse_dev_release(struct inode *inode, struct file *file);
- 
--void fuse_write_update_size(struct inode *inode, loff_t pos);
-+bool fuse_write_update_size(struct inode *inode, loff_t pos);
-+
-+int fuse_flush_mtime(struct file *file, bool nofail);
- 
- int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 		    struct file *file);
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 121638d..591b46c 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -170,8 +170,11 @@ void fuse_change_attributes_common(struct inode *inode, struct fuse_attr *attr,
- 	inode->i_blocks  = attr->blocks;
- 	inode->i_atime.tv_sec   = attr->atime;
- 	inode->i_atime.tv_nsec  = attr->atimensec;
--	inode->i_mtime.tv_sec   = attr->mtime;
--	inode->i_mtime.tv_nsec  = attr->mtimensec;
-+	/* mtime from server may be stale due to local buffered write */
-+	if (!fc->writeback_cache || !S_ISREG(inode->i_mode)) {
-+		inode->i_mtime.tv_sec   = attr->mtime;
-+		inode->i_mtime.tv_nsec  = attr->mtimensec;
-+	}
- 	inode->i_ctime.tv_sec   = attr->ctime;
- 	inode->i_ctime.tv_nsec  = attr->ctimensec;
- 
-@@ -249,6 +252,8 @@ static void fuse_init_inode(struct inode *inode, struct fuse_attr *attr)
- {
- 	inode->i_mode = attr->mode & S_IFMT;
- 	inode->i_size = attr->size;
-+	inode->i_mtime.tv_sec  = attr->mtime;
-+	inode->i_mtime.tv_nsec = attr->mtimensec;
- 	if (S_ISREG(inode->i_mode)) {
- 		fuse_init_common(inode);
- 		fuse_init_file_inode(inode);
-@@ -295,7 +300,9 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
- 		return NULL;
- 
- 	if ((inode->i_state & I_NEW)) {
--		inode->i_flags |= S_NOATIME|S_NOCMTIME;
-+		inode->i_flags |= S_NOATIME;
-+		if (!fc->writeback_cache)
-+			inode->i_flags |= S_NOCMTIME;
- 		inode->i_generation = generation;
- 		inode->i_data.backing_dev_info = &fc->bdi;
- 		fuse_init_inode(inode, attr);
+> 
+> > That said, I am OK with either way.
+> 
+> Cool. :-)
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> > > ---
+> > > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > Subject: ACPI / scan: Do not try to attach scan handlers to devices having them
+> > > 
+> > > In acpi_bus_device_attach(), if there is an ACPI device object
+> > > for the given handle and that device object has a scan handler
+> > > attached to it already, there's nothing more to do for that handle
+> > > and the function should just return success immediately.  Make
+> > > that happen.
+> > > 
+> > > Reported-by: Toshi Kani <toshi.kani@hp.com>
+> > > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > > ---
+> > >  drivers/acpi/scan.c |    3 +++
+> > >  1 file changed, 3 insertions(+)
+> > > 
+> > > Index: linux-pm/drivers/acpi/scan.c
+> > > ===================================================================
+> > > --- linux-pm.orig/drivers/acpi/scan.c
+> > > +++ linux-pm/drivers/acpi/scan.c
+> > > @@ -1984,6 +1984,9 @@ static acpi_status acpi_bus_device_attac
+> > >  	if (acpi_bus_get_device(handle, &device))
+> > >  		return AE_CTRL_DEPTH;
+> > >  
+> > > +	if (device->handler)
+> > > +		return AE_OK;
+> > > +
+> > >  	ret = acpi_scan_attach_handler(device);
+> > >  	if (ret)
+> > >  		return ret > 0 ? AE_OK : AE_CTRL_DEPTH;
+> > > 
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 
