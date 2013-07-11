@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855Ab3GKOpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:45:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42994 "EHLO
+	id S932964Ab3GKOqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:46:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42961 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab3GKO0F (ORCPT
+	with ESMTP id S932765Ab3GKOZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:05 -0400
+	Thu, 11 Jul 2013 10:25:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Axel Lin <axel.lin@ingics.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Laszlo Ersek <lersek@redhat.com>, John Haxby <john.haxby@oracle.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 38/98] drivers/rtc/rtc-rv3029c2.c: fix disabling AIE irq
-Date: Thu, 11 Jul 2013 15:24:08 +0100
-Message-Id: <1373552708-15235-39-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 32/98] xen/time: remove blocked time accounting from xen "clockchip"
+Date: Thu, 11 Jul 2013 15:24:02 +0100
+Message-Id: <1373552708-15235-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,36 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Laszlo Ersek <lersek@redhat.com>
 
-commit 29ecd78c0fd6ee05f2c6b07b23823a6ae43c13ff upstream.
+commit 0b0c002c340e78173789f8afaa508070d838cf3d upstream.
 
-In the disable AIE irq code path, current code passes "1" to enable
-parameter of rv3029c2_rtc_i2c_alarm_set_irq().  Thus it does not disable
-AIE irq.
+... because the "clock_event_device framework" already accounts for idle
+time through the "event_handler" function pointer in
+xen_timer_interrupt().
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Acked-by: Heiko Schocher <hs@denx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The patch is intended as the completion of [1]. It should fix the double
+idle times seen in PV guests' /proc/stat [2]. It should be orthogonal to
+stolen time accounting (the removed code seems to be isolated).
+
+The approach may be completely misguided.
+
+[1] https://lkml.org/lkml/2011/10/6/10
+[2] http://lists.xensource.com/archives/html/xen-devel/2010-08/msg01068.html
+
+John took the time to retest this patch on top of v3.10 and reported:
+"idle time is correctly incremented for pv and hvm for the normal
+case, nohz=off and nohz=idle." so lets put this patch in.
+
+Signed-off-by: Laszlo Ersek <lersek@redhat.com>
+Signed-off-by: John Haxby <john.haxby@oracle.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/rtc/rtc-rv3029c2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/xen/time.c | 17 ++---------------
+ 1 file changed, 2 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/rtc/rtc-rv3029c2.c b/drivers/rtc/rtc-rv3029c2.c
-index 0fbe57b..21d63d1 100644
---- a/drivers/rtc/rtc-rv3029c2.c
-+++ b/drivers/rtc/rtc-rv3029c2.c
-@@ -310,7 +310,7 @@ static int rv3029c2_rtc_i2c_set_alarm(struct i2c_client *client,
- 		dev_dbg(&client->dev, "alarm IRQ armed\n");
- 	} else {
- 		/* disable AIE irq */
--		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 1);
-+		ret = rv3029c2_rtc_i2c_alarm_set_irq(client, 0);
- 		if (ret)
- 			return ret;
+diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
+index 054cc01..d50a821 100644
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate);
+ /* snapshots of runstate info */
+ static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
  
+-/* unused ns of stolen and blocked time */
++/* unused ns of stolen time */
+ static DEFINE_PER_CPU(u64, xen_residual_stolen);
+-static DEFINE_PER_CPU(u64, xen_residual_blocked);
+ 
+ /* return an consistent snapshot of 64-bit time/counter value */
+ static u64 get64(const u64 *p)
+@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
+ {
+ 	struct vcpu_runstate_info state;
+ 	struct vcpu_runstate_info *snap;
+-	s64 blocked, runnable, offline, stolen;
++	s64 runnable, offline, stolen;
+ 	cputime_t ticks;
+ 
+ 	get_runstate_snapshot(&state);
+@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
+ 	snap = &__get_cpu_var(xen_runstate_snapshot);
+ 
+ 	/* work out how much time the VCPU has not been runn*ing*  */
+-	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
+ 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
+ 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
+ 
+@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
+ 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
+ 	__this_cpu_write(xen_residual_stolen, stolen);
+ 	account_steal_ticks(ticks);
+-
+-	/* Add the appropriate number of ticks of blocked time,
+-	   including any left-overs from last time. */
+-	blocked += __this_cpu_read(xen_residual_blocked);
+-
+-	if (blocked < 0)
+-		blocked = 0;
+-
+-	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
+-	__this_cpu_write(xen_residual_blocked, blocked);
+-	account_idle_ticks(ticks);
+ }
+ 
+ /* Get the TSC speed from Xen */
 -- 
 1.8.1.2
 
