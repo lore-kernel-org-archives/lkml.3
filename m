@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab3GKAiW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:38:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56619 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755409Ab3GKAg0 (ORCPT
+	id S1754777Ab3GKAmQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:42:16 -0400
+Received: from mail-gg0-f202.google.com ([209.85.161.202]:33691 "EHLO
+	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab3GKAmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:36:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: oliver+list@schinagl.nl, linux@roeck-us.net, khali@linux-fr.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 3/7] sysfs.h: add BIN_ATTR macro
-Date: Wed, 10 Jul 2013 17:36:01 -0700
-Message-Id: <1373502965-1683-4-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
- <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 10 Jul 2013 20:42:14 -0400
+From: Alexander Z Lam <azl@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>
+Subject: [PATCH 2/2] tracing: Fix error handling to ensure instances can always be removed
+Date: Wed, 10 Jul 2013 17:34:34 -0700
+Message-Id: <1373502874-1706-2-git-send-email-azl@google.com>
+X-Mailer: git-send-email 1.8.3
+In-Reply-To: <1373502874-1706-1-git-send-email-azl@google.com>
+References: <1373502874-1706-1-git-send-email-azl@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes it easier to create static binary attributes, which is needed
-in a number of drivers, instead of "open coding" them.
+Remove debugfs directories for tracing instances during creation if an error
+occurs causing the trace_array for that instance to not be added to
+ftrace_trace_arrays. If the directory continues to exist after the error, it
+cannot be removed because the respective trace_array is not in
+ftrace_trace_arrays.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Cc: Alexander Z Lam <lambchop468@gmail.com>
+Signed-off-by: Alexander Z Lam <azl@google.com>
 ---
- include/linux/sysfs.h | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ kernel/trace/trace.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index f62ff01..d50a96b 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -132,6 +132,15 @@ struct bin_attribute {
-  */
- #define sysfs_bin_attr_init(bin_attr) sysfs_attr_init(&(bin_attr)->attr)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index ca2743b..4ea9967 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5985,8 +5985,10 @@ static int new_instance_create(const char *name)
+ 		goto out_free_tr;
  
-+/* macro to create static binary attributes easier */
-+#define BIN_ATTR(_name, _mode, _read, _write, _size)		\
-+struct bin_attribute bin_attr_##_name = {			\
-+	.attr = {.name = __stringify(_name), .mode = _mode },	\
-+	.read	= _read,					\
-+	.write	= _write,					\
-+	.size	= _size,					\
-+}
-+
- struct sysfs_ops {
- 	ssize_t	(*show)(struct kobject *, struct attribute *,char *);
- 	ssize_t	(*store)(struct kobject *,struct attribute *,const char *, size_t);
+ 	ret = event_trace_add_tracer(tr->dir, tr);
+-	if (ret)
++	if (ret) {
++		debugfs_remove_recursive(tr->dir);
+ 		goto out_free_tr;
++	}
+ 
+ 	init_tracer_debugfs(tr, tr->dir);
+ 
 -- 
-1.8.3.rc0.20.gb99dd2e
+1.8.3
 
