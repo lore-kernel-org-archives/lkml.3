@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3GKNKl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:10:41 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:47174 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab3GKNKj (ORCPT
+	id S1756098Ab3GKNL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:11:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45101 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755874Ab3GKNLX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:10:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAF2Nc0xjxtWkpmurODWKNMCC9D+4Xf6gMnQAqAiec6zn4V0z3w@mail.gmail.com>
-References: <CAF2Nc0xVKS+aL0CXdDFQHSapvRxM35KZkjeKeigQ7X43+2NVBA@mail.gmail.com>
-	<20130711104307.GB28131@pd.tnic>
-	<CAF2Nc0xjxtWkpmurODWKNMCC9D+4Xf6gMnQAqAiec6zn4V0z3w@mail.gmail.com>
-Date: Thu, 11 Jul 2013 15:10:38 +0200
-X-Google-Sender-Auth: dZWsCkZtl_SZerrm_uQP8icyivs
-Message-ID: <CAMuHMdXUp+CcNYbc+oy9ux4PSbm+g6i2w_vann5ML9xwMqYAyw@mail.gmail.com>
-Subject: Re: Error 2: No rule to make target kernel/timeconst.pl
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Konrad Vrba <konrad.vrba@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 11 Jul 2013 09:11:23 -0400
+Subject: Re: [PATCH 6/8] KVM: PPC: Add support for multiple-TCE hcalls
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1373545982.19894.82.camel@pasglop>
+Date: Thu, 11 Jul 2013 15:11:15 +0200
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <55F96DD9-50B1-41CA-9257-FBF7DED90966@suse.de>
+References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru> <1373123227-22969-7-git-send-email-aik@ozlabs.ru> <51DC4228.7010607@suse.de> <51DCEA76.9070808@ozlabs.ru> <D10E7B99-3A7C-4275-9A49-3CB15598E705@suse.de> <51DE3ECB.7080803@ozlabs.ru> <1373545982.19894.82.camel@pasglop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 12:49 PM, Konrad Vrba <konrad.vrba@gmail.com> wrote:
-> On 7/11/13, Borislav Petkov <bp@alien8.de> wrote:
->> On Thu, Jul 11, 2013 at 12:28:20PM +0200, Konrad Vrba wrote:
->>> Hello,
->>> I have following error while compiling new stable kernel 3.10:
->>>
->>>   CC      kernel/fork.o
->>>   CC      kernel/exec_domain.o
->>>   CC      kernel/panic.o
->>>   CC      kernel/printk.o
->>>   CC      kernel/cpu.o
->>>   CC      kernel/exit.o
->>>   CC      kernel/itimer.o
->>> make[1]: *** No rule to make target `kernel/timeconst.pl', needed by
->>> `kernel/timeconst.h'.  Stop.
->>> make: *** [kernel] Error 2
->>>
->>> Could somebody please advise how to fix this ?
->>
->> Can you save your config first, cleanup the build dir from kbuild stuff:
->>
->> make mrproper
->>
->> and then try building again?
->>
->> FWIW, 3.10 and later builds just fine here.
->
-> cleaning up with 'make mrproper'  does not help.
-> I still get the same error
 
-Do you still have build files around after "make mrproper"?
-If this is a git clone, "git ls-files --others" will tell you.
+On 11.07.2013, at 14:33, Benjamin Herrenschmidt wrote:
 
-Gr{oetje,eeting}s,
+> On Thu, 2013-07-11 at 15:12 +1000, Alexey Kardashevskiy wrote:
+>>>> Any debug code is prohibited? Ok, I'll remove.
+>>> 
+>>> Debug code that requires code changes is prohibited, yes.
+>>> Debug code that is runtime switchable (pr_debug, trace points, etc)
+>>> are allowed.
+> 
+> Bollox.
+> 
+> $ grep DBG\( arch/powerpc/ -r | wc -l
+> 418
+> 
+> Also pr_devel is not runtime switchable in normal kernels either and
+> still an "official" kernel interface.
+> 
+>> Is there any easy way to enable just this specific udbg_printf (not all of
+>> them at once)? Trace points do not work in real mode as we figured out.
+> 
+> The cleaner way to do it is to use some kind of local macro that you
+> enable/disable by changing a #define at the top of the function, possibly
+> several.
 
-                        Geert
+If you do that in a way that doesn't bitrot, that's acceptable, yes. Something that leaves cpp compile checks working while optimizing out the debug code.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Alex
+
