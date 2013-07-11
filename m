@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab3GKRug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 13:50:36 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49632 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab3GKRuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 13:50:35 -0400
-Date: Thu, 11 Jul 2013 10:50:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        linux-kernel@vger.kernel.org, dhowells@redhat.com
-Subject: Re: Hard lockups using 3.10.0
-Message-ID: <20130711175015.GZ16780@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <8484013.LsABBJRIOx@devpool02>
- <20130711100721.GA28131@pd.tnic>
- <20130711105207.GE25631@dyad.programming.kicks-ass.net>
+	id S1754663Ab3GKSA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 14:00:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44586 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751133Ab3GKSAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 14:00:25 -0400
+Message-ID: <51DEF1F3.2020900@zytor.com>
+Date: Thu, 11 Jul 2013 10:57:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130711105207.GE25631@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071117-2398-0000-0000-0000004A5F27
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, Matt Wilson <msw@amazon.com>,
+        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        jeremy@goop.org, xen-devel@lists.xensource.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, mingo@redhat.com,
+        tglx@linutronix.de
+Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
+References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com>  <20130708192854.GF4927@phenom.dumpdata.com>  <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>  <51DB2134.9040909@zytor.com> <20130708205834.GA481@pd.tnic>  <1373326534.1438.10.camel@x61.thuisdomein>  <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com> <1373537338.9708.18.camel@x61.thuisdomein>
+In-Reply-To: <1373537338.9708.18.camel@x61.thuisdomein>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 12:52:07PM +0200, Peter Zijlstra wrote:
-> On Thu, Jul 11, 2013 at 12:07:21PM +0200, Borislav Petkov wrote:
-> > On Thu, Jul 11, 2013 at 11:38:37AM +0200, Rolf Eike Beer wrote:
-> > > Hi,
-> > > 
-> > > I'm running 3.10.0 (from openSUSE packages) on an "Intel(R) Core(TM) i7-2600 
-> > > CPU @ 3.40GHz". I got a hard lockup on one of my CPUs twice, once with 
-> > > backtrace (see attached image). Graphics is the builtin Intel, used with X 7.6 
-> > > and KDE 4.10beta2 (basically current openSUSE 12.3+KDE).
-> > > 
-> > > I'm not aware that I had done anything special, just "normal" desktop and 
-> > > development usage, but no heavy compile work at the moment the lockups 
-> > > happened.
-> > 
-> > Hmm, I can see commit_creds() doing some rcu pointers assignment and rcu
-> > calling into the scheduler which screams about a cpu runqueue of the
-> > task we're about to reschedule not being locked. Let's add some more
-> > people who should know better.
+On 07/11/2013 03:08 AM, Paul Bolle wrote:
+> On Mon, 2013-07-08 at 20:26 -0400, Konrad Rzeszutek Wilk wrote:
+>> Could you explain to me please why the check in the scripts is
+>> superfluous?
 > 
-> Ok, for the other people too lazy to bother finding the picture:
+> The discussion has since moved on a bit, but I haven't answered this
+> question yet.
 > 
->   http://marc.info/?l=linux-kernel&m=137353587012001&q=p3
+> The check grub2 currently performs in one of its configuration scripts
+> is (reformatted):
+>     if (grep -qx "CONFIG_XEN_DOM0=y" "${config}" 2> /dev/null ||
+>         grep -qx "CONFIG_XEN_PRIVILEGED_GUEST=y" "${config}" 2> /dev/null);
+>     then echo -n "$i " ;
+>     fi
 > 
-> So we bug at:
-> 
-> kernel/sched/core.c:519 assert_raw_spin_locked(&task_rq(p)->lock);
-> 
-> and get there through:
-> 
->   resched_task()
->   check_preempt_wakeup()
->   check_preempt_curr()
->   try_to_wake_up()
->   autoremove_wake_function()
->   __call_rcu_nocb_enqueue()
->   __call_rcu()
->   commit_creds()
->   ____call_usermodehelper()
->   ret_from_fork()
-> 
-> That don't make much sense though. Since:
-> 
->   try_to_wake_up()
->     ttwu_queue()
->       raw_spin_lock(&rq->lock)
->       ttwu_do_activate()
->         ttwu_do_wakeup()
->           check_preempt_curr()
->             check_preempt_wakeup()
->               resched_task(rq->curr)
->                 assert_raw_spin_locked(task_rq(p)->lock)
-> 
-> It would somehow mean that 'task_rq(rq->curr) != rq', that's completely
-> bonkers, we do after all have rq->lock locked.
-> 
-> I must also say that I've _never_ seen this bug before.
 
-New one on me as well.  Is this reproducible?  If so, does it happen
-when CONFIG_RCU_NOCB_CPU=n?  (Given the call to call_rcu_nocb_enqueue(),
-I expect that you built with CONFIG_RCU_NOCB_CPU=y.)  Can't say that I
-see how call_rcu_nocb_enqueue() would have caused this, but...
+If only grep supported looking for more than one string at a time.
+Maybe we could construct some kind of pattern expression syntax for it,
+perhaps based on the theory of regular languages?
 
-Well, I supposed that if RCU's callback lists got corrupted, this
-(and much else besides) could in fact happen.  Does your build have
-CONFIG_DEBUG_OBJECTS_RCU_HEAD=y?  If not, could you please try it?
+> But the Kconfig entry for XEN_PRIVILEGED_GUEST reads: 
+>     # Dummy symbol since people have come to rely on the PRIVILEGED_GUEST
+>     # name in tools.
+>     config XEN_PRIVILEGED_GUEST
+>             def_bool XEN_DOM0
+> 
+> In other words: CONFIG_XEN_PRIVILEGED_GUEST should always be equal to
+> CONFIG_XEN_DOM0. So the two grep commands should always both evaluate to
+> true or both evaluate to false. One of these two commands can safely be
+> dropped.
 
-							Thanx, Paul
+Not necessarily true across kernel versions.
+
+> Another consequence is that dropping XEN_PRIVILEGED_GUEST doesn't break
+> this configuration script. It will still behave as it does now.
+> 
+> (Whether that script should grep for Kconfig macros in the first place
+> is another discussion.)
+
+"Hell no".
+
+	-hpa
 
