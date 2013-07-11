@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756276Ab3GKRQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 13:16:20 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:38900 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3GKRQT (ORCPT
+	id S1756287Ab3GKRQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 13:16:54 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:43944 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab3GKRQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 13:16:19 -0400
+	Thu, 11 Jul 2013 13:16:53 -0400
+Message-ID: <51DEE880.6070908@gmail.com>
+Date: Thu, 11 Jul 2013 11:16:48 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130711135445.GA21500@sepie.suse.cz>
-References: <20130710133742.GA29368@emu.suse.cz>
-	<CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
-	<20130711135445.GA21500@sepie.suse.cz>
-Date: Thu, 11 Jul 2013 10:16:18 -0700
-X-Google-Sender-Auth: ujBx3iRyniRFmPstl-lFGnqwX74
-Message-ID: <CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
-Subject: Re: [GIT] kbuild changes for v3.11-rc1
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Jan Beulich <JBeulich@suse.com>, dt.tangr@gmail.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        robert.richter@calxeda.com,
-        "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>,
-        zzs0213@gmail.com,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
+References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com> <1373548341-24119-10-git-send-email-adrian.hunter@intel.com> <51DED2AA.6030307@gmail.com>
+In-Reply-To: <51DED2AA.6030307@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 6:54 AM, Michal Marek <mmarek@suse.cz> wrote:
+On 7/11/13 9:43 AM, David Ahern wrote:
+> On 7/11/13 7:12 AM, Adrian Hunter wrote:
+>> The event stream is not always parsable because the format of a sample
+>> is dependent on the sample_type of the selected event.  When there
+>> is more than one selected event and the sample_types are not the
+>> same then parsing becomes problematic.  A sample can be matched to its
+>> selected event using the ID that is allocated when the event is opened.
+>> Unfortunately, to get the ID from the sample means first parsing it.
 >
-> Yeah. It also reveals another bug that we rewrite the kernel.release
-> file each time. This patch should fix it, but please do not apply it
-> yet:
+> Here's an alternative suggestion -- one that does not involve changing
+> the kernel API or requiring a common denominator in sample_type options.
+>
+> perf handles event streams through an mmap which can be directly tied to
+> an evsel (a single event) when the mmap is created. ie., when events are
+> read we know exactly which evsel they correspond to. (See
+> perf_evlist__mmap_per_cpu and perf_evlist__mmap_per_thread and add
+> struct perf_evsel *evsel entry to struct perf_mmap).
 
-So I think not rewriting the file is a good thing, but in this case it
-would actually have hidden the real bug.
+Read that code a bit too quickly. All events for a thread are dropped 
+into the same buffer so as currently organized there is not an easy 
+correlation.
 
-At least for most people. For me, it would have rewritten the file
-anyway, because as a normal user I have
+David
 
-  core.abbrev=12
+>
+> Commands like perf-record can inject a user event into the stream and
+> hence the data file every time the evsel changes while walking all of
+> the mmap's reading events -- very  similar to the way finished round is
+> done. The event would only contain a perf_event_header which is 8 bytes
+> so this does not add a lot to a data file. As an optimization the evsel
+> event could only be injected if the sample_types differ.
+>
+> Live commands would just use the evsel connected to the mmap -- no
+> lookups needed which would simplify things a bit processing the events.
+>
+> In short, the information to associate event streams to an event (evsel)
+> is currently available -- it's just being discarded in the many layers.
+>
+> I'll try to whip up some code that implements this in the next few days.
+>
+> David
+>
 
-in my ~/.gitconfig, but when running it as root, it will take the
-abbrev setting from the git defaults (which I think is 7). So the
-content actually *changes* if root generates the version as opposed to
-my normal user account.
-
-Of course, that's arguably something we could fix in our localversion
-script (by just forcing a particular abbreviation length), but I
-actually like how a plain "git describe" (which will use the
-user-specified SHA1 abbreviations) matches "uname -r" (which will
-obviously take the version from the kernel version file at
-build-time). So I'm not convinced that it is wrong for us to just use
-the format that the user specified in their gitconfig, even if it does
-result in "odd" situations like this where "make kernelrelease" will
-then potentially give different output for different users.
-
-> We also run dozens of gcc checks during every make invocation, including
-> make install or make help, so there is some room for improvement. But at
-> least, these do not write to the source or object tree.
-
-It would be good to try to minimize these kinds of things, for the
-simple reason that I'm not at all sure that we necessarily get all the
-temporary file security issues right.
-
-Running as little as possible as root is good practice for a very real
-reason: there can be very subtle security issues. Let's not worry
-about it *too* much, but keeping it in mind is good.
-
-At least for the gcc checking scripts I looked at, we seem to be doing
-things safely (ie using pipes instead of temp-files in /tmp).
-
-              Linus
