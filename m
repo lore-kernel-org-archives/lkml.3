@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab3GKVN7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 17:13:59 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:46644 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756596Ab3GKVN6 (ORCPT
+	id S1756625Ab3GKVPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 17:15:34 -0400
+Received: from mail-bk0-f51.google.com ([209.85.214.51]:57874 "EHLO
+	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753790Ab3GKVPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 17:13:58 -0400
+	Thu, 11 Jul 2013 17:15:32 -0400
+Message-ID: <51DF206E.9010301@gmail.com>
+Date: Thu, 11 Jul 2013 23:15:26 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <51DEF1F3.2020900@zytor.com>
-References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com>
-	<20130708192854.GF4927@phenom.dumpdata.com>
-	<20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>
-	<51DB2134.9040909@zytor.com>
-	<20130708205834.GA481@pd.tnic>
-	<1373326534.1438.10.camel@x61.thuisdomein>
-	<f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
-	<1373537338.9708.18.camel@x61.thuisdomein>
-	<51DEF1F3.2020900@zytor.com>
-Date: Thu, 11 Jul 2013 23:13:57 +0200
-X-Google-Sender-Auth: 0HDKvWa3TU9qAU6r32zYYB7BG6g
-Message-ID: <CAMuHMdX0aJnfVVF7Y0OvOMFO8zJTBrOjTG7fFisvFievZMpLcw@mail.gmail.com>
-Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Paul Bolle <pebolle@tiscali.nl>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, Matt Wilson <msw@amazon.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        virtualization@lists.linux-foundation.org,
-        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LMML <linux-media@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH RFC v3] media: OF: add video sync endpoint property
+References: <1371913383-25088-1-git-send-email-prabhakar.csengg@gmail.com> <51D0548D.7020004@gmail.com> <CA+V-a8uG1KLY-Vjj+0ix2=wV4r=k+tkJ4aDBCN+iN+JZ6my30w@mail.gmail.com>
+In-Reply-To: <CA+V-a8uG1KLY-Vjj+0ix2=wV4r=k+tkJ4aDBCN+iN+JZ6my30w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 7:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> The check grub2 currently performs in one of its configuration scripts
->> is (reformatted):
->>     if (grep -qx "CONFIG_XEN_DOM0=y" "${config}" 2> /dev/null ||
->>         grep -qx "CONFIG_XEN_PRIVILEGED_GUEST=y" "${config}" 2> /dev/null);
->>     then echo -n "$i " ;
->>     fi
+On 07/11/2013 01:41 PM, Prabhakar Lad wrote:
+[...]
+>>> diff --git a/drivers/media/v4l2-core/v4l2-of.c
+>>> b/drivers/media/v4l2-core/v4l2-of.c
+>>> index aa59639..1a54530 100644
+>>> --- a/drivers/media/v4l2-core/v4l2-of.c
+>>> +++ b/drivers/media/v4l2-core/v4l2-of.c
+>>> @@ -100,6 +100,26 @@ static void v4l2_of_parse_parallel_bus(const struct
+>>> device_node *node,
+>>>          if (!of_property_read_u32(node, "data-shift",&v))
+>>>                  bus->data_shift = v;
+>>>
+>>> +       if (!of_property_read_u32(node, "video-sync",&v)) {
+>>> +               switch (v) {
+>>> +               case V4L2_MBUS_VIDEO_SEPARATE_SYNC:
+>>> +                       flags |= V4L2_MBUS_VIDEO_SEPARATE_SYNC;
 >>
->
-> If only grep supported looking for more than one string at a time.
-> Maybe we could construct some kind of pattern expression syntax for it,
-> perhaps based on the theory of regular languages?
+>>
+>> I'm not convinced all those video sync types is something that really
+>> belongs
+>> to the flags field. In my understanding this field is supposed to hold only
+>> the _signal polarity_ information.
+>>
+>>
+> Ok, so there should be a function say v4l2_of_parse_signal_polarity()
+> to get the polarity alone then.
 
-grep -E "(pat1|pat2|pat3|...)"?
-
-Or am I missing something?
-
-Gr{oetje,eeting}s,
-
-                        Geert
+I don't think this is required, I would just extend 
+v4l2_of_parse_parallel_bus()
+function to also handle sync-on-green-active property.
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Sylwester
