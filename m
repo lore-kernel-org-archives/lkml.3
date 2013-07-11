@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933190Ab3GKOk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:40:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43119 "EHLO
+	id S933257Ab3GKOks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:40:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43112 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932931Ab3GKO0e (ORCPT
+	with ESMTP id S932927Ab3GKO0d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:34 -0400
+	Thu, 11 Jul 2013 10:26:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: NeilBrown <neilb@suse.de>, Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 62/98] md/raid10: fix two bugs affecting RAID10 reshape.
-Date: Thu, 11 Jul 2013 15:24:32 +0100
-Message-Id: <1373552708-15235-63-git-send-email-luis.henriques@canonical.com>
+Cc: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 60/98] aacraid: Fix for arrays are going offline in the system. System hangs
+Date: Thu, 11 Jul 2013 15:24:30 +0100
+Message-Id: <1373552708-15235-61-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -26,50 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
 
-commit 78eaa0d4cbcdb345992fa3dd22b3bcbb473cc064 upstream.
+commit c5bebd829dd95602c15f8da8cc50fa938b5e0254 upstream.
 
-1/ If a RAID10 is being reshaped to a fewer number of devices
- and is stopped while this is ongoing, then when the array is
- reassembled the 'mirrors' array will be allocated too small.
- This will lead to an access error or memory corruption.
+One of the customer had reported that the set of raid logical arrays will
+become unavailable (I/O offline) after a long hours of IO stress test.  The OS
+wouldn`t be accessible afterwards and require a hard reset.
 
-2/ A sanity test for a reshaping RAID10 array is restarted
- is slightly incorrect.
+This driver patch has a fix for race condition between the doorbell and the
+circular buffer. The driver is modified to do an extra read after clearing the
+doorbell in case there had been a completion posted during the small timing
+window.
 
-Due to the first bug, this is suitable for any -stable
-kernel since 3.5 where this code was introduced.
+With this fix, we ran IO stress for ~13 days. There were no IO failures.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/raid10.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/aacraid/src.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index e76227e..a829557 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -3410,7 +3410,7 @@ static struct r10conf *setup_conf(struct mddev *mddev)
+diff --git a/drivers/scsi/aacraid/src.c b/drivers/scsi/aacraid/src.c
+index 7628206..4de2612 100644
+--- a/drivers/scsi/aacraid/src.c
++++ b/drivers/scsi/aacraid/src.c
+@@ -101,6 +101,9 @@ static irqreturn_t aac_src_intr_message(int irq, void *dev_id)
+ 			struct list_head *entry;
+ 			int send_it = 0;
  
- 	/* FIXME calc properly */
- 	conf->mirrors = kzalloc(sizeof(struct mirror_info)*(mddev->raid_disks +
--							    max(0,mddev->delta_disks)),
-+							    max(0,-mddev->delta_disks)),
- 				GFP_KERNEL);
- 	if (!conf->mirrors)
- 		goto out;
-@@ -3551,7 +3551,7 @@ static int run(struct mddev *mddev)
- 		    conf->geo.far_offset == 0)
- 			goto out_free_conf;
- 		if (conf->prev.far_copies != 1 &&
--		    conf->geo.far_offset == 0)
-+		    conf->prev.far_offset == 0)
- 			goto out_free_conf;
- 	}
- 
++			src_writel(dev, MUnit.ODR_C, bellbits);
++			src_readl(dev, MUnit.ODR_C);
++
+ 			if (dev->sync_fib) {
+ 				our_interrupt = 1;
+ 				if (dev->sync_fib->callback)
 -- 
 1.8.1.2
 
