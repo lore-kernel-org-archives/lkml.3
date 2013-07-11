@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3GKOZi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:25:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42850 "EHLO
+	id S932668Ab3GKOZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:25:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42886 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab3GKOZc (ORCPT
+	with ESMTP id S932617Ab3GKOZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:32 -0400
+	Thu, 11 Jul 2013 10:25:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 09/98] cgroup: fix umount vs cgroup_event_remove() race
-Date: Thu, 11 Jul 2013 15:23:39 +0100
-Message-Id: <1373552708-15235-10-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 16/98] jbd2: move superblock checksum calculation to jbd2_write_superblock()
+Date: Thu, 11 Jul 2013 15:23:46 +0100
+Message-Id: <1373552708-15235-17-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Theodore Ts'o <tytso@mit.edu>
 
-commit 1c8158eeae0f37d0eee9f1fbe68080df6a408df2 upstream.
+commit fe52d17cdd343ac43c85cf72940a58865b9d3bfb upstream.
 
- commit 5db9a4d99b0157a513944e9a44d29c9cec2e91dc
- Author: Tejun Heo <tj@kernel.org>
- Date:   Sat Jul 7 16:08:18 2012 -0700
+Some of the functions which modify the jbd2 superblock were not
+updating the checksum before calling jbd2_write_superblock().  Move
+the call to jbd2_superblock_csum_set() to jbd2_write_superblock(), so
+that the checksum is calculated consistently.
 
-     cgroup: fix cgroup hierarchy umount race
-
-This commit fixed a race caused by the dput() in css_dput_fn(), but
-the dput() in cgroup_event_remove() can also lead to the same BUG().
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Darrick J. Wong <darrick.wong@oracle.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cgroup.c | 25 +++++++++++++++++++------
- 1 file changed, 19 insertions(+), 6 deletions(-)
+ fs/jbd2/journal.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 5168e37..07ba52a 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3623,6 +3623,23 @@ static int cgroup_write_notify_on_release(struct cgroup *cgrp,
- }
- 
- /*
-+ * When dput() is called asynchronously, if umount has been done and
-+ * then deactivate_super() in cgroup_free_fn() kills the superblock,
-+ * there's a small window that vfs will see the root dentry with non-zero
-+ * refcnt and trigger BUG().
-+ *
-+ * That's why we hold a reference before dput() and drop it right after.
-+ */
-+static void cgroup_dput(struct cgroup *cgrp)
-+{
-+	struct super_block *sb = cgrp->root->sb;
-+
-+	atomic_inc(&sb->s_active);
-+	dput(cgrp->dentry);
-+	deactivate_super(sb);
-+}
-+
-+/*
-  * Unregister event and free resources.
-  *
-  * Gets called from workqueue.
-@@ -3637,7 +3654,7 @@ static void cgroup_event_remove(struct work_struct *work)
- 
- 	eventfd_ctx_put(event->eventfd);
- 	kfree(event);
--	dput(cgrp->dentry);
-+	cgroup_dput(cgrp);
- }
- 
- /*
-@@ -3888,12 +3905,8 @@ static void css_dput_fn(struct work_struct *work)
+diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+index dfb0e5b..34cdd6d 100644
+--- a/fs/jbd2/journal.c
++++ b/fs/jbd2/journal.c
+@@ -1304,6 +1304,7 @@ static int journal_reset(journal_t *journal)
+ static void jbd2_write_superblock(journal_t *journal, int write_op)
  {
- 	struct cgroup_subsys_state *css =
- 		container_of(work, struct cgroup_subsys_state, dput_work);
--	struct dentry *dentry = css->cgroup->dentry;
--	struct super_block *sb = dentry->d_sb;
+ 	struct buffer_head *bh = journal->j_sb_buffer;
++	journal_superblock_t *sb = journal->j_superblock;
+ 	int ret;
  
--	atomic_inc(&sb->s_active);
--	dput(dentry);
--	deactivate_super(sb);
-+	cgroup_dput(css->cgroup);
- }
+ 	trace_jbd2_write_superblock(journal, write_op);
+@@ -1325,6 +1326,7 @@ static void jbd2_write_superblock(journal_t *journal, int write_op)
+ 		clear_buffer_write_io_error(bh);
+ 		set_buffer_uptodate(bh);
+ 	}
++	jbd2_superblock_csum_set(journal, sb);
+ 	get_bh(bh);
+ 	bh->b_end_io = end_buffer_write_sync;
+ 	ret = submit_bh(write_op, bh);
+@@ -1421,7 +1423,6 @@ void jbd2_journal_update_sb_errno(journal_t *journal)
+ 	jbd_debug(1, "JBD2: updating superblock error (errno %d)\n",
+ 		  journal->j_errno);
+ 	sb->s_errno    = cpu_to_be32(journal->j_errno);
+-	jbd2_superblock_csum_set(journal, sb);
+ 	read_unlock(&journal->j_state_lock);
  
- static void init_cgroup_css(struct cgroup_subsys_state *css,
+ 	jbd2_write_superblock(journal, WRITE_SYNC);
 -- 
 1.8.1.2
 
