@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755325Ab3GKQgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:36:05 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:50030 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412Ab3GKQgD (ORCPT
+	id S1753271Ab3GKQhN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:37:13 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46591 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab3GKQhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:36:03 -0400
-Message-ID: <51DEDEEF.6090800@gmail.com>
-Date: Thu, 11 Jul 2013 10:35:59 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 11 Jul 2013 12:37:10 -0400
+Date: Thu, 11 Jul 2013 18:37:08 +0200
+From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
+To: Hector Palacios <hector.palacios@digi.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        Marek Vasut <marex@denx.de>, "cb@sgoc.de" <cb@sgoc.de>
+Subject: Re: MXS persistent bits driver
+Message-ID: <20130711163708.GW11243@lukather>
+References: <51DE5F1A.8010209@digi.com>
+ <20130711082413.GU11243@lukather>
+ <51DE734A.80206@digi.com>
 MIME-Version: 1.0
-To: acme@ghostprotocols.net
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: Re: [PATCH 3/6] perf event: initialize allocated memory for synthesized
- events
-References: <1372793245-4136-1-git-send-email-dsahern@gmail.com> <1372793245-4136-4-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1372793245-4136-4-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="A6Z7MKnLVMfR85kG"
+Content-Disposition: inline
+In-Reply-To: <51DE734A.80206@digi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo:
 
-Don't see this one in your perf/core branch.
+--A6Z7MKnLVMfR85kG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 7/2/13 1:27 PM, David Ahern wrote:
-> Fixes valgrind complaint:
->
-> =3118== Syscall param write(buf) points to uninitialised byte(s)
-> ==3118==    at 0x4E3F5B0: __write_nocancel (in /lib64/libpthread-2.14.90.so)
-> ==3118==    by 0x42F0EB: process_synthesized_event (builtin-record.c:89)
-> ==3118==    by 0x44E81C: perf_event__synthesize_mmap_events (event.c:230)
-> ==3118==    by 0x44F27C: perf_event__synthesize_threads (event.c:307)
-> ==3118==    by 0x42FEEA: cmd_record (builtin-record.c:530)
-> ==3118==    by 0x419D22: run_builtin (perf.c:319)
-> ==3118==    by 0x4195A2: main (perf.c:376)
->
-> Signed-off-by: David Ahern <dsahern@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> ---
->   tools/perf/util/event.c |    8 ++++----
->   1 file changed, 4 insertions(+), 4 deletions(-)
->
-> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-> index 5cd13d7..556b999 100644
-> --- a/tools/perf/util/event.c
-> +++ b/tools/perf/util/event.c
-> @@ -316,11 +316,11 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
->   	union perf_event *comm_event, *mmap_event;
->   	int err = -1, thread, j;
->
-> -	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
-> +	comm_event = zalloc(sizeof(comm_event->comm) + machine->id_hdr_size);
->   	if (comm_event == NULL)
->   		goto out;
->
-> -	mmap_event = malloc(sizeof(mmap_event->mmap) + machine->id_hdr_size);
-> +	mmap_event = zalloc(sizeof(mmap_event->mmap) + machine->id_hdr_size);
->   	if (mmap_event == NULL)
->   		goto out_free_comm;
->
-> @@ -375,11 +375,11 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
->   	union perf_event *comm_event, *mmap_event;
->   	int err = -1;
->
-> -	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
-> +	comm_event = zalloc(sizeof(comm_event->comm) + machine->id_hdr_size);
->   	if (comm_event == NULL)
->   		goto out;
->
-> -	mmap_event = malloc(sizeof(mmap_event->mmap) + machine->id_hdr_size);
-> +	mmap_event = zalloc(sizeof(mmap_event->mmap) + machine->id_hdr_size);
->   	if (mmap_event == NULL)
->   		goto out_free_comm;
->
->
+Hi Hector,
 
+On Thu, Jul 11, 2013 at 10:56:42AM +0200, Hector Palacios wrote:
+> On 07/11/2013 10:24 AM, maxime.ripard@free-electrons.com wrote:
+> >>I haven't seen this is supported upstream. Is anybody working on that?
+> >>Where would such a driver fit?
+> >
+> >Christoph Baumann recently started porting the Freescale's driver to
+> >newer release.
+> >
+> >http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/181569.h=
+tml
+> >
+> >This needs quite a lot of work, but it's ongoing.
+> >
+> >Also, about where to put such a driver, I started a discussion about
+> >this last week. Mostly, that would be part of MTD, from what is out of
+> >the discussion so far.
+> >
+> >http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/182002.h=
+tml
+>=20
+> I was talking about RTC persistent bits, not OTP bits, but I they
+> also fit in your EEPROM like model. I like it!
+
+Oops, sorry, I read your mail too quickly.
+
+But it's true that it would fit quite well in the EEPROM stuff we're
+discussing.
+
+Feel free to participate, and I'll let you know if something come out of
+it.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--A6Z7MKnLVMfR85kG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR3t80AAoJEBx+YmzsjxAg3XsQAIaUjfX2ebrOH4mtIdsZfadq
+4BUAJ/vb/YJdO5MBrlUKxxlu/lU7Q/gC3ydJ+jFxzXtpfD94v7yHu4He1ivYra4X
+2mJXL00VjskUqrU/4BdzGrX80T14P/0Kw/H+6cwP00zvu0f11yONSGwMkrMPaiHL
+M86bdojSCv2SwPN2Vo1E2oJ9C6jsSVNjxOGHho2X/s7pd2oPN9LSy+nJc0m9CqY2
+hL0KIAqkBo7ExRhNxXefVzJm05NENzl5EHxCTXQ7ZHoZ53GlDrSfarMa0mGifGCk
+arn2hjwTiNLWs54pVOinSD6QHR1oE2BD9VJSezJ60g7kb+lJmxTdtTQpYefXS+wk
+oOQImvPaAtT35nltvn+ItRatjt49gXsYCuzyMg8RQgDZ90GsdoaZXqj9LrpwDQWc
+u4b1cHo72bAyYxbMdYdT3upSMt8wvLEN9NDrmzQVfH8Owubd8/Qv9iIfooKhmRmi
+WEVU07QmC0QMDnVFpCAmVZHOC4ug6iXS2ulRGO3gbWN3hBkJPUBcyN+AloBtTu2s
+2s2HXhhWQ9ZdrrmUdvy1Tr0q/Uy/jc4j08r6aeQyVRKhyxmZVXxGE+XRcWeqD8i+
+toaRtFHdI/WeMbZQIYy5gOVDljNpNYPLpWlF+hG9Ott4rYGV2/k/z6nmN0nzGbP8
+n5yKt9SgihhJcJ+f6cdC
+=jAqQ
+-----END PGP SIGNATURE-----
+
+--A6Z7MKnLVMfR85kG--
