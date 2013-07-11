@@ -1,160 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756780Ab3GKWGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:06:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43037 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257Ab3GKWBl (ORCPT
+	id S1756773Ab3GKWKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:10:38 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:55792 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755182Ab3GKWKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:41 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/19] 3.10.1-stable review
-Date: Thu, 11 Jul 2013 15:01:17 -0700
-Message-Id: <20130711214830.611455274@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-User-Agent: quilt/0.60-5.1.1
+	Thu, 11 Jul 2013 18:10:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <51758630.6000003@gmx.de>
+References: <1360862966-6376-1-git-send-email-jmaggard10@gmail.com>
+	<5169477D.1000400@gmx.de>
+	<CAKgsxVT3_ge2vxcGWzy6NJYPEGwB1Wbw2eE7a=JtWWBb8o4XVg@mail.gmail.com>
+	<51758630.6000003@gmx.de>
+Date: Thu, 11 Jul 2013 15:10:35 -0700
+Message-ID: <CAKgsxVQqBE8vZUyBedpTysFMHVCnS1SayeNtMAPF9D0=RCoX4g@mail.gmail.com>
+Subject: Re: fanotify: fix support of large files
+From: Justin Maggard <jmaggard10@gmail.com>
+To: Heinrich Schuchardt <xypron.glpk@gmx.de>
+Cc: linux-kernel@vger.kernel.org, eparis@redhat.com, LinoSanfilippo@gmx.de,
+        Tzvetan Chaliavski <tzvetanc@commtouch.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<rant>
-  I'm sitting on top of over 170 more patches that have been marked for
-  the stable releases right now that are not included in this set of
-  releases.  The fact that there are this many patches for stable stuff
-  that are waiting to be merged through the main -rc1 merge window cycle
-  is worrying to me.
+On Mon, Apr 22, 2013 at 11:49 AM, Heinrich Schuchardt
+<xypron.glpk@gmx.de> wrote:
+>
+> Hello Justin,
+>
+> I downloaded the example,
+> http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+> compiled it without modification
+> $ gcc fanotify-example.c -o fanotify-example
+> and started the executable. In a separate windows I executed
+> truncate -s 2048m 2048m
+>
+> This is the output of the first window:
+> $ sudo ./fanotify-example /home/user/temp/
+> Started monitoring directory '/home/user/temp/'...
+> Received event in path '/home/user/temp/2048m' pid=3659 (truncate):
+>         FAN_OPEN
+> Received event in path '/home/user/temp/2048m' pid=3659 (truncate):
+>         FAN_CLOSE_WRITE
+>
+> $ uname -a
+> Linux family2 3.8.0 #1 SMP Fri Feb 22 22:07:58 CET 2013 i686 GNU/Linux
+>
 
-  Why are subsystem maintainers holding on to fixes that are
-  _supposedly_ affecting all users?  I mean, 21 powerpc core changes
-  that I don't see until a -rc1 merge?  It's as if developers don't
-  expect people to use a .0 release and are relying on me to get the
-  fixes they have burried in their trees out to users.  That's not that
-  nice.  6 "core" iscsi-target fixes?  That's the sign of either a
-  broken subsystem maintainer, or a lack of understanding what the
-  normal -rc kernel releases are supposed to be for.
+Ah yes, that's the reason.  I'm running on x86_64.  32-bit platforms
+actually work if you set O_LARGEFILE.  From /usr/incude/bits/fcntl.h:
 
-  So, I've picked through the patches and dug out only those that I've
-  "guessed" at being more important than others for the 3.10.1 release.
-  I'll get to the rest of these after 3.11-rc1 is out, and eventually
-  they will make it into the stable releases, but I am going to be much
-  more strict as to what is being added (carriage return changes for
-  debug messages, really ACPI developers?)
+#ifdef __USE_LARGEFILE64
+# if __WORDSIZE == 64
+#  define O_LARGEFILE   0
+# else
+#  define O_LARGEFILE   0100000
+# endif
+#endif
 
-</rant>
+If I include <asm/fcntl.h> instead of <fcntl.h>, it gets set to
+0x8000, and my large file fanotify test works.  Or, of course, I can
+define that flag locally and use it.  But it feels like I shouldn't
+have to do that.
 
-This is the start of the stable review cycle for the 3.10.1 release.
-There are 19 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+-Justin
 
-Responses should be made by Sat Jul 13 21:45:35 UTC 2013.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.1-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
--------------
-Pseudo-Shortlog of commits:
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.10.1-rc1
-
-Michal Hocko <mhocko@suse.cz>
-    Revert "memcg: avoid dangling reference count in creation failure"
-
-Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-    cpufreq: Fix cpufreq regression after suspend/resume
-
-Ben Hutchings <ben@decadent.org.uk>
-    SCSI: sd: Fix parsing of 'temporary ' cache mode prefix
-
-Gleb Natapov <gleb@redhat.com>
-    KVM: VMX: mark unusable segment as nonpresent
-
-J. Bruce Fields <bfields@redhat.com>
-    nfsd4: fix decoding of compounds across page boundaries
-
-Andy Adamson <andros@netapp.com>
-    NFSv4.1 end back channel session draining
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
-
-Peter Hurley <peter@hurleysoftware.com>
-    tty: Reset itty for other pty
-
-Zhang Yi <wetpzy@gmail.com>
-    futex: Take hugepages into account when generating futex_key
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
-
-Kees Cook <keescook@chromium.org>
-    crypto: sanitize argument for format string
-
-Kees Cook <keescook@chromium.org>
-    block: do not pass disk names as format strings
-
-Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-    hpfs: better test for errors
-
-Kees Cook <keescook@chromium.org>
-    charger-manager: Ensure event is not used as format string
-
-Rusty Russell <rusty@rustcorp.com.au>
-    module: do percpu allocation after uniqueness check. No, really!
-
-Jonathan Salwan <jonathan.salwan@gmail.com>
-    drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-
-Josh Durgin <josh.durgin@inktank.com>
-    libceph: fix invalid unsigned->signed conversion for timespec encoding
-
-majianpeng <majianpeng@gmail.com>
-    ceph: fix sleeping function called from invalid context.
-
-Tyler Hicks <tyhicks@canonical.com>
-    libceph: Fix NULL pointer dereference in auth client code
-
-
--------------
-
-Diffstat:
-
- MAINTAINERS                        |  1 +
- Makefile                           |  4 ++--
- arch/x86/kvm/vmx.c                 | 11 +++++++++--
- block/genhd.c                      |  2 +-
- crypto/algapi.c                    |  3 ++-
- drivers/block/nbd.c                |  3 ++-
- drivers/cdrom/cdrom.c              |  2 +-
- drivers/cpufreq/cpufreq_stats.c    |  1 +
- drivers/power/charger-manager.c    |  2 +-
- drivers/scsi/osd/osd_uld.c         |  2 +-
- drivers/scsi/sd.c                  |  2 +-
- drivers/tty/serial/8250/8250_pci.c |  4 ----
- drivers/tty/tty_io.c               |  2 ++
- fs/ceph/xattr.c                    |  9 +++++----
- fs/hpfs/map.c                      |  3 ++-
- fs/hpfs/super.c                    |  8 +++++++-
- fs/nfs/nfs4state.c                 | 23 +++++++++++------------
- fs/nfsd/nfs4xdr.c                  |  2 +-
- include/linux/ceph/decode.h        |  5 -----
- include/linux/hugetlb.h            | 16 ++++++++++++++++
- kernel/futex.c                     |  3 ++-
- kernel/module.c                    | 34 ++++++++++++++++++----------------
- mm/hugetlb.c                       | 17 +++++++++++++++++
- mm/memcontrol.c                    |  2 --
- net/ceph/auth_none.c               |  6 ++++++
- 25 files changed, 109 insertions(+), 58 deletions(-)
-
-
+>
+> To reproduce your problem, could you, please, provide the Linux configuration file (look in your /boot directory) and a link to the source of the Linux kernel version you use. Then I can use your configuration file to compile that kernel version.
+>
+> Best regards
+>
+> Heinrich Schuchardt
+>
+>
+> On 19.04.2013 21:23, Justin Maggard wrote:
+>>
+>> On Sat, Apr 13, 2013 at 4:54 AM, Heinrich Schuchardt<xypron.glpk@gmx.de>  wrote:
+>>>
+>>> Dear Justin,
+>>>
+>>> looking at the example at
+>>> http://www.lanedo.com/~aleksander/fanotify/fanotify-example.c
+>>> the large file support is enabled by passing O_LARGEFILE to fanotify_init:
+>>>
+>>>    if ((fanotify_fd = fanotify_init (FAN_CLOEXEC,
+>>>                                      O_RDONLY | O_CLOEXEC | O_LARGEFILE))<
+>>> 0)
+>>>
+>>> Could you, please, check if this solves your issue.
+>>>
+>>> (I am resending this message because HTML was rejected by
+>>> linux-kernel@vger.kernel.org).
+>>>
+>>> Best regards
+>>>
+>>> Heinrich Schuchardt
+>>>
+>>
+>> No, unfortunately that doesn't help.  I slightly modifed
+>> fanotify-example.c to call perror() when read() fails, and here's the
+>> output:
+>>
+>> jmaggard@jmaggard-W520:~/fanotify-test$ sudo ./fanotify-example .&
+>> [1] 7248
+>> jmaggard@jmaggard-W520:~/fanotify-test$ Started monitoring directory '.'...
+>> truncate -s 2047m 2047m
+>> Received event in path '/home/jmaggard/fanotify-test/2047m' pid=7250 (unknown):
+>> FAN_OPEN
+>> FAN_CLOSE_WRITE
+>> jmaggard@jmaggard-W520:~/fanotify-test$ truncate -s 2048m 2048m
+>> read: Value too large for defined data type
+>>
+>> -Justin
+>>
+>
