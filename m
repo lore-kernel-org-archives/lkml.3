@@ -1,63 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab3GKOrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:47:12 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:41711 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756125Ab3GKOrI (ORCPT
+	id S932808Ab3GKOra (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:47:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42954 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932403Ab3GKOZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:47:08 -0400
-Message-ID: <51DEC56A.4050001@akamai.com>
-Date: Thu, 11 Jul 2013 10:47:06 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jason Baron <jbaron@redhat.com>, Borislav Petkov <bpetkov@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction patching
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>  <51DDD3E9.6090601@linux.intel.com> <1373553344.17876.13.camel@gandalf.local.home>
-In-Reply-To: <1373553344.17876.13.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 10:25:56 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Shirish Pargaonkar <shirishpargaonkar@gmail.com>,
+        Steve French <smfrench@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 31/98] Handle big endianness in NTLM (ntlmv2) authentication
+Date: Thu, 11 Jul 2013 15:24:01 +0100
+Message-Id: <1373552708-15235-32-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
+References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2013 10:35 AM, Steven Rostedt wrote:
-> On Wed, 2013-07-10 at 14:36 -0700, H. Peter Anvin wrote:
->> On 07/10/2013 02:31 PM, Jiri Kosina wrote:
->>> If any CPU instruction execution would collide with the patching,
->>> it'd be trapped by the int3 breakpoint and redirected to the provided
->>> "handler" (which would typically mean just skipping over the patched
->>> region, acting as "nop" has been there, in case we are doing nop -> jump
->>> and jump -> nop transitions).
->>>
->> I'm wondering if it would be easier/more general to just return to the
->> instruction.  The "more general" bit would allow this to be used for
->> other things, like alternatives, and perhaps eventually dynamic call
->> patching.
->>
->> Returning to the instruction will, in effect, be a busy-wait for the
->> faulted CPU until the patch is complete; more or less what stop_machine
->> would do, but only for a CPU which actually strays into the affected region.
->>
-> Wont work for ftrace, as it patches all functions, it even patches
-> functions used to do the changes. Thus, it would cause a deadlock if a
-> breakpoint were to spin till the changes were finished.
->
-> -- Steve
->
->
+3.5.7.17 -stable review patch.  If anyone has any objections, please let me know.
 
-I'm not sure this works for jump labels either. Some tracepoints (which
-use jump_labels) have interrupts disabled across them. Thus, they will
-spin with interrupts disabled, while we are trying to issue an IPI.
+------------------
 
-Thanks,
+From: Steve French <smfrench@us.ibm.com>
 
--Jason
+commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
 
+This is RH bug 970891
+Uppercasing of username during calculation of ntlmv2 hash fails
+because UniStrupr function does not handle big endian wchars.
+
+Also fix a comment in the same code to reflect its correct usage.
+
+[To make it easier for stable (rather than require 2nd patch) fixed
+this patch of Shirish's to remove endian warning generated
+by sparse -- steve f.]
+
+Reported-by: steve <sanpatr1@in.ibm.com>
+Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/cifs/cifs_unicode.h | 8 ++++----
+ fs/cifs/cifsencrypt.c  | 6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/fs/cifs/cifs_unicode.h b/fs/cifs/cifs_unicode.h
+index a513a54..f2b2ffd 100644
+--- a/fs/cifs/cifs_unicode.h
++++ b/fs/cifs/cifs_unicode.h
+@@ -323,14 +323,14 @@ UniToupper(register wchar_t uc)
+ /*
+  * UniStrupr:  Upper case a unicode string
+  */
+-static inline wchar_t *
+-UniStrupr(register wchar_t *upin)
++static inline __le16 *
++UniStrupr(register __le16 *upin)
+ {
+-	register wchar_t *up;
++	register __le16 *up;
+ 
+ 	up = upin;
+ 	while (*up) {		/* For all characters */
+-		*up = UniToupper(*up);
++		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
+ 		up++;
+ 	}
+ 	return upin;		/* Return input pointer */
+diff --git a/fs/cifs/cifsencrypt.c b/fs/cifs/cifsencrypt.c
+index 63c460e..6d0c62a 100644
+--- a/fs/cifs/cifsencrypt.c
++++ b/fs/cifs/cifsencrypt.c
+@@ -394,7 +394,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 	int rc = 0;
+ 	int len;
+ 	char nt_hash[CIFS_NTHASH_SIZE];
+-	wchar_t *user;
++	__le16 *user;
+ 	wchar_t *domain;
+ 	wchar_t *server;
+ 
+@@ -419,7 +419,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 		return rc;
+ 	}
+ 
+-	/* convert ses->user_name to unicode and uppercase */
++	/* convert ses->user_name to unicode */
+ 	len = ses->user_name ? strlen(ses->user_name) : 0;
+ 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
+ 	if (user == NULL) {
+@@ -429,7 +429,7 @@ static int calc_ntlmv2_hash(struct cifs_ses *ses, char *ntlmv2_hash,
+ 	}
+ 
+ 	if (len) {
+-		len = cifs_strtoUTF16((__le16 *)user, ses->user_name, len, nls_cp);
++		len = cifs_strtoUTF16(user, ses->user_name, len, nls_cp);
+ 		UniStrupr(user);
+ 	} else {
+ 		memset(user, '\0', 2);
+-- 
+1.8.1.2
 
