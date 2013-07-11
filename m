@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933229Ab3GKOd4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:33:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43200 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933021Ab3GKO0v (ORCPT
+	id S933243Ab3GKOd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:33:59 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:63452 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933222Ab3GKOd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:51 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Tobias Kluge <zielscheibe@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 75/98] rtlwifi: rtl8192cu: Add new USB ID for TP-Link TL-WN8200ND
-Date: Thu, 11 Jul 2013 15:24:45 +0100
-Message-Id: <1373552708-15235-76-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 11 Jul 2013 10:33:56 -0400
+Message-ID: <1373553233.1349.15.camel@x61.thuisdomein>
+Subject: Re: [PATCH -v2 3/3] PCI,pciehp: use PCIe DSN to identify device
+ change during suspend
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Rafael <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com,
+        Oliver Neukum <oneukum@suse.de>, Gu Zheng <guz.fnst@cn.fujitsu.com>
+Date: Thu, 11 Jul 2013 16:33:53 +0200
+In-Reply-To: <1373535825-49972-4-git-send-email-wangyijing@huawei.com>
+References: <1373535825-49972-1-git-send-email-wangyijing@huawei.com>
+	 <1373535825-49972-4-git-send-email-wangyijing@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Jul 2013 14:33:54.0096 (UTC) FILETIME=[AB3A5B00:01CE7E43]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.17 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, 2013-07-11 at 17:43 +0800, Yijing Wang wrote:
+[...]
+> diff --git a/drivers/pci/hotplug/pciehp_core.c b/drivers/pci/hotplug/pciehp_core.c
+> index 1542735..f2eb214 100644
+> --- a/drivers/pci/hotplug/pciehp_core.c
+> +++ b/drivers/pci/hotplug/pciehp_core.c
+[...]
+> @@ -315,6 +342,24 @@ static int pciehp_resume (struct pcie_device *dev)
+>  	if (status) {
+>  		if (list_empty(&pbus->devices))
+>  			pciehp_enable_slot(slot);
+> +
+> +		if (device_serial_number_changed(pbus)) {
+> +			/*
+> +			 * first power off slot, avoid the old driver
+> +			 * .remove() method touch the new hardware
+> +			 */
+> +			if (POWER_CTRL(ctrl)) {
+> +				retval = pciehp_power_off_slot(slot);
+> +				if (retval) {
+> +					ctrl_err(ctrl,
+> +						"Issue of Slot Disable command failed\n");
+> +					return 0;
+> +				}
+> +				msleep(1000);
+> +				pciehp_unconfigure_device(slot);
+> +				pciehp_enable_slot(slot);
+> +			}
+> +		}
+>  	} else if (!list_empty(&pbus->devices))
+>  		pciehp_disable_slot(slot);
+>  	
 
-------------------
+It was surprisingly hard to see why the patch wouldn't apply to v3.10.
+It turns out the very last line of context is a line consisting of just
+a single tab. And in v3.10 it is an empty line. 
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+Is that lone tab perhaps an editing mistake on your side?
 
-commit c4d827c5ccc3a49227dbf9d4b248a2e86f388023 upstream.
 
-This is a new device for this driver.
-
-Reported-by: Tobias Kluge <zielscheibe@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Tobias Kluge <zielscheibe@gmail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index b450931..5212ad2 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -358,6 +358,7 @@ static struct usb_device_id rtl8192c_usb_ids[] = {
- 	{RTL_USB_DEVICE(0x2001, 0x330a, rtl92cu_hal_cfg)}, /*D-Link-Alpha*/
- 	{RTL_USB_DEVICE(0x2019, 0xab2b, rtl92cu_hal_cfg)}, /*Planex -Abocom*/
- 	{RTL_USB_DEVICE(0x20f4, 0x624d, rtl92cu_hal_cfg)}, /*TRENDNet*/
-+	{RTL_USB_DEVICE(0x2357, 0x0100, rtl92cu_hal_cfg)}, /*TP-Link WN8200ND*/
- 	{RTL_USB_DEVICE(0x7392, 0x7822, rtl92cu_hal_cfg)}, /*Edimax -Edimax*/
- 	{}
- };
--- 
-1.8.1.2
+Paul Bolle
 
