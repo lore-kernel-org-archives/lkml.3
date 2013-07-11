@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932656Ab3GKOwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:52:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42857 "EHLO
+	id S932756Ab3GKOw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:52:57 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42839 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932573Ab3GKOZd (ORCPT
+	with ESMTP id S932536Ab3GKOZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:33 -0400
+	Thu, 11 Jul 2013 10:25:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>, Felipe Balbi <balbi@ti.com>,
+Cc: Joachim Eastwood <manabian@gmail.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 08/98] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
-Date: Thu, 11 Jul 2013 15:23:38 +0100
-Message-Id: <1373552708-15235-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 07/98] pcmcia: at91_cf: fix gpio_get_value in at91_cf_get_status
+Date: Thu, 11 Jul 2013 15:23:37 +0100
+Message-Id: <1373552708-15235-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,50 +29,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+From: Joachim Eastwood <manabian@gmail.com>
 
-commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
+commit e39506b466edcda2a7e9d0174d7987ae654137b7 upstream.
 
-Without this memory barrier, the file-storage thread may fail to
-escape from the following while loop, because it may observe new
-common->thread_wakeup_needed and old bh->state which are updated by
-the callback functions.
+Commit 80af9e6d (pcmcia at91_cf: fix raw gpio number usage) forgot
+to change the parameter in gpio_get_value after adding gpio
+validation.
 
-	/* Wait for the CBW to arrive */
-	while (bh->state != BUF_STATE_FULL) {
-		rc = sleep_thread(common);
-		if (rc)
-			return rc;
-	}
-
-Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
-Acked-by: Michal Nazarewicz <mina86@mina86.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Joachim Eastwood <manabian@gmail.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/gadget/f_mass_storage.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/pcmcia/at91_cf.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index f67b453..277bb9b 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -511,6 +511,7 @@ static int fsg_set_halt(struct fsg_dev *fsg, struct usb_ep *ep)
- /* Caller must hold fsg->lock */
- static void wakeup_thread(struct fsg_common *common)
- {
-+	smp_wmb();	/* ensure the write of bh->state is complete */
- 	/* Tell the main thread that something has happened */
- 	common->thread_wakeup_needed = 1;
- 	if (common->thread_task)
-@@ -730,6 +731,7 @@ static int sleep_thread(struct fsg_common *common)
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	common->thread_wakeup_needed = 0;
-+	smp_rmb();	/* ensure the latest bh->state is visible */
- 	return rc;
- }
+diff --git a/drivers/pcmcia/at91_cf.c b/drivers/pcmcia/at91_cf.c
+index 9694c1e..fc50168 100644
+--- a/drivers/pcmcia/at91_cf.c
++++ b/drivers/pcmcia/at91_cf.c
+@@ -100,9 +100,9 @@ static int at91_cf_get_status(struct pcmcia_socket *s, u_int *sp)
+ 		int vcc	= gpio_is_valid(cf->board->vcc_pin);
  
+ 		*sp = SS_DETECT | SS_3VCARD;
+-		if (!rdy || gpio_get_value(rdy))
++		if (!rdy || gpio_get_value(cf->board->irq_pin))
+ 			*sp |= SS_READY;
+-		if (!vcc || gpio_get_value(vcc))
++		if (!vcc || gpio_get_value(cf->board->vcc_pin))
+ 			*sp |= SS_POWERON;
+ 	} else
+ 		*sp = 0;
 -- 
 1.8.1.2
 
