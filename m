@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab3GKLYu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 07:24:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41701 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab3GKLYt (ORCPT
+	id S1755996Ab3GKLZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 07:25:39 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:52621 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755899Ab3GKLZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 07:24:49 -0400
-Date: Thu, 11 Jul 2013 13:23:59 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/16] sched: Select a preferred node with the most numa
- hinting faults
-Message-ID: <20130711112359.GG25631@dyad.programming.kicks-ass.net>
-References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
- <1373536020-2799-6-git-send-email-mgorman@suse.de>
+	Thu, 11 Jul 2013 07:25:37 -0400
+Date: Thu, 11 Jul 2013 12:25:31 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Keerthy <j-keerthy@ti.com>
+Cc: linux-omap@vger.kernel.org, broonie@kernel.org, ldewangan@nvidia.com,
+        sameo@linux.intel.com, grant.likely@secretlab.ca, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, gg@slimlogic.co.uk
+Subject: Re: [PATCH v3 1/4] MFD: Palmas: Check if irq is valid
+Message-ID: <20130711112531.GJ25601@gmail.com>
+References: <1371621470-22279-1-git-send-email-j-keerthy@ti.com>
+ <1371621470-22279-2-git-send-email-j-keerthy@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1373536020-2799-6-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1371621470-22279-2-git-send-email-j-keerthy@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 10:46:49AM +0100, Mel Gorman wrote:
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1593,6 +1593,7 @@ static void __sched_fork(struct task_struct *p)
->  	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
->  	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
->  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
-> +	p->numa_preferred_nid = -1;
+On Wed, 19 Jun 2013, Keerthy wrote:
 
-(1)
-
->  	p->numa_work.next = &p->numa_work;
->  	p->numa_faults = NULL;
->  #endif /* CONFIG_NUMA_BALANCING */
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index 904fd6f..c0bee41 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -793,7 +793,8 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
->  
->  static void task_numa_placement(struct task_struct *p)
->  {
-> -	int seq;
-> +	int seq, nid, max_nid = 0;
-
-Should you not start with max_nid = -1?
-
-> +	unsigned long max_faults = 0;
->  
->  	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
->  		return;
-> @@ -802,7 +803,19 @@ static void task_numa_placement(struct task_struct *p)
->  		return;
->  	p->numa_scan_seq = seq;
->  
-> -	/* FIXME: Scheduling placement policy hints go here */
-> +	/* Find the node with the highest number of faults */
-> +	for (nid = 0; nid < nr_node_ids; nid++) {
-> +		unsigned long faults = p->numa_faults[nid];
-> +		p->numa_faults[nid] >>= 1;
-> +		if (faults > max_faults) {
-> +			max_faults = faults;
-> +			max_nid = nid;
-> +		}
-> +	}
-> +
-
-It is rather unlikely; but suppose the entire ->numa_faults[] array is 0, you'd
-somehow end up selecting max_nid := 0. Which seems inconsistent with \1.
-
-> +	/* Update the tasks preferred node if necessary */
-> +	if (max_faults && max_nid != p->numa_preferred_nid)
-> +		p->numa_preferred_nid = max_nid;
->  }
->  
->  /*
-> -- 
-> 1.8.1.4
+> From: J Keerthy <j-keerthy@ti.com>
 > 
+> Check if irq value obtained is valid. If it is not valid
+> then skip the irq request step and go ahead with the probe.
+> 
+> Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> ---
+>  drivers/mfd/palmas.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+
+Applied with Stephen and Mark's RB.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
