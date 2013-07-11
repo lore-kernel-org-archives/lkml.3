@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab3GKRMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 13:12:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48610 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab3GKRMr (ORCPT
+	id S1756257Ab3GKRNV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 13:13:21 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:43588 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752601Ab3GKRNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 13:12:47 -0400
-Date: Thu, 11 Jul 2013 19:11:57 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Tejun Heo <tj@kernel.org>, tglx@linutronix.de,
-        LKML <linux-kernel@vger.kernel.org>, trinity@vger.kernel.org
-Subject: Re: timer: lockup in run_timer_softirq()
-Message-ID: <20130711171157.GL25631@dyad.programming.kicks-ass.net>
-References: <51DC9379.9050408@oracle.com>
- <20130709230316.GB13855@redhat.com>
- <51DC983F.2010409@oracle.com>
- <20130710095210.GD17211@twins.programming.kicks-ass.net>
- <1373459254.7458.49.camel@gandalf.local.home>
- <20130710124245.GT25631@dyad.programming.kicks-ass.net>
- <1373461091.7458.55.camel@gandalf.local.home>
- <20130711164204.GK25631@dyad.programming.kicks-ass.net>
- <1373561726.17876.48.camel@gandalf.local.home>
- <1373561972.17876.51.camel@gandalf.local.home>
+	Thu, 11 Jul 2013 13:13:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373561972.17876.51.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1371999607-6483-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1371999607-6483-1-git-send-email-prabhakar.csengg@gmail.com>
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Date: Thu, 11 Jul 2013 22:42:57 +0530
+Message-ID: <CA+V-a8t-sTPAK+D5869X0_ZCdrmK0B+eRaowk9hMYwXMw09NqA@mail.gmail.com>
+Subject: Re: [PATCH v3 0/6] ARM: davinci: da850: add ethernet driver DT support
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        devicetree-discuss@lists.ozlabs.org,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 12:59:32PM -0400, Steven Rostedt wrote:
-> On Thu, 2013-07-11 at 12:55 -0400, Steven Rostedt wrote:
-> 
-> > > 
-> > > Other than that, a function tracer environment that is safer to use might be
-> > > useful for other people as well.
-> > 
-> > Not sure how to make the environment safe, as the main purpose of the
-> > function trace is to debug those hard to debug locations, like NMIs,
-> > RCU, dynamic ticks, etc. To ensure a "safe" environment, it would
-> > cripple the tracer.
-> > 
-> > Hmm, what would you state as a safe environment? How can we detect if
-> > the environment is safe to trace or not?
-> 
-> Maybe I misunderstood you. You mean to have this environment be
-> something for not just perf, and have the macro be:
-> 
-> NONSAFE_TRACE(__local_bh_enable);
-> 
-> ?
-> 
-> Then, any ftrace user could set a flag in the registering of its ops to
-> 'safe_only_functions'. And it will ignore all of these locations.
-> There's really not many of them, so it may not be too hard to weed out.
+Hi Sekhar,
 
-Yah, like that. But that doesn't invalidate your question as to what 'safe'
-would encompass. I think RCU/lockdep would be the big thing for perf, not
-sure it should be wider than that.
+On Sun, Jun 23, 2013 at 8:30 PM, Prabhakar Lad
+<prabhakar.csengg@gmail.com> wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+>
+> This patch set enables Ethernet support through device tree model.
+> This patch set enables mii interface only and is being tested to boot via
+> rootfs. The rmii phy is present on the i2c gpio expander chip (UI board)
+> for which yet support needs to be added, once the DT support for the chip
+> is enabled, enabling rmii will be subsequnet patch.
+>
+> Changes for v2:
+> 1: Enabled mdio device.
+> 2: Fixed clock lookup.
+>
+> Changes for v3:
+> 1: Fixed review comments pointed out by Sekhar.
+>
+> Lad, Prabhakar (6):
+>   ARM: davinci: da8xx: fix clock lookup for mdio device
+>   ARM: davinci: da850: add DT node for mdio device
+>   ARM: davinci: da850: add OF_DEV_AUXDATA entry for mdio.
+>   ARM: davinci: da850: add DT node for eth0.
+>   ARM: davinci: da850: add OF_DEV_AUXDATA entry for eth0.
+>   ARM: davinci: da850: configure system configuration chip(CFGCHIP3)
+>     for emac
+>
+gentle ping..
+
+Regards,
+--Prabhakar Lad
