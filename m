@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab3GKTXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 15:23:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59510 "EHLO mx2.suse.de"
+	id S1756522Ab3GKT3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 15:29:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59746 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751610Ab3GKTXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 15:23:21 -0400
-Date: Thu, 11 Jul 2013 21:23:20 +0200 (CEST)
+	id S1750734Ab3GKT3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 15:29:19 -0400
+Date: Thu, 11 Jul 2013 21:29:18 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jason Baron <jbaron@akamai.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mathieu.desnoyers@efficios.com
-Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based breakpoint
- instead of stop_machine()
-In-Reply-To: <1373560944.17876.41.camel@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1307112122020.29788@pobox.suse.cz>
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>  <51DDDFB3.3020004@akamai.com>  <alpine.LNX.2.00.1307110159490.25858@pobox.suse.cz> <1373560944.17876.41.camel@gandalf.local.home>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
+ patching
+In-Reply-To: <51DED90D.5050205@linux.intel.com>
+Message-ID: <alpine.LNX.2.00.1307112127530.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <51DE8799.9020904@hitachi.com> <51DED90D.5050205@linux.intel.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,32 +24,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Jul 2013, Steven Rostedt wrote:
+On Thu, 11 Jul 2013, H. Peter Anvin wrote:
 
-> On Thu, 2013-07-11 at 02:04 +0200, Jiri Kosina wrote:
-> 
-> > I even have preliminary (completely untested) patch, but would like to 
-> > have this merged/acked in the first round before proceeding with porting 
-> > ftrace to the new interface.
+> >> + * The way it is done:
+> >> + *	- add a int3 trap to the address that will be patched
+> >> + *	- sync cores
 > > 
-> > > Also, I wonder if its worth batching up updates. For example, right now 
-> > > we simply update each call-site one at a time even if its associated 
-> > > with the same control variable.
-> > 
-> > That does seem to make sense indeed, but it's not really closely tied to 
-> > this patchset, is it?
+> > You don't need this "sync cores". (and your code didn't) :)
 > 
-> If you want to have ftrace use this interface, then we need to support
-> batch processing. And you will need to do it with an iterator as well.
-> We can not allocate 30,000 locations to run this on. Ftrace has its own
-> table, and uses the ftrace iterator to traverse it.
-> 
-> Thus you would need to do something like:
+> I believe you do, lest you get "Frankenstructions".  I believe you don't
+> need the second one, however.  I should dig up my notes on this.
 
-Yup, I have been looking at the ftrace implementation and came to this 
-conclusion; thanks for confirmation.
-That's exactly why I wanted to postpone converting ftrace before agreement 
-on text_poke_bp() is reached and jump labels are converted.
+I found this post from 2010 from you:
+
+	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
+
+If it's still valid and you guys at Intel haven't discovered any reason 
+why that procedure would be invalid, I'll send out v3 with that'd be using 
+exactly this ordering of syncing of the cores.
 
 Thanks,
 
