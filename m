@@ -1,113 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab3GKL6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 07:58:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42172 "EHLO mx2.suse.de"
+	id S1755190Ab3GKMAV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 08:00:21 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:38248 "EHLO 7of9.schinagl.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab3GKL6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 07:58:35 -0400
-Date: Thu, 11 Jul 2013 13:58:32 +0200
-From: Jan Kara <jack@suse.cz>
-To: Paul Taysom <taysom@chromium.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jack@suse.cz, sonnyrao@chromium.org
-Subject: Re: [PATCH] fs: sync: fixed performance regression
-Message-ID: <20130711115832.GB5349@quack.suse.cz>
-References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
- <20130711105346.GA5349@quack.suse.cz>
+	id S1751357Ab3GKMAU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 08:00:20 -0400
+Message-ID: <51DE9DE5.20905@schinagl.nl>
+Date: Thu, 11 Jul 2013 13:58:29 +0200
+From: Oliver Schinagl <oliver+list@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130711105346.GA5349@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, linux@roeck-us.net, khali@linux-fr.org
+Subject: Re: [PATCH v2 2/7] sysfs.h: add ATTRIBUTE_GROUPS() macro
+References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org> <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org> <1373502965-1683-3-git-send-email-gregkh@linuxfoundation.org>
+In-Reply-To: <1373502965-1683-3-git-send-email-gregkh@linuxfoundation.org>
+Content-Type: multipart/mixed;
+ boundary="------------010700000406020506020809"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-07-13 12:53:46, Jan Kara wrote:
-> On Wed 10-07-13 16:12:36, Paul Taysom wrote:
-> > The following commit introduced a 10x regression for
-> > syncing inodes in ext4 with relatime enabled where just
-> > the atime had been modified.
-> > 
-> >     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
-> >     Author: Jan Kara <jack@suse.cz>
-> >     Date:   Tue Jul 3 16:45:34 2012 +0200
-> >     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
-> > 
-> >     See also: http://www.kernelhub.org/?msg=93100&p=2
-> > 
-> > Fixed by putting back in the call to writeback_inodes_sb.
-> > 
-> > I'll attach the test in a reply to this e-mail.
-> > 
-> > The test starts by creating 512 files, syncing, reading one byte
-> > from each of those files, syncing, and then deleting each file
-> > and syncing. The time to do each sync is printed. The process
-> > is then repeated for 1024 files and then the next power of
-> > two up to 262144 files.
-> > 
-> > Note, when running the test, the slow down doesn't always happen
-> > but most of the tests will show a slow down.
-> > 
-> > In response to crbug.com/240422
-> > 
-> > Signed-off-by: Paul Taysom <taysom@chromium.org>
->   Thanks for report. Rather than blindly reverting the change, I'd like to
-> understand why you see so huge regression. As the changelog in the patch
-> says, flusher thread should be doing async writeback equivalent to the
-> removed one because it gets woken via wakeup_flusher_threads(). But my
-> guess is that for some reason we end up doing all the writeback from
-> sync_inodes_one_sb(). I'll try to reproduce your results and investigate...
-  Hum, so it must be something timing sensitive. I wasn't able to reproduce
-the issue on my test machine in 4 runs of your test program. I was able to
-reproduce it on my laptop on every second run of the test program but once
-I've enabled some tracepoints, the issue disappeared and I didn't see it in
-about 10 runs.
+This is a multi-part message in MIME format.
+--------------010700000406020506020809
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-That being said I think that reverting my patch is just papering over the
-problem. We will do the async pass over inodes twice instead of once
-and thus the timing changes enough that you aren't able to observe the
-problem.
+On 11-07-13 02:36, Greg Kroah-Hartman wrote:
+> To make it easier for driver subsystems to work with attribute groups,
+> create the ATTRIBUTE_GROUPS macro to remove some of the repetitive
+> typing for the most common use for attribute groups.
+But binary groups are discriminated against :(
 
-I'm looking into this more...
+The attached patch should help here.
 
-								Honza
-> > ---
-> >  fs/sync.c | 7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > diff --git a/fs/sync.c b/fs/sync.c
-> > index 905f3f6..55c3316 100644
-> > --- a/fs/sync.c
-> > +++ b/fs/sync.c
-> > @@ -73,6 +73,12 @@ static void sync_inodes_one_sb(struct super_block *sb, void *arg)
-> >  		sync_inodes_sb(sb);
-> >  }
-> >  
-> > +static void writeback_inodes_one_sb(struct super_block *sb, void *arg)
-> > +{
-> > +	if (!(sb->s_flags & MS_RDONLY))
-> > +		writeback_inodes_sb(sb, WB_REASON_SYNC);
-> > +}
-> > +
-> >  static void sync_fs_one_sb(struct super_block *sb, void *arg)
-> >  {
-> >  	if (!(sb->s_flags & MS_RDONLY) && sb->s_op->sync_fs)
-> > @@ -104,6 +110,7 @@ SYSCALL_DEFINE0(sync)
-> >  	int nowait = 0, wait = 1;
-> >  
-> >  	wakeup_flusher_threads(0, WB_REASON_SYNC);
-> > +	iterate_supers(writeback_inodes_one_sb, NULL);
-> >  	iterate_supers(sync_inodes_one_sb, NULL);
-> >  	iterate_supers(sync_fs_one_sb, &nowait);
-> >  	iterate_supers(sync_fs_one_sb, &wait);
-> > -- 
-> > 1.8.3
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+I suppose one more additional helper wouldn't be bad to have:
+
+#define ATTRIBUTE_(BIN_)GROUPS_R[O/W](_name(, _size)) \
+ATTRIBUTE_(BIN_)ATTR_R[O/W](_name, _size); \
+ATTRIBUTE_(BIN_)GROUPS(_name)
+
+but wasn't sure if that wasn't a little overkill. I gladly add it in an 
+additional patch.
+
+>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>   include/linux/sysfs.h | 9 +++++++++
+>   1 file changed, 9 insertions(+)
+>
+> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+> index 9cd20c8..f62ff01 100644
+> --- a/include/linux/sysfs.h
+> +++ b/include/linux/sysfs.h
+> @@ -94,6 +94,15 @@ struct attribute_group {
+>   #define __ATTR_IGNORE_LOCKDEP	__ATTR
+>   #endif
+>
+> +#define ATTRIBUTE_GROUPS(name)					\
+> +static const struct attribute_group name##_group = {		\
+> +	.attrs = name##_attrs,					\
+> +};								\
+> +static const struct attribute_group *name##_groups[] = {	\
+> +	&name##_group,						\
+> +	NULL,							\
+> +}
+> +
+>   #define attr_name(_attr) (_attr).attr.name
+>
+>   struct file;
+>
+
+
+--------------010700000406020506020809
+Content-Type: text/x-patch;
+ name="0001-sysfs-add-more-helper-macro-s-for-bin_-attribute-_gr.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-sysfs-add-more-helper-macro-s-for-bin_-attribute-_gr.pa";
+ filename*1="tch"
+
+>From 003ab7a74ff689daa6934e7bc50c498b2d35a1cc Mon Sep 17 00:00:00 2001
+From: Oliver Schinagl <oliver@schinagl.nl>
+Date: Thu, 11 Jul 2013 13:48:18 +0200
+Subject: [PATCH] sysfs: add more helper macro's for (bin_)attribute(_groups)
+
+With the recent changes to sysfs there's various helper macro's.
+However there's no RW, RO BIN_ helper macro's. This patch adds them.
+
+Additionally there are no BIN_ group helpers so there's that aswell
+Moreso, if both bin and normal attribute groups are used, there's a
+simple helper for that, though the naming code be better. _TXT_ for the
+show/store ones and neither TXT or BIN for both, but that would change
+things to extensivly.
+
+Finally there's also helpers for ATTRIBUTE_ATTRS.
+
+After this patch, create default attributes can be as easy as:
+
+ATTRIBUTE_(BIN_)ATTR_RO(name, SIZE);
+ATTRIBUTE_BIN_GROUPS(name);
+
+Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
+---
+ include/linux/sysfs.h | 96 ++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 84 insertions(+), 12 deletions(-)
+
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 2c3b6a3..0ebed11 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -17,6 +17,7 @@
+ #include <linux/list.h>
+ #include <linux/lockdep.h>
+ #include <linux/kobject_ns.h>
++#include <linux/stat.h>
+ #include <linux/atomic.h>
+ 
+ struct kobject;
+@@ -94,15 +95,32 @@ struct attribute_group {
+ #define __ATTR_IGNORE_LOCKDEP	__ATTR
+ #endif
+ 
+-#define ATTRIBUTE_GROUPS(name)					\
+-static const struct attribute_group name##_group = {		\
+-	.attrs = name##_attrs,					\
++#define __ATTRIBUTE_GROUPS(_name)				\
++static const struct attribute_group *_name##_groups[] = {	\
++	&_name##_group,						\
++	NULL,							\
++}
++
++#define ATTRIBUTE_GROUPS(_name)					\
++static const struct attribute_group _name##_group = {		\
++	.attrs = _name##_attrs,					\
+ };								\
+-static const struct attribute_group *name##_groups[] = {	\
+-	&name##_group,						\
++__ATTRIBUTE_GROUPS(_name)
++
++#define __ATTRIBUTE_ATTRS(_name)				\
++struct bin_attribute *_name##_attrs[] = {			\
++	&_name##_attr,						\
+ 	NULL,							\
+ }
+ 
++#define ATTRIBUTE_ATTR_RO(_name, _size)				\
++struct attribute _name##_attr = __ATTR_RO(_name, _size);	\
++__ATTRIBUTE_ATTRS(_name)
++
++#define ATTRIBUTE_ATTR_RW(_name, _size)				\
++struct attribute _name##_attr = __ATTR_RW(_name, _size);	\
++__ATTRIBUTE_ATTRS(_name)
++
+ #define attr_name(_attr) (_attr).attr.name
+ 
+ struct file;
+@@ -132,15 +150,69 @@ struct bin_attribute {
+  */
+ #define sysfs_bin_attr_init(bin_attr) sysfs_attr_init(&(bin_attr)->attr)
+ 
+-/* macro to create static binary attributes easier */
+-#define BIN_ATTR(_name, _mode, _read, _write, _size)		\
+-struct bin_attribute bin_attr_##_name = {			\
+-	.attr = {.name = __stringify(_name), .mode = _mode },	\
+-	.read	= _read,					\
+-	.write	= _write,					\
+-	.size	= _size,					\
++/* macros to create static binary attributes easier */
++#define __BIN_ATTR(_name, _mode, _read, _write, _size) {		\
++	.attr = { .name = __stringify(_name), .mode = _mode },		\
++	.read	= _read,						\
++	.write	= _write,						\
++	.size	= _size,						\
++}
++
++#define __BIN_ATTR_RO(_name, _size) {					\
++	.attr	= { .name = __stringify(_name), .mode = S_IRUGO },	\
++	.read	= _name##_read,						\
++	.size	= _size,						\
++}
++
++#define __BIN_ATTR_RW(_name, _size) __BIN_ATTR(_name,			\
++				   (S_IWUSR | S_IRUGO), _name##_read,	\
++				   _name##_write)
++
++#define __BIN_ATTR_NULL __ATTR_NULL
++
++#define BIN_ATTR(_name, _mode, _read, _write, _size)			\
++struct bin_attribute bin_attr_##_name = __BIN_ATTR(_name, _mode, _read,	\
++					_write, _size)
++
++#define BIN_RO_ATTR(_name, _size)					\
++struct bin_attribute bin_attr_##_name = __BIN_ATTR_RO(_name, _size)
++
++#define BIN_RW_ATTR(_name, _size)					\
++struct bin_attribute bin_attr_##_name = __BIN_ATTR_RW(_name, _size)
++
++#define __ATTRIBUTE_BIN_GROUPS(_name)					\
++static const struct attribute_group *_name##_bin_groups[] = {		\
++	&_name##_bin_group,						\
++	NULL,								\
+ }
+ 
++#define ATTRIBUTE_BIN_GROUPS(_name)					\
++static const struct attribute_group _name##_bin_group = {		\
++	.bin_attrs = _name##_bin_attrs,					\
++};									\
++__ATTRIBUTE_BIN_GROUPS(_name)
++
++#define ATTRIBUTE_FULL_GROUPS(_name)					\
++static const struct attribute_group _name##_full_group = {		\
++	.attrs = _name##_attrs,						\
++	.bin_attrs = _name##_bin_attrs,					\
++};									\
++__ATTRIBUTE_GROUPS(_name); __ATTRIBUTE_BIN_GROUPS(_name)
++
++#define __ATTRIBUTE_BIN_ATTRS(_name)					\
++struct bin_attribute *_name##_bin_attrs[] = {				\
++	&_name##_bin_attr,						\
++	NULL,								\
++}
++
++#define ATTRIBUTE_BIN_ATTR_RO(_name, _size)				\
++struct bin_attribute _name##_bin_attr = __BIN_ATTR_RO(_name, _size);	\
++__ATTRIBUTE_BIN_ATTRS(_name)
++
++#define ATTRIBUTE_BIN_ATTR_RW(_name, _size)				\
++struct bin_attribute _name##_bin_attr = __BIN_ATTR_RW(_name, _size);	\
++__ATTRIBUTE_BIN_ATTRS(_name)
++
+ struct sysfs_ops {
+ 	ssize_t	(*show)(struct kobject *, struct attribute *,char *);
+ 	ssize_t	(*store)(struct kobject *,struct attribute *,const char *, size_t);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.1.5
+
+
+--------------010700000406020506020809--
