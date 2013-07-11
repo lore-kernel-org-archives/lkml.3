@@ -1,72 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab3GKAez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:34:55 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58739 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754210Ab3GKAey (ORCPT
+	id S1755411Ab3GKAfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:35:23 -0400
+Received: from mail-qc0-f201.google.com ([209.85.216.201]:50638 "EHLO
+	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287Ab3GKAfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:34:54 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-73-51ddfdab4cb6
-Date: Thu, 11 Jul 2013 09:34:54 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 06/23] tools lib lk: Fix for cross build
-Message-ID: <20130711003453.GA7756@lge.com>
-References: <1373483963-19277-1-git-send-email-acme@infradead.org>
- <1373483963-19277-7-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373483963-19277-7-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 10 Jul 2013 20:35:21 -0400
+From: Alexander Z Lam <azl@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>
+Subject: [PATCH 1/2] tracing: Miscellaneous fixes for trace_array ref counting
+Date: Wed, 10 Jul 2013 17:34:33 -0700
+Message-Id: <1373502874-1706-1-git-send-email-azl@google.com>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 04:19:06PM -0300, Arnaldo Carvalho de Melo wrote:
-> From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> Currently, lib lk doesn't use CROSS_COMPILE environment variable, so
-> cross build always fails.
+Some error paths did not handle ref counting properly, and some trace files need
+ref counting.
 
-Hello, Arnaldo.
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Cc: Alexander Z Lam <lambchop468@gmail.com>
+Signed-off-by: Alexander Z Lam <azl@google.com>
+---
+ kernel/trace/trace.c        | 34 +++++++++++++++++++++++-----------
+ kernel/trace/trace_events.c | 21 +++++++++++++++++++--
+ 2 files changed, 42 insertions(+), 13 deletions(-)
 
-Fix for lib lk cross build is already merged into mainline.
-It may be from your tree :)
-See following commit.
-
-commit 3c4797d46c14fa0c7cf733a77bd4b28875078b53
-Author: Rabin Vincent <rabin@rab.in>
-Date:   Fri May 17 22:27:44 2013 +0200
-
-    tools lib lk: Respect CROSS_COMPILE
-
-    Make lk use CROSS_COMPILE, in order to be able to cross compile perf
-    again.
-
-    Signed-off-by: Rabin Vincent <rabin@rab.in>
-    Cc: Ingo Molnar <mingo@kernel.org>
-    Cc: Borislav Petkov <bp@suse.de>
-    Link: http://lkml.kernel.org/r/1368822464-4887-1-git-send-email-rabin@rab.in
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-
-Thanks.
-
-> 
-> This is a quick fix for this problem.
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Link: http://lkml.kernel.org/r/1371603750-15053-2-git-send-email-iamjoonsoo.kim@lge.com
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 0cd500b..ca2743b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3008,7 +3008,6 @@ static int tracing_release(struct inode *inode, struct file *file)
+ 
+ 	iter = m->private;
+ 	tr = iter->tr;
+-	trace_array_put(tr);
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+@@ -3023,6 +3022,9 @@ static int tracing_release(struct inode *inode, struct file *file)
+ 	if (!iter->snapshot)
+ 		/* reenable tracing if it was previously enabled */
+ 		tracing_start_tr(tr);
++
++	__trace_array_put(tr);
++
+ 	mutex_unlock(&trace_types_lock);
+ 
+ 	mutex_destroy(&iter->mutex);
+@@ -3447,6 +3449,7 @@ tracing_trace_options_write(struct file *filp, const char __user *ubuf,
+ static int tracing_trace_options_open(struct inode *inode, struct file *file)
+ {
+ 	struct trace_array *tr = inode->i_private;
++	int ret;
+ 
+ 	if (tracing_disabled)
+ 		return -ENODEV;
+@@ -3454,7 +3457,11 @@ static int tracing_trace_options_open(struct inode *inode, struct file *file)
+ 	if (trace_array_get(tr) < 0)
+ 		return -ENODEV;
+ 
+-	return single_open(file, tracing_trace_options_show, inode->i_private);
++	ret = single_open(file, tracing_trace_options_show, inode->i_private);
++	if (ret < 0)
++		trace_array_put(tr);
++
++	return ret;
+ }
+ 
+ static const struct file_operations tracing_iter_fops = {
+@@ -3958,7 +3965,7 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 	if (!iter) {
+ 		ret = -ENOMEM;
+-		goto out;
++		goto fail_iter;
+ 	}
+ 
+ 	/*
+@@ -3968,13 +3975,13 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ 	iter->trace = kmalloc(sizeof(*iter->trace), GFP_KERNEL);
+ 	if (!iter->trace) {
+ 		ret = -ENOMEM;
+-		goto fail;
++		goto fail_trace;
+ 	}
+ 	*iter->trace = *tr->current_trace;
+ 
+ 	if (!alloc_cpumask_var(&iter->started, GFP_KERNEL)) {
+ 		ret = -ENOMEM;
+-		goto fail;
++		goto fail_trace;
+ 	}
+ 
+ 	/* trace pipe does not show start of buffer */
+@@ -4001,9 +4008,10 @@ out:
+ 	mutex_unlock(&trace_types_lock);
+ 	return ret;
+ 
+-fail:
++fail_trace:
+ 	kfree(iter->trace);
+ 	kfree(iter);
++fail_iter:
+ 	__trace_array_put(tr);
+ 	mutex_unlock(&trace_types_lock);
+ 	return ret;
+@@ -4705,12 +4713,15 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ 	} else {
+ 		/* Writes still need the seq_file to hold the private data */
+ 		m = kzalloc(sizeof(*m), GFP_KERNEL);
+-		if (!m)
+-			return -ENOMEM;
++		if (!m) {
++			ret = -ENOMEM;
++			goto out;
++		}
+ 		iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 		if (!iter) {
+ 			kfree(m);
+-			return -ENOMEM;
++			ret = -ENOMEM;
++			goto out;
+ 		}
+ 		iter->tr = tr;
+ 		iter->trace_buffer = &tc->tr->max_buffer;
+@@ -4718,7 +4729,7 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ 		m->private = iter;
+ 		file->private_data = m;
+ 	}
+-
++out:
+ 	if (ret < 0)
+ 		trace_array_put(tr);
+ 
+@@ -5328,9 +5339,10 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
+ }
+ 
+ static const struct file_operations tracing_stats_fops = {
+-	.open		= tracing_open_generic,
++	.open		= tracing_open_generic_tc,
+ 	.read		= tracing_stats_read,
+ 	.llseek		= generic_file_llseek,
++	.release	= tracing_release_generic_tc,
+ };
+ 
+ #ifdef CONFIG_DYNAMIC_FTRACE
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 7d85429..7a75cb2 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1218,6 +1218,7 @@ show_header(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+ 
+ static int ftrace_event_avail_open(struct inode *inode, struct file *file);
+ static int ftrace_event_set_open(struct inode *inode, struct file *file);
++static int ftrace_event_release(struct inode *inode, struct file *file);
+ 
+ static const struct seq_operations show_event_seq_ops = {
+ 	.start = t_start,
+@@ -1245,7 +1246,7 @@ static const struct file_operations ftrace_set_event_fops = {
+ 	.read = seq_read,
+ 	.write = ftrace_event_write,
+ 	.llseek = seq_lseek,
+-	.release = seq_release,
++	.release = ftrace_event_release,
+ };
+ 
+ static const struct file_operations ftrace_enable_fops = {
+@@ -1323,6 +1324,15 @@ ftrace_event_open(struct inode *inode, struct file *file,
+ 	return ret;
+ }
+ 
++static int ftrace_event_release(struct inode *inode, struct file *file)
++{
++	struct trace_array *tr = inode->i_private;
++
++	trace_array_put(tr);
++
++	return seq_release(inode, file);
++}
++
+ static int
+ ftrace_event_avail_open(struct inode *inode, struct file *file)
+ {
+@@ -1336,12 +1346,19 @@ ftrace_event_set_open(struct inode *inode, struct file *file)
+ {
+ 	const struct seq_operations *seq_ops = &show_set_event_seq_ops;
+ 	struct trace_array *tr = inode->i_private;
++	int ret;
++
++	if (trace_array_get(tr) < 0)
++		return -ENODEV;
+ 
+ 	if ((file->f_mode & FMODE_WRITE) &&
+ 	    (file->f_flags & O_TRUNC))
+ 		ftrace_clear_events(tr);
+ 
+-	return ftrace_event_open(inode, file, seq_ops);
++	ret = ftrace_event_open(inode, file, seq_ops);
++	if (ret < 0)
++		trace_array_put(tr);
++	return ret;
+ }
+ 
+ static struct event_subsystem *
+-- 
+1.8.3
 
