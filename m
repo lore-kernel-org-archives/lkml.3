@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab3GKJsn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 05:48:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37584 "EHLO mx2.suse.de"
+	id S932136Ab3GKJrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 05:47:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37533 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932145Ab3GKJrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 05:47:14 -0400
+	id S1754276Ab3GKJrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 05:47:09 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 13/16] mm: numa: Scan pages with elevated page_mapcount
-Date: Thu, 11 Jul 2013 10:46:57 +0100
-Message-Id: <1373536020-2799-14-git-send-email-mgorman@suse.de>
+Subject: [PATCH 07/16] sched: Favour moving tasks towards the preferred node
+Date: Thu, 11 Jul 2013 10:46:51 +0100
+Message-Id: <1373536020-2799-8-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373536020-2799-1-git-send-email-mgorman@suse.de>
 References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
@@ -22,137 +22,207 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently automatic NUMA balancing is unable to distinguish between false
-shared versus private pages except by ignoring pages with an elevated
-page_mapcount entirely. This avoids shared pages bouncing between the
-nodes whose task is using them but that is ignored quite a lot of data.
+This patch favours moving tasks towards the preferred NUMA node when it
+has just been selected. Ideally this is self-reinforcing as the longer
+the task runs on that node, the more faults it should incur causing
+task_numa_placement to keep the task running on that node. In reality a
+big weakness is that the nodes CPUs can be overloaded and it would be more
+efficient to queue tasks on an idle node and migrate to the new node. This
+would require additional smarts in the balancer so for now the balancer
+will simply prefer to place the task on the preferred node for a PTE scans
+which is controlled by the numa_balancing_settle_count sysctl. Once the
+settle_count number of scans has complete the schedule is free to place
+the task on an alternative node if the load is imbalanced.
 
-This patch kicks away the training wheels in preparation for adding support
-for identifying shared/private pages is now in place. The ordering is so
-that the impact of the shared/private detection can be easily measured. Note
-that the patch does not migrate shared, file-backed within vmas marked
-VM_EXEC as these are generally shared library pages. Migrating such pages
-is not beneficial as there is an expectation they are read-shared between
-caches and iTLB and iCache pressure is generally low.
-
+[srikar@linux.vnet.ibm.com: Fixed statistics]
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/migrate.h |  7 ++++---
- mm/memory.c             |  7 ++-----
- mm/migrate.c            | 17 ++++++-----------
- mm/mprotect.c           |  4 +---
- 4 files changed, 13 insertions(+), 22 deletions(-)
+ Documentation/sysctl/kernel.txt |  8 +++++-
+ include/linux/sched.h           |  1 +
+ kernel/sched/core.c             |  3 ++-
+ kernel/sched/fair.c             | 60 ++++++++++++++++++++++++++++++++++++++---
+ kernel/sysctl.c                 |  7 +++++
+ 5 files changed, 73 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index a405d3dc..e7e26af 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -92,11 +92,12 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- #endif /* CONFIG_MIGRATION */
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index 0fe678c..246b128 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -374,7 +374,8 @@ feature should be disabled. Otherwise, if the system overhead from the
+ feature is too high then the rate the kernel samples for NUMA hinting
+ faults may be controlled by the numa_balancing_scan_period_min_ms,
+ numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
+-numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
++numa_balancing_scan_period_max_ms, numa_balancing_scan_size_mb and
++numa_balancing_settle_count sysctls.
  
- #ifdef CONFIG_NUMA_BALANCING
--extern int migrate_misplaced_page(struct page *page, int node);
--extern int migrate_misplaced_page(struct page *page, int node);
-+extern int migrate_misplaced_page(struct page *page,
-+				  struct vm_area_struct *vma, int node);
- extern bool migrate_ratelimited(int node);
- #else
--static inline int migrate_misplaced_page(struct page *page, int node)
-+static inline int migrate_misplaced_page(struct page *page,
-+					 struct vm_area_struct *vma, int node)
+ ==============================================================
+ 
+@@ -418,6 +419,11 @@ scanned for a given scan.
+ numa_balancing_scan_period_reset is a blunt instrument that controls how
+ often a tasks scan delay is reset to detect sudden changes in task behaviour.
+ 
++numa_balancing_settle_count is how many scan periods must complete before
++the schedule balancer stops pushing the task towards a preferred node. This
++gives the scheduler a chance to place the task on an alternative node if the
++preferred node is overloaded.
++
+ ==============================================================
+ 
+ osrelease, ostype & version:
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 42f9818..82a6136 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -815,6 +815,7 @@ enum cpu_idle_type {
+ #define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
+ #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
+ #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
++#define SD_NUMA			0x4000	/* cross-node balancing */
+ 
+ extern int __weak arch_sd_sibiling_asym_packing(void);
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0bd541c..5e02507 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1591,7 +1591,7 @@ static void __sched_fork(struct task_struct *p)
+ 
+ 	p->node_stamp = 0ULL;
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+-	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
++	p->numa_migrate_seq = 0;
+ 	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+ 	p->numa_preferred_nid = -1;
+ 	p->numa_work.next = &p->numa_work;
+@@ -6141,6 +6141,7 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
+ 					| 0*SD_SHARE_PKG_RESOURCES
+ 					| 1*SD_SERIALIZE
+ 					| 0*SD_PREFER_SIBLING
++					| 1*SD_NUMA
+ 					| sd_local_flags(level)
+ 					,
+ 		.last_balance		= jiffies,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8dc9ff9..5055bf9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -791,6 +791,15 @@ unsigned int sysctl_numa_balancing_scan_size = 256;
+ /* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
+ unsigned int sysctl_numa_balancing_scan_delay = 1000;
+ 
++/*
++ * Once a preferred node is selected the scheduler balancer will prefer moving
++ * a task to that node for sysctl_numa_balancing_settle_count number of PTE
++ * scans. This will give the process the chance to accumulate more faults on
++ * the preferred node but still allow the scheduler to move the task again if
++ * the nodes CPUs are overloaded.
++ */
++unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
++
+ static void task_numa_placement(struct task_struct *p)
  {
- 	return -EAGAIN; /* can't migrate now */
- }
-diff --git a/mm/memory.c b/mm/memory.c
-index 189da75..f4e3ad5 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3586,7 +3586,7 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	int seq, nid, max_nid = 0;
+@@ -802,6 +811,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	if (p->numa_scan_seq == seq)
+ 		return;
+ 	p->numa_scan_seq = seq;
++	p->numa_migrate_seq++;
+ 
+ 	/* Find the node with the highest number of faults */
+ 	for (nid = 0; nid < nr_node_ids; nid++) {
+@@ -820,8 +830,10 @@ static void task_numa_placement(struct task_struct *p)
  	}
  
- 	/* Migrate to the requested node */
--	migrated = migrate_misplaced_page(page, target_nid);
-+	migrated = migrate_misplaced_page(page, vma, target_nid);
- 	if (migrated)
- 		current_nid = target_nid;
+ 	/* Update the tasks preferred node if necessary */
+-	if (max_faults && max_nid != p->numa_preferred_nid)
++	if (max_faults && max_nid != p->numa_preferred_nid) {
+ 		p->numa_preferred_nid = max_nid;
++		p->numa_migrate_seq = 0;
++	}
+ }
  
-@@ -3651,9 +3651,6 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		page = vm_normal_page(vma, addr, pteval);
- 		if (unlikely(!page))
- 			continue;
--		/* only check non-shared pages */
--		if (unlikely(page_mapcount(page) != 1))
--			continue;
+ /*
+@@ -3898,6 +3910,35 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
+ 	return delta < (s64)sysctl_sched_migration_cost;
+ }
  
- 		/*
- 		 * Note that the NUMA fault is later accounted to either
-@@ -3671,7 +3668,7 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 		/* Migrate to the requested node */
- 		pte_unmap_unlock(pte, ptl);
--		migrated = migrate_misplaced_page(page, target_nid);
-+		migrated = migrate_misplaced_page(page, vma, target_nid);
- 		if (migrated)
- 			curr_nid = target_nid;
- 		task_numa_fault(last_nid, curr_nid, 1, migrated);
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 3bbaf5d..23f8122 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1579,7 +1579,8 @@ int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
-  * node. Caller is expected to have an elevated reference count on
-  * the page that will be dropped by this function before returning.
++#ifdef CONFIG_NUMA_BALANCING
++/* Returns true if the destination node has incurred more faults */
++static bool migrate_improves_locality(struct task_struct *p, struct lb_env *env)
++{
++	int src_nid, dst_nid;
++
++	if (!p->numa_faults || !(env->sd->flags & SD_NUMA))
++		return false;
++
++	src_nid = cpu_to_node(env->src_cpu);
++	dst_nid = cpu_to_node(env->dst_cpu);
++
++	if (src_nid == dst_nid ||
++	    p->numa_migrate_seq >= sysctl_numa_balancing_settle_count)
++		return false;
++
++	if (p->numa_preferred_nid == dst_nid)
++		return true;
++
++	return false;
++}
++#else
++static inline bool migrate_improves_locality(struct task_struct *p,
++					     struct lb_env *env)
++{
++	return false;
++}
++#endif
++
+ /*
+  * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
   */
--int migrate_misplaced_page(struct page *page, int node)
-+int migrate_misplaced_page(struct page *page, struct vm_area_struct *vma,
-+			   int node)
- {
- 	pg_data_t *pgdat = NODE_DATA(node);
- 	int isolated;
-@@ -1587,10 +1588,11 @@ int migrate_misplaced_page(struct page *page, int node)
- 	LIST_HEAD(migratepages);
+@@ -3946,11 +3987,22 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
  
  	/*
--	 * Don't migrate pages that are mapped in multiple processes.
--	 * TODO: Handle false sharing detection instead of this hammer
-+	 * Don't migrate file pages that are mapped in multiple processes
-+	 * with execute permissions as they are probably shared libraries.
+ 	 * Aggressive migration if:
+-	 * 1) task is cache cold, or
+-	 * 2) too many balance attempts have failed.
++	 * 1) destination numa is preferred
++	 * 2) task is cache cold, or
++	 * 3) too many balance attempts have failed.
  	 */
--	if (page_mapcount(page) != 1)
-+	if (page_mapcount(page) != 1 && page_is_file_cache(page) &&
-+	    (vma->vm_flags & VM_EXEC))
- 		goto out;
- 
- 	/*
-@@ -1641,13 +1643,6 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 	int page_lru = page_is_file_cache(page);
- 
- 	/*
--	 * Don't migrate pages that are mapped in multiple processes.
--	 * TODO: Handle false sharing detection instead of this hammer
--	 */
--	if (page_mapcount(page) != 1)
--		goto out_dropref;
 -
--	/*
- 	 * Rate-limit the amount of data that is being migrated to a node.
- 	 * Optimal placement is no good if the memory bus is saturated and
- 	 * all the time is being spent migrating!
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 94722a4..cacc64a 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -69,9 +69,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 					if (last_nid != this_nid)
- 						all_same_node = false;
- 
--					/* only check non-shared pages */
--					if (!pte_numa(oldpte) &&
--					    page_mapcount(page) == 1) {
-+					if (!pte_numa(oldpte)) {
- 						ptent = pte_mknuma(ptent);
- 						updated = true;
- 					}
+ 	tsk_cache_hot = task_hot(p, env->src_rq->clock_task, env->sd);
++
++	if (migrate_improves_locality(p, env)) {
++#ifdef CONFIG_SCHEDSTATS
++		if (tsk_cache_hot) {
++			schedstat_inc(env->sd, lb_hot_gained[env->idle]);
++			schedstat_inc(p, se.statistics.nr_forced_migrations);
++		}
++#endif
++		return 1;
++	}
++
+ 	if (!tsk_cache_hot ||
+ 		env->sd->nr_balance_failed > env->sd->cache_nice_tries) {
+ #ifdef CONFIG_SCHEDSTATS
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index afc1dc6..263486f 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -393,6 +393,13 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++	{
++		.procname       = "numa_balancing_settle_count",
++		.data           = &sysctl_numa_balancing_settle_count,
++		.maxlen         = sizeof(unsigned int),
++		.mode           = 0644,
++		.proc_handler   = proc_dointvec,
++	},
+ #endif /* CONFIG_NUMA_BALANCING */
+ #endif /* CONFIG_SCHED_DEBUG */
+ 	{
 -- 
 1.8.1.4
 
