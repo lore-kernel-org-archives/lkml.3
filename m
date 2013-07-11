@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab3GKNbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:31:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:44761 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755318Ab3GKNb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:31:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.87,1043,1363158000"; 
-   d="scan'208";a="363706201"
-From: Youquan Song <youquan.song@intel.com>
-To: tj@kernel.org, jgarzik@redhat.com, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Cc: seth.heasley@intel.com, james.d.ralston@intel.com,
-        ed.ciechanowski@intel.com, Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>, stable@vger.kernel.org
-Subject: [PATCH] ata: Fix DVD not dectected at some platform with Wellsburg PCH
-Date: Thu, 11 Jul 2013 21:15:57 -0400
-Message-Id: <1373591757-416-1-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
+	id S932094Ab3GKNdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:33:32 -0400
+Received: from mail1.centrum-group.com ([194.12.254.133]:39447 "EHLO
+	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755765Ab3GKNd3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 09:33:29 -0400
+X-Antivirus-centrum-group.com-Mail-From: gdsdangeoreg1@outlook.com via mail1
+X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 214.867121 secs Process 29620)
+Message-ID: <59258.88.23.117.54.1373540331.squirrel@mail1.centrum-group.com>
+Date: Thu, 11 Jul 2013 13:58:51 +0300 (EEST)
+Subject: It's private
+From: "George Daniels" <gdsdangeoreg1@outlook.com>
+Reply-To: gdsdangeoreg1@outlook.com
+User-Agent: SquirrelMail/1.4.5
+MIME-Version: 1.0
+Content-Type: text/plain;charset=WINDOWS-1251
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a patch b55f84e2d527182e7c611d466cd0bb6ddce201de "ata_piix: Fix DVD
- not dectected at some Haswell platforms" to fix an issue of DVD not 
-recognized on Haswell Desktop platform with Lynx Point. 
-Recently, it is also found the same issue at some platformas with Wellsburg PCH.
+It's private
 
-So deliver a similar patch to fix it by disables 32bit PIO in IDE mode.
+I am George Daniels, a Banker and credit system programmer (HSBC bank).
+I saw your email address while browsing through  the bank D.T.C Screen in
+my office yesterday so I decided to use this very chance to know you. I
+believe we should use every opportunity to know each other better.
+However, I am contacting you for obvious reason which you will understand.
 
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Cc: stable@vger.kernel.org
----
- drivers/ata/ata_piix.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I am sending this mail just to know if this email address is OK,
+reply me back so that I will send  more details to you.
+I have a very important thing to discuss with you, I look forward to
+receiving your response at
+georgedaniels@postino.net. Have a pleasant day.
 
-diff --git a/drivers/ata/ata_piix.c b/drivers/ata/ata_piix.c
-index 9a8a674..424bcbe 100644
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -330,7 +330,7 @@ static const struct pci_device_id piix_pci_tbl[] = {
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d00, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
--	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
-+	{ 0x8086, 0x8d08, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
- 	{ 0x8086, 0x8d60, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_sata_snb },
- 	/* SATA Controller IDE (Wellsburg) */
--- 
-1.6.4.2
+George Daniels
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
