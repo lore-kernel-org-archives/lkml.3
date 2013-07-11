@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab3GKKw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:52:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40964 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755807Ab3GKKw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:52:58 -0400
-Date: Thu, 11 Jul 2013 12:52:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Rolf Eike Beer <eike-kernel@sf-tec.de>, linux-kernel@vger.kernel.org,
-        dhowells@redhat.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Hard lockups using 3.10.0
-Message-ID: <20130711105207.GE25631@dyad.programming.kicks-ass.net>
-References: <8484013.LsABBJRIOx@devpool02>
- <20130711100721.GA28131@pd.tnic>
+	id S1755920Ab3GKKxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:53:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40073 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755807Ab3GKKxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 06:53:48 -0400
+Date: Thu, 11 Jul 2013 12:53:46 +0200
+From: Jan Kara <jack@suse.cz>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, sonnyrao@chromium.org
+Subject: Re: [PATCH] fs: sync: fixed performance regression
+Message-ID: <20130711105346.GA5349@quack.suse.cz>
+References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130711100721.GA28131@pd.tnic>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1373497956-8770-1-git-send-email-taysom@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 12:07:21PM +0200, Borislav Petkov wrote:
-> On Thu, Jul 11, 2013 at 11:38:37AM +0200, Rolf Eike Beer wrote:
-> > Hi,
-> > 
-> > I'm running 3.10.0 (from openSUSE packages) on an "Intel(R) Core(TM) i7-2600 
-> > CPU @ 3.40GHz". I got a hard lockup on one of my CPUs twice, once with 
-> > backtrace (see attached image). Graphics is the builtin Intel, used with X 7.6 
-> > and KDE 4.10beta2 (basically current openSUSE 12.3+KDE).
-> > 
-> > I'm not aware that I had done anything special, just "normal" desktop and 
-> > development usage, but no heavy compile work at the moment the lockups 
-> > happened.
+On Wed 10-07-13 16:12:36, Paul Taysom wrote:
+> The following commit introduced a 10x regression for
+> syncing inodes in ext4 with relatime enabled where just
+> the atime had been modified.
 > 
-> Hmm, I can see commit_creds() doing some rcu pointers assignment and rcu
-> calling into the scheduler which screams about a cpu runqueue of the
-> task we're about to reschedule not being locked. Let's add some more
-> people who should know better.
+>     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
+>     Author: Jan Kara <jack@suse.cz>
+>     Date:   Tue Jul 3 16:45:34 2012 +0200
+>     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
+> 
+>     See also: http://www.kernelhub.org/?msg=93100&p=2
+> 
+> Fixed by putting back in the call to writeback_inodes_sb.
+> 
+> I'll attach the test in a reply to this e-mail.
+> 
+> The test starts by creating 512 files, syncing, reading one byte
+> from each of those files, syncing, and then deleting each file
+> and syncing. The time to do each sync is printed. The process
+> is then repeated for 1024 files and then the next power of
+> two up to 262144 files.
+> 
+> Note, when running the test, the slow down doesn't always happen
+> but most of the tests will show a slow down.
+> 
+> In response to crbug.com/240422
+> 
+> Signed-off-by: Paul Taysom <taysom@chromium.org>
+  Thanks for report. Rather than blindly reverting the change, I'd like to
+understand why you see so huge regression. As the changelog in the patch
+says, flusher thread should be doing async writeback equivalent to the
+removed one because it gets woken via wakeup_flusher_threads(). But my
+guess is that for some reason we end up doing all the writeback from
+sync_inodes_one_sb(). I'll try to reproduce your results and investigate...
 
-Ok, for the other people too lazy to bother finding the picture:
+								Honza
 
-  http://marc.info/?l=linux-kernel&m=137353587012001&q=p3
-
-So we bug at:
-
-kernel/sched/core.c:519 assert_raw_spin_locked(&task_rq(p)->lock);
-
-and get there through:
-
-  resched_task()
-  check_preempt_wakeup()
-  check_preempt_curr()
-  try_to_wake_up()
-  autoremove_wake_function()
-  __call_rcu_nocb_enqueue()
-  __call_rcu()
-  commit_creds()
-  ____call_usermodehelper()
-  ret_from_fork()
-
-That don't make much sense though. Since:
-
-  try_to_wake_up()
-    ttwu_queue()
-      raw_spin_lock(&rq->lock)
-      ttwu_do_activate()
-        ttwu_do_wakeup()
-          check_preempt_curr()
-            check_preempt_wakeup()
-              resched_task(rq->curr)
-                assert_raw_spin_locked(task_rq(p)->lock)
-
-It would somehow mean that 'task_rq(rq->curr) != rq', that's completely
-bonkers, we do after all have rq->lock locked.
-
-I must also say that I've _never_ seen this bug before.
+> ---
+>  fs/sync.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/fs/sync.c b/fs/sync.c
+> index 905f3f6..55c3316 100644
+> --- a/fs/sync.c
+> +++ b/fs/sync.c
+> @@ -73,6 +73,12 @@ static void sync_inodes_one_sb(struct super_block *sb, void *arg)
+>  		sync_inodes_sb(sb);
+>  }
+>  
+> +static void writeback_inodes_one_sb(struct super_block *sb, void *arg)
+> +{
+> +	if (!(sb->s_flags & MS_RDONLY))
+> +		writeback_inodes_sb(sb, WB_REASON_SYNC);
+> +}
+> +
+>  static void sync_fs_one_sb(struct super_block *sb, void *arg)
+>  {
+>  	if (!(sb->s_flags & MS_RDONLY) && sb->s_op->sync_fs)
+> @@ -104,6 +110,7 @@ SYSCALL_DEFINE0(sync)
+>  	int nowait = 0, wait = 1;
+>  
+>  	wakeup_flusher_threads(0, WB_REASON_SYNC);
+> +	iterate_supers(writeback_inodes_one_sb, NULL);
+>  	iterate_supers(sync_inodes_one_sb, NULL);
+>  	iterate_supers(sync_fs_one_sb, &nowait);
+>  	iterate_supers(sync_fs_one_sb, &wait);
+> -- 
+> 1.8.3
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
