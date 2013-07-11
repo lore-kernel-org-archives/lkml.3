@@ -1,107 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3GKOCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:02:11 -0400
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:38461 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755611Ab3GKOCI (ORCPT
+	id S1756159Ab3GKODm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:03:42 -0400
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:49066 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756085Ab3GKODk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:02:08 -0400
+	Thu, 11 Jul 2013 10:03:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <1373550090-30379-2-git-send-email-benjamin.tissoires@redhat.com>
-References: <1373550090-30379-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1373550090-30379-2-git-send-email-benjamin.tissoires@redhat.com>
-Date: Thu, 11 Jul 2013 16:02:08 +0200
-Message-ID: <CANq1E4Tx7cVkWmZHtLvtW4U78uedEUe4Qs40aeyzRORmEBTPBg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Bluetooth: hidp: implement hidinput_input_event callback
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>, Jiri Kosina <jkosina@suse.cz>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <51DE4F44.6060506@linux.vnet.ibm.com>
+References: <51C08370.4050906@gmx.de>
+	<CAKohpok1gThXL925Yz5UgC54vTVQgymBA1cLGER_g-dgZu0JLA@mail.gmail.com>
+	<51CF1E53.6060902@gmx.de>
+	<8029836.CFiJCXmRQ0@vostro.rjw.lan>
+	<51D05DF4.50704@linux.vnet.ibm.com>
+	<51D06556.7080204@gmx.de>
+	<51D07E7F.2030709@linux.vnet.ibm.com>
+	<51DDC8FA.4020609@gmx.de>
+	<51DDE067.2020106@linux.vnet.ibm.com>
+	<CAOLK0pwr03reaMWAEeaUs-6H2URoisFEJ3J4r83Rm1eTs1hU5w@mail.gmail.com>
+	<51DE4F44.6060506@linux.vnet.ibm.com>
+Date: Thu, 11 Jul 2013 22:03:39 +0800
+Message-ID: <CAOLK0pyJ=MoE20adyg8oUP-bTiwvXobRNX4ayA5eGRH0UGbpgw@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: Fix cpufreq regression after suspend/resume
+From: Lan Tianyu <lantianyu1986@gmail.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: =?ISO-8859-1?Q?Toralf_F=F6rster?= <toralf.foerster@gmx.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jarzmik, Robert" <robert.jarzmik@intel.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>, tianyu.lan@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+2013/7/11 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>:
+> On 07/11/2013 11:10 AM, Lan Tianyu wrote:
+>> 2013/7/11 Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>:
+> Oops! You are right. Hmm, this looks quite difficult to get right :(
+> There are multiple challenges here:
 
-On Thu, Jul 11, 2013 at 3:41 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> We can re-enable hidinput_input_event to allow the leds of bluetooth
-> keyboards to be set.
-> Now the callbacks uses hid core to retrieve the right HID report to
-> send, so this version is safer.
+If I understand correctly, the most concern is how to deal with per cpus'
+cpufreq_policy structure. If something wrong , please correct me.
+
 >
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  net/bluetooth/hidp/core.c | 26 ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
+> 1. The sysfs files must not be removed during cpu_down, and not initialized
 >
-> diff --git a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-> index f13a8da..9c8b50d 100644
-> --- a/net/bluetooth/hidp/core.c
-> +++ b/net/bluetooth/hidp/core.c
-> @@ -238,6 +238,31 @@ static int hidp_send_report(struct hidp_session *session, struct hid_report *rep
->         return hidp_send_intr_message(session, hdr, buf, rsize);
->  }
+>    during cpu_up. That would help us preserve the file permissions.
+
+For this case, cpufreq_policy must be reserved since all related cpufreq data
+and kobj is also store into it. We can't release it.
+
+> 2. But we should ensure that we really do the cpufreq-core parts of the cpu
+>    initialization during cpu_up. If we fail to free some of the data-structures
+>    during cpu_down, the cpu_up callback will think that a full-init is not
+>    required and not do its job. That will make cpufreq behave erratically after
+>    suspend/resume and take us back to square one.
 >
-> +static int hidp_hidinput_event(struct input_dev *dev, unsigned int type,
-> +                              unsigned int code, int value)
-> +{
-> +       struct hid_device *hid = input_get_drvdata(dev);
 
-I dislike that we have to deal with input_get_drvdata() in a transport
-driver. It is not obvious from the transport driver that this gives us
-an hid_device. But ok, that's how we do it in usbhid and hid-input so
-it's another issue..
+cpufreq_add_dev() checks whether the cpu has been attached cpufreq_cpu_data
+and associated kobj has been created. If yes, it would try to release it by
+cpufreq_cpu_put() and return directly. This seems to be conflicted
+with the above.
 
-> +       struct hidp_session *session = hid->driver_data;
-> +       struct hid_field *field;
-> +       int offset;
-> +
-> +       BT_DBG("session %p type %d code %d value %d",
-> +              session, type, code, value);
-> +
-> +       if (type != EV_LED)
-> +               return -1;
-> +
-> +       offset = hidinput_find_field(hid, type, code, &field);
-> +       if (offset == -1) {
-> +               hid_warn(dev, "event field not found\n");
-> +               return -1;
-> +       }
-> +
-> +       hid_set_field(field, offset, value);
-> +
-> +       return hidp_send_report(session, field->report);
-> +}
-> +
-
-We had this discussion before (regarding uhid and hidpinput_event), it
-would be nice to have a helper in hid-input.c which does this. We copy
-the code into every transport driver, which bugs me. But no-one
-stepped up to do this, so I am fine.
-
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-
-Thanks!
-David
-
->  static int hidp_get_raw_report(struct hid_device *hid,
->                 unsigned char report_number,
->                 unsigned char *data, size_t count,
-> @@ -711,6 +736,7 @@ static struct hid_ll_driver hidp_hid_driver = {
->         .stop = hidp_stop,
->         .open  = hidp_open,
->         .close = hidp_close,
-> +       .hidinput_input_event = hidp_hidinput_event,
->  };
+> 3. A full re-init in the cpu_up callback also involves memory allocations.
+>    So if we don't release the memory in the cpu_down callback, we'll end up
+>    in a memory leak.
 >
->  /* This function sets up the hid device. It does not add it
-> --
-> 1.8.3.1
+
+Even we remove the previous check, cpu scaling driver's init()  also will change
+some data of struct cpufreq_policy and this is also what we don't like to see.
+
+> I tried to address all these in this patch, but you found yet another serious
+> loop-hole. I guess I'm out of ideas now... if anybody has any thoughts on how
+> to get this right, then I'm all ears. Else, we'll just revert the original
+> commit like Rafael suggested and leave it upto userspace to save and restore
+> the permissions across suspend/resume if it wants ;-(
 >
+
+How about implement scaling driver's suspend/resume callback()? Although this
+needs to be dealt with case by case. If one's callbacks hasn't been implemented,
+it would have to follow current rule.
+
+>>> +                       unlock_policy_rwsem_read(cpu);
+>>> +                       kobject_put(kobj);
+>>> +
+>>> +                       pr_debug("waiting for dropping of refcount\n");
+>>> +                       wait_for_completion(cmp);
+>>> +                       pr_debug("wait complete\n");
+>>> +               }
+>>> +
+>>>         } else if (cpufreq_driver->target) {
+>>>                 __cpufreq_governor(data, CPUFREQ_GOV_START);
+>>>                 __cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
+>>> @@ -1221,7 +1230,7 @@ static int cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif)
+>>>         if (cpu_is_offline(cpu))
+>>>                 return 0;
+>>>
+>>> -       retval = __cpufreq_remove_dev(dev, sif);
+>>> +       retval = __cpufreq_remove_dev(dev, sif, true);
+>>>         return retval;
+>>>  }
+>
+> Regards,
+> Srivatsa S. Bhat
+>
+
+
+
+-- 
+Best regards
+Tianyu Lan
