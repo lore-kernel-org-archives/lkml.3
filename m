@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab3GKWVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:21:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43348 "EHLO
+	id S1757290Ab3GKWWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:22:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43346 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757255Ab3GKWUs (ORCPT
+	with ESMTP id S1757251Ab3GKWUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:20:48 -0400
+	Thu, 11 Jul 2013 18:20:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 8/8] SCSI: sd: Fix parsing of temporary  cache mode prefix
-Date: Thu, 11 Jul 2013 15:20:37 -0700
-Message-Id: <20130711221932.207762628@linuxfoundation.org>
+        Rick Macklem <rmacklem@uoguelph.ca>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 7/8] nfsd4: fix decoding of compounds across page boundaries
+Date: Thu, 11 Jul 2013 15:20:36 -0700
+Message-Id: <20130711221932.103555136@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711221931.216612791@linuxfoundation.org>
 References: <20130711221931.216612791@linuxfoundation.org>
@@ -27,34 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 2ee3e26c673e75c05ef8b914f54fadee3d7b9c88 upstream.
+commit 247500820ebd02ad87525db5d9b199e5b66f6636 upstream.
 
-Commit 39c60a0948cc '[SCSI] sd: fix array cache flushing bug causing
-performance problems' added temp as a pointer to "temporary " and used
-sizeof(temp) - 1 as its length.  But sizeof(temp) is the size of the
-pointer, not the size of the string constant.  Change temp to a static
-array so that sizeof() does what was intended.
+A freebsd NFSv4.0 client was getting rare IO errors expanding a tarball.
+A network trace showed the server returning BAD_XDR on the final getattr
+of a getattr+write+getattr compound.  The final getattr started on a
+page boundary.
 
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+I believe the Linux client ignores errors on the post-write getattr, and
+that that's why we haven't seen this before.
+
+Reported-by: Rick Macklem <rmacklem@uoguelph.ca>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/sd.c |    2 +-
+ fs/nfsd/nfs4xdr.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -138,7 +138,7 @@ sd_store_cache_type(struct device *dev,
- 	char *buffer_data;
- 	struct scsi_mode_data data;
- 	struct scsi_sense_hdr sshdr;
--	const char *temp = "temporary ";
-+	static const char temp[] = "temporary ";
- 	int len;
- 
- 	if (sdp->type != TYPE_DISK)
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -159,8 +159,8 @@ static __be32 *read_buf(struct nfsd4_com
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
++	argp->p = page_address(argp->pagelist[0]);
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
 
 
