@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab3GKAgc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:36:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56631 "EHLO
+	id S1755463Ab3GKAga (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:36:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56627 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab3GKAg3 (ORCPT
+	with ESMTP id S1755446Ab3GKAg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:36:29 -0400
+	Wed, 10 Jul 2013 20:36:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: oliver+list@schinagl.nl, linux@roeck-us.net, khali@linux-fr.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 6/7] driver core: Introduce device_create_groups
-Date: Wed, 10 Jul 2013 17:36:04 -0700
-Message-Id: <1373502965-1683-7-git-send-email-gregkh@linuxfoundation.org>
+Subject: [PATCH v2 5/7] sysfs: add support for binary attributes in groups
+Date: Wed, 10 Jul 2013 17:36:03 -0700
+Message-Id: <1373502965-1683-6-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,182 +22,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Guenter Roeck <linux@roeck-us.net>
+groups should be able to support binary attributes, just like it
+supports "normal" attributes.  This lets us only handle one type of
+structure, groups, throughout the driver core and subsystems, making
+binary attributes a "full fledged" part of the driver model, and not
+something just "tacked on".
 
-device_create_groups lets callers create devices as well as associated
-sysfs attributes with a single call. This avoids race conditions seen
-if sysfs attributes on new devices are created later.
-
-[fixed up comment block placement and add checks for printk buffer
-formats - gregkh]
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Cc: Jean Delvare <khali@linux-fr.org>
+Reported-by: Oliver Schinagl <oliver+list@schinagl.nl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/base/core.c    | 111 ++++++++++++++++++++++++++++++++++++-------------
- include/linux/device.h |   5 +++
- 2 files changed, 88 insertions(+), 28 deletions(-)
+ fs/sysfs/group.c      | 66 +++++++++++++++++++++++++++++++++++----------------
+ include/linux/sysfs.h |  4 ++--
+ 2 files changed, 48 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index dc3ea23..a8aae18 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1667,34 +1667,11 @@ static void device_create_release(struct device *dev)
- 	kfree(dev);
- }
- 
--/**
-- * device_create_vargs - creates a device and registers it with sysfs
-- * @class: pointer to the struct class that this device should be registered to
-- * @parent: pointer to the parent struct device of this new device, if any
-- * @devt: the dev_t for the char device to be added
-- * @drvdata: the data to be added to the device for callbacks
-- * @fmt: string for the device's name
-- * @args: va_list for the device's name
-- *
-- * This function can be used by char device classes.  A struct device
-- * will be created in sysfs, registered to the specified class.
-- *
-- * A "dev" file will be created, showing the dev_t for the device, if
-- * the dev_t is not 0,0.
-- * If a pointer to a parent struct device is passed in, the newly created
-- * struct device will be a child of that device in sysfs.
-- * The pointer to the struct device will be returned from the call.
-- * Any further sysfs files that might be required can be created using this
-- * pointer.
-- *
-- * Returns &struct device pointer on success, or ERR_PTR() on error.
-- *
-- * Note: the struct class passed to this function must have previously
-- * been created with a call to class_create().
-- */
--struct device *device_create_vargs(struct class *class, struct device *parent,
--				   dev_t devt, void *drvdata, const char *fmt,
--				   va_list args)
-+static struct device *
-+device_create_groups_vargs(struct class *class, struct device *parent,
-+			   dev_t devt, void *drvdata,
-+			   const struct attribute_group **groups,
-+			   const char *fmt, va_list args)
+diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+index aec3d5c..e5719c6 100644
+--- a/fs/sysfs/group.c
++++ b/fs/sysfs/group.c
+@@ -20,38 +20,64 @@ static void remove_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 			 const struct attribute_group *grp)
  {
- 	struct device *dev = NULL;
- 	int retval = -ENODEV;
-@@ -1711,6 +1688,7 @@ struct device *device_create_vargs(struct class *class, struct device *parent,
- 	dev->devt = devt;
- 	dev->class = class;
- 	dev->parent = parent;
-+	dev->groups = groups;
- 	dev->release = device_create_release;
- 	dev_set_drvdata(dev, drvdata);
+ 	struct attribute *const* attr;
+-	int i;
++	struct bin_attribute *const* bin_attr;
  
-@@ -1728,6 +1706,39 @@ error:
- 	put_device(dev);
- 	return ERR_PTR(retval);
+-	for (i = 0, attr = grp->attrs; *attr; i++, attr++)
+-		sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
++	if (grp->attrs)
++		for (attr = grp->attrs; *attr; attr++)
++			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
++	if (grp->bin_attrs)
++		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
++			sysfs_remove_bin_file(kobj, *bin_attr);
  }
-+
-+/**
-+ * device_create_vargs - creates a device and registers it with sysfs
-+ * @class: pointer to the struct class that this device should be registered to
-+ * @parent: pointer to the parent struct device of this new device, if any
-+ * @devt: the dev_t for the char device to be added
-+ * @drvdata: the data to be added to the device for callbacks
-+ * @fmt: string for the device's name
-+ * @args: va_list for the device's name
-+ *
-+ * This function can be used by char device classes.  A struct device
-+ * will be created in sysfs, registered to the specified class.
-+ *
-+ * A "dev" file will be created, showing the dev_t for the device, if
-+ * the dev_t is not 0,0.
-+ * If a pointer to a parent struct device is passed in, the newly created
-+ * struct device will be a child of that device in sysfs.
-+ * The pointer to the struct device will be returned from the call.
-+ * Any further sysfs files that might be required can be created using this
-+ * pointer.
-+ *
-+ * Returns &struct device pointer on success, or ERR_PTR() on error.
-+ *
-+ * Note: the struct class passed to this function must have previously
-+ * been created with a call to class_create().
-+ */
-+struct device *device_create_vargs(struct class *class, struct device *parent,
-+				   dev_t devt, void *drvdata, const char *fmt,
-+				   va_list args)
-+{
-+	return device_create_groups_vargs(class, parent, devt, drvdata, NULL,
-+					  fmt, args);
-+}
- EXPORT_SYMBOL_GPL(device_create_vargs);
  
+ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+ 			const struct attribute_group *grp, int update)
+ {
+ 	struct attribute *const* attr;
++	struct bin_attribute *const* bin_attr;
+ 	int error = 0, i;
+ 
+-	for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
+-		umode_t mode = 0;
++	if (grp->attrs) {
++		for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
++			umode_t mode = 0;
++
++			/*
++			 * In update mode, we're changing the permissions or
++			 * visibility.  Do this by first removing then
++			 * re-adding (if required) the file.
++			 */
++			if (update)
++				sysfs_hash_and_remove(dir_sd, NULL,
++						      (*attr)->name);
++			if (grp->is_visible) {
++				mode = grp->is_visible(kobj, *attr, i);
++				if (!mode)
++					continue;
++			}
++			error = sysfs_add_file_mode(dir_sd, *attr,
++						    SYSFS_KOBJ_ATTR,
++						    (*attr)->mode | mode);
++			if (unlikely(error))
++				break;
++		}
++		if (error) {
++			remove_files(dir_sd, kobj, grp);
++			goto exit;
++		}
++	}
+ 
+-		/* in update mode, we're changing the permissions or
+-		 * visibility.  Do this by first removing then
+-		 * re-adding (if required) the file */
+-		if (update)
+-			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
+-		if (grp->is_visible) {
+-			mode = grp->is_visible(kobj, *attr, i);
+-			if (!mode)
+-				continue;
++	if (grp->bin_attrs) {
++		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++) {
++			if (update)
++				sysfs_remove_bin_file(kobj, *bin_attr);
++			error = sysfs_create_bin_file(kobj, *bin_attr);
++			if (error)
++				break;
+ 		}
+-		error = sysfs_add_file_mode(dir_sd, *attr, SYSFS_KOBJ_ATTR,
+-					    (*attr)->mode | mode);
+-		if (unlikely(error))
+-			break;
++		if (error)
++			remove_files(dir_sd, kobj, grp);
+ 	}
+-	if (error)
+-		remove_files(dir_sd, kobj, grp);
++exit:
+ 	return error;
+ }
+ 
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index d50a96b..2c3b6a3 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -21,6 +21,7 @@
+ 
+ struct kobject;
+ struct module;
++struct bin_attribute;
+ enum kobj_ns_type;
+ 
+ struct attribute {
+@@ -59,10 +60,9 @@ struct attribute_group {
+ 	umode_t			(*is_visible)(struct kobject *,
+ 					      struct attribute *, int);
+ 	struct attribute	**attrs;
++	struct bin_attribute	**bin_attrs;
+ };
+ 
+-
+-
  /**
-@@ -1767,6 +1778,50 @@ struct device *device_create(struct class *class, struct device *parent,
- }
- EXPORT_SYMBOL_GPL(device_create);
- 
-+/**
-+ * device_create_with_groups - creates a device and registers it with sysfs
-+ * @class: pointer to the struct class that this device should be registered to
-+ * @parent: pointer to the parent struct device of this new device, if any
-+ * @devt: the dev_t for the char device to be added
-+ * @drvdata: the data to be added to the device for callbacks
-+ * @groups: NULL-terminated list of attribute groups to be created
-+ * @fmt: string for the device's name
-+ *
-+ * This function can be used by char device classes.  A struct device
-+ * will be created in sysfs, registered to the specified class.
-+ * Additional attributes specified in the groups parameter will also
-+ * be created automatically.
-+ *
-+ * A "dev" file will be created, showing the dev_t for the device, if
-+ * the dev_t is not 0,0.
-+ * If a pointer to a parent struct device is passed in, the newly created
-+ * struct device will be a child of that device in sysfs.
-+ * The pointer to the struct device will be returned from the call.
-+ * Any further sysfs files that might be required can be created using this
-+ * pointer.
-+ *
-+ * Returns &struct device pointer on success, or ERR_PTR() on error.
-+ *
-+ * Note: the struct class passed to this function must have previously
-+ * been created with a call to class_create().
-+ */
-+struct device *device_create_with_groups(struct class *class,
-+					 struct device *parent, dev_t devt,
-+					 void *drvdata,
-+					 const struct attribute_group **groups,
-+					 const char *fmt, ...)
-+{
-+	va_list vargs;
-+	struct device *dev;
-+
-+	va_start(vargs, fmt);
-+	dev = device_create_groups_vargs(class, parent, devt, drvdata, groups,
-+					 fmt, vargs);
-+	va_end(vargs);
-+	return dev;
-+}
-+EXPORT_SYMBOL_GPL(device_create_with_groups);
-+
- static int __match_devt(struct device *dev, const void *data)
- {
- 	const dev_t *devt = data;
-diff --git a/include/linux/device.h b/include/linux/device.h
-index f207a8f..bd5931e 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -938,6 +938,11 @@ extern __printf(5, 6)
- struct device *device_create(struct class *cls, struct device *parent,
- 			     dev_t devt, void *drvdata,
- 			     const char *fmt, ...);
-+extern __printf(6, 7)
-+struct device *device_create_with_groups(struct class *cls,
-+			     struct device *parent, dev_t devt, void *drvdata,
-+			     const struct attribute_group **groups,
-+			     const char *fmt, ...);
- extern void device_destroy(struct class *cls, dev_t devt);
- 
- /*
+  * Use these macros to make defining attributes easier. See include/linux/device.h
+  * for examples..
 -- 
 1.8.3.rc0.20.gb99dd2e
 
