@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab3GKOwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:52:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42863 "EHLO
+	id S932656Ab3GKOwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:52:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42857 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932575Ab3GKOZe (ORCPT
+	with ESMTP id S932573Ab3GKOZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:34 -0400
+	Thu, 11 Jul 2013 10:25:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        John Youn <johnyoun@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>, Felipe Balbi <balbi@ti.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 10/98] xhci: check for failed dma pool allocation
-Date: Thu, 11 Jul 2013 15:23:40 +0100
-Message-Id: <1373552708-15235-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 08/98] usb: gadget: f_mass_storage: add missing memory barrier for thread_wakeup_needed
+Date: Thu, 11 Jul 2013 15:23:38 +0100
+Message-Id: <1373552708-15235-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -30,41 +27,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
 
-commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
+commit d68c277b501889b3a50c179d1c3d704db7947b83 upstream.
 
-Fail and free the container context in case dma_pool_alloc() can't allocate
-the raw context data part of it
+Without this memory barrier, the file-storage thread may fail to
+escape from the following while loop, because it may observe new
+common->thread_wakeup_needed and old bh->state which are updated by
+the callback functions.
 
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
-Support for 64-byte contexts".
+	/* Wait for the CBW to arrive */
+	while (bh->state != BUF_STATE_FULL) {
+		rc = sleep_thread(common);
+		if (rc)
+			return rc;
+	}
 
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: John Youn <johnyoun@synopsys.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: UCHINO Satoshi <satoshi.uchino@toshiba.co.jp>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/host/xhci-mem.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/gadget/f_mass_storage.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
-index 0618f25..1ffbbfb 100644
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -369,6 +369,10 @@ static struct xhci_container_ctx *xhci_alloc_container_ctx(struct xhci_hcd *xhci
- 		ctx->size += CTX_SIZE(xhci->hcc_params);
- 
- 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
-+	if (!ctx->bytes) {
-+		kfree(ctx);
-+		return NULL;
-+	}
- 	memset(ctx->bytes, 0, ctx->size);
- 	return ctx;
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index f67b453..277bb9b 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -511,6 +511,7 @@ static int fsg_set_halt(struct fsg_dev *fsg, struct usb_ep *ep)
+ /* Caller must hold fsg->lock */
+ static void wakeup_thread(struct fsg_common *common)
+ {
++	smp_wmb();	/* ensure the write of bh->state is complete */
+ 	/* Tell the main thread that something has happened */
+ 	common->thread_wakeup_needed = 1;
+ 	if (common->thread_task)
+@@ -730,6 +731,7 @@ static int sleep_thread(struct fsg_common *common)
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ 	common->thread_wakeup_needed = 0;
++	smp_rmb();	/* ensure the latest bh->state is visible */
+ 	return rc;
  }
+ 
 -- 
 1.8.1.2
 
