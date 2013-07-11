@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab3GKOZa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:25:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42833 "EHLO
+	id S932613Ab3GKOZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:25:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42850 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab3GKOZ0 (ORCPT
+	with ESMTP id S932531Ab3GKOZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:26 -0400
+	Thu, 11 Jul 2013 10:25:32 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 06/98] zram: protect sysfs handler from invalid memory access
-Date: Thu, 11 Jul 2013 15:23:36 +0100
-Message-Id: <1373552708-15235-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 09/98] cgroup: fix umount vs cgroup_event_remove() race
+Date: Thu, 11 Jul 2013 15:23:39 +0100
+Message-Id: <1373552708-15235-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiang Liu <liuj97@gmail.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 5863e10b441e7ea4b492f930f1be180a97d026f3 upstream.
+commit 1c8158eeae0f37d0eee9f1fbe68080df6a408df2 upstream.
 
-Use zram->init_lock to protect access to zram->meta, otherwise it
-may cause invalid memory access if zram->meta has been freed by
-zram_reset_device().
+ commit 5db9a4d99b0157a513944e9a44d29c9cec2e91dc
+ Author: Tejun Heo <tj@kernel.org>
+ Date:   Sat Jul 7 16:08:18 2012 -0700
 
-This issue may be triggered by:
-Thread 1:
-while true; do cat mem_used_total; done
-Thread 2:
-while true; do echo 8M > disksize; echo 1 > reset; done
+     cgroup: fix cgroup hierarchy umount race
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Acked-by: Minchan Kim <minchan@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5:
-  - protect access to zram->mem_pool instead of zram->meta ]
+This commit fixed a race caused by the dput() in css_dput_fn(), but
+the dput() in cgroup_event_remove() can also lead to the same BUG().
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/zram/zram_sysfs.c | 2 ++
- 1 file changed, 2 insertions(+)
+ kernel/cgroup.c | 25 +++++++++++++++++++------
+ 1 file changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-index a7f3771..dbe8907 100644
---- a/drivers/staging/zram/zram_sysfs.c
-+++ b/drivers/staging/zram/zram_sysfs.c
-@@ -186,10 +186,12 @@ static ssize_t mem_used_total_show(struct device *dev,
- 	u64 val = 0;
- 	struct zram *zram = dev_to_zram(dev);
- 
-+	down_read(&zram->init_lock);
- 	if (zram->init_done) {
- 		val = zs_get_total_size_bytes(zram->mem_pool) +
- 			((u64)(zram->stats.pages_expand) << PAGE_SHIFT);
- 	}
-+	up_read(&zram->init_lock);
- 
- 	return sprintf(buf, "%llu\n", val);
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 5168e37..07ba52a 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3623,6 +3623,23 @@ static int cgroup_write_notify_on_release(struct cgroup *cgrp,
  }
+ 
+ /*
++ * When dput() is called asynchronously, if umount has been done and
++ * then deactivate_super() in cgroup_free_fn() kills the superblock,
++ * there's a small window that vfs will see the root dentry with non-zero
++ * refcnt and trigger BUG().
++ *
++ * That's why we hold a reference before dput() and drop it right after.
++ */
++static void cgroup_dput(struct cgroup *cgrp)
++{
++	struct super_block *sb = cgrp->root->sb;
++
++	atomic_inc(&sb->s_active);
++	dput(cgrp->dentry);
++	deactivate_super(sb);
++}
++
++/*
+  * Unregister event and free resources.
+  *
+  * Gets called from workqueue.
+@@ -3637,7 +3654,7 @@ static void cgroup_event_remove(struct work_struct *work)
+ 
+ 	eventfd_ctx_put(event->eventfd);
+ 	kfree(event);
+-	dput(cgrp->dentry);
++	cgroup_dput(cgrp);
+ }
+ 
+ /*
+@@ -3888,12 +3905,8 @@ static void css_dput_fn(struct work_struct *work)
+ {
+ 	struct cgroup_subsys_state *css =
+ 		container_of(work, struct cgroup_subsys_state, dput_work);
+-	struct dentry *dentry = css->cgroup->dentry;
+-	struct super_block *sb = dentry->d_sb;
+ 
+-	atomic_inc(&sb->s_active);
+-	dput(dentry);
+-	deactivate_super(sb);
++	cgroup_dput(css->cgroup);
+ }
+ 
+ static void init_cgroup_css(struct cgroup_subsys_state *css,
 -- 
 1.8.1.2
 
