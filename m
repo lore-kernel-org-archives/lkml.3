@@ -1,258 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab3GKLlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 07:41:24 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:51871 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab3GKLlV (ORCPT
+	id S1755088Ab3GKLmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 07:42:35 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38016 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab3GKLme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 07:41:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <51D0548D.7020004@gmail.com>
-References: <1371913383-25088-1-git-send-email-prabhakar.csengg@gmail.com> <51D0548D.7020004@gmail.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 11 Jul 2013 17:11:00 +0530
-Message-ID: <CA+V-a8uG1KLY-Vjj+0ix2=wV4r=k+tkJ4aDBCN+iN+JZ6my30w@mail.gmail.com>
-Subject: Re: [PATCH RFC v3] media: OF: add video sync endpoint property
-To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LMML <linux-media@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 11 Jul 2013 07:42:34 -0400
+From: Mark Brown <broonie@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@linaro.org>
+Date: Thu, 11 Jul 2013 12:42:06 +0100
+Message-Id: <1373542926-19481-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.3.2
+X-SA-Exim-Connect-IP: 193.120.41.118
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] regmap: Allow multiple patches to be registered
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester,
+From: Mark Brown <broonie@linaro.org>
 
-Oops some how missed this mail, sorry for the late response.
+It may be useful to register multiple patches with regmap, for example
+one that depends on the device revision and one that depends on the system
+configuration. Add support for doing this, appending any new patches to
+the existing patches.
 
-On Sun, Jun 30, 2013 at 9:23 PM, Sylwester Nawrocki
-<sylvester.nawrocki@gmail.com> wrote:
-> Hi,
->
->
-> On 06/22/2013 05:03 PM, Prabhakar Lad wrote:
->>
->> From: "Lad, Prabhakar"<prabhakar.csengg@gmail.com>
->>
->> This patch adds video sync properties as part of endpoint
->> properties and also support to parse them in the parser.
->>
->> Signed-off-by: Lad, Prabhakar<prabhakar.csengg@gmail.com>
->> Cc: Hans Verkuil<hans.verkuil@cisco.com>
->> Cc: Laurent Pinchart<laurent.pinchart@ideasonboard.com>
->> Cc: Mauro Carvalho Chehab<mchehab@redhat.com>
->> Cc: Guennadi Liakhovetski<g.liakhovetski@gmx.de>
->> Cc: Sylwester Nawrocki<s.nawrocki@samsung.com>
->> Cc: Sakari Ailus<sakari.ailus@iki.fi>
->> Cc: Grant Likely<grant.likely@secretlab.ca>
->> Cc: Rob Herring<rob.herring@calxeda.com>
->> Cc: Rob Landley<rob@landley.net>
->> Cc: devicetree-discuss@lists.ozlabs.org
->> Cc: linux-doc@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> Cc: davinci-linux-open-source@linux.davincidsp.com
->> Cc: Kyungmin Park<kyungmin.park@samsung.com>
->
->
-> Do you really need such a long Cc list here ? I think it would be better
-> to just add relevant e-mail addresses when sending the patch, otherwise
-> when this patch is applied in this form all those addresses are going to
-> be spammed with the patch management notifications, which might not be
-> what some ones are really interested in.
->
->
-Ok I'll take care of it in the next version.
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/base/regmap/regmap.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
->> ---
->>   This patch has 10 warnings for line over 80 characters
->>   for which I think can be ignored.
->>
->>   RFC v2 https://patchwork.kernel.org/patch/2578091/
->>   RFC V1 https://patchwork.kernel.org/patch/2572341/
->>   Changes for v3:
->>   1: Fixed review comments pointed by Laurent and Sylwester.
->>
->>   .../devicetree/bindings/media/video-interfaces.txt |    1 +
->>   drivers/media/v4l2-core/v4l2-of.c                  |   20
->> ++++++++++++++++++
->>   include/dt-bindings/media/video-interfaces.h       |   17
->> +++++++++++++++
->>   include/media/v4l2-mediabus.h                      |   22
->> +++++++++++---------
->>   4 files changed, 50 insertions(+), 10 deletions(-)
->>   create mode 100644 include/dt-bindings/media/video-interfaces.h
->>
->> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt
->> b/Documentation/devicetree/bindings/media/video-interfaces.txt
->> index e022d2d..2081278 100644
->> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
->> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
->> @@ -101,6 +101,7 @@ Optional endpoint properties
->>     array contains only one entry.
->>   - clock-noncontinuous: a boolean property to allow MIPI CSI-2
->> non-continuous
->>     clock mode.
->> +- video-sync: property indicating to sync the video on a signal in RGB.
->>
->>
->>   Example
->> diff --git a/drivers/media/v4l2-core/v4l2-of.c
->> b/drivers/media/v4l2-core/v4l2-of.c
->> index aa59639..1a54530 100644
->> --- a/drivers/media/v4l2-core/v4l2-of.c
->> +++ b/drivers/media/v4l2-core/v4l2-of.c
->> @@ -100,6 +100,26 @@ static void v4l2_of_parse_parallel_bus(const struct
->> device_node *node,
->>         if (!of_property_read_u32(node, "data-shift",&v))
->>                 bus->data_shift = v;
->>
->> +       if (!of_property_read_u32(node, "video-sync",&v)) {
->> +               switch (v) {
->> +               case V4L2_MBUS_VIDEO_SEPARATE_SYNC:
->> +                       flags |= V4L2_MBUS_VIDEO_SEPARATE_SYNC;
->
->
-> I'm not convinced all those video sync types is something that really
-> belongs
-> to the flags field. In my understanding this field is supposed to hold only
-> the _signal polarity_ information.
->
->
-Ok, so there should be a function say v4l2_of_parse_signal_polarity()
-to get the polarity alone then.
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index e0d0c7d..b2aeaba 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -1888,13 +1888,10 @@ EXPORT_SYMBOL_GPL(regmap_async_complete);
+ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 			  int num_regs)
+ {
++	struct reg_default *p;
+ 	int i, ret;
+ 	bool bypass;
+ 
+-	/* If needed the implementation can be extended to support this */
+-	if (map->patch)
+-		return -EBUSY;
+-
+ 	map->lock(map->lock_arg);
+ 
+ 	bypass = map->cache_bypass;
+@@ -1911,11 +1908,13 @@ int regmap_register_patch(struct regmap *map, const struct reg_default *regs,
+ 		}
+ 	}
+ 
+-	map->patch = kcalloc(num_regs, sizeof(struct reg_default), GFP_KERNEL);
+-	if (map->patch != NULL) {
+-		memcpy(map->patch, regs,
+-		       num_regs * sizeof(struct reg_default));
+-		map->patch_regs = num_regs;
++	p = krealloc(map->patch,
++		     sizeof(struct reg_default) * (map->patch_regs + num_regs),
++		     GFP_KERNEL);
++	if (p) {
++		memcpy(p + map->patch_regs, regs, num_regs);
++		map->patch = p;
++		map->patch_regs += num_regs;
+ 	} else {
+ 		ret = -ENOMEM;
+ 	}
+-- 
+1.8.3.2
 
->> +                       break;
->> +               case V4L2_MBUS_VIDEO_COMPOSITE_SYNC:
->> +                       flags |= V4L2_MBUS_VIDEO_COMPOSITE_SYNC;
->> +                       break;
->> +               case V4L2_MBUS_VIDEO_SYNC_ON_COMPOSITE:
->> +                       flags |= V4L2_MBUS_VIDEO_SYNC_ON_COMPOSITE;
->> +                       break;
->> +               case V4L2_MBUS_VIDEO_SYNC_ON_GREEN:
->> +                       flags |= V4L2_MBUS_VIDEO_SYNC_ON_GREEN;
->> +                       break;
->> +               case V4L2_MBUS_VIDEO_SYNC_ON_LUMINANCE:
->> +                       flags |= V4L2_MBUS_VIDEO_SYNC_ON_LUMINANCE;
->> +                       break;
->> +               }
->> +       }
->> +
->>         bus->flags = flags;
->>
->>   }
->> diff --git a/include/dt-bindings/media/video-interfaces.h
->> b/include/dt-bindings/media/video-interfaces.h
->> new file mode 100644
->> index 0000000..1a083dd
->> --- /dev/null
->> +++ b/include/dt-bindings/media/video-interfaces.h
->> @@ -0,0 +1,17 @@
->> +/*
->> + * This header provides constants for video interface.
->> + *
->> + */
->> +
->> +#ifndef _DT_BINDINGS_VIDEO_INTERFACES_H
->> +#define _DT_BINDINGS_VIDEO_INTERFACES_H
->> +
->> +#define V4L2_MBUS_VIDEO_SEPARATE_SYNC          (1<<  2)
->
->
-> You should never be putting anything Linux specific in those dt-bindings
-> headers. It just happens now include/dt-bindings is a part of the Linux
-> kernel, but it could well be in some separate repository, or could be
-> a part of the DT bindings specification, which is only specific to the
-> hardware and doesn't depend on Linux OS at all. Thus V4L2_MBUS_ prefix
-> shouldn't be used here.
->
->
-Ok
-
->> +#define V4L2_MBUS_VIDEO_COMPOSITE_SYNC         (1<<  3)
->> +#define V4L2_MBUS_VIDEO_SYNC_ON_COMPOSITE      (1<<  4)
->> +#define V4L2_MBUS_VIDEO_SYNC_ON_GREEN          (1<<  5)
->> +#define V4L2_MBUS_VIDEO_SYNC_ON_LUMINANCE      (1<<  6)
->> +
->> +#define V4L2_MBUS_VIDEO_INTERFACES_END         6
->> +
->> +#endif
->> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
->> index 83ae07e..a4676dd 100644
->> --- a/include/media/v4l2-mediabus.h
->> +++ b/include/media/v4l2-mediabus.h
->> @@ -11,6 +11,8 @@
->>   #ifndef V4L2_MEDIABUS_H
->>   #define V4L2_MEDIABUS_H
->>
->> +#include<dt-bindings/media/video-interfaces.h>
->> +
->>   #include<linux/v4l2-mediabus.h>
->>
->>   /* Parallel flags */
->> @@ -28,18 +30,18 @@
->>    * V4L2_MBUS_[HV]SYNC* flags should be also used for specifying
->>    * configuration of hardware that uses [HV]REF signals
->>    */
->> -#define V4L2_MBUS_HSYNC_ACTIVE_HIGH            (1<<  2)
->> -#define V4L2_MBUS_HSYNC_ACTIVE_LOW             (1<<  3)
->> -#define V4L2_MBUS_VSYNC_ACTIVE_HIGH            (1<<  4)
->> -#define V4L2_MBUS_VSYNC_ACTIVE_LOW             (1<<  5)
->> -#define V4L2_MBUS_PCLK_SAMPLE_RISING           (1<<  6)
->> -#define V4L2_MBUS_PCLK_SAMPLE_FALLING          (1<<  7)
->> -#define V4L2_MBUS_DATA_ACTIVE_HIGH             (1<<  8)
->> -#define V4L2_MBUS_DATA_ACTIVE_LOW              (1<<  9)
->> +#define V4L2_MBUS_HSYNC_ACTIVE_HIGH            (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 1))
->
->
-> No, please don't do that. We shouldn't combine the DT and Linux kernel
-> definitions like this.
->
->
-Ok.
-
->> +#define V4L2_MBUS_HSYNC_ACTIVE_LOW             (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 2))
->> +#define V4L2_MBUS_VSYNC_ACTIVE_HIGH            (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 3))
->> +#define V4L2_MBUS_VSYNC_ACTIVE_LOW             (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 4))
->> +#define V4L2_MBUS_PCLK_SAMPLE_RISING           (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 5))
->> +#define V4L2_MBUS_PCLK_SAMPLE_FALLING          (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 6))
->> +#define V4L2_MBUS_DATA_ACTIVE_HIGH             (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 7))
->> +#define V4L2_MBUS_DATA_ACTIVE_LOW              (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 8))
->>
->>   /* FIELD = 0/1 - Field1 (odd)/Field2 (even) */
->> -#define V4L2_MBUS_FIELD_EVEN_HIGH              (1<<  10)
->> +#define V4L2_MBUS_FIELD_EVEN_HIGH              (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 9))
->>   /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
->> -#define V4L2_MBUS_FIELD_EVEN_LOW               (1<<  11)
->> +#define V4L2_MBUS_FIELD_EVEN_LOW               (1<<
->> (V4L2_MBUS_VIDEO_INTERFACES_END + 10))
->
->
-> Please see my review of your 'media: i2c: tvp7002: add OF support" patch.
-> AFAICS it should be sufficient to add only V4L2_MBUS_SOG_ACTIVE_{LOW,HIGH}
-> flags and 'sync-on-green-active' DT property.
->
-Ok.
-
-Regards,
---Prabhakar Lad
