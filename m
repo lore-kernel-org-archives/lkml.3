@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab3GKNyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:54:12 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:45007 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756065Ab3GKNyK (ORCPT
+	id S932492Ab3GKN4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:56:46 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:39173 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756108Ab3GKNyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:54:10 -0400
+	Thu, 11 Jul 2013 09:54:11 -0400
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -15,9 +15,9 @@ Cc: Alan Stern <stern@rowland.harvard.edu>,
         Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 4/6] usb: gadget: USB_FOTG210_UDC should depend on HAS_DMA
-Date: Thu, 11 Jul 2013 15:54:03 +0200
-Message-Id: <1373550845-14457-4-git-send-email-geert@linux-m68k.org>
+Subject: [PATCH 5/6] usb: gadget: USB_MV_U3D should depend on HAS_DMA
+Date: Thu, 11 Jul 2013 15:54:04 +0200
+Message-Id: <1373550845-14457-5-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373550845-14457-1-git-send-email-geert@linux-m68k.org>
 References: <1373550845-14457-1-git-send-email-geert@linux-m68k.org>
@@ -27,11 +27,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 If NO_DMA=y:
 
-drivers/built-in.o: In function `fotg210_start_dma':
-drivers/usb/gadget/fotg210-udc.c:354: undefined reference to `dma_map_single'
-drivers/usb/gadget/fotg210-udc.c:357: undefined reference to `dma_mapping_error'
-drivers/usb/gadget/fotg210-udc.c:362: undefined reference to `dma_sync_single_for_cpu'
-drivers/usb/gadget/fotg210-udc.c:376: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `mv_u3d_done':
+drivers/usb/gadget/mv_u3d_core.c:206: undefined reference to `dma_pool_free'
+drivers/usb/gadget/mv_u3d_core.c:209: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `mv_u3d_build_trb_one':
+drivers/usb/gadget/mv_u3d_core.c:311: undefined reference to `dma_pool_alloc'
+drivers/built-in.o: In function `mv_u3d_req_to_trb':
+drivers/usb/gadget/mv_u3d_core.c:480: undefined reference to `dma_map_single'
+drivers/built-in.o: In function `mv_u3d_remove':
+drivers/usb/gadget/mv_u3d_core.c:1770: undefined reference to `dma_pool_destroy'
+drivers/usb/gadget/mv_u3d_core.c:1773: undefined reference to `dma_free_coherent'
+drivers/built-in.o: In function `mv_u3d_probe':
+drivers/usb/gadget/mv_u3d_core.c:1880: undefined reference to `dma_alloc_coherent'
+drivers/usb/gadget/mv_u3d_core.c:1890: undefined reference to `dma_pool_create'
+drivers/usb/gadget/mv_u3d_core.c:1984: undefined reference to `dma_pool_destroy'
+drivers/usb/gadget/mv_u3d_core.c:1986: undefined reference to `dma_free_coherent'
 
 Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
@@ -39,17 +49,17 @@ Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 95375d1..8743742 100644
+index 8743742..3f8df56 100644
 --- a/drivers/usb/gadget/Kconfig
 +++ b/drivers/usb/gadget/Kconfig
-@@ -193,6 +193,7 @@ config USB_FUSB300
- 	   Faraday usb device controller FUSB300 driver
+@@ -336,6 +336,7 @@ config USB_MV_UDC
+ 	  full speed USB peripheral.
  
- config USB_FOTG210_UDC
+ config USB_MV_U3D
 +	depends on HAS_DMA
- 	tristate "Faraday FOTG210 USB Peripheral Controller"
+ 	tristate "MARVELL PXA2128 USB 3.0 controller"
  	help
- 	   Faraday USB2.0 OTG controller which can be configured as
+ 	  MARVELL PXA2128 Processor series include a super speed USB3.0 device
 -- 
 1.7.9.5
 
