@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab3GKLT2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 07:19:28 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59150 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932295Ab3GKLT1 (ORCPT
+	id S932393Ab3GKLV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 07:21:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41608 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932349Ab3GKLV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 07:19:27 -0400
-Date: Thu, 11 Jul 2013 12:19:20 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] mfd: sec: Add register cache for interrupt mask registers
-Message-ID: <20130711111920.GI25601@gmail.com>
-References: <1372787476-10145-1-git-send-email-broonie@kernel.org>
+	Thu, 11 Jul 2013 07:21:57 -0400
+Date: Thu, 11 Jul 2013 13:21:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/16] mm: numa: Do not migrate or account for hinting
+ faults on the zero page
+Message-ID: <20130711112102.GF25631@dyad.programming.kicks-ass.net>
+References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
+ <1373536020-2799-5-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1372787476-10145-1-git-send-email-broonie@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1373536020-2799-5-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 02 Jul 2013, Mark Brown wrote:
+On Thu, Jul 11, 2013 at 10:46:48AM +0100, Mel Gorman wrote:
+> +++ b/mm/memory.c
+> @@ -3560,8 +3560,13 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	set_pte_at(mm, addr, ptep, pte);
+>  	update_mmu_cache(vma, addr, ptep);
+>  
+> +	/*
+> +	 * Do not account for faults against the huge zero page. The read-only
 
-> From: Mark Brown <broonie@linaro.org>
+s/huge //
+
+> +	 * data is likely to be read-cached on the local CPUs and it is less
+> +	 * useful to know about local versus remote hits on the zero page.
+> +	 */
+>  	page = vm_normal_page(vma, addr, pte);
+> -	if (!page) {
+> +	if (!page || is_zero_pfn(page_to_pfn(page))) {
+>  		pte_unmap_unlock(ptep, ptl);
+>  		return 0;
+>  	}
+> -- 
+> 1.8.1.4
 > 
-> The performance of regmap-irq is improved if the interrupt mask registers
-> can be cached since it does read/modify/update cycles so start using the
-> register cache infrastructure for those registers. We should use this more
-> widely but I don't have a datasheet and this is a nice, conservative
-> starting point.
-> 
-> Signed-off-by: Mark Brown <broonie@linaro.org>
-> ---
->  drivers/mfd/sec-core.c | 31 +++++++++++++++++++++++++++++++
->  1 file changed, 31 insertions(+)
-
-Applied, thanks.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
