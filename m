@@ -1,126 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab3GKQ0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:26:53 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:40235 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751733Ab3GKQ0u (ORCPT
+	id S1752154Ab3GKQas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:30:48 -0400
+Received: from drsnuggles.stderr.nl ([94.142.244.14]:46482 "EHLO
+	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab3GKQap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:26:50 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 01/11] perf evlist: restore methods removed in earlier cleanup
-Date: Thu, 11 Jul 2013 10:26:32 -0600
-Message-Id: <1373560002-14618-2-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1373560002-14618-1-git-send-email-dsahern@gmail.com>
-References: <1373560002-14618-1-git-send-email-dsahern@gmail.com>
+	Thu, 11 Jul 2013 12:30:45 -0400
+Date: Thu, 11 Jul 2013 17:43:22 +0200
+From: Matthijs Kooijman <matthijs@stdin.nl>
+To: Julien Delacou <julien.delacou.st@gmail.com>
+Cc: Paul Zimmerman <paulz@synopsys.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        Julien Delacou <julien.delacou@stericsson.com>
+Subject: Re: [PATCH] staging: dwc2: fix value used in dwc2_set_all_params
+Message-ID: <20130711154322.GJ10217@login.drsnuggles.stderr.nl>
+Mail-Followup-To: Julien Delacou <julien.delacou.st@gmail.com>,
+	Paul Zimmerman <paulz@synopsys.com>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Grant Likely <grant.likely@linaro.org>,
+	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+	devel@driverdev.osuosl.org,
+	Julien Delacou <julien.delacou@stericsson.com>
+References: <1373545450-5251-1-git-send-email-julien.delacou.st@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373545450-5251-1-git-send-email-julien.delacou.st@gmail.com>
+X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
+X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-Score: -2.6 (--)
+X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
+	pts  rule name              description
+	---- ---------------------- -------------------------------------------
+	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-e60fc847 removed the perf_evlist__add_tracepoints and helpers, but
-they are useful for kvm's upcoming live mode.
+On Thu, Jul 11, 2013 at 02:24:10PM +0200, Julien Delacou wrote:
+> From: Julien Delacou <julien.delacou@stericsson.com>
+> 
+> This fix uses 'value' parameter as it should be instead
+> of hardcoded -1.
+Woops!
 
-Signed-off-by: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
----
- tools/perf/util/evlist.c |   54 ++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/evlist.h |    3 +++
- 2 files changed, 57 insertions(+)
+> Signed-off-by: Julien Delacou <julien.delacou@stericsson.com>
+> Acked-by: Paul Zimmerman <paulz@synopys.com>
+Reviewed-by: Matthijs Kooijman <matthijs@stdin.nl>
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 42ea4e9..e666846 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -195,6 +195,60 @@ int __perf_evlist__add_default_attrs(struct perf_evlist *evlist,
- 	return perf_evlist__add_attrs(evlist, attrs, nr_attrs);
- }
- 
-+static int trace_event__id(const char *evname)
-+{
-+	char *filename, *colon;
-+	int err = -1, fd;
-+
-+	if (asprintf(&filename, "%s/%s/id", tracing_events_path, evname) < 0)
-+		return -1;
-+
-+	colon = strrchr(filename, ':');
-+	if (colon != NULL)
-+		*colon = '/';
-+
-+	fd = open(filename, O_RDONLY);
-+	if (fd >= 0) {
-+		char id[16];
-+		if (read(fd, id, sizeof(id)) > 0)
-+			err = atoi(id);
-+		close(fd);
-+	}
-+
-+	free(filename);
-+	return err;
-+}
-+
-+int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
-+				 const char * const tracepoints[],
-+				 size_t nr_tracepoints)
-+{
-+	int err;
-+	size_t i;
-+	struct perf_event_attr *attrs = zalloc(nr_tracepoints * sizeof(*attrs));
-+
-+	if (attrs == NULL)
-+		return -1;
-+
-+	for (i = 0; i < nr_tracepoints; i++) {
-+		err = trace_event__id(tracepoints[i]);
-+
-+		if (err < 0)
-+			goto out_free_attrs;
-+
-+		attrs[i].type	       = PERF_TYPE_TRACEPOINT;
-+		attrs[i].config	       = err;
-+		attrs[i].sample_type   = (PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
-+					  PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD);
-+		attrs[i].sample_period = 1;
-+	}
-+
-+	err = perf_evlist__add_attrs(evlist, attrs, nr_tracepoints);
-+out_free_attrs:
-+	free(attrs);
-+	return err;
-+}
-+
- struct perf_evsel *
- perf_evlist__find_tracepoint_by_id(struct perf_evlist *evlist, int id)
- {
-diff --git a/tools/perf/util/evlist.h b/tools/perf/util/evlist.h
-index 0583d36..a5b1880 100644
---- a/tools/perf/util/evlist.h
-+++ b/tools/perf/util/evlist.h
-@@ -59,6 +59,9 @@ void perf_evlist__add(struct perf_evlist *evlist, struct perf_evsel *entry);
- int perf_evlist__add_default(struct perf_evlist *evlist);
- int __perf_evlist__add_default_attrs(struct perf_evlist *evlist,
- 				     struct perf_event_attr *attrs, size_t nr_attrs);
-+int perf_evlist__add_tracepoints(struct perf_evlist *evlist,
-+				 const char * const tracepoints[],
-+				 size_t nr_tracepoints);
- 
- #define perf_evlist__add_default_attrs(evlist, array) \
- 	__perf_evlist__add_default_attrs(evlist, array, ARRAY_SIZE(array))
--- 
-1.7.10.1
-
+> ---
+>  drivers/staging/dwc2/hcd.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/dwc2/hcd.c b/drivers/staging/dwc2/hcd.c
+> index 2ed54b1..ca38aaa 100644
+> --- a/drivers/staging/dwc2/hcd.c
+> +++ b/drivers/staging/dwc2/hcd.c
+> @@ -2690,7 +2690,7 @@ void dwc2_set_all_params(struct dwc2_core_params *params, int value)
+>  	int i;
+>  
+>  	for (i = 0; i < size; i++)
+> -		p[i] = -1;
+> +		p[i] = value;
+>  }
+>  EXPORT_SYMBOL_GPL(dwc2_set_all_params);
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
