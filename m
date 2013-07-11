@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab3GKQsB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:48:01 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18024 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754572Ab3GKQsA (ORCPT
+	id S1755670Ab3GKQwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:52:06 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49997 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab3GKQwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:48:00 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=TyVgHLz5XD0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oLtpoGhtZv4A:10 a=40MIqcmNAAAA:8 a=x2D7G2zzgz5T7ujOc_cA:9 a=QEXdDO2ut3YA:10 a=-tENaG0q7zQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373561279.17876.45.camel@gandalf.local.home>
-Subject: Re: [PATCH] kernel: trace: remove __init from
- race_selftest_startup_function() and trace_selftest_startup_function_graph()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Jul 2013 12:47:59 -0400
-In-Reply-To: <51DDFCF8.2090808@asianux.com>
-References: <51DDFCF8.2090808@asianux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 12:52:04 -0400
+Date: Thu, 11 Jul 2013 17:51:16 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: rtc-linux@googlegroups.com, a.zummo@towertech.it,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+Message-ID: <20130711165116.GT24508@sirena.org.uk>
+References: <1373464848-28146-1-git-send-email-jonas.jensen@gmail.com>
+ <1373550711-18828-1-git-send-email-jonas.jensen@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BVQ1RKc6+nLPB5pT"
+Content-Disposition: inline
+In-Reply-To: <1373550711-18828-1-git-send-email-jonas.jensen@gmail.com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 193.120.41.114
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] rtc: Add MOXA ART RTC driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-11 at 08:31 +0800, Chen Gang wrote:
-> Like other trace_selftest_startup_*, trace_selftest_startup_function()
-> and trace_selftest_startup_function_graph() need in normal section, or
-> may cause section mismatch.
-> 
-> The related warnings:
-> 
->     LD      kernel/trace/built-in.o
->   WARNING: kernel/trace/built-in.o(.data+0x154c): Section mismatch in reference from the variable function_trace to the function .init.text:trace_selftest_startup_function()
->   The variable function_trace references
->   the function __init trace_selftest_startup_function()
->   If the reference is valid then annotate the
->   variable with __init* or __refdata (see linux/init.h) or name the variable:
->   *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
-> 
 
-No the fix is to add ref_data to the user. The selftest are only called
-at boot up. No need to waste memory keeping them around.
+--BVQ1RKc6+nLPB5pT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- Steve
+On Thu, Jul 11, 2013 at 03:51:51PM +0200, Jonas Jensen wrote:
+> Add RTC driver for MOXA ART SoCs.
 
-> 
-> Signed-off-by: Chen Gang <gang.chen@asianux.com>
-> ---
->  kernel/trace/trace_selftest.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
-> index a7329b7..e341b9d 100644
-> --- a/kernel/trace/trace_selftest.c
-> +++ b/kernel/trace/trace_selftest.c
-> @@ -640,7 +640,7 @@ out:
->   * Enable ftrace, sleep 1/10 second, and then read the trace
->   * buffer to see if all is in order.
->   */
-> -__init int
-> +int
->  trace_selftest_startup_function(struct tracer *trace, struct trace_array *tr)
->  {
->  	int save_ftrace_enabled = ftrace_enabled;
-> @@ -734,7 +734,7 @@ static int trace_graph_entry_watchdog(struct ftrace_graph_ent *trace)
->   * Pretty much the same than for the function tracer from which the selftest
->   * has been borrowed.
->   */
-> -__init int
-> +int
->  trace_selftest_startup_function_graph(struct tracer *trace,
->  					struct trace_array *tr)
->  {
+Looks good now.  A couple more minor nits.
 
+> +void moxart_rtc_write_byte(u8 data)
+> +{
 
+> +u8 moxart_rtc_read_byte(void)
+> +{
+
+These should be static.
+
+> +	gpio_direction_output(GPIO_RTC_DATA, 0);
+> +	gpio_set_value(GPIO_RTC_RESET, 1);
+
+I guess I'd expect the GPIOs to be configured by platform data in case
+of board changes (it's a bit odd that a SoC RTC is being done with
+bitbanging, I guess it's on an external chip?).
+
+> +	devm_gpio_request(&pdev->dev, GPIO_RTC_DATA, "rtc_data");
+> +	devm_gpio_request(&pdev->dev, GPIO_RTC_SCLK, "rtc_sclk");
+> +	devm_gpio_request(&pdev->dev, GPIO_RTC_RESET, "rtc_reset");
+
+Should check the errors from these.
+
+> +	gpio_direction_output(GPIO_RTC_RESET, 0);
+> +	gpio_direction_output(GPIO_RTC_SCLK, 0);
+
+devm_gpio_request_one()?  Though it doesn't make much difference and you
+do have a nice block of devm_gpio_request() above not all of which have
+a direction assigned immediately.
+
+--BVQ1RKc6+nLPB5pT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR3uKBAAoJELSic+t+oim91HsP/3Pv5RqqGac2N4XkDI6qOtxP
++9qW5dANrNHJ5kyUeSmxQxzQCjz8uEgCSrX/V3l5TqJPsrBq5gTfxD0tph8FJ2Zp
+38dp4lJ6GDkb68YXL8JjlcgWGqBTGAPqa3HXh7oK9wsMEmvJep1g0ytNn1VPLPur
+D1qTA5ArP0qpoPEM48seGwZUIDJUGZyJ4sY7PP/LU0amd+UtivpX7ycxqpMMMcQS
+mu3/HpIRssqdsl8H9wWHKI2D5FK8/PS2oFk7hD8EDKcvCJzd0YnhHN6wa0VGSB33
+aLXSRuGzsgwrYzNSSktP6LB/JF3q0+kwZhOrcxOz9NnzczI418H0pWSjK5VWDOlh
+bRLyifbdsiucpGlmtm84XvitQq1qINHYqRn/cwofHma1JdUIXRL+dYnzEhXta7tk
+7Y0MrCT4Ca4jVpM56oZgyss4ox7ng0goxV6b8Nam4mMLRngGkHiZkR7a19iewaAy
+ougL1LFvbah3Q4dMudOQXwfou38ykZBBqGf8Kn5PaHAmenRcEwZclo2x7ASs55NI
+JvUai6N8AutUcwmilW6bpVIHpbU9LpFHq3zX3J4hUpnlmU3EFaa8LWTyjJVGM91x
+BNATospHslWRx7JIpdlcUpqBc8ch2X0594AMuvkQYZCGbXbfbihs9jM9eushXElf
+kRCDB2VcEj6h3l8YoVg6
+=FlZb
+-----END PGP SIGNATURE-----
+
+--BVQ1RKc6+nLPB5pT--
