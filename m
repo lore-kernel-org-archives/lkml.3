@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab3GKAga (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:36:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56627 "EHLO
+	id S1755475Ab3GKAhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:37:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56636 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755446Ab3GKAg2 (ORCPT
+	with ESMTP id S1755450Ab3GKAg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:36:28 -0400
+	Wed, 10 Jul 2013 20:36:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: oliver+list@schinagl.nl, linux@roeck-us.net, khali@linux-fr.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 5/7] sysfs: add support for binary attributes in groups
-Date: Wed, 10 Jul 2013 17:36:03 -0700
-Message-Id: <1373502965-1683-6-git-send-email-gregkh@linuxfoundation.org>
+Subject: [PATCH v2 7/7] driver core: add default groups to struct class
+Date: Wed, 10 Jul 2013 17:36:05 -0700
+Message-Id: <1373502965-1683-8-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,132 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-groups should be able to support binary attributes, just like it
-supports "normal" attributes.  This lets us only handle one type of
-structure, groups, throughout the driver core and subsystems, making
-binary attributes a "full fledged" part of the driver model, and not
-something just "tacked on".
+We should be using groups, not attribute lists, for classes to allow
+subdirectories, and soon, binary files.  Groups are just more flexible
+overall, so add them.
 
-Reported-by: Oliver Schinagl <oliver+list@schinagl.nl>
+The dev_attrs list will go away after all in-kernel users are converted
+to use dev_groups.
+
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- fs/sysfs/group.c      | 66 +++++++++++++++++++++++++++++++++++----------------
- include/linux/sysfs.h |  4 ++--
- 2 files changed, 48 insertions(+), 22 deletions(-)
+ drivers/base/core.c    | 9 ++++++++-
+ include/linux/device.h | 4 +++-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index aec3d5c..e5719c6 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -20,38 +20,64 @@ static void remove_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
- 			 const struct attribute_group *grp)
- {
- 	struct attribute *const* attr;
--	int i;
-+	struct bin_attribute *const* bin_attr;
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index a8aae18..8856d74 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -528,9 +528,12 @@ static int device_add_attrs(struct device *dev)
+ 	int error;
  
--	for (i = 0, attr = grp->attrs; *attr; i++, attr++)
--		sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
-+	if (grp->attrs)
-+		for (attr = grp->attrs; *attr; attr++)
-+			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
-+	if (grp->bin_attrs)
-+		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++)
-+			sysfs_remove_bin_file(kobj, *bin_attr);
- }
- 
- static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
- 			const struct attribute_group *grp, int update)
- {
- 	struct attribute *const* attr;
-+	struct bin_attribute *const* bin_attr;
- 	int error = 0, i;
- 
--	for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
--		umode_t mode = 0;
-+	if (grp->attrs) {
-+		for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
-+			umode_t mode = 0;
-+
-+			/*
-+			 * In update mode, we're changing the permissions or
-+			 * visibility.  Do this by first removing then
-+			 * re-adding (if required) the file.
-+			 */
-+			if (update)
-+				sysfs_hash_and_remove(dir_sd, NULL,
-+						      (*attr)->name);
-+			if (grp->is_visible) {
-+				mode = grp->is_visible(kobj, *attr, i);
-+				if (!mode)
-+					continue;
-+			}
-+			error = sysfs_add_file_mode(dir_sd, *attr,
-+						    SYSFS_KOBJ_ATTR,
-+						    (*attr)->mode | mode);
-+			if (unlikely(error))
-+				break;
-+		}
-+		if (error) {
-+			remove_files(dir_sd, kobj, grp);
-+			goto exit;
-+		}
-+	}
- 
--		/* in update mode, we're changing the permissions or
--		 * visibility.  Do this by first removing then
--		 * re-adding (if required) the file */
--		if (update)
--			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
--		if (grp->is_visible) {
--			mode = grp->is_visible(kobj, *attr, i);
--			if (!mode)
--				continue;
-+	if (grp->bin_attrs) {
-+		for (bin_attr = grp->bin_attrs; *bin_attr; bin_attr++) {
-+			if (update)
-+				sysfs_remove_bin_file(kobj, *bin_attr);
-+			error = sysfs_create_bin_file(kobj, *bin_attr);
-+			if (error)
-+				break;
- 		}
--		error = sysfs_add_file_mode(dir_sd, *attr, SYSFS_KOBJ_ATTR,
--					    (*attr)->mode | mode);
--		if (unlikely(error))
--			break;
+ 	if (class) {
+-		error = device_add_attributes(dev, class->dev_attrs);
++		error = device_add_groups(dev, class->dev_groups);
+ 		if (error)
+ 			return error;
++		error = device_add_attributes(dev, class->dev_attrs);
 +		if (error)
-+			remove_files(dir_sd, kobj, grp);
- 	}
--	if (error)
--		remove_files(dir_sd, kobj, grp);
-+exit:
++			goto err_remove_class_groups;
+ 		error = device_add_bin_attributes(dev, class->dev_bin_attrs);
+ 		if (error)
+ 			goto err_remove_class_attrs;
+@@ -563,6 +566,9 @@ static int device_add_attrs(struct device *dev)
+  err_remove_class_attrs:
+ 	if (class)
+ 		device_remove_attributes(dev, class->dev_attrs);
++ err_remove_class_groups:
++	if (class)
++		device_remove_groups(dev, class->dev_groups);
+ 
  	return error;
  }
+@@ -581,6 +587,7 @@ static void device_remove_attrs(struct device *dev)
+ 	if (class) {
+ 		device_remove_attributes(dev, class->dev_attrs);
+ 		device_remove_bin_attributes(dev, class->dev_bin_attrs);
++		device_remove_groups(dev, class->dev_groups);
+ 	}
+ }
  
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index d50a96b..2c3b6a3 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -21,6 +21,7 @@
+diff --git a/include/linux/device.h b/include/linux/device.h
+index bd5931e..22b546a 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -320,6 +320,7 @@ int subsys_virtual_register(struct bus_type *subsys,
+  * @name:	Name of the class.
+  * @owner:	The module owner.
+  * @class_attrs: Default attributes of this class.
++ * @dev_groups:	Default attributes of the devices that belong to the class.
+  * @dev_attrs:	Default attributes of the devices belong to the class.
+  * @dev_bin_attrs: Default binary attributes of the devices belong to the class.
+  * @dev_kobj:	The kobject that represents this class and links it into the hierarchy.
+@@ -349,7 +350,8 @@ struct class {
+ 	struct module		*owner;
  
- struct kobject;
- struct module;
-+struct bin_attribute;
- enum kobj_ns_type;
+ 	struct class_attribute		*class_attrs;
+-	struct device_attribute		*dev_attrs;
++	struct device_attribute		*dev_attrs;	/* use dev_groups instead */
++	const struct attribute_group	**dev_groups;
+ 	struct bin_attribute		*dev_bin_attrs;
+ 	struct kobject			*dev_kobj;
  
- struct attribute {
-@@ -59,10 +60,9 @@ struct attribute_group {
- 	umode_t			(*is_visible)(struct kobject *,
- 					      struct attribute *, int);
- 	struct attribute	**attrs;
-+	struct bin_attribute	**bin_attrs;
- };
- 
--
--
- /**
-  * Use these macros to make defining attributes easier. See include/linux/device.h
-  * for examples..
 -- 
 1.8.3.rc0.20.gb99dd2e
 
