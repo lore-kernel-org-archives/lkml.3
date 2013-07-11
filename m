@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab3GKPMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 11:12:16 -0400
-Received: from smtp.eu.citrix.com ([46.33.159.39]:3795 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab3GKPMP (ORCPT
+	id S1756173Ab3GKPOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 11:14:32 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34157 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755976Ab3GKPOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 11:12:15 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
-   d="scan'208";a="6589834"
-Message-ID: <51DECB4D.4020009@citrix.com>
-Date: Thu, 11 Jul 2013 17:12:13 +0200
-From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 11 Jul 2013 11:14:30 -0400
+Date: Thu, 11 Jul 2013 11:14:29 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <rogerq@ti.com>
+cc: gregkh@linuxfoundation.org, <balbi@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>, <khilman@linaro.org>,
+        <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] USB: ehci-omap: Implement suspend/resume
+In-Reply-To: <51DE71F3.1040101@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1307111106090.1276-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>
-Subject: Re: [Xen-devel] [PATCH RFC 4/4] xen-block: introduce a new request
- type to unmap grants
-References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>	<1373288607-1876-5-git-send-email-roger.pau@citrix.com>	<20130708194152.GJ4927@phenom.dumpdata.com> <51DD271B.3010408@citrix.com> <51DEB795.3000602@citrix.com>
-In-Reply-To: <51DEB795.3000602@citrix.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.30.203.1]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/07/13 15:48, David Vrabel wrote:
-> On 10/07/13 10:19, Roger Pau Monné wrote:
->>
->> >From 1ede72ba10a7ec13d57ba6d2af54e86a099d7125 Mon Sep 17 00:00:00 2001
->> From: Roger Pau Monne <roger.pau@citrix.com>
->> Date: Wed, 10 Jul 2013 10:22:19 +0200
->> Subject: [PATCH RFC] xen-blkfront: revoke foreign access for grants not
->>  mapped by the backend
->> MIME-Version: 1.0
->> Content-Type: text/plain; charset=UTF-8
->> Content-Transfer-Encoding: 8bit
->>
->> There's no need to keep the foreign access in a grant if it is not
->> persistently mapped by the backend. This allows us to free grants that
->> are not mapped by the backend, thus preventing blkfront from hoarding
->> all grants.
->>
->> The main effect of this is that blkfront will only persistently map
->> the same grants as the backend, and it will always try to use grants
->> that are already mapped by the backend. Also the number of persistent
->> grants in blkfront is the same as in blkback (and is controlled by the
->> value in blkback).
+On Thu, 11 Jul 2013, Roger Quadros wrote:
+
+> > The other two problems are both related to the interaction between
+> > system PM and runtime PM.  Suppose the controller is already runtime
+> > suspended when the system goes to sleep.  Because it is runtime
+> > suspended, it is enabled for wakeup.  But device_may_wakeup() could
+> > return false; if this happens then you have to do a runtime-resume in
+> > omap_ehci_suspend() before calling ehci_suspend(), so that the
+> > controller can be suspended again with wakeups disabled.  (Or you could
+> > choose an alternative method for accomplishing the same result, such as
+> > disabling the wakeup signal from the pad without going through a whole
+> > EHCI resume/suspend cycle.)  Conversely, if device_may_wakeup() returns
+> > true then you shouldn't do anything at all, because the controller is
+> > already suspended with the correct wakeup setting.
 > 
-> Does this place in implicit requirement on the behaviour of the backend.
->  i.e., the backend must persistently map the first N grants and always
-> unmap the remainder?  If so, this should be clearly documented.
-
-No, the backend can persistently map whatever grants it wants, and in
-fact we have a LRU in the backend that keeps unmapping a certain amount
-of grants that have not been used over a period of time.
-
+> I think this case is taken care of by the Runtime PM core at least for the OMAP
+> platform according to the documentation
 > 
-> It also seems odd to have the backend decide how much frontend resource
-> can be consumed at anyone time.  It's not clear how the backend is
-> supposed to know how many persistent grants it should hang on to.
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/Documentation/power/runtime_pm.txt#n647
 
-blkfront has to at least persistently map the same grants as the
-backend. blkfront could persistently map all grants, but then we will
-have grant shortage, and I doubt there's much performance gain from
-persistently mapping grants in blkfront but not blkback (since the
-biggest performance penalty comes from the unmapping done in blkback and
-TLB flush involved).
+No; that section refers only to races, not to wakeup settings.
 
-Using this mechanism we also make sure that blkfront will always try to
-use grants that blkback has persistently mapped, and then fall back to
-non-persistent grants if we exhaust all persistent mappings.
+> At the end of this mail is the log during system suspend/resume
+> 
+> You can notice the following sequence
+> 
+> -ehci runtime suspends
+> -system suspend triggered
+> -ehci runtime resumes
+> -ehci suspends (uses new wakeup settings)
+> -system wakeup triggered
+> -ehci resumes
+> -ehci runtime suspends
+
+This is because the root hub was runtime suspended with the wrong
+wakeup setting.  The USB core, which is careful about these things,
+resumed and re-suspended it with the proper wakeup setting.  In the 
+process, the controller had to be runtime resumed as well.
+
+Try doing the test over again, but this time with the root hub enabled 
+for wakeup and the controller disabled.  (I know this is a bizarre 
+combination, but try it anyway.)  Also, after the system wakes up, see 
+whether the root hub and controller get runtime suspended.
+
+> > For the third problem, suppose the controller was runtime suspended
+> > when the system went to sleep.  When the system wakes up, the
+> > controller will become active, so you have to inform the runtime PM
+> > core about its change of state.  Basically, if omap_ehci_resume() sees
+> > that ehci_resume() returned 0 then it must do:
+> > 
+> > 	pm_runtime_disable(dev);
+> > 	pm_runtime_set_active(dev);
+> > 	pm_runtime_enable(dev);
+> > 
+> > All of these issues are discussed (among lots of other material) in 
+> > Documentation/power/runtime_pm.txt.
+> 
+> Is this still applicable? Documentation claims
+> 
+>    "During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
+>     for every device right after executing the subsystem-level .resume_early()
+>     callback and right after executing the subsystem-level .resume() callback
+>     for it, respectively."
+
+Yes, this is applicable, but it is irrelevant to the problem I 
+described.  You still have to tell the runtime PM core that the device 
+is now active.
+
+Alan Stern
 
