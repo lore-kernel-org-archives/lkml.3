@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab3GKWBz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:01:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43075 "EHLO
+	id S1756766Ab3GKWBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:01:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43089 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756572Ab3GKWBq (ORCPT
+	with ESMTP id S1756299Ab3GKWBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:46 -0400
+	Thu, 11 Jul 2013 18:01:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Subject: [ 10/19] MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
-Date: Thu, 11 Jul 2013 15:01:27 -0700
-Message-Id: <20130711214831.814376412@linuxfoundation.org>
+        Rusty Russell <rusty@rustcorp.com.au>, Jim Hull <jim.hull@hp.com>
+Subject: [ 05/19] module: do percpu allocation after uniqueness check.  No, really!
+Date: Thu, 11 Jul 2013 15:01:22 -0700
+Message-Id: <20130711214831.255665474@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
 References: <20130711214830.611455274@linuxfoundation.org>
@@ -26,30 +26,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 7b175c46720f8e6b92801bb634c93d1016f80c62 upstream.
+commit 8d8022e8aba85192e937f1f0f7450e256d66ae5c upstream.
 
-This hopefully will help point developers to the proper way that patches
-should be submitted for inclusion in the stable kernel releases.
+v3.8-rc1-5-g1fb9341 was supposed to stop parallel kvm loads exhausting
+percpu memory on large machines:
 
-Reported-by: David Howells <dhowells@redhat.com>
-Acked-by: David Howells <dhowells@redhat.com>
+    Now we have a new state MODULE_STATE_UNFORMED, we can insert the
+    module into the list (and thus guarantee its uniqueness) before we
+    allocate the per-cpu region.
+
+In my defence, it didn't actually say the patch did this.  Just that
+we "can".
+
+This patch actually *does* it.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Tested-by: Jim Hull <jim.hull@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- MAINTAINERS |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/module.c |   34 ++++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 16 deletions(-)
 
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -7667,6 +7667,7 @@ STABLE BRANCH
- M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- L:	stable@vger.kernel.org
- S:	Supported
-+F:	Documentation/stable_kernel_rules.txt
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2927,7 +2927,6 @@ static struct module *layout_and_allocat
+ {
+ 	/* Module within temporary copy. */
+ 	struct module *mod;
+-	Elf_Shdr *pcpusec;
+ 	int err;
  
- STAGING SUBSYSTEM
- M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ 	mod = setup_load_info(info, flags);
+@@ -2942,17 +2941,10 @@ static struct module *layout_and_allocat
+ 	err = module_frob_arch_sections(info->hdr, info->sechdrs,
+ 					info->secstrings, mod);
+ 	if (err < 0)
+-		goto out;
++		return ERR_PTR(err);
+ 
+-	pcpusec = &info->sechdrs[info->index.pcpu];
+-	if (pcpusec->sh_size) {
+-		/* We have a special allocation for this section. */
+-		err = percpu_modalloc(mod,
+-				      pcpusec->sh_size, pcpusec->sh_addralign);
+-		if (err)
+-			goto out;
+-		pcpusec->sh_flags &= ~(unsigned long)SHF_ALLOC;
+-	}
++	/* We will do a special allocation for per-cpu sections later. */
++	info->sechdrs[info->index.pcpu].sh_flags &= ~(unsigned long)SHF_ALLOC;
+ 
+ 	/* Determine total sizes, and put offsets in sh_entsize.  For now
+ 	   this is done generically; there doesn't appear to be any
+@@ -2963,17 +2955,22 @@ static struct module *layout_and_allocat
+ 	/* Allocate and move to the final place */
+ 	err = move_module(mod, info);
+ 	if (err)
+-		goto free_percpu;
++		return ERR_PTR(err);
+ 
+ 	/* Module has been copied to its final place now: return it. */
+ 	mod = (void *)info->sechdrs[info->index.mod].sh_addr;
+ 	kmemleak_load_module(mod, info);
+ 	return mod;
++}
+ 
+-free_percpu:
+-	percpu_modfree(mod);
+-out:
+-	return ERR_PTR(err);
++static int alloc_module_percpu(struct module *mod, struct load_info *info)
++{
++	Elf_Shdr *pcpusec = &info->sechdrs[info->index.pcpu];
++	if (!pcpusec->sh_size)
++		return 0;
++
++	/* We have a special allocation for this section. */
++	return percpu_modalloc(mod, pcpusec->sh_size, pcpusec->sh_addralign);
+ }
+ 
+ /* mod is no longer valid after this! */
+@@ -3237,6 +3234,11 @@ static int load_module(struct load_info
+ 	}
+ #endif
+ 
++	/* To avoid stressing percpu allocator, do this once we're unique. */
++	err = alloc_module_percpu(mod, info);
++	if (err)
++		goto unlink_mod;
++
+ 	/* Now module is in final location, initialize linked lists, etc. */
+ 	err = module_unload_init(mod);
+ 	if (err)
 
 
