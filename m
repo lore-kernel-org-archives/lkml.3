@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab3GKJr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 05:47:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37607 "EHLO mx2.suse.de"
+	id S932170Ab3GKJrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 05:47:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37542 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932178Ab3GKJrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 05:47:16 -0400
+	id S1756051Ab3GKJrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 05:47:10 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
         Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
         LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 16/16] sched: Select least loaded CPU on preferred NUMA node
-Date: Thu, 11 Jul 2013 10:47:00 +0100
-Message-Id: <1373536020-2799-17-git-send-email-mgorman@suse.de>
+Subject: [PATCH 08/16] sched: Reschedule task on preferred NUMA node once selected
+Date: Thu, 11 Jul 2013 10:46:52 +0100
+Message-Id: <1373536020-2799-9-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1373536020-2799-1-git-send-email-mgorman@suse.de>
 References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
@@ -22,153 +22,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces find_idlest_cpu_node with task_numa_find_cpu.
-find_idlest_cpu_node has two critical limitations. It does not take the
-scheduling class into account when calculating the load and it is unsuitable
-for using when comparing loads between NUMA nodes.
+A preferred node is selected based on the node the most NUMA hinting
+faults was incurred on. There is no guarantee that the task is running
+on that node at the time so this patch rescheules the task to run on
+the most idle CPU of the selected node when selected. This avoids
+waiting for the balancer to make a decision.
 
-task_numa_find_cpu uses similar load calculations to wake_affine() when
-selecting the least loaded CPU within a scheduling domain common to the
-source and destimation nodes. It is not implemented in this patch but
-potentially the information can be used to avoid overloading the destination
-node relative to the source node.
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- kernel/sched/fair.c | 96 ++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 73 insertions(+), 23 deletions(-)
+ kernel/sched/core.c  | 17 +++++++++++++++++
+ kernel/sched/fair.c  | 46 +++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/sched.h |  1 +
+ 3 files changed, 63 insertions(+), 1 deletion(-)
 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 5e02507..e4c1832 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -992,6 +992,23 @@ struct migration_arg {
+ 
+ static int migration_cpu_stop(void *data);
+ 
++#ifdef CONFIG_NUMA_BALANCING
++/* Migrate current task p to target_cpu */
++int migrate_task_to(struct task_struct *p, int target_cpu)
++{
++	struct migration_arg arg = { p, target_cpu };
++	int curr_cpu = task_cpu(p);
++
++	if (curr_cpu == target_cpu)
++		return 0;
++
++	if (!cpumask_test_cpu(target_cpu, tsk_cpus_allowed(p)))
++		return -EINVAL;
++
++	return stop_one_cpu(curr_cpu, migration_cpu_stop, &arg);
++}
++#endif
++
+ /*
+  * wait_task_inactive - wait for a thread to unschedule.
+  *
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2ab8fa0..aadff22 100644
+index 5055bf9..c9ce879 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -841,29 +841,81 @@ static unsigned int task_scan_max(struct task_struct *p)
+@@ -800,6 +800,31 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
   */
  unsigned int sysctl_numa_balancing_settle_count __read_mostly = 3;
  
--static unsigned long weighted_cpuload(const int cpu);
--
--
--static int
--find_idlest_cpu_node(int this_cpu, int nid)
--{
--	unsigned long load, min_load = ULONG_MAX;
--	int i, idlest_cpu = this_cpu;
-+static unsigned long source_load(int cpu, int type);
-+static unsigned long target_load(int cpu, int type);
-+static unsigned long power_of(int cpu);
-+static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
++static unsigned long weighted_cpuload(const int cpu);
 +
-+static int task_numa_find_cpu(struct task_struct *p, int nid)
++
++static int
++find_idlest_cpu_node(int this_cpu, int nid)
 +{
-+	int node_cpu = cpumask_first(cpumask_of_node(nid));
-+	int cpu, src_cpu = task_cpu(p), dst_cpu = src_cpu;
-+	unsigned long src_load, dst_load;
-+	unsigned long min_load = ULONG_MAX;
-+	struct task_group *tg = task_group(p);
-+	s64 src_eff_load, dst_eff_load;
-+	struct sched_domain *sd;
-+	unsigned long weight;
-+	int imbalance_pct, idx = -1;
- 
--	BUG_ON(cpu_to_node(this_cpu) == nid);
-+	/* No harm being optimistic */
-+	if (idle_cpu(node_cpu))
-+		return node_cpu;
- 
-+	/*
-+	 * Find the lowest common scheduling domain covering the nodes of both
-+	 * the CPU the task is currently running on and the target NUMA node.
-+	 */
- 	rcu_read_lock();
--	for_each_cpu(i, cpumask_of_node(nid)) {
--		load = weighted_cpuload(i);
--
--		if (load < min_load) {
--			min_load = load;
--			idlest_cpu = i;
-+	for_each_domain(src_cpu, sd) {
-+		if (cpumask_test_cpu(node_cpu, sched_domain_span(sd))) {
-+			/*
-+			 * busy_idx is used for the load decision as it is the
-+			 * same index used by the regular load balancer for an
-+			 * active cpu.
-+			 */
-+			idx = sd->busy_idx;
-+			imbalance_pct = sd->imbalance_pct;
-+			break;
++	unsigned long load, min_load = ULONG_MAX;
++	int i, idlest_cpu = this_cpu;
++
++	BUG_ON(cpu_to_node(this_cpu) == nid);
++
++	rcu_read_lock();
++	for_each_cpu(i, cpumask_of_node(nid)) {
++		load = weighted_cpuload(i);
++
++		if (load < min_load) {
++			min_load = load;
++			idlest_cpu = i;
++		}
++	}
++	rcu_read_unlock();
++
++	return idlest_cpu;
++}
++
+ static void task_numa_placement(struct task_struct *p)
+ {
+ 	int seq, nid, max_nid = 0;
+@@ -829,10 +854,29 @@ static void task_numa_placement(struct task_struct *p)
  		}
  	}
- 	rcu_read_unlock();
  
--	return idlest_cpu;
-+	if (WARN_ON_ONCE(idx == -1))
-+		return src_cpu;
-+
+-	/* Update the tasks preferred node if necessary */
 +	/*
-+	 * XXX the below is mostly nicked from wake_affine(); we should
-+	 * see about sharing a bit if at all possible; also it might want
-+	 * some per entity weight love.
++	 * Record the preferred node as the node with the most faults,
++	 * requeue the task to be running on the idlest CPU on the
++	 * preferred node and reset the scanning rate to recheck
++	 * the working set placement.
 +	 */
-+	weight = p->se.load.weight;
-+ 
-+	src_load = source_load(src_cpu, idx);
+ 	if (max_faults && max_nid != p->numa_preferred_nid) {
++		int preferred_cpu;
 +
-+	src_eff_load = 100 + (imbalance_pct - 100) / 2;
-+	src_eff_load *= power_of(src_cpu);
-+	src_eff_load *= src_load + effective_load(tg, src_cpu, -weight, -weight);
-+
-+	for_each_cpu(cpu, cpumask_of_node(nid)) {
-+		dst_load = target_load(cpu, idx);
-+
-+		/* If the CPU is idle, use it */
-+		if (!dst_load)
-+			return dst_cpu;
-+
-+		/* Otherwise check the target CPU load */
-+		dst_eff_load = 100;
-+		dst_eff_load *= power_of(cpu);
-+		dst_eff_load *= dst_load + effective_load(tg, cpu, weight, weight);
-+
-+		if (dst_load < min_load) {
-+			min_load = dst_load;
-+			dst_cpu = cpu;
++		/*
++		 * If the task is not on the preferred node then find the most
++		 * idle CPU to migrate to.
++		 */
++		preferred_cpu = task_cpu(p);
++		if (cpu_to_node(preferred_cpu) != max_nid) {
++			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
++							     max_nid);
 +		}
-+ 	}
 +
-+	return dst_cpu;
- }
- 
- static inline int task_faults_idx(int nid, int priv)
-@@ -916,14 +968,12 @@ static void task_numa_placement(struct task_struct *p)
- 		int old_migrate_seq = p->numa_migrate_seq;
- 
- 		/*
--		 * If the task is not on the preferred node then find the most
--		 * idle CPU to migrate to.
-+		 * If the task is not on the preferred node then find 
-+		 * a suitable CPU to migrate to.
- 		 */
- 		preferred_cpu = task_cpu(p);
--		if (cpu_to_node(preferred_cpu) != max_nid) {
--			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
--							     max_nid);
--		}
-+		if (cpu_to_node(preferred_cpu) != max_nid)
-+			preferred_cpu = task_numa_find_cpu(p, max_nid);
- 
- 		/* Update the preferred nid and migrate task if possible */
++		/* Update the preferred nid and migrate task if possible */
  		p->numa_preferred_nid = max_nid;
-@@ -3238,7 +3288,7 @@ static long effective_load(struct task_group *tg, int cpu, long wl, long wg)
+ 		p->numa_migrate_seq = 0;
++		migrate_task_to(p, preferred_cpu);
+ 	}
  }
- #else
  
--static inline unsigned long effective_load(struct task_group *tg, int cpu,
-+static unsigned long effective_load(struct task_group *tg, int cpu,
- 		unsigned long wl, unsigned long wg)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c5f773d..795346d 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -504,6 +504,7 @@ DECLARE_PER_CPU(struct rq, runqueues);
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
+ #ifdef CONFIG_NUMA_BALANCING
++extern int migrate_task_to(struct task_struct *p, int cpu);
+ static inline void task_numa_free(struct task_struct *p)
  {
- 	return wl;
+ 	kfree(p->numa_faults);
 -- 
 1.8.1.4
 
