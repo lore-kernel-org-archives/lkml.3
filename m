@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab3GKWUn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:20:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43321 "EHLO
+	id S1757238Ab3GKWXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:23:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43335 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757189Ab3GKWUk (ORCPT
+	with ESMTP id S1757207Ab3GKWUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:20:40 -0400
+	Thu, 11 Jul 2013 18:20:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Kees Cook <keescook@chromium.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Salwan <jonathan.salwan@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 2/8] drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-Date: Thu, 11 Jul 2013 15:20:31 -0700
-Message-Id: <20130711221931.522752920@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 5/8] crypto: sanitize argument for format string
+Date: Thu, 11 Jul 2013 15:20:34 -0700
+Message-Id: <20130711221931.865738148@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711221931.216612791@linuxfoundation.org>
 References: <20130711221931.216612791@linuxfoundation.org>
@@ -30,51 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Salwan <jonathan.salwan@gmail.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 542db01579fbb7ea7d1f7bb9ddcef1559df660b2 upstream.
+commit 1c8fca1d92e14859159a82b8a380d220139b7344 upstream.
 
-In drivers/cdrom/cdrom.c mmc_ioctl_cdrom_read_data() allocates a memory
-area with kmalloc in line 2885.
+The template lookup interface does not provide a way to use format
+strings, so make sure that the interface cannot be abused accidentally.
 
-  2885         cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-  2886         if (cgc->buffer == NULL)
-  2887                 return -ENOMEM;
-
-In line 2908 we can find the copy_to_user function:
-
-  2908         if (!ret && copy_to_user(arg, cgc->buffer, blocksize))
-
-The cgc->buffer is never cleaned and initialized before this function.
-If ret = 0 with the previous basic block, it's possible to display some
-memory bytes in kernel space from userspace.
-
-When we read a block from the disk it normally fills the ->buffer but if
-the drive is malfunctioning there is a chance that it would only be
-partially filled.  The result is an leak information to userspace.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jonathan Salwan <jonathan.salwan@gmail.com>
-Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cdrom/cdrom.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ crypto/algapi.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2879,7 +2879,7 @@ static noinline int mmc_ioctl_cdrom_read
- 	if (lba < 0)
- 		return -EINVAL;
+--- a/crypto/algapi.c
++++ b/crypto/algapi.c
+@@ -478,7 +478,8 @@ static struct crypto_template *__crypto_
  
--	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-+	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
- 	if (cgc->buffer == NULL)
- 		return -ENOMEM;
+ struct crypto_template *crypto_lookup_template(const char *name)
+ {
+-	return try_then_request_module(__crypto_lookup_template(name), name);
++	return try_then_request_module(__crypto_lookup_template(name), "%s",
++				       name);
+ }
+ EXPORT_SYMBOL_GPL(crypto_lookup_template);
  
 
 
