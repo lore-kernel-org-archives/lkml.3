@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab3GKQas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:30:48 -0400
-Received: from drsnuggles.stderr.nl ([94.142.244.14]:46482 "EHLO
-	drsnuggles.stderr.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab3GKQap (ORCPT
+	id S1754744Ab3GKQbm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:31:42 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46481 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752658Ab3GKQbi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:30:45 -0400
-Date: Thu, 11 Jul 2013 17:43:22 +0200
-From: Matthijs Kooijman <matthijs@stdin.nl>
-To: Julien Delacou <julien.delacou.st@gmail.com>
-Cc: Paul Zimmerman <paulz@synopsys.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        Julien Delacou <julien.delacou@stericsson.com>
-Subject: Re: [PATCH] staging: dwc2: fix value used in dwc2_set_all_params
-Message-ID: <20130711154322.GJ10217@login.drsnuggles.stderr.nl>
-Mail-Followup-To: Julien Delacou <julien.delacou.st@gmail.com>,
-	Paul Zimmerman <paulz@synopsys.com>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Grant Likely <grant.likely@linaro.org>,
-	linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-	devel@driverdev.osuosl.org,
-	Julien Delacou <julien.delacou@stericsson.com>
-References: <1373545450-5251-1-git-send-email-julien.delacou.st@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373545450-5251-1-git-send-email-julien.delacou.st@gmail.com>
-X-PGP-Fingerprint: 7F6A 9F44 2820 18E2 18DE  24AA CF49 D0E6 8A2F AFBC
-X-PGP-Key: http://www.stderr.nl/static/files/gpg_pubkey.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-Score: -2.6 (--)
-X-Spam-Report: Spamchecked on "mail.drsnuggles.stderr.nl"
-	pts  rule name              description
-	---- ---------------------- -------------------------------------------
-	-2.6 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	Thu, 11 Jul 2013 12:31:38 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv5 04/10] clocksource: sun4i: Add clocksource and sched clock drivers
+Date: Thu, 11 Jul 2013 18:31:16 +0200
+Message-Id: <1373560282-15184-5-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 02:24:10PM +0200, Julien Delacou wrote:
-> From: Julien Delacou <julien.delacou@stericsson.com>
-> 
-> This fix uses 'value' parameter as it should be instead
-> of hardcoded -1.
-Woops!
+Use the second timer found on the Allwinner SoCs as a clock source and
+sched clock, that were both not used yet on these platforms.
 
-> Signed-off-by: Julien Delacou <julien.delacou@stericsson.com>
-> Acked-by: Paul Zimmerman <paulz@synopys.com>
-Reviewed-by: Matthijs Kooijman <matthijs@stdin.nl>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/clocksource/sun4i_timer.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-> ---
->  drivers/staging/dwc2/hcd.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/dwc2/hcd.c b/drivers/staging/dwc2/hcd.c
-> index 2ed54b1..ca38aaa 100644
-> --- a/drivers/staging/dwc2/hcd.c
-> +++ b/drivers/staging/dwc2/hcd.c
-> @@ -2690,7 +2690,7 @@ void dwc2_set_all_params(struct dwc2_core_params *params, int value)
->  	int i;
->  
->  	for (i = 0; i < size; i++)
-> -		p[i] = -1;
-> +		p[i] = value;
->  }
->  EXPORT_SYMBOL_GPL(dwc2_set_all_params);
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
+index f5e227b..b581c93 100644
+--- a/drivers/clocksource/sun4i_timer.c
++++ b/drivers/clocksource/sun4i_timer.c
+@@ -19,6 +19,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqreturn.h>
++#include <linux/sched_clock.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_irq.h>
+@@ -96,6 +97,11 @@ static struct irqaction sun4i_timer_irq = {
+ 	.dev_id = &sun4i_clockevent,
+ };
+ 
++static u32 sun4i_timer_sched_read(void)
++{
++	return ~readl(timer_base + TIMER_CNTVAL_REG(1));
++}
++
+ static void __init sun4i_timer_init(struct device_node *node)
+ {
+ 	unsigned long rate = 0;
+@@ -117,6 +123,15 @@ static void __init sun4i_timer_init(struct device_node *node)
+ 
+ 	rate = clk_get_rate(clk);
+ 
++	writel(~0, timer_base + TIMER_INTVAL_REG(1));
++	writel(TIMER_CTL_ENABLE | TIMER_CTL_RELOAD |
++	       TIMER_CTL_CLK_SRC(TIMER_CTL_CLK_SRC_OSC24M),
++	       timer_base + TIMER_CTL_REG(1));
++
++	setup_sched_clock(sun4i_timer_sched_read, 32, rate);
++	clocksource_mmio_init(timer_base + TIMER_CNTVAL_REG(1), node->name,
++			      rate, 300, 32, clocksource_mmio_readl_down);
++
+ 	writel(rate / (TIMER_SCAL * HZ),
+ 	       timer_base + TIMER_INTVAL_REG(0));
+ 
+-- 
+1.8.3.2
+
