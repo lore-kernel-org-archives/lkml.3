@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab3GKOuI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:50:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42904 "EHLO
+	id S932735Ab3GKOui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:50:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42903 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932649Ab3GKOZo (ORCPT
+	with ESMTP id S932451Ab3GKOZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:44 -0400
+	Thu, 11 Jul 2013 10:25:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, Tejun Heo <tj@kernel.org>,
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 19/98] cgroup: fix umount vs cgroup_cfts_commit() race
-Date: Thu, 11 Jul 2013 15:23:49 +0100
-Message-Id: <1373552708-15235-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 20/98] tracing: Use current_uid() for critical time tracing
+Date: Thu, 11 Jul 2013 15:23:50 +0100
+Message-Id: <1373552708-15235-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,71 +27,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 084457f284abf6789d90509ee11dae383842b23b upstream.
+commit f17a5194859a82afe4164e938b92035b86c55794 upstream.
 
-cgroup_cfts_commit() uses dget() to keep cgroup alive after cgroup_mutex
-is dropped, but dget() won't prevent cgroupfs from being umounted. When
-the race happens, vfs will see some dentries with non-zero refcnt while
-umount is in process.
+The irqsoff tracer records the max time that interrupts are disabled.
+There are hooks in the assembly code that calls back into the tracer when
+interrupts are disabled or enabled.
 
-Keep running this:
-  mount -t cgroup -o blkio xxx /cgroup
-  umount /cgroup
+When they are enabled, the tracer checks if the amount of time they
+were disabled is larger than the previous recorded max interrupts off
+time. If it is, it creates a snapshot of the currently running trace
+to store where the last largest interrupts off time was held and how
+it happened.
 
-And this:
-  modprobe cfq-iosched
-  rmmod cfs-iosched
+During testing, this RCU lockdep dump appeared:
 
-After a while, the BUG() in shrink_dcache_for_umount_subtree() may
-be triggered:
+[ 1257.829021] ===============================
+[ 1257.829021] [ INFO: suspicious RCU usage. ]
+[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
+[ 1257.829021] -------------------------------
+[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
+[ 1257.829021]
+[ 1257.829021] other info that might help us debug this:
+[ 1257.829021]
+[ 1257.829021]
+[ 1257.829021] RCU used illegally from idle CPU!
+[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
+[ 1257.829021] RCU used illegally from extended quiescent state!
+[ 1257.829021] 2 locks held by trace-cmd/4831:
+[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
+[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
+[ 1257.829021]
+[ 1257.829021] stack backtrace:
+[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
+[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
+[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
+[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
+[ 1257.829021] Call Trace:
+[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
+[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
+[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
+[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
+[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
+[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
+[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
 
-  BUG: Dentry xxx{i=0,n=blkio.yyy} still in use (1) [umount of cgroup cgroup]
+What happened was entering into the user code, the interrupts were enabled
+and a max interrupts off was recorded. The trace buffer was saved along with
+various information about the task: comm, pid, uid, priority, etc.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-[ luis: backported to 3.5:
-  - fixed build error: added '&' to atomic_inc_not_zero parameter;
-    this was fixed upstream by commit e8c82d20a9f729cf4b9f73043f7fd4e0872bebfd ]
+The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
+to retrieve the data, and this happened to happen where RCU is blind (user_enter).
+
+As only the preempt and irqs off tracers can have this happen, and they both
+only have the tsk == current, if tsk == current, use current_uid() instead of
+task_uid(), as current_uid() does not use RCU as only current can change its uid.
+
+This fixes the RCU suspicious splat.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/cgroup.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ kernel/trace/trace.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 07ba52a..3b3fa5b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -2771,13 +2771,17 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- {
- 	LIST_HEAD(pending);
- 	struct cgroup *cgrp, *n;
-+	struct super_block *sb = ss->root->sb;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 0ae8b32..8aba3f9 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -672,7 +672,15 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
  
- 	/* %NULL @cfts indicates abort and don't bother if @ss isn't attached */
--	if (cfts && ss->root != &rootnode) {
-+	if (cfts && ss->root != &rootnode &&
-+	    atomic_inc_not_zero(&sb->s_active)) {
- 		list_for_each_entry(cgrp, &ss->root->allcg_list, allcg_node) {
- 			dget(cgrp->dentry);
- 			list_add_tail(&cgrp->cft_q_node, &pending);
- 		}
-+	} else {
-+		sb = NULL;
- 	}
- 
- 	mutex_unlock(&cgroup_mutex);
-@@ -2800,6 +2804,9 @@ static void cgroup_cfts_commit(struct cgroup_subsys *ss,
- 		dput(cgrp->dentry);
- 	}
- 
-+	if (sb)
-+		deactivate_super(sb);
+ 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
+ 	max_data->pid = tsk->pid;
+-	max_data->uid = task_uid(tsk);
++	/*
++	 * If tsk == current, then use current_uid(), as that does not use
++	 * RCU. The irq tracer can be called out of RCU scope.
++	 */
++	if (tsk == current)
++		max_data->uid = current_uid();
++	else
++		max_data->uid = task_uid(tsk);
 +
- 	mutex_unlock(&cgroup_cft_mutex);
- }
- 
+ 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+ 	max_data->policy = tsk->policy;
+ 	max_data->rt_priority = tsk->rt_priority;
 -- 
 1.8.1.2
 
