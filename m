@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab3GKMv0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 08:51:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43882 "EHLO mx2.suse.de"
+	id S1756035Ab3GKMxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 08:53:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43940 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab3GKMvZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 08:51:25 -0400
-Subject: Re: [PATCH 6/8] KVM: PPC: Add support for multiple-TCE hcalls
-Mime-Version: 1.0 (Apple Message framework v1278)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1373546368.19894.87.camel@pasglop>
-Date: Thu, 11 Jul 2013 14:51:20 +0200
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4133424D-B105-4CB1-A72A-4F47A6184DC7@suse.de>
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru> <1373123227-22969-7-git-send-email-aik@ozlabs.ru> <51DC4228.7010607@suse.de> <51DCEA76.9070808@ozlabs.ru> <D10E7B99-3A7C-4275-9A49-3CB15598E705@suse.de> <51DE3ECB.7080803@ozlabs.ru> <43E93931-F213-47CC-ADCF-D3A6D6BC4372@suse.de> <51DE8EE9.2000508@ozlabs.ru> <C6BC1E27-4C9C-4A18-A64A-052202DA64B5@suse.de> <1373546368.19894.87.camel@pasglop>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-X-Mailer: Apple Mail (2.1278)
+	id S1755913Ab3GKMxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 08:53:06 -0400
+Date: Thu, 11 Jul 2013 13:53:03 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/16] sched: Select a preferred node with the most numa
+ hinting faults
+Message-ID: <20130711125303.GB2355@suse.de>
+References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
+ <1373536020-2799-6-git-send-email-mgorman@suse.de>
+ <20130711112359.GG25631@dyad.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20130711112359.GG25631@dyad.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 11.07.2013, at 14:39, Benjamin Herrenschmidt wrote:
-
-> On Thu, 2013-07-11 at 13:15 +0200, Alexander Graf wrote:
->> And that's bad. Jeez, seriously. Don't argue this case. We enable new
->> features individually unless we're 100% sure we can keep everything
->> working. In this case an ENABLE_CAP doesn't hurt at all, because user
->> space still needs to handle the hypercalls if it wants them anyways.
->> But you get debugging for free for example.
+On Thu, Jul 11, 2013 at 01:23:59PM +0200, Peter Zijlstra wrote:
+> On Thu, Jul 11, 2013 at 10:46:49AM +0100, Mel Gorman wrote:
+> > --- a/kernel/sched/core.c
+> > +++ b/kernel/sched/core.c
+> > @@ -1593,6 +1593,7 @@ static void __sched_fork(struct task_struct *p)
+> >  	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+> >  	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
+> >  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+> > +	p->numa_preferred_nid = -1;
 > 
-> An ENABLE_CAP is utterly pointless. More bloat. But you seem to like
-> it :-)
-
-I don't like bloat usually. But Alexey even had an #ifdef DEBUG in there to selectively disable in-kernel handling of multi-TCE. Not calling ENABLE_CAP would give him exactly that without ugly #ifdefs in the kernel.
-
-
-Alex
-
+> (1)
 > 
-> Ben.
+> >  	p->numa_work.next = &p->numa_work;
+> >  	p->numa_faults = NULL;
+> >  #endif /* CONFIG_NUMA_BALANCING */
+> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> > index 904fd6f..c0bee41 100644
+> > --- a/kernel/sched/fair.c
+> > +++ b/kernel/sched/fair.c
+> > @@ -793,7 +793,8 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
+> >  
+> >  static void task_numa_placement(struct task_struct *p)
+> >  {
+> > -	int seq;
+> > +	int seq, nid, max_nid = 0;
 > 
+> Should you not start with max_nid = -1?
 > 
 
+For consistency, yes.
+
+> > +	unsigned long max_faults = 0;
+> >  
+> >  	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
+> >  		return;
+> > @@ -802,7 +803,19 @@ static void task_numa_placement(struct task_struct *p)
+> >  		return;
+> >  	p->numa_scan_seq = seq;
+> >  
+> > -	/* FIXME: Scheduling placement policy hints go here */
+> > +	/* Find the node with the highest number of faults */
+> > +	for (nid = 0; nid < nr_node_ids; nid++) {
+> > +		unsigned long faults = p->numa_faults[nid];
+> > +		p->numa_faults[nid] >>= 1;
+> > +		if (faults > max_faults) {
+> > +			max_faults = faults;
+> > +			max_nid = nid;
+> > +		}
+> > +	}
+> > +
+> 
+> It is rather unlikely; but suppose the entire ->numa_faults[] array is 0, you'd
+> somehow end up selecting max_nid := 0. Which seems inconsistent with \1.
+> 
+
+This happens more often than you might imagine due to THP false sharing
+getting count as shared. If the entire numa_faults[] array is 0 then
+max_faults == 0 and it will not update preferred_nid due to the
+"max_faults" check below.
+
+> > +	/* Update the tasks preferred node if necessary */
+> > +	if (max_faults && max_nid != p->numa_preferred_nid)
+> > +		p->numa_preferred_nid = max_nid;
+> >  }
+> >  
+
+-- 
+Mel Gorman
+SUSE Labs
