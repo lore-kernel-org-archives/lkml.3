@@ -1,94 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750914Ab3GKEVM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 00:21:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57791 "EHLO
+	id S1750982Ab3GKEZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 00:25:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57964 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab3GKEVL (ORCPT
+	with ESMTP id S1750765Ab3GKEZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 00:21:11 -0400
-Date: Wed, 10 Jul 2013 21:22:10 -0700
+	Thu, 11 Jul 2013 00:25:26 -0400
+Date: Wed, 10 Jul 2013 21:26:26 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Akhil Goyal <akhil.goyal@freescale.com>
-Cc: arnd@arndb.de, lars@metafoo.de, robin.getz@analog.com,
-        Michael.Hennerich@analog.com, lars-peter.clausen@analog.com,
-        linux-kernel@vger.kernel.org, pankaj.chauhan@freescale.com
-Subject: Re: [PATCH v2 0/4] Radio device framework
-Message-ID: <20130711042210.GA23660@kroah.com>
-References: <1373277002-14009-1-git-send-email-akhil.goyal@freescale.com>
- <51DE2DB5.60608@freescale.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>, Jan Beulich <JBeulich@suse.com>,
+        dt.tangr@gmail.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        robert.richter@calxeda.com,
+        "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>,
+        zzs0213@gmail.com,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] kbuild changes for v3.11-rc1
+Message-ID: <20130711042626.GA23875@kroah.com>
+References: <20130710133742.GA29368@emu.suse.cz>
+ <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51DE2DB5.60608@freescale.com>
+In-Reply-To: <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 09:29:49AM +0530, Akhil Goyal wrote:
-> On 7/8/2013 3:19 PM, akhil.goyal@freescale.com wrote:
-> >From: Akhil Goyal<akhil.goyal@freescale.com>
-> >
-> >RF signal path is integral part of any system that transmits/receives RF
-> >(radio frequency) signals. In these systems Data is processed/converted
-> >to IQ samples (digital representation a RF signal) and passed to a RFIC
-> >(RF PHY) which converts the digital RF signal (IQ samples) to analog and
-> >transmits over antenna.
-> >
-> >Typically The signal path consists of multiple components:
-> >
-> >Antenna controller<->  vector signal processors<->  RFIC<->  Antenna
-> >
-> >Each of these components have specific functionalities:
-> >
-> >1. Antenna controller: Framing of digital IQ data into protocol specific frames.
-> >2. vector signal processors: For conditioning of signal.
-> >3. RFIC : converts digital IQ data to analog signal which is transmitted/received on/from Air.
-> >
-> >Also it is desirable to control the complete signal path, for example:
-> >bringing the complete signal path up/down etc.
-> >
-> >The radio device framework introduces a way to accommodate the RF signal
-> >paths.  One signal path is represented as a RF device (rf0, rf1 etc), and
-> >it can contain multiple components which have their individual vendor
-> >specific drivers. The framework provides mechanism by which individual
-> >components can register with RF framework, and the framework will handle the binding
-> >of individual component devices to a RF device. RF device exports the control
-> >interfaces to user space, and this user space interface is independent of
-> >component (vendor specific) drivers.
-> >
-> >This patch set include
-> >1. RF Interface: Independent of phy or antenna controller.
-> >2. AIC driver: Antenna interface Controller(AIC) of Hetrogenous SOC's
-> >like BSC9131, BSC9132
-> >4. Device tree bindings for AIC.
-> >5. Device tree changes for BSC9131-AIC
-> >
-> >changes in v2:
-> >1. incorporated comments for handling pointers in user space API structures.
-> >2. Removed patches for AD9361 phy driver. It shall be sent once a proper
-> >driver is in place for AD9361 chip
-> >3. Removed Device tree nodes/bindings for AD9361
-> >4. Incorporated comments for proper handling of wait_events
-> >5. Added Documentation for IOCTL APIs and the structures used.
-> >6. Inserted paddings in user space structures.
-> >7. Reorganized code for rfdev.c to remove forward declaration and broke the
-> >rf_ioctl() function to handle local structures correctly.
-> >8. Corrected the error handling for mutex used.
-> >
+On Wed, Jul 10, 2013 at 07:11:53PM -0700, Linus Torvalds wrote:
+> Commit d2aae8477cd00325bb7c7c7e95be488088900c48 is broken. It causes
+> root to re-write "include/config/kernel.release".
 > 
-> Hi Arnd/Greg,
+> There is no excuse for this. That commit is shit. There's no way in
+> hell that "make modules_install" should ever rebuild anything, so
+> adding that kind of dependency is fundamentally wrong and broken.
 > 
-> It has been 3-4 days for this patch set and there are no review
-> comments on these patches. Please suggest a way forward for the
-> patch set. I have incorporated all the review comments for v1.
+> And that totally crap commit is even marked for stable.
 
-We are thick in the middle of the merge window for 3.11-rc1 and have
-_no_ time for reviewing anything new, please give us a chance to catch
-up with our existing work before asking about new stuff that is not
-going to happen until 3.12 at the earliest.
-
-In sort, patience please.
+It's now dropped from my stable to-apply queue.
 
 greg k-h
