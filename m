@@ -1,165 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933147Ab3GKOa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:30:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43278 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933095Ab3GKO1K (ORCPT
+	id S933165Ab3GKOa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:30:59 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5857 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932911Ab3GKOa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:27:10 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 90/98] x86, efivars: firmware bug workarounds should be in platform code
-Date: Thu, 11 Jul 2013 15:25:00 +0100
-Message-Id: <1373552708-15235-91-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 11 Jul 2013 10:30:26 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=tbluxUFyrLkA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=kkAV0wLU1hcA:10 a=D19gQVrFAAAA:8 a=PTq3U4hPHSjgs63iyFoA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373553022.17876.11.camel@gandalf.local.home>
+Subject: Re: [RFC][PATCH RT 6/6] vtime: Convert vtime_seqlock into
+ raw_spinlock_t and seqcount combo
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <clark.williams@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 11 Jul 2013 10:30:22 -0400
+In-Reply-To: <20130710171212.GA13553@windriver.com>
+References: <20130626192806.107564905@goodmis.org>
+	 <20130626193050.529670718@goodmis.org>
+	 <20130710171212.GA13553@windriver.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.17 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2013-07-10 at 13:12 -0400, Paul Gortmaker wrote:
+> [[RFC][PATCH RT 6/6] vtime: Convert vtime_seqlock into raw_spinlock_t and seqcount combo] On 26/06/2013 (Wed 15:28) Steven Rostedt wrote:
+> 
+> > The vtime seqlock needs to be taken in true interrupt context on -rt.
+> > The normal seqlocks are converted to mutexes when PREEMPT_RT_FULL is
+> > enabled, which will break the vtime code as the calls are done from
+> > interrupt context.
+> > 
+> > Convert the vtime seqlock into the raw_spinlock_t and seqcount combo
+> > that can be done in interrupt context.
+> 
+> Alternatively, we could revive the raw seqlock patch from Thomas?
+> 
+> https://lkml.org/lkml/2010/2/17/238
+> 
+> Below is a version updating it to 3.8.x-RT.  One downside is that
+> current mainline kernels have raw_seqcount_begin() function, which has
+> nothing to do with preempt-rt, so the seqcount function namespace can
+> get confusing unless we rename raw_seqcount_begin to something that
+> doesn't sound RT-ish.
 
-------------------
+There's a reason that Thomas didn't bring that patch forward, but I
+don't recall what it was.
 
-From: Matt Fleming <matt.fleming@intel.com>
+Thomas?
 
-commit a6e4d5a03e9e3587e88aba687d8f225f4f04c792 upstream.
+-- Steve
 
-Let's not burden ia64 with checks in the common efivars code that we're not
-writing too much data to the variable store. That kind of thing is an x86
-firmware bug, plain and simple.
-
-efi_query_variable_store() provides platforms with a wrapper in which they can
-perform checks and workarounds for EFI variable storage bugs.
-
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-[ luis: backported to 3.5: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/x86/platform/efi/efi.c | 25 +++++++++++++++++++++++++
- drivers/firmware/efivars.c  | 19 ++++---------------
- include/linux/efi.h         |  9 ++++++++-
- 3 files changed, 37 insertions(+), 16 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 1e40637..8bb9f83 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -964,3 +964,28 @@ u64 efi_mem_attributes(unsigned long phys_addr)
- 	}
- 	return 0;
- }
-+
-+/*
-+ * Some firmware has serious problems when using more than 50% of the EFI
-+ * variable store, i.e. it triggers bugs that can brick machines. Ensure that
-+ * we never use more than this safe limit.
-+ *
-+ * Return EFI_SUCCESS if it is safe to write 'size' bytes to the variable
-+ * store.
-+ */
-+efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
-+{
-+	efi_status_t status;
-+	u64 storage_size, remaining_size, max_size;
-+
-+	status = efi.query_variable_info(attributes, &storage_size,
-+					 &remaining_size, &max_size);
-+	if (status != EFI_SUCCESS)
-+		return status;
-+
-+	if (!storage_size || size > remaining_size || size > max_size ||
-+	    (remaining_size - size) < (storage_size / 2))
-+		return EFI_OUT_OF_RESOURCES;
-+
-+	return EFI_SUCCESS;
-+}
-diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
-index d68ce4b..d7c3540 100644
---- a/drivers/firmware/efivars.c
-+++ b/drivers/firmware/efivars.c
-@@ -415,24 +415,12 @@ static efi_status_t
- check_var_size_locked(struct efivars *efivars, u32 attributes,
- 			unsigned long size)
- {
--	u64 storage_size, remaining_size, max_size;
--	efi_status_t status;
- 	const struct efivar_operations *fops = efivars->ops;
- 
--	if (!efivars->ops->query_variable_info)
-+	if (!efivars->ops->query_variable_store)
- 		return EFI_UNSUPPORTED;
- 
--	status = fops->query_variable_info(attributes, &storage_size,
--					   &remaining_size, &max_size);
--
--	if (status != EFI_SUCCESS)
--		return status;
--
--	if (!storage_size || size > remaining_size || size > max_size ||
--	    (remaining_size - size) < (storage_size / 2))
--		return EFI_OUT_OF_RESOURCES;
--
--	return status;
-+	return fops->query_variable_store(attributes, size);
- }
- 
- static ssize_t
-@@ -1305,7 +1293,8 @@ efivars_init(void)
- 	ops.get_variable = efi.get_variable;
- 	ops.set_variable = efi.set_variable;
- 	ops.get_next_variable = efi.get_next_variable;
--	ops.query_variable_info = efi.query_variable_info;
-+	ops.query_variable_store = efi_query_variable_store;
-+
- 	error = register_efivars(&__efivars, &ops, efi_kobj);
- 	if (error)
- 		goto err_put;
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 260b2c5..6cf4a63 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -262,6 +262,7 @@ typedef efi_status_t efi_query_capsule_caps_t(efi_capsule_header_t **capsules,
- 					      unsigned long count,
- 					      u64 *max_size,
- 					      int *reset_type);
-+typedef efi_status_t efi_query_variable_store_t(u32 attributes, unsigned long size);
- 
- /*
-  *  EFI Configuration Table and GUID definitions
-@@ -503,8 +504,14 @@ extern void efi_gettimeofday (struct timespec *ts);
- extern void efi_enter_virtual_mode (void);	/* switch EFI to virtual mode, if possible */
- #ifdef CONFIG_X86
- extern void efi_free_boot_services(void);
-+extern efi_status_t efi_query_variable_store(u32 attributes, unsigned long size);
- #else
- static inline void efi_free_boot_services(void) {}
-+
-+static inline efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
-+{
-+	return EFI_SUCCESS;
-+}
- #endif
- extern u64 efi_get_iobase (void);
- extern u32 efi_mem_type (unsigned long phys_addr);
-@@ -657,7 +664,7 @@ struct efivar_operations {
- 	efi_get_variable_t *get_variable;
- 	efi_get_next_variable_t *get_next_variable;
- 	efi_set_variable_t *set_variable;
--	efi_query_variable_info_t *query_variable_info;
-+	efi_query_variable_store_t *query_variable_store;
- };
- 
- struct efivars {
--- 
-1.8.1.2
 
