@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756749Ab3GKX7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 19:59:01 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39016 "EHLO hydra.sisk.pl"
+	id S1756959Ab3GKX7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 19:59:18 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:39087 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab3GKX6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 19:58:55 -0400
+	id S1756854Ab3GKX7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 19:59:11 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
         Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
         Jiang Liu <liuj97@gmail.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC][PATCH 21/30] ACPI / hotplug / PCI: Consolidate slot disabling and ejecting
-Date: Fri, 12 Jul 2013 01:59:55 +0200
-Message-ID: <31949614.9GWyx1vXud@vostro.rjw.lan>
+Subject: [RFC][PATCH 0/30] ACPI / hotplug / PCI: Major rework + Thunderbolt workarounds
+Date: Fri, 12 Jul 2013 01:34:20 +0200
+Message-ID: <3718119.FLASu5DBx8@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3718119.FLASu5DBx8@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan>
+In-Reply-To: <26431283.HJCKsss0rt@vostro.rjw.lan>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,173 +25,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Hi,
 
-Both acpiphp_disable_slot() and acpiphp_eject_slot() are always
-called together so instead of calling each separately we can
-consolidate them into one function acpiphp_disable_and_eject_slot()
-that does both (but it will return success on _EJ0 failures that
-were ignored in the majority of call sites anyway).
+I've made some progress with my ACPIPHP rework since I posted the series last
+time and here goes an update.
 
-[rjw: Rebased plus minor tweaks]
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/pci/hotplug/acpiphp.h      |    3 -
- drivers/pci/hotplug/acpiphp_core.c |    6 ---
- drivers/pci/hotplug/acpiphp_glue.c |   74 +++++++++++++++----------------------
- 3 files changed, 33 insertions(+), 50 deletions(-)
+First off, the previous series was somewhat racy, which should be fixed now.
+Apart from this there's quite some new material on top of the patches I posted
+last time (or rather on top of their new versions) and I integrated the
+Thunderbolt series from Mika with that.  As a result,
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -186,8 +186,7 @@ void acpiphp_unregister_hotplug_slot(str
- typedef int (*acpiphp_callback)(struct acpiphp_slot *slot, void *data);
- 
- int acpiphp_enable_slot(struct acpiphp_slot *slot);
--int acpiphp_disable_slot(struct acpiphp_slot *slot);
--int acpiphp_eject_slot(struct acpiphp_slot *slot);
-+int acpiphp_disable_and_eject_slot(struct acpiphp_slot *slot);
- u8 acpiphp_get_power_status(struct acpiphp_slot *slot);
- u8 acpiphp_get_attention_status(struct acpiphp_slot *slot);
- u8 acpiphp_get_latch_status(struct acpiphp_slot *slot);
-Index: linux-pm/drivers/pci/hotplug/acpiphp_core.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_core.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_core.c
-@@ -155,15 +155,11 @@ static int enable_slot(struct hotplug_sl
- static int disable_slot(struct hotplug_slot *hotplug_slot)
- {
- 	struct slot *slot = hotplug_slot->private;
--	int retval;
- 
- 	dbg("%s - physical_slot = %s\n", __func__, slot_name(slot));
- 
- 	/* disable the specified slot */
--	retval = acpiphp_disable_slot(slot->acpi_slot);
--	if (!retval)
--		retval = acpiphp_eject_slot(slot->acpi_slot);
--	return retval;
-+	return acpiphp_disable_and_eject_slot(slot->acpi_slot);
- }
- 
- 
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -777,38 +777,6 @@ static unsigned int get_slot_status(stru
- }
- 
- /**
-- * acpiphp_eject_slot - physically eject the slot
-- * @slot: ACPI PHP slot
-- */
--int acpiphp_eject_slot(struct acpiphp_slot *slot)
--{
--	acpi_status status;
--	struct acpiphp_func *func;
--	struct acpi_object_list arg_list;
--	union acpi_object arg;
--
--	list_for_each_entry(func, &slot->funcs, sibling) {
--		/* We don't want to call _EJ0 on non-existing functions. */
--		if ((func->flags & FUNC_HAS_EJ0)) {
--			/* _EJ0 method take one argument */
--			arg_list.count = 1;
--			arg_list.pointer = &arg;
--			arg.type = ACPI_TYPE_INTEGER;
--			arg.integer.value = 1;
--
--			status = acpi_evaluate_object(func_to_handle(func),
--						      "_EJ0", &arg_list, NULL);
--			if (ACPI_FAILURE(status)) {
--				warn("%s: _EJ0 failed\n", __func__);
--				return -1;
--			} else
--				break;
--		}
--	}
--	return 0;
--}
--
--/**
-  * acpiphp_check_bridge - re-enumerate devices
-  * @bridge: where to begin re-enumeration
-  *
-@@ -828,13 +796,11 @@ static int acpiphp_check_bridge(struct a
- 		if (slot->flags & SLOT_ENABLED) {
- 			if (status == ACPI_STA_ALL)
- 				continue;
--			retval = acpiphp_disable_slot(slot);
--			if (retval) {
--				err("Error occurred in disabling\n");
-+
-+			retval = acpiphp_disable_and_eject_slot(slot);
-+			if (retval)
- 				goto err_exit;
--			} else {
--				acpiphp_eject_slot(slot);
--			}
-+
- 			disabled++;
- 		} else {
- 			if (status != ACPI_STA_ALL)
-@@ -974,9 +940,7 @@ static void hotplug_event(acpi_handle ha
- 	case ACPI_NOTIFY_EJECT_REQUEST:
- 		/* request device eject */
- 		dbg("%s: Device eject notify on %s\n", __func__, objname);
--		if (!(acpiphp_disable_slot(func->slot)))
--			acpiphp_eject_slot(func->slot);
--
-+		acpiphp_disable_and_eject_slot(func->slot);
- 		break;
- 
- 	case ACPI_NOTIFY_FREQUENCY_MISMATCH:
-@@ -1171,11 +1135,14 @@ int acpiphp_enable_slot(struct acpiphp_s
- }
- 
- /**
-- * acpiphp_disable_slot - power off slot
-+ * acpiphp_disable_and_eject_slot - power off and eject slot
-  * @slot: ACPI PHP slot
-  */
--int acpiphp_disable_slot(struct acpiphp_slot *slot)
-+int acpiphp_disable_and_eject_slot(struct acpiphp_slot *slot)
- {
-+	struct acpiphp_func *func;
-+	struct acpi_object_list arg_list;
-+	union acpi_object arg;
- 	int retval = 0;
- 
- 	mutex_lock(&slot->crit_sect);
-@@ -1190,6 +1157,27 @@ int acpiphp_disable_slot(struct acpiphp_
- 	if (retval)
- 		goto err_exit;
- 
-+	list_for_each_entry(func, &slot->funcs, sibling) {
-+		/* We don't want to call _EJ0 on non-existing functions. */
-+		if (func->flags & FUNC_HAS_EJ0) {
-+			acpi_handle handle = func_to_handle(func);
-+			acpi_status status;
-+
-+			/* _EJ0 method take one argument */
-+			arg_list.count = 1;
-+			arg_list.pointer = &arg;
-+			arg.type = ACPI_TYPE_INTEGER;
-+			arg.integer.value = 1;
-+
-+			status = acpi_evaluate_object(handle, "_EJ0", &arg_list,
-+						      NULL);
-+			if (ACPI_FAILURE(status))
-+				acpi_handle_err(handle, "_EJ0 failed\n");
-+
-+			break;
-+		}
-+	}
-+
-  err_exit:
- 	mutex_unlock(&slot->crit_sect);
- 	return retval;
+https://patchwork.kernel.org/patch/2817341/
 
+is required to be applied.
+
+Still untested, still based on 3.10 with ACPI+PM 3.11 material merged on top,
+but this time I don't have any plans to add more patches to the series for the
+time being.  Also 3.11-rc1 should be out in a couple of days, so I'll be able
+to integrate this work with the previous cleanups series from Gerry and myself
+on top of it.
+
+I did my best not to change too much at a time and some steps add stuff that
+is removed by the subsequent ones, so hopefully it is bisectable.
+
+If anyone finds something questionable or outright bogus in these patches,
+please let me know before it's too late. ;-)
+
+[ 1/30] Make bus registration and unregistration symmetric.  [Resend]
+[ 2/30] Consolidate acpiphp_enumerate_slots().  [Resend]
+[ 3/30] Fix error code path in register_slot().  [Resend]
+[ 4/30] Introduce hotplug context objects for ACPI device objects corresponding
+        to PCI hotplug devices.  [Update]
+[ 5/30] Unified notify handler for hotplug events.  [Update]
+[ 6/30] Drop acpiphp_handle_to_bridge() and use context objects instead of it.  [Update]
+[ 7/30] Pass entire hotplug context objects (instead of their fields
+        individually) to event handling work functions.  [Update]
+[ 8/30] Merge hotplug event handling functions.  [Update]
+[ 9/30] Drop func field from struct acpiphp_bridge.
+[10/30] Refactor slot allocation code in register_slot().
+[11/30] Make acpiphp_enumerate_slots() to register all devices on the given bus
+        and install the notification handler for all of them.
+[12/30] Drop sun field from struct acpiphp_slot.
+[13/30] Use common slot count variable in register_slot().
+[14/30] Drop flags field from struct acpiphp_bridge.
+[15/30] Embed function structure into struct acpiphp_context.
+[16/30] Drop handle field from struct acpiphp_func.
+[17/30] Drop handle field from struct acpiphp_bridge.
+[18/30] Store parent bridge pointer in function objects and bus pointer in slot
+        objects.
+[19/30] Rework ACPI namespace scanning and trimming routines.
+[20/30] Drop redundant checks from check_hotplug_bridge().
+[21/30] Consolidate slot disabling and ejecting
+[22/30] Do not queue up event handling work items for non-hotplug events.
+[23/30] Do not execute _PS0 and _PS3 directly.
+[24/30] Do not check SLOT_ENABLED in enable_device().  [Thunderbolt series]
+[25/30] Allow slots without new devices to be rescanned.  [Thunderbolt series]
+[26/30] Check for new devices on enabled slots.  [Thunderbolt series, TBD]
+[27/30] Get rid of unused constands in acpiphp.h.  [Thunderbolt series]
+[28/30] Sanitize acpiphp_get_(latch)|(adapter)_status().  [Thunderbolt series]
+[29/30] Redefine enable_device() and disable_device() (rename and change to void).
+[30/30] Clean up the usage of bridge_mutex.
+
+Patch [26/30] seems to go over the top with dropping the non-responsive devices
+and it probaby needs some more thought.  Also the algorithm of bus checks and
+device checks may need to be improved in the future, but for the time being I
+think it is good enough.
+
+Comments welcome!
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
