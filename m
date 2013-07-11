@@ -1,71 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3GKF5O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 01:57:14 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:39128 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750841Ab3GKF5N (ORCPT
+	id S1755328Ab3GKGMH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 02:12:07 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57685 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab3GKGMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 01:57:13 -0400
-Date: Thu, 11 Jul 2013 07:57:00 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: rebase of the jdelvare-hwmon quilt series
-Message-ID: <20130711075700.21d8482c@endymion.delvare>
-In-Reply-To: <20130711102724.51608a4ace419b6d42591257@canb.auug.org.au>
-References: <20130711102724.51608a4ace419b6d42591257@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 02:12:05 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-71-51de4cb199ea
+Date: Thu, 11 Jul 2013 15:12:01 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: Dave Hansen <dave.hansen@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 1/5] mm, page_alloc: support multiple pages allocation
+Message-ID: <20130711061201.GA2400@lge.com>
+References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
+ <51DDE5BA.9020800@intel.com>
+ <20130711010248.GB7756@lge.com>
+ <51DE44CC.2070700@sr71.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51DE44CC.2070700@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Wed, Jul 10, 2013 at 10:38:20PM -0700, Dave Hansen wrote:
+> On 07/10/2013 06:02 PM, Joonsoo Kim wrote:
+> > On Wed, Jul 10, 2013 at 03:52:42PM -0700, Dave Hansen wrote:
+> >> On 07/03/2013 01:34 AM, Joonsoo Kim wrote:
+> >>> -		if (page)
+> >>> +		do {
+> >>> +			page = buffered_rmqueue(preferred_zone, zone, order,
+> >>> +							gfp_mask, migratetype);
+> >>> +			if (!page)
+> >>> +				break;
+> >>> +
+> >>> +			if (!nr_pages) {
+> >>> +				count++;
+> >>> +				break;
+> >>> +			}
+> >>> +
+> >>> +			pages[count++] = page;
+> >>> +			if (count >= *nr_pages)
+> >>> +				break;
+> >>> +
+> >>> +			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
+> >>> +			if (!zone_watermark_ok(zone, order, mark,
+> >>> +					classzone_idx, alloc_flags))
+> >>> +				break;
+> >>> +		} while (1);
+> >>
+> >> I'm really surprised this works as well as it does.  Calling
+> >> buffered_rmqueue() a bunch of times enables/disables interrupts a bunch
+> >> of times, and mucks with the percpu pages lists a whole bunch.
+> >> buffered_rmqueue() is really meant for _single_ pages, not to be called
+> >> a bunch of times in a row.
+> >>
+> >> Why not just do a single rmqueue_bulk() call?
+> > 
+> > rmqueue_bulk() needs a zone lock. If we allocate not so many pages,
+> > for example, 2 or 3 pages, it can have much more overhead rather than
+> > allocationg 1 page multiple times. So, IMHO, it is better that
+> > multiple pages allocation is supported on top of percpu pages list.
+> 
+> It makes _zero_ sense to be doing a number of buffered_rmqueue() calls
+> that are approaching the size of the percpu pages batches.  If you end
+> up doing that, you pay both the overhead in manipulating both the percpu
+> page data _and_ the buddy lists.
+> 
+> You're probably right for small numbers of pages.  But, if we're talking
+> about things that are more than, say, 100 pages (isn't the pcp batch
+> size clamped to 128 4k pages?) you surely don't want to be doing
+> buffered_rmqueue().
 
-On Thu, 11 Jul 2013 10:27:24 +1000, Stephen Rothwell wrote:
-> Why have you just rebased the jdelvare-hwmon series
-> (http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/)?  You have
-> just invalidated your testing and made it likely that Linus will blast
-> you if you ask him to pull your patches.  Your whole series was already
-> based after v3.10 (i.e. released or rebased after the merge window
-> opened), so why move it again?
+Yes, you are right.
+Firstly, I thought that I can use this for readahead. On my machine,
+readahead reads (maximum) 32 pages in advance if faulted. And batch size
+of percpu pages list is close to or larger than 32 pages
+on today's machine. So I didn't consider more than 32 pages before.
+But to cope with a request for more pages, using rmqueue_bulk() is
+a right way. How about using rmqueue_bulk() conditionally?
 
-I'm quite confused by this complaint of yours. I do not have the
-feeling that I rebased anything or invalidated any testing. And I don't
-think I did anything different this time from the way I have been
-proceeding for years.
+> 
+> I'd also like to see some scalability numbers on this.  How do your
+> tests look when all the CPUs on the system are hammering away?
 
-I had only 2 hwmon patches for Linus for this merge window:
-  hwmon-lm63-drop-redundant-safety.patch
-  hwmon-lm90-drop-redundant-safety.patch
+What test do you mean?
+Please elaborate on this more.
 
-They have been in
-http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/ (and thus in
-linux-next) continuously since May 19th so I'd say they received pretty
-good testing. I did not touch them, I did not even have to refresh them.
+> > And I think that enables/disables interrupts a bunch of times help
+> > to avoid a latency problem. If we disable interrupts until the whole works
+> > is finished, interrupts can be handled too lately.
+> > free_hot_cold_page_list() already do enables/disalbed interrupts a bunch of
+> > times.
+> 
+> I don't think interrupt latency is going to be a problem on the scale
+> we're talking about here.  There are much, much, much worse offenders in
+> the kernel.
 
-3 days ago I added these 2 patches to the hwmon-for-linus branch of my
-staging tree:
-http://git.kernel.org/cgit/linux/kernel/git/jdelvare/staging.git/log/?h=hwmon-for-linus
-and asked Linux to pull from it.
+Hmm, rmqueue_bulk() doesn't stop until all requested pages are allocated.
+If we request too many pages (1024 pages or more), interrupt latency can
+be a problem.
 
-Yesterday I reviewed a new (trivial) hwmon patch, and I accepted it, so
-it was added to http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/ as 
-hwmon-w83792d-update-module-author.patch (and thus went to linux-next.)
+Thanks!!
 
-Last night Linus pulled from
-http://git.kernel.org/cgit/linux/kernel/git/jdelvare/staging.git/log/?h=hwmon-for-linus
-so the 2 "old" patches are now merged upstream. The one "new" patch
-is not, it will get upstream next time I ask Linus to pull from my
-staging tree.
-
-This is how things have happened, and I just can't see anything wrong.
-If you do, please explain what you thing shouldn't have happened, and
-let me know what I should have done instead.
-
-Thanks,
--- 
-Jean Delvare
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
