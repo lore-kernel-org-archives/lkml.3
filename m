@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab3GKWUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:20:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43330 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757206Ab3GKWUm (ORCPT
+	id S1757293Ab3GKWVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:21:38 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:40038 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757261Ab3GKWUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:20:42 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 4/8] block: do not pass disk names as format strings
-Date: Thu, 11 Jul 2013 15:20:33 -0700
-Message-Id: <20130711221931.742325385@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130711221931.216612791@linuxfoundation.org>
-References: <20130711221931.216612791@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 11 Jul 2013 18:20:49 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 8/8] cpufreq: Perform light-weight init/teardown during
+ suspend/resume
+To: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com
+Cc: stern@rowland.harvard.edu,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Jul 2013 03:47:19 +0530
+Message-ID: <20130711221717.547.54461.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071122-1618-0000-0000-0000043FF8A9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Now that we have the infrastructure to perform a light-weight init/tear-down,
+use that in the cpufreq CPU hotplug notifier when invoked from the
+suspend/resume path.
 
-------------------
+This also ensures that the file permissions of the cpufreq sysfs files are
+preserved across suspend/resume, something which commit a66b2e (cpufreq:
+Preserve sysfs files across suspend/resume) originally intended to do, but
+had to be reverted due to other problems.
 
-From: Kees Cook <keescook@chromium.org>
-
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
-
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
-
-CVE-2013-2851
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- block/genhd.c              |    2 +-
- drivers/block/nbd.c        |    3 ++-
- drivers/scsi/osd/osd_uld.c |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -518,7 +518,7 @@ void register_disk(struct gendisk *disk)
- 
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -658,7 +658,8 @@ static int __nbd_ioctl(struct block_devi
- 
- 		mutex_unlock(&lo->tx_lock);
- 
--		thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
-+		thread = kthread_create(nbd_thread, lo, "%s",
-+					lo->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&lo->tx_lock);
- 			return PTR_ERR(thread);
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -465,7 +465,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
+ drivers/cpufreq/cpufreq.c       |   18 +++++++++++-------
+ drivers/cpufreq/cpufreq_stats.c |    2 --
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 15ced5f..c7f59e8 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -2030,22 +2030,26 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+ {
+ 	unsigned int cpu = (unsigned long)hcpu;
+ 	struct device *dev;
++	bool frozen = false;
+ 
+ 	dev = get_cpu_device(cpu);
+ 	if (dev) {
+-		switch (action) {
++
++		if (action & CPU_TASKS_FROZEN)
++			frozen = true;
++
++		switch (action & ~CPU_TASKS_FROZEN) {
+ 		case CPU_ONLINE:
+-		case CPU_ONLINE_FROZEN:
+-			cpufreq_add_dev(dev, NULL);
++			__cpufreq_add_dev(dev, NULL, frozen);
+ 			cpufreq_update_policy(cpu);
+ 			break;
++
+ 		case CPU_DOWN_PREPARE:
+-		case CPU_DOWN_PREPARE_FROZEN:
+-			__cpufreq_remove_dev(dev, NULL, false);
++			__cpufreq_remove_dev(dev, NULL, frozen);
+ 			break;
++
+ 		case CPU_DOWN_FAILED:
+-		case CPU_DOWN_FAILED_FROZEN:
+-			cpufreq_add_dev(dev, NULL);
++			__cpufreq_add_dev(dev, NULL, frozen);
+ 			break;
+ 		}
+ 	}
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index a3e7475..4e1eb3f 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -349,11 +349,9 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+ 
+ 	switch (action) {
+ 	case CPU_DOWN_PREPARE:
+-	case CPU_DOWN_PREPARE_FROZEN:
+ 		cpufreq_stats_free_sysfs(cpu);
+ 		break;
+ 	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+ 		cpufreq_stats_free_table(cpu);
+ 		break;
+ 	}
 
