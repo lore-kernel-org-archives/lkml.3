@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab3GKNRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:17:39 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:37998 "EHLO SMTP.CITRIX.COM"
+	id S1755470Ab3GKNTF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:19:05 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37844 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778Ab3GKNRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:17:38 -0400
-X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
-   d="scan'208";a="36374477"
-Message-ID: <51DEB070.3060106@citrix.com>
-Date: Thu, 11 Jul 2013 14:17:36 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1751868Ab3GKNTD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 09:19:03 -0400
+Date: Thu, 11 Jul 2013 15:18:45 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Konrad Vrba <konrad.vrba@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Error 2: No rule to make target kernel/timeconst.pl
+Message-ID: <20130711131845.GB8900@pd.tnic>
+References: <CAF2Nc0xVKS+aL0CXdDFQHSapvRxM35KZkjeKeigQ7X43+2NVBA@mail.gmail.com>
+ <20130711104307.GB28131@pd.tnic>
+ <CAF2Nc0xjxtWkpmurODWKNMCC9D+4Xf6gMnQAqAiec6zn4V0z3w@mail.gmail.com>
+ <20130711123548.GA8900@pd.tnic>
+ <CAF2Nc0ybnoQ7ZYoYzZNci4PaPnH5PA8--8-OBw4u0b3COT6tDQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Roger Pau Monne <roger.pau@citrix.com>
-CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH RFC 1/4] xen-gnt: prevent adding duplicate
- gnt	callbacks
-References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com> <1373288607-1876-2-git-send-email-roger.pau@citrix.com>
-In-Reply-To: <1373288607-1876-2-git-send-email-roger.pau@citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAF2Nc0ybnoQ7ZYoYzZNci4PaPnH5PA8--8-OBw4u0b3COT6tDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/13 14:03, Roger Pau Monne wrote:
-> With the current implementation, the callback in the tail of the list
-> can be added twice, because the check done in
-> gnttab_request_free_callback is bogus, callback->next can be NULL if
-> it is the last callback in the list. If we add the same callback twice
-> we end up with an infinite loop, were callback == callback->next.
-> 
-> Replace this check with a proper one that iterates over the list to
-> see if the callback has already been added.
-> 
-> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/grant-table.c |   13 +++++++++++--
->  1 files changed, 11 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 04c1b2d..d5418c1 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -729,9 +729,18 @@ void gnttab_request_free_callback(struct gnttab_free_callback *callback,
->  				  void (*fn)(void *), void *arg, u16 count)
->  {
->  	unsigned long flags;
-> +	struct gnttab_free_callback *cb;
-> +
->  	spin_lock_irqsave(&gnttab_list_lock, flags);
-> -	if (callback->next)
-> -		goto out;
-> +
-> +	/* Check if the callback is already on the list */
-> +	cb = gnttab_free_callback_list;
-> +	while (cb) {
-> +		if (cb == callback)
-> +			goto out;
-> +		cb = cb->next;
-> +	}
+On Thu, Jul 11, 2013 at 02:56:46PM +0200, Konrad Vrba wrote:
+> .config is attached
 
-O(N)?
+Your config builds just fine here.
 
-Suggest using the standard list infrastructure, or using something other
-than NULL for the end of the list (e.g., gnttab_free_callback_list).
+And you must be having some garbage lying around because 3.10 doesn't
+have timeconst.pl:
 
-gnttab_request_free_callback() is also putting the callbacks in the
-wrong order -- it should be FIFO not LIFO.  Might be nice to fix this as
-well.
+$ git describe
+v3.10
+$ git ls-files | grep timeconst
+kernel/timeconst.bc
 
-David
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
