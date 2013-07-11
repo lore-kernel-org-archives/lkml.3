@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab3GKWFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:05:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43065 "EHLO
+	id S1756824Ab3GKWFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:05:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43061 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756449Ab3GKWBp (ORCPT
+	with ESMTP id S1756364Ab3GKWBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:45 -0400
+	Thu, 11 Jul 2013 18:01:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 08/19] block: do not pass disk names as format strings
-Date: Thu, 11 Jul 2013 15:01:25 -0700
-Message-Id: <20130711214831.597538494@linuxfoundation.org>
+Subject: [ 07/19] hpfs: better test for errors
+Date: Thu, 11 Jul 2013 15:01:24 -0700
+Message-Id: <20130711214831.496678832@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
 References: <20130711214830.611455274@linuxfoundation.org>
@@ -28,62 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
+commit 3ebacb05044f82c5f0bb456a894eb9dc57d0ed90 upstream.
 
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
+The test if bitmap access is out of bound could errorneously pass if the
+device size is divisible by 16384 sectors and we are asking for one bitmap
+after the end.
 
-CVE-2013-2851
+Check for invalid size in the superblock. Invalid size could cause integer
+overflows in the rest of the code.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c              |    2 +-
- drivers/block/nbd.c        |    3 ++-
- drivers/scsi/osd/osd_uld.c |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ fs/hpfs/map.c   |    3 ++-
+ fs/hpfs/super.c |    8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -512,7 +512,7 @@ static void register_disk(struct gendisk
- 
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -714,7 +714,8 @@ static int __nbd_ioctl(struct block_devi
- 		else
- 			blk_queue_flush(nbd->disk->queue, 0);
- 
--		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
-+		thread = kthread_create(nbd_thread, nbd, "%s",
-+					nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
- 			return PTR_ERR(thread);
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -485,7 +485,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
+--- a/fs/hpfs/map.c
++++ b/fs/hpfs/map.c
+@@ -17,7 +17,8 @@ __le32 *hpfs_map_bitmap(struct super_blo
+ 			 struct quad_buffer_head *qbh, char *id)
+ {
+ 	secno sec;
+-	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
++	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
++	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
+ 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
+ 		return NULL;
+ 	}
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -558,7 +558,13 @@ static int hpfs_fill_super(struct super_
+ 	sbi->sb_cp_table = NULL;
+ 	sbi->sb_c_bitmap = -1;
+ 	sbi->sb_max_fwd_alloc = 0xffffff;
+-	
++
++	if (sbi->sb_fs_size >= 0x80000000) {
++		hpfs_error(s, "invalid size in superblock: %08x",
++			(unsigned)sbi->sb_fs_size);
++		goto bail4;
++	}
++
+ 	/* Load bitmap directory */
+ 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
+ 		goto bail4;
 
 
