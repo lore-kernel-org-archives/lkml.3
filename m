@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756580Ab3GKTVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 15:21:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59468 "EHLO mx2.suse.de"
+	id S1756561Ab3GKTXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 15:23:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59510 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756463Ab3GKTVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 15:21:16 -0400
-Date: Thu, 11 Jul 2013 21:21:14 +0200 (CEST)
+	id S1751610Ab3GKTXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 15:23:21 -0400
+Date: Thu, 11 Jul 2013 21:23:20 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Jason Baron <jbaron@akamai.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jason Baron <jbaron@akamai.com>, Borislav Petkov <bpetkov@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
- patching
-In-Reply-To: <1373561176.17876.44.camel@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1307112116360.29788@pobox.suse.cz>
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>  <51DDD3E9.6090601@linux.intel.com>  <alpine.LNX.2.00.1307111204000.29788@pobox.suse.cz>
-  <51DEDDEF.4060502@linux.intel.com> <1373561176.17876.44.camel@gandalf.local.home>
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mathieu.desnoyers@efficios.com
+Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based breakpoint
+ instead of stop_machine()
+In-Reply-To: <1373560944.17876.41.camel@gandalf.local.home>
+Message-ID: <alpine.LNX.2.00.1307112122020.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>  <51DDDFB3.3020004@akamai.com>  <alpine.LNX.2.00.1307110159490.25858@pobox.suse.cz> <1373560944.17876.41.camel@gandalf.local.home>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -28,27 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Thu, 11 Jul 2013, Steven Rostedt wrote:
 
-> > The current code assumes that one of the two code sequences is a NOP,
-> > and therefore that jumping over the region is legal.  This does not
-> > allow for transitioning one active code sequence to another.
+> On Thu, 2013-07-11 at 02:04 +0200, Jiri Kosina wrote:
 > 
-> Correct, and I think we should keep the two changes separate, as the NOP
-> case is trivial. No need to complicate the trivial and common updates
-> (jump_labels and ftrace). But for things like kprobes, we could do a bit
-> more complex code, but it should probably be separate.
+> > I even have preliminary (completely untested) patch, but would like to 
+> > have this merged/acked in the first round before proceeding with porting 
+> > ftrace to the new interface.
+> > 
+> > > Also, I wonder if its worth batching up updates. For example, right now 
+> > > we simply update each call-site one at a time even if its associated 
+> > > with the same control variable.
+> > 
+> > That does seem to make sense indeed, but it's not really closely tied to 
+> > this patchset, is it?
 > 
-> Perhaps call this text_poke_nop_bp()?
+> If you want to have ftrace use this interface, then we need to support
+> batch processing. And you will need to do it with an iterator as well.
+> We can not allocate 30,000 locations to run this on. Ftrace has its own
+> table, and uses the ftrace iterator to traverse it.
+> 
+> Thus you would need to do something like:
 
-Hmm ... I don't think this is exactly precise, at least as long as the 
-implementation in the patchset I have submitted is concerned.
+Yup, I have been looking at the ftrace implementation and came to this 
+conclusion; thanks for confirmation.
+That's exactly why I wanted to postpone converting ftrace before agreement 
+on text_poke_bp() is reached and jump labels are converted.
 
-Yes, most use cases (jump labels, perhaps ftrace) will simply be skipping 
-over the patched region, pretending that NOP has been there; but the 
-handler provided to text_poke_bp() is completely free to do any other kind 
-of trickery.
-
-The one that jump label provides in PATCH 2/2 really just skips over the 
-region, yes. But the interface potentially allows for more.
+Thanks,
 
 -- 
 Jiri Kosina
