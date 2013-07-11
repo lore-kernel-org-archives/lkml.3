@@ -1,90 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932568Ab3GKNyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:54:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47190 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755025Ab3GKNyw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:54:52 -0400
-Date: Thu, 11 Jul 2013 15:54:45 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Beulich <JBeulich@suse.com>, dt.tangr@gmail.com,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        robert.richter@calxeda.com,
-        "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>,
-        zzs0213@gmail.com,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] kbuild changes for v3.11-rc1
-Message-ID: <20130711135445.GA21500@sepie.suse.cz>
-References: <20130710133742.GA29368@emu.suse.cz>
- <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932482Ab3GKNyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:54:15 -0400
+Received: from jacques.telenet-ops.be ([195.130.132.50]:44922 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756104Ab3GKNyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 09:54:10 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH 2/6] usb: chipidea: USB_CHIPIDEA_UDC should depend on HAS_DMA
+Date: Thu, 11 Jul 2013 15:54:01 +0200
+Message-Id: <1373550845-14457-2-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373550845-14457-1-git-send-email-geert@linux-m68k.org>
+References: <1373550845-14457-1-git-send-email-geert@linux-m68k.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 07:11:53PM -0700, Linus Torvalds wrote:
-> You need to start being more careful. And I would seriously suggest
-> you start doing some explicit testing for this. You can do things like
-> "find . -user root", and if that shows a single file in the kernel
-> tree after a "make [modules_]install", then there's a problem.
+If NO_DMA=y:
 
-Good idea. I added this after the *install calls in my test script.
+drivers/built-in.o: In function `dma_set_coherent_mask':
+include/linux/dma-mapping.h:93: undefined reference to `dma_supported'
+drivers/built-in.o: In function `destroy_eps':
+drivers/usb/chipidea/udc.c:1598: undefined reference to `dma_pool_free'
+drivers/built-in.o: In function `free_pending_td':
+drivers/usb/chipidea/udc.c:540: undefined reference to `dma_pool_free'
+drivers/built-in.o: In function `add_td_to_list':
+drivers/usb/chipidea/udc.c:383: undefined reference to `dma_pool_alloc'
+drivers/built-in.o: In function `_ep_nuke':
+drivers/usb/chipidea/udc.c:639: undefined reference to `dma_pool_free'
+drivers/built-in.o: In function `udc_stop':
+drivers/usb/chipidea/udc.c:1855: undefined reference to `dma_pool_destroy'
+drivers/built-in.o: In function `init_eps':
+drivers/usb/chipidea/udc.c:1564: undefined reference to `dma_pool_alloc'
+drivers/built-in.o: In function `udc_start':
+drivers/usb/chipidea/udc.c:1766: undefined reference to `dma_pool_create'
+drivers/usb/chipidea/udc.c:1835: undefined reference to `dma_pool_destroy'
+drivers/usb/chipidea/udc.c:1837: undefined reference to `dma_pool_destroy'
+drivers/built-in.o: In function `ep_free_request':
+drivers/usb/chipidea/udc.c:1268: undefined reference to `dma_pool_free'
 
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/usb/chipidea/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Commit d2aae8477cd00325bb7c7c7e95be488088900c48 is broken. It causes
-> root to re-write "include/config/kernel.release".
-
-Yeah. It also reveals another bug that we rewrite the kernel.release
-file each time. This patch should fix it, but please do not apply it
-yet:
-
->From f522eef24216f229c82b6bbb55f326814db2bac0 Mon Sep 17 00:00:00 2001
-From: Michal Marek <mmarek@suse.cz>
-Date: Thu, 11 Jul 2013 15:34:51 +0200
-Subject: [PATCH] kbuild: Do not overwrite include/config/kernel.release
- needlessly
-
-Use filechk to detect if the content changed or not.
-
-diff --git a/Makefile b/Makefile
-index 4e3575c..3aa232f 100644
---- a/Makefile
-+++ b/Makefile
-@@ -794,10 +794,13 @@ PHONY += $(vmlinux-dirs)
- $(vmlinux-dirs): prepare scripts
- 	$(Q)$(MAKE) $(build)=$@
+diff --git a/drivers/usb/chipidea/Kconfig b/drivers/usb/chipidea/Kconfig
+index eb2aa2e..189dbc6 100644
+--- a/drivers/usb/chipidea/Kconfig
++++ b/drivers/usb/chipidea/Kconfig
+@@ -12,7 +12,7 @@ if USB_CHIPIDEA
  
-+define filechk_kernel.release
-+	echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))"
-+endef
-+
- # Store (new) KERNELRELEASE string in include/config/kernel.release
- include/config/kernel.release: include/config/auto.conf FORCE
--	$(Q)rm -f $@
--	$(Q)echo "$(KERNELVERSION)$$($(CONFIG_SHELL) $(srctree)/scripts/setlocalversion $(srctree))" > $@
-+	$(call filechk,kernel.release)
- 
- 
- # Things we need to do before we recursively start building the kernel
+ config USB_CHIPIDEA_UDC
+ 	bool "ChipIdea device controller"
+-	depends on USB_GADGET=y || USB_CHIPIDEA=m
++	depends on (USB_GADGET=y || USB_CHIPIDEA=m) && HAS_DMA
+ 	help
+ 	  Say Y here to enable device controller functionality of the
+ 	  ChipIdea driver.
+-- 
+1.7.9.5
 
-
-> There is no excuse for this. That commit is shit. There's no way in
-> hell that "make modules_install" should ever rebuild anything, so
-> adding that kind of dependency is fundamentally wrong and broken.
-
-We also run dozens of gcc checks during every make invocation, including
-make install or make help, so there is some room for improvement. But at
-least, these do not write to the source or object tree.
-
-Michal
