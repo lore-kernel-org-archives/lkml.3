@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab3GKC7a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 22:59:30 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14525 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab3GKC73 (ORCPT
+	id S1755533Ab3GKDDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 23:03:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57220 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab3GKDDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 22:59:29 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 10 Jul 2013 19:58:52 -0700
-Message-ID: <51DE219B.7000109@nvidia.com>
-Date: Thu, 11 Jul 2013 08:38:11 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kishon@ti.com" <kishon@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>
-Subject: Re: [PATCH V3] extcon: palmas: Option to disable ID/VBUS detection
- based on platform
-References: <1373448546-7531-1-git-send-email-ldewangan@nvidia.com> <51DE1B99.6090403@samsung.com>
-In-Reply-To: <51DE1B99.6090403@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Wed, 10 Jul 2013 23:03:04 -0400
+Date: Wed, 10 Jul 2013 20:03:37 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Glauber Costa <glommer@gmail.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-Id: <20130710200337.cd9a05d6.akpm@linux-foundation.org>
+In-Reply-To: <20130711022634.GZ3438@dastard>
+References: <20130701075005.GA28765@dhcp22.suse.cz>
+	<20130701081056.GA4072@dastard>
+	<20130702092200.GB16815@dhcp22.suse.cz>
+	<20130702121947.GE14996@dastard>
+	<20130702124427.GG16815@dhcp22.suse.cz>
+	<20130703112403.GP14996@dastard>
+	<20130704163643.GF7833@dhcp22.suse.cz>
+	<20130708125352.GC20149@dhcp22.suse.cz>
+	<20130710023138.GO3438@dastard>
+	<20130710080605.GC4437@dhcp22.suse.cz>
+	<20130711022634.GZ3438@dastard>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 July 2013 08:12 AM, Chanwoo Choi wrote:
-> Hi Laxman,
->
->>   static int palmas_usb_probe(struct platform_device *pdev)
->> @@ -137,20 +140,26 @@ static int palmas_usb_probe(struct platform_device *pdev)
->>   	struct palmas_usb *palmas_usb;
->>   	int status;
->>   
->> -	if (node && !pdata) {
->> -		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
->> -
->> -		if (!pdata)
->> -			return -ENOMEM;
->> +	palmas_usb = devm_kzalloc(&pdev->dev, sizeof(*palmas_usb), GFP_KERNEL);
->> +	if (!palmas_usb)
->> +		return -ENOMEM;
->>   
->> -		pdata->wakeup = of_property_read_bool(node, "ti,wakeup");
->> +	if (node && !pdata) {
->> +		palmas_usb->wakeup = of_property_read_bool(node, "ti,wakeup");
->> +		palmas_usb->enable_id_detection = of_property_read_bool(node,
->> +						"ti,enable-id-detection");
->> +		palmas_usb->enable_vbus_detection = of_property_read_bool(node,
->> +						"ti,enable-vbus-detection");
->> +	} else if (pdata) {
->> +		palmas_usb->wakeup = pdata->wakeup;
->> +		palmas_usb->enable_id_detection = true;
->> +		palmas_usb->enable_vbus_detection = true;
->>   	} else if (!pdata) {
->> -		return -EINVAL;
->> +		palmas_usb->wakeup = true;
->> +		palmas_usb->enable_id_detection = true;
->> +		palmas_usb->enable_vbus_detection = true;
->>   	}
-> I think we could modify it as following patch to remove duplicate line.
-> If you agree about below modification, I will apply your patch with following patch.
->
-I am fine with this and this looks simple and straight.
+On Thu, 11 Jul 2013 12:26:34 +1000 Dave Chinner <david@fromorbit.com> wrote:
 
-I have seen some patches/discussion from TI to remove the platform data 
-support at all and hence removing from here in future will be very simple.
+> > Just for reference. wait_on_page_writeback is issued only for memcg
+> > reclaim because there is no other throttling mechanism to prevent from
+> > too many dirty pages on the list, thus pre-mature OOM killer. See
+> > e62e384e9d (memcg: prevent OOM with too many dirty pages) for more
+> > details. The original patch relied on may_enter_fs but that check
+> > disappeared by later changes by c3b94f44fc (memcg: further prevent OOM
+> > with too many dirty pages).
+> 
+> Aye. That's the exact code I was looking at yesterday and wondering
+> "how the hell is waiting on page writeback valid in GFP_NOFS
+> context?". It seems that memcg reclaim is intentionally ignoring
+> GFP_NOFS to avoid OOM issues.  That's a memcg implementation problem,
+> not a filesystem or LRU infrastructure problem....
 
+Yup, c3b94f44fc shouldn't have done that.
 
+Throttling by waiting on a specific page is indeed prone to deadlocks
+and has a number of efficiency problems as well: if 1,000,000 pages
+came clean while you're waiting for *this* page to come clean, you're
+left looking pretty stupid.
 
+Hence congestion_wait(), which perhaps can save us here.  I'm not sure
+how the wait_on_page_writeback() got back in there - I must have been
+asleep at the time.
