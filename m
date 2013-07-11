@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab3GKW1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:27:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43259 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757019Ab3GKWT7 (ORCPT
+	id S1756252Ab3GKW1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:27:51 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:42459 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab3GKW1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:19:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 08/15] crypto: sanitize argument for format string
-Date: Thu, 11 Jul 2013 15:19:38 -0700
-Message-Id: <20130711221256.912646047@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130711221255.925669600@linuxfoundation.org>
-References: <20130711221255.925669600@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 11 Jul 2013 18:27:48 -0400
+Date: Thu, 11 Jul 2013 15:27:46 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Oleg Nesterov <oleg@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: mempolicy: turn vma_set_policy() into
+ vma_dup_policy()
+In-Reply-To: <20130711152006.de0900cfcd784f2833285ee4@linux-foundation.org>
+Message-ID: <alpine.DEB.2.02.1307111524400.2458@chino.kir.corp.google.com>
+References: <20130710170205.GA26425@redhat.com> <alpine.DEB.2.02.1307111509000.2458@chino.kir.corp.google.com> <20130711152006.de0900cfcd784f2833285ee4@linux-foundation.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 11 Jul 2013, Andrew Morton wrote:
 
-------------------
+> On Thu, 11 Jul 2013 15:13:03 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
+> 
+> > > +int vma_dup_policy(struct vm_area_struct *src, struct vm_area_struct *dst)
+> > > +{
+> > > +	struct mempolicy *pol = mpol_dup(vma_policy(src));
+> > > +
+> > > +	if (IS_ERR(pol))
+> > > +		return PTR_ERR(pol);
+> > 
+> > PTR_ERR() returns long, so vma_dup_policy() needs to return long.
+> 
+> hm, really?  vma_dup_policy() returns an errno and errnos have type "int".
+> 
+> Arguably it is PTR_ERR() which returns the wrong type...
+> 
 
-From: Kees Cook <keescook@chromium.org>
+PTR_ERR() may not imply IS_ERR(), which I believe Rusty is trying to fix 
+with his series that fixes up abuses of PTR_ERR().  But I agree that 
+vma_dup_policy() can return int because of the IS_ERR() check as written.  
 
-commit 1c8fca1d92e14859159a82b8a380d220139b7344 upstream.
-
-The template lookup interface does not provide a way to use format
-strings, so make sure that the interface cannot be abused accidentally.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- crypto/algapi.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
---- a/crypto/algapi.c
-+++ b/crypto/algapi.c
-@@ -495,7 +495,8 @@ static struct crypto_template *__crypto_
- 
- struct crypto_template *crypto_lookup_template(const char *name)
- {
--	return try_then_request_module(__crypto_lookup_template(name), name);
-+	return try_then_request_module(__crypto_lookup_template(name), "%s",
-+				       name);
- }
- EXPORT_SYMBOL_GPL(crypto_lookup_template);
- 
-
-
+For complete correctness there should probably be a build error if 
+MAX_ERRNO cannot fit in an int and then this should do 
+return (int)PTR_ERR(pol) to make it clear.
