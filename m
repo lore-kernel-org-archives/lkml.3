@@ -1,93 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492Ab3GKAgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:36:37 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56868 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755270Ab3GKAgf (ORCPT
+	id S1755478Ab3GKAgc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:36:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56631 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab3GKAg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:36:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgonAM/83VF5LD3k/2dsb2JhbABagwkygm2qfQKOVIUsBAGBDhd0giMBAQUyASMjEAgDDgoJJQ8FJQMhE4gODbdJFox6gQgugR0Hg3UDl1mBKoh4hymDIyo
-Date: Thu, 11 Jul 2013 10:36:29 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Yann Droneaud <ydroneaud@opteya.com>
-Cc: Ben Myers <bpm@sgi.com>, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 10/13] xfs: use get_unused_fd_flags(0) instead of
- get_unused_fd()
-Message-ID: <20130711003629.GS3438@dastard>
-References: <cover.1372777600.git.ydroneaud@opteya.com>
- <8d21b76c621dbfc59b2dbbfc933f96170835304d.1372777600.git.ydroneaud@opteya.com>
- <20130708224133.GA23250@sgi.com>
- <20130709205321.GV20932@sgi.com>
- <70a3a6971c3127226563e9538ae53bec@meuh.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <70a3a6971c3127226563e9538ae53bec@meuh.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 10 Jul 2013 20:36:29 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: oliver+list@schinagl.nl, linux@roeck-us.net, khali@linux-fr.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v2 6/7] driver core: Introduce device_create_groups
+Date: Wed, 10 Jul 2013 17:36:04 -0700
+Message-Id: <1373502965-1683-7-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
+References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
+ <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 12:00:57PM +0200, Yann Droneaud wrote:
-> Hi,
-> 
-> Le 09.07.2013 22:53, Ben Myers a écrit :
-> >On Mon, Jul 08, 2013 at 05:41:33PM -0500, Ben Myers wrote:
-> >>On Tue, Jul 02, 2013 at 06:39:34PM +0200, Yann Droneaud wrote:
-> 
-> >>> diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-> >>> index 5e99968..dc5b659 100644
-> >>> --- a/fs/xfs/xfs_ioctl.c
-> >>> +++ b/fs/xfs/xfs_ioctl.c
-> >>> @@ -248,7 +248,7 @@ xfs_open_by_handle(
-> >>>  		goto out_dput;
-> >>>  	}
-> >>>
-> >>> -	fd = get_unused_fd();
-> >>> +	fd = get_unused_fd_flags(0);
-> >>
-> >>O_CLOEXEC should be fine in this case.
-> >>
-> >>Reviewed-by: Ben Myers <bpm@sgi.com>
-> >
-> >Applied at git://oss.sgi.com/xfs/xfs.git.  Looks like I was wrong about
-> >O_CLOEXEC being ok here.  There may be applications which
-> >open_by_handle then
-> >fork/exec and expect to still be able to use that file descriptor.
-> >
-> 
-> OK, it's very important to not cause regression here.
-> 
-> For the record, xfs_open_by_handle() is not related to
-> open_by_handle_at() syscall.
-> 
-> It's an ioctl (XFS_IOC_OPEN_BY_HANDLE) which is used by xfsprogs's
-> libhandle
-> in functions open_by_fshandle() and open_by_handle().
-> 
-> http://sources.debian.net/src/xfsprogs/3.1.9/libhandle/handle.c?hl=284#L284
-> http://sources.debian.net/src/xfsprogs/3.1.9/libhandle/handle.c?hl=308#L308
-> 
-> According to codesearch.debian.org, libhandle's open_by_handle() is
-> only used
-> by xfsdump
-> 
-> http://sources.debian.net/src/xfsdump/3.1.1/restore/tree.c?hl=2534#L2534
-> 
-> So there's no many *known* users of this features ... but it's more
-> important
-> not to break *unknown* users of it.
+From: Guenter Roeck <linux@roeck-us.net>
 
-There are commercial products (i.e. proprietary, closed source) that
-use it. SGI has one (DMF) and there are a couple of other backup
-programs that have used it in the past, too.
+device_create_groups lets callers create devices as well as associated
+sysfs attributes with a single call. This avoids race conditions seen
+if sysfs attributes on new devices are created later.
 
-Cheers,
+[fixed up comment block placement and add checks for printk buffer
+formats - gregkh]
 
-Dave.
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/base/core.c    | 111 ++++++++++++++++++++++++++++++++++++-------------
+ include/linux/device.h |   5 +++
+ 2 files changed, 88 insertions(+), 28 deletions(-)
+
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index dc3ea23..a8aae18 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1667,34 +1667,11 @@ static void device_create_release(struct device *dev)
+ 	kfree(dev);
+ }
+ 
+-/**
+- * device_create_vargs - creates a device and registers it with sysfs
+- * @class: pointer to the struct class that this device should be registered to
+- * @parent: pointer to the parent struct device of this new device, if any
+- * @devt: the dev_t for the char device to be added
+- * @drvdata: the data to be added to the device for callbacks
+- * @fmt: string for the device's name
+- * @args: va_list for the device's name
+- *
+- * This function can be used by char device classes.  A struct device
+- * will be created in sysfs, registered to the specified class.
+- *
+- * A "dev" file will be created, showing the dev_t for the device, if
+- * the dev_t is not 0,0.
+- * If a pointer to a parent struct device is passed in, the newly created
+- * struct device will be a child of that device in sysfs.
+- * The pointer to the struct device will be returned from the call.
+- * Any further sysfs files that might be required can be created using this
+- * pointer.
+- *
+- * Returns &struct device pointer on success, or ERR_PTR() on error.
+- *
+- * Note: the struct class passed to this function must have previously
+- * been created with a call to class_create().
+- */
+-struct device *device_create_vargs(struct class *class, struct device *parent,
+-				   dev_t devt, void *drvdata, const char *fmt,
+-				   va_list args)
++static struct device *
++device_create_groups_vargs(struct class *class, struct device *parent,
++			   dev_t devt, void *drvdata,
++			   const struct attribute_group **groups,
++			   const char *fmt, va_list args)
+ {
+ 	struct device *dev = NULL;
+ 	int retval = -ENODEV;
+@@ -1711,6 +1688,7 @@ struct device *device_create_vargs(struct class *class, struct device *parent,
+ 	dev->devt = devt;
+ 	dev->class = class;
+ 	dev->parent = parent;
++	dev->groups = groups;
+ 	dev->release = device_create_release;
+ 	dev_set_drvdata(dev, drvdata);
+ 
+@@ -1728,6 +1706,39 @@ error:
+ 	put_device(dev);
+ 	return ERR_PTR(retval);
+ }
++
++/**
++ * device_create_vargs - creates a device and registers it with sysfs
++ * @class: pointer to the struct class that this device should be registered to
++ * @parent: pointer to the parent struct device of this new device, if any
++ * @devt: the dev_t for the char device to be added
++ * @drvdata: the data to be added to the device for callbacks
++ * @fmt: string for the device's name
++ * @args: va_list for the device's name
++ *
++ * This function can be used by char device classes.  A struct device
++ * will be created in sysfs, registered to the specified class.
++ *
++ * A "dev" file will be created, showing the dev_t for the device, if
++ * the dev_t is not 0,0.
++ * If a pointer to a parent struct device is passed in, the newly created
++ * struct device will be a child of that device in sysfs.
++ * The pointer to the struct device will be returned from the call.
++ * Any further sysfs files that might be required can be created using this
++ * pointer.
++ *
++ * Returns &struct device pointer on success, or ERR_PTR() on error.
++ *
++ * Note: the struct class passed to this function must have previously
++ * been created with a call to class_create().
++ */
++struct device *device_create_vargs(struct class *class, struct device *parent,
++				   dev_t devt, void *drvdata, const char *fmt,
++				   va_list args)
++{
++	return device_create_groups_vargs(class, parent, devt, drvdata, NULL,
++					  fmt, args);
++}
+ EXPORT_SYMBOL_GPL(device_create_vargs);
+ 
+ /**
+@@ -1767,6 +1778,50 @@ struct device *device_create(struct class *class, struct device *parent,
+ }
+ EXPORT_SYMBOL_GPL(device_create);
+ 
++/**
++ * device_create_with_groups - creates a device and registers it with sysfs
++ * @class: pointer to the struct class that this device should be registered to
++ * @parent: pointer to the parent struct device of this new device, if any
++ * @devt: the dev_t for the char device to be added
++ * @drvdata: the data to be added to the device for callbacks
++ * @groups: NULL-terminated list of attribute groups to be created
++ * @fmt: string for the device's name
++ *
++ * This function can be used by char device classes.  A struct device
++ * will be created in sysfs, registered to the specified class.
++ * Additional attributes specified in the groups parameter will also
++ * be created automatically.
++ *
++ * A "dev" file will be created, showing the dev_t for the device, if
++ * the dev_t is not 0,0.
++ * If a pointer to a parent struct device is passed in, the newly created
++ * struct device will be a child of that device in sysfs.
++ * The pointer to the struct device will be returned from the call.
++ * Any further sysfs files that might be required can be created using this
++ * pointer.
++ *
++ * Returns &struct device pointer on success, or ERR_PTR() on error.
++ *
++ * Note: the struct class passed to this function must have previously
++ * been created with a call to class_create().
++ */
++struct device *device_create_with_groups(struct class *class,
++					 struct device *parent, dev_t devt,
++					 void *drvdata,
++					 const struct attribute_group **groups,
++					 const char *fmt, ...)
++{
++	va_list vargs;
++	struct device *dev;
++
++	va_start(vargs, fmt);
++	dev = device_create_groups_vargs(class, parent, devt, drvdata, groups,
++					 fmt, vargs);
++	va_end(vargs);
++	return dev;
++}
++EXPORT_SYMBOL_GPL(device_create_with_groups);
++
+ static int __match_devt(struct device *dev, const void *data)
+ {
+ 	const dev_t *devt = data;
+diff --git a/include/linux/device.h b/include/linux/device.h
+index f207a8f..bd5931e 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -938,6 +938,11 @@ extern __printf(5, 6)
+ struct device *device_create(struct class *cls, struct device *parent,
+ 			     dev_t devt, void *drvdata,
+ 			     const char *fmt, ...);
++extern __printf(6, 7)
++struct device *device_create_with_groups(struct class *cls,
++			     struct device *parent, dev_t devt, void *drvdata,
++			     const struct attribute_group **groups,
++			     const char *fmt, ...);
+ extern void device_destroy(struct class *cls, dev_t devt);
+ 
+ /*
 -- 
-Dave Chinner
-david@fromorbit.com
+1.8.3.rc0.20.gb99dd2e
+
