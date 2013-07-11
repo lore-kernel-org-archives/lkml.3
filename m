@@ -1,104 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755772Ab3GKHjC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 03:39:02 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36658 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755602Ab3GKHjA convert rfc822-to-8bit (ORCPT
+	id S1755816Ab3GKHjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 03:39:40 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:26051 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755767Ab3GKHjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 03:39:00 -0400
-Date: Thu, 11 Jul 2013 09:38:58 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        rostedt@goodmis.org, John Kacur <jkacur@redhat.com>
-Subject: [ANNOUNCE] 3.8.13-rt14
-Message-ID: <20130711073858.GA3695@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 11 Jul 2013 03:39:39 -0400
+Date: Thu, 11 Jul 2013 09:39:28 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: rebase of the jdelvare-hwmon quilt series
+Message-ID: <20130711093928.24490f06@endymion.delvare>
+In-Reply-To: <20130711165343.f921e147403570508939f2df@canb.auug.org.au>
+References: <20130711102724.51608a4ace419b6d42591257@canb.auug.org.au>
+	<20130711075700.21d8482c@endymion.delvare>
+	<20130711165343.f921e147403570508939f2df@canb.auug.org.au>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear RT Folks,
+On Thu, 11 Jul 2013 16:53:43 +1000, Stephen Rothwell wrote:
+> On Thu, 11 Jul 2013 07:57:00 +0200 Jean Delvare <khali@linux-fr.org> wrote:
+> > On Thu, 11 Jul 2013 10:27:24 +1000, Stephen Rothwell wrote:
+> > > Why have you just rebased the jdelvare-hwmon series
+> > > (http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/)?  You have
+> > > just invalidated your testing and made it likely that Linus will blast
+> > > you if you ask him to pull your patches.  Your whole series was already
+> > > based after v3.10 (i.e. released or rebased after the merge window
+> > > opened), so why move it again?
+> > 
+> > I'm quite confused by this complaint of yours. I do not have the
+> > feeling that I rebased anything or invalidated any testing. And I don't
+> > think I did anything different this time from the way I have been
+> > proceeding for years.
+> 
+> Probably not, I guess I have been getting more sensitive lately.
+> However, you have changed the base of your quilt series.  This means that
+> you have included more changes from Linus' tree into your tree, thus any
+> testing you have done previously may be invalidated by those changes.
 
-I'm pleased to announce the 3.8.13-rt14 release.
+And then what? Linus will end up merging these patches into his
+up-to-date tree anyway. Me staying on an old tree is not going to help
+anything. I am precisely trying to stick to Linus' tree as much as
+possible, precisely to me sure that 1* merging my patches will be a
+trivial operation for Linus and 2* I can detect and fix any build or
+run-time issue before Linus merges my patches.
 
-changes since v3.8.13-rt13:
-- added a patch from Uwe Kleine-König to fix the UP breakage introduced by
-  the recent s/sbin spinlocks/raw_spin_lock/ change.
-- added a fix for a livelock of workqueue vs ata-piix. Found by Carsten
-  Emde, patch proposed by Thomas Gleixner.
+Isn't linux-next itself rebased on Linus's latest tree every day for
+exactly that reason?
 
-The delta patch against v3.8.13-rt13 is appended below and can be found here:
+> > I had only 2 hwmon patches for Linus for this merge window:
+> >   hwmon-lm63-drop-redundant-safety.patch
+> >   hwmon-lm90-drop-redundant-safety.patch
+> 
+> Yeah, sorry, but I was complaining to several people today.
+> 
+> > They have been in
+> > http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/ (and thus in
+> > linux-next) continuously since May 19th so I'd say they received pretty
+> > good testing. I did not touch them, I did not even have to refresh them.
+> 
+> Actually, those patches only hit linux-next on July 9 (my time), when the
+> were based on v3.10-6005-gd2b4a64.
 
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/incr/patch-3.8.13-rt13-rt14.patch.xz
+Hmm, that would mean I forgot to update my public series when I
+accepted them. That's embarrassing and I apologize for that, this
+should not happen. My tree is seeing so little change these days, it
+can stay for weeks without a change, so if I forget to export once, it
+can take long before the omission is repaired.
 
-The RT patch against 3.8.13 can be found here:
+> Then today you changed the base of
+> your series to v3.10-8587-g496322b and added another patch.
 
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patch-3.8.13-rt14.patch.xz
+Yes I did. I always do that.
 
-The split quilt queue is available at:
+> > 3 days ago I added these 2 patches to the hwmon-for-linus branch of my
+> > staging tree:
+> > http://git.kernel.org/cgit/linux/kernel/git/jdelvare/staging.git/log/?h=hwmon-for-linus
+> > and asked Linux to pull from it.
+> 
+> Which is probably when they hit linux-next.
 
-  https://www.kernel.org/pub/linux/kernel/projects/rt/3.8/patches-3.8.13-rt14.tar.xz
+I suppose so, yes. Updating my public patch series is a preliminary
+step to preparing my staging tree for Linus to pull from.
 
-Sebastian
+> > Yesterday I reviewed a new (trivial) hwmon patch, and I accepted it, so
+> > it was added to http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/ as 
+> > hwmon-w83792d-update-module-author.patch (and thus went to linux-next.)
+> 
+> And I have no problem with maintainers making judgement calls about
+> simple patches during the merge window.
 
-diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
-index ddfd46a..becd7a6 100644
---- a/include/linux/list_bl.h
-+++ b/include/linux/list_bl.h
-@@ -131,8 +131,10 @@ static inline void hlist_bl_lock(struct hlist_bl_head *b)
- 	bit_spin_lock(0, (unsigned long *)b);
- #else
- 	raw_spin_lock(&b->lock);
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- 	__set_bit(0, (unsigned long *)b);
- #endif
-+#endif
- }
- 
- static inline void hlist_bl_unlock(struct hlist_bl_head *b)
-@@ -140,7 +142,9 @@ static inline void hlist_bl_unlock(struct hlist_bl_head *b)
- #ifndef CONFIG_PREEMPT_RT_BASE
- 	__bit_spin_unlock(0, (unsigned long *)b);
- #else
-+#if defined(CONFIG_SMP) || defined(CONFIG_DEBUG_SPINLOCK)
- 	__clear_bit(0, (unsigned long *)b);
-+#endif
- 	raw_spin_unlock(&b->lock);
- #endif
- }
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 0d49ddf..99855b3 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -42,6 +42,7 @@
- #include <linux/lockdep.h>
- #include <linux/idr.h>
- #include <linux/locallock.h>
-+#include <linux/delay.h>
- 
- #include "workqueue_sched.h"
- 
-@@ -1157,7 +1158,7 @@ static int try_to_grab_pending(struct work_struct *work, bool is_dwork,
- 	local_unlock_irqrestore(pendingb_lock, *flags);
- 	if (work_is_canceling(work))
- 		return -ENOENT;
--	cpu_relax();
-+	cpu_chill();
- 	return -EAGAIN;
- }
- 
-diff --git a/localversion-rt b/localversion-rt
-index 9f7d0bd..08b3e75 100644
---- a/localversion-rt
-+++ b/localversion-rt
-@@ -1 +1 @@
---rt13
-+-rt14
+FWIW I would have accepted the patch even if it was not trivial and it
+would have gone in linux-next just the same. The only difference is
+whether I consider the patch for this merge window or only for the next.
+
+Is there a policy to not include new patches in linux-next during a
+merge window if the patch is for the next merge window? If so I wasn't
+aware of it. I always considered that the earlier a patch gets in
+linux-next, the better.
+
+> It all seems a bit trivial when we are talking about 2 patches, but it is
+> the process that is important.
+
+I'm fine respecting any process in place, but at this point I still do
+not understand how what I did is supposed to be wrong or problematic. I
+can't believe you are asking me to not rebase my quilt series on
+Linus's latest kernel tree every now and then, to make sure it still
+applies cleanly. This is exactly what quilt is good for.
+
+So please tell me exactly what you expect from me. Was I supposed to
+base my patches on v3.10 rather than following Linus's v3.11
+development tree until I sent my pull request? This would put the
+merging burden on his (and your) shoulders instead of mine, which seems
+wrong. And if so, what am I supposed to do after Linus has actually
+pulled my changes? What if I need to send a second round of patches
+during the merge window?
+
+Confused,
+-- 
+Jean Delvare
