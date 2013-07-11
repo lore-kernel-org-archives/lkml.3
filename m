@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab3GKWWM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:22:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43346 "EHLO
+	id S1757243Ab3GKWUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:20:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43327 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757251Ab3GKWUr (ORCPT
+	with ESMTP id S1757166Ab3GKWUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:20:47 -0400
+	Thu, 11 Jul 2013 18:20:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rick Macklem <rmacklem@uoguelph.ca>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 7/8] nfsd4: fix decoding of compounds across page boundaries
-Date: Thu, 11 Jul 2013 15:20:36 -0700
-Message-Id: <20130711221932.103555136@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 3/8] hpfs: better test for errors
+Date: Thu, 11 Jul 2013 15:20:32 -0700
+Message-Id: <20130711221931.634007547@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711221931.216612791@linuxfoundation.org>
 References: <20130711221931.216612791@linuxfoundation.org>
@@ -27,37 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit 247500820ebd02ad87525db5d9b199e5b66f6636 upstream.
+commit 3ebacb05044f82c5f0bb456a894eb9dc57d0ed90 upstream.
 
-A freebsd NFSv4.0 client was getting rare IO errors expanding a tarball.
-A network trace showed the server returning BAD_XDR on the final getattr
-of a getattr+write+getattr compound.  The final getattr started on a
-page boundary.
+The test if bitmap access is out of bound could errorneously pass if the
+device size is divisible by 16384 sectors and we are asking for one bitmap
+after the end.
 
-I believe the Linux client ignores errors on the post-write getattr, and
-that that's why we haven't seen this before.
+Check for invalid size in the superblock. Invalid size could cause integer
+overflows in the rest of the code.
 
-Reported-by: Rick Macklem <rmacklem@uoguelph.ca>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/hpfs/map.c   |    3 ++-
+ fs/hpfs/super.c |    8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -159,8 +159,8 @@ static __be32 *read_buf(struct nfsd4_com
- 	 */
- 	memcpy(p, argp->p, avail);
- 	/* step to next page */
--	argp->p = page_address(argp->pagelist[0]);
- 	argp->pagelist++;
-+	argp->p = page_address(argp->pagelist[0]);
- 	if (argp->pagelen < PAGE_SIZE) {
- 		argp->end = argp->p + (argp->pagelen>>2);
- 		argp->pagelen = 0;
+--- a/fs/hpfs/map.c
++++ b/fs/hpfs/map.c
+@@ -17,7 +17,8 @@ unsigned int *hpfs_map_bitmap(struct sup
+ 			 struct quad_buffer_head *qbh, char *id)
+ {
+ 	secno sec;
+-	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
++	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
++	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
+ 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
+ 		return NULL;
+ 	}
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -553,7 +553,13 @@ static int hpfs_fill_super(struct super_
+ 	sbi->sb_cp_table = NULL;
+ 	sbi->sb_c_bitmap = -1;
+ 	sbi->sb_max_fwd_alloc = 0xffffff;
+-	
++
++	if (sbi->sb_fs_size >= 0x80000000) {
++		hpfs_error(s, "invalid size in superblock: %08x",
++			(unsigned)sbi->sb_fs_size);
++		goto bail4;
++	}
++
+ 	/* Load bitmap directory */
+ 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
+ 		goto bail4;
 
 
