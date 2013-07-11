@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932828Ab3GKO0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:26:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42980 "EHLO
+	id S932901Ab3GKO0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:26:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43050 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932208Ab3GKO0C (ORCPT
+	with ESMTP id S932880Ab3GKO0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:02 -0400
+	Thu, 11 Jul 2013 10:26:17 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Florian Westphal <fw@strlen.de>, Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 35/98] block: do not pass disk names as format strings
-Date: Thu, 11 Jul 2013 15:24:05 +0100
-Message-Id: <1373552708-15235-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 48/98] netfilter: xt_TCPOPTSTRIP: don't use tcp_hdr()
+Date: Thu, 11 Jul 2013 15:24:18 +0100
+Message-Id: <1373552708-15235-49-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,69 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Pablo Neira Ayuso <pablo@netfilter.org>
 
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
+commit ed82c437320c48a4032492f4a55a7e2c934158b6 upstream.
 
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
+In (bc6bcb5 netfilter: xt_TCPOPTSTRIP: fix possible mangling beyond
+packet boundary), the use of tcp_hdr was introduced. However, we
+cannot assume that skb->transport_header is set for non-local packets.
 
-CVE-2013-2851
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.5: adjusted context ]
+Cc: Florian Westphal <fw@strlen.de>
+Reported-by: Phil Oester <kernel@linuxace.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- block/genhd.c              | 2 +-
- drivers/block/nbd.c        | 3 ++-
- drivers/scsi/osd/osd_uld.c | 2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ net/netfilter/xt_TCPOPTSTRIP.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 60108d9..d815a0f 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -518,7 +518,7 @@ static void register_disk(struct gendisk *disk)
+diff --git a/net/netfilter/xt_TCPOPTSTRIP.c b/net/netfilter/xt_TCPOPTSTRIP.c
+index 1eb1a44..b68fa19 100644
+--- a/net/netfilter/xt_TCPOPTSTRIP.c
++++ b/net/netfilter/xt_TCPOPTSTRIP.c
+@@ -48,11 +48,13 @@ tcpoptstrip_mangle_packet(struct sk_buff *skb,
+ 		return NF_DROP;
  
- 	ddev->parent = disk->driverfs_dev;
+ 	len = skb->len - tcphoff;
+-	if (len < (int)sizeof(struct tcphdr) ||
+-	    tcp_hdr(skb)->doff * 4 > len)
++	if (len < (int)sizeof(struct tcphdr))
+ 		return NF_DROP;
  
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
+ 	tcph = (struct tcphdr *)(skb_network_header(skb) + tcphoff);
++	if (tcph->doff * 4 > len)
++		return NF_DROP;
++
+ 	opt  = (u_int8_t *)tcph;
  
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 7f25e24..e1d49fc 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -675,7 +675,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
- 
- 		mutex_unlock(&nbd->tx_lock);
- 
--		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
-+		thread = kthread_create(nbd_thread, nbd, "%s",
-+					nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
- 			return PTR_ERR(thread);
-diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
-index d4ed9eb..caac1b2 100644
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -465,7 +465,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
+ 	/*
 -- 
 1.8.1.2
 
