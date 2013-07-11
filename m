@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab3GKOcs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:32:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43234 "EHLO
+	id S933136Ab3GKOdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:33:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43218 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933055Ab3GKO1A (ORCPT
+	with ESMTP id S932861Ab3GKO05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:27:00 -0400
+	Thu, 11 Jul 2013 10:26:57 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Julia Lemire <jlemire@matrox.com>, Dave Airlie <airlied@redhat.com>,
+Cc: Tyler Hicks <tyhicks@canonical.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 79/98] drm/mgag200: Added resolution and bandwidth limits for various G200e products.
-Date: Thu, 11 Jul 2013 15:24:49 +0100
-Message-Id: <1373552708-15235-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 81/98] libceph: Fix NULL pointer dereference in auth client code
+Date: Thu, 11 Jul 2013 15:24:51 +0100
+Message-Id: <1373552708-15235-82-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,154 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lemire <jlemire@matrox.com>
+From: Tyler Hicks <tyhicks@canonical.com>
 
-commit abbee6238775c6633a3779962e9e5b5cb9823749 upstream.
+commit 2cb33cac622afde897aa02d3dcd9fbba8bae839e upstream.
 
-At the larger resolutions, the g200e series sometimes struggles with
-maintaining a proper output.  Problems like flickering or black bands appearing
-on screen can occur.  In order to avoid this, limitations regarding resolutions
-and bandwidth have been added for the different variations of the g200e series.
-This code was ported from the old xorg mga driver.
+A malicious monitor can craft an auth reply message that could cause a
+NULL function pointer dereference in the client's kernel.
 
-Signed-off-by: Julia Lemire <jlemire@matrox.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+To prevent this, the auth_none protocol handler needs an empty
+ceph_auth_client_ops->build_request() function.
+
+CVE-2013-1059
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Chanam Park <chanam.park@hkpco.kr>
+Reviewed-by: Seth Arnold <seth.arnold@canonical.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/mgag200/mgag200_drv.h  |  3 +-
- drivers/gpu/drm/mgag200/mgag200_main.c |  2 +-
- drivers/gpu/drm/mgag200/mgag200_mode.c | 70 ++++++++++++++++++++++++++++++++--
- 3 files changed, 70 insertions(+), 5 deletions(-)
+ net/ceph/auth_none.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_drv.h b/drivers/gpu/drm/mgag200/mgag200_drv.h
-index aa2fa4d..01cc01b 100644
---- a/drivers/gpu/drm/mgag200/mgag200_drv.h
-+++ b/drivers/gpu/drm/mgag200/mgag200_drv.h
-@@ -200,7 +200,8 @@ struct mga_device {
- 		atomic_t validate_sequence;
- 	} ttm;
- 
--	u32 reg_1e24; /* SE model number */
-+	/* SE model number stored in reg 0x1e24 */
-+	u32 unique_rev_id;
- };
- 
- 
-diff --git a/drivers/gpu/drm/mgag200/mgag200_main.c b/drivers/gpu/drm/mgag200/mgag200_main.c
-index 636a81c..3663a11 100644
---- a/drivers/gpu/drm/mgag200/mgag200_main.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_main.c
-@@ -190,7 +190,7 @@ static int mgag200_device_init(struct drm_device *dev,
- 
- 	/* stash G200 SE model number for later use */
- 	if (IS_G200_SE(mdev))
--		mdev->reg_1e24 = RREG32(0x1e24);
-+		mdev->unique_rev_id = RREG32(0x1e24);
- 
- 	ret = mga_vram_init(mdev);
- 	if (ret) {
-diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
-index 6356ea1..f780f2c 100644
---- a/drivers/gpu/drm/mgag200/mgag200_mode.c
-+++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
-@@ -1016,7 +1016,7 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 
- 
- 	if (IS_G200_SE(mdev)) {
--		if (mdev->reg_1e24 >= 0x02) {
-+		if (mdev->unique_rev_id >= 0x02) {
- 			u8 hi_pri_lvl;
- 			u32 bpp;
- 			u32 mb;
-@@ -1046,7 +1046,7 @@ static int mga_crtc_mode_set(struct drm_crtc *crtc,
- 			WREG8(MGAREG_CRTCEXT_DATA, hi_pri_lvl);
- 		} else {
- 			WREG8(MGAREG_CRTCEXT_INDEX, 0x06);
--			if (mdev->reg_1e24 >= 0x01)
-+			if (mdev->unique_rev_id >= 0x01)
- 				WREG8(MGAREG_CRTCEXT_DATA, 0x03);
- 			else
- 				WREG8(MGAREG_CRTCEXT_DATA, 0x04);
-@@ -1420,6 +1420,32 @@ static int mga_vga_get_modes(struct drm_connector *connector)
- 	return ret;
+diff --git a/net/ceph/auth_none.c b/net/ceph/auth_none.c
+index 925ca58..8c93fa8 100644
+--- a/net/ceph/auth_none.c
++++ b/net/ceph/auth_none.c
+@@ -39,6 +39,11 @@ static int should_authenticate(struct ceph_auth_client *ac)
+ 	return xi->starting;
  }
  
-+static uint32_t mga_vga_calculate_mode_bandwidth(struct drm_display_mode *mode,
-+							int bits_per_pixel)
++static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
 +{
-+	uint32_t total_area, divisor;
-+	int64_t active_area, pixels_per_second, bandwidth;
-+	uint64_t bytes_per_pixel = (bits_per_pixel + 7) / 8;
-+
-+	divisor = 1024;
-+
-+	if (!mode->htotal || !mode->vtotal || !mode->clock)
-+		return 0;
-+
-+	active_area = mode->hdisplay * mode->vdisplay;
-+	total_area = mode->htotal * mode->vtotal;
-+
-+	pixels_per_second = active_area * mode->clock * 1000;
-+	do_div(pixels_per_second, total_area);
-+
-+	bandwidth = pixels_per_second * bytes_per_pixel * 100;
-+	do_div(bandwidth, divisor);
-+
-+	return (uint32_t)(bandwidth);
++	return 0;
 +}
 +
-+#define MODE_BANDWIDTH	MODE_BAD
-+
- static int mga_vga_mode_valid(struct drm_connector *connector,
- 				 struct drm_display_mode *mode)
- {
-@@ -1431,7 +1457,45 @@ static int mga_vga_mode_valid(struct drm_connector *connector,
- 	int bpp = 32;
- 	int i = 0;
- 
--	/* FIXME: Add bandwidth and g200se limitations */
-+	if (IS_G200_SE(mdev)) {
-+		if (mdev->unique_rev_id == 0x01) {
-+			if (mode->hdisplay > 1600)
-+				return MODE_VIRTUAL_X;
-+			if (mode->vdisplay > 1200)
-+				return MODE_VIRTUAL_Y;
-+			if (mga_vga_calculate_mode_bandwidth(mode, bpp)
-+				> (24400 * 1024))
-+				return MODE_BANDWIDTH;
-+		} else if (mdev->unique_rev_id >= 0x02) {
-+			if (mode->hdisplay > 1920)
-+				return MODE_VIRTUAL_X;
-+			if (mode->vdisplay > 1200)
-+				return MODE_VIRTUAL_Y;
-+			if (mga_vga_calculate_mode_bandwidth(mode, bpp)
-+				> (30100 * 1024))
-+				return MODE_BANDWIDTH;
-+		}
-+	} else if (mdev->type == G200_WB) {
-+		if (mode->hdisplay > 1280)
-+			return MODE_VIRTUAL_X;
-+		if (mode->vdisplay > 1024)
-+			return MODE_VIRTUAL_Y;
-+		if (mga_vga_calculate_mode_bandwidth(mode,
-+			bpp > (31877 * 1024)))
-+			return MODE_BANDWIDTH;
-+	} else if (mdev->type == G200_EV &&
-+		(mga_vga_calculate_mode_bandwidth(mode, bpp)
-+			> (32700 * 1024))) {
-+		return MODE_BANDWIDTH;
-+	} else if (mode->type == G200_EH &&
-+		(mga_vga_calculate_mode_bandwidth(mode, bpp)
-+			> (37500 * 1024))) {
-+		return MODE_BANDWIDTH;
-+	} else if (mode->type == G200_ER &&
-+		(mga_vga_calculate_mode_bandwidth(mode,
-+			bpp) > (55000 * 1024))) {
-+		return MODE_BANDWIDTH;
-+	}
- 
- 	if (mode->crtc_hdisplay > 2048 || mode->crtc_hsync_start > 4096 ||
- 	    mode->crtc_hsync_end > 4096 || mode->crtc_htotal > 4096 ||
+ /*
+  * the generic auth code decode the global_id, and we carry no actual
+  * authenticate state, so nothing happens here.
+@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops ceph_auth_none_ops = {
+ 	.destroy = destroy,
+ 	.is_authenticated = is_authenticated,
+ 	.should_authenticate = should_authenticate,
++	.build_request = build_request,
+ 	.handle_reply = handle_reply,
+ 	.create_authorizer = ceph_auth_none_create_authorizer,
+ 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
 -- 
 1.8.1.2
 
