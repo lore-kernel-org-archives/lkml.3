@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757302Ab3GKWUz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:20:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43311 "EHLO
+	id S1757287Ab3GKWUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:20:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43330 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757125Ab3GKWUj (ORCPT
+	with ESMTP id S1757206Ab3GKWUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:20:39 -0400
+	Thu, 11 Jul 2013 18:20:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 0/8] 3.0.86-stable review
-Date: Thu, 11 Jul 2013 15:20:29 -0700
-Message-Id: <20130711221931.216612791@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 4/8] block: do not pass disk names as format strings
+Date: Thu, 11 Jul 2013 15:20:33 -0700
+Message-Id: <20130711221931.742325385@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130711221931.216612791@linuxfoundation.org>
+References: <20130711221931.216612791@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.86 release.
-There are 8 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sat Jul 13 22:18:05 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.86-rc1.gz
-and the diffstat can be found below.
+From: Kees Cook <keescook@chromium.org>
 
-thanks,
+commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
 
-greg k-h
+Disk names may contain arbitrary strings, so they must not be
+interpreted as format strings.  It seems that only md allows arbitrary
+strings to be used for disk names, but this could allow for a local
+memory corruption from uid 0 into ring 0.
 
--------------
-Pseudo-Shortlog of commits:
+CVE-2013-2851
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.86-rc1
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Ben Hutchings <ben@decadent.org.uk>
-    SCSI: sd: Fix parsing of 'temporary ' cache mode prefix
+---
+ block/genhd.c              |    2 +-
+ drivers/block/nbd.c        |    3 ++-
+ drivers/scsi/osd/osd_uld.c |    2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
-J. Bruce Fields <bfields@redhat.com>
-    nfsd4: fix decoding of compounds across page boundaries
-
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
-
-Kees Cook <keescook@chromium.org>
-    crypto: sanitize argument for format string
-
-Kees Cook <keescook@chromium.org>
-    block: do not pass disk names as format strings
-
-Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-    hpfs: better test for errors
-
-Jonathan Salwan <jonathan.salwan@gmail.com>
-    drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-
-Tyler Hicks <tyhicks@canonical.com>
-    libceph: Fix NULL pointer dereference in auth client code
-
-
--------------
-
-Diffstat:
-
- MAINTAINERS                | 1 +
- Makefile                   | 4 ++--
- block/genhd.c              | 2 +-
- crypto/algapi.c            | 3 ++-
- drivers/block/nbd.c        | 3 ++-
- drivers/cdrom/cdrom.c      | 2 +-
- drivers/scsi/osd/osd_uld.c | 2 +-
- drivers/scsi/sd.c          | 2 +-
- fs/hpfs/map.c              | 3 ++-
- fs/hpfs/super.c            | 8 +++++++-
- fs/nfsd/nfs4xdr.c          | 2 +-
- net/ceph/auth_none.c       | 6 ++++++
- 12 files changed, 27 insertions(+), 11 deletions(-)
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -518,7 +518,7 @@ void register_disk(struct gendisk *disk)
+ 
+ 	ddev->parent = disk->driverfs_dev;
+ 
+-	dev_set_name(ddev, disk->disk_name);
++	dev_set_name(ddev, "%s", disk->disk_name);
+ 
+ 	/* delay uevents, until we scanned partition table */
+ 	dev_set_uevent_suppress(ddev, 1);
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -658,7 +658,8 @@ static int __nbd_ioctl(struct block_devi
+ 
+ 		mutex_unlock(&lo->tx_lock);
+ 
+-		thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
++		thread = kthread_create(nbd_thread, lo, "%s",
++					lo->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+ 			mutex_lock(&lo->tx_lock);
+ 			return PTR_ERR(thread);
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -465,7 +465,7 @@ static int osd_probe(struct device *dev)
+ 	oud->class_dev.class = &osd_uld_class;
+ 	oud->class_dev.parent = dev;
+ 	oud->class_dev.release = __remove;
+-	error = dev_set_name(&oud->class_dev, disk->disk_name);
++	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
+ 	if (error) {
+ 		OSD_ERR("dev_set_name failed => %d\n", error);
+ 		goto err_put_cdev;
 
 
