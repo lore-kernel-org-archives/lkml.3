@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab3GKNHv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:07:51 -0400
+	id S1756071Ab3GKNH6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:07:58 -0400
 Received: from mga01.intel.com ([192.55.52.88]:62928 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751866Ab3GKNHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:07:47 -0400
+	id S1756016Ab3GKNHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 09:07:55 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.87,1043,1363158000"; 
-   d="scan'208";a="368612863"
+   d="scan'208";a="368612917"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -18,9 +18,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
         Adrian Hunter <adrian.hunter@intel.com>
-Subject: [PATCH V5 01/12] perf tools: add debug prints
-Date: Thu, 11 Jul 2013 16:12:10 +0300
-Message-Id: <1373548341-24119-2-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V5 03/12] perf tools: add pid to struct thread
+Date: Thu, 11 Jul 2013 16:12:12 +0300
+Message-Id: <1373548341-24119-4-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
 References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
@@ -29,136 +29,117 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is useful to see the arguments to perf_event_open
-and whether the perf events ring buffer was mmapped
-per-cpu or per-thread.  That information will now be
-displayed when verbose is 2 i.e option -vv
+Record pid on struct thread.  The member is named 'pid_'
+to avoid confusion with the 'tid' member which was previously
+named 'pid'.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/evlist.c |  3 +++
- tools/perf/util/evsel.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 61 insertions(+)
+ tools/perf/util/machine.c | 16 +++++++++++-----
+ tools/perf/util/thread.c  |  3 ++-
+ tools/perf/util/thread.h  |  3 ++-
+ 3 files changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 42ea4e9..2b77b33 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -14,6 +14,7 @@
- #include "target.h"
- #include "evlist.h"
- #include "evsel.h"
-+#include "debug.h"
- #include <unistd.h>
- 
- #include "parse-events.h"
-@@ -454,6 +455,7 @@ static int perf_evlist__mmap_per_cpu(struct perf_evlist *evlist, int prot, int m
- 	int nr_cpus = cpu_map__nr(evlist->cpus);
- 	int nr_threads = thread_map__nr(evlist->threads);
- 
-+	pr_debug2("perf event ring buffer mmapped per cpu\n");
- 	for (cpu = 0; cpu < nr_cpus; cpu++) {
- 		int output = -1;
- 
-@@ -492,6 +494,7 @@ static int perf_evlist__mmap_per_thread(struct perf_evlist *evlist, int prot, in
- 	int thread;
- 	int nr_threads = thread_map__nr(evlist->threads);
- 
-+	pr_debug2("perf event ring buffer mmapped per thread\n");
- 	for (thread = 0; thread < nr_threads; thread++) {
- 		int output = -1;
- 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index a635461..0b9c4fd 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -21,6 +21,7 @@
- #include "thread_map.h"
- #include "target.h"
- #include "perf_regs.h"
-+#include "debug.h"
- 
- static struct {
- 	bool sample_id_all;
-@@ -817,6 +818,58 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
- 	return fd;
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index f9f9d63..67ba572 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -233,7 +233,8 @@ void machines__set_id_hdr_size(struct machines *machines, u16 id_hdr_size)
+ 	return;
  }
  
-+static size_t perf_event_attr__fprintf(struct perf_event_attr *attr, FILE *fp)
-+{
-+	size_t ret;
-+
-+	ret = fprintf(fp, "------------------------------------------------------------\n");
-+	ret += fprintf(fp, "perf_event_attr:\n");
-+	ret += fprintf(fp, "  type                %u\n", attr->type);
-+	ret += fprintf(fp, "  size                %u\n", attr->size);
-+	ret += fprintf(fp, "  config              %#"PRIx64"\n", (uint64_t)attr->config);
-+	ret += fprintf(fp, "  sample_period       %"PRIu64"\n", (uint64_t)attr->sample_period);
-+	ret += fprintf(fp, "  sample_freq         %"PRIu64"\n", (uint64_t)attr->sample_freq);
-+	ret += fprintf(fp, "  sample_type         %#"PRIx64"\n", (uint64_t)attr->sample_type);
-+	ret += fprintf(fp, "  read_format         %#"PRIx64"\n", (uint64_t)attr->read_format);
-+
-+	ret += fprintf(fp, "  disabled            %u    ", attr->disabled);
-+	ret += fprintf(fp, "inherit             %u\n", attr->inherit);
-+	ret += fprintf(fp, "  pinned              %u    ", attr->pinned);
-+	ret += fprintf(fp, "exclusive           %u\n", attr->exclusive);
-+	ret += fprintf(fp, "  exclude_user        %u    ", attr->exclude_user);
-+	ret += fprintf(fp, "exclude_kernel      %u\n", attr->exclude_kernel);
-+	ret += fprintf(fp, "  exclude_hv          %u    ", attr->exclude_hv);
-+	ret += fprintf(fp, "exclude_idle        %u\n", attr->exclude_idle);
-+	ret += fprintf(fp, "  mmap                %u    ", attr->mmap);
-+	ret += fprintf(fp, "comm                %u\n", attr->comm);
-+	ret += fprintf(fp, "  freq                %u    ", attr->freq);
-+	ret += fprintf(fp, "inherit_stat        %u\n", attr->inherit_stat);
-+	ret += fprintf(fp, "  enable_on_exec      %u    ", attr->enable_on_exec);
-+	ret += fprintf(fp, "task                %u\n", attr->task);
-+	ret += fprintf(fp, "  watermark           %u    ", attr->watermark);
-+	ret += fprintf(fp, "precise_ip          %u\n", attr->precise_ip);
-+	ret += fprintf(fp, "  mmap_data           %u    ", attr->mmap_data);
-+	ret += fprintf(fp, "sample_id_all       %u\n", attr->sample_id_all);
-+	ret += fprintf(fp, "  exclude_host        %u    ", attr->exclude_host);
-+	ret += fprintf(fp, "exclude_guest       %u\n", attr->exclude_guest);
-+	ret += fprintf(fp, "  excl.callchain.kern %u    ", attr->exclude_callchain_kernel);
-+	ret += fprintf(fp, "excl.callchain.user %u\n", attr->exclude_callchain_user);
-+
-+	ret += fprintf(fp, "  wakeup_events       %u\n", attr->wakeup_events);
-+	ret += fprintf(fp, "  wakeup_watermark    %u\n", attr->wakeup_watermark);
-+	ret += fprintf(fp, "  bp_type             %#x\n", attr->bp_type);
-+	ret += fprintf(fp, "  bp_addr             %#"PRIx64"\n", (uint64_t)attr->bp_addr);
-+	ret += fprintf(fp, "  config1             %#"PRIx64"\n", (uint64_t)attr->config1);
-+	ret += fprintf(fp, "  bp_len              %"PRIu64"\n", (uint64_t)attr->bp_len);
-+	ret += fprintf(fp, "  config2             %#"PRIx64"\n", (uint64_t)attr->config2);
-+	ret += fprintf(fp, "  branch_sample_type  %#"PRIx64"\n", (uint64_t)attr->branch_sample_type);
-+	ret += fprintf(fp, "  sample_regs_user    %#"PRIx64"\n", (uint64_t)attr->sample_regs_user);
-+	ret += fprintf(fp, "  sample_stack_user   %u\n", attr->sample_stack_user);
-+	ret += fprintf(fp, "------------------------------------------------------------\n");
-+
-+	return ret;
-+}
-+
- static int __perf_evsel__open(struct perf_evsel *evsel, struct cpu_map *cpus,
- 			      struct thread_map *threads)
+-static struct thread *__machine__findnew_thread(struct machine *machine, pid_t tid,
++static struct thread *__machine__findnew_thread(struct machine *machine,
++						pid_t pid, pid_t tid,
+ 						bool create)
  {
-@@ -840,6 +893,9 @@ retry_sample_id:
- 	if (perf_missing_features.sample_id_all)
- 		evsel->attr.sample_id_all = 0;
+ 	struct rb_node **p = &machine->threads.rb_node;
+@@ -245,8 +246,11 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+ 	 * so most of the time we dont have to look up
+ 	 * the full rbtree:
+ 	 */
+-	if (machine->last_match && machine->last_match->tid == tid)
++	if (machine->last_match && machine->last_match->tid == tid) {
++		if (pid && pid != machine->last_match->pid_)
++			machine->last_match->pid_ = pid;
+ 		return machine->last_match;
++	}
  
-+	if (verbose >= 2)
-+		perf_event_attr__fprintf(&evsel->attr, stderr);
-+
- 	for (cpu = 0; cpu < cpus->nr; cpu++) {
+ 	while (*p != NULL) {
+ 		parent = *p;
+@@ -254,6 +258,8 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
  
- 		for (thread = 0; thread < threads->nr; thread++) {
-@@ -850,6 +906,8 @@ retry_sample_id:
+ 		if (th->tid == tid) {
+ 			machine->last_match = th;
++			if (pid && pid != th->pid_)
++				th->pid_ = pid;
+ 			return th;
+ 		}
  
- 			group_fd = get_group_fd(evsel, cpu, thread);
+@@ -266,7 +272,7 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+ 	if (!create)
+ 		return NULL;
  
-+			pr_debug2("perf_event_open: pid %d  cpu %d  group_fd %d  flags %#lx\n",
-+				  pid, cpus->map[cpu], group_fd, flags);
- 			FD(evsel, cpu, thread) = sys_perf_event_open(&evsel->attr,
- 								     pid,
- 								     cpus->map[cpu],
+-	th = thread__new(tid);
++	th = thread__new(pid, tid);
+ 	if (th != NULL) {
+ 		rb_link_node(&th->rb_node, parent, p);
+ 		rb_insert_color(&th->rb_node, &machine->threads);
+@@ -278,12 +284,12 @@ static struct thread *__machine__findnew_thread(struct machine *machine, pid_t t
+ 
+ struct thread *machine__findnew_thread(struct machine *machine, pid_t tid)
+ {
+-	return __machine__findnew_thread(machine, tid, true);
++	return __machine__findnew_thread(machine, 0, tid, true);
+ }
+ 
+ struct thread *machine__find_thread(struct machine *machine, pid_t tid)
+ {
+-	return __machine__findnew_thread(machine, tid, false);
++	return __machine__findnew_thread(machine, 0, tid, false);
+ }
+ 
+ int machine__process_comm_event(struct machine *machine, union perf_event *event)
+diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
+index 6feeb88..e3d4a55 100644
+--- a/tools/perf/util/thread.c
++++ b/tools/perf/util/thread.c
+@@ -7,12 +7,13 @@
+ #include "util.h"
+ #include "debug.h"
+ 
+-struct thread *thread__new(pid_t tid)
++struct thread *thread__new(pid_t pid, pid_t tid)
+ {
+ 	struct thread *self = zalloc(sizeof(*self));
+ 
+ 	if (self != NULL) {
+ 		map_groups__init(&self->mg);
++		self->pid_ = pid;
+ 		self->tid = tid;
+ 		self->ppid = -1;
+ 		self->comm = malloc(32);
+diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
+index 0fe1f9c..fc464bc 100644
+--- a/tools/perf/util/thread.h
++++ b/tools/perf/util/thread.h
+@@ -12,6 +12,7 @@ struct thread {
+ 		struct list_head node;
+ 	};
+ 	struct map_groups	mg;
++	pid_t			pid_; /* Not all tools update this */
+ 	pid_t			tid;
+ 	pid_t			ppid;
+ 	char			shortname[3];
+@@ -24,7 +25,7 @@ struct thread {
+ 
+ struct machine;
+ 
+-struct thread *thread__new(pid_t tid);
++struct thread *thread__new(pid_t pid, pid_t tid);
+ void thread__delete(struct thread *self);
+ 
+ int thread__set_comm(struct thread *self, const char *comm);
 -- 
 1.7.11.7
 
