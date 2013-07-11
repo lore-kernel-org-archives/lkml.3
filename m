@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751227Ab3GKEef (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 00:34:35 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:62611 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3GKEed (ORCPT
+	id S1751422Ab3GKEgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 00:36:51 -0400
+Received: from mail-vb0-f50.google.com ([209.85.212.50]:49773 "EHLO
+	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab3GKEgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 00:34:33 -0400
-X-AuditID: 9c93016f-b7c29ae00000722e-51-51de35d636aa
-Date: Thu, 11 Jul 2013 13:34:33 +0900
-From: Kyungsik Lee <kyungsik.lee@lge.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Borislav Petkov <bp@alien8.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-Message-ID: <20130711043433.GA29245@hulk>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com>
- <20130506095124.GA22041@pd.tnic>
- <CAMuHMdWH9w5fj6HRXi+9QcBJym4dukAFsPVGZVqSSk3yTZJUcA@mail.gmail.com>
- <20130710093642.GC14873@pd.tnic>
- <20130710182815.GA362@x4>
+	Thu, 11 Jul 2013 00:36:49 -0400
+Date: Thu, 11 Jul 2013 00:42:31 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Ingo Molnar <mingo@kernel.org>
+cc: Michael Ellerman <michael@ellerman.id.au>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Vince Weaver <vincent.weaver@maine.edu>,
+        Vince Weaver <vince@deater.net>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        paulus@samba.org, acme@redhat.com,
+        Stephane Eranian <eranian@google.com>, sukadev@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com
+Subject: Re: [PATCH v2 2/2] perf tools: Make Power7 events available for
+ perf
+In-Reply-To: <20130710083435.GA24070@gmail.com>
+Message-ID: <alpine.DEB.2.10.1307110039560.26051@vincent-weaver-1.um.maine.edu>
+References: <1372170933-4538-1-git-send-email-runzhen@linux.vnet.ibm.com> <1372170933-4538-3-git-send-email-runzhen@linux.vnet.ibm.com> <alpine.DEB.2.02.1306251240440.25443@pianoman.cluster.toy> <20130704125218.GA21134@concordia>
+ <20130704125700.GM18898@dyad.programming.kicks-ass.net> <20130709012952.GA7185@concordia> <alpine.DEB.2.10.1307082204550.26280@vincent-weaver-1.um.maine.edu> <20130709081434.GI25631@dyad.programming.kicks-ass.net> <20130710030926.GD7491@concordia>
+ <20130710083435.GA24070@gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130710182815.GA362@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> BTW speaking of introductory-level patches, what about the following
-> one:
-> 
-> Now that lz4 kernel compression is available, add *.lz4 to .gitignore
-> 
-> diff --git a/.gitignore b/.gitignore
-> index 3b8b9b3..7e9932e 100644
-> --- a/.gitignore
-> +++ b/.gitignore
-> @@ -29,6 +29,7 @@ modules.builtin
->  *.bz2
->  *.lzma
->  *.xz
-> +*.lz4
->  *.lzo
->  *.patch
->  *.gcno
-> 
-Acked-by: Kyungsik Lee <kyungsik.lee@lge.com>
+On Wed, 10 Jul 2013, Ingo Molnar wrote:
 
-Thanks,
-Kyungsik
+> Exactly - PMUs enumerated in /sys should be self-identifying, it's a 
+> hardware topology after all ...
+> 
+> Anytime userspace is forced to look into /proc, or into weird places in 
+> /sys it's a FAIL really.
 
+well on x86 you have to look at /proc/cpuinfo to get the 
+vendor/family/model number.  Should we add some specifier under sys?
+It's probably too late though as all userspace event libs will have
+to look at /proc/cpuinfo anyway to be backwards compatible.
+
+Vince
