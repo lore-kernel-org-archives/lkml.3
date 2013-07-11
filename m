@@ -1,93 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab3GKRRW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 13:17:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29451 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756306Ab3GKRRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 13:17:19 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
-Cc: davem@davemloft.net, v9fs-developer@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] 9p: fix off by one causing access violations and memory corruption
-Date: Thu, 11 Jul 2013 13:16:54 -0400
-Message-Id: <1373563014-4645-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.1.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	id S1756121Ab3GKRWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 13:22:39 -0400
+Received: from mga02.intel.com ([134.134.136.20]:21729 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751290Ab3GKRWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 13:22:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,1045,1367996400"; 
+   d="scan'208";a="344065178"
+Message-ID: <51DEEAFE.506@linux.intel.com>
+Date: Thu, 11 Jul 2013 10:27:26 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Alexander Holler <holler@ahsoftware.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 0/4] iio: hid-sensor: add module alias for autoload
+References: <1373445120-5407-1-git-send-email-holler@ahsoftware.de> <51DD7D78.2020506@linux.intel.com> <51DD848E.4050206@ahsoftware.de>
+In-Reply-To: <51DD848E.4050206@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-p9_release_pages() would attempt to dereference one value past the end of
-pages[]. This would cause the following crashes:
 
-[ 6293.171817] BUG: unable to handle kernel paging request at ffff8807c96f3000
-[ 6293.174146] IP: [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.176447] PGD 79c5067 PUD 82c1e3067 PMD 82c197067 PTE 80000007c96f3060
-[ 6293.180060] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 6293.180060] Modules linked in:
-[ 6293.180060] CPU: 62 PID: 174043 Comm: modprobe Tainted: G        W    3.10.0-next-20130710-sasha #3954
-[ 6293.180060] task: ffff8807b803b000 ti: ffff880787dde000 task.ti: ffff880787dde000
-[ 6293.180060] RIP: 0010:[<ffffffff8412793b>]  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.214316] RSP: 0000:ffff880787ddfc28  EFLAGS: 00010202
-[ 6293.214316] RAX: 0000000000000001 RBX: ffff8807c96f2ff8 RCX: 0000000000000000
-[ 6293.222017] RDX: ffff8807b803b000 RSI: 0000000000000001 RDI: ffffea001c7e3d40
-[ 6293.222017] RBP: ffff880787ddfc48 R08: 0000000000000000 R09: 0000000000000000
-[ 6293.222017] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
-[ 6293.222017] R13: 0000000000000001 R14: ffff8807cc50c070 R15: ffff8807cc50c070
-[ 6293.222017] FS:  00007f572641d700(0000) GS:ffff8807f3600000(0000) knlGS:0000000000000000
-[ 6293.256784] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 6293.256784] CR2: ffff8807c96f3000 CR3: 00000007c8e81000 CR4: 00000000000006e0
-[ 6293.256784] Stack:
-[ 6293.256784]  ffff880787ddfcc8 ffff880787ddfcc8 0000000000000000 ffff880787ddfcc8
-[ 6293.256784]  ffff880787ddfd48 ffffffff84128be8 ffff880700000002 0000000000000001
-[ 6293.256784]  ffff8807b803b000 ffff880787ddfce0 0000100000000000 0000000000000000
-[ 6293.256784] Call Trace:
-[ 6293.256784]  [<ffffffff84128be8>] p9_virtio_zc_request+0x598/0x630
-[ 6293.256784]  [<ffffffff8115c610>] ? wake_up_bit+0x40/0x40
-[ 6293.256784]  [<ffffffff841209b1>] p9_client_zc_rpc+0x111/0x3a0
-[ 6293.256784]  [<ffffffff81174b78>] ? sched_clock_cpu+0x108/0x120
-[ 6293.256784]  [<ffffffff84122a21>] p9_client_read+0xe1/0x2c0
-[ 6293.256784]  [<ffffffff81708a90>] v9fs_file_read+0x90/0xc0
-[ 6293.256784]  [<ffffffff812bd073>] vfs_read+0xc3/0x130
-[ 6293.256784]  [<ffffffff811a78bd>] ? trace_hardirqs_on+0xd/0x10
-[ 6293.256784]  [<ffffffff812bd5a2>] SyS_read+0x62/0xa0
-[ 6293.256784]  [<ffffffff841a1a00>] tracesys+0xdd/0xe2
-[ 6293.256784] Code: 66 90 48 89 fb 41 89 f5 48 8b 3f 48 85 ff 74 29 85 f6 74 25 45 31 e4 66 0f 1f 84 00 00 00 00 00 e8 eb 14 12 fd 41 ff c4 49 63 c4 <48> 8b 3c c3 48 85 ff 74 05 45 39 e5 75 e7 48 83 c4 08 5b 41 5c
-[ 6293.256784] RIP  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.256784]  RSP <ffff880787ddfc28>
-[ 6293.256784] CR2: ffff8807c96f3000
-[ 6293.256784] ---[ end trace 50822ee72cd360fc ]---
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- net/9p/trans_common.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
-index de8df95..2ee3879 100644
---- a/net/9p/trans_common.c
-+++ b/net/9p/trans_common.c
-@@ -24,11 +24,11 @@
-  */
- void p9_release_pages(struct page **pages, int nr_pages)
- {
--	int i = 0;
--	while (pages[i] && nr_pages--) {
--		put_page(pages[i]);
--		i++;
--	}
-+	int i;
-+
-+	for (i = 0; i < nr_pages; i++)
-+		if (pages[i])
-+			put_page(pages[i]);
- }
- EXPORT_SYMBOL(p9_release_pages);
- 
--- 
-1.8.1.2
+On 07/10/2013 08:58 AM, Alexander Holler wrote:
+> Am 10.07.2013 17:27, schrieb Srinivas Pandruvada:
+>> Hi,
+>>
+>> There was no intention to prevent auto loading. Did you get chance to
+>> test these changes?
+>
+> Sure, I always test patches before I send them out.
+>
+> Ok, I haven't tested the changes with the iio HID drivers (I don't 
+> have any commercial HID sensor hub, so I've just compile tested these 
+> patches here, double reading them), but I've tested the similiar 
+> changes with a patch for rtc-hid-sensor-time I've send out yesterday. 
+> (sorry, no link, lkml.org seems dead, just search for 
+> "rtc-hid-sensor-time: add module alias")
+>
+> It works just fine. An example output is now
+>
+> Jul  9 19:27:21 dockstar3 kernel: [    5.124444] rtc_hid_sensor_time 
+> HID-SENSOR-2000a0.0: milliseconds supported
+> Jul  9 19:27:21 dockstar3 kernel: [    5.132864] rtc_hid_sensor_time 
+> HID-SENSOR-2000a0.0: rtc core: setting system clock to 2013-07-09 
+> 17:26:51:328000 UTC (1373390811)
+> Jul  9 19:27:21 dockstar3 kernel: [    5.146105] rtc_hid_sensor_time 
+> HID-SENSOR-2000a0.0: rtc core: registered hid-sensor-time as rtc0
+>
+> Before the output was e.g.
+>
+> HID-SENSOR-2000a0 HID-SENSOR-2000a0.0: rtc core: registered 
+> hid-sensor-time as rtc0
+>
+> instead of the above with the descriptive rtc_hid_sensor_time.
+<Agreed. This is better. >
+> Automatic loading of modules works too and it works on ARM, Intel and 
+> AMD as module or static linked. ;)
+>
+> Regards,
+>
+> Alexander Holler
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
