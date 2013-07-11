@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206Ab3GKObw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:31:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43251 "EHLO
+	id S933127Ab3GKOcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:32:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43245 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933073Ab3GKO1E (ORCPT
+	with ESMTP id S933071Ab3GKO1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:27:04 -0400
+	Thu, 11 Jul 2013 10:27:02 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 86/98] drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-Date: Thu, 11 Jul 2013 15:24:56 +0100
-Message-Id: <1373552708-15235-87-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 82/98] rtlwifi: rtl8192cu: Fix duplicate if test
+Date: Thu, 11 Jul 2013 15:24:52 +0100
+Message-Id: <1373552708-15235-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -29,51 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Salwan <jonathan.salwan@gmail.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 542db01579fbb7ea7d1f7bb9ddcef1559df660b2 upstream.
+commit 10d0b9030a3f86e1e26c710c7580524d7787d688 upstream.
 
-In drivers/cdrom/cdrom.c mmc_ioctl_cdrom_read_data() allocates a memory
-area with kmalloc in line 2885.
+A typo causes routine rtl92cu_phy_rf6052_set_cck_txpower() to test the
+same condition twice. The problem was found using cppcheck-1.49, and the
+proper fix was verified against the pre-mac80211 version of the code.
 
-  2885         cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-  2886         if (cgc->buffer == NULL)
-  2887                 return -ENOMEM;
+This patch was originally included as commit 1288aa4, but was accidentally
+reverted in a later patch.
 
-In line 2908 we can find the copy_to_user function:
-
-  2908         if (!ret && copy_to_user(arg, cgc->buffer, blocksize))
-
-The cgc->buffer is never cleaned and initialized before this function.
-If ret = 0 with the previous basic block, it's possible to display some
-memory bytes in kernel space from userspace.
-
-When we read a block from the disk it normally fills the ->buffer but if
-the drive is malfunctioning there is a chance that it would only be
-partially filled.  The result is an leak information to userspace.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: David Binderman <dcb314@hotmail.com> [original report]
+Reported-by: Andrea Morello <andrea.merello@gmail.com> [report of accidental reversion]
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cdrom/cdrom.c | 2 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index d620b44..8a3aff7 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2882,7 +2882,7 @@ static noinline int mmc_ioctl_cdrom_read_data(struct cdrom_device_info *cdi,
- 	if (lba < 0)
- 		return -EINVAL;
- 
--	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-+	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
- 	if (cgc->buffer == NULL)
- 		return -ENOMEM;
- 
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
+index 506b9a0..4763426 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/rf.c
+@@ -104,7 +104,7 @@ void rtl92cu_phy_rf6052_set_cck_txpower(struct ieee80211_hw *hw,
+ 			tx_agc[RF90_PATH_A] = 0x10101010;
+ 			tx_agc[RF90_PATH_B] = 0x10101010;
+ 		} else if (rtlpriv->dm.dynamic_txhighpower_lvl ==
+-			   TXHIGHPWRLEVEL_LEVEL1) {
++			   TXHIGHPWRLEVEL_LEVEL2) {
+ 			tx_agc[RF90_PATH_A] = 0x00000000;
+ 			tx_agc[RF90_PATH_B] = 0x00000000;
+ 		} else{
 -- 
 1.8.1.2
 
