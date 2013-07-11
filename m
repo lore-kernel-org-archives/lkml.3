@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab3GKOui (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:50:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42903 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932451Ab3GKOZn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932643Ab3GKOZn (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Jul 2013 10:25:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42891 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932451Ab3GKOZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 10:25:40 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Steven Rostedt <rostedt@goodmis.org>,
+Cc: Al Viro <viro@zeniv.linux.org.uk>, "Theodore Ts'o" <tytso@mit.edu>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 20/98] tracing: Use current_uid() for critical time tracing
-Date: Thu, 11 Jul 2013 15:23:50 +0100
-Message-Id: <1373552708-15235-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 17/98] ext3,ext4: don't mess with dir_file->f_pos in htree_dirblock_to_tree()
+Date: Thu, 11 Jul 2013 15:23:47 +0100
+Message-Id: <1373552708-15235-18-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,103 +27,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit f17a5194859a82afe4164e938b92035b86c55794 upstream.
+commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
 
-The irqsoff tracer records the max time that interrupts are disabled.
-There are hooks in the assembly code that calls back into the tracer when
-interrupts are disabled or enabled.
+Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
+in-core rbtree for use by call_filldir().  All updates of ->f_pos are
+done by the latter; bumping it here (on error) is obviously wrong - we
+might very well have it nowhere near the block we'd found an error in.
 
-When they are enabled, the tracer checks if the amount of time they
-were disabled is larger than the previous recorded max interrupts off
-time. If it is, it creates a snapshot of the currently running trace
-to store where the last largest interrupts off time was held and how
-it happened.
-
-During testing, this RCU lockdep dump appeared:
-
-[ 1257.829021] ===============================
-[ 1257.829021] [ INFO: suspicious RCU usage. ]
-[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
-[ 1257.829021] -------------------------------
-[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
-[ 1257.829021]
-[ 1257.829021] other info that might help us debug this:
-[ 1257.829021]
-[ 1257.829021]
-[ 1257.829021] RCU used illegally from idle CPU!
-[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
-[ 1257.829021] RCU used illegally from extended quiescent state!
-[ 1257.829021] 2 locks held by trace-cmd/4831:
-[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
-[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
-[ 1257.829021]
-[ 1257.829021] stack backtrace:
-[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
-[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
-[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
-[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
-[ 1257.829021] Call Trace:
-[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
-[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
-[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
-[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
-[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
-[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
-[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
-[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
-
-What happened was entering into the user code, the interrupts were enabled
-and a max interrupts off was recorded. The trace buffer was saved along with
-various information about the task: comm, pid, uid, priority, etc.
-
-The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
-to retrieve the data, and this happened to happen where RCU is blind (user_enter).
-
-As only the preempt and irqs off tracers can have this happen, and they both
-only have the tsk == current, if tsk == current, use current_uid() instead of
-task_uid(), as current_uid() does not use RCU as only current can change its uid.
-
-This fixes the RCU suspicious splat.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/ext3/namei.c | 7 ++-----
+ fs/ext4/namei.c | 7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 0ae8b32..8aba3f9 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -672,7 +672,15 @@ __update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 
- 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
- 	max_data->pid = tsk->pid;
--	max_data->uid = task_uid(tsk);
-+	/*
-+	 * If tsk == current, then use current_uid(), as that does not use
-+	 * RCU. The irq tracer can be called out of RCU scope.
-+	 */
-+	if (tsk == current)
-+		max_data->uid = current_uid();
-+	else
-+		max_data->uid = task_uid(tsk);
-+
- 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
- 	max_data->policy = tsk->policy;
- 	max_data->rt_priority = tsk->rt_priority;
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index eeb63df..336256a 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -573,11 +573,8 @@ static int htree_dirblock_to_tree(struct file *dir_file,
+ 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
+ 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
+ 						+((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse (bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext3fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 20c13eb..43a35db 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -859,11 +859,8 @@ static int htree_dirblock_to_tree(struct file *dir_file,
+ 		if (ext4_check_dir_entry(dir, NULL, de, bh,
+ 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
+ 					 + ((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse(bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext4fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
 -- 
 1.8.1.2
 
