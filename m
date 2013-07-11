@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab3GKQeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:34:07 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46481 "EHLO
+	id S1755985Ab3GKQeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:34:05 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:46488 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752907Ab3GKQbj (ORCPT
+	with ESMTP id S1752932Ab3GKQbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Jul 2013 12:31:39 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
@@ -14,9 +14,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv5 06/10] clocksource: sun4i: Fix the next event code
-Date: Thu, 11 Jul 2013 18:31:18 +0200
-Message-Id: <1373560282-15184-7-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv5 05/10] clocksource: sun4i: Don't forget to enable the clock we use
+Date: Thu, 11 Jul 2013 18:31:17 +0200
+Message-Id: <1373560282-15184-6-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1373560282-15184-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -24,63 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next_event logic was setting the next interval to fire in the
-current timer value instead of the interval value register, which is
-obviously wrong.
-
-Plus, the logic to set the actual value was wrong as well: the interval
-register can only be modified when the timer is disabled, and then
-enable it back, otherwise, it'll have no effect. Fix this logic as well
-since that code couldn't possibly work.
+Even if in our case, this clock was non-gatable, used as a parent clock
+for several IPs, it still is a good idea to enable it.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- drivers/clocksource/sun4i_timer.c | 25 ++++++++++++++++++++++---
- 1 file changed, 22 insertions(+), 3 deletions(-)
+ drivers/clocksource/sun4i_timer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/clocksource/sun4i_timer.c b/drivers/clocksource/sun4i_timer.c
-index 8e9c651..7123f65 100644
+index b581c93..8e9c651 100644
 --- a/drivers/clocksource/sun4i_timer.c
 +++ b/drivers/clocksource/sun4i_timer.c
-@@ -38,6 +38,20 @@
+@@ -120,6 +120,7 @@ static void __init sun4i_timer_init(struct device_node *node)
+ 	clk = of_clk_get(node, 0);
+ 	if (IS_ERR(clk))
+ 		panic("Can't get timer clock");
++	clk_prepare_enable(clk);
  
- static void __iomem *timer_base;
+ 	rate = clk_get_rate(clk);
  
-+/*
-+ * When we disable a timer, we need to wait at least for 2 cycles of
-+ * the timer source clock. We will use for that the clocksource timer
-+ * that is already setup and runs at the same frequency than the other
-+ * timers, and we never will be disabled.
-+ */
-+static void sun4i_clkevt_sync(void)
-+{
-+	u32 old = readl(timer_base + TIMER_CNTVAL_REG(1));
-+
-+	while ((old - readl(timer_base + TIMER_CNTVAL_REG(1))) < 3)
-+		cpu_relax();
-+}
-+
- static void sun4i_clkevt_mode(enum clock_event_mode mode,
- 			      struct clock_event_device *clk)
- {
-@@ -63,9 +77,14 @@ static void sun4i_clkevt_mode(enum clock_event_mode mode,
- static int sun4i_clkevt_next_event(unsigned long evt,
- 				   struct clock_event_device *unused)
- {
--	u32 u = readl(timer_base + TIMER_CTL_REG(0));
--	writel(evt, timer_base + TIMER_CNTVAL_REG(0));
--	writel(u | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
-+	u32 val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val & ~TIMER_CTL_ENABLE, timer_base + TIMER_CTL_REG(0));
-+	sun4i_clkevt_sync();
-+
-+	writel(evt, timer_base + TIMER_INTVAL_REG(0));
-+
-+	val = readl(timer_base + TIMER_CTL_REG(0));
-+	writel(val | TIMER_CTL_ENABLE | TIMER_CTL_AUTORELOAD,
- 	       timer_base + TIMER_CTL_REG(0));
- 
- 	return 0;
 -- 
 1.8.3.2
 
