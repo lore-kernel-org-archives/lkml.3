@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab3GKWLO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:11:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43153 "EHLO
+	id S932212Ab3GKWLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:11:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43208 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab3GKWLN (ORCPT
+	with ESMTP id S1756902Ab3GKWL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:11:13 -0400
+	Thu, 11 Jul 2013 18:11:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Chanam Park <chanam.park@hkpco.kr>,
-        Seth Arnold <seth.arnold@canonical.com>, Sage Weil <sage@inktank.com>
-Subject: [ 01/11] libceph: Fix NULL pointer dereference in auth client code
-Date: Thu, 11 Jul 2013 15:11:01 -0700
-Message-Id: <20130711220545.756373722@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 05/11] block: do not pass disk names as format strings
+Date: Thu, 11 Jul 2013 15:11:05 -0700
+Message-Id: <20130711220546.176243070@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
 References: <20130711220545.542911892@linuxfoundation.org>
@@ -28,49 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit 2cb33cac622afde897aa02d3dcd9fbba8bae839e upstream.
+commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
 
-A malicious monitor can craft an auth reply message that could cause a
-NULL function pointer dereference in the client's kernel.
+Disk names may contain arbitrary strings, so they must not be
+interpreted as format strings.  It seems that only md allows arbitrary
+strings to be used for disk names, but this could allow for a local
+memory corruption from uid 0 into ring 0.
 
-To prevent this, the auth_none protocol handler needs an empty
-ceph_auth_client_ops->build_request() function.
+CVE-2013-2851
 
-CVE-2013-1059
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Chanam Park <chanam.park@hkpco.kr>
-Reviewed-by: Seth Arnold <seth.arnold@canonical.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/auth_none.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ block/genhd.c              |    2 +-
+ drivers/block/nbd.c        |    3 ++-
+ drivers/scsi/osd/osd_uld.c |    2 +-
+ 3 files changed, 4 insertions(+), 3 deletions(-)
 
---- a/net/ceph/auth_none.c
-+++ b/net/ceph/auth_none.c
-@@ -39,6 +39,11 @@ static int should_authenticate(struct ce
- 	return xi->starting;
- }
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -518,7 +518,7 @@ static void register_disk(struct gendisk
  
-+static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
-+{
-+	return 0;
-+}
-+
- /*
-  * the generic auth code decode the global_id, and we carry no actual
-  * authenticate state, so nothing happens here.
-@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops
- 	.destroy = destroy,
- 	.is_authenticated = is_authenticated,
- 	.should_authenticate = should_authenticate,
-+	.build_request = build_request,
- 	.handle_reply = handle_reply,
- 	.create_authorizer = ceph_auth_none_create_authorizer,
- 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
+ 	ddev->parent = disk->driverfs_dev;
+ 
+-	dev_set_name(ddev, disk->disk_name);
++	dev_set_name(ddev, "%s", disk->disk_name);
+ 
+ 	/* delay uevents, until we scanned partition table */
+ 	dev_set_uevent_suppress(ddev, 1);
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -666,7 +666,8 @@ static int __nbd_ioctl(struct block_devi
+ 
+ 		mutex_unlock(&nbd->tx_lock);
+ 
+-		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
++		thread = kthread_create(nbd_thread, nbd, "%s",
++					nbd->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+ 			mutex_lock(&nbd->tx_lock);
+ 			return PTR_ERR(thread);
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -465,7 +465,7 @@ static int osd_probe(struct device *dev)
+ 	oud->class_dev.class = &osd_uld_class;
+ 	oud->class_dev.parent = dev;
+ 	oud->class_dev.release = __remove;
+-	error = dev_set_name(&oud->class_dev, disk->disk_name);
++	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
+ 	if (error) {
+ 		OSD_ERR("dev_set_name failed => %d\n", error);
+ 		goto err_put_cdev;
 
 
