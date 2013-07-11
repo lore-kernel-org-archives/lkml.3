@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab3GKWMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:12:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43186 "EHLO
+	id S1756862Ab3GKWLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:11:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43163 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756876Ab3GKWLZ (ORCPT
+	with ESMTP id S1756511Ab3GKWLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:11:25 -0400
+	Thu, 11 Jul 2013 18:11:21 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Seyfried <stefan.seyfried@googlemail.com>,
-        Wang YanQing <udknight@gmail.com>
-Subject: [ 08/11] Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
-Date: Thu, 11 Jul 2013 15:11:08 -0700
-Message-Id: <20130711220546.493864099@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jonathan Salwan <jonathan.salwan@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [ 02/11] drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
+Date: Thu, 11 Jul 2013 15:11:02 -0700
+Message-Id: <20130711220545.877158517@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
 References: <20130711220545.542911892@linuxfoundation.org>
@@ -27,35 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Jonathan Salwan <jonathan.salwan@gmail.com>
 
-commit 828c6a102b1f2b8583fadc0e779c46b31d448f0b upstream.
+commit 542db01579fbb7ea7d1f7bb9ddcef1559df660b2 upstream.
 
-This reverts commit 8d2f8cd424ca0b99001f3ff4f5db87c4e525f366.
+In drivers/cdrom/cdrom.c mmc_ioctl_cdrom_read_data() allocates a memory
+area with kmalloc in line 2885.
 
-As reported by Stefan, this device already works with the parport_serial
-driver, so the 8250_pci driver should not also try to grab it as well.
+  2885         cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
+  2886         if (cgc->buffer == NULL)
+  2887                 return -ENOMEM;
 
-Reported-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
-Cc: Wang YanQing <udknight@gmail.com>
+In line 2908 we can find the copy_to_user function:
+
+  2908         if (!ret && copy_to_user(arg, cgc->buffer, blocksize))
+
+The cgc->buffer is never cleaned and initialized before this function.
+If ret = 0 with the previous basic block, it's possible to display some
+memory bytes in kernel space from userspace.
+
+When we read a block from the disk it normally fills the ->buffer but if
+the drive is malfunctioning there is a chance that it would only be
+partially filled.  The result is an leak information to userspace.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jonathan Salwan <jonathan.salwan@gmail.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/serial/8250/8250_pci.c |    4 ----
- 1 file changed, 4 deletions(-)
+ drivers/cdrom/cdrom.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/8250/8250_pci.c
-+++ b/drivers/tty/serial/8250/8250_pci.c
-@@ -4086,10 +4086,6 @@ static struct pci_device_id serial_pci_t
- 		PCI_VENDOR_ID_IBM, 0x0299,
- 		0, 0, pbn_b0_bt_2_115200 },
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2882,7 +2882,7 @@ static noinline int mmc_ioctl_cdrom_read
+ 	if (lba < 0)
+ 		return -EINVAL;
  
--	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
--		0x1000, 0x0012,
--		0, 0, pbn_b0_bt_2_115200 },
--
- 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
- 		0xA000, 0x1000,
- 		0, 0, pbn_b0_1_115200 },
+-	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
++	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
+ 	if (cgc->buffer == NULL)
+ 		return -ENOMEM;
+ 
 
 
