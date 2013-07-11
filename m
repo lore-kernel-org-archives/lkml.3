@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab3GKWGN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:06:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43057 "EHLO
+	id S1756800Ab3GKWGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:06:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43040 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756304Ab3GKWBo (ORCPT
+	with ESMTP id S1754572Ab3GKWBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:44 -0400
+	Thu, 11 Jul 2013 18:01:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Anton Vorontsov <cbou@mail.ru>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: [ 06/19] charger-manager: Ensure event is not used as format string
-Date: Thu, 11 Jul 2013 15:01:23 -0700
-Message-Id: <20130711214831.365557081@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>
+Subject: [ 02/19] ceph: fix sleeping function called from invalid context.
+Date: Thu, 11 Jul 2013 15:01:19 -0700
+Message-Id: <20130711214830.924767898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
 References: <20130711214830.611455274@linuxfoundation.org>
@@ -28,34 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 3594f4c0d7bc51e3a7e6d73c44e368ae079e42f3 upstream.
+commit a1dc1937337a93e699eaa56968b7de6e1a9e77cf upstream.
 
-The exposed interface for cm_notify_event() could result in the event msg
-string being parsed as a format string. Make sure it is only used as a
-literal string.
+[ 1121.231883] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
+[ 1121.231935] in_atomic(): 1, irqs_disabled(): 0, pid: 9831, name: mv
+[ 1121.231971] 1 lock held by mv/9831:
+[ 1121.231973]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...},at:[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
+[ 1121.231998] CPU: 3 PID: 9831 Comm: mv Not tainted 3.10.0-rc6+ #215
+[ 1121.232000] Hardware name: To Be Filled By O.E.M. To Be Filled By
+O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
+[ 1121.232027]  ffff88006d355a80 ffff880092f69ce0 ffffffff8168348c ffff880092f69cf8
+[ 1121.232045]  ffffffff81070435 ffff88006d355a20 ffff880092f69d20 ffffffff816899ba
+[ 1121.232052]  0000000300000004 ffff8800b76911d0 ffff88006d355a20 ffff880092f69d68
+[ 1121.232056] Call Trace:
+[ 1121.232062]  [<ffffffff8168348c>] dump_stack+0x19/0x1b
+[ 1121.232067]  [<ffffffff81070435>] __might_sleep+0xe5/0x110
+[ 1121.232071]  [<ffffffff816899ba>] down_read+0x2a/0x98
+[ 1121.232080]  [<ffffffffa02baf70>] ceph_vxattrcb_layout+0x60/0xf0 [ceph]
+[ 1121.232088]  [<ffffffffa02bbd7f>] ceph_getxattr+0x9f/0x1d0 [ceph]
+[ 1121.232093]  [<ffffffff81188d28>] vfs_getxattr+0xa8/0xd0
+[ 1121.232097]  [<ffffffff8118900b>] getxattr+0xab/0x1c0
+[ 1121.232100]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+[ 1121.232104]  [<ffffffff81155f80>] ? kmem_cache_free+0xb0/0x260
+[ 1121.232107]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+[ 1121.232110]  [<ffffffff8109e63d>] ? trace_hardirqs_on+0xd/0x10
+[ 1121.232114]  [<ffffffff816957a7>] ? sysret_check+0x1b/0x56
+[ 1121.232120]  [<ffffffff81189c9c>] SyS_fgetxattr+0x6c/0xc0
+[ 1121.232125]  [<ffffffff81695782>] system_call_fastpath+0x16/0x1b
+[ 1121.232129] BUG: scheduling while atomic: mv/9831/0x10000002
+[ 1121.232154] 1 lock held by mv/9831:
+[ 1121.232156]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:
+[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Anton Vorontsov <cbou@mail.ru>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Anton Vorontsov <anton@enomsg.org>
+I think move the ci->i_ceph_lock down is safe because we can't free
+ceph_inode_info at there.
+
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/power/charger-manager.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ceph/xattr.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -450,7 +450,7 @@ static void uevent_notify(struct charger
- 	strncpy(env_str, event, UEVENT_BUF_SIZE);
- 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
+--- a/fs/ceph/xattr.c
++++ b/fs/ceph/xattr.c
+@@ -675,17 +675,18 @@ ssize_t ceph_getxattr(struct dentry *den
+ 	if (!ceph_is_valid_xattr(name))
+ 		return -ENODATA;
  
--	dev_info(cm->dev, event);
-+	dev_info(cm->dev, "%s", event);
- }
+-	spin_lock(&ci->i_ceph_lock);
+-	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
+-	     ci->i_xattrs.version, ci->i_xattrs.index_version);
  
- /**
+ 	/* let's see if a virtual xattr was requested */
+ 	vxattr = ceph_match_vxattr(inode, name);
+ 	if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
+ 		err = vxattr->getxattr_cb(ci, value, size);
+-		goto out;
++		return err;
+ 	}
+ 
++	spin_lock(&ci->i_ceph_lock);
++	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
++	     ci->i_xattrs.version, ci->i_xattrs.index_version);
++
+ 	if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 1) &&
+ 	    (ci->i_xattrs.index_version >= ci->i_xattrs.version)) {
+ 		goto get_xattr;
 
 
