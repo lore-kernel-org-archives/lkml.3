@@ -1,54 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab3GKL12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 07:27:28 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:39327 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932364Ab3GKL10 (ORCPT
+	id S1755837Ab3GKL24 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 07:28:56 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:44839 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868Ab3GKL2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 07:27:26 -0400
-Date: Thu, 11 Jul 2013 12:27:20 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Keerthy <j-keerthy@ti.com>
-Cc: linux-omap@vger.kernel.org, broonie@kernel.org, ldewangan@nvidia.com,
-        sameo@linux.intel.com, grant.likely@secretlab.ca, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, gg@slimlogic.co.uk
-Subject: Re: [PATCH v3 1/4] MFD: Palmas: Check if irq is valid
-Message-ID: <20130711112720.GK25601@gmail.com>
-References: <1371621470-22279-1-git-send-email-j-keerthy@ti.com>
- <1371621470-22279-2-git-send-email-j-keerthy@ti.com>
- <20130711112531.GJ25601@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130711112531.GJ25601@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Jul 2013 07:28:53 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] ext4: fix ext4_get_group_number() at cluster boundaries
+Date: Thu, 11 Jul 2013 12:28:48 +0100
+Message-Id: <1373542128-15662-1-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Jul 2013, Lee Jones wrote:
+Commit bd86298e60b8 introduced a new optimisation for callers who needed
+only the ext4 group number and not the block offset within.  It hand
+calculates the group number from the block in the common case, falling
+back to the original group offset implementation otherwise.
 
-> On Wed, 19 Jun 2013, Keerthy wrote:
-> 
-> > From: J Keerthy <j-keerthy@ti.com>
-> > 
-> > Check if irq value obtained is valid. If it is not valid
-> > then skip the irq request step and go ahead with the probe.
-> > 
-> > Signed-off-by: J Keerthy <j-keerthy@ti.com>
-> > ---
-> >  drivers/mfd/palmas.c |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> Applied with Stephen and Mark's RB.
+Clearly the group number returned by this speed optimised block to group
+mapping in ext4_get_group_number() must return the same group that
+ext4_get_group_no_and_offset() otherwise we get group missmatches when
+compared with callers needing the offset.  Currently where the first
+block is non-zero we will return differing blocks near cluster boundaries.
 
-Scrap that, it appears to be applied already.
+This missmatch was uncovered by a multi-lvm test case which builds
+systems with a large number of separate filesystems.  It was reliably
+triggering the BUG below in ext4_mb_release_group_pa() when trying to
+clean up preallocations:
 
+    static noinline_for_stack int ext4_mb_release_group_pa(
+	    struct ext4_buddy *e4b, struct ext4_prealloc_space *pa)
+    {
+	[...]
+	    BUG_ON(group != e4b->bd_group && pa->pa_len != 0);
+	[...]
+    }
+
+This was occuring because the caller uses ext4_get_group_number() to obtain
+the buddy information and when that was compared against the group number
+locally calculated via ext4_get_group_no_and_offset() from the same block
+number it was inconsistant tripping the above BUG.
+
+I pulled these two routines out and fed them the filesystem parameters
+for the filesystem triggering the OOPS and a range of block numbers.
+Comparing the results I found the following inconsistancies at cluster
+boundaries:
+
+    1 != 0 at 8191
+    1 != 0 at 8192
+    2 != 1 at 16383
+    2 != 1 at 16384
+    3 != 2 at 24575
+    3 != 2 at 24576
+
+We are calculating incorrect block numbers within s_first_data_block blocks
+of the boundary (1 block in my failing example).  Fix up the calculations
+to match.
+
+BugLink: http://bugs.launchpad.net/bugs/1195710
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ fs/ext4/balloc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+	While it seems clear this must be correct I would like some
+	confirmation on my thinking.  I have done some touch testing
+	and it seems to fix the OOPS in my test setup, but I am somewhat
+	unsure why this does not commonly get triggered in all testing
+	but only in the specific testing scenario.  Perhaps it is only
+	trivially triggered with very small filesystems or similar.
+
+	-apw
+
+diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
+index d0f13ea..e496f03 100644
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -38,8 +38,8 @@ ext4_group_t ext4_get_group_number(struct super_block *sb,
+ 	ext4_group_t group;
+ 
+ 	if (test_opt2(sb, STD_GROUP_SIZE))
+-		group = (le32_to_cpu(EXT4_SB(sb)->s_es->s_first_data_block) +
+-			 block) >>
++		group = (block - 
++			le32_to_cpu(EXT4_SB(sb)->s_es->s_first_data_block)) >>
+ 			(EXT4_BLOCK_SIZE_BITS(sb) + EXT4_CLUSTER_BITS(sb) + 3);
+ 	else
+ 		ext4_get_group_no_and_offset(sb, block, &group, NULL);
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.1.2
+
