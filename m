@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab3GKGMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 02:12:07 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:57685 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab3GKGMF (ORCPT
+	id S1755423Ab3GKGQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 02:16:48 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:52830 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab3GKGQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 02:12:05 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-71-51de4cb199ea
-Date: Thu, 11 Jul 2013 15:12:01 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Dave Hansen <dave@sr71.net>
-Cc: Dave Hansen <dave.hansen@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] mm, page_alloc: support multiple pages allocation
-Message-ID: <20130711061201.GA2400@lge.com>
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com>
- <51DDE5BA.9020800@intel.com>
- <20130711010248.GB7756@lge.com>
- <51DE44CC.2070700@sr71.net>
+	Thu, 11 Jul 2013 02:16:47 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-ea-51de4dcd7393
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Thomas Renninger <trenn@suse.de>
+Subject: Re: [PATCH 1/4] perf tools: Remove event types framework only user
+References: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
+	<1373388539-9347-2-git-send-email-jolsa@redhat.com>
+Date: Thu, 11 Jul 2013 15:16:45 +0900
+In-Reply-To: <1373388539-9347-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Tue, 9 Jul 2013 18:48:56 +0200")
+Message-ID: <87oba9y62a.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51DE44CC.2070700@sr71.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 10:38:20PM -0700, Dave Hansen wrote:
-> On 07/10/2013 06:02 PM, Joonsoo Kim wrote:
-> > On Wed, Jul 10, 2013 at 03:52:42PM -0700, Dave Hansen wrote:
-> >> On 07/03/2013 01:34 AM, Joonsoo Kim wrote:
-> >>> -		if (page)
-> >>> +		do {
-> >>> +			page = buffered_rmqueue(preferred_zone, zone, order,
-> >>> +							gfp_mask, migratetype);
-> >>> +			if (!page)
-> >>> +				break;
-> >>> +
-> >>> +			if (!nr_pages) {
-> >>> +				count++;
-> >>> +				break;
-> >>> +			}
-> >>> +
-> >>> +			pages[count++] = page;
-> >>> +			if (count >= *nr_pages)
-> >>> +				break;
-> >>> +
-> >>> +			mark = zone->watermark[alloc_flags & ALLOC_WMARK_MASK];
-> >>> +			if (!zone_watermark_ok(zone, order, mark,
-> >>> +					classzone_idx, alloc_flags))
-> >>> +				break;
-> >>> +		} while (1);
-> >>
-> >> I'm really surprised this works as well as it does.  Calling
-> >> buffered_rmqueue() a bunch of times enables/disables interrupts a bunch
-> >> of times, and mucks with the percpu pages lists a whole bunch.
-> >> buffered_rmqueue() is really meant for _single_ pages, not to be called
-> >> a bunch of times in a row.
-> >>
-> >> Why not just do a single rmqueue_bulk() call?
-> > 
-> > rmqueue_bulk() needs a zone lock. If we allocate not so many pages,
-> > for example, 2 or 3 pages, it can have much more overhead rather than
-> > allocationg 1 page multiple times. So, IMHO, it is better that
-> > multiple pages allocation is supported on top of percpu pages list.
-> 
-> It makes _zero_ sense to be doing a number of buffered_rmqueue() calls
-> that are approaching the size of the percpu pages batches.  If you end
-> up doing that, you pay both the overhead in manipulating both the percpu
-> page data _and_ the buddy lists.
-> 
-> You're probably right for small numbers of pages.  But, if we're talking
-> about things that are more than, say, 100 pages (isn't the pcp batch
-> size clamped to 128 4k pages?) you surely don't want to be doing
-> buffered_rmqueue().
+Hi Jiri,
 
-Yes, you are right.
-Firstly, I thought that I can use this for readahead. On my machine,
-readahead reads (maximum) 32 pages in advance if faulted. And batch size
-of percpu pages list is close to or larger than 32 pages
-on today's machine. So I didn't consider more than 32 pages before.
-But to cope with a request for more pages, using rmqueue_bulk() is
-a right way. How about using rmqueue_bulk() conditionally?
+On Tue,  9 Jul 2013 18:48:56 +0200, Jiri Olsa wrote:
+> The only user of the event types data is 'perf timechart'
+> command and uses this info to identify proper tracepoints
+> based on its name.
+>
+> Switching this code to use traceevent library API to obtain
+> IDs for needed tracepoints. This should also make the samples
+> processing faster as we no longer compare strings but numbers.
 
-> 
-> I'd also like to see some scalability numbers on this.  How do your
-> tests look when all the CPUs on the system are hammering away?
+A better way I think is using tracepoint handlers.  You don't need to
+compare anything this way since an evsel can know its handler.
 
-What test do you mean?
-Please elaborate on this more.
+Please see perf_session__set_tracepoints_handlers() and builtin-
+{kmem,lock,sched}.c.
 
-> > And I think that enables/disables interrupts a bunch of times help
-> > to avoid a latency problem. If we disable interrupts until the whole works
-> > is finished, interrupts can be handled too lately.
-> > free_hot_cold_page_list() already do enables/disalbed interrupts a bunch of
-> > times.
-> 
-> I don't think interrupt latency is going to be a problem on the scale
-> we're talking about here.  There are much, much, much worse offenders in
-> the kernel.
 
-Hmm, rmqueue_bulk() doesn't stop until all requested pages are allocated.
-If we request too many pages (1024 pages or more), interrupt latency can
-be a problem.
+[SNIP]
+>  
+> -/*
+> - * trace_flag_type is an enumeration that holds different
+> - * states when a trace occurs. These are:
+> - *  IRQS_OFF            - interrupts were disabled
+> - *  IRQS_NOSUPPORT      - arch does not support irqs_disabled_flags
+> - *  NEED_RESCED         - reschedule is requested
+> - *  HARDIRQ             - inside an interrupt handler
+> - *  SOFTIRQ             - inside a softirq handler
+> - */
+> -enum trace_flag_type {
+> -	TRACE_FLAG_IRQS_OFF		= 0x01,
+> -	TRACE_FLAG_IRQS_NOSUPPORT	= 0x02,
+> -	TRACE_FLAG_NEED_RESCHED		= 0x04,
+> -	TRACE_FLAG_HARDIRQ		= 0x08,
+> -	TRACE_FLAG_SOFTIRQ		= 0x10,
+> -};
 
-Thanks!!
+Why did you remove this part?  Isn't it used by elsewhere?  Anyway, it
+seems unrelated to this change.
 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+[SNIP]
+> +static int get_id(const char *sys, const char *name, u32 *id)
+> +{
+> +	struct event_format *format;
+> +
+> +	format = event_format__new(sys, name);
+
+No.  You need to access to tracepoints in the perf session data, not
+ones in the current system.  The perf_session__set_tracepoints_handlers()
+deals with it correctly.
+
+Thanks,
+Namhyung
+
+
+> +	if (!format)
+> +		return -1;
+> +
+> +	*id = format->id;
+> +	pevent_free_format(format);
+> +	return 0;
+> +}
