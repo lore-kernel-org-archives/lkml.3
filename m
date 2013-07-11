@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab3GKD3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 23:29:33 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52040 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754574Ab3GKD3c (ORCPT
+	id S1755596Ab3GKDeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 23:34:06 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:16778 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754774Ab3GKDeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 23:29:32 -0400
-Message-ID: <51DE2698.3060307@hitachi.com>
-Date: Thu, 11 Jul 2013 12:29:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Jason Baron <jbaron@redhat.com>, Borislav Petkov <bpetkov@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
- patching
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <51DDD3E9.6090601@linux.intel.com>
-In-Reply-To: <51DDD3E9.6090601@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Jul 2013 23:34:00 -0400
+From: Bo Shen <voice.shen@atmel.com>
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: ludovic.desroches@atmel.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH v2 1/3] arm: atmel: at91sam9n12: add pinctrl of TWI
+Date: Thu, 11 Jul 2013 11:30:44 +0800
+Message-Id: <1373513446-18215-2-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1373513446-18215-1-git-send-email-voice.shen@atmel.com>
+References: <1373513446-18215-1-git-send-email-voice.shen@atmel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/11 6:36), H. Peter Anvin wrote:
-> On 07/10/2013 02:31 PM, Jiri Kosina wrote:
->>
->> If any CPU instruction execution would collide with the patching,
->> it'd be trapped by the int3 breakpoint and redirected to the provided
->> "handler" (which would typically mean just skipping over the patched
->> region, acting as "nop" has been there, in case we are doing nop -> jump
->> and jump -> nop transitions).
->>
-> 
-> I'm wondering if it would be easier/more general to just return to the
-> instruction.  The "more general" bit would allow this to be used for
-> other things, like alternatives, and perhaps eventually dynamic call
-> patching.
->
-> Returning to the instruction will, in effect, be a busy-wait for the
-> faulted CPU until the patch is complete; more or less what stop_machine
-> would do, but only for a CPU which actually strays into the affected region.
+add pinctrl of TWI for at91sam9n12 SoC
 
-Sounds a good idea :)
-It may minimize the interface and the implementation will be
-self-contained.
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
 
-Thank you,
+---
+Changes in v2:
+  - remove comments as use micro
 
+ arch/arm/boot/dts/at91sam9n12.dtsi |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+index bb7f564..9fb7ffd 100644
+--- a/arch/arm/boot/dts/at91sam9n12.dtsi
++++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+@@ -291,6 +291,22 @@
+ 					};
+ 				};
+ 
++				i2c0 {
++					pinctrl_i2c0: i2c0-0 {
++						atmel,pins =
++							<AT91_PIOA 30 AT91_PERIPH_A AT91_PINCTRL_NONE
++							 AT91_PIOA 31 AT91_PERIPH_A AT91_PINCTRL_NONE>;
++					};
++				};
++
++				i2c1 {
++					pinctrl_i2c1: i2c1-0 {
++						atmel,pins =
++							<AT91_PIOC 0 AT91_PERIPH_C AT91_PINCTRL_NONE
++							 AT91_PIOC 1 AT91_PERIPH_C AT91_PINCTRL_NONE>;
++					};
++				};
++
+ 				tcb0 {
+ 					pinctrl_tcb0_tclk0: tcb0_tclk0-0 {
+ 						atmel,pins = <AT91_PIOA 24 AT91_PERIPH_A AT91_PINCTRL_NONE>;
+@@ -471,6 +487,8 @@
+ 				dma-names = "tx", "rx";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_i2c0>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -483,6 +501,8 @@
+ 				dma-names = "tx", "rx";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
++				pinctrl-names = "default";
++				pinctrl-0 = <&pinctrl_i2c1>;
+ 				status = "disabled";
+ 			};
+ 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.9.5
 
