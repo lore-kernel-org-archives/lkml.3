@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3GKWBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:01:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43089 "EHLO
+	id S1756817Ab3GKWDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:03:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756299Ab3GKWBt (ORCPT
+	with ESMTP id S1756769Ab3GKWBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:49 -0400
+	Thu, 11 Jul 2013 18:01:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>, Jim Hull <jim.hull@hp.com>
-Subject: [ 05/19] module: do percpu allocation after uniqueness check.  No, really!
-Date: Thu, 11 Jul 2013 15:01:22 -0700
-Message-Id: <20130711214831.255665474@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 17/19] SCSI: sd: Fix parsing of temporary  cache mode prefix
+Date: Thu, 11 Jul 2013 15:01:34 -0700
+Message-Id: <20130711214832.574345473@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
 References: <20130711214830.611455274@linuxfoundation.org>
@@ -26,100 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 8d8022e8aba85192e937f1f0f7450e256d66ae5c upstream.
+commit 2ee3e26c673e75c05ef8b914f54fadee3d7b9c88 upstream.
 
-v3.8-rc1-5-g1fb9341 was supposed to stop parallel kvm loads exhausting
-percpu memory on large machines:
+Commit 39c60a0948cc '[SCSI] sd: fix array cache flushing bug causing
+performance problems' added temp as a pointer to "temporary " and used
+sizeof(temp) - 1 as its length.  But sizeof(temp) is the size of the
+pointer, not the size of the string constant.  Change temp to a static
+array so that sizeof() does what was intended.
 
-    Now we have a new state MODULE_STATE_UNFORMED, we can insert the
-    module into the list (and thus guarantee its uniqueness) before we
-    allocate the per-cpu region.
-
-In my defence, it didn't actually say the patch did this.  Just that
-we "can".
-
-This patch actually *does* it.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Tested-by: Jim Hull <jim.hull@hp.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/module.c |   34 ++++++++++++++++++----------------
- 1 file changed, 18 insertions(+), 16 deletions(-)
+ drivers/scsi/sd.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2927,7 +2927,6 @@ static struct module *layout_and_allocat
- {
- 	/* Module within temporary copy. */
- 	struct module *mod;
--	Elf_Shdr *pcpusec;
- 	int err;
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -142,7 +142,7 @@ sd_store_cache_type(struct device *dev,
+ 	char *buffer_data;
+ 	struct scsi_mode_data data;
+ 	struct scsi_sense_hdr sshdr;
+-	const char *temp = "temporary ";
++	static const char temp[] = "temporary ";
+ 	int len;
  
- 	mod = setup_load_info(info, flags);
-@@ -2942,17 +2941,10 @@ static struct module *layout_and_allocat
- 	err = module_frob_arch_sections(info->hdr, info->sechdrs,
- 					info->secstrings, mod);
- 	if (err < 0)
--		goto out;
-+		return ERR_PTR(err);
- 
--	pcpusec = &info->sechdrs[info->index.pcpu];
--	if (pcpusec->sh_size) {
--		/* We have a special allocation for this section. */
--		err = percpu_modalloc(mod,
--				      pcpusec->sh_size, pcpusec->sh_addralign);
--		if (err)
--			goto out;
--		pcpusec->sh_flags &= ~(unsigned long)SHF_ALLOC;
--	}
-+	/* We will do a special allocation for per-cpu sections later. */
-+	info->sechdrs[info->index.pcpu].sh_flags &= ~(unsigned long)SHF_ALLOC;
- 
- 	/* Determine total sizes, and put offsets in sh_entsize.  For now
- 	   this is done generically; there doesn't appear to be any
-@@ -2963,17 +2955,22 @@ static struct module *layout_and_allocat
- 	/* Allocate and move to the final place */
- 	err = move_module(mod, info);
- 	if (err)
--		goto free_percpu;
-+		return ERR_PTR(err);
- 
- 	/* Module has been copied to its final place now: return it. */
- 	mod = (void *)info->sechdrs[info->index.mod].sh_addr;
- 	kmemleak_load_module(mod, info);
- 	return mod;
-+}
- 
--free_percpu:
--	percpu_modfree(mod);
--out:
--	return ERR_PTR(err);
-+static int alloc_module_percpu(struct module *mod, struct load_info *info)
-+{
-+	Elf_Shdr *pcpusec = &info->sechdrs[info->index.pcpu];
-+	if (!pcpusec->sh_size)
-+		return 0;
-+
-+	/* We have a special allocation for this section. */
-+	return percpu_modalloc(mod, pcpusec->sh_size, pcpusec->sh_addralign);
- }
- 
- /* mod is no longer valid after this! */
-@@ -3237,6 +3234,11 @@ static int load_module(struct load_info
- 	}
- #endif
- 
-+	/* To avoid stressing percpu allocator, do this once we're unique. */
-+	err = alloc_module_percpu(mod, info);
-+	if (err)
-+		goto unlink_mod;
-+
- 	/* Now module is in final location, initialize linked lists, etc. */
- 	err = module_unload_init(mod);
- 	if (err)
+ 	if (sdp->type != TYPE_DISK)
 
 
