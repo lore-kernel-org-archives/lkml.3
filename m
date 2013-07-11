@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab3GKOya (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:54:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42808 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755839Ab3GKOZV (ORCPT
+	id S932925Ab3GKO5Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:57:16 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:50116 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932549Ab3GKO5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:21 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Jiang Liu <jiang.liu@huawei.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 01/98] zram: avoid invalid memory access in zram_exit()
-Date: Thu, 11 Jul 2013 15:23:31 +0100
-Message-Id: <1373552708-15235-2-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 11 Jul 2013 10:57:14 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
+   d="scan'208";a="6589122"
+Message-ID: <51DEC7C8.1090509@citrix.com>
+Date: Thu, 11 Jul 2013 16:57:12 +0200
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 3/4] xen-blkfront: prevent hoarding all
+ grants
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com> <1373288607-1876-4-git-send-email-roger.pau@citrix.com> <51DEB3D5.2050101@citrix.com>
+In-Reply-To: <51DEB3D5.2050101@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.17 -stable review patch.  If anyone has any objections, please let me know.
+On 11/07/13 15:32, David Vrabel wrote:
+> On 08/07/13 14:03, Roger Pau Monne wrote:
+>> Prevent blkfront from hoarding all grants by adding a minimum number
+>> of grants that must be free at all times. We still need a way to free
+>> unused grants in blkfront, but this patch will mitigate the problem
+>> in the meantime.
+> 
+> I think this could end up with the a frontend being able to get no
+> grants because some other frontend always grabs the free grants first.
+> 
+> Particularly as the free grant callbacks are done in the wrong order.
 
-------------------
+I'm not so sure this patch is worth pushing any more, given that we will
+be freeing grants instead of keeping them all in blkfront.
 
-From: Jiang Liu <liuj97@gmail.com>
-
-commit 6030ea9b35971a4200062f010341ab832e878ac9 upstream.
-
-Memory for zram->disk object may have already been freed after returning
-from destroy_device(zram), then it's unsafe for zram_reset_device(zram)
-to access zram->disk again.
-
-We can't solve this bug by flipping the order of destroy_device(zram)
-and zram_reset_device(zram), that will cause deadlock issues to the
-zram sysfs handler.
-
-So fix it by holding an extra reference to zram->disk before calling
-destroy_device(zram).
-
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.5: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/staging/zram/zram_drv.c | 2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index fb7f9fb..900f0ed 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -841,9 +841,11 @@ static void __exit zram_exit(void)
- 	for (i = 0; i < num_devices; i++) {
- 		zram = &zram_devices[i];
- 
-+		get_disk(zram->disk);
- 		destroy_device(zram);
- 		if (zram->init_done)
- 			zram_reset_device(zram);
-+		put_disk(zram->disk);
- 	}
- 
- 	unregister_blkdev(zram_major, "zram");
--- 
-1.8.1.2
-
+It seems like it might still be useful if we are under a lot of IO
+pressure on different blkfronts and for example wanted to hot-attach a
+new network interface (which requires 512 grants).
