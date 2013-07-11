@@ -1,80 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab3GKWUH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:20:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43298 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988Ab3GKWUE (ORCPT
+	id S1757252Ab3GKWYQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:24:16 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:49033 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757079Ab3GKWUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:20:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 06/15] hpfs: better test for errors
-Date: Thu, 11 Jul 2013 15:19:36 -0700
-Message-Id: <20130711221256.710125212@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130711221255.925669600@linuxfoundation.org>
-References: <20130711221255.925669600@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Thu, 11 Jul 2013 18:20:06 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 4/8] cpufreq: Extract non-interface related stuff from
+ cpufreq_add_dev_interface
+To: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com
+Cc: stern@rowland.harvard.edu,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Jul 2013 03:46:29 +0530
+Message-ID: <20130711221623.547.5846.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071122-6102-0000-0000-000003D7B34C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.9-stable review patch.  If anyone has any objections, please let me know.
+cpufreq_add_dev_interface() includes the work of exposing the interface
+to the device, as well as a lot of unrelated stuff. Move the latter to
+cpufreq_add_dev(), where it is more appropriate.
 
-------------------
-
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-
-commit 3ebacb05044f82c5f0bb456a894eb9dc57d0ed90 upstream.
-
-The test if bitmap access is out of bound could errorneously pass if the
-device size is divisible by 16384 sectors and we are asking for one bitmap
-after the end.
-
-Check for invalid size in the superblock. Invalid size could cause integer
-overflows in the rest of the code.
-
-Signed-off-by: Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
- fs/hpfs/map.c   |    3 ++-
- fs/hpfs/super.c |    8 +++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
 
---- a/fs/hpfs/map.c
-+++ b/fs/hpfs/map.c
-@@ -17,7 +17,8 @@ __le32 *hpfs_map_bitmap(struct super_blo
- 			 struct quad_buffer_head *qbh, char *id)
+ drivers/cpufreq/cpufreq.c |   43 ++++++++++++++++++++++++++-----------------
+ 1 file changed, 26 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index ca14dc2..2ab39f3 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -834,11 +834,8 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
+ 				     struct cpufreq_policy *policy,
+ 				     struct device *dev)
  {
- 	secno sec;
--	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
-+	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
-+	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
- 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
- 		return NULL;
+-	struct cpufreq_policy new_policy;
+ 	struct freq_attr **drv_attr;
+-	unsigned long flags;
+ 	int ret = 0;
+-	unsigned int j;
+ 
+ 	/* prepare interface data */
+ 	ret = kobject_init_and_add(&policy->kobj, &ktype_cpufreq,
+@@ -870,17 +867,23 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
+ 			goto err_out_kobj_put;
  	}
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -558,7 +558,13 @@ static int hpfs_fill_super(struct super_
- 	sbi->sb_cp_table = NULL;
- 	sbi->sb_c_bitmap = -1;
- 	sbi->sb_max_fwd_alloc = 0xffffff;
--	
+ 
+-	write_lock_irqsave(&cpufreq_driver_lock, flags);
+-	for_each_cpu(j, policy->cpus) {
+-		per_cpu(cpufreq_cpu_data, j) = policy;
+-		per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
+-	}
+-	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+-
+ 	ret = cpufreq_add_dev_symlink(cpu, policy);
+ 	if (ret)
+ 		goto err_out_kobj_put;
+ 
++	return ret;
 +
-+	if (sbi->sb_fs_size >= 0x80000000) {
-+		hpfs_error(s, "invalid size in superblock: %08x",
-+			(unsigned)sbi->sb_fs_size);
-+		goto bail4;
++err_out_kobj_put:
++	kobject_put(&policy->kobj);
++	wait_for_completion(&policy->kobj_unregister);
++	return ret;
++}
++
++static void cpufreq_init_policy(struct cpufreq_policy *policy)
++{
++	struct cpufreq_policy new_policy;
++	int ret = 0;
++
+ 	memcpy(&new_policy, policy, sizeof(struct cpufreq_policy));
+ 	/* assure that the starting sequence is run in __cpufreq_set_policy */
+ 	policy->governor = NULL;
+@@ -895,12 +898,6 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
+ 		if (cpufreq_driver->exit)
+ 			cpufreq_driver->exit(policy);
+ 	}
+-	return ret;
+-
+-err_out_kobj_put:
+-	kobject_put(&policy->kobj);
+-	wait_for_completion(&policy->kobj_unregister);
+-	return ret;
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+@@ -1074,10 +1071,19 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+ 	}
+ #endif
+ 
++	write_lock_irqsave(&cpufreq_driver_lock, flags);
++	for_each_cpu(j, policy->cpus) {
++		per_cpu(cpufreq_cpu_data, j) = policy;
++		per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
 +	}
++	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 +
- 	/* Load bitmap directory */
- 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
- 		goto bail4;
-
+ 	ret = cpufreq_add_dev_interface(cpu, policy, dev);
+ 	if (ret)
+ 		goto err_out_unregister;
+ 
++	cpufreq_init_policy(policy);
++
+ 	kobject_uevent(&policy->kobj, KOBJ_ADD);
+ 	module_put(cpufreq_driver->owner);
+ 	pr_debug("initialization complete\n");
+@@ -1086,8 +1092,11 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
+ 
+ err_out_unregister:
+ 	write_lock_irqsave(&cpufreq_driver_lock, flags);
+-	for_each_cpu(j, policy->cpus)
++	for_each_cpu(j, policy->cpus) {
+ 		per_cpu(cpufreq_cpu_data, j) = NULL;
++		if (j != cpu)
++			per_cpu(cpufreq_policy_cpu, j) = -1;
++	}
+ 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
+ 	kobject_put(&policy->kobj);
 
