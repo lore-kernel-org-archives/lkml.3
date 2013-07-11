@@ -1,193 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755365Ab3GKACJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:02:09 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:60159 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188Ab3GKACF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:02:05 -0400
-Message-ID: <1373501229.7397.242.camel@haakon3.risingtidesystems.com>
-Subject: [GIT PULL] target updates for v3.11-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Date: Wed, 10 Jul 2013 17:07:09 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755288Ab3GKAEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:04:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51162 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754457Ab3GKAEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 20:04:34 -0400
+Date: Thu, 11 Jul 2013 02:04:27 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jason Baron <jbaron@akamai.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mathieu.desnoyers@efficios.com
+Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based breakpoint
+ instead of stop_machine()
+In-Reply-To: <51DDDFB3.3020004@akamai.com>
+Message-ID: <alpine.LNX.2.00.1307110159490.25858@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <51DDDFB3.3020004@akamai.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus!
+On Wed, 10 Jul 2013, Jason Baron wrote:
 
-Here are the target pending patches for the v3.11-rc1 merge window.
+> > this is a resurrection of a few years old idea to have jump labels use 
+> > synchronization based on int3 breakpoint rather than relying on 
+> > stop_machine() with all the consequences.
+> >
+> > ftrace has been doing exactly this kind of patching for year since 
+> > 08d636b6 ("ftrace/x86: Have arch x86_64 use breakpoints instead of stop 
+> > machine").
+> >
+> > This patchset first introduces generic text_poke_bp() that provides means 
+> > to perform this method of patching in parallel to text_poke_smp(), and 
+> > then converts x86 jump label code to use it.
+> >
+> > If this is merged, I'll do a followup patch converting ftrace to use this 
+> > infrastructure as well, as it's doing the same thing in principle already.
+> >
+> > Comments welcome.
+> >
+> 
+> Cool. This definitely an area I've wanted to improve with jump labels.
+> 
+> Perhaps, ftrace should be considered at this point to make sure the
+> interface is suitable for both callers?
 
-Please go ahead and pull from:
+Yeah, Steven is CCed. From my understanding of the code, ftrace is 
+actually doing exactly what I have done for jump labels in 2/2, i.e. in 
+case the breakpoint is triggered, ftrace implicitly behaves like if "nop" 
+was the instruction that has been executed.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git for-next
+I even have preliminary (completely untested) patch, but would like to 
+have this merged/acked in the first round before proceeding with porting 
+ftrace to the new interface.
 
-Lots of activity this round on performance improvements in target-core
-while benchmarking the prototype scsi-mq initiator code with vhost-scsi
-fabric ports, along with a number of iscsi/iser-target improvements and
-hardening fixes for exception path cases post v3.10 merge.
+> Also, I wonder if its worth batching up updates. For example, right now 
+> we simply update each call-site one at a time even if its associated 
+> with the same control variable.
 
-The highlights include:
+That does seem to make sense indeed, but it's not really closely tied to 
+this patchset, is it?
 
-  - Make persistent reservations APTPL buffer allocated on-demand, and drop
-    per t10_reservation buffer. (grover)
-  - Make virtual LUN=0 a NULLIO device, and skip allocation of NULLIO
-    device pages (grover)
-  - Add transport_cmd_check_stop write_pending bit to avoid extra access
-    of ->t_state_lock is WRITE I/O submission fast-path. (nab)
-  - Drop unnecessary CMD_T_DEV_ACTIVE check from transport_lun_remove_cmd
-    to avoid extra access of ->t_state_lock in release fast-path. (nab)
-  - Avoid extra t_state_lock access in __target_execute_cmd fast-path (nab)
-  - Drop unnecessary vhost-scsi wait_for_tasks=true usage + ->t_state_lock
-    access in release fast-path. (nab)
-  - Convert vhost-scsi to use modern se_cmd->cmd_kref TARGET_SCF_ACK_KREF
-    usage (nab)
-  - Add tracepoints for SCSI commands being processed (roland)
-  - Refactoring of iscsi-target handling of ISCSI_OP_NOOP + ISCSI_OP_TEXT
-    to be transport independent (nab)
-  - Add iscsi-target SendTargets=$IQN support for in-band discovery (nab)
-  - Add iser-target support for in-band discovery (nab + Or)
-  - Add iscsi-target demo-mode TPG authentication context support (nab)
-  - Fix isert_put_reject payload buffer post (nab)
-  - Fix iscsit_add_reject* usage for iser (nab)
-  - Fix iscsit_sequence_cmd reject handling for iser (nab)
-  - Fix ISCSI_OP_SCSI_TMFUNC handling for iser (nab)
-  - Fix session reset bug with RDMA_CM_EVENT_DISCONNECTED (nab)
+Thanks,
 
-The last five iscsi/iser-target items are CC'ed to stable, as they do
-address issues present in v3.10 code.  They are certainly larger than
-I'd like for stable patch set, but are important to ensure proper REJECT
-exception handling in iser-target for 3.10.y.
-
-Also just a heads up to expect a minor conflict in drivers/vhost/scsi.c
-when pulling vhost-next (MST CC'ed) that has come up recently in
-linux-next testing here:
-
-http://marc.info/?l=linux-next&m=137331470429528&w=2
-
-Thank you,
-
---nab
-
-Andy Grover (13):
-  target: Add register_type and preempt_type enums to clarify code
-  target: Alter core_pr_dump_initiator_port for ease of use
-  target: Fix two debugprints that appear to be wrong
-  target: Simplify metadata handling when clearing aptpl metadata
-  target: Unify __core_scsi3_update_aptpl_buf and
-    core_scsi3_update_aptpl_buf
-  target: Remove t10_reservation.pr_aptpl_buf_len
-  target: Remove unneeded param pr_aptpl_buf_len to
-    write_aptpl_to_file()
-  target: Delete incorrect comment
-  target: Allocate aptpl_buf inside update_and_write_aptpl()
-  target: Use if/else for sa_res_key conditional in
-    emulate_pro_register()
-  target: Further refactoring of core_scsi3_emulate_pro_register()
-  target: Make virtual_lun0 a nullio device
-  target: Don't allocate pages for NULLIO devices
-
-Dan Carpenter (1):
-  iscsi-target: missing kfree() on error path
-
-Joern Engel (2):
-  target: remove unused codes from enum tcm_tmrsp_table
-  target: make queue_tm_rsp() return void
-
-Jörn Engel (3):
-  qla_target: remove qlt_check_fcport_exist
-  iscsi-target: Fix tfc_tpg_nacl_auth_cit configfs length overflow
-  iscsi-target: kstrtou* configfs attribute parameter cleanups
-
-Nicholas Bellinger (29):
-  target: Add transport_cmd_check_stop write_pending bit
-  target: Drop unnecessary CMD_T_DEV_ACTIVE check from
-    transport_lun_remove_cmd
-  target: Remove legacy t_fe_count + avoid t_state_lock access in
-    transport_put_cmd
-  target: Avoid extra t_state_lock access in __target_execute_cmd
-  target: Drop unnecessary t_state_lock access for
-    SCF_SUPPORTED_SAM_OPCODE assignment
-  iscsi-target: Avoid unnecessary t_state_lock during unsolicited
-    data-out check
-  target: Drop legacy se_cmd->check_release bit
-  vhost/scsi: Drop unnecessary wait_for_tasks=true usage with
-    transport_generic_free_cmd
-  vhost/scsi: Convert to se_cmd->cmd_kref TARGET_SCF_ACK_KREF usage
-  iscsi/isert-target: Refactor ISCSI_OP_NOOP RX handling
-  iscsi-target: Refactor ISCSI_OP_TEXT RX handling
-  iscsi-target: Refactor ISCSI_OP_TEXT_RSP TX handling
-  iscsi-target: Allow ->MaxXmitDataSegmentLength assignment for iser
-    discovery
-  iscsi-target: Move sendtargets parsing into iscsit_process_text_cmd
-  iscsi-target: Add IFC_SENDTARGETS_SINGLE support
-  target: Add se_portal_group->tpg_auth_group
-  iscsi-target: Add demo-mode TPG authentication context support
-  target: Make core_scsi3_update_and_write_aptpl return sense_reason_t
-  iscsi-target: Drop left-over iscsi_conn->bad_hdr
-  iser-target: Fix isert_put_reject payload buffer post
-  iscsi-target: Fix iscsit_add_reject* usage for iser
-  iscsi-target: Fix iscsit_sequence_cmd reject handling for iser
-  iscsi-target: Fix ISCSI_OP_SCSI_TMFUNC handling for iser
-  iser-target: Fix session reset bug with RDMA_CM_EVENT_DISCONNECTED
-  iser-target: Add vendor_err debug output
-  iser-target: Rename sense_buf_[dma,len] to pdu_[dma,len]
-  iser-target: Add support for ISCSI_OP_TEXT opcode + payload handling
-  iscsi-target: Fix tfc_tpg_auth_cit configfs length overflow
-  iser-target: Ignore non TEXT + LOGOUT opcodes for discovery
-
-Roland Dreier (3):
-  target: Add tracepoints for SCSI commands being processed
-  target: Return correct sense data for IO past the end of a device
-  target: Add (obsolete) checking for PMI/LBA fields in READ
-    CAPACITY(10)
-
- drivers/infiniband/ulp/isert/ib_isert.c        |  268 +++++++--
- drivers/infiniband/ulp/isert/ib_isert.h        |    5 +-
- drivers/infiniband/ulp/srpt/ib_srpt.c          |   27 +-
- drivers/scsi/qla2xxx/qla_target.c              |  151 +----
- drivers/scsi/qla2xxx/tcm_qla2xxx.c             |   10 +-
- drivers/target/iscsi/iscsi_target.c            |  768 ++++++++++++------------
- drivers/target/iscsi/iscsi_target.h            |    2 +-
- drivers/target/iscsi/iscsi_target_configfs.c   |  184 +++++-
- drivers/target/iscsi/iscsi_target_core.h       |   11 +-
- drivers/target/iscsi/iscsi_target_erl0.c       |    8 +-
- drivers/target/iscsi/iscsi_target_erl1.c       |   26 +-
- drivers/target/iscsi/iscsi_target_nego.c       |   13 +-
- drivers/target/iscsi/iscsi_target_parameters.c |    3 -
- drivers/target/iscsi/iscsi_target_util.c       |   28 +-
- drivers/target/iscsi/iscsi_target_util.h       |    3 +-
- drivers/target/loopback/tcm_loop.c             |    3 +-
- drivers/target/sbp/sbp_target.c                |    3 +-
- drivers/target/target_core_configfs.c          |   13 +-
- drivers/target/target_core_device.c            |    5 +-
- drivers/target/target_core_fabric_configfs.c   |   21 +-
- drivers/target/target_core_pr.c                |  499 ++++++---------
- drivers/target/target_core_pr.h                |    2 +-
- drivers/target/target_core_rd.c                |    5 +
- drivers/target/target_core_sbc.c               |   18 +-
- drivers/target/target_core_tmr.c               |   12 +-
- drivers/target/target_core_transport.c         |   87 ++-
- drivers/target/tcm_fc/tcm_fc.h                 |    2 +-
- drivers/target/tcm_fc/tfc_cmd.c                |    8 +-
- drivers/usb/gadget/tcm_usb_gadget.c            |    3 +-
- drivers/vhost/scsi.c                           |   37 +-
- include/target/iscsi/iscsi_transport.h         |   21 +-
- include/target/target_core_base.h              |   23 +-
- include/target/target_core_configfs.h          |    1 +
- include/target/target_core_fabric.h            |    2 +-
- include/target/target_core_fabric_configfs.h   |   11 +
- include/trace/events/target.h                  |  214 +++++++
- 36 files changed, 1413 insertions(+), 1084 deletions(-)
- create mode 100644 include/trace/events/target.h
-
+-- 
+Jiri Kosina
+SUSE Labs
