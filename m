@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab3GKW2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:28:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43251 "EHLO
+	id S1756334Ab3GKW2k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:28:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43245 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757018Ab3GKWT6 (ORCPT
+	with ESMTP id S1757092Ab3GKWT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:19:58 -0400
+	Thu, 11 Jul 2013 18:19:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 07/15] block: do not pass disk names as format strings
-Date: Thu, 11 Jul 2013 15:19:37 -0700
-Message-Id: <20130711221256.814129315@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [ 05/15] charger-manager: Ensure event is not used as format string
+Date: Thu, 11 Jul 2013 15:19:35 -0700
+Message-Id: <20130711221256.599062238@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711221255.925669600@linuxfoundation.org>
 References: <20130711221255.925669600@linuxfoundation.org>
@@ -30,60 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kees Cook <keescook@chromium.org>
 
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
+commit 3594f4c0d7bc51e3a7e6d73c44e368ae079e42f3 upstream.
 
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
-
-CVE-2013-2851
+The exposed interface for cm_notify_event() could result in the event msg
+string being parsed as a format string. Make sure it is only used as a
+literal string.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Signed-off-by: Anton Vorontsov <anton@enomsg.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/genhd.c              |    2 +-
- drivers/block/nbd.c        |    3 ++-
- drivers/scsi/osd/osd_uld.c |    2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/power/charger-manager.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -512,7 +512,7 @@ static void register_disk(struct gendisk
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -450,7 +450,7 @@ static void uevent_notify(struct charger
+ 	strncpy(env_str, event, UEVENT_BUF_SIZE);
+ 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
  
- 	ddev->parent = disk->driverfs_dev;
+-	dev_info(cm->dev, event);
++	dev_info(cm->dev, "%s", event);
+ }
  
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -714,7 +714,8 @@ static int __nbd_ioctl(struct block_devi
- 		else
- 			blk_queue_flush(nbd->disk->queue, 0);
- 
--		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
-+		thread = kthread_create(nbd_thread, nbd, "%s",
-+					nbd->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&nbd->tx_lock);
- 			return PTR_ERR(thread);
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -485,7 +485,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
+ /**
 
 
