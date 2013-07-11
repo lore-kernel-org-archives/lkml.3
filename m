@@ -1,469 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab3GKVur (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 17:50:47 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:51174 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756703Ab3GKVup (ORCPT
+	id S1756595Ab3GKWBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:01:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43044 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756285Ab3GKWBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 17:50:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130711185104.GC5349@quack.suse.cz>
-References: <20130705155113.3586.78292.stgit@maximpc.sw.ru>
-	<20130711185104.GC5349@quack.suse.cz>
-Date: Fri, 12 Jul 2013 01:50:44 +0400
-X-Google-Sender-Auth: iC7P6HqgIabUm7-d5xGAmYEq56M
-Message-ID: <CAPB2xN89n=1JLQe7w_+J8A246HsUDv0oP1WCjQ=4OFJnDDGchQ@mail.gmail.com>
-Subject: Re: [PATCH] mm: strictlimit feature -v3
-From: Maxim Patlasov <MPatlasov@parallels.com>
-To: Jan Kara <jack@suse.cz>
-Cc: akpm@linux-foundation.org, riel@redhat.com, dev@parallels.com,
-        miklos@szeredi.hu, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, xemul@parallels.com, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, linux-mm@kvack.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, fengguang.wu@intel.com,
-        devel@openvz.org, mgorman@suse.de
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 11 Jul 2013 18:01:42 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Josh Durgin <josh.durgin@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [ 03/19] libceph: fix invalid unsigned->signed conversion for timespec encoding
+Date: Thu, 11 Jul 2013 15:01:20 -0700
+Message-Id: <20130711214831.023271016@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
+References: <20130711214830.611455274@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 10:51 PM, Jan Kara <jack@suse.cz> wrote:
-> On Fri 05-07-13 19:53:36, Maxim Patlasov wrote:
->> The feature prevents mistrusted filesystems to grow a large number of dirty
->> pages before throttling. For such filesystems balance_dirty_pages always
->> check bdi counters against bdi limits. I.e. even if global "nr_dirty" is under
->> "freerun", it's not allowed to skip bdi checks. The only use case for now is
->> fuse: it sets bdi max_ratio to 1% by default and system administrators are
->> supposed to expect that this limit won't be exceeded.
->>
->> The feature is on if a BDI is marked by BDI_CAP_STRICTLIMIT flag.
->> A filesystem may set the flag when it initializes its BDI.
->>
->> Changed in v2 (thanks to Andrew Morton):
->>  - added a few explanatory comments
->>  - cleaned up the mess in backing_dev_info foo_stamp fields: now it's clearly
->>    stated that bw_time_stamp is measured in jiffies; renamed other foo_stamp
->>    fields to reflect that they are in units of number-of-pages.
->>
->> Changed in v3 (thanks to Jan Kara)
->>  - made strictlimit a bdi flag
->>  - introduced "bdi_dirty <= bdi_freerun" check
->>  - removed BDI_idle and BDI_WRITTEN_BACK as redundant
->>  - moved foo_stamp cleanup to separate patch because it's not related
->>    to strictlimit feature anymore
->>  - corrected spelling.
->   I have some comments below but the patch is much better! Thanks!
->
->> Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
->> ---
->>  fs/fuse/inode.c             |    2
->>  include/linux/backing-dev.h |    3 +
->>  mm/page-writeback.c         |  190 ++++++++++++++++++++++++++++++++++++-------
->>  3 files changed, 164 insertions(+), 31 deletions(-)
->>
->> diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
->> index 9a0cdde..9aa1932 100644
->> --- a/fs/fuse/inode.c
->> +++ b/fs/fuse/inode.c
->> @@ -929,7 +929,7 @@ static int fuse_bdi_init(struct fuse_conn *fc, struct super_block *sb)
->>       fc->bdi.name = "fuse";
->>       fc->bdi.ra_pages = (VM_MAX_READAHEAD * 1024) / PAGE_CACHE_SIZE;
->>       /* fuse does it's own writeback accounting */
->> -     fc->bdi.capabilities = BDI_CAP_NO_ACCT_WB;
->> +     fc->bdi.capabilities = BDI_CAP_NO_ACCT_WB | BDI_CAP_STRICTLIMIT;
->>
->>       err = bdi_init(&fc->bdi);
->>       if (err)
->> diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
->> index ee7eb1a..7166489 100644
->> --- a/include/linux/backing-dev.h
->> +++ b/include/linux/backing-dev.h
->> @@ -244,6 +244,8 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned int max_ratio);
->>   * BDI_CAP_EXEC_MAP:       Can be mapped for execution
->>   *
->>   * BDI_CAP_SWAP_BACKED:    Count shmem/tmpfs objects as swap-backed.
->> + *
->> + * BDI_CAP_STRICTLIMIT:    Keep number of dirty pages below bdi threshold.
->>   */
->>  #define BDI_CAP_NO_ACCT_DIRTY        0x00000001
->>  #define BDI_CAP_NO_WRITEBACK 0x00000002
->> @@ -255,6 +257,7 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned int max_ratio);
->>  #define BDI_CAP_NO_ACCT_WB   0x00000080
->>  #define BDI_CAP_SWAP_BACKED  0x00000100
->>  #define BDI_CAP_STABLE_WRITES        0x00000200
->> +#define BDI_CAP_STRICTLIMIT  0x00000400
->>
->>  #define BDI_CAP_VMFLAGS \
->>       (BDI_CAP_READ_MAP | BDI_CAP_WRITE_MAP | BDI_CAP_EXEC_MAP)
->> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->> index 088a8db..1f9b5e4 100644
->> --- a/mm/page-writeback.c
->> +++ b/mm/page-writeback.c
->> @@ -585,6 +585,37 @@ unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
->>  }
->>
->>  /*
->> + *                           setpoint - dirty 3
->> + *        f(dirty) := 1.0 + (----------------)
->> + *                           limit - setpoint
->> + *
->> + * it's a 3rd order polynomial that subjects to
->> + *
->> + * (1) f(freerun)  = 2.0 => rampup dirty_ratelimit reasonably fast
->> + * (2) f(setpoint) = 1.0 => the balance point
->> + * (3) f(limit)    = 0   => the hard limit
->> + * (4) df/dx      <= 0        => negative feedback control
->> + * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
->> + *     => fast response on large errors; small oscillation near setpoint
->> + */
->> +static inline long long pos_ratio_polynom(unsigned long setpoint,
->> +                                       unsigned long dirty,
->> +                                       unsigned long limit)
->> +{
->> +     long long pos_ratio;
->> +     long x;
->> +
->> +     x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
->> +                 limit - setpoint + 1);
->> +     pos_ratio = x;
->> +     pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
->> +     pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
->> +     pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
->> +
->> +     return pos_ratio;
->> +}
->   I think you should limit return value of this function to <-2,2> range to
-> save us from surprises when dirty > limit or dirty < setpoint.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-OK, I'll add it to the next version of the patch.
+------------------
 
->
->> +
->> +/*
->>   * Dirty position control.
->>   *
->>   * (o) global/bdi setpoints
->> @@ -682,26 +713,75 @@ static unsigned long bdi_position_ratio(struct backing_dev_info *bdi,
->>       /*
->>        * global setpoint
->>        *
->> -      *                           setpoint - dirty 3
->> -      *        f(dirty) := 1.0 + (----------------)
->> -      *                           limit - setpoint
->> +      * See comment for pos_ratio_polynom().
->> +      */
->> +     setpoint = (freerun + limit) / 2;
->> +     pos_ratio = pos_ratio_polynom(setpoint, dirty, limit);
->> +
->> +     /*
->> +      * The strictlimit feature is a tool preventing mistrusted filesystems
->> +      * from growing a large number of dirty pages before throttling. For
->> +      * such filesystems balance_dirty_pages always checks bdi counters
->> +      * against bdi limits. Even if global "nr_dirty" is under "freerun".
->> +      * This is especially important for fuse which sets bdi->max_ratio to
->> +      * 1% by default. Without strictlimit feature, fuse writeback may
->> +      * consume arbitrary amount of RAM because it is accounted in
->> +      * NR_WRITEBACK_TEMP which is not involved in calculating "nr_dirty".
->   I know this isn't directly related to this patch, but why isn't
-> NR_WRITEBACK_TEMP accounted in nr_dirty? I presume this is due to possible
-> deadlocks when you have dirty page against fuse, then to clean it, you have
-> to submit it to userspace process which must be able to dirty some pages to
-> actually write the page. Am I right?
+From: Josh Durgin <josh.durgin@inktank.com>
 
-Yes. Mel Gorman suggested to account it in nr_dirty for all but fuse
-daemons, and this looked like the way to go. But then it turned out
-that we cannot reliably discern fuse daemons among other processes.
+commit 8b8cf8917f9b5d74e04f281272d8719ce335a497 upstream.
 
->
-> But then if we have 'strictlimit' properly implemented, NR_WRITEBACK_TEMP
-> hack shouldn't be necessary anymore.
+__kernel_time_t is a long, which cannot hold a U32_MAX on 32-bit
+architectures.  Just drop this check as it has limited value.
 
-Currently, NR_WRITEBACK_TEMP is accounted by FUSE and printed out in
-/proc/meminfo, but nobody in the kernel uses it. We can remove it
-right now and nothing will change.
+This fixes a crash like:
 
-On the other hand, independently on strictlimit feature, we cannot
-account all those NR_WRITEBACK_TEMP pages in ordinary NR_WRITEBACK.
-Because balance_dirty_pages() is not the only place where
-NR_WRITEBACK is used. Another important place is
-throttle_vm_writeout(). We definitely don't want to slow down
-reclaimer due to pages sit in fuse internals.
+[  957.905812] kernel BUG at /srv/autobuild-ceph/gitbuilder.git/build/include/linux/ceph/decode.h:164!
+[  957.914849] Internal error: Oops - BUG: 0 [#1] SMP ARM
+[  957.919978] Modules linked in: rbd libceph libcrc32c ipmi_devintf ipmi_si ipmi_msghandler nfsd nfs_acl auth_rpcgss nfs fscache lockd sunrpc
+[  957.932547] CPU: 1    Tainted: G        W     (3.9.0-ceph-19bb6a83-highbank #1)
+[  957.939881] PC is at ceph_osdc_build_request+0x8c/0x4f8 [libceph]
+[  957.945967] LR is at 0xec520904
+[  957.949103] pc : [<bf13e76c>]    lr : [<ec520904>]    psr: 20000153
+[  957.949103] sp : ec753df8  ip : 00000001  fp : ec53e100
+[  957.960571] r10: ebef25c0  r9 : ec5fa400  r8 : ecbcc000
+[  957.965788] r7 : 00000000  r6 : 00000000  r5 : ffffffff  r4 : 00000020
+[  957.972307] r3 : 51cc8143  r2 : ec520900  r1 : ec753e58  r0 : ec520908
+[  957.978827] Flags: nzCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment user
+[  957.986039] Control: 10c5387d  Table: 2c59c04a  DAC: 00000015
+[  957.991777] Process rbd (pid: 2138, stack limit = 0xec752238)
+[  957.997514] Stack: (0xec753df8 to 0xec754000)
+[  958.001864] 3de0:                                                       00000001 00000001
+[  958.010032] 3e00: 00000001 bf139744 ecbcc000 ec55a0a0 00000024 00000000 ebef25c0 fffffffe
+[  958.018204] 3e20: ffffffff 00000000 00000000 00000001 ec5fa400 ebef25c0 ec53e100 bf166b68
+[  958.026377] 3e40: 00000000 0000220f fffffffe ffffffff ec753e58 bf13ff24 51cc8143 05b25ed2
+[  958.034548] 3e60: 00000001 00000000 00000000 bf1688d4 00000001 00000000 00000000 00000000
+[  958.042720] 3e80: 00000001 00000060 ec5fa400 ed53d200 ed439600 ed439300 00000001 00000060
+[  958.050888] 3ea0: ec5fa400 ed53d200 00000000 bf16a320 00000000 ec53e100 00000040 ec753eb8
+[  958.059059] 3ec0: ec51df00 ed53d7c0 ed53d200 ed53d7c0 00000000 ed53d7c0 ec5fa400 bf16ed70
+[  958.067230] 3ee0: 00000000 00000060 00000002 ed53d200 00000000 bf16acf4 ed53d7c0 ec752000
+[  958.075402] 3f00: ed980e50 e954f5d8 00000000 00000060 ed53d240 ed53d258 ec753f80 c04f44a8
+[  958.083574] 3f20: edb7910c ec664700 01ade920 c02e4c44 00000060 c016b3dc ec51de40 01adfb84
+[  958.091745] 3f40: 00000060 ec752000 ec753f80 ec752000 00000060 c0108444 00000007 ec51de48
+[  958.099914] 3f60: ed0eb8c0 00000000 00000000 ec51de40 01adfb84 00000001 00000060 c0108858
+[  958.108085] 3f80: 00000000 00000000 51cc8143 00000060 01adfb84 00000007 00000004 c000dd68
+[  958.116257] 3fa0: 00000000 c000dbc0 00000060 01adfb84 00000007 01adfb84 00000060 01adfb80
+[  958.124429] 3fc0: 00000060 01adfb84 00000007 00000004 beded1a8 00000000 01adf2f0 01ade920
+[  958.132599] 3fe0: 00000000 beded180 b6811324 b6811334 800f0010 00000007 2e7f5821 2e7f5c21
+[  958.140815] [<bf13e76c>] (ceph_osdc_build_request+0x8c/0x4f8 [libceph]) from [<bf166b68>] (rbd_osd_req_format_write+0x50/0x7c [rbd])
+[  958.152739] [<bf166b68>] (rbd_osd_req_format_write+0x50/0x7c [rbd]) from [<bf1688d4>] (rbd_dev_header_watch_sync+0xe0/0x204 [rbd])
+[  958.164486] [<bf1688d4>] (rbd_dev_header_watch_sync+0xe0/0x204 [rbd]) from [<bf16a320>] (rbd_dev_image_probe+0x23c/0x850 [rbd])
+[  958.175967] [<bf16a320>] (rbd_dev_image_probe+0x23c/0x850 [rbd]) from [<bf16acf4>] (rbd_add+0x3c0/0x918 [rbd])
+[  958.185975] [<bf16acf4>] (rbd_add+0x3c0/0x918 [rbd]) from [<c02e4c44>] (bus_attr_store+0x20/0x2c)
+[  958.194850] [<c02e4c44>] (bus_attr_store+0x20/0x2c) from [<c016b3dc>] (sysfs_write_file+0x168/0x198)
+[  958.203984] [<c016b3dc>] (sysfs_write_file+0x168/0x198) from [<c0108444>] (vfs_write+0x9c/0x170)
+[  958.212768] [<c0108444>] (vfs_write+0x9c/0x170) from [<c0108858>] (sys_write+0x3c/0x70)
+[  958.220768] [<c0108858>] (sys_write+0x3c/0x70) from [<c000dbc0>] (ret_fast_syscall+0x0/0x30)
+[  958.229199] Code: e59d1058 e5913000 e3530000 ba000114 (e7f001f2)
 
-> We just need to make sure bdi_limit is
-> low enough that fuse daemon doesn't hit the global dirty limit... This gets
-> somewhat tricky as all fuse filesystems in the system together shouldn't be
-> able to create too many dirty pages but the same problem is there with
-> NR_WRITEBACK_TEMP only it would demonstrate itself by driving the machine
-> OOM instead of locking up in balance_dirty_pages().
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-What you're suggesting is not logical. fuse daemon is the guy who is
-in charge of processing fuse internal writeback (those pages which
-were accounted in NR_WRITEBACK_TEMP). Hence, we should not slow down
-it (fuse daemon) based on the amount of pages under fuse writeback.
-That's exactly what Mel Gorman explained during LSF/MM summit. And
-what you're suggesting will lead to something like "more pages under
-fuse writeback ==> lesser pos_ratio ==> higher pause in
-balance_dirty_pages". This is not correct when throttling fuse daemon.
+---
+ include/linux/ceph/decode.h |    5 -----
+ 1 file changed, 5 deletions(-)
 
-> If I'm right in the above, then removing NR_WRITEBACK_TEMP would be a nice
-> followup patch.
+--- a/include/linux/ceph/decode.h
++++ b/include/linux/ceph/decode.h
+@@ -160,11 +160,6 @@ static inline void ceph_decode_timespec(
+ static inline void ceph_encode_timespec(struct ceph_timespec *tv,
+ 					const struct timespec *ts)
+ {
+-	BUG_ON(ts->tv_sec < 0);
+-	BUG_ON(ts->tv_sec > (__kernel_time_t)U32_MAX);
+-	BUG_ON(ts->tv_nsec < 0);
+-	BUG_ON(ts->tv_nsec > (long)U32_MAX);
+-
+ 	tv->tv_sec = cpu_to_le32((u32)ts->tv_sec);
+ 	tv->tv_nsec = cpu_to_le32((u32)ts->tv_nsec);
+ }
 
-I'd rather introduce the notion of trusted fuse filesystem. If system
-administrator believe given fuse fs "trusted", it works w/o
-strictlimit, but fuse daemon is supposed to notify the kernel
-explicitly about threads related to processing writeback. The kernel
-would raise a per-task flag for those threads. And, calculating
-nr_dirty in balance_dirty_pages, we'd add NR_WRITEBACK_TEMP for all,
-excepting tasks with the flag set.  This is very simple and will work
-perfectly.
 
->>        *
->> -      * it's a 3rd order polynomial that subjects to
->> +      * Here, in bdi_position_ratio(), we calculate pos_ratio based on
->> +      * two values: bdi_dirty and bdi_thresh. Let's consider an example:
->> +      * total amount of RAM is 16GB, bdi->max_ratio is equal to 1%, global
->> +      * limits are set by default to 10% and 20% (background and throttle).
->> +      * Then bdi_thresh is 1% of 20% of 16GB. This amounts to ~8K pages.
->> +      * bdi_dirty_limit(bdi, bg_thresh) is about ~4K pages. bdi_setpoint is
->> +      * about ~6K pages (as the average of background and throttle bdi
->> +      * limits). The 3rd order polynomial will provide positive feedback if
->> +      * bdi_dirty is under bdi_setpoint and vice versa.
->>        *
->> -      * (1) f(freerun)  = 2.0 => rampup dirty_ratelimit reasonably fast
->> -      * (2) f(setpoint) = 1.0 => the balance point
->> -      * (3) f(limit)    = 0   => the hard limit
->> -      * (4) df/dx      <= 0   => negative feedback control
->> -      * (5) the closer to setpoint, the smaller |df/dx| (and the reverse)
->> -      *     => fast response on large errors; small oscillation near setpoint
->> +      * Note, that we cannot use global counters in these calculations
->> +      * because we want to throttle process writing to a strictlimit BDI
->> +      * much earlier than global "freerun" is reached (~23MB vs. ~2.3GB
->> +      * in the example above).
->>        */
->> -     setpoint = (freerun + limit) / 2;
->> -     x = div_s64(((s64)setpoint - (s64)dirty) << RATELIMIT_CALC_SHIFT,
->> -                 limit - setpoint + 1);
->> -     pos_ratio = x;
->> -     pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
->> -     pos_ratio = pos_ratio * x >> RATELIMIT_CALC_SHIFT;
->> -     pos_ratio += 1 << RATELIMIT_CALC_SHIFT;
->> +     if (unlikely(bdi->capabilities & BDI_CAP_STRICTLIMIT)) {
->> +             long long bdi_pos_ratio;
->> +             unsigned long bdi_bg_thresh;
->> +
->> +             if (bdi_dirty < 8)
->> +                     return min_t(long long, pos_ratio * 2,
->> +                                  2 << RATELIMIT_CALC_SHIFT);
->> +
->> +             if (bdi_dirty >= bdi_thresh)
->> +                     return 0;
->> +
->> +             bdi_bg_thresh = div_u64((u64)bdi_thresh * bg_thresh, thresh);
->> +             bdi_setpoint = dirty_freerun_ceiling(bdi_thresh,
->> +                                                  bdi_bg_thresh);
->> +
->> +             if (bdi_setpoint == 0 || bdi_setpoint == bdi_thresh)
->> +                     return 0;
->> +
->> +             bdi_pos_ratio = pos_ratio_polynom(bdi_setpoint, bdi_dirty,
->> +                                               bdi_thresh);
->> +
->> +             /*
->> +              * Typically, for strictlimit case, bdi_setpoint << setpoint
->> +              * and pos_ratio >> bdi_pos_ratio. In the other words global
->> +              * state ("dirty") is not limiting factor and we have to
->> +              * make decision based on bdi counters. But there is an
->> +              * important case when global pos_ratio should get precedence:
->> +              * global limits are exceeded (e.g. due to activities on other
->> +              * BDIs) while given strictlimit BDI is below limit.
->> +              *
->> +              * "pos_ratio * bdi_pos_ratio" would work for the case above,
->> +              * but it would look too non-natural for the case of all
->> +              * activity in the system coming from a single strictlimit BDI
->> +              * with bdi->max_ratio == 100%.
->> +              */
->> +             pos_ratio = min(pos_ratio, bdi_pos_ratio);
->   This somewhat changes the dynamics of the control system. Normally,
-> pos_ratio value can be well over 3 (when globally we are at freerun and bdi
-> is well below bdi setpoint). Now the maximum pos_ratio in the same
-> situation is 2. Since I cannot come up with a better alternative to your
-> min(), leave it there but please make a short note in the comment that we
-> might want to tweak this if we observe the control system is too slow to
-> adapt.
-
-OK, I agree.
-
->
->> +
->> +             return min_t(long long, pos_ratio, 2 << RATELIMIT_CALC_SHIFT);
->> +     }
->>
->>       /*
->>        * We have computed basic pos_ratio above based on global situation. If
->> @@ -994,6 +1074,27 @@ static void bdi_update_dirty_ratelimit(struct backing_dev_info *bdi,
->>        * keep that period small to reduce time lags).
->>        */
->>       step = 0;
->> +
->> +     /*
->> +      * For strictlimit case, calculations above were based on bdi counters
->> +      * and limits (starting from pos_ratio = bdi_position_ratio() and up to
->> +      * balanced_dirty_ratelimit = task_ratelimit * write_bw / dirty_rate).
->> +      * Hence, to calculate "step" properly, we have to use bdi_dirty as
->> +      * "dirty" and bdi_setpoint as "setpoint".
->> +      *
->> +      * We rampup dirty_ratelimit forcibly if bdi_dirty is low because
->> +      * it's possible that bdi_thresh is close to zero due to inactivity
->> +      * of backing device (see the implementation of bdi_dirty_limit()).
->> +      */
->> +     if (unlikely(bdi->capabilities & BDI_CAP_STRICTLIMIT)) {
->> +             dirty = bdi_dirty;
->> +             if (bdi_dirty < 8)
->> +                     setpoint = bdi_dirty + 1;
->> +             else
->> +                     setpoint = (bdi_thresh +
->> +                                 bdi_dirty_limit(bdi, bg_thresh)) / 2;
->> +     }
->> +
->   Ho, hum.... but if bdi_dirty < bdi_setpoint but globally we are above
-> setpoint, resulting pos_ratio will be < 1. Then the logic below this place
-> will result in step == 0 (as current dirty_ratelimit is likely to be
-> greater than the new one computed now) and thus we won't change the
-> ratelimit for the bdi at all. But we should reduce the ratelimit to
-> ease the total pressure on the system.
-
-Excuse me, I disagree. If globally we're above setpoint, there must be
-bdi-s with bdi_dirty > bdi_setpoint. Let's reduce their ratelimits,
-not ours. Because if our ratelimit is really above bdi write
-bandwidth, our bdi_dirty will exceed our bdi_setpoint soon. And as for
-total pressure, it will be relaxed anyway because global pos_ratio is
-coming to zero very quickly when global nr_dirty is coming to global
-limit close enough (due to that 3rd order polynomial). This works for
-all, including tasks with bdi_dirty < bdi_setpoint. And vice versa --
-if we're only slightly above global setpoint -- why should we reduce
-ratelimit of someone with low bdi_dirty?
-
->
-> So I think you need to make the condition below something like:
->         if (dirty < setpoint &&
->             (!(bdi->capabilities & BDI_CAP_STRICTLIMIT) ||
->              bdi_dirty < bdi_setpoint))
->
->
->>       if (dirty < setpoint) {
->>               x = min(bdi->balanced_dirty_ratelimit,
->>                        min(balanced_dirty_ratelimit, task_ratelimit));
->> @@ -1198,6 +1299,21 @@ static long bdi_min_pause(struct backing_dev_info *bdi,
->>       return pages >= DIRTY_POLL_THRESH ? 1 + t / 2 : t;
->>  }
->>
->> +static inline bool below_freerun_ceiling(unsigned long nr,
->> +                                      unsigned long thresh,
->> +                                      unsigned long bg_thresh,
->> +                                      unsigned long now)
->> +{
->> +     if (nr <= dirty_freerun_ceiling(thresh, bg_thresh)) {
->> +             current->dirty_paused_when = now;
->> +             current->nr_dirtied = 0;
->> +             current->nr_dirtied_pause = dirty_poll_interval(nr, thresh);
->> +             return true;
->> +     }
->> +
->> +     return false;
->> +}
->> +
->>  /*
->>   * balance_dirty_pages() must be called by processes which are generating dirty
->>   * data.  It looks at the number of dirty pages in the machine and will force
->> @@ -1212,7 +1328,6 @@ static void balance_dirty_pages(struct address_space *mapping,
->>       unsigned long bdi_reclaimable;
->>       unsigned long nr_dirty;  /* = file_dirty + writeback + unstable_nfs */
->>       unsigned long bdi_dirty;
->> -     unsigned long freerun;
->>       unsigned long background_thresh;
->>       unsigned long dirty_thresh;
->>       unsigned long bdi_thresh;
->> @@ -1226,6 +1341,7 @@ static void balance_dirty_pages(struct address_space *mapping,
->>       unsigned long dirty_ratelimit;
->>       unsigned long pos_ratio;
->>       struct backing_dev_info *bdi = mapping->backing_dev_info;
->> +     bool strictlimit = bdi->capabilities & BDI_CAP_STRICTLIMIT;
->>       unsigned long start_time = jiffies;
->>
->>       for (;;) {
->> @@ -1248,18 +1364,10 @@ static void balance_dirty_pages(struct address_space *mapping,
->>                * catch-up. This avoids (excessively) small writeouts
->>                * when the bdi limits are ramping up.
->>                */
->> -             freerun = dirty_freerun_ceiling(dirty_thresh,
->> -                                             background_thresh);
->> -             if (nr_dirty <= freerun) {
->> -                     current->dirty_paused_when = now;
->> -                     current->nr_dirtied = 0;
->> -                     current->nr_dirtied_pause =
->> -                             dirty_poll_interval(nr_dirty, dirty_thresh);
->> +             if (likely(!strictlimit) &&
->> +                 below_freerun_ceiling(nr_dirty, dirty_thresh,
->> +                                       background_thresh, now))
->   Hiding the 'current' update in the helper function is unexpected. I'd
-> rather have the 'bdi_dirty' computation hidden in a helper function and
-> perform it either before or after freerun check depending on whether we are
-> in strictlimit mode or not.
-
-OK. I'll try to do it in the next version.
-
-Thanks,
-Maxim
-
->
->>                       break;
->> -             }
->> -
->> -             if (unlikely(!writeback_in_progress(bdi)))
->> -                     bdi_start_background_writeback(bdi);
->>
->>               /*
->>                * bdi_thresh is not treated as some limiting factor as
->> @@ -1296,8 +1404,30 @@ static void balance_dirty_pages(struct address_space *mapping,
->>                                   bdi_stat(bdi, BDI_WRITEBACK);
->>               }
->>
->> +             /*
->> +              * Throttle it only when the background writeback cannot
->> +              * catch-up. But this time (strictlimit case) make decision
->> +              * based on the bdi counters and limits. Small writeouts when
->> +              * the bdi limits are ramping up are the price we consciously
->> +              * pay for strictlimit-ing.
->> +              */
->> +             if (unlikely(strictlimit)) {
->> +                     unsigned long bdi_bg_thresh;
->> +
->> +                     bdi_bg_thresh = div_u64((u64)bdi_thresh *
->> +                                             background_thresh,
->> +                                             dirty_thresh);
->> +
->> +                     if (below_freerun_ceiling(bdi_dirty, bdi_thresh,
->> +                                               bdi_bg_thresh, now))
->> +                             break;
->> +             }
->> +
->> +             if (unlikely(!writeback_in_progress(bdi)))
->> +                     bdi_start_background_writeback(bdi);
->> +
->>               dirty_exceeded = (bdi_dirty > bdi_thresh) &&
->> -                               (nr_dirty > dirty_thresh);
->> +                              ((nr_dirty > dirty_thresh) || strictlimit);
->>               if (dirty_exceeded && !bdi->dirty_exceeded)
->>                       bdi->dirty_exceeded = 1;
->
->                                                                 Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
