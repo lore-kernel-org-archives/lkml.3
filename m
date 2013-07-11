@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab3GKWBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:01:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43044 "EHLO
+	id S1756857Ab3GKWCH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:02:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43112 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756285Ab3GKWBm (ORCPT
+	with ESMTP id S1756700Ab3GKWBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:42 -0400
+	Thu, 11 Jul 2013 18:01:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Durgin <josh.durgin@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [ 03/19] libceph: fix invalid unsigned->signed conversion for timespec encoding
-Date: Thu, 11 Jul 2013 15:01:20 -0700
-Message-Id: <20130711214831.023271016@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 18/19] cpufreq: Fix cpufreq regression after suspend/resume
+Date: Thu, 11 Jul 2013 15:01:35 -0700
+Message-Id: <20130711214832.686008000@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
 References: <20130711214830.611455274@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,79 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Durgin <josh.durgin@inktank.com>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit 8b8cf8917f9b5d74e04f281272d8719ce335a497 upstream.
+commit f51e1eb63d9c28cec188337ee656a13be6980cfd upstream.
 
-__kernel_time_t is a long, which cannot hold a U32_MAX on 32-bit
-architectures.  Just drop this check as it has limited value.
+Toralf Förster reported that the cpufreq ondemand governor behaves erratically
+(doesn't scale well) after a suspend/resume cycle. The problem was that the
+cpufreq subsystem's idea of the cpu frequencies differed from the actual
+frequencies set in the hardware after a suspend/resume cycle. Toralf bisected
+the problem to commit a66b2e5 (cpufreq: Preserve sysfs files across
+suspend/resume).
 
-This fixes a crash like:
+Among other (harmless) things, that commit skipped the call to
+cpufreq_update_policy() in the resume path. But cpufreq_update_policy() plays
+an important role during resume, because it is responsible for checking if
+the BIOS changed the cpu frequencies behind our back and resynchronize the
+cpufreq subsystem's knowledge of the cpu frequencies, and update them
+accordingly.
 
-[  957.905812] kernel BUG at /srv/autobuild-ceph/gitbuilder.git/build/include/linux/ceph/decode.h:164!
-[  957.914849] Internal error: Oops - BUG: 0 [#1] SMP ARM
-[  957.919978] Modules linked in: rbd libceph libcrc32c ipmi_devintf ipmi_si ipmi_msghandler nfsd nfs_acl auth_rpcgss nfs fscache lockd sunrpc
-[  957.932547] CPU: 1    Tainted: G        W     (3.9.0-ceph-19bb6a83-highbank #1)
-[  957.939881] PC is at ceph_osdc_build_request+0x8c/0x4f8 [libceph]
-[  957.945967] LR is at 0xec520904
-[  957.949103] pc : [<bf13e76c>]    lr : [<ec520904>]    psr: 20000153
-[  957.949103] sp : ec753df8  ip : 00000001  fp : ec53e100
-[  957.960571] r10: ebef25c0  r9 : ec5fa400  r8 : ecbcc000
-[  957.965788] r7 : 00000000  r6 : 00000000  r5 : ffffffff  r4 : 00000020
-[  957.972307] r3 : 51cc8143  r2 : ec520900  r1 : ec753e58  r0 : ec520908
-[  957.978827] Flags: nzCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment user
-[  957.986039] Control: 10c5387d  Table: 2c59c04a  DAC: 00000015
-[  957.991777] Process rbd (pid: 2138, stack limit = 0xec752238)
-[  957.997514] Stack: (0xec753df8 to 0xec754000)
-[  958.001864] 3de0:                                                       00000001 00000001
-[  958.010032] 3e00: 00000001 bf139744 ecbcc000 ec55a0a0 00000024 00000000 ebef25c0 fffffffe
-[  958.018204] 3e20: ffffffff 00000000 00000000 00000001 ec5fa400 ebef25c0 ec53e100 bf166b68
-[  958.026377] 3e40: 00000000 0000220f fffffffe ffffffff ec753e58 bf13ff24 51cc8143 05b25ed2
-[  958.034548] 3e60: 00000001 00000000 00000000 bf1688d4 00000001 00000000 00000000 00000000
-[  958.042720] 3e80: 00000001 00000060 ec5fa400 ed53d200 ed439600 ed439300 00000001 00000060
-[  958.050888] 3ea0: ec5fa400 ed53d200 00000000 bf16a320 00000000 ec53e100 00000040 ec753eb8
-[  958.059059] 3ec0: ec51df00 ed53d7c0 ed53d200 ed53d7c0 00000000 ed53d7c0 ec5fa400 bf16ed70
-[  958.067230] 3ee0: 00000000 00000060 00000002 ed53d200 00000000 bf16acf4 ed53d7c0 ec752000
-[  958.075402] 3f00: ed980e50 e954f5d8 00000000 00000060 ed53d240 ed53d258 ec753f80 c04f44a8
-[  958.083574] 3f20: edb7910c ec664700 01ade920 c02e4c44 00000060 c016b3dc ec51de40 01adfb84
-[  958.091745] 3f40: 00000060 ec752000 ec753f80 ec752000 00000060 c0108444 00000007 ec51de48
-[  958.099914] 3f60: ed0eb8c0 00000000 00000000 ec51de40 01adfb84 00000001 00000060 c0108858
-[  958.108085] 3f80: 00000000 00000000 51cc8143 00000060 01adfb84 00000007 00000004 c000dd68
-[  958.116257] 3fa0: 00000000 c000dbc0 00000060 01adfb84 00000007 01adfb84 00000060 01adfb80
-[  958.124429] 3fc0: 00000060 01adfb84 00000007 00000004 beded1a8 00000000 01adf2f0 01ade920
-[  958.132599] 3fe0: 00000000 beded180 b6811324 b6811334 800f0010 00000007 2e7f5821 2e7f5c21
-[  958.140815] [<bf13e76c>] (ceph_osdc_build_request+0x8c/0x4f8 [libceph]) from [<bf166b68>] (rbd_osd_req_format_write+0x50/0x7c [rbd])
-[  958.152739] [<bf166b68>] (rbd_osd_req_format_write+0x50/0x7c [rbd]) from [<bf1688d4>] (rbd_dev_header_watch_sync+0xe0/0x204 [rbd])
-[  958.164486] [<bf1688d4>] (rbd_dev_header_watch_sync+0xe0/0x204 [rbd]) from [<bf16a320>] (rbd_dev_image_probe+0x23c/0x850 [rbd])
-[  958.175967] [<bf16a320>] (rbd_dev_image_probe+0x23c/0x850 [rbd]) from [<bf16acf4>] (rbd_add+0x3c0/0x918 [rbd])
-[  958.185975] [<bf16acf4>] (rbd_add+0x3c0/0x918 [rbd]) from [<c02e4c44>] (bus_attr_store+0x20/0x2c)
-[  958.194850] [<c02e4c44>] (bus_attr_store+0x20/0x2c) from [<c016b3dc>] (sysfs_write_file+0x168/0x198)
-[  958.203984] [<c016b3dc>] (sysfs_write_file+0x168/0x198) from [<c0108444>] (vfs_write+0x9c/0x170)
-[  958.212768] [<c0108444>] (vfs_write+0x9c/0x170) from [<c0108858>] (sys_write+0x3c/0x70)
-[  958.220768] [<c0108858>] (sys_write+0x3c/0x70) from [<c000dbc0>] (ret_fast_syscall+0x0/0x30)
-[  958.229199] Code: e59d1058 e5913000 e3530000 ba000114 (e7f001f2)
+So, restore the call to cpufreq_update_policy() in the resume path to fix
+the cpufreq regression.
 
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Reported-and-tested-by: Toralf Förster <toralf.foerster@gmx.de>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ceph/decode.h |    5 -----
- 1 file changed, 5 deletions(-)
+ drivers/cpufreq/cpufreq_stats.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/include/linux/ceph/decode.h
-+++ b/include/linux/ceph/decode.h
-@@ -160,11 +160,6 @@ static inline void ceph_decode_timespec(
- static inline void ceph_encode_timespec(struct ceph_timespec *tv,
- 					const struct timespec *ts)
- {
--	BUG_ON(ts->tv_sec < 0);
--	BUG_ON(ts->tv_sec > (__kernel_time_t)U32_MAX);
--	BUG_ON(ts->tv_nsec < 0);
--	BUG_ON(ts->tv_nsec > (long)U32_MAX);
--
- 	tv->tv_sec = cpu_to_le32((u32)ts->tv_sec);
- 	tv->tv_nsec = cpu_to_le32((u32)ts->tv_nsec);
- }
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -349,6 +349,7 @@ static int __cpuinit cpufreq_stat_cpu_ca
+ 
+ 	switch (action) {
+ 	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
+ 		cpufreq_update_policy(cpu);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
 
 
