@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab3GKJqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 05:46:46 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:52495 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754348Ab3GKJqn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 05:46:43 -0400
-Date: Thu, 11 Jul 2013 11:46:40 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Borislav Petkov <bp@alien8.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        CE Linux Developers List <celinux-dev@lists.celinuxforum.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>
-Subject: [PATCH] .gitignore: ignore *.lz4 files
-Message-ID: <20130711094640.GA358@x4>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com>
- <20130506095124.GA22041@pd.tnic>
- <CAMuHMdWH9w5fj6HRXi+9QcBJym4dukAFsPVGZVqSSk3yTZJUcA@mail.gmail.com>
- <20130710093642.GC14873@pd.tnic>
- <20130710182815.GA362@x4>
- <20130711043433.GA29245@hulk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130711043433.GA29245@hulk>
+	id S1756048Ab3GKJrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 05:47:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37492 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754276Ab3GKJrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 05:47:05 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/16] mm: numa: Document automatic NUMA balancing sysctls
+Date: Thu, 11 Jul 2013 10:46:45 +0100
+Message-Id: <1373536020-2799-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1373536020-2799-1-git-send-email-mgorman@suse.de>
+References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that lz4 kernel compression is available, add *.lz4 to .gitignore.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ Documentation/sysctl/kernel.txt | 66 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
-Signed-off-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-Acked-by: Kyungsik Lee <kyungsik.lee@lge.com>
-
-diff --git a/.gitignore b/.gitignore
-index 3b8b9b3..7e9932e 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -29,6 +29,7 @@ modules.builtin
- *.bz2
- *.lzma
- *.xz
-+*.lz4
- *.lzo
- *.patch
- *.gcno
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index ccd4258..0fe678c 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -354,6 +354,72 @@ utilize.
+ 
+ ==============================================================
+ 
++numa_balancing
++
++Enables/disables automatic page fault based NUMA memory
++balancing. Memory is moved automatically to nodes
++that access it often.
++
++Enables/disables automatic NUMA memory balancing. On NUMA machines, there
++is a performance penalty if remote memory is accessed by a CPU. When this
++feature is enabled the kernel samples what task thread is accessing memory
++by periodically unmapping pages and later trapping a page fault. At the
++time of the page fault, it is determined if the data being accessed should
++be migrated to a local memory node.
++
++The unmapping of pages and trapping faults incur additional overhead that
++ideally is offset by improved memory locality but there is no universal
++guarantee. If the target workload is already bound to NUMA nodes then this
++feature should be disabled. Otherwise, if the system overhead from the
++feature is too high then the rate the kernel samples for NUMA hinting
++faults may be controlled by the numa_balancing_scan_period_min_ms,
++numa_balancing_scan_delay_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_period_max_ms and numa_balancing_scan_size_mb sysctls.
++
++==============================================================
++
++numa_balancing_scan_period_min_ms, numa_balancing_scan_delay_ms,
++numa_balancing_scan_period_max_ms, numa_balancing_scan_period_reset,
++numa_balancing_scan_size_mb
++
++Automatic NUMA balancing scans tasks address space and unmaps pages to
++detect if pages are properly placed or if the data should be migrated to a
++memory node local to where the task is running.  Every "scan delay" the task
++scans the next "scan size" number of pages in its address space. When the
++end of the address space is reached the scanner restarts from the beginning.
++
++In combination, the "scan delay" and "scan size" determine the scan rate.
++When "scan delay" decreases, the scan rate increases.  The scan delay and
++hence the scan rate of every task is adaptive and depends on historical
++behaviour. If pages are properly placed then the scan delay increases,
++otherwise the scan delay decreases.  The "scan size" is not adaptive but
++the higher the "scan size", the higher the scan rate.
++
++Higher scan rates incur higher system overhead as page faults must be
++trapped and potentially data must be migrated. However, the higher the scan
++rate, the more quickly a tasks memory is migrated to a local node if the
++workload pattern changes and minimises performance impact due to remote
++memory accesses. These sysctls control the thresholds for scan delays and
++the number of pages scanned.
++
++numa_balancing_scan_period_min_ms is the minimum delay in milliseconds
++between scans. It effectively controls the maximum scanning rate for
++each task.
++
++numa_balancing_scan_delay_ms is the starting "scan delay" used for a task
++when it initially forks.
++
++numa_balancing_scan_period_max_ms is the maximum delay between scans. It
++effectively controls the minimum scanning rate for each task.
++
++numa_balancing_scan_size_mb is how many megabytes worth of pages are
++scanned for a given scan.
++
++numa_balancing_scan_period_reset is a blunt instrument that controls how
++often a tasks scan delay is reset to detect sudden changes in task behaviour.
++
++==============================================================
++
+ osrelease, ostype & version:
+ 
+ # cat osrelease
 -- 
-Markus
+1.8.1.4
+
