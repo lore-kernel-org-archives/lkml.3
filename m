@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab3GKOZw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:25:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42929 "EHLO
+	id S932775Ab3GKO0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:26:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42936 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932403Ab3GKOZu (ORCPT
+	with ESMTP id S932716Ab3GKOZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:50 -0400
+	Thu, 11 Jul 2013 10:25:51 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolin Chen <b42378@freescale.com>, Mark Brown <broonie@linaro.org>,
+Cc: Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 25/98] ASoC: wm8962: Remove remaining direct register cache accesses
-Date: Thu, 11 Jul 2013 15:23:55 +0100
-Message-Id: <1373552708-15235-26-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 26/98] ACPICA: Do not use extended sleep registers unless HW-reduced bit is set
+Date: Thu, 11 Jul 2013 15:23:56 +0100
+Message-Id: <1373552708-15235-27-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolin Chen <b42378@freescale.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit 2e7ee15ced914e109a1a5b6dfcd463d846a13bd5 upstream.
+commit 7cec7048fe22e3e92389da2cd67098f6c4284e7f upstream.
 
-Also fix return values for headphone switch updates.
+Previous implementation incorrectly used the ACPI 5.0 extended
+sleep registers if they were simply populated. This caused
+problems on some non-HW-reduced machines. As per the ACPI spec,
+they should only be used if the HW-reduced bit is set.  Lv Zheng,
+ACPICA BZ 1020.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=54181
+References: https://bugs.acpica.org/show_bug.cgi?id=1020
+Reported-by: Daniel Rowe <bart@fathom13.com>
+Bisected-by: Brint E. Kriebel <kernel@bekit.net>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/wm8962.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/acpi/acpica/hwxfsleep.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8962.c b/sound/soc/codecs/wm8962.c
-index dab6256..bff98fb 100644
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -1600,7 +1600,6 @@ static int wm8962_put_hp_sw(struct snd_kcontrol *kcontrol,
- 			    struct snd_ctl_elem_value *ucontrol)
- {
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
--	u16 *reg_cache = codec->reg_cache;
- 	int ret;
+diff --git a/drivers/acpi/acpica/hwxfsleep.c b/drivers/acpi/acpica/hwxfsleep.c
+index 762d059..a8af0ba 100644
+--- a/drivers/acpi/acpica/hwxfsleep.c
++++ b/drivers/acpi/acpica/hwxfsleep.c
+@@ -242,12 +242,14 @@ acpi_hw_sleep_dispatch(u8 sleep_state, u8 flags, u32 function_id)
+ 	    &acpi_sleep_dispatch[function_id];
  
- 	/* Apply the update (if any) */
-@@ -1609,16 +1608,19 @@ static int wm8962_put_hp_sw(struct snd_kcontrol *kcontrol,
- 		return 0;
- 
- 	/* If the left PGA is enabled hit that VU bit... */
--	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTL_PGA_ENA)
--		return snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
--				     reg_cache[WM8962_HPOUTL_VOLUME]);
-+	ret = snd_soc_read(codec, WM8962_PWR_MGMT_2);
-+	if (ret & WM8962_HPOUTL_PGA_ENA) {
-+		snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
-+			      snd_soc_read(codec, WM8962_HPOUTL_VOLUME));
-+		return 1;
-+	}
- 
- 	/* ...otherwise the right.  The VU is stereo. */
--	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTR_PGA_ENA)
--		return snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
--				     reg_cache[WM8962_HPOUTR_VOLUME]);
-+	if (ret & WM8962_HPOUTR_PGA_ENA)
-+		snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
-+			      snd_soc_read(codec, WM8962_HPOUTR_VOLUME));
- 
--	return 0;
-+	return 1;
- }
- 
- /* The VU bits for the speakers are in a different register to the mute
-@@ -3375,7 +3377,6 @@ static int wm8962_probe(struct snd_soc_codec *codec)
- 	int ret;
- 	struct wm8962_priv *wm8962 = snd_soc_codec_get_drvdata(codec);
- 	struct wm8962_pdata *pdata = dev_get_platdata(codec->dev);
--	u16 *reg_cache = codec->reg_cache;
- 	int i, trigger, irq_pol;
- 	bool dmicclk, dmicdat;
- 
-@@ -3433,8 +3434,9 @@ static int wm8962_probe(struct snd_soc_codec *codec)
- 
- 		/* Put the speakers into mono mode? */
- 		if (pdata->spk_mono)
--			reg_cache[WM8962_CLASS_D_CONTROL_2]
--				|= WM8962_SPK_MONO;
-+			snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_2,
-+				WM8962_SPK_MONO_MASK, WM8962_SPK_MONO);
-+
- 
- 		/* Micbias setup, detection enable and detection
- 		 * threasholds. */
+ #if (!ACPI_REDUCED_HARDWARE)
+-
+ 	/*
+ 	 * If the Hardware Reduced flag is set (from the FADT), we must
+-	 * use the extended sleep registers
++	 * use the extended sleep registers (FADT). Note: As per the ACPI
++	 * specification, these extended registers are to be used for HW-reduced
++	 * platforms only. They are not general-purpose replacements for the
++	 * legacy PM register sleep support.
+ 	 */
+-	if (acpi_gbl_reduced_hardware || acpi_gbl_FADT.sleep_control.address) {
++	if (acpi_gbl_reduced_hardware) {
+ 		status = sleep_functions->extended_function(sleep_state, flags);
+ 	} else {
+ 		/* Legacy sleep */
 -- 
 1.8.1.2
 
