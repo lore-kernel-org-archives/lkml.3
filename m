@@ -1,128 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816Ab3GKHjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 03:39:40 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:26051 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755767Ab3GKHjj (ORCPT
+	id S1755830Ab3GKHkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 03:40:06 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:34394 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755671Ab3GKHkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 03:39:39 -0400
-Date: Thu, 11 Jul 2013 09:39:28 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: rebase of the jdelvare-hwmon quilt series
-Message-ID: <20130711093928.24490f06@endymion.delvare>
-In-Reply-To: <20130711165343.f921e147403570508939f2df@canb.auug.org.au>
-References: <20130711102724.51608a4ace419b6d42591257@canb.auug.org.au>
-	<20130711075700.21d8482c@endymion.delvare>
-	<20130711165343.f921e147403570508939f2df@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 11 Jul 2013 03:40:04 -0400
+Message-ID: <51DE6152.20406@atmel.com>
+Date: Thu, 11 Jul 2013 09:40:02 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Wolfram Sang <wsa@the-dreams.de>, <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/12] drivers/net/ethernet/cadence: don't use devm_pinctrl_get_select_default()
+ in probe
+References: <1373471889-18107-1-git-send-email-wsa@the-dreams.de> <1373471889-18107-8-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1373471889-18107-8-git-send-email-wsa@the-dreams.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Jul 2013 16:53:43 +1000, Stephen Rothwell wrote:
-> On Thu, 11 Jul 2013 07:57:00 +0200 Jean Delvare <khali@linux-fr.org> wrote:
-> > On Thu, 11 Jul 2013 10:27:24 +1000, Stephen Rothwell wrote:
-> > > Why have you just rebased the jdelvare-hwmon series
-> > > (http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/)?  You have
-> > > just invalidated your testing and made it likely that Linus will blast
-> > > you if you ask him to pull your patches.  Your whole series was already
-> > > based after v3.10 (i.e. released or rebased after the merge window
-> > > opened), so why move it again?
-> > 
-> > I'm quite confused by this complaint of yours. I do not have the
-> > feeling that I rebased anything or invalidated any testing. And I don't
-> > think I did anything different this time from the way I have been
-> > proceeding for years.
-> 
-> Probably not, I guess I have been getting more sensitive lately.
-> However, you have changed the base of your quilt series.  This means that
-> you have included more changes from Linus' tree into your tree, thus any
-> testing you have done previously may be invalidated by those changes.
+On 10/07/2013 17:57, Wolfram Sang :
+> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
+> we can rely on device core for setting the default pins. Compile tested only.
+>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
-And then what? Linus will end up merging these patches into his
-up-to-date tree anyway. Me staying on an old tree is not going to help
-anything. I am precisely trying to stick to Linus' tree as much as
-possible, precisely to me sure that 1* merging my patches will be a
-trivial operation for Linus and 2* I can detect and fix any build or
-run-time issue before Linus merges my patches.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Isn't linux-next itself rebased on Linus's latest tree every day for
-exactly that reason?
+Thanks Wolfram.
 
-> > I had only 2 hwmon patches for Linus for this merge window:
-> >   hwmon-lm63-drop-redundant-safety.patch
-> >   hwmon-lm90-drop-redundant-safety.patch
-> 
-> Yeah, sorry, but I was complaining to several people today.
-> 
-> > They have been in
-> > http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/ (and thus in
-> > linux-next) continuously since May 19th so I'd say they received pretty
-> > good testing. I did not touch them, I did not even have to refresh them.
-> 
-> Actually, those patches only hit linux-next on July 9 (my time), when the
-> were based on v3.10-6005-gd2b4a64.
+Bye,
 
-Hmm, that would mean I forgot to update my public series when I
-accepted them. That's embarrassing and I apologize for that, this
-should not happen. My tree is seeing so little change these days, it
-can stay for weeks without a change, so if I forget to export once, it
-can take long before the omission is repaired.
+> ---
+>   drivers/net/ethernet/cadence/at91_ether.c |   11 -----------
+>   1 file changed, 11 deletions(-)
+>
+> diff --git a/drivers/net/ethernet/cadence/at91_ether.c b/drivers/net/ethernet/cadence/at91_ether.c
+> index 3f19571..bb5d63f 100644
+> --- a/drivers/net/ethernet/cadence/at91_ether.c
+> +++ b/drivers/net/ethernet/cadence/at91_ether.c
+> @@ -29,7 +29,6 @@
+>   #include <linux/of.h>
+>   #include <linux/of_device.h>
+>   #include <linux/of_net.h>
+> -#include <linux/pinctrl/consumer.h>
+>
+>   #include "macb.h"
+>
+> @@ -309,7 +308,6 @@ static int __init at91ether_probe(struct platform_device *pdev)
+>   	struct resource *regs;
+>   	struct net_device *dev;
+>   	struct phy_device *phydev;
+> -	struct pinctrl *pinctrl;
+>   	struct macb *lp;
+>   	int res;
+>   	u32 reg;
+> @@ -319,15 +317,6 @@ static int __init at91ether_probe(struct platform_device *pdev)
+>   	if (!regs)
+>   		return -ENOENT;
+>
+> -	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
+> -	if (IS_ERR(pinctrl)) {
+> -		res = PTR_ERR(pinctrl);
+> -		if (res == -EPROBE_DEFER)
+> -			return res;
+> -
+> -		dev_warn(&pdev->dev, "No pinctrl provided\n");
+> -	}
+> -
+>   	dev = alloc_etherdev(sizeof(struct macb));
+>   	if (!dev)
+>   		return -ENOMEM;
+>
 
-> Then today you changed the base of
-> your series to v3.10-8587-g496322b and added another patch.
 
-Yes I did. I always do that.
-
-> > 3 days ago I added these 2 patches to the hwmon-for-linus branch of my
-> > staging tree:
-> > http://git.kernel.org/cgit/linux/kernel/git/jdelvare/staging.git/log/?h=hwmon-for-linus
-> > and asked Linux to pull from it.
-> 
-> Which is probably when they hit linux-next.
-
-I suppose so, yes. Updating my public patch series is a preliminary
-step to preparing my staging tree for Linus to pull from.
-
-> > Yesterday I reviewed a new (trivial) hwmon patch, and I accepted it, so
-> > it was added to http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/ as 
-> > hwmon-w83792d-update-module-author.patch (and thus went to linux-next.)
-> 
-> And I have no problem with maintainers making judgement calls about
-> simple patches during the merge window.
-
-FWIW I would have accepted the patch even if it was not trivial and it
-would have gone in linux-next just the same. The only difference is
-whether I consider the patch for this merge window or only for the next.
-
-Is there a policy to not include new patches in linux-next during a
-merge window if the patch is for the next merge window? If so I wasn't
-aware of it. I always considered that the earlier a patch gets in
-linux-next, the better.
-
-> It all seems a bit trivial when we are talking about 2 patches, but it is
-> the process that is important.
-
-I'm fine respecting any process in place, but at this point I still do
-not understand how what I did is supposed to be wrong or problematic. I
-can't believe you are asking me to not rebase my quilt series on
-Linus's latest kernel tree every now and then, to make sure it still
-applies cleanly. This is exactly what quilt is good for.
-
-So please tell me exactly what you expect from me. Was I supposed to
-base my patches on v3.10 rather than following Linus's v3.11
-development tree until I sent my pull request? This would put the
-merging burden on his (and your) shoulders instead of mine, which seems
-wrong. And if so, what am I supposed to do after Linus has actually
-pulled my changes? What if I need to send a second round of patches
-during the merge window?
-
-Confused,
 -- 
-Jean Delvare
+Nicolas Ferre
