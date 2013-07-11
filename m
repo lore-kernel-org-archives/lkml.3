@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab3GKO0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:26:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42969 "EHLO
+	id S932872Ab3GKOoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:44:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43010 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932776Ab3GKO0A (ORCPT
+	with ESMTP id S932807Ab3GKO0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:00 -0400
+	Thu, 11 Jul 2013 10:26:07 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jed Davis <jld@mozilla.com>, Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 30/98] ARM: 7765/1: perf: Record the user-mode PC in the call chain.
-Date: Thu, 11 Jul 2013 15:24:00 +0100
-Message-Id: <1373552708-15235-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 37/98] mm/memory-hotplug: fix lowmem count overflow when offline pages
+Date: Thu, 11 Jul 2013 15:24:07 +0100
+Message-Id: <1373552708-15235-38-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +31,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jed Davis <jld@mozilla.com>
+From: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 
-commit c5f927a6f62196226915f12194c9d0df4e2210d7 upstream.
+commit cea27eb2a202959783f81254c48c250ddd80e129 upstream.
 
-With this change, we no longer lose the innermost entry in the user-mode
-part of the call chain.  See also the x86 port, which includes the ip.
+The logic for the memory-remove code fails to correctly account the
+Total High Memory when a memory block which contains High Memory is
+offlined as shown in the example below.  The following patch fixes it.
 
-It's possible to partially work around this problem by post-processing
-the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
-wasn't in the kernel when the sample was taken.
+Before logic memory remove:
 
-Signed-off-by: Jed Davis <jld@mozilla.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+MemTotal:        7603740 kB
+MemFree:         6329612 kB
+Buffers:           94352 kB
+Cached:           872008 kB
+SwapCached:            0 kB
+Active:           626932 kB
+Inactive:         519216 kB
+Active(anon):     180776 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296272 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5704696 kB
+LowTotal:         309068 kB
+LowFree:          624916 kB
+
+After logic memory remove:
+
+MemTotal:        7079452 kB
+MemFree:         5805976 kB
+Buffers:           94372 kB
+Cached:           872000 kB
+SwapCached:            0 kB
+Active:           626936 kB
+Inactive:         519236 kB
+Active(anon):     180780 kB
+Inactive(anon):   222944 kB
+Active(file):     446156 kB
+Inactive(file):   296292 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       7294672 kB
+HighFree:        5181024 kB
+LowTotal:       4294752076 kB
+LowFree:          624952 kB
+
+[mhocko@suse.cz: fix CONFIG_HIGHMEM=n build]
+Signed-off-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 [ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arm/kernel/perf_event.c | 1 +
- 1 file changed, 1 insertion(+)
+ mm/page_alloc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 952a5a7..55790a5 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -824,6 +824,7 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 	struct frame_tail __user *tail;
- 
- 
-+	perf_callchain_store(entry, regs->ARM_pc);
- 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
- 
- 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 0ed96c7..63e6fa4 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5911,6 +5911,10 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+ 		zone->free_area[order].nr_free--;
+ 		__mod_zone_page_state(zone, NR_FREE_PAGES,
+ 				      - (1UL << order));
++#ifdef CONFIG_HIGHMEM
++		if (PageHighMem(page))
++			totalhigh_pages -= 1 << order;
++#endif
+ 		for (i = 0; i < (1 << order); i++)
+ 			SetPageReserved((page+i));
+ 		pfn += (1 << order);
 -- 
 1.8.1.2
 
