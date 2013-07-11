@@ -1,127 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab3GKWze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:55:34 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:46113 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754451Ab3GKWzb (ORCPT
+	id S1756330Ab3GKW6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:58:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43772 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab3GKW6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:55:31 -0400
-Message-ID: <1373583637.7397.370.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        Jens Axboe <axboe@kernel.dk>
-Date: Thu, 11 Jul 2013 16:00:37 -0700
-In-Reply-To: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
-References: <cover.1369155164.git.agordeev@redhat.com>
-	 <20130521235003.GE6985@mtj.dyndns.org>
-	 <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
-	 <20130522170305.GD9563@kernel.dk>
-	 <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 18:58:05 -0400
+Date: Thu, 11 Jul 2013 15:58:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: 21 stable powerpc patches showing up in 3.11-rc1?
+Message-ID: <20130711225804.GA19886@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-11 at 12:26 +0200, Alexander Gordeev wrote:
-> On Wed, May 22, 2013 at 07:03:05PM +0200, Jens Axboe wrote:
-> > On Wed, May 22 2013, Alexander Gordeev wrote:
-> > > On Wed, May 22, 2013 at 08:50:03AM +0900, Tejun Heo wrote:
-> > > > Hmmmmmm..... I'd normally apply this patch but block layer is just
-> > > > growing multi-queue support and libata is likely to be converted to mq
-> > > > in foreseeable future, so I'm a bit hesitant to make irq handling more
-> > > > sophiscated right now.  Would you be interested in looking into
-> > > > converting libata to blk mq support?  I'm pretty sure it'd yield far
-> > > > better outcome if done properly.
-> > > 
-> > > I am not committing, but will look into it, sure.
-> > 
-> > Would be most awesome, I'm sure Nic would not mind a bit of help on the
-> > SCSI/libata side :-)
+Ben,
+
+Why do I have 21 patches from you marked for -stable trees in the
+3.11-rc1 merge window, like the one quoted below?  All of these look
+serious enough that they should have gone into the 3.10-rc releases,
+especially as the date of when they were submitted gave you plenty of
+time to get them merged.
+
+So why wait for 3.11-rc1?  Are you not expecting anyone to run a 3.10.0
+kernel on powerpc?  If so, why would they want to wait for 3.10.1?
+
+What is broken in our development process that caused this?
+
+greg k-h
+
+> commit: b14b6260efeee6eb8942c6e6420e31281892acb6
+> From: Michael Ellerman <michael@ellerman.id.au>
+> Date: Tue, 25 Jun 2013 17:47:57 +1000
+> Subject: powerpc: Wire up the HV facility unavailable exception
 > 
-> Hi Nicholas,
+> Similar to the facility unavailble exception, except the facilities are
+> controlled by HFSCR.
 > 
-> Could you please clarify the status of SCSI MQ support? Is it usable now?
+> Adapt the facility_unavailable_exception() so it can be called for
+> either the regular or Hypervisor facility unavailable exceptions.
 > 
-
-Hi Alexander,
-
-Thanks for taking a look.  I've not made further progress in the last
-weeks on scsi-mq, but am still using virtio-scsi + scsi-mq <->
-vhost-scsi + per-cpu-ida for quite a bit for benchmarking purposes.
-
-> I tried git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git,
-> but it does not appear working without (at least) changes below to SCSI lib:
+> Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+> CC: <stable@vger.kernel.org> [v3.10]
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
+>  arch/powerpc/kernel/exceptions-64s.S |   15 +++++++++++++++
+>  arch/powerpc/kernel/traps.c          |   16 ++++++++++++----
+>  2 files changed, 27 insertions(+), 4 deletions(-)
 > 
-
-The only scsi-mq LLD conversions so far have been to virtio-scsi +
-scsi_debug to nop REQ_TYPE_FS.
-
-Just so I understand, your patch below is required in order to make what
-LLD function with scsi-mq..?
-
-Thanks!
-
---nab
-
-> Thanks!
-> 
-> diff --git a/drivers/scsi/scsi-mq.c b/drivers/scsi/scsi-mq.c
-> index ca6ff67..d8cc7a4 100644
-> --- a/drivers/scsi/scsi-mq.c
-> +++ b/drivers/scsi/scsi-mq.c
-> @@ -155,6 +155,7 @@ void scsi_mq_done(struct scsi_cmnd *sc)
->  static struct blk_mq_ops scsi_mq_ops = {
->  	.queue_rq	= scsi_mq_queue_rq,
->  	.map_queue	= blk_mq_map_queue,
-> +	.timeout	= scsi_times_out,
->  	.alloc_hctx	= blk_mq_alloc_single_hw_queue,
->  	.free_hctx	= blk_mq_free_single_hw_queue,
->  };
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 65360db..33aa373 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -283,7 +283,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
->  	/*
->  	 * head injection *required* here otherwise quiesce won't work
->  	 */
-> -	blk_execute_rq(req->q, NULL, req, 1);
-> +	if (q->mq_ops)
-> +		blk_mq_execute_rq(req->q, req);
-> +	else
-> +		blk_execute_rq(req->q, NULL, req, 1);
+> diff --git a/arch/powerpc/kernel/exceptions-64s.S b/arch/powerpc/kernel/exceptions-64s.S
+> index 6ee74f8..359d949 100644
+> --- a/arch/powerpc/kernel/exceptions-64s.S
+> +++ b/arch/powerpc/kernel/exceptions-64s.S
+> @@ -347,6 +347,12 @@ facility_unavailable_trampoline:
+>  	EXCEPTION_PROLOG_0(PACA_EXGEN)
+>  	b	facility_unavailable_pSeries
 >  
->  	/*
->  	 * Some devices (USB mass-storage in particular) may transfer
-> @@ -298,12 +301,8 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
->  		*resid = req->resid_len;
->  	ret = req->errors;
->   out:
-> -	if (q->mq_ops) {
-> -		printk("scsi_execute(): Calling blk_mq_free_request >>>\n");
-> -		blk_mq_free_request(req);
-> -	} else {
-> +	if (!q->mq_ops)
->  		blk_put_request(req);
-> -	}
+> +hv_facility_unavailable_trampoline:
+> +	. = 0xf80
+> +	SET_SCRATCH0(r13)
+> +	EXCEPTION_PROLOG_0(PACA_EXGEN)
+> +	b	facility_unavailable_hv
+> +
+>  #ifdef CONFIG_CBE_RAS
+>  	STD_EXCEPTION_HV(0x1200, 0x1202, cbe_system_error)
+>  	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0x1202)
+> @@ -525,6 +531,8 @@ denorm_done:
+>  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf40)
+>  	STD_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
+>  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf60)
+> +	STD_EXCEPTION_HV_OOL(0xf82, facility_unavailable)
+> +	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xf82)
 >  
->  	return ret;
->  }
-> 
-> 
-> > And personally, can't wait to run it on the laptop! That's right, I
-> > alpha test on the laptop.
-> > 
-> > -- 
-> > Jens Axboe
-> > 
-> 
-
-
+>  /*
+>   * An interrupt came in while soft-disabled. We set paca->irq_happened, then:
+> @@ -836,6 +844,12 @@ facility_unavailable_relon_trampoline:
+>  	EXCEPTION_PROLOG_0(PACA_EXGEN)
+>  	b	facility_unavailable_relon_pSeries
+>  
+> +hv_facility_unavailable_relon_trampoline:
+> +	. = 0x4f80
+> +	SET_SCRATCH0(r13)
+> +	EXCEPTION_PROLOG_0(PACA_EXGEN)
+> +	b	facility_unavailable_relon_hv
+> +
+>  	STD_RELON_EXCEPTION_PSERIES(0x5300, 0x1300, instruction_breakpoint)
+>  #ifdef CONFIG_PPC_DENORMALISATION
+>  	. = 0x5500
+> @@ -1174,6 +1188,7 @@ __end_handlers:
+>  	STD_RELON_EXCEPTION_PSERIES_OOL(0xf20, altivec_unavailable)
+>  	STD_RELON_EXCEPTION_PSERIES_OOL(0xf40, vsx_unavailable)
+>  	STD_RELON_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
+> +	STD_RELON_EXCEPTION_HV_OOL(0xf80, facility_unavailable)
+>  
+>  #if defined(CONFIG_PPC_PSERIES) || defined(CONFIG_PPC_POWERNV)
+>  /*
+> diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+> index 11f4488..4a87fcb 100644
+> --- a/arch/powerpc/kernel/traps.c
+> +++ b/arch/powerpc/kernel/traps.c
+> @@ -1299,10 +1299,18 @@ void facility_unavailable_exception(struct pt_regs *regs)
+>  		"EBB",
+>  		"TAR",
+>  	};
+> -	char *facility;
+> +	char *facility, *prefix;
+>  	u64 value;
+>  
+> -	value = mfspr(SPRN_FSCR) >> 56;
+> +	if (regs->trap == 0xf60) {
+> +		value = mfspr(SPRN_FSCR);
+> +		prefix = "";
+> +	} else {
+> +		value = mfspr(SPRN_HFSCR);
+> +		prefix = "Hypervisor ";
+> +	}
+> +
+> +	value = value >> 56;
+>  
+>  	/* We restore the interrupt state now */
+>  	if (!arch_irq_disabled_regs(regs))
+> @@ -1313,8 +1321,8 @@ void facility_unavailable_exception(struct pt_regs *regs)
+>  	else
+>  		facility = "unknown";
+>  
+> -	pr_err("Facility '%s' unavailable, exception at 0x%lx, MSR=%lx\n",
+> -		facility, regs->nip, regs->msr);
+> +	pr_err("%sFacility '%s' unavailable, exception at 0x%lx, MSR=%lx\n",
+> +		prefix, facility, regs->nip, regs->msr);
+>  
+>  	if (user_mode(regs)) {
+>  		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
+> -- 
+> 1.7.10.4
