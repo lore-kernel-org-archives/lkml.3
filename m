@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab3GKOjp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:39:45 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43125 "EHLO
+	id S933219Ab3GKOjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:39:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43126 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932939Ab3GKO0f (ORCPT
+	with ESMTP id S932940Ab3GKO0f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Jul 2013 10:26:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chen Gang <gang.chen@asianux.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 61/98] powerpc/smp: Section mismatch from smp_release_cpus to __initdata spinning_secondaries
-Date: Thu, 11 Jul 2013 15:24:31 +0100
-Message-Id: <1373552708-15235-62-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 63/98] hpfs: better test for errors
+Date: Thu, 11 Jul 2013 15:24:33 +0100
+Message-Id: <1373552708-15235-64-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,53 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chen Gang <gang.chen@asianux.com>
+From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
 
-commit 8246aca7058f3f2c2ae503081777965cd8df7b90 upstream.
+commit 3ebacb05044f82c5f0bb456a894eb9dc57d0ed90 upstream.
 
-the smp_release_cpus is a normal funciton and called in normal environments,
-  but it calls the __initdata spinning_secondaries.
-  need modify spinning_secondaries to match smp_release_cpus.
+The test if bitmap access is out of bound could errorneously pass if the
+device size is divisible by 16384 sectors and we are asking for one bitmap
+after the end.
 
-the related warning:
-  (the linker report boot_paca.33377, but it should be spinning_secondaries)
+Check for invalid size in the superblock. Invalid size could cause integer
+overflows in the rest of the code.
 
------------------------------------------------------------------------------
-
-WARNING: arch/powerpc/kernel/built-in.o(.text+0x23176): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
-The function .smp_release_cpus() references
-the variable __initdata boot_paca.33377.
-This is often because .smp_release_cpus lacks a __initdata
-annotation or the annotation of boot_paca.33377 is wrong.
-
-WARNING: arch/powerpc/kernel/built-in.o(.text+0x231fe): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
-The function .smp_release_cpus() references
-the variable __initdata boot_paca.33377.
-This is often because .smp_release_cpus lacks a __initdata
-annotation or the annotation of boot_paca.33377 is wrong.
-
------------------------------------------------------------------------------
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/powerpc/kernel/setup_64.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/hpfs/map.c   | 3 ++-
+ fs/hpfs/super.c | 8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
-index 389bd4f..5c9eccc 100644
---- a/arch/powerpc/kernel/setup_64.c
-+++ b/arch/powerpc/kernel/setup_64.c
-@@ -76,7 +76,7 @@
- #endif
- 
- int boot_cpuid = 0;
--int __initdata spinning_secondaries;
-+int spinning_secondaries;
- u64 ppc64_pft_size;
- 
- /* Pick defaults since we might want to patch instructions
+diff --git a/fs/hpfs/map.c b/fs/hpfs/map.c
+index 4acb19d..803d3da 100644
+--- a/fs/hpfs/map.c
++++ b/fs/hpfs/map.c
+@@ -17,7 +17,8 @@ __le32 *hpfs_map_bitmap(struct super_block *s, unsigned bmp_block,
+ 			 struct quad_buffer_head *qbh, char *id)
+ {
+ 	secno sec;
+-	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
++	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
++	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
+ 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
+ 		return NULL;
+ 	}
+diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
+index 706a12c..8d250192 100644
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -552,7 +552,13 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 	sbi->sb_cp_table = NULL;
+ 	sbi->sb_c_bitmap = -1;
+ 	sbi->sb_max_fwd_alloc = 0xffffff;
+-	
++
++	if (sbi->sb_fs_size >= 0x80000000) {
++		hpfs_error(s, "invalid size in superblock: %08x",
++			(unsigned)sbi->sb_fs_size);
++		goto bail4;
++	}
++
+ 	/* Load bitmap directory */
+ 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
+ 		goto bail4;
 -- 
 1.8.1.2
 
