@@ -1,97 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829Ab3GKNMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:12:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43729 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755025Ab3GKNMw (ORCPT
+	id S932370Ab3GKNNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:13:14 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:46342 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182Ab3GKNNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:12:52 -0400
-Date: Thu, 11 Jul 2013 15:11:58 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/16] sched: Reschedule task on preferred NUMA node once
- selected
-Message-ID: <20130711131158.GJ25631@dyad.programming.kicks-ass.net>
-References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
- <1373536020-2799-9-git-send-email-mgorman@suse.de>
- <20130711123038.GH25631@dyad.programming.kicks-ass.net>
- <20130711130322.GC2355@suse.de>
+	Thu, 11 Jul 2013 09:13:12 -0400
+Message-ID: <51DEAF60.2000902@ozlabs.ru>
+Date: Thu, 11 Jul 2013 23:13:04 +1000
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130711130322.GC2355@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
+Subject: Re: [PATCH 6/8] KVM: PPC: Add support for multiple-TCE hcalls
+References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru>  <1373123227-22969-7-git-send-email-aik@ozlabs.ru>  <51DC4228.7010607@suse.de> <51DCEA76.9070808@ozlabs.ru>  <D10E7B99-3A7C-4275-9A49-3CB15598E705@suse.de> <51DE3ECB.7080803@ozlabs.ru>  <43E93931-F213-47CC-ADCF-D3A6D6BC4372@suse.de> <51DE8EE9.2000508@ozlabs.ru>  <C6BC1E27-4C9C-4A18-A64A-052202DA64B5@suse.de>  <1373546368.19894.87.camel@pasglop>  <4133424D-B105-4CB1-A72A-4F47A6184DC7@suse.de> <1373547480.19894.102.camel@pasglop>
+In-Reply-To: <1373547480.19894.102.camel@pasglop>
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 02:03:22PM +0100, Mel Gorman wrote:
-> On Thu, Jul 11, 2013 at 02:30:38PM +0200, Peter Zijlstra wrote:
-> > On Thu, Jul 11, 2013 at 10:46:52AM +0100, Mel Gorman wrote:
-> > > @@ -829,10 +854,29 @@ static void task_numa_placement(struct task_struct *p)
-> > >  		}
-> > >  	}
-> > >  
-> > > -	/* Update the tasks preferred node if necessary */
-> > > +	/*
-> > > +	 * Record the preferred node as the node with the most faults,
-> > > +	 * requeue the task to be running on the idlest CPU on the
-> > > +	 * preferred node and reset the scanning rate to recheck
-> > > +	 * the working set placement.
-> > > +	 */
-> > >  	if (max_faults && max_nid != p->numa_preferred_nid) {
-> > > +		int preferred_cpu;
-> > > +
-> > > +		/*
-> > > +		 * If the task is not on the preferred node then find the most
-> > > +		 * idle CPU to migrate to.
-> > > +		 */
-> > > +		preferred_cpu = task_cpu(p);
-> > > +		if (cpu_to_node(preferred_cpu) != max_nid) {
-> > > +			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
-> > > +							     max_nid);
-> > > +		}
-> > > +
-> > > +		/* Update the preferred nid and migrate task if possible */
-> > >  		p->numa_preferred_nid = max_nid;
-> > >  		p->numa_migrate_seq = 0;
-> > > +		migrate_task_to(p, preferred_cpu);
-> > >  	}
-> > >  }
-> > 
-> > Now what happens if the migrations fails? We set numa_preferred_nid to max_nid
-> > but then never re-try the migration. Should we not re-try the migration every
-> > so often, regardless of whether max_nid changed?
+On 07/11/2013 10:58 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2013-07-11 at 14:51 +0200, Alexander Graf wrote:
+>> I don't like bloat usually. But Alexey even had an #ifdef DEBUG in
+>> there to selectively disable in-kernel handling of multi-TCE. Not
+>> calling ENABLE_CAP would give him exactly that without ugly #ifdefs in
+>> the kernel.
 > 
-> We do this
-> 
-> load_balance
-> -> active_load_balance_cpu_stop
+> I don't see much point in disabling it... but ok, if that's a valuable
+> feature, then shoot some VM level ENABLE_CAP (please don't iterate all
+> VCPUs, that's gross).
 
-Note that active balance is rare to begin with.
+No use for me whatsoever as I only want to disable real more handlers and
+keep virtual mode handlers enabled (sometime, for debug only) and this
+capability is not about that - I can easily just not enable it in QEMU with
+the exactly the same effect.
 
->   -> move_one_task
->     -> can_migrate_task
->       -> migrate_improves_locality
-> 
-> If the conditions are right then it'll move the task to the preferred node
-> for a number of PTE scans. Of course there is no guarantee that the necessary
-> conditions will occur but I was wary of taking more drastic steps in the
-> scheduler such as retrying on every fault until the migration succeeds.
-> 
+So please, fellas, decide whether I should iterate vcpu's or add ENABLE_CAP
+per KVM. Thanks.
 
-Ah, so task_numa_placement() is only called every full scan, not every fault.
-Also one could throttle it.
 
-So initially I did all the movement through the regular balancer, but Ingo
-found that when the machine grows it quickly becomes unlikely we hit the right
-conditions. Hence he also went to direct migrations in his series.
-
-Another thing we might consider is counting the number of migration attempts
-and settling for the n-th best node for the n'th attempt and giving up when n
-surpasses the quality of the node we're currently on.
+-- 
+Alexey
