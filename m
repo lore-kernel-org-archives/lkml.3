@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab3GKWTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:19:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43223 "EHLO
+	id S1757121Ab3GKWUA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:20:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43229 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab3GKWTr (ORCPT
+	with ESMTP id S1757014Ab3GKWTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:19:47 -0400
+	Thu, 11 Jul 2013 18:19:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Chanam Park <chanam.park@hkpco.kr>,
-        Seth Arnold <seth.arnold@canonical.com>, Sage Weil <sage@inktank.com>
-Subject: [ 01/15] libceph: Fix NULL pointer dereference in auth client code
-Date: Thu, 11 Jul 2013 15:19:31 -0700
-Message-Id: <20130711221256.160285989@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, Sage Weil <sage@inktank.com>
+Subject: [ 02/15] ceph: fix sleeping function called from invalid context.
+Date: Thu, 11 Jul 2013 15:19:32 -0700
+Message-Id: <20130711221256.270076856@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711221255.925669600@linuxfoundation.org>
 References: <20130711221255.925669600@linuxfoundation.org>
@@ -28,49 +26,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@canonical.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 2cb33cac622afde897aa02d3dcd9fbba8bae839e upstream.
+commit a1dc1937337a93e699eaa56968b7de6e1a9e77cf upstream.
 
-A malicious monitor can craft an auth reply message that could cause a
-NULL function pointer dereference in the client's kernel.
+[ 1121.231883] BUG: sleeping function called from invalid context at kernel/rwsem.c:20
+[ 1121.231935] in_atomic(): 1, irqs_disabled(): 0, pid: 9831, name: mv
+[ 1121.231971] 1 lock held by mv/9831:
+[ 1121.231973]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...},at:[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
+[ 1121.231998] CPU: 3 PID: 9831 Comm: mv Not tainted 3.10.0-rc6+ #215
+[ 1121.232000] Hardware name: To Be Filled By O.E.M. To Be Filled By
+O.E.M./To be filled by O.E.M., BIOS 080015  11/09/2011
+[ 1121.232027]  ffff88006d355a80 ffff880092f69ce0 ffffffff8168348c ffff880092f69cf8
+[ 1121.232045]  ffffffff81070435 ffff88006d355a20 ffff880092f69d20 ffffffff816899ba
+[ 1121.232052]  0000000300000004 ffff8800b76911d0 ffff88006d355a20 ffff880092f69d68
+[ 1121.232056] Call Trace:
+[ 1121.232062]  [<ffffffff8168348c>] dump_stack+0x19/0x1b
+[ 1121.232067]  [<ffffffff81070435>] __might_sleep+0xe5/0x110
+[ 1121.232071]  [<ffffffff816899ba>] down_read+0x2a/0x98
+[ 1121.232080]  [<ffffffffa02baf70>] ceph_vxattrcb_layout+0x60/0xf0 [ceph]
+[ 1121.232088]  [<ffffffffa02bbd7f>] ceph_getxattr+0x9f/0x1d0 [ceph]
+[ 1121.232093]  [<ffffffff81188d28>] vfs_getxattr+0xa8/0xd0
+[ 1121.232097]  [<ffffffff8118900b>] getxattr+0xab/0x1c0
+[ 1121.232100]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+[ 1121.232104]  [<ffffffff81155f80>] ? kmem_cache_free+0xb0/0x260
+[ 1121.232107]  [<ffffffff811704f2>] ? final_putname+0x22/0x50
+[ 1121.232110]  [<ffffffff8109e63d>] ? trace_hardirqs_on+0xd/0x10
+[ 1121.232114]  [<ffffffff816957a7>] ? sysret_check+0x1b/0x56
+[ 1121.232120]  [<ffffffff81189c9c>] SyS_fgetxattr+0x6c/0xc0
+[ 1121.232125]  [<ffffffff81695782>] system_call_fastpath+0x16/0x1b
+[ 1121.232129] BUG: scheduling while atomic: mv/9831/0x10000002
+[ 1121.232154] 1 lock held by mv/9831:
+[ 1121.232156]  #0:  (&(&ci->i_ceph_lock)->rlock){+.+...}, at:
+[<ffffffffa02bbd38>] ceph_getxattr+0x58/0x1d0 [ceph]
 
-To prevent this, the auth_none protocol handler needs an empty
-ceph_auth_client_ops->build_request() function.
+I think move the ci->i_ceph_lock down is safe because we can't free
+ceph_inode_info at there.
 
-CVE-2013-1059
-
-Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
-Reported-by: Chanam Park <chanam.park@hkpco.kr>
-Reviewed-by: Seth Arnold <seth.arnold@canonical.com>
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/auth_none.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ fs/ceph/xattr.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/net/ceph/auth_none.c
-+++ b/net/ceph/auth_none.c
-@@ -39,6 +39,11 @@ static int should_authenticate(struct ce
- 	return xi->starting;
- }
+--- a/fs/ceph/xattr.c
++++ b/fs/ceph/xattr.c
+@@ -675,17 +675,18 @@ ssize_t ceph_getxattr(struct dentry *den
+ 	if (!ceph_is_valid_xattr(name))
+ 		return -ENODATA;
  
-+static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
-+{
-+	return 0;
-+}
+-	spin_lock(&ci->i_ceph_lock);
+-	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
+-	     ci->i_xattrs.version, ci->i_xattrs.index_version);
+ 
+ 	/* let's see if a virtual xattr was requested */
+ 	vxattr = ceph_match_vxattr(inode, name);
+ 	if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
+ 		err = vxattr->getxattr_cb(ci, value, size);
+-		goto out;
++		return err;
+ 	}
+ 
++	spin_lock(&ci->i_ceph_lock);
++	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
++	     ci->i_xattrs.version, ci->i_xattrs.index_version);
 +
- /*
-  * the generic auth code decode the global_id, and we carry no actual
-  * authenticate state, so nothing happens here.
-@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops
- 	.destroy = destroy,
- 	.is_authenticated = is_authenticated,
- 	.should_authenticate = should_authenticate,
-+	.build_request = build_request,
- 	.handle_reply = handle_reply,
- 	.create_authorizer = ceph_auth_none_create_authorizer,
- 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
+ 	if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 1) &&
+ 	    (ci->i_xattrs.index_version >= ci->i_xattrs.version)) {
+ 		goto get_xattr;
 
 
