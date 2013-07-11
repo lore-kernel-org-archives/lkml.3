@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3GKAIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:08:53 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46707 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab3GKAIw (ORCPT
+	id S1755361Ab3GKALf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:11:35 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47178 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047Ab3GKALd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:08:52 -0400
-Date: Thu, 11 Jul 2013 10:08:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Simon Horman <horms@verge.net.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: rebase/rewrite of the renesas tree
-Message-Id: <20130711100851.14dc2f2c5c268a23486c89c1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+	Wed, 10 Jul 2013 20:11:33 -0400
+Date: Wed, 10 Jul 2013 17:11:30 -0700 (PDT)
+Message-Id: <20130710.171130.1523851475695552451.davem@davemloft.net>
+To: eliezer.tamir@linux.intel.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        donald.c.skidmore@intel.com, corbet@lwn.net,
+        e1000-devel@lists.sourceforge.net, eilong@broadcom.com,
+        amirv@mellanox.com, erdnetdev@gmail.com, willemb@google.com,
+        eliezer@tamir.org.il
+Subject: Re: [PATCH net-next v3 0/3] net: finish renaming lls to busy poll
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130710141307.15596.47242.stgit@ladj378.jer.intel.com>
+References: <20130710141307.15596.47242.stgit@ladj378.jer.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__11_Jul_2013_10_08_51_+1000_ssKIRMv6wFEHV/HQ"
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__11_Jul_2013_10_08_51_+1000_ssKIRMv6wFEHV/HQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Eliezer Tamir <eliezer.tamir@linux.intel.com>
+Date: Wed, 10 Jul 2013 17:13:07 +0300
 
-Hi Simon,
+> Here are three patches that complete the rename of lls to busy-poll
+> 
+> 1. rename include/net/ll_poll.h to include/net/busy_poll.h
+> 2. Rename ndo_ll_poll to ndo_busy_poll.
+>    Rename sk_mark_ll to sk_mark_napi_id.
+>    Rename skb_mark_ll to skb_mark_napi_id.
+>    Correct all useres of these functions.
+>    Update comments and defines  in include/net/busy_poll.h
+> 3. Rename LL_SO to BUSY_POLL_SO
+>    Rename sysctl_net_ll_{read,poll} to sysctl_busy_{read,poll}
+>    Fix up users of these variables.
+>    Fix documentation for sysctl.
+> 
+> v2 fixed forgetting the ndo changes in v1
+> v3 is a resend with -M
 
-Why have you just rebased the renesas tree
-(git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas.git#next)?
-You have just invalidated your testing and made it likely that your
-upstream maintainers will blast you if you ask them to pull your tree
-(though it is probably too late for v3.11 now anyway).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__11_Jul_2013_10_08_51_+1000_ssKIRMv6wFEHV/HQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR3feTAAoJEECxmPOUX5FE4K4P/33W7EY/3hVxjiX72Vfyh7Ic
-IPlwE5dixRgyEgPN62VdlvQR0EECGtadVT7rOqe0kTyjHREX2wpYpOWY5BQ1ObbV
-SFzVHUktsBOkIqQmUaflKzi5WTY7hGWDI1XFUE7Tu0k0UmjoB5tl74Z6v3hJQhNo
-hDDstyVMpvZaNRF1GKx8YNsBFm/B4j8nx42NHzqmhtV8By/on8ScodL4LTj7niGn
-+2P/rBuH86yIMlj61LPGUAwyxgK/mMSngGW8N5X3ywbYXVM1p2eOdX/ioHR8uLiE
-KlRWVHrKIeccPCkGEPyGXXbB76fFBAzrDyg0JoFrv96Aci7yAyNCjusTFeh/3/GA
-xO+5FjyxyEEqV7yhvxwla67Yjp7ohQfzGOSefrhvosv0OA+0raI0WRwpY0uQrDyg
-A1JTLMpum94Yox9hKH9gN4AdmOmARePKkCMTOb84bCuuCOQqKOdzFRaoqZjBNOLS
-LQgoPw3/uyD1+8m/DaqvVLeo6r2PS56Uv9Da4dtDVqncmjpmMiNLpM45X/rronvt
-DkeZqK2WH1dbijltsbljDwummqCksDzatL6Tz8ZkStu+dZiX/qcHybFeaJQb8r9w
-r1zO14yjOut/f4QOWGRWIpQeQgPxU6Mv2AjbbzaYfEltXIEMp+NuCfpCFywcqMeG
-6wNnZ5Nifk1GdwfdhAbK
-=6Pso
------END PGP SIGNATURE-----
-
---Signature=_Thu__11_Jul_2013_10_08_51_+1000_ssKIRMv6wFEHV/HQ--
+Series applied, thanks.
