@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab3GKAEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:04:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51162 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754457Ab3GKAEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:04:34 -0400
-Date: Thu, 11 Jul 2013 02:04:27 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jason Baron <jbaron@akamai.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mathieu.desnoyers@efficios.com
-Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based breakpoint
- instead of stop_machine()
-In-Reply-To: <51DDDFB3.3020004@akamai.com>
-Message-ID: <alpine.LNX.2.00.1307110159490.25858@pobox.suse.cz>
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <51DDDFB3.3020004@akamai.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755363Ab3GKAEo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:04:44 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:39828 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754457Ab3GKAEm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 20:04:42 -0400
+Date: Thu, 11 Jul 2013 10:04:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: rebase of the drivers-x86 tree
+Message-Id: <20130711100437.4e5198a27a72dcdd3f69200f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__11_Jul_2013_10_04_37_+1000_0x0WabxcQdx+sCdm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Jul 2013, Jason Baron wrote:
+--Signature=_Thu__11_Jul_2013_10_04_37_+1000_0x0WabxcQdx+sCdm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > this is a resurrection of a few years old idea to have jump labels use 
-> > synchronization based on int3 breakpoint rather than relying on 
-> > stop_machine() with all the consequences.
-> >
-> > ftrace has been doing exactly this kind of patching for year since 
-> > 08d636b6 ("ftrace/x86: Have arch x86_64 use breakpoints instead of stop 
-> > machine").
-> >
-> > This patchset first introduces generic text_poke_bp() that provides means 
-> > to perform this method of patching in parallel to text_poke_smp(), and 
-> > then converts x86 jump label code to use it.
-> >
-> > If this is merged, I'll do a followup patch converting ftrace to use this 
-> > infrastructure as well, as it's doing the same thing in principle already.
-> >
-> > Comments welcome.
-> >
-> 
-> Cool. This definitely an area I've wanted to improve with jump labels.
-> 
-> Perhaps, ftrace should be considered at this point to make sure the
-> interface is suitable for both callers?
+Hi Matthew,
 
-Yeah, Steven is CCed. From my understanding of the code, ftrace is 
-actually doing exactly what I have done for jump labels in 2/2, i.e. in 
-case the breakpoint is triggered, ftrace implicitly behaves like if "nop" 
-was the instruction that has been executed.
+Why have you just rebased the drivers-x86 tree
+(git://cavan.codon.org.uk/platform-drivers-x86.git#linux-next)?  You have
+just invalidated your testing and made it likely that Linus will blast
+you if you ask him to pull your tree.  Your whole tree was already based
+after v3.10 (i.e. released or rebased after the merge window opened), so
+why move it again?
 
-I even have preliminary (completely untested) patch, but would like to 
-have this merged/acked in the first round before proceeding with porting 
-ftrace to the new interface.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> Also, I wonder if its worth batching up updates. For example, right now 
-> we simply update each call-site one at a time even if its associated 
-> with the same control variable.
+--Signature=_Thu__11_Jul_2013_10_04_37_+1000_0x0WabxcQdx+sCdm
+Content-Type: application/pgp-signature
 
-That does seem to make sense indeed, but it's not really closely tied to 
-this patchset, is it?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Thanks,
+iQIcBAEBCAAGBQJR3faVAAoJEECxmPOUX5FEuwYP/jFf+hwtVU98uuUfcuqdM5ua
+hlZQS/589iktEBVGlaBpld1c12eFh+z24LkrrxW4dlZ7iwqKwAr7QKVf6CK3qJdv
+OrXTk8g5Jcsn36TORc7PdxidUkoKYVo0P9cl0Jg7om7MKuL1fEX7Ln+H9OHNSdEL
+aQ02/HVOVZsq7XUAp9l6j4Oz99CiEro/txpZLe2fRQyoF2jYeUdtSBiltj6nQdWk
+Wc8i5ArEUsv0Esvejuxy/cyz5jSpC0tO1492wr8snYf3irFqxvUlKdBCxfr9wINl
+UZYIeurYw5F0z5nrmPd+ms1YCXTYofQgo49IaPGoT5M6ZzXyWdFgknVJMxp0TtEv
+W07Aj4V3/2JR3Y95p8qtGCPKk+WlbQTJwvwE4U1BOQU+ux324LCyJcfC39zmH0Zc
+g+Wpuccj1v8sGYST4FM16cZ9VKBiqctYlal5LIoTmfTAi1svWCjuZfcUDj+/HxPL
+4BKV+PSb2FDcSKaBUrIezevsdp+15in5nv9HnguCp2WBaa6LFL2fGs08VkgrDgh4
+GAqpibgVaIypgpTUoBveRRiFgL0RIJuOq4mzaF9agvYDI/N7TKsVwAR5ITcIgr4l
+zvaTA6S2/TWyCY/i3jnSk6OxeJG+XAOcWsdTEdJRJSeSH+ShUyF9e8s6eYdW5kc8
+3ifjMIo04Zbqu0lA+NJa
+=3siF
+-----END PGP SIGNATURE-----
 
--- 
-Jiri Kosina
-SUSE Labs
+--Signature=_Thu__11_Jul_2013_10_04_37_+1000_0x0WabxcQdx+sCdm--
