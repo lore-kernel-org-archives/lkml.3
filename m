@@ -1,60 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755464Ab3GKCV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 22:21:59 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:37848 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab3GKCV5 (ORCPT
+	id S1755451Ab3GKC0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 22:26:39 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:12416 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755063Ab3GKC0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 22:21:57 -0400
-Message-ID: <51DE16C1.4030403@hitachi.com>
-Date: Thu, 11 Jul 2013 11:21:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 10 Jul 2013 22:26:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmAMAKUW3lF5LD3k/2dsb2JhbABagwmDH7lVhSwEAYEPF3SCIwEBBAE6HCMFCwgDDgoJJQ8FJQMhE4gJBbc+Fo4wgR0Hg3UDl1mKIocpgyMq
+Date: Thu, 11 Jul 2013 12:26:34 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: slab shrinkers: BUG at mm/list_lru.c:92
+Message-ID: <20130711022634.GZ3438@dastard>
+References: <20130701075005.GA28765@dhcp22.suse.cz>
+ <20130701081056.GA4072@dastard>
+ <20130702092200.GB16815@dhcp22.suse.cz>
+ <20130702121947.GE14996@dastard>
+ <20130702124427.GG16815@dhcp22.suse.cz>
+ <20130703112403.GP14996@dastard>
+ <20130704163643.GF7833@dhcp22.suse.cz>
+ <20130708125352.GC20149@dhcp22.suse.cz>
+ <20130710023138.GO3438@dastard>
+ <20130710080605.GC4437@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based breakpoint
- instead of stop_machine()
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130710080605.GC4437@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/11 5:25), Jiri Kosina wrote:
-> Hi,
+On Wed, Jul 10, 2013 at 10:06:05AM +0200, Michal Hocko wrote:
+> On Wed 10-07-13 12:31:39, Dave Chinner wrote:
+> [...]
+> > > 20761 [<ffffffffa0305fdd>] xlog_grant_head_wait+0xdd/0x1a0 [xfs]
+> > > [<ffffffffa0306166>] xlog_grant_head_check+0xc6/0xe0 [xfs]
+> > > [<ffffffffa030627f>] xfs_log_reserve+0xff/0x240 [xfs]
+> > > [<ffffffffa0302ac4>] xfs_trans_reserve+0x234/0x240 [xfs]
+> > > [<ffffffffa02c5999>] xfs_create+0x1a9/0x5c0 [xfs]
+> > > [<ffffffffa02bccca>] xfs_vn_mknod+0x8a/0x1a0 [xfs]
+> > > [<ffffffffa02bce0e>] xfs_vn_create+0xe/0x10 [xfs]
+> > > [<ffffffff811763dd>] vfs_create+0xad/0xd0
+> > > [<ffffffff81177e68>] lookup_open+0x1b8/0x1d0
+> > > [<ffffffff8117815e>] do_last+0x2de/0x780
+> > > [<ffffffff8117ae9a>] path_openat+0xda/0x400
+> > > [<ffffffff8117b303>] do_filp_open+0x43/0xa0
+> > > [<ffffffff81168ee0>] do_sys_open+0x160/0x1e0
+> > > [<ffffffff81168f9c>] sys_open+0x1c/0x20
+> > > [<ffffffff815830e9>] system_call_fastpath+0x16/0x1b
+> > > [<ffffffffffffffff>] 0xffffffffffffffff
+> > 
+> > That's an XFS log space issue, indicating that it has run out of
+> > space in IO the log and it is waiting for more to come free. That
+> > requires IO completion to occur.
+> >
+> > > [276962.652076] INFO: task xfs-data/sda9:930 blocked for more than 480 seconds.
+> > > [276962.652087] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> > > [276962.652093] xfs-data/sda9   D ffff88001ffb9cc8     0   930      2 0x00000000
+> > 
+> > Oh, that's why. This is the IO completion worker...
 > 
-> this is a resurrection of a few years old idea to have jump labels use 
-> synchronization based on int3 breakpoint rather than relying on 
-> stop_machine() with all the consequences.
+> But that task doesn't seem to be stuck anymore (at least lockup watchdog
+> doesn't report it anymore and I have already rebooted to test with ext3
+> :/). I am sorry if the these lockups logs were more confusing than
+> helpful, but they happened _long_ time ago and the system obviously
+> recovered from them. I am pasting only the traces for processes in D
+> state here again for reference.
+
+Right, there are various triggers that can get XFS out of the
+situation - it takes something to kick the log or metadata writeback
+and that can make space in the log free up and hence things get
+moving again. The problem will be that once in this low memory state
+everything in the filesystem will back up on slow memory allocation
+and it might take minutes to clear the backlog of IO completions....
+
+> 20757 [<ffffffffa0305fdd>] xlog_grant_head_wait+0xdd/0x1a0 [xfs]
+> [<ffffffffa0306166>] xlog_grant_head_check+0xc6/0xe0 [xfs]
+> [<ffffffffa030627f>] xfs_log_reserve+0xff/0x240 [xfs]
+> [<ffffffffa0302ac4>] xfs_trans_reserve+0x234/0x240 [xfs]
+
+That is the stack of a process waiting for log space to come
+available.
+
+> We are wating for page under writeback but neither of the 2 paths starts
+> in xfs code. So I do not think waiting for PageWriteback causes a
+> deadlock here.
+
+The problem is this: the page that we are waiting for IO on is in
+the IO completion queue, but the IO compeltion requires memory
+allocation to complete the transaction. That memory allocation is
+causing memcg reclaim, which then waits for IO completion on another
+page, which may or may not end up in the same IO completion queue.
+The CMWQ can continue to process new Io completions - up to a point
+- so slow progress will be made. In the worst case, it can deadlock.
+
+GFP_NOFS allocation is the mechanism by which filesystems are
+supposed to be able to avoid this recursive deadlock...
+
+> [...]
+> > ... is running IO completion work and trying to commit a transaction
+> > that is blocked in memory allocation which is waiting for IO
+> > completion. It's disappeared up it's own fundamental orifice.
+> > 
+> > Ok, this has absolutely nothing to do with the LRU changes - this is
+> > a pre-existing XFS/mm interaction problem from around 3.2. The
+> > question is now this: how the hell do I get memory allocation to not
+> > block waiting on IO completion here? This is already being done in
+> > GFP_NOFS allocation context here....
 > 
-> ftrace has been doing exactly this kind of patching for year since 
-> 08d636b6 ("ftrace/x86: Have arch x86_64 use breakpoints instead of stop 
-> machine").
-> 
-> This patchset first introduces generic text_poke_bp() that provides means 
-> to perform this method of patching in parallel to text_poke_smp(), and 
-> then converts x86 jump label code to use it.
-> 
-> If this is merged, I'll do a followup patch converting ftrace to use this 
-> infrastructure as well, as it's doing the same thing in principle already.
+> Just for reference. wait_on_page_writeback is issued only for memcg
+> reclaim because there is no other throttling mechanism to prevent from
+> too many dirty pages on the list, thus pre-mature OOM killer. See
+> e62e384e9d (memcg: prevent OOM with too many dirty pages) for more
+> details. The original patch relied on may_enter_fs but that check
+> disappeared by later changes by c3b94f44fc (memcg: further prevent OOM
+> with too many dirty pages).
 
-Hi Jiri,
+Aye. That's the exact code I was looking at yesterday and wondering
+"how the hell is waiting on page writeback valid in GFP_NOFS
+context?". It seems that memcg reclaim is intentionally ignoring
+GFP_NOFS to avoid OOM issues.  That's a memcg implementation problem,
+not a filesystem or LRU infrastructure problem....
 
-Thank you for taking over it! :)
-If yours is merged, I can move optprobe on that too ;)
+Cheers,
 
-Thank you again!!
-
+Dave.
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Dave Chinner
+david@fromorbit.com
