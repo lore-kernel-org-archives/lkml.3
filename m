@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab3GKPDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 11:03:54 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34143 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751197Ab3GKPDw (ORCPT
+	id S1756118Ab3GKPMQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 11:12:16 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:3795 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755976Ab3GKPMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 11:03:52 -0400
-Date: Thu, 11 Jul 2013 11:03:52 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: USB host support should depend on HAS_DMA
-In-Reply-To: <CAMuHMdWF8pHQ7RfojiJK7NxULZZjecvzSkP6R+Q-5ib4A516Bw@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1307111059220.1276-100000@iolanthe.rowland.org>
+	Thu, 11 Jul 2013 11:12:15 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
+   d="scan'208";a="6589834"
+Message-ID: <51DECB4D.4020009@citrix.com>
+Date: Thu, 11 Jul 2013 17:12:13 +0200
+From: =?ISO-8859-1?Q?Roger_Pau_Monn=E9?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: David Vrabel <david.vrabel@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xen.org>
+Subject: Re: [Xen-devel] [PATCH RFC 4/4] xen-block: introduce a new request
+ type to unmap grants
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com>	<1373288607-1876-5-git-send-email-roger.pau@citrix.com>	<20130708194152.GJ4927@phenom.dumpdata.com> <51DD271B.3010408@citrix.com> <51DEB795.3000602@citrix.com>
+In-Reply-To: <51DEB795.3000602@citrix.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Jul 2013, Geert Uytterhoeven wrote:
-
-> On Thu, Jul 11, 2013 at 3:01 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> > On Thu, 11 Jul 2013, Arnd Bergmann wrote:
-> >
-> >> On Wednesday 10 July 2013, Alan Stern wrote:
-> >> > This isn't right.  There are USB host controllers that use PIO, not
-> >> > DMA.  The HAS_DMA dependency should go with the controller driver, not
-> >> > the USB core.
-> >> >
-> >> > On the other hand, the USB core does call various routines like
-> >> > dma_unmap_single.  It ought to be possible to compile these calls even
-> >> > when DMA isn't enabled.  That is, they should be defined as do-nothing
-> >> > stubs.
-> >>
-> >> The asm-generic/dma-mapping-broken.h file intentionally causes link
-> >> errors, but that could be changed.
-> >>
-> >> The better approach in my mind would be to replace code like
-> >>
-> >>
-> >>       if (hcd->self.uses_dma)
-> >>
-> >> with
-> >>
-> >>       if (IS_ENABLED(CONFIG_HAS_DMA) && hcd->self.uses_dma) {
-> >>
-> >> which will reliably cause that reference to be omitted from object code,
-> >> but not stop giving link errors for drivers that actually require
-> >> DMA.
-> >
-> > How will it give link errors for drivers that require DMA?
+On 11/07/13 15:48, David Vrabel wrote:
+> On 10/07/13 10:19, Roger Pau Monné wrote:
+>>
+>> >From 1ede72ba10a7ec13d57ba6d2af54e86a099d7125 Mon Sep 17 00:00:00 2001
+>> From: Roger Pau Monne <roger.pau@citrix.com>
+>> Date: Wed, 10 Jul 2013 10:22:19 +0200
+>> Subject: [PATCH RFC] xen-blkfront: revoke foreign access for grants not
+>>  mapped by the backend
+>> MIME-Version: 1.0
+>> Content-Type: text/plain; charset=UTF-8
+>> Content-Transfer-Encoding: 8bit
+>>
+>> There's no need to keep the foreign access in a grant if it is not
+>> persistently mapped by the backend. This allows us to free grants that
+>> are not mapped by the backend, thus preventing blkfront from hoarding
+>> all grants.
+>>
+>> The main effect of this is that blkfront will only persistently map
+>> the same grants as the backend, and it will always try to use grants
+>> that are already mapped by the backend. Also the number of persistent
+>> grants in blkfront is the same as in blkback (and is controlled by the
+>> value in blkback).
 > 
-> It won't. Unless the host driver itself calls into the DMA API, too
-> (are there any that don't?).
+> Does this place in implicit requirement on the behaviour of the backend.
+>  i.e., the backend must persistently map the first N grants and always
+> unmap the remainder?  If so, this should be clearly documented.
 
-To my knowledge, all the host controller drivers which use DMA _do_
-call functions in the DMA API.  So they would still get link errors,
-even though the USB core wouldn't.
+No, the backend can persistently map whatever grants it wants, and in
+fact we have a LRU in the backend that keeps unmapping a certain amount
+of grants that have not been used over a period of time.
 
-Therefore adding the appropriate HAS_DMA dependencies should be 
-straightforward: Try to build all the drivers and see which ones fail 
-to link.
+> 
+> It also seems odd to have the backend decide how much frontend resource
+> can be consumed at anyone time.  It's not clear how the backend is
+> supposed to know how many persistent grants it should hang on to.
 
-Alan Stern
+blkfront has to at least persistently map the same grants as the
+backend. blkfront could persistently map all grants, but then we will
+have grant shortage, and I doubt there's much performance gain from
+persistently mapping grants in blkfront but not blkback (since the
+biggest performance penalty comes from the unmapping done in blkback and
+TLB flush involved).
+
+Using this mechanism we also make sure that blkfront will always try to
+use grants that blkback has persistently mapped, and then fall back to
+non-persistent grants if we exhaust all persistent mappings.
 
