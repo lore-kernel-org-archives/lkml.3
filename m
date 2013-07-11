@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754175Ab3GKQ1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:27:07 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:34849 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab3GKQ1E (ORCPT
+	id S1755532Ab3GKQ23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:28:29 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:56771 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754074Ab3GKQ1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:27:04 -0400
+	Thu, 11 Jul 2013 12:27:06 -0400
 From: David Ahern <dsahern@gmail.com>
 To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
 Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -15,9 +15,9 @@ Cc: David Ahern <dsahern@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
         Runzhen Wang <runzhen@linux.vnet.ibm.com>
-Subject: [PATCH 06/11] perf kvm: split out tracepoints from record args
-Date: Thu, 11 Jul 2013 10:26:37 -0600
-Message-Id: <1373560002-14618-7-git-send-email-dsahern@gmail.com>
+Subject: [PATCH 07/11] perf stats: add max and min stats
+Date: Thu, 11 Jul 2013 10:26:38 -0600
+Message-Id: <1373560002-14618-8-git-send-email-dsahern@gmail.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1373560002-14618-1-git-send-email-dsahern@gmail.com>
 References: <1373560002-14618-1-git-send-email-dsahern@gmail.com>
@@ -25,8 +25,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Needed by kvm live command. Make record_args a local while we are
-messing with the args.
+Need an initialization function to set min to -1 to
+differentiate from an actual min of 0.
 
 Signed-off-by: David Ahern <dsahern@gmail.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -38,65 +38,52 @@ Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Runzhen Wang <runzhen@linux.vnet.ibm.com>
 ---
- tools/perf/builtin-kvm.c |   30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+ tools/perf/util/stat.c |    6 ++++++
+ tools/perf/util/stat.h |    9 +++++++++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 24b78ae..7d14a3a 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -801,16 +801,11 @@ exit:
- 	return ret;
+diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
+index 7c59c28..6506b3d 100644
+--- a/tools/perf/util/stat.c
++++ b/tools/perf/util/stat.c
+@@ -10,6 +10,12 @@ void update_stats(struct stats *stats, u64 val)
+ 	delta = val - stats->mean;
+ 	stats->mean += delta / stats->n;
+ 	stats->M2 += delta*(val - stats->mean);
++
++	if (val > stats->max)
++		stats->max = val;
++
++	if (val < stats->min)
++		stats->min = val;
  }
  
--static const char * const record_args[] = {
--	"record",
--	"-R",
--	"-f",
--	"-m", "1024",
--	"-c", "1",
--	"-e", "kvm:kvm_entry",
--	"-e", "kvm:kvm_exit",
--	"-e", "kvm:kvm_mmio",
--	"-e", "kvm:kvm_pio",
-+static const char * const kvm_events_tp[] = {
-+	"kvm:kvm_entry",
-+	"kvm:kvm_exit",
-+	"kvm:kvm_mmio",
-+	"kvm:kvm_pio",
+ double avg_stats(struct stats *stats)
+diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
+index 588367c..ae8ccd7 100644
+--- a/tools/perf/util/stat.h
++++ b/tools/perf/util/stat.h
+@@ -6,6 +6,7 @@
+ struct stats
+ {
+ 	double n, mean, M2;
++	u64 max, min;
  };
  
- #define STRDUP_FAIL_EXIT(s)		\
-@@ -826,8 +821,16 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- {
- 	unsigned int rec_argc, i, j;
- 	const char **rec_argv;
-+	const char * const record_args[] = {
-+		"record",
-+		"-R",
-+		"-f",
-+		"-m", "1024",
-+		"-c", "1",
-+	};
+ void update_stats(struct stats *stats, u64 val);
+@@ -13,4 +14,12 @@ double avg_stats(struct stats *stats);
+ double stddev_stats(struct stats *stats);
+ double rel_stddev_stats(double stddev, double avg);
  
--	rec_argc = ARRAY_SIZE(record_args) + argc + 2;
-+	rec_argc = ARRAY_SIZE(record_args) + argc + 2 +
-+		   2 * ARRAY_SIZE(kvm_events_tp);
- 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
- 
- 	if (rec_argv == NULL)
-@@ -836,6 +839,11 @@ kvm_events_record(struct perf_kvm_stat *kvm, int argc, const char **argv)
- 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
- 		rec_argv[i] = STRDUP_FAIL_EXIT(record_args[i]);
- 
-+	for (j = 0; j < ARRAY_SIZE(kvm_events_tp); j++) {
-+		rec_argv[i++] = "-e";
-+		rec_argv[i++] = STRDUP_FAIL_EXIT(kvm_events_tp[j]);
-+	}
-+
- 	rec_argv[i++] = STRDUP_FAIL_EXIT("-o");
- 	rec_argv[i++] = STRDUP_FAIL_EXIT(kvm->file_name);
- 
++static inline void init_stats(struct stats *stats)
++{
++	stats->n    = 0.0;
++	stats->mean = 0.0;
++	stats->M2   = 0.0;
++	stats->min  = (u64) -1;
++	stats->max  = 0;
++}
+ #endif
 -- 
 1.7.10.1
 
