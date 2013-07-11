@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297Ab3GKLKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 07:10:48 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:57156 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754658Ab3GKLKr (ORCPT
+	id S932326Ab3GKLLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 07:11:05 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:60301 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932309Ab3GKLLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 07:10:47 -0400
-Date: Thu, 11 Jul 2013 12:10:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Ankur Raina <Ankur.Raina@kpitcummins.com>
-Cc: sameo@linux.intel.com, broonie@kernel.org, axel.lin@gmail.com,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        david.chen@diasemi.com
-Subject: Re: [patch v1]mfd: fix for DA9055 driver initialization
-Message-ID: <20130711111040.GG25601@gmail.com>
-References: <1373030310.1601.30.camel@ankurr1-desktop>
+	Thu, 11 Jul 2013 07:11:01 -0400
+Message-ID: <51DE9387.7090804@linux.vnet.ibm.com>
+Date: Thu, 11 Jul 2013 16:44:15 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1373030310.1601.30.camel@ankurr1-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: Andrew Jones <drjones@redhat.com>, mingo@redhat.com, ouyang@cs.pitt.edu,
+        habanero@linux.vnet.ibm.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
+        chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+References: <51CAEF45.3010203@linux.vnet.ibm.com> <20130626161130.GB18152@redhat.com> <51CB2AD9.5060508@linux.vnet.ibm.com> <51DBD3C2.2040807@linux.vnet.ibm.com> <20130710103325.GP24941@redhat.com> <51DE771F.7070805@linux.vnet.ibm.com> <20130711094833.GC8575@redhat.com> <51DE849E.4020405@linux.vnet.ibm.com> <20130711101104.GF8575@redhat.com> <51DE8EC6.6020700@linux.vnet.ibm.com> <20130711105631.GH8575@redhat.com>
+In-Reply-To: <20130711105631.GH8575@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071111-4790-0000-0000-000009378567
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 05 Jul 2013, Ankur Raina wrote:
+On 07/11/2013 04:26 PM, Gleb Natapov wrote:
+> On Thu, Jul 11, 2013 at 04:23:58PM +0530, Raghavendra K T wrote:
+>> On 07/11/2013 03:41 PM, Gleb Natapov wrote:
+>>> On Thu, Jul 11, 2013 at 03:40:38PM +0530, Raghavendra K T wrote:
+>>>>>>>> Gleb,
+>>>>>>>> Can you elaborate little more on what you have in mind regarding per
+>>>>>>>> VM ple_window. (maintaining part of it as a per vm variable is clear
+>>>>>>>> to
+>>>>>>>>   me), but is it that we have to load that every time of guest entry?
+>>>>>>>>
+>>>>>>> Only when it changes, shouldn't be to often no?
+>>>>>>
+>>>>>> Ok. Thinking how to do. read the register and writeback if there need
+>>>>>> to be a change during guest entry?
+>>>>>>
+>>>>> Why not do it like in the patch you've linked? When value changes write it
+>>>>> to VMCS of the current vcpu.
+>>>>>
+>>>>
+>>>> Yes. can be done. So the running vcpu's ple_window gets updated only
+>>>> after next pl-exit. right?
+>>> I am not sure what you mean. You cannot change vcpu's ple_window while
+>>> vcpu is in a guest mode.
+>>>
+>>
+>> I agree with that. Both of us are on the same page.
+>>   What I meant is,
+>> suppose the per VM ple_window changes when a vcpu x of that VM  was running,
+>> it will get its ple_window updated during next run.
+> Ah, I think "per VM" is what confuses me. Why do you want to have "per
+> VM" ple_windows and not "per vcpu" one? With per vcpu one ple_windows
+> cannot change while vcpu is running.
+>
 
-> This patch clears all the events received while powering up DA9055.
-> While powering up DA9055,power sequencer and gpio events are received.
-> These events remain uncleared after boot up, due to which further event handling also fails.
-> DA9055 has three event registers.The event register bits are set to '1' on receiving an event.
-> The events can be cleared on writing a '1' to the set bit, which would then clear that bit to '0'
-> After applying this patch we have a clean state after boot up.
-> 
-> Signed-off-by: Ankur Raina <Ankur.Raina@kpitcummins.com>
-> ---
->  drivers/mfd/da9055-core.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
+Okay. Got that. My initial feeling was vcpu does not "feel" the global
+load. But I think that should be of no problem. instead we will not need
+atomic operations to update ple_window, which is better.
 
-I'm going to clean up the commit message a little then apply this patch.
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
