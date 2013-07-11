@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab3GKNNO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:13:14 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:46342 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab3GKNNM (ORCPT
+	id S1755215Ab3GKNQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:16:58 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:59374 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab3GKNQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:13:12 -0400
-Message-ID: <51DEAF60.2000902@ozlabs.ru>
-Date: Thu, 11 Jul 2013 23:13:04 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Thu, 11 Jul 2013 09:16:57 -0400
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Alexander Graf <agraf@suse.de>, linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 6/8] KVM: PPC: Add support for multiple-TCE hcalls
-References: <1373123227-22969-1-git-send-email-aik@ozlabs.ru>  <1373123227-22969-7-git-send-email-aik@ozlabs.ru>  <51DC4228.7010607@suse.de> <51DCEA76.9070808@ozlabs.ru>  <D10E7B99-3A7C-4275-9A49-3CB15598E705@suse.de> <51DE3ECB.7080803@ozlabs.ru>  <43E93931-F213-47CC-ADCF-D3A6D6BC4372@suse.de> <51DE8EE9.2000508@ozlabs.ru>  <C6BC1E27-4C9C-4A18-A64A-052202DA64B5@suse.de>  <1373546368.19894.87.camel@pasglop>  <4133424D-B105-4CB1-A72A-4F47A6184DC7@suse.de> <1373547480.19894.102.camel@pasglop>
-In-Reply-To: <1373547480.19894.102.camel@pasglop>
-Content-Type: text/plain; charset=KOI8-R
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMuHMdXUp+CcNYbc+oy9ux4PSbm+g6i2w_vann5ML9xwMqYAyw@mail.gmail.com>
+References: <CAF2Nc0xVKS+aL0CXdDFQHSapvRxM35KZkjeKeigQ7X43+2NVBA@mail.gmail.com>
+	<20130711104307.GB28131@pd.tnic>
+	<CAF2Nc0xjxtWkpmurODWKNMCC9D+4Xf6gMnQAqAiec6zn4V0z3w@mail.gmail.com>
+	<CAMuHMdXUp+CcNYbc+oy9ux4PSbm+g6i2w_vann5ML9xwMqYAyw@mail.gmail.com>
+Date: Thu, 11 Jul 2013 15:16:56 +0200
+Message-ID: <CAF2Nc0x8nQG7grtgbBNw4NLfP787GDwGoDKjoHQNLE7TrfjJ7w@mail.gmail.com>
+Subject: Re: Error 2: No rule to make target kernel/timeconst.pl
+From: Konrad Vrba <konrad.vrba@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2013 10:58 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-07-11 at 14:51 +0200, Alexander Graf wrote:
->> I don't like bloat usually. But Alexey even had an #ifdef DEBUG in
->> there to selectively disable in-kernel handling of multi-TCE. Not
->> calling ENABLE_CAP would give him exactly that without ugly #ifdefs in
->> the kernel.
-> 
-> I don't see much point in disabling it... but ok, if that's a valuable
-> feature, then shoot some VM level ENABLE_CAP (please don't iterate all
-> VCPUs, that's gross).
+On 7/11/13, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Thu, Jul 11, 2013 at 12:49 PM, Konrad Vrba <konrad.vrba@gmail.com>
+> wrote:
+>> On 7/11/13, Borislav Petkov <bp@alien8.de> wrote:
+>>> On Thu, Jul 11, 2013 at 12:28:20PM +0200, Konrad Vrba wrote:
+>>>> Hello,
+>>>> I have following error while compiling new stable kernel 3.10:
+>>>>
+>>>>   CC      kernel/fork.o
+>>>>   CC      kernel/exec_domain.o
+>>>>   CC      kernel/panic.o
+>>>>   CC      kernel/printk.o
+>>>>   CC      kernel/cpu.o
+>>>>   CC      kernel/exit.o
+>>>>   CC      kernel/itimer.o
+>>>> make[1]: *** No rule to make target `kernel/timeconst.pl', needed by
+>>>> `kernel/timeconst.h'.  Stop.
+>>>> make: *** [kernel] Error 2
+>>>>
+>>>> Could somebody please advise how to fix this ?
+>>>
+>>> Can you save your config first, cleanup the build dir from kbuild stuff:
+>>>
+>>> make mrproper
+>>>
+>>> and then try building again?
+>>>
+>>> FWIW, 3.10 and later builds just fine here.
+>>
+>> cleaning up with 'make mrproper'  does not help.
+>> I still get the same error
+>
+> Do you still have build files around after "make mrproper"?
+> If this is a git clone, "git ls-files --others" will tell you.
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 --
+> geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker.
+> But
+> when I'm talking to journalists I just say "programmer" or something like
+> that.
+>                                 -- Linus Torvalds
+>
 
-No use for me whatsoever as I only want to disable real more handlers and
-keep virtual mode handlers enabled (sometime, for debug only) and this
-capability is not about that - I can easily just not enable it in QEMU with
-the exactly the same effect.
-
-So please, fellas, decide whether I should iterate vcpu's or add ENABLE_CAP
-per KVM. Thanks.
-
-
--- 
-Alexey
+no, I don't have any build files. Even when I unpack freshly
+downloaded kernel archive, and copy the .config, I still get the same
+errors
