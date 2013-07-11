@@ -1,190 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab3GKOJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:09:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47821 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755049Ab3GKOJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:09:17 -0400
-Date: Thu, 11 Jul 2013 15:09:14 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 08/16] sched: Reschedule task on preferred NUMA node once
- selected
-Message-ID: <20130711140914.GE2355@suse.de>
-References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
- <1373536020-2799-9-git-send-email-mgorman@suse.de>
- <20130711123038.GH25631@dyad.programming.kicks-ass.net>
- <20130711130322.GC2355@suse.de>
- <20130711131158.GJ25631@dyad.programming.kicks-ass.net>
+	id S932278Ab3GKOKu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:10:50 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:59734 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab3GKOKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 10:10:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130711131158.GJ25631@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANq1E4Tx7cVkWmZHtLvtW4U78uedEUe4Qs40aeyzRORmEBTPBg@mail.gmail.com>
+References: <1373550090-30379-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1373550090-30379-2-git-send-email-benjamin.tissoires@redhat.com>
+	<CANq1E4Tx7cVkWmZHtLvtW4U78uedEUe4Qs40aeyzRORmEBTPBg@mail.gmail.com>
+Date: Thu, 11 Jul 2013 16:10:46 +0200
+Message-ID: <CAN+gG=HsR3uQDF-U+jAd5Ap_+GQqLG2xOe-waLBNq3D6Righnw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Bluetooth: hidp: implement hidinput_input_event callback
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>, Jiri Kosina <jkosina@suse.cz>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 03:11:58PM +0200, Peter Zijlstra wrote:
-> On Thu, Jul 11, 2013 at 02:03:22PM +0100, Mel Gorman wrote:
-> > On Thu, Jul 11, 2013 at 02:30:38PM +0200, Peter Zijlstra wrote:
-> > > On Thu, Jul 11, 2013 at 10:46:52AM +0100, Mel Gorman wrote:
-> > > > @@ -829,10 +854,29 @@ static void task_numa_placement(struct task_struct *p)
-> > > >  		}
-> > > >  	}
-> > > >  
-> > > > -	/* Update the tasks preferred node if necessary */
-> > > > +	/*
-> > > > +	 * Record the preferred node as the node with the most faults,
-> > > > +	 * requeue the task to be running on the idlest CPU on the
-> > > > +	 * preferred node and reset the scanning rate to recheck
-> > > > +	 * the working set placement.
-> > > > +	 */
-> > > >  	if (max_faults && max_nid != p->numa_preferred_nid) {
-> > > > +		int preferred_cpu;
-> > > > +
-> > > > +		/*
-> > > > +		 * If the task is not on the preferred node then find the most
-> > > > +		 * idle CPU to migrate to.
-> > > > +		 */
-> > > > +		preferred_cpu = task_cpu(p);
-> > > > +		if (cpu_to_node(preferred_cpu) != max_nid) {
-> > > > +			preferred_cpu = find_idlest_cpu_node(preferred_cpu,
-> > > > +							     max_nid);
-> > > > +		}
-> > > > +
-> > > > +		/* Update the preferred nid and migrate task if possible */
-> > > >  		p->numa_preferred_nid = max_nid;
-> > > >  		p->numa_migrate_seq = 0;
-> > > > +		migrate_task_to(p, preferred_cpu);
-> > > >  	}
-> > > >  }
-> > > 
-> > > Now what happens if the migrations fails? We set numa_preferred_nid to max_nid
-> > > but then never re-try the migration. Should we not re-try the migration every
-> > > so often, regardless of whether max_nid changed?
-> > 
-> > We do this
-> > 
-> > load_balance
-> > -> active_load_balance_cpu_stop
-> 
-> Note that active balance is rare to begin with.
-> 
+Hi David,
 
-Yeah. I was not sure how rare exactly but it is what motivated the
-introduction of migrate_task_to in the first place. I actually have no
-idea how often the migration fails. I did not check for it.
+On Thu, Jul 11, 2013 at 4:02 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+>> +static int hidp_hidinput_event(struct input_dev *dev, unsigned int type,
+>> +                              unsigned int code, int value)
+>> +{
+>> +       struct hid_device *hid = input_get_drvdata(dev);
+>
+> I dislike that we have to deal with input_get_drvdata() in a transport
+> driver. It is not obvious from the transport driver that this gives us
+> an hid_device. But ok, that's how we do it in usbhid and hid-input so
+> it's another issue..
 
-> >   -> move_one_task
-> >     -> can_migrate_task
-> >       -> migrate_improves_locality
-> > 
-> > If the conditions are right then it'll move the task to the preferred node
-> > for a number of PTE scans. Of course there is no guarantee that the necessary
-> > conditions will occur but I was wary of taking more drastic steps in the
-> > scheduler such as retrying on every fault until the migration succeeds.
-> > 
-> 
-> Ah, so task_numa_placement() is only called every full scan, not every fault.
-> Also one could throttle it.
-> 
-> So initially I did all the movement through the regular balancer, but Ingo
-> found that when the machine grows it quickly becomes unlikely we hit the right
-> conditions. Hence he also went to direct migrations in his series.
-> 
+right. So we should definitively change the callback signature here.
 
-I wanted to avoid aggressive scheduling decisions until after the false
-share detection stuff was solid.
+>
+>> +       struct hidp_session *session = hid->driver_data;
+>> +       struct hid_field *field;
+>> +       int offset;
+>> +
+>> +       BT_DBG("session %p type %d code %d value %d",
+>> +              session, type, code, value);
+>> +
+>> +       if (type != EV_LED)
+>> +               return -1;
+>> +
+>> +       offset = hidinput_find_field(hid, type, code, &field);
+>> +       if (offset == -1) {
+>> +               hid_warn(dev, "event field not found\n");
+>> +               return -1;
+>> +       }
+>> +
+>> +       hid_set_field(field, offset, value);
+>> +
+>> +       return hidp_send_report(session, field->report);
+>> +}
+>> +
+>
+> We had this discussion before (regarding uhid and hidpinput_event), it
+> would be nice to have a helper in hid-input.c which does this. We copy
+> the code into every transport driver, which bugs me. But no-one
+> stepped up to do this, so I am fine.
 
-> Another thing we might consider is counting the number of migration attempts
-> and settling for the n-th best node for the n'th attempt and giving up when n
-> surpasses the quality of the node we're currently on.
+oh, yes, you are right. I'll add it to my todo list (now that I am
+responsible of 2/4 code duplication :-S )
 
-That might be necessary when the machine is overloaded. As a
-starting point the following should retry the migrate a number of times
-until success. The retry is checked on every fault but should not fire
-more than once every 100ms.
+>
+> Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-Compile tested only
+Thanks for the review!
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index d44fbc6..454ad2e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1505,6 +1505,7 @@ struct task_struct {
- 	int numa_migrate_seq;
- 	unsigned int numa_scan_period;
- 	unsigned int numa_scan_period_max;
-+	unsigned long numa_migrate_retry;
- 	u64 node_stamp;			/* migration stamp  */
- 	struct callback_head numa_work;
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f2b37e01..a5b6b01 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -934,6 +934,20 @@ static inline int task_faults_idx(int nid, int priv)
- 	return 2 * nid + priv;
- }
- 
-+/* Attempt to migrate a task to a CPU on the preferred node */
-+static void numa_migrate_preferred(struct task_struct *p)
-+{
-+	int preferred_cpu = task_cpu(p);
-+
-+	p->numa_migrate_retry = 0;
-+	if (cpu_to_node(preferred_cpu) != p->numa_preferred_nid) {
-+		preferred_cpu = task_numa_find_cpu(p, p->numa_preferred_nid);
-+
-+		if (!migrate_task_to(p, preferred_cpu))
-+			p->numa_migrate_retry = jiffies + HZ/10;
-+	}
-+}
-+
- static void task_numa_placement(struct task_struct *p)
- {
- 	int seq, nid, max_nid = -1;
-@@ -975,21 +989,12 @@ static void task_numa_placement(struct task_struct *p)
- 	 * the working set placement.
- 	 */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
--		int preferred_cpu;
- 		int old_migrate_seq = p->numa_migrate_seq;
- 
--		/*
--		 * If the task is not on the preferred node then find 
--		 * a suitable CPU to migrate to.
--		 */
--		preferred_cpu = task_cpu(p);
--		if (cpu_to_node(preferred_cpu) != max_nid)
--			preferred_cpu = task_numa_find_cpu(p, max_nid);
--
- 		/* Update the preferred nid and migrate task if possible */
- 		p->numa_preferred_nid = max_nid;
- 		p->numa_migrate_seq = 0;
--		migrate_task_to(p, preferred_cpu);
-+		numa_migrate_preferred(p);
- 
- 		/*
- 		 * If preferred nodes changes frequently then the scan rate
-@@ -1050,6 +1055,10 @@ void task_numa_fault(int last_nidpid, int node, int pages, bool migrated)
- 
- 	task_numa_placement(p);
- 
-+	/* Retry task to preferred node migration if it previously failed */
-+	if (p->numa_migrate_retry && time_after(jiffies, p->numa_migrate_retry))
-+		numa_migrate_preferred(p);
-+
- 	/* Record the fault, double the weight if pages were migrated */
- 	p->numa_faults_buffer[task_faults_idx(node, priv)] += pages << migrated;
- }
+Cheers,
+Benjamin
 
--- 
-Mel Gorman
-SUSE Labs
+>
+> Thanks!
+> David
+>
+>>  static int hidp_get_raw_report(struct hid_device *hid,
+>>                 unsigned char report_number,
+>>                 unsigned char *data, size_t count,
+>> @@ -711,6 +736,7 @@ static struct hid_ll_driver hidp_hid_driver = {
+>>         .stop = hidp_stop,
+>>         .open  = hidp_open,
+>>         .close = hidp_close,
+>> +       .hidinput_input_event = hidp_hidinput_event,
+>>  };
+>>
+>>  /* This function sets up the hid device. It does not add it
+>> --
+>> 1.8.3.1
+>>
