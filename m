@@ -1,97 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3GKGQs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 02:16:48 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:52830 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab3GKGQr (ORCPT
+	id S1755452Ab3GKGSF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 02:18:05 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:23290 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751009Ab3GKGSD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 02:16:47 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-ea-51de4dcd7393
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCH 1/4] perf tools: Remove event types framework only user
-References: <1373388539-9347-1-git-send-email-jolsa@redhat.com>
-	<1373388539-9347-2-git-send-email-jolsa@redhat.com>
-Date: Thu, 11 Jul 2013 15:16:45 +0900
-In-Reply-To: <1373388539-9347-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Tue, 9 Jul 2013 18:48:56 +0200")
-Message-ID: <87oba9y62a.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 11 Jul 2013 02:18:03 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX183L5xWbrpZJlHVwx5E7jCi
+Date: Wed, 10 Jul 2013 23:17:58 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Hebbar Gururaja <gururaja.hebbar@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [RFC] ARM: OMAP2+: omap_device: add pinctrl handling
+Message-ID: <20130711061757.GX5523@atomide.com>
+References: <1371826990-25820-1-git-send-email-grygorii.strashko@ti.com>
+ <CACRpkdY=m1b9Lh27+wHP8FQ4SbVZKmAOCGhxe59aP+TcuR9QaA@mail.gmail.com>
+ <20130625065811.GZ5523@atomide.com>
+ <51CAEA90.90200@ti.com>
+ <CACRpkdbKgEcfF67oO9HrczvDp4Po3Xt1hFajJ1vO8kEvsZH4jA@mail.gmail.com>
+ <51CC45D3.2000305@ti.com>
+ <CACRpkdYU13bhPaL2ZG9CT9JRv9sKQ+1N3zCUPizk571+LQqB4A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdYU13bhPaL2ZG9CT9JRv9sKQ+1N3zCUPizk571+LQqB4A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+* Linus Walleij <linus.walleij@linaro.org> [130710 13:42]:
+> On Thu, Jun 27, 2013 at 4:01 PM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
+> 
+> > I think, In the future the OMAP pinctrl configurations would be manged in
+> > more flexible way then now (thanks to "pinctrl PM helpers" and you;))
+> > - "Idle" state will be splitted to "Idle"/"sleep"
+> > - "default" state will be splitted to "default"/"active"
+> 
+> OK so the first ones we already have so the discussion is now down
+> to adding the "active" state (and pinctrl_pm* helper function).
 
-On Tue,  9 Jul 2013 18:48:56 +0200, Jiri Olsa wrote:
-> The only user of the event types data is 'perf timechart'
-> command and uses this info to identify proper tracepoints
-> based on its name.
->
-> Switching this code to use traceevent library API to obtain
-> IDs for needed tracepoints. This should also make the samples
-> processing faster as we no longer compare strings but numbers.
+I think I have a patchset ready for pinctrl to allow multiple simulaneous
+states as discussed, need to test it first though. Should be able to
+post it on Friday hopefully.
+ 
+> I guess we need a patch set prepared which adds the "active" state
+> and helper function as the first patch, i.e. this:
+> http://marc.info/?l=linux-kernel&m=137094012703340&w=2
+> Can I have your ACK on this patch?
 
-A better way I think is using tracepoint handlers.  You don't need to
-compare anything this way since an evsel can know its handler.
+Hmm I have gone a bit further with the drivers/base/pinctrl.c in my
+set where if active state is defined then sleep and idle states must
+match active state for the pingroups to avoid constantly checking
+those sets during runtime.
 
-Please see perf_session__set_tracepoints_handlers() and builtin-
-{kmem,lock,sched}.c.
+Then the pinctrl_pm_select_active_state() does not actually have
+anything to do with PM in the rx/tx case, so we should rename that.
 
+It's pretty close, but before we can apply that we need the changes
+I have to allow multiple simultaneous states. I suggest wait just
+few days on that patch.
+ 
+> I do not want to add the state unless there is a clear consumer,
+> so it needs to go in with the first patch to a device driver that uses
+> pinctrl_pm_select_active_state() which will be a good demonstration
+> on its use and utility. (And a point to object and suggest other ways
+> to do the same thing...)
 
-[SNIP]
->  
-> -/*
-> - * trace_flag_type is an enumeration that holds different
-> - * states when a trace occurs. These are:
-> - *  IRQS_OFF            - interrupts were disabled
-> - *  IRQS_NOSUPPORT      - arch does not support irqs_disabled_flags
-> - *  NEED_RESCED         - reschedule is requested
-> - *  HARDIRQ             - inside an interrupt handler
-> - *  SOFTIRQ             - inside a softirq handler
-> - */
-> -enum trace_flag_type {
-> -	TRACE_FLAG_IRQS_OFF		= 0x01,
-> -	TRACE_FLAG_IRQS_NOSUPPORT	= 0x02,
-> -	TRACE_FLAG_NEED_RESCHED		= 0x04,
-> -	TRACE_FLAG_HARDIRQ		= 0x08,
-> -	TRACE_FLAG_SOFTIRQ		= 0x10,
-> -};
+Right, we have quite a few consumers with omaps for that as am33xx
+requires remuxing wake-up events for all drivers AFAIK. The MMC SDIO
+pin remuxing is probably closest one ready.
 
-Why did you remove this part?  Isn't it used by elsewhere?  Anyway, it
-seems unrelated to this change.
+Regards,
 
-
-[SNIP]
-> +static int get_id(const char *sys, const char *name, u32 *id)
-> +{
-> +	struct event_format *format;
-> +
-> +	format = event_format__new(sys, name);
-
-No.  You need to access to tracepoints in the perf session data, not
-ones in the current system.  The perf_session__set_tracepoints_handlers()
-deals with it correctly.
-
-Thanks,
-Namhyung
-
-
-> +	if (!format)
-> +		return -1;
-> +
-> +	*id = format->id;
-> +	pevent_free_format(format);
-> +	return 0;
-> +}
+Tony
