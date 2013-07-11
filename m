@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab3GKWLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:11:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43163 "EHLO
+	id S1756968Ab3GKWNN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:13:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43184 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab3GKWLV (ORCPT
+	with ESMTP id S1756865Ab3GKWLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:11:21 -0400
+	Thu, 11 Jul 2013 18:11:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jonathan Salwan <jonathan.salwan@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [ 02/11] drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-Date: Thu, 11 Jul 2013 15:11:02 -0700
-Message-Id: <20130711220545.877158517@linuxfoundation.org>
+        David Howells <dhowells@redhat.com>
+Subject: [ 07/11] MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
+Date: Thu, 11 Jul 2013 15:11:07 -0700
+Message-Id: <20130711220546.392644563@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
 References: <20130711220545.542911892@linuxfoundation.org>
@@ -30,51 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jonathan Salwan <jonathan.salwan@gmail.com>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit 542db01579fbb7ea7d1f7bb9ddcef1559df660b2 upstream.
+commit 7b175c46720f8e6b92801bb634c93d1016f80c62 upstream.
 
-In drivers/cdrom/cdrom.c mmc_ioctl_cdrom_read_data() allocates a memory
-area with kmalloc in line 2885.
+This hopefully will help point developers to the proper way that patches
+should be submitted for inclusion in the stable kernel releases.
 
-  2885         cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-  2886         if (cgc->buffer == NULL)
-  2887                 return -ENOMEM;
-
-In line 2908 we can find the copy_to_user function:
-
-  2908         if (!ret && copy_to_user(arg, cgc->buffer, blocksize))
-
-The cgc->buffer is never cleaned and initialized before this function.
-If ret = 0 with the previous basic block, it's possible to display some
-memory bytes in kernel space from userspace.
-
-When we read a block from the disk it normally fills the ->buffer but if
-the drive is malfunctioning there is a chance that it would only be
-partially filled.  The result is an leak information to userspace.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jonathan Salwan <jonathan.salwan@gmail.com>
-Cc: Luis Henriques <luis.henriques@canonical.com>
+Reported-by: David Howells <dhowells@redhat.com>
+Acked-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cdrom/cdrom.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ MAINTAINERS |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2882,7 +2882,7 @@ static noinline int mmc_ioctl_cdrom_read
- 	if (lba < 0)
- 		return -EINVAL;
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6390,6 +6390,7 @@ STABLE BRANCH
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	stable@vger.kernel.org
+ S:	Supported
++F:	Documentation/stable_kernel_rules.txt
  
--	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
-+	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
- 	if (cgc->buffer == NULL)
- 		return -ENOMEM;
- 
+ STAGING SUBSYSTEM
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
