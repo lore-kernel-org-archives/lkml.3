@@ -1,134 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab3GKKXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:23:24 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:36513 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab3GKKXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:23:23 -0400
-Message-ID: <51DE8799.9020904@hitachi.com>
-Date: Thu, 11 Jul 2013 19:23:21 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755633Ab3GKKYn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:24:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751868Ab3GKKYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 06:24:40 -0400
+Date: Thu, 11 Jul 2013 12:26:30 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130711102630.GA11133@dhcp-26-207.brq.redhat.com>
+References: <cover.1369155164.git.agordeev@redhat.com>
+ <20130521235003.GE6985@mtj.dyndns.org>
+ <20130522143923.GD19383@dhcp-26-207.brq.redhat.com>
+ <20130522170305.GD9563@kernel.dk>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction patching
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130522170305.GD9563@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/11 6:31), Jiri Kosina wrote:
-> +/*
-> + * text_poke_bp() -- update instructions on live kernel on SMP
-> + * @addr:	address to patch
-> + * @opcode:	opcode of new instruction
-> + * @len:	length to copy
-> + * @handler:	address to jump to when the temporary breakpoint is hit
-> + *
-> +
-> + * Modify multi-byte instruction by using int3 breakpoint on SMP.
-> + * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
-> + * and achieve the synchronization using int3 breakpoint.
-> + *
-> + * The way it is done:
-> + *	- add a int3 trap to the address that will be patched
-> + *	- sync cores
+On Wed, May 22, 2013 at 07:03:05PM +0200, Jens Axboe wrote:
+> On Wed, May 22 2013, Alexander Gordeev wrote:
+> > On Wed, May 22, 2013 at 08:50:03AM +0900, Tejun Heo wrote:
+> > > Hmmmmmm..... I'd normally apply this patch but block layer is just
+> > > growing multi-queue support and libata is likely to be converted to mq
+> > > in foreseeable future, so I'm a bit hesitant to make irq handling more
+> > > sophiscated right now.  Would you be interested in looking into
+> > > converting libata to blk mq support?  I'm pretty sure it'd yield far
+> > > better outcome if done properly.
+> > 
+> > I am not committing, but will look into it, sure.
+> 
+> Would be most awesome, I'm sure Nic would not mind a bit of help on the
+> SCSI/libata side :-)
 
-You don't need this "sync cores". (and your code didn't) :)
+Hi Nicholas,
 
-> + *	- update all but the first byte of the patched range
-> + *	- sync cores
-> + *	- replalace the first byte (int3) by the first byte of
-> + *	  replacing opcode
-> + *	- sync cores
-> + *
-> + * Note: must be called under text_mutex.
-> + */
-> +void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
-> +{
-> +	unsigned char int3 = 0xcc;
-> +
+Could you please clarify the status of SCSI MQ support? Is it usable now?
 
-Here, you have to protect this code from others, since bp_* are
-global.
+I tried git://git.kernel.org/pub/scm/linux/kernel/git/nab/target-pending.git,
+but it does not appear working without (at least) changes below to SCSI lib:
 
-> +	bp_int3_handler = handler;
-> +	bp_int3_addr = (u8 *)addr + sizeof(int3);
-> +	bp_patching_in_progress = true;
-> +	/*
-> +	 * corresponding read barrier in int3 notifier for
-> +	 * making sure the in_progress flags is correctly ordered wrt.
-> +	 * patching */
-> +	smp_wmb();
-> +
-> +	text_poke(addr, &int3, sizeof(int3));
-> +
-> +	if (len - sizeof(int3) > 0) {
-> +		/* patch all but the first byte */
-> +		text_poke((char *)addr + sizeof(int3),
-> +			  (const char *) opcode + sizeof(int3),
-> +			  len - sizeof(int3));
-> +
-> +		on_each_cpu(do_sync_core, NULL, 1);
-> +	}
-> +
-> +	/* patch the first byte */
-> +	text_poke(addr, opcode, sizeof(int3));
-> +
-> +	on_each_cpu(do_sync_core, NULL, 1);
-> +
-> +	bp_patching_in_progress = false;
-> +	smp_wmb();
-> +
-> +	return addr;
-> +}
-> +
-> +/* this one needs to run before anything else handles it as a
-> + * regular exception */
-> +static struct notifier_block int3_nb = {
-> +	.priority = 0x7fffffff,
-> +	.notifier_call = int3_notify
-> +};
-> +
-> +static int __init int3_init(void)
-> +{
-> +	return register_die_notifier(&int3_nb);
-> +}
-> +
-> +arch_initcall(int3_init);
->  /*
->   * Cross-modifying kernel text with stop_machine().
->   * This code originally comes from immediate value.
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index bddf3b2..d6db7bd 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
->  
->  static struct notifier_block kprobe_exceptions_nb = {
->  	.notifier_call = kprobe_exceptions_notify,
-> -	.priority = 0x7fffffff /* we need to be notified first */
-> +	.priority = 0x7ffffff0 /* High priority, but not first.  */
->  };
->  
->  unsigned long __weak arch_deref_entry_point(void *entry)
+Thanks!
+
+diff --git a/drivers/scsi/scsi-mq.c b/drivers/scsi/scsi-mq.c
+index ca6ff67..d8cc7a4 100644
+--- a/drivers/scsi/scsi-mq.c
++++ b/drivers/scsi/scsi-mq.c
+@@ -155,6 +155,7 @@ void scsi_mq_done(struct scsi_cmnd *sc)
+ static struct blk_mq_ops scsi_mq_ops = {
+ 	.queue_rq	= scsi_mq_queue_rq,
+ 	.map_queue	= blk_mq_map_queue,
++	.timeout	= scsi_times_out,
+ 	.alloc_hctx	= blk_mq_alloc_single_hw_queue,
+ 	.free_hctx	= blk_mq_free_single_hw_queue,
+ };
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 65360db..33aa373 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -283,7 +283,10 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ 	/*
+ 	 * head injection *required* here otherwise quiesce won't work
+ 	 */
+-	blk_execute_rq(req->q, NULL, req, 1);
++	if (q->mq_ops)
++		blk_mq_execute_rq(req->q, req);
++	else
++		blk_execute_rq(req->q, NULL, req, 1);
+ 
+ 	/*
+ 	 * Some devices (USB mass-storage in particular) may transfer
+@@ -298,12 +301,8 @@ int scsi_execute(struct scsi_device *sdev, const unsigned char *cmd,
+ 		*resid = req->resid_len;
+ 	ret = req->errors;
+  out:
+-	if (q->mq_ops) {
+-		printk("scsi_execute(): Calling blk_mq_free_request >>>\n");
+-		blk_mq_free_request(req);
+-	} else {
++	if (!q->mq_ops)
+ 		blk_put_request(req);
+-	}
+ 
+ 	return ret;
+ }
+
+
+> And personally, can't wait to run it on the laptop! That's right, I
+> alpha test on the laptop.
+> 
+> -- 
+> Jens Axboe
 > 
 
-Thanks,
-
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
