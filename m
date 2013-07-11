@@ -1,73 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756287Ab3GKRQy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 13:16:54 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:43944 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3GKRQx (ORCPT
+	id S1756326Ab3GKRRW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 13:17:22 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29451 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756306Ab3GKRRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 13:16:53 -0400
-Message-ID: <51DEE880.6070908@gmail.com>
-Date: Thu, 11 Jul 2013 11:16:48 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>,
-        Stephane Eranian <eranian@google.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
-References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com> <1373548341-24119-10-git-send-email-adrian.hunter@intel.com> <51DED2AA.6030307@gmail.com>
-In-Reply-To: <51DED2AA.6030307@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 13:17:19 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: ericvh@gmail.com, rminnich@sandia.gov, lucho@ionkov.net
+Cc: davem@davemloft.net, v9fs-developer@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] 9p: fix off by one causing access violations and memory corruption
+Date: Thu, 11 Jul 2013 13:16:54 -0400
+Message-Id: <1373563014-4645-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/11/13 9:43 AM, David Ahern wrote:
-> On 7/11/13 7:12 AM, Adrian Hunter wrote:
->> The event stream is not always parsable because the format of a sample
->> is dependent on the sample_type of the selected event.  When there
->> is more than one selected event and the sample_types are not the
->> same then parsing becomes problematic.  A sample can be matched to its
->> selected event using the ID that is allocated when the event is opened.
->> Unfortunately, to get the ID from the sample means first parsing it.
->
-> Here's an alternative suggestion -- one that does not involve changing
-> the kernel API or requiring a common denominator in sample_type options.
->
-> perf handles event streams through an mmap which can be directly tied to
-> an evsel (a single event) when the mmap is created. ie., when events are
-> read we know exactly which evsel they correspond to. (See
-> perf_evlist__mmap_per_cpu and perf_evlist__mmap_per_thread and add
-> struct perf_evsel *evsel entry to struct perf_mmap).
+p9_release_pages() would attempt to dereference one value past the end of
+pages[]. This would cause the following crashes:
 
-Read that code a bit too quickly. All events for a thread are dropped 
-into the same buffer so as currently organized there is not an easy 
-correlation.
+[ 6293.171817] BUG: unable to handle kernel paging request at ffff8807c96f3000
+[ 6293.174146] IP: [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.176447] PGD 79c5067 PUD 82c1e3067 PMD 82c197067 PTE 80000007c96f3060
+[ 6293.180060] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 6293.180060] Modules linked in:
+[ 6293.180060] CPU: 62 PID: 174043 Comm: modprobe Tainted: G        W    3.10.0-next-20130710-sasha #3954
+[ 6293.180060] task: ffff8807b803b000 ti: ffff880787dde000 task.ti: ffff880787dde000
+[ 6293.180060] RIP: 0010:[<ffffffff8412793b>]  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.214316] RSP: 0000:ffff880787ddfc28  EFLAGS: 00010202
+[ 6293.214316] RAX: 0000000000000001 RBX: ffff8807c96f2ff8 RCX: 0000000000000000
+[ 6293.222017] RDX: ffff8807b803b000 RSI: 0000000000000001 RDI: ffffea001c7e3d40
+[ 6293.222017] RBP: ffff880787ddfc48 R08: 0000000000000000 R09: 0000000000000000
+[ 6293.222017] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
+[ 6293.222017] R13: 0000000000000001 R14: ffff8807cc50c070 R15: ffff8807cc50c070
+[ 6293.222017] FS:  00007f572641d700(0000) GS:ffff8807f3600000(0000) knlGS:0000000000000000
+[ 6293.256784] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 6293.256784] CR2: ffff8807c96f3000 CR3: 00000007c8e81000 CR4: 00000000000006e0
+[ 6293.256784] Stack:
+[ 6293.256784]  ffff880787ddfcc8 ffff880787ddfcc8 0000000000000000 ffff880787ddfcc8
+[ 6293.256784]  ffff880787ddfd48 ffffffff84128be8 ffff880700000002 0000000000000001
+[ 6293.256784]  ffff8807b803b000 ffff880787ddfce0 0000100000000000 0000000000000000
+[ 6293.256784] Call Trace:
+[ 6293.256784]  [<ffffffff84128be8>] p9_virtio_zc_request+0x598/0x630
+[ 6293.256784]  [<ffffffff8115c610>] ? wake_up_bit+0x40/0x40
+[ 6293.256784]  [<ffffffff841209b1>] p9_client_zc_rpc+0x111/0x3a0
+[ 6293.256784]  [<ffffffff81174b78>] ? sched_clock_cpu+0x108/0x120
+[ 6293.256784]  [<ffffffff84122a21>] p9_client_read+0xe1/0x2c0
+[ 6293.256784]  [<ffffffff81708a90>] v9fs_file_read+0x90/0xc0
+[ 6293.256784]  [<ffffffff812bd073>] vfs_read+0xc3/0x130
+[ 6293.256784]  [<ffffffff811a78bd>] ? trace_hardirqs_on+0xd/0x10
+[ 6293.256784]  [<ffffffff812bd5a2>] SyS_read+0x62/0xa0
+[ 6293.256784]  [<ffffffff841a1a00>] tracesys+0xdd/0xe2
+[ 6293.256784] Code: 66 90 48 89 fb 41 89 f5 48 8b 3f 48 85 ff 74 29 85 f6 74 25 45 31 e4 66 0f 1f 84 00 00 00 00 00 e8 eb 14 12 fd 41 ff c4 49 63 c4 <48> 8b 3c c3 48 85 ff 74 05 45 39 e5 75 e7 48 83 c4 08 5b 41 5c
+[ 6293.256784] RIP  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.256784]  RSP <ffff880787ddfc28>
+[ 6293.256784] CR2: ffff8807c96f3000
+[ 6293.256784] ---[ end trace 50822ee72cd360fc ]---
 
-David
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ net/9p/trans_common.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
->
-> Commands like perf-record can inject a user event into the stream and
-> hence the data file every time the evsel changes while walking all of
-> the mmap's reading events -- very  similar to the way finished round is
-> done. The event would only contain a perf_event_header which is 8 bytes
-> so this does not add a lot to a data file. As an optimization the evsel
-> event could only be injected if the sample_types differ.
->
-> Live commands would just use the evsel connected to the mmap -- no
-> lookups needed which would simplify things a bit processing the events.
->
-> In short, the information to associate event streams to an event (evsel)
-> is currently available -- it's just being discarded in the many layers.
->
-> I'll try to whip up some code that implements this in the next few days.
->
-> David
->
+diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
+index de8df95..2ee3879 100644
+--- a/net/9p/trans_common.c
++++ b/net/9p/trans_common.c
+@@ -24,11 +24,11 @@
+  */
+ void p9_release_pages(struct page **pages, int nr_pages)
+ {
+-	int i = 0;
+-	while (pages[i] && nr_pages--) {
+-		put_page(pages[i]);
+-		i++;
+-	}
++	int i;
++
++	for (i = 0; i < nr_pages; i++)
++		if (pages[i])
++			put_page(pages[i]);
+ }
+ EXPORT_SYMBOL(p9_release_pages);
+ 
+-- 
+1.8.1.2
 
