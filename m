@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933141Ab3GKO1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:27:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43299 "EHLO
+	id S933173Ab3GKO1X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:27:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43320 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019Ab3GKO1P (ORCPT
+	with ESMTP id S933019Ab3GKO1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:27:15 -0400
+	Thu, 11 Jul 2013 10:27:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>, Matt Fleming <matt.fleming@intel.com>,
+Cc: Alex Williamson <alex.williamson@redhat.com>,
+        Joerg Roedel <joro@8bytes.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 95/98] x86/efi: Fix dummy variable buffer allocation
-Date: Thu, 11 Jul 2013 15:25:05 +0100
-Message-Id: <1373552708-15235-96-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 98/98] iommu/amd: Only unmap large pages from the first pte
+Date: Thu, 11 Jul 2013 15:25:08 +0100
+Message-Id: <1373552708-15235-99-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,50 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Alex Williamson <alex.williamson@redhat.com>
 
-commit b8cb62f82103083a6e8fa5470bfe634a2c06514d upstream.
+commit 60d0ca3cfd199b6612bbbbf4999a3470dad38bb1 upstream.
 
-1. Check for allocation failure
-2. Clear the buffer contents, as they may actually be written to flash
-3. Don't leak the buffer
+If we use a large mapping, the expectation is that only unmaps from
+the first pte in the superpage are supported.  Unmaps from offsets
+into the superpage should fail (ie. return zero sized unmap).  In the
+current code, unmapping from an offset clears the size of the full
+mapping starting from an offset.  For instance, if we map a 16k
+physically contiguous range at IOVA 0x0 with a large page, then
+attempt to unmap 4k at offset 12k, 4 ptes are cleared (12k - 28k) and
+the unmap returns 16k unmapped.  This potentially incorrectly clears
+valid mappings and confuses drivers like VFIO that use the unmap size
+to release pinned pages.
 
-Compile-tested only.
+Fix by refusing to unmap from offsets into the page.
 
-[ Tested successfully on my buggy ASUS machine - Matt ]
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/platform/efi/efi.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 2c990b5..ca4e1ad 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -1024,7 +1024,10 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
- 		 * that by attempting to use more space than is available.
- 		 */
- 		unsigned long dummy_size = remaining_size + 1024;
--		void *dummy = kmalloc(dummy_size, GFP_ATOMIC);
-+		void *dummy = kzalloc(dummy_size, GFP_ATOMIC);
-+
-+		if (!dummy)
-+			return EFI_OUT_OF_RESOURCES;
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index d3be586..141c69f 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -1309,6 +1309,10 @@ static unsigned long iommu_unmap_page(struct protection_domain *dom,
  
- 		status = efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
- 					  EFI_VARIABLE_NON_VOLATILE |
-@@ -1044,6 +1047,8 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size)
- 					 0, dummy);
- 		}
- 
-+		kfree(dummy);
+ 			/* Large PTE found which maps this address */
+ 			unmap_size = PTE_PAGE_SIZE(*pte);
 +
- 		/*
- 		 * The runtime code may now have triggered a garbage collection
- 		 * run, so check the variable info again
++			/* Only unmap from the first pte in the page */
++			if ((unmap_size - 1) & bus_addr)
++				break;
+ 			count      = PAGE_SIZE_PTE_COUNT(unmap_size);
+ 			for (i = 0; i < count; i++)
+ 				pte[i] = 0ULL;
+@@ -1318,7 +1322,7 @@ static unsigned long iommu_unmap_page(struct protection_domain *dom,
+ 		unmapped += unmap_size;
+ 	}
+ 
+-	BUG_ON(!is_power_of_2(unmapped));
++	BUG_ON(unmapped && !is_power_of_2(unmapped));
+ 
+ 	return unmapped;
+ }
 -- 
 1.8.1.2
 
