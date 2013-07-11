@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab3GKUks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 16:40:48 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:60935 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756612Ab3GKUkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 16:40:46 -0400
+	id S1756670Ab3GKUts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 16:49:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:43385 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756613Ab3GKUtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 16:49:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,647,1367996400"; 
+   d="scan'208";a="330066460"
+Message-ID: <51DF1A6A.7020803@linux.intel.com>
+Date: Thu, 11 Jul 2013 13:49:46 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130711113822.GA18579@amd.pavel.ucw.cz>
-References: <1372723921.53875.YahooMailNeo@web182202.mail.bf1.yahoo.com> <20130711113822.GA18579@amd.pavel.ucw.cz>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 11 Jul 2013 14:40:26 -0600
-Message-ID: <CAErSpo5Jsbh8fcUXt_GL=ihv-3yq1SOD_UejC5MP=jBGowNn_w@mail.gmail.com>
-Subject: Re: is it desirable to improve the build system?
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Mark Galeck <mark_galeck@pacbell.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction patching
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <51DE8799.9020904@hitachi.com> <51DED90D.5050205@linux.intel.com> <alpine.LNX.2.00.1307112127530.29788@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1307112127530.29788@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 5:38 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
+On 07/11/2013 12:29 PM, Jiri Kosina wrote:
+> On Thu, 11 Jul 2013, H. Peter Anvin wrote:
+> 
+>>>> + * The way it is done:
+>>>> + *	- add a int3 trap to the address that will be patched
+>>>> + *	- sync cores
+>>>
+>>> You don't need this "sync cores". (and your code didn't) :)
 >>
->> Does the Linux-Kernel Community perceive that is the case?
->>
->> If so, do you think it is possible to improve?
->>
->> If so, would such an attempt be welcome, including and especially by, the current maintainer(s) of the build?  Of course it would have to be completely backwards-compatible, including to the text output interface and requirements for modules makefiles.
->>
->
-> Yes, speeding up build would be nice. Especially nice would be
-> speeding up "empty" build, when only one or two files changed...
+>> I believe you do, lest you get "Frankenstructions".  I believe you don't
+>> need the second one, however.  I should dig up my notes on this.
+> 
+> I found this post from 2010 from you:
+> 
+> 	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
+> 
+> If it's still valid and you guys at Intel haven't discovered any reason 
+> why that procedure would be invalid, I'll send out v3 with that'd be using 
+> exactly this ordering of syncing of the cores.
+> 
 
-The answer to "is it desirable to improve X?" is always "yes."  But
-the only way to make progress in Linux is to actually post patches
-that "improve X."  This is unlike many corporate environments, where
-you might need to get somebody's approval before you even start
-trying.  In Linux, there's no such thing as prior approval.  Even if
-you could get somebody to say "this looks like a good thing to try,"
-that would be no guarantee that subsequent patches would be accepted.
+That is still the latest word as far as I know.
 
-It's hard enough to get people to comment on actual Linux code
-changes, i.e., patches.  It's almost impossible to get useful feedback
-on proposals without code.
+	-hpa
 
-If you posted patches that made significant improvements in build
-time, I think people would be very interested.
 
-Bjorn
