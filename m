@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab3GKMxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 08:53:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43940 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755913Ab3GKMxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 08:53:06 -0400
-Date: Thu, 11 Jul 2013 13:53:03 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 05/16] sched: Select a preferred node with the most numa
- hinting faults
-Message-ID: <20130711125303.GB2355@suse.de>
-References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
- <1373536020-2799-6-git-send-email-mgorman@suse.de>
- <20130711112359.GG25631@dyad.programming.kicks-ass.net>
+	id S932347Ab3GKMxX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 08:53:23 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:41812 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab3GKMxT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 08:53:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130711112359.GG25631@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAN_LGv2zhu3zWd+7Jmi9FZd728W5T5kte2P0FMWABzENmyKJ5w@mail.gmail.com>
+References: <CAN_LGv2zhu3zWd+7Jmi9FZd728W5T5kte2P0FMWABzENmyKJ5w@mail.gmail.com>
+Date: Thu, 11 Jul 2013 16:53:18 +0400
+Message-ID: <CAKywueQXGN+W6eMyZ-eQD+pCpgRz86Dpxht+YiMVKAGXVebPFg@mail.gmail.com>
+Subject: Re: CIFS-related deadlock in 3.10-rc7
+From: Pavel Shilovsky <piastryyy@gmail.com>
+To: "Alexander E. Patrakov" <patrakov@gmail.com>
+Cc: linux-cifs <linux-cifs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 01:23:59PM +0200, Peter Zijlstra wrote:
-> On Thu, Jul 11, 2013 at 10:46:49AM +0100, Mel Gorman wrote:
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -1593,6 +1593,7 @@ static void __sched_fork(struct task_struct *p)
-> >  	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
-> >  	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
-> >  	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
-> > +	p->numa_preferred_nid = -1;
-> 
-> (1)
-> 
-> >  	p->numa_work.next = &p->numa_work;
-> >  	p->numa_faults = NULL;
-> >  #endif /* CONFIG_NUMA_BALANCING */
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index 904fd6f..c0bee41 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -793,7 +793,8 @@ unsigned int sysctl_numa_balancing_scan_delay = 1000;
-> >  
-> >  static void task_numa_placement(struct task_struct *p)
-> >  {
-> > -	int seq;
-> > +	int seq, nid, max_nid = 0;
-> 
-> Should you not start with max_nid = -1?
-> 
+2013/7/7 Alexander E. Patrakov <patrakov@gmail.com>:
+> While playing a file from a CIFS-mounted samba share (over wireless,
+> if that matters), I got this deadlock:
+>
+> [ 2164.132440] =============================================
+> [ 2164.132443] [ INFO: possible recursive locking detected ]
+> [ 2164.132446] 3.10.0-rc7-rafael+ #26 Tainted: G         C
+> [ 2164.132448] ---------------------------------------------
+> [ 2164.132452] vlc/2370 is trying to acquire lock:
+> [ 2164.132454]  (&cifsi->lock_sem){++++.+}, at: [<ffffffffa0913110>]
+> cifs_reopen_file+0x270/0x5b0 [cifs]
+> [ 2164.132472]
+> but task is already holding lock:
+> [ 2164.132475]  (&cifsi->lock_sem){++++.+}, at: [<ffffffffa0918ca8>]
+> cifs_strict_readv+0x88/0x160 [cifs]
+> [ 2164.132488]
+> other info that might help us debug this:
+> [ 2164.132491]  Possible unsafe locking scenario:
+>
+> [ 2164.132494]        CPU0
+> [ 2164.132496]        ----
+> [ 2164.132498]   lock(&cifsi->lock_sem);
+> [ 2164.132502]   lock(&cifsi->lock_sem);
+> [ 2164.132505]
+>  *** DEADLOCK ***
+>
+> [ 2164.132508]  May be due to missing lock nesting notation
+>
+> [ 2164.132511] 1 lock held by vlc/2370:
+> [ 2164.132513]  #0:  (&cifsi->lock_sem){++++.+}, at:
+> [<ffffffffa0918ca8>] cifs_strict_readv+0x88/0x160 [cifs]
+> [ 2164.132526]
+> stack backtrace:
+> [ 2164.132531] CPU: 3 PID: 2370 Comm: vlc Tainted: G         C
+> 3.10.0-rc7-rafael+ #26
+> [ 2164.132534] Hardware name: Sony Corporation VPCZ23A4R/VAIO, BIOS
+> R1013H5 05/21/2012
+> [ 2164.132537]  ffff880235033f80 ffff8802281fb958 ffffffff8165b7ae
+> ffff8802281fba48
+> [ 2164.132544]  ffffffff810a0042 ffff8802281fb978 ffffffff826360d0
+> ffff8802281fb9c8
+> [ 2164.132550]  0000000000000000 0000000000000000 00000000000389b0
+> ffff880200000542
+> [ 2164.132556] Call Trace:
+> [ 2164.132564]  [<ffffffff8165b7ae>] dump_stack+0x19/0x1b
+> [ 2164.132569]  [<ffffffff810a0042>] __lock_acquire+0x1522/0x1ee0
+> [ 2164.132579]  [<ffffffffa091aa41>] ? cifs_get_inode_info+0x181/0x690 [cifs]
+> [ 2164.132587]  [<ffffffffa0913110>] ? cifs_reopen_file+0x270/0x5b0 [cifs]
+> [ 2164.132591]  [<ffffffff810a1027>] lock_acquire+0x87/0x150
+> [ 2164.132598]  [<ffffffffa0913110>] ? cifs_reopen_file+0x270/0x5b0 [cifs]
+> [ 2164.132604]  [<ffffffff8165ed3f>] down_write+0x3f/0x70
+> [ 2164.132612]  [<ffffffffa0913110>] ? cifs_reopen_file+0x270/0x5b0 [cifs]
+> [ 2164.132622]  [<ffffffffa0927a76>] ? cifs_set_fid+0x26/0x40 [cifs]
+> [ 2164.132632]  [<ffffffffa0913110>] cifs_reopen_file+0x270/0x5b0 [cifs]
+> [ 2164.132642]  [<ffffffffa0913d0b>] cifs_readpage_worker+0x1ab/0x4e0 [cifs]
+> [ 2164.132652]  [<ffffffffa091427e>] cifs_readpage+0x5e/0x160 [cifs]
+> [ 2164.132660]  [<ffffffff81109b87>] generic_file_aio_read+0x217/0x760
+> [ 2164.132670]  [<ffffffffa0918d51>] cifs_strict_readv+0x131/0x160 [cifs]
+> [ 2164.132675]  [<ffffffff8116fff5>] do_sync_read+0x75/0xb0
+> [ 2164.132681]  [<ffffffff81170ef7>] vfs_read+0xa7/0x180
+> [ 2164.132686]  [<ffffffff81171170>] SyS_read+0x50/0xa0
+> [ 2164.132691]  [<ffffffff81668e16>] system_call_fastpath+0x1a/0x1f
+>
+> --
+> Alexander E. Patrakov
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-cifs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-For consistency, yes.
+Thank you for pointing it out. I created a patch that should fix the
+problem - will sent separately.
 
-> > +	unsigned long max_faults = 0;
-> >  
-> >  	if (!p->mm)	/* for example, ksmd faulting in a user's mm */
-> >  		return;
-> > @@ -802,7 +803,19 @@ static void task_numa_placement(struct task_struct *p)
-> >  		return;
-> >  	p->numa_scan_seq = seq;
-> >  
-> > -	/* FIXME: Scheduling placement policy hints go here */
-> > +	/* Find the node with the highest number of faults */
-> > +	for (nid = 0; nid < nr_node_ids; nid++) {
-> > +		unsigned long faults = p->numa_faults[nid];
-> > +		p->numa_faults[nid] >>= 1;
-> > +		if (faults > max_faults) {
-> > +			max_faults = faults;
-> > +			max_nid = nid;
-> > +		}
-> > +	}
-> > +
-> 
-> It is rather unlikely; but suppose the entire ->numa_faults[] array is 0, you'd
-> somehow end up selecting max_nid := 0. Which seems inconsistent with \1.
-> 
-
-This happens more often than you might imagine due to THP false sharing
-getting count as shared. If the entire numa_faults[] array is 0 then
-max_faults == 0 and it will not update preferred_nid due to the
-"max_faults" check below.
-
-> > +	/* Update the tasks preferred node if necessary */
-> > +	if (max_faults && max_nid != p->numa_preferred_nid)
-> > +		p->numa_preferred_nid = max_nid;
-> >  }
-> >  
-
--- 
-Mel Gorman
-SUSE Labs
+--
+Best regards,
+Pavel Shilovsky.
