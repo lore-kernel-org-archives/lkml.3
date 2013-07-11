@@ -1,55 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab3GKKTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:19:17 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:53477 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751478Ab3GKKTQ (ORCPT
+	id S1755636Ab3GKKXY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:23:24 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:36513 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab3GKKXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:19:16 -0400
-Message-ID: <1373537953.9708.25.camel@x61.thuisdomein>
-Subject: Re: [PATCH 2/2] PCI,pciehp: avoid add a device already exist during
- pciehp_resume
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Rafael <rjw@sisk.pl>,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com,
-        Oliver Neukum <oneukum@suse.de>, Gu Zheng <guz.fnst@cn.fujitsu.com>
-Date: Thu, 11 Jul 2013 12:19:13 +0200
-In-Reply-To: <51DE2C98.5030803@huawei.com>
-References: <1373356564-21668-1-git-send-email-wangyijing@huawei.com>
-	 <1373357261.1633.4.camel@x61.thuisdomein> <51DE2C98.5030803@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 11 Jul 2013 06:23:23 -0400
+Message-ID: <51DE8799.9020904@hitachi.com>
+Date: Thu, 11 Jul 2013 19:23:21 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction patching
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz> <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Jul 2013 10:19:14.0150 (UTC) FILETIME=[17ABA060:01CE7E20]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yijing,
+(2013/07/11 6:31), Jiri Kosina wrote:
+> +/*
+> + * text_poke_bp() -- update instructions on live kernel on SMP
+> + * @addr:	address to patch
+> + * @opcode:	opcode of new instruction
+> + * @len:	length to copy
+> + * @handler:	address to jump to when the temporary breakpoint is hit
+> + *
+> +
+> + * Modify multi-byte instruction by using int3 breakpoint on SMP.
+> + * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
+> + * and achieve the synchronization using int3 breakpoint.
+> + *
+> + * The way it is done:
+> + *	- add a int3 trap to the address that will be patched
+> + *	- sync cores
 
-On Thu, 2013-07-11 at 11:55 +0800, Yijing Wang wrote:
-> Can you provide the lspci -vvv and lspci -xxxx info messages ?
-> I want to confirm your hardware information which cause your resume error.
-> You can get these messages in any kernel version, that's ok.
+You don't need this "sync cores". (and your code didn't) :)
 
-Would it be sufficient to send that information just for the two pcie
-ports on my laptop, and the wireless card that is present in one of
-those two ports?
+> + *	- update all but the first byte of the patched range
+> + *	- sync cores
+> + *	- replalace the first byte (int3) by the first byte of
+> + *	  replacing opcode
+> + *	- sync cores
+> + *
+> + * Note: must be called under text_mutex.
+> + */
+> +void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+> +{
+> +	unsigned char int3 = 0xcc;
+> +
 
-And would it be OK to send that information off list?
+Here, you have to protect this code from others, since bp_* are
+global.
 
-> When you suspend and resume the system, the wireless card is always
-> present in pcie slot, right?
+> +	bp_int3_handler = handler;
+> +	bp_int3_addr = (u8 *)addr + sizeof(int3);
+> +	bp_patching_in_progress = true;
+> +	/*
+> +	 * corresponding read barrier in int3 notifier for
+> +	 * making sure the in_progress flags is correctly ordered wrt.
+> +	 * patching */
+> +	smp_wmb();
+> +
+> +	text_poke(addr, &int3, sizeof(int3));
+> +
+> +	if (len - sizeof(int3) > 0) {
+> +		/* patch all but the first byte */
+> +		text_poke((char *)addr + sizeof(int3),
+> +			  (const char *) opcode + sizeof(int3),
+> +			  len - sizeof(int3));
+> +
+> +		on_each_cpu(do_sync_core, NULL, 1);
+> +	}
+> +
+> +	/* patch the first byte */
+> +	text_poke(addr, opcode, sizeof(int3));
+> +
+> +	on_each_cpu(do_sync_core, NULL, 1);
+> +
+> +	bp_patching_in_progress = false;
+> +	smp_wmb();
+> +
+> +	return addr;
+> +}
+> +
+> +/* this one needs to run before anything else handles it as a
+> + * regular exception */
+> +static struct notifier_block int3_nb = {
+> +	.priority = 0x7fffffff,
+> +	.notifier_call = int3_notify
+> +};
+> +
+> +static int __init int3_init(void)
+> +{
+> +	return register_die_notifier(&int3_nb);
+> +}
+> +
+> +arch_initcall(int3_init);
+>  /*
+>   * Cross-modifying kernel text with stop_machine().
+>   * This code originally comes from immediate value.
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index bddf3b2..d6db7bd 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
+>  
+>  static struct notifier_block kprobe_exceptions_nb = {
+>  	.notifier_call = kprobe_exceptions_notify,
+> -	.priority = 0x7fffffff /* we need to be notified first */
+> +	.priority = 0x7ffffff0 /* High priority, but not first.  */
+>  };
+>  
+>  unsigned long __weak arch_deref_entry_point(void *entry)
+> 
 
-Yes. I actually wouldn't even know how to remove it. I only discovered
-my wireless card was in a pcie slot because of the error messages at
-resume (which started a few releases ago, I think v3.7).
+Thanks,
 
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Paul Bolle
 
