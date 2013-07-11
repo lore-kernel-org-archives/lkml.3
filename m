@@ -1,238 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab3GKU0j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 16:26:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32890 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755174Ab3GKU0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 16:26:37 -0400
-Date: Thu, 11 Jul 2013 22:26:36 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 v3] x86: introduce int3-based instruction patching
-In-Reply-To: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1307112221110.29788@pobox.suse.cz>
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756632Ab3GKU3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 16:29:23 -0400
+Received: from mail1.centrum-group.com ([194.12.254.133]:55736 "EHLO
+	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598Ab3GKU3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 16:29:22 -0400
+X-Antivirus-centrum-group.com-Mail-From: georgedaniels698@yahoo.com.hk via mail1
+X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 225.120778 secs Process 10128)
+Message-ID: <49999.95.17.153.9.1373554715.squirrel@mail1.centrum-group.com>
+Date: Thu, 11 Jul 2013 17:58:35 +0300 (EEST)
+Subject: RESPOND URGENTLY!!
+From: "GEORGE DANIELS" <georgedaniels698@yahoo.com.hk>
+Reply-To: georgedaniels848@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;charset=WINDOWS-1251
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a method for run-time instrucntion patching on a live SMP kernel 
-based on int3 breakpoint, completely avoiding the need for stop_machine().
+Greetings from George Daniels
 
-The way this is achieved:
+I am George Daniels, a Banker and credit system programmer (HSBC bank).
+I saw your email address while browsing through  the bank D.T.C Screen in
+my office
+yesterday so I decided to use this very chance to know you. I believe
+we should use every opportunity to know each other better.
 
-	- add a int3 trap to the address that will be patched
-	- sync cores
-	- update all but the first byte of the patched range
-	- sync cores
-	- replace the first byte (int3) by the first byte of
-	  replacing opcode
-	- sync cores
+However, I am contacting you for obvious reason which you will understand.
+I am sending this mail just to know if this email address is OK,
+reply me back so that I will send  more details to you.
+I have a very important thing to discuss with you, I look forward to
+receiving your response at
+georgedaniels848@yahoo.com.hk. Have a pleasant day.
 
-According to
+George Daniels
 
-	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
 
-synchronization after replacing "all but first" instructions should not
-be necessary (on Intel hardware), as the syncing after the subsequent
-patching of the first byte provides enough safety.
-But there's not only Intel HW out there, and we'd rather be on a safe
-side.
 
-If any CPU instruction execution would collide with the patching,
-it'd be trapped by the int3 breakpoint and redirected to the provided
-"handler" (which would typically mean just skipping over the patched
-region, acting as "nop" has been there, in case we are doing nop -> jump
-and jump -> nop transitions).
 
-Ftrace has been using this very technique since 08d636b ("ftrace/x86:
-Have arch x86_64 use breakpoints instead of stop machine") for ages
-already, and jump labels are another obvious potential user of this.
 
-Based on activities of Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-a few years ago.
 
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
-Changes:
 
-v1 -> v2:
-  + fixed kerneldoc
-  + fixed checkpatch errors (reported by Borislav)
 
-v2 -> v3:
-  + fixed few typos (Joe Perches)
-  + extended changelog with pointer to Intel's statement regarding minimal 
-    necessary synchronization points to achieve correctness
-  + added even the synchronization that might not be needed according to 
-    Intel, to be on a safe side (and do what has been proven to work by 
-    ftrace implementation already) (Steven Rostedt)
-  + Fix formatting of comments (Steven Rostedt, Borislav Petkov, Joe 
-    Perches)
 
- arch/x86/include/asm/alternative.h |    1 +
- arch/x86/kernel/alternative.c      |  107 ++++++++++++++++++++++++++++++++++++
- kernel/kprobes.c                   |    2 +-
- 3 files changed, 109 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 58ed6d9..3abf8dd 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -233,6 +233,7 @@ struct text_poke_param {
- };
- 
- extern void *text_poke(void *addr, const void *opcode, size_t len);
-+extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
- extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
- extern void text_poke_smp_batch(struct text_poke_param *params, int n);
- 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index c15cf9a..ed2377d 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -11,6 +11,7 @@
- #include <linux/memory.h>
- #include <linux/stop_machine.h>
- #include <linux/slab.h>
-+#include <linux/kdebug.h>
- #include <asm/alternative.h>
- #include <asm/sections.h>
- #include <asm/pgtable.h>
-@@ -596,6 +597,112 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
- 	return addr;
- }
- 
-+static void do_sync_core(void *info)
-+{
-+	sync_core();
-+}
-+
-+static bool bp_patching_in_progress;
-+static void *bp_int3_handler, *bp_int3_addr;
-+
-+static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
-+{
-+	struct die_args *args = data;
-+
-+	/* bp_patching_in_progress */
-+	smp_rmb();
-+
-+	if (likely(!bp_patching_in_progress))
-+		return NOTIFY_DONE;
-+
-+	/* we are not interested in non-int3 faults and ring > 0 faults */
-+	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
-+			    || (unsigned long) bp_int3_addr != args->regs->ip)
-+		return NOTIFY_DONE;
-+
-+	/* set up the specified breakpoint handler */
-+	args->regs->ip = (unsigned long) bp_int3_handler;
-+
-+	return NOTIFY_STOP;
-+}
-+/*
-+ * text_poke_bp() -- update instructions on live kernel on SMP
-+ * @addr:	address to patch
-+ * @opcode:	opcode of new instruction
-+ * @len:	length to copy
-+ * @handler:	address to jump to when the temporary breakpoint is hit
-+ *
-+
-+ * Modify multi-byte instruction by using int3 breakpoint on SMP.
-+ * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
-+ * and achieve the synchronization using int3 breakpoint.
-+ *
-+ * The way it is done:
-+ *	- add a int3 trap to the address that will be patched
-+ *	- sync cores
-+ *	- update all but the first byte of the patched range
-+ *	- sync cores
-+ *	- replace the first byte (int3) by the first byte of
-+ *	  replacing opcode
-+ *	- sync cores
-+ *
-+ * Note: must be called under text_mutex.
-+ */
-+void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
-+{
-+	unsigned char int3 = 0xcc;
-+
-+	bp_int3_handler = handler;
-+	bp_int3_addr = (u8 *)addr + sizeof(int3);
-+	bp_patching_in_progress = true;
-+	/*
-+	 * Corresponding read barrier in int3 notifier for
-+	 * making sure the in_progress flags is correctly ordered wrt.
-+	 * patching
-+	 */
-+	smp_wmb();
-+
-+	text_poke(addr, &int3, sizeof(int3));
-+
-+	on_each_cpu(do_sync_core, NULL, 1);
-+
-+	if (len - sizeof(int3) > 0) {
-+		/* patch all but the first byte */
-+		text_poke((char *)addr + sizeof(int3),
-+			  (const char *) opcode + sizeof(int3),
-+			  len - sizeof(int3));
-+		/*
-+		 * According to Intel, this core syncing is very likely
-+		 * not necessary and we'd be safe even without it. But
-+		 * better safe than sorry (plus there's not only Intel).
-+		 */
-+		on_each_cpu(do_sync_core, NULL, 1);
-+	}
-+
-+	/* patch the first byte */
-+	text_poke(addr, opcode, sizeof(int3));
-+
-+	on_each_cpu(do_sync_core, NULL, 1);
-+
-+	bp_patching_in_progress = false;
-+	smp_wmb();
-+
-+	return addr;
-+}
-+
-+/* this one needs to run before anything else handles it as a
-+ * regular exception */
-+static struct notifier_block int3_nb = {
-+	.priority = 0x7fffffff,
-+	.notifier_call = int3_notify
-+};
-+
-+static int __init int3_init(void)
-+{
-+	return register_die_notifier(&int3_nb);
-+}
-+
-+arch_initcall(int3_init);
- /*
-  * Cross-modifying kernel text with stop_machine().
-  * This code originally comes from immediate value.
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index bddf3b2..d6db7bd 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
- 
- static struct notifier_block kprobe_exceptions_nb = {
- 	.notifier_call = kprobe_exceptions_notify,
--	.priority = 0x7fffffff /* we need to be notified first */
-+	.priority = 0x7ffffff0 /* High priority, but not first.  */
- };
- 
- unsigned long __weak arch_deref_entry_point(void *entry)
--- 
-1.7.3.1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
