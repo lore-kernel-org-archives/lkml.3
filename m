@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab3GKNQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:16:58 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:59374 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab3GKNQ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:16:57 -0400
+	id S1755420Ab3GKNRj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:17:39 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:37998 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778Ab3GKNRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 09:17:38 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
+   d="scan'208";a="36374477"
+Message-ID: <51DEB070.3060106@citrix.com>
+Date: Thu, 11 Jul 2013 14:17:36 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdXUp+CcNYbc+oy9ux4PSbm+g6i2w_vann5ML9xwMqYAyw@mail.gmail.com>
-References: <CAF2Nc0xVKS+aL0CXdDFQHSapvRxM35KZkjeKeigQ7X43+2NVBA@mail.gmail.com>
-	<20130711104307.GB28131@pd.tnic>
-	<CAF2Nc0xjxtWkpmurODWKNMCC9D+4Xf6gMnQAqAiec6zn4V0z3w@mail.gmail.com>
-	<CAMuHMdXUp+CcNYbc+oy9ux4PSbm+g6i2w_vann5ML9xwMqYAyw@mail.gmail.com>
-Date: Thu, 11 Jul 2013 15:16:56 +0200
-Message-ID: <CAF2Nc0x8nQG7grtgbBNw4NLfP787GDwGoDKjoHQNLE7TrfjJ7w@mail.gmail.com>
-Subject: Re: Error 2: No rule to make target kernel/timeconst.pl
-From: Konrad Vrba <konrad.vrba@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Roger Pau Monne <roger.pau@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 1/4] xen-gnt: prevent adding duplicate
+ gnt	callbacks
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com> <1373288607-1876-2-git-send-email-roger.pau@citrix.com>
+In-Reply-To: <1373288607-1876-2-git-send-email-roger.pau@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/11/13, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Thu, Jul 11, 2013 at 12:49 PM, Konrad Vrba <konrad.vrba@gmail.com>
-> wrote:
->> On 7/11/13, Borislav Petkov <bp@alien8.de> wrote:
->>> On Thu, Jul 11, 2013 at 12:28:20PM +0200, Konrad Vrba wrote:
->>>> Hello,
->>>> I have following error while compiling new stable kernel 3.10:
->>>>
->>>>   CC      kernel/fork.o
->>>>   CC      kernel/exec_domain.o
->>>>   CC      kernel/panic.o
->>>>   CC      kernel/printk.o
->>>>   CC      kernel/cpu.o
->>>>   CC      kernel/exit.o
->>>>   CC      kernel/itimer.o
->>>> make[1]: *** No rule to make target `kernel/timeconst.pl', needed by
->>>> `kernel/timeconst.h'.  Stop.
->>>> make: *** [kernel] Error 2
->>>>
->>>> Could somebody please advise how to fix this ?
->>>
->>> Can you save your config first, cleanup the build dir from kbuild stuff:
->>>
->>> make mrproper
->>>
->>> and then try building again?
->>>
->>> FWIW, 3.10 and later builds just fine here.
->>
->> cleaning up with 'make mrproper'  does not help.
->> I still get the same error
->
-> Do you still have build files around after "make mrproper"?
-> If this is a git clone, "git ls-files --others" will tell you.
->
-> Gr{oetje,eeting}s,
->
->                         Geert
->
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 --
-> geert@linux-m68k.org
->
-> In personal conversations with technical people, I call myself a hacker.
-> But
-> when I'm talking to journalists I just say "programmer" or something like
-> that.
->                                 -- Linus Torvalds
->
+On 08/07/13 14:03, Roger Pau Monne wrote:
+> With the current implementation, the callback in the tail of the list
+> can be added twice, because the check done in
+> gnttab_request_free_callback is bogus, callback->next can be NULL if
+> it is the last callback in the list. If we add the same callback twice
+> we end up with an infinite loop, were callback == callback->next.
+> 
+> Replace this check with a proper one that iterates over the list to
+> see if the callback has already been added.
+> 
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  drivers/xen/grant-table.c |   13 +++++++++++--
+>  1 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 04c1b2d..d5418c1 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -729,9 +729,18 @@ void gnttab_request_free_callback(struct gnttab_free_callback *callback,
+>  				  void (*fn)(void *), void *arg, u16 count)
+>  {
+>  	unsigned long flags;
+> +	struct gnttab_free_callback *cb;
+> +
+>  	spin_lock_irqsave(&gnttab_list_lock, flags);
+> -	if (callback->next)
+> -		goto out;
+> +
+> +	/* Check if the callback is already on the list */
+> +	cb = gnttab_free_callback_list;
+> +	while (cb) {
+> +		if (cb == callback)
+> +			goto out;
+> +		cb = cb->next;
+> +	}
 
-no, I don't have any build files. Even when I unpack freshly
-downloaded kernel archive, and copy the .config, I still get the same
-errors
+O(N)?
+
+Suggest using the standard list infrastructure, or using something other
+than NULL for the end of the list (e.g., gnttab_free_callback_list).
+
+gnttab_request_free_callback() is also putting the callbacks in the
+wrong order -- it should be FIFO not LIFO.  Might be nice to fix this as
+well.
+
+David
