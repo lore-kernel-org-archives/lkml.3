@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab3GKWNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:13:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43173 "EHLO
+	id S1756955Ab3GKWOG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:14:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43171 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab3GKWLW (ORCPT
+	with ESMTP id S1756700Ab3GKWLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Jul 2013 18:11:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 04/11] hpfs: better test for errors
-Date: Thu, 11 Jul 2013 15:11:04 -0700
-Message-Id: <20130711220546.074265989@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, Anton Vorontsov <cbou@mail.ru>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [ 03/11] charger-manager: Ensure event is not used as format string
+Date: Thu, 11 Jul 2013 15:11:03 -0700
+Message-Id: <20130711220545.981905096@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
 References: <20130711220545.542911892@linuxfoundation.org>
@@ -27,54 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Kees Cook <keescook@chromium.org>
 
-commit 3ebacb05044f82c5f0bb456a894eb9dc57d0ed90 upstream.
+commit 3594f4c0d7bc51e3a7e6d73c44e368ae079e42f3 upstream.
 
-The test if bitmap access is out of bound could errorneously pass if the
-device size is divisible by 16384 sectors and we are asking for one bitmap
-after the end.
+The exposed interface for cm_notify_event() could result in the event msg
+string being parsed as a format string. Make sure it is only used as a
+literal string.
 
-Check for invalid size in the superblock. Invalid size could cause integer
-overflows in the rest of the code.
-
-Signed-off-by: Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: Anton Vorontsov <cbou@mail.ru>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Signed-off-by: Anton Vorontsov <anton@enomsg.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/hpfs/map.c   |    3 ++-
- fs/hpfs/super.c |    8 +++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/power/charger-manager.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/hpfs/map.c
-+++ b/fs/hpfs/map.c
-@@ -17,7 +17,8 @@ unsigned int *hpfs_map_bitmap(struct sup
- 			 struct quad_buffer_head *qbh, char *id)
- {
- 	secno sec;
--	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
-+	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
-+	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
- 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
- 		return NULL;
- 	}
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -552,7 +552,13 @@ static int hpfs_fill_super(struct super_
- 	sbi->sb_cp_table = NULL;
- 	sbi->sb_c_bitmap = -1;
- 	sbi->sb_max_fwd_alloc = 0xffffff;
--	
-+
-+	if (sbi->sb_fs_size >= 0x80000000) {
-+		hpfs_error(s, "invalid size in superblock: %08x",
-+			(unsigned)sbi->sb_fs_size);
-+		goto bail4;
-+	}
-+
- 	/* Load bitmap directory */
- 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
- 		goto bail4;
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -330,7 +330,7 @@ static void uevent_notify(struct charger
+ 	strncpy(env_str, event, UEVENT_BUF_SIZE);
+ 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
+ 
+-	dev_info(cm->dev, event);
++	dev_info(cm->dev, "%s", event);
+ }
+ 
+ /**
 
 
