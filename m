@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab3GKUts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 16:49:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:43385 "EHLO mga14.intel.com"
+	id S1756677Ab3GKUvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 16:51:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:47127 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756613Ab3GKUtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 16:49:47 -0400
+	id S1756613Ab3GKUvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 16:51:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,647,1367996400"; 
-   d="scan'208";a="330066460"
-Message-ID: <51DF1A6A.7020803@linux.intel.com>
-Date: Thu, 11 Jul 2013 13:49:46 -0700
+   d="scan'208";a="330066876"
+Message-ID: <51DF1AB9.2010405@linux.intel.com>
+Date: Thu, 11 Jul 2013 13:51:05 -0700
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
@@ -48,8 +48,9 @@ On 07/11/2013 12:29 PM, Jiri Kosina wrote:
 > exactly this ordering of syncing of the cores.
 > 
 
-That is still the latest word as far as I know.
+Just a note on that: in that post "In fact, if a suitable int3 handler
+is left permanently in place then step 5 is unnecessary as well" should
+obviously have been "the synchronization in step 4" rather than "step 5".
 
 	-hpa
-
 
