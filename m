@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933210Ab3GKOcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:32:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43239 "EHLO
+	id S933050Ab3GKO06 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:26:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43215 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057Ab3GKO1B (ORCPT
+	with ESMTP id S933019Ab3GKO0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:27:01 -0400
+	Thu, 11 Jul 2013 10:26:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Christopher Harvey <charvey@matrox.com>, Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 84/98] ext4: fix overflow when counting used blocks on 32-bit architectures
-Date: Thu, 11 Jul 2013 15:24:54 +0100
-Message-Id: <1373552708-15235-85-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 78/98] drm/mgag200: Reject modes that are too big for VRAM
+Date: Thu, 11 Jul 2013 15:24:48 +0100
+Message-Id: <1373552708-15235-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,43 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Christopher Harvey <charvey@matrox.com>
 
-commit 8af8eecc1331dbf5e8c662022272cf667e213da5 upstream.
+commit 0ba53171583f86bbcbba951fe172982f7fc3761c upstream.
 
-The arithmetics adding delalloc blocks to the number of used blocks in
-ext4_getattr() can easily overflow on 32-bit archs as we first multiply
-number of blocks by blocksize and then divide back by 512. Make the
-arithmetics more clever and also use proper type (unsigned long long
-instead of unsigned long).
+A monitor or a user could request a resolution greater than the
+available VRAM for the backing framebuffer. This change checks the
+required framebuffer size against the max VRAM size and rejects modes
+if they are too big. This change can also remove a mode request passed
+in via the video= parameter.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Christopher Harvey <charvey@matrox.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/inode.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/mgag200/mgag200_mode.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 55006fa..8aacdda 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4317,7 +4317,7 @@ int ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 		 struct kstat *stat)
+diff --git a/drivers/gpu/drm/mgag200/mgag200_mode.c b/drivers/gpu/drm/mgag200/mgag200_mode.c
+index 4e48f91..6356ea1 100644
+--- a/drivers/gpu/drm/mgag200/mgag200_mode.c
++++ b/drivers/gpu/drm/mgag200/mgag200_mode.c
+@@ -1423,6 +1423,14 @@ static int mga_vga_get_modes(struct drm_connector *connector)
+ static int mga_vga_mode_valid(struct drm_connector *connector,
+ 				 struct drm_display_mode *mode)
  {
- 	struct inode *inode;
--	unsigned long delalloc_blocks;
-+	unsigned long long delalloc_blocks;
++	struct drm_device *dev = connector->dev;
++	struct mga_device *mdev = (struct mga_device*)dev->dev_private;
++	struct mga_fbdev *mfbdev = mdev->mfbdev;
++	struct drm_fb_helper *fb_helper = &mfbdev->helper;
++	struct drm_fb_helper_connector *fb_helper_conn = NULL;
++	int bpp = 32;
++	int i = 0;
++
+ 	/* FIXME: Add bandwidth and g200se limitations */
  
- 	inode = dentry->d_inode;
- 	generic_fillattr(inode, stat);
-@@ -4335,7 +4335,7 @@ int ext4_getattr(struct vfsmount *mnt, struct dentry *dentry,
- 	delalloc_blocks = EXT4_C2B(EXT4_SB(inode->i_sb),
- 				EXT4_I(inode)->i_reserved_data_blocks);
+ 	if (mode->crtc_hdisplay > 2048 || mode->crtc_hsync_start > 4096 ||
+@@ -1432,6 +1440,25 @@ static int mga_vga_mode_valid(struct drm_connector *connector,
+ 		return MODE_BAD;
+ 	}
  
--	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
-+	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
- 	return 0;
++	/* Validate the mode input by the user */
++	for (i = 0; i < fb_helper->connector_count; i++) {
++		if (fb_helper->connector_info[i]->connector == connector) {
++			/* Found the helper for this connector */
++			fb_helper_conn = fb_helper->connector_info[i];
++			if (fb_helper_conn->cmdline_mode.specified) {
++				if (fb_helper_conn->cmdline_mode.bpp_specified) {
++					bpp = fb_helper_conn->cmdline_mode.bpp;
++				}
++			}
++		}
++	}
++
++	if ((mode->hdisplay * mode->vdisplay * (bpp/8)) > mdev->mc.vram_size) {
++		if (fb_helper_conn)
++			fb_helper_conn->cmdline_mode.specified = false;
++		return MODE_BAD;
++	}
++
+ 	return MODE_OK;
  }
  
 -- 
