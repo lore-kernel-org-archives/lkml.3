@@ -1,93 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab3GKAWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 20:22:31 -0400
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:15660
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753977Ab3GKAWa (ORCPT
+	id S1755192Ab3GKA13 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 20:27:29 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:47078 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754131Ab3GKA12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 20:22:30 -0400
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VPS-5(zzbb2dI98dI9371I936eI1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bh8275dhz2dh668h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-X-WSS-ID: 0MPQX1B-01-8ZS-02
-X-M-MSG: 
-Message-ID: <51DDFABF.4030101@amd.com>
-Date: Wed, 10 Jul 2013 19:22:23 -0500
-From: Sherry Hurwitz <sherry.hurwitz@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: David Woodhouse <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
-        <amd64-microcode@amd64.org>, <suravee.suthikulpanit@amd.com>
-Subject: Re: [PATCH 1/1] linux-firmware: Add AMD microcode patch firmware
- files
-References: <1372447651-10290-1-git-send-email-sherry.hurwitz@amd.com> <1372906583.22888.66.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1372906583.22888.66.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: amd.com
+	Wed, 10 Jul 2013 20:27:28 -0400
+Date: Thu, 11 Jul 2013 10:27:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: rebase of the jdelvare-hwmon quilt series
+Message-Id: <20130711102724.51608a4ace419b6d42591257@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__11_Jul_2013_10_27_24_+1000_TwZHgtj6iqXnoxWL"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/03/2013 09:56 PM, Ben Hutchings wrote:
-> On Fri, 2013-06-28 at 14:27 -0500, Sherry Hurwitz wrote:
->> For AMD Families 10h ~ 14h Processors
->> file:   amd-ucode/microcode_amd.bin
->> md5sum: 55ae79b82cbfddcf7142058be3c9ec2d
->>
->> For AMD Family 15h Processors
->> file:   amd-ucode/microcode_amd_fam15h.bin
->> md5sum: 122ac7e56442c2b7c28eb26978b2d57c
->>
->> Signed-off-by: Sherry Hurwitz<sherry.hurwitz@amd.com>
->> ---
->>   LICENSE.amd-ucode                  |   64 ++++++++++++++++++++++++++++++++++++
->>   WHENCE                             |    9 +++++
->>   amd-ucode/microcode_amd.bin        |  Bin 0 -> 12684 bytes
->>   amd-ucode/microcode_amd_fam15h.bin |  Bin 0 -> 7876 bytes
->>   4 files changed, 73 insertions(+)
->>   create mode 100644 LICENSE.amd-ucode
->>   create mode 100644 amd-ucode/microcode_amd.bin
->>   create mode 100644 amd-ucode/microcode_amd_fam15h.bin
-> [...]
->> --- a/WHENCE
->> +++ b/WHENCE
->> @@ -2169,3 +2169,12 @@ File: go7007/wis-startrek.fw
->>   Licence: Redistributable. See LICENCE.go7007_firmware for details
->>   
->>   --------------------------------------------------------------------------
->> +
->> +Driver: microcode_amd - AMD CPU Microcode Update Driver for Linux
->> +
->> +File: amd-ucode/microcode_amd.bin
->> +File: amd-ucode/microcode_amd_fam15h.bin
->> +
->> +License: Redistributable. See LICENSE.amd-ucode for details
-> [...]
->
-> Please include the version number.
->
-> I notice that the download page on amd64.org also has GPG signatures.
-> Perhaps those should be included too?
->
-> (Actually, I would like to see verifiable signatures on all binary
-> firmware, but I don't think that can be made a requirement any time
-> soon.  Key 9F94BC90 isn't signed by another published key, so I still
-> have no reason to trust its identity.)
->
-> Ben.
->
-The amd64.org site is down and will no longer be used for distributing 
-AMD microcode patches.  Therefore, the Key ID 9F94BC90 will no longer be 
-used to sign the future microcode container files.  A new key will be 
-created and signed by me and another AMD co-worker.  We will resend the 
-patch with  the Key ID 8C0108B4.  You can pull this key from the gnuPG 
-key server to verify and see it is signed by two other keys, one 
-belonging to me and the other by Suravee Suthikulpanit, with AMD email 
-addresses.
+--Signature=_Thu__11_Jul_2013_10_27_24_+1000_TwZHgtj6iqXnoxWL
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Sherry
+Hi Jean,
 
+Why have you just rebased the jdelvare-hwmon series
+(http://khali.linux-fr.org/devel/linux-3/jdelvare-hwmon/)?  You have
+just invalidated your testing and made it likely that Linus will blast
+you if you ask him to pull your patches.  Your whole series was already
+based after v3.10 (i.e. released or rebased after the merge window
+opened), so why move it again?
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__11_Jul_2013_10_27_24_+1000_TwZHgtj6iqXnoxWL
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR3fvsAAoJEECxmPOUX5FEfGsP/izmdQB+nwSrqrKrdKQtZ2eS
+L7p+/737iLei/JZPEYhSgwR44xEjuMAB5HI4wv0sFHUF7tXj6eFMsy4oiXwpKz8f
+eKgejlELPpvKhr+KEBZCdGUIaEKR9GXlMDKOOLMJGLCn42SlkyI7mPNbosDvpGgc
+Fxj36C521xIH5J8taVfdr3kOYb8THic+oS3G67RrQF6MuQDlBuIDdDHTgkLL/8Zx
+kh+nVIpA3qFxx+PByESguVhBkcUF6s7IV9dnXuKLLjSo73eFsWvvSd89JR7vmQQ6
+QuOMVoxlBANZT3wiUXFp5meCC//+1hUMnsTWbTF6m0oIMGgsOq5+jK6k/nD1xd0g
+AG6T5rzb+9Uy7694uzDOSD8omF63AGN0exI+mFsabOTp99Gh/q6tk5B9fLWBYjiB
+9Io7vWU98W7CEAuSLRHrrLTqv4BoB2X1p4NT0VhUyLvBKeo2ccfR8Dodu63RIRlQ
+AOhnf+43LeXSmQ2Z50m8/ABQoNsgLk58s3bzEaJ/hjl+TSVyiFBOgHZ5dDqjZ7aV
+KN81gFK+lTElZxaWR+kb/rMvpZ3WWxgJ1QeAcrCJAaCyrOdJJwdm/5rjrSZkmXK4
+T8AUZHHE/680E6PtXL8a0DOUDoHpfR6xikVT7T3ha+bDOe/ouGBoBHx1nGkBNU5E
+mKZYNen3cbod0ZVpAwB1
+=Xz0S
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__11_Jul_2013_10_27_24_+1000_TwZHgtj6iqXnoxWL--
