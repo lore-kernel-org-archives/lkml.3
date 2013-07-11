@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab3GKHlq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 03:41:46 -0400
-Received: from kdh-gw.itdev.co.uk ([89.21.227.133]:15301 "EHLO
-	hermes.kdh.itdev.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755747Ab3GKHlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 03:41:44 -0400
-Message-ID: <51DE61B5.1000600@itdev.co.uk>
-Date: Thu, 11 Jul 2013 08:41:41 +0100
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755854Ab3GKHl7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 03:41:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755834Ab3GKHl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 03:41:58 -0400
+Date: Thu, 11 Jul 2013 10:41:53 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH] kvm: reset arch memslot info on memslot creation
+Message-ID: <20130711074153.GB5895@redhat.com>
+References: <20130710082439.GA1482@redhat.com>
+ <20130710224956.b7a44f39c151148afa5a47ba@gmail.com>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Joonyoung Shim <jy0922.shim@samsung.com>, Alan.Bowens@atmel.com,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pmeerw@pmeerw.net, bleung@chromium.org, olofj@chromium.org
-Subject: Re: [PATCH 10/53] Input: atmel_mxt_ts - Add memory access interface
- via sysfs
-References: <20130606164629.GG31367@sirena.org.uk> <51B1F859.1010504@itdev.co.uk> <20130607154134.GU31367@sirena.org.uk> <51B20630.7000304@itdev.co.uk> <20130607164700.GW31367@sirena.org.uk> <51B6FE69.6060505@itdev.co.uk> <20130611114727.GY1403@sirena.org.uk> <51B7151F.5070307@itdev.co.uk> <20130619185909.GG1403@sirena.org.uk> <51C47C50.8000606@itdev.co.uk> <20130702101125.GD27646@sirena.org.uk>
-In-Reply-To: <20130702101125.GD27646@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130710224956.b7a44f39c151148afa5a47ba@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Fri, Jun 21, 2013 at 09:16:16AM -0700, Nick Dyer wrote:
->> Mark Brown wrote:
->>> Yes, to be honest.  I'd hope it wouldn't be increasing the number of
->>> read/write operations...
+On Wed, Jul 10, 2013 at 10:49:56PM +0900, Takuya Yoshikawa wrote:
+> On Wed, 10 Jul 2013 11:24:39 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > 
->> For some operations it does. For example updating the whole chip config
->> (which is a common thing to want to do), it would turn a couple of write
->> operations into ~20 on recent chips.
+> > On x86, kvm_arch_create_memslot assumes that rmap/lpage_info for the
+> > slot are zeroed out: if they weren't, error handling code after out_free
+> > label will free memory which wasn't allocated here.
+> > This always happens to be the case because on KVM_MR_DELETE we clear the
+> > whole arch structure.  So there's no bug, but it's cleaner not to rely
+> > on this here.
 > 
-> Is that really happening on peformance critical paths other than initial
-> power up (which could be handled more neatly anyway).
+> Yes, the assumption is that the function is called only with zero-sized slots.
+> Since changing the size is not allowed, DELETE-CREATE is the only case we
+> care about.
+> 
+> But isn't it possible to make it explicit that zero-sized slots have always
+> zero-cleared contents instead?  Otherwise, there would be many troubles.
+> 
+Do you have something in mind?
 
-Well, you're right that we could probably add more API for performance
-critical stuff. But that wasn't your original question.
-
->>> and of course a system integrator may choose not to copy the reference
->>> design in this respect, it does seem a bit odd after all.
+> 	Takuya
 > 
->> You're being a bit optimistic there. Examples of devices that require
->> this are Samsung Galaxy Tab 10.1, Asus Transformer TF101.
+> > 
+> > Make the code more robust by clearing the rmap/lpage_info explicitly.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  arch/x86/kvm/x86.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index e8ba99c..96e6eb4 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -6922,6 +6922,10 @@ int kvm_arch_create_memslot(struct kvm_memory_slot *slot, unsigned long npages)
+> >  {
+> >  	int i;
+> >  
+> > +	/* Reset in case slot had some rmap/lpage_info. */
+> > +	memset(&slot->arch.rmap, 0, sizeof slot->arch.rmap);
+> > +	memset(&slot->arch.lpage_info, 0, sizeof slot->arch.lpage_info);
+> > +
+> >  	for (i = 0; i < KVM_NR_PAGE_SIZES; ++i) {
+> >  		unsigned long ugfn;
+> >  		int lpages;
+> > -- 
+> > MST
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> If absoluely nobody has used the separate wakeup pin then the hardware
-> designers are wasting a pin there...  my point isn't that nobody would
-> use the reference design it's that some boards will have the separate
-> signal.
+> 
+> -- 
+> Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
 
-That's entirely hypothetical, and you're wasting our time until you can
-actually point to such hardware, happy to write patches to support that
-mode of operation as well if you do.
+--
+			Gleb.
