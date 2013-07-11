@@ -1,128 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab3GKWTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:19:46 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39593 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034Ab3GKWTp (ORCPT
+	id S1757081Ab3GKWTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:19:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43223 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756993Ab3GKWTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:19:45 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 3/8] cpufreq: Add helper to perform alloc/free of policy
- structure
-To: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
-        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
-        lantianyu1986@gmail.com, dirk.brandewie@gmail.com
-Cc: stern@rowland.harvard.edu,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Jul 2013 03:46:07 +0530
-Message-ID: <20130711221605.547.69988.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071122-7014-0000-0000-0000034E7BA3
+	Thu, 11 Jul 2013 18:19:47 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tyler Hicks <tyhicks@canonical.com>,
+        Chanam Park <chanam.park@hkpco.kr>,
+        Seth Arnold <seth.arnold@canonical.com>, Sage Weil <sage@inktank.com>
+Subject: [ 01/15] libceph: Fix NULL pointer dereference in auth client code
+Date: Thu, 11 Jul 2013 15:19:31 -0700
+Message-Id: <20130711221256.160285989@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130711221255.925669600@linuxfoundation.org>
+References: <20130711221255.925669600@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Separate out the allocation of the cpufreq policy structure (along with
-its error handling) to a helper function. This makes the code easier to
-read and also helps with some upcoming code reorganization.
+3.9-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+------------------
+
+From: Tyler Hicks <tyhicks@canonical.com>
+
+commit 2cb33cac622afde897aa02d3dcd9fbba8bae839e upstream.
+
+A malicious monitor can craft an auth reply message that could cause a
+NULL function pointer dereference in the client's kernel.
+
+To prevent this, the auth_none protocol handler needs an empty
+ceph_auth_client_ops->build_request() function.
+
+CVE-2013-1059
+
+Signed-off-by: Tyler Hicks <tyhicks@canonical.com>
+Reported-by: Chanam Park <chanam.park@hkpco.kr>
+Reviewed-by: Seth Arnold <seth.arnold@canonical.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ net/ceph/auth_none.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
- drivers/cpufreq/cpufreq.c |   50 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 35 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index f8c3100..ca14dc2 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -943,6 +943,37 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
+--- a/net/ceph/auth_none.c
++++ b/net/ceph/auth_none.c
+@@ -39,6 +39,11 @@ static int should_authenticate(struct ce
+ 	return xi->starting;
  }
- #endif
  
-+static struct cpufreq_policy *cpufreq_policy_alloc(void)
++static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
 +{
-+	struct cpufreq_policy *policy;
-+
-+	policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
-+	if (!policy)
-+		return NULL;
-+
-+	if (!alloc_cpumask_var(&policy->cpus, GFP_KERNEL))
-+		goto err_free_policy;
-+
-+	if (!zalloc_cpumask_var(&policy->related_cpus, GFP_KERNEL))
-+		goto err_free_cpumask;
-+
-+	return policy;
-+
-+err_free_cpumask:
-+	free_cpumask_var(policy->cpus);
-+err_free_policy:
-+	kfree(policy);
-+
-+	return NULL;
++	return 0;
 +}
 +
-+static void cpufreq_policy_free(struct cpufreq_policy *policy)
-+{
-+	free_cpumask_var(policy->related_cpus);
-+	free_cpumask_var(policy->cpus);
-+	kfree(policy);
-+}
-+
- /**
-  * cpufreq_add_dev - add a CPU device
-  *
-@@ -996,16 +1027,10 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 		goto module_out;
- 	}
- 
--	policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
-+	policy = cpufreq_policy_alloc();
- 	if (!policy)
- 		goto nomem_out;
- 
--	if (!alloc_cpumask_var(&policy->cpus, GFP_KERNEL))
--		goto err_free_policy;
--
--	if (!zalloc_cpumask_var(&policy->related_cpus, GFP_KERNEL))
--		goto err_free_cpumask;
--
- 	policy->cpu = cpu;
- 	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
- 	cpumask_copy(policy->cpus, cpumask_of(cpu));
-@@ -1070,11 +1095,7 @@ err_out_unregister:
- 
- err_set_policy_cpu:
- 	per_cpu(cpufreq_policy_cpu, cpu) = -1;
--	free_cpumask_var(policy->related_cpus);
--err_free_cpumask:
--	free_cpumask_var(policy->cpus);
--err_free_policy:
--	kfree(policy);
-+	cpufreq_policy_free(policy);
- nomem_out:
- 	module_put(cpufreq_driver->owner);
- module_out:
-@@ -1201,9 +1222,8 @@ static int __cpufreq_remove_dev(struct device *dev,
- 		if (cpufreq_driver->exit)
- 			cpufreq_driver->exit(data);
- 
--		free_cpumask_var(data->related_cpus);
--		free_cpumask_var(data->cpus);
--		kfree(data);
-+		cpufreq_policy_free(data);
-+
- 	} else if (cpufreq_driver->target) {
- 		__cpufreq_governor(data, CPUFREQ_GOV_START);
- 		__cpufreq_governor(data, CPUFREQ_GOV_LIMITS);
+ /*
+  * the generic auth code decode the global_id, and we carry no actual
+  * authenticate state, so nothing happens here.
+@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops
+ 	.destroy = destroy,
+ 	.is_authenticated = is_authenticated,
+ 	.should_authenticate = should_authenticate,
++	.build_request = build_request,
+ 	.handle_reply = handle_reply,
+ 	.create_authorizer = ceph_auth_none_create_authorizer,
+ 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
+
 
