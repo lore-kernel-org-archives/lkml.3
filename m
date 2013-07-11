@@ -1,148 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab3GKWSW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:18:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59468 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab3GKWSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:18:20 -0400
-Message-ID: <51DEF6DD.1070406@redhat.com>
-Date: Thu, 11 Jul 2013 14:18:05 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S1756975Ab3GKWSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:18:53 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:46875 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756870Ab3GKWSv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 18:18:51 -0400
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
+To: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
+        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
+        lantianyu1986@gmail.com, dirk.brandewie@gmail.com
+Cc: stern@rowland.harvard.edu,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Jul 2013 03:45:17 +0530
+Message-ID: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Yijing Wang <wangyijing@huawei.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH -v2 1/3] PCI: introduce PCIe Device Serial Number Capability
- support
-References: <1373535825-49972-1-git-send-email-wangyijing@huawei.com> <1373535825-49972-2-git-send-email-wangyijing@huawei.com> <51DE8032.4040808@redhat.com> <CAErSpo50ni41TiscZDVpg8wMFK2wgWmS1sySfNTs8X9JA7Mmkw@mail.gmail.com>
-In-Reply-To: <CAErSpo50ni41TiscZDVpg8wMFK2wgWmS1sySfNTs8X9JA7Mmkw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071209-3568-0000-0000-000003E9A0A8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2013 04:09 PM, Bjorn Helgaas wrote:
-> On Thu, Jul 11, 2013 at 3:51 AM, Don Dutile<ddutile@redhat.com>  wrote:
->> On 07/11/2013 05:43 AM, Yijing Wang wrote:
->>>
->>> Introduce PCIe Ext Capability Device Serial Number support,
->>> so we can use the unique device serial number to identify
->>> the physical device. During system suspend, if the PCIe
->>> device was removed and inserted a new same device, after
->>> system resume there is no good way to identify it, maybe
->>> Device Serial Number is a good choice if device support.
->>>
->>> Signed-off-by: Yijing Wang<wangyijing@huawei.com>
->>> ---
->>>    drivers/pci/pci.c   |   27 +++++++++++++++++++++++++++
->>>    drivers/pci/probe.c |    2 ++
->>>    include/linux/pci.h |    3 +++
->>>    3 files changed, 32 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
->>> index e37fea6..2e855b5 100644
->>> --- a/drivers/pci/pci.c
->>> +++ b/drivers/pci/pci.c
->>> @@ -2048,6 +2048,33 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
->>>    }
->>>
->>>    /**
->>> + * pci_device_serial_number - get device serial number
->>> + * @dev: the PCI device
->>> + *
->>> + * return the device serial number if device support,
->>> + * otherwise return 0.
->>> + */
->>> +u64 pci_device_serial_number(struct pci_dev *dev)
->>
->> See comment below:
->> void  pci_device_serial_number(struct pci_dev *dev)
->>
->>
->>> +{
->>> +       int pos;
->>> +       u64 sn;
->>> +       u32 lo, hi;
->>> +
->>> +       if (!pci_is_pcie(dev))
->>> +               return 0;
->>> +
->>
->> See comment below:
->> if (!pci_is_pcie(dev)) {
->>          dev->sn = 0;
->>          return;
->>
->> }
->>>
->>> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
->>> +       if (!pos)
->>> +               return 0;
->>> +
->>> +       pci_read_config_dword(dev, pos + 4,&lo);
->>> +       pci_read_config_dword(dev, pos + 8,&hi);
->>> +       sn = ((u64)hi<<   32) | lo;
->>
->> See comment below:
->>          dev->sn = ((u64)hi<<   32) | lo;
->>          return;
->>
->>> +       return sn;
->>> +}
->>> +EXPORT_SYMBOL(pci_device_serial_number);
->>> +
->>> +/**
->>>     * pci_configure_ari - enable or disable ARI forwarding
->>>     * @dev: the PCI device
->>>     *
->>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->>> index 46ada5c..c4c1a2b 100644
->>> --- a/drivers/pci/probe.c
->>> +++ b/drivers/pci/probe.c
->>> @@ -1322,6 +1322,8 @@ static void pci_init_capabilities(struct pci_dev
->>> *dev)
->>>          /* Power Management */
->>>          pci_pm_init(dev);
->>>
->>> +       dev->sn = pci_device_serial_number(dev);
->>> +
->>
->> Finally, 'the comment below':
->> I know you were following Bjorn's suggestion, which I thought
->> was an improvement, but why not do above assignment in
->> pci_device_serial_number() ?
->> See above....
->
-> pci_device_serial_number() would then have the side-effect of saving
-> the result somewhere, and callers would have to know where to look.
-Ah, like so many other features of a PCI device?  -- what are all those
-flags/status bits in pdev for ??? ;-)
 
-> Personally, I think it's simpler to return the serial number directly
-> and avoid the side-effect, but maybe this is just bike-shedding.
->
-What struck me about rtning a value is in pci_init_capabilities(),
-it was the only function with a rtn value that had to be put into a pci_dev 
-struct element,
-while all the others stored their related capabilities in the pdev, or other struct
-related to it.
+Hi,
 
-So, maybe there should be a "pci_device_serial_number_init()" function
-which does the storage in the pdev struct, and another (wrapper,
-dare I shoot myself, inline)  that is "pci_device_serial_number()" that returns
-the value of the pdev's sn element, if another module or other core component
-want to get it. .... and do that in a future patch... :-/
+Commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume) caused
+some subtle regressions in the cpufreq subsystem during suspend/resume.
+This patchset is aimed at rectifying those problems, by fixing the regression
+as well as achieving the original goal of that commit in a proper way.
 
-> As long as we are bike-shedding, I'd just drop "sn" and do:
->
->      return ((u64)hi<<  32) | lo;
->
-> And of course, you need spaces before "&hi" and "&lo" in the
-> pci_read_config_dword() calls.
+Patch 1 reverts the above commit, and is CC'ed to stable.
+
+Patches 2 - 5 reorganize the code and have no functional impact, and can go
+in as general cleanups as well. This reorganization builds a base that the
+rest of the patches will make use of.
+
+Patch 6 and 7 add a mechanism to perform light-weight init/tear-down of CPUs
+in the cpufreq subsystem and finally patch 8 uses it to preserve sysfs files
+across suspend/resume.
+
+All the patches apply on current mainline.
+
+
+Robert, Durgadoss, it would be great if you could try it out and see if it works
+well for your usecase. I tested it locally and cpufreq related files did retain
+their permissions across suspend/resume. Let me know if it works fine in your
+setup too.
+
+And I'd of course appreciate to hear from Dirk, Tianyu and Toralf to know
+whether their systems work fine after:
+a. applying only the first commit (this is what gets backported to stable)
+b. applying all the commits
+
+(Note: I had to use Michael's fix[1] to avoid CPU hotplug deadlock while
+testing this patchset. Though that patch also touches cpufreq subsystem, it
+doesn't affect this patchset in any way and there is absolutely no dependency
+between the two in terms of code. That fix just makes basic CPU hotplug work
+without locking up on current mainline).
+
+[1]. https://lkml.org/lkml/2013/7/10/611
+
+
+Thank you very much!
+
+
+ Srivatsa S. Bhat (8):
+      cpufreq: Revert commit a66b2e to fix cpufreq regression during suspend/resume
+      cpufreq: Fix misplaced call to cpufreq_update_policy()
+      cpufreq: Add helper to perform alloc/free of policy structure
+      cpufreq: Extract non-interface related stuff from cpufreq_add_dev_interface
+      cpufreq: Extract the handover of policy cpu to a helper function
+      cpufreq: Introduce a flag ('frozen') to separate full vs temporary init/teardown
+      cpufreq: Preserve policy structure across suspend/resume
+      cpufreq: Perform light-weight init/teardown during suspend/resume
+
+ drivers/cpufreq/cpufreq.c       |  297 ++++++++++++++++++++++++++-------------
+ drivers/cpufreq/cpufreq_stats.c |   10 -
+ 2 files changed, 199 insertions(+), 108 deletions(-)
+
+
+Thanks,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
