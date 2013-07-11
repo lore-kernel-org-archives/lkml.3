@@ -1,136 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab3GKWYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:24:16 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:49033 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079Ab3GKWUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:20:06 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH 4/8] cpufreq: Extract non-interface related stuff from
- cpufreq_add_dev_interface
-To: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
-        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
-        lantianyu1986@gmail.com, dirk.brandewie@gmail.com
-Cc: stern@rowland.harvard.edu,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+	id S1757173Ab3GKWYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:24:14 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:38876 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757146Ab3GKWYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 18:24:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: viresh.kumar@linaro.org, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Jul 2013 03:46:29 +0530
-Message-ID: <20130711221623.547.5846.stgit@srivatsabhat.in.ibm.com>
+Subject: Re: [PATCH 0/8] Cpufreq, cpu hotplug, suspend/resume related fixes
+Date: Fri, 12 Jul 2013 00:33:55 +0200
+Message-ID: <6515593.XAmN11qlGF@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
 References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13071122-6102-0000-0000-000003D7B34C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpufreq_add_dev_interface() includes the work of exposing the interface
-to the device, as well as a lot of unrelated stuff. Move the latter to
-cpufreq_add_dev(), where it is more appropriate.
+On Friday, July 12, 2013 03:45:17 AM Srivatsa S. Bhat wrote:
+> 
+> Hi,
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+Hi,
 
- drivers/cpufreq/cpufreq.c |   43 ++++++++++++++++++++++++++-----------------
- 1 file changed, 26 insertions(+), 17 deletions(-)
+> Commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume) caused
+> some subtle regressions in the cpufreq subsystem during suspend/resume.
+> This patchset is aimed at rectifying those problems, by fixing the regression
+> as well as achieving the original goal of that commit in a proper way.
+> 
+> Patch 1 reverts the above commit, and is CC'ed to stable.
+> 
+> Patches 2 - 5 reorganize the code and have no functional impact, and can go
+> in as general cleanups as well. This reorganization builds a base that the
+> rest of the patches will make use of.
+> 
+> Patch 6 and 7 add a mechanism to perform light-weight init/tear-down of CPUs
+> in the cpufreq subsystem and finally patch 8 uses it to preserve sysfs files
+> across suspend/resume.
+> 
+> All the patches apply on current mainline.
+> 
+> 
+> Robert, Durgadoss, it would be great if you could try it out and see if it works
+> well for your usecase. I tested it locally and cpufreq related files did retain
+> their permissions across suspend/resume. Let me know if it works fine in your
+> setup too.
+> 
+> And I'd of course appreciate to hear from Dirk, Tianyu and Toralf to know
+> whether their systems work fine after:
+> a. applying only the first commit (this is what gets backported to stable)
+> b. applying all the commits
+> 
+> (Note: I had to use Michael's fix[1] to avoid CPU hotplug deadlock while
+> testing this patchset. Though that patch also touches cpufreq subsystem, it
+> doesn't affect this patchset in any way and there is absolutely no dependency
+> between the two in terms of code. That fix just makes basic CPU hotplug work
+> without locking up on current mainline).
+> 
+> [1]. https://lkml.org/lkml/2013/7/10/611
+> 
+> 
+> Thank you very much!
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index ca14dc2..2ab39f3 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -834,11 +834,8 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
- 				     struct cpufreq_policy *policy,
- 				     struct device *dev)
- {
--	struct cpufreq_policy new_policy;
- 	struct freq_attr **drv_attr;
--	unsigned long flags;
- 	int ret = 0;
--	unsigned int j;
- 
- 	/* prepare interface data */
- 	ret = kobject_init_and_add(&policy->kobj, &ktype_cpufreq,
-@@ -870,17 +867,23 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
- 			goto err_out_kobj_put;
- 	}
- 
--	write_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_cpu(j, policy->cpus) {
--		per_cpu(cpufreq_cpu_data, j) = policy;
--		per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
--	}
--	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
--
- 	ret = cpufreq_add_dev_symlink(cpu, policy);
- 	if (ret)
- 		goto err_out_kobj_put;
- 
-+	return ret;
-+
-+err_out_kobj_put:
-+	kobject_put(&policy->kobj);
-+	wait_for_completion(&policy->kobj_unregister);
-+	return ret;
-+}
-+
-+static void cpufreq_init_policy(struct cpufreq_policy *policy)
-+{
-+	struct cpufreq_policy new_policy;
-+	int ret = 0;
-+
- 	memcpy(&new_policy, policy, sizeof(struct cpufreq_policy));
- 	/* assure that the starting sequence is run in __cpufreq_set_policy */
- 	policy->governor = NULL;
-@@ -895,12 +898,6 @@ static int cpufreq_add_dev_interface(unsigned int cpu,
- 		if (cpufreq_driver->exit)
- 			cpufreq_driver->exit(policy);
- 	}
--	return ret;
--
--err_out_kobj_put:
--	kobject_put(&policy->kobj);
--	wait_for_completion(&policy->kobj_unregister);
--	return ret;
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -1074,10 +1071,19 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 	}
- #endif
- 
-+	write_lock_irqsave(&cpufreq_driver_lock, flags);
-+	for_each_cpu(j, policy->cpus) {
-+		per_cpu(cpufreq_cpu_data, j) = policy;
-+		per_cpu(cpufreq_policy_cpu, j) = policy->cpu;
-+	}
-+	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
-+
- 	ret = cpufreq_add_dev_interface(cpu, policy, dev);
- 	if (ret)
- 		goto err_out_unregister;
- 
-+	cpufreq_init_policy(policy);
-+
- 	kobject_uevent(&policy->kobj, KOBJ_ADD);
- 	module_put(cpufreq_driver->owner);
- 	pr_debug("initialization complete\n");
-@@ -1086,8 +1092,11 @@ static int cpufreq_add_dev(struct device *dev, struct subsys_interface *sif)
- 
- err_out_unregister:
- 	write_lock_irqsave(&cpufreq_driver_lock, flags);
--	for_each_cpu(j, policy->cpus)
-+	for_each_cpu(j, policy->cpus) {
- 		per_cpu(cpufreq_cpu_data, j) = NULL;
-+		if (j != cpu)
-+			per_cpu(cpufreq_policy_cpu, j) = -1;
-+	}
- 	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
- 
- 	kobject_put(&policy->kobj);
+Thanks Srivatsa!
 
+I'm going to take [1/8] for 3.11 and queue up the rest for 3.12 if people don't
+hate them.  This way we'll have some more testing coverage before they reach
+the mainline hopefully.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
