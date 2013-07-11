@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab3GKOr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:47:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42947 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932730Ab3GKOZz (ORCPT
+	id S932860Ab3GKOsB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:48:01 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:20241 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932730Ab3GKOr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:55 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Seth Heasley <seth.heasley@intel.com>, Tejun Heo <tj@kernel.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 29/98] ahci: AHCI-mode SATA patch for Intel Coleto Creek DeviceIDs
-Date: Thu, 11 Jul 2013 15:23:59 +0100
-Message-Id: <1373552708-15235-30-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.5
+	Thu, 11 Jul 2013 10:47:58 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1043,1363132800"; 
+   d="scan'208";a="6588557"
+Message-ID: <51DEC59B.2040501@citrix.com>
+Date: Thu, 11 Jul 2013 16:47:55 +0200
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 2/4] xen-blkfront: improve aproximation
+ of	required grants per request
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com> <1373288607-1876-3-git-send-email-roger.pau@citrix.com> <51DEB102.7060802@citrix.com>
+In-Reply-To: <51DEB102.7060802@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.5.7.17 -stable review patch.  If anyone has any objections, please let me know.
+On 11/07/13 15:20, David Vrabel wrote:
+> On 08/07/13 14:03, Roger Pau Monne wrote:
+>> Improve the calculation of required grants to process a request by
+>> using nr_phys_segments instead of always assuming a request is going
+>> to use all posible segments.
+> 
+> This isn't obviously correct to me.  Why is this correct value for the
+> number of pages that need to be granted?
 
-------------------
-
-From: Seth Heasley <seth.heasley@intel.com>
-
-commit 1cfc7df3de10c40ed459e13cce6de616023bf41c upstream.
-
-This patch adds the AHCI-mode SATA DeviceIDs for the Intel Coleto Creek PCH.
-
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/ata/ahci.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index ec7f1a8..9270f35 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -300,6 +300,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(INTEL, 0x8d64), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
- 
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
--- 
-1.8.1.2
-
+This contains the number of scatter-gather DMA addr+len pairs, which is
+basically what we put at every granted page. for_each_sg iterates over
+the DMA addr+len pairs and uses a grant page for each of them.
