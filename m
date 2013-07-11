@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756047Ab3GKTmo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 15:42:44 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:54501 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab3GKTmm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 15:42:42 -0400
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Jul 2013 15:42:42 EDT
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Ralf Baechle <ralf@linux-mips.org>, cpufreq@vger.kernel.org,
-        Julia Lawall <Julia.Lawall@lip6.fr>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, stable@vger.kernel.org
-Subject: [PATCH] MIPS: loongson2: cpufreq: fix broken cpufreq
-Date: Thu, 11 Jul 2013 22:34:41 +0300
-Message-Id: <1373571281-4457-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.8.3.1
+	id S1756192Ab3GKTnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 15:43:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60057 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610Ab3GKTno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 15:43:44 -0400
+Date: Thu, 11 Jul 2013 21:43:42 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Borislav Petkov <bpetkov@suse.de>, linux-kernel@vger.kernel.org,
+        Jason Baron <jbaron@akamai.com>
+Subject: Re: [RFC] [PATCH 1/2 v2] x86: introduce int3-based instruction
+ patching
+In-Reply-To: <1373558223.17876.22.camel@gandalf.local.home>
+Message-ID: <alpine.LNX.2.00.1307112141151.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102218200.25858@pobox.suse.cz>  <alpine.LNX.2.00.1307102328540.25858@pobox.suse.cz> <1373558223.17876.22.camel@gandalf.local.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 42913c799 (MIPS: Loongson2: Use clk API instead of direct
-dereferences) broke the cpufreq functionality on Loongson2 boards:
-clk_set_rate() is called before the CPU frequency table is initialized,
-and therefore will always fail.
+On Thu, 11 Jul 2013, Steven Rostedt wrote:
 
-Fix by moving the clk_set_rate() after the table initialization.
-Tested on Lemote FuLoong mini-PC.
+[ .. snip .. ]
+> > +	smp_wmb();
+> > +
+> > +	text_poke(addr, &int3, sizeof(int3));
+> > +
+> > +	if (len - sizeof(int3) > 0) {
+> 
+> I believe we need a sync here. Otherwise, if the instruction crosses
+> cache lines, the original first byte could have been pulled in, and then
+> after the text_poke() below, it gets the updated version, causing a
+> crash on that CPU.
+> 
+> 		on_each_cpu(do_sync_core, NULL, 1);
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: stable@vger.kernel.org
----
- drivers/cpufreq/loongson2_cpufreq.c | 11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+Right you are.
 
-diff --git a/drivers/cpufreq/loongson2_cpufreq.c b/drivers/cpufreq/loongson2_cpufreq.c
-index d539127..f92b02a 100644
---- a/drivers/cpufreq/loongson2_cpufreq.c
-+++ b/drivers/cpufreq/loongson2_cpufreq.c
-@@ -118,11 +118,6 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 		clk_put(cpuclk);
- 		return -EINVAL;
- 	}
--	ret = clk_set_rate(cpuclk, rate);
--	if (ret) {
--		clk_put(cpuclk);
--		return ret;
--	}
- 
- 	/* clock table init */
- 	for (i = 2;
-@@ -130,6 +125,12 @@ static int loongson2_cpufreq_cpu_init(struct cpufreq_policy *policy)
- 	     i++)
- 		loongson2_clockmod_table[i].frequency = (rate * i) / 8;
- 
-+	ret = clk_set_rate(cpuclk, rate);
-+	if (ret) {
-+		clk_put(cpuclk);
-+		return ret;
-+	}
-+
- 	policy->cur = loongson2_cpufreq_get(policy->cpu);
- 
- 	cpufreq_frequency_table_get_attr(&loongson2_clockmod_table[0],
+OTOH we apparently don't need the one after the text_poke() below, as 
+syncing the cores just after patching the first byte afterwards provides 
+safe enough guard (at least according to hpa's words back in 2010 :) ).
+
+Will change it for next respin of the patchset, thanks for review.
+
 -- 
-1.8.3.1
-
+Jiri Kosina
+SUSE Labs
