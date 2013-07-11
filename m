@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab3GKKtT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:49:19 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:54310 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab3GKKtS (ORCPT
+	id S1755892Ab3GKKuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:50:35 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48215 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755803Ab3GKKud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:49:18 -0400
+	Thu, 11 Jul 2013 06:50:33 -0400
+Message-ID: <51DE8EC6.6020700@linux.vnet.ibm.com>
+Date: Thu, 11 Jul 2013 16:23:58 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20130711104307.GB28131@pd.tnic>
-References: <CAF2Nc0xVKS+aL0CXdDFQHSapvRxM35KZkjeKeigQ7X43+2NVBA@mail.gmail.com>
-	<20130711104307.GB28131@pd.tnic>
-Date: Thu, 11 Jul 2013 12:49:17 +0200
-Message-ID: <CAF2Nc0xjxtWkpmurODWKNMCC9D+4Xf6gMnQAqAiec6zn4V0z3w@mail.gmail.com>
-Subject: Re: Error 2: No rule to make target kernel/timeconst.pl
-From: Konrad Vrba <konrad.vrba@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: Andrew Jones <drjones@redhat.com>, mingo@redhat.com, ouyang@cs.pitt.edu,
+        habanero@linux.vnet.ibm.com, jeremy@goop.org, x86@kernel.org,
+        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
+        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
+        chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
+References: <20130626113744.GA6300@hawk.usersys.redhat.com> <20130626125240.GY18508@redhat.com> <51CAEF45.3010203@linux.vnet.ibm.com> <20130626161130.GB18152@redhat.com> <51CB2AD9.5060508@linux.vnet.ibm.com> <51DBD3C2.2040807@linux.vnet.ibm.com> <20130710103325.GP24941@redhat.com> <51DE771F.7070805@linux.vnet.ibm.com> <20130711094833.GC8575@redhat.com> <51DE849E.4020405@linux.vnet.ibm.com> <20130711101104.GF8575@redhat.com>
+In-Reply-To: <20130711101104.GF8575@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071110-0260-0000-0000-0000034BB645
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/11/13, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Jul 11, 2013 at 12:28:20PM +0200, Konrad Vrba wrote:
->> Hello,
->> I have following error while compiling new stable kernel 3.10:
+On 07/11/2013 03:41 PM, Gleb Natapov wrote:
+> On Thu, Jul 11, 2013 at 03:40:38PM +0530, Raghavendra K T wrote:
+>>>>>> Gleb,
+>>>>>> Can you elaborate little more on what you have in mind regarding per
+>>>>>> VM ple_window. (maintaining part of it as a per vm variable is clear
+>>>>>> to
+>>>>>>   me), but is it that we have to load that every time of guest entry?
+>>>>>>
+>>>>> Only when it changes, shouldn't be to often no?
+>>>>
+>>>> Ok. Thinking how to do. read the register and writeback if there need
+>>>> to be a change during guest entry?
+>>>>
+>>> Why not do it like in the patch you've linked? When value changes write it
+>>> to VMCS of the current vcpu.
+>>>
 >>
->>   CC      kernel/fork.o
->>   CC      kernel/exec_domain.o
->>   CC      kernel/panic.o
->>   CC      kernel/printk.o
->>   CC      kernel/cpu.o
->>   CC      kernel/exit.o
->>   CC      kernel/itimer.o
->> make[1]: *** No rule to make target `kernel/timeconst.pl', needed by
->> `kernel/timeconst.h'.  Stop.
->> make: *** [kernel] Error 2
->>
->> Could somebody please advise how to fix this ?
->
-> Can you save your config first, cleanup the build dir from kbuild stuff:
->
-> make mrproper
->
-> and then try building again?
->
-> FWIW, 3.10 and later builds just fine here.
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+>> Yes. can be done. So the running vcpu's ple_window gets updated only
+>> after next pl-exit. right?
+> I am not sure what you mean. You cannot change vcpu's ple_window while
+> vcpu is in a guest mode.
 >
 
-cleaning up with 'make mrproper'  does not help.
-I still get the same error
+I agree with that. Both of us are on the same page.
+  What I meant is,
+suppose the per VM ple_window changes when a vcpu x of that VM  was running,
+it will get its ple_window updated during next run.
+
