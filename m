@@ -1,125 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab3GKRFV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 13:05:21 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46714 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab3GKRFT (ORCPT
+	id S1756064Ab3GKRGu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 13:06:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38789 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750903Ab3GKRGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 13:05:19 -0400
-Date: Thu, 11 Jul 2013 19:05:06 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, oliver@schinagl.nl,
-        linux-mtd@lists.infradead.org, Wolfram Sang <wsa@the-dreams.de>,
-        Jean Delvare <khali@linux-fr.org>, linux-i2c@vger.kernel.org
-Subject: Re: MTD EEPROM support and driver integration
-Message-ID: <20130711170506.GZ11243@lukather>
-References: <20130705201118.GM2959@lukather>
- <5811519.oHVuMujf0I@wuerfel>
- <20130706120112.GA11069@lukather>
- <8997501.Dchyii8uWX@wuerfel>
- <20130708083426.GO27646@sirena.org.uk>
- <20130708202538.GK11243@lukather>
- <20130709145510.GZ27646@sirena.org.uk>
+	Thu, 11 Jul 2013 13:06:49 -0400
+Date: Thu, 11 Jul 2013 10:06:48 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Oliver Schinagl <oliver+list@schinagl.nl>
+Cc: linux-kernel@vger.kernel.org, linux@roeck-us.net, khali@linux-fr.org
+Subject: Re: [PATCH v2 2/7] sysfs.h: add ATTRIBUTE_GROUPS() macro
+Message-ID: <20130711170648.GC23056@kroah.com>
+References: <1373486714-14531-1-git-send-email-gregkh@linuxfoundation.org>
+ <1373502965-1683-1-git-send-email-gregkh@linuxfoundation.org>
+ <1373502965-1683-3-git-send-email-gregkh@linuxfoundation.org>
+ <51DE9DE5.20905@schinagl.nl>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hEarWVD7htqb1VxP"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130709145510.GZ27646@sirena.org.uk>
+In-Reply-To: <51DE9DE5.20905@schinagl.nl>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 11, 2013 at 01:58:29PM +0200, Oliver Schinagl wrote:
+> On 11-07-13 02:36, Greg Kroah-Hartman wrote:
+> >To make it easier for driver subsystems to work with attribute groups,
+> >create the ATTRIBUTE_GROUPS macro to remove some of the repetitive
+> >typing for the most common use for attribute groups.
+> But binary groups are discriminated against :(
 
---hEarWVD7htqb1VxP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes, as they are "rarer" by far, as they should be.  binary sysfs files
+should almost never be used, as they are only "pass-through" files to
+the hardware, so I want to see you do more work in order to use them, as
+they should not be created lightly.
 
-Hi Mark,
+> The attached patch should help here.
 
-On Tue, Jul 09, 2013 at 03:55:10PM +0100, Mark Brown wrote:
-> On Mon, Jul 08, 2013 at 10:25:38PM +0200, Maxime Ripard wrote:
-> > On Mon, Jul 08, 2013 at 09:34:26AM +0100, Mark Brown wrote:
->=20
-> > > I'd really like to see more discussion of this "DT parsing code for
-> > > regmap" idea...  I've missed almost all the context here.
->=20
-> > The context was that I found we lack a way to simply express the need
-> > for one driver to get a value from an EEPROM-like device, for example to
-> > get a MAC Address, or a serial number, in a generic way, without having
-> > to poke directly with some custom function that would be exported by the
-> > EEPROM driver.
->=20
-> This sort of information is often stored in places like flash partitions
-> too.  Are we sure that regmap is a good place to be hooking in here?
-> The use case is sane, and being able to use regmap to do some of it
-> seems sensible (I've seen people use OTP in PMICs for similar purposes)
-> but perhaps an additional layer of abstraction on top makes sense.
+Can you give me an example of using these macros?  I seem to be lost in
+them somehow, or maybe my morning coffee just hasn't kicked in...
 
-Ah, I didn't thought it could be stored into a partition. Ok, so using
-an intermediate abstraction for this makes sense (probably using regmap
-for all the accesses that are relevant, like i2c, spi or mmio)
+> I suppose one more additional helper wouldn't be bad to have:
+> 
+> #define ATTRIBUTE_(BIN_)GROUPS_R[O/W](_name(, _size)) \
+> ATTRIBUTE_(BIN_)ATTR_R[O/W](_name, _size); \
+> ATTRIBUTE_(BIN_)GROUPS(_name)
 
-> > What we've been discussing so far is that:
-> >   - To have a common framework we could base our work on, we could move
-> >     the EEPROM drivers from drivers/misc/eeprom to MTD
-> >   - To declare the ranges that needed to be used by a driver that was
-> >     needing a value from one of those MTD drivers, we would use regmap
-> >     with a MTD backend
-> >   - And since we actually need to declare which ranges and in which
-> >     device one driver would have to retrieve this value from, we were
-> >     actually in need of DT bindings.
->=20
-> > This is pretty much the only context involved, and we are at the early
-> > stage of the discussion, so any comment is very welcome :)
->=20
-> If this stuff is being represented in MTD doesn't MTD already have
-> adequate abstractions for saying "this region in flash".  But otherwise
-> this seems fine, it's not a generic regmap DT binding but instead rather
-> more specific than that.
+Would that ever be needed?
 
-Yes, since we seem to be going to a point where regmap will be a
-convenience in this case, we probably won't need a generic regmap
-binding, but rather a generic way to define a range and offset into a
-referenced device.
+> >From 003ab7a74ff689daa6934e7bc50c498b2d35a1cc Mon Sep 17 00:00:00 2001
+> From: Oliver Schinagl <oliver@schinagl.nl>
+> Date: Thu, 11 Jul 2013 13:48:18 +0200
+> Subject: [PATCH] sysfs: add more helper macro's for (bin_)attribute(_groups)
+> 
+> With the recent changes to sysfs there's various helper macro's.
+> However there's no RW, RO BIN_ helper macro's. This patch adds them.
+> 
+> Additionally there are no BIN_ group helpers so there's that aswell
+> Moreso, if both bin and normal attribute groups are used, there's a
+> simple helper for that, though the naming code be better. _TXT_ for the
+> show/store ones and neither TXT or BIN for both, but that would change
+> things to extensivly.
+> 
+> Finally there's also helpers for ATTRIBUTE_ATTRS.
+> 
+> After this patch, create default attributes can be as easy as:
+> 
+> ATTRIBUTE_(BIN_)ATTR_RO(name, SIZE);
+> ATTRIBUTE_BIN_GROUPS(name);
+> 
+> Signed-off-by: Oliver Schinagl <oliver@schinagl.nl>
+> ---
+>  include/linux/sysfs.h | 96 ++++++++++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 84 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+> index 2c3b6a3..0ebed11 100644
+> --- a/include/linux/sysfs.h
+> +++ b/include/linux/sysfs.h
+> @@ -17,6 +17,7 @@
+>  #include <linux/list.h>
+>  #include <linux/lockdep.h>
+>  #include <linux/kobject_ns.h>
+> +#include <linux/stat.h>
+>  #include <linux/atomic.h>
+>  
+>  struct kobject;
+> @@ -94,15 +95,32 @@ struct attribute_group {
+>  #define __ATTR_IGNORE_LOCKDEP	__ATTR
+>  #endif
+>  
+> -#define ATTRIBUTE_GROUPS(name)					\
+> -static const struct attribute_group name##_group = {		\
+> -	.attrs = name##_attrs,					\
+> +#define __ATTRIBUTE_GROUPS(_name)				\
+> +static const struct attribute_group *_name##_groups[] = {	\
+> +	&_name##_group,						\
+> +	NULL,							\
+> +}
+> +
+> +#define ATTRIBUTE_GROUPS(_name)					\
+> +static const struct attribute_group _name##_group = {		\
+> +	.attrs = _name##_attrs,					\
+>  };								\
+> -static const struct attribute_group *name##_groups[] = {	\
+> -	&name##_group,						\
+> +__ATTRIBUTE_GROUPS(_name)
+> +
+> +#define __ATTRIBUTE_ATTRS(_name)				\
+> +struct bin_attribute *_name##_attrs[] = {			\
+> +	&_name##_attr,						\
+>  	NULL,							\
+>  }
+>  
+> +#define ATTRIBUTE_ATTR_RO(_name, _size)				\
+> +struct attribute _name##_attr = __ATTR_RO(_name, _size);	\
+> +__ATTRIBUTE_ATTRS(_name)
+> +
+> +#define ATTRIBUTE_ATTR_RW(_name, _size)				\
+> +struct attribute _name##_attr = __ATTR_RW(_name, _size);	\
+> +__ATTRIBUTE_ATTRS(_name)
 
-Arnd, the others, is this ok for you?
+What do these two help out with?  "attribute attribute read-write" seems
+a bit "clunky", don't you think? :)
 
-Maxime
+> +
+>  #define attr_name(_attr) (_attr).attr.name
+>  
+>  struct file;
+> @@ -132,15 +150,69 @@ struct bin_attribute {
+>   */
+>  #define sysfs_bin_attr_init(bin_attr) sysfs_attr_init(&(bin_attr)->attr)
+>  
+> -/* macro to create static binary attributes easier */
+> -#define BIN_ATTR(_name, _mode, _read, _write, _size)		\
+> -struct bin_attribute bin_attr_##_name = {			\
+> -	.attr = {.name = __stringify(_name), .mode = _mode },	\
+> -	.read	= _read,					\
+> -	.write	= _write,					\
+> -	.size	= _size,					\
+> +/* macros to create static binary attributes easier */
+> +#define __BIN_ATTR(_name, _mode, _read, _write, _size) {		\
+> +	.attr = { .name = __stringify(_name), .mode = _mode },		\
+> +	.read	= _read,						\
+> +	.write	= _write,						\
+> +	.size	= _size,						\
+> +}
+> +
+> +#define __BIN_ATTR_RO(_name, _size) {					\
+> +	.attr	= { .name = __stringify(_name), .mode = S_IRUGO },	\
+> +	.read	= _name##_read,						\
+> +	.size	= _size,						\
+> +}
+> +
+> +#define __BIN_ATTR_RW(_name, _size) __BIN_ATTR(_name,			\
+> +				   (S_IWUSR | S_IRUGO), _name##_read,	\
+> +				   _name##_write)
+> +
+> +#define __BIN_ATTR_NULL __ATTR_NULL
+> +
+> +#define BIN_ATTR(_name, _mode, _read, _write, _size)			\
+> +struct bin_attribute bin_attr_##_name = __BIN_ATTR(_name, _mode, _read,	\
+> +					_write, _size)
+> +
+> +#define BIN_RO_ATTR(_name, _size)					\
+> +struct bin_attribute bin_attr_##_name = __BIN_ATTR_RO(_name, _size)
+> +
+> +#define BIN_RW_ATTR(_name, _size)					\
+> +struct bin_attribute bin_attr_##_name = __BIN_ATTR_RW(_name, _size)
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+To be consistent, these shoudl be BIN_ATTR_RO and BIN_ATTR_RW, right?
 
---hEarWVD7htqb1VxP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+These all look fine to me, thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It's these that I'm confused about:
 
-iQIcBAEBAgAGBQJR3uXCAAoJEBx+YmzsjxAgMugP/28QkZ0Yz7D+Xrk8UsJFiLh9
-jam5T1KOqga2lKB2N4uAnyQiWtuaZMX/ywELmxO7esx2055efI91r8oUj7PO0qJu
-vgW/0d1zDTmRLZ/KdaDj/xvpkiotx6dSQghMXFdAiscIZJEF3XccLg+D8rQd5Vig
-hagL31ateq28hM6GHeb6xE9HSX1uZRPFPrapWjwTAuWpYKNgt5TaEUpO9VIGk5LA
-GEHJJL+wijJoeEF0/9w6Ub06BlUpjt6b86H591oyOQqnhLmABgi7CMPH4qtfrCDS
-RAYahsSgkcKoVYCOD9YjULIgPS7Lh5EjbYoczkn9VDehN8YdSt0Jkhi5Z84ottuX
-6YTbDwtf0o4ijOGbI4My97QuLJ19tYWL0/ACx/yrVYIn+7WEFSxrEsIYgbFthIdn
-GyYjVmUixNFsB6JokjfmWDyak3LfvMfaH4PCZSuFrS+7u2XyEKQoc1hQBaDSCSTa
-8e9jCuvCrB0UaLmasTwflsD/HChv/m8Q4q5uJp0s3ASsg5II+T5eujqdl7EEKcBS
-fklMfHOhBLZ2HoXTRQenaNi/roVLtYqr2j55NHTwjFeZvZbRgMPi9VTPEZzKGM6N
-JFenmvWnrjS0iNuwdn8oqmlg8FHNZmeBaTaZEKholDUkqZTrRS0GujJ5H0wfArrh
-+U6CLMYZX1u3W26egsRW
-=rUP+
------END PGP SIGNATURE-----
+> +
+> +#define __ATTRIBUTE_BIN_GROUPS(_name)					\
+> +static const struct attribute_group *_name##_bin_groups[] = {		\
+> +	&_name##_bin_group,						\
+> +	NULL,								\
+>  }
+>  
+> +#define ATTRIBUTE_BIN_GROUPS(_name)					\
+> +static const struct attribute_group _name##_bin_group = {		\
+> +	.bin_attrs = _name##_bin_attrs,					\
+> +};									\
+> +__ATTRIBUTE_BIN_GROUPS(_name)
+> +
+> +#define ATTRIBUTE_FULL_GROUPS(_name)					\
+> +static const struct attribute_group _name##_full_group = {		\
+> +	.attrs = _name##_attrs,						\
+> +	.bin_attrs = _name##_bin_attrs,					\
+> +};									\
+> +__ATTRIBUTE_GROUPS(_name); __ATTRIBUTE_BIN_GROUPS(_name)
+> +
+> +#define __ATTRIBUTE_BIN_ATTRS(_name)					\
+> +struct bin_attribute *_name##_bin_attrs[] = {				\
+> +	&_name##_bin_attr,						\
+> +	NULL,								\
+> +}
+> +
+> +#define ATTRIBUTE_BIN_ATTR_RO(_name, _size)				\
+> +struct bin_attribute _name##_bin_attr = __BIN_ATTR_RO(_name, _size);	\
+> +__ATTRIBUTE_BIN_ATTRS(_name)
+> +
+> +#define ATTRIBUTE_BIN_ATTR_RW(_name, _size)				\
+> +struct bin_attribute _name##_bin_attr = __BIN_ATTR_RW(_name, _size);	\
+> +__ATTRIBUTE_BIN_ATTRS(_name)
 
---hEarWVD7htqb1VxP--
+Can you show me how these would be used in a real-world example?
+
+thanks,
+
+greg k-h
