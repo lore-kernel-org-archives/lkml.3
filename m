@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab3GKPld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 11:41:33 -0400
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:65036 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755842Ab3GKPlb (ORCPT
+	id S932454Ab3GKPno (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 11:43:44 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:52016 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066Ab3GKPnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 11:41:31 -0400
-Date: Thu, 11 Jul 2013 08:41:22 -0700
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Mohit KUMAR <Mohit.KUMAR@st.com>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Sean Cross'" <xobs@kosagi.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] pci: exynos: split into two parts such as Synopsys
- part and Exynos part
-Message-ID: <20130711154121.GC2198@dhcp-172-17-186-34.nvidia.com>
-References: <001201ce7dfa$716b3370$54419a50$@samsung.com>
+	Thu, 11 Jul 2013 11:43:43 -0400
+Message-ID: <51DED2AA.6030307@gmail.com>
+Date: Thu, 11 Jul 2013 09:43:38 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4jXrM3lyYWu4nBt5"
-Content-Disposition: inline
-In-Reply-To: <001201ce7dfa$716b3370$54419a50$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Adrian Hunter <adrian.hunter@intel.com>,
+        Stephane Eranian <eranian@google.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
+References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com> <1373548341-24119-10-git-send-email-adrian.hunter@intel.com>
+In-Reply-To: <1373548341-24119-10-git-send-email-adrian.hunter@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 7/11/13 7:12 AM, Adrian Hunter wrote:
+> The event stream is not always parsable because the format of a sample
+> is dependent on the sample_type of the selected event.  When there
+> is more than one selected event and the sample_types are not the
+> same then parsing becomes problematic.  A sample can be matched to its
+> selected event using the ID that is allocated when the event is opened.
+> Unfortunately, to get the ID from the sample means first parsing it.
 
---4jXrM3lyYWu4nBt5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Here's an alternative suggestion -- one that does not involve changing 
+the kernel API or requiring a common denominator in sample_type options.
 
-On Thu, Jul 11, 2013 at 02:49:43PM +0900, Jingoo Han wrote:
-[...]
-> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
-[...]
->  obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
->  obj-$(CONFIG_PCIE_DW) += pcie-designware.o
-> +obj-$(CONFIG_PCI_EXYNOS) += pcie-exynos.o
+perf handles event streams through an mmap which can be directly tied to 
+an evsel (a single event) when the mmap is created. ie., when events are 
+read we know exactly which evsel they correspond to. (See 
+perf_evlist__mmap_per_cpu and perf_evlist__mmap_per_thread and add 
+struct perf_evsel *evsel entry to struct perf_mmap).
 
-I think we should keep these sorted alphabetically. Also Tegra and
-Marvell are PCIe controllers but they still use the pci- prefix instead
-of pcie-. Perhaps it'd be good to keep consistency here? I initially
-chose pci- because from a software point of view it doesn't matter all
-that much whether it's PCI or PCIe and because the drivers are part of
-the PCI subsystem. However if Exynos now uses the pcie- prefix it makes
-it look like Tegra and Marvell are plain old PCI.
+Commands like perf-record can inject a user event into the stream and 
+hence the data file every time the evsel changes while walking all of 
+the mmap's reading events -- very  similar to the way finished round is 
+done. The event would only contain a perf_event_header which is 8 bytes 
+so this does not add a lot to a data file. As an optimization the evsel 
+event could only be injected if the sample_types differ.
 
-Thierry
+Live commands would just use the evsel connected to the mmap -- no 
+lookups needed which would simplify things a bit processing the events.
 
---4jXrM3lyYWu4nBt5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+In short, the information to associate event streams to an event (evsel) 
+is currently available -- it's just being discarded in the many layers.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I'll try to whip up some code that implements this in the next few days.
 
-iQIcBAEBAgAGBQJR3tIhAAoJEN0jrNd/PrOhCCMP/iGDcDc81Sii7T3D2sYloq4s
-uzIcMm0j0eVD2q6B3vPjZRSV7KiMMLxRHw3HeKGSlLc5xNXGquacI3uh2MImqe1K
-f6Zb6F52DvuzJ1c2Y2yWqzYTEA+X80T/zb2i0fM5R4dB4Ijf0V+R1dFpV0+IWR9x
-S2BJM9dHJ9xrWZ1tf6h+oBFPq0bq5QTNfB5V8j6GkG9SCC8fnvsfPTa8jh5zkv2k
-jiN28T4vAiRj8Xn67X47SZ3bfdvqBUQpKE9i35+F5pULF9K1d9oxqIRLzRMd7hw6
-TLpYv09h7fMhHjfOp9kGA9jf9CFbiIM795RmEfgEcsqoRX+wd0cltmGkb3Pt2Cai
-edB9RF6aXWO1CYrdDF4JRa3OyjZqlSgmWW0rHR6lBlyTFW57FK4OdFUe/wzBUOyD
-996hU8vi33vCkLwSKerKi1CC9qpoq7SVxGoB+JcGzBZIuZIQVjBkGssGPMLJhswf
-vFmujloMw62uSsw4Yb+T6+qYdxb+shKdlY7Ml7aX/RelhWO5K0FpKxCWa/cc6/UF
-i696/K1xFO9Xkm8sQa+bi9/Prql01p8bL+Hq+bymco/tIfC/rK2DsgoXHRPFHie0
-X23RiKHxUDMr1pOMiYjUG3a721Z4YdL86P6X8n57R5l3yDRYwKex+lN0AeSt+9O/
-R8YFMVAW6NYbfZiS72y5
-=ezQU
------END PGP SIGNATURE-----
+David
 
---4jXrM3lyYWu4nBt5--
