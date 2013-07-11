@@ -1,125 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab3GKCmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 22:42:40 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:43753 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755229Ab3GKCmi (ORCPT
+	id S1755528Ab3GKCn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 22:43:57 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:47219 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404Ab3GKCnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 22:42:38 -0400
-X-AuditID: cbfee68f-b7f436d000000f81-ef-51de1b9950ad
-Message-id: <51DE1B99.6090403@samsung.com>
-Date: Thu, 11 Jul 2013 11:42:33 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: myungjoo.ham@samsung.com, devicetree-discuss@lists.ozlabs.org,
-        rob@landley.net, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kishon@ti.com, gg@slimlogic.co.uk
-Subject: Re: [PATCH V3] extcon: palmas: Option to disable ID/VBUS detection
- based on platform
-References: <1373448546-7531-1-git-send-email-ldewangan@nvidia.com>
-In-reply-to: <1373448546-7531-1-git-send-email-ldewangan@nvidia.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsWyRsSkUHem9L1Ag8/rLS0OzH7IatG/xcXi
-	wtMeNoul+1azWCxsW8JicXnXHDaL240r2CzWvZzO4sDh8Wr1TFaP8zMWMnr0Nr9j8+jbsorR
-	Y+qUv4wex29sZ/L4vEkugD2KyyYlNSezLLVI3y6BK2PfRZeCd0IVd+c+ZG1gvMfbxcjJISFg
-	ItHy/h4rhC0mceHeerYuRi4OIYGljBIbH39nhyn6O+cNVGI6o8SZ6XsZIZxXjBLvOpcDVXFw
-	8ApoSVxe7ArSwCKgKrH4TxMLiM0GFN7/4gYbiC0qECaxcvoVsDivgKDEj8n3wGwRoJpvB/4x
-	g8xkFtjEKLFq2ixmkISwQLzE30c/wc4TEnCWOHZ0C5jNKeAi8WX6E7ChzAI6Evtbp0HZ8hKb
-	17wFGyQh8Ihd4ubiWUwQFwlIfJt8iAXkUAkBWYlNB5ghPpOUOLjiBssERrFZSG6ahWTsLCRj
-	FzAyr2IUTS1ILihOSi8y1itOzC0uzUvXS87P3cQIjMnT/57172C8e8D6EGMy0MqJzFKiyfnA
-	mM4riTc0NjOyMDUxNTYytzQjTVhJnFetxTpQSCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6Ow
-	p0Riwebsptn2H3et2s++xnST0vVvlyffjPqXf1Fq5z/lbxw9Fm/uvFDWKFzP9TSC6V2P26Up
-	gatY6h0mqpRv1zs1SVAjZG7t/8eLpydzTujTniv3pM1M7Ms1Vr0AxiM6Yhe8N/zpqUpqFfQz
-	nLnZwK7rAUeMYGezWcaxBWbH1wS/al9y/IsSS3FGoqEWc1FxIgAir+w03wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQd2Z0vcCDf7NN7Q4MPshq0X/FheL
-	C0972CyW7lvNYrGwbQmLxeVdc9gsbjeuYLNY93I6iwOHx6vVM1k9zs9YyOjR2/yOzaNvyypG
-	j6lT/jJ6HL+xncnj8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWF
-	vMTcVFslF58AXbfMHKCrlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZ
-	+y66FLwTqrg79yFrA+M93i5GTg4JAROJv3PesEHYYhIX7q0Hsrk4hASmM0qcmb6XEcJ5xSjx
-	rnM5excjBwevgJbE5cWuIA0sAqoSi/80sYDYbEDh/S9ugA0SFQiTWDn9ClicV0BQ4sfke2C2
-	CFDNtwP/mEFmMgtsYpRYNW0WM0hCWCBe4u+jn6wgtpCAs8Sxo1vAbE4BF4kv05+ADWUW0JHY
-	3zoNypaX2LzmLfMERoFZSHbMQlI2C0nZAkbmVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjB
-	Ef9MagfjygaLQ4wCHIxKPLwN8XcDhVgTy4orcw8xSnAwK4nwnpwCFOJNSaysSi3Kjy8qzUkt
-	PsSYDAyCicxSosn5wGSUVxJvaGxiZmRpZG5oYWRsTpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgt
-	TBycUg2MU5/Ga8y6v01MPjSM+5gzX5j4+YwES6u/BnYcem2q3NkHpzh3mH76/lF4YvaHN9au
-	l2V+J36xWffSeU/EZP67qgUnvcwqXf54vT+v3nCLTVdPwnRn8aEdkQs3Ngjs7tk+a4910Lvc
-	vKm2L3nuONx7d2k/zzrb8G3+U8oEVnS+vpYmEWbRvPmYEktxRqKhFnNRcSIAP0liGjwDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 10 Jul 2013 22:43:55 -0400
+Message-ID: <51DE1BE1.3090707@linux.vnet.ibm.com>
+Date: Thu, 11 Jul 2013 10:43:45 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+CC: Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@alien8.de>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Subject: Re: [LOCKDEP] cpufreq: possible circular locking dependency detected
+References: <20130625211544.GA2270@swordfish> <51D10899.1080501@linux.vnet.ibm.com> <20130710231305.GA4046@swordfish>
+In-Reply-To: <20130710231305.GA4046@swordfish>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071102-8878-0000-0000-000007E6F65F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
+Hi, Sergey
 
->  static int palmas_usb_probe(struct platform_device *pdev)
-> @@ -137,20 +140,26 @@ static int palmas_usb_probe(struct platform_device *pdev)
->  	struct palmas_usb *palmas_usb;
->  	int status;
->  
-> -	if (node && !pdata) {
-> -		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> -
-> -		if (!pdata)
-> -			return -ENOMEM;
-> +	palmas_usb = devm_kzalloc(&pdev->dev, sizeof(*palmas_usb), GFP_KERNEL);
-> +	if (!palmas_usb)
-> +		return -ENOMEM;
->  
-> -		pdata->wakeup = of_property_read_bool(node, "ti,wakeup");
-> +	if (node && !pdata) {
-> +		palmas_usb->wakeup = of_property_read_bool(node, "ti,wakeup");
-> +		palmas_usb->enable_id_detection = of_property_read_bool(node,
-> +						"ti,enable-id-detection");
-> +		palmas_usb->enable_vbus_detection = of_property_read_bool(node,
-> +						"ti,enable-vbus-detection");
-> +	} else if (pdata) {
-> +		palmas_usb->wakeup = pdata->wakeup;
-> +		palmas_usb->enable_id_detection = true;
-> +		palmas_usb->enable_vbus_detection = true;
->  	} else if (!pdata) {
-> -		return -EINVAL;
-> +		palmas_usb->wakeup = true;
-> +		palmas_usb->enable_id_detection = true;
-> +		palmas_usb->enable_vbus_detection = true;
+On 07/11/2013 07:13 AM, Sergey Senozhatsky wrote:
+[snip]
+> 
+> 
+> Please kindly review the following patch.
+> 
+> 
+> 
+> Remove cpu device only upon succesful cpu down on CPU_POST_DEAD event,
+> so we can kill off CPU_DOWN_FAILED case and eliminate potential extra
+> remove/add path:
+> 	
+> 	hotplug lock
+> 		CPU_DOWN_PREPARE: __cpufreq_remove_dev
+> 		CPU_DOWN_FAILED: cpufreq_add_dev
+> 	hotplug unlock
+> 
+> Since cpu still present on CPU_DEAD event, cpu stats table should be
+> kept longer and removed later on CPU_POST_DEAD as well.
+> 
+> Because CPU_POST_DEAD action performed with hotplug lock released, CPU_DOWN
+> might block existing gov_queue_work() user (blocked on get_online_cpus())
+> and unblock it with one of policy->cpus offlined, thus cpu_is_offline()
+> check is performed in __gov_queue_work().
+> 
+> Besides, existing gov_queue_work() hotplug guard extended to protect all
+> __gov_queue_work() calls: for both all_cpus and !all_cpus cases.
+> 
+> CPUFREQ_GOV_START performs direct __gov_queue_work() call because hotplug
+> lock already held there, opposing to previous gov_queue_work() and nested
+> get/put_online_cpus().
+
+Nice to know you have some idea on solving the issue ;-)
+
+I'm not sure whether I catch the idea, but seems like you are trying
+to re-organize the timing of add/remove device.
+
+I'm sure that we have more than one way to solve the issues, but what
+we need is the cure of root...
+
+As Srivatsa discovered, the root issue may be:
+	gov_cancel_work() failed to stop all the work after it's return.
+
+And Viresh also confirmed that this is not by-designed.
+
+Which means gov_queue_work() invoked by od_dbs_timer() is supposed to
+never happen after CPUFREQ_GOV_STOP notify, the whole policy should
+stop working at that time.
+
+But it failed to, and the work concurrent with cpu dying caused the
+first problem.
+
+Thus I think we should focus on this and suggested below fix, I'd like
+to know your opinions :)
+
+Regards,
+Michael Wang
+
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index dc9b72e..a64b544 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -178,13 +178,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+ {
+ 	int i;
+ 
++	if (dbs_data->queue_stop)
++		return;
++
+ 	if (!all_cpus) {
+ 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+ 	} else {
+-		get_online_cpus();
+ 		for_each_cpu(i, policy->cpus)
+ 			__gov_queue_work(i, dbs_data, delay);
+-		put_online_cpus();
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(gov_queue_work);
+@@ -193,12 +194,27 @@ static inline void gov_cancel_work(struct dbs_data *dbs_data,
+ 		struct cpufreq_policy *policy)
+ {
+ 	struct cpu_dbs_common_info *cdbs;
+-	int i;
++	int i, round = 2;
+ 
++	dbs_data->queue_stop = 1;
++redo:
++	round--;
+ 	for_each_cpu(i, policy->cpus) {
+ 		cdbs = dbs_data->cdata->get_cpu_cdbs(i);
+ 		cancel_delayed_work_sync(&cdbs->work);
+ 	}
++
++	/*
++	 * Since there is no lock to prvent re-queue the
++	 * cancelled work, some early cancelled work might
++	 * have been queued again by later cancelled work.
++	 *
++	 * Flush the work again with dbs_data->queue_stop
++	 * enabled, this time there will be no survivors.
++	 */
++	if (round)
++		goto redo;
++	dbs_data->queue_stop = 0;
+ }
+ 
+ /* Will return if we need to evaluate cpu load again or not */
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index e16a961..9116135 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -213,6 +213,7 @@ struct dbs_data {
+ 	unsigned int min_sampling_rate;
+ 	int usage_count;
+ 	void *tuners;
++	int queue_stop;
+ 
+ 	/* dbs_mutex protects dbs_enable in governor start/stop */
+ 	struct mutex mutex;
+
+> 
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> 
+> ---
+> 
+>  drivers/cpufreq/cpufreq.c          |  5 +----
+>  drivers/cpufreq/cpufreq_governor.c | 17 +++++++++++------
+>  drivers/cpufreq/cpufreq_stats.c    |  2 +-
+>  3 files changed, 13 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 6a015ad..f8aacf1 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1943,13 +1943,10 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
+>  		case CPU_ONLINE:
+>  			cpufreq_add_dev(dev, NULL);
+>  			break;
+> -		case CPU_DOWN_PREPARE:
+> +		case CPU_POST_DEAD:
+>  		case CPU_UP_CANCELED_FROZEN:
+>  			__cpufreq_remove_dev(dev, NULL);
+>  			break;
+> -		case CPU_DOWN_FAILED:
+> -			cpufreq_add_dev(dev, NULL);
+> -			break;
+>  		}
 >  	}
-
-I think we could modify it as following patch to remove duplicate line.
-If you agree about below modification, I will apply your patch with following patch.
-
-index 5c218d2..56909cc 100644
---- a/drivers/extcon/extcon-palmas.c
-+++ b/drivers/extcon/extcon-palmas.c
-@@ -150,16 +150,14 @@ static int palmas_usb_probe(struct platform_device *pdev)
-                                                "ti,enable-id-detection");
-                palmas_usb->enable_vbus_detection = of_property_read_bool(node,
-                                                "ti,enable-vbus-detection");
--       } else if (pdata) {
--               palmas_usb->wakeup = pdata->wakeup;
--               palmas_usb->enable_id_detection = true;
--               palmas_usb->enable_vbus_detection = true;
--       } else if (!pdata) {
-+       } else {
-                palmas_usb->wakeup = true;
-                palmas_usb->enable_id_detection = true;
-                palmas_usb->enable_vbus_detection = true;
--       }
- 
-+               if (pdata)
-+                       palmas_usb->wakeup = pdata->wakeup;
-+       }
- 
-        palmas->usb = palmas_usb;
-        palmas_usb->palmas = palmas;
-
-
-Thanks,
-Chanwoo Choi
-
+>  	return NOTIFY_OK;
+> diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+> index 4645876..681d5d6 100644
+> --- a/drivers/cpufreq/cpufreq_governor.c
+> +++ b/drivers/cpufreq/cpufreq_governor.c
+> @@ -125,7 +125,11 @@ static inline void __gov_queue_work(int cpu, struct dbs_data *dbs_data,
+>  		unsigned int delay)
+>  {
+>  	struct cpu_dbs_common_info *cdbs = dbs_data->cdata->get_cpu_cdbs(cpu);
+> -
+> +	/* cpu offline might block existing gov_queue_work() user,
+> +	 * unblocking it after CPU_DEAD and before CPU_POST_DEAD.
+> +	 * thus potentially we can hit offlined CPU */
+> +	if (unlikely(cpu_is_offline(cpu)))
+> +		return;
+>  	mod_delayed_work_on(cpu, system_wq, &cdbs->work, delay);
+>  }
+> 
+> @@ -133,15 +137,14 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
+>  		unsigned int delay, bool all_cpus)
+>  {
+>  	int i;
+> -
+> +	get_online_cpus();
+>  	if (!all_cpus) {
+>  		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+>  	} else {
+> -		get_online_cpus();
+>  		for_each_cpu(i, policy->cpus)
+>  			__gov_queue_work(i, dbs_data, delay);
+> -		put_online_cpus();
+>  	}
+> +	put_online_cpus();
+>  }
+>  EXPORT_SYMBOL_GPL(gov_queue_work);
+> 
+> @@ -354,8 +357,10 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
+>  		/* Initiate timer time stamp */
+>  		cpu_cdbs->time_stamp = ktime_get();
+> 
+> -		gov_queue_work(dbs_data, policy,
+> -				delay_for_sampling_rate(sampling_rate), true);
+> +		/* hotplug lock already held */
+> +		for_each_cpu(j, policy->cpus)
+> +			__gov_queue_work(j, dbs_data,
+> +				delay_for_sampling_rate(sampling_rate));
+>  		break;
+> 
+>  	case CPUFREQ_GOV_STOP:
+> diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+> index cd9e817..833816e 100644
+> --- a/drivers/cpufreq/cpufreq_stats.c
+> +++ b/drivers/cpufreq/cpufreq_stats.c
+> @@ -355,7 +355,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+>  	case CPU_DOWN_PREPARE:
+>  		cpufreq_stats_free_sysfs(cpu);
+>  		break;
+> -	case CPU_DEAD:
+> +	case CPU_POST_DEAD:
+>  		cpufreq_stats_free_table(cpu);
+>  		break;
+>  	case CPU_UP_CANCELED_FROZEN:
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
