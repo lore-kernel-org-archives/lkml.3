@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933003Ab3GKO1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:27:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43232 "EHLO
+	id S933121Ab3GKO1O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:27:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:43259 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019Ab3GKO07 (ORCPT
+	with ESMTP id S933019Ab3GKO1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:26:59 -0400
+	Thu, 11 Jul 2013 10:27:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>, Tony Luck <tony.luck@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 83/98] ext4: fix data offset overflow in ext4_xattr_fiemap() on 32-bit archs
-Date: Thu, 11 Jul 2013 15:24:53 +0100
-Message-Id: <1373552708-15235-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 87/98] efi_pstore: Check remaining space with QueryVariableInfo() before writing data
+Date: Thu, 11 Jul 2013 15:24:57 +0100
+Message-Id: <1373552708-15235-88-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +27,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Seiji Aguchi <seiji.aguchi@hds.com>
 
-commit a60697f411eb365fb09e639e6f183fe33d1eb796 upstream.
+commit d80a361d779a9f19498943d1ca84243209cd5647 upstream.
 
-On 32-bit architectures with 32-bit sector_t computation of data offset
-in ext4_xattr_fiemap() can overflow resulting in reporting bogus data
-location. Fix the problem by typing block number to proper type before
-shifting.
+[Issue]
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+As discussed in a thread below, Running out of space in EFI isn't a well-tested scenario.
+And we wouldn't expect all firmware to handle it gracefully.
+http://marc.info/?l=linux-kernel&m=134305325801789&w=2
+
+On the other hand, current efi_pstore doesn't check a remaining space of storage at writing time.
+Therefore, efi_pstore may not work if it tries to write a large amount of data.
+
+[Patch Description]
+
+To avoid handling the situation above, this patch checks if there is a space enough to log with
+QueryVariableInfo() before writing data.
+
+Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Acked-by: Mike Waychison <mikew@google.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/extents.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/firmware/efivars.c | 18 ++++++++++++++++++
+ include/linux/efi.h        |  1 +
+ 2 files changed, 19 insertions(+)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 5101df2..177f655 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4783,7 +4783,7 @@ static int ext4_xattr_fiemap(struct inode *inode,
- 		error = ext4_get_inode_loc(inode, &iloc);
- 		if (error)
- 			return error;
--		physical = iloc.bh->b_blocknr << blockbits;
-+		physical = (__u64)iloc.bh->b_blocknr << blockbits;
- 		offset = EXT4_GOOD_OLD_INODE_SIZE +
- 				EXT4_I(inode)->i_extra_isize;
- 		physical += offset;
-@@ -4791,7 +4791,7 @@ static int ext4_xattr_fiemap(struct inode *inode,
- 		flags |= FIEMAP_EXTENT_DATA_INLINE;
- 		brelse(iloc.bh);
- 	} else { /* external block */
--		physical = EXT4_I(inode)->i_file_acl << blockbits;
-+		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
- 		length = inode->i_sb->s_blocksize;
- 	}
+diff --git a/drivers/firmware/efivars.c b/drivers/firmware/efivars.c
+index 303bc8e..3c8fd0f 100644
+--- a/drivers/firmware/efivars.c
++++ b/drivers/firmware/efivars.c
+@@ -710,12 +710,29 @@ static int efi_pstore_write(enum pstore_type_id type,
+ 	struct efivars *efivars = psi->data;
+ 	struct efivar_entry *entry, *found = NULL;
+ 	int i, ret = 0;
++	u64 storage_space, remaining_space, max_variable_size;
++	efi_status_t status = EFI_NOT_FOUND;
  
+ 	sprintf(stub_name, "dump-type%u-%u-", type, part);
+ 	sprintf(name, "%s%lu", stub_name, get_seconds());
+ 
+ 	spin_lock(&efivars->lock);
+ 
++	/*
++	 * Check if there is a space enough to log.
++	 * size: a size of logging data
++	 * DUMP_NAME_LEN * 2: a maximum size of variable name
++	 */
++	status = efivars->ops->query_variable_info(PSTORE_EFI_ATTRIBUTES,
++						   &storage_space,
++						   &remaining_space,
++						   &max_variable_size);
++	if (status || remaining_space < size + DUMP_NAME_LEN * 2) {
++		spin_unlock(&efivars->lock);
++		*id = part;
++		return -ENOSPC;
++	}
++
+ 	for (i = 0; i < DUMP_NAME_LEN; i++)
+ 		efi_name[i] = stub_name[i];
+ 
+@@ -1220,6 +1237,7 @@ efivars_init(void)
+ 	ops.get_variable = efi.get_variable;
+ 	ops.set_variable = efi.set_variable;
+ 	ops.get_next_variable = efi.get_next_variable;
++	ops.query_variable_info = efi.query_variable_info;
+ 	error = register_efivars(&__efivars, &ops, efi_kobj);
+ 	if (error)
+ 		goto err_put;
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index eee8b0b..8554af9 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -652,6 +652,7 @@ struct efivar_operations {
+ 	efi_get_variable_t *get_variable;
+ 	efi_get_next_variable_t *get_next_variable;
+ 	efi_set_variable_t *set_variable;
++	efi_query_variable_info_t *query_variable_info;
+ };
+ 
+ struct efivars {
 -- 
 1.8.1.2
 
