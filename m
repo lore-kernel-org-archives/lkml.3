@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab3GKSOB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 14:14:01 -0400
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:60187 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752131Ab3GKSOA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 14:14:00 -0400
-Message-ID: <1373566438.1349.21.camel@x61.thuisdomein>
-Subject: Re: [Xen-devel] [PATCH] xen: remove unused Kconfig parameter
-From: Paul Bolle <pebolle@tiscali.nl>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Borislav Petkov <bp@alien8.de>, Matt Wilson <msw@amazon.com>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
-        jeremy@goop.org, xen-devel@lists.xensource.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mingo@redhat.com,
-        tglx@linutronix.de
-Date: Thu, 11 Jul 2013 20:13:58 +0200
-In-Reply-To: <51DEF1F3.2020900@zytor.com>
-References: <1373264904-27053-1-git-send-email-michael.opdenacker@free-electrons.com>
-	  <20130708192854.GF4927@phenom.dumpdata.com>
-	  <20130708193457.GA6926@u109add4315675089e695.ant.amazon.com>
-	  <51DB2134.9040909@zytor.com> <20130708205834.GA481@pd.tnic>
-	  <1373326534.1438.10.camel@x61.thuisdomein>
-	  <f5d6bd67-7464-4932-a7ca-6026fe534fc7@email.android.com>
-	 <1373537338.9708.18.camel@x61.thuisdomein> <51DEF1F3.2020900@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Jul 2013 18:13:58.0553 (UTC) FILETIME=[69B29890:01CE7E62]
-X-RcptDomain: vger.kernel.org
+	id S1756379Ab3GKSSV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 14:18:21 -0400
+Received: from mx11.netapp.com ([216.240.18.76]:23741 "EHLO mx11.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756358Ab3GKSST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 14:18:19 -0400
+X-IronPort-AV: E=Sophos;i="4.89,1045,1367996400"; 
+   d="scan'208";a="33208842"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux NFS mailing list <linux-nfs@vger.kernel.org>
+Subject: [GIT PULL] Please pull NFS client updates
+Thread-Topic: [GIT PULL] Please pull NFS client updates
+Thread-Index: AQHOfmMEpLV8lWr8DkyKFaroLEsz4g==
+Date: Thu, 11 Jul 2013 18:18:17 +0000
+Message-ID: <1373566697.12823.30.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <CFFB7A0795EB634688EE34ED54E37F54@hq.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6BIIZ9Q025592
 
-On Thu, 2013-07-11 at 10:57 -0700, H. Peter Anvin wrote:
-> On 07/11/2013 03:08 AM, Paul Bolle wrote:
-> > But the Kconfig entry for XEN_PRIVILEGED_GUEST reads: 
-> >     # Dummy symbol since people have come to rely on the PRIVILEGED_GUEST
-> >     # name in tools.
-> >     config XEN_PRIVILEGED_GUEST
-> >             def_bool XEN_DOM0
-> > 
-> > In other words: CONFIG_XEN_PRIVILEGED_GUEST should always be equal to
-> > CONFIG_XEN_DOM0. So the two grep commands should always both evaluate to
-> > true or both evaluate to false. One of these two commands can safely be
-> > dropped.
-> 
-> Not necessarily true across kernel versions.
+Hi Linus,
 
-Correct. But it has actually been true ever since this Kconfig entry was
-introduced in v2.6.37 (commit 6b0661a5e6fbfb159b78a39c0476905aa9b575fe,
-"xen: introduce XEN_DOM0 as a silent option").
+The following pull request mainly contains some small readdir
+optimisations that had dependencies on Al Viro's readdir rewrite. There
+is also a fix for a nasty deadlock which surfaced earlier in this merge
+window.
 
-So people need not worry about breaking grub2 by dropping
-XEN_PRIVILEGED_GUEST.
+The following changes since commit a82a729f04232ccd0b59406574ba4cf20027a49d:
+
+  Merge branch 'akpm' (updates from Andrew Morton) (2013-07-09 13:33:36 -0700)
+
+are available in the git repository at:
 
 
-Paul Bolle
+  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.11-2
 
+for you to fetch changes up to eeee245268c951262b861bc1be4e9dc812352499:
+
+  SUNRPC: Fix a deadlock in rpc_client_register() (2013-07-10 15:58:55 -0400)
+
+----------------------------------------------------------------
+NFS client updates for Linux 3.11 (part 2)
+
+Highlights include:
+- Fix an_rpc pipefs regression that causes a deadlock on mount
+- Readdir optimisations by Scott Mayhew and Jeff Layton
+- clean up the rpc_pipefs dentry operation setup
+
+----------------------------------------------------------------
+Fengguang Wu (1):
+      rpc_pipe: rpc_dir_inode_operations can be static
+
+Jeff Layton (2):
+      nfs: set verifier on existing dentries in nfs_prime_dcache
+      rpc_pipe: set dentry operations at d_alloc time
+
+Scott Mayhew (3):
+      NFS: Make nfs_attribute_cache_expired() non-static
+      NFS: Make nfs_readdir revalidate less often
+      NFS: Allow nfs_updatepage to extend a write under additional circumstances
+
+Trond Myklebust (1):
+      SUNRPC: Fix a deadlock in rpc_client_register()
+
+ fs/nfs/dir.c           |  6 ++++--
+ fs/nfs/inode.c         |  2 +-
+ fs/nfs/write.c         | 31 +++++++++++++++++++++++--------
+ include/linux/nfs_fs.h |  1 +
+ net/sunrpc/clnt.c      | 16 +++++++++-------
+ net/sunrpc/rpc_pipe.c  | 25 ++++++++++++++++++++-----
+ 6 files changed, 58 insertions(+), 23 deletions(-)
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
