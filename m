@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab3GKK6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 06:58:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18441 "EHLO mx1.redhat.com"
+	id S932266Ab3GKK6j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 06:58:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54999 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932081Ab3GKK6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 06:58:02 -0400
-Date: Thu, 11 Jul 2013 13:56:31 +0300
+	id S932081Ab3GKK6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 06:58:38 -0400
+Date: Thu, 11 Jul 2013 13:58:22 +0300
 From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Andrew Jones <drjones@redhat.com>, mingo@redhat.com, ouyang@cs.pitt.edu,
-        habanero@linux.vnet.ibm.com, jeremy@goop.org, x86@kernel.org,
-        konrad.wilk@oracle.com, hpa@zytor.com, pbonzini@redhat.com,
-        linux-doc@vger.kernel.org, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, gregkh@suse.de, agraf@suse.de,
-        chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V9 0/19] Paravirtualized ticket spinlocks
-Message-ID: <20130711105631.GH8575@redhat.com>
-References: <51CAEF45.3010203@linux.vnet.ibm.com>
- <20130626161130.GB18152@redhat.com>
- <51CB2AD9.5060508@linux.vnet.ibm.com>
- <51DBD3C2.2040807@linux.vnet.ibm.com>
- <20130710103325.GP24941@redhat.com>
- <51DE771F.7070805@linux.vnet.ibm.com>
- <20130711094833.GC8575@redhat.com>
- <51DE849E.4020405@linux.vnet.ibm.com>
- <20130711101104.GF8575@redhat.com>
- <51DE8EC6.6020700@linux.vnet.ibm.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Dominik Dingel <dingel@linux.vnet.ibm.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Xiantao Zhang <xiantao.zhang@intel.com>,
+        Alexander Graf <agraf@suse.de>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Ralf Baechle <ralf@linux-mips.org>, kvm@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] PF: Async page fault support on s390
+Message-ID: <20130711105822.GI8575@redhat.com>
+References: <1373461195-27628-1-git-send-email-dingel@linux.vnet.ibm.com>
+ <1373461195-27628-5-git-send-email-dingel@linux.vnet.ibm.com>
+ <20130711090411.GA8575@redhat.com>
+ <51DE8BE1.8000902@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51DE8EC6.6020700@linux.vnet.ibm.com>
+In-Reply-To: <51DE8BE1.8000902@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 04:23:58PM +0530, Raghavendra K T wrote:
-> On 07/11/2013 03:41 PM, Gleb Natapov wrote:
-> >On Thu, Jul 11, 2013 at 03:40:38PM +0530, Raghavendra K T wrote:
-> >>>>>>Gleb,
-> >>>>>>Can you elaborate little more on what you have in mind regarding per
-> >>>>>>VM ple_window. (maintaining part of it as a per vm variable is clear
-> >>>>>>to
-> >>>>>>  me), but is it that we have to load that every time of guest entry?
-> >>>>>>
-> >>>>>Only when it changes, shouldn't be to often no?
-> >>>>
-> >>>>Ok. Thinking how to do. read the register and writeback if there need
-> >>>>to be a change during guest entry?
-> >>>>
-> >>>Why not do it like in the patch you've linked? When value changes write it
-> >>>to VMCS of the current vcpu.
-> >>>
+On Thu, Jul 11, 2013 at 12:41:37PM +0200, Christian Borntraeger wrote:
+> On 11/07/13 11:04, Gleb Natapov wrote:
+> > On Wed, Jul 10, 2013 at 02:59:55PM +0200, Dominik Dingel wrote:
+> >> This patch enables async page faults for s390 kvm guests.
+> >> It provides the userspace API to enable, disable or get the status of this
+> >> feature. Also it includes the diagnose code, called by the guest to enable
+> >> async page faults.
 > >>
-> >>Yes. can be done. So the running vcpu's ple_window gets updated only
-> >>after next pl-exit. right?
-> >I am not sure what you mean. You cannot change vcpu's ple_window while
-> >vcpu is in a guest mode.
-> >
+> >> The async page faults will use an already existing guest interface for this
+> >> purpose, as described in "CP Programming Services (SC24-6084)".
+> >>
+> >> Signed-off-by: Dominik Dingel <dingel@linux.vnet.ibm.com>
+> > Christian, looks good now?
 > 
-> I agree with that. Both of us are on the same page.
->  What I meant is,
-> suppose the per VM ple_window changes when a vcpu x of that VM  was running,
-> it will get its ple_window updated during next run.
-Ah, I think "per VM" is what confuses me. Why do you want to have "per
-VM" ple_windows and not "per vcpu" one? With per vcpu one ple_windows
-cannot change while vcpu is running.
+> Looks good, but I just had a  discussion with Dominik about several other cases 
+> (guest driven reboot, qemu driven reboot, life migration). This patch should 
+> allow all these cases (independent from this patch we need an ioctl to flush the
+> list of pending interrupts to do so, but reboot is currently broken in that
+> regard anyway - patch is currently being looked at)
+> 
+> We are currently discussion if we should get rid of the APF_STATUS and let 
+> the kernel wait for outstanding page faults before returning from KVM_RUN
+> or if we go with this patch and let userspace wait for completion. 
+> 
+> Will discuss this with Dominik, Conny and Alex. So lets defer that till next
+> week, ok?
+> 
+Sure.
 
 --
 			Gleb.
