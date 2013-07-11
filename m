@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3GKJSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 05:18:16 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:39306 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932315Ab3GKJSJ (ORCPT
+	id S1755960Ab3GKJej (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 05:34:39 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:34090 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755738Ab3GKJeh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 05:18:09 -0400
-From: Nenghua Cao <nhcao@marvell.com>
-To: "alsa-devel-bounces@alsa-project.org" 
-	<alsa-devel-bounces@alsa-project.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Jul 2013 02:15:44 -0700
-Subject: RE: Your message to Alsa-devel awaits moderator approval
-Thread-Topic: Your message to Alsa-devel awaits moderator approval
-Thread-Index: Ac53CJt0QYwdSbaPRQip1mRnbIZf7gHDaHAw
-Message-ID: <F766E4F80769BD478052FB6533FA745D3FEAE1D71E@SC-VEXCH4.marvell.com>
-References: <mailman.223.1372758206.793.alsa-devel@alsa-project.org>
-In-Reply-To: <mailman.223.1372758206.793.alsa-devel@alsa-project.org>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="gb2312"
+	Thu, 11 Jul 2013 05:34:37 -0400
+Date: Thu, 11 Jul 2013 10:34:29 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "J, KEERTHY" <j-keerthy@ti.com>
+Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 1/4] MFD: Add TPS659038 documentation under Palmas
+Message-ID: <20130711093429.GD25601@gmail.com>
+References: <1371726289-10042-1-git-send-email-j-keerthy@ti.com>
+ <DC88CAD03C0052499C1907B327FC63229EF495@DBDE04.ent.ti.com>
+ <DC88CAD03C0052499C1907B327FC63229F80C6@DBDE04.ent.ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <DC88CAD03C0052499C1907B327FC63229F80C6@DBDE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6B9JeRP021870
 
-Hi, Alsa Maintainer:
+> Hello Grant,
+> > Hi Grant,
+> > > Hello Grant,
+> > >
+> > > Could you pull this Please?
+> > A gentle ping on this.
+> A gentle ping on this. Could you pull this one?
 
-  I just provided a patch to enhance dynamic pcm feature. And It is important for our platform. In our platform, the cpu_dai in FE is dummy, but codec_dai in FE is specific interface. And it is convenient for us to use codec_dai to derive fe dapm widget. I don't know who can help me to push this activity further. Thanks!
+> > > > Signed-off-by: J Keerthy <j-keerthy@ti.com>
+> > > > Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-BR
-Nenghua
+Why does Grant have to pull this?
 
-> -----Original Message-----
-> From: alsa-devel-bounces@alsa-project.org
-> [mailto:alsa-devel-bounces@alsa-project.org]
-> Sent: 2013Äê7ÔÂ2ÈÕ 17:43
-> To: Nenghua Cao
-> Subject: Your message to Alsa-devel awaits moderator approval
-> 
-> Your mail to 'Alsa-devel' with the subject
-> 
->     [PATCH] ASOC: pcm: support fe dapm widget derived from codec_dai
-> 
-> Is being held until the list moderator can review it for approval.
-> 
-> The reason it is being held:
-> 
->     Post by non-member to a members-only list
-> 
-> Either the message will get posted to the list, or you will receive
-> notification of the moderator's decision.  If you would like to cancel
-> this posting, please visit the following URL:
-> 
-> 
-> http://mailman.alsa-project.org/mailman/confirm/alsa-devel/4232afb58ae75f
-> 42bb21a6b01191ac276c30846a
+Do you know why Sam didn't take it?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'd be happy to, if it wasn't stepping on anyone's toes.
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
