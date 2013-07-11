@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab3GKCPS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Jul 2013 22:15:18 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:9364
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755063Ab3GKCPQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Jul 2013 22:15:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VS2(zzc89bh1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz8275dhz2dh2a8h668h839h941hd25he5bhf0ah1269h1288h12a5h12a9h12bdh12e1h1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51DE161C.6090304@freescale.com>
-Date: Thu, 11 Jul 2013 10:19:08 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1755464Ab3GKCV7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Jul 2013 22:21:59 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:37848 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755063Ab3GKCV5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Jul 2013 22:21:57 -0400
+Message-ID: <51DE16C1.4030403@hitachi.com>
+Date: Thu, 11 Jul 2013 11:21:53 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: Fabio Estevam <fabio.estevam@freescale.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, Bill Pemberton <wfp5p@virginia.edu>,
-        <linux-mtd@lists.infradead.org>, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 06/12] drivers/mtd/nand/gpmi-nand: don't use devm_pinctrl_get_select_default()
- in probe
-References: <1373471889-18107-1-git-send-email-wsa@the-dreams.de> <1373471889-18107-6-git-send-email-wsa@the-dreams.de> <51DE1514.20903@freescale.com>
-In-Reply-To: <51DE1514.20903@freescale.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based breakpoint
+ instead of stop_machine()
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2013年07月11日 10:14, Huang Shijie 写道:
-> 于 2013年07月10日 23:57, Wolfram Sang 写道:
->> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
->> we can rely on device core for setting the default pins. Compile tested only.
->>
->> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
->> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
->> --- 
-> i remember Fabio had already sent a similar patch about this issue.
->
-sorry. Fabio just fix it in the gpmi driver, maybe he did not fix the
-atmel-nand.
+(2013/07/11 5:25), Jiri Kosina wrote:
+> Hi,
+> 
+> this is a resurrection of a few years old idea to have jump labels use 
+> synchronization based on int3 breakpoint rather than relying on 
+> stop_machine() with all the consequences.
+> 
+> ftrace has been doing exactly this kind of patching for year since 
+> 08d636b6 ("ftrace/x86: Have arch x86_64 use breakpoints instead of stop 
+> machine").
+> 
+> This patchset first introduces generic text_poke_bp() that provides means 
+> to perform this method of patching in parallel to text_poke_smp(), and 
+> then converts x86 jump label code to use it.
+> 
+> If this is merged, I'll do a followup patch converting ftrace to use this 
+> infrastructure as well, as it's doing the same thing in principle already.
 
-thanks
-Huang Shijie
+Hi Jiri,
+
+Thank you for taking over it! :)
+If yours is merged, I can move optprobe on that too ;)
+
+Thank you again!!
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
