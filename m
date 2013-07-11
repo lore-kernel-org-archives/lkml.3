@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab3GKOZr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 10:25:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42884 "EHLO
+	id S932724Ab3GKOtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 10:49:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42915 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932531Ab3GKOZj (ORCPT
+	with ESMTP id S932617Ab3GKOZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 10:25:39 -0400
+	Thu, 11 Jul 2013 10:25:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ben Hutchings <ben@decadent.org.uk>, 709647@bugs.debian.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Shane Huang <shane.huang@amd.com>, Bjorn Helgaas <bhelgaas@google.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 14/98] genirq: Fix can_request_irq() for IRQs without an action
-Date: Thu, 11 Jul 2013 15:23:44 +0100
-Message-Id: <1373552708-15235-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 22/98] i2c-piix4: Add AMD CZ SMBus device ID
+Date: Thu, 11 Jul 2013 15:23:52 +0100
+Message-Id: <1373552708-15235-23-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
 References: <1373552708-15235-1-git-send-email-luis.henriques@canonical.com>
@@ -28,46 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Shane Huang <shane.huang@amd.com>
 
-commit 2779db8d37d4b542d9ca2575f5f178dbeaca6c86 upstream.
+commit b996ac90f595dda271cbd858b136b45557fc1a57 upstream.
 
-Commit 02725e7471b8 ('genirq: Use irq_get/put functions'),
-inadvertently changed can_request_irq() to return 0 for IRQs that have
-no action.  This causes pcibios_lookup_irq() to select only IRQs that
-already have an action with IRQF_SHARED set, or to fail if there are
-none.  Change can_request_irq() to return 1 for IRQs that have no
-action (if the first two conditions are met).
+To add AMD CZ SMBus controller device ID.
 
-Reported-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is>
-Tested-by: Bjarni Ingi Gislason <bjarniig@rhi.hi.is> (against 3.2)
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: 709647@bugs.debian.org
-Link: http://bugs.debian.org/709647
-Link: http://lkml.kernel.org/r/1372383630.23847.40.camel@deadeye.wl.decadent.org.uk
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bhelgaas: drop pci_ids.h update]
+Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/irq/manage.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ Documentation/i2c/busses/i2c-piix4 | 2 +-
+ drivers/i2c/busses/Kconfig         | 1 +
+ drivers/i2c/busses/i2c-piix4.c     | 3 ++-
+ 3 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index b4c6385..a561ed3 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -554,9 +554,9 @@ int can_request_irq(unsigned int irq, unsigned long irqflags)
- 		return 0;
+diff --git a/Documentation/i2c/busses/i2c-piix4 b/Documentation/i2c/busses/i2c-piix4
+index 475bb4a..65da157 100644
+--- a/Documentation/i2c/busses/i2c-piix4
++++ b/Documentation/i2c/busses/i2c-piix4
+@@ -8,7 +8,7 @@ Supported adapters:
+     Datasheet: Only available via NDA from ServerWorks
+   * ATI IXP200, IXP300, IXP400, SB600, SB700 and SB800 southbridges
+     Datasheet: Not publicly available
+-  * AMD Hudson-2
++  * AMD Hudson-2, CZ
+     Datasheet: Not publicly available
+   * Standard Microsystems (SMSC) SLC90E66 (Victory66) southbridge
+     Datasheet: Publicly available at the SMSC website http://www.smsc.com
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index 9b72abe..f2f2058 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -137,6 +137,7 @@ config I2C_PIIX4
+ 	    ATI SB700
+ 	    ATI SB800
+ 	    AMD Hudson-2
++	    AMD CZ
+ 	    Serverworks OSB4
+ 	    Serverworks CSB5
+ 	    Serverworks CSB6
+diff --git a/drivers/i2c/busses/i2c-piix4.c b/drivers/i2c/busses/i2c-piix4.c
+index c14d48d..a356974 100644
+--- a/drivers/i2c/busses/i2c-piix4.c
++++ b/drivers/i2c/busses/i2c-piix4.c
+@@ -22,7 +22,7 @@
+ 	Intel PIIX4, 440MX
+ 	Serverworks OSB4, CSB5, CSB6, HT-1000, HT-1100
+ 	ATI IXP200, IXP300, IXP400, SB600, SB700, SB800
+-	AMD Hudson-2
++	AMD Hudson-2, CZ
+ 	SMSC Victory66
  
- 	if (irq_settings_can_request(desc)) {
--		if (desc->action)
--			if (irqflags & desc->action->flags & IRQF_SHARED)
--				canrequest =1;
-+		if (!desc->action ||
-+		    irqflags & desc->action->flags & IRQF_SHARED)
-+			canrequest = 1;
- 	}
- 	irq_put_desc_unlock(desc, flags);
- 	return canrequest;
+    Note: we assume there can only be one device, with one SMBus interface.
+@@ -481,6 +481,7 @@ static DEFINE_PCI_DEVICE_TABLE(piix4_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP400_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SMBUS) },
++	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, 0x790b) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SERVERWORKS,
+ 		     PCI_DEVICE_ID_SERVERWORKS_OSB4) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SERVERWORKS,
 -- 
 1.8.1.2
 
