@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720Ab3GKQSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:18:50 -0400
-Received: from relay.parallels.com ([195.214.232.42]:40502 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755735Ab3GKQSt (ORCPT
+	id S932713Ab3GKQXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:23:47 -0400
+Received: from smtp.eu.citrix.com ([46.33.159.39]:1556 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755735Ab3GKQXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:18:49 -0400
-Subject: [PATCH 08/16] fuse: Flush files on wb close -v2
-From: Maxim Patlasov <MPatlasov@parallels.com>
-Cc: dev@parallels.com, xemul@parallels.com, fuse-devel@lists.sourceforge.net,
-        bfoster@redhat.com, miklos@szeredi.hu, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, devel@openvz.org
-Date: Thu, 11 Jul 2013 20:18:42 +0400
-Message-ID: <20130711161617.29434.51569.stgit@maximpc.sw.ru>
-In-Reply-To: <20130629174458.20175.11065.stgit@maximpc.sw.ru>
-References: <20130629174458.20175.11065.stgit@maximpc.sw.ru>
-User-Agent: StGit/0.15
+	Thu, 11 Jul 2013 12:23:46 -0400
+X-IronPort-AV: E=Sophos;i="4.87,1045,1363132800"; 
+   d="scan'208";a="6592226"
+Message-ID: <51DEDC10.3020702@citrix.com>
+Date: Thu, 11 Jul 2013 18:23:44 +0200
+From: =?UTF-8?B?Um9nZXIgUGF1IE1vbm7DqQ==?= <roger.pau@citrix.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+To: David Vrabel <david.vrabel@citrix.com>
+CC: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH RFC 1/4] xen-gnt: prevent adding duplicate
+ gnt	callbacks
+References: <1373288607-1876-1-git-send-email-roger.pau@citrix.com> <1373288607-1876-2-git-send-email-roger.pau@citrix.com> <51DEB070.3060106@citrix.com>
+In-Reply-To: <51DEB070.3060106@citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.30.203.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Emelyanov <xemul@openvz.org>
+On 11/07/13 15:17, David Vrabel wrote:
+> On 08/07/13 14:03, Roger Pau Monne wrote:
+>> With the current implementation, the callback in the tail of the list
+>> can be added twice, because the check done in
+>> gnttab_request_free_callback is bogus, callback->next can be NULL if
+>> it is the last callback in the list. If we add the same callback twice
+>> we end up with an infinite loop, were callback == callback->next.
+>>
+>> Replace this check with a proper one that iterates over the list to
+>> see if the callback has already been added.
+>>
+>> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+>> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>> ---
+>>  drivers/xen/grant-table.c |   13 +++++++++++--
+>>  1 files changed, 11 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+>> index 04c1b2d..d5418c1 100644
+>> --- a/drivers/xen/grant-table.c
+>> +++ b/drivers/xen/grant-table.c
+>> @@ -729,9 +729,18 @@ void gnttab_request_free_callback(struct gnttab_free_callback *callback,
+>>  				  void (*fn)(void *), void *arg, u16 count)
+>>  {
+>>  	unsigned long flags;
+>> +	struct gnttab_free_callback *cb;
+>> +
+>>  	spin_lock_irqsave(&gnttab_list_lock, flags);
+>> -	if (callback->next)
+>> -		goto out;
+>> +
+>> +	/* Check if the callback is already on the list */
+>> +	cb = gnttab_free_callback_list;
+>> +	while (cb) {
+>> +		if (cb == callback)
+>> +			goto out;
+>> +		cb = cb->next;
+>> +	}
+> 
+> O(N)?
 
-Any write request requires a file handle to report to the userspace. Thus
-when we close a file (and free the fuse_file with this info) we have to
-flush all the outstanding dirty pages.
+IMHO we should not worry _that_ much about having a O(N) search here,
+the number of elements in the list is probably going to be quite low (5,
+maybe 10?). That doesn't mean I oppose to changing the free callback
+list code.
 
-filemap_write_and_wait() is enough because every page under fuse writeback
-is accounted in ff->count. This delays actual close until all fuse wb is
-completed.
+> Suggest using the standard list infrastructure, or using something other
+> than NULL for the end of the list (e.g., gnttab_free_callback_list).
+> 
+> gnttab_request_free_callback() is also putting the callbacks in the
+> wrong order -- it should be FIFO not LIFO.  Might be nice to fix this as
+> well.
 
-In case of "write cache" turned off, the flush is ensured by fuse_vma_close().
-
-Changed in v2:
- - updated patch to be applied smoothly on top of
-   "Trust kernel i_mtime only -v2".
-
-Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
----
- fs/fuse/file.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
-
-diff --git a/fs/fuse/file.c b/fs/fuse/file.c
-index 09a9eeb..3778de1 100644
---- a/fs/fuse/file.c
-+++ b/fs/fuse/file.c
-@@ -291,6 +291,12 @@ static int fuse_open(struct inode *inode, struct file *file)
- 
- static int fuse_release(struct inode *inode, struct file *file)
- {
-+	struct fuse_conn *fc = get_fuse_conn(inode);
-+
-+	/* see fuse_vma_close() for !writeback_cache case */
-+	if (fc->writeback_cache)
-+		filemap_write_and_wait(file->f_mapping);
-+
- 	if (test_bit(FUSE_I_MTIME_DIRTY, &get_fuse_inode(inode)->state))
- 		fuse_flush_mtime(file, true);
- 
+Agree, all this free callback list mechanism is pretty ad-hoc, we should
+use one of the list types provided by Linux, so bugs like the one I've
+found can be avoided and we can use a FIFO list.
 
