@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab3GKN4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 09:56:46 -0400
-Received: from georges.telenet-ops.be ([195.130.137.68]:39173 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756108Ab3GKNyL (ORCPT
+	id S1756113Ab3GKN5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 09:57:15 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:35594 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042Ab3GKN5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 09:54:11 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH 5/6] usb: gadget: USB_MV_U3D should depend on HAS_DMA
-Date: Thu, 11 Jul 2013 15:54:04 +0200
-Message-Id: <1373550845-14457-5-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373550845-14457-1-git-send-email-geert@linux-m68k.org>
-References: <1373550845-14457-1-git-send-email-geert@linux-m68k.org>
+	Thu, 11 Jul 2013 09:57:13 -0400
+MIME-Version: 1.0
+X-Originating-IP: [72.73.18.11]
+In-Reply-To: <20130711104701.1f1c5fda@endymion.delvare>
+References: <002901ce77e9$dfac4f20$9f04ed60$@lucidpixels.com>
+	<20130703144201.GA10323@roeck-us.net>
+	<20130711104701.1f1c5fda@endymion.delvare>
+Date: Thu, 11 Jul 2013 09:57:12 -0400
+Message-ID: <CAO9zADyZvMpJoD68QKQ9bw0dMLdMvwK3Yqz=E5zTWWoFCoqncg@mail.gmail.com>
+Subject: Re: [lm-sensors] 3.10: NCT6776F sensor question with Supermicro
+ X9SRL-F motherboard
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Guenter Roeck <linux@roeck-us.net>,
+        open list <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If NO_DMA=y:
+Thanks for these details!
 
-drivers/built-in.o: In function `mv_u3d_done':
-drivers/usb/gadget/mv_u3d_core.c:206: undefined reference to `dma_pool_free'
-drivers/usb/gadget/mv_u3d_core.c:209: undefined reference to `dma_unmap_single'
-drivers/built-in.o: In function `mv_u3d_build_trb_one':
-drivers/usb/gadget/mv_u3d_core.c:311: undefined reference to `dma_pool_alloc'
-drivers/built-in.o: In function `mv_u3d_req_to_trb':
-drivers/usb/gadget/mv_u3d_core.c:480: undefined reference to `dma_map_single'
-drivers/built-in.o: In function `mv_u3d_remove':
-drivers/usb/gadget/mv_u3d_core.c:1770: undefined reference to `dma_pool_destroy'
-drivers/usb/gadget/mv_u3d_core.c:1773: undefined reference to `dma_free_coherent'
-drivers/built-in.o: In function `mv_u3d_probe':
-drivers/usb/gadget/mv_u3d_core.c:1880: undefined reference to `dma_alloc_coherent'
-drivers/usb/gadget/mv_u3d_core.c:1890: undefined reference to `dma_pool_create'
-drivers/usb/gadget/mv_u3d_core.c:1984: undefined reference to `dma_pool_destroy'
-drivers/usb/gadget/mv_u3d_core.c:1986: undefined reference to `dma_free_coherent'
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/usb/gadget/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index 8743742..3f8df56 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -336,6 +336,7 @@ config USB_MV_UDC
- 	  full speed USB peripheral.
- 
- config USB_MV_U3D
-+	depends on HAS_DMA
- 	tristate "MARVELL PXA2128 USB 3.0 controller"
- 	help
- 	  MARVELL PXA2128 Processor series include a super speed USB3.0 device
--- 
-1.7.9.5
-
+On Thu, Jul 11, 2013 at 4:47 AM, Jean Delvare <khali@linux-fr.org> wrote:
+> Hi Guenter, Justin,
+>
+> On Wed, 3 Jul 2013 07:42:01 -0700, Guenter Roeck wrote:
+>> On Wed, Jul 03, 2013 at 08:35:59AM -0400, Justin Piszcz wrote:
+>> > I also found:
+>> > http://www.lm-sensors.org/wiki/Configurations/SuperMicro/X9SRA
+>> >
+>> > Does Super Micro also have such a config file for the X9SRL-F?
+>> > This board uses a NCT6776F.
+>>
+>> Supermicro does not provide configuration files. You can take the above file,
+>> test and update it, and let us know so we can add it to the wiki.
+>
+> Actually they do provide configuration information. They have their own
+> tool names SuperDoctor, which can be downloaded from:
+>   ftp://ftp.supermicro.com/utility/SuperDoctor_II/Linux/Release/
+>
+> If you look at file AllSuperD.ini, you'll find per-board entries
+> describing the input mapping. It is very helpful when writing a custom
+> libsensors configuration file for the board in question. It takes some
+> knowledge of the monitoring chip or its driver though, as the ini file
+> references register addresses ("Offset" in the file.)
+>
+> A gave a quick look and at least the voltage input mapping (and
+> presumably the voltage scaling factors as well) is similar to the
+> X9SRA so you can reuse this part of the X9SRA configuration file.
+>
+> Hope that helps,
+> --
+> Jean Delvare
