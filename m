@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab3GKVRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 17:17:41 -0400
-Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:11423 "EHLO
-	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756790Ab3GKVRg (ORCPT
+	id S1756692Ab3GKVWI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 17:22:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42626 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753790Ab3GKVWG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 17:17:36 -0400
-Message-ID: <51DF20EF.8020402@akamai.com>
-Date: Thu, 11 Jul 2013 17:17:35 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: dynamic debug: Jason's not there...
-References: <1373495803.14604.88.camel@joe-AO722>
-In-Reply-To: <1373495803.14604.88.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 11 Jul 2013 17:22:06 -0400
+Date: Thu, 11 Jul 2013 14:22:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Valdis.Kletnieks@vt.edu, axboe@kernel.dk, oakad@yahoo.com, tj@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] memstick: add support for legacy memorysticks
+Message-Id: <20130711142204.6c1fc4c260676da6cad93be7@linux-foundation.org>
+In-Reply-To: <1373502517.14147.0.camel@maxim-laptop>
+References: <1373292716.32554.5.camel@maxim-laptop>
+	<1373316896-6045-1-git-send-email-maximlevitsky@gmail.com>
+	<1373316896-6045-2-git-send-email-maximlevitsky@gmail.com>
+	<1373502517.14147.0.camel@maxim-laptop>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Joe - feel free to add:
+On Thu, 11 Jul 2013 03:28:37 +0300 Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 
-Acked-by: Jason Baron <jbaron@akamai.com>
+> On Mon, 2013-07-08 at 23:54 +0300, Maxim Levitsky wrote: 
+> > Based partially on MS standard spec quotes from Alex Dubov.
+> > 
+> > As any code that works with user data this driver isn't
+> > recommended to use to write cards that contain valuable data.
+> > 
+> > It tries its best though to avoid data corruption
+> > and possible damage to the card.
+> > 
+> > Tested on MS DUO 64 MB card on Ricoh R592 card reader.
+> > 
 
-On 07/10/2013 06:36 PM, Joe Perches wrote:
-> He must be too, umm, busy to update his own bouncing
-> email address too.
->
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->
-> poke - prod...
->
->  MAINTAINERS | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index e51d018..3c81917 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -2875,7 +2875,7 @@ F:	drivers/media/usb/dvb-usb-v2/dvb_usb*
->  F:	drivers/media/usb/dvb-usb-v2/usb_urb.c
->  
->  DYNAMIC DEBUG
-> -M:	Jason Baron <jbaron@redhat.com>
-> +M:	Jason Baron <jbaron@akamai.com>
->  S:	Maintained
->  F:	lib/dynamic_debug.c
->  F:	include/linux/dynamic_debug.h
->
->
+(top-posting repaired.  Please don't do that).
 
+> Any update?
+
+You sent a large patch in the middle of the 3.11 merge window, when
+nobody is looking at large new patches.
+
+I have it saved away for consideration after -rc1.
