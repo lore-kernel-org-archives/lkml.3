@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755672Ab3GKH45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 03:56:57 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:53195 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab3GKH44 (ORCPT
+	id S1755752Ab3GKIAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 04:00:38 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51648 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab3GKIAh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 03:56:56 -0400
-X-AuditID: 9c93017d-b7b45ae000000e34-8c-51de654618e9
+	Thu, 11 Jul 2013 04:00:37 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-19-51de6624a24b
 From: Namhyung Kim <namhyung@kernel.org>
 To: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
@@ -18,14 +18,14 @@ Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         David Ahern <dsahern@gmail.com>, Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 06/19] perf ftrace: Add support for --pid option
+Subject: Re: [PATCH 09/19] perf ftrace: Add 'record' sub-command
 References: <1372230862-15861-1-git-send-email-namhyung@kernel.org>
-	<1372230862-15861-7-git-send-email-namhyung@kernel.org>
-	<20130710141820.GA5931@krava.brq.redhat.com>
-Date: Thu, 11 Jul 2013 16:56:54 +0900
-In-Reply-To: <20130710141820.GA5931@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Wed, 10 Jul 2013 16:18:20 +0200")
-Message-ID: <87fvvly1fd.fsf@sejong.aot.lge.com>
+	<1372230862-15861-10-git-send-email-namhyung@kernel.org>
+	<20130710142821.GC5931@krava.brq.redhat.com>
+Date: Thu, 11 Jul 2013 17:00:36 +0900
+In-Reply-To: <20130710142821.GC5931@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Wed, 10 Jul 2013 16:28:21 +0200")
+Message-ID: <87bo69y197.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -34,30 +34,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Jul 2013 16:18:20 +0200, Jiri Olsa wrote:
-> On Wed, Jun 26, 2013 at 04:14:09PM +0900, Namhyung Kim wrote:
+On Wed, 10 Jul 2013 16:28:21 +0200, Jiri Olsa wrote:
+> On Wed, Jun 26, 2013 at 04:14:12PM +0900, Namhyung Kim wrote:
 >> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> The -p (--pid) option enables to trace existing process by its pid.
 >
-> hi,
-> I can't get any output from -p for live subcommand:
+> SNIP
 >
-> [jolsa@krava perf]$ pgrep yes
-> 6443
-> [jolsa@krava perf]$ sudo ./perf ftrace live -p `pgrep yes`
+>> +
+>> +static int create_perf_directory(struct perf_ftrace *ftrace)
+>> +{
+>> +	int err;
+>> +	char buf[PATH_MAX];
+>> +	struct stat statbuf;
+>> +
+>> +	scnprintf(buf, sizeof(buf), "%s.dir", ftrace->dirname);
+>> +
+>> +	if (stat(buf, &statbuf) == 0) {
+>> +		/* same name already exists - rename to *.old.dir */
+>> +		char *old_name = malloc(strlen(buf) + 5);
+>> +		if (old_name == NULL)
+>> +			return -1;
+>> +
+>> +		scnprintf(old_name, strlen(buf) + 5,
+>> +			  "%s.old.dir", ftrace->dirname);
+>> +
+>> +		if (remove_directory(old_name) < 0) {
+>> +			perror("rmdir");
+>> +			return -1;
+>> +		}
+>> +
+>> +		if (rename(buf, old_name) < 0) {
+>> +			perror("rename");
+>> +			free(old_name);
+>> +			return -1;
+>> +		}
+>> +
+>> +		free(old_name);
+>> +	}
+>> +
+>> +	err = mkdir(buf, 0755);
+>> +	if (err < 0) {
+>> +		perror("mkdir");
+>> +		return -1;
+>> +	}
+>> +
+>> +	strcat(buf, "/perf.header");
+>> +
+>> +	err = open(buf, O_RDWR | O_CREAT | O_TRUNC, 0644);
+>> +	return err;
+>> +}
+>
+> nitpick.. should this be rather be called create_perf_header,
+> which calls create_perf_directory inside?
 
-Hmm... looks like it's stuck on polling the trace_pipe:
+Looks reasonable.  I'll change the name.
 
-  $ sudo strace ./perf ftrace -p `pgrep yes'
-  ...
-  poll([{fd=3, events=POLLIN}], 1, 4294967295
-
-
-Need to investigate it more.
-
-Along with it, I found that I didn't close fd in
-__write_tracing_file().  I'll fix it in the next spin too.
-
-Thanks for the review and testing!
+Thanks,
 Namhyung
