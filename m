@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab3GKQhN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 12:37:13 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:46591 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751999Ab3GKQhK (ORCPT
+	id S1752945Ab3GKQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 12:42:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8497 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751733Ab3GKQm0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 12:37:10 -0400
-Date: Thu, 11 Jul 2013 18:37:08 +0200
-From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
-To: Hector Palacios <hector.palacios@digi.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        Marek Vasut <marex@denx.de>, "cb@sgoc.de" <cb@sgoc.de>
-Subject: Re: MXS persistent bits driver
-Message-ID: <20130711163708.GW11243@lukather>
-References: <51DE5F1A.8010209@digi.com>
- <20130711082413.GU11243@lukather>
- <51DE734A.80206@digi.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="A6Z7MKnLVMfR85kG"
-Content-Disposition: inline
-In-Reply-To: <51DE734A.80206@digi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Jul 2013 12:42:26 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=s37gdL-KhCUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=P1PPt9p6O00A:10 a=K5Sxo7UcNOoPadickKMA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373560944.17876.41.camel@gandalf.local.home>
+Subject: Re: [RFC] [PATCH 0/2] x86: make jump labels use int3-based
+ breakpoint instead of stop_machine()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jason Baron <jbaron@akamai.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mathieu.desnoyers@efficios.com
+Date: Thu, 11 Jul 2013 12:42:24 -0400
+In-Reply-To: <alpine.LNX.2.00.1307110159490.25858@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+	 <51DDDFB3.3020004@akamai.com>
+	 <alpine.LNX.2.00.1307110159490.25858@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-07-11 at 02:04 +0200, Jiri Kosina wrote:
 
---A6Z7MKnLVMfR85kG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I even have preliminary (completely untested) patch, but would like to 
+> have this merged/acked in the first round before proceeding with porting 
+> ftrace to the new interface.
+> 
+> > Also, I wonder if its worth batching up updates. For example, right now 
+> > we simply update each call-site one at a time even if its associated 
+> > with the same control variable.
+> 
+> That does seem to make sense indeed, but it's not really closely tied to 
+> this patchset, is it?
 
-Hi Hector,
+If you want to have ftrace use this interface, then we need to support
+batch processing. And you will need to do it with an iterator as well.
+We can not allocate 30,000 locations to run this on. Ftrace has its own
+table, and uses the ftrace iterator to traverse it.
 
-On Thu, Jul 11, 2013 at 10:56:42AM +0200, Hector Palacios wrote:
-> On 07/11/2013 10:24 AM, maxime.ripard@free-electrons.com wrote:
-> >>I haven't seen this is supported upstream. Is anybody working on that?
-> >>Where would such a driver fit?
-> >
-> >Christoph Baumann recently started porting the Freescale's driver to
-> >newer release.
-> >
-> >http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/181569.h=
-tml
-> >
-> >This needs quite a lot of work, but it's ongoing.
-> >
-> >Also, about where to put such a driver, I started a discussion about
-> >this last week. Mostly, that would be part of MTD, from what is out of
-> >the discussion so far.
-> >
-> >http://lists.infradead.org/pipermail/linux-arm-kernel/2013-July/182002.h=
-tml
->=20
-> I was talking about RTC persistent bits, not OTP bits, but I they
-> also fit in your EEPROM like model. I like it!
+Thus you would need to do something like:
 
-Oops, sorry, I read your mail too quickly.
+int text_poke_iterator(struct text_poke_iter *iterator)
+{
+	struct text_poke_iter_instance *iter;
 
-But it's true that it would fit quite well in the EEPROM stuff we're
-discussing.
+	for (iter = text_poke_iterator_start(iterator);
+	     iter;
+	     iter = text_poke_iterator_next(iterator)) {
+		ret = add_breakpoints(iter->addr, iter->old);
+		if (!ret)
+			goto failed;
+	}
 
-Feel free to participate, and I'll let you know if something come out of
-it.
+	on_each_cpu(do_sync_core, NULL, 1);
+	/* and this doesn't even handle the issue with ftrace
+	  start up code */
 
-Maxime
+	for (iter = text_poke_iterator_start(iterator);
+	     iter;
+	     iter = text_poke_iterator_next(iterator)) {
+		ret = add_update(iter->addr, iter->old, iter->new);
+		if (!ret)
+			goto failed;
+	}
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+	on_each_cpu(do_sync_core, NULL, 1);
 
---A6Z7MKnLVMfR85kG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	for (iter = text_poke_iterator_start(iterator);
+	     iter;
+	     iter = text_poke_iterator_next(iterator)) {
+		ret = remove_breakpoints(iter->addr, iter->new);
+		if (!ret)
+			goto failed;
+	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+	on_each_cpu(do_sync_core, NULL, 1);
 
-iQIcBAEBAgAGBQJR3t80AAoJEBx+YmzsjxAg3XsQAIaUjfX2ebrOH4mtIdsZfadq
-4BUAJ/vb/YJdO5MBrlUKxxlu/lU7Q/gC3ydJ+jFxzXtpfD94v7yHu4He1ivYra4X
-2mJXL00VjskUqrU/4BdzGrX80T14P/0Kw/H+6cwP00zvu0f11yONSGwMkrMPaiHL
-M86bdojSCv2SwPN2Vo1E2oJ9C6jsSVNjxOGHho2X/s7pd2oPN9LSy+nJc0m9CqY2
-hL0KIAqkBo7ExRhNxXefVzJm05NENzl5EHxCTXQ7ZHoZ53GlDrSfarMa0mGifGCk
-arn2hjwTiNLWs54pVOinSD6QHR1oE2BD9VJSezJ60g7kb+lJmxTdtTQpYefXS+wk
-oOQImvPaAtT35nltvn+ItRatjt49gXsYCuzyMg8RQgDZ90GsdoaZXqj9LrpwDQWc
-u4b1cHo72bAyYxbMdYdT3upSMt8wvLEN9NDrmzQVfH8Owubd8/Qv9iIfooKhmRmi
-WEVU07QmC0QMDnVFpCAmVZHOC4ug6iXS2ulRGO3gbWN3hBkJPUBcyN+AloBtTu2s
-2s2HXhhWQ9ZdrrmUdvy1Tr0q/Uy/jc4j08r6aeQyVRKhyxmZVXxGE+XRcWeqD8i+
-toaRtFHdI/WeMbZQIYy5gOVDljNpNYPLpWlF+hG9Ott4rYGV2/k/z6nmN0nzGbP8
-n5yKt9SgihhJcJ+f6cdC
-=jAqQ
------END PGP SIGNATURE-----
+	return 0;
+failed:
+	for (iter = text_poke_iterator_start(iterator);
+	     iter;
+	     iter = text_poke_iterator_next(iterator)) {
+		ret = remove_breakpoints_fail(iter->addr, iter->old, iter->new);
+	}
+}
 
---A6Z7MKnLVMfR85kG--
+-- Steve
+
+
