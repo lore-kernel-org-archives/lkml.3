@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3GKWCA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 18:02:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43100 "EHLO
+	id S1756821Ab3GKWB7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 18:01:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623Ab3GKWBv (ORCPT
+	with ESMTP id S1751137Ab3GKWBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 18:01:51 -0400
+	Thu, 11 Jul 2013 18:01:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rick Macklem <rmacklem@uoguelph.ca>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 15/19] nfsd4: fix decoding of compounds across page boundaries
-Date: Thu, 11 Jul 2013 15:01:32 -0700
-Message-Id: <20130711214832.348997226@linuxfoundation.org>
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: [ 12/19] tty: Reset itty for other pty
+Date: Thu, 11 Jul 2013 15:01:29 -0700
+Message-Id: <20130711214832.037841851@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130711214830.611455274@linuxfoundation.org>
 References: <20130711214830.611455274@linuxfoundation.org>
@@ -27,37 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 247500820ebd02ad87525db5d9b199e5b66f6636 upstream.
+commit 64e377dcd7d75c241d614458e9619d3445de44ef upstream.
 
-A freebsd NFSv4.0 client was getting rare IO errors expanding a tarball.
-A network trace showed the server returning BAD_XDR on the final getattr
-of a getattr+write+getattr compound.  The final getattr started on a
-page boundary.
+Commit 19ffd68f816878aed456d5e87697f43bd9e3bd2b
+('pty: Remove redundant itty reset') introduced a regression
+whereby the other pty's linkage is not cleared on teardown.
+This triggers a false positive diagnostic in testing.
 
-I believe the Linux client ignores errors on the post-write getattr, and
-that that's why we haven't seen this before.
+Properly reset the itty linkage.
 
-Reported-by: Rick Macklem <rmacklem@uoguelph.ca>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfs4xdr.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_io.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -162,8 +162,8 @@ static __be32 *read_buf(struct nfsd4_com
- 	 */
- 	memcpy(p, argp->p, avail);
- 	/* step to next page */
--	argp->p = page_address(argp->pagelist[0]);
- 	argp->pagelist++;
-+	argp->p = page_address(argp->pagelist[0]);
- 	if (argp->pagelen < PAGE_SIZE) {
- 		argp->end = argp->p + (argp->pagelen>>2);
- 		argp->pagelen = 0;
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1618,6 +1618,8 @@ static void release_tty(struct tty_struc
+ 	tty_free_termios(tty);
+ 	tty_driver_remove_tty(tty->driver, tty);
+ 	tty->port->itty = NULL;
++	if (tty->link)
++		tty->link->port->itty = NULL;
+ 	cancel_work_sync(&tty->port->buf.work);
+ 
+ 	if (tty->link)
 
 
