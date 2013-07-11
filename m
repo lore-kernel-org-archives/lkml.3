@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542Ab3GKSqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 14:46:55 -0400
-Received: from mail-gh0-f173.google.com ([209.85.160.173]:36895 "EHLO
-	mail-gh0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459Ab3GKSqv convert rfc822-to-8bit (ORCPT
+	id S1756556Ab3GKSrD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 14:47:03 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:58853 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756459Ab3GKSq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 14:46:51 -0400
-Date: Thu, 11 Jul 2013 13:46:44 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH] Documentation: Fix references to defunct
- linux-net@vger.kernel.org
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-doc@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, trivial@kernel.org
-References: <1373358151-26161-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1373358151-26161-1-git-send-email-geert@linux-m68k.org> (from
-	geert@linux-m68k.org on Tue Jul  9 03:22:31 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1373568404.27613.43@driftwood>
+	Thu, 11 Jul 2013 14:46:57 -0400
+Message-ID: <51DEFD9E.7010703@mit.edu>
+Date: Thu, 11 Jul 2013 11:46:54 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Matt Mackall <mpm@selenic.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/5] mm: soft-dirty bits for user memory changes tracking
+References: <517FED13.8090806@parallels.com> <517FED64.4020400@parallels.com>
+In-Reply-To: <517FED64.4020400@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 03:22:31 AM, Geert Uytterhoeven wrote:
-> linux-net@vger.kernel.org was replaced by netdev@oss.sgi.com was  
-> replaced
-> by netdev@vger.kernel.org.
+On 04/30/2013 09:12 AM, Pavel Emelyanov wrote:
+> The soft-dirty is a bit on a PTE which helps to track which pages a task
+> writes to. In order to do this tracking one should
 > 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Confirmed http://vger.kernel.org/vger-lists.html does not mention  
-linux-net anymore.
-
-Acked-by: Rob Landley <rob@landley.net>
-
-Adding trivial@ to the cc:
-
-Rob
-
-> ---
->  Documentation/networking/arcnet.txt |    7 ++++---
->  Documentation/networking/vortex.txt |    2 +-
->  2 files changed, 5 insertions(+), 4 deletions(-)
+>   1. Clear soft-dirty bits from PTEs ("echo 4 > /proc/PID/clear_refs)
+>   2. Wait some time.
+>   3. Read soft-dirty bits (55'th in /proc/PID/pagemap entries)
 > 
-> diff --git a/Documentation/networking/arcnet.txt  
-> b/Documentation/networking/arcnet.txt
-> index 9ff5795..aff97f4 100644
-> --- a/Documentation/networking/arcnet.txt
-> +++ b/Documentation/networking/arcnet.txt
-> @@ -70,9 +70,10 @@ list, mail to linux-arcnet@tichy.ch.uj.edu.pl.
->  There are archives of the mailing list at:
->  	http://epistolary.org/mailman/listinfo.cgi/arcnet
+> To do this tracking, the writable bit is cleared from PTEs when the
+> soft-dirty bit is. Thus, after this, when the task tries to modify a page
+> at some virtual address the #PF occurs and the kernel sets the soft-dirty
+> bit on the respective PTE.
 > 
-> -The people on linux-net@vger.kernel.org have also been known to be  
-> very
-> -helpful, especially when we're talking about ALPHA Linux kernels  
-> that may or
-> -may not work right in the first place.
-> +The people on linux-net@vger.kernel.org (now defunct, replaced by
-> +netdev@vger.kernel.org) have also been known to be very helpful,  
-> especially
-> +when we're talking about ALPHA Linux kernels that may or may not  
-> work right
-> +in the first place.
+> Note, that although all the task's address space is marked as r/o after the
+> soft-dirty bits clear, the #PF-s that occur after that are processed fast.
+> This is so, since the pages are still mapped to physical memory, and thus
+> all the kernel does is finds this fact out and puts back writable, dirty
+> and soft-dirty bits on the PTE.
 > 
-> 
->  Other Drivers and Info
-> diff --git a/Documentation/networking/vortex.txt  
-> b/Documentation/networking/vortex.txt
-> index b4038ff..9a8041d 100644
-> --- a/Documentation/networking/vortex.txt
-> +++ b/Documentation/networking/vortex.txt
-> @@ -359,7 +359,7 @@ steps you should take:
->  - OK, it's a driver problem.
-> 
->     You need to generate a report.  Typically this is an email to the
-> -   maintainer and/or linux-net@vger.kernel.org.  The maintainer's
-> +   maintainer and/or netdev@vger.kernel.org.  The maintainer's
->     email address will be in the driver source or in the MAINTAINERS  
-> file.
-> 
->  - The contents of your report will vary a lot depending upon the
-> --
-> 1.7.9.5
+> Another thing to note, is that when mremap moves PTEs they are marked with
+> soft-dirty as well, since from the user perspective mremap modifies the
+> virtual memory at mremap's new address.
 > 
 > 
 
+Sorry I'm late to the party -- I didn't notice this until the lwn
+article this week.
+
+How does this get munmap + mmap right?  mremap marks things soft-dirty,
+but unmapping and remapping seems like it will result in the soft-dirty
+bit being cleared.  For that matter, won't this sequence also end up wrong:
+
+ - clear_refs
+ - Write to mapping
+ - Page and pte evicted due to memory pressure
+ - Read from mapping -- clean page faulted back in
+ - pte soft-dirty is now clear ?!?
+
+--Andy
