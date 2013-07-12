@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965306Ab3GLSmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 14:42:32 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38410 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933171Ab3GLSmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 14:42:31 -0400
-Date: Fri, 12 Jul 2013 11:42:13 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, PaX Team <pageexec@freemail.hu>
-Subject: [PATCH v2] x86: make sure IDT is page aligned
-Message-ID: <20130712184213.GA22604@www.outflux.net>
+	id S965298Ab3GLSos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 14:44:48 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57786 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933171Ab3GLSor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 14:44:47 -0400
+Message-ID: <51E04E99.9060105@kernel.org>
+Date: Fri, 12 Jul 2013 19:44:41 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: Alexander Holler <holler@ahsoftware.de>
+CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 0/4] iio: hid-sensor: add module alias for autoload
+References: <1373445120-5407-1-git-send-email-holler@ahsoftware.de> <51DD7D78.2020506@linux.intel.com> <51DD848E.4050206@ahsoftware.de> <51DEEAFE.506@linux.intel.com> <51DFAE85.9060508@ahsoftware.de>
+In-Reply-To: <51DFAE85.9060508@ahsoftware.de>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the IDT is referenced from a fixmap, make sure it is page aligned.
-(32-bit already was, this is only needed on 64-bit.) This avoids the
-risk of it ever being moved in the bss and having the mapping be offset,
-resulting in calling incorrect handlers.
+On 07/12/2013 08:21 AM, Alexander Holler wrote:
+> Am 11.07.2013 19:27, schrieb Srinivas Pandruvada:
+>>
+>>
+>> On 07/10/2013 08:58 AM, Alexander Holler wrote:
+>>> Am 10.07.2013 17:27, schrieb Srinivas Pandruvada:
+>>>> Hi,
+>>>>
+>>>> There was no intention to prevent auto loading. Did you get chance to
+>>>> test these changes?
+>>>
+>>> Sure, I always test patches before I send them out.
+>>>
+>>> Ok, I haven't tested the changes with the iio HID drivers (I don't
+>>> have any commercial HID sensor hub, so I've just compile tested these
+>>> patches here, double reading them), but I've tested the similiar
+>>> changes with a patch for rtc-hid-sensor-time I've send out yesterday.
+>>> (sorry, no link, lkml.org seems dead, just search for
+>>> "rtc-hid-sensor-time: add module alias")
+>>>
+>>> It works just fine. An example output is now
+>>>
+>>> Jul  9 19:27:21 dockstar3 kernel: [    5.124444] rtc_hid_sensor_time
+>>> HID-SENSOR-2000a0.0: milliseconds supported
+>>> Jul  9 19:27:21 dockstar3 kernel: [    5.132864] rtc_hid_sensor_time
+>>> HID-SENSOR-2000a0.0: rtc core: setting system clock to 2013-07-09
+>>> 17:26:51:328000 UTC (1373390811)
+>>> Jul  9 19:27:21 dockstar3 kernel: [    5.146105] rtc_hid_sensor_time
+>>> HID-SENSOR-2000a0.0: rtc core: registered hid-sensor-time as rtc0
+>>>
+>>> Before the output was e.g.
+>>>
+>>> HID-SENSOR-2000a0 HID-SENSOR-2000a0.0: rtc core: registered
+>>> hid-sensor-time as rtc0
+>>>
+>>> instead of the above with the descriptive rtc_hid_sensor_time.
+>> <Agreed. This is better. >
+>>> Automatic loading of modules works too and it works on ARM, Intel and
+>>> AMD as module or static linked. ;)
+> 
+> Do you have tested the patches with a real device? I assume you have one. ;)
+> 
+> Regards,
+> 
+> Alexander Holler
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: PaX Team <pageexec@freemail.hu>
-Cc: stable@vger.kernel.org
----
-v2:
- - 32-bit was already aligned, noted by PaX Team
----
- arch/x86/kernel/head_64.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Just so you two know. Given this discussion, I'll be lazy about these and
+wait for an Ack from Srinivas before taking these.  Look fine to me, but
+nice to have confirmation as you say with the actual hardware!
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 5e4d8a8..77e6d3e 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -513,7 +513,7 @@ ENTRY(phys_base)
- #include "../../x86/xen/xen-head.S"
- 	
- 	.section .bss, "aw", @nobits
--	.align L1_CACHE_BYTES
-+	.align PAGE_SIZE
- ENTRY(idt_table)
- 	.skip IDT_ENTRIES * 16
- 
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
+Jonathan
