@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751297Ab3GLEjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 00:39:51 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49659 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab3GLEju (ORCPT
+	id S1751748Ab3GLEm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 00:42:29 -0400
+Received: from mail-qe0-f53.google.com ([209.85.128.53]:54240 "EHLO
+	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750859Ab3GLEm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 00:39:50 -0400
-X-IronPort-AV: E=Sophos;i="4.89,650,1367996400"; 
-   d="scan'208";a="62296129"
-X-IronPort-AV: E=Sophos;i="4.89,650,1367996400"; 
-   d="scan'208";a="567036546"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-wireless@vger.kernel.org>,
-        <ath10k@lists.infradead.org>
-Subject: Re: [PATCH 3/3] ath10k: ATH10K should depend on HAS_DMA
-References: <1373490216-12437-1-git-send-email-geert@linux-m68k.org>
-	<1373490216-12437-3-git-send-email-geert@linux-m68k.org>
-Date: Fri, 12 Jul 2013 07:39:39 +0300
-In-Reply-To: <1373490216-12437-3-git-send-email-geert@linux-m68k.org> (Geert
-	Uytterhoeven's message of "Wed, 10 Jul 2013 23:03:36 +0200")
-Message-ID: <87txk04cj8.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Fri, 12 Jul 2013 00:42:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [172.30.48.1]
+Date: Thu, 11 Jul 2013 23:42:27 -0500
+Message-ID: <CAPmiNYi34E6bZrPD7vOPV0HJ=7eHtNRqStdT1p2U2ET4vmx39Q@mail.gmail.com>
+Subject: Re: ALSA: Conexant CX20585 (thinkpad t510) speaker powersave regression
+From: Jason Schindler <jschind@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+I'm attempting to jump into the thread from here:
 
-> If NO_DMA=y:
->
-> drivers/built-in.o: In function `ath10k_skb_unmap':
-> drivers/net/wireless/ath/ath10k/core.h:98: undefined reference to `dma_unmap_single'
-> drivers/built-in.o: In function `ath10k_skb_map':
-> drivers/net/wireless/ath/ath10k/core.h:83: undefined reference to `dma_map_single'
-> drivers/net/wireless/ath/ath10k/core.h:86: undefined reference to `dma_mapping_error'
-> drivers/built-in.o: In function `ath10k_htt_rx_ring_free':
-> drivers/net/wireless/ath/ath10k/htt_rx.c:113: undefined reference to `dma_unmap_single'
-> drivers/built-in.o: In function `ath10k_htt_rx_amsdu_pop':
-> drivers/net/wireless/ath/ath10k/htt_rx.c:296: undefined reference to `dma_unmap_single'
-> drivers/net/wireless/ath/ath10k/htt_rx.c:389: undefined reference to `dma_unmap_single'
-> drivers/built-in.o: In function `__ath10k_htt_rx_ring_fill_n':
-> drivers/net/wireless/ath/ath10k/htt_rx.c:146: undefined reference to `dma_map_single'
-> drivers/net/wireless/ath/ath10k/htt_rx.c:150: undefined reference to `dma_mapping_error'
-> drivers/built-in.o: In function `ath10k_htt_rx_attach':
-> drivers/net/wireless/ath/ath10k/htt_rx.c:474: undefined reference to `dma_alloc_coherent'
-> drivers/net/wireless/ath/ath10k/htt_rx.c:509: undefined reference to `dma_free_coherent'
-> drivers/net/wireless/ath/ath10k/htt_rx.c:514: undefined reference to `dma_free_coherent'
-> drivers/built-in.o: In function `ath10k_htt_rx_detach':
-> drivers/net/wireless/ath/ath10k/htt_rx.c:220: undefined reference to `dma_unmap_single'
-> drivers/net/wireless/ath/ath10k/htt_rx.c:228: undefined reference to `dma_free_coherent'
-> drivers/built-in.o: In function `ath10k_skb_map':
-> drivers/net/wireless/ath/ath10k/core.h:83: undefined reference to `dma_map_single'
-> drivers/net/wireless/ath/ath10k/core.h:86: undefined reference to `dma_mapping_error'
-> drivers/built-in.o: In function `ath10k_skb_unmap':
-> drivers/net/wireless/ath/ath10k/core.h:98: undefined reference to `dma_unmap_single'
-> drivers/built-in.o: In function `ath10k_skb_map':
-> drivers/net/wireless/ath/ath10k/core.h:83: undefined reference to `dma_map_single'
-> drivers/net/wireless/ath/ath10k/core.h:86: undefined reference to `dma_mapping_error'
-> drivers/net/wireless/ath/ath10k/core.h:83: undefined reference to `dma_map_single'
-> drivers/net/wireless/ath/ath10k/core.h:86: undefined reference to `dma_mapping_error'
-> drivers/built-in.o: In function `ath10k_skb_unmap':
-> drivers/net/wireless/ath/ath10k/core.h:98: undefined reference to `dma_unmap_single'
-> drivers/net/wireless/ath/ath10k/core.h:98: undefined reference to `dma_unmap_single'
-> drivers/net/wireless/ath/ath10k/core.h:98: undefined reference to `dma_unmap_single'
-> drivers/net/wireless/ath/ath10k/core.h:98: undefined reference to `dma_unmap_single'
->
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: linux-wireless@vger.kernel.org
+http://markmail.org/message/zqbhcuc2gnxji3s7
 
-Thanks, I'll take this and send forward.
+I'm experiencing the same issue as described in the thread.  I'm
+currently running kernel 3.9.6, but have had the issue for some time.
 
--- 
-Kalle Valo
+I attempted to go through the debugging requested by Takashi Iwai on Jan 13.
+
+Immediately after issuing the "hda-verb /dev/snd/hwC0D0 0x1f
+SET_POWER_STATE 0" command, here is the trace output:
+
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 8/8   #P:4
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+        hda-verb-14066 [001] .... 90509.001737: hda_power_count: [0:0]
+power_count=2, power_on=1, power_transition=0
+        hda-verb-14066 [001] .... 90509.001740: hda_send_cmd: [0:0] val=1f70500
+        hda-verb-14066 [001] .... 90509.001814: hda_get_response: [0:0] val=0
+        hda-verb-14066 [001] .... 90509.001814: hda_power_count: [0:0]
+power_count=1, power_on=1, power_transition=0
+        hda-verb-14122 [003] .... 90712.799801: hda_power_count: [0:0]
+power_count=2, power_on=1, power_transition=0
+        hda-verb-14122 [003] .... 90712.799804: hda_send_cmd: [0:0] val=1f70500
+        hda-verb-14122 [003] .... 90712.799880: hda_get_response: [0:0] val=0
+        hda-verb-14122 [003] .... 90712.799881: hda_power_count: [0:0]
+power_count=1, power_on=1, power_transition=0
+
+When the speakers stop, here is the output:
+
+# tracer: nop
+#
+# entries-in-buffer/entries-
+written: 8/8   #P:4
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+        hda-verb-14066 [001] .... 90509.001737: hda_power_count: [0:0]
+power_count=2, power_on=1, power_transition=0
+        hda-verb-14066 [001] .... 90509.001740: hda_send_cmd: [0:0] val=1f70500
+        hda-verb-14066 [001] .... 90509.001814: hda_get_response: [0:0] val=0
+        hda-verb-14066 [001] .... 90509.001814: hda_power_count: [0:0]
+power_count=1, power_on=1, power_transition=0
+        hda-verb-14122 [003] .... 90712.799801: hda_power_count: [0:0]
+power_count=2, power_on=1, power_transition=0
+        hda-verb-14122 [003] .... 90712.799804: hda_send_cmd: [0:0] val=1f70500
+        hda-verb-14122 [003] .... 90712.799880: hda_get_response: [0:0] val=0
+        hda-verb-14122 [003] .... 90712.799881: hda_power_count: [0:0]
+power_count=1, power_on=1, power_transition=0
+
+I'm a bit out of my element here, if I've missed a crucial step,
+please let me know.
+
+Thanks!
+
+-Jason
