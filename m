@@ -1,54 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab3GLB7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 21:59:52 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:21426 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab3GLB7v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 21:59:51 -0400
-X-Spam-Score: -100.8
-Message-ID: <51DF62DB.3010409@asianux.com>
-Date: Fri, 12 Jul 2013 09:58:51 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: trace: remove __init from race_selftest_startup_function()
- and trace_selftest_startup_function_graph()
-References: <51DDFCF8.2090808@asianux.com>  <1373561279.17876.45.camel@gandalf.local.home>  <51DF44FA.9060000@asianux.com> <1373593261.17876.61.camel@gandalf.local.home>
-In-Reply-To: <1373593261.17876.61.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932592Ab3GLCEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:04:08 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:42361 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932556Ab3GLCEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 22:04:07 -0400
+From: Robin Holt <holt@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [RFC 1/4] memblock: Introduce a for_each_reserved_mem_region iterator.
+Date: Thu, 11 Jul 2013 21:03:52 -0500
+Message-Id: <1373594635-131067-2-git-send-email-holt@sgi.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1373594635-131067-1-git-send-email-holt@sgi.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 09:41 AM, Steven Rostedt wrote:
-> On Fri, 2013-07-12 at 07:51 +0800, Chen Gang wrote:
-> 
->> > Hmm, can all trace_selftest_startup_* (*selftest* in trace_selftest.c)
->> > use '__init', so not waste memory keeping them around ?
-> Yeah, they should all be set to __init, but that's pretty low on the
-> totem poll, as distros don't enable selftests in their main kernels.
+As part of initializing struct page's in 2MiB chunks, we noticed that
+at the end of free_all_bootmem(), there was nothing which had forced
+the reserved/allocated 4KiB pages to be initialized.
 
-Excuse me, my English is not quite well, I guess your meaning is:
+This helper function will be used for that expansion.
 
-  they should all be set to '__init', although it is minor in real world.
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Nate Zimmer <nzimmer@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linux MM <linux-mm@kvack.org>
+Cc: Rob Landley <rob@landley.net>
+Cc: Mike Travis <travis@sgi.com>
+Cc: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+ include/linux/memblock.h | 18 ++++++++++++++++++
+ mm/memblock.c            | 32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+)
 
-Is it correct ?
-
-
-For me, I recommend to let all *selftest* as the same: "all add '
-__init' or none add '__init'" (if choose add, all report warnings).
-
-Is it suitable to still send new related patch for it ? If so, could
-you provide your suggesting choice (all add, or none add) ?
-
-
-Thanks.
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index f388203..e99bbd1 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -118,6 +118,24 @@ void __next_free_mem_range_rev(u64 *idx, int nid, phys_addr_t *out_start,
+ 	     i != (u64)ULLONG_MAX;					\
+ 	     __next_free_mem_range_rev(&i, nid, p_start, p_end, p_nid))
+ 
++void __next_reserved_mem_region(u64 *idx, phys_addr_t *out_start,
++			       phys_addr_t *out_end);
++
++/**
++ * for_earch_reserved_mem_region - iterate over all reserved memblock areas
++ * @i: u64 used as loop variable
++ * @p_start: ptr to phys_addr_t for start address of the range, can be %NULL
++ * @p_end: ptr to phys_addr_t for end address of the range, can be %NULL
++ *
++ * Walks over reserved areas of memblock in. Available as soon as memblock
++ * is initialized.
++ */
++#define for_each_reserved_mem_region(i, p_start, p_end)			\
++	for (i = 0UL,							\
++	     __next_reserved_mem_region(&i, p_start, p_end);		\
++	     i != (u64)ULLONG_MAX;					\
++	     __next_reserved_mem_region(&i, p_start, p_end))
++
+ #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
+ int memblock_set_node(phys_addr_t base, phys_addr_t size, int nid);
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index c5fad93..0d7d6e7 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -564,6 +564,38 @@ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ }
+ 
+ /**
++ * __next_reserved_mem_region - next function for for_each_reserved_region()
++ * @idx: pointer to u64 loop variable
++ * @out_start: ptr to phys_addr_t for start address of the region, can be %NULL
++ * @out_end: ptr to phys_addr_t for end address of the region, can be %NULL
++ *
++ * Iterate over all reserved memory regions.
++ */
++void __init_memblock __next_reserved_mem_region(u64 *idx,
++					   phys_addr_t *out_start,
++					   phys_addr_t *out_end)
++{
++	struct memblock_type *rsv = &memblock.reserved;
++
++	if (*idx >= 0 && *idx < rsv->cnt) {
++		struct memblock_region *r = &rsv->regions[*idx];
++		phys_addr_t base = r->base;
++		phys_addr_t size = r->size;
++
++		if (out_start)
++			*out_start = base;
++		if (out_end)
++			*out_end = base + size - 1;
++
++		*idx += 1;
++		return;
++	}
++
++	/* signal end of iteration */
++	*idx = ULLONG_MAX;
++}
++
++/**
+  * __next_free_mem_range - next function for for_each_free_mem_range()
+  * @idx: pointer to u64 loop variable
+  * @nid: nid: node selector, %MAX_NUMNODES for all nodes
 -- 
-Chen Gang
+1.8.2.1
+
