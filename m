@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964924Ab3GLNak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 09:30:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59594 "EHLO
+	id S964937Ab3GLNa5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:30:57 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59611 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964802Ab3GLNa0 (ORCPT
+	with ESMTP id S964808Ab3GLNay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 09:30:26 -0400
-Date: Fri, 12 Jul 2013 06:29:49 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-cedce3e730833d26a37826a96e1905b6ef387df9@git.kernel.org>
+	Fri, 12 Jul 2013 09:30:54 -0400
+Date: Fri, 12 Jul 2013 06:30:00 -0700
+From: tip-bot for Dave Hansen <tipbot@zytor.com>
+Message-ID: <tip-baf64b85445546a38b44052d71782dfe7531e350@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rostedt@goodmis.org, peterz@infradead.org, tkhai@yandex.ru,
-        tglx@linutronix.de
+        dave.hansen@linux.intel.com, tglx@linutronix.de, dave@sr71.net
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, peterz@infradead.org, tkhai@yandex.ru,
-        tglx@linutronix.de
-In-Reply-To: <512421372963700@web25f.yandex.ru>
-References: <512421372963700@web25f.yandex.ru>
+        tglx@linutronix.de, dave.hansen@linux.intel.com, dave@sr71.net
+In-Reply-To: <20130708214404.B0B6EA66@viggo.jf.intel.com>
+References: <20130708214404.B0B6EA66@viggo.jf.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/__wake_up_sync_key():
-  Fix nr_exclusive tasks which lead to WF_SYNC clearing
-Git-Commit-ID: cedce3e730833d26a37826a96e1905b6ef387df9
+Subject: [tip:perf/urgent] perf/x86: Fix incorrect use of do_div()
+  in NMI warning
+Git-Commit-ID: baf64b85445546a38b44052d71782dfe7531e350
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,41 +28,63 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 06:29:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 06:30:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cedce3e730833d26a37826a96e1905b6ef387df9
-Gitweb:     http://git.kernel.org/tip/cedce3e730833d26a37826a96e1905b6ef387df9
-Author:     Kirill Tkhai <tkhai@yandex.ru>
-AuthorDate: Thu, 4 Jul 2013 22:48:20 +0400
+Commit-ID:  baf64b85445546a38b44052d71782dfe7531e350
+Gitweb:     http://git.kernel.org/tip/baf64b85445546a38b44052d71782dfe7531e350
+Author:     Dave Hansen <dave.hansen@linux.intel.com>
+AuthorDate: Mon, 8 Jul 2013 14:44:04 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 12 Jul 2013 13:54:03 +0200
+CommitDate: Fri, 12 Jul 2013 14:13:04 +0200
 
-sched/__wake_up_sync_key(): Fix nr_exclusive tasks which lead to WF_SYNC clearing
+perf/x86: Fix incorrect use of do_div() in NMI warning
 
-Only one task can replace the waker.
+I completely botched understanding the calling conventions of
+do_div().  I assumed that do_div() returned the result instead
+of realizing that it modifies its argument and returns a
+remainder.  The side-effect from this would be bogus numbers
+for the "msecs" value in the warning messages:
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-CC: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/512421372963700@web25f.yandex.ru
+	INFO: NMI handler (perf_event_nmi_handler) took too long to run: 0.114 msecs
+
+Note, there was a second fix posted by Stephane Eranian for
+a separate patch which I also botched:
+
+	http://lkml.kernel.org/r/20130704223010.GA30625@quad
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: Dave Hansen <dave@sr71.net>
+Link: http://lkml.kernel.org/r/20130708214404.B0B6EA66@viggo.jf.intel.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/nmi.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0d8eb45..f737871 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2660,7 +2660,7 @@ void __wake_up_sync_key(wait_queue_head_t *q, unsigned int mode,
- 	if (unlikely(!q))
- 		return;
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index 0920212..ba77ebc 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -111,7 +111,7 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
+ 	 */
+ 	list_for_each_entry_rcu(a, &desc->head, list) {
+ 		u64 before, delta, whole_msecs;
+-		int decimal_msecs, thishandled;
++		int remainder_ns, decimal_msecs, thishandled;
  
--	if (unlikely(!nr_exclusive))
-+	if (unlikely(nr_exclusive != 1))
- 		wake_flags = 0;
+ 		before = local_clock();
+ 		thishandled = a->handler(type, regs);
+@@ -123,8 +123,9 @@ static int __kprobes nmi_handle(unsigned int type, struct pt_regs *regs, bool b2
+ 			continue;
  
- 	spin_lock_irqsave(&q->lock, flags);
+ 		nmi_longest_ns = delta;
+-		whole_msecs = do_div(delta, (1000 * 1000));
+-		decimal_msecs = do_div(delta, 1000) % 1000;
++		whole_msecs = delta;
++		remainder_ns = do_div(whole_msecs, (1000 * 1000));
++		decimal_msecs = remainder_ns / 1000;
+ 		printk_ratelimited(KERN_INFO
+ 			"INFO: NMI handler (%ps) took too long to run: "
+ 			"%lld.%03d msecs\n", a->handler, whole_msecs,
