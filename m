@@ -1,47 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964905Ab3GLNti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 09:49:38 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36987 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964861Ab3GLNth (ORCPT
+	id S964987Ab3GLNt7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:49:59 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:38652 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964861Ab3GLNt6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 09:49:37 -0400
-Date: Fri, 12 Jul 2013 14:49:31 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] MFD: twl6040: Remove support for legacy (pdata) mode
-Message-ID: <20130712134931.GL25601@gmail.com>
-References: <1373628724-11397-1-git-send-email-peter.ujfalusi@ti.com>
+	Fri, 12 Jul 2013 09:49:58 -0400
+Date: Fri, 12 Jul 2013 06:50:00 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Wei Ni <wni@nvidia.com>, thierry.reding@gmail.com,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] hwmon: (lm90) split set&show temp as common codes
+Message-ID: <20130712135000.GA3386@roeck-us.net>
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
+ <1373615287-18502-2-git-send-email-wni@nvidia.com>
+ <20130712152615.23464a6b@endymion.delvare>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1373628724-11397-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <20130712152615.23464a6b@endymion.delvare>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Jul 2013, Peter Ujfalusi wrote:
-
-> TWL6040 is used only with OMAP4/5 SoCs and they can only boot in in DT mode.
-> The support for pdata/legacy boot can be removed.
+On Fri, Jul 12, 2013 at 03:26:15PM +0200, Jean Delvare wrote:
+> Hi Wei, Guenter,
 > 
-> Add TODO comment to the header file that all pdata struct can be removed in
-> the next merge window (after the sub driver updates are in).
+> Guenter, thanks for reviewing the previous version of this patch.
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  drivers/mfd/twl6040.c       | 55 +++++++++++----------------------------------
->  include/linux/mfd/twl6040.h |  1 +
->  2 files changed, 14 insertions(+), 42 deletions(-)
+> Wei, thanks for incorporating review feedback and posting updated
+> patches so quickly, this is very appreciated, even though I'm too busy
+> these days to be that fast on my end, sorry about that.
+> 
+> On Fri, 12 Jul 2013 15:48:04 +0800, Wei Ni wrote:
+> > Split set&show temp codes as common functions, so we can use it directly when
+> > implement linux thermal framework.
+> 
+> Can I see a recent version of the code which will need this change? It
+> makes no sense to apply this first part which makes the code more
+> complex with no benefit, without the second part which needs it, so
+> they should be applied together or not at all.
+> 
+> One thing I am a little worried about (but maybe I'm wrong) is that I
+> seem to understand you want to register every LM90-like chip as both a
+> hwmon device and two thermal devices. I seem to recall that every
+> thermal device is also exposed automatically as a virtual hwmon
+> device, is that correct? If so we will be presenting the same values
+> twice to libsensors, which would be confusing.
+> 
+Not sure if that is a good idea, but if I recall correctly, the thermal folks
+plan to remove that path.
 
-Applied, thanks.
+Guenter
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> > Signed-off-by: Wei Ni <wni@nvidia.com>
+> > ---
+> >  drivers/hwmon/lm90.c |  112 +++++++++++++++++++++++++++++++-------------------
+> >  1 file changed, 69 insertions(+), 43 deletions(-)
+> 
+> The code changes look good, however I have one suggestion for
+> improvement (plus a minor cleanup request):
+> 
+> > diff --git a/drivers/hwmon/lm90.c b/drivers/hwmon/lm90.c
+> > index 8eeb141..5f30f90 100644
+> > --- a/drivers/hwmon/lm90.c
+> > +++ b/drivers/hwmon/lm90.c
+> > (...)
+> > -static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+> > -			 const char *buf, size_t count)
+> > (...)
+> > +static void write_temp8(struct device *dev, int index, long val)
+> >  {
+> >  	static const u8 reg[8] = {
+> >  		LM90_REG_W_LOCAL_LOW,
+> > @@ -737,60 +742,73 @@ static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+> >  		MAX6659_REG_W_REMOTE_EMERG,
+> >  	};
+> >  
+> > -	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> >  	struct i2c_client *client = to_i2c_client(dev);
+> >  	struct lm90_data *data = i2c_get_clientdata(client);
+> > -	int nr = attr->index;
+> > -	long val;
+> > -	int err;
+> > -
+> > -	err = kstrtol(buf, 10, &val);
+> > -	if (err < 0)
+> > -		return err;
+> >  
+> >  	/* +16 degrees offset for temp2 for the LM99 */
+> > -	if (data->kind == lm99 && attr->index == 3)
+> > +	if (data->kind == lm99 && index == 3)
+> >  		val -= 16000;
+> >  
+> >  	mutex_lock(&data->update_lock);
+> >  	if (data->kind == adt7461)
+> > -		data->temp8[nr] = temp_to_u8_adt7461(data, val);
+> > +		data->temp8[index] = temp_to_u8_adt7461(data, val);
+> >  	else if (data->kind == max6646)
+> > -		data->temp8[nr] = temp_to_u8(val);
+> > +		data->temp8[index] = temp_to_u8(val);
+> >  	else
+> > -		data->temp8[nr] = temp_to_s8(val);
+> > +		data->temp8[index] = temp_to_s8(val);
+> >  
+> > -	lm90_select_remote_channel(client, data, nr >= 6);
+> > -	i2c_smbus_write_byte_data(client, reg[nr], data->temp8[nr]);
+> > +	lm90_select_remote_channel(client, data, index >= 6);
+> > +	i2c_smbus_write_byte_data(client, reg[index], data->temp8[index]);
+> 
+> This write could fail. So far the lm90 driver has failed to handle
+> register write errors at all, and I will take the blame for that. But
+> if we want to integrate properly with the thermal subsystem, I suspect
+> we will have to properly report errors. So it might be the right time
+> to catch and return write errors here. Then set_temp8() below could
+> return it to user-space (either in this patch or in a separate patch,
+> as you prefer.)
+> 
+> And then as a next step, lm90_select_remote_channel should return
+> errors as they happen as well, so that they can be transmitted to the
+> caller.
+> 
+> >  	lm90_select_remote_channel(client, data, 0);
+> >  
+> >  	mutex_unlock(&data->update_lock);
+> > +}
+> > +
+> > +static ssize_t set_temp8(struct device *dev, struct device_attribute *devattr,
+> > +			 const char *buf, size_t count)
+> > +{
+> > +	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
+> > +	int index = attr->index;
+> > +	long val;
+> > +	int err;
+> > +
+> > +	err = kstrtol(buf, 10, &val);
+> > +	if (err < 0)
+> > +		return err;
+> > +
+> > +	write_temp8(dev, index, val);
+> > +
+> >  	return count;
+> >  }
+> >  
+> > -static ssize_t show_temp11(struct device *dev, struct device_attribute *devattr,
+> > -			   char *buf)
+> > +static int read_temp11(struct device *dev, int index)
+> >  {
+> > -	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> >  	struct lm90_data *data = lm90_update_device(dev);
+> >  	int temp;
+> >  
+> >  	if (data->kind == adt7461)
+> > -		temp = temp_from_u16_adt7461(data, data->temp11[attr->index]);
+> > +		temp = temp_from_u16_adt7461(data, data->temp11[index]);
+> >  	else if (data->kind == max6646)
+> > -		temp = temp_from_u16(data->temp11[attr->index]);
+> > +		temp = temp_from_u16(data->temp11[index]);
+> >  	else
+> > -		temp = temp_from_s16(data->temp11[attr->index]);
+> > +		temp = temp_from_s16(data->temp11[index]);
+> >  
+> >  	/* +16 degrees offset for temp2 for the LM99 */
+> > -	if (data->kind == lm99 &&  attr->index <= 2)
+> > +	if (data->kind == lm99 &&  index <= 2)
+> 
+> There's a doubled space on this line. It isn't added by your patch, it
+> was already there before, but please fix it while you're here.
+> 
+> >  		temp += 16000;
+> >  
+> > -	return sprintf(buf, "%d\n", temp);
+> > +	return temp;
+> >  }
+> >  
+> > -static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+> > -			  const char *buf, size_t count)
+> > (...)
+> > +static void write_temp11(struct device *dev, int nr, int index, long val)
+> 
+> Here too I would suggest returning errors from the I2C layer, and
+> handling them in set_temp11() now or later.
+> 
+> >  {
+> >  	struct {
+> >  		u8 high;
+> > @@ -804,17 +822,8 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+> >  		{ LM90_REG_W_REMOTE_HIGHH, LM90_REG_W_REMOTE_HIGHL, 1 }
+> >  	};
+> >  
+> > -	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> >  	struct i2c_client *client = to_i2c_client(dev);
+> >  	struct lm90_data *data = i2c_get_clientdata(client);
+> > -	int nr = attr->nr;
+> > -	int index = attr->index;
+> > -	long val;
+> > -	int err;
+> > -
+> > -	err = kstrtol(buf, 10, &val);
+> > -	if (err < 0)
+> > -		return err;
+> >  
+> >  	/* +16 degrees offset for temp2 for the LM99 */
+> >  	if (data->kind == lm99 && index <= 2)
+> > @@ -839,6 +848,23 @@ static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+> >  	lm90_select_remote_channel(client, data, 0);
+> >  
+> >  	mutex_unlock(&data->update_lock);
+> > +}
+> > +
+> > +static ssize_t set_temp11(struct device *dev, struct device_attribute *devattr,
+> > +			  const char *buf, size_t count)
+> > +{
+> > +	struct sensor_device_attribute_2 *attr = to_sensor_dev_attr_2(devattr);
+> > +	int nr = attr->nr;
+> > +	int index = attr->index;
+> > +	long val;
+> > +	int err;
+> > +
+> > +	err = kstrtol(buf, 10, &val);
+> > +	if (err < 0)
+> > +		return err;
+> > +
+> > +	write_temp11(dev, nr, index, val);
+> > +
+> >  	return count;
+> >  }
+> >  
+> 
+> -- 
+> Jean Delvare
+> 
