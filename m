@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965343Ab3GLTNZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 15:13:25 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36869 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965136Ab3GLTNX (ORCPT
+	id S1757543Ab3GLTYL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 15:24:11 -0400
+Received: from smtp.opengridcomputing.com ([72.48.136.20]:33577 "EHLO
+	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757318Ab3GLTYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 15:13:23 -0400
-Date: Fri, 12 Jul 2013 20:13:21 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [git pull] vfs.git part 2
-Message-ID: <20130712191321.GB4165@ZenIV.linux.org.uk>
-References: <20130703122918.GK4165@ZenIV.linux.org.uk>
- <CA+55aFyyxJL1LyXZeBsf2ypriraj5ut1XkNDsunRBqgVjZU_6Q@mail.gmail.com>
- <20130712054817.GY4165@ZenIV.linux.org.uk>
- <8738rk9eai.fsf@rasmusvillemoes.dk>
- <20130712154833.GA4165@ZenIV.linux.org.uk>
- <87wqovviyy.fsf@rasmusvillemoes.dk>
+	Fri, 12 Jul 2013 15:24:10 -0400
+Message-ID: <51E057DE.5050909@opengridcomputing.com>
+Date: Fri, 12 Jul 2013 14:24:14 -0500
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqovviyy.fsf@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Oops mystery
+References: <51E02545.7080106@opengridcomputing.com> <20130712164816.GE1020@redhat.com> <51E0348A.2030208@opengridcomputing.com> <20130712170046.GB1537@redhat.com> <51E03809.5030307@opengridcomputing.com> <20130712171422.GC1537@redhat.com>
+In-Reply-To: <20130712171422.GC1537@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 04:30:45PM +0000, Rasmus Villemoes wrote:
-> >> Just thinking out loud, and please tell me to shut up if it doesn't make
-> >> sense: The documentation for O_DIRECTORY seems to imply that one could
-> >> require O_DIRECTORY to be given when using O_TMPFILE. The "If pathname
-> >> is not a directory, cause the open to fail" certainly seems to make
-> >> sense when O_TMPFILE is used, and older kernels should complain when
-> >> seeing the O_CREAT|O_DIRECTORY combination. It is a hack, though.
-> >
-> > They should, but they won't ;-/
-> 
-> I see; I should test before I post, but...
-> 
-> > It's the same problem - we do *not* validate the flags argument.
-> > We'll get to do_last(), hit lookup_open(), which will create the
-> > sucker and go to finish_open_created.  Which is past the logics
-> > checking for LOOKUP_DIRECTORY trying to return a non-directory and it
-> > would've been too late to fail anyway - the file has already been
-> > created.  IOW, O_DIRECTORY is ignored when O_CREAT is present *and*
-> > file didn't exist already.  In that case we almost certainly can treat
-> > that as a bug (i.e. start failing open() on O_CREAT | O_DIRECTORY in
-> > all cases - I'd be _very_ surprised if somebody called open() with
-> > such combination of flags), but that doesn't help with older
-> > kernels...
-> 
-> ... it seems that if one then omits O_CREAT, things work out ok, as long
-> as one uses O_RDWR (which is the only sane thing to do with O_TMPFILE, I
-> guess):
-> 
-> open("/tmp/test/dir", O_DIRECTORY | O_RDWR, 0666) -> -1; Is a directory
-> open("/tmp/test/dir", O_DIRECTORY | O_RDONLY, 0666) -> 3; Success
-> open("/tmp/test/file", O_DIRECTORY | O_RDWR, 0666) -> -1; Not a directory
-> open("/tmp/test/link_to_file", O_DIRECTORY | O_RDWR, 0666) -> -1; Not a directory
-> open("/tmp/test/link_to_nowhere", O_DIRECTORY | O_RDWR, 0666) -> -1; No such file or directory
-> open("/tmp/test/link_to_dir", O_DIRECTORY | O_RDWR, 0666) -> -1; Is a directory
-> open("/tmp/test/link_to_dir", O_DIRECTORY | O_RDONLY, 0666) -> 3; Success
-> open("/tmp/test/link_to_dir", O_NOFOLLOW | O_DIRECTORY | O_RDWR, 0666) -> -1; Too many levels of symbolic links
-> open("/tmp/test/link_to_dir", O_NOFOLLOW | O_DIRECTORY | O_RDONLY, 0666) -> -1; Too many levels of symbolic links
-> 
-> (The above flags are what an old kernel would effectively see with or
-> without O_TMPFILE present, I suppose.)
-> 
-> How about simply making O_TMPFILE == O_DIRECTORY | O_RDWR |
-> O_TMPFILE_INTERNAL, and letting the correct use be 
-> 
-> open("/some/dir", O_TMPFILE) [with or without a mode argument]
-> 
-> Using O_DIRECTORY when we don't want to open a directory, and omitting
-> O_CREAT when we do want to create something new, is somewhat
-> counter-intuitive, but I think this would solve the problem with old
-> kernels.
+On 7/12/2013 12:14 PM, Dave Jones wrote:
+> On Fri, Jul 12, 2013 at 12:08:25PM -0500, Steve Wise wrote:
+>   
+>   > There is no 'Code:' line in the log.  I thought about that that too, but
+>   > I don't see it dumping the code.   The kernel is a SLES11sp1 kernel,
+>   > 1.6.32.54-0.3-default.
+>   
+> "Ask suse" is probably your best bet in that case.
+>
+>   > [ 1054.392502] Modules linked in: smb2(N) smb(N) smb_manager(N)
+>   > nas_netlink(N) af_packet nfsd nfs_common(N) lockd auth_rpcgss nas_acl(N)
+>   > nas_proto_vfs(N) sunrpc snas_ts(N) ipmi_devintf snas_cafs(PN) snas_ca(N)
+>   > ipmi_si ipmi_msghandler snas_mds(PN) snas_ds(N) nm(PN) snas_nvcache(PN)
+>   > snas_dlm(PN) snas_trns(PN) snas_cm_sdd(PN) snas_cm_pma(PN)
+>   > disk_online_diagnostic(N) snas_monc(N) snas_fc(N) snas_mml(PN) cstl(PN)
+>   > ptlrpc(N) ko2iblnd(N) ksocklnd(N) obdclass(N) lnet(N) lvfs(PN) libcfs(N)
+>   > snas_base(PN) nofs(N) usos(N) zlib_deflate cpufreq_conservative
+>   > cpufreq_userspace cpufreq_powersave acpi_cpufreq t3k_mpt2sas_vdl(N)
+>   > raidrepair(N) ib_ipoib ib_umad iw_nes crc32c libcrc32c iw_cxgb3 cxgb3
+>   > ib_qib(N) dca mlx4_ib mlx4_en mlx4_core ib_mthca nvdimm_mapping(N)
+>   > smbuspci(N) microcode t4_tom(N) toecore(N) rdma_ucm ib_uverbs rdma_cm
+>   > ib_cm iw_cm ib_sa ib_mad ib_addr ipv6 iw_cxgb4(N) ib_core
+>   > soft_watchdog(PN) kbox(PN) fuse loop dm_mod tpm_tis tpm iTCO_wdt
+>   > rtc_cmos tpm_bios i2c_i801 cxgb4(N) pcspkr iTCO_vendor_support i2c_core
+>   > rtc_core ses sg rtc_lib bnx2 enclosure wmi button container usbhid hid
+>   > ehci_hcd usbcore sd_mod crc_t10dif edd ext3 mbcache jbd fan processor
+>   > mpt2sas scsi_transport_sas raid_class scsi_mod thermal thermal_sys hwmon
+>   
+> Or maybe one of the proprietary module vendors. Who knows.
+>
+>
 
-Hrm...  I can't say I like it, but it's almost OK; the only problem here
-is the bug fixed by commit bc77daa78 - on some of the old kernels (including
-3.10, BTW) we used to allow opening /proc/self/fd/0 with O_DIRECTORY|O_RDWR ;-/
+I was hoping someone could verify that my analysis is correct, or if 
+I've come to the wrong conclusion due to some mistake in my analysis.
 
-Said that, I think it's more tolerable than the kludge I came up with -
-one would need to pass it a procfs symlink as argument to hit that.
-Linus, your opinion?
+Steve.
+
+
