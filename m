@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab3GLOg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:36:56 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49055 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757203Ab3GLOgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:36:55 -0400
-Date: Fri, 12 Jul 2013 16:36:34 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Ming Lei <tom.leiming@gmail.com>, Linda Walsh <lkml@tlinx.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
-Message-ID: <20130712143634.GK24008@pd.tnic>
-References: <51D9EAF3.4050804@tlinx.org>
- <CACVXFVPRwakzB6vtqRqL49StHKdugCpxDyNvx3VzcDC7GggFMQ@mail.gmail.com>
- <20130712080428.GB359@x4>
- <20130712134115.GI24008@pd.tnic>
- <20130712142844.GA359@x4>
+	id S1757519Ab3GLOhg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:37:36 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:32951 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757203Ab3GLOhe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 10:37:34 -0400
+Date: Fri, 12 Jul 2013 10:37:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+cc: shuox.liu@intel.com, <linux-kernel@vger.kernel.org>, <len.brown@intel.com>,
+        <pavel@ucw.cz>, <rjw@sisk.pl>, <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] PM: avoid 'autosleep' in shutdown progress
+In-Reply-To: <1373609651.4432.122.camel@ymzhang.sh.intel.com>
+Message-ID: <Pine.LNX.4.44L0.1307121034180.1469-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130712142844.GA359@x4>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 04:28:44PM +0200, Markus Trippelsdorf wrote:
-> Yes, it's working fine here, too. Thanks Boris.
+On Fri, 12 Jul 2013, Yanmin Zhang wrote:
 
-Thanks Markus!
+> On Thu, 2013-07-11 at 16:03 +0800, shuox.liu@intel.com wrote:
+> > From: Liu ShuoX <shuox.liu@intel.com>
+> > 
+> > In shutdown progress, system is possible to do power transition
+> > (such as suspend-to-ram) in parallel. It is unreasonable. So,
+> > fixes it by adding a system_state checking and queue try_to_suspend
+> > again when system status is not running.
+> > 
+> > Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
+> > ---
+> >  kernel/power/autosleep.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> Without this patch, we hit an hang issue on Android.
+> 
+> Scenario:
+> Kernel starts shutdown and calls all device driver's shutdown callback.
+> When a driver's shutdown is called, the last wakelock is released and
+> suspend-to-ram starts. However, as some driver's shut down callbacks
+> already shut down devices and disable runtime pm, the suspend-to-ram
+> calls driver's suspend callback without noticing that device is already
+> off and causes crash.
+> We know the drivers should be fixed, but can we also change generic
+> codes a little to make it stronger?
 
--- 
-Regards/Gruss,
-    Boris.
+Indeed, this does seem like the sort of thing we want to have.  
+Allowing an "automatic" or "opportunistic" sleep in the middle of a
+shutdown makes no sense at all.  In fact, it might be a good idea to
+disable system sleep completely at this time -- not even a write to
+/sys/power/state should be allowed to interrupt a shutdown.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Alan Stern
+
