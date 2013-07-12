@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757643Ab3GLKwn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 06:52:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55264 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757269Ab3GLKwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 06:52:41 -0400
-Message-ID: <51DFDFF5.80702@suse.de>
-Date: Fri, 12 Jul 2013 12:52:37 +0200
-From: Hannes Reinecke <hare@suse.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757727Ab3GLKyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 06:54:22 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:39326 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757301Ab3GLKyV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 06:54:21 -0400
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Greg KH <greg@kroah.com>, ksummit-2013-discuss@lists.linuxfoundation.org,
-        Jens Axboe <axboe@kernel.dk>, James Smart <James.Smart@Emulex.Com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, kmo@daterainc.com,
-        target-devel <target-devel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>, scameron@beardog.cce.hp.com
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>  <20130712010223.GA15673@kroah.com> <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
-X-Enigmail-Version: 1.6a1pre
+In-Reply-To: <20130705195512.GJ27646@sirena.org.uk>
+References: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
+	<20130705195512.GJ27646@sirena.org.uk>
+Date: Fri, 12 Jul 2013 13:54:20 +0300
+Message-ID: <CAHp75VeasHGariq=v005NSUTe_+e471NYbEoSzPJXcFNgsfKNQ@mail.gmail.com>
+Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Bin Gao <bin.gao@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
-> On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
->> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
->>> Drilling down the work items ahead of a real mainline push is high on
->>> priority list for discussion.
->>>
->>> The parties to be included in such a discussion are:
->>>
->>>   - Jens Axboe (blk-mq author)
->>>   - James Bottomley (scsi maintainer)
->>>   - Christoph Hellwig (scsi)
->>>   - Martin Petersen (scsi)
->>>   - Tejun Heo (block + libata)
->>>   - Hannes Reinecke (scsi error recovery)
->>>   - Kent Overstreet (block, per-cpu ida)
->>>   - Stephen Cameron (scsi-over-pcie driver)
->>>   - Andrew Vasquez (qla2xxx LLD)
->>>   - James Smart (lpfc LLD)
->>
->> Isn't this something that should have been discussed at the storage
->> mini-summit a few months ago?
-> 
-> The scsi-mq prototype, along with blk-mq (in it's current form) did not
-> exist a few short months ago.  ;)
-> 
->>  It seems very specific to one subsystem to be a kernel summit topic,
->> don't you think?
-> 
-> It's no more subsystem specific than half of the other proposals so far,
-> and given it's reach across multiple subsystems (block, scsi, target),
-> and the amount of off-list interest on the topic, I think it would make
-> a good candidate for discussion.
-> 
-And it'll open up new approaches which previously were dismissed,
-like re-implementing multipathing on top of scsi-mq, giving us the
-single scsi device like other UNIX systems.
+On Fri, Jul 5, 2013 at 10:55 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Jun 06, 2013 at 11:33:46AM -0700, Bin Gao wrote:
+>
+>> A good example is that an ISP(Imaging Signal Processor) driver needs
+>> register i2c camera sensor devices via v4l2, so it has to unregister
+>> all i2c clients that were previously registered by calling
+>> i2c_register_board_info(), and then re-register. For this case we
+>> can use this helper to get i2c_client by passing the client name.
+>
+> Please look at the work that IIRC Laurent Pichart (CCed) was doing on
+> developing generic DT bindings for v4l in embedded systems,
 
-Also I do think there's quite some synergy to be had, as with blk-mq
-we could nail each queue to a processor, which would eliminate the
-need for locking.
-Which could be useful for other subsystems, too.
+I couldn't find anything related to OF except v4l2-of.c in the v4l2-core.
+Is that what you mentioned?
 
-Cheers,
+> it sounds
+> like you're working on similar hardware here.  The general ideas should
+> apply to any enumeration mechanism, not just DT.
 
-Hannes
--- 
-Dr. Hannes Reinecke		      zSeries & Storage
-hare@suse.de			      +49 911 74053 688
-SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
-GF: J. Hawn, J. Guild, F. Imendörffer, HRB 16746 (AG Nürnberg)
+Briefly looking into ACPI tables we have and mechanisms that we can
+use in ACPI case, I doubt we may apply all the ideas, probably some of
+them, though I didn't get yet where to read about in details. What I
+could say now is that the patch provided by Bin Gao is definitely no
+go.
+
+--
+With Best Regards,
+Andy Shevchenko
