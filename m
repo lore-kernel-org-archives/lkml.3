@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3GLTfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 15:35:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53620 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757521Ab3GLTfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 15:35:37 -0400
-Date: Fri, 12 Jul 2013 15:35:28 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-ext4@vger.kernel.org
-Subject: WARNING: at fs/ext4/inode.c:230 ext4_evict_inode+0x4b9/0x6d0()
-Message-ID: <20130712193528.GA15261@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
+	id S1757655Ab3GLTgG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 15:36:06 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37279 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757511Ab3GLTgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 15:36:03 -0400
+Date: Fri, 12 Jul 2013 15:35:57 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130712193557.GB342@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Guenter Roeck <linux@roeck-us.net>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	stable <stable@vger.kernel.org>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130711222935.GA11340@redhat.com>
+ <20130711224455.GA17222@kroah.com>
+ <20130712141530.GA3629@roeck-us.net>
+ <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+ <20130712173150.GA5534@roeck-us.net>
+ <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
+ <20130712181103.GA6689@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130712181103.GA6689@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just hit a bunch of these..
+The unwritten criteria that I've seen used (and sometimes even
+discussed on mailing lists) is that if it's something that distro
+kernel maintainers would want, then it's fit for stable.  Now, there's
+a grey area here.  The criteria before distro's "golden master" has
+been released is quite different compared to a criteria for a Service
+Pack 5 kernel.  There's also a hjuge difference between a patch which
+has just hit mainline during the merge window, and a bug fix which has
+been in Linus's tree for weeks or months.  It's likely that a bug fix
+which has been in the kernel since 3.8, even if it is not "critical"
+is one which might be suitable merging for 3.4.  Heck, I've even had
+users screaming at me that it was somehow my duty as the ext4
+maintainer to find these commits and backport them to 3.4 or 3.2.  (Of
+course, I blow them off.  :-)
 
-WARNING: CPU: 0 PID: 995613 at fs/ext4/inode.c:230 ext4_evict_inode+0x4b9/0x6d0()
-Modules linked in: 8021q garp mrp bridge stp rfcomm tun nfsd nfs_acl rpcsec_gss_krb5 auth_rpcgss oid_registry nfsv4 nfs lockd 
-sunrpc fscache fuse l2tp_ppp l2tp_netlink l2tp_core bnep cmtp kernelcapi hidp scsi_transport_iscsi can_raw ipt_ULOG nfnetlink can_bcm llc2 irda af_802154 x25 can pppoe pppox p
-pp_generic af_key slhc af_rxrpc atm rds bluetooth vmw_vsock_vmci_transport vmw_vmci phonet vsock netrom appletalk rose ipx p8023 ax25 psnap p8022 llc nfc rfkill caif_socket ca
-if crc_ccitt btrfs xor snd_hda_codec_realtek snd_hda_intel snd_hda_codec raid6_pq libcrc32c snd_pcm zlib_deflate snd_page_alloc snd_timer pcspkr snd serio_raw edac_core soundc
-ore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
-CPU: 0 PID: 995613 Comm: trinity-child1 Not tainted 3.10.0+ #10
-Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
- ffffffff81a1c2b3 ffff88010d537d18 ffffffff816bbb90 0000000000000000
- ffff88010d537d50 ffffffff81043f0c ffff88000c583970 ffff88000c583970
- ffffffff81825420 ffffffff81825420 ffff88011d4f9f90 ffff88010d537d60
-Call Trace:
- [<ffffffff816bbb90>] dump_stack+0x4e/0x82
- [<ffffffff81043f0c>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff81043ffa>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81258079>] ext4_evict_inode+0x4b9/0x6d0
- [<ffffffff811da983>] evict+0xa3/0x1a0
- [<ffffffff811db335>] iput+0x105/0x190
- [<ffffffff811eccf4>] sync_inodes_sb+0x194/0x240
- [<ffffffff816c18df>] ? wait_for_completion+0xdf/0x110
- [<ffffffff811f2ad0>] ? generic_write_sync+0x70/0x70
- [<ffffffff811f2ae9>] sync_inodes_one_sb+0x19/0x20
- [<ffffffff811c2100>] iterate_supers+0xb0/0x110
- [<ffffffff811f2d65>] sys_sync+0x35/0x90
- [<ffffffff816cdd94>] tracesys+0xdd/0xe2
----[ end trace 1749b013664e80fc ]---
+So the problem is that maintainers are lazy.  They don't want to go
+back for bug fixes that have "proven" themselves, and even if they
+aren't critical bug fixes, they are things which a distro maintainer
+or a stable kernel user might want (and sometimes stable uers are
+uppity enough to expect subsystem maintainers to do this back
+porting).  So subsystem maintainers then react by marking submits for
+stable even though they really should soak for a release or two before
+submitting them, since by marking them as submit, the commit gets
+pushed to stable automatically --- albeit early.
 
-WARNING: CPU: 1 PID: 998688 at fs/ext4/inode.c:230 ext4_evict_inode+0x4b9/0x6d0()
-Modules linked in: 8021q garp mrp bridge stp rfcomm tun nfsd nfs_acl rpcsec_gss_krb5 auth_rpcgss oid_registry nfsv4 nfs lockd sunrpc fscache fuse l2tp_ppp l2tp_netlink l2tp_core bnep cmtp kernelcapi hidp scsi_transport_iscsi can_raw ipt_ULOG nfnetlink can_bcm llc2 irda af_802154 x25 can pppoe pppox ppp_generic af_key slhc af_rxrpc atm rds bluetooth vmw_vsock_vmci_transport vmw_vmci phonet vsock netrom appletalk rose ipx p8023 ax25 psnap p8022 llc nfc rfkill caif_socket caif crc_ccitt btrfs xor snd_hda_codec_realtek snd_hda_intel snd_hda_codec raid6_pq libcrc32c snd_pcm zlib_deflate snd_page_alloc snd_timer pcspkr snd serio_raw edac_core soundcore r8169 mii sr_mod cdrom pata_atiixp radeon backlight drm_kms_helper ttm
-CPU: 1 PID: 998688 Comm: gcc Tainted: G        W    3.10.0+ #10 
-Hardware name: Gigabyte Technology Co., Ltd. GA-MA78GM-S2H/GA-MA78GM-S2H, BIOS F12a 04/23/2010
- ffffffff81a1c2b3 ffff880126ce7cd0 ffffffff816bbb90 0000000000000000
- ffff880126ce7d08 ffffffff81043f0c ffff880007d88ae0 ffff880007d88ae0
- ffffffff81825420 ffffffff81825420 ffff88011afcd780 ffff880126ce7d18
-Call Trace:
- [<ffffffff816bbb90>] dump_stack+0x4e/0x82
- [<ffffffff81043f0c>] warn_slowpath_common+0x8c/0xc0
- [<ffffffff81043ffa>] warn_slowpath_null+0x1a/0x20
- [<ffffffff81258079>] ext4_evict_inode+0x4b9/0x6d0
- [<ffffffff811da983>] evict+0xa3/0x1a0
- [<ffffffff811db335>] iput+0x105/0x190
- [<ffffffff811d6878>] dput+0x1f8/0x2d0
- [<ffffffff811cd73d>] SYSC_renameat+0x35d/0x3b0
- [<ffffffff810b993e>] ? put_lock_stats.isra.27+0xe/0x40
- [<ffffffff810b9f25>] ? lock_release_holdtime.part.28+0xe5/0x160
- [<ffffffff810bcb4d>] ? trace_hardirqs_on+0xd/0x10
- [<ffffffff81010725>] ? syscall_trace_enter+0x25/0x290
- [<ffffffff811cfd7e>] SyS_renameat+0xe/0x10
- [<ffffffff811cfd9b>] SyS_rename+0x1b/0x20
- [<ffffffff816cdd94>] tracesys+0xdd/0xe2
----[ end trace 1749b013664e812a ]---
+Now, I'm not condoning this practice; but I suspect this is at least
+partially the reason why some maintainers have gotten more aggressive
+about marking patches for stable and not pushing them to mainline earlier.
 
+If it really is the case that patches that are marked for -stable are
+patches that should just be sent to linus pre-rc4, and patches that
+had just been added to the subsystem maintainer tree a few weeks
+before the merge window shouldn't be automatically be merged into
+stable, maybe the right answer is that the stable kernel maintainers
+shouldn't be automatically including _any_ patches that are marked for
+stable which are sent to mainline during the merge window.
 
-That's...
-
-	WARN_ON(atomic_read(&EXT4_I(inode)->i_ioend_count));
-
+       	     	      	 	  	 - Ted
