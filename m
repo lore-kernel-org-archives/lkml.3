@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab3GLCjl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:39:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65296 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab3GLCjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:39:40 -0400
-Date: Thu, 11 Jul 2013 22:39:30 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: xfs@oss.sgi.com
-Subject: XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file:
- fs/xfs/xfs_dir2_sf.c, line: 358
-Message-ID: <20130712023930.GA6473@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+	id S1756220Ab3GLCj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:39:58 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58807 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755798Ab3GLCj4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 22:39:56 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51DF6C5D.1020904@jp.fujitsu.com>
+Date: Fri, 12 Jul 2013 11:39:25 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: dyoung@redhat.com
+CC: airlied@linux.ie, vgoyal@redhat.com, bhe@redhat.com, chaowang@redhat.com,
+        linux-kernel@vger.kernel.org, ishii.hironobu@jp.fujitsu.com
+Subject: Re: PCIE resetting graphic card
+References: <51DF6446.9090105@redhat.com>
+In-Reply-To: <51DF6446.9090105@redhat.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just saw this during boot after an unclean shutdown. It hung afterwards.
+Hi Dave,
 
-[   97.162665] XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file: fs/xfs/xfs_dir2_sf.c, line: 358
-[   97.164646] ------------[ cut here ]------------
-[   97.165312] kernel BUG at fs/xfs/xfs_message.c:108!
-[   97.165986] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   97.166947] Modules linked in: snd_hda_codec_realtek pcspkr usb_debug snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm e1000e ptp snd_page_alloc pps_core snd_timer snd soundcore xfs libcrc32c
-[   97.170782] CPU: 3 PID: 341 Comm: rpcbind Not tainted 3.10.0+ #49
-[   97.173684] task: ffff880235d14a40 ti: ffff880235dae000 task.ti: ffff880235dae000
-[   97.173701] RIP: 0010:[<ffffffffa002a362>]  [<ffffffffa002a362>] assfail+0x22/0x30 [xfs]
-[   97.173702] RSP: 0018:ffff880235dafa98  EFLAGS: 00010296
-[   97.173703] RAX: 0000000000000060 RBX: ffff880235dafb20 RCX: 0000000000000006
-[   97.173703] RDX: 00000000000031e0 RSI: ffff880235d152a0 RDI: ffff880235d14a40
-[   97.173704] RBP: ffff880235dafa98 R08: 0000000000000002 R09: 0000000000000000
-[   97.173704] R10: 0000000000000001 R11: 0000000000000001 R12: ffff880235e54000
-[   97.173705] R13: 0000000000035e92 R14: ffff880235dafc88 R15: ffff880235dafc28
-[   97.173706] FS:  00007fa6aac79840(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
-[   97.173706] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   97.173707] CR2: 00007fffb1905f18 CR3: 0000000235ce5000 CR4: 00000000001407e0
-[   97.173707] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   97.173708] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
-[   97.173708] Stack:
-[   97.173712]  ffff880235dafb00 ffffffffa0076953 ffffe8ffffc066a0 ffff880240e04ca8
-[   97.173713]  0000000000000250 0000000000000020 ffff88023d05af40 ffff880235dafb20
-[   97.173715]  ffff880235a14a40 ffff880235e54000 0000000000035e92 ffff880235dafc88
-[   97.173715] Call Trace:
-[   97.173730]  [<ffffffffa0076953>] xfs_dir2_sf_addname+0x43/0x760 [xfs]
-[   97.173743]  [<ffffffffa0067cfc>] xfs_dir_createname+0x15c/0x1b0 [xfs]
-[   97.173754]  [<ffffffffa002f2dc>] xfs_create+0x4cc/0x710 [xfs]
-[   97.173764]  [<ffffffffa00278ca>] xfs_vn_mknod+0x9a/0x1c0 [xfs]
-[   97.173773]  [<ffffffffa0027a03>] xfs_vn_create+0x13/0x20 [xfs]
-[   97.173776]  [<ffffffff811d100d>] vfs_create+0x9d/0x100
-[   97.173778]  [<ffffffff811d1995>] do_last+0x925/0xe00
-[   97.173780]  [<ffffffff811d1f2e>] path_openat+0xbe/0x6f0
-[   97.173783]  [<ffffffff8109e33f>] ? local_clock+0x3f/0x50
-[   97.173785]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
-[   97.173787]  [<ffffffff811d2c3a>] do_filp_open+0x3a/0x90
-[   97.173789]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
-[   97.173790]  [<ffffffff811c0ddb>] do_sys_open+0x10b/0x200
-[   97.173792]  [<ffffffff81010578>] ? syscall_trace_enter+0x18/0x290
-[   97.173794]  [<ffffffff811c0eee>] SyS_open+0x1e/0x20
-[   97.173796]  [<ffffffff81717c14>] tracesys+0xdd/0xe2
-[   97.173813] Code: 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 f1 41 89 d0 48 89 e5 48 89 fa 48 c7 c6 a8 98 0b a0 31 ff 31 c0 e8 ce fb ff ff <0f> 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 
+(2013/07/12 11:04), Dave Young wrote:
+> Hi, Takao
+> 
+> I know you are working on the PCIE resetting patches for the iommu kdump
+> issue.
+> 
+> You explicitly excluded the graphic card in your patch. I have some
+> questions about this. Why can't we reset the graphic card like other
+> pcie devices?
 
-This trace repeated a few times, then the same assertion was triggered from sys_renameat.
+As far as I tested, the monitor blacks out after video controller is
+reset, and we cannot know what's going on. So, for now display device is
+not reset in my patch.
 
-	Dave
+I'm not sure what we need to do to recover graphic card after its reset,
+but my colleague said that we need to run BIOS code to get back legacy
+VGA mode after reset. It seems not to be easy:-(
+
+Maybe this document is helpful to do this.
+http://www.coreboot.org/images/2/2b/Vgabios.pdf
+
+Thanks,
+Takao Indoh
+
+> 
+> We have problems, if 1st kernel is in kms mode kdump kernel will have no
+> chance to switch back to VGA console. There's no serial port on most of
+> recent laptops thus it's difficult to debug kdump issue.
+> 
+> So if we can reset graphic card as well, and if it works I wonder if the
+> 2nd kdump kernel can use vga console with nomodeset?
+
+
 
