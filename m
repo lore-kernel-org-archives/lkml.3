@@ -1,40 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964958Ab3GLW2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 18:28:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41749 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab3GLW2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 18:28:32 -0400
-Message-ID: <51E082F6.4030305@zytor.com>
-Date: Fri, 12 Jul 2013 15:28:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Borislav Petkov <bp@suse.de>, Fenghua Yu <fenghua.yu@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        PaX Team <pageexec@freemail.hu>
-Subject: Re: [PATCH] x86: make sure IDT is page aligned
-References: <20130712183014.GA20551@www.outflux.net>
-In-Reply-To: <20130712183014.GA20551@www.outflux.net>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933276Ab3GLW3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 18:29:21 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:9554 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932434Ab3GLW3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 18:29:20 -0400
+Message-ID: <1373668116.24916.43.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Jul 2013 16:28:36 -0600
+In-Reply-To: <1907509.WiI0tI5uDZ@vostro.rjw.lan>
+References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com>
+	 <2971486.2Wa9ROjLYK@vostro.rjw.lan>
+	 <1373663544.24916.19.camel@misato.fc.hp.com>
+	 <1907509.WiI0tI5uDZ@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 11:30 AM, Kees Cook wrote:
->  
-> -	.word 0				# 32-bit align idt_desc.address
-> +	.word PAGE_SIZE			# page align idt_desc.address
+On Fri, 2013-07-12 at 23:40 +0200, Rafael J. Wysocki wrote:
+> On Friday, July 12, 2013 03:12:24 PM Toshi Kani wrote:
+> > On Fri, 2013-07-12 at 23:13 +0200, Rafael J. Wysocki wrote:
+> > > On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
+> > > > On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
+> > > > > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
+> > > > > > > (2013/07/11 1:47), Toshi Kani wrote:
+> > > > > > > > device->driver_data needs to be cleared when releasing its data,
+> > > > > > > > mem_device, in an error path of acpi_memory_device_add().
+> > > > > > > > 
+> > > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > > > > ---
+> > > > > > > 
+> > > > > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > > > > > 
+> > > > > > Thanks Yasuaki!
+> > > > > 
+> > > > > Queued up as a fix for 3.11.
+> > > > 
+> > > > Thanks!
+> > > > 
+> > > > > Do we need that in -stable as well?
+> > > > 
+> > > > Good point.  Yes, we need that in -stable as well.
+> > > 
+> > > What's the oldest mainline major release that fix is applicable to?
+> > 
+> > The fix is applicable all ways up to 2.6.32.
 > 
+> For -stable I'll need to say some more about what practical consequences of
+> the bug are.  Is it difficult to trigger?
 
-... and this is totally confused.  This didn't change alignment one
-iota, it only put the value 4096 into the padding.
+The function evaluates _CRS of memory device objects, and fails when it
+gets an unexpected resource or cannot allocate a memory.  A kernel crash
+or data corruption may occur when the kernel accessed a stale pointer.
+That said, I am not sure how critical this issue is for old kernels
+since I do not think there are many platforms that support memory
+hotplug today.  After reading the recent -stable discussion on LKML, now
+I am not sure if this fix should be applied for -stable.  I instrumented
+the kernel to generate an error for testing this change.
+ 
+Thanks,
+-Toshi
 
-	-hpa
+
+> 
+> Rafael
+> 
+> 
+> > > > > > > >   drivers/acpi/acpi_memhotplug.c |    1 +
+> > > > > > > >   1 file changed, 1 insertion(+)
+> > > > > > > > 
+> > > > > > > > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> > > > > > > > index c711d11..999adb5 100644
+> > > > > > > > --- a/drivers/acpi/acpi_memhotplug.c
+> > > > > > > > +++ b/drivers/acpi/acpi_memhotplug.c
+> > > > > > > > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
+> > > > > > > >   	/* Get the range from the _CRS */
+> > > > > > > >   	result = acpi_memory_get_device_resources(mem_device);
+> > > > > > > >   	if (result) {
+> > > > > > > > +		device->driver_data = NULL;
+> > > > > > > >   		kfree(mem_device);
+> > > > > > > >   		return result;
+> > > > > > > >   	}
+> > > > > > > > --
+> > > > > > > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > > > > > > > the body of a message to majordomo@vger.kernel.org
+> > > > > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > > > > > 
+> > > > > > > 
+> > > > > > > 
+> > > > > > 
+> > > > > > 
+> > > > 
+> > > > 
+> > 
+> > 
+
 
