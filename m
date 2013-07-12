@@ -1,65 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965362Ab3GLURO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 16:17:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55230 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965283Ab3GLURM (ORCPT
+	id S965387Ab3GLURZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 16:17:25 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:63559 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965283Ab3GLURV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 16:17:12 -0400
-Date: Fri, 12 Jul 2013 21:17:03 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, Stable <stable@vger.kernel.org>
-Message-ID: <20130712201703.GB7729@decadent.org.uk>
-References: <1373637292-25855-1-git-send-email-kys@microsoft.com>
- <1373637375-25936-1-git-send-email-kys@microsoft.com>
+	Fri, 12 Jul 2013 16:17:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373637375-25936-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH 1/2] Drivers: hv: balloon: Fix a bug in the hot-add code
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+In-Reply-To: <CAGXu5jL=oSkWTGEbYLxAU1PwGbgoyeiOgFV31Gd4yj1JkDECBg@mail.gmail.com>
+References: <1373659660-31123-1-git-send-email-keescook@chromium.org>
+	<CAGXu5jL=oSkWTGEbYLxAU1PwGbgoyeiOgFV31Gd4yj1JkDECBg@mail.gmail.com>
+Date: Fri, 12 Jul 2013 13:17:21 -0700
+X-Google-Sender-Auth: cnt07uvQ-92lV5NhYbGKGz4msUs
+Message-ID: <CAGXu5jK8fb-wJGbQdM=2iPR=qwY30U--yATjgdwDtfJOhFK8dw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] x86, boot: add mmio serial during compressed boot
+From: Kees Cook <keescook@chromium.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-serial@vger.kernel.org, Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 06:56:14AM -0700, K. Y. Srinivasan wrote:
-> As we hot-add 128 MB chunks of memory, we wait to ensure that the memory
-> is onlined before attempting to hot-add the next chunk. If the udev rule for
-> memory hot-add is not executed within the allowed time, we would rollback the
-> state and abort further hot-add. Since the hot-add has succeeded and the only
-> failure is that the memory is not onlined within the allowed time, we should not
-> be rolling back the state. Fix this bug.
-[...]
->  		/*
->  		 * Wait for the memory block to be onlined.
->  		 */
-> -		t = wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
-> -		if (t == 0) {
-> -			pr_info("hot_add memory timedout\n");
-> -			has->ha_end_pfn -= HA_CHUNK;
-> -			has->covered_end_pfn -=  processed_pfn;
-> -			break;
-> -		}
-> +		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
->  
->  	}
->  
+[resend, gmail tricked me into HTML mode...]
 
-Well now it might look like a bug that you don't test the result
-of wait_for_completion_timeout().  Maybe update the comment to
-explain why it's OK to continue anyway?
+On Fri, Jul 12, 2013 at 1:15 PM, Kees Cook <keescook@chromium.org> wrote:
+> On Fri, Jul 12, 2013 at 1:07 PM, Kees Cook <keescook@chromium.org> wrote:
+>>
+>> Allows "console=uart[8250],mmio[32],0xADDR[,BAUDn8[,BASE_BAUD]]" to
+>> be recognized during compressed boot early console setup, and during
+>> boot console setup. Replaces defines with common serial defines. Adds
+>> suport for mmio-based serial devices to compressed-boot early console,
+>> and plumbs support for defining the base baud rate for UART clock
+>> calculations (since mmio serial cards may not have the standard rate,
+>> resulting in incorrect baud rates for mmio devices).
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>> diff --git a/include/uapi/linux/serial_reg.h
+>> b/include/uapi/linux/serial_reg.h
+>> index e632260..bdeaf5a 100644
+>> --- a/include/uapi/linux/serial_reg.h
+>> +++ b/include/uapi/linux/serial_reg.h
+>> @@ -333,12 +333,13 @@
+>>
+>>  #define UART_RSA_TCR_SWITCH (1 << 0) /* Timer on */
+>>
+>> +#define SERIAL_BAUD_BASE (1843200/16)
+>>  /*
+>>   * The RSA DSV/II board has two fixed clock frequencies.  One is the
+>>   * standard rate, and the other is 8 times faster.
+>>   */
+>> -#define SERIAL_RSA_BAUD_BASE (921600)
+>> -#define SERIAL_RSA_BAUD_BASE_LO (SERIAL_RSA_BAUD_BASE / 8)
+>> +#define SERIAL_RSA_BAUD_BASE_LO SERIAL_BAUD_BASE
+>> +#define SERIAL_RSA_BAUD_BASE (SERIAL_RSA_BAUD_BASE * 8)
+>
+>
+> Argh, just found this typo during an allyesconfig build. Above should be:
+>
+> #define SERIAL_RSA_BAUD_BASE (SERIAL_BAUD_BASE * 8)
+>
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
 
-Ben.
 
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+
+--
+Kees Cook
+Chrome OS Security
