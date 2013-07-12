@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965003Ab3GLNvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 09:51:39 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:63136 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964861Ab3GLNvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 09:51:38 -0400
-Date: Fri, 12 Jul 2013 14:51:33 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] MFD: twl6040: Cleanup in early error handling in
- probe function
-Message-ID: <20130712135133.GN25601@gmail.com>
-References: <1373628724-11397-1-git-send-email-peter.ujfalusi@ti.com>
- <1373628724-11397-3-git-send-email-peter.ujfalusi@ti.com>
+	id S965022Ab3GLNw1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:52:27 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40414 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964861Ab3GLNwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 09:52:25 -0400
+From: Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+To: <khilman@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>,
+        Andrii Tseglytskyi <andrii.tseglytskyi@ti.com>
+Subject: [PATCH v1 0/2] PM / AVS: interrupt handling fixes
+Date: Fri, 12 Jul 2013 16:52:01 +0300
+Message-ID: <1373637123-1152-1-git-send-email-andrii.tseglytskyi@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1373628724-11397-3-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Jul 2013, Peter Ujfalusi wrote:
+Hi Kevin,
 
-> The err: label is not needed we can just return instead of the jump there.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  drivers/mfd/twl6040.c | 14 +++++---------
->  1 file changed, 5 insertions(+), 9 deletions(-)
+Could you please take a look to the following patch series.
+It consists of two patches, which are needed for proper
+SmartReflex Interrupt handling.
 
-Nice little clean-up. Applied, thanks.
+Based on Linux v3.10. Verified on OMAP4430.
+
+Thank you in advance.
+
+Regards,
+Andrii
+
+Nishanth Menon (2):
+  PM / AVS: SmartReflex: fix interrupt disable sequence
+  PM / AVS: SmartReflex: disable spamming interrupts
+
+ drivers/power/avs/smartreflex.c |   31 +++++++++++++++++++++++++------
+ 1 file changed, 25 insertions(+), 6 deletions(-)
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
