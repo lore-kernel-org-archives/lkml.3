@@ -1,48 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab3GLHR2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 03:17:28 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:45822 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071Ab3GLHR1 (ORCPT
+	id S1757218Ab3GLHR6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 03:17:58 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:54250 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757145Ab3GLHR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 03:17:27 -0400
-From: Cosmin Stanescu <cosmin90stanescu@gmail.com>
-To: hare@suse.de
-Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Cosmin Stanescu <cosmin90stanescu@gmail.com>
-Subject: [PATCH] ic7xxx_osm: use kzalloc instead of kmalloc + memset
-Date: Fri, 12 Jul 2013 10:17:05 +0300
-Message-Id: <1373613425-30725-1-git-send-email-cosmin90stanescu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 12 Jul 2013 03:17:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130711221623.547.5846.stgit@srivatsabhat.in.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+	<20130711221623.547.5846.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 12 Jul 2013 12:47:56 +0530
+Message-ID: <CAKohpo=VoWyJSKZt9DypmG16m14sAnJCWZ25F2d09heB8iK0iw@mail.gmail.com>
+Subject: Re: [PATCH 4/8] cpufreq: Extract non-interface related stuff from cpufreq_add_dev_interface
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-found using coccinelle.
+On 12 July 2013 03:46, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> cpufreq_add_dev_interface() includes the work of exposing the interface
+> to the device, as well as a lot of unrelated stuff. Move the latter to
+> cpufreq_add_dev(), where it is more appropriate.
+>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+>
+>  drivers/cpufreq/cpufreq.c |   43 ++++++++++++++++++++++++++-----------------
+>  1 file changed, 26 insertions(+), 17 deletions(-)
 
-Signed-off-by: Cosmin Stanescu <cosmin90stanescu@gmail.com>
----
- drivers/scsi/aic7xxx/aic7xxx_osm.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/aic7xxx/aic7xxx_osm.c b/drivers/scsi/aic7xxx/aic7xxx_osm.c
-index c0c6258..7167cfe 100644
---- a/drivers/scsi/aic7xxx/aic7xxx_osm.c
-+++ b/drivers/scsi/aic7xxx/aic7xxx_osm.c
-@@ -1223,10 +1223,9 @@ ahc_platform_alloc(struct ahc_softc *ahc, void *platform_arg)
- {
- 
- 	ahc->platform_data =
--	    kmalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
-+	    kzalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
- 	if (ahc->platform_data == NULL)
- 		return (ENOMEM);
--	memset(ahc->platform_data, 0, sizeof(struct ahc_platform_data));
- 	ahc->platform_data->irq = AHC_LINUX_NOIRQ;
- 	ahc_lockinit(ahc);
- 	ahc->seltime = (aic7xxx_seltime & 0x3) << 4;
--- 
-1.7.10.4
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
