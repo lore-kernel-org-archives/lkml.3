@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932852Ab3GLLT0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 07:19:26 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:33518 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932637Ab3GLLTY (ORCPT
+	id S932900Ab3GLLZu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:25:50 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:46277 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932578Ab3GLLZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 07:19:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1307121146040.29788@pobox.suse.cz>
-References: <20130711214830.611455274@linuxfoundation.org>
-	<20130712005023.GB31005@thunk.org>
-	<1373594058.17876.71.camel@gandalf.local.home>
-	<alpine.LNX.2.00.1307121146040.29788@pobox.suse.cz>
-Date: Fri, 12 Jul 2013 07:19:22 -0400
-Message-ID: <CA+5PVA59P5b+ohB6=7OVz=zNU6m6U4YC0PhX6GtPJU9381DY9Q@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Jul 2013 07:25:48 -0400
+Date: Fri, 12 Jul 2013 19:25:34 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: sage <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: [PATCH] libceph: Unregister request if __map_request failed.
+X-Priority: 3
+X-GUID: 914B6DD9-8552-40E0-952B-2B3787E5B710
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201307121925324881460@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6CBQ8fO029922
 
-On Fri, Jul 12, 2013 at 5:46 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Thu, 11 Jul 2013, Steven Rostedt wrote:
->
->> > Maybe the pendulum has swung too far in the direction of holding back
->> > changes and trying to avoid the risk of introducing regressions;
->> > perhaps this would be a good topic to discuss at the Kernel Summit.
->>
->> Bah, I sent out a similar email about discussing this at KS too. Before
->> seeing this one.
->
-> If this is going to be picked up as a discussion topic at KS, I believe it
-> can be easily merged with my "stable: too pushy maintainers" proposal I
-> sent a couple days ago.
+In func ceph_osdc_start_request, if __mape_request failed, it should
+call __unregister_request avoid cause bugs, etc memleak, umount fs
+failed.
 
-Yes, I agree.
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+---
+ net/ceph/osd_client.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-josh
+diff --git a/net/ceph/osd_client.c b/net/ceph/osd_client.c
+index dd47889..6356539 100644
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -2130,6 +2130,7 @@ int ceph_osdc_start_request(struct ceph_osd_client *osdc,
+ 				" will retry %lld\n", req->r_tid);
+ 			rc = 0;
+ 		}
++		__unregister_request(osdc, req);
+ 		goto out_unlock;
+ 	}
+ 	if (req->r_osd == NULL) {
+-- 
+1.8.1.2
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
