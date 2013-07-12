@@ -1,86 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab3GLPjP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:39:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20805 "EHLO mga09.intel.com"
+	id S933270Ab3GLPnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:43:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37737 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932979Ab3GLPjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:39:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,653,1367996400"; 
-   d="scan'208";a="344601642"
-Message-ID: <51E0230C.9010509@intel.com>
-Date: Fri, 12 Jul 2013 08:38:52 -0700
-From: Dave Hansen <dave.hansen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S933150Ab3GLPnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 11:43:16 -0400
+Date: Fri, 12 Jul 2013 17:43:14 +0200
+From: Jan Kara <jack@suse.cz>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jack@suse.cz, sonnyrao@chromium.org
+Subject: Re: [PATCH] fs: sync: fixed performance regression
+Message-ID: <20130712154314.GC22823@quack.suse.cz>
+References: <1373497956-8770-1-git-send-email-taysom@chromium.org>
+ <20130711105346.GA5349@quack.suse.cz>
+ <20130711115832.GB5349@quack.suse.cz>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Dave Jones <davej@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Subject: Re: Yet more softlockups.
-References: <20130704015525.GA8486@redhat.com> <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com> <20130705143821.GB325@redhat.com> <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de> <20130705160043.GF325@redhat.com> <20130706072408.GA14865@gmail.com> <20130710151324.GA11309@redhat.com> <20130710152015.GA757@x4> <20130710154029.GB11309@redhat.com> <20130712103117.GA14862@gmail.com>
-In-Reply-To: <20130712103117.GA14862@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="GvXjxJ+pjyke8COw"
+Content-Disposition: inline
+In-Reply-To: <20130711115832.GB5349@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 03:31 AM, Ingo Molnar wrote:
-> * Dave Jones <davej@redhat.com> wrote:
->> On Wed, Jul 10, 2013 at 05:20:15PM +0200, Markus Trippelsdorf wrote:
->>  > On 2013.07.10 at 11:13 -0400, Dave Jones wrote:
->>  > > I get this right after booting..
->>  > > 
->>  > > [  114.516619] perf samples too long (4262 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
->>  > 
->>  > You can disable this warning by:
->>  > 
->>  > echo 0 > /proc/sys/kernel/perf_cpu_time_max_percent
->>
->> Yes, but why is this even being run when I'm not running perf ?
->>
->> The only NMI source running should be the watchdog.
+
+--GvXjxJ+pjyke8COw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu 11-07-13 13:58:32, Jan Kara wrote:
+> On Thu 11-07-13 12:53:46, Jan Kara wrote:
+> > On Wed 10-07-13 16:12:36, Paul Taysom wrote:
+> > > The following commit introduced a 10x regression for
+> > > syncing inodes in ext4 with relatime enabled where just
+> > > the atime had been modified.
+> > > 
+> > >     commit 4ea425b63a3dfeb7707fc7cc7161c11a51e871ed
+> > >     Author: Jan Kara <jack@suse.cz>
+> > >     Date:   Tue Jul 3 16:45:34 2012 +0200
+> > >     vfs: Avoid unnecessary WB_SYNC_NONE writeback during sys_sync and reorder sync passes
+> > > 
+> > >     See also: http://www.kernelhub.org/?msg=93100&p=2
+> > > 
+> > > Fixed by putting back in the call to writeback_inodes_sb.
+> > > 
+> > > I'll attach the test in a reply to this e-mail.
+> > > 
+> > > The test starts by creating 512 files, syncing, reading one byte
+> > > from each of those files, syncing, and then deleting each file
+> > > and syncing. The time to do each sync is printed. The process
+> > > is then repeated for 1024 files and then the next power of
+> > > two up to 262144 files.
+> > > 
+> > > Note, when running the test, the slow down doesn't always happen
+> > > but most of the tests will show a slow down.
+> > > 
+> > > In response to crbug.com/240422
+> > > 
+> > > Signed-off-by: Paul Taysom <taysom@chromium.org>
+> >   Thanks for report. Rather than blindly reverting the change, I'd like to
+> > understand why you see so huge regression. As the changelog in the patch
+> > says, flusher thread should be doing async writeback equivalent to the
+> > removed one because it gets woken via wakeup_flusher_threads(). But my
+> > guess is that for some reason we end up doing all the writeback from
+> > sync_inodes_one_sb(). I'll try to reproduce your results and investigate...
+>   Hum, so it must be something timing sensitive. I wasn't able to reproduce
+> the issue on my test machine in 4 runs of your test program. I was able to
+> reproduce it on my laptop on every second run of the test program but once
+> I've enabled some tracepoints, the issue disappeared and I didn't see it in
+> about 10 runs.
 > 
-> The NMI watchdog is a perf event.
+> That being said I think that reverting my patch is just papering over the
+> problem. We will do the async pass over inodes twice instead of once
+> and thus the timing changes enough that you aren't able to observe the
+> problem.
 > 
-> I've Cc:-ed Dave Hansen, the author of those changes - is this a false 
-> positive or some real problem?
+> I'm looking into this more...
+  So I finally understood what's going on. If the system has no dirty pages
+at all wakeup_flusher_threads() will submit work with nr_pages == 0.  So
+wb_writeback() will bail out immediately without doing anything and all the
+writeback is left for WB_SYNC_ALL pass of sync(1) which is slow. Attached
+patch fixes the problem for me.
 
-The warning comes from calling perf_sample_event_took(), which is only
-called from one place: perf_event_nmi_handler().
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
 
-So we can be pretty sure that the perf NMI is firing, or at least that
-this handler code is running.
+--GvXjxJ+pjyke8COw
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-writeback-Fix-occasional-slow-sync-1.patch"
 
-nmi_handle() says:
-        /*
-         * NMIs are edge-triggered, which means if you have enough
-         * of them concurrently, you can lose some because only one
-         * can be latched at any given time.  Walk the whole list
-         * to handle those situations.
-         */
+>From 2e3d6f21ffa990780e9b25e11be31a6e0da13c79 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Fri, 12 Jul 2013 17:30:07 +0200
+Subject: [PATCH] writeback: Fix occasional slow sync(1)
 
-perf_event_nmi_handler() probably gets _called_ when the watchdog NMI
-goes off.  But, it should hit this check:
+In case when system contains no dirty pages, wakeup_flusher_threads()
+will submit WB_SYNC_NONE writeback for 0 pages so wb_writeback() exits
+immediately without doing anything. Thus sync(1) will write all the
+dirty inodes from a WB_SYNC_ALL writeback pass which is slow.
 
-        if (!atomic_read(&active_events))
-                return NMI_DONE;
+Fix the problem by using get_nr_dirty_pages() in
+wakeup_flusher_threads() instead of calculating number of dirty pages
+manually. That function also takes number of dirty inodes into account.
 
-and return quickly. This is before it has a chance to call
-perf_sample_event_took().
+CC: stable@vger.kernel.org
+Reported-by: Paul Taysom <taysom@chromium.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/fs-writeback.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Dave, for your case, my suspicion would be that it got turned on
-inadvertently, or that we somehow have a bug which bumped up
-perf_event.c's 'active_events' and we're running some perf code that we
-don't have to.
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index a85ac4e..d0d70a8 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1055,10 +1055,8 @@ void wakeup_flusher_threads(long nr_pages, enum wb_reason reason)
+ {
+ 	struct backing_dev_info *bdi;
+ 
+-	if (!nr_pages) {
+-		nr_pages = global_page_state(NR_FILE_DIRTY) +
+-				global_page_state(NR_UNSTABLE_NFS);
+-	}
++	if (!nr_pages)
++		nr_pages = get_nr_dirty_pages();
+ 
+ 	rcu_read_lock();
+ 	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list) {
+-- 
+1.8.1.4
 
-But, I'm suspicious.  I was having all kinds of issues with perf and
-NMIs taking hundreds of milliseconds.  I never isolated it to having a
-real, single, cause.  I attributed it to my large NUMA system just being
-slow.  Your description makes me wonder what I missed, though.
+
+--GvXjxJ+pjyke8COw--
