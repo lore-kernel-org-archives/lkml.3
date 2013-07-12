@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965530Ab3GLVta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 17:49:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59153 "EHLO arroyo.ext.ti.com"
+	id S965560Ab3GLVtr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 17:49:47 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:59155 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757641Ab3GLVtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 17:49:25 -0400
+	id S965501Ab3GLVt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 17:49:28 -0400
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Russell King <linux@arm.linux.org.uk>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: [RFC/RFT PATCH 4/5] ARM: mm: change max*pfn to include the physical offset of memory
-Date: Fri, 12 Jul 2013 17:48:13 -0400
-Message-ID: <1373665694-7580-5-git-send-email-santosh.shilimkar@ti.com>
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Tejun Heo <tj@kernel.org>
+Subject: [RFC/RFT PATCH 5/5] ARM: mm: Remove bootmem code and switch to NO_BOOTMEM
+Date: Fri, 12 Jul 2013 17:48:14 -0400
+Message-ID: <1373665694-7580-6-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com>
@@ -25,113 +25,148 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most of the kernel code assumes that max*pfn is maximum pfns because
-the physical start of memory is expected to be PFN0. Since this
-assumption is not true on ARM architectures, the meaning of max*pfn
-is number of memory pages. This is done to keep drivers happy which
-are making use of of these variable to calculate the dma bounce limit
-using dma_mask.
+In the effort of using memblock instead of bootmem allocator, ARM arch
+needs to be converted to use NO_BOOTMEM. With NO_BOOTMEM change,
+now we use memblock allocator to reserve space for crash kernel to
+have one less dependency with nobootmem allocator wrapper.
 
-Now since we have a architecture override possibility for DMAable
-maximum pfns, lets make meaning of max*pfns as maximum pnfs on ARM
-as well.
+Hopefully the NO_BOOTMEM memblock wrapper(nobootmem.c) will vanish in
+near future and archs can directly use memblock APIs. Ongoing thread
+on this topic is here:
+https://lkml.org/lkml/2013/6/29/77
 
-In the patch, the dma_to_pfn/pfn_to_dma() pair is hacked to take care of
-the physical memory offset. It is done this way just to enable testing
-since its understood that it can come in way of single zImage.
+Boot tested with both flat memory and sparse (faked) memory models
+with highmem enabled. LAPE systems with memory starting > 4GB still
+won't work but this is one of the step to solve that problem for ARM.
 
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Will Deacon <will.deacon@arm.com>
 Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Tejun Heo <tj@kernel.org>
 
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- arch/arm/include/asm/dma-mapping.h |   16 ++++++++++++----
- arch/arm/mm/init.c                 |   10 ++++------
- 2 files changed, 16 insertions(+), 10 deletions(-)
+ arch/arm/Kconfig        |    1 +
+ arch/arm/kernel/setup.c |    2 +-
+ arch/arm/mm/init.c      |   58 ++---------------------------------------------
+ 3 files changed, 4 insertions(+), 57 deletions(-)
 
-diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
-index 5b579b9..b2d5937 100644
---- a/arch/arm/include/asm/dma-mapping.h
-+++ b/arch/arm/include/asm/dma-mapping.h
-@@ -47,12 +47,12 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
- #ifndef __arch_pfn_to_dma
- static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
- {
--	return (dma_addr_t)__pfn_to_bus(pfn);
-+	return (dma_addr_t)__pfn_to_bus(pfn + PHYS_PFN_OFFSET);
- }
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 0ac9be6..cff9a59 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -63,6 +63,7 @@ config ARM
+ 	select OLD_SIGSUSPEND3
+ 	select OLD_SIGACTION
+ 	select HAVE_CONTEXT_TRACKING
++	select NO_BOOTMEM
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
+diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+index 63af9a7..2ca4b90 100644
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -805,7 +805,7 @@ static void __init reserve_crashkernel(void)
+ 	if (ret)
+ 		return;
  
- static inline unsigned long dma_to_pfn(struct device *dev, dma_addr_t addr)
- {
--	return __bus_to_pfn(addr);
-+	return __bus_to_pfn(addr) - PHYS_PFN_OFFSET;
- }
- 
- static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
-@@ -64,15 +64,16 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
- {
- 	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
- }
-+
- #else
- static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
- {
--	return __arch_pfn_to_dma(dev, pfn);
-+	return __arch_pfn_to_dma(dev, pfn + PHYS_PFN_OFFSET);
- }
- 
- static inline unsigned long dma_to_pfn(struct device *dev, dma_addr_t addr)
- {
--	return __arch_dma_to_pfn(dev, addr);
-+	return __arch_dma_to_pfn(dev, addr) - PHYS_PFN_OFFSET;
- }
- 
- static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
-@@ -86,6 +87,13 @@ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
- }
- #endif
- 
-+/* The ARM override for dma_max_pfn() */
-+static inline unsigned long dma_max_pfn(struct device *dev)
-+{
-+	return dma_to_pfn(dev, *dev->dma_mask);
-+}
-+#define dma_max_pfn(dev) dma_max_pfn(dev)
-+
- /*
-  * DMA errors are defined by all-bits-set in the DMA address.
-  */
+-	ret = reserve_bootmem(crash_base, crash_size, BOOTMEM_EXCLUSIVE);
++	ret = memblock_reserve(crash_base, crash_size);
+ 	if (ret < 0) {
+ 		printk(KERN_WARNING "crashkernel reservation failed - "
+ 		       "memory is in use (0x%lx)\n", (unsigned long)crash_base);
 diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 6833cbe..588a2c1 100644
+index 588a2c1..84dd56c 100644
 --- a/arch/arm/mm/init.c
 +++ b/arch/arm/mm/init.c
-@@ -420,12 +420,10 @@ void __init bootmem_init(void)
- 	 * This doesn't seem to be used by the Linux memory manager any
- 	 * more, but is used by ll_rw_block.  If we can get rid of it, we
- 	 * also get rid of some of the stuff above as well.
--	 *
--	 * Note: max_low_pfn and max_pfn reflect the number of _pages_ in
--	 * the system, not the maximum PFN.
- 	 */
--	max_low_pfn = max_low - PHYS_PFN_OFFSET;
--	max_pfn = max_high - PHYS_PFN_OFFSET;
-+	min_low_pfn = min;
-+	max_low_pfn = max_low;
-+	max_pfn = max_high;
+@@ -153,58 +153,6 @@ static void __init find_limits(unsigned long *min, unsigned long *max_low,
+ 	*max_high = bank_pfn_end(&mi->bank[mi->nr_banks - 1]);
  }
  
- /*
-@@ -531,7 +529,7 @@ static inline void free_area_high(unsigned long pfn, unsigned long end)
- static void __init free_highpages(void)
- {
- #ifdef CONFIG_HIGHMEM
--	unsigned long max_low = max_low_pfn + PHYS_PFN_OFFSET;
-+	unsigned long max_low = max_low_pfn;
- 	struct memblock_region *mem, *res;
+-static void __init arm_bootmem_init(unsigned long start_pfn,
+-	unsigned long end_pfn)
+-{
+-	struct memblock_region *reg;
+-	unsigned int boot_pages;
+-	phys_addr_t bitmap;
+-	pg_data_t *pgdat;
+-
+-	/*
+-	 * Allocate the bootmem bitmap page.  This must be in a region
+-	 * of memory which has already been mapped.
+-	 */
+-	boot_pages = bootmem_bootmap_pages(end_pfn - start_pfn);
+-	bitmap = memblock_alloc_base(boot_pages << PAGE_SHIFT, L1_CACHE_BYTES,
+-				__pfn_to_phys(end_pfn));
+-
+-	/*
+-	 * Initialise the bootmem allocator, handing the
+-	 * memory banks over to bootmem.
+-	 */
+-	node_set_online(0);
+-	pgdat = NODE_DATA(0);
+-	init_bootmem_node(pgdat, __phys_to_pfn(bitmap), start_pfn, end_pfn);
+-
+-	/* Free the lowmem regions from memblock into bootmem. */
+-	for_each_memblock(memory, reg) {
+-		unsigned long start = memblock_region_memory_base_pfn(reg);
+-		unsigned long end = memblock_region_memory_end_pfn(reg);
+-
+-		if (end >= end_pfn)
+-			end = end_pfn;
+-		if (start >= end)
+-			break;
+-
+-		free_bootmem(__pfn_to_phys(start), (end - start) << PAGE_SHIFT);
+-	}
+-
+-	/* Reserve the lowmem memblock reserved regions in bootmem. */
+-	for_each_memblock(reserved, reg) {
+-		unsigned long start = memblock_region_reserved_base_pfn(reg);
+-		unsigned long end = memblock_region_reserved_end_pfn(reg);
+-
+-		if (end >= end_pfn)
+-			end = end_pfn;
+-		if (start >= end)
+-			break;
+-
+-		reserve_bootmem(__pfn_to_phys(start),
+-			        (end - start) << PAGE_SHIFT, BOOTMEM_DEFAULT);
+-	}
+-}
+-
+ #ifdef CONFIG_ZONE_DMA
  
- 	/* set highmem page free */
+ unsigned long arm_dma_zone_size __read_mostly;
+@@ -242,7 +190,7 @@ void __init setup_dma_zone(struct machine_desc *mdesc)
+ #endif
+ }
+ 
+-static void __init arm_bootmem_free(unsigned long min, unsigned long max_low,
++static void __init zone_sizes_init(unsigned long min, unsigned long max_low,
+ 	unsigned long max_high)
+ {
+ 	unsigned long zone_size[MAX_NR_ZONES], zhole_size[MAX_NR_ZONES];
+@@ -396,8 +344,6 @@ void __init bootmem_init(void)
+ 
+ 	find_limits(&min, &max_low, &max_high);
+ 
+-	arm_bootmem_init(min, max_low);
+-
+ 	/*
+ 	 * Sparsemem tries to allocate bootmem in memory_present(),
+ 	 * so must be done after the fixed reservations
+@@ -414,7 +360,7 @@ void __init bootmem_init(void)
+ 	 * the sparse mem_map arrays initialized by sparse_init()
+ 	 * for memmap_init_zone(), otherwise all PFNs are invalid.
+ 	 */
+-	arm_bootmem_free(min, max_low, max_high);
++	zone_sizes_init(min, max_low, max_high);
+ 
+ 	/*
+ 	 * This doesn't seem to be used by the Linux memory manager any
 -- 
 1.7.9.5
 
