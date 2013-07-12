@@ -1,166 +1,523 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965421Ab3GLUeW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 16:34:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:34195 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965377Ab3GLUeU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 16:34:20 -0400
-Message-ID: <51E06841.50701@oracle.com>
-Date: Fri, 12 Jul 2013 16:34:09 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S965429Ab3GLUiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 16:38:18 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40850 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965331Ab3GLUiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 16:38:16 -0400
+Date: Fri, 12 Jul 2013 13:38:02 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Rob Landley <rob@landley.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: [PATCH v2 1/3] x86, boot: add mmio serial during compressed boot
+Message-ID: <20130712203802.GA14702@www.outflux.net>
 MIME-Version: 1.0
-To: dipankar@in.ibm.com, paulmck@linux.vnet.ibm.com
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: rcu: qs related lockup on boot
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373659660-31123-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Allows "console=uart[8250],mmio[32],0xADDR[,BAUDn8[,BASE_BAUD]]" to
+be recognized during compressed boot early console setup, and during
+boot console setup. Replaces defines with common serial defines. Adds
+suport for mmio-based serial devices to compressed-boot early console,
+and plumbs support for defining the base baud rate for UART clock
+calculations (since mmio serial cards may not have the standard rate,
+resulting in incorrect baud rates for mmio devices).
 
-I've stumbled on the following rcu related spew at boot. It happened right when the
-kernel finished up it's boot sequence and passed it to userspace.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+v2:
+ - fixed typo in SERIAL_RSA_...
+---
+ Documentation/kernel-parameters.txt             |   12 ++-
+ arch/x86/boot/boot.h                            |   20 +++-
+ arch/x86/boot/compressed/early_serial_console.c |    5 +-
+ arch/x86/boot/compressed/misc.c                 |   10 +-
+ arch/x86/boot/compressed/misc.h                 |    4 +-
+ arch/x86/boot/early_serial_console.c            |  122 +++++++++++++----------
+ arch/x86/boot/early_serial_console.h            |   43 ++++++++
+ arch/x86/boot/tty.c                             |   12 +--
+ drivers/tty/serial/8250/8250_early.c            |   11 +-
+ include/uapi/linux/serial_reg.h                 |    5 +-
+ 10 files changed, 168 insertions(+), 76 deletions(-)
+ create mode 100644 arch/x86/boot/early_serial_console.h
 
-[  116.549044] BUG: soft lockup - CPU#0 stuck for 30s! [modprobe:12510]
-[  116.549884] Modules linked in:
-[  116.551796] hardirqs last  enabled at (3258): [<ffffffff84199eb7>] restore_args+0x0/0x30
-[  116.553684] hardirqs last disabled at (3259): [<ffffffff841a3ced>] apic_timer_interrupt+0x6d/0x80
-[  116.554753] softirqs last  enabled at (3212): [<ffffffff81132d07>] __do_softirq+0x447/0x4d0
-[  116.555857] softirqs last disabled at (3223): [<ffffffff81132ed6>] irq_exit+0x86/0x120
-[  116.556760] CPU: 0 PID: 12510 Comm: modprobe Tainted: G        W    3.10.0-next-20130712-sasha #3956
-[  116.557812] task: ffff8807c8173000 ti: ffff8807c72a6000 task.ti: ffff8807c72a6000
-[  116.558599] RIP: 0010:[<ffffffff8419965d>]  [<ffffffff8419965d>] 
-_raw_spin_unlock_irqrestore+0x8d/0xc0
-[  116.558958] RSP: 0018:ffff8807eba03ce8  EFLAGS: 00000282
-[  116.558958] RAX: ffff8807c8173000 RBX: ffffffff84199eb7 RCX: 0000000000000000
-[  116.558958] RDX: ffff8807c8173000 RSI: 0000000000000000 RDI: 0000000000000282
-[  116.558958] RBP: ffff8807eba03cf8 R08: 0000000000000000 R09: 0000000000000000
-[  116.558958] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8807eba03c58
-[  116.558958] R13: ffffffff841a3cf2 R14: ffff8807eba03cf8 R15: ffffffff86098020
-[  116.558958] FS:  0000000000000000(0000) GS:ffff8807eba00000(0000) knlGS:0000000000000000
-[  116.558958] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  116.558958] CR2: 00007f99fc17f850 CR3: 00000007c8438000 CR4: 00000000000006f0
-[  116.558958] Stack:
-[  116.558958]  ffffffff86098020 0000000000000282 ffff8807eba03d38 ffffffff81169173
-[  116.558958]  ffff8807eba03d18 ffffffff85e8d000 0000000000000282 0000000000000000
-[  116.558958]  0000000000000000 0000000000000000 ffff8807eba03d58 ffffffff811e7743
-[  116.558958] Call Trace:
-[  116.558958]  <IRQ>
-[  116.558958]  [<ffffffff81169173>] __wake_up+0x53/0x70
-[  116.558958]  [<ffffffff811e7743>] rcu_report_qs_rsp+0x73/0x80
-[  116.558958]  [<ffffffff811edbbd>] rcu_report_qs_rnp+0x26d/0x2c0
-[  116.558958]  [<ffffffff811edf3a>] ? rcu_check_quiescent_state+0x4a/0xf0
-[  116.558958]  [<ffffffff811edfbc>] rcu_check_quiescent_state+0xcc/0xf0
-[  116.558958]  [<ffffffff811ee03b>] __rcu_process_callbacks+0x5b/0x180
-[  116.558958]  [<ffffffff811ee1e8>] rcu_process_callbacks+0x88/0xc0
-[  116.558958]  [<ffffffff81132b21>] __do_softirq+0x261/0x4d0
-[  116.558958]  [<ffffffff81132ed6>] irq_exit+0x86/0x120
-[  116.558958]  [<ffffffff841a53aa>] smp_apic_timer_interrupt+0x4a/0x60
-[  116.558958]  [<ffffffff841a3cf2>] apic_timer_interrupt+0x72/0x80
-[  116.558958]  <EOI>
-[  116.558958]  [<ffffffff84199eb7>] ? retint_restore_args+0x13/0x13
-[  116.558958]  [<ffffffff841996dc>] ? _raw_spin_unlock_irq+0x4c/0x80
-[  116.558958]  [<ffffffff841996c0>] ? _raw_spin_unlock_irq+0x30/0x80
-[  116.558958]  [<ffffffff8116a626>] finish_task_switch+0x96/0x120
-[  116.558958]  [<ffffffff8116a5e8>] ? finish_task_switch+0x58/0x120
-[  116.558958]  [<ffffffff841971db>] __schedule+0x81b/0x8e0
-[  116.558958]  [<ffffffff811ed0f7>] ? rcu_irq_exit+0x1b7/0x200
-[  116.558958]  [<ffffffff84199eb7>] ? retint_restore_args+0x13/0x13
-[  116.558958]  [<ffffffff841978c4>] preempt_schedule_irq+0xa4/0xf0
-[  116.558958]  [<ffffffff84199fe6>] retint_kernel+0x26/0x30
-[  116.558958]  [<ffffffff812355e5>] ? user_enter+0x135/0x150
-[  116.558958]  [<ffffffff81077d6d>] syscall_trace_leave+0x12d/0x160
-[  116.558958]  [<ffffffff841a32f7>] int_check_syscall_exit_work+0x34/0x3d
-[  116.558958] Code: 1f 80 00 00 00 00 e8 73 e2 00 fd 48 83 3d e3 d6 8a 01 00 75 11 0f 0b 0f 1f 80 
-00 00 00 00 eb fe 66 0f 1f 44 00 00 4c 89 e7 57 9d <66> 66 90 66 90 bf 01 00 00 00 e8 94 4f 00 00 65 
-48 8b 04 25 88
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 15356ac..52ad7d8 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -575,11 +575,21 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			alternative.
+ 
+ 		uart[8250],io,<addr>[,options]
+-		uart[8250],mmio,<addr>[,options]
++		uart[8250],mmio,<addr>[,options[,base_baud]]
+ 			Start an early, polled-mode console on the 8250/16550
+ 			UART at the specified I/O port or MMIO address,
+ 			switching to the matching ttyS device later.  The
+ 			options are the same as for ttyS, above.
++
++			For x86 early boot mmio uart consoles, the base baud
++			rate (for calculating the UART clock) can be defined
++			as well. This is done after the options above, comma
++			separated. For example "...,115200n8,4000000" would
++			use 4000000 as the base baud rate. Once the real uart
++			driver initializes, this value will be ignored, since
++			it will use the known device-specific value instead.
++			The default is 115200.
++
+ 		hvc<n>	Use the hypervisor console device <n>. This is for
+ 			both Xen and PowerPC hypervisors.
+ 
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index 5b75319..ae61c19 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -80,6 +80,23 @@ static inline void io_delay(void)
+ 	asm volatile("outb %%al,%0" : : "dN" (DELAY_PORT));
+ }
+ 
++/* Minimal mmio functions from include/asm/io.h. */
++#define build_mmio_read(name, size, type, reg, barrier) \
++static inline type name(const volatile void __iomem *addr) \
++{ type ret; asm volatile("mov" size " %1,%0":reg (ret) \
++:"m" (*(volatile type __force *)addr) barrier); return ret; }
++
++#define build_mmio_write(name, size, type, reg, barrier) \
++static inline void name(type val, volatile void __iomem *addr) \
++{ asm volatile("mov" size " %0,%1": :reg (val), \
++"m" (*(volatile type __force *)addr) barrier); }
++
++build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
++build_mmio_read(readl, "l", unsigned int, "=r", :"memory")
++
++build_mmio_write(writeb, "b", unsigned char, "q", :"memory")
++build_mmio_write(writel, "l", unsigned int, "r", :"memory")
++
+ /* These functions are used to reference data in other segments. */
+ 
+ static inline u16 ds(void)
+@@ -319,7 +336,8 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr);
+ int validate_cpu(void);
+ 
+ /* early_serial_console.c */
+-extern int early_serial_base;
++extern unsigned long early_serial_base;
++extern int early_serial_type;
+ void console_init(void);
+ 
+ /* edd.c */
+diff --git a/arch/x86/boot/compressed/early_serial_console.c b/arch/x86/boot/compressed/early_serial_console.c
+index d3d003c..7b9572a 100644
+--- a/arch/x86/boot/compressed/early_serial_console.c
++++ b/arch/x86/boot/compressed/early_serial_console.c
+@@ -2,8 +2,9 @@
+ 
+ #ifdef CONFIG_EARLY_PRINTK
+ 
+-int early_serial_base;
+-
+ #include "../early_serial_console.c"
+ 
++unsigned long early_serial_base;
++int early_serial_type;
++
+ #endif
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 0319c88..3c635f0 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -125,6 +125,8 @@ static char *vidmem;
+ static int vidport;
+ static int lines, cols;
+ 
++#include "../early_serial_console.h"
++
+ #ifdef CONFIG_KERNEL_GZIP
+ #include "../../../../lib/decompress_inflate.c"
+ #endif
+@@ -158,18 +160,14 @@ static void scroll(void)
+ 		vidmem[i] = ' ';
+ }
+ 
+-#define XMTRDY          0x20
+-
+-#define TXR             0       /*  Transmit register (WRITE) */
+-#define LSR             5       /*  Line Status               */
+ static void serial_putchar(int ch)
+ {
+ 	unsigned timeout = 0xffff;
+ 
+-	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
++	while ((early_serial_in(UART_LSR) & UART_LSR_THRE) == 0 && --timeout)
+ 		cpu_relax();
+ 
+-	outb(ch, early_serial_base + TXR);
++	early_serial_out(UART_TX, ch);
+ }
+ 
+ void __putstr(const char *s)
+diff --git a/arch/x86/boot/compressed/misc.h b/arch/x86/boot/compressed/misc.h
+index 674019d..da0b0bc 100644
+--- a/arch/x86/boot/compressed/misc.h
++++ b/arch/x86/boot/compressed/misc.h
+@@ -46,13 +46,13 @@ int cmdline_find_option(const char *option, char *buffer, int bufsize);
+ int cmdline_find_option_bool(const char *option);
+ 
+ /* early_serial_console.c */
+-extern int early_serial_base;
++extern unsigned long early_serial_base;
+ void console_init(void);
+ 
+ #else
+ 
+ /* early_serial_console.c */
+-static const int early_serial_base;
++static const unsigned long early_serial_base;
+ static inline void console_init(void)
+ { }
+ 
+diff --git a/arch/x86/boot/early_serial_console.c b/arch/x86/boot/early_serial_console.c
+index 5df2869..3483b0b7 100644
+--- a/arch/x86/boot/early_serial_console.c
++++ b/arch/x86/boot/early_serial_console.c
+@@ -1,43 +1,26 @@
+ #include "boot.h"
++#include "early_serial_console.h"
+ 
+-#define DEFAULT_SERIAL_PORT 0x3f8 /* ttyS0 */
+-
+-#define XMTRDY          0x20
+-
+-#define DLAB		0x80
+-
+-#define TXR             0       /*  Transmit register (WRITE) */
+-#define RXR             0       /*  Receive register  (READ)  */
+-#define IER             1       /*  Interrupt Enable          */
+-#define IIR             2       /*  Interrupt ID              */
+-#define FCR             2       /*  FIFO control              */
+-#define LCR             3       /*  Line control              */
+-#define MCR             4       /*  Modem control             */
+-#define LSR             5       /*  Line Status               */
+-#define MSR             6       /*  Modem Status              */
+-#define DLL             0       /*  Divisor Latch Low         */
+-#define DLH             1       /*  Divisor latch High        */
+-
+-#define DEFAULT_BAUD 9600
+-
+-static void early_serial_init(int port, int baud)
++static void early_serial_init(int type, unsigned long port, int baud,
++			      int base_baud)
+ {
+ 	unsigned char c;
+ 	unsigned divisor;
+ 
+-	outb(0x3, port + LCR);	/* 8n1 */
+-	outb(0, port + IER);	/* no interrupt */
+-	outb(0, port + FCR);	/* no fifo */
+-	outb(0x3, port + MCR);	/* DTR + RTS */
+-
+-	divisor	= 115200 / baud;
+-	c = inb(port + LCR);
+-	outb(c | DLAB, port + LCR);
+-	outb(divisor & 0xff, port + DLL);
+-	outb((divisor >> 8) & 0xff, port + DLH);
+-	outb(c & ~DLAB, port + LCR);
+-
++	early_serial_type = type;
+ 	early_serial_base = port;
++
++	early_serial_out(UART_LCR, UART_LCR_WLEN8);	/* 8n1 */
++	early_serial_out(UART_IER, 0);			/* no interrupts */
++	early_serial_out(UART_FCR, 0);			/* no fifo */
++	early_serial_out(UART_MCR, UART_MCR_DTR | UART_MCR_RTS);
++
++	divisor	= base_baud / baud;
++	c = early_serial_in(UART_LCR);
++	early_serial_out(UART_LCR, c | UART_LCR_DLAB);
++	early_serial_out(UART_DLL, divisor & 0xff);
++	early_serial_out(UART_DLM, (divisor >> 8) & 0xff);
++	early_serial_out(UART_LCR, c & ~UART_LCR_DLAB);
+ }
+ 
+ static void parse_earlyprintk(void)
+@@ -45,7 +28,7 @@ static void parse_earlyprintk(void)
+ 	int baud = DEFAULT_BAUD;
+ 	char arg[32];
+ 	int pos = 0;
+-	int port = 0;
++	unsigned long port = 0;
+ 
+ 	if (cmdline_find_option("earlyprintk", arg, sizeof arg) > 0) {
+ 		char *e;
+@@ -92,33 +75,47 @@ static void parse_earlyprintk(void)
+ 	}
+ 
+ 	if (port)
+-		early_serial_init(port, baud);
++		early_serial_init(EARLY_SERIAL_IO, port, baud,
++				  SERIAL_BAUD_BASE);
+ }
+ 
+-#define BASE_BAUD (1843200/16)
+-static unsigned int probe_baud(int port)
++static unsigned int probe_baud(int type, unsigned long port)
+ {
+ 	unsigned char lcr, dll, dlh;
+ 	unsigned int quot;
++	int saved_type;
++	unsigned long saved_port;
+ 
+-	lcr = inb(port + LCR);
+-	outb(lcr | DLAB, port + LCR);
+-	dll = inb(port + DLL);
+-	dlh = inb(port + DLH);
+-	outb(lcr, port + LCR);
++	saved_type = early_serial_type;
++	saved_port = early_serial_base;
++	early_serial_type = type;
++	early_serial_base = port;
++
++	lcr = early_serial_in(UART_LCR);
++	early_serial_out(UART_LCR, lcr | UART_LCR_DLAB);
++	dll = early_serial_in(UART_DLL);
++	dlh = early_serial_in(UART_DLM);
++	early_serial_out(UART_LCR, lcr);
+ 	quot = (dlh << 8) | dll;
+ 
+-	return BASE_BAUD / quot;
++	early_serial_type = saved_type;
++	early_serial_base = saved_port;
++
++	return SERIAL_BAUD_BASE / quot;
+ }
+ 
+ static void parse_console_uart8250(void)
+ {
+ 	char optstr[64], *options;
+ 	int baud = DEFAULT_BAUD;
+-	int port = 0;
++	int base_baud = SERIAL_BAUD_BASE;
++	int type = EARLY_SERIAL_IO;
++	unsigned long port = 0;
+ 
+ 	/*
+ 	 * console=uart8250,io,0x3f8,115200n8
++	 * console=uart,mmio,0xe080100,115200n8
++	 * console=uart,mmio32,0xe0801000,115200n8
+ 	 * need to make sure it is last one console !
+ 	 */
+ 	if (cmdline_find_option("console", optstr, sizeof optstr) <= 0)
+@@ -126,20 +123,41 @@ static void parse_console_uart8250(void)
+ 
+ 	options = optstr;
+ 
+-	if (!strncmp(options, "uart8250,io,", 12))
+-		port = simple_strtoull(options + 12, &options, 0);
+-	else if (!strncmp(options, "uart,io,", 8))
+-		port = simple_strtoull(options + 8, &options, 0);
+-	else
++	if (strncmp(options, "uart", 4))
++		return;
++	options += 4;
++	if (!strncmp(options, "8250", 4))
++		options += 4;
++	if (*options++ != ',')
+ 		return;
+ 
+-	if (options && (options[0] == ','))
++	if (!strncmp(options, "io,", 3))
++		port = simple_strtoull(options + 3, &options, 0);
++	else if (!strncmp(options, "mmio", 4)) {
++		options += 4;
++		type = EARLY_SERIAL_MMIO;
++		if (!strncmp(options, "32", 2)) {
++			options += 2;
++			type = EARLY_SERIAL_MMIO32;
++		}
++		if (*options++ != ',')
++			return;
++		port = simple_strtoull(options, &options, 0);
++	} else
++		return;
++
++	if (options && (options[0] == ',')) {
+ 		baud = simple_strtoull(options + 1, &options, 0);
++		while (*options != ' ' && *options != ',' && *options != '\0')
++			options++;
++		if (*options == ',')
++			base_baud = simple_strtoull(options + 1, &options, 0);
++	}
+ 	else
+-		baud = probe_baud(port);
++		baud = probe_baud(type, port);
+ 
+ 	if (port)
+-		early_serial_init(port, baud);
++		early_serial_init(type, port, baud, base_baud);
+ }
+ 
+ void console_init(void)
+diff --git a/arch/x86/boot/early_serial_console.h b/arch/x86/boot/early_serial_console.h
+new file mode 100644
+index 0000000..3f7ff34
+--- /dev/null
++++ b/arch/x86/boot/early_serial_console.h
+@@ -0,0 +1,43 @@
++#include <linux/serial_reg.h>
++
++#define DEFAULT_SERIAL_PORT 0x3f8 /* ttyS0 */
++#define DEFAULT_BAUD 9600
++
++#define EARLY_SERIAL_IO		0
++#define EARLY_SERIAL_MMIO	1
++#define EARLY_SERIAL_MMIO32	2
++
++extern unsigned long early_serial_base;
++extern int early_serial_type;
++
++static inline unsigned int early_serial_in(int offset)
++{
++	switch (early_serial_type) {
++	case EARLY_SERIAL_IO:
++		return inb(early_serial_base + offset);
++	case EARLY_SERIAL_MMIO:
++		return readb((const volatile void *)early_serial_base +
++				offset);
++	case EARLY_SERIAL_MMIO32:
++		return readl((const volatile void *)early_serial_base +
++				(offset << 2));
++	default:
++		return 0;
++	}
++}
++
++static inline void early_serial_out(int offset, int value)
++{
++	switch (early_serial_type) {
++	case EARLY_SERIAL_IO:
++		outb(value, early_serial_base + offset);
++		break;
++	case EARLY_SERIAL_MMIO:
++		writeb(value, (volatile void *)early_serial_base + offset);
++		break;
++	case EARLY_SERIAL_MMIO32:
++		writel(value, (volatile void *)early_serial_base +
++				(offset << 2));
++		break;
++	}
++}
+diff --git a/arch/x86/boot/tty.c b/arch/x86/boot/tty.c
+index def2451..60dede2 100644
+--- a/arch/x86/boot/tty.c
++++ b/arch/x86/boot/tty.c
+@@ -15,12 +15,10 @@
+ 
+ #include "boot.h"
+ 
+-int early_serial_base;
++unsigned long early_serial_base;
++int early_serial_type;
+ 
+-#define XMTRDY          0x20
+-
+-#define TXR             0       /*  Transmit register (WRITE) */
+-#define LSR             5       /*  Line Status               */
++#include "early_serial_console.h"
+ 
+ /*
+  * These functions are in .inittext so they can be used to signal
+@@ -31,10 +29,10 @@ static void __attribute__((section(".inittext"))) serial_putchar(int ch)
+ {
+ 	unsigned timeout = 0xffff;
+ 
+-	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
++	while ((early_serial_in(UART_LSR) & UART_LSR_THRE) == 0 && --timeout)
+ 		cpu_relax();
+ 
+-	outb(ch, early_serial_base + TXR);
++	early_serial_out(UART_TX, ch);
+ }
+ 
+ static void __attribute__((section(".inittext"))) bios_putchar(int ch)
+diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
+index 721904f..9526dd0 100644
+--- a/drivers/tty/serial/8250/8250_early.c
++++ b/drivers/tty/serial/8250/8250_early.c
+@@ -42,7 +42,7 @@
+ 
+ struct early_serial8250_device {
+ 	struct uart_port port;
+-	char options[16];		/* e.g., 115200n8 */
++	char options[32];		/* e.g., 115200n8 */
+ 	unsigned int baud;
+ };
+ 
+@@ -153,12 +153,11 @@ static int __init parse_options(struct early_serial8250_device *device,
+ {
+ 	struct uart_port *port = &device->port;
+ 	int mmio, mmio32, length;
++	int base_baud = BASE_BAUD;
+ 
+ 	if (!options)
+ 		return -ENODEV;
+ 
+-	port->uartclk = BASE_BAUD * 16;
+-
+ 	mmio = !strncmp(options, "mmio,", 5);
+ 	mmio32 = !strncmp(options, "mmio32,", 7);
+ 	if (mmio || mmio32) {
+@@ -195,12 +194,18 @@ static int __init parse_options(struct early_serial8250_device *device,
+ 		device->baud = simple_strtoul(options, NULL, 0);
+ 		length = min(strcspn(options, " "), sizeof(device->options));
+ 		strlcpy(device->options, options, length);
++		while (*options != ' ' && *options != '\0' && *options != ',')
++			options++;
++		if (*options == ',')
++			base_baud = simple_strtoul(options + 1, NULL, 0);
+ 	} else {
+ 		device->baud = probe_baud(port);
+ 		snprintf(device->options, sizeof(device->options), "%u",
+ 			device->baud);
+ 	}
+ 
++	port->uartclk = base_baud * 16;
++
+ 	if (mmio || mmio32)
+ 		printk(KERN_INFO
+ 		       "Early serial console at MMIO%s 0x%llx (options '%s')\n",
+diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
+index e632260..1b563f9 100644
+--- a/include/uapi/linux/serial_reg.h
++++ b/include/uapi/linux/serial_reg.h
+@@ -333,12 +333,13 @@
+ 
+ #define UART_RSA_TCR_SWITCH (1 << 0) /* Timer on */
+ 
++#define SERIAL_BAUD_BASE (1843200/16)
+ /*
+  * The RSA DSV/II board has two fixed clock frequencies.  One is the
+  * standard rate, and the other is 8 times faster.
+  */
+-#define SERIAL_RSA_BAUD_BASE (921600)
+-#define SERIAL_RSA_BAUD_BASE_LO (SERIAL_RSA_BAUD_BASE / 8)
++#define SERIAL_RSA_BAUD_BASE_LO SERIAL_BAUD_BASE
++#define SERIAL_RSA_BAUD_BASE (SERIAL_BAUD_BASE * 8)
+ 
+ /*
+  * Extra serial register definitions for the internal UARTs
+-- 
+1.7.9.5
 
-The other cpus with anything in their callstack are:
 
-[  118.366894] CPU: 140 PID: 0 Comm: swapper/140 Tainted: G        W    3.10.0-next-20130712-sasha #3956
-[  118.366894] task: ffff8807de5bb000 ti: ffff8807de5c0000 task.ti: ffff8807de5c0000
-[  118.366894] RIP: 0010:[<ffffffff81a73602>]  [<ffffffff81a73602>] delay_tsc+0xb2/0x140
-[  118.366894] RSP: 0018:ffff8807fd203eb8  EFLAGS: 00000046
-[  118.366894] RAX: 0000000000080000 RBX: 000000005af9b24b RCX: 000000005af9c2c7
-[  118.366894] RDX: 0000000000000043 RSI: 0000000000000000 RDI: 0000000000000001
-[  118.366894] RBP: ffff8807fd203ee8 R08: 00000000e26ec8c5 R09: 0000000000000001
-[  118.366894] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8807de5c0010
-[  118.366894] R13: 0000000000005854 R14: 000000000000008c R15: 000000005af9c2c7
-[  118.366894] FS:  0000000000000000(0000) GS:ffff8807fd200000(0000) knlGS:0000000000000000
-[  118.366894] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  118.366894] CR2: 00007f55dc6b6000 CR3: 0000000005a24000 CR4: 00000000000006e0
-[  118.366894] Stack:
-[  118.366894]  ffff8807de5bb000 ffff8807de5bb000 0000000000000000 00000000ffffffff
-[  118.366894]  0000000000000000 0000000000000002 ffff8807fd203ef8 ffffffff81a734f9
-[  118.366894]  ffff8807fd203f18 ffffffff81156af4 0000000000000000 0000000000000000
-[  118.366894] Call Trace:
-[  118.366894]  <IRQ>
-[  118.366894]  [<ffffffff81a734f9>] __const_udelay+0x29/0x30
-[  118.366894]  [<ffffffff81156af4>] __rcu_read_unlock+0x44/0xb0
-[  118.366894]  [<ffffffff8419e58d>] __atomic_notifier_call_chain+0x10d/0x130
-[  118.366894]  [<ffffffff8419e480>] ? notifier_call_chain+0x130/0x130
-[  118.366894]  [<ffffffff8419e5c6>] atomic_notifier_call_chain+0x16/0x20
-[  118.366894]  [<ffffffff810732ff>] exit_idle+0x3f/0x50
-[  118.366894]  [<ffffffff841a539e>] smp_apic_timer_interrupt+0x3e/0x60
-[  118.366894]  [<ffffffff841a3cf2>] apic_timer_interrupt+0x72/0x80
-[  118.366894]  <EOI>
-[  118.366894]  [<ffffffff810b0066>] ? native_safe_halt+0x6/0x10
-[  118.366894]  [<ffffffff811a78bd>] ? trace_hardirqs_on+0xd/0x10
-[  118.366894]  [<ffffffff81073dad>] default_idle+0x13d/0x2a0
-[  118.366894]  [<ffffffff81073258>] arch_cpu_idle+0x18/0x50
-[  118.366894]  [<ffffffff811925ef>] cpu_idle_loop+0x32f/0x410
-[  118.366894]  [<ffffffff81192740>] cpu_startup_entry+0x70/0x80
-[  118.366894]  [<ffffffff810a0ab3>] start_secondary+0xf3/0x100
-[  118.366894] Code: 41 89 c7 29 d8 44 39 e8 73 6f bf 01 00 00 00 e8 15 b0 72 02 49 8b 04 24 a8 08 
-74 0d e8 58 3d 72 02 0f 1f 84 00 00 00 00 00 f3 90 <bf> 01 00 00 00 e8 e4 b0 72 02 e8 af d6 01 00 41 
-39 c6 74 9a e8
-
-and:
-
-[  116.900485] CPU: 230 PID: 2154 Comm: watchdog/230 Tainted: G        W 
-3.10.0-next-20130712-sasha #3956
-[  116.900485] task: ffff8807da8c8000 ti: ffff8807da8bc000 task.ti: ffff8807da8bc000
-[  116.900485] RIP: 0010:[<ffffffff81a73602>]  [<ffffffff81a73602>] delay_tsc+0xb2/0x140
-[  116.900485] RSP: 0018:ffff8807da8bdc58  EFLAGS: 00000046
-[  116.900485] RAX: 0000000000080000 RBX: 000000007a14c1cd RCX: 000000007a1518e5
-[  116.900485] RDX: 0000000000000043 RSI: 0000000000000000 RDI: 0000000000000001
-[  116.900485] RBP: ffff8807da8bdc88 R08: 00000000e26ec8c5 R09: 0000000000000001
-[  116.900485] R10: 0000000000000001 R11: 0000000000000000 R12: ffff8807da8bc010
-[  116.900485] R13: 0000000000005854 R14: 00000000000000e6 R15: 000000007a1518e5
-[  116.900485] FS:  0000000000000000(0000) GS:ffff880808600000(0000) knlGS:0000000000000000
-[  116.900485] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  116.900485] CR2: 0000000000625370 CR3: 0000000005a24000 CR4: 00000000000006e0
-[  116.900485] Stack:
-[  116.900485]  ffff8807da8c8000 ffff8807da8c8000 00000000ffffb87a ffff8808087d78c0
-[  116.900485]  00000000000000e6 ffff8807da8bdcf4 ffff8807da8bdc98 ffffffff81a734f9
-[  116.900485]  ffff8807da8bdcb8 ffffffff81156af4 00000000000000e6 0000000000000000
-[  116.900485] Call Trace:
-[  116.900485]  [<ffffffff81a734f9>] __const_udelay+0x29/0x30
-[  116.900485]  [<ffffffff81156af4>] __rcu_read_unlock+0x44/0xb0
-[  116.900485]  [<ffffffff8117eae5>] idle_balance+0x205/0x240
-[  116.900485]  [<ffffffff8117e924>] ? idle_balance+0x44/0x240
-[  116.900485]  [<ffffffff81181dd9>] ? dequeue_task_rt+0x39/0x50
-[  116.900485]  [<ffffffff84196c35>] __schedule+0x275/0x8e0
-[  116.900485]  [<ffffffff8419741d>] schedule+0x5d/0x70
-[  116.900485]  [<ffffffff81166d25>] smpboot_thread_fn+0x295/0x2f0
-[  116.900485]  [<ffffffff81166a90>] ? smpboot_register_percpu_thread+0x100/0x100
-[  116.900485]  [<ffffffff8115bc27>] kthread+0xe7/0xf0
-[  116.900485]  [<ffffffff8419684a>] ? wait_for_completion+0xca/0x120
-[  116.900485]  [<ffffffff8115bb40>] ? __init_kthread_worker+0x70/0x70
-[  116.900485]  [<ffffffff841a2f2c>] ret_from_fork+0x7c/0xb0
-[  116.900485]  [<ffffffff8115bb40>] ? __init_kthread_worker+0x70/0x70
-[  116.900485] Code: 41 89 c7 29 d8 44 39 e8 73 6f bf 01 00 00 00 e8 15 b0 72 02 49 8b 04 24 a8 08 
-74 0d e8 58 3d 72 02 0f 1f 84 00 00 00 00 00 f3 90 <bf> 01 00 00 00 e8 e4 b0 72 02 e8 af d6 01 00 41 
-39 c6 74 9a e8
-
-All other cpus are idle.
-
-
-Thanks,
-Sasha
+-- 
+Kees Cook
+Chrome OS Security
