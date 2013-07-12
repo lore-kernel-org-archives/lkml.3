@@ -1,107 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965155Ab3GLRFf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:05:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52005 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965067Ab3GLRFd (ORCPT
+	id S965127Ab3GLRHH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:07:07 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:60958 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964922Ab3GLRHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:05:33 -0400
-Date: Fri, 12 Jul 2013 10:05:32 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130712170532.GA5656@kroah.com>
-References: <20130711214830.611455274@linuxfoundation.org>
- <20130711222935.GA11340@redhat.com>
- <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <1373644044.17876.92.camel@gandalf.local.home>
- <CA+55aFxUZCWT55EZ7fZw0j_UgaqjPA8Wiv47s5qO01NvHNzFCQ@mail.gmail.com>
- <20130712161708.GA3759@gmail.com>
- <CA+5PVA6k8xQR4uCpiCnYD3iz421XHGX9eV8vNDH3y1t092aAdw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA6k8xQR4uCpiCnYD3iz421XHGX9eV8vNDH3y1t092aAdw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Jul 2013 13:07:05 -0400
+From: Tanya Brokhman <tlinder@codeaurora.org>
+To: axboe@kernel.dk
+Cc: linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org (open list),
+        linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM)
+Subject: [RFC/PATCH/RESEND v2 1/4] block: make rq->cmd_flags be 64-bit
+Date: Fri, 12 Jul 2013 20:06:18 +0300
+Message-Id: <1373648808-16968-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 12:35:26PM -0400, Josh Boyer wrote:
-> On Fri, Jul 12, 2013 at 12:17 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >
-> >> On Fri, Jul 12, 2013 at 8:47 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >> >
-> >> > I tend to hold things off after -rc4 because you scare me more than Greg
-> >> > does ;-)
-> >>
-> >> Have you guys *seen* Greg? The guy is a freakish giant. He *should*
-> >> scare you. He might squish you without ever even noticing.
-> >
-> > Greg might be a giant and he might squish people without ever even
-> > noticing, but that's just a grave, deadly physical threat no real kernel
-> > hacker ever feels threatened by. (Not much can hurt us deep in our dark
-> > basements after all, except maybe earthquakes, gamma ray eruptions and Mom
-> > trying to clean up around the computers.)
-> >
-> > So Greg, if you want it all to change, create some _real_ threat: be frank
-> > with contributors and sometimes swear a bit. That will cut your mailqueue
-> > in half, promise!
+From: Jens Axboe <axboe@kernel.dk>
 
-Ok, I'll channel my "inner Linus" and take a cue from my kids and start
-swearing more.
+We have officially run out of flags in a 32-bit space. Extend it
+to 64-bit even on 32-bit archs.
 
-> I don't think it's that simple.  The problem here isn't that Greg is
-> being too nice.  The problem is that people are holding back fixes
-> from Linus' tree.  Greg might be able to yell at maintainers more, but
-> if he does it's after the fact and it's sort of a too late situation.
-> Those fixes should probably get in the tree because they should
-> probably have been in the .0 release to begin with.  I don't envy Greg
-> here.
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 
-I'm going to start pushing back on the "obviously this shouldn't be for
-stable" patches, and have done so, but you are right, the real issue is
-that it seems that subsystem maintainers are being lazy and just not
-sending the patches to Linus at all, because they "know" I will pick
-them up for the .1 or .2 release.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 93a18d1..cfa4dd3 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -174,9 +174,9 @@ void blk_dump_rq_flags(struct request *rq, char *msg)
+ {
+ 	int bit;
+ 
+-	printk(KERN_INFO "%s: dev %s: type=%x, flags=%x\n", msg,
++	printk(KERN_INFO "%s: dev %s: type=%x, flags=%llx\n", msg,
+ 		rq->rq_disk ? rq->rq_disk->disk_name : "?", rq->cmd_type,
+-		rq->cmd_flags);
++		(unsigned long long) rq->cmd_flags);
+ 
+ 	printk(KERN_INFO "  sector %llu, nr/cnr %u/%u\n",
+ 	       (unsigned long long)blk_rq_pos(rq),
+diff --git a/drivers/block/floppy.c b/drivers/block/floppy.c
+index 04ceb7e..000abe2 100644
+--- a/drivers/block/floppy.c
++++ b/drivers/block/floppy.c
+@@ -2886,9 +2886,9 @@ static void do_fd_request(struct request_queue *q)
+ 		return;
+ 
+ 	if (WARN(atomic_read(&usage_count) == 0,
+-		 "warning: usage count=0, current_req=%p sect=%ld type=%x flags=%x\n",
++		 "warning: usage count=0, current_req=%p sect=%ld type=%x flags=%llx\n",
+ 		 current_req, (long)blk_rq_pos(current_req), current_req->cmd_type,
+-		 current_req->cmd_flags))
++		 (unsigned long long) current_req->cmd_flags))
+ 		return;
+ 
+ 	if (test_and_set_bit(0, &fdc_busy)) {
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 80f39b8..aa81364 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -994,7 +994,7 @@ static int sd_prep_fn(struct request_queue *q, struct request *rq)
+ 		SCpnt->cmnd[0] = READ_6;
+ 		SCpnt->sc_data_direction = DMA_FROM_DEVICE;
+ 	} else {
+-		scmd_printk(KERN_ERR, SCpnt, "Unknown command %x\n", rq->cmd_flags);
++		scmd_printk(KERN_ERR, SCpnt, "Unknown command %llx\n", (unsigned long long) rq->cmd_flags);
+ 		goto out;
+ 	}
+ 
+diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+index fa1abeb..c26801e 100644
+--- a/include/linux/blk_types.h
++++ b/include/linux/blk_types.h
+@@ -181,16 +181,16 @@ enum rq_flag_bits {
+ 	__REQ_NR_BITS,		/* stops here */
+ };
+ 
+-#define REQ_WRITE		(1 << __REQ_WRITE)
+-#define REQ_FAILFAST_DEV	(1 << __REQ_FAILFAST_DEV)
+-#define REQ_FAILFAST_TRANSPORT	(1 << __REQ_FAILFAST_TRANSPORT)
+-#define REQ_FAILFAST_DRIVER	(1 << __REQ_FAILFAST_DRIVER)
+-#define REQ_SYNC		(1 << __REQ_SYNC)
+-#define REQ_META		(1 << __REQ_META)
+-#define REQ_PRIO		(1 << __REQ_PRIO)
+-#define REQ_DISCARD		(1 << __REQ_DISCARD)
+-#define REQ_WRITE_SAME		(1 << __REQ_WRITE_SAME)
+-#define REQ_NOIDLE		(1 << __REQ_NOIDLE)
++#define REQ_WRITE		(1ULL << __REQ_WRITE)
++#define REQ_FAILFAST_DEV	(1ULL << __REQ_FAILFAST_DEV)
++#define REQ_FAILFAST_TRANSPORT	(1ULL << __REQ_FAILFAST_TRANSPORT)
++#define REQ_FAILFAST_DRIVER	(1ULL << __REQ_FAILFAST_DRIVER)
++#define REQ_SYNC		(1ULL << __REQ_SYNC)
++#define REQ_META		(1ULL << __REQ_META)
++#define REQ_PRIO		(1ULL << __REQ_PRIO)
++#define REQ_DISCARD		(1ULL << __REQ_DISCARD)
++#define REQ_WRITE_SAME		(1ULL << __REQ_WRITE_SAME)
++#define REQ_NOIDLE		(1ULL << __REQ_NOIDLE)
+ 
+ #define REQ_FAILFAST_MASK \
+ 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
+@@ -206,28 +206,28 @@ enum rq_flag_bits {
+ #define REQ_NOMERGE_FLAGS \
+ 	(REQ_NOMERGE | REQ_STARTED | REQ_SOFTBARRIER | REQ_FLUSH | REQ_FUA)
+ 
+-#define REQ_RAHEAD		(1 << __REQ_RAHEAD)
+-#define REQ_THROTTLED		(1 << __REQ_THROTTLED)
+-
+-#define REQ_SORTED		(1 << __REQ_SORTED)
+-#define REQ_SOFTBARRIER		(1 << __REQ_SOFTBARRIER)
+-#define REQ_FUA			(1 << __REQ_FUA)
+-#define REQ_NOMERGE		(1 << __REQ_NOMERGE)
+-#define REQ_STARTED		(1 << __REQ_STARTED)
+-#define REQ_DONTPREP		(1 << __REQ_DONTPREP)
+-#define REQ_QUEUED		(1 << __REQ_QUEUED)
+-#define REQ_ELVPRIV		(1 << __REQ_ELVPRIV)
+-#define REQ_FAILED		(1 << __REQ_FAILED)
+-#define REQ_QUIET		(1 << __REQ_QUIET)
+-#define REQ_PREEMPT		(1 << __REQ_PREEMPT)
+-#define REQ_ALLOCED		(1 << __REQ_ALLOCED)
+-#define REQ_COPY_USER		(1 << __REQ_COPY_USER)
+-#define REQ_FLUSH		(1 << __REQ_FLUSH)
+-#define REQ_FLUSH_SEQ		(1 << __REQ_FLUSH_SEQ)
+-#define REQ_IO_STAT		(1 << __REQ_IO_STAT)
+-#define REQ_MIXED_MERGE		(1 << __REQ_MIXED_MERGE)
+-#define REQ_SECURE		(1 << __REQ_SECURE)
+-#define REQ_KERNEL		(1 << __REQ_KERNEL)
+-#define REQ_PM			(1 << __REQ_PM)
++#define REQ_RAHEAD		(1ULL << __REQ_RAHEAD)
++#define REQ_THROTTLED		(1ULL << __REQ_THROTTLED)
++
++#define REQ_SORTED		(1ULL << __REQ_SORTED)
++#define REQ_SOFTBARRIER		(1ULL << __REQ_SOFTBARRIER)
++#define REQ_FUA			(1ULL << __REQ_FUA)
++#define REQ_NOMERGE		(1ULL << __REQ_NOMERGE)
++#define REQ_STARTED		(1ULL << __REQ_STARTED)
++#define REQ_DONTPREP		(1ULL << __REQ_DONTPREP)
++#define REQ_QUEUED		(1ULL << __REQ_QUEUED)
++#define REQ_ELVPRIV		(1ULL << __REQ_ELVPRIV)
++#define REQ_FAILED		(1ULL << __REQ_FAILED)
++#define REQ_QUIET		(1ULL << __REQ_QUIET)
++#define REQ_PREEMPT		(1ULL << __REQ_PREEMPT)
++#define REQ_ALLOCED		(1ULL << __REQ_ALLOCED)
++#define REQ_COPY_USER		(1ULL << __REQ_COPY_USER)
++#define REQ_FLUSH		(1ULL << __REQ_FLUSH)
++#define REQ_FLUSH_SEQ		(1ULL << __REQ_FLUSH_SEQ)
++#define REQ_IO_STAT		(1ULL << __REQ_IO_STAT)
++#define REQ_MIXED_MERGE		(1ULL << __REQ_MIXED_MERGE)
++#define REQ_SECURE		(1ULL << __REQ_SECURE)
++#define REQ_KERNEL		(1ULL << __REQ_KERNEL)
++#define REQ_PM			(1ULL << __REQ_PM)
+ 
+ #endif /* __LINUX_BLK_TYPES_H */
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 2fdb4a4..40e3cea 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -99,7 +99,7 @@ struct request {
+ 
+ 	struct request_queue *q;
+ 
+-	unsigned int cmd_flags;
++	u64 cmd_flags;
+ 	enum rq_cmd_type_bits cmd_type;
+ 	unsigned long atomic_flags;
+ 
+@@ -570,7 +570,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
+ 
+ #define list_entry_rq(ptr)	list_entry((ptr), struct request, queuelist)
+ 
+-#define rq_data_dir(rq)		((rq)->cmd_flags & 1)
++#define rq_data_dir(rq)		(((rq)->cmd_flags & 1) != 0)
+ 
+ static inline unsigned int blk_queue_cluster(struct request_queue *q)
+ {
+-- 
+1.7.6
 
-Specific example is, again, the powerpc patches.  Out of 21 patches
-marked for stable that showed up in the -rc1 merge, at least 7 of them
-had _plenty_ of time to get into 3.10.0 as they are weeks, and sometimes
-months, old.  Some of the other ones seem _very_ new, being only days
-old before they hit Linus's tree, which makes me worry about them for
-totally different reasons (i.e. not tested in linux-next at all.)
-
-I can put a "delay" on patches to not hit a stable release for a few
-weeks until they get some testing in Linus's tree, but in reality,
-what's that going to help with?
-
-I guess I can just not apply them at all, tough-love and all that, but
-that just puts an extra burden on the distro kernel maintainers to have
-to go dig up the fixes for their users.
-
-Although really, who cares about powerpc anymore :)
-
-> More seriously though, those -stable fixes queued up for months show
-> up there first.  Perhaps if we watch the trees feeding into linux-next
-> for a bit for fixes tagged with -stable in the middle -rc windows, we
-> can prod maintainers more.
-
-Someone once did this, and I agree, it should be done more.  I'll see
-about knocking up a script to try to automate it a bit to make it easier
-for me to do that.  Dave has proven that we need to poke maintainers
-more to get their act together and push fixes to Linus.
-
-greg k-h
