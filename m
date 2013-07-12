@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965081Ab3GLPxD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:53:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42889 "EHLO mx1.redhat.com"
+	id S964947Ab3GLPwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:52:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14151 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965013Ab3GLPwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:52:53 -0400
+	id S933072Ab3GLPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 11:52:50 -0400
 From: Jan Vesely <jvesely@redhat.com>
 To: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
         James Bottomley <James.Bottomley@hansenpartnership.com>,
@@ -15,101 +15,27 @@ Cc: Kent Overstreet <koverstreet@google.com>, Rob Evers <revers@redhat.com>,
         Nikola Pajkovsky <npajkovs@redhat.com>,
         Kai Makisara <Kai.Makisara@kolumbus.fi>, linux-scsi@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Don Howard <dhoward@redhat.com>
-Subject: [PATCH v4 2/2] block: modify __bio_add_page check to accept pages that don't start a new segment
-Date: Fri, 12 Jul 2013 17:52:23 +0200
-Message-Id: <1373644343-6671-3-git-send-email-jvesely@redhat.com>
-In-Reply-To: <1373644343-6671-1-git-send-email-jvesely@redhat.com>
-References: <1373644343-6671-1-git-send-email-jvesely@redhat.com>
+Subject: [PATCH v4 0/2] block: Allow merging of tail pages into the last segment
+Date: Fri, 12 Jul 2013 17:52:21 +0200
+Message-Id: <1373644343-6671-1-git-send-email-jvesely@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Vesely <jvesely@redhat.com>
+Hi
 
-The original behavior was to refuse all pages after the maximum number of
-segments has been reached. However, some drivers (like st) craft their buffers
-to potentially require exactly max segments and multiple pages in the last
-segment. This patch modifies the check to allow pages that can be merged into
-the last segment.
+These patches modify __bio_add_page to accept pages that extent the last bio
+segment. some drivers craft their buffers and rely on this behavior (see
+message in patch 2 for details)
 
-Fixes EBUSY failures when using large tape block size in high
-memory fragmentation condition. This regression was introduced by commit
-46081b166415acb66d4b3150ecefcd9460bb48a1
-st: Increase success probability in driver buffer allocation
 
-Signed-off-by: Jan Vesely <jvesely@redhat.com>
+jan
 
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>
-CC: Jens Axboe <axboe@kernel.dk>
-CC: Kent Overstreet <koverstreet@google.com>
-CC: Rob Evers <revers@redhat.com>
-CC: Tomas Henzl <thenzl@redhat.com>
-CC: Nikola Pajkovsky <npajkovs@redhat.com>
-CC: Kai Makisara <Kai.Makisara@kolumbus.fi>
-CC: linux-scsi@vger.kernel.org
-CC: linux-fsdevel@vger.kernel.org
----
- fs/bio.c | 30 +++++++++++++++++++-----------
- 1 file changed, 19 insertions(+), 11 deletions(-)
+v4: whitespace fixes to make checkpatch happy
 
-diff --git a/fs/bio.c b/fs/bio.c
-index 94bbc04..ba64e99 100644
---- a/fs/bio.c
-+++ b/fs/bio.c
-@@ -603,7 +603,6 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 			  *page, unsigned int len, unsigned int offset,
- 			  unsigned short max_sectors)
- {
--	int retried_segments = 0;
- 	struct bio_vec *bvec;
- 
- 	/*
-@@ -654,18 +653,12 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 		return 0;
- 
- 	/*
--	 * we might lose a segment or two here, but rather that than
--	 * make this too complex.
-+	 * The first part of the segment count check,
-+	 * reduce segment count if possible
- 	 */
--
--	while (bio->bi_phys_segments >= queue_max_segments(q)) {
--
--		if (retried_segments)
--			return 0;
--
--		retried_segments = 1;
-+	if (bio->bi_phys_segments >= queue_max_segments(q))
- 		blk_recount_segments(q, bio);
--	}
-+
- 
- 	/*
- 	 * setup the new entry, we might clear it again later if we
-@@ -677,6 +670,21 @@ static int __bio_add_page(struct request_queue *q, struct bio *bio, struct page
- 	bvec->bv_offset = offset;
- 
- 	/*
-+	 * the other part of the segment count check, allow mergeable pages.
-+	 * BIO_SEG_VALID flag is cleared below
-+	 */
-+	if ((bio->bi_phys_segments > queue_max_segments(q)) ||
-+	    ((bio->bi_phys_segments == queue_max_segments(q)) &&
-+	     !bvec_mergeable(q, __BVEC_END(bio), bvec,
-+			     bio->bi_seg_back_size))) {
-+			bvec->bv_page = NULL;
-+			bvec->bv_len = 0;
-+			bvec->bv_offset = 0;
-+			return 0;
-+	}
-+
-+
-+	/*
- 	 * if queue has other restrictions (eg varying max sector size
- 	 * depending on offset), it can specify a merge_bvec_fn in the
- 	 * queue to get further control
--- 
-1.8.3.1
+v3: Use code from __blk_recalc_rq_segments to decide whether the page is
+    mergeable, 
+
+v2: modify a comment
+
 
