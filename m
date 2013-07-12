@@ -1,109 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab3GLDFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 23:05:49 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:11565 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371Ab3GLDFs (ORCPT
+	id S1756427Ab3GLDMn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 23:12:43 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:58605 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755775Ab3GLDMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 23:05:48 -0400
-X-Spam-Score: -100.8
-Message-ID: <51DF7250.9020209@asianux.com>
-Date: Fri, 12 Jul 2013 11:04:48 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: trace: remove __init from race_selftest_startup_function()
- and trace_selftest_startup_function_graph()
-References: <51DDFCF8.2090808@asianux.com>   <1373561279.17876.45.camel@gandalf.local.home>   <51DF44FA.9060000@asianux.com>  <1373593261.17876.61.camel@gandalf.local.home>  <51DF62DB.3010409@asianux.com> <1373596735.17876.84.camel@gandalf.local.home>
-In-Reply-To: <1373596735.17876.84.camel@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 23:12:42 -0400
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
+        davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
+        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH] asymmetric keys: explicitly add the leading zero byte to encoded message
+Date: Fri, 12 Jul 2013 11:11:31 +0800
+Message-Id: <1373598691-1504-1-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 10:38 AM, Steven Rostedt wrote:
-> On Fri, 2013-07-12 at 09:58 +0800, Chen Gang wrote:
->> On 07/12/2013 09:41 AM, Steven Rostedt wrote:
->>> On Fri, 2013-07-12 at 07:51 +0800, Chen Gang wrote:
->>>
->>>>> Hmm, can all trace_selftest_startup_* (*selftest* in trace_selftest.c)
->>>>> use '__init', so not waste memory keeping them around ?
->>> Yeah, they should all be set to __init, but that's pretty low on the
->>> totem poll, as distros don't enable selftests in their main kernels.
->>
->> Excuse me, my English is not quite well, I guess your meaning is:
->>
->>   they should all be set to '__init', although it is minor in real world.
->>
->> Is it correct ?
-> 
-> Correct.
-> 
->>
->>
->> For me, I recommend to let all *selftest* as the same: "all add '
->> __init' or none add '__init'" (if choose add, all report warnings).
->>
->> Is it suitable to still send new related patch for it ? If so, could
->> you provide your suggesting choice (all add, or none add) ?
-> 
-> Does this patch fix your warning?
-> 
-> -- Steve
-> 
+From: Chun-Yi Lee <jlee@suse.com>
 
-I guess it can (although I do not give a compiling test), it seems a
-better fixing.
+Per PKCS1 spec, the EMSA-PKCS1-v1_5 encoded message is leading by 0x00 0x01 in
+its first 2 bytes. The leading zero byte is suppressed by MPI so we pass a
+pointer to the _preceding_ byte to RSA_verify() in original code, but it has
+risk for the byte is not zero because it's not in EM buffer's scope, neither
+RSA_verify() nor mpi_get_buffer() didn't take care the leading byte.
 
-And is it suitable to let all *selftest* as the same ? (all add, or none
-add '__init').
+To avoid the risk, that's better we explicitly add the leading zero byte to EM
+for pass to RSA_verify(). This patch allocate a _EM buffer to capture the
+result from RSA_I2OSP(), then set the first byte to zero in EM and copy the
+remaining bytes from _EM.
 
-Thanks.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Josh Boyer <jwboyer@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: David Howells <dhowells@redhat.com>
+Signed-off-by: Chun-Yi Lee <jlee@suse.com>
+---
+ crypto/asymmetric_keys/rsa.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
 
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index a4ed382..5e794d1 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -680,6 +680,15 @@ extern int trace_selftest_startup_sched_switch(struct tracer *trace,
->  					       struct trace_array *tr);
->  extern int trace_selftest_startup_branch(struct tracer *trace,
->  					 struct trace_array *tr);
-> +/*
-> + * Tracer data references selftest functions that only occur
-> + * on boot up. These can be __init functions. Thus, when selftests
-> + * are enabled, then the tracers need to reference __init functions.
-> + */
-> +#define __tracer_data		__refdata
-> +#else
-> +/* Tracers are seldom changed. Optimize when selftests are disabled. */
-> +#define __tracer_data		__read_mostly
->  #endif /* CONFIG_FTRACE_STARTUP_TEST */
->  
->  extern void *head_page(struct trace_array_cpu *data);
-> diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-> index b863f93..38fe148 100644
-> --- a/kernel/trace/trace_functions.c
-> +++ b/kernel/trace/trace_functions.c
-> @@ -199,7 +199,7 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
->  	return 0;
->  }
->  
-> -static struct tracer function_trace __read_mostly =
-> +static struct tracer function_trace __tracer_data =
->  {
->  	.name		= "function",
->  	.init		= function_trace_init,
-> 
-> 
-> 
-> 
-
-
+diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
+index ca1a4f3..7bc99d2 100644
+--- a/crypto/asymmetric_keys/rsa.c
++++ b/crypto/asymmetric_keys/rsa.c
+@@ -303,6 +303,7 @@ static int RSA_verify_signature(const struct public_key *key,
+ 	/* Variables as per RFC3447 sec 8.2.2 */
+ 	const u8 *H = sig->digest;
+ 	u8 *EM = NULL;
++	u8 *_EM = NULL;
+ 	MPI m = NULL;
+ 	size_t k;
+ 
+@@ -337,14 +338,19 @@ static int RSA_verify_signature(const struct public_key *key,
+ 	/* (2c) Convert the message representative (m) to an encoded message
+ 	 *      (EM) of length k octets.
+ 	 *
+-	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
+-	 *      pointer to the _preceding_ byte to RSA_verify()!
++	 *      NOTE!  The leading zero byte is suppressed by MPI, so we add it
++	 *      back to EM before input to RSA_verify()!
+ 	 */
+-	ret = RSA_I2OSP(m, k, &EM);
++	ret = RSA_I2OSP(m, k, &_EM);
+ 	if (ret < 0)
+ 		goto error;
+ 
+-	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
++	EM = kmalloc(k, GFP_KERNEL);
++	memset(EM, 0, 1);
++	memcpy(EM + 1, _EM, k-1);
++	kfree(_EM);
++
++	ret = RSA_verify(H, EM, k, sig->digest_size,
+ 			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
+ 			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
+ 
 -- 
-Chen Gang
+1.6.4.2
+
