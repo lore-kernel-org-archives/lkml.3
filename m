@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965471Ab3GLU7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 16:59:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40352 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965443Ab3GLU7c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 16:59:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [RFC][PATCH 23/30] ACPI / hotplug / PCI: Do not exectute _PS0 and _PS3 directly
-Date: Fri, 12 Jul 2013 23:09:22 +0200
-Message-ID: <6400136.2GQyQFPMtH@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130712130508.GK4898@intel.com>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <1757750.sf0hy8txF5@vostro.rjw.lan> <20130712130508.GK4898@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S965468Ab3GLVB7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 17:01:59 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:3247 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965359Ab3GLVB6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 17:01:58 -0400
+Message-ID: <1373662875.24916.17.camel@misato.fc.hp.com>
+Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 12 Jul 2013 15:01:15 -0600
+In-Reply-To: <3723604.ey6eovWnzB@vostro.rjw.lan>
+References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com>
+	 <51DF4CB6.4060903@jp.fujitsu.com>
+	 <1373640689.24916.15.camel@misato.fc.hp.com>
+	 <3723604.ey6eovWnzB@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 12, 2013 04:05:08 PM Mika Westerberg wrote:
-> On Fri, Jul 12, 2013 at 02:01:30AM +0200, Rafael J. Wysocki wrote:
-> > Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-> > ===================================================================
-> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-> > +++ linux-pm/drivers/pci/hotplug/acpiphp.h
-> > @@ -160,7 +160,6 @@ struct acpiphp_attention_info
-> >  
-> >  /* slot flags */
-> >  
-> > -#define SLOT_POWEREDON		(0x00000001)
-> >  #define SLOT_ENABLED		(0x00000002)
-> >  #define SLOT_MULTIFUNCTION	(0x00000004)
-> >  
-> > @@ -168,11 +167,7 @@ struct acpiphp_attention_info
-> >  
-> >  #define FUNC_HAS_STA		(0x00000001)
-> >  #define FUNC_HAS_EJ0		(0x00000002)
-> > -#define FUNC_HAS_PS0		(0x00000010)
-> > -#define FUNC_HAS_PS1		(0x00000020)
-> > -#define FUNC_HAS_PS2		(0x00000040)
-> > -#define FUNC_HAS_PS3		(0x00000080)
-> > -#define FUNC_HAS_DCK            (0x00000100)
-> > +#define FUNC_HAS_DCK            (0x00000003)
+On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
+> On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
+> > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
+> > > (2013/07/11 1:47), Toshi Kani wrote:
+> > > > device->driver_data needs to be cleared when releasing its data,
+> > > > mem_device, in an error path of acpi_memory_device_add().
+> > > > 
+> > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > ---
+> > > 
+> > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > 
+> > Thanks Yasuaki!
 > 
-> These are flags not enum so the above wants to be
+> Queued up as a fix for 3.11.
+
+Thanks!
+
+> Do we need that in -stable as well?
+
+Good point.  Yes, we need that in -stable as well.
+
+-Toshi
+
+
+> Rafael
 > 
-> 	#define FUNC_HAS_DCK            (0x00000004)
-
-Yeah, obviously.
-
-I guess it goes against the natural tendency to assign numbers to things
-sequentially, so I generally prefer the (1U << n) notation. :-)
-
-> otherwise we accidentally match checks like:
 > 
-> 	/* install notify handler */
-> 	if (!(newfunc->flags & FUNC_HAS_DCK)) {
-> 		...
+> > > 
+> > > >   drivers/acpi/acpi_memhotplug.c |    1 +
+> > > >   1 file changed, 1 insertion(+)
+> > > > 
+> > > > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> > > > index c711d11..999adb5 100644
+> > > > --- a/drivers/acpi/acpi_memhotplug.c
+> > > > +++ b/drivers/acpi/acpi_memhotplug.c
+> > > > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
+> > > >   	/* Get the range from the _CRS */
+> > > >   	result = acpi_memory_get_device_resources(mem_device);
+> > > >   	if (result) {
+> > > > +		device->driver_data = NULL;
+> > > >   		kfree(mem_device);
+> > > >   		return result;
+> > > >   	}
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > > > the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > 
+> > > 
+> > > 
+> > 
+> > 
 
-Yup.  Thanks for spotting that!
 
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
