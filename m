@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964850Ab3GLNHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 09:07:01 -0400
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:44074 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932997Ab3GLNHA (ORCPT
+	id S933148Ab3GLNJy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:09:54 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54319 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932910Ab3GLNJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 09:07:00 -0400
-Date: Fri, 12 Jul 2013 14:06:01 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Morten Rasmussen <Morten.Rasmussen@arm.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 8/9] sched: power: Add initial frequency scaling
- support to power scheduler
-Message-ID: <20130712130601.GD28271@arm.com>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <1373385338-12983-9-git-send-email-morten.rasmussen@arm.com>
- <51DD5D63.7000602@linux.intel.com>
- <20130712125113.GF20960@e103034-lin>
+	Fri, 12 Jul 2013 09:09:53 -0400
+Message-ID: <51E0001E.3050108@hitachi.com>
+Date: Fri, 12 Jul 2013 22:09:50 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712125113.GF20960@e103034-lin>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 0/4] tracing/kprobes/uprobes: Fix race between opening
+ probe event files and deleting probe
+References: <20130704033347.807661713@goodmis.org>
+In-Reply-To: <20130704033347.807661713@goodmis.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 01:51:13PM +0100, Morten Rasmussen wrote:
-> On Wed, Jul 10, 2013 at 02:10:59PM +0100, Arjan van de Ven wrote:
-> > On 7/9/2013 8:55 AM, Morten Rasmussen wrote:
-> > > Extends the power scheduler capacity management algorithm to handle
-> > > frequency scaling and provide basic frequency/P-state selection hints
-> > > to the power driver.
-> > >
-> > > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
-> > > CC: Ingo Molnar <mingo@kernel.org>
-> > > CC: Peter Zijlstra <peterz@infradead.org>
-> > > CC: Catalin Marinas <catalin.marinas@arm.com>
-> > > ---
-> > >   kernel/sched/power.c |   33 ++++++++++++++++++++++++++++-----
-> > >   1 file changed, 28 insertions(+), 5 deletions(-)
-> > >
-> > > diff --git a/kernel/sched/power.c b/kernel/sched/power.c
-> > > index 9e44c0e..5fc32b0 100644
-> > > --- a/kernel/sched/power.c
-> > > +++ b/kernel/sched/power.c
-> > > @@ -21,6 +21,8 @@
-> > >
-> > >   #define INTERVAL 5 /* ms */
-> > >   #define CPU_FULL 90 /* Busy %-age - TODO: Make tunable */
-> > > +#define CPU_TARGET 80 /* Target busy %-age - TODO: Make tunable */
-> > > +#define CPU_EMPTY 5 /* Idle noise %-age - TODO: Make tunable */
-> > >
-> > 
-> > to be honest, this is the policy part that really should be in the hardware specific driver
-> > and not in the scheduler.
-> > (even if said driver is sort of a "generic library" kind of thing)
+(2013/07/04 12:33), Steven Rostedt wrote:
+> Currently there exists a race with deleting a kprobe or uprobe and
+> a user opening the probe event file or using perf events.
 > 
-> I agree that the values should be set by a hardware specific power
-> driver. Or do you mean that algorithms using this sort of values should
-> be in the driver?
+> The problem stems from not being able to take the probe_lock from the
+> unregister code because we may have the event_mutex at the time, and
+> the event mutex may be taken with the probe_lock held.
+> 
+> To solve this, the events get a ref count (using the flags field), where
+> when an event file is opened, the ftrace_event_call ref count increments.
+> Then this is checked under event_mutex and if set, the unregistering
+> of the probe will fail.
+> 
+> Here's a test that shows how things break:
+> 
+>      # cd /sys/kernel/debug/tracing
+>      # echo 'p:sigprocmask sigprocmask' > kprobe_events || exit -1
+>      # enable_probe() {
+>         sleep 10
+>         echo 1
+>      }
+>      # file=events/kprobes/sigprocmask/enable
+>      # enable_probe > $file &
+>      > kprobe_events
+>     
+>     The above will corrupt the kprobe system, as the write to the enable
+>     file will happen after the kprobe was deleted.
+>     
+>     Trying to create the probe again fails:
+>     
+>      # echo 'p:sigprocmask sigprocmask' > kprobe_events
+>      # cat kprobe_events
+>     p:kprobes/sigprocmask sigprocmask
+>      # ls events/kprobes/
+>     enable  filter
+> 
+> After applying these patches, the "> kprobe_events" fails due to the
+> event being busy.
+> 
+> Masami, please review these patches and give your ack.
 
-I think for flexibility we could place the default algorithm in a
-library and it would be used by the cpufreq power driver wrapper or
-directly by a new power driver. The intel_pstate.c driver could be
-allowed to do smarter things.
+Steve, Oleg, could you also take a look on my additional 2 patches too?
+
+I think both this series and my patches are required for
+fixing most of the problem. (what we need is a patch to ensure
+finishing all running uprobe handlers at disabling it *if needed*)
+
+Thank you,
 
 -- 
-Catalin
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
