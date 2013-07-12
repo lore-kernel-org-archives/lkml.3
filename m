@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab3GLIxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 04:53:40 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:42851 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757790Ab3GLIxh (ORCPT
+	id S1757825Ab3GLIxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 04:53:48 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:62402 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757809Ab3GLIxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 04:53:37 -0400
-X-AuditID: 9c93017e-b7b62ae000000eeb-12-51dfc40fe3c6
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>, Thomas Renninger <trenn@suse.de>
-Subject: Re: [PATCHv2 0/5] perf tools: Remove event types data
-References: <1373556513-3000-1-git-send-email-jolsa@redhat.com>
-Date: Fri, 12 Jul 2013 17:53:35 +0900
-In-Reply-To: <1373556513-3000-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Thu, 11 Jul 2013 17:28:28 +0200")
-Message-ID: <87txk0w44w.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 12 Jul 2013 04:53:45 -0400
+Date: Fri, 12 Jul 2013 10:53:41 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Robin Holt <holt@sgi.com>, Robert Richter <rric@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: boot tracing
+Message-ID: <20130712085341.GC4328@gmail.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <20130712082756.GA4328@gmail.com>
+ <20130712084712.GD24008@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130712084712.GD24008@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
 
-On Thu, 11 Jul 2013 17:28:28 +0200, Jiri Olsa wrote:
-> hi,
-> following up on the 'perf timechart' FIXME note and changing
-> its tracepoint match not to use event types data.
->
-> Original RFC sent here:
-> http://marc.info/?l=linux-kernel&m=137344263513417&w=2
->
-> v2 changes:
->   - using tracepoints haler callbacks to get power data
->     in timechart command (patch 2)
->   - separating enum removal of 'enum trace_flag_type'
->     (patch 1)
->
-> Again, timechart (and perf.data)  tests look ok, but would
-> appreciate another tester ;-).
->
-> It's reachable here:
-> git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-> perf/et2
+* Borislav Petkov <bp@alien8.de> wrote:
 
-For the whole patchset:
+> On Fri, Jul 12, 2013 at 10:27:56AM +0200, Ingo Molnar wrote:
+> > Robert Richter and Boris Petkov are working on 'persistent events'
+> > support for perf, which will eventually allow boot time profiling -
+> > I'm not sure if the patches and the tooling support is ready enough
+> > yet for your purposes.
+> 
+> Nope, not yet but we're getting there.
+> 
+> > Robert, Boris, the following workflow would be pretty intuitive:
+> > 
+> >  - kernel developer sets boot flag: perf=boot,freq=1khz,size=16MB
+> 
+> What does perf=boot mean? I assume boot tracing.
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+In this case it would mean boot profiling - i.e. a cycles hardware-PMU 
+event collecting into a perf trace buffer as usual.
 
+Essentially a 'perf record -a' work-alike, just one that gets activated as 
+early as practical, and which would allow the profiling of memory 
+initialization.
+
+Now, one extra complication here is that to be able to profile buddy 
+allocator this persistent event would have to work before the buddy 
+allocator is active :-/ So this sort of profiling would have to use 
+memblock_alloc().
+
+Just wanted to highlight this usecase, we might eventually want to support 
+it.
+
+[ Note that this is different from boot tracing of one or more trace 
+  events - but it's a conceptually pretty close cousin. ]
+ 
 Thanks,
-Namhyung
+
+	Ingo
