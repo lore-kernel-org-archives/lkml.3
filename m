@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965455Ab3GLUrx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 16:47:53 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37306 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965441Ab3GLUrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 16:47:51 -0400
-Date: Fri, 12 Jul 2013 16:47:44 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130712204744.GD342@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Willy Tarreau <w@1wt.eu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Guenter Roeck <linux@roeck-us.net>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	stable <stable@vger.kernel.org>
-References: <20130711214830.611455274@linuxfoundation.org>
- <20130711222935.GA11340@redhat.com>
- <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712195051.GB32054@1wt.eu>
+	id S965460Ab3GLUyi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 16:54:38 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40342 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965378Ab3GLUyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 16:54:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [RFC][PATCH 0/30] ACPI / hotplug / PCI: Major rework + Thunderbolt workarounds
+Date: Fri, 12 Jul 2013 23:04:26 +0200
+Message-ID: <5687298.pUqv2oM5bn@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130712131850.GL4898@intel.com>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan> <20130712131850.GL4898@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712195051.GB32054@1wt.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 09:50:51PM +0200, Willy Tarreau wrote:
-> So probably we should incite patch contributors to add a specific
-> tag such as "Fixes: 3.5 and later", so that non-important patches
-> do not need the Cc:stable anymore, but users who experience an issue
-> can easily spot them and ask for their inclusion.
+On Friday, July 12, 2013 04:18:50 PM Mika Westerberg wrote:
+> On Fri, Jul 12, 2013 at 01:34:20AM +0200, Rafael J. Wysocki wrote:
+> > Hi,
+> > 
+> > I've made some progress with my ACPIPHP rework since I posted the series last
+> > time and here goes an update.
+> > 
+> > First off, the previous series was somewhat racy, which should be fixed now.
+> > Apart from this there's quite some new material on top of the patches I posted
+> > last time (or rather on top of their new versions) and I integrated the
+> > Thunderbolt series from Mika with that.  As a result,
+> > 
+> > https://patchwork.kernel.org/patch/2817341/
+> > 
+> > is required to be applied.
+> 
+> With the above mentioned patch applied + fix for patch [23/30], I tested
+> this series on Acer Aspire S5 and Intel DZ77RE-75K desktop and Thunderbolt
+> works just fine :-)
+> 
+> You can add
+> 
+> Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> 
+> to the series.
 
-This is a really good idea.   /me likes....
+Thanks a lot, that's really helpful!
 
-I will likely start adopting this for the ext4 tree.
+Now I can rebase it on the previous cleanups and we'll see how that all
+together works on top of the Linus' current. :-)
 
-					- Ted
+> Nice cleanup!
+
+Thanks!
+
