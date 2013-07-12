@@ -1,109 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933276Ab3GLW3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 18:29:21 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:9554 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932434Ab3GLW3U (ORCPT
+	id S1757874Ab3GLWnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 18:43:12 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:36837 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757617Ab3GLWnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 18:29:20 -0400
-Message-ID: <1373668116.24916.43.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Jul 2013 16:28:36 -0600
-In-Reply-To: <1907509.WiI0tI5uDZ@vostro.rjw.lan>
-References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com>
-	 <2971486.2Wa9ROjLYK@vostro.rjw.lan>
-	 <1373663544.24916.19.camel@misato.fc.hp.com>
-	 <1907509.WiI0tI5uDZ@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Jul 2013 18:43:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <51E082F6.4030305@zytor.com>
+References: <20130712183014.GA20551@www.outflux.net>
+	<51E082F6.4030305@zytor.com>
+Date: Fri, 12 Jul 2013 15:43:10 -0700
+X-Google-Sender-Auth: Xa-5XqVSEKn2J5M6Cn5tllIPjMQ
+Message-ID: <CAGXu5jJ_eo3AP67jS8M1mPak-SxS4FzBoosJTzj5cb=CLC43KQ@mail.gmail.com>
+Subject: Re: [PATCH] x86: make sure IDT is page aligned
+From: Kees Cook <keescook@chromium.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        Borislav Petkov <bp@suse.de>, Fenghua Yu <fenghua.yu@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        PaX Team <pageexec@freemail.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 23:40 +0200, Rafael J. Wysocki wrote:
-> On Friday, July 12, 2013 03:12:24 PM Toshi Kani wrote:
-> > On Fri, 2013-07-12 at 23:13 +0200, Rafael J. Wysocki wrote:
-> > > On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
-> > > > On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
-> > > > > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
-> > > > > > > (2013/07/11 1:47), Toshi Kani wrote:
-> > > > > > > > device->driver_data needs to be cleared when releasing its data,
-> > > > > > > > mem_device, in an error path of acpi_memory_device_add().
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > > > > > > ---
-> > > > > > > 
-> > > > > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > > > > > 
-> > > > > > Thanks Yasuaki!
-> > > > > 
-> > > > > Queued up as a fix for 3.11.
-> > > > 
-> > > > Thanks!
-> > > > 
-> > > > > Do we need that in -stable as well?
-> > > > 
-> > > > Good point.  Yes, we need that in -stable as well.
-> > > 
-> > > What's the oldest mainline major release that fix is applicable to?
-> > 
-> > The fix is applicable all ways up to 2.6.32.
-> 
-> For -stable I'll need to say some more about what practical consequences of
-> the bug are.  Is it difficult to trigger?
+That was the busted patch. See the v2 I sent. Only 64-bit needs
+alignment. And after looking more at it, the idt in head_64.S could be
+entirely dropped in favor of using the one in arch/x86/kernel/traps.c
+(after moving it out of the #ifdef.
 
-The function evaluates _CRS of memory device objects, and fails when it
-gets an unexpected resource or cannot allocate a memory.  A kernel crash
-or data corruption may occur when the kernel accessed a stale pointer.
-That said, I am not sure how critical this issue is for old kernels
-since I do not think there are many platforms that support memory
-hotplug today.  After reading the recent -stable discussion on LKML, now
-I am not sure if this fix should be applied for -stable.  I instrumented
-the kernel to generate an error for testing this change.
- 
-Thanks,
--Toshi
+-Kees
+
+On Fri, Jul 12, 2013 at 3:28 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 07/12/2013 11:30 AM, Kees Cook wrote:
+>>
+>> -     .word 0                         # 32-bit align idt_desc.address
+>> +     .word PAGE_SIZE                 # page align idt_desc.address
+>>
+>
+> ... and this is totally confused.  This didn't change alignment one
+> iota, it only put the value 4096 into the padding.
+>
+>         -hpa
+>
 
 
-> 
-> Rafael
-> 
-> 
-> > > > > > > >   drivers/acpi/acpi_memhotplug.c |    1 +
-> > > > > > > >   1 file changed, 1 insertion(+)
-> > > > > > > > 
-> > > > > > > > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> > > > > > > > index c711d11..999adb5 100644
-> > > > > > > > --- a/drivers/acpi/acpi_memhotplug.c
-> > > > > > > > +++ b/drivers/acpi/acpi_memhotplug.c
-> > > > > > > > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
-> > > > > > > >   	/* Get the range from the _CRS */
-> > > > > > > >   	result = acpi_memory_get_device_resources(mem_device);
-> > > > > > > >   	if (result) {
-> > > > > > > > +		device->driver_data = NULL;
-> > > > > > > >   		kfree(mem_device);
-> > > > > > > >   		return result;
-> > > > > > > >   	}
-> > > > > > > > --
-> > > > > > > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > > > > > > > the body of a message to majordomo@vger.kernel.org
-> > > > > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > > > > > 
-> > > > > > > 
-> > > > > > > 
-> > > > > > 
-> > > > > > 
-> > > > 
-> > > > 
-> > 
-> > 
 
-
+-- 
+Kees Cook
+Chrome OS Security
