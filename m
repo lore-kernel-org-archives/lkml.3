@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964809Ab3GLMrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 08:47:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51720 "EHLO mail.skyhub.de"
+	id S933081Ab3GLMtg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 08:49:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:31224 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964794Ab3GLMrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 08:47:17 -0400
-Date: Fri, 12 Jul 2013 14:46:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-Message-ID: <20130712124657.GH24008@pd.tnic>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com>
- <20130712075602.GA4002@gmail.com>
- <20130712080145.GC24008@pd.tnic>
- <20130712101319.GA13421@gmail.com>
- <20130712102326.GE24008@pd.tnic>
- <20130712041810.53c86e5f.akpm@linux-foundation.org>
- <20130712121354.GG24008@pd.tnic>
- <CAGVrzcZq-NQU=1UY7FpXPXZPFjJV7CQMsNQJbdY=bLTFVqGQHA@mail.gmail.com>
+	id S932951Ab3GLMtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 08:49:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,652,1367996400"; 
+   d="scan'208";a="267409360"
+Message-ID: <51DFFCE1.1070203@intel.com>
+Date: Fri, 12 Jul 2013 15:56:01 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAGVrzcZq-NQU=1UY7FpXPXZPFjJV7CQMsNQJbdY=bLTFVqGQHA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
+References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com> <1373548341-24119-10-git-send-email-adrian.hunter@intel.com> <20130712095600.GT25631@dyad.programming.kicks-ass.net>
+In-Reply-To: <20130712095600.GT25631@dyad.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 01:34:38PM +0100, Florian Fainelli wrote:
-> Shall we provide a shell script wrapper for all of these compressor
-> commands which would test for the utility presence and issue a BIG FAT
-> WARNING if not, but still create the file not to make the kernel build
-> fail? I guess we could probably do this in the Makefile directly as
-> well.
+On 12/07/13 12:56, Peter Zijlstra wrote:
+> On Thu, Jul 11, 2013 at 04:12:18PM +0300, Adrian Hunter wrote:
+>> The event stream is not always parsable because the format of a sample
+>> is dependent on the sample_type of the selected event.  When there
+>> is more than one selected event and the sample_types are not the
+>> same then parsing becomes problematic.  A sample can be matched to its
+>> selected event using the ID that is allocated when the event is opened.
+>> Unfortunately, to get the ID from the sample means first parsing it.
+>>
+>> This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
+>> the ID at a fixed position so that the ID can be retrieved without
+>> parsing the sample.  For sample events, that is the first position
+>> immediately after the header.  For non-sample events, that is the last
+>> position.
+> 
+> There's events where this isn't a possible location; take PERF_RECORD_MMAP for
+> instance; the tail is the complete filename.
 
-I don't know how that would work with the main kernel Makefile
-but we do those kinds of tests in perf before we build it so
-that we can save ourselves the time spent on a failed build:
-2209001fd895e8932ae2c85bfca233758234499a.
+PERF_RECORD_MMAP falls in the category I have called non-sample events.
+Those events are appended with an ID sample.  perf tools parses the ID
+sample backwards from header.size.  So the ID is at the last position
+relative to header.size
 
-This should probably work if you add a prerequisite target which runs
-early in the build process and checks for all the userspace tools
-required for the build.
+> 
+> Why not always insert right after the header?
 
-Thanks.
+It is for sample events i.e. PERF_RECORD_SAMPLE
 
--- 
-Regards/Gruss,
-    Boris.
+> 
+> Also; you forgot to update include/uapi/linux/perf_event.h:enum perf_event_type
+> That's the format documentation.
+> 
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+OK
+
