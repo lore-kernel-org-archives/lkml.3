@@ -1,106 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096Ab3GLMK1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 08:10:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51334 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932851Ab3GLMKZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 08:10:25 -0400
-Date: Fri, 12 Jul 2013 05:10:23 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Javi Merino <javi.merino@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH] irqchip: gic: Don't complain in gic_get_cpumask() if
- UP system
-Message-ID: <20130712121023.GB27430@codeaurora.org>
-References: <1373067573-29946-1-git-send-email-sboyd@codeaurora.org>
- <20130712111322.GC3213@e102654-lin.cambridge.arm.com>
+	id S933129Ab3GLMMJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 08:12:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53938 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932193Ab3GLMMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 08:12:07 -0400
+Date: Fri, 12 Jul 2013 15:11:46 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-serial@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
+        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 2/2] serial: omap: fix wrong context restoration on init
+Message-ID: <20130712121146.GC17053@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1373630142-21765-1-git-send-email-grygorii.strashko@ti.com>
+ <1373630142-21765-2-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7qSK/uQB79J36Y4o"
 Content-Disposition: inline
-In-Reply-To: <20130712111322.GC3213@e102654-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1373630142-21765-2-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12, Javi Merino wrote:
-> On Sat, Jul 06, 2013 at 12:39:33AM +0100, Stephen Boyd wrote:
-> > In a uniprocessor implementation the interrupt processor targets
-> > registers are read-as-zero/write-ignored (RAZ/WI). Unfortunately
-> > gic_get_cpumask() will print a critical message saying
-> > 
-> >  GIC CPU mask not found - kernel will fail to boot.
-> > 
-> > if these registers all read as zero, but there won't actually be
-> > a problem on uniprocessor systems and the kernel will boot just
-> > fine. Skip this check if we're running a UP kernel or if we
-> > detect that the hardware only supports a single processor.
-> > 
-> > Cc: Nicolas Pitre <nico@linaro.org>
-> > Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > ---
-> > 
-> > Maybe we should just drop the check entirely? It looks like it may
-> > just be debug code that won't ever trigger in practice, even on the
-> > 11MPCore that caused this code to be introduced.
-> 
-> I agree, we should drop the check.  It's annoying in uniprocessors and
-> unlikely to be found in the real world unless your gic entry in the dt
-> is wrong.
-> 
+--7qSK/uQB79J36Y4o
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok. How about this?
+hi,
 
-----8<-----
-Subject: [PATCH v2] irqchip: gic: Don't complain in gic_get_cpumask()
+On Fri, Jul 12, 2013 at 02:55:42PM +0300, Grygorii Strashko wrote:
+> Since commit a630fbf "serial: omap: Fix device tree based PM runtime"
+> the OMAP serial driver will always try to restore its context in
+> serial_omap_runtime_resume(). But the problem is that during driver
+> initialization the UART context is not ready yet and, as result, first
+> call to pm_runtime_get*() will cause UART register overwriting by all
+> zeros. This causes Kernel boot hang in case if "earlyprintk" feature is
+> enabled at least [1].
+>=20
+> Unfortunately, there is no exact place in driver now where we can
+> determine that UART context is ready - most of registers configured in
+> serial_omap_set_termios(), but some of them in other places.
+> More over, even if PM runtime will be disabled (blocked) during OMAP
+> serial driver probe() execution [2],[3] it will fix only console UART,
+> but context of other UARTs will be overwriting by all zeros during first
+> access to the corresponding UART.
+>=20
+> To fix this issue:
+> - introduce additional "initialized" flag and update PM runtime callback
+> to do nothing if its not set. Set "initialized" at the end of probe().
+> - read current UART registers configuration in probe and use it by
+> default.
+>=20
+> [1] http://www.spinics.net/lists/arm-kernel/msg256828.html
+> [2] http://www.spinics.net/lists/arm-kernel/msg258062.html
+> [3] http://www.spinics.net/lists/arm-kernel/msg258040.html
+>=20
+> CC: Tony Lindgren <tony@atomide.com>
+> CC: Rajendra Nayak <rnayak@ti.com>
+> CC: Felipe Balbi <balbi@ti.com>
+> CC: Kevin Hilman <khilman@linaro.org>
+>=20
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+> tested on OMAP4 SDP with and without earlyprintk enabled.
+>  drivers/tty/serial/omap-serial.c |   27 ++++++++++++++++++++++++++-
+>  1 file changed, 26 insertions(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-s=
+erial.c
+> index f39bf0c..e1e9667 100644
+> --- a/drivers/tty/serial/omap-serial.c
+> +++ b/drivers/tty/serial/omap-serial.c
+> @@ -162,6 +162,7 @@ struct uart_omap_port {
+>  	struct work_struct	qos_work;
+>  	struct pinctrl		*pins;
+>  	bool			is_suspending;
+> +	bool			initialized;
 
-In a uniprocessor implementation the interrupt processor targets
-registers are read-as-zero/write-ignored (RAZ/WI). Unfortunately
-gic_get_cpumask() will print a critical message saying
+you really think adding this sort of bool flag is the best thing we can
+do ? Something which will, quite likely, spread through every single
+driver ?
 
- GIC CPU mask not found - kernel will fail to boot.
+oh well...
 
-if these registers all read as zero, but there won't actually be
-a problem on uniprocessor systems and the kernel will boot just
-fine. Remove this check because if you're on a multiprocessor
-system it's unlikely to be printed unless your DT is wrong or
-your hardware is broken.
+--=20
+balbi
 
-Cc: Nicolas Pitre <nico@linaro.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Javi Merino <javi.merino@arm.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/irqchip/irq-gic.c | 3 ---
- 1 file changed, 3 deletions(-)
+--7qSK/uQB79J36Y4o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 19ceaa60..4fbcea9 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -368,9 +368,6 @@ static u8 gic_get_cpumask(struct gic_chip_data *gic)
- 			break;
- 	}
- 
--	if (!mask)
--		pr_crit("GIC CPU mask not found - kernel will fail to boot.\n");
--
- 	return mask;
- }
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR3/KBAAoJEIaOsuA1yqREAM8P/0KBH59o9s1wvbaDv+hmMYRe
+yPX7NUzO0y4IEBadl41CLKK00Gle/YXUJ/tQC24mzySVwOj/k94bS2bfeLaSnIxq
+jRgj0sreP4jwoBiW++lRyzaH750KVO/qI+w/gHSvxBxYmFmRhXL6ttoqCQ4xv2z7
+iYeV3Po4QUDJnqHTIpqnUIkLedGwM9hVAhMN0FA9ceC/7NyRYUHW8BckMSaUXwzu
+5T4KFb+YlahGLVtmvNDaTOiNGnPI+gOXykRU6MHkoym7VNS5W0AJgkt6VD7G3pdy
+1/5EFGIMI4ndrJ3Vuit9blNcvxE3q7hYqKwhsZAKcYcvyzTfQbobEeT8gR/j735o
+r3mk3AuwUa9WiUbZX6JMaSfkMaBm3xh2boJtwVBHClM1/8gx3OHI9vyZzcw/fX+s
+ek27O29iAu/g7qqePcPcgEysdQ2/7dMpCCxOaOzkDe2EGBP/N1yvDbWE6oMZO340
+pG4dXWcUr6FniJadqr2MYmLCT4uaHH3Ki7+0uYkInZl9fB7FOJ0XcWPApLZ4H1eu
+7YXjZUzZtoI19+1X3O81yRdqa30avnNsKbk/Z6ASAKLYeoFLRN1aYyJ3HDiS19cL
+d1j1pXFoMzfei1YGLmHE/yWttCrh0kkf5PnnzBqWpB2flEfQC+FNtVX8tdMhXR//
+PmCvE0G11PTxzTwABSEt
+=xa+7
+-----END PGP SIGNATURE-----
 
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+--7qSK/uQB79J36Y4o--
