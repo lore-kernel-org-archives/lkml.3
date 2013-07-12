@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964975Ab3GLNcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 09:32:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59740 "EHLO
+	id S964989Ab3GLNcu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:32:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59771 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964884Ab3GLNca (ORCPT
+	with ESMTP id S964807Ab3GLNcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 09:32:30 -0400
-Date: Fri, 12 Jul 2013 06:29:18 -0700
+	Fri, 12 Jul 2013 09:32:48 -0400
+Date: Fri, 12 Jul 2013 06:29:29 -0700
 From: tip-bot for Michel Lespinasse <tipbot@zytor.com>
-Message-ID: <tip-a51805efae5dda0da66f79268ffcf0715f9dbea4@git.kernel.org>
+Message-ID: <tip-c4be9cb4f19cbd534a6c4c334cd48d8bb483e17a@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         rusty@rustcorp.com.au, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, rostedt@goodmis.org,
-        paulmck@us.ibm.com, akpm@linux-foundation.org, ak@linux.intel.com,
+        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        rostedt@goodmis.org, paulmck@us.ibm.com, ak@linux.intel.com,
         tglx@linutronix.de, oleg@redhat.com, walken@google.com,
         laijs@cn.fujitsu.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         rusty@rustcorp.com.au, peterz@infradead.org,
-        srivatsa.bhat@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        rostedt@goodmis.org, paulmck@us.ibm.com, ak@linux.intel.com,
+        srivatsa.bhat@linux.vnet.ibm.com, paulmck@us.ibm.com,
+        akpm@linux-foundation.org, rostedt@goodmis.org, ak@linux.intel.com,
         oleg@redhat.com, tglx@linutronix.de, laijs@cn.fujitsu.com,
         walken@google.com
-In-Reply-To: <20130708212350.6DD1931C15E@corp2gmr1-1.hot.corp.google.com>
-References: <20130708212350.6DD1931C15E@corp2gmr1-1.hot.corp.google.com>
+In-Reply-To: <20130708212352.1769031C15E@corp2gmr1-1.hot.corp.google.com>
+References: <20130708212352.1769031C15E@corp2gmr1-1.hot.corp.google.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] lockdep: Introduce lock_acquire_exclusive()/
- shared() helper macros
-Git-Commit-ID: a51805efae5dda0da66f79268ffcf0715f9dbea4
+Subject: [tip:core/locking] lglock:
+  Update lockdep annotations to report recursive local locks
+Git-Commit-ID: c4be9cb4f19cbd534a6c4c334cd48d8bb483e17a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,160 +36,105 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 06:29:26 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 06:29:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a51805efae5dda0da66f79268ffcf0715f9dbea4
-Gitweb:     http://git.kernel.org/tip/a51805efae5dda0da66f79268ffcf0715f9dbea4
+Commit-ID:  c4be9cb4f19cbd534a6c4c334cd48d8bb483e17a
+Gitweb:     http://git.kernel.org/tip/c4be9cb4f19cbd534a6c4c334cd48d8bb483e17a
 Author:     Michel Lespinasse <walken@google.com>
-AuthorDate: Mon, 8 Jul 2013 14:23:49 -0700
+AuthorDate: Mon, 8 Jul 2013 14:23:51 -0700
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 12 Jul 2013 13:51:18 +0200
+CommitDate: Fri, 12 Jul 2013 13:51:19 +0200
 
-lockdep: Introduce lock_acquire_exclusive()/shared() helper macros
+lglock: Update lockdep annotations to report recursive local locks
 
-In lockdep.h, the spinlock/mutex/rwsem/rwlock/lock_map acquire macros have
-different definitions based on the value of CONFIG_PROVE_LOCKING.  We have
-separate ifdefs for each of these definitions, which seems redundant.
+Oleg Nesterov recently noticed that the lockdep annotations in lglock.c
+are not sufficient to detect some obvious deadlocks, such as
+lg_local_lock(LOCK) + lg_local_lock(LOCK) or spin_lock(X) +
+lg_local_lock(Y) vs lg_local_lock(Y) + spin_lock(X).
 
-Introduce lock_acquire_{exclusive,shared,shared_recursive} helpers which
-will have different definitions based on CONFIG_PROVE_LOCKING.  Then all
-other helper macros can be defined based on the above ones, which reduces
-the amount of ifdefined code.
+Both issues are easily fixed by indicating to lockdep that lglock's local
+locks are not recursive.  We shouldn't use the rwlock acquire/release
+functions here, as lglock doesn't share the same semantics.  Instead we
+can base our lockdep annotations on the lock_acquire_shared (for local
+lglock) and lock_acquire_exclusive (for global lglock) helpers.
 
+I am not proposing new lglock specific helpers as I don't see the point of
+the existing second level of helpers :)
+
+Noticed-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
 Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Andi Kleen <ak@linux.intel.com>
 Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20130708212350.6DD1931C15E@corp2gmr1-1.hot.corp.google.com
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20130708212352.1769031C15E@corp2gmr1-1.hot.corp.google.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/lockdep.h | 92 +++++++++++++------------------------------------
- 1 file changed, 23 insertions(+), 69 deletions(-)
+ kernel/lglock.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index f1e877b..cfc2f11 100644
---- a/include/linux/lockdep.h
-+++ b/include/linux/lockdep.h
-@@ -365,7 +365,7 @@ extern void lockdep_trace_alloc(gfp_t mask);
+diff --git a/kernel/lglock.c b/kernel/lglock.c
+index 6535a66..86ae2ae 100644
+--- a/kernel/lglock.c
++++ b/kernel/lglock.c
+@@ -21,7 +21,7 @@ void lg_local_lock(struct lglock *lg)
+ 	arch_spinlock_t *lock;
  
- #define lockdep_recursing(tsk)	((tsk)->lockdep_recursion)
- 
--#else /* !LOCKDEP */
-+#else /* !CONFIG_LOCKDEP */
- 
- static inline void lockdep_off(void)
+ 	preempt_disable();
+-	rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
++	lock_acquire_shared(&lg->lock_dep_map, 0, 0, NULL, _RET_IP_);
+ 	lock = this_cpu_ptr(lg->lock);
+ 	arch_spin_lock(lock);
+ }
+@@ -31,7 +31,7 @@ void lg_local_unlock(struct lglock *lg)
  {
-@@ -479,82 +479,36 @@ static inline void print_irqtrace_events(struct task_struct *curr)
-  * on the per lock-class debug mode:
-  */
+ 	arch_spinlock_t *lock;
  
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--# ifdef CONFIG_PROVE_LOCKING
--#  define spin_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
--#  define spin_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
--# else
--#  define spin_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
--#  define spin_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, NULL, i)
--# endif
--# define spin_release(l, n, i)			lock_release(l, n, i)
-+#ifdef CONFIG_PROVE_LOCKING
-+ #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 2, n, i)
-+ #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 2, n, i)
-+ #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 2, n, i)
- #else
--# define spin_acquire(l, s, t, i)		do { } while (0)
--# define spin_release(l, n, i)			do { } while (0)
-+ #define lock_acquire_exclusive(l, s, t, n, i)		lock_acquire(l, s, t, 0, 1, n, i)
-+ #define lock_acquire_shared(l, s, t, n, i)		lock_acquire(l, s, t, 1, 1, n, i)
-+ #define lock_acquire_shared_recursive(l, s, t, n, i)	lock_acquire(l, s, t, 2, 1, n, i)
- #endif
+-	rwlock_release(&lg->lock_dep_map, 1, _RET_IP_);
++	lock_release(&lg->lock_dep_map, 1, _RET_IP_);
+ 	lock = this_cpu_ptr(lg->lock);
+ 	arch_spin_unlock(lock);
+ 	preempt_enable();
+@@ -43,7 +43,7 @@ void lg_local_lock_cpu(struct lglock *lg, int cpu)
+ 	arch_spinlock_t *lock;
  
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--# ifdef CONFIG_PROVE_LOCKING
--#  define rwlock_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
--#  define rwlock_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 2, 2, NULL, i)
--# else
--#  define rwlock_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
--#  define rwlock_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 2, 1, NULL, i)
--# endif
--# define rwlock_release(l, n, i)		lock_release(l, n, i)
--#else
--# define rwlock_acquire(l, s, t, i)		do { } while (0)
--# define rwlock_acquire_read(l, s, t, i)	do { } while (0)
--# define rwlock_release(l, n, i)		do { } while (0)
--#endif
-+#define spin_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
-+#define spin_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
-+#define spin_release(l, n, i)			lock_release(l, n, i)
+ 	preempt_disable();
+-	rwlock_acquire_read(&lg->lock_dep_map, 0, 0, _RET_IP_);
++	lock_acquire_shared(&lg->lock_dep_map, 0, 0, NULL, _RET_IP_);
+ 	lock = per_cpu_ptr(lg->lock, cpu);
+ 	arch_spin_lock(lock);
+ }
+@@ -53,7 +53,7 @@ void lg_local_unlock_cpu(struct lglock *lg, int cpu)
+ {
+ 	arch_spinlock_t *lock;
  
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--# ifdef CONFIG_PROVE_LOCKING
--#  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
--#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
--# else
--#  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
--#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, n, i)
--# endif
--# define mutex_release(l, n, i)			lock_release(l, n, i)
--#else
--# define mutex_acquire(l, s, t, i)		do { } while (0)
--# define mutex_acquire_nest(l, s, t, n, i)	do { } while (0)
--# define mutex_release(l, n, i)			do { } while (0)
--#endif
-+#define rwlock_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
-+#define rwlock_acquire_read(l, s, t, i)		lock_acquire_shared_recursive(l, s, t, NULL, i)
-+#define rwlock_release(l, n, i)			lock_release(l, n, i)
+-	rwlock_release(&lg->lock_dep_map, 1, _RET_IP_);
++	lock_release(&lg->lock_dep_map, 1, _RET_IP_);
+ 	lock = per_cpu_ptr(lg->lock, cpu);
+ 	arch_spin_unlock(lock);
+ 	preempt_enable();
+@@ -65,7 +65,7 @@ void lg_global_lock(struct lglock *lg)
+ 	int i;
  
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--# ifdef CONFIG_PROVE_LOCKING
--#  define rwsem_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
--#  define rwsem_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
--#  define rwsem_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 1, 2, NULL, i)
--# else
--#  define rwsem_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
--#  define rwsem_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, n, i)
--#  define rwsem_acquire_read(l, s, t, i)	lock_acquire(l, s, t, 1, 1, NULL, i)
--# endif
-+#define mutex_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
-+#define mutex_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
-+#define mutex_release(l, n, i)			lock_release(l, n, i)
-+
-+#define rwsem_acquire(l, s, t, i)		lock_acquire_exclusive(l, s, t, NULL, i)
-+#define rwsem_acquire_nest(l, s, t, n, i)	lock_acquire_exclusive(l, s, t, n, i)
-+#define rwsem_acquire_read(l, s, t, i)		lock_acquire_shared(l, s, t, NULL, i)
- # define rwsem_release(l, n, i)			lock_release(l, n, i)
--#else
--# define rwsem_acquire(l, s, t, i)		do { } while (0)
--# define rwsem_acquire_nest(l, s, t, n, i)	do { } while (0)
--# define rwsem_acquire_read(l, s, t, i)		do { } while (0)
--# define rwsem_release(l, n, i)			do { } while (0)
--#endif
+ 	preempt_disable();
+-	rwlock_acquire(&lg->lock_dep_map, 0, 0, _RET_IP_);
++	lock_acquire_exclusive(&lg->lock_dep_map, 0, 0, NULL, _RET_IP_);
+ 	for_each_possible_cpu(i) {
+ 		arch_spinlock_t *lock;
+ 		lock = per_cpu_ptr(lg->lock, i);
+@@ -78,7 +78,7 @@ void lg_global_unlock(struct lglock *lg)
+ {
+ 	int i;
  
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--# ifdef CONFIG_PROVE_LOCKING
--#  define lock_map_acquire(l)		lock_acquire(l, 0, 0, 0, 2, NULL, _THIS_IP_)
--#  define lock_map_acquire_read(l)	lock_acquire(l, 0, 0, 2, 2, NULL, _THIS_IP_)
--# else
--#  define lock_map_acquire(l)		lock_acquire(l, 0, 0, 0, 1, NULL, _THIS_IP_)
--#  define lock_map_acquire_read(l)	lock_acquire(l, 0, 0, 2, 1, NULL, _THIS_IP_)
--# endif
-+#define lock_map_acquire(l)			lock_acquire_exclusive(l, 0, 0, NULL, _THIS_IP_)
-+#define lock_map_acquire_read(l)		lock_acquire_shared_recursive(l, 0, 0, NULL, _THIS_IP_)
- # define lock_map_release(l)			lock_release(l, 1, _THIS_IP_)
--#else
--# define lock_map_acquire(l)			do { } while (0)
--# define lock_map_acquire_read(l)		do { } while (0)
--# define lock_map_release(l)			do { } while (0)
--#endif
- 
- #ifdef CONFIG_PROVE_LOCKING
- # define might_lock(lock) 						\
+-	rwlock_release(&lg->lock_dep_map, 1, _RET_IP_);
++	lock_release(&lg->lock_dep_map, 1, _RET_IP_);
+ 	for_each_possible_cpu(i) {
+ 		arch_spinlock_t *lock;
+ 		lock = per_cpu_ptr(lg->lock, i);
