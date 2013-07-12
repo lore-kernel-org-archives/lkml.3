@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965313Ab3GLSOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 14:14:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15131 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965283Ab3GLSOQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 14:14:16 -0400
-X-Authority-Analysis: v=2.0 cv=KtrPKBqN c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=HICIQ9bjhMYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PINbNDQYIjoA:10 a=X3osjzD9AAAA:8 a=N5U4lpj6c9pDuC0Ym2oA:9 a=QEXdDO2ut3YA:10 a=tXsnliwV7b4A:10 a=jeBq3FmKZ4MA:10 a=KlEQ0vv7NekA:10 a=cPPGnai4B8_w7p3M:21 a=ZbhV6MbReX0-T4Gv:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373652854.17876.112.camel@gandalf.local.home>
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S965308Ab3GLSRK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 14:17:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37882 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964938Ab3GLSRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 14:17:08 -0400
+Message-ID: <51E0480A.2040905@zytor.com>
+Date: Fri, 12 Jul 2013 11:16:42 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
         ksummit-2013-discuss@lists.linux-foundation.org
-Date: Fri, 12 Jul 2013 14:14:14 -0400
-In-Reply-To: <CA+55aFw6_1Lx-vJE=JGXbR_YYhWMqB+w69R1jDAcOrNCQc515Q@mail.gmail.com>
-References: <20130711214830.611455274@linuxfoundation.org>
-	 <20130712005023.GB31005@thunk.org> <20130712025745.GA24086@tuxdriver.com>
-	 <20130712033430.GA3798@kroah.com> <51E03AEE.5010403@zytor.com>
-	 <20130712172836.GA7627@kroah.com>
-	 <1373651458.17876.103.camel@gandalf.local.home>
-	 <CA+55aFw6_1Lx-vJE=JGXbR_YYhWMqB+w69R1jDAcOrNCQc515Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org> <20130712025745.GA24086@tuxdriver.com> <20130712033430.GA3798@kroah.com> <51E03AEE.5010403@zytor.com> <20130712172836.GA7627@kroah.com> <20130712175718.GA342@thunk.org>
+In-Reply-To: <20130712175718.GA342@thunk.org>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 10:59 -0700, Linus Torvalds wrote:
-> On Fri, Jul 12, 2013 at 10:50 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > Perhaps just make a separate stable branch, where you cherry-pick the
-> > specific patch using the -x option. Adds a "(cherry picked from
-> > commit ...)". Then you could have some filter that monitors Linus
-> > commits and when a commit matches one of these patches, have it
-> > automatically sent to the stable list.
+On 07/12/2013 10:57 AM, Theodore Ts'o wrote:
+> On Fri, Jul 12, 2013 at 10:28:36AM -0700, Greg Kroah-Hartman wrote:
+>> On Fri, Jul 12, 2013 at 10:20:46AM -0700, H. Peter Anvin wrote:
+>>> On the subject of the stable tree: could we get a standard format for
+>>> requesting post-inclusion elevation of patches to stable status?  It
+>>> isn't all that unusual that the need for -stable is highlighted after a
+>>> patch has been included in a maintainer's tree, and rebasing to add
+>>> stable metadata annoys Linus.
+>>
+>> After it's in Linus's tree, just send the git id of the patch to
+>> stable@vger.kernel.org, along with what stable tree(s) you want to see
+>> the patch backported to.
+>>
+>> Documentation/stable_kernel_rules.txt should be pretty explicit about
+>> how to do this, but if not, patches to it are always welcome.
 > 
-> Actually, please don't use -x very much. It doesn't much help, and it
-> can get very confusing before things are merged, and people who are on
-> one branch don't even see the other "identical" commit.
+> FWIW, Documentation/stable_kernel_rules.txt currently says that you
+> should send the patch.  I checked to see whether sending the git id
+> was sufficient, and upon reading stable_kernel_rules.txt, decided to
+> simply run git format-patch/git send-email of the commits in mainline.
+> Apparently no one seemed to mind....
 > 
 
-Actually I was trying to answer HPA's question about how to notify
-stable of a patch that wasn't tagged for stable, and one that you need
-to remember when its committed by you.
+My main point was actually to have something that could be automatically
+recognized and flagged by maintainer tools, which an informal email
+really can't.
 
-Say I get a bunch of patches and add them to a branch queued for an -rc
-(all fixes for the current release). Then I notice that one of the
-patches is a fix for older kernels as well, but it has already been made
-public. As to tag it for stable would require a rebase, but its still in
-a queue to be sent to you, and others may have based their work on it.
-The question now is, how do I remember to notify stable of this patch
-when its part of a queue going to you already?
+This relates to the "a posteori metadata" problem with git.  In theory I
+think git notes should handle those, but I have to admit that git notes
+somewhat creep me out because there doesn't seem to be any version
+control on them, and as far as I can tell there is only one note per object.
 
-Is it OK to cherry pick the patch separately, and add the stable tag,
-and queue that up to you first? That way the stable automated process
-will trigger when you take it.
+	-hpa
 
-Basically, there's been times when branches have been made public before
-it is realized that a commit in that branch should go back to older
-trees, not just a fix for the current -rc release. Thus, this is not a
-question of sending a stable fix to you, but a fix that is already
-queued to go to you and later realize it needs to go to older trees as
-well. Greg likes it when you send that patch after it is in mainline.
-But remembering which patch to send isn't always trivial, and can be
-forgotten about. I was giving an answer to that question.
-
-Having the separate stable branch that will never be pushed to you and
-only used as a database of what needs to go to stable for older kernels
-is what I was going for. It doesn't need to be a git branch at all. It
-could just be a directory of files that was created via a git
-format-patch.
-
--- Steve
 
