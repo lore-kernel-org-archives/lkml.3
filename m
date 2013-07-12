@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965449Ab3GLUqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 16:46:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9368 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965365Ab3GLUqq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 16:46:46 -0400
-X-Authority-Analysis: v=2.0 cv=Tr1kdUrh c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=HICIQ9bjhMYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PINbNDQYIjoA:10 a=viUFN44M_gvwnEO8oTwA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373662005.17876.127.camel@gandalf.local.home>
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	id S965455Ab3GLUrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 16:47:53 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:37306 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965441Ab3GLUrv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 16:47:51 -0400
+Date: Fri, 12 Jul 2013 16:47:44 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Willy Tarreau <w@1wt.eu>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable <stable@vger.kernel.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linux-foundation.org
-Date: Fri, 12 Jul 2013 16:46:45 -0400
-In-Reply-To: <20130712203334.GA24331@kroah.com>
-References: <20130712005023.GB31005@thunk.org>
-	 <20130712025745.GA24086@tuxdriver.com> <20130712033430.GA3798@kroah.com>
-	 <51E03AEE.5010403@zytor.com> <20130712172836.GA7627@kroah.com>
-	 <20130712175718.GA342@thunk.org> <51E0480A.2040905@zytor.com>
-	 <51E04AB9.1000003@zytor.com>
-	 <CA+55aFw0PvYBguFmacL0FC6V_hjGVcUWsrZ6HO9tuQof=yw5PA@mail.gmail.com>
-	 <1373658797.17876.119.camel@gandalf.local.home>
-	 <20130712203334.GA24331@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130712204744.GD342@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, Willy Tarreau <w@1wt.eu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Guenter Roeck <linux@roeck-us.net>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	stable <stable@vger.kernel.org>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130711222935.GA11340@redhat.com>
+ <20130711224455.GA17222@kroah.com>
+ <20130712141530.GA3629@roeck-us.net>
+ <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+ <20130712173150.GA5534@roeck-us.net>
+ <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
+ <20130712195051.GB32054@1wt.eu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130712195051.GB32054@1wt.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 13:33 -0700, Greg Kroah-Hartman wrote:
+On Fri, Jul 12, 2013 at 09:50:51PM +0200, Willy Tarreau wrote:
+> So probably we should incite patch contributors to add a specific
+> tag such as "Fixes: 3.5 and later", so that non-important patches
+> do not need the Cc:stable anymore, but users who experience an issue
+> can easily spot them and ask for their inclusion.
 
-> That's what mailboxes are for, use a script of 'git send-email' to send
-> it to yourself and save it somewhere.  Use patchwork.  Use a text file
-> to remind yourself.  Use quilt, like Andrew does, he has a great track
-> record of marking patches for the stable trees properly.  Use something,
-> it really isn't that hard, or at least, it sure shouldn't be, if you
-> really care about it.
+This is a really good idea.   /me likes....
 
-Or use git notes locally ;-)
+I will likely start adopting this for the ext4 tree.
 
--- Steve
-
-
+					- Ted
