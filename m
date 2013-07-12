@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab3GLDMn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 23:12:43 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:58605 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775Ab3GLDMm (ORCPT
+	id S1756492Ab3GLDQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 23:16:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:42360 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755770Ab3GLDP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 23:12:42 -0400
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: rusty@rustcorp.com.au, dhowells@redhat.com, herbert@gondor.hengli.com.au,
-        davem@davemloft.net
-Cc: linux-kernel@vger.kernel.org, Chun-Yi Lee <jlee@suse.com>,
-        Josh Boyer <jwboyer@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: [PATCH] asymmetric keys: explicitly add the leading zero byte to encoded message
-Date: Fri, 12 Jul 2013 11:11:31 +0800
-Message-Id: <1373598691-1504-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Thu, 11 Jul 2013 23:15:59 -0400
+Date: Fri, 12 Jul 2013 13:15:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chandra Seetharaman <sekharan@us.ibm.com>, Ben Myers <bpm@sgi.com>,
+        David Chinner <david@fromorbit.com>, xfs@oss.sgi.com,
+        Glauber Costa <glommer@openvz.org>
+Subject: linux-next: manual merge of the akpm tree with the xfs tree
+Message-Id: <20130712131546.61d05ef97d33d58a28c728db@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__12_Jul_2013_13_15_46_+1000_+ZSBWRLm1HQHWOJT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chun-Yi Lee <jlee@suse.com>
+--Signature=_Fri__12_Jul_2013_13_15_46_+1000_+ZSBWRLm1HQHWOJT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Per PKCS1 spec, the EMSA-PKCS1-v1_5 encoded message is leading by 0x00 0x01 in
-its first 2 bytes. The leading zero byte is suppressed by MPI so we pass a
-pointer to the _preceding_ byte to RSA_verify() in original code, but it has
-risk for the byte is not zero because it's not in EM buffer's scope, neither
-RSA_verify() nor mpi_get_buffer() didn't take care the leading byte.
+Hi Andrew,
 
-To avoid the risk, that's better we explicitly add the leading zero byte to EM
-for pass to RSA_verify(). This patch allocate a _EM buffer to capture the
-result from RSA_I2OSP(), then set the first byte to zero in EM and copy the
-remaining bytes from _EM.
+Today's linux-next merge of the akpm tree got a conflict in
+fs/xfs/xfs_qm.h between commit 92f8ff73f186 ("xfs: Add pquota fields
+where gquota is used") from the xfs tree and commit  "xfs: convert dquot
+cache lru to list_lru" from the akpm tree.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Josh Boyer <jwboyer@redhat.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: David Howells <dhowells@redhat.com>
-Signed-off-by: Chun-Yi Lee <jlee@suse.com>
----
- crypto/asymmetric_keys/rsa.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-diff --git a/crypto/asymmetric_keys/rsa.c b/crypto/asymmetric_keys/rsa.c
-index ca1a4f3..7bc99d2 100644
---- a/crypto/asymmetric_keys/rsa.c
-+++ b/crypto/asymmetric_keys/rsa.c
-@@ -303,6 +303,7 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* Variables as per RFC3447 sec 8.2.2 */
- 	const u8 *H = sig->digest;
- 	u8 *EM = NULL;
-+	u8 *_EM = NULL;
- 	MPI m = NULL;
- 	size_t k;
- 
-@@ -337,14 +338,19 @@ static int RSA_verify_signature(const struct public_key *key,
- 	/* (2c) Convert the message representative (m) to an encoded message
- 	 *      (EM) of length k octets.
- 	 *
--	 *      NOTE!  The leading zero byte is suppressed by MPI, so we pass a
--	 *      pointer to the _preceding_ byte to RSA_verify()!
-+	 *      NOTE!  The leading zero byte is suppressed by MPI, so we add it
-+	 *      back to EM before input to RSA_verify()!
- 	 */
--	ret = RSA_I2OSP(m, k, &EM);
-+	ret = RSA_I2OSP(m, k, &_EM);
- 	if (ret < 0)
- 		goto error;
- 
--	ret = RSA_verify(H, EM - 1, k, sig->digest_size,
-+	EM = kmalloc(k, GFP_KERNEL);
-+	memset(EM, 0, 1);
-+	memcpy(EM + 1, _EM, k-1);
-+	kfree(_EM);
-+
-+	ret = RSA_verify(H, EM, k, sig->digest_size,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].data,
- 			 RSA_ASN1_templates[sig->pkey_hash_algo].size);
- 
--- 
-1.6.4.2
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc fs/xfs/xfs_qm.h
+index 579d6a0,cf2ad1f..0000000
+--- a/fs/xfs/xfs_qm.h
++++ b/fs/xfs/xfs_qm.h
+@@@ -44,14 -44,10 +44,12 @@@ extern struct kmem_zone	*xfs_qm_dqtrxzo
+  typedef struct xfs_quotainfo {
+  	struct radix_tree_root qi_uquota_tree;
+  	struct radix_tree_root qi_gquota_tree;
+ +	struct radix_tree_root qi_pquota_tree;
+  	struct mutex qi_tree_lock;
+ -	xfs_inode_t	*qi_uquotaip;	 /* user quota inode */
+ -	xfs_inode_t	*qi_gquotaip;	 /* group quota inode */
+ +	struct xfs_inode	*qi_uquotaip;	/* user quota inode */
+ +	struct xfs_inode	*qi_gquotaip;	/* group quota inode */
+ +	struct xfs_inode	*qi_pquotaip;	/* project quota inode */
+- 	struct list_head qi_lru_list;
+- 	struct mutex	 qi_lru_lock;
+- 	int		 qi_lru_count;
++ 	struct list_lru	 qi_lru;
+  	int		 qi_dquots;
+  	time_t		 qi_btimelimit;	 /* limit for blks timer */
+  	time_t		 qi_itimelimit;	 /* limit for inodes timer */
+
+--Signature=_Fri__12_Jul_2013_13_15_46_+1000_+ZSBWRLm1HQHWOJT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR33TnAAoJEECxmPOUX5FEdj4P/3q79Hko10rAF8RPkZ310xDm
+gH2yFo7ncjndKq0y74dqTQGSY08UpwAZPSCT7QaLrpTvHzEz/eKRytnQO7HrpePZ
+EiqPc3JeHX+i+XN5+jXSFRtNGHLg2hI8QsHoRzWaMKsfYk0/C9wgHgQKWdAwAsdW
+g65RVvePnAhDr8ZTC+YGVSWOhUuBlBoYdSODs9IX9qAzjGP5IBWvVuQOdekBq0QS
+Ij6497vO87UtQLf0NXECHQ8oSXXDsR3asjQElv0Rk11I5mEvVgwAZ5JCovPBHT1g
+XqXgQjh6TiVqQiKxdPVomUTxOHHw4gTJTxuiu9laul4a2zlzGy3EYhJU32ERvSqf
+osXMQJMKCTIYyagHfvGTPtM1Xemy+9tLvgK1rv9osHy6JmWo6zz/apWvoST/EvIC
+qJU6oS/CYEVUe94PhiFK5MOkvxnZX8qgOOnGTLqlFR4Y1MJwGQQueClSIZeH8b0N
+5NtE6Vs4U8koBDAWwYawye6NFcRG6z+XzO2cFXmS2WQVTceQlauheKYUUvvZoNLz
+4VaA/LB7WBmoSH5WBQ733xQJ2VrBVtq0RhhOkpr9IslmIvvSfQB5HA6pu7lAgbOF
+XINRIbI2DO5xNvFnAnDrOIl59wnfvaR5pjEqTx3UtuWjnYHllqEMF7x/jSdWV6KO
+cpqRxrHpyHgwplUpJ061
+=yhcL
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__12_Jul_2013_13_15_46_+1000_+ZSBWRLm1HQHWOJT--
