@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757280Ab3GLHTT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 03:19:19 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43229 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757148Ab3GLHTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 03:19:15 -0400
-From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
-To: <tony@atomide.com>, <benoit.cousson@linaro.org>, <rnayak@ti.com>,
-        <peter.ujfalusi@ti.com>, <kishon@ti.com>, <jic23@cam.ac.uk>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <lars@metafoo.de>, <sameo@linux.intel.com>, <ch.naveen@samsung.com>,
-        <poeschel@lemonage.de>, <milo.kim@ti.com>, <balajitk@ti.com>,
-        <gg@slimlogic.co.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-iio@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH v3 1/2] ARM: dts: twl: Add GPADC data to device tree
-Date: Fri, 12 Jul 2013 10:18:01 +0300
-Message-ID: <1373613482-28390-2-git-send-email-oleksandr.kozaruk@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1373613482-28390-1-git-send-email-oleksandr.kozaruk@ti.com>
-References: <1373613482-28390-1-git-send-email-oleksandr.kozaruk@ti.com>
+	id S1757303Ab3GLHT0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 03:19:26 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:41983 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757226Ab3GLHTW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 03:19:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130711221644.547.74786.stgit@srivatsabhat.in.ibm.com>
+References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
+	<20130711221644.547.74786.stgit@srivatsabhat.in.ibm.com>
+Date: Fri, 12 Jul 2013 12:49:21 +0530
+Message-ID: <CAKohpo=eo5KAjE6Nk32aLJ3-KZZ4Ge-mm+hB1-gUMk+ZDF8iqw@mail.gmail.com>
+Subject: Re: [PATCH 5/8] cpufreq: Extract the handover of policy cpu to a
+ helper function
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
+        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
+        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GPADC is the general purpose ADC present on twl6030.
-The dt data is interrupt used to trigger end of ADC
-conversion.
+On 12 July 2013 03:46, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> During cpu offline, when the policy->cpu is going down, some other CPU
+> present in the policy->cpus mask is nominated as the new policy->cpu.
+> Extract this functionality from __cpufreq_remove_dev() and implement
+> it in a helper function. This helps in upcoming code reorganization.
+>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> ---
+>
+>  drivers/cpufreq/cpufreq.c |   62 ++++++++++++++++++++++++++++-----------------
+>  1 file changed, 38 insertions(+), 24 deletions(-)
 
-Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
----
- arch/arm/boot/dts/twl6030.dtsi |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/arm/boot/dts/twl6030.dtsi b/arch/arm/boot/dts/twl6030.dtsi
-index 2e3bd31..434842c 100644
---- a/arch/arm/boot/dts/twl6030.dtsi
-+++ b/arch/arm/boot/dts/twl6030.dtsi
-@@ -103,4 +103,10 @@
- 		compatible = "ti,twl6030-pwmled";
- 		#pwm-cells = <2>;
- 	};
-+
-+	gpadc: twl6030_gpadc {
-+		compatible = "ti,twl6030_gpadc";
-+		interrupts = <3>;
-+		#io-channel-cells = <1>;
-+	};
- };
--- 
-1.7.9.5
-
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
