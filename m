@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab3GLGCK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 02:02:10 -0400
-Received: from ozlabs.org ([203.10.76.45]:59545 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480Ab3GLGCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 02:02:09 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Jason Wang <jasowang@redhat.com>, Cong Wang <amwang@redhat.com>,
-        Amos Kong <akong@redhat.com>, Dave Jones <davej@redhat.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [PATCH] virtio-net: put virtio net header inline with data
-In-Reply-To: <20130711130007.GA3794@redhat.com>
-References: <20130708101259.GA16074@redhat.com> <871u78eavc.fsf@rustcorp.com.au> <20130711130007.GA3794@redhat.com>
-User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Fri, 12 Jul 2013 15:27:18 +0930
-Message-ID: <87oba82udd.fsf@rustcorp.com.au>
+	id S1753163Ab3GLGFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 02:05:09 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:54075 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab3GLGFG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 02:05:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1373571281-4457-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1373571281-4457-1-git-send-email-aaro.koskinen@iki.fi>
+Date: Fri, 12 Jul 2013 11:35:05 +0530
+X-Google-Sender-Auth: UXFwICWKPs-OPNYVJbIrfI0anDQ
+Message-ID: <CAOh2x==snAt8UfdG+d_FvA6m9Pqnp_BmonOB=u7UX1MLH8O89A@mail.gmail.com>
+Subject: Re: [PATCH] MIPS: loongson2: cpufreq: fix broken cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Ralf Baechle <ralf@linux-mips.org>,
+        cpufreq@vger.kernel.org, Julia Lawall <Julia.Lawall@lip6.fr>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
-> On Tue, Jul 09, 2013 at 11:46:23AM +0930, Rusty Russell wrote:
->> "Michael S. Tsirkin" <mst@redhat.com> writes:
->> > For small packets we can simplify xmit processing
->> > by linearizing buffers with the header:
->> > most packets seem to have enough head room
->> > we can use for this purpose.
->> > Since existing hypervisors require that header
->> > is the first s/g element, we need a feature bit
->> > for this.
->> >
->> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->> > ---
->> >
->> > Note: this needs to be applied on top of patch
->> > defining VIRTIO_F_ANY_LAYOUT - bit to be
->> > selected by Rusty.
->> >
->> > The following patch should work for any definition of
->> > VIRTIO_F_ANY_LAYOUT - I used bit 31 for testing.
->> > Rusty, could you please pick a valid bit for VIRTIO_F_ANY_LAYOUT
->> > and squeeze this patch into 3.11?
->> 
->> Sorry, it's too late.
->> 
->> First, I've been a bit lax in sending patches via DaveM, and this is
->> definitely his territory (ie. more net than virtio).
->> 
->> Secondly, it needs baking and testing time.
->> 
->> Cheers,
->> Rusty.
+On Fri, Jul 12, 2013 at 1:04 AM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> Commit 42913c799 (MIPS: Loongson2: Use clk API instead of direct
+> dereferences) broke the cpufreq functionality on Loongson2 boards:
+> clk_set_rate() is called before the CPU frequency table is initialized,
+> and therefore will always fail.
 >
-> Okay. But we can already commit the qemu change, right?
-> Also, can you submit the spec update please?
+> Fix by moving the clk_set_rate() after the table initialization.
+> Tested on Lemote FuLoong mini-PC.
+>
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Cc: stable@vger.kernel.org
+> ---
+>  drivers/cpufreq/loongson2_cpufreq.c | 11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
 
-The spec has been updated, BTW.
-
-Cheers,
-Rusty.
+Ackec-by: Viresh Kumar <viresh.kumar@linaro.org>
