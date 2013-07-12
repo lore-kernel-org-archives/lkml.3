@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab3GLOat (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:30:49 -0400
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:7209 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab3GLOas (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:30:48 -0400
-Date: Fri, 12 Jul 2013 16:30:34 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Wei Ni <wni@nvidia.com>, thierry.reding@gmail.com,
-        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v3 1/4] hwmon: (lm90) split set&show temp as common
- codes
-Message-ID: <20130712163034.1fc1cd66@endymion.delvare>
-In-Reply-To: <20130712135000.GA3386@roeck-us.net>
-References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
-	<1373615287-18502-2-git-send-email-wni@nvidia.com>
-	<20130712152615.23464a6b@endymion.delvare>
-	<20130712135000.GA3386@roeck-us.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757440Ab3GLOb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:31:26 -0400
+Received: from 8bytes.org ([85.214.48.195]:34302 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752392Ab3GLObZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 10:31:25 -0400
+Date: Fri, 12 Jul 2013 16:31:22 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "Li, Zhen-Hua" <zhen-hual@hp.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: next-20130709 DMAR issues
+Message-ID: <20130712143122.GF28811@8bytes.org>
+References: <29624.1373475702@turing-police.cc.vt.edu>
+ <20130712121419.GA22945@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130712121419.GA22945@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Fri Jul 12 16:31:23 2013
+X-DSPAM-Confidence: 0.9978
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 51e0133b20861837640754
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Thanks for the heads-up, Ingo.
 
-On Fri, 12 Jul 2013 06:50:00 -0700, Guenter Roeck wrote:
-> On Fri, Jul 12, 2013 at 03:26:15PM +0200, Jean Delvare wrote:
-> > One thing I am a little worried about (but maybe I'm wrong) is that I
-> > seem to understand you want to register every LM90-like chip as both a
-> > hwmon device and two thermal devices. I seem to recall that every
-> > thermal device is also exposed automatically as a virtual hwmon
-> > device, is that correct? If so we will be presenting the same values
-> > twice to libsensors, which would be confusing.
-> 
-> Not sure if that is a good idea, but if I recall correctly, the thermal folks
-> plan to remove that path.
+On Fri, Jul 12, 2013 at 02:14:20PM +0200, Ingo Molnar wrote:
+> > Jul 10 12:20:19 turing-police kernel: [    0.021583] DMAR:[fault reason 06] PTE Read access is not set
+> > 
+> > Now I have 3 extra messages talking about handling a fault status.  lspci says 00:1f.2 is:
+> > 
+> > 00:1f.2 SATA controller: Intel Corporation 7 Series Chipset Family 6-port SATA Controller [AHCI mode] (rev 04)
 
-If that means that for example the ACPI thermal zone is no longer
-displayed by "sensors", then I strongly object - unless it is
-explicitly registered as a separate hwmon device from now on, of course.
+This could be caused by some change in the SATA driver stack. Maybe a
+DMA buffer is used after unmap or something.
 
-My idea was to make the bridge optional - you decide when you register
-a thermal device if it should be exposed as hwmon or not.
 
-I don't have a strong opinion on the implementation, as long as each
-input is listed by "sensors" once and only once.
+> > If this doesn't ring any bells, I'l go do the bisect thing...
 
--- 
-Jean Delvare
+Yes, a bisection would help here, thanks for doing this.
+
+
+	Joerg
+
+
