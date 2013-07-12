@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751990Ab3GLFdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 01:33:43 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:28063
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751125Ab3GLFdm (ORCPT
+	id S1752164Ab3GLFjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 01:39:42 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:52807 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab3GLFjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 01:33:42 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Message-ID: <51DF952B.8050802@freescale.com>
-Date: Fri, 12 Jul 2013 13:33:31 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 12 Jul 2013 01:39:41 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [V9fs-developer] [GIT PULL] 9p changes for 3.11 merge window (part	2)
+In-Reply-To: <CAFkjPTnWcVCrDYiNAwWMOa=8yLzpdZKUi+v7oSQqt3DinYp4xA@mail.gmail.com>
+References: <CAFkjPTnWcVCrDYiNAwWMOa=8yLzpdZKUi+v7oSQqt3DinYp4xA@mail.gmail.com>
+User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+Date: Fri, 12 Jul 2013 11:09:31 +0530
+Message-ID: <87fvvktjzg.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, <vakul@freescale.com>
-Subject: Re: [PATCH V2 1/2] DMA: Freescale: Add new 8-channel DMA engine device
- tree nodes
-References: <1373005626-20726-1-git-send-email-hongbo.zhang@freescale.com> <1373005626-20726-2-git-send-email-hongbo.zhang@freescale.com> <1373388526.8183.191@snotra>
-In-Reply-To: <1373388526.8183.191@snotra>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13071205-2674-0000-0000-000009C50EBB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 12:48 AM, Scott Wood wrote:
-> On 07/05/2013 01:27:05 AM, hongbo.zhang@freescale.com wrote:
->> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->>
->> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this 
->> patch add
->> the device tree nodes for them.
->>
->> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
->> ---
->>  arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi   |   90 
->> +++++++++++++++++++++++++++
->>  arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi   |   90 
->> +++++++++++++++++++++++++++
->>  arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
->>  3 files changed, 182 insertions(+), 2 deletions(-)
->>  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->>  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
->
-> Please update Documentation/devicetree/bindings/powerpc/fsl/dma.txt 
-> for the new compatible and dgsr1.
-OK, thanks.
-What's more, some text string in the driver and Kconfig files should be 
-updated too, e.g. "Elo / Elo Plus DMA" may be changed to "Elo series 
-DMA", will send out v3 patches soon.
->
-> -Scott
+Eric Van Hensbergen <ericvh@gmail.com> writes:
 
+> The following changes since commit 2315cb14010c4cb0eb7c1d19fcf90475e4688207:
+>
+>   9p: Add rest of 9p files to MAINTAINERS entry (2013-05-28 13:47:58 -0500)
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.gittags/for-linus-3.11-merge-window-part-2
+>
+> for you to fetch changes up to f2692ea8d5b535277bc06b315eabd32ef4e7a11c:
+>
+>   fs/9p: Remove the unused variable "err" in v9fs_vfs_getattr() (2013-07-07
+> 22:18:31 -0500)
+>
+> ----------------------------------------------------------------
+> Second round of 9p patches for the 3.11 merge window.
+>
+> Several of these patches were rebased in order to correct style issues.
+> Only stylistic changes were made versus the patches which were in linux-next
+> for two weeks.  The rebases have been in linux-next for 3 days and have
+> passed my regressions.
+>
+> The bulk of these are RDMA fixes and improvements.  There's also some
+> additions on the extended attributes front to support some additional
+> namespaces and a new option for TCP to force allocation of mount requests
+> from a priviledged port.
+>
 
+Noticed that we have
+
+6390460af8a672754dd6743f326515e98f52b2a7 and 
+42fe6484c639e8f79e09f81cb89f4f69db224997
+
+Both are the same fix. 
+net/9p: Handle error in zero copy request correctly for 9p2000.u
+
+Any idea what happened ?
+
+-aneesh
 
