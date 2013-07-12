@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964812Ab3GLM7n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 08:59:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22646 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178Ab3GLM7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 08:59:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,652,1367996400"; 
-   d="scan'208";a="369134560"
-Date: Fri, 12 Jul 2013 16:05:08 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [RFC][PATCH 23/30] ACPI / hotplug / PCI: Do not exectute _PS0
- and _PS3 directly
-Message-ID: <20130712130508.GK4898@intel.com>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan>
- <3718119.FLASu5DBx8@vostro.rjw.lan>
- <1757750.sf0hy8txF5@vostro.rjw.lan>
+	id S964847Ab3GLNCA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:02:00 -0400
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:50397 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S964828Ab3GLNB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 09:01:59 -0400
+Date: Fri, 12 Jul 2013 14:00:21 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
+Message-ID: <20130712130021.GC28271@arm.com>
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+ <51DC414F.5050900@linux.intel.com>
+ <20130710111627.GC15989@e103687>
+ <51DD5BFC.8000102@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1757750.sf0hy8txF5@vostro.rjw.lan>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51DD5BFC.8000102@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 02:01:30AM +0200, Rafael J. Wysocki wrote:
-> Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-> ===================================================================
-> --- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-> +++ linux-pm/drivers/pci/hotplug/acpiphp.h
-> @@ -160,7 +160,6 @@ struct acpiphp_attention_info
->  
->  /* slot flags */
->  
-> -#define SLOT_POWEREDON		(0x00000001)
->  #define SLOT_ENABLED		(0x00000002)
->  #define SLOT_MULTIFUNCTION	(0x00000004)
->  
-> @@ -168,11 +167,7 @@ struct acpiphp_attention_info
->  
->  #define FUNC_HAS_STA		(0x00000001)
->  #define FUNC_HAS_EJ0		(0x00000002)
-> -#define FUNC_HAS_PS0		(0x00000010)
-> -#define FUNC_HAS_PS1		(0x00000020)
-> -#define FUNC_HAS_PS2		(0x00000040)
-> -#define FUNC_HAS_PS3		(0x00000080)
-> -#define FUNC_HAS_DCK            (0x00000100)
-> +#define FUNC_HAS_DCK            (0x00000003)
+On Wed, Jul 10, 2013 at 02:05:00PM +0100, Arjan van de Ven wrote:
+> >> also, it almost looks like there is a fundamental assumption in the
+> >> code that you can get the current effective P state to make
+> >> scheduler decisions on; on Intel at least that is basically
+> >> impossible... and getting more so with every generation (likewise
+> >> for AMD afaics)
+> >>
+> >> (you can get what you ran at on average over some time in the past,
+> >> but not what you're at now or going forward)
+> >
+> > As described above, it is not a strict assumption. From a scheduler
+> > point of view we somehow need to know if the cpus are truly fully
+> > utilized (at their highest P-state)
+> 
+> unfortunately we can't provide this on Intel ;-(
+> we can provide you what you ran at average, we cannot provide you if
+> that is the max or not
+> 
+> (first of all, because we outright don't know what the max would have
+> been, and second, because we may be running slower than max because
+> the workload was memory bound or any of the other conditions that
+> makes the HW P state "governor" decide to reduce frequency for
+> efficiency reasons)
 
-These are flags not enum so the above wants to be
+I guess even if we have a constant CPU frequency (no turbo boost), we
+still don't have a simple relation between the load as seen by the
+scheduler and the CPU frequency (for reasons that you mentioned above
+like memory-bound tasks).
 
-	#define FUNC_HAS_DCK            (0x00000004)
+But on x86 you still have a P-state hint for the CPU and the scheduler
+could at least hope for more CPU performance. We can make the power
+scheduler ask the power driver for an increase or decrease of
+performance (as Preeti suggested) and give it the current load as
+argument rather than a precise performance/frequency level. The power
+driver would change the P-state accordingly and take the load into
+account (or ignore it, something like intel_pstate.c can do its own
+aperf/mperf tracking). But the power driver will inform the scheduler
+that it can't change the P-state further and the power scheduler can
+decide to spread the load out to other CPUs.
 
-otherwise we accidentally match checks like:
-
-	/* install notify handler */
-	if (!(newfunc->flags & FUNC_HAS_DCK)) {
-		...
+-- 
+Catalin
