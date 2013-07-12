@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab3GLO2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:28:48 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:38146 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752178Ab3GLO2q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:28:46 -0400
-Date: Fri, 12 Jul 2013 16:28:44 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Ming Lei <tom.leiming@gmail.com>, Linda Walsh <lkml@tlinx.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
-Message-ID: <20130712142844.GA359@x4>
-References: <51D9EAF3.4050804@tlinx.org>
- <CACVXFVPRwakzB6vtqRqL49StHKdugCpxDyNvx3VzcDC7GggFMQ@mail.gmail.com>
- <20130712080428.GB359@x4>
- <20130712134115.GI24008@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712134115.GI24008@pd.tnic>
+	id S1757365Ab3GLO3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:29:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757142Ab3GLO3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 10:29:20 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf tests: Check proper prev_state size for sched_switch tp
+Date: Fri, 12 Jul 2013 16:29:06 +0200
+Message-Id: <1373639346-4547-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013.07.12 at 15:41 +0200, Borislav Petkov wrote:
-> On Fri, Jul 12, 2013 at 10:04:28AM +0200, Markus Trippelsdorf wrote:
-> > Mauro said he will fix this in the coming weeks:
-> > 
-> > http://article.gmane.org/gmane.linux.kernel/1522719
-> 
-> Here's a possible fix which works fine here. Markus, if you could verify
-> please...
+The prev_state is defined as long which is 4 bytes long
+on 32-bit x86. Changing the check against sizeof(long).
 
-Yes, it's working fine here, too. Thanks Boris.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/tests/evsel-tp-sched.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
+index f79e7d0..9b98c15 100644
+--- a/tools/perf/tests/evsel-tp-sched.c
++++ b/tools/perf/tests/evsel-tp-sched.c
+@@ -49,7 +49,7 @@ int test__perf_evsel__tp_sched_test(void)
+ 	if (perf_evsel__test_field(evsel, "prev_prio", 4, true))
+ 		ret = -1;
+ 
+-	if (perf_evsel__test_field(evsel, "prev_state", 8, true))
++	if (perf_evsel__test_field(evsel, "prev_state", sizeof(long), true))
+ 		ret = -1;
+ 
+ 	if (perf_evsel__test_field(evsel, "next_comm", 16, true))
 -- 
-Markus
+1.7.11.7
+
