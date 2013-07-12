@@ -1,148 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933194Ab3GLPRS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:17:18 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:58514 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759Ab3GLPRR (ORCPT
+	id S933083Ab3GLPWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:22:31 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:35110 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932759Ab3GLPW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:17:17 -0400
-From: Alexandru Juncu <alexj@rosedu.org>
-To: willy@linux.intel.com
-Cc: linux-nvme@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandru Juncu <alexj@rosedu.org>
-Subject: [PATCH] NVMe: replace kmalloc and memset with kzalloc.
-Date: Fri, 12 Jul 2013 18:16:49 +0300
-Message-Id: <1373642209-16288-1-git-send-email-alexj@rosedu.org>
-X-Mailer: git-send-email 1.8.1.2
+	Fri, 12 Jul 2013 11:22:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130712141530.GA3629@roeck-us.net>
+References: <20130711214830.611455274@linuxfoundation.org>
+	<20130711222935.GA11340@redhat.com>
+	<20130711224455.GA17222@kroah.com>
+	<20130712141530.GA3629@roeck-us.net>
+Date: Fri, 12 Jul 2013 08:22:27 -0700
+X-Google-Sender-Auth: ngHDMDoB6o68j8m5_yqdsXOVtEk
+Message-ID: <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found using coccinelle.
+On Fri, Jul 12, 2013 at 7:15 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> >
+>> > I get the impression as soon as we hit -rc1, some maintainers immediately
+>> > go into "OH SHIT, I CAN'T SEND PATCHES OR LINUS WILL SHOUT AT ME" mode.
+>>
+>> I agree.  But it seems that I need to now start shouting at them :(
+>
+> Just like others, I now have a cutoff-point for -stable patches. Depending on
+> the severity of a bug, it is somewhere between -rc4 and -rc6. After -rc6 I only
+> push regressions and crash fixes; the rest has to wait for the commit window.
 
-Signed-off-by: Alexandru Juncu <alexj@rosedu.org>
----
- drivers/block/nvme-scsi.c | 24 ++++++++----------------
- 1 file changed, 8 insertions(+), 16 deletions(-)
+So regressions, crash fixes (and security issues) is exactly what I
+want to get after -rc3 or so. And yes, I will start shouting at people
+if other things show up.
 
-diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
-index 102de2f..4a4ff4e 100644
---- a/drivers/block/nvme-scsi.c
-+++ b/drivers/block/nvme-scsi.c
-@@ -933,13 +933,12 @@ static int nvme_trans_bdev_char_page(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	int res = SNTI_TRANSLATION_SUCCESS;
- 	int xfer_len;
- 
--	inq_response = kmalloc(EXTENDED_INQUIRY_DATA_PAGE_LENGTH, GFP_KERNEL);
-+	inq_response = kzalloc(EXTENDED_INQUIRY_DATA_PAGE_LENGTH, GFP_KERNEL);
- 	if (inq_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
- 
--	memset(inq_response, 0, EXTENDED_INQUIRY_DATA_PAGE_LENGTH);
- 	inq_response[1] = INQ_BDEV_CHARACTERISTICS_PAGE;    /* Page Code */
- 	inq_response[2] = 0x00;    /* Page Length MSB */
- 	inq_response[3] = 0x3C;    /* Page Length LSB */
-@@ -964,12 +963,11 @@ static int nvme_trans_log_supp_pages(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	int xfer_len;
- 	u8 *log_response;
- 
--	log_response = kmalloc(LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH, GFP_KERNEL);
-+	log_response = kzalloc(LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH, GFP_KERNEL);
- 	if (log_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(log_response, 0, LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH);
- 
- 	log_response[0] = LOG_PAGE_SUPPORTED_LOG_PAGES_PAGE;
- 	/* Subpage=0x00, Page Length MSB=0 */
-@@ -1000,12 +998,11 @@ static int nvme_trans_log_info_exceptions(struct nvme_ns *ns,
- 	u8 temp_c;
- 	u16 temp_k;
- 
--	log_response = kmalloc(LOG_INFO_EXCP_PAGE_LENGTH, GFP_KERNEL);
-+	log_response = kzalloc(LOG_INFO_EXCP_PAGE_LENGTH, GFP_KERNEL);
- 	if (log_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(log_response, 0, LOG_INFO_EXCP_PAGE_LENGTH);
- 
- 	mem = dma_alloc_coherent(&dev->pci_dev->dev,
- 					sizeof(struct nvme_smart_log),
-@@ -1069,12 +1066,11 @@ static int nvme_trans_log_temperature(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	u8 temp_c_cur, temp_c_thresh;
- 	u16 temp_k;
- 
--	log_response = kmalloc(LOG_TEMP_PAGE_LENGTH, GFP_KERNEL);
-+	log_response = kzalloc(LOG_TEMP_PAGE_LENGTH, GFP_KERNEL);
- 	if (log_response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(log_response, 0, LOG_TEMP_PAGE_LENGTH);
- 
- 	mem = dma_alloc_coherent(&dev->pci_dev->dev,
- 					sizeof(struct nvme_smart_log),
-@@ -1380,12 +1376,11 @@ static int nvme_trans_mode_page_create(struct nvme_ns *ns,
- 	blk_desc_offset = mph_size;
- 	mode_pages_offset_1 = blk_desc_offset + blk_desc_len;
- 
--	response = kmalloc(resp_size, GFP_KERNEL);
-+	response = kzalloc(resp_size, GFP_KERNEL);
- 	if (response == NULL) {
- 		res = -ENOMEM;
- 		goto out_mem;
- 	}
--	memset(response, 0, resp_size);
- 
- 	res = nvme_trans_fill_mode_parm_hdr(&response[0], mph_size, cdb10,
- 					llbaa, mode_data_length, blk_desc_len);
-@@ -2480,12 +2475,11 @@ static int nvme_trans_read_capacity(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 	}
- 	id_ns = mem;
- 
--	response = kmalloc(resp_size, GFP_KERNEL);
-+	response = kzalloc(resp_size, GFP_KERNEL);
- 	if (response == NULL) {
- 		res = -ENOMEM;
- 		goto out_dma;
- 	}
--	memset(response, 0, resp_size);
- 	nvme_trans_fill_read_cap(response, id_ns, cdb16);
- 
- 	xfer_len = min(alloc_len, resp_size);
-@@ -2554,12 +2548,11 @@ static int nvme_trans_report_luns(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 			goto out_dma;
- 		}
- 
--		response = kmalloc(resp_size, GFP_KERNEL);
-+		response = kzalloc(resp_size, GFP_KERNEL);
- 		if (response == NULL) {
- 			res = -ENOMEM;
- 			goto out_dma;
- 		}
--		memset(response, 0, resp_size);
- 
- 		/* The first LUN ID will always be 0 per the SAM spec */
- 		for (lun_id = 0; lun_id < le32_to_cpu(id_ctrl->nn); lun_id++) {
-@@ -2600,12 +2593,11 @@ static int nvme_trans_request_sense(struct nvme_ns *ns, struct sg_io_hdr *hdr,
- 
- 	resp_size = ((desc_format) ? (DESC_FMT_SENSE_DATA_SIZE) :
- 					(FIXED_FMT_SENSE_DATA_SIZE));
--	response = kmalloc(resp_size, GFP_KERNEL);
-+	response = kzalloc(resp_size, GFP_KERNEL);
- 	if (response == NULL) {
- 		res = -ENOMEM;
- 		goto out;
- 	}
--	memset(response, 0, resp_size);
- 
- 	if (desc_format == DESCRIPTOR_FORMAT_SENSE_DATA_TYPE) {
- 		/* Descriptor Format Sense Data */
--- 
-1.8.1.2
+However, I think your comments clearly show the problem:
 
+> So, yes, there are a couple of hwmon patches in your list.
+>
+> From a maintainer perspective, seems to me we are stuck between a rock and a
+> hard place. Yes, I would prefer to push all -stable material even late in the
+> -rc game, but that is not how things work nowadays anymore.
+
+That's f*cking sad. You know *why* it's sad?
+
+Go read the rules for stable patches. Really.
+
+Because the rules for stable patches are the rules _I_ use for that
+late -rc stuff, and is pretty much exactly what you yourself described
+as "this is what I send Linus after -rc4".
+
+Now, that should make you think about THE ABSOLUTE CRAP YOU MARK FOR -stable!
+
+If it isn't important enough to send to me after -rc4, then it damn
+well isn't important enough to mark for stable either!
+
+It really is that simple.
+
+> This should really be discussed at the Kernel Summit. Overall, I don't really
+> care too much how to handle it. Just tell me. The outlook of "Either Linus
+> will shout at you or Greg will" doesn't sound like a good solution, though.
+
+Listen to yourself. In fact, there is a damn good solution": don't
+mark crap for stable, and don't send crap to me after -rc4.
+
+If it doesn't fit the stable rules, they should go in the next merge
+window. It really is that simple. You even (unwittingly) pretty much
+described the stable rules, but then you apparently didn't understand
+that those were the rules for -stable too.
+
+Of course, I suspect I see why this happens. Greg doesn't shout as
+much as me, and he has been taking any random patches into -stable. So
+the end result is that people think it's easier to mark things for
+-stable than it is to show that it actualy *is* stable, and they are
+trying to use -stable as a way to get any random late fixes in.
+
+That is not how stable should work. When stable started, it had some
+rather clear rules. It's not for "fixes". It was meant to be solely
+for big issues.
+
+The thing you just described that you put a stable tag on is *EXACTLY*
+the things that should not be marked for stable. For *EXACTLY* the
+same reason that you realized you shouldn't push it to me after -rc4.
+
+Do you really not see this?
+
+Greg, the reason you get a lot of stable patches seems to be that you
+make it easy to act as a door-mat. Clearly at least some people say "I
+know this patch isn't important enough to send to Linus, but I know
+Greg will silently accept it after the fact, so I'll just wait and
+mark it for stable".
+
+You may need to learn to shout at people.
+
+                   Linus
