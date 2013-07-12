@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab3GLLCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 07:02:24 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54293 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932525Ab3GLLCW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 07:02:22 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Bin Gao <bin.gao@linux.intel.com>,
-        linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
-Date: Fri, 12 Jul 2013 13:02:56 +0200
-Message-ID: <1899733.ozqpzoazFs@avalon>
-User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
-In-Reply-To: <20130712110047.GA3135@katana>
-References: <20130606183346.GA13259@bingao-desk1.fm.intel.com> <CAHp75VeasHGariq=v005NSUTe_+e471NYbEoSzPJXcFNgsfKNQ@mail.gmail.com> <20130712110047.GA3135@katana>
+	id S932825Ab3GLLDH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:03:07 -0400
+Received: from cdw.me.uk ([91.203.57.136]:57075 "EHLO cdw.me.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932525Ab3GLLDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 07:03:05 -0400
+Date: Fri, 12 Jul 2013 12:03:02 +0100
+From: Chris Webb <chris@arachsys.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Simple tool using user namespaces to build containers
+Message-ID: <20130712110301.GA10675@arachsys.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart7896866.9i7YIXmRqC"; micalg="pgp-sha1"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Prompted by the merge of support for user namespaces in recent kernels, I've
+written a couple of simple standalone tools that use them together with
+mount, PID and other namespaces to implement containers.
 
---nextPart7896866.9i7YIXmRqC
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+I've put these utilities up here in case they're of use to anyone else, and
+also as demonstrations of how easy-to-use these new kernel interfaces are:
 
-On Friday 12 July 2013 12:00:47 Wolfram Sang wrote:
-> > Briefly looking into ACPI tables we have and mechanisms that we can
-> > use in ACPI case, I doubt we may apply all the ideas, probably some of
-> > them, though I didn't get yet where to read about in details. What I
-> > could say now is that the patch provided by Bin Gao is definitely no
-> > go.
-> 
-> Laurent explained to me what V4L did and now does. It used to be the way
-> tha V4L drivers did register I2C slaves according to platform_data. Now,
-> with DT the slaves get instanciated earlier, so they now use notifiers
-> to know when the slaves are in place. Something like this should
-> probably be done here, too, instead of unregistering and re-registering.
+  https://github.com/arachsys/containers
+  http://arachsys.github.io/downloads/containers-0.9.tar.gz
+  http://arachsys.github.io/downloads/containers-0.9.tar.sign
 
-This will be available in v3.11 in drivers/media/v4l2-core/v4l2-async.c.
+They support the same /etc/subuid and /etc/subgid files that Eric Biederman
+proposed in his patch set against the shadow package, which will hopefully
+become a fairly standard mechanism for delegating extra users and groups.
 
--- 
-Regards,
+User namespaces arrived without much fanfare, but they're really useful new
+functionality. I was pleasantly surprised how straightforward it was to
+build both fully isolated containers, and also a replacement for fakeroot
+which allows me to chroot to build packages.
 
-Laurent Pinchart
+Many thanks to Eric for working on this and also for patiently explaining
+the rationale behind the design decision to remap user IDs on the kernel
+list recently.
 
---nextPart7896866.9i7YIXmRqC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
+Cheers,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQEcBAABAgAGBQJR3+JgAAoJEIkPb2GL7hl14ugH/j+Mw8QncwOfqDwa+NpqzX/H
-16fmoTPCi2EufBs2zREShHY/20/r6fflXM6r3zapKwSTF4HLWRCjEc6MR5JInMMk
-cOnG9MN7e1PJRql5G13oflXdobTCHJ/ioPL57uZ+Ub5WjLWceNW4UtSPyfPpDnkN
-f8LsR/5HgAah1/dsgYOQN+ziGsiQCbkfreEoqsWze81aK3vi/Esz7Gb9Kn3wHDkZ
-tA5iQ7G1GmmxiYyrz5Wij1uBvncBbLViGdPPsIP/B8Zmrgr/u2JjzBWkDzcw07jX
-MH84fWqYNa+ueSbdPu6KFhJVfx+fH4X4hxX+d3Sc2m29oPzHPtA3+yiFqY8nxmw=
-=ZKyh
------END PGP SIGNATURE-----
-
---nextPart7896866.9i7YIXmRqC--
-
+Chris.
