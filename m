@@ -1,118 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932594Ab3GLJTU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 05:19:20 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:61941 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932251Ab3GLJTS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 05:19:18 -0400
-Date: Fri, 12 Jul 2013 10:19:09 +0100
-From: Robert Richter <rric@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-Message-ID: <20130712091909.GC8731@rric.localhost>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
- <20130712082756.GA4328@gmail.com>
+	id S932575Ab3GLJVz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 05:21:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52168 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757223Ab3GLJVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 05:21:53 -0400
+Date: Fri, 12 Jul 2013 11:21:48 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Joe Perches <joe@perches.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2 v4] x86: introduce int3-based instruction patching
+In-Reply-To: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1307121102440.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712082756.GA4328@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12.07.13 10:27:56, Ingo Molnar wrote:
-> 
-> * Robin Holt <holt@sgi.com> wrote:
-> 
-> > [...]
-> > 
-> > With this patch, we did boot a 16TiB machine.  Without the patches, the 
-> > v3.10 kernel with the same configuration took 407 seconds for 
-> > free_all_bootmem.  With the patches and operating on 2MiB pages instead 
-> > of 1GiB, it took 26 seconds so performance was improved.  I have no feel 
-> > for how the 1GiB chunk size will perform.
-> 
-> That's pretty impressive.
-> 
-> It's still a 15x speedup instead of a 512x speedup, so I'd say there's 
-> something else being the current bottleneck, besides page init 
-> granularity.
-> 
-> Can you boot with just a few gigs of RAM and stuff the rest into hotplug 
-> memory, and then hot-add that memory? That would allow easy profiling of 
-> remaining overhead.
-> 
-> Side note:
-> 
-> Robert Richter and Boris Petkov are working on 'persistent events' support 
-> for perf, which will eventually allow boot time profiling - I'm not sure 
-> if the patches and the tooling support is ready enough yet for your 
-> purposes.
+Introduce a method for run-time instruction patching on a live SMP kernel 
+based on int3 breakpoint, completely avoiding the need for stop_machine().
 
-The latest patch set is still this:
+The way this is achieved:
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git persistent-v2
+	- add a int3 trap to the address that will be patched
+	- sync cores
+	- update all but the first byte of the patched range
+	- sync cores
+	- replace the first byte (int3) by the first byte of
+	  replacing opcode
+	- sync cores
 
-It requires the perf subsystem to be initialized first which might be
-too late, see perf_event_init() in start_kernel(). The patch set is
-currently also limited to tracepoints only.
+According to
 
-If this is sufficient for you, you might register persistent events
-with the function perf_add_persistent_event_by_id(), see
-mcheck_init_tp() how to do this. Later you can fetch all samples with:
+	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
 
- # perf record -e persistent/<tracepoint>/ sleep 1
+synchronization after replacing "all but first" instructions should not
+be necessary (on Intel hardware), as the syncing after the subsequent
+patching of the first byte provides enough safety.
+But there's not only Intel HW out there, and we'd rather be on a safe
+side.
 
-> Robert, Boris, the following workflow would be pretty intuitive:
-> 
->  - kernel developer sets boot flag: perf=boot,freq=1khz,size=16MB
-> 
->  - we'd get a single (cycles?) event running once the perf subsystem is up
->    and running, with a sampling frequency of 1 KHz, sending profiling
->    trace events to a sufficiently sized profiling buffer of 16 MB per
->    CPU.
+If any CPU instruction execution would collide with the patching,
+it'd be trapped by the int3 breakpoint and redirected to the provided
+"handler" (which would typically mean just skipping over the patched
+region, acting as "nop" has been there, in case we are doing nop -> jump
+and jump -> nop transitions).
 
-I am not sure about the event you want to setup here, if it is a
-tracepoint the sample_period should be always 1. The buffer size
-parameter looks interesting, for now it is 512kB per cpu per default
-(as perf tools setup the buffer).
+Ftrace has been using this very technique since 08d636b ("ftrace/x86:
+Have arch x86_64 use breakpoints instead of stop machine") for ages
+already, and jump labels are another obvious potential user of this.
 
-> 
->  - once the system reaches SYSTEM_RUNNING, profiling is stopped either
->    automatically - or the user stops it via a new tooling command.
-> 
->  - the profiling buffer is extracted into a regular perf.data via a
->    special 'perf record' call or some other, new perf tooling 
->    solution/variant.
+Based on activities of Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+a few years ago.
 
-See the perf-record command above...
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+---
+Changes:
+v1 -> v2:
+  + fixed kerneldoc
+  + fixed checkpatch errors (reported by Borislav)
 
-> 
->    [ Alternatively the kernel could attempt to construct a 'virtual'
->      perf.data from the persistent buffer, available via /sys/debug or
->      elsewhere in /sys - just like the kernel constructs a 'virtual' 
->      /proc/kcore, etc. That file could be copied or used directly. ]
-> 
->  - from that point on this workflow joins the regular profiling workflow: 
->    perf report, perf script et al can be used to analyze the resulting
->    boot profile.
+v2 -> v3:
+  + fixed few typos (Joe Perches)
+  + extended changelog with pointer to Intel's statement regarding minimal 
+    necessary synchronization points to achieve correctness
+  + added even the synchronization that might not be needed according to 
+    Intel, to be on a safe side (and do what has been proven to work by 
+    ftrace implementation already) (Steven Rostedt)
+  + Fix formatting of comments (Steven Rostedt, Borislav Petkov, Joe 
+    Perches)
+v3 -> v4:
+   + fixed kerneldoc (Joe Perches, Steven Rostedr)
+   + a few trivial code cleanups (Joe Perches)
+   + gathered Acks, not RFC anymore
 
-Ingo, thanks for outlining this workflow. We will look how this could
-fit into the new version of persistent events we currently working on.
+ arch/x86/include/asm/alternative.h |    1 +
+ arch/x86/kernel/alternative.c      |  106 ++++++++++++++++++++++++++++++++++++
+ kernel/kprobes.c                   |    2 +-
+ 3 files changed, 108 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 58ed6d9..3abf8dd 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -233,6 +233,7 @@ struct text_poke_param {
+ };
+ 
+ extern void *text_poke(void *addr, const void *opcode, size_t len);
++extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
+ extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
+ extern void text_poke_smp_batch(struct text_poke_param *params, int n);
+ 
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index c15cf9a..0ab4936 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -11,6 +11,7 @@
+ #include <linux/memory.h>
+ #include <linux/stop_machine.h>
+ #include <linux/slab.h>
++#include <linux/kdebug.h>
+ #include <asm/alternative.h>
+ #include <asm/sections.h>
+ #include <asm/pgtable.h>
+@@ -596,6 +597,111 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
+ 	return addr;
+ }
+ 
++static void do_sync_core(void *info)
++{
++	sync_core();
++}
++
++static bool bp_patching_in_progress;
++static void *bp_int3_handler, *bp_int3_addr;
++
++static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
++{
++	struct die_args *args = data;
++
++	/* bp_patching_in_progress */
++	smp_rmb();
++
++	if (likely(!bp_patching_in_progress))
++		return NOTIFY_DONE;
++
++	/* we are not interested in non-int3 faults and ring > 0 faults */
++	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
++			    || args->regs->ip != (unsigned long)bp_int3_addr)
++		return NOTIFY_DONE;
++
++	/* set up the specified breakpoint handler */
++	args->regs->ip = (unsigned long) bp_int3_handler;
++
++	return NOTIFY_STOP;
++}
++/**
++ * text_poke_bp() -- update instructions on live kernel on SMP
++ * @addr:	address to patch
++ * @opcode:	opcode of new instruction
++ * @len:	length to copy
++ * @handler:	address to jump to when the temporary breakpoint is hit
++ *
++ * Modify multi-byte instruction by using int3 breakpoint on SMP.
++ * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
++ * and achieve the synchronization using int3 breakpoint.
++ *
++ * The way it is done:
++ *	- add a int3 trap to the address that will be patched
++ *	- sync cores
++ *	- update all but the first byte of the patched range
++ *	- sync cores
++ *	- replace the first byte (int3) by the first byte of
++ *	  replacing opcode
++ *	- sync cores
++ *
++ * Note: must be called under text_mutex.
++ */
++void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
++{
++	unsigned char int3 = 0xcc;
++
++	bp_int3_handler = handler;
++	bp_int3_addr = (u8 *)addr + sizeof(int3);
++	bp_patching_in_progress = true;
++	/*
++	 * Corresponding read barrier in int3 notifier for
++	 * making sure the in_progress flags is correctly ordered wrt.
++	 * patching
++	 */
++	smp_wmb();
++
++	text_poke(addr, &int3, sizeof(int3));
++
++	on_each_cpu(do_sync_core, NULL, 1);
++
++	if (len - sizeof(int3) > 0) {
++		/* patch all but the first byte */
++		text_poke((char *)addr + sizeof(int3),
++			  (const char *) opcode + sizeof(int3),
++			  len - sizeof(int3));
++		/*
++		 * According to Intel, this core syncing is very likely
++		 * not necessary and we'd be safe even without it. But
++		 * better safe than sorry (plus there's not only Intel).
++		 */
++		on_each_cpu(do_sync_core, NULL, 1);
++	}
++
++	/* patch the first byte */
++	text_poke(addr, opcode, sizeof(int3));
++
++	on_each_cpu(do_sync_core, NULL, 1);
++
++	bp_patching_in_progress = false;
++	smp_wmb();
++
++	return addr;
++}
++
++/* this one needs to run before anything else handles it as a
++ * regular exception */
++static struct notifier_block int3_nb = {
++	.priority = 0x7fffffff,
++	.notifier_call = int3_notify
++};
++
++static int __init int3_init(void)
++{
++	return register_die_notifier(&int3_nb);
++}
++
++arch_initcall(int3_init);
+ /*
+  * Cross-modifying kernel text with stop_machine().
+  * This code originally comes from immediate value.
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index bddf3b2..d6db7bd 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
+ 
+ static struct notifier_block kprobe_exceptions_nb = {
+ 	.notifier_call = kprobe_exceptions_notify,
+-	.priority = 0x7fffffff /* we need to be notified first */
++	.priority = 0x7ffffff0 /* High priority, but not first.  */
+ };
+ 
+ unsigned long __weak arch_deref_entry_point(void *entry)
+-- 
+1.7.3.1
 
--Robert
