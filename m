@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932645Ab3GLJrF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 05:47:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53314 "EHLO mx2.suse.de"
+	id S1757507Ab3GLJrn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 05:47:43 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:37909 "EHLO smtp208.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757350Ab3GLJrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 05:47:02 -0400
-Date: Fri, 12 Jul 2013 11:46:59 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org,
-        ksummit-2013-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-In-Reply-To: <1373594058.17876.71.camel@gandalf.local.home>
-Message-ID: <alpine.LNX.2.00.1307121146040.29788@pobox.suse.cz>
-References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org> <1373594058.17876.71.camel@gandalf.local.home>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757350Ab3GLJrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 05:47:42 -0400
+Date: Fri, 12 Jul 2013 11:47:33 +0200
+From: Gianluca Anzolin <gianluca@sottospazio.it>
+To: jslaby@suse.cz
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix refcount leak in tty_port.c
+Message-ID: <20130712094733.GA28317@debian.seek.priv>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130709083535.GA30227>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Jul 2013, Steven Rostedt wrote:
+Hello,
 
-> > Maybe the pendulum has swung too far in the direction of holding back
-> > changes and trying to avoid the risk of introducing regressions;
-> > perhaps this would be a good topic to discuss at the Kernel Summit.
+I'm sorry to bother you again, I'm just pinging to see if you received the
+patch or if it got lost in the noise. It fixes a regression introduced in git
+commit aa27a094e2c2e
+
+I have another patch for rfcomm tty waiting for this fix to get applied.
+
+Thank you,
+
+Gianluca
+
+On Tue, Jul 09, 2013 at 10:35:35AM +0200, Gianluca Anzolin wrote:
+> Hello,
 > 
-> Bah, I sent out a similar email about discussing this at KS too. Before
-> seeing this one.
+> In linux 3.10 in the file drivers/tty/tty_port.c the function
+> tty_port_tty_hangup may leak a tty reference:
+> 
+>         struct tty_struct *tty = tty_port_tty_get(port);
+> 
+>         if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+>                 tty_hangup(tty);
+>                 tty_kref_put(tty);
+>         }
+> 
+> If tty != NULL and the second condition is false we never call tty_kref_put and
+> the reference is leaked.
+> 
+> Fix by nesting two if statements.
+> 
+> Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
 
-If this is going to be picked up as a discussion topic at KS, I believe it 
-can be easily merged with my "stable: too pushy maintainers" proposal I 
-sent a couple days ago.
+> diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+> index 121aeb9..2198f7d 100644
+> --- a/drivers/tty/tty_port.c
+> +++ b/drivers/tty/tty_port.c
+> @@ -256,8 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
+>  {
+>  	struct tty_struct *tty = tty_port_tty_get(port);
+>  
+> -	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+> -		tty_hangup(tty);
+> +	if (tty) {
+> +		if (!check_clocal || !C_CLOCAL(tty))
+> +			tty_hangup(tty);
+>  		tty_kref_put(tty);
+>  	}
+>  }
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
