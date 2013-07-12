@@ -1,155 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab3GLKPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 06:15:22 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:63573 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757253Ab3GLKPS (ORCPT
+	id S1757480Ab3GLKPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 06:15:35 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:57305 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757253Ab3GLKPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 06:15:18 -0400
+	Fri, 12 Jul 2013 06:15:30 -0400
+Date: Fri, 12 Jul 2013 12:15:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Chen Gang <gang.chen@asianux.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH, re-send] Always trap on BUG()
+Message-ID: <20130712101525.GA13552@gmail.com>
+References: <201307051738.35930.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <20130710125811.GB2615@book.gsilab.sittig.org>
-References: <1373451651-20029-1-git-send-email-a13xp0p0v88@gmail.com>
-	<20130710125811.GB2615@book.gsilab.sittig.org>
-Date: Fri, 12 Jul 2013 14:15:16 +0400
-Message-ID: <CAF0T0X70wa1DBPtvccr+-cb9_2AAw1tFaqJSt7_7GP-xa1qyVg@mail.gmail.com>
-Subject: Re: [V2 1/2] powerpc: mpc512x_dma: add support for data transfers
- between memory and i/o memory
-From: Alexander Popov <a13xp0p0v88@gmail.com>
-To: Alexander Popov <a13xp0p0v88@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201307051738.35930.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/10 Gerhard Sittig <gsi@denx.de>:
-> Disclaimer:  It's been a while since I worked with the MPC512x
-> DMA controller, and I only read the RM rev3 back then.
 
-Hello Gerhard.
+* Arnd Bergmann <arnd@arndb.de> wrote:
 
-Thank you for fast and detailed feedback.
+> I've run some size analyis using the ARM 'multi_v7_defconfig'
+> and gcc-4.8, using various definitions for BUG() and BUG_ON(), to
+> see how big the size improvement actually gets
+> 
+> 1. Baseline: normal bug plus CONFIG_BUG_VERBOSE
+>    text    data     bss     dec     hex filename
+> 3743196  224396  206812 4174404  3fb244 vmlinux-bugverbose
+> 
+> 2. disabling CONFIG_BUG_VERBOSE, saving 0.6%
+> 3716920  224380  206812 4148112  3f4b90 vmlinux-nobugverbose
+> 
+> 3. #define BUG() panic(__func__), #define BUG_ON(c) if(c) BUG(), saving 1.0%
+> 3701076  224384  206812 4132272  3f0db0 vmlinux-bug-panicfunc
+> 
+> 3. #define BUG() panic(__func__), #define BUG_ON(c) if(c) BUG(), saving 1.5%
+> 3678884  224400  206812 4110096  3eb710 vmlinux-bug-panic
+> 
+> 4. #define BUG() unreachable(), saving 2.1%
+> 3652636  224384  206812 4083832  3e5078 vmlinux-bug-unreachable
+> 
+> 5. as 4, plus #define BUG_ON(c) if(c) unreachable(), saving 2.2%
+> 3651108  224380  206812 4082300  3e4a7c vmlinux-bugon-unreachable
+> 
+> 6. #define BUG() do{}while(0), saving 2.1%
+> 3654264  224380  206812 4085456  3e56d0 vmlinux-nobug
+> 
+> 7. as 6, plus #define BUG_ON if(0 && (c)) unreachable, saving 2.2%
+> 3648392  223996  206748 4079136  3e3e20 vmlinux-no-bugon
+> 
+> 8. my patch below, saving 1.8%
+> 3666532  224380  206812 4097724  3e86bc obj-tmp/vmlinux
+> 
+> The gain of doing unreachable and letting the code run off whereever
+> is minimal compared to the current state of doing nothing, but it
+> avoids the warnings.
+> 
+> Same test using x86_defconfig:
+> 
+> 1. CONFIG_BUG=y, CONFIG_BUGVERBOSE=n
+> 10797859        1395648 1175552 13369059         cbfee3 vmlinux-x86-bug
+> 
+> 2. CONFIG_BUG=n, saves 1.0%
+> 10658553        1395584 1175552 13229689         c9de79 vmlinux-x86-nobug
+> 
+> 3. with my patch, saves 0.8%
+> 10684186        1395584 1175552 13255322         ca429a vmlinux-x86-archbug
+> 
+> Getting 1-2% savings in kernel size seems absolutely worth keeping the
+> option, but 0.2-0.4% left for getting reproducible behavior also seems
+> worthwhile. The result in the patch below.
+> 
+> This basically loses any of the BUG() reporting, but leaves the
+> logic to trap and kill the task in place when CONFIG_BUG is disabled.
 
->> @@ -256,7 +256,9 @@ static void mpc_dma_execute(struct mpc_dma_chan *mchan)
->>
->>               prev->tcd->dlast_sga = mdesc->tcd_paddr;
->>               prev->tcd->e_sg = 1;
->> -             mdesc->tcd->start = 1;
->> +             /* only start explicitly on MDDRC channel */
->> +             if (cid == 32)
->> +                     mdesc->tcd->start = 1;
->>
->>               prev = mdesc;
->>       }
->> @@ -268,7 +270,15 @@ static void mpc_dma_execute(struct mpc_dma_chan *mchan)
->>
->>       if (first != prev)
->>               mdma->tcd[cid].e_sg = 1;
->> -     out_8(&mdma->regs->dmassrt, cid);
->> +
->> +     switch (cid) {
->> +     case 26:
->> +             out_8(&mdma->regs->dmaserq, cid);
->> +             break;
->> +     case 32:
->> +             out_8(&mdma->regs->dmassrt, cid);
->> +             break;
->> +     }
->>  }
->>
->>  /* Handle interrupt on one half of DMA controller (32 channels) */
+This also kills a boatload of compiler warnings when CONFIG_BUG is 
+disabled.
 
-> This part of the change looks suspicious to me.  The logic
-> changes from always starting the transfer in software to only
-> starting from software for memory or having hardware request the
-> start for LPB controller requests, while _all_other_ channels
-> remain without setup of the start condition.
->
-> Either make sure that only the new source (LPB) gets handled
-> specially, or
+Acked-by: Ingo Molnar <mingo@kernel.org>
 
-I agree, I'll use this way.
+Thanks,
 
-> In addition, try to get rid of the magic numbers.  Use symbolic
-> identifiers instead (regardless of whether other floating patches
-> used magic numbers as well).
-
-Ok.
-
->> +             if (!IS_ALIGNED(sg_dma_address(sg), 4))
->> +                     return NULL;
->> +
->> +             if (direction == DMA_DEV_TO_MEM) {
->> +                     tcd->saddr = mchan->per_paddr;
->> +                     tcd->daddr = sg_dma_address(sg);
->> +                     tcd->soff = 0;
->> +                     tcd->doff = 4;
->> +             } else if (direction == DMA_MEM_TO_DEV) {
->> +                     tcd->saddr = sg_dma_address(sg);
->> +                     tcd->daddr = mchan->per_paddr;
->> +                     tcd->soff = 4;
->> +                     tcd->doff = 0;
->> +             } else {
->> +                     return NULL;
->> +             }
->> +             tcd->ssize = MPC_DMA_TSIZE_4;
->> +             tcd->dsize = MPC_DMA_TSIZE_4;
-
-> This hardcodes the address increments and the source and
-> destination port sizes to 32bits, right?  This may be an
-> acceptable limitation given the current use of the DMA engine,
-> but might need a comment as well.
-
-Ok, I'll add it.
-
->> +             } else {
->> +                     /* citer_linkch contains the high bits of iter */
->> +                     tcd->biter = iter & 0x1ff;
->> +                     tcd->biter_linkch = iter >> 9;
->> +                     tcd->citer = tcd->biter;
->> +                     tcd->citer_linkch = tcd->biter_linkch;
->> +             }
-
-> I cannot tell how these magic numbers here (bit masks, shift
-> numbers) are acceptable or shall get replaced by something else.
-> Just pointing at potential for improvement. :)
-
-This piece of code may become clearer if I improve the comment.
-
->> +
->> +             tcd->e_sg = 0;
->> +             tcd->d_req = 1;
->> +
->> +             /* Place descriptor in prepared list */
->> +             spin_lock_irqsave(&mchan->lock, iflags);
->> +             list_add_tail(&mdesc->node, &mchan->prepared);
->> +             spin_unlock_irqrestore(&mchan->lock, iflags);
->> +     }
->> +
->> +     /* Return the last descriptor */
->> +     return &mdesc->desc;
->> +}
->> +
-
-> It's not related to your specific patch, but I guess that the
-> current implementation of the MPC512x DMA engine cannot really
-> cope with scatter/gather as it should.  Unfortunately the Linux
-> DMA API appears to "somehow intermingle" the S/G aspect with
-> "peripheral access", while it actually should be orthogonal.
-
-That's why I tried to add my code to mpc_dma_prep_memcpy()
-in the first version of this patch.
-
-> To cut it short:  As long as "mdesc" items and "TCD" items can't
-> get allocated and chained individually, and as long as the prep
-> and submit routines assume that an mdesc is associated with
-> exactly one tcd, there should be a comment about this limitation
-> or even better an explicit check in the prep slave sg routine to
-> reject S/G lists with more than one entry.
-
-I'll fix that and return with the third version.
-
-Best regards,
-Alexander
+	Ingo
