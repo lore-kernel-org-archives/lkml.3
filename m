@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751129Ab3GLFL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 01:11:28 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:42768 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab3GLFL1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 01:11:27 -0400
-Date: Thu, 11 Jul 2013 18:00:08 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: 3.10-rc1: commit ccdfcc398594 broke uClibc build.
-To: David Howells <dhowells@redhat.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, dhowells@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>, linux-net@vger.kernel.org
-In-Reply-To: <6325.1373365553@warthog.procyon.org.uk> (from
-	dhowells@redhat.com on Tue Jul  9 05:25:53 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1373583608.27613.46@driftwood>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+	id S1751779Ab3GLFPK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 01:15:10 -0400
+Received: from 1wt.eu ([62.212.114.60]:34530 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750884Ab3GLFPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 01:15:08 -0400
+Date: Fri, 12 Jul 2013 07:14:51 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        ksummit-2013-discuss@lists.linux-foundation.org
+Subject: Re: When to push bug fixes to mainline
+Message-ID: <20130712051451.GC25815@1wt.eu>
+References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20130712005023.GB31005@thunk.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2013 05:25:53 AM, David Howells wrote:
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+On Thu, Jul 11, 2013 at 08:50:23PM -0400, Theodore Ts'o wrote:
+> On Thu, Jul 11, 2013 at 03:01:17PM -0700, Greg Kroah-Hartman wrote:
+> > <rant>
+> >   I'm sitting on top of over 170 more patches that have been marked for
+> >   the stable releases right now that are not included in this set of
+> >   releases.  The fact that there are this many patches for stable stuff
+> >   that are waiting to be merged through the main -rc1 merge window cycle
+> >   is worrying to me.
+> > 
+> >   Why are subsystem maintainers holding on to fixes that are
+> >   _supposedly_ affecting all users?  I mean, 21 powerpc core changes
+> >   that I don't see until a -rc1 merge?  It's as if developers don't
+> >   expect people to use a .0 release and are relying on me to get the
+> >   fixes they have burried in their trees out to users.  That's not that
+> >   nice.  6 "core" iscsi-target fixes?  That's the sign of either a
+> >   broken subsystem maintainer, or a lack of understanding what the
+> >   normal -rc kernel releases are supposed to be for.
 > 
-> > The #include <linux/kernel.h> added to include/uapi/linux/netlink.h  
-> causes
-> > the uClibc build to go:
-> >
-> > In file included from include/linux/kernel.h:4,
-> >                  from include/linux/netlink.h:4,
-> >                  from include/linux/rtnetlink.h:5,
-> >                  from libc/inet/netlinkaccess.h:27,
-> >                  from libc/inet/if_index.c:37:
-> > > include/linux/sysinfo.h:8: error: expected  
-> specifier-qualifier-list before
-> > > '__kernel_long_t'
-> > > make: *** [libc/inet/if_index.o] Error 1
-> > >
-> > > If I comment out that line, it builds fine. The kernel builds  
-> (for my
-> > > config) either way.
-> 
-> Comment out which line?  Line 8 of include/linux/sysinfo.h or the new  
-> #include
-> line?
+> At least at one point in the past, the rule that Linus had laid down
+> after discussing things at Kernel Summits was after -rc2, or maybe
+> -rc3 at the latest, the ***only*** fixes that should be sent to Linus
+> would be for regression fixes or for really serious data integrity
+> issues.  The concern was that people were pushing bug fixes in -rc5 or
+> -rc6 that were in some cases causing regressions.
 
-http://landley.net/hg/aboriginal/file/1616/sources/patches/linux-fixuClibc.patch
+And maybe in the end, having 1/10 patch cause a regression is not *that*
+dramatic, and probably less than not fixing the 9 other bugs. In one case
+we rely on -stable to merge the 10 fixes, and on the other case we'd rely
+on -stable to just revert one of them.
 
-> Also, what arch are you compiling for?
+Also there has never been any promise of very stable mainline kernels,
+and at the same time the rules for getting patches in -stable are strict.
+So this means that most fixes should probably be pushed to mainline anyway
+otherwise we risk never to get them, which means lower overall quality.
 
-My Aboriginal Linux project does arm, mips, powerpc, sparc, sh4, x86,  
-x86_64, m68k, and I'm poking at adding alpha.
+Just my two cents,
+Willy
 
-I believe the uClibc build breaks in a target-independent manner. I  
-just rebuilt armv5l without the patch to confirm:
-
-   CC libc/inet/if_index.os
-In file included from  
-/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-armv5l/include/linux/kernel.h:4,
-                  from  
-/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-armv5l/include/linux/netlink.h:4,
-                  from  
-/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-armv5l/include/linux/rtnetlink.h:5,
-                  from libc/inet/netlinkaccess.h:27,
-                  from libc/inet/if_index.c:37:
-/home/landley/aboriginal/aboriginal/build/simple-cross-compiler-armv5l/include/linux/sysinfo.h:8:  
-error: expected specifier-qualifier-list before '__kernel_long_t'
-make: *** [libc/inet/if_index.os] Error 1
-make: *** Waiting for unfinished jobs....
-
-Rob
