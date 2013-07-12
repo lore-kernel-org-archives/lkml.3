@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757858Ab3GLWUS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 18:20:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41690 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757641Ab3GLWUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 18:20:16 -0400
-Message-ID: <51E0810C.6060208@zytor.com>
-Date: Fri, 12 Jul 2013 15:19:56 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1757876Ab3GLWZV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 18:25:21 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36598 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757834Ab3GLWZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 18:25:20 -0400
+Date: Fri, 12 Jul 2013 23:25:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org
+Subject: Re: [RFC/RFT PATCH 3/5] scsi: Use dma_max_pfn(dev) helper for
+	bounce_limit calculations
+Message-ID: <20130712222506.GI24642@n2100.arm.linux.org.uk>
+References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <1373665694-7580-4-git-send-email-santosh.shilimkar@ti.com> <51E07B6E.5090900@cogentembedded.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        stable <stable@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ksummit-2013-discuss@lists.linux-foundation.org
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-References: <20130712005023.GB31005@thunk.org> <20130712025745.GA24086@tuxdriver.com> <20130712033430.GA3798@kroah.com> <51E03AEE.5010403@zytor.com> <20130712172836.GA7627@kroah.com> <20130712175718.GA342@thunk.org> <51E0480A.2040905@zytor.com> <51E04AB9.1000003@zytor.com> <CA+55aFw0PvYBguFmacL0FC6V_hjGVcUWsrZ6HO9tuQof=yw5PA@mail.gmail.com> <1373658797.17876.119.camel@gandalf.local.home> <20130712203334.GA24331@kroah.com>
-In-Reply-To: <20130712203334.GA24331@kroah.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E07B6E.5090900@cogentembedded.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 01:33 PM, Greg Kroah-Hartman wrote:
-> 
-> Is it _really_ all that hard to remember what to mark for stable
-> inclusion?  If you figure it out after you have committed the patch,
-> then just put a copy of it somewhere to remind yourself.  That seems to
-> be what both David and I do with no problems, and I think we both deal
-> with more individual patches and developers than probably most everyone
-> else combined.
-> 
+On Sat, Jul 13, 2013 at 01:55:58AM +0400, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 07/13/2013 01:48 AM, Santosh Shilimkar wrote:
+>
+>> DMA bounce limit is the maximum direct DMA'able memory beyond which
+>> bounce buffers has to be used to perform dma operations. SCSI driver
+>> relies on dma_mask but its calculation is based on max_*pfn which
+>> don't have uniform meaning across architectures. So make use of
+>> dma_max_pfn() which is expected to return the DMAable maximum pfn
+>> value across architectures.
+>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: linux-scsi@vger.kernel.org
+>
+>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> ---
+>>   drivers/scsi/scsi_lib.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>> index 86d5220..e8275fa 100644
+>> --- a/drivers/scsi/scsi_lib.c
+>> +++ b/drivers/scsi/scsi_lib.c
+>> @@ -1668,7 +1668,7 @@ u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
+>>
+>>   	host_dev = scsi_get_device(shost);
+>>   	if (host_dev && host_dev->dma_mask)
+>> -		bounce_limit = *host_dev->dma_mask;
+>> +		bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
+>
+>    You definitely forgot -1 here.
 
-For the record, my main reason for wanting something like git notes is
-that it is now X years after a patch, the maintainer is gone, and
-tracking down someone who knows about the patch is really valuable.
-Someone acking a patch after the fact is someone who looked at it "back
-then", and can be tracked.
-
-Yes, you can find this in mailing list archives and so on, but we have
-had problems with such extrinsic information not being as sticky as we'd
-like.
-
-	-hpa
-
-
+Please explain your point.
