@@ -1,64 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965308Ab3GLSRK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 14:17:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37882 "EHLO mail.zytor.com"
+	id S933340Ab3GLSRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 14:17:49 -0400
+Received: from mga03.intel.com ([143.182.124.21]:15165 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964938Ab3GLSRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 14:17:08 -0400
-Message-ID: <51E0480A.2040905@zytor.com>
-Date: Fri, 12 Jul 2013 11:16:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S932987Ab3GLSRr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 14:17:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,654,1367996400"; 
+   d="scan'208";a="330533354"
+From: "Verma, Vishal L" <vishal.l.verma@intel.com>
+To: Alexandru Juncu <alexj@rosedu.org>,
+        "willy@linux.intel.com" <willy@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nvme@lists.infradead.org" <linux-nvme@lists.infradead.org>
+Subject: Re: [PATCH] NVMe: replace kmalloc and memset with kzalloc.
+Thread-Topic: [PATCH] NVMe: replace kmalloc and memset with kzalloc.
+Thread-Index: AQHOfxM5hQazw7jLUUKEM9kwh1jtbJlhaR6A
+Date: Fri, 12 Jul 2013 18:17:27 +0000
+Message-ID: <CE05A282.D8D9%vishal.l.verma@intel.com>
+In-Reply-To: <1373642209-16288-1-git-send-email-alexj@rosedu.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.5.130515
+x-originating-ip: [10.254.20.201]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <62F43452D98B0A47AAE3B8D6C9BD1BE5@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        ksummit-2013-discuss@lists.linux-foundation.org
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org> <20130712025745.GA24086@tuxdriver.com> <20130712033430.GA3798@kroah.com> <51E03AEE.5010403@zytor.com> <20130712172836.GA7627@kroah.com> <20130712175718.GA342@thunk.org>
-In-Reply-To: <20130712175718.GA342@thunk.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 10:57 AM, Theodore Ts'o wrote:
-> On Fri, Jul 12, 2013 at 10:28:36AM -0700, Greg Kroah-Hartman wrote:
->> On Fri, Jul 12, 2013 at 10:20:46AM -0700, H. Peter Anvin wrote:
->>> On the subject of the stable tree: could we get a standard format for
->>> requesting post-inclusion elevation of patches to stable status?  It
->>> isn't all that unusual that the need for -stable is highlighted after a
->>> patch has been included in a maintainer's tree, and rebasing to add
->>> stable metadata annoys Linus.
->>
->> After it's in Linus's tree, just send the git id of the patch to
->> stable@vger.kernel.org, along with what stable tree(s) you want to see
->> the patch backported to.
->>
->> Documentation/stable_kernel_rules.txt should be pretty explicit about
->> how to do this, but if not, patches to it are always welcome.
+Hi Alexandru,
+
+This patch has already been applied:
+http://git.infradead.org/users/willy/linux-nvme.git/commitdiff/03ea83e9a37e
+41d436f8348e6eee3d8281bfff3a
+
+
+It was submitted on the LKML on 6/9 by Tushar Behera.
+
+Thanks,
+-Vishal
+
+On 7/12/13 9:16 AM, "Alexandru Juncu" <alexj@rosedu.org> wrote:
+
+>Found using coccinelle.
+>
+>Signed-off-by: Alexandru Juncu <alexj@rosedu.org>
+>---
+> drivers/block/nvme-scsi.c | 24 ++++++++----------------
+> 1 file changed, 8 insertions(+), 16 deletions(-)
+>
+>diff --git a/drivers/block/nvme-scsi.c b/drivers/block/nvme-scsi.c
+>index 102de2f..4a4ff4e 100644
+>--- a/drivers/block/nvme-scsi.c
+>+++ b/drivers/block/nvme-scsi.c
+>@@ -933,13 +933,12 @@ static int nvme_trans_bdev_char_page(struct nvme_ns
+>*ns, struct sg_io_hdr *hdr,
+> 	int res = SNTI_TRANSLATION_SUCCESS;
+> 	int xfer_len;
 > 
-> FWIW, Documentation/stable_kernel_rules.txt currently says that you
-> should send the patch.  I checked to see whether sending the git id
-> was sufficient, and upon reading stable_kernel_rules.txt, decided to
-> simply run git format-patch/git send-email of the commits in mainline.
-> Apparently no one seemed to mind....
+>-	inq_response = kmalloc(EXTENDED_INQUIRY_DATA_PAGE_LENGTH, GFP_KERNEL);
+>+	inq_response = kzalloc(EXTENDED_INQUIRY_DATA_PAGE_LENGTH, GFP_KERNEL);
+> 	if (inq_response == NULL) {
+> 		res = -ENOMEM;
+> 		goto out_mem;
+> 	}
 > 
-
-My main point was actually to have something that could be automatically
-recognized and flagged by maintainer tools, which an informal email
-really can't.
-
-This relates to the "a posteori metadata" problem with git.  In theory I
-think git notes should handle those, but I have to admit that git notes
-somewhat creep me out because there doesn't seem to be any version
-control on them, and as far as I can tell there is only one note per object.
-
-	-hpa
-
+>-	memset(inq_response, 0, EXTENDED_INQUIRY_DATA_PAGE_LENGTH);
+> 	inq_response[1] = INQ_BDEV_CHARACTERISTICS_PAGE;    /* Page Code */
+> 	inq_response[2] = 0x00;    /* Page Length MSB */
+> 	inq_response[3] = 0x3C;    /* Page Length LSB */
+>@@ -964,12 +963,11 @@ static int nvme_trans_log_supp_pages(struct nvme_ns
+>*ns, struct sg_io_hdr *hdr,
+> 	int xfer_len;
+> 	u8 *log_response;
+> 
+>-	log_response = kmalloc(LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH, GFP_KERNEL);
+>+	log_response = kzalloc(LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH, GFP_KERNEL);
+> 	if (log_response == NULL) {
+> 		res = -ENOMEM;
+> 		goto out_mem;
+> 	}
+>-	memset(log_response, 0, LOG_PAGE_SUPPORTED_LOG_PAGES_LENGTH);
+> 
+> 	log_response[0] = LOG_PAGE_SUPPORTED_LOG_PAGES_PAGE;
+> 	/* Subpage=0x00, Page Length MSB=0 */
+>@@ -1000,12 +998,11 @@ static int nvme_trans_log_info_exceptions(struct
+>nvme_ns *ns,
+> 	u8 temp_c;
+> 	u16 temp_k;
+> 
+>-	log_response = kmalloc(LOG_INFO_EXCP_PAGE_LENGTH, GFP_KERNEL);
+>+	log_response = kzalloc(LOG_INFO_EXCP_PAGE_LENGTH, GFP_KERNEL);
+> 	if (log_response == NULL) {
+> 		res = -ENOMEM;
+> 		goto out_mem;
+> 	}
+>-	memset(log_response, 0, LOG_INFO_EXCP_PAGE_LENGTH);
+> 
+> 	mem = dma_alloc_coherent(&dev->pci_dev->dev,
+> 					sizeof(struct nvme_smart_log),
+>@@ -1069,12 +1066,11 @@ static int nvme_trans_log_temperature(struct
+>nvme_ns *ns, struct sg_io_hdr *hdr,
+> 	u8 temp_c_cur, temp_c_thresh;
+> 	u16 temp_k;
+> 
+>-	log_response = kmalloc(LOG_TEMP_PAGE_LENGTH, GFP_KERNEL);
+>+	log_response = kzalloc(LOG_TEMP_PAGE_LENGTH, GFP_KERNEL);
+> 	if (log_response == NULL) {
+> 		res = -ENOMEM;
+> 		goto out_mem;
+> 	}
+>-	memset(log_response, 0, LOG_TEMP_PAGE_LENGTH);
+> 
+> 	mem = dma_alloc_coherent(&dev->pci_dev->dev,
+> 					sizeof(struct nvme_smart_log),
+>@@ -1380,12 +1376,11 @@ static int nvme_trans_mode_page_create(struct
+>nvme_ns *ns,
+> 	blk_desc_offset = mph_size;
+> 	mode_pages_offset_1 = blk_desc_offset + blk_desc_len;
+> 
+>-	response = kmalloc(resp_size, GFP_KERNEL);
+>+	response = kzalloc(resp_size, GFP_KERNEL);
+> 	if (response == NULL) {
+> 		res = -ENOMEM;
+> 		goto out_mem;
+> 	}
+>-	memset(response, 0, resp_size);
+> 
+> 	res = nvme_trans_fill_mode_parm_hdr(&response[0], mph_size, cdb10,
+> 					llbaa, mode_data_length, blk_desc_len);
+>@@ -2480,12 +2475,11 @@ static int nvme_trans_read_capacity(struct
+>nvme_ns *ns, struct sg_io_hdr *hdr,
+> 	}
+> 	id_ns = mem;
+> 
+>-	response = kmalloc(resp_size, GFP_KERNEL);
+>+	response = kzalloc(resp_size, GFP_KERNEL);
+> 	if (response == NULL) {
+> 		res = -ENOMEM;
+> 		goto out_dma;
+> 	}
+>-	memset(response, 0, resp_size);
+> 	nvme_trans_fill_read_cap(response, id_ns, cdb16);
+> 
+> 	xfer_len = min(alloc_len, resp_size);
+>@@ -2554,12 +2548,11 @@ static int nvme_trans_report_luns(struct nvme_ns
+>*ns, struct sg_io_hdr *hdr,
+> 			goto out_dma;
+> 		}
+> 
+>-		response = kmalloc(resp_size, GFP_KERNEL);
+>+		response = kzalloc(resp_size, GFP_KERNEL);
+> 		if (response == NULL) {
+> 			res = -ENOMEM;
+> 			goto out_dma;
+> 		}
+>-		memset(response, 0, resp_size);
+> 
+> 		/* The first LUN ID will always be 0 per the SAM spec */
+> 		for (lun_id = 0; lun_id < le32_to_cpu(id_ctrl->nn); lun_id++) {
+>@@ -2600,12 +2593,11 @@ static int nvme_trans_request_sense(struct
+>nvme_ns *ns, struct sg_io_hdr *hdr,
+> 
+> 	resp_size = ((desc_format) ? (DESC_FMT_SENSE_DATA_SIZE) :
+> 					(FIXED_FMT_SENSE_DATA_SIZE));
+>-	response = kmalloc(resp_size, GFP_KERNEL);
+>+	response = kzalloc(resp_size, GFP_KERNEL);
+> 	if (response == NULL) {
+> 		res = -ENOMEM;
+> 		goto out;
+> 	}
+>-	memset(response, 0, resp_size);
+> 
+> 	if (desc_format == DESCRIPTOR_FORMAT_SENSE_DATA_TYPE) {
+> 		/* Descriptor Format Sense Data */
+>-- 
+>1.8.1.2
+>
+>
+>_______________________________________________
+>Linux-nvme mailing list
+>Linux-nvme@lists.infradead.org
+>http://merlin.infradead.org/mailman/listinfo/linux-nvme
 
