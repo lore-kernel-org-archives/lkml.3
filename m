@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965495Ab3GLVaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 17:30:19 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40385 "EHLO hydra.sisk.pl"
+	id S965487Ab3GLVm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 17:42:56 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24683 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965436Ab3GLVaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 17:30:17 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
-Date: Fri, 12 Jul 2013 23:40:06 +0200
-Message-ID: <1907509.WiI0tI5uDZ@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1373663544.24916.19.camel@misato.fc.hp.com>
-References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com> <2971486.2Wa9ROjLYK@vostro.rjw.lan> <1373663544.24916.19.camel@misato.fc.hp.com>
+	id S1757555Ab3GLVmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 17:42:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,655,1367996400"; 
+   d="scan'208";a="369384416"
+Message-ID: <51E079E3.4030404@linux.intel.com>
+Date: Fri, 12 Jul 2013 14:49:23 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Alexander Holler <holler@ahsoftware.de>
+CC: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Srinivas Pandruvada <srinivas.pandruvada@intel.com>
+Subject: Re: [PATCH 2/4] iio: hid-sensor-gyro-3d: add module alias for autoload
+References: <1373445120-5407-1-git-send-email-holler@ahsoftware.de> <1373445120-5407-3-git-send-email-holler@ahsoftware.de>
+In-Reply-To: <1373445120-5407-3-git-send-email-holler@ahsoftware.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 12, 2013 03:12:24 PM Toshi Kani wrote:
-> On Fri, 2013-07-12 at 23:13 +0200, Rafael J. Wysocki wrote:
-> > On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
-> > > On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
-> > > > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
-> > > > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
-> > > > > > (2013/07/11 1:47), Toshi Kani wrote:
-> > > > > > > device->driver_data needs to be cleared when releasing its data,
-> > > > > > > mem_device, in an error path of acpi_memory_device_add().
-> > > > > > > 
-> > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > > > > > > ---
-> > > > > > 
-> > > > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> > > > > 
-> > > > > Thanks Yasuaki!
-> > > > 
-> > > > Queued up as a fix for 3.11.
-> > > 
-> > > Thanks!
-> > > 
-> > > > Do we need that in -stable as well?
-> > > 
-> > > Good point.  Yes, we need that in -stable as well.
-> > 
-> > What's the oldest mainline major release that fix is applicable to?
-> 
-> The fix is applicable all ways up to 2.6.32.
+Tested. You can add my ack.
 
-For -stable I'll need to say some more about what practical consequences of
-the bug are.  Is it difficult to trigger?
-
-Rafael
+Acked-by:Srinivas Pandruvada<srinivas.pandruvada@linux.intel.com>
 
 
-> > > > > > >   drivers/acpi/acpi_memhotplug.c |    1 +
-> > > > > > >   1 file changed, 1 insertion(+)
-> > > > > > > 
-> > > > > > > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> > > > > > > index c711d11..999adb5 100644
-> > > > > > > --- a/drivers/acpi/acpi_memhotplug.c
-> > > > > > > +++ b/drivers/acpi/acpi_memhotplug.c
-> > > > > > > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
-> > > > > > >   	/* Get the range from the _CRS */
-> > > > > > >   	result = acpi_memory_get_device_resources(mem_device);
-> > > > > > >   	if (result) {
-> > > > > > > +		device->driver_data = NULL;
-> > > > > > >   		kfree(mem_device);
-> > > > > > >   		return result;
-> > > > > > >   	}
-> > > > > > > --
-> > > > > > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > > > > > > the body of a message to majordomo@vger.kernel.org
-> > > > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > > > > 
-> > > > > > 
-> > > > > > 
-> > > > > 
-> > > > > 
-> > > 
-> > > 
-> 
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+On 07/10/2013 01:31 AM, Alexander Holler wrote:
+> Add a MODULE_DEVICE_TABLE in order to let hotplug mechanisms automatically
+> load the driver.
+>
+> This makes it also possible to use the usual driver name instead of
+> HID-SENSOR-2000xx which isn't very descriptive in kernel messages.
+>
+> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> ---
+>   drivers/iio/gyro/hid-sensor-gyro-3d.c | 16 +++++++++++-----
+>   1 file changed, 11 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+> index bc943dd..9cc8aa1 100644
+> --- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
+> +++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
+> @@ -30,10 +30,6 @@
+>   #include <linux/iio/triggered_buffer.h>
+>   #include "../common/hid-sensors/hid-sensor-trigger.h"
+>   
+> -/*Format: HID-SENSOR-usage_id_in_hex*/
+> -/*Usage ID from spec for Gyro-3D: 0x200076*/
+> -#define DRIVER_NAME "HID-SENSOR-200076"
+> -
+>   enum gyro_3d_channel {
+>   	CHANNEL_SCAN_INDEX_X,
+>   	CHANNEL_SCAN_INDEX_Y,
+> @@ -389,9 +385,19 @@ static int hid_gyro_3d_remove(struct platform_device *pdev)
+>   	return 0;
+>   }
+>   
+> +static struct platform_device_id hid_gyro_3d_ids[] = {
+> +	{
+> +		/* Format: HID-SENSOR-usage_id_in_hex_lowercase */
+> +		.name = "HID-SENSOR-200076",
+> +	},
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(platform, hid_gyro_3d_ids);
+> +
+>   static struct platform_driver hid_gyro_3d_platform_driver = {
+> +	.id_table = hid_gyro_3d_ids,
+>   	.driver = {
+> -		.name	= DRIVER_NAME,
+> +		.name	= KBUILD_MODNAME,
+>   		.owner	= THIS_MODULE,
+>   	},
+>   	.probe		= hid_gyro_3d_probe,
+
