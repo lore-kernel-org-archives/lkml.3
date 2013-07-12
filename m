@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965517Ab3GLVoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 17:44:20 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:58546 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964787Ab3GLVoS (ORCPT
+	id S965494Ab3GLVq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 17:46:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:30377 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757776Ab3GLVqz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 17:44:18 -0400
-Message-ID: <51E078AD.1050508@cogentembedded.com>
-Date: Sat, 13 Jul 2013 01:44:13 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 12 Jul 2013 17:46:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,655,1367996400"; 
+   d="scan'208";a="344793974"
+From: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Alexander Holler <holler@ahsoftware.de>
+CC: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Jonathan Cameron <jic23@cam.ac.uk>
+Subject: RE: [PATCH 0/4] iio: hid-sensor: add module alias for autoload
+Thread-Topic: [PATCH 0/4] iio: hid-sensor: add module alias for autoload
+Thread-Index: AQHOfUgtyCPFJiydDUK13wutOUvtRpleft0AgAAIcwCAAatKAIAA6ReAgAC+04D//71BYA==
+Date: Fri, 12 Jul 2013 21:46:52 +0000
+Message-ID: <4FA419E87744DF4DAECD5BCE1214B7A92FBDB758@ORSMSX110.amr.corp.intel.com>
+References: <1373445120-5407-1-git-send-email-holler@ahsoftware.de>
+ <51DD7D78.2020506@linux.intel.com> <51DD848E.4050206@ahsoftware.de>
+ <51DEEAFE.506@linux.intel.com> <51DFAE85.9060508@ahsoftware.de>
+ <51E04E99.9060105@kernel.org>
+In-Reply-To: <51E04E99.9060105@kernel.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Yuan-Hsin Chen <yhchen@faraday-tech.com>, Felipe Balbi <balbi@ti.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: fotg210-udc: Remove bogus __init/__exit
- annotations
-References: <1373492716-14684-1-git-send-email-geert@linux-m68k.org> <51DDD792.7000300@cogentembedded.com> <CAMuHMdUxfaXV=npJCn90CGSFpdcPkmWGxbX+ej9NFKSWuKgGRA@mail.gmail.com>
-In-Reply-To: <CAMuHMdUxfaXV=npJCn90CGSFpdcPkmWGxbX+ej9NFKSWuKgGRA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Tested and ready to go.
 
-On 07/11/2013 11:25 AM, Geert Uytterhoeven wrote:
+Thanks,
+Srinivas
 
->>> When builtin (CONFIG_USB_FOTG210_UDC=y):
 
->>>     LD      drivers/usb/gadget/built-in.o
->>> WARNING: drivers/usb/gadget/built-in.o(.data+0xbf8): Section mismatch in
->>> reference from the variable fotg210_driver to the function
->>> .init.text:fotg210_udc_probe()
->>> The variable fotg210_driver references
->>> the function __init fotg210_udc_probe()
->>> If the reference is valid then annotate the
->>> variable with __init* or __refdata (see linux/init.h) or name the
->>> variable:
->>> *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+-----Original Message-----
+From: Jonathan Cameron [mailto:jic23@kernel.org] 
+Sent: Friday, July 12, 2013 11:45 AM
+To: Alexander Holler
+Cc: Srinivas Pandruvada; linux-kernel@vger.kernel.org; linux-iio@vger.kernel.org; Jonathan Cameron; Pandruvada, Srinivas
+Subject: Re: [PATCH 0/4] iio: hid-sensor: add module alias for autoload
 
->>> diff --git a/drivers/usb/gadget/fotg210-udc.c
->>> b/drivers/usb/gadget/fotg210-udc.c
->>> index cce5535..10cd18d 100644
->>> --- a/drivers/usb/gadget/fotg210-udc.c
->>> +++ b/drivers/usb/gadget/fotg210-udc.c
->>> @@ -1074,7 +1074,7 @@ static struct usb_gadget_ops fotg210_gadget_ops = {
->>>          .udc_stop               = fotg210_udc_stop,
->>>    };
+On 07/12/2013 08:21 AM, Alexander Holler wrote:
+> Am 11.07.2013 19:27, schrieb Srinivas Pandruvada:
+>>
+>>
+>> On 07/10/2013 08:58 AM, Alexander Holler wrote:
+>>> Am 10.07.2013 17:27, schrieb Srinivas Pandruvada:
+>>>> Hi,
+>>>>
+>>>> There was no intention to prevent auto loading. Did you get chance 
+>>>> to test these changes?
 >>>
->>> -static int __exit fotg210_udc_remove(struct platform_device *pdev)
->>> +static int fotg210_udc_remove(struct platform_device *pdev)
+>>> Sure, I always test patches before I send them out.
+>>>
+>>> Ok, I haven't tested the changes with the iio HID drivers (I don't 
+>>> have any commercial HID sensor hub, so I've just compile tested 
+>>> these patches here, double reading them), but I've tested the 
+>>> similiar changes with a patch for rtc-hid-sensor-time I've send out yesterday.
+>>> (sorry, no link, lkml.org seems dead, just search for
+>>> "rtc-hid-sensor-time: add module alias")
+>>>
+>>> It works just fine. An example output is now
+>>>
+>>> Jul  9 19:27:21 dockstar3 kernel: [    5.124444] rtc_hid_sensor_time
+>>> HID-SENSOR-2000a0.0: milliseconds supported
+>>> Jul  9 19:27:21 dockstar3 kernel: [    5.132864] rtc_hid_sensor_time
+>>> HID-SENSOR-2000a0.0: rtc core: setting system clock to 2013-07-09
+>>> 17:26:51:328000 UTC (1373390811)
+>>> Jul  9 19:27:21 dockstar3 kernel: [    5.146105] rtc_hid_sensor_time
+>>> HID-SENSOR-2000a0.0: rtc core: registered hid-sensor-time as rtc0
+>>>
+>>> Before the output was e.g.
+>>>
+>>> HID-SENSOR-2000a0 HID-SENSOR-2000a0.0: rtc core: registered 
+>>> hid-sensor-time as rtc0
+>>>
+>>> instead of the above with the descriptive rtc_hid_sensor_time.
+>> <Agreed. This is better. >
+>>> Automatic loading of modules works too and it works on ARM, Intel 
+>>> and AMD as module or static linked. ;)
+> 
+> Do you have tested the patches with a real device? I assume you have 
+> one. ;)
+> 
+> Regards,
+> 
+> Alexander Holler
 
->>     I think you can leave __exit annotation here, if you enclose the
->> reference in the driver structure in __exit_p()...
+Just so you two know. Given this discussion, I'll be lazy about these and wait for an Ack from Srinivas before taking these.  Look fine to me, but nice to have confirmation as you say with the actual hardware!
 
-> The driver is using module_platform_driver(), not
-> module_platform_driver_probe(),
-> so it expects the platform device to show up or disappear anytime.
-
-    Well, I don't think it actually does. Perhaps the reason was that 
-the latter function wasn't available yet at the time of conversion to 
-the former (IIRC it appeared later).
-
-WBR, Sergei
-
+Jonathan
