@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932732Ab3GLLBk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 07:01:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20960 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932525Ab3GLLBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 07:01:39 -0400
-Message-ID: <51DFA9CA.7010807@redhat.com>
-Date: Fri, 12 Jul 2013 03:01:30 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+	id S932784Ab3GLLCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:02:24 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54293 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932525Ab3GLLCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 07:02:22 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Bin Gao <bin.gao@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
+Date: Fri, 12 Jul 2013 13:02:56 +0200
+Message-ID: <1899733.ozqpzoazFs@avalon>
+User-Agent: KMail/4.10.2 (Linux/3.8.13-gentoo; KDE/4.10.2; x86_64; ; )
+In-Reply-To: <20130712110047.GA3135@katana>
+References: <20130606183346.GA13259@bingao-desk1.fm.intel.com> <CAHp75VeasHGariq=v005NSUTe_+e471NYbEoSzPJXcFNgsfKNQ@mail.gmail.com> <20130712110047.GA3135@katana>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: bhelgaas@google.com, linux-pci@vger.kernel.org, joro@8bytes.org,
-        andihartmann@01019freenet.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] pci: ACS fixes & quirks
-References: <20130627222159.16564.38166.stgit@bling.home> <1373300262.2602.22.camel@ul30vt.home>
-In-Reply-To: <1373300262.2602.22.camel@ul30vt.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="nextPart7896866.9i7YIXmRqC"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2013 12:17 PM, Alex Williamson wrote:
-> Ping.  Comments?
->
-As I read the PCIe & SRIOV specs wrt ACS, this patch set appears
-to fix the nuances we have learned about whether a device (MFD or bridge)
-implements (the equiv. of) ACS, or not, as required (for secure, device assignment).
-Like the layering of which flag bits to check based on ACS control/enablement,
-so it de-complicated the per-PCIe-type checking in pci_acs_enabled().
 
-You can add my ack to the patch set...
+--nextPart7896866.9i7YIXmRqC
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-Acked-by: Donald Dutile <ddutile@redhat.com>
+On Friday 12 July 2013 12:00:47 Wolfram Sang wrote:
+> > Briefly looking into ACPI tables we have and mechanisms that we can
+> > use in ACPI case, I doubt we may apply all the ideas, probably some of
+> > them, though I didn't get yet where to read about in details. What I
+> > could say now is that the patch provided by Bin Gao is definitely no
+> > go.
+> 
+> Laurent explained to me what V4L did and now does. It used to be the way
+> tha V4L drivers did register I2C slaves according to platform_data. Now,
+> with DT the slaves get instanciated earlier, so they now use notifiers
+> to know when the slaves are in place. Something like this should
+> probably be done here, too, instead of unregistering and re-registering.
 
-ps -- I'll patch a kernel & test it out on a few knarly configs I have back in 
-the lab
-         when I back from vacation and report any issues I find, if any.
+This will be available in v3.11 in drivers/media/v4l2-core/v4l2-async.c.
 
-> On Thu, 2013-06-27 at 16:39 -0600, Alex Williamson wrote:
->> v2:
->>
->> Revised patch 1/ to match comments from Bjorn.  PCIe event collectors
->> and PCIe-to-PCI bridges now indicate that they do not support ACS.
->> I've reached out to try to get clarification on this, but I think it's
->> reasonable to proceed with a conservative approach until then.  I also
->> added PCI-to-PCIe bridges for the sake of being complete.  Also added
->> more comments about the purpose and behavior of pci_acs_enabled().  If
->> I've overlooked anything else that needs to be addressed, please let
->> me know.
->>
->> Patch 2/ had no comments, it's unchanged.
->>
->> Patch 3/ is added.  This was sent as an RFC nearly a year ago and
->> Joerg confirmed for us that these devices do not support p2p on AMD
->> systems with AMD IOMMU.  We can't simply use iommu_present() to test
->> for an IOMMU because it's setup just after we need this function.
->> Instead we test for the ACPI IVRS table that describes the IOMMU.  It
->> would probably suffice to skip an actual AMD IOMMU check, but I don't
->> want it to later come bite us if these ASICs get re-used, maybe with
->> a different IOMMU, and don't make the same guarantees.
->>
->> Joerg, I was also curious back when we investigated this patch if the
->> same rules hold true for these other southbridge devices:
->>
->> 1002:43a0 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 0)
->> 1002:43a1 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 1)
->> 1002:43a2 SB900 PCI to PCI bridge (PCIE port 2)
->> 1002:43a3 SB900 PCI to PCI bridge (PCIE port 3)
->>
->> If you remember or have contacts to poke, I'd be happy to follow-up
->> with another patch to add them.  Thanks,
->>
->> Alex
->>
->> ---
->>
->> Alex Williamson (3):
->>        pci: Fix flaw in pci_acs_enabled()
->>        pci: Differentiate ACS controllable from enabled
->>        pci: ACS quirk for AMD southbridge
->>
->>
->>   drivers/pci/pci.c    |   93 +++++++++++++++++++++++++++++++++++++++++---------
->>   drivers/pci/quirks.c |   50 +++++++++++++++++++++++++++
->>   2 files changed, 127 insertions(+), 16 deletions(-)
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Regards,
+
+Laurent Pinchart
+
+--nextPart7896866.9i7YIXmRqC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQEcBAABAgAGBQJR3+JgAAoJEIkPb2GL7hl14ugH/j+Mw8QncwOfqDwa+NpqzX/H
+16fmoTPCi2EufBs2zREShHY/20/r6fflXM6r3zapKwSTF4HLWRCjEc6MR5JInMMk
+cOnG9MN7e1PJRql5G13oflXdobTCHJ/ioPL57uZ+Ub5WjLWceNW4UtSPyfPpDnkN
+f8LsR/5HgAah1/dsgYOQN+ziGsiQCbkfreEoqsWze81aK3vi/Esz7Gb9Kn3wHDkZ
+tA5iQ7G1GmmxiYyrz5Wij1uBvncBbLViGdPPsIP/B8Zmrgr/u2JjzBWkDzcw07jX
+MH84fWqYNa+ueSbdPu6KFhJVfx+fH4X4hxX+d3Sc2m29oPzHPtA3+yiFqY8nxmw=
+=ZKyh
+-----END PGP SIGNATURE-----
+
+--nextPart7896866.9i7YIXmRqC--
 
