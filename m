@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab3GLO3V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:29:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757142Ab3GLO3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:29:20 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@redhat.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf tests: Check proper prev_state size for sched_switch tp
-Date: Fri, 12 Jul 2013 16:29:06 +0200
-Message-Id: <1373639346-4547-1-git-send-email-jolsa@redhat.com>
+	id S1757385Ab3GLOat (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:30:49 -0400
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:7209 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab3GLOas (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 10:30:48 -0400
+Date: Fri, 12 Jul 2013 16:30:34 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Wei Ni <wni@nvidia.com>, thierry.reding@gmail.com,
+        lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v3 1/4] hwmon: (lm90) split set&show temp as common
+ codes
+Message-ID: <20130712163034.1fc1cd66@endymion.delvare>
+In-Reply-To: <20130712135000.GA3386@roeck-us.net>
+References: <1373615287-18502-1-git-send-email-wni@nvidia.com>
+	<1373615287-18502-2-git-send-email-wni@nvidia.com>
+	<20130712152615.23464a6b@endymion.delvare>
+	<20130712135000.GA3386@roeck-us.net>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prev_state is defined as long which is 4 bytes long
-on 32-bit x86. Changing the check against sizeof(long).
+Hi Guenter,
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/tests/evsel-tp-sched.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, 12 Jul 2013 06:50:00 -0700, Guenter Roeck wrote:
+> On Fri, Jul 12, 2013 at 03:26:15PM +0200, Jean Delvare wrote:
+> > One thing I am a little worried about (but maybe I'm wrong) is that I
+> > seem to understand you want to register every LM90-like chip as both a
+> > hwmon device and two thermal devices. I seem to recall that every
+> > thermal device is also exposed automatically as a virtual hwmon
+> > device, is that correct? If so we will be presenting the same values
+> > twice to libsensors, which would be confusing.
+> 
+> Not sure if that is a good idea, but if I recall correctly, the thermal folks
+> plan to remove that path.
 
-diff --git a/tools/perf/tests/evsel-tp-sched.c b/tools/perf/tests/evsel-tp-sched.c
-index f79e7d0..9b98c15 100644
---- a/tools/perf/tests/evsel-tp-sched.c
-+++ b/tools/perf/tests/evsel-tp-sched.c
-@@ -49,7 +49,7 @@ int test__perf_evsel__tp_sched_test(void)
- 	if (perf_evsel__test_field(evsel, "prev_prio", 4, true))
- 		ret = -1;
- 
--	if (perf_evsel__test_field(evsel, "prev_state", 8, true))
-+	if (perf_evsel__test_field(evsel, "prev_state", sizeof(long), true))
- 		ret = -1;
- 
- 	if (perf_evsel__test_field(evsel, "next_comm", 16, true))
+If that means that for example the ACPI thermal zone is no longer
+displayed by "sensors", then I strongly object - unless it is
+explicitly registered as a separate hwmon device from now on, of course.
+
+My idea was to make the bridge optional - you decide when you register
+a thermal device if it should be exposed as hwmon or not.
+
+I don't have a strong opinion on the implementation, as long as each
+input is listed by "sensors" once and only once.
+
 -- 
-1.7.11.7
-
+Jean Delvare
