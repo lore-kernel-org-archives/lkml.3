@@ -1,401 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939Ab3GLAA2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 20:00:28 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39086 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756827Ab3GKX7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 19:59:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC][PATCH 4/30] ACPI / hotplug / PCI: Hotplug context objects for bridges and functions
-Date: Fri, 12 Jul 2013 01:39:55 +0200
-Message-ID: <1959617.ldDv36pgBK@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <3718119.FLASu5DBx8@vostro.rjw.lan>
-References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3718119.FLASu5DBx8@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1756999Ab3GLAAi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 20:00:38 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:24510 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756827Ab3GLAAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 20:00:30 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-bb-51df471d877e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <001201ce7dfa$716b3370$54419a50$@samsung.com>
+ <51DE72CC.9050001@ti.com>
+In-reply-to: <51DE72CC.9050001@ti.com>
+Subject: Re: [PATCH V2] pci: exynos: split into two parts such as Synopsys part
+ and Exynos part
+Date: Fri, 12 Jul 2013 09:00:28 +0900
+Message-id: <001301ce7e92$d19a04e0$74ce0ea0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQMw1eBP/VKXWuT2/qwqXEWC1QeRsgGtjU66lo4LNxA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t8zI11Z9/uBBo9vsFn8nXSM3WJJU4bF
+	y0OaFpcXXmK16F1wlc3iwtMeNovLu+awWZydd5zNYsb5fUwWG6f+YrRov6Rs8XPXPBaLxqMP
+	WC1anzxgdODz+P1rEqPHzll32T0WbCr1+L5wPrtH35ZVjB5Pf+xl9jh+YzuTx+dNcgEcUVw2
+	Kak5mWWpRfp2CVwZm5/cYyzYyFWxYNsylgbGdRxdjJwcEgImEp2fDrNC2GISF+6tZ+ti5OIQ
+	EljGKHGwq5sNpujezgZGiMQiRonTv85COb8YJaY++s8EUsUmoCbx5cthdhBbREBHYuHp9cwg
+	NrPAGWaJTRvtQWwhgVCJ5V93M4LYnED1+548AVstLJAo8W/lA7BtLAKqEj+WtYDZvAKWEsve
+	HGOEsAUlfky+xwIxU0ti/c7jTBC2vMTmNW+ZIS5VkNhx9jUjxA1WEgu+fYeqF5HY9+Id2NES
+	Ams5JLZtusUEsUxA4tvkQ0BFHEAJWYlNB6DmSEocXHGDZQKjxCwkq2chWT0LyepZSFYsYGRZ
+	xSiaWpBcUJyUXmSiV5yYW1yal66XnJ+7iRGSHCbsYLx3wPoQYzLQ+onMUqLJ+cDkklcSb2hs
+	ZmRhamJqbGRuaUaasJI4r3qLdaCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRsPtU1t4s2xW
+	RSqXrAlcvq/ld7eB+8e/E/4yW68JVjZ88PiZQ/emmfYLQ3k+WRzdrJl6kMHpc7yU5f77L6eW
+	2C4PdmX/cU34zEeVhYFH1E4vlZx8IX/Hi64i0cufcvUEl7j1ewrqHD1Zw3Kl6l2O1dTbWwzK
+	uQ7c1DGM92q2bskpvhVUWGLXpMRSnJFoqMVcVJwIAM8XgR8kAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLKsWRmVeSWpSXmKPExsVy+t9jAV1Z9/uBBpOKLf5OOsZusaQpw+Ll
+	IU2LywsvsVr0LrjKZnHhaQ+bxeVdc9gszs47zmYx4/w+JouNU38xWrRfUrb4uWsei0Xj0Qes
+	Fq1PHjA68Hn8/jWJ0WPnrLvsHgs2lXp8Xzif3aNvyypGj6c/9jJ7HL+xncnj8ya5AI6oBkab
+	jNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCjlRTKEnNK
+	gUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGEdYwZm5/cYyzYyFWxYNsylgbGdRxdjJwc
+	EgImEvd2NjBC2GISF+6tZ+ti5OIQEljEKHH611lGCOcXo8TUR/+ZQKrYBNQkvnw5zA5iiwjo
+	SCw8vZ4ZxGYWOMMssWmjPYgtJBAqsfzrbrCpnED1+548YQWxhQUSJf6tfMAGYrMIqEr8WNYC
+	ZvMKWEose3OMEcIWlPgx+R4LxEwtifU7jzNB2PISm9e8ZYa4VEFix9nXjBA3WEks+PYdql5E
+	Yt+Ld4wTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66XnJ+7iZGcOJ5
+	Jr2DcVWDxSFGAQ5GJR7eghP3AoVYE8uKK3MPMUpwMCuJ8N40ux8oxJuSWFmVWpQfX1Sak1p8
+	iDEZ6NOJzFKiyfnApJhXEm9obGJmZGlkZmFkYm5OmrCSOO/BVutAIYH0xJLU7NTUgtQimC1M
+	HJxSDYzZd/7uzqj1+T8/OIP9yVTnLWk7lVU0mA5M2xx3gCv+pub5KVHWnI4s/ZVG+bU78o8+
+	3ZIZqVa+PDlxbWzBtm62n0w7Ik8GzymU1X4sx15evNbngvmKhebujdskd+ldX/OdxfDz5k1B
+	zExLr/WvvLjtN7Mavyin3dLAx913c+PrjrdOlYqQD1RiKc5INNRiLipOBADncHEYgAMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Thursday, July 11, 2013 5:55 PM, Kishon Vijay Abraham I wrote:
+> On Thursday 11 July 2013 11:19 AM, Jingoo Han wrote:
+> > Exynos PCIe IP consists of Synopsys specific part and Exynos
+> > specific part. Only core block is a Synopsys designware part;
+> > other parts are Exynos specific.
+> > Also, the Synopsys designware part can be shared with other
+> > platforms; thus, it can be split two parts such as Synopsys
+> > designware part and Exynos specific part.
+> >
+> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> > Cc: Pratyush Anand <pratyush.anand@st.com>
+> > Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
+> > ---
+> .
+> .
+> <snip>
+> .
+> .
+> > +
+> > +/* Exynos PCIe driver does not allow module unload */
+> 
+> Just curious, why is this restriction?
 
-When either a new hotplug bridge or a new hotplug function is added
-by the ACPI-based PCI hotplug (ACPIPHP) code, attach a context object
-to its ACPI handle to store hotplug-related information in it.  To
-start with, put the handle's bridge and function pointers into that
-object.  Count references to the context objects and drop them when
-they are not needed any more.
+CC'ed Thierry Reding,
 
-First of all, this makes it possible to find out if the given bridge
-has been registered as a function already in a much more
-straightforward way and acpiphp_bridge_handle_to_function() can be
-dropped (Yay!).
+Hi Kishon,
 
-This also will allow some more simplifications to be made going
-forward.
+That's a good question.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/pci/hotplug/acpiphp.h      |   10 ++
- drivers/pci/hotplug/acpiphp_glue.c |  180 +++++++++++++++++++++++++++----------
- 2 files changed, 146 insertions(+), 44 deletions(-)
+Now, we don't have the solution to "be able to load and unload
+the PCI host driver in a loop definitely without crashing or exposing
+any races  or leaks", as Arnd Bergmann said.
+Please refer to the following thread in mailing-list.
+(http://archive.arm.linux.org.uk/lurker/message/20130614.123849.4ff363c5.pl.html)
 
-Index: linux-pm/drivers/pci/hotplug/acpiphp.h
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp.h
-+++ linux-pm/drivers/pci/hotplug/acpiphp.h
-@@ -49,6 +49,7 @@
- #define info(format, arg...) printk(KERN_INFO "%s: " format, MY_NAME , ## arg)
- #define warn(format, arg...) printk(KERN_WARNING "%s: " format, MY_NAME , ## arg)
- 
-+struct acpiphp_context;
- struct acpiphp_bridge;
- struct acpiphp_slot;
- 
-@@ -77,6 +78,7 @@ struct acpiphp_bridge {
- 	struct kref ref;
- 	acpi_handle handle;
- 
-+	struct acpiphp_context *context;
- 	/* Ejectable PCI-to-PCI bridge (PCI bridge and PCI function) */
- 	struct acpiphp_func *func;
- 
-@@ -119,6 +121,7 @@ struct acpiphp_slot {
-  * typically 8 objects per slot (i.e. for each PCI function)
-  */
- struct acpiphp_func {
-+	struct acpiphp_context *context;
- 	struct acpiphp_slot *slot;	/* parent */
- 
- 	struct list_head sibling;
-@@ -129,6 +132,13 @@ struct acpiphp_func {
- 	u32		flags;		/* see below */
- };
- 
-+struct acpiphp_context {
-+	acpi_handle handle;
-+	struct acpiphp_func *func;
-+	struct acpiphp_bridge *bridge;
-+	unsigned int refcount;
-+};
-+
- /*
-  * struct acpiphp_attention_info - device specific attention registration
-  *
-Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-===================================================================
---- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
-+++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
-@@ -55,6 +55,7 @@
- 
- static LIST_HEAD(bridge_list);
- static DEFINE_MUTEX(bridge_mutex);
-+static DEFINE_MUTEX(acpiphp_context_lock);
- 
- #define MY_NAME "acpiphp_glue"
- 
-@@ -79,6 +80,74 @@ is_pci_dock_device(acpi_handle handle, u
- 	}
- }
- 
-+static void acpiphp_context_handler(acpi_handle handle, void *context)
-+{
-+	/* Intentionally empty. */
-+}
-+
-+/**
-+ * acpiphp_init_context - Create hotplug context and grab a reference to it.
-+ * @handle: ACPI object handle to create the context for.
-+ *
-+ * Call under acpiphp_context_lock.
-+ */
-+static struct acpiphp_context *acpiphp_init_context(acpi_handle handle)
-+{
-+	struct acpiphp_context *context;
-+	acpi_status status;
-+
-+	context = kzalloc(sizeof(*context), GFP_KERNEL);
-+	if (!context)
-+		return NULL;
-+
-+	context->handle = handle;
-+	context->refcount = 1;
-+	status = acpi_attach_data(handle, acpiphp_context_handler, context);
-+	if (ACPI_FAILURE(status)) {
-+		kfree(context);
-+		return NULL;
-+	}
-+	return context;
-+}
-+
-+/**
-+ * acpiphp_get_context - Get hotplug context and grab a reference to it.
-+ * @handle: ACPI object handle to get the context for.
-+ *
-+ * Call under acpiphp_context_lock.
-+ */
-+static struct acpiphp_context *acpiphp_get_context(acpi_handle handle)
-+{
-+	struct acpiphp_context *context = NULL;
-+	acpi_status status;
-+	void *data;
-+
-+	status = acpi_get_data(handle, acpiphp_context_handler, &data);
-+	if (ACPI_SUCCESS(status)) {
-+		context = data;
-+		context->refcount++;
-+	}
-+	return context;
-+}
-+
-+/**
-+ * acpiphp_put_context - Drop a reference to ACPI hotplug context.
-+ * @handle: ACPI object handle to put the context for.
-+ *
-+ * The context object is removed if there are no more references to it.
-+ *
-+ * Call under acpiphp_context_lock.
-+ */
-+static void acpiphp_put_context(struct acpiphp_context *context)
-+{
-+	if (--context->refcount)
-+		return;
-+
-+	WARN_ON(context->func || context->bridge);
-+	acpi_detach_data(context->handle, acpiphp_context_handler);
-+	kfree(context);
-+}
-+
- static inline void get_bridge(struct acpiphp_bridge *bridge)
- {
- 	kref_get(&bridge->ref);
-@@ -91,25 +160,37 @@ static inline void put_bridge(struct acp
- 
- static void free_bridge(struct kref *kref)
- {
-+	struct acpiphp_context *context;
- 	struct acpiphp_bridge *bridge;
- 	struct acpiphp_slot *slot, *next;
- 	struct acpiphp_func *func, *tmp;
- 
-+	mutex_lock(&acpiphp_context_lock);
-+
- 	bridge = container_of(kref, struct acpiphp_bridge, ref);
- 
- 	list_for_each_entry_safe(slot, next, &bridge->slots, node) {
- 		list_for_each_entry_safe(func, tmp, &slot->funcs, sibling) {
-+			context = func->context;
-+			context->func = NULL;
-+			acpiphp_put_context(context);
- 			kfree(func);
- 		}
- 		kfree(slot);
- 	}
- 
--	/* Release reference acquired by acpiphp_bridge_handle_to_function() */
-+	/* Release the reference acquired by acpiphp_enumerate_slots(). */
- 	if ((bridge->flags & BRIDGE_HAS_EJ0) && bridge->func)
- 		put_bridge(bridge->func->slot->bridge);
-+
- 	put_device(&bridge->pci_bus->dev);
- 	pci_dev_put(bridge->pci_dev);
-+	context = bridge->context;
-+	context->bridge = NULL;
-+	acpiphp_put_context(context);
- 	kfree(bridge);
-+
-+	mutex_unlock(&acpiphp_context_lock);
- }
- 
- /*
-@@ -195,10 +276,11 @@ static void acpiphp_dock_release(void *d
- }
- 
- /* callback routine to register each ACPI PCI slot object */
--static acpi_status
--register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-+static acpi_status register_slot(acpi_handle handle, u32 lvl, void *data,
-+				 void **rv)
- {
--	struct acpiphp_bridge *bridge = (struct acpiphp_bridge *)context;
-+	struct acpiphp_bridge *bridge = data;
-+	struct acpiphp_context *context;
- 	struct acpiphp_slot *slot;
- 	struct acpiphp_func *newfunc;
- 	acpi_handle tmp;
-@@ -232,6 +314,18 @@ register_slot(acpi_handle handle, u32 lv
- 	newfunc->handle = handle;
- 	newfunc->function = function;
- 
-+	mutex_lock(&acpiphp_context_lock);
-+	context = acpiphp_init_context(handle);
-+	if (!context) {
-+		mutex_unlock(&acpiphp_context_lock);
-+		acpi_handle_err(handle, "No hotplug context\n");
-+		kfree(newfunc);
-+		return AE_NOT_EXIST;
-+	}
-+	newfunc->context = context;
-+	context->func = newfunc;
-+	mutex_unlock(&acpiphp_context_lock);
-+
- 	if (ACPI_SUCCESS(acpi_get_handle(handle, "_EJ0", &tmp)))
- 		newfunc->flags = FUNC_HAS_EJ0;
- 
-@@ -268,8 +362,8 @@ register_slot(acpi_handle handle, u32 lv
- 	if (!found) {
- 		slot = kzalloc(sizeof(struct acpiphp_slot), GFP_KERNEL);
- 		if (!slot) {
--			kfree(newfunc);
--			return AE_NO_MEMORY;
-+			status = AE_NO_MEMORY;
-+			goto err_out;
- 		}
- 
- 		slot->bridge = bridge;
-@@ -293,7 +387,9 @@ register_slot(acpi_handle handle, u32 lv
- 			else
- 				warn("acpiphp_register_hotplug_slot failed "
- 					"(err code = 0x%x)\n", retval);
--			goto err_exit;
-+
-+			status = AE_OK;
-+			goto err;
- 		}
- 	}
- 
-@@ -339,15 +435,20 @@ register_slot(acpi_handle handle, u32 lv
- 
- 	return AE_OK;
- 
-- err_exit:
-+ err:
- 	bridge->nr_slots--;
- 	mutex_lock(&bridge_mutex);
- 	list_del(&slot->node);
- 	mutex_unlock(&bridge_mutex);
- 	kfree(slot);
--	kfree(newfunc);
- 
--	return AE_OK;
-+ err_out:
-+	mutex_lock(&acpiphp_context_lock);
-+	context->func = NULL;
-+	acpiphp_put_context(context);
-+	mutex_unlock(&acpiphp_context_lock);
-+	kfree(newfunc);
-+	return status;
- }
- 
- 
-@@ -362,32 +463,6 @@ static int detect_ejectable_slots(acpi_h
- 	return found;
- }
- 
--
--/* find acpiphp_func from acpiphp_bridge */
--static struct acpiphp_func *acpiphp_bridge_handle_to_function(acpi_handle handle)
--{
--	struct acpiphp_bridge *bridge;
--	struct acpiphp_slot *slot;
--	struct acpiphp_func *func = NULL;
--
--	mutex_lock(&bridge_mutex);
--	list_for_each_entry(bridge, &bridge_list, list) {
--		list_for_each_entry(slot, &bridge->slots, node) {
--			list_for_each_entry(func, &slot->funcs, sibling) {
--				if (func->handle == handle) {
--					get_bridge(func->slot->bridge);
--					mutex_unlock(&bridge_mutex);
--					return func;
--				}
--			}
--		}
--	}
--	mutex_unlock(&bridge_mutex);
--
--	return NULL;
--}
--
--
- static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle)
- {
- 	struct acpiphp_bridge *bridge;
-@@ -1130,6 +1205,7 @@ static void handle_hotplug_event_func(ac
-  */
- void acpiphp_enumerate_slots(struct pci_bus *bus)
- {
-+	struct acpiphp_context *context;
- 	struct acpiphp_bridge *bridge;
- 	acpi_handle handle;
- 	acpi_status status;
-@@ -1142,8 +1218,8 @@ void acpiphp_enumerate_slots(struct pci_
- 		return;
- 
- 	bridge = kzalloc(sizeof(struct acpiphp_bridge), GFP_KERNEL);
--	if (bridge == NULL) {
--		err("out of memory\n");
-+	if (!bridge) {
-+		acpi_handle_err(handle, "No memory for bridge object\n");
- 		return;
- 	}
- 
-@@ -1153,6 +1229,21 @@ void acpiphp_enumerate_slots(struct pci_
- 	bridge->pci_dev = pci_dev_get(bus->self);
- 	bridge->pci_bus = bus;
- 
-+	mutex_lock(&acpiphp_context_lock);
-+	context = acpiphp_get_context(handle);
-+	if (!context) {
-+		context = acpiphp_init_context(handle);
-+		if (!context) {
-+			mutex_unlock(&acpiphp_context_lock);
-+			acpi_handle_err(handle, "No hotplug context\n");
-+			kfree(bridge);
-+			return;
-+		}
-+	}
-+	bridge->context = context;
-+	context->bridge = bridge;
-+	mutex_unlock(&acpiphp_context_lock);
-+
- 	/*
- 	 * Grab a ref to the subordinate PCI bus in case the bus is
- 	 * removed via PCI core logical hotplug. The ref pins the bus
-@@ -1185,20 +1276,21 @@ void acpiphp_enumerate_slots(struct pci_
- 				"failed to register notify handler\n");
- 		goto err;
- 	}
--
- 	status = acpi_get_handle(bridge->handle, "_EJ0", &handle);
- 	if (ACPI_FAILURE(status))
- 		return;
- 
- 	dbg("found ejectable p2p bridge\n");
- 	bridge->flags |= BRIDGE_HAS_EJ0;
--	bridge->func = acpiphp_bridge_handle_to_function(bridge->handle);
--	if (bridge->func) {
--		status = acpi_remove_notify_handler(bridge->func->handle,
--						    ACPI_SYSTEM_NOTIFY,
-+	if (context->func) {
-+		get_bridge(context->func->slot->bridge);
-+		bridge->func = context->func;
-+		handle = context->handle;
-+		WARN_ON(bridge->handle != handle);
-+		status = acpi_remove_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
- 						    handle_hotplug_event_func);
- 		if (ACPI_FAILURE(status))
--			acpi_handle_err(bridge->func->handle,
-+			acpi_handle_err(handle,
- 					"failed to remove notify handler\n");
- 	}
- 	return;
+Thus, Exynos PCIe did not support unloading module.
+(http://archive.arm.linux.org.uk/lurker/message/20130614.125338.7d2bbf62.pl.html)
+
+Best regards,
+Jingoo Han
+
 
