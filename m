@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab3GLCJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:09:58 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48177 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab3GLCJ4 (ORCPT
+	id S932607Ab3GLCMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:12:09 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:15350 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab3GLCMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:09:56 -0400
-Date: Fri, 12 Jul 2013 11:09:51 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH] kvm: reset arch memslot info on memslot creation
-Message-Id: <20130712110951.2b9ffb0e0e3fdeb537db132a@gmail.com>
-In-Reply-To: <20130711074153.GB5895@redhat.com>
-References: <20130710082439.GA1482@redhat.com>
-	<20130710224956.b7a44f39c151148afa5a47ba@gmail.com>
-	<20130711074153.GB5895@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Thu, 11 Jul 2013 22:12:07 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=_govd7qWaBoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ZIb5cOGuYnAA:10 a=PLzQjFQzM9Uk5o6_xP0A:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373595125.17876.78.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2 v3] x86: make jump_label use int3-based patching
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jason Baron <jbaron@akamai.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Date: Thu, 11 Jul 2013 22:12:05 -0400
+In-Reply-To: <alpine.LNX.2.00.1307112225060.29788@pobox.suse.cz>
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
+	 <alpine.LNX.2.00.1307112225060.29788@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Jul 2013 10:41:53 +0300
-Gleb Natapov <gleb@redhat.com> wrote:
-
-> On Wed, Jul 10, 2013 at 10:49:56PM +0900, Takuya Yoshikawa wrote:
-> > On Wed, 10 Jul 2013 11:24:39 +0300
-> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
-> > 
-> > > On x86, kvm_arch_create_memslot assumes that rmap/lpage_info for the
-> > > slot are zeroed out: if they weren't, error handling code after out_free
-> > > label will free memory which wasn't allocated here.
-> > > This always happens to be the case because on KVM_MR_DELETE we clear the
-> > > whole arch structure.  So there's no bug, but it's cleaner not to rely
-> > > on this here.
-> > 
-> > Yes, the assumption is that the function is called only with zero-sized slots.
-> > Since changing the size is not allowed, DELETE-CREATE is the only case we
-> > care about.
-> > 
-> > But isn't it possible to make it explicit that zero-sized slots have always
-> > zero-cleared contents instead?  Otherwise, there would be many troubles.
-> > 
-> Do you have something in mind?
+On Thu, 2013-07-11 at 22:26 +0200, Jiri Kosina wrote:
+> Make jump labels use text_poke_bp() for text patching instead of 
+> text_poke_smp(), avoiding the need for stop_machine().
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+> Changes:
+> 
+> - unchanged since v1, patch 1/2 is the one being updated
+> 
+>  arch/x86/kernel/jump_label.c |   16 ++++++++++++++--
+>  1 files changed, 14 insertions(+), 2 deletions(-)
 > 
 
-I remember that I once wrote code that assumed flags field was cleared before
-creating a new slot and was pointed out that such assumptions might be dangerous:
-actually, it's cleared separately but not so easy to notice.
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
-So, I want to make it clear what differentiate DELETE'ed slots from others.
+-- Steve
 
-If we only assume (npages == 0), CREATE should properly set everything,
-having out_free troubles in mind like this patch.  If we also assume the other
-fields are zero, then DELETE is responsible for that assumption, some comment
-in code may be helpful.
+> diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+> index 2889b3d..460f5d9 100644
+> --- a/arch/x86/kernel/jump_label.c
+> +++ b/arch/x86/kernel/jump_label.c
+> @@ -37,7 +37,19 @@ static void __jump_label_transform(struct jump_entry *entry,
+>  	} else
+>  		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
+>  
+> -	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
+> +	/*
+> +	 * Make text_poke_bp() a default fallback poker.
+> +	 *
+> +	 * At the time the change is being done, just ignore whether we
+> +	 * are doing nop -> jump or jump -> nop transition, and assume
+> +	 * always nop being the 'currently valid' instruction
+> +	 *
+> +	 */
+> +	if (poker)
+> +		(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
+> +	else
+> +		text_poke_bp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE,
+> +			     (void *)entry->code + JUMP_LABEL_NOP_SIZE);
+>  }
+>  
+>  void arch_jump_label_transform(struct jump_entry *entry,
+> @@ -45,7 +57,7 @@ void arch_jump_label_transform(struct jump_entry *entry,
+>  {
+>  	get_online_cpus();
+>  	mutex_lock(&text_mutex);
+> -	__jump_label_transform(entry, type, text_poke_smp);
+> +	__jump_label_transform(entry, type, NULL);
+>  	mutex_unlock(&text_mutex);
+>  	put_online_cpus();
+>  }
 
-Actually, (rmap==NULL) was once used to check if we needed to allocate memory
-for a new slot, meaning that we assumed the latter.  I felt uneasy and changed
-that to (npages == 0).
 
-Let's make it clear the underlying assumptions now.
-
-	Takuya
