@@ -1,89 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887Ab3GLWvl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 18:51:41 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:57107 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757418Ab3GLWvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 18:51:40 -0400
-Date: Fri, 12 Jul 2013 15:50:17 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Kees Cook <keescook@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        PaX Team <pageexec@gmail.com>
-Subject: [PATCH v3] x86: make sure IDT is page aligned
-Message-ID: <20130712225017.GA5366@www.outflux.net>
+	id S933329Ab3GLW6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 18:58:30 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:60755 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757856Ab3GLW62 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 18:58:28 -0400
+Date: Fri, 12 Jul 2013 15:58:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: naveen yadav <yad.naveen@gmail.com>
+cc: kernelnewbies <Kernelnewbies@kernelnewbies.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: shmem info issue
+In-Reply-To: <CAJ8eaTw9o+ZBAzR+1qe-5XEpfZzv-6DJ_EHK_BF_32-va-KL+g@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1307121529190.3315@eggly.anvils>
+References: <CAJ8eaTw9o+ZBAzR+1qe-5XEpfZzv-6DJ_EHK_BF_32-va-KL+g@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the IDT is referenced from a fixmap, make sure it is page aligned.
-Merge with 32-bit one, since it was already aligned to deal with F00F bug.
-This avoids the risk of it ever being moved in the bss and having the
-mapping be offset, resulting in calling incorrect handlers.
+On Fri, 12 Jul 2013, naveen yadav wrote:
+>  Hi All
+> 
+> I am working on tmpfs. During code analysis I found shmem driver
+> register itself as tmpfs .
+> 
+> cat /proc/meminfo Shmem field read NR_SHMEM enum filed and shows used
+> memory in tmpfs
+> 
+> 
+> [root@localhost linux-3.8.2]# cat /proc/meminfo | grep -r Shmem
+> Shmem:               704 kB
+> [root@localhost linux-3.8.2]#
+> 
+> include/linux/mmzone.h
+> enum zone_stat_item {
+> -----cut here-------
+>  NR_SHMEM,               /* shmem pages (included tmpfs/GEM pages
+>  -----cut here
+> }
+> 
+> I have the following query
+> 1-> cat /proc/meminfo | grep -r Shmem show only the used tmpfs memory
+> or it show used  tmpfs memory + mata data also (because I found Shmem
+> is bit larger then tempfs used memory )
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: PaX Team <pageexec@gmail.com>
-Cc: stable@vger.kernel.org
----
-v3:
- - merge 32-bit and 64-bit idt_table definition
-v2:
- - 32-bit was already aligned
----
- arch/x86/kernel/head_64.S |    4 ----
- arch/x86/kernel/traps.c   |    7 ++-----
- 2 files changed, 2 insertions(+), 9 deletions(-)
+"Shmem" includes only data, not metadata, nor memory currently swapped
+out.  But it includes tmpfs memory, SysV shared memory (from ipc/shm.c),
+POSIX shared memory (under /dev/shm), and shared anonymous mappings
+(from mmap of /dev/zero with MAP_SHARED: see call to shmem_zero_setup()
+from drivers/char/mem.c): whatever allocates pages through mm/shmem.c.
 
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 5e4d8a8..317b8cc 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -514,10 +514,6 @@ ENTRY(phys_base)
- 	
- 	.section .bss, "aw", @nobits
- 	.align L1_CACHE_BYTES
--ENTRY(idt_table)
--	.skip IDT_ENTRIES * 16
--
--	.align L1_CACHE_BYTES
- ENTRY(debug_idt_table)
- 	.skip IDT_ENTRIES * 16
- 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index b0865e8..0952614 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -68,13 +68,10 @@
- #include <asm/setup.h>
- 
- asmlinkage int system_call(void);
-+#endif
- 
--/*
-- * The IDT has to be page-aligned to simplify the Pentium
-- * F0 0F bug workaround.
-- */
-+/* The IDT has to be page-aligned to keep it aligned with its fixmap. */
- gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
--#endif
- 
- DECLARE_BITMAP(used_vectors, NR_VECTORS);
- EXPORT_SYMBOL_GPL(used_vectors);
--- 
-1.7.9.5
+> 2-> as per the developer comments NR_SHMEM included tmpfs and GEM
+> pages whct is Gem pages
 
+Ah yes, and the Graphics Execution Manager uses shmem for objects shared
+with the GPU: see use of shmem_read_mapping_page*() in drivers/gpu/drm/.
 
--- 
-Kees Cook
-Chrome OS Security
+> 3-> is my above code analysis is correct?
+
+I think so.
+
+Hugh
