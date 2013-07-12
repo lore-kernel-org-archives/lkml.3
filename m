@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965205Ab3GLS2b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 14:28:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38133 "EHLO mail.zytor.com"
+	id S965271Ab3GLSbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 14:31:52 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40797 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933256Ab3GLS23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 14:28:29 -0400
-Message-ID: <51E04AB9.1000003@zytor.com>
-Date: Fri, 12 Jul 2013 11:28:09 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S965116Ab3GLSbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 14:31:50 -0400
+Date: Fri, 12 Jul 2013 11:30:14 -0700
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Borislav Petkov <bp@suse.de>, Fenghua Yu <fenghua.yu@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        PaX Team <pageexec@freemail.hu>
+Subject: [PATCH] x86: make sure IDT is page aligned
+Message-ID: <20130712183014.GA20551@www.outflux.net>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        ksummit-2013-discuss@lists.linux-foundation.org
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org> <20130712025745.GA24086@tuxdriver.com> <20130712033430.GA3798@kroah.com> <51E03AEE.5010403@zytor.com> <20130712172836.GA7627@kroah.com> <20130712175718.GA342@thunk.org> <51E0480A.2040905@zytor.com>
-In-Reply-To: <51E0480A.2040905@zytor.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 11:16 AM, H. Peter Anvin wrote:
-> 
-> This relates to the "a posteori metadata" problem with git.  In theory I
-> think git notes should handle those, but I have to admit that git notes
-> somewhat creep me out because there doesn't seem to be any version
-> control on them, and as far as I can tell there is only one note per object.
-> 
+Since the IDT is referenced from a fixmap, make sure it is page aligned.
+This avoids the risk of it ever being moved in the bss and having the
+fixmap fail.
 
-OK, just read up some more on git notes, and *both* the assumptions I
-had made about git notes were fundamentally wrong.  Not sure how well
-they would scale, though, but stuffing metadata like additional
-Acked-by:, Tested-by: and Cc: stable into notes seems more viable after
-reading the spec.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Reported-by: PaX Team <pageexec@freemail.hu>
+Cc: stable@vger.kernel.org
+---
+ arch/x86/kernel/head_32.S |    2 +-
+ arch/x86/kernel/head_64.S |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-	-hpa
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index e65ddc6..3526dd1 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -734,7 +734,7 @@ boot_gdt_descr:
+ 	.word __BOOT_DS+7
+ 	.long boot_gdt - __PAGE_OFFSET
+ 
+-	.word 0				# 32-bit align idt_desc.address
++	.word PAGE_SIZE			# page align idt_desc.address
+ idt_descr:
+ 	.word IDT_ENTRIES*8-1		# idt contains 256 entries
+ 	.long idt_table
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 5e4d8a8..77e6d3e 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -513,7 +513,7 @@ ENTRY(phys_base)
+ #include "../../x86/xen/xen-head.S"
+ 	
+ 	.section .bss, "aw", @nobits
+-	.align L1_CACHE_BYTES
++	.align PAGE_SIZE
+ ENTRY(idt_table)
+ 	.skip IDT_ENTRIES * 16
+ 
+-- 
+1.7.9.5
 
 
+-- 
+Kees Cook
+Chrome OS Security
