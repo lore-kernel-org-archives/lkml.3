@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932658Ab3GLCRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:17:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11672 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932512Ab3GLCRj (ORCPT
+	id S932664Ab3GLCTU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:19:20 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:33085 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932512Ab3GLCTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:17:39 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=xFf7jPuUPC8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=ag1SF4gXAAAA:8 a=VwQbUJbxAAAA:8 a=f3b2Vskq_a13c5GH3xgA:9 a=QEXdDO2ut3YA:10 a=U62fhAwekXMA:10 a=1TSTQ8KKaH4A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373595458.17876.83.camel@gandalf.local.home>
-Subject: Re: [ 00/11] 3.4.53-stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Date: Thu, 11 Jul 2013 22:17:38 -0400
-In-Reply-To: <20130712003346.GA10248@kroah.com>
-References: <20130711220545.542911892@linuxfoundation.org>
-	 <CAP=VYLqgAF=RL9BcemhQH_qN8c8n9vud2QfPkMskH-rBMd35UA@mail.gmail.com>
-	 <20130712003346.GA10248@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Jul 2013 22:19:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <51D9EAF3.4050804@tlinx.org>
+References: <51D9EAF3.4050804@tlinx.org>
+Date: Fri, 12 Jul 2013 10:19:17 +0800
+Message-ID: <CACVXFVPRwakzB6vtqRqL49StHKdugCpxDyNvx3VzcDC7GggFMQ@mail.gmail.com>
+Subject: Re: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
+From: Ming Lei <tom.leiming@gmail.com>
+To: Linda Walsh <lkml@tlinx.org>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-11 at 17:33 -0700, Greg Kroah-Hartman wrote:
-> On Thu, Jul 11, 2013 at 08:24:33PM -0400, Paul Gortmaker wrote:
-> > On Thu, Jul 11, 2013 at 6:11 PM, Greg Kroah-Hartman
-> > <gregkh@linuxfoundation.org> wrote:
-> > > This is the start of the stable review cycle for the 3.4.53 release.
-> > > There are 11 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let me know.
-> > >
-> > > Responses should be made by Sat Jul 13 22:04:03 UTC 2013.
-> > > Anything received after that time might be too late.
-> > >
-> > > The whole patch series can be found in one patch at:
-> > >         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.53-rc1.gz
-> > 
-> > Just happened to notice the v3.0 in the path vs. the 3.4 version.
-> > Wasn't sure that was intentional or not, so figured I'd mention it.
-> 
-> It's intentional, it's always been there, but I guess I could use the
-> 3.x link instead, they both point to the same place.
-> 
+On Mon, Jul 8, 2013 at 6:25 AM, Linda Walsh <lkml@tlinx.org> wrote:
+> Also am seeing this for the first time:
+>
+> (don't know, but seems unlikely to be related to
+> https://patchwork.kernel.org/patch/87359/
+> Yet it is the only hit I found for the same message.
+>
+>
+> Looks like it's back to a more stable 3.9.8...
+> (*sigh*)
+>
+>
+> BUG: key ffff880c1148c478 not in .data!
+> [    4.429474] ------------[ cut here ]------------
+> [    4.434236] WARNING: at kernel/lockdep.c:2987
+> lockdep_init_map+0x45e/0x490()
+> [    4.441414] DEBUG_LOCKS_WARN_ON(1)
+> [    4.444684] Modules linked in:
+> [    4.448168] usb 1-3.2: new low-speed USB device number 3 using ehci-pci
+> [    4.454975] CPU: 10 PID: 1 Comm: swapper/0 Tainted: G          I
+> 3.10.0-Isht-Van #1
+> [    4.462862] Hardware name: Dell Inc. PowerEdge T610/0CX0R0, BIOS 6.3.0
+> 07/24/2012
+> [    4.470475]  0000000000000009 ffff880c13175a70 ffffffff815bb279
+> ffff880c13175aa8
+> [    4.478221]  ffffffff8104641c ffff880c11c12130 ffff880c1148c478
+> 0000000000000000
+> [    4.485988]  ffff880c11c12058 ffff880c12386180 ffff880c13175b08
+> ffffffff81046487
+> [    4.493800] Call Trace:
+> [    4.496472]  [<ffffffff815bb279>] dump_stack+0x19/0x1b
+> [    4.501776]  [<ffffffff8104641c>] warn_slowpath_common+0x5c/0x80
+> [    4.507917]  [<ffffffff81046487>] warn_slowpath_fmt+0x47/0x50
+> [    4.513790]  [<ffffffff8109c1fe>] lockdep_init_map+0x45e/0x490
+> [    4.519775]  [<ffffffff8109b12d>] debug_mutex_init+0x2d/0x40
+> [    4.525567]  [<ffffffff8106ef61>] __mutex_init+0x51/0x60
+> [    4.531017]  [<ffffffff813a1618>] bus_register+0x158/0x2c0
+> [    4.536646]  [<ffffffff814c6dc3>] edac_create_sysfs_mci_device+0x53/0x540
 
-I can vouch for it always being there. I had to add a work around in my
--rt scripts to test if it was 3.0 or > 3.0, to determine what to post as
-the patch set to get to an -rt kernel:
+Looks because that bus_type of 'struct mem_ctl_info' is allocated dynamically
+instead of being kept it in .data statically.
 
-Or to build 3.0.85-rt113 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/linux-3.0.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.0/patch-3.0.85.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.0/patch-3.0.85-rt113.patch.xz
-
-
-Or to build 3.4.52-rt67 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.52.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.52-rt67.patch.xz
-
-
-Note, it's not just with stable, it's also with the main kernel tree too.
-
-But it seems today they are the same directory. I think it wasn't like
-that before the break in. Otherwise, I doubt I would have spent time on
-that work around.
-
--- Steve
-
-
-
-
+Thanks,
+-- 
+Ming Lei
