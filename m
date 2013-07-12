@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab3GLGwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 02:52:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:59323 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756469Ab3GLGw3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 02:52:29 -0400
-Date: Fri, 12 Jul 2013 08:52:27 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: 3.10.0: Full dynticks = high load
-Message-ID: <20130712065227.GC1985@fancy-poultry.org>
-References: <krlv29$jbp$1@ger.gmane.org>
+	id S1756987Ab3GLG6D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 02:58:03 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53969 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752994Ab3GLG6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 02:58:01 -0400
+Date: Fri, 12 Jul 2013 09:57:34 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Julius Werner <jwerner@chromium.org>
+CC: <balbi@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-samsung-soc@vger.kernel.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        Praveen Paneri <p.paneri@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Tushar Behera <tushar.behera@linaro.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        Vincent Palatin <vpalatin@chromium.org>
+Subject: Re: [PATCH] usb: phy: samsung-usb2: Toggle HSIC GPIO from device tree
+Message-ID: <20130712065734.GE31802@arwen.pp.htv.fi>
+Reply-To: <balbi@ti.com>
+References: <1373416455-30358-1-git-send-email-jwerner@chromium.org>
+ <20130710052534.GB15674@arwen.pp.htv.fi>
+ <CAODwPW9dmwpXeyBeVER9azsh2uW3NXLTbDtz3mJaXrvSwb6opg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="+jhVVhN62yS6hEJ8"
 Content-Disposition: inline
-In-Reply-To: <krlv29$jbp$1@ger.gmane.org>
-Organization: private site
-OpenPGP: id=60F4A92C; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+155 (d3096e8796e7) (2012-12-30)
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:BCG2hjdB4ErnEFvvTys6/Sio5HEdW/coye1LZd1GRHM
- PTFIYcxZvauuIBDSUASkSf4qPTDZ6iGO2QJfWlYtZap3HoZuH2
- 81W+2JxFo13jI4Nh0uTTjrg8ZB45XCU8xPrGox/xigqcTST/Lq
- +XnwmB1/fPSv9flTvlI4WFIsOozLzJr8Pq4Byunmw7m+MEDX84
- tXSq+gOMIK9Lrnrt0er+/uHa2sde7wMLyiYVxDGtnVrYUTNx3V
- KKYBtKUk9BCV99avcOvltnOMzZTjcTdh0eFdtVnZCOy8Y9m2l3
- LbgFDlp6sn6LqnIY9JGhSBz/FuhdM4aQg8pFGq9rw2+dFK22iQ
- iJ7zSvVJEEbHeX3/ZBS6GVwY3rl0xNl4wPqjCmpEU
+In-Reply-To: <CAODwPW9dmwpXeyBeVER9azsh2uW3NXLTbDtz3mJaXrvSwb6opg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.07.2013, Dâniel Fraga wrote: 
+--+jhVVhN62yS6hEJ8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 	I upgraded to kernel 3.10.0 and decided to try the new "Full
-> dynticks system (tickless)" option, but now the system load is always
-> at 1 or above.
-> 
-> 	Using the previous "Idle dynticks system (tickless idle)" solves
-> the problem, so it seems the new Full dynticks code is causing this.
-> 
+Hi,
 
-This describes exactly what I have encountered, and "tickless idle"
-fixed it for me, too. So I'll second that.
+On Wed, Jul 10, 2013 at 10:42:27AM -0700, Julius Werner wrote:
+> Hi Felipe,
+>=20
+> This is intended to pull down a reset signal line, not to switch power
+> to the device. I could implement that with the regulator framework
+> too, but I think that would just be confusing and harder to understand
+> without providing any benefit. It's really just a plain old GPIO.
 
+alright, in that case how about using drivers/reset/ ?
+
+--=20
+balbi
+
+--+jhVVhN62yS6hEJ8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR36jeAAoJEIaOsuA1yqREPkgP/isbYeG4jRaimYMNBWfhFKpI
+9ZA3AWoO9oYP9W8iFd0Ss4xnbDpUzp2iKlyux+7D2brMmUihwforDJjGYhGs70P7
+KW3bO1JuUyvjGc2T+Zu/RsRdwfOr/m0YaRvVIuRs5BtvB1qPVpdGi3TLD758+stV
+tRW+UX30KARKnClQXnTrnXeeArd2Wie7IOI05c2+y9PK6/RCWgENsC3qZQxxTQZR
+mDBUxe+Xtna7ZM7xGvBcKrrMUlc/796LJP8DKK5j5of4FaKOWcP8aZN4o9d1Fez4
+CdB7rv8BJcu/Pa6VUjl3VRvo+My7cnhvAnWxobclyPVoj1hkXU4o5KMH4ydH0WnQ
+hx0YKm4Kf/5k2LZRUhFnUE6KujR7R7AJrcOlNyfvJ3EKdbllWESuls+umMIRfvlT
+CLun+XMGMqk8AqkUD/orYKJC1LsDCTtyRfXPFTvleAuR2/v2zusv/XBfjOTyp5LA
+wNGEoWt1/QY8SoKfIOSNcYNLHVJJAf3/E+neCKwBaqQOW8HDJzx+oXVRIORaJUVD
+VvRBDEt07S4/q5lCaKhTouliCyEDOolh8CXVc0/GovQfYv6eheddfgj4gPbwUFR3
+TWfrUImfuJzmZeggbPb271lMrPaMyC80IWb03s83q9Q9CDOr6/OiE3DboWZvx31/
++8mbayC5LH6iUxbCSbRb
+=rrdx
+-----END PGP SIGNATURE-----
+
+--+jhVVhN62yS6hEJ8--
