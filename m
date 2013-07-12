@@ -1,45 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965056Ab3GLOAu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:00:50 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:49733 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964886Ab3GLOAr (ORCPT
+	id S965075Ab3GLOEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:04:39 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:35303 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S964823Ab3GLOEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:00:47 -0400
-From: Alexandru Juncu <alexj@rosedu.org>
-To: plagnioj@jcrosoft.com
-Cc: tomi.valkeinen@ti.com, alexj@rosedu.org, linux-fbdev@vger.kernel.org,
+	Fri, 12 Jul 2013 10:04:38 -0400
+Message-ID: <51E00CF1.6070302@hurleysoftware.com>
+Date: Fri, 12 Jul 2013 10:04:33 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Gustavo Padovan <gustavo@padovan.org>,
+        Gianluca Anzolin <gianluca@sottospazio.it>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] matroxfb: replace kmalloc and memset with kzalloc.
-Date: Fri, 12 Jul 2013 17:00:18 +0300
-Message-Id: <1373637618-10529-1-git-send-email-alexj@rosedu.org>
-X-Mailer: git-send-email 1.8.1.2
+CC: jslaby@suse.cz, gregkh@linuxfoundation.org
+Subject: Re: [PATCH] Fix refcount leak in tty_port.c
+References: <20130709083535.GA30227@debian.seek.priv> <20130712103026.GC2065@joana>
+In-Reply-To: <20130712103026.GC2065@joana>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexandru Juncu <alexj@rosedu.org>
----
- drivers/video/matrox/matroxfb_base.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+On 07/12/2013 06:30 AM, Gustavo Padovan wrote:
+> Hi Gianluca,
+>
+> * Gianluca Anzolin <gianluca@sottospazio.it> [2013-07-09 10:35:35 +0200]:
+>
+>> Hello,
+>>
+>> In linux 3.10 in the file drivers/tty/tty_port.c the function
+>> tty_port_tty_hangup may leak a tty reference:
+>>
+>>          struct tty_struct *tty = tty_port_tty_get(port);
+>>
+>>          if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+>>                  tty_hangup(tty);
+>>                  tty_kref_put(tty);
+>>          }
+>>
+>> If tty != NULL and the second condition is false we never call tty_kref_put and
+>> the reference is leaked.
 
-diff --git a/drivers/video/matrox/matroxfb_base.c b/drivers/video/matrox/matroxfb_base.c
-index 401a56e..2456529 100644
---- a/drivers/video/matrox/matroxfb_base.c
-+++ b/drivers/video/matrox/matroxfb_base.c
-@@ -2029,10 +2029,9 @@ static int matroxfb_probe(struct pci_dev* pdev, const struct pci_device_id* dumm
- 		return -1;
- 	}
- 
--	minfo = kmalloc(sizeof(*minfo), GFP_KERNEL);
-+	minfo = kzalloc(sizeof(*minfo), GFP_KERNEL);
- 	if (!minfo)
- 		return -1;
--	memset(minfo, 0, sizeof(*minfo));
- 
- 	minfo->pcidev = pdev;
- 	minfo->dead = 0;
--- 
-1.8.1.2
+Good catch.
+
+>> Fix by nesting two if statements.
+>>
+>> Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
+>
+> As mentioned by Gianluca this is a regression of aa27a094 and we depend on
+> this patch to go ahead with some fixes in the bluetooth subsystem.
+
+Gustavo,
+
+There's no direct dependency; ie., there aren't merge issues here.
+We should progress with the fixes to rfcomm independent of this patch.
+
+> Gianluca, it might help if you send a proper git inline formated patch,
+> mentioning the issue and which regression you are fixing.  It makes
+> maintainer's life easier.
+
+As Gustavo points out, please inline the patch otherwise commenters
+have to do it for you.
+
+> Also add my Ack to the patch:
+ >
+>
+> Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+>
+> 	Gustavo
+
+Copy of the Gianluca's patch with my comments
+
+--- %< ---
+
+Please put a proper commit message here, including that this is
+a regression and the commit id that caused the regression so this patch
+can eventually make its way to stable.
+
+
+ > diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+ > index 121aeb9..2198f7d 100644
+ > --- a/drivers/tty/tty_port.c
+ > +++ b/drivers/tty/tty_port.c
+ > @@ -256,8 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
+ >  {
+ >  	struct tty_struct *tty = tty_port_tty_get(port);
+ >
+ > -	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+ > -		tty_hangup(tty);
+ > +	if (tty) {
+ > +		if (!check_clocal || !C_CLOCAL(tty))
+ > +			tty_hangup(tty);
+ >  		tty_kref_put(tty);
+ >  	}
+ >  }
+
+
+tty_kref_put() already checks for NULL tty. I would prefer:
+
+{
+   	struct tty_struct *tty = tty_port_tty_get(port);
+
+	if (tty && (!check_clocal || !C_CLOCAL(tty)))
+		tty_hangup(tty);
+	tty_kref_put(tty);
+}
+
 
