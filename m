@@ -1,63 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3GLCj6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:39:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58807 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab3GLCj4 (ORCPT
+	id S1756354Ab3GLCkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:40:18 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:34852 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048Ab3GLCkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:39:56 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51DF6C5D.1020904@jp.fujitsu.com>
-Date: Fri, 12 Jul 2013 11:39:25 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 11 Jul 2013 22:40:16 -0400
+Message-ID: <51DF6C8D.1080903@hitachi.com>
+Date: Fri, 12 Jul 2013 11:40:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: dyoung@redhat.com
-CC: airlied@linux.ie, vgoyal@redhat.com, bhe@redhat.com, chaowang@redhat.com,
-        linux-kernel@vger.kernel.org, ishii.hironobu@jp.fujitsu.com
-Subject: Re: PCIE resetting graphic card
-References: <51DF6446.9090105@redhat.com>
-In-Reply-To: <51DF6446.9090105@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2 v3] x86: introduce int3-based instruction patching
+References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307112221110.29788@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1307112221110.29788@pobox.suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
-
-(2013/07/12 11:04), Dave Young wrote:
-> Hi, Takao
+(2013/07/12 5:26), Jiri Kosina wrote:
+> Introduce a method for run-time instrucntion patching on a live SMP kernel 
+> based on int3 breakpoint, completely avoiding the need for stop_machine().
 > 
-> I know you are working on the PCIE resetting patches for the iommu kdump
-> issue.
+> The way this is achieved:
 > 
-> You explicitly excluded the graphic card in your patch. I have some
-> questions about this. Why can't we reset the graphic card like other
-> pcie devices?
-
-As far as I tested, the monitor blacks out after video controller is
-reset, and we cannot know what's going on. So, for now display device is
-not reset in my patch.
-
-I'm not sure what we need to do to recover graphic card after its reset,
-but my colleague said that we need to run BIOS code to get back legacy
-VGA mode after reset. It seems not to be easy:-(
-
-Maybe this document is helpful to do this.
-http://www.coreboot.org/images/2/2b/Vgabios.pdf
-
-Thanks,
-Takao Indoh
-
+> 	- add a int3 trap to the address that will be patched
+> 	- sync cores
+> 	- update all but the first byte of the patched range
+> 	- sync cores
+> 	- replace the first byte (int3) by the first byte of
+> 	  replacing opcode
+> 	- sync cores
 > 
-> We have problems, if 1st kernel is in kms mode kdump kernel will have no
-> chance to switch back to VGA console. There's no serial port on most of
-> recent laptops thus it's difficult to debug kdump issue.
+> According to
 > 
-> So if we can reset graphic card as well, and if it works I wonder if the
-> 2nd kdump kernel can use vga console with nomodeset?
+> 	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
+> 
+> synchronization after replacing "all but first" instructions should not
+> be necessary (on Intel hardware), as the syncing after the subsequent
+> patching of the first byte provides enough safety.
+> But there's not only Intel HW out there, and we'd rather be on a safe
+> side.
+> 
+> If any CPU instruction execution would collide with the patching,
+> it'd be trapped by the int3 breakpoint and redirected to the provided
+> "handler" (which would typically mean just skipping over the patched
+> region, acting as "nop" has been there, in case we are doing nop -> jump
+> and jump -> nop transitions).
+> 
+> Ftrace has been using this very technique since 08d636b ("ftrace/x86:
+> Have arch x86_64 use breakpoints instead of stop machine") for ages
+> already, and jump labels are another obvious potential user of this.
+> 
+> Based on activities of Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> a few years ago.
+> 
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 
+Looks good for me. I'd like to use this for optprobe too :)
+
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+Thank you!
+
+> ---
+> Changes:
+> 
+> v1 -> v2:
+>   + fixed kerneldoc
+>   + fixed checkpatch errors (reported by Borislav)
+> 
+> v2 -> v3:
+>   + fixed few typos (Joe Perches)
+>   + extended changelog with pointer to Intel's statement regarding minimal 
+>     necessary synchronization points to achieve correctness
+>   + added even the synchronization that might not be needed according to 
+>     Intel, to be on a safe side (and do what has been proven to work by 
+>     ftrace implementation already) (Steven Rostedt)
+>   + Fix formatting of comments (Steven Rostedt, Borislav Petkov, Joe 
+>     Perches)
+> 
+>  arch/x86/include/asm/alternative.h |    1 +
+>  arch/x86/kernel/alternative.c      |  107 ++++++++++++++++++++++++++++++++++++
+>  kernel/kprobes.c                   |    2 +-
+>  3 files changed, 109 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+> index 58ed6d9..3abf8dd 100644
+> --- a/arch/x86/include/asm/alternative.h
+> +++ b/arch/x86/include/asm/alternative.h
+> @@ -233,6 +233,7 @@ struct text_poke_param {
+>  };
+>  
+>  extern void *text_poke(void *addr, const void *opcode, size_t len);
+> +extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
+>  extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
+>  extern void text_poke_smp_batch(struct text_poke_param *params, int n);
+>  
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index c15cf9a..ed2377d 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -11,6 +11,7 @@
+>  #include <linux/memory.h>
+>  #include <linux/stop_machine.h>
+>  #include <linux/slab.h>
+> +#include <linux/kdebug.h>
+>  #include <asm/alternative.h>
+>  #include <asm/sections.h>
+>  #include <asm/pgtable.h>
+> @@ -596,6 +597,112 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
+>  	return addr;
+>  }
+>  
+> +static void do_sync_core(void *info)
+> +{
+> +	sync_core();
+> +}
+> +
+> +static bool bp_patching_in_progress;
+> +static void *bp_int3_handler, *bp_int3_addr;
+> +
+> +static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
+> +{
+> +	struct die_args *args = data;
+> +
+> +	/* bp_patching_in_progress */
+> +	smp_rmb();
+> +
+> +	if (likely(!bp_patching_in_progress))
+> +		return NOTIFY_DONE;
+> +
+> +	/* we are not interested in non-int3 faults and ring > 0 faults */
+> +	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
+> +			    || (unsigned long) bp_int3_addr != args->regs->ip)
+> +		return NOTIFY_DONE;
+> +
+> +	/* set up the specified breakpoint handler */
+> +	args->regs->ip = (unsigned long) bp_int3_handler;
+> +
+> +	return NOTIFY_STOP;
+> +}
+> +/*
+> + * text_poke_bp() -- update instructions on live kernel on SMP
+> + * @addr:	address to patch
+> + * @opcode:	opcode of new instruction
+> + * @len:	length to copy
+> + * @handler:	address to jump to when the temporary breakpoint is hit
+> + *
+> +
+> + * Modify multi-byte instruction by using int3 breakpoint on SMP.
+> + * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
+> + * and achieve the synchronization using int3 breakpoint.
+> + *
+> + * The way it is done:
+> + *	- add a int3 trap to the address that will be patched
+> + *	- sync cores
+> + *	- update all but the first byte of the patched range
+> + *	- sync cores
+> + *	- replace the first byte (int3) by the first byte of
+> + *	  replacing opcode
+> + *	- sync cores
+> + *
+> + * Note: must be called under text_mutex.
+> + */
+> +void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+> +{
+> +	unsigned char int3 = 0xcc;
+> +
+> +	bp_int3_handler = handler;
+> +	bp_int3_addr = (u8 *)addr + sizeof(int3);
+> +	bp_patching_in_progress = true;
+> +	/*
+> +	 * Corresponding read barrier in int3 notifier for
+> +	 * making sure the in_progress flags is correctly ordered wrt.
+> +	 * patching
+> +	 */
+> +	smp_wmb();
+> +
+> +	text_poke(addr, &int3, sizeof(int3));
+> +
+> +	on_each_cpu(do_sync_core, NULL, 1);
+> +
+> +	if (len - sizeof(int3) > 0) {
+> +		/* patch all but the first byte */
+> +		text_poke((char *)addr + sizeof(int3),
+> +			  (const char *) opcode + sizeof(int3),
+> +			  len - sizeof(int3));
+> +		/*
+> +		 * According to Intel, this core syncing is very likely
+> +		 * not necessary and we'd be safe even without it. But
+> +		 * better safe than sorry (plus there's not only Intel).
+> +		 */
+> +		on_each_cpu(do_sync_core, NULL, 1);
+> +	}
+> +
+> +	/* patch the first byte */
+> +	text_poke(addr, opcode, sizeof(int3));
+> +
+> +	on_each_cpu(do_sync_core, NULL, 1);
+> +
+> +	bp_patching_in_progress = false;
+> +	smp_wmb();
+> +
+> +	return addr;
+> +}
+> +
+> +/* this one needs to run before anything else handles it as a
+> + * regular exception */
+> +static struct notifier_block int3_nb = {
+> +	.priority = 0x7fffffff,
+> +	.notifier_call = int3_notify
+> +};
+> +
+> +static int __init int3_init(void)
+> +{
+> +	return register_die_notifier(&int3_nb);
+> +}
+> +
+> +arch_initcall(int3_init);
+>  /*
+>   * Cross-modifying kernel text with stop_machine().
+>   * This code originally comes from immediate value.
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index bddf3b2..d6db7bd 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
+>  
+>  static struct notifier_block kprobe_exceptions_nb = {
+>  	.notifier_call = kprobe_exceptions_notify,
+> -	.priority = 0x7fffffff /* we need to be notified first */
+> +	.priority = 0x7ffffff0 /* High priority, but not first.  */
+>  };
+>  
+>  unsigned long __weak arch_deref_entry_point(void *entry)
+> 
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
