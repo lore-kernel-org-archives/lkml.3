@@ -1,255 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab3GLCkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:40:18 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:34852 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753048Ab3GLCkQ (ORCPT
+	id S1755879Ab3GLCmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:42:13 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:63887 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753131Ab3GLCmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:40:16 -0400
-Message-ID: <51DF6C8D.1080903@hitachi.com>
-Date: Fri, 12 Jul 2013 11:40:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 11 Jul 2013 22:42:11 -0400
+Message-ID: <51DF6C72.9070302@huawei.com>
+Date: Fri, 12 Jul 2013 10:39:46 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2 v3] x86: introduce int3-based instruction patching
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz> <alpine.LNX.2.00.1307112221110.29788@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1307112221110.29788@pobox.suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Don Dutile <ddutile@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH -v2 1/3] PCI: introduce PCIe Device Serial Number Capability
+ support
+References: <1373535825-49972-1-git-send-email-wangyijing@huawei.com> <1373535825-49972-2-git-send-email-wangyijing@huawei.com> <51DE8032.4040808@redhat.com> <CAErSpo50ni41TiscZDVpg8wMFK2wgWmS1sySfNTs8X9JA7Mmkw@mail.gmail.com> <51DEF6DD.1070406@redhat.com>
+In-Reply-To: <51DEF6DD.1070406@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/12 5:26), Jiri Kosina wrote:
-> Introduce a method for run-time instrucntion patching on a live SMP kernel 
-> based on int3 breakpoint, completely avoiding the need for stop_machine().
+On 2013/7/12 2:18, Don Dutile wrote:
+> On 07/11/2013 04:09 PM, Bjorn Helgaas wrote:
+>> On Thu, Jul 11, 2013 at 3:51 AM, Don Dutile<ddutile@redhat.com>  wrote:
+>>> On 07/11/2013 05:43 AM, Yijing Wang wrote:
+>>>>
+>>>> Introduce PCIe Ext Capability Device Serial Number support,
+>>>> so we can use the unique device serial number to identify
+>>>> the physical device. During system suspend, if the PCIe
+>>>> device was removed and inserted a new same device, after
+>>>> system resume there is no good way to identify it, maybe
+>>>> Device Serial Number is a good choice if device support.
+>>>>
+>>>> Signed-off-by: Yijing Wang<wangyijing@huawei.com>
+>>>> ---
+>>>>    drivers/pci/pci.c   |   27 +++++++++++++++++++++++++++
+>>>>    drivers/pci/probe.c |    2 ++
+>>>>    include/linux/pci.h |    3 +++
+>>>>    3 files changed, 32 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+>>>> index e37fea6..2e855b5 100644
+>>>> --- a/drivers/pci/pci.c
+>>>> +++ b/drivers/pci/pci.c
+>>>> @@ -2048,6 +2048,33 @@ void pci_free_cap_save_buffers(struct pci_dev *dev)
+>>>>    }
+>>>>
+>>>>    /**
+>>>> + * pci_device_serial_number - get device serial number
+>>>> + * @dev: the PCI device
+>>>> + *
+>>>> + * return the device serial number if device support,
+>>>> + * otherwise return 0.
+>>>> + */
+>>>> +u64 pci_device_serial_number(struct pci_dev *dev)
+>>>
+>>> See comment below:
+>>> void  pci_device_serial_number(struct pci_dev *dev)
+>>>
+>>>
+>>>> +{
+>>>> +       int pos;
+>>>> +       u64 sn;
+>>>> +       u32 lo, hi;
+>>>> +
+>>>> +       if (!pci_is_pcie(dev))
+>>>> +               return 0;
+>>>> +
+>>>
+>>> See comment below:
+>>> if (!pci_is_pcie(dev)) {
+>>>          dev->sn = 0;
+>>>          return;
+>>>
+>>> }
+>>>>
+>>>> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
+>>>> +       if (!pos)
+>>>> +               return 0;
+>>>> +
+>>>> +       pci_read_config_dword(dev, pos + 4,&lo);
+>>>> +       pci_read_config_dword(dev, pos + 8,&hi);
+>>>> +       sn = ((u64)hi<<   32) | lo;
+>>>
+>>> See comment below:
+>>>          dev->sn = ((u64)hi<<   32) | lo;
+>>>          return;
+>>>
+>>>> +       return sn;
+>>>> +}
+>>>> +EXPORT_SYMBOL(pci_device_serial_number);
+>>>> +
+>>>> +/**
+>>>>     * pci_configure_ari - enable or disable ARI forwarding
+>>>>     * @dev: the PCI device
+>>>>     *
+>>>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+>>>> index 46ada5c..c4c1a2b 100644
+>>>> --- a/drivers/pci/probe.c
+>>>> +++ b/drivers/pci/probe.c
+>>>> @@ -1322,6 +1322,8 @@ static void pci_init_capabilities(struct pci_dev
+>>>> *dev)
+>>>>          /* Power Management */
+>>>>          pci_pm_init(dev);
+>>>>
+>>>> +       dev->sn = pci_device_serial_number(dev);
+>>>> +
+>>>
+>>> Finally, 'the comment below':
+>>> I know you were following Bjorn's suggestion, which I thought
+>>> was an improvement, but why not do above assignment in
+>>> pci_device_serial_number() ?
+>>> See above....
+>>
+>> pci_device_serial_number() would then have the side-effect of saving
+>> the result somewhere, and callers would have to know where to look.
+> Ah, like so many other features of a PCI device?  -- what are all those
+> flags/status bits in pdev for ??? ;-)
 > 
-> The way this is achieved:
+>> Personally, I think it's simpler to return the serial number directly
+>> and avoid the side-effect, but maybe this is just bike-shedding.
+>>
+> What struck me about rtning a value is in pci_init_capabilities(),
+> it was the only function with a rtn value that had to be put into a pci_dev struct element,
+> while all the others stored their related capabilities in the pdev, or other struct
+> related to it.
 > 
-> 	- add a int3 trap to the address that will be patched
-> 	- sync cores
-> 	- update all but the first byte of the patched range
-> 	- sync cores
-> 	- replace the first byte (int3) by the first byte of
-> 	  replacing opcode
-> 	- sync cores
-> 
-> According to
-> 
-> 	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
-> 
-> synchronization after replacing "all but first" instructions should not
-> be necessary (on Intel hardware), as the syncing after the subsequent
-> patching of the first byte provides enough safety.
-> But there's not only Intel HW out there, and we'd rather be on a safe
-> side.
-> 
-> If any CPU instruction execution would collide with the patching,
-> it'd be trapped by the int3 breakpoint and redirected to the provided
-> "handler" (which would typically mean just skipping over the patched
-> region, acting as "nop" has been there, in case we are doing nop -> jump
-> and jump -> nop transitions).
-> 
-> Ftrace has been using this very technique since 08d636b ("ftrace/x86:
-> Have arch x86_64 use breakpoints instead of stop machine") for ages
-> already, and jump labels are another obvious potential user of this.
-> 
-> Based on activities of Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> a few years ago.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> So, maybe there should be a "pci_device_serial_number_init()" function
+> which does the storage in the pdev struct, and another (wrapper,
+> dare I shoot myself, inline)  that is "pci_device_serial_number()" that returns
 
-Looks good for me. I'd like to use this for optprobe too :)
+add an wrapper function may be ok, as I mentioned in pre-reply, what about,
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+static void pci_init_capabilities(struct pci_dev *dev)
+     ...............
+     pci_dsn_init(dev);
+     .................
 
-Thank you!
 
-> ---
-> Changes:
+void pci_dsn_init(dev)
+{
+     dev->sn = pci_device_serial_number(dev);
+}
+
+> the value of the pdev's sn element, if another module or other core component
+> want to get it. .... and do that in a future patch... :-/
 > 
-> v1 -> v2:
->   + fixed kerneldoc
->   + fixed checkpatch errors (reported by Borislav)
+>> As long as we are bike-shedding, I'd just drop "sn" and do:
+>>
+>>      return ((u64)hi<<  32) | lo;
+>>
+>> And of course, you need spaces before "&hi" and "&lo" in the
+>> pci_read_config_dword() calls.
 > 
-> v2 -> v3:
->   + fixed few typos (Joe Perches)
->   + extended changelog with pointer to Intel's statement regarding minimal 
->     necessary synchronization points to achieve correctness
->   + added even the synchronization that might not be needed according to 
->     Intel, to be on a safe side (and do what has been proven to work by 
->     ftrace implementation already) (Steven Rostedt)
->   + Fix formatting of comments (Steven Rostedt, Borislav Petkov, Joe 
->     Perches)
 > 
->  arch/x86/include/asm/alternative.h |    1 +
->  arch/x86/kernel/alternative.c      |  107 ++++++++++++++++++++++++++++++++++++
->  kernel/kprobes.c                   |    2 +-
->  3 files changed, 109 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-> index 58ed6d9..3abf8dd 100644
-> --- a/arch/x86/include/asm/alternative.h
-> +++ b/arch/x86/include/asm/alternative.h
-> @@ -233,6 +233,7 @@ struct text_poke_param {
->  };
->  
->  extern void *text_poke(void *addr, const void *opcode, size_t len);
-> +extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
->  extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
->  extern void text_poke_smp_batch(struct text_poke_param *params, int n);
->  
-> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-> index c15cf9a..ed2377d 100644
-> --- a/arch/x86/kernel/alternative.c
-> +++ b/arch/x86/kernel/alternative.c
-> @@ -11,6 +11,7 @@
->  #include <linux/memory.h>
->  #include <linux/stop_machine.h>
->  #include <linux/slab.h>
-> +#include <linux/kdebug.h>
->  #include <asm/alternative.h>
->  #include <asm/sections.h>
->  #include <asm/pgtable.h>
-> @@ -596,6 +597,112 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
->  	return addr;
->  }
->  
-> +static void do_sync_core(void *info)
-> +{
-> +	sync_core();
-> +}
-> +
-> +static bool bp_patching_in_progress;
-> +static void *bp_int3_handler, *bp_int3_addr;
-> +
-> +static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
-> +{
-> +	struct die_args *args = data;
-> +
-> +	/* bp_patching_in_progress */
-> +	smp_rmb();
-> +
-> +	if (likely(!bp_patching_in_progress))
-> +		return NOTIFY_DONE;
-> +
-> +	/* we are not interested in non-int3 faults and ring > 0 faults */
-> +	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
-> +			    || (unsigned long) bp_int3_addr != args->regs->ip)
-> +		return NOTIFY_DONE;
-> +
-> +	/* set up the specified breakpoint handler */
-> +	args->regs->ip = (unsigned long) bp_int3_handler;
-> +
-> +	return NOTIFY_STOP;
-> +}
-> +/*
-> + * text_poke_bp() -- update instructions on live kernel on SMP
-> + * @addr:	address to patch
-> + * @opcode:	opcode of new instruction
-> + * @len:	length to copy
-> + * @handler:	address to jump to when the temporary breakpoint is hit
-> + *
-> +
-> + * Modify multi-byte instruction by using int3 breakpoint on SMP.
-> + * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
-> + * and achieve the synchronization using int3 breakpoint.
-> + *
-> + * The way it is done:
-> + *	- add a int3 trap to the address that will be patched
-> + *	- sync cores
-> + *	- update all but the first byte of the patched range
-> + *	- sync cores
-> + *	- replace the first byte (int3) by the first byte of
-> + *	  replacing opcode
-> + *	- sync cores
-> + *
-> + * Note: must be called under text_mutex.
-> + */
-> +void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
-> +{
-> +	unsigned char int3 = 0xcc;
-> +
-> +	bp_int3_handler = handler;
-> +	bp_int3_addr = (u8 *)addr + sizeof(int3);
-> +	bp_patching_in_progress = true;
-> +	/*
-> +	 * Corresponding read barrier in int3 notifier for
-> +	 * making sure the in_progress flags is correctly ordered wrt.
-> +	 * patching
-> +	 */
-> +	smp_wmb();
-> +
-> +	text_poke(addr, &int3, sizeof(int3));
-> +
-> +	on_each_cpu(do_sync_core, NULL, 1);
-> +
-> +	if (len - sizeof(int3) > 0) {
-> +		/* patch all but the first byte */
-> +		text_poke((char *)addr + sizeof(int3),
-> +			  (const char *) opcode + sizeof(int3),
-> +			  len - sizeof(int3));
-> +		/*
-> +		 * According to Intel, this core syncing is very likely
-> +		 * not necessary and we'd be safe even without it. But
-> +		 * better safe than sorry (plus there's not only Intel).
-> +		 */
-> +		on_each_cpu(do_sync_core, NULL, 1);
-> +	}
-> +
-> +	/* patch the first byte */
-> +	text_poke(addr, opcode, sizeof(int3));
-> +
-> +	on_each_cpu(do_sync_core, NULL, 1);
-> +
-> +	bp_patching_in_progress = false;
-> +	smp_wmb();
-> +
-> +	return addr;
-> +}
-> +
-> +/* this one needs to run before anything else handles it as a
-> + * regular exception */
-> +static struct notifier_block int3_nb = {
-> +	.priority = 0x7fffffff,
-> +	.notifier_call = int3_notify
-> +};
-> +
-> +static int __init int3_init(void)
-> +{
-> +	return register_die_notifier(&int3_nb);
-> +}
-> +
-> +arch_initcall(int3_init);
->  /*
->   * Cross-modifying kernel text with stop_machine().
->   * This code originally comes from immediate value.
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index bddf3b2..d6db7bd 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
->  
->  static struct notifier_block kprobe_exceptions_nb = {
->  	.notifier_call = kprobe_exceptions_notify,
-> -	.priority = 0x7fffffff /* we need to be notified first */
-> +	.priority = 0x7ffffff0 /* High priority, but not first.  */
->  };
->  
->  unsigned long __weak arch_deref_entry_point(void *entry)
+> .
 > 
 
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Thanks!
+Yijing
 
