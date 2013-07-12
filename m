@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab3GLL3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 07:29:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53339 "EHLO comal.ext.ti.com"
+	id S932920Ab3GLLar (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:30:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52595 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932757Ab3GLL3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 07:29:44 -0400
+	id S932757Ab3GLLaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 07:30:46 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] input: twl6040-vibra: Remove support for legacy (pdata) mode
-Date: Fri, 12 Jul 2013 13:29:41 +0200
-Message-ID: <1373628581-11305-1-git-send-email-peter.ujfalusi@ti.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-gpio@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH] GPIO: gpio-twl6040: Remove support for legacy (pdata) mode
+Date: Fri, 12 Jul 2013 13:30:43 +0200
+Message-ID: <1373628643-11360-1-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.2.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,82 +25,30 @@ The support for pdata/legacy boot can be removed.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/input/misc/twl6040-vibra.c | 41 ++++++++++++++------------------------
- 1 file changed, 15 insertions(+), 26 deletions(-)
+ drivers/gpio/gpio-twl6040.c | 6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index 0c2dfc8..7864b0c 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -257,7 +257,6 @@ static SIMPLE_DEV_PM_OPS(twl6040_vibra_pm_ops, twl6040_vibra_suspend, NULL);
+diff --git a/drivers/gpio/gpio-twl6040.c b/drivers/gpio/gpio-twl6040.c
+index 0be82c6..d420d30 100644
+--- a/drivers/gpio/gpio-twl6040.c
++++ b/drivers/gpio/gpio-twl6040.c
+@@ -84,15 +84,11 @@ static struct gpio_chip twl6040gpo_chip = {
  
- static int twl6040_vibra_probe(struct platform_device *pdev)
+ static int gpo_twl6040_probe(struct platform_device *pdev)
  {
--	struct twl6040_vibra_data *pdata = pdev->dev.platform_data;
+-	struct twl6040_gpo_data *pdata = pdev->dev.platform_data;
  	struct device *twl6040_core_dev = pdev->dev.parent;
- 	struct device_node *twl6040_core_node = NULL;
- 	struct vibra_info *info;
-@@ -270,8 +269,8 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
- 						 "vibra");
- #endif
+ 	struct twl6040 *twl6040 = dev_get_drvdata(twl6040_core_dev);
+ 	int ret;
  
--	if (!pdata && !twl6040_core_node) {
--		dev_err(&pdev->dev, "platform_data not available\n");
-+	if (!twl6040_core_node) {
-+		dev_err(&pdev->dev, "parent of node is missing?\n");
- 		return -EINVAL;
- 	}
+-	if (pdata)
+-		twl6040gpo_chip.base = pdata->gpio_base;
+-	else
+-		twl6040gpo_chip.base = -1;
++	twl6040gpo_chip.base = -1;
  
-@@ -284,27 +283,17 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
- 	info->dev = &pdev->dev;
- 
- 	info->twl6040 = dev_get_drvdata(pdev->dev.parent);
--	if (pdata) {
--		info->vibldrv_res = pdata->vibldrv_res;
--		info->vibrdrv_res = pdata->vibrdrv_res;
--		info->viblmotor_res = pdata->viblmotor_res;
--		info->vibrmotor_res = pdata->vibrmotor_res;
--		vddvibl_uV = pdata->vddvibl_uV;
--		vddvibr_uV = pdata->vddvibr_uV;
--	} else {
--		of_property_read_u32(twl6040_core_node, "ti,vibldrv-res",
--				     &info->vibldrv_res);
--		of_property_read_u32(twl6040_core_node, "ti,vibrdrv-res",
--				     &info->vibrdrv_res);
--		of_property_read_u32(twl6040_core_node, "ti,viblmotor-res",
--				     &info->viblmotor_res);
--		of_property_read_u32(twl6040_core_node, "ti,vibrmotor-res",
--				     &info->vibrmotor_res);
--		of_property_read_u32(twl6040_core_node, "ti,vddvibl-uV",
--				     &vddvibl_uV);
--		of_property_read_u32(twl6040_core_node, "ti,vddvibr-uV",
--				     &vddvibr_uV);
--	}
-+
-+	of_property_read_u32(twl6040_core_node, "ti,vibldrv-res",
-+			     &info->vibldrv_res);
-+	of_property_read_u32(twl6040_core_node, "ti,vibrdrv-res",
-+			     &info->vibrdrv_res);
-+	of_property_read_u32(twl6040_core_node, "ti,viblmotor-res",
-+			     &info->viblmotor_res);
-+	of_property_read_u32(twl6040_core_node, "ti,vibrmotor-res",
-+			     &info->vibrmotor_res);
-+	of_property_read_u32(twl6040_core_node, "ti,vddvibl-uV", &vddvibl_uV);
-+	of_property_read_u32(twl6040_core_node, "ti,vddvibr-uV", &vddvibr_uV);
- 
- 	if ((!info->vibldrv_res && !info->viblmotor_res) ||
- 	    (!info->vibrdrv_res && !info->vibrmotor_res)) {
-@@ -334,8 +323,8 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
- 	 * When booted with Device tree the regulators are attached to the
- 	 * parent device (twl6040 MFD core)
- 	 */
--	ret = regulator_bulk_get(pdata ? info->dev : twl6040_core_dev,
--				 ARRAY_SIZE(info->supplies), info->supplies);
-+	ret = regulator_bulk_get(twl6040_core_dev, ARRAY_SIZE(info->supplies),
-+				 info->supplies);
- 	if (ret) {
- 		dev_err(info->dev, "couldn't get regulators %d\n", ret);
- 		return ret;
+ 	if (twl6040_get_revid(twl6040) < TWL6041_REV_ES2_0)
+ 		twl6040gpo_chip.ngpio = 3; /* twl6040 have 3 GPO */
 -- 
 1.8.2.1
 
