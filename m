@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965372Ab3GLUT6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 16:19:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3088 "EHLO mx1.redhat.com"
+	id S965381Ab3GLUUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 16:20:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40912 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965283Ab3GLUT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 16:19:56 -0400
-Date: Fri, 12 Jul 2013 16:19:39 -0400
-From: Dave Jones <davej@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Guenter Roeck <linux@roeck-us.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130712201939.GB15261@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Steven Rostedt <rostedt@goodmis.org>, Theodore Ts'o <tytso@mit.edu>,
-	Guenter Roeck <linux@roeck-us.net>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	stable <stable@vger.kernel.org>
-References: <20130711214830.611455274@linuxfoundation.org>
- <20130711222935.GA11340@redhat.com>
- <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712181103.GA6689@roeck-us.net>
- <20130712193557.GB342@thunk.org>
- <1373658551.17876.117.camel@gandalf.local.home>
+	id S965283Ab3GLUUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 16:20:49 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAGXu5jL=oSkWTGEbYLxAU1PwGbgoyeiOgFV31Gd4yj1JkDECBg@mail.gmail.com>
+References: <1373659660-31123-1-git-send-email-keescook@chromium.org> <CAGXu5jL=oSkWTGEbYLxAU1PwGbgoyeiOgFV31Gd4yj1JkDECBg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373658551.17876.117.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/3] x86, boot: add mmio serial during compressed boot
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 12 Jul 2013 13:20:13 -0700
+To: Kees Cook <keescook@chromium.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Message-ID: <b37c0f48-36b1-41c8-a8b1-b313009e4cdd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 03:49:11PM -0400, Steven Rostedt wrote:
- > On Fri, 2013-07-12 at 15:35 -0400, Theodore Ts'o wrote:
- > 
- > > So the problem is that maintainers are lazy.  They don't want to go
- > > back for bug fixes that have "proven" themselves, and even if they
- > > aren't critical bug fixes, they are things which a distro maintainer
- > > or a stable kernel user might want (and sometimes stable uers are
- > > uppity enough to expect subsystem maintainers to do this back
- > > porting).  So subsystem maintainers then react by marking submits for
- > > stable even though they really should soak for a release or two before
- > > submitting them, since by marking them as submit, the commit gets
- > > pushed to stable automatically --- albeit early.
- > 
- > Actually, this is a very good point. There were one or two stable
- > patches I had pushed to linux-next that I wasn't too comfortable about.
- > If the fix goes back to older trees, I rather have them stirring in
- > linux-next and push it in the next merge window instead of pushing it to
- > Linus and have it go to stable immediately.
- > 
- > Unless its a obvious fix, I tend to take about a month from the time I
- > get a stable fix to the time I push it out. Making sure the stable fix
- > doesn't introduce new bugs.
+Can you fix & resend the patch?
 
-Like most of the other examples in this thread, one size doesn't fit all though.
+Kees Cook <keescook@chromium.org> wrote:
 
-Your example above: If that fix was for "tracing reports wrong results", no big deal,
-everyone can live with it for a month. If it was fixing "a bug in tracing can allow
-an unprivileged user to crash the kernel", a month is unacceptable, and at
-the least we should be getting an interim fix to mitigate the problem.
+>On Fri, Jul 12, 2013 at 1:07 PM, Kees Cook <keescook@chromium.org>
+>wrote:
+>
+>> Allows "console=uart[8250],mmio[32],0xADDR[,BAUDn8[,BASE_BAUD]]" to
+>> be recognized during compressed boot early console setup, and during
+>> boot console setup. Replaces defines with common serial defines. Adds
+>> suport for mmio-based serial devices to compressed-boot early
+>console,
+>> and plumbs support for defining the base baud rate for UART clock
+>> calculations (since mmio serial cards may not have the standard rate,
+>> resulting in incorrect baud rates for mmio devices).
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>> diff --git a/include/uapi/linux/serial_reg.h
+>> b/include/uapi/linux/serial_reg.h
+>> index e632260..bdeaf5a 100644
+>> --- a/include/uapi/linux/serial_reg.h
+>> +++ b/include/uapi/linux/serial_reg.h
+>> @@ -333,12 +333,13 @@
+>>
+>>  #define UART_RSA_TCR_SWITCH (1 << 0) /* Timer on */
+>>
+>> +#define SERIAL_BAUD_BASE (1843200/16)
+>>  /*
+>>   * The RSA DSV/II board has two fixed clock frequencies.  One is the
+>>   * standard rate, and the other is 8 times faster.
+>>   */
+>> -#define SERIAL_RSA_BAUD_BASE (921600)
+>> -#define SERIAL_RSA_BAUD_BASE_LO (SERIAL_RSA_BAUD_BASE / 8)
+>> +#define SERIAL_RSA_BAUD_BASE_LO SERIAL_BAUD_BASE
+>> +#define SERIAL_RSA_BAUD_BASE (SERIAL_RSA_BAUD_BASE * 8)
+>>
+>
+>Argh, just found this typo during an allyesconfig build. Above should
+>be:
+>
+>#define SERIAL_RSA_BAUD_BASE (SERIAL_BAUD_BASE * 8)
+>
+>-Kees
 
-	Dave
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
