@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757777Ab3GLTmg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 15:42:36 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37287 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757750Ab3GLTme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 15:42:34 -0400
-Date: Fri, 12 Jul 2013 15:42:29 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org
-Subject: Re: WARNING: at fs/ext4/inode.c:230 ext4_evict_inode+0x4b9/0x6d0()
-Message-ID: <20130712194229.GC342@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <20130712193528.GA15261@redhat.com>
+	id S965300Ab3GLTpA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 15:45:00 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:34341 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753043Ab3GLTo7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 15:44:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712193528.GA15261@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <51E04AB9.1000003@zytor.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+	<20130712005023.GB31005@thunk.org>
+	<20130712025745.GA24086@tuxdriver.com>
+	<20130712033430.GA3798@kroah.com>
+	<51E03AEE.5010403@zytor.com>
+	<20130712172836.GA7627@kroah.com>
+	<20130712175718.GA342@thunk.org>
+	<51E0480A.2040905@zytor.com>
+	<51E04AB9.1000003@zytor.com>
+Date: Fri, 12 Jul 2013 12:44:58 -0700
+X-Google-Sender-Auth: LhtPJDrROm7XgcwWvIev_fCBUfc
+Message-ID: <CA+55aFw0PvYBguFmacL0FC6V_hjGVcUWsrZ6HO9tuQof=yw5PA@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>,
+        ksummit-2013-discuss@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 03:35:28PM -0400, Dave Jones wrote:
-> Just hit a bunch of these..
-> 
-> WARNING: CPU: 0 PID: 995613 at fs/ext4/inode.c:230 ext4_evict_inode+0x4b9/0x6d0()
+On Fri, Jul 12, 2013 at 11:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> OK, just read up some more on git notes, and *both* the assumptions I
+> had made about git notes were fundamentally wrong.  Not sure how well
+> they would scale, though, but stuffing metadata like additional
+> Acked-by:, Tested-by: and Cc: stable into notes seems more viable after
+> reading the spec.
 
-This is fixed up by the following commit which is queued up to be sent
-to Linus, hopefully before he ships -rc1.  I'm just waiting for the
-regression tests to complete before I sent a pull request.
+I really don't want to use git notes for anything that actually gets
+distributed.
 
-Thanks for testing and reporting this warning!
+They can be useful for "local" notes (they can be very powerful for
+certain workflows), but they won't be pulled and pushed by me.
 
-	   	    	     	      	   - Ted
-
-commit 822dbba33458cd6ad0e715f3f4a57ebc99d54d1b
-Author: Jan Kara <jack@suse.cz>
-Date:   Wed Jul 10 21:31:04 2013 -0400
-
-    ext4: fix warning in ext4_evict_inode()
-    
-    The following race can lead to ext4_evict_inode() seeing i_ioend_count
-    > 0 and thus triggering a sanity check warning:
-    
-            CPU1                                    CPU2
-    ext4_end_bio()                          ext4_evict_inode()
-      ext4_finish_bio()
-        end_page_writeback();
-                                              truncate_inode_pages()
-                                                evict page
-                                            WARN_ON(i_ioend_count > 0);
-      ext4_put_io_end_defer()
-        ext4_release_io_end()
-          dec i_ioend_count
-    
-    This is possible use-after-free bug since we decrement i_ioend_count in
-    possibly released inode.
-    
-    Since i_ioend_count is used only for sanity checks one possible solution
-    would be to just remove it but for now I'd like to keep those sanity
-    checks to help debugging the new ext4 writeback code.
-    
-    This patch changes ext4_end_bio() to call ext4_put_io_end_defer() before
-    ext4_finish_bio() in the shortcut case when unwritten extent conversion
-    isn't needed.  In that case we don't need the io_end so we are safe to
-    drop it early.
-    
-    Reported-by: Guenter Roeck <linux@roeck-us.net>
-    Tested-by: Guenter Roeck <linux@roeck-us.net>
-    Signed-off-by: Jan Kara <jack@suse.cz>
-    Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+                Linus
