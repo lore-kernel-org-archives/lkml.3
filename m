@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab3GLJVz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 05:21:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52168 "EHLO mx2.suse.de"
+	id S932665Ab3GLJWM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 05:22:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52186 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757223Ab3GLJVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 05:21:53 -0400
-Date: Fri, 12 Jul 2013 11:21:48 +0200 (CEST)
+	id S932193Ab3GLJWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 05:22:11 -0400
+Date: Fri, 12 Jul 2013 11:22:09 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
         "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
         Joe Perches <joe@perches.com>, x86@kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 v4] x86: introduce int3-based instruction patching
+Subject: [PATCH 2/2 v4] x86: make jump_label use int3-based patching
 In-Reply-To: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1307121102440.29788@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1307121120250.29788@pobox.suse.cz>
 References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
@@ -24,219 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a method for run-time instruction patching on a live SMP kernel 
-based on int3 breakpoint, completely avoiding the need for stop_machine().
-
-The way this is achieved:
-
-	- add a int3 trap to the address that will be patched
-	- sync cores
-	- update all but the first byte of the patched range
-	- sync cores
-	- replace the first byte (int3) by the first byte of
-	  replacing opcode
-	- sync cores
-
-According to
-
-	http://lkml.indiana.edu/hypermail/linux/kernel/1001.1/01530.html
-
-synchronization after replacing "all but first" instructions should not
-be necessary (on Intel hardware), as the syncing after the subsequent
-patching of the first byte provides enough safety.
-But there's not only Intel HW out there, and we'd rather be on a safe
-side.
-
-If any CPU instruction execution would collide with the patching,
-it'd be trapped by the int3 breakpoint and redirected to the provided
-"handler" (which would typically mean just skipping over the patched
-region, acting as "nop" has been there, in case we are doing nop -> jump
-and jump -> nop transitions).
-
-Ftrace has been using this very technique since 08d636b ("ftrace/x86:
-Have arch x86_64 use breakpoints instead of stop machine") for ages
-already, and jump labels are another obvious potential user of this.
-
-Based on activities of Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-a few years ago.
+Make jump labels use text_poke_bp() for text patching instead of 
+text_poke_smp(), avoiding the need for stop_machine().
 
 Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
-Changes:
-v1 -> v2:
-  + fixed kerneldoc
-  + fixed checkpatch errors (reported by Borislav)
+ arch/x86/kernel/jump_label.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-v2 -> v3:
-  + fixed few typos (Joe Perches)
-  + extended changelog with pointer to Intel's statement regarding minimal 
-    necessary synchronization points to achieve correctness
-  + added even the synchronization that might not be needed according to 
-    Intel, to be on a safe side (and do what has been proven to work by 
-    ftrace implementation already) (Steven Rostedt)
-  + Fix formatting of comments (Steven Rostedt, Borislav Petkov, Joe 
-    Perches)
-v3 -> v4:
-   + fixed kerneldoc (Joe Perches, Steven Rostedr)
-   + a few trivial code cleanups (Joe Perches)
-   + gathered Acks, not RFC anymore
-
- arch/x86/include/asm/alternative.h |    1 +
- arch/x86/kernel/alternative.c      |  106 ++++++++++++++++++++++++++++++++++++
- kernel/kprobes.c                   |    2 +-
- 3 files changed, 108 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 58ed6d9..3abf8dd 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -233,6 +233,7 @@ struct text_poke_param {
- };
+diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
+index 2889b3d..460f5d9 100644
+--- a/arch/x86/kernel/jump_label.c
++++ b/arch/x86/kernel/jump_label.c
+@@ -37,7 +37,19 @@ static void __jump_label_transform(struct jump_entry *entry,
+ 	} else
+ 		memcpy(&code, ideal_nops[NOP_ATOMIC5], JUMP_LABEL_NOP_SIZE);
  
- extern void *text_poke(void *addr, const void *opcode, size_t len);
-+extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
- extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
- extern void text_poke_smp_batch(struct text_poke_param *params, int n);
- 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index c15cf9a..0ab4936 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -11,6 +11,7 @@
- #include <linux/memory.h>
- #include <linux/stop_machine.h>
- #include <linux/slab.h>
-+#include <linux/kdebug.h>
- #include <asm/alternative.h>
- #include <asm/sections.h>
- #include <asm/pgtable.h>
-@@ -596,6 +597,111 @@ void *__kprobes text_poke(void *addr, const void *opcode, size_t len)
- 	return addr;
+-	(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
++	/*
++	 * Make text_poke_bp() a default fallback poker.
++	 *
++	 * At the time the change is being done, just ignore whether we
++	 * are doing nop -> jump or jump -> nop transition, and assume
++	 * always nop being the 'currently valid' instruction
++	 *
++	 */
++	if (poker)
++		(*poker)((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
++	else
++		text_poke_bp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE,
++			     (void *)entry->code + JUMP_LABEL_NOP_SIZE);
  }
  
-+static void do_sync_core(void *info)
-+{
-+	sync_core();
-+}
-+
-+static bool bp_patching_in_progress;
-+static void *bp_int3_handler, *bp_int3_addr;
-+
-+static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
-+{
-+	struct die_args *args = data;
-+
-+	/* bp_patching_in_progress */
-+	smp_rmb();
-+
-+	if (likely(!bp_patching_in_progress))
-+		return NOTIFY_DONE;
-+
-+	/* we are not interested in non-int3 faults and ring > 0 faults */
-+	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
-+			    || args->regs->ip != (unsigned long)bp_int3_addr)
-+		return NOTIFY_DONE;
-+
-+	/* set up the specified breakpoint handler */
-+	args->regs->ip = (unsigned long) bp_int3_handler;
-+
-+	return NOTIFY_STOP;
-+}
-+/**
-+ * text_poke_bp() -- update instructions on live kernel on SMP
-+ * @addr:	address to patch
-+ * @opcode:	opcode of new instruction
-+ * @len:	length to copy
-+ * @handler:	address to jump to when the temporary breakpoint is hit
-+ *
-+ * Modify multi-byte instruction by using int3 breakpoint on SMP.
-+ * In contrary to text_poke_smp(), we completely avoid stop_machine() here,
-+ * and achieve the synchronization using int3 breakpoint.
-+ *
-+ * The way it is done:
-+ *	- add a int3 trap to the address that will be patched
-+ *	- sync cores
-+ *	- update all but the first byte of the patched range
-+ *	- sync cores
-+ *	- replace the first byte (int3) by the first byte of
-+ *	  replacing opcode
-+ *	- sync cores
-+ *
-+ * Note: must be called under text_mutex.
-+ */
-+void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
-+{
-+	unsigned char int3 = 0xcc;
-+
-+	bp_int3_handler = handler;
-+	bp_int3_addr = (u8 *)addr + sizeof(int3);
-+	bp_patching_in_progress = true;
-+	/*
-+	 * Corresponding read barrier in int3 notifier for
-+	 * making sure the in_progress flags is correctly ordered wrt.
-+	 * patching
-+	 */
-+	smp_wmb();
-+
-+	text_poke(addr, &int3, sizeof(int3));
-+
-+	on_each_cpu(do_sync_core, NULL, 1);
-+
-+	if (len - sizeof(int3) > 0) {
-+		/* patch all but the first byte */
-+		text_poke((char *)addr + sizeof(int3),
-+			  (const char *) opcode + sizeof(int3),
-+			  len - sizeof(int3));
-+		/*
-+		 * According to Intel, this core syncing is very likely
-+		 * not necessary and we'd be safe even without it. But
-+		 * better safe than sorry (plus there's not only Intel).
-+		 */
-+		on_each_cpu(do_sync_core, NULL, 1);
-+	}
-+
-+	/* patch the first byte */
-+	text_poke(addr, opcode, sizeof(int3));
-+
-+	on_each_cpu(do_sync_core, NULL, 1);
-+
-+	bp_patching_in_progress = false;
-+	smp_wmb();
-+
-+	return addr;
-+}
-+
-+/* this one needs to run before anything else handles it as a
-+ * regular exception */
-+static struct notifier_block int3_nb = {
-+	.priority = 0x7fffffff,
-+	.notifier_call = int3_notify
-+};
-+
-+static int __init int3_init(void)
-+{
-+	return register_die_notifier(&int3_nb);
-+}
-+
-+arch_initcall(int3_init);
- /*
-  * Cross-modifying kernel text with stop_machine().
-  * This code originally comes from immediate value.
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index bddf3b2..d6db7bd 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
- 
- static struct notifier_block kprobe_exceptions_nb = {
- 	.notifier_call = kprobe_exceptions_notify,
--	.priority = 0x7fffffff /* we need to be notified first */
-+	.priority = 0x7ffffff0 /* High priority, but not first.  */
- };
- 
- unsigned long __weak arch_deref_entry_point(void *entry)
+ void arch_jump_label_transform(struct jump_entry *entry,
+@@ -45,7 +57,7 @@ void arch_jump_label_transform(struct jump_entry *entry,
+ {
+ 	get_online_cpus();
+ 	mutex_lock(&text_mutex);
+-	__jump_label_transform(entry, type, text_poke_smp);
++	__jump_label_transform(entry, type, NULL);
+ 	mutex_unlock(&text_mutex);
+ 	put_online_cpus();
+ }
 -- 
 1.7.3.1
 
