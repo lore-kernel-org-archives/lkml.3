@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab3GLPEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:04:40 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:45706 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932752Ab3GLPEi (ORCPT
+	id S933091Ab3GLPGY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:06:24 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:32993 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932845Ab3GLPGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:04:38 -0400
+	Fri, 12 Jul 2013 11:06:22 -0400
+Date: Fri, 12 Jul 2013 11:06:21 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>, Geert Uytterhoeven <geert@linux-m68k.org>
+cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] USB: GADGET: don't fail when DMA isn't present
+In-Reply-To: <CAMuHMdXGfMb3FZoNPVeWy2c15wxGwfb2w+qcRYtD7m4qADh3Wg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1307121104050.1469-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Date: Fri, 12 Jul 2013 10:04:38 -0500
-Message-ID: <CAH2r5mva3f6_WbYPH7LQ0r_p9GTzBd-p4RKPGHtPJTMh0Z__eg@mail.gmail.com>
-Subject: [GIT] CIFS Fixes
-From: Steve French <smfrench@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-cifs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes for 4 cifs bugs, including a reconnect problem, a problem
-parsing responses to SMB2 open request, and setting nlink incorrectly
-to some servers which don't report it properly on the wire.  Also
-improves data integrity on reconnect with series from Pavel which adds
-durable handle support for SMB2.
+When CONFIG_HAS_DMA isn't enabled, the UDC core gets build errors:
 
-The following changes since commit 80cc38b16389849a6e06441ace4530f6b2497c3c:
+drivers/built-in.o: In function `dma_set_coherent_mask':
+include/linux/dma-mapping.h:93: undefined reference to `dma_supported'
+include/linux/dma-mapping.h:93: undefined reference to `dma_supported'
+drivers/built-in.o: In function `usb_gadget_unmap_request':
+drivers/usb/gadget/udc-core.c:91: undefined reference to `dma_unmap_sg'
+drivers/usb/gadget/udc-core.c:96: undefined reference to `dma_unmap_single'
+drivers/built-in.o: In function `usb_gadget_map_request':
+drivers/usb/gadget/udc-core.c:62: undefined reference to `dma_map_sg'
+drivers/usb/gadget/udc-core.c:71: undefined reference to `dma_map_single'
+drivers/usb/gadget/udc-core.c:74: undefined reference to `dma_mapping_error'
 
-  Merge branch 'for-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial
-(2013-07-04 11:40:58 -0700)
+Prevent this by protecting the DMA API routines with preprocessor tests.
 
-are available in the git repository at:
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>
+Acked-by: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+
+---
 
 
-  git://git.samba.org/sfrench/cifs-2.6.git for-linus
+[as1693]
 
-for you to fetch changes up to 689c3db4d57a73bee6c5ad7797fce7b54d32a87c:
+ drivers/usb/gadget/udc-core.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-  CIFS: Fix a deadlock when a file is reopened (2013-07-11 18:05:41 -0500)
+Index: usb-3.10/drivers/usb/gadget/udc-core.c
+===================================================================
+--- usb-3.10.orig/drivers/usb/gadget/udc-core.c
++++ usb-3.10/drivers/usb/gadget/udc-core.c
+@@ -50,6 +50,8 @@ static DEFINE_MUTEX(udc_lock);
+ 
+ /* ------------------------------------------------------------------------- */
+ 
++#ifdef	CONFIG_HAS_DMA
++
+ int usb_gadget_map_request(struct usb_gadget *gadget,
+ 		struct usb_request *req, int is_in)
+ {
+@@ -99,6 +101,8 @@ void usb_gadget_unmap_request(struct usb
+ }
+ EXPORT_SYMBOL_GPL(usb_gadget_unmap_request);
+ 
++#endif	/* CONFIG_HAS_DMA */
++
+ /* ------------------------------------------------------------------------- */
+ 
+ void usb_gadget_set_state(struct usb_gadget *gadget,
+@@ -194,9 +198,11 @@ int usb_add_gadget_udc_release(struct de
+ 	dev_set_name(&gadget->dev, "gadget");
+ 	gadget->dev.parent = parent;
+ 
++#ifdef	CONFIG_HAS_DMA
+ 	dma_set_coherent_mask(&gadget->dev, parent->coherent_dma_mask);
+ 	gadget->dev.dma_parms = parent->dma_parms;
+ 	gadget->dev.dma_mask = parent->dma_mask;
++#endif
+ 
+ 	if (release)
+ 		gadget->dev.release = release;
 
-----------------------------------------------------------------
-Pavel Shilovsky (10):
-      CIFS: Fix lease context buffer parsing
-      CIFS: Respect create_options in smb2_open_file
-      CIFS: Simplify SMB2_open code path
-      CIFS: Simplify SMB2 create context handling
-      CIFS: Request durable open for SMB2 opens
-      CIFS: Introduce cifs_open_parms struct
-      CIFS: Make SMB2_open use cifs_open_parms struct
-      CIFS: Reconnect durable handles for SMB2
-      CIFS: Reopen the file if reconnect durable handle failed
-      CIFS: Fix a deadlock when a file is reopened
-
-Steve French (3):
-      Limit allocation of crypto mechanisms to dialect which requires
-      [CIFS] use sensible file nlink values if unprovided
-      [CIFS] Fix minor endian error in durable handle patch series
-
- fs/cifs/cifsencrypt.c   | 195 +++++++++++++++++++-----------------------
- fs/cifs/cifsglob.h      |  17 +++-
- fs/cifs/cifsproto.h     |   1 -
- fs/cifs/connect.c       |   6 --
- fs/cifs/dir.c           |  14 ++-
- fs/cifs/file.c          |  54 ++++++++----
- fs/cifs/inode.c         |   5 ++
- fs/cifs/smb1ops.c       |  29 ++++---
- fs/cifs/smb2file.c      |  24 +++---
- fs/cifs/smb2inode.c     |  57 +++++++------
- fs/cifs/smb2ops.c       |  54 ++++++++----
- fs/cifs/smb2pdu.c       | 220 ++++++++++++++++++++++++++++++++++--------------
- fs/cifs/smb2pdu.h       |  14 ++-
- fs/cifs/smb2proto.h     |  16 ++--
- fs/cifs/smb2transport.c |  90 +++++++++++++++++++-
- 15 files changed, 515 insertions(+), 281 deletions(-)
-
--- 
-Thanks,
-
-Steve
