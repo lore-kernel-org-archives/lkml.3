@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965489Ab3GLVCV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 17:02:21 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:62770 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965359Ab3GLVCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 17:02:19 -0400
-Date: Fri, 12 Jul 2013 14:02:20 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: "Theodore Ts'o" <tytso@mit.edu>, Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130712210220.GA8872@roeck-us.net>
-References: <20130711214830.611455274@linuxfoundation.org>
- <20130711222935.GA11340@redhat.com>
- <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712195051.GB32054@1wt.eu>
- <20130712204744.GD342@thunk.org>
+	id S965479Ab3GLVDS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 17:03:18 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40359 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965435Ab3GLVDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 17:03:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
+Date: Fri, 12 Jul 2013 23:13:07 +0200
+Message-ID: <2971486.2Wa9ROjLYK@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1373662875.24916.17.camel@misato.fc.hp.com>
+References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com> <3723604.ey6eovWnzB@vostro.rjw.lan> <1373662875.24916.17.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712204744.GD342@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 04:47:44PM -0400, Theodore Ts'o wrote:
-> On Fri, Jul 12, 2013 at 09:50:51PM +0200, Willy Tarreau wrote:
-> > So probably we should incite patch contributors to add a specific
-> > tag such as "Fixes: 3.5 and later", so that non-important patches
-> > do not need the Cc:stable anymore, but users who experience an issue
-> > can easily spot them and ask for their inclusion.
+On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
+> On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
+> > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
+> > > > (2013/07/11 1:47), Toshi Kani wrote:
+> > > > > device->driver_data needs to be cleared when releasing its data,
+> > > > > mem_device, in an error path of acpi_memory_device_add().
+> > > > > 
+> > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > ---
+> > > > 
+> > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > > 
+> > > Thanks Yasuaki!
+> > 
+> > Queued up as a fix for 3.11.
 > 
-> This is a really good idea.   /me likes....
+> Thanks!
 > 
-I agree, that would be very helpful.
+> > Do we need that in -stable as well?
+> 
+> Good point.  Yes, we need that in -stable as well.
 
-Guenter
+What's the oldest mainline major release that fix is applicable to?
+
+Rafael
+
+
+> > > > >   drivers/acpi/acpi_memhotplug.c |    1 +
+> > > > >   1 file changed, 1 insertion(+)
+> > > > > 
+> > > > > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> > > > > index c711d11..999adb5 100644
+> > > > > --- a/drivers/acpi/acpi_memhotplug.c
+> > > > > +++ b/drivers/acpi/acpi_memhotplug.c
+> > > > > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
+> > > > >   	/* Get the range from the _CRS */
+> > > > >   	result = acpi_memory_get_device_resources(mem_device);
+> > > > >   	if (result) {
+> > > > > +		device->driver_data = NULL;
+> > > > >   		kfree(mem_device);
+> > > > >   		return result;
+> > > > >   	}
+> > > > > --
+> > > > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > > > > the body of a message to majordomo@vger.kernel.org
+> > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > > 
+> > > > 
+> > > > 
+> > > 
+> > > 
+> 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
