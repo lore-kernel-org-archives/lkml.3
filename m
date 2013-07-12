@@ -1,70 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab3GLXnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 19:43:04 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:32858 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab3GLXnC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 19:43:02 -0400
-Message-ID: <51E0947F.1040800@cogentembedded.com>
-Date: Sat, 13 Jul 2013 03:42:55 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757934Ab3GLXnb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 19:43:31 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40499 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753289Ab3GLXn3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 19:43:29 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
+Date: Sat, 13 Jul 2013 01:53:18 +0200
+Message-ID: <1628443.pD3ROIrBQn@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1373668116.24916.43.camel@misato.fc.hp.com>
+References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com> <1907509.WiI0tI5uDZ@vostro.rjw.lan> <1373668116.24916.43.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org
-Subject: Re: [RFC/RFT PATCH 3/5] scsi: Use dma_max_pfn(dev) helper for bounce_limit
- calculations
-References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <1373665694-7580-4-git-send-email-santosh.shilimkar@ti.com> <51E07B6E.5090900@cogentembedded.com> <20130712222506.GI24642@n2100.arm.linux.org.uk> <51E08C6B.2080802@cogentembedded.com>
-In-Reply-To: <51E08C6B.2080802@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2013 03:08 AM, Sergei Shtylyov wrote:
+On Friday, July 12, 2013 04:28:36 PM Toshi Kani wrote:
+> On Fri, 2013-07-12 at 23:40 +0200, Rafael J. Wysocki wrote:
+> > On Friday, July 12, 2013 03:12:24 PM Toshi Kani wrote:
+> > > On Fri, 2013-07-12 at 23:13 +0200, Rafael J. Wysocki wrote:
+> > > > On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
+> > > > > On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > > > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
+> > > > > > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
+> > > > > > > > (2013/07/11 1:47), Toshi Kani wrote:
+> > > > > > > > > device->driver_data needs to be cleared when releasing its data,
+> > > > > > > > > mem_device, in an error path of acpi_memory_device_add().
+> > > > > > > > > 
+> > > > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > > > > > ---
+> > > > > > > > 
+> > > > > > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > > > > > > 
+> > > > > > > Thanks Yasuaki!
+> > > > > > 
+> > > > > > Queued up as a fix for 3.11.
+> > > > > 
+> > > > > Thanks!
+> > > > > 
+> > > > > > Do we need that in -stable as well?
+> > > > > 
+> > > > > Good point.  Yes, we need that in -stable as well.
+> > > > 
+> > > > What's the oldest mainline major release that fix is applicable to?
+> > > 
+> > > The fix is applicable all ways up to 2.6.32.
+> > 
+> > For -stable I'll need to say some more about what practical consequences of
+> > the bug are.  Is it difficult to trigger?
+> 
+> The function evaluates _CRS of memory device objects, and fails when it
+> gets an unexpected resource or cannot allocate a memory.
 
->>>> DMA bounce limit is the maximum direct DMA'able memory beyond which
->>>> bounce buffers has to be used to perform dma operations. SCSI driver
->>>> relies on dma_mask but its calculation is based on max_*pfn which
->>>> don't have uniform meaning across architectures. So make use of
->>>> dma_max_pfn() which is expected to return the DMAable maximum pfn
->>>> value across architectures.
+OK, so this is essentially about surviving unexpected external input, which
+I suppose is serious enough.
 
->>>> Cc: Russell King <linux@arm.linux.org.uk>
->>>> Cc: linux-scsi@vger.kernel.org
+> A kernel crash
+> or data corruption may occur when the kernel accessed a stale pointer.
+> That said, I am not sure how critical this issue is for old kernels
+> since I do not think there are many platforms that support memory
+> hotplug today.
 
->>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>> ---
->>>>    drivers/scsi/scsi_lib.c |    2 +-
->>>>    1 file changed, 1 insertion(+), 1 deletion(-)
+Which doesn't matter.  People may want to run 3.10.y on future hardware too.
 
->>>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
->>>> index 86d5220..e8275fa 100644
->>>> --- a/drivers/scsi/scsi_lib.c
->>>> +++ b/drivers/scsi/scsi_lib.c
->>>> @@ -1668,7 +1668,7 @@ u64 scsi_calculate_bounce_limit(struct
->>>> Scsi_Host *shost)
->>>>
->>>>        host_dev = scsi_get_device(shost);
->>>>        if (host_dev && host_dev->dma_mask)
->>>> -        bounce_limit = *host_dev->dma_mask;
->>>> +        bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
+> After reading the recent -stable discussion on LKML, now
+> I am not sure if this fix should be applied for -stable.
 
->>>     You definitely forgot -1 here.
+Well, I don't necessarily agree with some things being said there.  I guess
+I'll need to say something in that thread. :-)
 
->> Please explain your point.
+> I instrumented the kernel to generate an error for testing this change.
 
->     Previously, 'bounce_limit' would look like 0xffffffff (unless I'm
-> mistaken), now it would look like 0xfffff000 which is hardly what we're
-> looking for, no?
+OK
 
-    Although, -1 won't give us the correct result in this case, it's 
-more like + PAGE_SIZE - 1.
+Thanks,
+Rafael
 
-WBR, Sergei
 
+> > > > > > > > >   drivers/acpi/acpi_memhotplug.c |    1 +
+> > > > > > > > >   1 file changed, 1 insertion(+)
+> > > > > > > > > 
+> > > > > > > > > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> > > > > > > > > index c711d11..999adb5 100644
+> > > > > > > > > --- a/drivers/acpi/acpi_memhotplug.c
+> > > > > > > > > +++ b/drivers/acpi/acpi_memhotplug.c
+> > > > > > > > > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
+> > > > > > > > >   	/* Get the range from the _CRS */
+> > > > > > > > >   	result = acpi_memory_get_device_resources(mem_device);
+> > > > > > > > >   	if (result) {
+> > > > > > > > > +		device->driver_data = NULL;
+> > > > > > > > >   		kfree(mem_device);
+> > > > > > > > >   		return result;
+> > > > > > > > >   	}
+> > > > > > > > > --
+> > > > > > > > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > > > > > > > > the body of a message to majordomo@vger.kernel.org
+> > > > > > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > > > > > > 
+> > > > > > > > 
+> > > > > > > > 
+> > > > > > > 
+> > > > > > > 
+> > > > > 
+> > > > > 
+> > > 
+> > > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
