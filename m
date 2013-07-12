@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757727Ab3GLKyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 06:54:22 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:39326 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757301Ab3GLKyV (ORCPT
+	id S932696Ab3GLK52 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 06:57:28 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:55858 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757479Ab3GLK50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 06:54:21 -0400
+	Fri, 12 Jul 2013 06:57:26 -0400
+Date: Fri, 12 Jul 2013 11:57:21 +0100
+From: Robert Richter <rric@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Marek <mmarek@suse.cz>, Jan Beulich <JBeulich@suse.com>,
+        dt.tangr@gmail.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        James Hogan <james.hogan@imgtec.com>,
+        Christian Kujau <lists@nerdbynature.de>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>,
+        zzs0213@gmail.com,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] kbuild changes for v3.11-rc1
+Message-ID: <20130712105721.GF8731@rric.localhost>
+References: <20130710133742.GA29368@emu.suse.cz>
+ <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
+ <20130711135445.GA21500@sepie.suse.cz>
+ <CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130705195512.GJ27646@sirena.org.uk>
-References: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
-	<20130705195512.GJ27646@sirena.org.uk>
-Date: Fri, 12 Jul 2013 13:54:20 +0300
-Message-ID: <CAHp75VeasHGariq=v005NSUTe_+e471NYbEoSzPJXcFNgsfKNQ@mail.gmail.com>
-Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Bin Gao <bin.gao@linux.intel.com>, Wolfram Sang <wsa@the-dreams.de>,
-        linux-i2c@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 5, 2013 at 10:55 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Jun 06, 2013 at 11:33:46AM -0700, Bin Gao wrote:
->
->> A good example is that an ISP(Imaging Signal Processor) driver needs
->> register i2c camera sensor devices via v4l2, so it has to unregister
->> all i2c clients that were previously registered by calling
->> i2c_register_board_info(), and then re-register. For this case we
->> can use this helper to get i2c_client by passing the client name.
->
-> Please look at the work that IIRC Laurent Pichart (CCed) was doing on
-> developing generic DT bindings for v4l in embedded systems,
+On 11.07.13 10:16:18, Linus Torvalds wrote:
+> On Thu, Jul 11, 2013 at 6:54 AM, Michal Marek <mmarek@suse.cz> wrote:
+> >
+> > Yeah. It also reveals another bug that we rewrite the kernel.release
+> > file each time.
 
-I couldn't find anything related to OF except v4l2-of.c in the v4l2-core.
-Is that what you mentioned?
+The odd thing I have in a specific configuration is that depmod is
+missing the kernelrelease when I only build install rules, though I
+had built everything before and kernelrelease should be there:
 
-> it sounds
-> like you're working on similar hardware here.  The general ideas should
-> apply to any enumeration mechanism, not just DT.
+ $ make <makeflags>
+ $ make <makeflags> modules_install zinstall
+ ...
+   DEPMOD  
+ Usage: .../scripts/depmod.sh /sbin/depmod <kernelrelease>
 
-Briefly looking into ACPI tables we have and mechanisms that we can
-use in ACPI case, I doubt we may apply all the ideas, probably some of
-them, though I didn't get yet where to read about in details. What I
-could say now is that the patch provided by Bin Gao is definitely no
-go.
+Note that makeflags include the -j option, INSTALL_MOD_PATH and
+INSTALL_PATH variables set, so no root perms required in this case.
 
---
-With Best Regards,
-Andy Shevchenko
+I agree, the fix to add a dependency to the kernelrelease file is
+wrong here since it rewrites the object tree, which should be readonly
+for install rules.
+
+I could reproduce the error above in my setup and will look at it
+again, hopefully fixing it more carefully.
+
+Appologize the trouble this made.
+
+Thanks,
+
+-Robert
