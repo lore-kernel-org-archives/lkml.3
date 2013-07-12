@@ -1,183 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab3GLJDZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 05:03:25 -0400
-Received: from shell.v3.sk ([195.168.3.45]:50584 "EHLO zimbra.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757361Ab3GLJDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 05:03:22 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
+	id S932580Ab3GLJDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 05:03:40 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:49694 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932512Ab3GLJDg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 05:03:36 -0400
+From: Srinivas KANDAGATLA <srinivas.kandagatla@st.com>
 To: linux-media@vger.kernel.org
-Cc: Lubomir Rintel <lkundrak@v3.sk>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [media] usbtv: Add S-Video input support
-Date: Fri, 12 Jul 2013 11:03:03 +0200
-Message-Id: <1373619783-31456-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
+Cc: alipowski@interia.pl, Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel@vger.kernel.org, srinivas.kandagatla@gmail.com,
+        srinivas.kandagatla@st.com
+Subject: [PATCH RFC] media: lirc: Allow lirc dev to talk to rc device
+Date: Fri, 12 Jul 2013 09:55:28 +0100
+Message-Id: <1373619328-14376-1-git-send-email-srinivas.kandagatla@st.com>
+X-Mailer: git-send-email 1.7.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alongside already existing Composite input.
+From: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-media@vger.kernel.org
+The use case is simple, if any rc device has allowed protocols =
+RC_TYPE_LIRC and map_name = RC_MAP_LIRC set, the driver open will be never
+called. The reason for this is, all of the key maps except lirc have some
+KEYS in there map, so during rc_register_device process these keys are
+matched against the input drivers and open is performed, so for the case
+of RC_MAP_EMPTY, a tty/vt/keyboard is matched and the driver open is
+performed.
+
+In case of lirc, there is no match and result is that there is no open
+performed, however the lirc-dev will go ahead and create a /dev/lirc0
+node. Now when lircd/mode2 opens this device, no data is available
+because the driver was never opened.
+
+lirc_dev seems to have no link with actual rc device w.r.t open/close.
+This patch adds the missing link rc_dev pointer to lirc_driver structure
+for cases like this, so that it can do the open/close of the real driver
+in accordance to lircd/mode2 open/close.
+
+Without this patch its impossible to open a rc device which has
+RC_TYPE_LIRC ad RC_MAP_LIRC set.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 ---
- drivers/media/usb/usbtv/usbtv.c |   99 ++++++++++++++++++++++++++++++++-------
- 1 files changed, 82 insertions(+), 17 deletions(-)
+ drivers/media/rc/ir-lirc-codec.c |    1 +
+ drivers/media/rc/lirc_dev.c      |   14 ++++++++++++++
+ include/media/lirc_dev.h         |    1 +
+ 3 files changed, 16 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/media/usb/usbtv/usbtv.c b/drivers/media/usb/usbtv/usbtv.c
-index 9165017..9b250a7 100644
---- a/drivers/media/usb/usbtv/usbtv.c
-+++ b/drivers/media/usb/usbtv/usbtv.c
-@@ -91,17 +91,78 @@ struct usbtv {
- 	u32 frame_id;
- 	int chunks_done;
+diff --git a/drivers/media/rc/ir-lirc-codec.c b/drivers/media/rc/ir-lirc-codec.c
+index e456126..d5ad27f 100644
+--- a/drivers/media/rc/ir-lirc-codec.c
++++ b/drivers/media/rc/ir-lirc-codec.c
+@@ -375,6 +375,7 @@ static int ir_lirc_register(struct rc_dev *dev)
+ 	drv->code_length = sizeof(struct ir_raw_event) * 8;
+ 	drv->fops = &lirc_fops;
+ 	drv->dev = &dev->dev;
++	drv->rc_dev = dev;
+ 	drv->owner = THIS_MODULE;
  
-+	enum {
-+		USBTV_COMPOSITE_INPUT,
-+		USBTV_SVIDEO_INPUT,
-+	} input;
- 	int iso_size;
- 	unsigned int sequence;
- 	struct urb *isoc_urbs[USBTV_ISOC_TRANSFERS];
- };
+ 	drv->minor = lirc_register_driver(drv);
+diff --git a/drivers/media/rc/lirc_dev.c b/drivers/media/rc/lirc_dev.c
+index 8dc057b..485bf7d 100644
+--- a/drivers/media/rc/lirc_dev.c
++++ b/drivers/media/rc/lirc_dev.c
+@@ -35,6 +35,7 @@
+ #include <linux/device.h>
+ #include <linux/cdev.h>
  
--static int usbtv_setup_capture(struct usbtv *usbtv)
-+static int usbtv_set_regs(struct usbtv *usbtv, const u16 regs[][2], int size)
++#include <media/rc-core.h>
+ #include <media/lirc.h>
+ #include <media/lirc_dev.h>
+ 
+@@ -437,6 +438,7 @@ EXPORT_SYMBOL(lirc_unregister_driver);
+ int lirc_dev_fop_open(struct inode *inode, struct file *file)
  {
- 	int ret;
- 	int pipe = usb_rcvctrlpipe(usbtv->udev, 0);
- 	int i;
--	static const u16 protoregs[][2] = {
-+
-+	for (i = 0; i < size; i++) {
-+		u16 index = regs[i][0];
-+		u16 value = regs[i][1];
-+
-+		ret = usb_control_msg(usbtv->udev, pipe, USBTV_REQUEST_REG,
-+			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-+			value, index, NULL, 0, 0);
-+		if (ret < 0)
-+			return ret;
+ 	struct irctl *ir;
++	struct rc_dev *rc_dev;
+ 	struct cdev *cdev;
+ 	int retval = 0;
+ 
+@@ -467,6 +469,13 @@ int lirc_dev_fop_open(struct inode *inode, struct file *file)
+ 		goto error;
+ 	}
+ 
++	rc_dev = ir->d.rc_dev;
++	if (rc_dev && rc_dev->open) {
++		retval = rc_dev->open(rc_dev);
++		if (retval)
++			goto error;
 +	}
 +
-+	return 0;
-+}
-+
-+static int usbtv_select_input(struct usbtv *usbtv, int input)
-+{
-+	int ret;
-+
-+	static const u16 composite[][2] = {
-+		{ USBTV_BASE + 0x0105, 0x0060 },
-+		{ USBTV_BASE + 0x011f, 0x00f2 },
-+		{ USBTV_BASE + 0x0127, 0x0060 },
-+		{ USBTV_BASE + 0x00ae, 0x0010 },
-+		{ USBTV_BASE + 0x0284, 0x00aa },
-+		{ USBTV_BASE + 0x0239, 0x0060 },
-+	};
-+
-+	static const u16 svideo[][2] = {
-+		{ USBTV_BASE + 0x0105, 0x0010 },
-+		{ USBTV_BASE + 0x011f, 0x00ff },
-+		{ USBTV_BASE + 0x0127, 0x0060 },
-+		{ USBTV_BASE + 0x00ae, 0x0030 },
-+		{ USBTV_BASE + 0x0284, 0x0088 },
-+		{ USBTV_BASE + 0x0239, 0x0060 },
-+	};
-+
-+	switch (input) {
-+	case USBTV_COMPOSITE_INPUT:
-+		ret = usbtv_set_regs(usbtv, composite, ARRAY_SIZE(composite));
-+		break;
-+	case USBTV_SVIDEO_INPUT:
-+		ret = usbtv_set_regs(usbtv, svideo, ARRAY_SIZE(svideo));
-+		break;
-+	default:
-+		ret = -EINVAL;
-+	}
-+
-+	if (!ret)
-+		usbtv->input = input;
-+
-+	return ret;
-+}
-+
-+static int usbtv_setup_capture(struct usbtv *usbtv)
-+{
-+	int ret;
-+	static const u16 setup[][2] = {
- 		/* These seem to enable the device. */
- 		{ USBTV_BASE + 0x0008, 0x0001 },
- 		{ USBTV_BASE + 0x01d0, 0x00ff },
-@@ -189,16 +250,13 @@ static int usbtv_setup_capture(struct usbtv *usbtv)
- 		{ USBTV_BASE + 0x024f, 0x0002 },
- 	};
- 
--	for (i = 0; i < ARRAY_SIZE(protoregs); i++) {
--		u16 index = protoregs[i][0];
--		u16 value = protoregs[i][1];
-+	ret = usbtv_set_regs(usbtv, setup, ARRAY_SIZE(setup));
-+	if (ret)
-+		return ret;
- 
--		ret = usb_control_msg(usbtv->udev, pipe, USBTV_REQUEST_REG,
--			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
--			value, index, NULL, 0, 0);
--		if (ret < 0)
--			return ret;
--	}
-+	ret = usbtv_select_input(usbtv, usbtv->input);
-+	if (ret)
-+		return ret;
- 
- 	return 0;
- }
-@@ -443,10 +501,17 @@ static int usbtv_querycap(struct file *file, void *priv,
- static int usbtv_enum_input(struct file *file, void *priv,
- 					struct v4l2_input *i)
+ 	cdev = ir->cdev;
+ 	if (try_module_get(cdev->owner)) {
+ 		ir->open++;
+@@ -499,6 +508,7 @@ int lirc_dev_fop_close(struct inode *inode, struct file *file)
  {
--	if (i->index > 0)
-+	switch (i->index) {
-+	case USBTV_COMPOSITE_INPUT:
-+		strlcpy(i->name, "Composite", sizeof(i->name));
-+		break;
-+	case USBTV_SVIDEO_INPUT:
-+		strlcpy(i->name, "S-Video", sizeof(i->name));
-+		break;
-+	default:
- 		return -EINVAL;
-+	}
+ 	struct irctl *ir = irctls[iminor(inode)];
+ 	struct cdev *cdev;
++	struct rc_dev *rc_dev;
  
--	strlcpy(i->name, "Composite", sizeof(i->name));
- 	i->type = V4L2_INPUT_TYPE_CAMERA;
- 	i->std = V4L2_STD_525_60;
- 	return 0;
-@@ -486,15 +551,15 @@ static int usbtv_g_std(struct file *file, void *priv, v4l2_std_id *norm)
+ 	if (!ir) {
+ 		printk(KERN_ERR "%s: called with invalid irctl\n", __func__);
+@@ -511,6 +521,10 @@ int lirc_dev_fop_close(struct inode *inode, struct file *file)
  
- static int usbtv_g_input(struct file *file, void *priv, unsigned int *i)
- {
--	*i = 0;
-+	struct usbtv *usbtv = video_drvdata(file);
-+	*i = usbtv->input;
- 	return 0;
- }
+ 	WARN_ON(mutex_lock_killable(&lirc_dev_lock));
  
- static int usbtv_s_input(struct file *file, void *priv, unsigned int i)
- {
--	if (i > 0)
--		return -EINVAL;
--	return 0;
-+	struct usbtv *usbtv = video_drvdata(file);
-+	return usbtv_select_input(usbtv, i);
- }
- 
- static int usbtv_s_std(struct file *file, void *priv, v4l2_std_id norm)
++	rc_dev = ir->d.rc_dev;
++	if (rc_dev && rc_dev->close)
++		rc_dev->close(rc_dev);
++
+ 	ir->open--;
+ 	if (ir->attached) {
+ 		ir->d.set_use_dec(ir->d.data);
+diff --git a/include/media/lirc_dev.h b/include/media/lirc_dev.h
+index 168dd0b..96dccb6 100644
+--- a/include/media/lirc_dev.h
++++ b/include/media/lirc_dev.h
+@@ -139,6 +139,7 @@ struct lirc_driver {
+ 	struct lirc_buffer *rbuf;
+ 	int (*set_use_inc) (void *data);
+ 	void (*set_use_dec) (void *data);
++	struct rc_dev *rc_dev;
+ 	const struct file_operations *fops;
+ 	struct device *dev;
+ 	struct module *owner;
 -- 
-1.7.1
+1.7.6.5
 
