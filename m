@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab3GLLtx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 07:49:53 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:49817 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932834Ab3GLLtv (ORCPT
+	id S932965Ab3GLLw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:52:56 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42216 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932805Ab3GLLwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 07:49:51 -0400
-Date: Fri, 12 Jul 2013 12:49:26 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Genoud <richard.genoud@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Bo Shen <voice.shen@atmel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree-discuss@lists.ozlabs.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Message-ID: <20130712114926.GE24508@sirena.org.uk>
-References: <1373559359-31607-1-git-send-email-richard.genoud@gmail.com>
- <1373559359-31607-3-git-send-email-richard.genoud@gmail.com>
+	Fri, 12 Jul 2013 07:52:55 -0400
+Date: Fri, 12 Jul 2013 13:52:53 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>, Greg KH <greg@kroah.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Joe Lawrence <joe.lawrence@stratus.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Dave, Tushar N" <tushar.n.dave@intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        linux-pci@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        mjg59@srcf.ucam.org
+Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
+Message-ID: <20130712115253.GA4585@amd.pavel.ucw.cz>
+References: <20130709012611.GA22371@amd.pavel.ucw.cz>
+ <20130709041321.GA30555@kroah.com>
+ <20130709094906.GA3870@amd.pavel.ucw.cz>
+ <20130709101039.GA4479@amd.pavel.ucw.cz>
+ <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
+ <20130710132950.GA3684@amd.pavel.ucw.cz>
+ <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
+ <9BBC4E0CF881AA4299206E2E1412B6264F90E999@ORSMSX102.amr.corp.intel.com>
+ <20130710225715.GA23171@google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Fr7jhMP26BSURKlp"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373559359-31607-3-git-send-email-richard.genoud@gmail.com>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 193.120.41.114
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5 2/7] sound: sam9x5_wm8731: machine driver for
- at91sam9x5 wm8731 boards
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130710225715.GA23171@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
---Fr7jhMP26BSURKlp
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > > Pavel's ThinkPad X60 has two NICs: Intel 82573L and Intel PRO/Wireless
+> > > 3945ABG.  I'm pretty sure the problem he's reporting is with the 82573L.  Ping
+> > > times are bad (~100msec) when ASPM is enabled, as reported by lspci.
+> > > 
+> > > On Pavel's system, the FADT says we shouldn't enable OSPM control of ASPM
+> > > (ACPI_FADT_NO_ASPM is set), so we set "aspm_disabled = 1".  One effect is that
+> > > we don't blacklist the pre-1.1 82573L device, which I think results in it being left
+> > > with the BIOS configuration, which apparently has ASPM enabled.  (Pavel, could
+> > > you confirm the BIOS config, e.g., with "pci=earlydump"?)
+> > >
+> > > e1000e claims to disable ASPM, but because aspm_disabled is set, the driver's
+> > > call to pci_disable_link_state_locked() actually does nothing [1].
+> > 
+> > Yes, this is the problem we run into.  It would help if the call to pci_disable_link_state_locked() returned an error if ASPM is not disabled as requested so that drivers can then do the brute force disabling of it themselves.
+> 
+> I considered returning an error, but resisted because I think drivers
+> will just handle the error by doing the brute-force disable themselves,
+> and then we might as well drop the pci_disable_link_state() interface
+> completely.
 
-On Thu, Jul 11, 2013 at 06:15:54PM +0200, Richard Genoud wrote:
-> From: Nicolas Ferre <nicolas.ferre@atmel.com>
->=20
-> Description of the Asoc machine driver for an at91sam9x5 based board
+What is that? Yes, if function does not perform what it was asked to
+do, it should return an error. Anything else is antisocial.
 
-ASoC.
+If drivers will attempt to do something _more_ antisocial (like doing
+PCI bit banging) we can surely catch it during review.
 
-> +sam9x5 pins:
-> + * LOUT
-> + * ROUT
-> + * LHPOUT
-> + * RHPOUT
-> + * LLINEIN
-> + * RLINEIN
-> + * MICIN
+[Actually, the functions seem to have "force" parameter. Should we
+just let e1000e/iwlwifi set the force? They _know_ hardware will not
+work properly with the ASPM.] 
 
-These aren't pins on the CPU, they're pins on the CODEC, and you should
-be adding this to the binding document for the CODEC and referring to
-that rather than having them in each individual binding document.  This
-also helps if any new variants are added (not that this is likely for
-the WM8731).
+> I proposed a patch [3] a while ago that made pci_disable_link_state()
+> turn off ASPM unconditionally.  That would have the same effect as
+> returning failure and having drivers disable ASPM themselves.  But
+> Rafael and Matthew thought it was too risky [4] (and I think they're
+> probably right because it does not match the Windows behavior).
 
-> +static struct sam9x5_drvdata sam9x5_priv;
+Well, I believe "patch might be risky" is trumped by "this ethernet
+card is not usable". 
 
-Why is this a global static?
+> So by extension, I guess it would also be risky to return an error and
+> have the driver disable ASPM.
 
-> +	ret =3D snd_soc_register_card(&snd_soc_sam9x5);
-> +	if (ret) {
-> +		dev_err(&pdev->dev,
-> +			"ASoC: Platform device allocation failed\n");
-> +		goto out_put_audio;
-> +	}
+It does not seem like clean conclusion to me.
 
-> +	platform_set_drvdata(pdev, &snd_soc_sam9x5);
+Doing force-disabling on selected hardware that needs it (x60+e1000e)
+is certainly less risky than changing behaviour for all the 1000
+notebooks out there.
 
-It should be being dynamically allocated and retrieved as driver data
-when needed.
+So yes, you should be returning error.
 
---Fr7jhMP26BSURKlp
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+At the very least, e1000e and iwlwifi could warn the user loudly and
+maybe even disable the interface.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR3+1DAAoJELSic+t+oim95AsP/3bXnAukXiiPnuv0mi3StyaL
-W8nMl6B317eWWb981owyWrrFJfRGa62wI+S/6Tj00A3Dc8EbZoCGBV1yCwvCj7aD
-hJQJ8JTgVojDPWPAOa/OTtwnatkfguLh/n4jCUAztMDGT4aF3VEJ+Go5X216ECgx
-UMbaXx7VSbK639oVjwI9FrSN/vE/59pB/s/jJ3VpmKVqvYfcnZRo6BH1K7YaF4zK
-n4Vh8H+QQwMdtEA1PwbUR+MMZN7UwxorfPrhiI8DdaGr8HgAUPVBxEzZb7NSuH2G
-kbN/l2Iat+TOTQ3FYb+tPdWXQWYP2R+uRbL8M6YesUlNL8AMfdfSJoiU994Qq2F+
-BHcDKVDpvoiZQEp1nbjJgtx9Vfrf5kTq68oagsfxMYF4TjipB+PxjP+0stcGSfic
-T8ouZ0ABEsggHaZyRcNYbGKQOHpYiYYj66BqRCI6pk8L3LsSw/zKQrV524zFZT2C
-WFe+bzM6pXe+mHFUIVwSCB4FtlLCSPRheuYbR728av65LZVySRM16Zh9Z+qqXkMa
-6KUZ1sMB9FOsaTyM+L1g4LfulfrUVk6TtlO9Lhf8m6NohzuWuyhIPFi4sFgUWrFP
-VsljSXyc2LJsmU9mBBMejSpVjwm+nfoJ3cKMYY773qWLeYVl5nUGZDD/2jKArso9
-msrtfWYlGCLBRhJvzQaM
-=fz1S
------END PGP SIGNATURE-----
-
---Fr7jhMP26BSURKlp--
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
