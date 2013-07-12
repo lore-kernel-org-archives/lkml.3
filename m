@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965153Ab3GLRVi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:21:38 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:63652 "EHLO
+	id S965164Ab3GLRW6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:22:58 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:63689 "EHLO
 	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965094Ab3GLRVg convert rfc822-to-8bit (ORCPT
+	with ESMTP id S965073Ab3GLRW5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:21:36 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-07-51e03b1ff214
+	Fri, 12 Jul 2013 13:22:57 -0400
+X-AuditID: cbfec37c-b7f166d000004b4e-97-51e03b704956
 From: Shuah Khan <shuah.kh@samsung.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -16,12 +16,12 @@ Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "stable@vger.kernel.org" <stable@vger.kernel.org>,
         Shuah Khan <shuah.kh@samsung.com>,
         "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/11] 3.4.53-stable review
-Thread-topic: [ 00/11] 3.4.53-stable review
-Thread-index: AQHOfo0XkWE4RlL6dkOGZ5BM4vYV7w==
-Date: Fri, 12 Jul 2013 17:21:33 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E61739C95@sisaex02sj>
-References: <20130711220545.542911892@linuxfoundation.org>
+Subject: Re: [ 0/8] 3.0.86-stable review
+Thread-topic: [ 0/8] 3.0.86-stable review
+Thread-index: AQHOfpCGm5UkSBD0Q02pcRoNc6LOGw==
+Date: Fri, 12 Jul 2013 17:22:54 +0000
+Message-id: <B8EFE96D1287C24090BAD9D858E15E61739CBB@sisaex02sj>
+References: <20130711221931.216612791@linuxfoundation.org>
 Accept-Language: en-US
 Content-language: en-US
 X-MS-Has-Attach: 
@@ -30,39 +30,40 @@ X-Originating-IP: [105.144.21.63]
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 8BIT
 MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e+wn6689YNAg+nH2C3mrF/DZtG8eD2b
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjkeLIzCtJLcpLzFFi42I5/e+wr26B9YNAg+nf+C3mrF/DZtG8eD2b
 	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4MrY8bSPuWCKQMWGvfINjMt4uxg5OSQETCRWPljMAmGLSVy4t56ti5GLQ0hgGaPEir+d
-	LBBOL5PE6tvNzBDOfEaJ612fWUFa2ATUJT6/3sEOYosIGEv0n50FZjMLHGOS6OgsA7GFBbQk
-	fv28wwRRoy3R+ngFkM0BZOtJnNuoARJmEVCVOLb0KNgVvAL2Esu3H2YGsYUErCQW/usAG8kI
-	dN33U2uYIMaLSzS33oS6WkBiyZ7zzBC2qMTLx/9YQcZLCChKbF9tBVGuJbF+53GoVm2JJ+8u
-	sEKsEpT4MfkeywRGsVlIps5C0jILScssJC0LGFlWMYqVFicXFCelp1YY6RUn5haX5qXrJefn
-	bmKExF31Dsa7X20OMQpwMCrx8DqIPggUYk0sK67MPcQowcGsJML73xAoxJuSWFmVWpQfX1Sa
-	k1p8iJGJg1OqgTHt/+Pu0zkPdOs2XXfsZOJ90rVqoiLrLKfIR782W3u9sN9v/uTB7Mrd9geO
-	L/Hp0C6cqlMy0bqNt6BxqfK+HfPO50xdZMvnGcH8M2xFdmZeinXPI+ODLyJqLEsigpLE76S+
-	uJojNXnN7N2/ciyXvFer/zK1bdqd674CDcJpD/aHrPvmaCxp7KvEUpyRaKjFXFScCAC2xnmF
+	0rdL4MqYd/wWa8EKgYrfxycxNzBu5+1i5OSQEDCRePphDhuELSZx4d56IJuLQ0hgGaPEzG97
+	GCGcXiaJDStuskA48xklPh54wgLSwiagLvH59Q52EFtEwFii/+wsMJtZ4BiTREdnGYgtLKAh
+	0XX9GmsXIwdQjabE/dYMiHI9iestf1lAwiwCqhKXb6iBhHkF7CWWz30LNkVIwEpiz6uPYMcx
+	Ah33/dQaJojp4hLNrTdZII4WkFiy5zwzhC0q8fLxP7BNEgKKEttXW0GUa0ms33kcqlVb4sm7
+	C6wQqwQlfky+xzKBUWwWkqmzkLTMQtIyC0nLAkaWVYxipcXJBcVJ6akVxnrFibnFpXnpesn5
+	uZsYIXFXs4Px3lebQ4wCHIxKPLwvhB4ECrEmlhVX5h5ilOBgVhLh/W8IFOJNSaysSi3Kjy8q
+	zUktPsTIxMEp1cDoY7VCmstc++u25Jzdvlca7tXZXvOtykoxdd7zpuCFVIbjtrb0ZIcJC130
+	dvVWzA6fNcWjdW5LcW7BxUSuqb9zGC4XVkmbx95LzeELej6tUU15tcq+rl6zAovK1OoPxr/5
+	j28uUL5/PK0t7U7y58tv6l94mW49NXX3OYsZnzOmM0uLJs98vlqJpTgj0VCLuag4EQAICIyt
 	mQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2013 05:19 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.53 release.
-> There are 11 patches in this series, all will be posted as a response
+On 07/11/2013 05:44 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.0.86 release.
+> There are 8 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Sat Jul 13 22:04:03 UTC 2013.
+> Responses should be made by Sat Jul 13 22:18:05 UTC 2013.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.53-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.86-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
 >
 > greg k-h
 >
+> -------------
 
 Patches applied cleanly to 3.0.85, 3.4.52, 3.9.9, and 3.10
 
