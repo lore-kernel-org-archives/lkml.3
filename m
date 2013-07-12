@@ -1,148 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964865Ab3GLPgE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:36:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45648 "EHLO mga09.intel.com"
+	id S964923Ab3GLPhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:37:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1333 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932979Ab3GLPgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:36:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,653,1367996400"; 
-   d="scan'208";a="364336011"
-Message-ID: <51E0225F.7090509@linux.intel.com>
-Date: Fri, 12 Jul 2013 08:35:59 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S964785Ab3GLPhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 11:37:13 -0400
+Date: Fri, 12 Jul 2013 17:32:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: mempolicy: turn vma_set_policy() into
+	vma_dup_policy()
+Message-ID: <20130712153205.GA18825@redhat.com>
+References: <20130710170205.GA26425@redhat.com> <alpine.DEB.2.02.1307111509000.2458@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-CC: "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        rafael.j.wysocki@intel.com
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <51DC414F.5050900@linux.intel.com> <20130710111627.GC15989@e103687> <51DD5BFC.8000102@linux.intel.com> <20130712124612.GE20960@e103034-lin>
-In-Reply-To: <20130712124612.GE20960@e103034-lin>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1307111509000.2458@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/12/2013 5:46 AM, Morten Rasmussen wrote:
-
-
-> I have had a quick look at intel_pstate.c and to me it seems that it can
-> be turned into a power driver that uses the proposed interface with a
-> few modifications. intel_pstate.c already has max and min P-state as
-> well as a current P-state calculated using the aperf/mperf ratio. I
-
-it calculates average frequency... not current p state.
-first of all, it's completely and strictly backwards looking
-(and in the light of this being used in a load balancing decision,
-the past is NOT a predictor for the future since you're about to change the maximum)
-and second, in the light of having idle time... you do not get what you
-think you get ;-)
-
-
+On 07/11, David Rientjes wrote:
 >
-> In the first case, the power scheduler would not know about turbo mode
-> and never request it. Turbo mode could still be used by the power driver
-> as a hidden bonus when power scheduler requests max power.
-
-but what do you do when you ask for low power? On Intel.. for various cases,
-you also pick a high P state!
-
-(the assumption "low P state == low power" and "high P state == high power"
-is just not valid)
-
-
+> On Wed, 10 Jul 2013, Oleg Nesterov wrote:
 >
-> In the second approach, the power scheduler may request power (P-state)
-> that can only be provided by a turbo P-state. Since we cannot be
-> guaranteed to get that, the power driver would return the power
-> (P-state) that is guaranteed (or at least very likely)
+> > +int vma_dup_policy(struct vm_area_struct *src, struct vm_area_struct *dst)
+> > +{
+> > +	struct mempolicy *pol = mpol_dup(vma_policy(src));
+> > +
+> > +	if (IS_ERR(pol))
+> > +		return PTR_ERR(pol);
+>
+> PTR_ERR() returns long, so vma_dup_policy() needs to return long.
 
-even non-turbo is very likely to not be achievable in various very
-common situations. Two year ago I would have said, sure, but today,
-it's just not the case anymore.
+I think that "int" should be fine, or we should fix IS_ERR/ERR_PTR. If
+nothing else, the changed code did the same. And there are a lot of other
+"int" functions which return PTR_ERR().
 
-> I understand that the difference between highest guaranteed P-state and
-> highest potential P-state is likely to increase in the future. Without
-> any feedback about what potential P-state we can approximately get, we
-> can only pack tasks until we hit the load that can be handled at the
-> highest guaranteed P-state.
+But I agree, this is only correct because vma_dup_policy() checks IS_ERR()
+before PTR_ERR(), and because mpol_dup() doesn't do the wrong things with
+ERR_PTR().
 
-the only highest guaranteed P state is... the lowest P state. Sorry.
-Everything else is subject to thermal management and hardware policies.
+For example, ERR_PTR(args->err) in hw_breakpoint_handler() looks really
+strange and imho should be killed. But correct, it is not actually the
+error.
 
+> > @@ -2505,12 +2504,9 @@ static int __split_vma(struct mm_struct * mm, struct vm_area_struct * vma,
+> >  		new->vm_pgoff += ((addr - vma->vm_start) >> PAGE_SHIFT);
+> >  	}
+> >
+> > -	pol = mpol_dup(vma_policy(vma));
+> > -	if (IS_ERR(pol)) {
+> > -		err = PTR_ERR(pol);
+> > +	err = vma_dup_policy(vma, new);
+> > +	if (err)
+> >  		goto out_free_vma;
+> > -	}
+> > -	vma_set_policy(new, pol);
+> >
+> >  	if (anon_vma_clone(new, vma))
+> >  		goto out_free_mpol;
+>
+> This isn't the first occurrence in mm/mmap.c, what about vma_adjust()?
+> Probably need to patch 3.10 or later.
 
-> I believe that there already is a power limit notification mechanism on
-> Intel that can notify the OS when the firmware chooses a lower P-state
-> than the one requested by the OS.
+Ah, sorry for confusion, I forgot to mention that this is on top of
+another -mm patch,
 
-and we turn that off to avoid interrupt floods.....
+	mm-mempolicy-fix-mbind_range-vma_adjust-interaction.patch
 
+attached below just in case.
 
-> You (or Rafael) mentioned in our previous discussion that you are
-> working on an improved intel_pstate driver. Will that be fundamentally
-> different from the current one?
+> Otherwise looks good.
 
-yes.
-the hardware has been changing, and will be changing more (at a faster rate),
-and we'll have very different algorithms for the different generations.
+Thanks for review ;)
 
-For example, for the recently launched client Haswell (think Ultrabook) the
-system idle power is going down about 20 times compared to the previous generation (e.g.
-what you'd buy a month ago).
-With that change, the rules about when to go fast and not are changing dramatically....
-since going faster means you'll go to the low power faster (even on previous generations that
-effect is there, but with lower power in idle, this just gets stronger).
+Oleg.
 
-> I agree that packing is not a good idea for cache or memory bound tasks.
-> It is not any different on dual cluster ARM setups like big.LITTLE. But,
-> we do see a lot of benefit in packing small tasks which are not cache or
-> memory bound, or performance critical. Keeping them on as few cpus as
-> possible means that the rest can enter deeper C-states for longer.
+-----------------------------------------------------------------------
+[PATCH] mm: mempolicy: fix mbind_range() && vma_adjust() interaction
 
-I totally agree with the idea of *statistically* grouping short running tasks.
-But... this can be done VERY simple without such explicit "how many do we need".
-All you need to do is to do a statistical "sort left", e.g. if a short running tasks
-wants to run (that by definition has not run for a while, so is cache cold anyway),
-make it prefer the lowest number idle cpu to wake up on.
-Heck, even making it just prefer only cpu 0 when it's idle will by and large already achieve
-this.
-Remember that you don't have to be perfect; no point trying to move tasks that never run in your
-management time window; only the ones that actually want to run need management.
-And at the "I want to run" time, you can just sort it left.
-(and this is fine for tasks that run short; all the numa/etc logic value kicks in for tasks that do
-some serious amounts of work and thus by definition run for longer stretches)
+vma_adjust() does vma_set_policy(vma, vma_policy(next)) and this
+is doubly wrong:
 
-What you don't want to do, is run tasks sequentially that could have run in parallel. That's the best
-way to destroy power efficiency in multicore systems ;-(
+1. This leaks vma->vm_policy if it is not NULL and not equal to
+   next->vm_policy.
 
-And to be honest, the effect of per logical CPU C states is much smaller on Intel than the effect
-of global idle (in Intel terms, "package C states"). The break even points of CPU core states are
-extremely short for us, even for the deepest states. The bigger bang for the buck is with system wide
-idle, so that memory can go to self refresh (and the memory controllers/etc can be turned off).
-The break even point for those kind of things is longer, and that's where wakeups/etc make a much bigger dent.
+   This can happen if vma_merge() expands "area", not prev (case 8).
 
+2. This sets the wrong policy if vma_merge() joins prev and area,
+   area is the vma the caller needs to update and it still has the
+   old policy.
 
+Revert 1444f92c "mm: merging memory blocks resets mempolicy" which
+introduced these problems.
 
-> BTW. Packing one strictly memory bound task and one strictly cpu bound
-> task on one socket might work. The only problem is to determine the task
-> charateristics ;-)
+Change mbind_range() to recheck mpol_equal() after vma_merge() to
+fix the problem 1444f92c tried to address.
 
-yeah "NUMA is hard, lets go shopping" for sure.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Cc: <stable@vger.kernel.org>
+---
+ mm/mempolicy.c |    6 +++++-
+ mm/mmap.c      |    2 +-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 7431001..4baf12e 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -732,7 +732,10 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 		if (prev) {
+ 			vma = prev;
+ 			next = vma->vm_next;
+-			continue;
++			if (mpol_equal(vma_policy(vma), new_pol))
++				continue;
++			/* vma_merge() joined vma && vma->next, case 8 */
++			goto replace;
+ 		}
+ 		if (vma->vm_start != vmstart) {
+ 			err = split_vma(vma->vm_mm, vma, vmstart, 1);
+@@ -744,6 +747,7 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
+ 			if (err)
+ 				goto out;
+ 		}
++ replace:
+ 		err = vma_replace_policy(vma, new_pol);
+ 		if (err)
+ 			goto out;
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 7fe7f0b..42234b8 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -865,7 +865,7 @@ again:			remove_next = 1 + (end > next->vm_end);
+ 		if (next->anon_vma)
+ 			anon_vma_merge(vma, next);
+ 		mm->map_count--;
+-		vma_set_policy(vma, vma_policy(next));
++		mpol_put(vma_policy(next));
+ 		kmem_cache_free(vm_area_cachep, next);
+ 		/*
+ 		 * In mprotect's case 6 (see comments on vma_merge),
+-- 
+1.5.5.1
 
 
