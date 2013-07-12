@@ -1,38 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757916Ab3GLXOK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 19:14:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754563Ab3GLXOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 19:14:07 -0400
-Date: Fri, 12 Jul 2013 16:14:02 -0700 (PDT)
-Message-Id: <20130712.161402.460159983188127882.davem@redhat.com>
-To: hayeswang@realtek.com
-Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH net 2/2] usb/net/r815x: fix cast to restricted __le32
-From: David Miller <davem@redhat.com>
-In-Reply-To: <1373617576-2272-2-git-send-email-hayeswang@realtek.com>
-References: <1373617576-2272-1-git-send-email-hayeswang@realtek.com>
-	<1373617576-2272-2-git-send-email-hayeswang@realtek.com>
+	id S1757870Ab3GLX2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 19:28:09 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:48738 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754189Ab3GLX2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 19:28:08 -0400
+Message-ID: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH] mm/hugetlb: per-vma instantiation mutexes
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Jul 2013 16:28:01 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Fri, 12 Jul 2013 16:26:16 +0800
+The hugetlb_instantiation_mutex serializes hugepage allocation and instantiation
+in the page directory entry. It was found that this mutex can become quite contended
+during the early phases of large databases which make use of huge pages - for instance
+startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
+reports that this mutex can be one of the top 5 most contended locks in the kernel during
+the first few minutes:
 
->>> drivers/net/usb/r815x.c:38:16: sparse: cast to restricted __le32
->>> drivers/net/usb/r815x.c:67:15: sparse: cast to restricted __le32
->>> drivers/net/usb/r815x.c:69:13: sparse: incorrect type in assignment (different base types)
->    drivers/net/usb/r815x.c:69:13:    expected unsigned int [unsigned] [addressable] [assigned] [usertype] tmp
->    drivers/net/usb/r815x.c:69:13:    got restricted __le32 [usertype] <noident>
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> Spotted-by: kbuild test robot <fengguang.wu@intel.com>
+hugetlb_instantiation_mutex:      10678     10678
+             ---------------------------
+             hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
+             ---------------------------
+             hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
 
-Applied.
+contentions:          10678
+acquisitions:         99476
+waittime-total: 76888911.01 us
+
+Instead of serializing each hugetlb fault, we can deal with concurrent faults for pages
+in different vmas. The per-vma mutex is initialized when creating a new vma. So, back to
+the example above, we now get much less contention:
+
+ &vma->hugetlb_instantiation_mutex:  1         1
+       ---------------------------------
+       &vma->hugetlb_instantiation_mutex       1   [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+       ---------------------------------
+       &vma->hugetlb_instantiation_mutex       1    [<ffffffff8115e216>] hugetlb_fault+0xa6/0x350
+
+contentions:          1
+acquisitions:    108092
+waittime-total:  621.24 us
+
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ include/linux/mm_types.h |  3 +++
+ mm/hugetlb.c             | 12 +++++-------
+ mm/mmap.c                |  3 +++
+ 3 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index fb425aa..b45fd87 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -289,6 +289,9 @@ struct vm_area_struct {
+ #ifdef CONFIG_NUMA
+ 	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
+ #endif
++#ifdef CONFIG_HUGETLB_PAGE
++	struct mutex hugetlb_instantiation_mutex;
++#endif
+ };
+ 
+ struct core_thread {
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 83aff0a..12e665b 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -137,12 +137,12 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
+  * The region data structures are protected by a combination of the mmap_sem
+  * and the hugetlb_instantion_mutex.  To access or modify a region the caller
+  * must either hold the mmap_sem for write, or the mmap_sem for read and
+- * the hugetlb_instantiation mutex:
++ * the vma's hugetlb_instantiation mutex:
+  *
+  *	down_write(&mm->mmap_sem);
+  * or
+  *	down_read(&mm->mmap_sem);
+- *	mutex_lock(&hugetlb_instantiation_mutex);
++ *	mutex_lock(&vma->hugetlb_instantiation_mutex);
+  */
+ struct file_region {
+ 	struct list_head link;
+@@ -2547,7 +2547,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+ 
+ /*
+  * Hugetlb_cow() should be called with page lock of the original hugepage held.
+- * Called with hugetlb_instantiation_mutex held and pte_page locked so we
++ * Called with the vma's hugetlb_instantiation_mutex held and pte_page locked so we
+  * cannot race with other handlers or page migration.
+  * Keep the pte_same checks anyway to make transition from the mutex easier.
+  */
+@@ -2847,7 +2847,6 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	int ret;
+ 	struct page *page = NULL;
+ 	struct page *pagecache_page = NULL;
+-	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
+ 	struct hstate *h = hstate_vma(vma);
+ 
+ 	address &= huge_page_mask(h);
+@@ -2872,7 +2871,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * get spurious allocation failures if two CPUs race to instantiate
+ 	 * the same page in the page cache.
+ 	 */
+-	mutex_lock(&hugetlb_instantiation_mutex);
++	mutex_lock(&vma->hugetlb_instantiation_mutex);
+ 	entry = huge_ptep_get(ptep);
+ 	if (huge_pte_none(entry)) {
+ 		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
+@@ -2943,8 +2942,7 @@ out_page_table_lock:
+ 	put_page(page);
+ 
+ out_mutex:
+-	mutex_unlock(&hugetlb_instantiation_mutex);
+-
++	mutex_unlock(&vma->hugetlb_instantiation_mutex);
+ 	return ret;
+ }
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index fbad7b0..8f0b034 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1543,6 +1543,9 @@ munmap_back:
+ 	vma->vm_page_prot = vm_get_page_prot(vm_flags);
+ 	vma->vm_pgoff = pgoff;
+ 	INIT_LIST_HEAD(&vma->anon_vma_chain);
++#ifdef CONFIG_HUGETLB_PAGE
++	mutex_init(&vma->hugetlb_instantiation_mutex);
++#endif
+ 
+ 	error = -EINVAL;	/* when rejecting VM_GROWSDOWN|VM_GROWSUP */
+ 
+-- 
+1.7.11.7
+
+
+
