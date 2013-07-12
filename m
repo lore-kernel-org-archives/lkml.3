@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab3GLI2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 04:28:07 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:52564 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284Ab3GLI2B (ORCPT
+	id S1757405Ab3GLIcK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 04:32:10 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:63590 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab3GLIcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 04:28:01 -0400
-Date: Fri, 12 Jul 2013 10:27:56 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Robin Holt <holt@sgi.com>, Borislav Petkov <bp@alien8.de>,
-        Robert Richter <rric@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-Message-ID: <20130712082756.GA4328@gmail.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+	Fri, 12 Jul 2013 04:32:08 -0400
+Date: Fri, 12 Jul 2013 10:32:02 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Mark Galeck <mark_galeck@pacbell.net>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: is it desirable to improve the build system?
+Message-ID: <20130712083202.GB5032@netboy>
+References: <1372723921.53875.YahooMailNeo@web182202.mail.bf1.yahoo.com>
+ <20130711113822.GA18579@amd.pavel.ucw.cz>
+ <CAErSpo5Jsbh8fcUXt_GL=ihv-3yq1SOD_UejC5MP=jBGowNn_w@mail.gmail.com>
+ <1373577734.39761.YahooMailNeo@web182202.mail.bf1.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1373594635-131067-1-git-send-email-holt@sgi.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1373577734.39761.YahooMailNeo@web182202.mail.bf1.yahoo.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Robin Holt <holt@sgi.com> wrote:
-
-> [...]
+On Thu, Jul 11, 2013 at 02:22:14PM -0700, Mark Galeck wrote:
+> >The answer to "is it desirable to improve X?" is always "yes."  But
 > 
-> With this patch, we did boot a 16TiB machine.  Without the patches, the 
-> v3.10 kernel with the same configuration took 407 seconds for 
-> free_all_bootmem.  With the patches and operating on 2MiB pages instead 
-> of 1GiB, it took 26 seconds so performance was improved.  I have no feel 
-> for how the 1GiB chunk size will perform.
+> the only way to make progress in Linux is to actually post patches
+> that "improve X."  This is unlike many corporate environments, where
+> you might need to get somebody's approval
+> 
+> 
+> Precisely. Please excuse me coming from a corporate background. 
+> In corporate, even if you "get somebody's approval", there may be "other stakeholders" who may "feel ownership" etc etc
 
-That's pretty impressive.
-
-It's still a 15x speedup instead of a 512x speedup, so I'd say there's 
-something else being the current bottleneck, besides page init 
-granularity.
-
-Can you boot with just a few gigs of RAM and stuff the rest into hotplug 
-memory, and then hot-add that memory? That would allow easy profiling of 
-remaining overhead.
-
-Side note:
-
-Robert Richter and Boris Petkov are working on 'persistent events' support 
-for perf, which will eventually allow boot time profiling - I'm not sure 
-if the patches and the tooling support is ready enough yet for your 
-purposes.
-
-Robert, Boris, the following workflow would be pretty intuitive:
-
- - kernel developer sets boot flag: perf=boot,freq=1khz,size=16MB
-
- - we'd get a single (cycles?) event running once the perf subsystem is up
-   and running, with a sampling frequency of 1 KHz, sending profiling
-   trace events to a sufficiently sized profiling buffer of 16 MB per
-   CPU.
-
- - once the system reaches SYSTEM_RUNNING, profiling is stopped either
-   automatically - or the user stops it via a new tooling command.
-
- - the profiling buffer is extracted into a regular perf.data via a
-   special 'perf record' call or some other, new perf tooling 
-   solution/variant.
-
-   [ Alternatively the kernel could attempt to construct a 'virtual'
-     perf.data from the persistent buffer, available via /sys/debug or
-     elsewhere in /sys - just like the kernel constructs a 'virtual' 
-     /proc/kcore, etc. That file could be copied or used directly. ]
-
- - from that point on this workflow joins the regular profiling workflow: 
-   perf report, perf script et al can be used to analyze the resulting
-   boot profile.
+Yes, your approved project may get canned later. But the point was,
+that you aren't allowed to even get started without someone's
+approval.
 
 Thanks,
+Richard
 
-	Ingo
