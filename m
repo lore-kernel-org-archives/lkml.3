@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab3GLXjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 19:39:17 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:57474 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab3GLXjQ (ORCPT
+	id S1757924Ab3GLXnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 19:43:04 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:32858 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756032Ab3GLXnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 19:39:16 -0400
+	Fri, 12 Jul 2013 19:43:02 -0400
+Message-ID: <51E0947F.1040800@cogentembedded.com>
+Date: Sat, 13 Jul 2013 03:42:55 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Fri, 12 Jul 2013 16:38:54 -0700
-X-Google-Sender-Auth: x_AZB1rdrMv_9hWb3bx1Gsopsh4
-Message-ID: <CAB=NE6XyC0Svxh8yeVNvnpdkVBTWEAcmi8wZocc6MC=kxLs2iw@mail.gmail.com>
-Subject: [ANN] backports-v3.10 released - first release!
-To: "backports@vger.kernel.org" <backports@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org
+Subject: Re: [RFC/RFT PATCH 3/5] scsi: Use dma_max_pfn(dev) helper for bounce_limit
+ calculations
+References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <1373665694-7580-4-git-send-email-santosh.shilimkar@ti.com> <51E07B6E.5090900@cogentembedded.com> <20130712222506.GI24642@n2100.arm.linux.org.uk> <51E08C6B.2080802@cogentembedded.com>
+In-Reply-To: <51E08C6B.2080802@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kicked out the first Linux kernel backports release under the new
-project name, "backports" that hopefully clarifies this a generic
-backport project now. Backported subsystems in this release:
+On 07/13/2013 03:08 AM, Sergei Shtylyov wrote:
 
-  * Ethernet
-  * Wireless
-  * Bluetooth
-  * NFC
-  * GPU
-  * Media
-  * Regulator
+>>>> DMA bounce limit is the maximum direct DMA'able memory beyond which
+>>>> bounce buffers has to be used to perform dma operations. SCSI driver
+>>>> relies on dma_mask but its calculation is based on max_*pfn which
+>>>> don't have uniform meaning across architectures. So make use of
+>>>> dma_max_pfn() which is expected to return the DMAable maximum pfn
+>>>> value across architectures.
 
-Go read the git tree for a full ChangeLog, moving forward I won't be
-providing those anymore. The highlights are  Johannes Berg's awesome
-work on adding full Kconfig support, which makes you can use 'make
-menuconfig', and his huge rework of the entire build system, and
-kicking us into pythonifying everything non-user / build related.
-Other obvious highlights are huge ongoing contributions by Hauke
-without which any of this wouldn't have happened. Thierry Escande
-threw in NFC, and we also now have Media and Regulator subsystems
-backported. We should have now over 830 drivers backported.
+>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>> Cc: linux-scsi@vger.kernel.org
 
-Under the new build system users should query 'make help' and 'make
-defconfig-help'.
+>>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>> ---
+>>>>    drivers/scsi/scsi_lib.c |    2 +-
+>>>>    1 file changed, 1 insertion(+), 1 deletion(-)
 
-Go download the new release [0] and if you want something more fancy
-check out the new shiny but temporary release page [1].
+>>>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>>>> index 86d5220..e8275fa 100644
+>>>> --- a/drivers/scsi/scsi_lib.c
+>>>> +++ b/drivers/scsi/scsi_lib.c
+>>>> @@ -1668,7 +1668,7 @@ u64 scsi_calculate_bounce_limit(struct
+>>>> Scsi_Host *shost)
+>>>>
+>>>>        host_dev = scsi_get_device(shost);
+>>>>        if (host_dev && host_dev->dma_mask)
+>>>> -        bounce_limit = *host_dev->dma_mask;
+>>>> +        bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
 
-[0] http://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.10/backports-3.10-1.tar.bz2
-[1] http://drvbp1.linux-foundation.org/~mcgrof/rel-html/backports/
+>>>     You definitely forgot -1 here.
 
-  Luis
+>> Please explain your point.
+
+>     Previously, 'bounce_limit' would look like 0xffffffff (unless I'm
+> mistaken), now it would look like 0xfffff000 which is hardly what we're
+> looking for, no?
+
+    Although, -1 won't give us the correct result in this case, it's 
+more like + PAGE_SIZE - 1.
+
+WBR, Sergei
+
