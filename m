@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3GLGnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 02:43:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752136Ab3GLGnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 02:43:19 -0400
-Message-ID: <51DF6D35.9030409@redhat.com>
-Date: Thu, 11 Jul 2013 22:43:01 -0400
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
-MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>
-CC: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Rafael <rjw@sisk.pl>,
-        Hanjun Guo <guohanjun@huawei.com>, jiang.liu@huawei.com
-Subject: Re: [PATCH -v2 1/3] PCI: introduce PCIe Device Serial Number Capability
- support
-References: <1373535825-49972-1-git-send-email-wangyijing@huawei.com> <1373535825-49972-2-git-send-email-wangyijing@huawei.com> <51DE8032.4040808@redhat.com> <51DF5DFC.3090107@huawei.com>
-In-Reply-To: <51DF5DFC.3090107@huawei.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756836Ab3GLGu1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 02:50:27 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:57594 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab3GLGu0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 02:50:26 -0400
+From: Camelia Groza <camelia.groza@gmail.com>
+To: hiralpat@cisco.com
+Cc: sramars@cisco.com, buchino@cisco.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Camelia Groza <camelia.groza@gmail.com>
+Subject: [PATCH] fnic: use simple_open instead of fnic_trace_ctrl_open
+Date: Fri, 12 Jul 2013 09:50:08 +0300
+Message-Id: <1373611808-4959-1-git-send-email-camelia.groza@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2013 09:38 PM, Yijing Wang wrote:
-> Hi Don,
->     Thanks for your review and comments very much!
->
->>> +    dev->sn = pci_device_serial_number(dev);
->>> +
->> Finally, 'the comment below':
->> I know you were following Bjorn's suggestion, which I thought
->> was an improvement, but why not do above assignment in pci_device_serial_number() ?
->
-> I don't do assignment in pci_device_serial_number() because pci_device_serial_number()
-> is an EXPORT_SYMBOL, and will be used to get dsn for non-scaned device, for example:
->
-> 1. we have pcie device in slot before suspend.
-> 2. we removed the device during suspend.
-> 3. we reinserted a new device during suspend.
-> 4. we should check the device change during resume, so we
-> try to use pcie device serial number to identify changes.
-> But the pci_dev structure maybe the old stale data. So
-> I prefer to get dsn by return.
->
-> what about this:
->
-> static void pci_init_capabilities(struct pci_dev *dev)
->      ........
->      pci_dsn_init(dev);
->      ..........
->
->
-> void pci_dsn_init(dev)
-> {
->      dev->sn = pci_device_serial_number(dev);
-> }
->
->
->
-Looks good!  I think that meets all the uses (use in init, post-suspend).
-- Don
+This removes the open coded fnic_trace_ctrl_open() function
+and replaces file operations references to the function
+with simple_open() instead.
 
->> See above....
->> - Don
->>
->>>        /* Vital Product Data */
->>>        pci_vpd_pci22_init(dev);
->>>
->>> diff --git a/include/linux/pci.h b/include/linux/pci.h
->>> index 0fd1f15..10d190b 100644
->>> --- a/include/linux/pci.h
->>> +++ b/include/linux/pci.h
->>> @@ -342,6 +342,7 @@ struct pci_dev {
->>>        struct list_head msi_list;
->>>        struct kset *msi_kset;
->>>    #endif
->>> +    u64 sn;        /* device serieal number, 0 if not support */
->>>        struct pci_vpd *vpd;
->>>    #ifdef CONFIG_PCI_ATS
->>>        union {
->>> @@ -995,6 +996,8 @@ ssize_t pci_read_vpd(struct pci_dev *dev, loff_t pos, size_t count, void *buf);
->>>    ssize_t pci_write_vpd(struct pci_dev *dev, loff_t pos, size_t count, const void *buf);
->>>    int pci_vpd_truncate(struct pci_dev *dev, size_t size);
->>>
->>> +u64 pci_device_serial_number(struct pci_dev *dev);
->>> +
->>>    /* Helper functions for low-level code (drivers/pci/setup-[bus,res].c) */
->>>    resource_size_t pcibios_retrieve_fw_addr(struct pci_dev *dev, int idx);
->>>    void pci_bus_assign_resources(const struct pci_bus *bus);
->>
->>
->> .
->>
->
->
+Found using coccinelle.
+
+Signed-off-by: Camelia Groza <camelia.groza@gmail.com>
+---
+ drivers/scsi/fnic/fnic_debugfs.c |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
+
+diff --git a/drivers/scsi/fnic/fnic_debugfs.c b/drivers/scsi/fnic/fnic_debugfs.c
+index cbcb012..ddc7e94 100644
+--- a/drivers/scsi/fnic/fnic_debugfs.c
++++ b/drivers/scsi/fnic/fnic_debugfs.c
+@@ -25,23 +25,6 @@ static struct dentry *fnic_trace_debugfs_file;
+ static struct dentry *fnic_trace_enable;
+ 
+ /*
+- * fnic_trace_ctrl_open - Open the trace_enable file
+- * @inode: The inode pointer.
+- * @file: The file pointer to attach the trace enable/disable flag.
+- *
+- * Description:
+- * This routine opens a debugsfs file trace_enable.
+- *
+- * Returns:
+- * This function returns zero if successful.
+- */
+-static int fnic_trace_ctrl_open(struct inode *inode, struct file *filp)
+-{
+-	filp->private_data = inode->i_private;
+-	return 0;
+-}
+-
+-/*
+  * fnic_trace_ctrl_read - Read a trace_enable debugfs file
+  * @filp: The file pointer to read from.
+  * @ubuf: The buffer to copy the data to.
+@@ -222,7 +205,7 @@ static int fnic_trace_debugfs_release(struct inode *inode,
+ 
+ static const struct file_operations fnic_trace_ctrl_fops = {
+ 	.owner = THIS_MODULE,
+-	.open = fnic_trace_ctrl_open,
++	.open = simple_open,
+ 	.read = fnic_trace_ctrl_read,
+ 	.write = fnic_trace_ctrl_write,
+ };
+-- 
+1.7.10.4
 
