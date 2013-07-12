@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757621Ab3GLKef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 06:34:35 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:60166 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757244Ab3GLKed (ORCPT
+	id S1757678Ab3GLKk0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 06:40:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56347 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757403Ab3GLKkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 06:34:33 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Dongjin Kim'" <tobetter@gmail.com>,
-        "'Julius Werner'" <jwerner@chromium.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'Felipe Balbi'" <balbi@ti.com>, linux-usb@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-samsung-soc@vger.kernel.org,
-        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
-        "'Praveen Paneri'" <p.paneri@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Tushar Behera'" <tushar.behera@linaro.org>,
-        "'Doug Anderson'" <dianders@chromium.org>,
-        "'Olof Johansson'" <olofj@chromium.org>,
-        "'Vincent Palatin'" <vpalatin@chromium.org>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Fabio Estevam'" <festevam@gmail.com>,
-        "'Philipp Zabel'" <p.zabel@pengutronix.de>,
-        Yulgon Kim <yulgon.kim@samsung.com>, s.nawrocki@samsung.com,
-        grant.likely@linaro.org, arnd@arndb.de
-Subject: Re: [PATCH] usb: phy: samsung-usb2: Toggle HSIC GPIO from device tree
-Date: Fri, 12 Jul 2013 12:34:25 +0200
-Message-ID: <2736758.WIzxm4p4Im@thinkpad>
-User-Agent: KMail/4.10.5 (Linux/3.9.9-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <001701ce7e99$95b2c460$c1184d20$@samsung.com>
-References: <1373416455-30358-1-git-send-email-jwerner@chromium.org> <CAODwPW-=bo2BqcHopY32N76p6DDGNDmCrKFo1R4gEEZhsG-DYg@mail.gmail.com> <001701ce7e99$95b2c460$c1184d20$@samsung.com>
+	Fri, 12 Jul 2013 06:40:24 -0400
+Date: Fri, 12 Jul 2013 03:39:36 -0700
+From: tip-bot for Stephen Boyd <tipbot@zytor.com>
+Message-ID: <tip-a272dcca1802a7e265a56e60b0d0a6715b0a8ac2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        linux-arm-kernel@lists.infradead.org, marc.zyngier@arm.com,
+        Mark.Rutland@arm.com, swarren@nvidia.com, sboyd@codeaurora.org,
+        john.stultz@linaro.org, josephl@nvidia.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Mark.Rutland@arm.com,
+        marc.zyngier@arm.com, swarren@nvidia.com, sboyd@codeaurora.org,
+        john.stultz@linaro.org, josephl@nvidia.com, tglx@linutronix.de
+In-Reply-To: <20130711140059.GA27430@codeaurora.org>
+References: <20130711140059.GA27430@codeaurora.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/urgent] tick: broadcast:
+  Check broadcast mode on CPU hotplug
+Git-Commit-ID: a272dcca1802a7e265a56e60b0d0a6715b0a8ac2
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 03:39:44 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit-ID:  a272dcca1802a7e265a56e60b0d0a6715b0a8ac2
+Gitweb:     http://git.kernel.org/tip/a272dcca1802a7e265a56e60b0d0a6715b0a8ac2
+Author:     Stephen Boyd <sboyd@codeaurora.org>
+AuthorDate: Thu, 11 Jul 2013 07:00:59 -0700
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 12 Jul 2013 12:35:40 +0200
 
-On Friday 12 of July 2013 09:48:54 Jingoo Han wrote:
-> On Friday, July 12, 2013 6:46 AM, Julius Werner wrote:
-> > Hi Jingoo,
-> > 
-> > Yeah, I followed that discussion back then, but it seems to have
-> > stalled a little (at least the HSIC patches haven't been picked up in
-> > any kernel.org repo yet to my knowledge).
-> > 
-> > The problem is that I think these approaches cannot work reliably. I
-> > agree that it would be nice to control the HSIC device from its own
-> > driver, and have spent quite some time playing around with the
-> > usb/misc/usb3503.c driver to try to make this work... but there's a
-> > timing dependency here that you just can't model correctly with
-> > independent drivers.
-> > 
-> > If the HSIC device is already active during boot (e.g. because it was
-> > used by firmware), there's always a chance that the USB stack will
-> > come up before the driver that resets it does. The device will be
-> > enumerated as normal, and when the other driver later pulls the reset
-> > signal the USB stack will not notice because there is no real
-> > disconnect detection on HSIC. Only when you eventually try to send
-> > another transfer to the device will you start to get timeouts, and the
-> > newly reset device will not be able to reenumerate because the host
-> > never asks it to.
-> > 
-> > I really don't see how you could solve this without putting some kind
-> > of synchronization mechanism in the USB drivers. So this leaves
-> > ehci-s5p and phy-samsung-usb2 as the only possible places, and I chose
-> > the latter since all the host-side HSIC initialization is also there
-> > already. I think if you think of it as "reset whatever is on the other
-> > side of this PHY", it's okay to put it as an optional feature into the
-> > PHY driver.
-> 
-> CC'ed Tomasz Figa, Dongjin Kim, Yulgon Kim
-> 
-> 
-> Hi Tomasz, Dongjin,
-> 
-> Julius Werner wants to put 'SMSC 3503 hub reset on Arndale board'
-> to 'phy-samsung-usb*.c' files, because there is a timing dependency
-> above mentioned.
-> The following is the original patch sent by Julius Werner two day ago.
-> (http://www.spinics.net/lists/linux-samsung-soc/msg20250.html)
+tick: broadcast: Check broadcast mode on CPU hotplug
 
-Well, I think this is simply broken. Following are the reasons why I think so:
- a) you can use the smsc3503 chip on any USB/HSIC controller and with any 
-USB/HSIC PHY, so you would have to add such reset GPIO to _every_ PHY or 
-controller driver,
- b) you might want to use other USB/HSIC hubs like this one that requires some 
-initialization sequence, other than just toggling a GPIO, so you would have to 
-add cases for all of those hubs or other chips in _every_ PHY or controller 
-driver.
+On ARM systems the dummy clockevent is registered with the cpu
+hotplug notifier chain before any other per-cpu clockevent. This
+has the side-effect of causing the dummy clockevent to be
+registered first in every hotplug sequence. Because the dummy is
+first, we'll try to turn the broadcast source on but the code in
+tick_device_uses_broadcast() assumes the broadcast source is in
+periodic mode and calls tick_broadcast_start_periodic()
+unconditionally.
 
-> Previously, Olof mentioned that 'drivers/platform/arm/' would be used.
-> (http://patches.linaro.org/16856/)
-> 
-> Also, another way was mentioned by Fabio Estevam, using
-> 'drivers/reset/gpio-reset.c' which is not merged yet.
-> (http://permalink.gmane.org/gmane.linux.drivers.devicetree/36830)
-> 
-> I think that 'phy-samsung-usb*.c' files are not a good place.
-> However, Julius Werner's comment looks reasonable enough.
+On boot this isn't a problem because we typically haven't
+switched into oneshot mode yet (if at all). During hotplug, if
+the broadcast source isn't in periodic mode we'll replace the
+broadcast oneshot handler with the broadcast periodic handler and
+start emulating oneshot mode when we shouldn't. Due to the way
+the broadcast oneshot handler programs the next_event it's
+possible for it to contain KTIME_MAX and cause us to hang the
+system when the periodic handler tries to program the next tick.
+Fix this by using the appropriate function to start the broadcast
+source.
 
-I can see this problem almost equivalent to the problem with on-board WLAN 
-adapters connected using SDIO. Those adapters require some kind of power on 
-sequence before they can be enumerated using standard MMC/SDIO mechanisms and 
-so does this USB/HSIC hub.
+Reported-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Mark Rutland <Mark.Rutland@arm.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>
+Cc: ARM kernel mailing list <linux-arm-kernel@lists.infradead.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Joseph Lo <josephl@nvidia.com>
+Link: http://lkml.kernel.org/r/20130711140059.GA27430@codeaurora.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-broadcast.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-So basically this is a thing that we should consider on a more generic level, 
-not just for this particular single chip.
-
-CCing some extra people to increase chance of getting more opinions on this.
-
-Best regards,
-Tomasz
-
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 6d3f916..218bcb5 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -157,7 +157,10 @@ int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu)
+ 		dev->event_handler = tick_handle_periodic;
+ 		tick_device_setup_broadcast_func(dev);
+ 		cpumask_set_cpu(cpu, tick_broadcast_mask);
+-		tick_broadcast_start_periodic(bc);
++		if (tick_broadcast_device.mode == TICKDEV_MODE_PERIODIC)
++			tick_broadcast_start_periodic(bc);
++		else
++			tick_broadcast_setup_oneshot(bc);
+ 		ret = 1;
+ 	} else {
+ 		/*
