@@ -1,106 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab3GLPWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:22:31 -0400
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:35110 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932759Ab3GLPW3 (ORCPT
+	id S933209Ab3GLP3Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:29:16 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57986 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932863Ab3GLP3O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:22:29 -0400
+	Fri, 12 Jul 2013 11:29:14 -0400
+Message-ID: <51E020C2.4040504@codeaurora.org>
+Date: Fri, 12 Jul 2013 18:29:06 +0300
+From: Tanya Brokhman <tlinder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130712141530.GA3629@roeck-us.net>
-References: <20130711214830.611455274@linuxfoundation.org>
-	<20130711222935.GA11340@redhat.com>
-	<20130711224455.GA17222@kroah.com>
-	<20130712141530.GA3629@roeck-us.net>
-Date: Fri, 12 Jul 2013 08:22:27 -0700
-X-Google-Sender-Auth: ngHDMDoB6o68j8m5_yqdsXOVtEk
-Message-ID: <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: axboe@kernel.dk, linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>,
+        "open list:UNIVERSAL FLASH S..." <linux-scsi@vger.kernel.org>
+Subject: Re: [RFC/PATCH 4/4] block: Add URGENT request notification support
+ to CFQ scheduler
+References: <1373547671-2779-1-git-send-email-tlinder@codeaurora.org> <x49oba9ndls.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49oba9ndls.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 7:15 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->> >
->> > I get the impression as soon as we hit -rc1, some maintainers immediately
->> > go into "OH SHIT, I CAN'T SEND PATCHES OR LINUS WILL SHOUT AT ME" mode.
+Hello Jeff
+
+Thank you for your comments. Please see inline.
+
+On 7/11/2013 9:41 PM, Jeff Moyer wrote:
+> Tanya Brokhman <tlinder@codeaurora.org> writes:
+>
+>> When the scheduler reports to the block layer that there is an urgent
+>> request pending, the device driver may decide to stop the transmission
+>> of the current request in order to handle the urgent one. This is done
+>> in order to reduce the latency of an urgent request. For example:
+>> long WRITE may be stopped to handle an urgent READ.
+>
+> In general, I don't like the approach taken.  I would much rather see
+> a low-level cancellation method, and layer your urgent request handling
+> on top of that.  That could actually be used by the aio subsystem as
+> well (with a lot of work, of course).  That aside, I've provided some
+> comments below.
+>
+
+We shared a support for the low-level cancellation method some time ago. 
+Please look for a patch from Konstantin Dorfman from June 30 subjected:
+[RFC/PATCH v2] mmc: Add support to handle Urgent data transfer
+This patch set was released as a usage example for the mmc patch. They 
+should go together actually in order to achieve the benefit described 
+bellow.
+
+
+
+>> @@ -2111,12 +2114,13 @@ static void blk_account_io_done(struct request *req)
+>>   		cpu = part_stat_lock();
+>>   		part = req->part;
 >>
->> I agree.  But it seems that I need to now start shouting at them :(
+>> -		part_stat_inc(cpu, part, ios[rw]);
+>> -		part_stat_add(cpu, part, ticks[rw], duration);
+>> -		part_round_stats(cpu, part);
+>> -		part_dec_in_flight(part, rw);
+>> -
+>> -		hd_struct_put(part);
+>> +		if (req->part != NULL) {
+>> +			part_stat_inc(cpu, part, ios[rw]);
+>> +			part_stat_add(cpu, part, ticks[rw], duration);
+>> +			part_round_stats(cpu, part);
+>> +			part_dec_in_flight(part, rw);
+>> +			hd_struct_put(part);
+>> +		}
 >
-> Just like others, I now have a cutoff-point for -stable patches. Depending on
-> the severity of a bug, it is somewhere between -rc4 and -rc6. After -rc6 I only
-> push regressions and crash fixes; the rest has to wait for the commit window.
-
-So regressions, crash fixes (and security issues) is exactly what I
-want to get after -rc3 or so. And yes, I will start shouting at people
-if other things show up.
-
-However, I think your comments clearly show the problem:
-
-> So, yes, there are a couple of hwmon patches in your list.
+> A comment about why we now expect req->part might be null would be nice.
 >
-> From a maintainer perspective, seems to me we are stuck between a rock and a
-> hard place. Yes, I would prefer to push all -stable material even late in the
-> -rc game, but that is not how things work nowadays anymore.
 
-That's f*cking sad. You know *why* it's sad?
+This is not related to my patch. Have no idea how it got in. I'll upload 
+a new version soon. Sorry about that.
 
-Go read the rules for stable patches. Really.
 
-Because the rules for stable patches are the rules _I_ use for that
-late -rc stuff, and is pretty much exactly what you yourself described
-as "this is what I send Linus after -rc4".
+>> @@ -2783,6 +2786,14 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+>>   	(RQ_CFQG(rq))->dispatched++;
+>>   	elv_dispatch_sort(q, rq);
+>>
+>> +	if (rq->cmd_flags & REQ_URGENT) {
+>> +		if (!cfqd->nr_urgent_pending)
+>> +			WARN_ON(1);
+>> +		else
+>> +			cfqd->nr_urgent_pending--;
+>> +		cfqd->nr_urgent_in_flight++;
+>> +	}
+>> +
+>
+> This is a rather ugly construct, and gets repeated later.  I'd be
+> inclined to just BUG.
 
-Now, that should make you think about THE ABSOLUTE CRAP YOU MARK FOR -stable!
+will fix.
 
-If it isn't important enough to send to me after -rc4, then it damn
-well isn't important enough to mark for stable either!
+>> +/*
+>> + * Called when a request (rq) is reinserted (to cfqq). Check if there's
+>> + * something we should do about it
+>> + */
+>> +static void
+>> +cfq_rq_requeued(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>> +		struct request *rq)
+>> +{
+>> +	struct cfq_io_cq *cic = RQ_CIC(rq);
+>> +
+>> +	cfqd->rq_queued++;
+>> +	if (rq->cmd_flags & REQ_PRIO)
+>> +		cfqq->prio_pending++;
+>> +
+>> +	cfqq->dispatched--;
+>> +	(RQ_CFQG(rq))->dispatched--;
+>> +
+>> +	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
+>> +
+>> +	cfq_update_io_thinktime(cfqd, cfqq, cic);
+>> +	cfq_update_io_seektime(cfqd, cfqq, rq);
+>> +	cfq_update_idle_window(cfqd, cfqq, cic);
+>> +
+>> +	cfqq->last_request_pos = blk_rq_pos(rq) + blk_rq_sectors(rq);
+>> +
+>> +	if (cfqq == cfqd->active_queue) {
+>> +		if (cfq_cfqq_wait_request(cfqq)) {
+>> +			if (blk_rq_bytes(rq) > PAGE_CACHE_SIZE ||
+>> +			    cfqd->busy_queues > 1) {
+>> +				cfq_del_timer(cfqd, cfqq);
+>> +				cfq_clear_cfqq_wait_request(cfqq);
+>> +			} else {
+>> +				cfqg_stats_update_idle_time(cfqq->cfqg);
+>> +				cfq_mark_cfqq_must_dispatch(cfqq);
+>> +			}
+>> +		}
+>> +	} else if (cfq_should_preempt(cfqd, cfqq, rq)) {
+>> +		cfq_preempt_queue(cfqd, cfqq);
+>> +	}
+>> +}
+>
+> Huge cut-n-paste of cfq_rq_enqueued.  Please factor the code out.
 
-It really is that simple.
+ok.
 
-> This should really be discussed at the Kernel Summit. Overall, I don't really
-> care too much how to handle it. Just tell me. The outlook of "Either Linus
-> will shout at you or Greg will" doesn't sound like a good solution, though.
 
-Listen to yourself. In fact, there is a damn good solution": don't
-mark crap for stable, and don't send crap to me after -rc4.
+>> +
+>>   static void cfq_insert_request(struct request_queue *q, struct request *rq)
+>>   {
+>>   	struct cfq_data *cfqd = q->elevator->elevator_data;
+>> @@ -3923,6 +3996,43 @@ static void cfq_insert_request(struct request_queue *q, struct request *rq)
+>>   	cfqg_stats_update_io_add(RQ_CFQG(rq), cfqd->serving_group,
+>>   				 rq->cmd_flags);
+>>   	cfq_rq_enqueued(cfqd, cfqq, rq);
+>> +
+>> +	if (rq->cmd_flags & REQ_URGENT) {
+>> +		WARN_ON(1);
+>> +		blk_dump_rq_flags(rq, "");
+>> +		rq->cmd_flags &= ~REQ_URGENT;
+>> +	}
+>> +
+>> +	/*
+>> +	 * Request is considered URGENT if:
+>> +	 * 1. The queue being served is of a lower IO priority then the new
+>> +	 *    request
+>> +	 * OR:
+>> +	 * 2. The workload being performed is ASYNC
+>> +	 * Only READ requests may be considered as URGENT
+>> +	 */
+>> +	if ((cfqd->active_queue &&
+>> +		 cfqq->ioprio_class < cfqd->active_queue->ioprio_class) ||
+>> +		(cfqd->serving_wl_type == ASYNC_WORKLOAD &&
+>> +		 rq_data_dir(rq) == READ)) {
+>> +		rq->cmd_flags |= REQ_URGENT;
+>> +		cfqd->nr_urgent_pending++;
+>> +	}
+>
+> If requests are queued from a higher priority queue, then that queue
+> will preempt the existing queue.  Why do we also need to interrupt read
+> requests from the lower priority queue?  You seemed to indicate that
+> long-running writes were the primary concern.
+>
+You're right, our main concern are long-running writes. Preempting lower 
+priority read request won't give us much benefit because read requests 
+are usually short.
+In the current implementation of urgent request in the mmc driver, short 
+requests or reads won't be preempted. The block layer notifies the 
+device driver of an urgent pending but it's the device driver decision 
+whether to stop an ongoing request or not.
+CFQ doesn't distinguish between read and sync write. And we do want to 
+preempt sync write requests.
 
-If it doesn't fit the stable rules, they should go in the next merge
-window. It really is that simple. You even (unwittingly) pretty much
-described the stable rules, but then you apparently didn't understand
-that those were the rules for -stable too.
 
-Of course, I suspect I see why this happens. Greg doesn't shout as
-much as me, and he has been taking any random patches into -stable. So
-the end result is that people think it's easier to mark things for
--stable than it is to show that it actualy *is* stable, and they are
-trying to use -stable as a way to get any random late fixes in.
-
-That is not how stable should work. When stable started, it had some
-rather clear rules. It's not for "fixes". It was meant to be solely
-for big issues.
-
-The thing you just described that you put a stable tag on is *EXACTLY*
-the things that should not be marked for stable. For *EXACTLY* the
-same reason that you realized you shouldn't push it to me after -rc4.
-
-Do you really not see this?
-
-Greg, the reason you get a lot of stable patches seems to be that you
-make it easy to act as a door-mat. Clearly at least some people say "I
-know this patch isn't important enough to send to Linus, but I know
-Greg will silently accept it after the fact, so I'll just wait and
-mark it for stable".
-
-You may need to learn to shout at people.
-
-                   Linus
+-- 
+QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+of Code Aurora Forum, hosted by The Linux Foundation
