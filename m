@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965214Ab3GLRez (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:34:55 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:44056 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932813Ab3GLRey (ORCPT
+	id S965230Ab3GLRkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:40:13 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:61304 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932813Ab3GLRkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:34:54 -0400
-Date: Fri, 12 Jul 2013 10:34:56 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 00/11] 3.4.53-stable review
-Message-ID: <20130712173456.GB5534@roeck-us.net>
-References: <20130711220545.542911892@linuxfoundation.org>
+	Fri, 12 Jul 2013 13:40:11 -0400
+Message-ID: <51E03F76.3090607@gmail.com>
+Date: Fri, 12 Jul 2013 11:40:06 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130711220545.542911892@linuxfoundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Jones <davej@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Subject: Re: Yet more softlockups.
+References: <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de> <20130705160043.GF325@redhat.com> <20130706072408.GA14865@gmail.com> <20130710151324.GA11309@redhat.com> <20130710152015.GA757@x4> <20130710154029.GB11309@redhat.com> <20130712103117.GA14862@gmail.com> <51E0230C.9010509@intel.com> <20130712154521.GD1020@redhat.com> <51E038ED.7050600@gmail.com> <20130712171808.GD1537@redhat.com>
+In-Reply-To: <20130712171808.GD1537@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 03:11:00PM -0700, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.53 release.
-> There are 11 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
-> 
-> Responses should be made by Sat Jul 13 22:04:03 UTC 2013.
-> Anything received after that time might be too late.
-> 
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.53-rc1.gz
-> and the diffstat can be found below.
-> 
-Build results below. No changes to previous release.
+On 7/12/13 11:18 AM, Dave Jones wrote:
+> On Fri, Jul 12, 2013 at 11:12:13AM -0600, David Ahern wrote:
+>   > On 7/12/13 9:45 AM, Dave Jones wrote:
+>   > > Here's a fun trick:
+>   > >
+>   > > trinity -c perf_event_open -C4 -q -l off
+>   > >
+>   > > Within about a minute, that brings any of my boxes to its knees.
+>   > > The softlockup detector starts going nuts, and then the box wedges solid.
+>   >
+>   > I tried that in a VM running latest Linus tree. I see trinity children
+>   > getting nuked regularly from oom.
+>
+> Weird. I'm curious what the backtrace looks like in those cases.
+> Where is it trying to allocate memory ?
+> (Though that isn't usually too helpful in most cases, but in absense of
+>   anything else..)
 
-Guenter
+(gdb) bt
+#0  0x000000313b27f3e0 in malloc () from /lib64/libc.so.6
+#1  0x0000000000404405 in _get_address 
+(null_allowed=null_allowed@entry=1 '\001') at generic-sanitise.c:151
+#2  0x00000000004044ca in get_address () at generic-sanitise.c:182
+#3  0x00000000004052a0 in fill_arg (childno=<optimized out>, 
+call=call@entry=298, argnum=argnum@entry=1) at generic-sanitise.c:415
+#4  0x000000000040548d in generic_sanitise (childno=childno@entry=0) at 
+generic-sanitise.c:615
+#5  0x0000000000405620 in mkcall (childno=childno@entry=0) at syscall.c:131
+#6  0x0000000000407d85 in child_process () at child.c:219
+#7  0x00000000004073ad in fork_children () at main.c:103
+#8  main_loop () at main.c:308
+#9  do_main_loop () at main.c:342
+#10 0x000000000040253a in main (argc=<optimized out>, argv=<optimized 
+out>) at trinity.c:180
 
----
 
-Build reference: v3.4.52-11-g44011ba
+In _get_address, case 8 must be happening a lot and I don't see a free 
+when that address comes from malloc. Perhaps all of the rand() calls are 
+breaking down in the VM. If I change that case from malloc to something 
+static - like page_rand - memory stays flat.
 
-Build x86_64:defconfig passed
-Build x86_64:allyesconfig passed
-Build x86_64:allmodconfig passed
-Build x86_64:allnoconfig passed
-Build x86_64:alldefconfig passed
-Build i386:defconfig passed
-Build i386:allyesconfig passed
-Build i386:allmodconfig passed
-Build i386:allnoconfig passed
-Build i386:alldefconfig passed
-Build mips:defconfig passed
-Build mips:bcm47xx_defconfig passed
-Build mips:bcm63xx_defconfig passed
-Build mips:nlm_xlp_defconfig passed
-Build mips:ar7_defconfig passed
-Build mips:fuloong2e_defconfig passed
-Build mips:e55_defconfig passed
-Build mips:powertv_defconfig passed
-Build mips:malta_defconfig passed
-Build powerpc:defconfig passed
-Build powerpc:allyesconfig failed
-Build powerpc:allmodconfig passed
-Build powerpc:chroma_defconfig failed
-Build powerpc:maple_defconfig passed
-Build powerpc:ppc6xx_defconfig passed
-Build powerpc:mpc83xx_defconfig passed
-Build powerpc:mpc85xx_defconfig passed
-Build powerpc:mpc85xx_smp_defconfig passed
-Build powerpc:tqm8xx_defconfig passed
-Build powerpc:85xx/sbc8548_defconfig passed
-Build powerpc:83xx/mpc834x_mds_defconfig passed
-Build powerpc:86xx/sbc8641d_defconfig passed
-Build arm:defconfig passed
-Build arm:allyesconfig failed
-Build arm:allmodconfig failed
-Build arm:exynos4_defconfig passed
-Build arm:kirkwood_defconfig passed
-Build arm:omap2plus_defconfig passed
-Build arm:tegra_defconfig passed
-Build arm:u8500_defconfig passed
-Build arm:at91sam9rl_defconfig passed
-Build arm:ap4evb_defconfig passed
-Build arm:bonito_defconfig passed
-Build arm:pxa910_defconfig passed
-Build m68k:defconfig passed
-Build m68k:m5272c3_defconfig passed
-Build m68k:m5307c3_defconfig passed
-Build m68k:m5249evb_defconfig passed
-Build m68k:m5407c3_defconfig passed
-Build m68k:sun3_defconfig passed
-Build sparc:defconfig passed
-Build sparc:sparc64_defconfig passed
-Build xtensa:defconfig failed
-Build xtensa:iss_defconfig failed
-Build microblaze:mmu_defconfig failed
-Build microblaze:nommu_defconfig passed
-Build blackfin:defconfig failed
-Build parisc:defconfig passed
-
------------------------
-Total builds: 58 Total build errors: 8
+David
