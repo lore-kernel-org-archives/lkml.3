@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab3GLBDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 21:03:12 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:55487 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932209Ab3GLBDL (ORCPT
+	id S932400Ab3GLBPS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 21:15:18 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:56578 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab3GLBPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 21:03:11 -0400
-Date: Fri, 12 Jul 2013 11:03:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alasdair G Kergon <agk@redhat.com>
-Cc: Yann Droneaud <ydroneaud@opteya.com>, Mike Snitzer <snitzer@redhat.com>,
-        Robin Dong <sanbai@taobao.com>, linux-kernel@vger.kernel.org,
-        Jim Ramsay <jim_ramsay@dell.com>, dm-devel@redhat.com,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Milan Broz <gmazyland@gmail.com>, Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [dm-devel] [git pull] device-mapper changes for 3.11
-Message-Id: <20130712110303.06095e7b41c49c35bcd61fab@canb.auug.org.au>
-In-Reply-To: <20130711135522.GN8530@agk-dp.fab.redhat.com>
-References: <20130711013448.GD32399@agk-dp.fab.redhat.com>
-	<20130711162040.8a82cb97a6c647c4f61f919b@canb.auug.org.au>
-	<20130711135522.GN8530@agk-dp.fab.redhat.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.19; i486-pc-linux-gnu)
+	Thu, 11 Jul 2013 21:15:16 -0400
+Message-ID: <1373592023.7397.465.camel@haakon3.risingtidesystems.com>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        ksummit-2013-discuss@lists.linux-foundation.org,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Thu, 11 Jul 2013 18:20:23 -0700
+In-Reply-To: <20130712005023.GB31005@thunk.org>
+References: <20130711214830.611455274@linuxfoundation.org>
+	 <20130712005023.GB31005@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__12_Jul_2013_11_03_03_+1000_tYJy6HCLoj8f9sKQ"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__12_Jul_2013_11_03_03_+1000_tYJy6HCLoj8f9sKQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-07-11 at 20:50 -0400, Theodore Ts'o wrote:
+> On Thu, Jul 11, 2013 at 03:01:17PM -0700, Greg Kroah-Hartman wrote:
+> > <rant>
+> >   I'm sitting on top of over 170 more patches that have been marked for
+> >   the stable releases right now that are not included in this set of
+> >   releases.  The fact that there are this many patches for stable stuff
+> >   that are waiting to be merged through the main -rc1 merge window cycle
+> >   is worrying to me.
+> > 
+> >   Why are subsystem maintainers holding on to fixes that are
+> >   _supposedly_ affecting all users?  I mean, 21 powerpc core changes
+> >   that I don't see until a -rc1 merge?  It's as if developers don't
+> >   expect people to use a .0 release and are relying on me to get the
+> >   fixes they have burried in their trees out to users.  That's not that
+> >   nice.  6 "core" iscsi-target fixes?  That's the sign of either a
+> >   broken subsystem maintainer, or a lack of understanding what the
+> >   normal -rc kernel releases are supposed to be for.
+> 
 
-Hi Alasdair,
+In my defense here, the patches that have been CC'ed to 3.10.y stable
+are to address bugs in iser-target, and it's interaction with existing
+iscsi-target code after the large set of refactoring changes went in to
+support multi-transport operation.
 
-On Thu, 11 Jul 2013 14:55:22 +0100 Alasdair G Kergon <agk@redhat.com> wrote:
->
-> On Thu, Jul 11, 2013 at 04:20:40PM +1000, Stephen Rothwell wrote:
-> > Alistair, is there some reason that you cannot maintain some relatively
-> > stable git tree for me to fetch (instead of the quilt series). =20
->=20
-> Well Mike Snitzer is becoming a joint maintainer and this also requires
-> changes to the workflow so watch this space.
+The reasons that they where not included in a v3.10-rc pull request is
+because the bugs where found sufficiently late enough in the cycle, and
+required large enough changes plus a non trival amount of manual failure
+injection testing to verify their correctness.
 
-OK, noted.
+--nab
 
-> > Also,
-> > there is not real reason to keep rebasing this stuff (especially just
-> > before sending it to Linus).
-> =20
-> Most of the time the patches are decoupled from the rest of the tree
-> and the final linux-next kernel is the same regardless of where the
-> quilt tree is attached.  I maintain a single sequence of patches=20
-> where the ones ready for upstream float up to the top and the
-> linux-next export is a by-product and not the primary output.
->=20
-> Anyway, like I say, we'll be changing things during the next couple of
-> cycles and we'll bear your suggestions in mind.
-
-Thanks, I will watch for developments.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__12_Jul_2013_11_03_03_+1000_tYJy6HCLoj8f9sKQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR31XHAAoJEECxmPOUX5FEVKMP/j1Y1hl23A+XOcKZqeHSqlo2
-mWigXgDm1kB9vPPTzHDdOVoqnY7+vv9XGN78jleov/cS4C2uDUQ5gFMvn1PbvJBX
-DdiOgyd8brlM8a3l1SFOGQ5qFOjNbrxkavWQ7pgle63hbPrtNdrAcbOxVDdrUGrn
-3giKcu4oNlex7JUUihhuBo2yzyJOumo4tVSlIV+RFZqlzQd8mBZwT4r1r9mAxPbq
-kPa1uR8qu4MRsEgjjpZV9cLwBtMxhKsMA6jYqGzccMfezbWX5dciz35pWvXhDMB5
-Dk1uwP4W+yz0KDRLfzl4nR0dq1RGGTyQE9PioRkJG3cXJ4GUky1SczXtM/yPONhH
-v3InRiJTWiVM8tDfWDXMuN0buQyRXdIP7aMS0AoPclvr4xdDnL23ZrDb1XjBEuaI
-doODRcx6YxdMPF6wdbn8Rjc6gq5Y4Tz7wY9KwF4HRiFGdAmIqQVzLYKfZWLXTaSQ
-Eb0AWnl9IjSmel3QuAz1KLrWWEyHTR8s3dAn/6L+YOxzZeYnyF56nJ1yuW43CZiP
-aMVwgFZalR+8p+biVulMIp41XTi9XwsGri3dQWLv2uLGEgOXakkQygNyyJbMd8S0
-Yjlfnm7kJZ5R5WA13dGgwwurQn8Dn/8qP5Q+sr9HDCD7092mN6S5nLsIKmJWzYY+
-x+2ipYu7Jew9bmKyf0IT
-=oHHk
------END PGP SIGNATURE-----
-
---Signature=_Fri__12_Jul_2013_11_03_03_+1000_tYJy6HCLoj8f9sKQ--
