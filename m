@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab3GLQOB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 12:14:01 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42216 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932612Ab3GLQN7 (ORCPT
+	id S964916Ab3GLQOd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 12:14:33 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:65188 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932612Ab3GLQOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 12:13:59 -0400
-Date: Fri, 12 Jul 2013 13:13:40 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Ming Lei <tom.leiming@gmail.com>, Linda Walsh <lkml@tlinx.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
-Message-ID: <20130712131340.1a371662.mchehab@infradead.org>
-In-Reply-To: <20130712142106.GJ24008@pd.tnic>
-References: <51D9EAF3.4050804@tlinx.org>
-	<CACVXFVPRwakzB6vtqRqL49StHKdugCpxDyNvx3VzcDC7GggFMQ@mail.gmail.com>
-	<20130712080428.GB359@x4>
-	<20130712134115.GI24008@pd.tnic>
-	<51E00B55.5070003@infradead.org>
-	<20130712142106.GJ24008@pd.tnic>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.19; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 12 Jul 2013 12:14:32 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19/aBh90jvffG3uWeAPtDRrhpo+5LCg9MQ=
+Date: Fri, 12 Jul 2013 12:14:23 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Bergmann Arnd <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Neil Zhang <zhangwm@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+Message-ID: <20130712161423.GA11908@titan.lakedaemon.net>
+References: <1373352166-10064-2-git-send-email-zhangwm@marvell.com>
+ <20130709124900.GG11908@titan.lakedaemon.net>
+ <CAN1soZxiOh6TpbUOCUzK8gNwmvjbT3ihkUWaw8tuZ7md+NVA2g@mail.gmail.com>
+ <20130710122433.GO11908@titan.lakedaemon.net>
+ <CAN1soZzMvront1-jcBW6-uRKNs0OZNGnmiOjKGZSM28bViB_8A@mail.gmail.com>
+ <20130710215041.GR11908@titan.lakedaemon.net>
+ <CAN1soZzuiukY9qASFNcH0k=zH8=uT=71bKejPss44FCzNy=X-A@mail.gmail.com>
+ <CAMLZHHQGZvDssY-YxQ3ZW8FYhpG-H1-VbokOid33socRSPrMNw@mail.gmail.com>
+ <20130712155733.GZ11908@titan.lakedaemon.net>
+ <CAMLZHHRrrHpSkNbabP9ALKBXemUw07=VmB6kBoD+4u05HQwQ_Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMLZHHRrrHpSkNbabP9ALKBXemUw07=VmB6kBoD+4u05HQwQ_Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, 12 Jul 2013 16:21:06 +0200
-Borislav Petkov <bp@alien8.de> escreveu:
-
-> On Fri, Jul 12, 2013 at 10:57:41AM -0300, Mauro Carvalho Chehab wrote:
-> > This will be overriding the content of the static var mc_bus every for
-> > every new memory controller. Are you sure that bus.name is only used
-> > on register, or if its contents is stored somewhere?
+On Fri, Jul 12, 2013 at 10:05:45AM -0600, Daniel Drake wrote:
+> On Fri, Jul 12, 2013 at 9:57 AM, Jason Cooper <jason@lakedaemon.net> wrote:
+> > This also means we should do a patch for stable v3.5+ appending the
+> > "mrvl,..." string to the drivers that had it removed improperly, as
+> > Daniel discovered.  Daniel, since you are probably most familiar (and
+> > most able to test ;-) ), would you mind putting that patch together?
 > 
-> bus_register does kobject_set_name which copies bus->name, for example,
+> I will look at that. There was another case of a quiet mrvl->marvell
+> conversion that bit us around a year ago as well, so I will dig that
+> up too for consideration.
 
-Ok, so, it could be safe.
+Ok, thanks.
 
-> but I didn't look exhaustively.
-
-Did you try to remove and reinsert the edac driver a few times, on a
-multi-memory controller machine? The bus nodes got created properly?
+> > So we don't have to keep it around forever, we could do as Arnd has
+> > suggested in the past (for an entirely different problem):
+> >
+> >         /* assuming it goes in for v3.12 */
+> >         if (WARN_ON(of_device_is_compatible(dev, "mrvl,..."))) {
+> >                 dev_info(&dev->dev, "compatible string \"mrvl,...\" being removed in v3.15\n");
+> >                 BUG_ON(LINUX_VERSION_CODE >= KERNEL_VERSION(3,15,0));
+> >         }
+> >
+> > * I can't find where Arnd's suggestion was, so this hack is completely
+> > my own.
+> >
+> > Keep in mind, the above hack is just a suggestion, it makes my skin
+> > crawl just looking at it... I'm open to other ideas.  Or, not doing it
+> > at all.
 > 
-> Just to be on the safe side, I should probably do a
-> 
-> static const char **bus_names = { "mc0", "mc1", ..., "mc7" };
+> A new OpenFirmware or dtb file would want to keep the old mrvl
+> compatible string around in order to have compatibility with old
+> kernels. So I think that hack would have to be extended to "if device
+> is compatible with mrvl, but not marvell, then warn". And that seems
+> so ugly that my vote would be to avoid it. Especially while we don't
+> know of existing users who have a requirement of stability.
 
-You would likely to use an array for the bus_type too, if reusing
-the static one is an issue.
+whew!  Ok, drop that idea.
 
-> and use it. Are 8 enough for your edac drivers too?
+thx,
 
-With edac_ghes, I suspect that the worse case, on Intel side, is the
-Nehalem/Sandy Bridge/Ivy Bridge EX machines.
-
-Tony,
-
-What would be a reasonable maximum limit for the number of memory
-controllers, on a -EX machine?
-
-Cheers,
-Mauro
+Jason.
