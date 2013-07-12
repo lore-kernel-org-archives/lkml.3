@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965156Ab3GLRMT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:12:19 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:44373 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932884Ab3GLRMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:12:18 -0400
-Message-ID: <51E038ED.7050600@gmail.com>
-Date: Fri, 12 Jul 2013 11:12:13 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S933272Ab3GLROd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:14:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55247 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932884Ab3GLROc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 13:14:32 -0400
+Date: Fri, 12 Jul 2013 13:14:22 -0400
+From: Dave Jones <davej@redhat.com>
+To: Steve Wise <swise@opengridcomputing.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Oops mystery
+Message-ID: <20130712171422.GC1537@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Steve Wise <swise@opengridcomputing.com>,
+	linux-kernel@vger.kernel.org
+References: <51E02545.7080106@opengridcomputing.com>
+ <20130712164816.GE1020@redhat.com>
+ <51E0348A.2030208@opengridcomputing.com>
+ <20130712170046.GB1537@redhat.com>
+ <51E03809.5030307@opengridcomputing.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Subject: Re: Yet more softlockups.
-References: <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com> <20130705143821.GB325@redhat.com> <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de> <20130705160043.GF325@redhat.com> <20130706072408.GA14865@gmail.com> <20130710151324.GA11309@redhat.com> <20130710152015.GA757@x4> <20130710154029.GB11309@redhat.com> <20130712103117.GA14862@gmail.com> <51E0230C.9010509@intel.com> <20130712154521.GD1020@redhat.com>
-In-Reply-To: <20130712154521.GD1020@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E03809.5030307@opengridcomputing.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/12/13 9:45 AM, Dave Jones wrote:
-> Here's a fun trick:
->
-> trinity -c perf_event_open -C4 -q -l off
->
-> Within about a minute, that brings any of my boxes to its knees.
-> The softlockup detector starts going nuts, and then the box wedges solid.
+On Fri, Jul 12, 2013 at 12:08:25PM -0500, Steve Wise wrote:
+ 
+ > There is no 'Code:' line in the log.  I thought about that that too, but 
+ > I don't see it dumping the code.   The kernel is a SLES11sp1 kernel, 
+ > 1.6.32.54-0.3-default.
+ 
+"Ask suse" is probably your best bet in that case.
 
-I tried that in a VM running latest Linus tree. I see trinity children 
-getting nuked regularly from oom.
+ > [ 1054.392502] Modules linked in: smb2(N) smb(N) smb_manager(N) 
+ > nas_netlink(N) af_packet nfsd nfs_common(N) lockd auth_rpcgss nas_acl(N) 
+ > nas_proto_vfs(N) sunrpc snas_ts(N) ipmi_devintf snas_cafs(PN) snas_ca(N) 
+ > ipmi_si ipmi_msghandler snas_mds(PN) snas_ds(N) nm(PN) snas_nvcache(PN) 
+ > snas_dlm(PN) snas_trns(PN) snas_cm_sdd(PN) snas_cm_pma(PN) 
+ > disk_online_diagnostic(N) snas_monc(N) snas_fc(N) snas_mml(PN) cstl(PN) 
+ > ptlrpc(N) ko2iblnd(N) ksocklnd(N) obdclass(N) lnet(N) lvfs(PN) libcfs(N) 
+ > snas_base(PN) nofs(N) usos(N) zlib_deflate cpufreq_conservative 
+ > cpufreq_userspace cpufreq_powersave acpi_cpufreq t3k_mpt2sas_vdl(N) 
+ > raidrepair(N) ib_ipoib ib_umad iw_nes crc32c libcrc32c iw_cxgb3 cxgb3 
+ > ib_qib(N) dca mlx4_ib mlx4_en mlx4_core ib_mthca nvdimm_mapping(N) 
+ > smbuspci(N) microcode t4_tom(N) toecore(N) rdma_ucm ib_uverbs rdma_cm 
+ > ib_cm iw_cm ib_sa ib_mad ib_addr ipv6 iw_cxgb4(N) ib_core 
+ > soft_watchdog(PN) kbox(PN) fuse loop dm_mod tpm_tis tpm iTCO_wdt 
+ > rtc_cmos tpm_bios i2c_i801 cxgb4(N) pcspkr iTCO_vendor_support i2c_core 
+ > rtc_core ses sg rtc_lib bnx2 enclosure wmi button container usbhid hid 
+ > ehci_hcd usbcore sd_mod crc_t10dif edd ext3 mbcache jbd fan processor 
+ > mpt2sas scsi_transport_sas raid_class scsi_mod thermal thermal_sys hwmon 
+ 
+Or maybe one of the proprietary module vendors. Who knows.
 
-I was dumping Vm elements using:
+	Dave
 
-while [ 1 ]; do echo $(date) $(egrep Vm /proc/$pid/status); sleep 1; done
-
-And right before the process is killed was the line:
-
-Fri Jul 12 11:00:19 MDT 2013 VmPeak: 2867472 kB VmSize: 2867472 kB 
-VmLck: 0 kB VmPin: 0 kB VmHWM: 1493092 kB VmRSS: 1493092 kB VmData: 
-2857944 kB VmStk: 136 kB VmExe: 100 kB VmLib: 1844 kB VmPTE: 5628 kB 
-VmSwap: 0 kB
-
-The VmData is growing fairly steadily and strace shows a lot of brk 
-calls. Is that normal for trinity - or this command line?
-
-Looking at the perf_event_open calls I see a lot of E2BIG errors in 
-addition to EINVAL. e.g,
-
-...
-perf_event_open(0xba9000, 0, 0x4c, 0xcc, 0) = -1 EINVAL (Invalid argument)
-alarm(0)                                = 1
-getppid()                               = 9031
-alarm(1)                                = 0
-perf_event_open(0xba9000, 0x2a6e, 0xe, 0xfd, 0) = -1 E2BIG (Argument 
-list too long)
-alarm(0)                                = 1
-getppid()                               = 9031
-alarm(1)                                = 0
-...
-
-David
