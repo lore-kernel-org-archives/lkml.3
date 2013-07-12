@@ -1,57 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965476Ab3GLVTQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 17:19:16 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:47944 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757829Ab3GLVTN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 17:19:13 -0400
-Date: Fri, 12 Jul 2013 16:19:09 -0500
-From: "Justin M. Forbes" <jmforbes@linuxtx.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Dave Jones <davej@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130712211909.GA3797@linuxtx.org>
-References: <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712181103.GA6689@roeck-us.net>
- <20130712193557.GB342@thunk.org>
- <1373658551.17876.117.camel@gandalf.local.home>
- <20130712201939.GB15261@redhat.com>
- <1373660900.17876.124.camel@gandalf.local.home>
+	id S965495Ab3GLVaT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 17:30:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40385 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965436Ab3GLVaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 17:30:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
+Date: Fri, 12 Jul 2013 23:40:06 +0200
+Message-ID: <1907509.WiI0tI5uDZ@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1373663544.24916.19.camel@misato.fc.hp.com>
+References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com> <2971486.2Wa9ROjLYK@vostro.rjw.lan> <1373663544.24916.19.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373660900.17876.124.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 04:28:20PM -0400, Steven Rostedt wrote:
+On Friday, July 12, 2013 03:12:24 PM Toshi Kani wrote:
+> On Fri, 2013-07-12 at 23:13 +0200, Rafael J. Wysocki wrote:
+> > On Friday, July 12, 2013 03:01:15 PM Toshi Kani wrote:
+> > > On Fri, 2013-07-12 at 22:42 +0200, Rafael J. Wysocki wrote:
+> > > > On Friday, July 12, 2013 08:51:29 AM Toshi Kani wrote:
+> > > > > On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
+> > > > > > (2013/07/11 1:47), Toshi Kani wrote:
+> > > > > > > device->driver_data needs to be cleared when releasing its data,
+> > > > > > > mem_device, in an error path of acpi_memory_device_add().
+> > > > > > > 
+> > > > > > > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+> > > > > > > ---
+> > > > > > 
+> > > > > > Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> > > > > 
+> > > > > Thanks Yasuaki!
+> > > > 
+> > > > Queued up as a fix for 3.11.
+> > > 
+> > > Thanks!
+> > > 
+> > > > Do we need that in -stable as well?
+> > > 
+> > > Good point.  Yes, we need that in -stable as well.
+> > 
+> > What's the oldest mainline major release that fix is applicable to?
 > 
-> I would suspect that machines that allow unprivileged users would be
-> running distro kernels, and not the latest release from Linus, and thus
-> even a bug that "can allow an unprivileged user to crash the kernel" may
-> still be able to sit around for a month before being submitted.
-> 
-But distros *do* ship the latest release from Linus. Fedora is often
-shipping .1 releases, and sometimes .0.  This seems to be getting more
-difficult though as more and more fixes have been left for stable to fix
-and the Linus release contains a number of known regressions.
-We know about those regressions not just from following lists, but because
-we have users running rawhide kernels which are snapshots of Linus' tree
-almost daily.  They see the regressions and complain.  So yeah, there are
-machines out there running Linus' latest tree.
+> The fix is applicable all ways up to 2.6.32.
 
-Justin
+For -stable I'll need to say some more about what practical consequences of
+the bug are.  Is it difficult to trigger?
+
+Rafael
+
+
+> > > > > > >   drivers/acpi/acpi_memhotplug.c |    1 +
+> > > > > > >   1 file changed, 1 insertion(+)
+> > > > > > > 
+> > > > > > > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> > > > > > > index c711d11..999adb5 100644
+> > > > > > > --- a/drivers/acpi/acpi_memhotplug.c
+> > > > > > > +++ b/drivers/acpi/acpi_memhotplug.c
+> > > > > > > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
+> > > > > > >   	/* Get the range from the _CRS */
+> > > > > > >   	result = acpi_memory_get_device_resources(mem_device);
+> > > > > > >   	if (result) {
+> > > > > > > +		device->driver_data = NULL;
+> > > > > > >   		kfree(mem_device);
+> > > > > > >   		return result;
+> > > > > > >   	}
+> > > > > > > --
+> > > > > > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> > > > > > > the body of a message to majordomo@vger.kernel.org
+> > > > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > > > > > 
+> > > > > > 
+> > > > > > 
+> > > > > 
+> > > > > 
+> > > 
+> > > 
+> 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
