@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965046Ab3GLQbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 12:31:50 -0400
-Received: from www.sr71.net ([198.145.64.142]:46632 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964992Ab3GLQbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 12:31:48 -0400
-Message-ID: <51E02F6E.1060303@sr71.net>
-Date: Fri, 12 Jul 2013 09:31:42 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S965072Ab3GLQf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 12:35:28 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:34109 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965004Ab3GLQf1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 12:35:27 -0400
 MIME-Version: 1.0
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-CC: Dave Hansen <dave.hansen@intel.com>,
+In-Reply-To: <20130712161708.GA3759@gmail.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+	<20130711222935.GA11340@redhat.com>
+	<20130711224455.GA17222@kroah.com>
+	<20130712141530.GA3629@roeck-us.net>
+	<CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+	<1373644044.17876.92.camel@gandalf.local.home>
+	<CA+55aFxUZCWT55EZ7fZw0j_UgaqjPA8Wiv47s5qO01NvHNzFCQ@mail.gmail.com>
+	<20130712161708.GA3759@gmail.com>
+Date: Fri, 12 Jul 2013 12:35:26 -0400
+Message-ID: <CA+5PVA6k8xQR4uCpiCnYD3iz421XHGX9eV8vNDH3y1t092aAdw@mail.gmail.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+From: Josh Boyer <jwboyer@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan@kernel.org>, Jiang Liu <jiang.liu@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] mm, page_alloc: support multiple pages allocation
-References: <1372840460-5571-1-git-send-email-iamjoonsoo.kim@lge.com> <1372840460-5571-2-git-send-email-iamjoonsoo.kim@lge.com> <51DDE5BA.9020800@intel.com> <20130711010248.GB7756@lge.com> <51DE44CC.2070700@sr71.net> <20130711061201.GA2400@lge.com>
-In-Reply-To: <20130711061201.GA2400@lge.com>
+        stable <stable@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/10/2013 11:12 PM, Joonsoo Kim wrote:
-> On Wed, Jul 10, 2013 at 10:38:20PM -0700, Dave Hansen wrote:
->> You're probably right for small numbers of pages.  But, if we're talking
->> about things that are more than, say, 100 pages (isn't the pcp batch
->> size clamped to 128 4k pages?) you surely don't want to be doing
->> buffered_rmqueue().
-> 
-> Yes, you are right.
-> Firstly, I thought that I can use this for readahead. On my machine,
-> readahead reads (maximum) 32 pages in advance if faulted. And batch size
-> of percpu pages list is close to or larger than 32 pages
-> on today's machine. So I didn't consider more than 32 pages before.
-> But to cope with a request for more pages, using rmqueue_bulk() is
-> a right way. How about using rmqueue_bulk() conditionally?
+On Fri, Jul 12, 2013 at 12:17 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>
+>> On Fri, Jul 12, 2013 at 8:47 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>> >
+>> > I tend to hold things off after -rc4 because you scare me more than Greg
+>> > does ;-)
+>>
+>> Have you guys *seen* Greg? The guy is a freakish giant. He *should*
+>> scare you. He might squish you without ever even noticing.
+>
+> Greg might be a giant and he might squish people without ever even
+> noticing, but that's just a grave, deadly physical threat no real kernel
+> hacker ever feels threatened by. (Not much can hurt us deep in our dark
+> basements after all, except maybe earthquakes, gamma ray eruptions and Mom
+> trying to clean up around the computers.)
+>
+> So Greg, if you want it all to change, create some _real_ threat: be frank
+> with contributors and sometimes swear a bit. That will cut your mailqueue
+> in half, promise!
 
-How about you test it both ways and see what is faster?
+I don't think it's that simple.  The problem here isn't that Greg is
+being too nice.  The problem is that people are holding back fixes
+from Linus' tree.  Greg might be able to yell at maintainers more, but
+if he does it's after the fact and it's sort of a too late situation.
+Those fixes should probably get in the tree because they should
+probably have been in the .0 release to begin with.  I don't envy Greg
+here.
 
-> Hmm, rmqueue_bulk() doesn't stop until all requested pages are allocated.
-> If we request too many pages (1024 pages or more), interrupt latency can
-> be a problem.
+I know... let's push this off onto linux-next. It isn't like Stephen
+has anything better to do anyway ;).
 
-OK, so only call it for the number of pages you believe allows it to
-have acceptable interrupt latency.  If you want 200 pages, and you can
-only disable interrupts for 100 pages, then just do it in two batches.
+More seriously though, those -stable fixes queued up for months show
+up there first.  Perhaps if we watch the trees feeding into linux-next
+for a bit for fixes tagged with -stable in the middle -rc windows, we
+can prod maintainers more.
 
-The point is that you want to avoid messing with the buffering by the
-percpu structures.  They're just overhead in your case.
-
+josh
