@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965271Ab3GLSbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 14:31:52 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:40797 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965116Ab3GLSbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 14:31:50 -0400
-Date: Fri, 12 Jul 2013 11:30:14 -0700
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Borislav Petkov <bp@suse.de>, Fenghua Yu <fenghua.yu@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Seiji Aguchi <seiji.aguchi@hds.com>,
-        PaX Team <pageexec@freemail.hu>
-Subject: [PATCH] x86: make sure IDT is page aligned
-Message-ID: <20130712183014.GA20551@www.outflux.net>
+	id S965253Ab3GLSij (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 14:38:39 -0400
+Received: from relay.parallels.com ([195.214.232.42]:50755 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965131Ab3GLSii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 14:38:38 -0400
+Message-ID: <51E04D1E.8060303@parallels.com>
+Date: Fri, 12 Jul 2013 22:38:22 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Matt Mackall <mpm@selenic.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>
+Subject: Re: [PATCH 4/5] mm: soft-dirty bits for user memory changes tracking
+References: <517FED13.8090806@parallels.com> <517FED64.4020400@parallels.com> <51DEFD9E.7010703@mit.edu>
+In-Reply-To: <51DEFD9E.7010703@mit.edu>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [195.189.16.124]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the IDT is referenced from a fixmap, make sure it is page aligned.
-This avoids the risk of it ever being moved in the bss and having the
-fixmap fail.
+On 07/11/2013 10:46 PM, Andy Lutomirski wrote:
+> 
+> Sorry I'm late to the party -- I didn't notice this until the lwn
+> article this week.
+> 
+> How does this get munmap + mmap right?  mremap marks things soft-dirty,
+> but unmapping and remapping seems like it will result in the soft-dirty
+> bit being cleared.  For that matter, won't this sequence also end up wrong:
+> 
+>  - clear_refs
+>  - Write to mapping
+>  - Page and pte evicted due to memory pressure
+>  - Read from mapping -- clean page faulted back in
+>  - pte soft-dirty is now clear ?!?
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Reported-by: PaX Team <pageexec@freemail.hu>
-Cc: stable@vger.kernel.org
----
- arch/x86/kernel/head_32.S |    2 +-
- arch/x86/kernel/head_64.S |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Yes, it looks like this problem exists. I'll look what can be done about
+it, thank you.
 
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index e65ddc6..3526dd1 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -734,7 +734,7 @@ boot_gdt_descr:
- 	.word __BOOT_DS+7
- 	.long boot_gdt - __PAGE_OFFSET
- 
--	.word 0				# 32-bit align idt_desc.address
-+	.word PAGE_SIZE			# page align idt_desc.address
- idt_descr:
- 	.word IDT_ENTRIES*8-1		# idt contains 256 entries
- 	.long idt_table
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index 5e4d8a8..77e6d3e 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -513,7 +513,7 @@ ENTRY(phys_base)
- #include "../../x86/xen/xen-head.S"
- 	
- 	.section .bss, "aw", @nobits
--	.align L1_CACHE_BYTES
-+	.align PAGE_SIZE
- ENTRY(idt_table)
- 	.skip IDT_ENTRIES * 16
- 
--- 
-1.7.9.5
+> --Andy
 
-
--- 
-Kees Cook
-Chrome OS Security
+Pavel
