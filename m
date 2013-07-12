@@ -1,106 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965109Ab3GLRPl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:15:41 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:42508 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932884Ab3GLRPi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:15:38 -0400
-Date: Fri, 12 Jul 2013 10:15:30 -0700
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] pci: exynos: split into two parts such as Synopsys
- part and Exynos part
-Message-ID: <20130712171529.GA9620@dhcp-172-17-186-34.nvidia.com>
-References: <001201ce7dfa$716b3370$54419a50$@samsung.com>
- <20130711154121.GC2198@dhcp-172-17-186-34.nvidia.com>
- <000301ce7e8e$4b7d9420$e278bc60$@samsung.com>
+	id S965130Ab3GLRTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:19:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12833 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964889Ab3GLRTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 13:19:11 -0400
+Date: Fri, 12 Jul 2013 13:18:08 -0400
+From: Dave Jones <davej@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Subject: Re: Yet more softlockups.
+Message-ID: <20130712171808.GD1537@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	David Ahern <dsahern@gmail.com>,
+	Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@kernel.org>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+	Dave Hansen <dave.hansen@linux.intel.com>
+References: <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de>
+ <20130705160043.GF325@redhat.com>
+ <20130706072408.GA14865@gmail.com>
+ <20130710151324.GA11309@redhat.com>
+ <20130710152015.GA757@x4>
+ <20130710154029.GB11309@redhat.com>
+ <20130712103117.GA14862@gmail.com>
+ <51E0230C.9010509@intel.com>
+ <20130712154521.GD1020@redhat.com>
+ <51E038ED.7050600@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wRRV7LY7NUeQGEoC"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000301ce7e8e$4b7d9420$e278bc60$@samsung.com>
+In-Reply-To: <51E038ED.7050600@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 12, 2013 at 11:12:13AM -0600, David Ahern wrote:
+ > On 7/12/13 9:45 AM, Dave Jones wrote:
+ > > Here's a fun trick:
+ > >
+ > > trinity -c perf_event_open -C4 -q -l off
+ > >
+ > > Within about a minute, that brings any of my boxes to its knees.
+ > > The softlockup detector starts going nuts, and then the box wedges solid.
+ > 
+ > I tried that in a VM running latest Linus tree. I see trinity children 
+ > getting nuked regularly from oom.
 
---wRRV7LY7NUeQGEoC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Weird. I'm curious what the backtrace looks like in those cases.
+Where is it trying to allocate memory ?
+(Though that isn't usually too helpful in most cases, but in absense of
+ anything else..)
 
-On Fri, Jul 12, 2013 at 08:28:05AM +0900, Jingoo Han wrote:
-> On Friday, July 12, 2013 12:41 AM, Thierry Reding wrote:
-> > On Thu, Jul 11, 2013 at 02:49:43PM +0900, Jingoo Han wrote:
-> > [...]
-> > > diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
-> > [...]
-> > >  obj-$(CONFIG_PCI_MVEBU) +=3D pci-mvebu.o
-> > >  obj-$(CONFIG_PCIE_DW) +=3D pcie-designware.o
-> > > +obj-$(CONFIG_PCI_EXYNOS) +=3D pcie-exynos.o
-> >=20
-> > I think we should keep these sorted alphabetically. Also Tegra and
-> > Marvell are PCIe controllers but they still use the pci- prefix instead
-> > of pcie-. Perhaps it'd be good to keep consistency here? I initially
-> > chose pci- because from a software point of view it doesn't matter all
-> > that much whether it's PCI or PCIe and because the drivers are part of
-> > the PCI subsystem. However if Exynos now uses the pcie- prefix it makes
-> > it look like Tegra and Marvell are plain old PCI.
-> >=20
->=20
-> Hi Thierry,
->=20
-> I initially chose 'pci-' prefix such as 'pci-designware.c'.
->=20
-> However, Pratyush Anand suggested as below:
-> "I would suggest to rename it as pcie-designware.c,
-> because synopsis pcie and pci controllers are different."
->=20
-> If you have a good idea, please give it to me. :)
+ > I was dumping Vm elements using:
+ > 
+ > while [ 1 ]; do echo $(date) $(egrep Vm /proc/$pid/status); sleep 1; done
+ > 
+ > And right before the process is killed was the line:
+ > 
+ > Fri Jul 12 11:00:19 MDT 2013 VmPeak: 2867472 kB VmSize: 2867472 kB 
+ > VmLck: 0 kB VmPin: 0 kB VmHWM: 1493092 kB VmRSS: 1493092 kB VmData: 
+ > 2857944 kB VmStk: 136 kB VmExe: 100 kB VmLib: 1844 kB VmPTE: 5628 kB 
+ > VmSwap: 0 kB
+ > 
+ > The VmData is growing fairly steadily and strace shows a lot of brk 
+ > calls. Is that normal for trinity - or this command line?
+ 
+Hmm, there are a few known leaks in trinity that I still haven't got
+around to fixing, but none that should be triggered from this.
 
-Alternatively the plain old PCI variant could be suffixed -legacy or
-similar, but I guess pcie- as a prefix works okay in this case.
+I wonder if something about being virtualised is perturbing its behaviour
+somehow. Though I can't think what would matter. 
 
-However I still think you should sort them properly:
+ > Looking at the perf_event_open calls I see a lot of E2BIG errors in 
+ > addition to EINVAL. e.g,
+ > 
+ > ...
+ > perf_event_open(0xba9000, 0, 0x4c, 0xcc, 0) = -1 EINVAL (Invalid argument)
+ > alarm(0)                                = 1
+ > getppid()                               = 9031
+ > alarm(1)                                = 0
+ > perf_event_open(0xba9000, 0x2a6e, 0xe, 0xfd, 0) = -1 E2BIG (Argument 
+ > list too long)
+ > alarm(0)                                = 1
+ > getppid()                               = 9031
+ > alarm(1)                                = 0
 
-	obj-$(CONFIG_PCIE_DW) +=3D pcie-designware.o
-	obj-$(CONFIG_PCI_EXYNOS) +=3D pci-exynos.o
-	obj-$(CONFIG_PCI_MVEBU) +=3D pci-mvebu.o
+Yep, that'll happen.
 
-Thierry
+Perhaps try CONFIG_MEMLEAK ?
 
---wRRV7LY7NUeQGEoC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+	Dave
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR4DmxAAoJEN0jrNd/PrOhGOQP/imUsGAyq5MAn4zc9TdGO3hP
-bMgEV2mNaq+VQp7y8BmV+LOaFQW4JfPZQBV0P+De75dce2eO7ZoYq8wIObXGLxt7
-9AcZOMSJFeyUixJ9WzP24ZpHJSej7kwytMPGgATphdRBS7epOMSvZTT7jwW9sfQL
-ajzmcGpYDh7gH1kW7WrGhpfcrQ/9AdhM5PoswgSHw//HCENNpXgpZrcHHacvDZD9
-/YU9U4bzQXnAjKZ641fAZUKh0VOhJVrdeSWQATCIB2aQ1jKCJKYa3uiEjftiQRtK
-oJJJAJF+5+8ZzNkzDerBAPmLBhzonPrkjXUryY5J5zA3a31jG5sEwZmcmauGlExx
-y3ajrFYdQ8JR4da/JTuc6Epnrixi7JSiCBuC8fwKE8uhhGje3TlDkgBlaPjgzPrP
-w6KS2XySrlW87slBFztakY+e9rL2pzoMb3VUxsDlTslSD4jO3dNPYa69uSSjT5bd
-LdqnkLvfE7OZLaTM16MHIs03CWNamd5zikfaUcQtAGjtjdjo2uen8fUdViDG8AZQ
-rpJvJkiwrZ/aqWAWCirjPIiWb5Xupn+RpMzY8U16e14NioDJoLWmwacqKhtBPo1/
-09Msm/2Ffev79pNEGTX05FwdgFGLd9s6m2Bjqwx8XY/uQOEkdlv8DjTlkQy/o5Li
-OPjO4ADhaF1QVHP0wqXv
-=tPL6
------END PGP SIGNATURE-----
-
---wRRV7LY7NUeQGEoC--
