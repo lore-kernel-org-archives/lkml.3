@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757257Ab3GLHor (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 03:44:47 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:10634 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757213Ab3GLHop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 03:44:45 -0400
-From: Oskar Andero <oskar.andero@sonymobile.com>
-Date: Fri, 12 Jul 2013 09:44:41 +0200
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "Makarov, Aleksej" <Aleksej.Makarov@sonymobile.com>
-Subject: Re: [PATCH] input: don't call input_dev_release_keys() in resume
-Message-ID: <20130712074441.GC3778@caracas.corpusers.net>
-References: <1362664882-16194-1-git-send-email-oskar.andero@sonymobile.com>
- <20130404163313.GA12302@core.coreip.homeip.net>
- <20130705074632.GF11422@caracas.corpusers.net>
+	id S1757191Ab3GLHqC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 03:46:02 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:39051 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756798Ab3GLHqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 03:46:01 -0400
+Date: Fri, 12 Jul 2013 02:45:58 -0500
+From: Robin Holt <holt@sgi.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC 2/4] Have __free_pages_memory() free in larger chunks.
+Message-ID: <20130712074558.GP18798@sgi.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <1373594635-131067-3-git-send-email-holt@sgi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130705074632.GF11422@caracas.corpusers.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1373594635-131067-3-git-send-email-holt@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09:46 Fri 05 Jul     , Oskar Andero wrote:
-> Hi Dmitry,
+After sleeping on this, why can't we change __free_pages_bootmem
+to not take an order, but rather nr_pages?  If we did that,
+then __free_pages_memory could just calculate nr_pages and call
+__free_pages_bootmem one time.
+
+I don't see why any of the callers of __free_pages_bootmem would not
+easily support that change.  Maybe I will work that up as part of a -v2
+and see if it boots/runs.
+
+At the very least, I think we could change to:
+static void __init __free_pages_memory(unsigned long start, unsigned long end)
+{
+	int order;
+
+	while (start < end) {
+		order = ffs(start);
+
+		while (start + (1UL << order) > end)
+			order--;
+
+		__free_pages_bootmem(start, order);
+
+		start += (1UL << order);
+	}
+}
+
+
+Robin
+
+On Thu, Jul 11, 2013 at 09:03:53PM -0500, Robin Holt wrote:
+> Currently, when free_all_bootmem() calls __free_pages_memory(), the
+> number of contiguous pages that __free_pages_memory() passes to the
+> buddy allocator is limited to BITS_PER_LONG.  In order to be able to
+> free only the first page of a 2MiB chunk, we need that to be increased
+> to PTRS_PER_PMD.
 > 
-> On 18:33 Thu 04 Apr     , Dmitry Torokhov wrote:
-> > Hi Oskar,
-> > 
-> > On Thu, Mar 07, 2013 at 03:01:22PM +0100, oskar.andero@sonymobile.com wrote:
-> > > From: Aleksej Makarov <aleksej.makarov@sonymobile.com>
-> > >
-> > > When waking up the platform by pressing a specific key, sending a
-> > > release on that key makes it impossible to react on the event in
-> > > user-space.
-> > >
-> > 
-> > No, we can not simply not release keys after resume from suspend, as
-> > this leads to keys being stuck. Consider you are holding an 'I' key on
-> > your external USB keyboard and close your laptop's lid. Then you release
-> > the key and leave. Later you come back, open the lid waking the laptop
-> > and observe endless stream of 'I' in your open terminal.
-> > 
-> > Maybe we should release the keys during suspend time? I am not sure how
-> > Android infrastructure will react to this though...
+> Signed-off-by: Robin Holt <holt@sgi.com>
+> Signed-off-by: Nate Zimmer <nzimmer@sgi.com>
+> To: "H. Peter Anvin" <hpa@zytor.com>
+> To: Ingo Molnar <mingo@kernel.org>
+> Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+> Cc: Linux MM <linux-mm@kvack.org>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Mike Travis <travis@sgi.com>
+> Cc: Daniel J Blueman <daniel@numascale-asia.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Greg KH <gregkh@linuxfoundation.org>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/nobootmem.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
 > 
-> I finally got the time to try this out. Releasing the keys in suspend
-> also solves our problem. Would such patch work for the USB keyboard
-> case you described? Theoretically, I think it should, right?
-> 
-> So, basically:
-> 
-> static int input_dev_suspend(struct device *dev)
+> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> index bdd3fa2..3b512ca 100644
+> --- a/mm/nobootmem.c
+> +++ b/mm/nobootmem.c
+> @@ -83,10 +83,10 @@ void __init free_bootmem_late(unsigned long addr, unsigned long size)
+>  static void __init __free_pages_memory(unsigned long start, unsigned long end)
 >  {
->         struct input_dev *input_dev = to_input_dev(dev);
+>  	unsigned long i, start_aligned, end_aligned;
+> -	int order = ilog2(BITS_PER_LONG);
+> +	int order = ilog2(max(BITS_PER_LONG, PTRS_PER_PMD));
 >  
-> -       mutex_lock(&input_dev->mutex);
-> -
-> -       if (input_dev->users)
-> -               input_dev_toggle(input_dev, false);
-> -
-> -       mutex_unlock(&input_dev->mutex);
-> +       input_reset_device(input_dev);
+> -	start_aligned = (start + (BITS_PER_LONG - 1)) & ~(BITS_PER_LONG - 1);
+> -	end_aligned = end & ~(BITS_PER_LONG - 1);
+> +	start_aligned = (start + ((1UL << order) - 1)) & ~((1UL << order) - 1);
+> +	end_aligned = end & ~((1UL << order) - 1);
 >  
->         return 0;
->  }
+>  	if (end_aligned <= start_aligned) {
+>  		for (i = start; i < end; i++)
+> @@ -98,7 +98,7 @@ static void __init __free_pages_memory(unsigned long start, unsigned long end)
+>  	for (i = start; i < start_aligned; i++)
+>  		__free_pages_bootmem(pfn_to_page(i), 0);
 >  
->  static int input_dev_resume(struct device *dev)
->  {
-> -       struct input_dev *input_dev = to_input_dev(dev);
-> -
-> -       input_reset_device(input_dev);
-> -
->         return 0;
->  }
-> 
-> Should I send the patch?
-
-Ping. Any thoughts on this?
-
-Thanks!
-
--Oskar
-
+> -	for (i = start_aligned; i < end_aligned; i += BITS_PER_LONG)
+> +	for (i = start_aligned; i < end_aligned; i += 1 << order)
+>  		__free_pages_bootmem(pfn_to_page(i), order);
+>  
+>  	for (i = end_aligned; i < end; i++)
+> -- 
+> 1.8.2.1
