@@ -1,85 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab3GLLyD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 07:54:03 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36250 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932877Ab3GLLyC (ORCPT
+	id S933035Ab3GLL4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:56:50 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:49592 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932877Ab3GLL4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 07:54:02 -0400
-Date: Fri, 12 Jul 2013 12:54:00 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] vfs.git part 2
-Message-ID: <20130712115400.GZ4165@ZenIV.linux.org.uk>
-References: <20130703122918.GK4165@ZenIV.linux.org.uk>
- <CA+55aFyyxJL1LyXZeBsf2ypriraj5ut1XkNDsunRBqgVjZU_6Q@mail.gmail.com>
- <20130712054817.GY4165@ZenIV.linux.org.uk>
+	Fri, 12 Jul 2013 07:56:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712054817.GY4165@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4066449.W80oPjbVFF@avalon>
+References: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
+	<20130712110047.GA3135@katana>
+	<CAHp75Ve8oLeT=-_t96i_ctcmnM4kEPHD0cBjBroJTnYxwczBmw@mail.gmail.com>
+	<4066449.W80oPjbVFF@avalon>
+Date: Fri, 12 Jul 2013 14:56:47 +0300
+Message-ID: <CAHp75Vfzo=Co2EV04ihxF1c6f203iu=2WF6sih8_BNTJ50ngUg@mail.gmail.com>
+Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Mark Brown <broonie@kernel.org>,
+        Bin Gao <bin.gao@linux.intel.com>, linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 06:48:17AM +0100, Al Viro wrote:
-> It's slightly less painful than that - if dirname exists, the old kernels
-> will fail; O_CREAT for existing directory means an error.  So in practice
-> you can use it safely.  I'm not too happy about that situation, but I
-> hadn't been able to come up with anything better, short of a new syscall
-> that would duplicate openat(2), but reject unknown values in flags argument
-> from the very beginning ;-/  Which is what we probably should've done with
-> openat(2) itself, but it's too late for that now...
+On Fri, Jul 12, 2013 at 2:35 PM, Laurent Pinchart
+<laurent.pinchart@ideasonboard.com> wrote:
+> On Friday 12 July 2013 14:29:16 Andy Shevchenko wrote:
+>> On Fri, Jul 12, 2013 at 2:00 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+>> >> Briefly looking into ACPI tables we have and mechanisms that we can
+>> >> use in ACPI case, I doubt we may apply all the ideas, probably some of
+>> >> them, though I didn't get yet where to read about in details. What I
+>> >> could say now is that the patch provided by Bin Gao is definitely no
+>> >> go.
+>> >
+>> > Laurent explained to me what V4L did and now does. It used to be the way
+>> > tha V4L drivers did register I2C slaves according to platform_data. Now,
+>> > with DT the slaves get instanciated earlier, so they now use notifiers
+>> > to know when the slaves are in place. Something like this should
+>> > probably be done here, too, instead of unregistering and re-registering.
+>>
+>> Yes, seems right way to go.
+>> I think ACPI case can use V4L2 async API somehow, though it has its
+>> own event model.
+>> I'll talk to Sakari Ailus to sync.
+>
+> Do you have any pointer to the relevant parts of the ACPI specification ?
 
-FWIW, it might make sense to do sys_openat2() that would really validate
-the 'flags' argument.  The question is, what checks do we want to do?
-The situation for open(2) is complicated by OSF, HPUX and Solaris compat.
-AFAICS, we have the following picture:
+Section 5.6.6 of ACPI5 spec describes device object notifications.
+It's useful to detect hotplug events.
 
-* two bits are used to encode O_RDONLY/O_WRONLY/O_RDWR/open-for-ioctl
-Any combination is allowed.  Ignored with O_PATH.
+Otherwise, the i2c slave devices are enumerated from the i2c host
+controller (for example, you can look at i2c-designware-platdrv.c:176.
+It's done in a very similar way like for DT case.
 
-* O_CLOEXEC - orthogonal to everything else
+However, it's possible to have i2c slaves described as children of
+camera device in the DSDT (analogue of the DT). In that case camera
+driver (v4l2 framework?) shall enumerate them on its own.
 
-* O_NOATIME, O_APPEND, O_DIRECT, O_NONBLOCK, O_NDELAY - more or less
-arch-independent (O_NDELAY may or may not coincide with O_NONBLOCK,
-on parisc O_NOATIME is the same value as O_INVISIBLE, whatever that is).
-Can be changed by fcntl(), probably shouldn't be allowed with O_PATH
-(right now we just ignore those in that case).  For that matter, F_SETFL
-makes no sense for O_PATH descriptors.  O_APPEND makes no sense for O_RDONLY
-opens; might be better to leave that as-is, though.
-
-* O_DIRECTORY - shouldn't be allowed with O_TMPFILE.  Requires either O_RDONLY
-or O_PATH (in which case both lower bits are ignored anyway).
-
-* O_NOFOLLOW - orthogonal to everything else
-
-* O_NOCTTY, O_LARGEFILE - probably shouldn't be allowed with O_PATH (currently
-ignored in that case).
-
-* O_CREAT - makes no sense with O_PATH.  O_TMPFILE currently demands it, but
-that's just an attempt to get it fail on old kernels more reliably.
-
-* O_TRUNC - makes no sense with O_PATH.  Pointless with O_TMPFILE.
-
-* O_EXCL - $DEITY-awful mess.  Combination with O_CREAT is probably the
-most regular part; however, it is usable without O_CREAT for some
-devices, with varying semantics.  I'd mapped "can't link tmpfile in place"
-semantics on that one (with O_CREAT | O_TMPFILE).
-
-* O_SYNC and things around it - arch-dependent mess.
-
-* O_BLKSEEK, etc. - weird flags from HPUX et.al.; ignored by the kernel,
-OSF fortunately has only O_SYNC/O_DSYNC near that pile and that's the only
-one we might realistically care about - Solaris compat is gone and HPUX
-one is not much better off.
-
-IMO we should fail on any unknown bits if we go that way, and probably
-tighten O_PATH side of things as well.  It's still not too late - we can
-just add sys_openat2() and make sys_openat() ignore O_TMPFILE completely.
-Do you want to go that way?  If so, let's decide what validation will be
-done and spell it out explicitly...
+--
+With Best Regards,
+Andy Shevchenko
