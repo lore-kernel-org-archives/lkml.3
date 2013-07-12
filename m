@@ -1,167 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757896Ab3GLW7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 18:59:20 -0400
-Received: from mailout.micron.com ([137.201.242.129]:51419 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757856Ab3GLW7S convert rfc822-to-8bit (ORCPT
+	id S1755576Ab3GLXIe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 19:08:34 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:34996 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab3GLXIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 18:59:18 -0400
-Message-ID: <51E08A3C.5030001@micron.com>
-Date: Fri, 12 Jul 2013 15:59:08 -0700
-From: Asai Thambi S P <asamymuthupa@micron.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 12 Jul 2013 19:08:32 -0400
+Message-ID: <51E08C6B.2080802@cogentembedded.com>
+Date: Sat, 13 Jul 2013 03:08:27 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: David Milburn <dmilburn@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtip32xx: dynamically allocate buffer in debugfs functions
-References: <1369344225-4110-1-git-send-email-dmilburn@redhat.com>
-In-Reply-To: <1369344225-4110-1-git-send-email-dmilburn@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20012.001
-X-TM-AS-Result: No--16.938300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org
+Subject: Re: [RFC/RFT PATCH 3/5] scsi: Use dma_max_pfn(dev) helper for bounce_limit
+ calculations
+References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <1373665694-7580-4-git-send-email-santosh.shilimkar@ti.com> <51E07B6E.5090900@cogentembedded.com> <20130712222506.GI24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130712222506.GI24642@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/23/2013 2:23 PM, David Milburn wrote:
+Hello.
 
-> Dynamically allocate buf to prevent warnings:
-> 
-> drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_device_status’:
-> drivers/block/mtip32xx/mtip32xx.c:2823: warning: the frame size of 1056 bytes is larger than 1024 bytes
-> drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_registers’:
-> drivers/block/mtip32xx/mtip32xx.c:2894: warning: the frame size of 1056 bytes is larger than 1024 bytes
-> drivers/block/mtip32xx/mtip32xx.c: In function ‘mtip_hw_read_flags’:
-> drivers/block/mtip32xx/mtip32xx.c:2917: warning: the frame size of 1056 bytes is larger than 1024 bytes
-> 
-> Signed-off-by: David Milburn <dmilburn@redhat.com>
+On 07/13/2013 02:25 AM, Russell King - ARM Linux wrote:
 
+>>> DMA bounce limit is the maximum direct DMA'able memory beyond which
+>>> bounce buffers has to be used to perform dma operations. SCSI driver
+>>> relies on dma_mask but its calculation is based on max_*pfn which
+>>> don't have uniform meaning across architectures. So make use of
+>>> dma_max_pfn() which is expected to return the DMAable maximum pfn
+>>> value across architectures.
 
-Acked-by: Asai Thambi S P <asamymuthupa@micron.com>
+>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>> Cc: linux-scsi@vger.kernel.org
 
-> ---
->  drivers/block/mtip32xx/mtip32xx.c |   47 +++++++++++++++++++++++++++++--------
->  1 files changed, 37 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-> index 847107e..baa0996 100644
-> --- a/drivers/block/mtip32xx/mtip32xx.c
-> +++ b/drivers/block/mtip32xx/mtip32xx.c
-> @@ -2806,34 +2806,51 @@ static ssize_t show_device_status(struct device_driver *drv, char *buf)
->  static ssize_t mtip_hw_read_device_status(struct file *f, char __user *ubuf,
->  						size_t len, loff_t *offset)
->  {
-> +	struct driver_data *dd =  (struct driver_data *)f->private_data;
->  	int size = *offset;
-> -	char buf[MTIP_DFS_MAX_BUF_SIZE];
-> +	char *buf;
-> +	int rv = 0;
->  
->  	if (!len || *offset)
->  		return 0;
->  
-> +	buf = kzalloc(MTIP_DFS_MAX_BUF_SIZE, GFP_KERNEL);
-> +	if (!buf) {
-> +		dev_err(&dd->pdev->dev,
-> +			"Memory allocation: status buffer\n");
-> +		return -ENOMEM;
-> +	}
-> +
->  	size += show_device_status(NULL, buf);
->  
->  	*offset = size <= len ? size : len;
->  	size = copy_to_user(ubuf, buf, *offset);
->  	if (size)
-> -		return -EFAULT;
-> +		rv = -EFAULT;
->  
-> -	return *offset;
-> +	kfree(buf);
-> +	return rv ? rv : *offset;
->  }
->  
->  static ssize_t mtip_hw_read_registers(struct file *f, char __user *ubuf,
->  				  size_t len, loff_t *offset)
->  {
->  	struct driver_data *dd =  (struct driver_data *)f->private_data;
-> -	char buf[MTIP_DFS_MAX_BUF_SIZE];
-> +	char *buf;
->  	u32 group_allocated;
->  	int size = *offset;
-> -	int n;
-> +	int n, rv = 0;
->  
->  	if (!len || size)
->  		return 0;
->  
-> +	buf = kzalloc(MTIP_DFS_MAX_BUF_SIZE, GFP_KERNEL);
-> +	if (!buf) {
-> +		dev_err(&dd->pdev->dev,
-> +			"Memory allocation: register buffer\n");
-> +		return -ENOMEM;
-> +	}
-> +
->  	size += sprintf(&buf[size], "H/ S ACTive      : [ 0x");
->  
->  	for (n = dd->slot_groups-1; n >= 0; n--)
-> @@ -2888,21 +2905,30 @@ static ssize_t mtip_hw_read_registers(struct file *f, char __user *ubuf,
->  	*offset = size <= len ? size : len;
->  	size = copy_to_user(ubuf, buf, *offset);
->  	if (size)
-> -		return -EFAULT;
-> +		rv = -EFAULT;
->  
-> -	return *offset;
-> +	kfree(buf);
-> +	return rv ? rv : *offset;
->  }
->  
->  static ssize_t mtip_hw_read_flags(struct file *f, char __user *ubuf,
->  				  size_t len, loff_t *offset)
->  {
->  	struct driver_data *dd =  (struct driver_data *)f->private_data;
-> -	char buf[MTIP_DFS_MAX_BUF_SIZE];
-> +	char *buf;
->  	int size = *offset;
-> +	int rv = 0;
->  
->  	if (!len || size)
->  		return 0;
->  
-> +	buf = kzalloc(MTIP_DFS_MAX_BUF_SIZE, GFP_KERNEL);
-> +	if (!buf) {
-> +		dev_err(&dd->pdev->dev,
-> +			"Memory allocation: flag buffer\n");
-> +		return -ENOMEM;
-> +	}
-> +
->  	size += sprintf(&buf[size], "Flag-port : [ %08lX ]\n",
->  							dd->port->flags);
->  	size += sprintf(&buf[size], "Flag-dd   : [ %08lX ]\n",
-> @@ -2911,9 +2937,10 @@ static ssize_t mtip_hw_read_flags(struct file *f, char __user *ubuf,
->  	*offset = size <= len ? size : len;
->  	size = copy_to_user(ubuf, buf, *offset);
->  	if (size)
-> -		return -EFAULT;
-> +		rv = -EFAULT;
->  
-> -	return *offset;
-> +	kfree(buf);
-> +	return rv ? rv : *offset;
->  }
->  
->  static const struct file_operations mtip_device_status_fops = {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+>>> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>> ---
+>>>    drivers/scsi/scsi_lib.c |    2 +-
+>>>    1 file changed, 1 insertion(+), 1 deletion(-)
 
+>>> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+>>> index 86d5220..e8275fa 100644
+>>> --- a/drivers/scsi/scsi_lib.c
+>>> +++ b/drivers/scsi/scsi_lib.c
+>>> @@ -1668,7 +1668,7 @@ u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
+>>>
+>>>    	host_dev = scsi_get_device(shost);
+>>>    	if (host_dev && host_dev->dma_mask)
+>>> -		bounce_limit = *host_dev->dma_mask;
+>>> +		bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
+
+>>     You definitely forgot -1 here.
+
+> Please explain your point.
+
+    Previously, 'bounce_limit' would look like 0xffffffff (unless I'm 
+mistaken), now it would look like 0xfffff000 which is hardly what we're 
+looking for, no?
+
+WBR, Sergei
 
