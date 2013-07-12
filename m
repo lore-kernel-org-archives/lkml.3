@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965075Ab3GLOEj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:04:39 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:35303 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S964823Ab3GLOEi (ORCPT
+	id S965069Ab3GLOPa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:15:30 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:57359 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964861Ab3GLOP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:04:38 -0400
-Message-ID: <51E00CF1.6070302@hurleysoftware.com>
-Date: Fri, 12 Jul 2013 10:04:33 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 12 Jul 2013 10:15:29 -0400
+Date: Fri, 12 Jul 2013 07:15:30 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130712141530.GA3629@roeck-us.net>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130711222935.GA11340@redhat.com>
+ <20130711224455.GA17222@kroah.com>
 MIME-Version: 1.0
-To: Gustavo Padovan <gustavo@padovan.org>,
-        Gianluca Anzolin <gianluca@sottospazio.it>,
-        linux-kernel@vger.kernel.org
-CC: jslaby@suse.cz, gregkh@linuxfoundation.org
-Subject: Re: [PATCH] Fix refcount leak in tty_port.c
-References: <20130709083535.GA30227@debian.seek.priv> <20130712103026.GC2065@joana>
-In-Reply-To: <20130712103026.GC2065@joana>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130711224455.GA17222@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 06:30 AM, Gustavo Padovan wrote:
-> Hi Gianluca,
->
-> * Gianluca Anzolin <gianluca@sottospazio.it> [2013-07-09 10:35:35 +0200]:
->
->> Hello,
->>
->> In linux 3.10 in the file drivers/tty/tty_port.c the function
->> tty_port_tty_hangup may leak a tty reference:
->>
->>          struct tty_struct *tty = tty_port_tty_get(port);
->>
->>          if (tty && (!check_clocal || !C_CLOCAL(tty))) {
->>                  tty_hangup(tty);
->>                  tty_kref_put(tty);
->>          }
->>
->> If tty != NULL and the second condition is false we never call tty_kref_put and
->> the reference is leaked.
+On Thu, Jul 11, 2013 at 03:44:55PM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Jul 11, 2013 at 06:29:35PM -0400, Dave Jones wrote:
+> > On Thu, Jul 11, 2013 at 03:01:17PM -0700, Greg Kroah-Hartman wrote:
+> >  > <rant>
+> >  >   I'm sitting on top of over 170 more patches that have been marked for
+> >  >   the stable releases right now that are not included in this set of
+> >  >   releases.  The fact that there are this many patches for stable stuff
+> >  >   that are waiting to be merged through the main -rc1 merge window cycle
+> >  >   is worrying to me.
+> >  > 
+> >  >   Why are subsystem maintainers holding on to fixes that are
+> >  >   _supposedly_ affecting all users?  I mean, 21 powerpc core changes
+> >  >   that I don't see until a -rc1 merge?  It's as if developers don't
+> >  >   expect people to use a .0 release and are relying on me to get the
+> >  >   fixes they have burried in their trees out to users.  That's not that
+> >  >   nice.  6 "core" iscsi-target fixes?  That's the sign of either a
+> >  >   broken subsystem maintainer, or a lack of understanding what the
+> >  >   normal -rc kernel releases are supposed to be for.
+> > 
+> > I get the impression as soon as we hit -rc1, some maintainers immediately
+> > go into "OH SHIT, I CAN'T SEND PATCHES OR LINUS WILL SHOUT AT ME" mode.
+> 
+> I agree.  But it seems that I need to now start shouting at them :(
+> 
+Just like others, I now have a cutoff-point for -stable patches. Depending on
+the severity of a bug, it is somewhere between -rc4 and -rc6. After -rc6 I only
+push regressions and crash fixes; the rest has to wait for the commit window.
 
-Good catch.
+So, yes, there are a couple of hwmon patches in your list.
 
->> Fix by nesting two if statements.
->>
->> Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
->
-> As mentioned by Gianluca this is a regression of aa27a094 and we depend on
-> this patch to go ahead with some fixes in the bluetooth subsystem.
+>From a maintainer perspective, seems to me we are stuck between a rock and a
+hard place. Yes, I would prefer to push all -stable material even late in the
+-rc game, but that is not how things work nowadays anymore.
 
-Gustavo,
+This should really be discussed at the Kernel Summit. Overall, I don't really
+care too much how to handle it. Just tell me. The outlook of "Either Linus
+will shout at you or Greg will" doesn't sound like a good solution, though.
 
-There's no direct dependency; ie., there aren't merge issues here.
-We should progress with the fixes to rfcomm independent of this patch.
-
-> Gianluca, it might help if you send a proper git inline formated patch,
-> mentioning the issue and which regression you are fixing.  It makes
-> maintainer's life easier.
-
-As Gustavo points out, please inline the patch otherwise commenters
-have to do it for you.
-
-> Also add my Ack to the patch:
- >
->
-> Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
->
-> 	Gustavo
-
-Copy of the Gianluca's patch with my comments
-
---- %< ---
-
-Please put a proper commit message here, including that this is
-a regression and the commit id that caused the regression so this patch
-can eventually make its way to stable.
-
-
- > diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
- > index 121aeb9..2198f7d 100644
- > --- a/drivers/tty/tty_port.c
- > +++ b/drivers/tty/tty_port.c
- > @@ -256,8 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
- >  {
- >  	struct tty_struct *tty = tty_port_tty_get(port);
- >
- > -	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
- > -		tty_hangup(tty);
- > +	if (tty) {
- > +		if (!check_clocal || !C_CLOCAL(tty))
- > +			tty_hangup(tty);
- >  		tty_kref_put(tty);
- >  	}
- >  }
-
-
-tty_kref_put() already checks for NULL tty. I would prefer:
-
-{
-   	struct tty_struct *tty = tty_port_tty_get(port);
-
-	if (tty && (!check_clocal || !C_CLOCAL(tty)))
-		tty_hangup(tty);
-	tty_kref_put(tty);
-}
-
-
+Guenter
