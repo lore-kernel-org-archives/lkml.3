@@ -1,108 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab3GLLw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 07:52:56 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42216 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932805Ab3GLLwz (ORCPT
+	id S933002Ab3GLLyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:54:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36250 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932877Ab3GLLyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 07:52:55 -0400
-Date: Fri, 12 Jul 2013 13:52:53 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>, Greg KH <greg@kroah.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Dave, Tushar N" <tushar.n.dave@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        linux-pci@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        mjg59@srcf.ucam.org
-Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
-Message-ID: <20130712115253.GA4585@amd.pavel.ucw.cz>
-References: <20130709012611.GA22371@amd.pavel.ucw.cz>
- <20130709041321.GA30555@kroah.com>
- <20130709094906.GA3870@amd.pavel.ucw.cz>
- <20130709101039.GA4479@amd.pavel.ucw.cz>
- <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
- <20130710132950.GA3684@amd.pavel.ucw.cz>
- <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
- <9BBC4E0CF881AA4299206E2E1412B6264F90E999@ORSMSX102.amr.corp.intel.com>
- <20130710225715.GA23171@google.com>
+	Fri, 12 Jul 2013 07:54:02 -0400
+Date: Fri, 12 Jul 2013 12:54:00 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [git pull] vfs.git part 2
+Message-ID: <20130712115400.GZ4165@ZenIV.linux.org.uk>
+References: <20130703122918.GK4165@ZenIV.linux.org.uk>
+ <CA+55aFyyxJL1LyXZeBsf2ypriraj5ut1XkNDsunRBqgVjZU_6Q@mail.gmail.com>
+ <20130712054817.GY4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130710225715.GA23171@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130712054817.GY4165@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Jul 12, 2013 at 06:48:17AM +0100, Al Viro wrote:
+> It's slightly less painful than that - if dirname exists, the old kernels
+> will fail; O_CREAT for existing directory means an error.  So in practice
+> you can use it safely.  I'm not too happy about that situation, but I
+> hadn't been able to come up with anything better, short of a new syscall
+> that would duplicate openat(2), but reject unknown values in flags argument
+> from the very beginning ;-/  Which is what we probably should've done with
+> openat(2) itself, but it's too late for that now...
 
-> > > Pavel's ThinkPad X60 has two NICs: Intel 82573L and Intel PRO/Wireless
-> > > 3945ABG.  I'm pretty sure the problem he's reporting is with the 82573L.  Ping
-> > > times are bad (~100msec) when ASPM is enabled, as reported by lspci.
-> > > 
-> > > On Pavel's system, the FADT says we shouldn't enable OSPM control of ASPM
-> > > (ACPI_FADT_NO_ASPM is set), so we set "aspm_disabled = 1".  One effect is that
-> > > we don't blacklist the pre-1.1 82573L device, which I think results in it being left
-> > > with the BIOS configuration, which apparently has ASPM enabled.  (Pavel, could
-> > > you confirm the BIOS config, e.g., with "pci=earlydump"?)
-> > >
-> > > e1000e claims to disable ASPM, but because aspm_disabled is set, the driver's
-> > > call to pci_disable_link_state_locked() actually does nothing [1].
-> > 
-> > Yes, this is the problem we run into.  It would help if the call to pci_disable_link_state_locked() returned an error if ASPM is not disabled as requested so that drivers can then do the brute force disabling of it themselves.
-> 
-> I considered returning an error, but resisted because I think drivers
-> will just handle the error by doing the brute-force disable themselves,
-> and then we might as well drop the pci_disable_link_state() interface
-> completely.
+FWIW, it might make sense to do sys_openat2() that would really validate
+the 'flags' argument.  The question is, what checks do we want to do?
+The situation for open(2) is complicated by OSF, HPUX and Solaris compat.
+AFAICS, we have the following picture:
 
-What is that? Yes, if function does not perform what it was asked to
-do, it should return an error. Anything else is antisocial.
+* two bits are used to encode O_RDONLY/O_WRONLY/O_RDWR/open-for-ioctl
+Any combination is allowed.  Ignored with O_PATH.
 
-If drivers will attempt to do something _more_ antisocial (like doing
-PCI bit banging) we can surely catch it during review.
+* O_CLOEXEC - orthogonal to everything else
 
-[Actually, the functions seem to have "force" parameter. Should we
-just let e1000e/iwlwifi set the force? They _know_ hardware will not
-work properly with the ASPM.] 
+* O_NOATIME, O_APPEND, O_DIRECT, O_NONBLOCK, O_NDELAY - more or less
+arch-independent (O_NDELAY may or may not coincide with O_NONBLOCK,
+on parisc O_NOATIME is the same value as O_INVISIBLE, whatever that is).
+Can be changed by fcntl(), probably shouldn't be allowed with O_PATH
+(right now we just ignore those in that case).  For that matter, F_SETFL
+makes no sense for O_PATH descriptors.  O_APPEND makes no sense for O_RDONLY
+opens; might be better to leave that as-is, though.
 
-> I proposed a patch [3] a while ago that made pci_disable_link_state()
-> turn off ASPM unconditionally.  That would have the same effect as
-> returning failure and having drivers disable ASPM themselves.  But
-> Rafael and Matthew thought it was too risky [4] (and I think they're
-> probably right because it does not match the Windows behavior).
+* O_DIRECTORY - shouldn't be allowed with O_TMPFILE.  Requires either O_RDONLY
+or O_PATH (in which case both lower bits are ignored anyway).
 
-Well, I believe "patch might be risky" is trumped by "this ethernet
-card is not usable". 
+* O_NOFOLLOW - orthogonal to everything else
 
-> So by extension, I guess it would also be risky to return an error and
-> have the driver disable ASPM.
+* O_NOCTTY, O_LARGEFILE - probably shouldn't be allowed with O_PATH (currently
+ignored in that case).
 
-It does not seem like clean conclusion to me.
+* O_CREAT - makes no sense with O_PATH.  O_TMPFILE currently demands it, but
+that's just an attempt to get it fail on old kernels more reliably.
 
-Doing force-disabling on selected hardware that needs it (x60+e1000e)
-is certainly less risky than changing behaviour for all the 1000
-notebooks out there.
+* O_TRUNC - makes no sense with O_PATH.  Pointless with O_TMPFILE.
 
-So yes, you should be returning error.
+* O_EXCL - $DEITY-awful mess.  Combination with O_CREAT is probably the
+most regular part; however, it is usable without O_CREAT for some
+devices, with varying semantics.  I'd mapped "can't link tmpfile in place"
+semantics on that one (with O_CREAT | O_TMPFILE).
 
-At the very least, e1000e and iwlwifi could warn the user loudly and
-maybe even disable the interface.
+* O_SYNC and things around it - arch-dependent mess.
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+* O_BLKSEEK, etc. - weird flags from HPUX et.al.; ignored by the kernel,
+OSF fortunately has only O_SYNC/O_DSYNC near that pile and that's the only
+one we might realistically care about - Solaris compat is gone and HPUX
+one is not much better off.
+
+IMO we should fail on any unknown bits if we go that way, and probably
+tighten O_PATH side of things as well.  It's still not too late - we can
+just add sys_openat2() and make sys_openat() ignore O_TMPFILE completely.
+Do you want to go that way?  If so, let's decide what validation will be
+done and spell it out explicitly...
