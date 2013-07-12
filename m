@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932696Ab3GLK52 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 06:57:28 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55858 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757479Ab3GLK50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 06:57:26 -0400
-Date: Fri, 12 Jul 2013 11:57:21 +0100
-From: Robert Richter <rric@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>, Jan Beulich <JBeulich@suse.com>,
-        dt.tangr@gmail.com, Geert Uytterhoeven <geert@linux-m68k.org>,
-        James Hogan <james.hogan@imgtec.com>,
-        Christian Kujau <lists@nerdbynature.de>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        "Yaakov (Cygwin/X)" <yselkowitz@users.sourceforge.net>,
-        zzs0213@gmail.com,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] kbuild changes for v3.11-rc1
-Message-ID: <20130712105721.GF8731@rric.localhost>
-References: <20130710133742.GA29368@emu.suse.cz>
- <CA+55aFxtvT3Yvbxe5JGBThZS13payymFJ7jCLyEiE2iNDvsZtQ@mail.gmail.com>
- <20130711135445.GA21500@sepie.suse.cz>
- <CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
+	id S1757601Ab3GLLBA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 07:01:00 -0400
+Received: from sauhun.de ([89.238.76.85]:47524 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757344Ab3GLLA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 07:00:58 -0400
+Date: Fri, 12 Jul 2013 12:00:47 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Bin Gao <bin.gao@linux.intel.com>,
+        linux-i2c@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: i2c: introduce i2c helper i2c_find_client_by_name()
+Message-ID: <20130712110047.GA3135@katana>
+References: <20130606183346.GA13259@bingao-desk1.fm.intel.com>
+ <20130705195512.GJ27646@sirena.org.uk>
+ <CAHp75VeasHGariq=v005NSUTe_+e471NYbEoSzPJXcFNgsfKNQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="k+w/mQv8wyuph6w0"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFyVjugxM7cUDWi0ASWttYthCxa6e7X3CADknBcSFxWgew@mail.gmail.com>
+In-Reply-To: <CAHp75VeasHGariq=v005NSUTe_+e471NYbEoSzPJXcFNgsfKNQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.07.13 10:16:18, Linus Torvalds wrote:
-> On Thu, Jul 11, 2013 at 6:54 AM, Michal Marek <mmarek@suse.cz> wrote:
-> >
-> > Yeah. It also reveals another bug that we rewrite the kernel.release
-> > file each time.
 
-The odd thing I have in a specific configuration is that depmod is
-missing the kernelrelease when I only build install rules, though I
-had built everything before and kernelrelease should be there:
+--k+w/mQv8wyuph6w0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
- $ make <makeflags>
- $ make <makeflags> modules_install zinstall
- ...
-   DEPMOD  
- Usage: .../scripts/depmod.sh /sbin/depmod <kernelrelease>
 
-Note that makeflags include the -j option, INSTALL_MOD_PATH and
-INSTALL_PATH variables set, so no root perms required in this case.
+> Briefly looking into ACPI tables we have and mechanisms that we can
+> use in ACPI case, I doubt we may apply all the ideas, probably some of
+> them, though I didn't get yet where to read about in details. What I
+> could say now is that the patch provided by Bin Gao is definitely no
+> go.
 
-I agree, the fix to add a dependency to the kernelrelease file is
-wrong here since it rewrites the object tree, which should be readonly
-for install rules.
+Laurent explained to me what V4L did and now does. It used to be the way
+tha V4L drivers did register I2C slaves according to platform_data. Now,
+with DT the slaves get instanciated earlier, so they now use notifiers
+to know when the slaves are in place. Something like this should
+probably be done here, too, instead of unregistering and re-registering.
 
-I could reproduce the error above in my setup and will look at it
-again, hopefully fixing it more carefully.
 
-Appologize the trouble this made.
+--k+w/mQv8wyuph6w0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--Robert
+iQIcBAEBAgAGBQJR3+HfAAoJEBQN5MwUoCm2bmAQALGb3HN11Xjr8sv4ubKOqJIE
+E/2fc0dC1wwqfeOn7q3quqaxmeUqpelWGDyigkLkELfOuiopFDNRHdskD67cvziG
+cXhy8Ll3fTY3A62u001r8L70eFpSbfKlaHd5lSiFI8jLP0zHihc/blmE0L8LHiOb
+mKxulbv6+l3FdueIvTbRuwaA+CDvkLLOoewFN7w6cxasP1ncqL9UcFHxjPSxSZ4P
+dKBMTtqi//2gKugU0LTYT6Y0tG++qieeTUNppZDldpfZaktAxVdsEahVid8x8dbj
+gUObr8wFgwyV5sZVcrNgXgomBwGdm7pWe2hZTholQnW6asglw0KT0WuuK24ZnBaH
+4b+18zGclNw0oH1Se0s49KxCf5yAc2IWEPUSDMGE7axiuu1OgPY07fT4yO4VTEGh
+jgeCmIpcomrdOAeUPFNGNVC5O+GxWhvsppCGc1MF7rm6IdGCIx0HCat++xU6FkNz
+pswxwMsE9rrG4hCsX1Y5gwGH2DArXl5VCwJWeoNYlJez9AEkDg02RwS/KSS+1p77
+45b5HiSLJKSVrWPvfsMDMj+NSFkX9q4MhIaD31AP2r4DWjkRUuqbv7o0xJ2tVCtl
+Oe/7C0+E/T3dLFnxyPI41nKAhXcOLyKR4mzrKt2X2x34kq+QQCmN0GcP7btQwrZF
+KQuq8WIURVmLlmZ8jBhS
+=uyrr
+-----END PGP SIGNATURE-----
+
+--k+w/mQv8wyuph6w0--
