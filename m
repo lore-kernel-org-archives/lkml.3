@@ -1,102 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3GLDqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 23:46:33 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37645 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756581Ab3GLDqb (ORCPT
+	id S1756693Ab3GLDrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 23:47:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45828 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab3GLDra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 23:46:31 -0400
+	Thu, 11 Jul 2013 23:47:30 -0400
+Date: Thu, 11 Jul 2013 20:48:25 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [ 6/8] MAINTAINERS: add stable_kernel_rules.txt to stable
+ maintainer information
+Message-ID: <20130712034825.GA4965@kroah.com>
+References: <20130711221931.216612791@linuxfoundation.org>
+ <20130711221931.994089526@linuxfoundation.org>
+ <1373600160.24446.74.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <51CC6B09.5080809@infradead.org>
-References: <alpine.DEB.2.02.1306181705530.28460@M2420>
-	<1371560680.3495.121.camel@deadeye.wl.decadent.org.uk>
-	<51C07608.2070406@infradead.org>
-	<CADJHv_vZiPsDUiLrFao41rRVduf+AYFm0NuvpNaCW8S3KrAjnA@mail.gmail.com>
-	<51CC6B09.5080809@infradead.org>
-Date: Fri, 12 Jul 2013 11:46:30 +0800
-Message-ID: <CADJHv_sSn9oU-xg5qgoHRKDeyHRCqy8VuPJW5_punHd45inzsA@mail.gmail.com>
-Subject: Re: [PATCH]amilo-rfkill: add depends on i8042 in Kconfig
-From: Xiong Zhou <jencce.kernel@gmail.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>, matthew.garrett@nebula.com,
-        platform-driver-x86@vger.kernel.org,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Jim Davis <jim.epost@gmail.com>, Jiri Kosina <trivial@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373600160.24446.74.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/6/28 Randy Dunlap <rdunlap@infradead.org>:
-> On 06/18/13 18:09, Xiong Zhou wrote:
->> 2013/6/18 Randy Dunlap <rdunlap@infradead.org>:
->>> On 06/18/13 06:04, Ben Hutchings wrote:
->>>> On Tue, 2013-06-18 at 17:21 +0800, Xiong Zhou wrote:
->>>>> From: Xiong Zhou <jencce.kernel@gmail.com>
->>>>>
->>>>> Fix randconfig build failure for Amilo x86 platform driver.
->>>>> AMILO_RFKILL requires SERIO_I8042 being available.
->>>>>
->>>>> amilo-rfkill.c:(.text+0x108b5b): undefined reference to `i8042_lock_chip'
->>>>> amilo-rfkill.c:(.text+0x108b69): undefined reference to `i8042_command'
->>>>> amilo-rfkill.c:(.text+0x108b71): undefined reference to `i8042_unlock_chip'
->>>>>
->>>>> Reported-by: Jim Davis <jim.epost@gmail.com>
->>>>> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
->>>>
->>>> Acked-by: Ben Hutchings <ben@decadent.org.uk>
->>>>
->>>> But I thought somehow sent this same fix a while back...
->>>
->>> Yes, I reported it and sent a patch for it that you acked...
->>> I guess my patch was never picked up.
->>>
->>
->> ... Better someone pick this up.
->>
->
-> This build error is still occurring in linux-next (20130627).
-> I first reported it and posted a patch for it on May-15 2013.
->
-> Please merge either patch...
->
-> Is anybody out there?
->
->
->>
->>>>
->>>> Ben.
->>>>
->>>>> ---
->>>>>  drivers/platform/x86/Kconfig |    1 +
->>>>>  1 file changed, 1 insertion(+)
->>>>>
->>>>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
->>>>> index 8577261..37645b9 100644
->>>>> --- a/drivers/platform/x86/Kconfig
->>>>> +++ b/drivers/platform/x86/Kconfig
->>>>> @@ -176,6 +176,7 @@ config FUJITSU_TABLET
->>>>>  config AMILO_RFKILL
->>>>>      tristate "Fujitsu-Siemens Amilo rfkill support"
->>>>>      depends on RFKILL
->>>>> +    depends on SERIO_I8042
->>>>>      ---help---
->>>>>        This is a driver for enabling wifi on some Fujitsu-Siemens Amilo
->>>>>        laptops.
->>>>
->>>
->>>
->>> --
->>> ~Randy
->> --
->
->
-> --
-> ~Randy
+On Fri, Jul 12, 2013 at 04:36:00AM +0100, Ben Hutchings wrote:
+> On Thu, 2013-07-11 at 15:20 -0700, Greg Kroah-Hartman wrote:
+> > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > commit 7b175c46720f8e6b92801bb634c93d1016f80c62 upstream.
+> > 
+> > This hopefully will help point developers to the proper way that patches
+> > should be submitted for inclusion in the stable kernel releases.
+> > 
+> > Reported-by: David Howells <dhowells@redhat.com>
+> > Acked-by: David Howells <dhowells@redhat.com>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > ---
+> >  MAINTAINERS |    1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -5725,6 +5725,7 @@ P:	Vincent Sanders <vince@simtec.co.uk>
+> >  M:	Simtec Linux Team <linux@simtec.co.uk>
+> >  W:	http://www.simtec.co.uk/products/EB110ATX/
+> >  S:	Supported
+> > +F:	Documentation/stable_kernel_rules.txt
+> 
+> You've applied this in the wrong place for some reason.
 
+Ick, patch did something odd there, thanks, I'll go fix it up and see if
+3.4 is ok too.
 
-
-cc Jiri Kosina <trivial@kernel.org>
+greg k-h
