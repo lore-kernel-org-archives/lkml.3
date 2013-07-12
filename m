@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003Ab3GLFYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 01:24:09 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:39017 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab3GLFYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 01:24:07 -0400
-Message-ID: <51DF92E7.2070109@ti.com>
-Date: Fri, 12 Jul 2013 10:53:51 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1751990Ab3GLFdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 01:33:43 -0400
+Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:28063
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751125Ab3GLFdm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 01:33:42 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz8275bhz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Message-ID: <51DF952B.8050802@freescale.com>
+Date: Fri, 12 Jul 2013 13:33:31 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Jingoo Han <jg1.han@samsung.com>
-CC: "'Bjorn Helgaas'" <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
-        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        <linux-kernel@vger.kernel.org>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>
-Subject: Re: [PATCH V2] pci: exynos: split into two parts such as Synopsys
- part and Exynos part
-References: <001201ce7dfa$716b3370$54419a50$@samsung.com> <51DE72CC.9050001@ti.com> <001301ce7e92$d19a04e0$74ce0ea0$@samsung.com>
-In-Reply-To: <001301ce7e92$d19a04e0$74ce0ea0$@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Scott Wood <scottwood@freescale.com>
+CC: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <vakul@freescale.com>
+Subject: Re: [PATCH V2 1/2] DMA: Freescale: Add new 8-channel DMA engine device
+ tree nodes
+References: <1373005626-20726-1-git-send-email-hongbo.zhang@freescale.com> <1373005626-20726-2-git-send-email-hongbo.zhang@freescale.com> <1373388526.8183.191@snotra>
+In-Reply-To: <1373388526.8183.191@snotra>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 12 July 2013 05:30 AM, Jingoo Han wrote:
-> On Thursday, July 11, 2013 5:55 PM, Kishon Vijay Abraham I wrote:
->> On Thursday 11 July 2013 11:19 AM, Jingoo Han wrote:
->>> Exynos PCIe IP consists of Synopsys specific part and Exynos
->>> specific part. Only core block is a Synopsys designware part;
->>> other parts are Exynos specific.
->>> Also, the Synopsys designware part can be shared with other
->>> platforms; thus, it can be split two parts such as Synopsys
->>> designware part and Exynos specific part.
->>>
->>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
->>> Cc: Pratyush Anand <pratyush.anand@st.com>
->>> Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
->>> ---
->> .
->> .
->> <snip>
->> .
->> .
->>> +
->>> +/* Exynos PCIe driver does not allow module unload */
+On 07/10/2013 12:48 AM, Scott Wood wrote:
+> On 07/05/2013 01:27:05 AM, hongbo.zhang@freescale.com wrote:
+>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
 >>
->> Just curious, why is this restriction?
-> 
-> CC'ed Thierry Reding,
-> 
-> Hi Kishon,
-> 
-> That's a good question.
-> 
-> Now, we don't have the solution to "be able to load and unload
-> the PCI host driver in a loop definitely without crashing or exposing
-> any races  or leaks", as Arnd Bergmann said.
-> Please refer to the following thread in mailing-list.
-> (http://archive.arm.linux.org.uk/lurker/message/20130614.123849.4ff363c5.pl.html)
+>> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this 
+>> patch add
+>> the device tree nodes for them.
+>>
+>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+>> ---
+>>  arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi   |   90 
+>> +++++++++++++++++++++++++++
+>>  arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi   |   90 
+>> +++++++++++++++++++++++++++
+>>  arch/powerpc/boot/dts/fsl/t4240si-post.dtsi |    4 +-
+>>  3 files changed, 182 insertions(+), 2 deletions(-)
+>>  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+>>  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+>
+> Please update Documentation/devicetree/bindings/powerpc/fsl/dma.txt 
+> for the new compatible and dgsr1.
+OK, thanks.
+What's more, some text string in the driver and Kconfig files should be 
+updated too, e.g. "Elo / Elo Plus DMA" may be changed to "Elo series 
+DMA", will send out v3 patches soon.
+>
+> -Scott
 
-That explains.
 
-Thanks
-Kishon
+
