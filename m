@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932555Ab3GLCEG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:04:06 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49191 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932414Ab3GLCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:04:05 -0400
-From: Robin Holt <holt@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [RFC 0/4] Transparent on-demand struct page initialization embedded in the buddy allocator
-Date: Thu, 11 Jul 2013 21:03:51 -0500
-Message-Id: <1373594635-131067-1-git-send-email-holt@sgi.com>
-X-Mailer: git-send-email 1.8.2.1
+	id S932635Ab3GLCFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:05:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756179Ab3GLCFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 22:05:04 -0400
+Message-ID: <51DF6446.9090105@redhat.com>
+Date: Fri, 12 Jul 2013 10:04:54 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+CC: airlied@linux.ie, Vivek Goyal <vgoyal@redhat.com>,
+        Baoquan He <bhe@redhat.com>, Chao Wang <chaowang@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: PCIE resetting graphic card
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have been working on this since we returned from shutdown and have
-something to discuss now.  We restricted ourselves to 2MiB initialization
-to keep the patch set a little smaller and more clear.
+Hi, Takao
 
-First, I think I want to propose getting rid of the page flag.  If I knew
-of a concrete way to determine that the page has not been initialized,
-this patch series would look different.  If there is no definitive
-way to determine that the struct page has been initialized aside from
-checking the entire page struct is zero, then I think I would suggest
-we change the page flag to indicate the page has been initialized.
+I know you are working on the PCIE resetting patches for the iommu kdump
+issue.
 
-The heart of the problem as I see it comes from expand().  We nearly
-always see a first reference to a struct page which is in the middle
-of the 2MiB region.  Due to that access, the unlikely() check that was
-originally proposed really ends up referencing a different page entirely.
-We actually did not introduce an unlikely and refactor the patches to
-make that unlikely inside a static inline function.  Also, given the
-strong warning at the head of expand(), we did not feel experienced
-enough to refactor it to make things always reference the 2MiB page
-first.
+You explicitly excluded the graphic card in your patch. I have some
+questions about this. Why can't we reset the graphic card like other
+pcie devices?
 
-With this patch, we did boot a 16TiB machine.  Without the patches,
-the v3.10 kernel with the same configuration took 407 seconds for
-free_all_bootmem.  With the patches and operating on 2MiB pages instead
-of 1GiB, it took 26 seconds so performance was improved.  I have no feel
-for how the 1GiB chunk size will perform.
+We have problems, if 1st kernel is in kms mode kdump kernel will have no
+chance to switch back to VGA console. There's no serial port on most of
+recent laptops thus it's difficult to debug kdump issue.
 
-I am on vacation for the next three days so I am sorry in advance for
-my infrequent or non-existant responses.
+So if we can reset graphic card as well, and if it works I wonder if the
+2nd kdump kernel can use vga console with nomodeset?
 
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Nate Zimmer <nzimmer@sgi.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Linux MM <linux-mm@kvack.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Mike Travis <travis@sgi.com>
-Cc: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
+-- 
+Thanks
+Dave
