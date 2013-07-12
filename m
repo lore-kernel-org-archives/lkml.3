@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab3GLKNZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 06:13:25 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:46421 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111Ab3GLKNY (ORCPT
+	id S932787Ab3GLKPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 06:15:01 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60426 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111Ab3GLKPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 06:13:24 -0400
-Date: Fri, 12 Jul 2013 12:13:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Kyungsik Lee <kyungsik.lee@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, x86@kernel.org,
-        celinux-dev@lists.celinuxforum.org,
-        linux-arm-kernel@lists.infradead.org, hyojun.im@lge.com,
-        chan.jeong@lge.com, raphael.andy.lee@gmail.com,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Florian Fainelli <florian@openwrt.org>,
-        Yann Collet <yann.collet.73@gmail.com>,
-        Chanho Min <chanho.min@lge.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
- streaming format
-Message-ID: <20130712101319.GA13421@gmail.com>
-References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
- <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com>
- <20130712075602.GA4002@gmail.com>
- <20130712080145.GC24008@pd.tnic>
+	Fri, 12 Jul 2013 06:15:00 -0400
+Date: Fri, 12 Jul 2013 12:14:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/16] sched: Reschedule task on preferred NUMA node once
+ selected
+Message-ID: <20130712101408.GV25631@dyad.programming.kicks-ass.net>
+References: <1373536020-2799-1-git-send-email-mgorman@suse.de>
+ <1373536020-2799-9-git-send-email-mgorman@suse.de>
+ <20130711123038.GH25631@dyad.programming.kicks-ass.net>
+ <20130711130322.GC2355@suse.de>
+ <20130711131158.GJ25631@dyad.programming.kicks-ass.net>
+ <20130711140914.GE2355@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130712080145.GC24008@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130711140914.GE2355@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Borislav Petkov <bp@alien8.de> wrote:
-
-> On Fri, Jul 12, 2013 at 09:56:02AM +0200, Ingo Molnar wrote:
-> >
-> > If a utility is not widely available yet and if the utility is not in 
-> > the kernel proper, could you please at least make sure that randconfig 
-> > does not stumble over non-buildable kernels?
-> 
-> Two months ago I've complained about this and other people have burned 
-> themselves too in the meantime...
-
-and now it is upstream already, via -mm:
-
-   e76e1fdfa8f8 lib: add support for LZ4-compressed kernel
-
-
-Thanks,
-
-	Ingo
+On Thu, Jul 11, 2013 at 03:09:14PM +0100, Mel Gorman wrote:
+> That might be necessary when the machine is overloaded. As a
+> starting point the following should retry the migrate a number of times
+> until success. The retry is checked on every fault but should not fire
+> more than once every 100ms.
+ 
+Yeah, something like that might work. But getting a working imbalance bound is
+important. The current very weak direct migration is the only thing that keeps
+the system from massively skewing load.
