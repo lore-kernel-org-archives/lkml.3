@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab3GLKaa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 06:30:30 -0400
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:39821 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757244Ab3GLKa3 (ORCPT
+	id S1757593Ab3GLKbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 06:31:23 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:41630 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757244Ab3GLKbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 06:30:29 -0400
-Date: Fri, 12 Jul 2013 11:30:26 +0100
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Gianluca Anzolin <gianluca@sottospazio.it>
-Cc: jslaby@suse.cz, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix refcount leak in tty_port.c
-Message-ID: <20130712103026.GC2065@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Gianluca Anzolin <gianluca@sottospazio.it>, jslaby@suse.cz,
-	gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-References: <20130709083535.GA30227@debian.seek.priv>
+	Fri, 12 Jul 2013 06:31:21 -0400
+Date: Fri, 12 Jul 2013 12:31:17 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Dave Jones <davej@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Subject: Re: Yet more softlockups.
+Message-ID: <20130712103117.GA14862@gmail.com>
+References: <20130704015525.GA8486@redhat.com>
+ <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
+ <20130705143821.GB325@redhat.com>
+ <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de>
+ <20130705160043.GF325@redhat.com>
+ <20130706072408.GA14865@gmail.com>
+ <20130710151324.GA11309@redhat.com>
+ <20130710152015.GA757@x4>
+ <20130710154029.GB11309@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130709083535.GA30227@debian.seek.priv>
+In-Reply-To: <20130710154029.GB11309@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gianluca,
 
-* Gianluca Anzolin <gianluca@sottospazio.it> [2013-07-09 10:35:35 +0200]:
+* Dave Jones <davej@redhat.com> wrote:
 
-> Hello,
+> On Wed, Jul 10, 2013 at 05:20:15PM +0200, Markus Trippelsdorf wrote:
+>  > On 2013.07.10 at 11:13 -0400, Dave Jones wrote:
+>  > > I get this right after booting..
+>  > > 
+>  > > [  114.516619] perf samples too long (4262 > 2500), lowering kernel.perf_event_max_sample_rate to 50000
+>  > 
+>  > You can disable this warning by:
+>  > 
+>  > echo 0 > /proc/sys/kernel/perf_cpu_time_max_percent
 > 
-> In linux 3.10 in the file drivers/tty/tty_port.c the function
-> tty_port_tty_hangup may leak a tty reference:
+> Yes, but why is this even being run when I'm not running perf ?
 > 
->         struct tty_struct *tty = tty_port_tty_get(port);
-> 
->         if (tty && (!check_clocal || !C_CLOCAL(tty))) {
->                 tty_hangup(tty);
->                 tty_kref_put(tty);
->         }
-> 
-> If tty != NULL and the second condition is false we never call tty_kref_put and
-> the reference is leaked.
-> 
-> Fix by nesting two if statements.
-> 
-> Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
+> The only NMI source running should be the watchdog.
 
-As mentioned by Gianluca this is a regression of aa27a094 and we depend on
-this patch to go ahead with some fixes in the bluetooth subsystem.
+The NMI watchdog is a perf event.
 
-Gianluca, it might help if you send a proper git inline formated patch,
-mentioning the issue and which regression you are fixing. It makes
-maintainer's life easier. Also add my Ack to the patch:
+I've Cc:-ed Dave Hansen, the author of those changes - is this a false 
+positive or some real problem?
 
-Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Thanks,
 
-	Gustavo
+	Ingo
