@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757876Ab3GLWZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 18:25:21 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36598 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab3GLWZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 18:25:20 -0400
-Date: Fri, 12 Jul 2013 23:25:06 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-scsi@vger.kernel.org
-Subject: Re: [RFC/RFT PATCH 3/5] scsi: Use dma_max_pfn(dev) helper for
-	bounce_limit calculations
-Message-ID: <20130712222506.GI24642@n2100.arm.linux.org.uk>
-References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <1373665694-7580-4-git-send-email-santosh.shilimkar@ti.com> <51E07B6E.5090900@cogentembedded.com>
+	id S1757880Ab3GLW1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 18:27:54 -0400
+Received: from ar100.montanavision.com ([216.146.103.100]:36803 "EHLO
+	xilka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757776Ab3GLW1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 18:27:52 -0400
+X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Jul 2013 18:27:52 EDT
+Message-ID: <51E080DC.5040109@xilka.com>
+Date: Fri, 12 Jul 2013 16:19:08 -0600
+From: Kelly Anderson <kelly@xilka.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130702 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E07B6E.5090900@cogentembedded.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH]: 3.10 fails to boot from mmc root
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 01:55:58AM +0400, Sergei Shtylyov wrote:
-> Hello.
->
-> On 07/13/2013 01:48 AM, Santosh Shilimkar wrote:
->
->> DMA bounce limit is the maximum direct DMA'able memory beyond which
->> bounce buffers has to be used to perform dma operations. SCSI driver
->> relies on dma_mask but its calculation is based on max_*pfn which
->> don't have uniform meaning across architectures. So make use of
->> dma_max_pfn() which is expected to return the DMAable maximum pfn
->> value across architectures.
->
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: linux-scsi@vger.kernel.org
->
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>   drivers/scsi/scsi_lib.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->
->> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
->> index 86d5220..e8275fa 100644
->> --- a/drivers/scsi/scsi_lib.c
->> +++ b/drivers/scsi/scsi_lib.c
->> @@ -1668,7 +1668,7 @@ u64 scsi_calculate_bounce_limit(struct Scsi_Host *shost)
->>
->>   	host_dev = scsi_get_device(shost);
->>   	if (host_dev && host_dev->dma_mask)
->> -		bounce_limit = *host_dev->dma_mask;
->> +		bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
->
->    You definitely forgot -1 here.
+3.10 fails to boot from mmc root without this patch.
 
-Please explain your point.
+An early version of this patch was to be included in in 3.10
+but apparently didn't make it.
+
+--- ./drivers/mmc/core/core.c.orig    2013-06-30 16:13:29.000000000 -0600
++++ ./drivers/mmc/core/core.c    2013-07-12 15:17:15.377466795 -0600
+@@ -2421,6 +2421,7 @@ void mmc_start_host(struct mmc_host *hos
+      else
+          mmc_power_up(host);
+      mmc_detect_change(host, 0);
++    mmc_flush_scheduled_work();
+  }
+
+  void mmc_stop_host(struct mmc_host *host)
+
