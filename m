@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965145Ab3GLR2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:28:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52512 "EHLO
+	id S965196Ab3GLR3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:29:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52556 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932650Ab3GLR2h (ORCPT
+	with ESMTP id S964904Ab3GLR3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:28:37 -0400
-Date: Fri, 12 Jul 2013 10:28:36 -0700
+	Fri, 12 Jul 2013 13:29:32 -0400
+Date: Fri, 12 Jul 2013 10:29:32 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org,
-        ksummit-2013-discuss@lists.linux-foundation.org
-Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
-Message-ID: <20130712172836.GA7627@kroah.com>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130712172932.GB7627@kroah.com>
 References: <20130711214830.611455274@linuxfoundation.org>
- <20130712005023.GB31005@thunk.org>
- <20130712025745.GA24086@tuxdriver.com>
- <20130712033430.GA3798@kroah.com>
- <51E03AEE.5010403@zytor.com>
+ <B8EFE96D1287C24090BAD9D858E15E61739C88@sisaex02sj>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E03AEE.5010403@zytor.com>
+In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E61739C88@sisaex02sj>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 10:20:46AM -0700, H. Peter Anvin wrote:
-> On the subject of the stable tree: could we get a standard format for
-> requesting post-inclusion elevation of patches to stable status?  It
-> isn't all that unusual that the need for -stable is highlighted after a
-> patch has been included in a maintainer's tree, and rebasing to add
-> stable metadata annoys Linus.
+On Fri, Jul 12, 2013 at 05:20:29PM +0000, Shuah Khan wrote:
+> On 07/11/2013 04:24 PM, Greg Kroah-Hartman wrote:
+> 
+> >
+> > This is the start of the stable review cycle for the 3.10.1 release.
+> > There are 19 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Sat Jul 13 21:45:35 UTC 2013.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.1-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
+> 
+> Patches applied cleanly to 3.0.85, 3.4.52, 3.9.9, and 3.10
+> 
+> Compiled and booted on the following systems:
+> 
+> Samsung Series 9 900X4C Intel Corei5:
+>      (3.4.53-rc1, 3.9.10-rc1, 3.10.1-rc1)
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
+>      (3.0.86-rc1, 3.4.53-rc1, 3.9.10-rc1, and 3.10.1-rc1)
+> 
+> dmesgs for all releases look good. No regressions compared to the previous
+> dmesgs for each of these releases. dmesg emerg, crit, alert, err are clean.
+> No regressions in warn.
+> 
+> Cross-compile testing:
+> HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
+>      (3.0.86-rc1, 3.4.53-rc1, 3.9.10-rc1, and 3.10.1-rc1)
 
-After it's in Linus's tree, just send the git id of the patch to
-stable@vger.kernel.org, along with what stable tree(s) you want to see
-the patch backported to.
-
-Documentation/stable_kernel_rules.txt should be pretty explicit about
-how to do this, but if not, patches to it are always welcome.
-
-Yes, this requires you to remember to do this after it hits Linus's
-tree, so you could do like David does for networking, and keep a
-seperate tree to send to me specifically for stable patches.  I think he
-uses patchwork, but I know others use git for this, and that's fine as
-well.
+Great, thanks for testing all of these and letting me know.
 
 greg k-h
