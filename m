@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116Ab3GLHKA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 03:10:00 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:53085 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756686Ab3GLHJ7 (ORCPT
+	id S1757182Ab3GLHKX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 03:10:23 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:63946 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757134Ab3GLHKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 03:09:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130711221605.547.69988.stgit@srivatsabhat.in.ibm.com>
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-	<20130711221605.547.69988.stgit@srivatsabhat.in.ibm.com>
-Date: Fri, 12 Jul 2013 12:39:58 +0530
-Message-ID: <CAKohponVobWCLNf3ryPiEXpmru+qrp=EYLyX0zLh2SSabpf-SQ@mail.gmail.com>
-Subject: Re: [PATCH 3/8] cpufreq: Add helper to perform alloc/free of policy structure
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
-        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
-        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Jul 2013 03:10:20 -0400
+From: Vladimir Cernov <gg.kaspersky@gmail.com>
+To: james.smart@emulex.com
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vladimir Cernov <gg.kaspersky@gmail.com>
+Subject: [PATCH] [SCSI] lpfc 8.3.40: Remove useless cast
+Date: Fri, 12 Jul 2013 10:10:09 +0300
+Message-Id: <1373613009-8435-1-git-send-email-gg.kaspersky@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 July 2013 03:46, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Separate out the allocation of the cpufreq policy structure (along with
-> its error handling) to a helper function. This makes the code easier to
-> read and also helps with some upcoming code reorganization.
->
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
->
->  drivers/cpufreq/cpufreq.c |   50 ++++++++++++++++++++++++++++++++-------------
->  1 file changed, 35 insertions(+), 15 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index f8c3100..ca14dc2 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -943,6 +943,37 @@ static int cpufreq_add_policy_cpu(unsigned int cpu, unsigned int sibling,
->  }
->  #endif
->
-> +static struct cpufreq_policy *cpufreq_policy_alloc(void)
-> +{
-> +       struct cpufreq_policy *policy;
-> +
-> +       policy = kzalloc(sizeof(struct cpufreq_policy), GFP_KERNEL);
+Found using coccinelle tool.
+Signed-off-by: Vladimir Cernov <gg.kaspersky@gmail.com>
+---
+ drivers/scsi/lpfc/lpfc_init.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-sizeof(*policy) ??
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index e0b20fa..b7621f6 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -4721,8 +4721,7 @@ lpfc_sli_driver_resource_setup(struct lpfc_hba *phba)
+ 	}
+ 
+ 	if (!phba->sli.ring)
+-		phba->sli.ring = (struct lpfc_sli_ring *)
+-			kzalloc(LPFC_SLI3_MAX_RING *
++		phba->sli.ring = kzalloc(LPFC_SLI3_MAX_RING *
+ 			sizeof(struct lpfc_sli_ring), GFP_KERNEL);
+ 	if (!phba->sli.ring)
+ 		return -ENOMEM;
+-- 
+1.7.10.4
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
