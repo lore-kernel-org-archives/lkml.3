@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756980Ab3GLHHC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 03:07:02 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:33180 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab3GLHHA (ORCPT
+	id S1757092Ab3GLHIf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 03:08:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:17275 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab3GLHIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 03:07:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130711221553.547.56787.stgit@srivatsabhat.in.ibm.com>
-References: <20130711221419.547.69781.stgit@srivatsabhat.in.ibm.com>
-	<20130711221553.547.56787.stgit@srivatsabhat.in.ibm.com>
-Date: Fri, 12 Jul 2013 12:36:59 +0530
-Message-ID: <CAKohpo=DNhKTGdectgyWLW3XkfDOAiEhJ=hi+zW=6G6fWShybg@mail.gmail.com>
-Subject: Re: [PATCH 2/8] cpufreq: Fix misplaced call to cpufreq_update_policy()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: rjw@sisk.pl, toralf.foerster@gmx.de, robert.jarzmik@intel.com,
-        durgadoss.r@intel.com, tianyu.lan@intel.com, lantianyu1986@gmail.com,
-        dirk.brandewie@gmail.com, stern@rowland.harvard.edu,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Jul 2013 03:08:34 -0400
+X-AuditID: cbfee61b-b7f8e6d00000524c-9b-51dfab7092db
+From: Sunghan Suh <sunghan.suh@samsung.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, minchan@kernel.org,
+        sjenning@linux.vnet.ibm.com, Sunghan Suh <sunghan.suh@samsung.com>
+Subject: [PATCH] staging: zsmalloc: access page->private by using page_private
+ macro
+Date: Fri, 12 Jul 2013 16:08:13 +0900
+Message-id: <1373612893-13058-1-git-send-email-sunghan.suh@samsung.com>
+X-Mailer: git-send-email 1.8.1.2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJJMWRmVeSWpSXmKPExsVy+t9jAd2C1fcDDR69ELbYc+YXu0Xz4vVs
+	Fpd3zWGzWPb1PbvFoX2r2C1O3z7E5MDmcW/fYRaPTas62TweHNrM4rF/7hp2j74tqxg9Pm+S
+	C2CL4rJJSc3JLEst0rdL4Mp4OGkrS0EjR8XJi1ENjGfYuhg5OSQETCR2HzrJDmGLSVy4tx4o
+	zsUhJLCIUaL1zUmwIiGBFiaJr2tqQWw2AW2JqztuMYHYIgI2Ejv23gOq4eBgFqiQWHncASQs
+	LBAm8f/CGmYQm0VAVaLt2kEWEJtXwF2i5+QHJohdChI/L59gm8DIvYCRYRWjaGpBckFxUnqu
+	kV5xYm5xaV66XnJ+7iZGcIA8k97BuKrB4hCjAAejEg9vwYl7gUKsiWXFlbmHGCU4mJVEeG+a
+	3Q8U4k1JrKxKLcqPLyrNSS0+xCjNwaIkznuw1TpQSCA9sSQ1OzW1ILUIJsvEwSnVwMh46veB
+	A2UcHkHBPFqVe47sb92xboVmZjOvpojgZ46bdaH+q8VS9aS+fz50yGzmvrkrzxTwJlm69f/I
+	Vyy4tejD8dv/jQ/2cdYEr57lmnts4V1pbaYLe3yvCQqtsTYP293/8FHNnge7p8378+RykIHV
+	Eze/whXbGM97nPTfpRbrZR3keOVNkokSS3FGoqEWc1FxIgAtoCsZDAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 July 2013 03:45, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> The call to cpufreq_update_policy() is placed in the CPU hotplug callback
-> of cpufreq_stats, which has a higher priority than the CPU hotplug callback
-> of cpufreq-core. As a result, during CPU_ONLINE/CPU_ONLINE_FROZEN, we end up
-> calling cpufreq_update_policy() *before* calling cpufreq_add_dev() !
-> And for uninitialized CPUs, it just returns silently, not doing anything.
+Signed-off-by: Sunghan Suh <sunghan.suh@samsung.com>
+---
+ drivers/staging/zsmalloc/zsmalloc-main.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Hmm..
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index 4bb275b..1a67537 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -423,7 +423,7 @@ static struct page *get_next_page(struct page *page)
+ 	if (is_last_page(page))
+ 		next = NULL;
+ 	else if (is_first_page(page))
+-		next = (struct page *)page->private;
++		next = (struct page *)page_private(page);
+ 	else
+ 		next = list_entry(page->lru.next, struct page, lru);
+ 
+@@ -581,7 +581,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+ 			first_page->inuse = 0;
+ 		}
+ 		if (i == 1)
+-			first_page->private = (unsigned long)page;
++			set_page_private(first_page, (unsigned long)page);
+ 		if (i >= 1)
+ 			page->first_page = first_page;
+ 		if (i >= 2)
+-- 
+1.8.1.2
 
-> To add to it, cpufreq_stats is not even the right place to call
-> cpufreq_update_policy() to begin with. The cpufreq core ought to handle
-> this in its own callback, from an elegance/relevance perspective.
->
-> So move the invocation of cpufreq_update_policy() to cpufreq_cpu_callback,
-> and place it *after* cpufreq_add_dev().
->
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
->
->  drivers/cpufreq/cpufreq.c       |    1 +
->  drivers/cpufreq/cpufreq_stats.c |    6 ------
->  2 files changed, 1 insertion(+), 6 deletions(-)
->
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index ccc6eab..f8c3100 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -1943,6 +1943,7 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
->                 case CPU_ONLINE:
->                 case CPU_ONLINE_FROZEN:
->                         cpufreq_add_dev(dev, NULL);
-> +                       cpufreq_update_policy(cpu);
-
-Do we need to call this for every hotplug of cpu? I am not
-talking about suspend/resume here.
