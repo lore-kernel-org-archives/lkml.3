@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab3GLOwX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:52:23 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:45883 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932588Ab3GLOwV (ORCPT
+	id S1757492Ab3GLOzg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:55:36 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36322 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757203Ab3GLOzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:52:21 -0400
-Message-ID: <1373640689.24916.15.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] ACPI / memhotplug: Fix a stale pointer in error path
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: rjw@sisk.pl, linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 12 Jul 2013 08:51:29 -0600
-In-Reply-To: <51DF4CB6.4060903@jp.fujitsu.com>
-References: <1373474833-14047-1-git-send-email-toshi.kani@hp.com>
-	 <51DF4CB6.4060903@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Jul 2013 10:55:35 -0400
+Date: Fri, 12 Jul 2013 16:55:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
+Message-ID: <20130712145515.GI17211@twins.programming.kicks-ass.net>
+References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com>
+ <1373548341-24119-10-git-send-email-adrian.hunter@intel.com>
+ <20130712095600.GT25631@dyad.programming.kicks-ass.net>
+ <51DFFCE1.1070203@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51DFFCE1.1070203@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 09:24 +0900, Yasuaki Ishimatsu wrote:
-> (2013/07/11 1:47), Toshi Kani wrote:
-> > device->driver_data needs to be cleared when releasing its data,
-> > mem_device, in an error path of acpi_memory_device_add().
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> > ---
+On Fri, Jul 12, 2013 at 03:56:01PM +0300, Adrian Hunter wrote:
+> > There's events where this isn't a possible location; take PERF_RECORD_MMAP for
+> > instance; the tail is the complete filename.
 > 
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> PERF_RECORD_MMAP falls in the category I have called non-sample events.
+> Those events are appended with an ID sample.  perf tools parses the ID
+> sample backwards from header.size.  So the ID is at the last position
+> relative to header.size
 
-Thanks Yasuaki!
--Toshi
-
-
-
-> 
-> Thanks,
-> Yasuaki Ishimatsu
-> 
-> >   drivers/acpi/acpi_memhotplug.c |    1 +
-> >   1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-> > index c711d11..999adb5 100644
-> > --- a/drivers/acpi/acpi_memhotplug.c
-> > +++ b/drivers/acpi/acpi_memhotplug.c
-> > @@ -323,6 +323,7 @@ static int acpi_memory_device_add(struct acpi_device *device,
-> >   	/* Get the range from the _CRS */
-> >   	result = acpi_memory_get_device_resources(mem_device);
-> >   	if (result) {
-> > +		device->driver_data = NULL;
-> >   		kfree(mem_device);
-> >   		return result;
-> >   	}
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-> 
-
-
+But why? Why make it different per PERF_RECORD type? 
