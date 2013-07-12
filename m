@@ -1,100 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757472Ab3GLJL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 05:11:29 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:49081 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757211Ab3GLJL1 (ORCPT
+	id S932594Ab3GLJTU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 05:19:20 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61941 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932251Ab3GLJTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 05:11:27 -0400
-Date: Fri, 12 Jul 2013 11:11:23 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-fbdev@vger.kernel.org, jimwall@q.com, brian@crystalfontz.com,
-        linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: [PATCH 1/2] fb: backlight: HX8357: Make IM pins optionnal
-Message-ID: <20130712091123.GD24370@lukather>
-References: <1371839259-543-1-git-send-email-alexandre.belloni@free-electrons.com>
- <20130624142645.GG305@game.jcrosoft.org>
- <20130625135015.GM26008@lukather>
+	Fri, 12 Jul 2013 05:19:18 -0400
+Date: Fri, 12 Jul 2013 10:19:09 +0100
+From: Robert Richter <rric@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Robin Holt <holt@sgi.com>, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
+ embedded in the buddy allocator
+Message-ID: <20130712091909.GC8731@rric.localhost>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <20130712082756.GA4328@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yudcn1FV7Hsu/q59"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130625135015.GM26008@lukather>
+In-Reply-To: <20130712082756.GA4328@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12.07.13 10:27:56, Ingo Molnar wrote:
+> 
+> * Robin Holt <holt@sgi.com> wrote:
+> 
+> > [...]
+> > 
+> > With this patch, we did boot a 16TiB machine.  Without the patches, the 
+> > v3.10 kernel with the same configuration took 407 seconds for 
+> > free_all_bootmem.  With the patches and operating on 2MiB pages instead 
+> > of 1GiB, it took 26 seconds so performance was improved.  I have no feel 
+> > for how the 1GiB chunk size will perform.
+> 
+> That's pretty impressive.
+> 
+> It's still a 15x speedup instead of a 512x speedup, so I'd say there's 
+> something else being the current bottleneck, besides page init 
+> granularity.
+> 
+> Can you boot with just a few gigs of RAM and stuff the rest into hotplug 
+> memory, and then hot-add that memory? That would allow easy profiling of 
+> remaining overhead.
+> 
+> Side note:
+> 
+> Robert Richter and Boris Petkov are working on 'persistent events' support 
+> for perf, which will eventually allow boot time profiling - I'm not sure 
+> if the patches and the tooling support is ready enough yet for your 
+> purposes.
 
---yudcn1FV7Hsu/q59
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The latest patch set is still this:
 
-On Tue, Jun 25, 2013 at 03:50:15PM +0200, Maxime Ripard wrote:
-> > >  };
-> > > =20
-> > >  static u8 hx8357_seq_power[] =3D {
-> > > @@ -250,9 +251,11 @@ static int hx8357_lcd_init(struct lcd_device *lc=
-dev)
-> > >  	 * Set the interface selection pins to SPI mode, with three
-> > >  	 * wires
-> > >  	 */
-> > > -	gpio_set_value_cansleep(lcd->im_pins[0], 1);
-> > > -	gpio_set_value_cansleep(lcd->im_pins[1], 0);
-> > > -	gpio_set_value_cansleep(lcd->im_pins[2], 1);
-> > > +	if (lcd->use_im_pins) {
-> > > +		gpio_set_value_cansleep(lcd->im_pins[0], 1);
-> > > +		gpio_set_value_cansleep(lcd->im_pins[1], 0);
-> > > +		gpio_set_value_cansleep(lcd->im_pins[2], 1);
-> > > +	}
-> >=20
-> > base on the dt probe you may have gpios betwee 0 to HX8357_NUM_IM_PINS
-> >=20
-> > so this look wrong
->=20
-> How so?
->=20
-> HX8357_NUM_IM_PINS is defined to 3, the probe checks to see if we
-> actually have HX8357_NUM_IM_PINS, otherwise returns an error, what is
-> wrong in setting these pins here?
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git persistent-v2
 
-Ping?
+It requires the perf subsystem to be initialized first which might be
+too late, see perf_event_init() in start_kernel(). The patch set is
+currently also limited to tracepoints only.
 
-I'd really like to get this merged, could you clarify what you want?
+If this is sufficient for you, you might register persistent events
+with the function perf_add_persistent_event_by_id(), see
+mcheck_init_tp() how to do this. Later you can fetch all samples with:
+
+ # perf record -e persistent/<tracepoint>/ sleep 1
+
+> Robert, Boris, the following workflow would be pretty intuitive:
+> 
+>  - kernel developer sets boot flag: perf=boot,freq=1khz,size=16MB
+> 
+>  - we'd get a single (cycles?) event running once the perf subsystem is up
+>    and running, with a sampling frequency of 1 KHz, sending profiling
+>    trace events to a sufficiently sized profiling buffer of 16 MB per
+>    CPU.
+
+I am not sure about the event you want to setup here, if it is a
+tracepoint the sample_period should be always 1. The buffer size
+parameter looks interesting, for now it is 512kB per cpu per default
+(as perf tools setup the buffer).
+
+> 
+>  - once the system reaches SYSTEM_RUNNING, profiling is stopped either
+>    automatically - or the user stops it via a new tooling command.
+> 
+>  - the profiling buffer is extracted into a regular perf.data via a
+>    special 'perf record' call or some other, new perf tooling 
+>    solution/variant.
+
+See the perf-record command above...
+
+> 
+>    [ Alternatively the kernel could attempt to construct a 'virtual'
+>      perf.data from the persistent buffer, available via /sys/debug or
+>      elsewhere in /sys - just like the kernel constructs a 'virtual' 
+>      /proc/kcore, etc. That file could be copied or used directly. ]
+> 
+>  - from that point on this workflow joins the regular profiling workflow: 
+>    perf report, perf script et al can be used to analyze the resulting
+>    boot profile.
+
+Ingo, thanks for outlining this workflow. We will look how this could
+fit into the new version of persistent events we currently working on.
 
 Thanks,
-Maxime
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---yudcn1FV7Hsu/q59
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR38g7AAoJEBx+YmzsjxAgrnMP/RsfQfsHqKBBJw7JTI6aMYKA
-Cqht8j7s80/zr4EnKzWbmsBpxLhdkZ+8jthYOsk+USEWhLYyO1IK0LmVrygpL+jg
-KVU3R0GYkNYaTLIJhhah/RV53mZNuCuklLppJzMotWOIOJYQGU2HIEL/LcdZhtdI
-qhpLe10V/2TiqM4LVv7cV1mEDiQ9oGJLXBJJ0cieJwGPrxyFJg0IIoISHsvTGty2
-w2POECARnXoHqfytXshrWq5pubU2BJ5X4A90taHNQ6/SrvJB/ra7qAI2l+TwTcMu
-xIKbAm8XSz5wfur1DNgsH0O6VSiMYhuqHza4Pex1d5zu33/53YUdqGa9t7W5Jvl1
-nWflGIogu9wOntPsW6Y6HxHYzr3f2u5OxZVAoisGAFCg4qS+sC/kdlISIULeraCT
-HmKbZl+B0gYbVQRAdCx+nUmxZ6ZUuY51NUUJ7axLWLMrbCF2aLYfH0rz4hu6jWtj
-LG+FYI0Al4qWdisObCK46Mmfq+sG7S1Hf1ppFtqUDG4sTlYzX4bZ1LO+Wl+yqjBp
-witiSADGZQCfWCrZ/JQdtP0rQp2FJr+HV1xjdQuJ5pNaIjCzFgc6v7MmDfIHldqi
-sLJf3uhAtMRmvMAOGektt5wk4HD5PNW9H11YcxQ9UW2qgnTtXTEjI2xhpcGjuzKj
-mfnA1lqjaqvpjiY5Uf34
-=DiKc
------END PGP SIGNATURE-----
-
---yudcn1FV7Hsu/q59--
+-Robert
