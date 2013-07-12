@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964844Ab3GLN3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 09:29:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59468 "EHLO
+	id S964864Ab3GLN3V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:29:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59474 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964799Ab3GLN3M (ORCPT
+	with ESMTP id S964799Ab3GLN3Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 09:29:12 -0400
-Date: Fri, 12 Jul 2013 06:28:59 -0700
-From: tip-bot for Xiong Zhou <tipbot@zytor.com>
-Message-ID: <tip-ff5599816711d2e67da2d7561fd36ac48debd433@git.kernel.org>
+	Fri, 12 Jul 2013 09:29:16 -0400
+Date: Fri, 12 Jul 2013 06:28:49 -0700
+From: tip-bot for Maarten Lankhorst <tipbot@zytor.com>
+Message-ID: <tip-1b375dc30710180c4b88cc59caba6e3481ec5c8b@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jencce.kernel@gmail.com, tglx@linutronix.de
+        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
+        airlied@gmail.com, riel@redhat.com, tglx@linutronix.de,
+        maarten.lankhorst@canonical.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jencce.kernel@gmail.com, tglx@linutronix.de
-In-Reply-To: <alpine.DEB.2.02.1307091053280.28371@M2420>
-References: <alpine.DEB.2.02.1307091053280.28371@M2420>
+        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
+        airlied@gmail.com, riel@redhat.com, tglx@linutronix.de,
+        maarten.lankhorst@canonical.com
+In-Reply-To: <51D675DC.3000907@canonical.com>
+References: <51D675DC.3000907@canonical.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/platform/ce4100:
-  Add header file for reboot type
-Git-Commit-ID: ff5599816711d2e67da2d7561fd36ac48debd433
+Subject: [tip:core/locking] mutex: Move ww_mutex definitions to ww_mutex.h
+Git-Commit-ID: 1b375dc30710180c4b88cc59caba6e3481ec5c8b
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,46 +31,733 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 06:29:06 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 06:28:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ff5599816711d2e67da2d7561fd36ac48debd433
-Gitweb:     http://git.kernel.org/tip/ff5599816711d2e67da2d7561fd36ac48debd433
-Author:     Xiong Zhou <jencce.kernel@gmail.com>
-AuthorDate: Tue, 9 Jul 2013 11:06:27 +0800
+Commit-ID:  1b375dc30710180c4b88cc59caba6e3481ec5c8b
+Gitweb:     http://git.kernel.org/tip/1b375dc30710180c4b88cc59caba6e3481ec5c8b
+Author:     Maarten Lankhorst <maarten.lankhorst@canonical.com>
+AuthorDate: Fri, 5 Jul 2013 09:29:32 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 12 Jul 2013 12:21:20 +0200
+CommitDate: Fri, 12 Jul 2013 12:07:46 +0200
 
-x86/platform/ce4100: Add header file for reboot type
+mutex: Move ww_mutex definitions to ww_mutex.h
 
-Add header file for reboot type to fix this build failure:
+Move the definitions for wound/wait mutexes out to a separate
+header, ww_mutex.h. This reduces clutter in mutex.h, and
+increases readability.
 
- error: 'reboot_type' undeclared (first use in this function)
- error: 'BOOT_KBD' undeclared (first use in this function)
-
-Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
-Cc: rui.zhang@intel.com
-Cc: alan@linux.intel.com
-Cc: ffainelli@freebox.fr
-Cc: mbizon@freebox.fr
-Cc: matthew.garrett@nebula.com
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1307091053280.28371@M2420
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Dave Airlie <airlied@gmail.com>
+Link: http://lkml.kernel.org/r/51D675DC.3000907@canonical.com
+[ Tidied up the code a bit. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/platform/ce4100/ce4100.c | 1 +
- 1 file changed, 1 insertion(+)
+ include/linux/mutex.h                 | 358 ----------------------------------
+ include/linux/reservation.h           |   2 +-
+ include/linux/{mutex.h => ww_mutex.h} | 186 ++----------------
+ kernel/mutex.c                        |   1 +
+ lib/locking-selftest.c                |   1 +
+ 5 files changed, 15 insertions(+), 533 deletions(-)
 
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index f8ab494..9962015 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -14,6 +14,7 @@
- #include <linux/module.h>
- #include <linux/serial_reg.h>
- #include <linux/serial_8250.h>
-+#include <linux/reboot.h>
+diff --git a/include/linux/mutex.h b/include/linux/mutex.h
+index 3793ed7..ccd4260 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/mutex.h
+@@ -78,40 +78,6 @@ struct mutex_waiter {
+ #endif
+ };
  
- #include <asm/ce4100.h>
- #include <asm/prom.h>
+-struct ww_class {
+-	atomic_long_t stamp;
+-	struct lock_class_key acquire_key;
+-	struct lock_class_key mutex_key;
+-	const char *acquire_name;
+-	const char *mutex_name;
+-};
+-
+-struct ww_acquire_ctx {
+-	struct task_struct *task;
+-	unsigned long stamp;
+-	unsigned acquired;
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	unsigned done_acquire;
+-	struct ww_class *ww_class;
+-	struct ww_mutex *contending_lock;
+-#endif
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	struct lockdep_map dep_map;
+-#endif
+-#ifdef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
+-	unsigned deadlock_inject_interval;
+-	unsigned deadlock_inject_countdown;
+-#endif
+-};
+-
+-struct ww_mutex {
+-	struct mutex base;
+-	struct ww_acquire_ctx *ctx;
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	struct ww_class *ww_class;
+-#endif
+-};
+-
+ #ifdef CONFIG_DEBUG_MUTEXES
+ # include <linux/mutex-debug.h>
+ #else
+@@ -136,11 +102,8 @@ static inline void mutex_destroy(struct mutex *lock) {}
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # define __DEP_MAP_MUTEX_INITIALIZER(lockname) \
+ 		, .dep_map = { .name = #lockname }
+-# define __WW_CLASS_MUTEX_INITIALIZER(lockname, ww_class) \
+-		, .ww_class = &ww_class
+ #else
+ # define __DEP_MAP_MUTEX_INITIALIZER(lockname)
+-# define __WW_CLASS_MUTEX_INITIALIZER(lockname, ww_class)
+ #endif
+ 
+ #define __MUTEX_INITIALIZER(lockname) \
+@@ -150,49 +113,13 @@ static inline void mutex_destroy(struct mutex *lock) {}
+ 		__DEBUG_MUTEX_INITIALIZER(lockname) \
+ 		__DEP_MAP_MUTEX_INITIALIZER(lockname) }
+ 
+-#define __WW_CLASS_INITIALIZER(ww_class) \
+-		{ .stamp = ATOMIC_LONG_INIT(0) \
+-		, .acquire_name = #ww_class "_acquire" \
+-		, .mutex_name = #ww_class "_mutex" }
+-
+-#define __WW_MUTEX_INITIALIZER(lockname, class) \
+-		{ .base = { \__MUTEX_INITIALIZER(lockname) } \
+-		__WW_CLASS_MUTEX_INITIALIZER(lockname, class) }
+-
+ #define DEFINE_MUTEX(mutexname) \
+ 	struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
+ 
+-#define DEFINE_WW_CLASS(classname) \
+-	struct ww_class classname = __WW_CLASS_INITIALIZER(classname)
+-
+-#define DEFINE_WW_MUTEX(mutexname, ww_class) \
+-	struct ww_mutex mutexname = __WW_MUTEX_INITIALIZER(mutexname, ww_class)
+-
+-
+ extern void __mutex_init(struct mutex *lock, const char *name,
+ 			 struct lock_class_key *key);
+ 
+ /**
+- * ww_mutex_init - initialize the w/w mutex
+- * @lock: the mutex to be initialized
+- * @ww_class: the w/w class the mutex should belong to
+- *
+- * Initialize the w/w mutex to unlocked state and associate it with the given
+- * class.
+- *
+- * It is not allowed to initialize an already locked mutex.
+- */
+-static inline void ww_mutex_init(struct ww_mutex *lock,
+-				 struct ww_class *ww_class)
+-{
+-	__mutex_init(&lock->base, ww_class->mutex_name, &ww_class->mutex_key);
+-	lock->ctx = NULL;
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	lock->ww_class = ww_class;
+-#endif
+-}
+-
+-/**
+  * mutex_is_locked - is the mutex locked
+  * @lock: the mutex to be queried
+  *
+@@ -246,291 +173,6 @@ extern int __must_check mutex_lock_killable(struct mutex *lock);
+ extern int mutex_trylock(struct mutex *lock);
+ extern void mutex_unlock(struct mutex *lock);
+ 
+-/**
+- * ww_acquire_init - initialize a w/w acquire context
+- * @ctx: w/w acquire context to initialize
+- * @ww_class: w/w class of the context
+- *
+- * Initializes an context to acquire multiple mutexes of the given w/w class.
+- *
+- * Context-based w/w mutex acquiring can be done in any order whatsoever within
+- * a given lock class. Deadlocks will be detected and handled with the
+- * wait/wound logic.
+- *
+- * Mixing of context-based w/w mutex acquiring and single w/w mutex locking can
+- * result in undetected deadlocks and is so forbidden. Mixing different contexts
+- * for the same w/w class when acquiring mutexes can also result in undetected
+- * deadlocks, and is hence also forbidden. Both types of abuse will be caught by
+- * enabling CONFIG_PROVE_LOCKING.
+- *
+- * Nesting of acquire contexts for _different_ w/w classes is possible, subject
+- * to the usual locking rules between different lock classes.
+- *
+- * An acquire context must be released with ww_acquire_fini by the same task
+- * before the memory is freed. It is recommended to allocate the context itself
+- * on the stack.
+- */
+-static inline void ww_acquire_init(struct ww_acquire_ctx *ctx,
+-				   struct ww_class *ww_class)
+-{
+-	ctx->task = current;
+-	ctx->stamp = atomic_long_inc_return(&ww_class->stamp);
+-	ctx->acquired = 0;
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	ctx->ww_class = ww_class;
+-	ctx->done_acquire = 0;
+-	ctx->contending_lock = NULL;
+-#endif
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	debug_check_no_locks_freed((void *)ctx, sizeof(*ctx));
+-	lockdep_init_map(&ctx->dep_map, ww_class->acquire_name,
+-			 &ww_class->acquire_key, 0);
+-	mutex_acquire(&ctx->dep_map, 0, 0, _RET_IP_);
+-#endif
+-#ifdef CONFIG_DEBUG_WW_MUTEX_SLOWPATH
+-	ctx->deadlock_inject_interval = 1;
+-	ctx->deadlock_inject_countdown = ctx->stamp & 0xf;
+-#endif
+-}
+-
+-/**
+- * ww_acquire_done - marks the end of the acquire phase
+- * @ctx: the acquire context
+- *
+- * Marks the end of the acquire phase, any further w/w mutex lock calls using
+- * this context are forbidden.
+- *
+- * Calling this function is optional, it is just useful to document w/w mutex
+- * code and clearly designated the acquire phase from actually using the locked
+- * data structures.
+- */
+-static inline void ww_acquire_done(struct ww_acquire_ctx *ctx)
+-{
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	lockdep_assert_held(ctx);
+-
+-	DEBUG_LOCKS_WARN_ON(ctx->done_acquire);
+-	ctx->done_acquire = 1;
+-#endif
+-}
+-
+-/**
+- * ww_acquire_fini - releases a w/w acquire context
+- * @ctx: the acquire context to free
+- *
+- * Releases a w/w acquire context. This must be called _after_ all acquired w/w
+- * mutexes have been released with ww_mutex_unlock.
+- */
+-static inline void ww_acquire_fini(struct ww_acquire_ctx *ctx)
+-{
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	mutex_release(&ctx->dep_map, 0, _THIS_IP_);
+-
+-	DEBUG_LOCKS_WARN_ON(ctx->acquired);
+-	if (!config_enabled(CONFIG_PROVE_LOCKING))
+-		/*
+-		 * lockdep will normally handle this,
+-		 * but fail without anyway
+-		 */
+-		ctx->done_acquire = 1;
+-
+-	if (!config_enabled(CONFIG_DEBUG_LOCK_ALLOC))
+-		/* ensure ww_acquire_fini will still fail if called twice */
+-		ctx->acquired = ~0U;
+-#endif
+-}
+-
+-extern int __must_check __ww_mutex_lock(struct ww_mutex *lock,
+-					struct ww_acquire_ctx *ctx);
+-extern int __must_check __ww_mutex_lock_interruptible(struct ww_mutex *lock,
+-						      struct ww_acquire_ctx *ctx);
+-
+-/**
+- * ww_mutex_lock - acquire the w/w mutex
+- * @lock: the mutex to be acquired
+- * @ctx: w/w acquire context, or NULL to acquire only a single lock.
+- *
+- * Lock the w/w mutex exclusively for this task.
+- *
+- * Deadlocks within a given w/w class of locks are detected and handled with the
+- * wait/wound algorithm. If the lock isn't immediately avaiable this function
+- * will either sleep until it is (wait case). Or it selects the current context
+- * for backing off by returning -EDEADLK (wound case). Trying to acquire the
+- * same lock with the same context twice is also detected and signalled by
+- * returning -EALREADY. Returns 0 if the mutex was successfully acquired.
+- *
+- * In the wound case the caller must release all currently held w/w mutexes for
+- * the given context and then wait for this contending lock to be available by
+- * calling ww_mutex_lock_slow. Alternatively callers can opt to not acquire this
+- * lock and proceed with trying to acquire further w/w mutexes (e.g. when
+- * scanning through lru lists trying to free resources).
+- *
+- * The mutex must later on be released by the same task that
+- * acquired it. The task may not exit without first unlocking the mutex. Also,
+- * kernel memory where the mutex resides must not be freed with the mutex still
+- * locked. The mutex must first be initialized (or statically defined) before it
+- * can be locked. memset()-ing the mutex to 0 is not allowed. The mutex must be
+- * of the same w/w lock class as was used to initialize the acquire context.
+- *
+- * A mutex acquired with this function must be released with ww_mutex_unlock.
+- */
+-static inline int ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	if (ctx)
+-		return __ww_mutex_lock(lock, ctx);
+-	else {
+-		mutex_lock(&lock->base);
+-		return 0;
+-	}
+-}
+-
+-/**
+- * ww_mutex_lock_interruptible - acquire the w/w mutex, interruptible
+- * @lock: the mutex to be acquired
+- * @ctx: w/w acquire context
+- *
+- * Lock the w/w mutex exclusively for this task.
+- *
+- * Deadlocks within a given w/w class of locks are detected and handled with the
+- * wait/wound algorithm. If the lock isn't immediately avaiable this function
+- * will either sleep until it is (wait case). Or it selects the current context
+- * for backing off by returning -EDEADLK (wound case). Trying to acquire the
+- * same lock with the same context twice is also detected and signalled by
+- * returning -EALREADY. Returns 0 if the mutex was successfully acquired. If a
+- * signal arrives while waiting for the lock then this function returns -EINTR.
+- *
+- * In the wound case the caller must release all currently held w/w mutexes for
+- * the given context and then wait for this contending lock to be available by
+- * calling ww_mutex_lock_slow_interruptible. Alternatively callers can opt to
+- * not acquire this lock and proceed with trying to acquire further w/w mutexes
+- * (e.g. when scanning through lru lists trying to free resources).
+- *
+- * The mutex must later on be released by the same task that
+- * acquired it. The task may not exit without first unlocking the mutex. Also,
+- * kernel memory where the mutex resides must not be freed with the mutex still
+- * locked. The mutex must first be initialized (or statically defined) before it
+- * can be locked. memset()-ing the mutex to 0 is not allowed. The mutex must be
+- * of the same w/w lock class as was used to initialize the acquire context.
+- *
+- * A mutex acquired with this function must be released with ww_mutex_unlock.
+- */
+-static inline int __must_check ww_mutex_lock_interruptible(struct ww_mutex *lock,
+-							   struct ww_acquire_ctx *ctx)
+-{
+-	if (ctx)
+-		return __ww_mutex_lock_interruptible(lock, ctx);
+-	else
+-		return mutex_lock_interruptible(&lock->base);
+-}
+-
+-/**
+- * ww_mutex_lock_slow - slowpath acquiring of the w/w mutex
+- * @lock: the mutex to be acquired
+- * @ctx: w/w acquire context
+- *
+- * Acquires a w/w mutex with the given context after a wound case. This function
+- * will sleep until the lock becomes available.
+- *
+- * The caller must have released all w/w mutexes already acquired with the
+- * context and then call this function on the contended lock.
+- *
+- * Afterwards the caller may continue to (re)acquire the other w/w mutexes it
+- * needs with ww_mutex_lock. Note that the -EALREADY return code from
+- * ww_mutex_lock can be used to avoid locking this contended mutex twice.
+- *
+- * It is forbidden to call this function with any other w/w mutexes associated
+- * with the context held. It is forbidden to call this on anything else than the
+- * contending mutex.
+- *
+- * Note that the slowpath lock acquiring can also be done by calling
+- * ww_mutex_lock directly. This function here is simply to help w/w mutex
+- * locking code readability by clearly denoting the slowpath.
+- */
+-static inline void
+-ww_mutex_lock_slow(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+-{
+-	int ret;
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	DEBUG_LOCKS_WARN_ON(!ctx->contending_lock);
+-#endif
+-	ret = ww_mutex_lock(lock, ctx);
+-	(void)ret;
+-}
+-
+-/**
+- * ww_mutex_lock_slow_interruptible - slowpath acquiring of the w/w mutex,
+- * 				      interruptible
+- * @lock: the mutex to be acquired
+- * @ctx: w/w acquire context
+- *
+- * Acquires a w/w mutex with the given context after a wound case. This function
+- * will sleep until the lock becomes available and returns 0 when the lock has
+- * been acquired. If a signal arrives while waiting for the lock then this
+- * function returns -EINTR.
+- *
+- * The caller must have released all w/w mutexes already acquired with the
+- * context and then call this function on the contended lock.
+- *
+- * Afterwards the caller may continue to (re)acquire the other w/w mutexes it
+- * needs with ww_mutex_lock. Note that the -EALREADY return code from
+- * ww_mutex_lock can be used to avoid locking this contended mutex twice.
+- *
+- * It is forbidden to call this function with any other w/w mutexes associated
+- * with the given context held. It is forbidden to call this on anything else
+- * than the contending mutex.
+- *
+- * Note that the slowpath lock acquiring can also be done by calling
+- * ww_mutex_lock_interruptible directly. This function here is simply to help
+- * w/w mutex locking code readability by clearly denoting the slowpath.
+- */
+-static inline int __must_check
+-ww_mutex_lock_slow_interruptible(struct ww_mutex *lock,
+-				 struct ww_acquire_ctx *ctx)
+-{
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	DEBUG_LOCKS_WARN_ON(!ctx->contending_lock);
+-#endif
+-	return ww_mutex_lock_interruptible(lock, ctx);
+-}
+-
+-extern void ww_mutex_unlock(struct ww_mutex *lock);
+-
+-/**
+- * ww_mutex_trylock - tries to acquire the w/w mutex without acquire context
+- * @lock: mutex to lock
+- *
+- * Trylocks a mutex without acquire context, so no deadlock detection is
+- * possible. Returns 1 if the mutex has been acquired successfully, 0 otherwise.
+- */
+-static inline int __must_check ww_mutex_trylock(struct ww_mutex *lock)
+-{
+-	return mutex_trylock(&lock->base);
+-}
+-
+-/***
+- * ww_mutex_destroy - mark a w/w mutex unusable
+- * @lock: the mutex to be destroyed
+- *
+- * This function marks the mutex uninitialized, and any subsequent
+- * use of the mutex is forbidden. The mutex must not be locked when
+- * this function is called.
+- */
+-static inline void ww_mutex_destroy(struct ww_mutex *lock)
+-{
+-	mutex_destroy(&lock->base);
+-}
+-
+-/**
+- * ww_mutex_is_locked - is the w/w mutex locked
+- * @lock: the mutex to be queried
+- *
+- * Returns 1 if the mutex is locked, 0 if unlocked.
+- */
+-static inline bool ww_mutex_is_locked(struct ww_mutex *lock)
+-{
+-	return mutex_is_locked(&lock->base);
+-}
+-
+ extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+ 
+ #ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
+diff --git a/include/linux/reservation.h b/include/linux/reservation.h
+index e9ee806..813dae9 100644
+--- a/include/linux/reservation.h
++++ b/include/linux/reservation.h
+@@ -39,7 +39,7 @@
+ #ifndef _LINUX_RESERVATION_H
+ #define _LINUX_RESERVATION_H
+ 
+-#include <linux/mutex.h>
++#include <linux/ww_mutex.h>
+ 
+ extern struct ww_class reservation_ww_class;
+ 
+diff --git a/include/linux/mutex.h b/include/linux/ww_mutex.h
+similarity index 69%
+copy from include/linux/mutex.h
+copy to include/linux/ww_mutex.h
+index 3793ed7..760399a 100644
+--- a/include/linux/mutex.h
++++ b/include/linux/ww_mutex.h
+@@ -1,82 +1,20 @@
+ /*
+- * Mutexes: blocking mutual exclusion locks
++ * Wound/Wait Mutexes: blocking mutual exclusion locks with deadlock avoidance
+  *
+- * started by Ingo Molnar:
++ * Original mutex implementation started by Ingo Molnar:
+  *
+  *  Copyright (C) 2004, 2005, 2006 Red Hat, Inc., Ingo Molnar <mingo@redhat.com>
+  *
++ * Wound/wait implementation:
++ *  Copyright (C) 2013 Canonical Ltd.
++ *
+  * This file contains the main data structure and API definitions.
+  */
+-#ifndef __LINUX_MUTEX_H
+-#define __LINUX_MUTEX_H
+ 
+-#include <asm/current.h>
+-#include <linux/list.h>
+-#include <linux/spinlock_types.h>
+-#include <linux/linkage.h>
+-#include <linux/lockdep.h>
++#ifndef __LINUX_WW_MUTEX_H
++#define __LINUX_WW_MUTEX_H
+ 
+-#include <linux/atomic.h>
+-
+-/*
+- * Simple, straightforward mutexes with strict semantics:
+- *
+- * - only one task can hold the mutex at a time
+- * - only the owner can unlock the mutex
+- * - multiple unlocks are not permitted
+- * - recursive locking is not permitted
+- * - a mutex object must be initialized via the API
+- * - a mutex object must not be initialized via memset or copying
+- * - task may not exit with mutex held
+- * - memory areas where held locks reside must not be freed
+- * - held mutexes must not be reinitialized
+- * - mutexes may not be used in hardware or software interrupt
+- *   contexts such as tasklets and timers
+- *
+- * These semantics are fully enforced when DEBUG_MUTEXES is
+- * enabled. Furthermore, besides enforcing the above rules, the mutex
+- * debugging code also implements a number of additional features
+- * that make lock debugging easier and faster:
+- *
+- * - uses symbolic names of mutexes, whenever they are printed in debug output
+- * - point-of-acquire tracking, symbolic lookup of function names
+- * - list of all locks held in the system, printout of them
+- * - owner tracking
+- * - detects self-recursing locks and prints out all relevant info
+- * - detects multi-task circular deadlocks and prints out all affected
+- *   locks and tasks (and only those tasks)
+- */
+-struct mutex {
+-	/* 1: unlocked, 0: locked, negative: locked, possible waiters */
+-	atomic_t		count;
+-	spinlock_t		wait_lock;
+-	struct list_head	wait_list;
+-#if defined(CONFIG_DEBUG_MUTEXES) || defined(CONFIG_SMP)
+-	struct task_struct	*owner;
+-#endif
+-#ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+-	void			*spin_mlock;	/* Spinner MCS lock */
+-#endif
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	const char 		*name;
+-	void			*magic;
+-#endif
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-	struct lockdep_map	dep_map;
+-#endif
+-};
+-
+-/*
+- * This is the control structure for tasks blocked on mutex,
+- * which resides on the blocked task's kernel stack:
+- */
+-struct mutex_waiter {
+-	struct list_head	list;
+-	struct task_struct	*task;
+-#ifdef CONFIG_DEBUG_MUTEXES
+-	void			*magic;
+-#endif
+-};
++#include <linux/mutex.h>
+ 
+ struct ww_class {
+ 	atomic_long_t stamp;
+@@ -112,44 +50,13 @@ struct ww_mutex {
+ #endif
+ };
+ 
+-#ifdef CONFIG_DEBUG_MUTEXES
+-# include <linux/mutex-debug.h>
+-#else
+-# define __DEBUG_MUTEX_INITIALIZER(lockname)
+-/**
+- * mutex_init - initialize the mutex
+- * @mutex: the mutex to be initialized
+- *
+- * Initialize the mutex to unlocked state.
+- *
+- * It is not allowed to initialize an already locked mutex.
+- */
+-# define mutex_init(mutex) \
+-do {							\
+-	static struct lock_class_key __key;		\
+-							\
+-	__mutex_init((mutex), #mutex, &__key);		\
+-} while (0)
+-static inline void mutex_destroy(struct mutex *lock) {}
+-#endif
+-
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-# define __DEP_MAP_MUTEX_INITIALIZER(lockname) \
+-		, .dep_map = { .name = #lockname }
+ # define __WW_CLASS_MUTEX_INITIALIZER(lockname, ww_class) \
+ 		, .ww_class = &ww_class
+ #else
+-# define __DEP_MAP_MUTEX_INITIALIZER(lockname)
+ # define __WW_CLASS_MUTEX_INITIALIZER(lockname, ww_class)
+ #endif
+ 
+-#define __MUTEX_INITIALIZER(lockname) \
+-		{ .count = ATOMIC_INIT(1) \
+-		, .wait_lock = __SPIN_LOCK_UNLOCKED(lockname.wait_lock) \
+-		, .wait_list = LIST_HEAD_INIT(lockname.wait_list) \
+-		__DEBUG_MUTEX_INITIALIZER(lockname) \
+-		__DEP_MAP_MUTEX_INITIALIZER(lockname) }
+-
+ #define __WW_CLASS_INITIALIZER(ww_class) \
+ 		{ .stamp = ATOMIC_LONG_INIT(0) \
+ 		, .acquire_name = #ww_class "_acquire" \
+@@ -159,19 +66,12 @@ static inline void mutex_destroy(struct mutex *lock) {}
+ 		{ .base = { \__MUTEX_INITIALIZER(lockname) } \
+ 		__WW_CLASS_MUTEX_INITIALIZER(lockname, class) }
+ 
+-#define DEFINE_MUTEX(mutexname) \
+-	struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)
+-
+ #define DEFINE_WW_CLASS(classname) \
+ 	struct ww_class classname = __WW_CLASS_INITIALIZER(classname)
+ 
+ #define DEFINE_WW_MUTEX(mutexname, ww_class) \
+ 	struct ww_mutex mutexname = __WW_MUTEX_INITIALIZER(mutexname, ww_class)
+ 
+-
+-extern void __mutex_init(struct mutex *lock, const char *name,
+-			 struct lock_class_key *key);
+-
+ /**
+  * ww_mutex_init - initialize the w/w mutex
+  * @lock: the mutex to be initialized
+@@ -193,60 +93,6 @@ static inline void ww_mutex_init(struct ww_mutex *lock,
+ }
+ 
+ /**
+- * mutex_is_locked - is the mutex locked
+- * @lock: the mutex to be queried
+- *
+- * Returns 1 if the mutex is locked, 0 if unlocked.
+- */
+-static inline int mutex_is_locked(struct mutex *lock)
+-{
+-	return atomic_read(&lock->count) != 1;
+-}
+-
+-/*
+- * See kernel/mutex.c for detailed documentation of these APIs.
+- * Also see Documentation/mutex-design.txt.
+- */
+-#ifdef CONFIG_DEBUG_LOCK_ALLOC
+-extern void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
+-extern void _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest_lock);
+-
+-extern int __must_check mutex_lock_interruptible_nested(struct mutex *lock,
+-					unsigned int subclass);
+-extern int __must_check mutex_lock_killable_nested(struct mutex *lock,
+-					unsigned int subclass);
+-
+-#define mutex_lock(lock) mutex_lock_nested(lock, 0)
+-#define mutex_lock_interruptible(lock) mutex_lock_interruptible_nested(lock, 0)
+-#define mutex_lock_killable(lock) mutex_lock_killable_nested(lock, 0)
+-
+-#define mutex_lock_nest_lock(lock, nest_lock)				\
+-do {									\
+-	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);	\
+-	_mutex_lock_nest_lock(lock, &(nest_lock)->dep_map);		\
+-} while (0)
+-
+-#else
+-extern void mutex_lock(struct mutex *lock);
+-extern int __must_check mutex_lock_interruptible(struct mutex *lock);
+-extern int __must_check mutex_lock_killable(struct mutex *lock);
+-
+-# define mutex_lock_nested(lock, subclass) mutex_lock(lock)
+-# define mutex_lock_interruptible_nested(lock, subclass) mutex_lock_interruptible(lock)
+-# define mutex_lock_killable_nested(lock, subclass) mutex_lock_killable(lock)
+-# define mutex_lock_nest_lock(lock, nest_lock) mutex_lock(lock)
+-#endif
+-
+-/*
+- * NOTE: mutex_trylock() follows the spin_trylock() convention,
+- *       not the down_trylock() convention!
+- *
+- * Returns 1 if the mutex has been acquired successfully, and 0 on contention.
+- */
+-extern int mutex_trylock(struct mutex *lock);
+-extern void mutex_unlock(struct mutex *lock);
+-
+-/**
+  * ww_acquire_init - initialize a w/w acquire context
+  * @ctx: w/w acquire context to initialize
+  * @ww_class: w/w class of the context
+@@ -378,10 +224,9 @@ static inline int ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ct
+ {
+ 	if (ctx)
+ 		return __ww_mutex_lock(lock, ctx);
+-	else {
+-		mutex_lock(&lock->base);
+-		return 0;
+-	}
++
++	mutex_lock(&lock->base);
++	return 0;
+ }
+ 
+ /**
+@@ -458,8 +303,7 @@ ww_mutex_lock_slow(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+ }
+ 
+ /**
+- * ww_mutex_lock_slow_interruptible - slowpath acquiring of the w/w mutex,
+- * 				      interruptible
++ * ww_mutex_lock_slow_interruptible - slowpath acquiring of the w/w mutex, interruptible
+  * @lock: the mutex to be acquired
+  * @ctx: w/w acquire context
+  *
+@@ -531,10 +375,4 @@ static inline bool ww_mutex_is_locked(struct ww_mutex *lock)
+ 	return mutex_is_locked(&lock->base);
+ }
+ 
+-extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+-
+-#ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
+-#define arch_mutex_cpu_relax()	cpu_relax()
+-#endif
+-
+ #endif
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index e581ada..ff05f4b 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -18,6 +18,7 @@
+  * Also see Documentation/mutex-design.txt.
+  */
+ #include <linux/mutex.h>
++#include <linux/ww_mutex.h>
+ #include <linux/sched.h>
+ #include <linux/sched/rt.h>
+ #include <linux/export.h>
+diff --git a/lib/locking-selftest.c b/lib/locking-selftest.c
+index aad024d..6dc09d8 100644
+--- a/lib/locking-selftest.c
++++ b/lib/locking-selftest.c
+@@ -12,6 +12,7 @@
+  */
+ #include <linux/rwsem.h>
+ #include <linux/mutex.h>
++#include <linux/ww_mutex.h>
+ #include <linux/sched.h>
+ #include <linux/delay.h>
+ #include <linux/lockdep.h>
