@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab3GLCbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:31:16 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36368 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab3GLCbO (ORCPT
+	id S1755410Ab3GLCi6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:38:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17434 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab3GLCi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:31:14 -0400
-Message-ID: <51DF6A48.4070506@huawei.com>
-Date: Fri, 12 Jul 2013 10:30:32 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Don Dutile <ddutile@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH -v2 1/3] PCI: introduce PCIe Device Serial Number Capability
- support
-References: <1373535825-49972-1-git-send-email-wangyijing@huawei.com> <1373535825-49972-2-git-send-email-wangyijing@huawei.com> <51DE8032.4040808@redhat.com> <CAErSpo50ni41TiscZDVpg8wMFK2wgWmS1sySfNTs8X9JA7Mmkw@mail.gmail.com>
-In-Reply-To: <CAErSpo50ni41TiscZDVpg8wMFK2wgWmS1sySfNTs8X9JA7Mmkw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 11 Jul 2013 22:38:57 -0400
+X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=TyVgHLz5XD0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oLtpoGhtZv4A:10 a=LcwtFZqVcudtIxIXw7UA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373596735.17876.84.camel@gandalf.local.home>
+Subject: Re: [PATCH] kernel: trace: remove __init from
+ race_selftest_startup_function() and trace_selftest_startup_function_graph()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Jul 2013 22:38:55 -0400
+In-Reply-To: <51DF62DB.3010409@asianux.com>
+References: <51DDFCF8.2090808@asianux.com>
+	  <1373561279.17876.45.camel@gandalf.local.home>
+	  <51DF44FA.9060000@asianux.com>
+	 <1373593261.17876.61.camel@gandalf.local.home>
+	 <51DF62DB.3010409@asianux.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> }
->>>
->>> +       pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_DSN);
->>> +       if (!pos)
->>> +               return 0;
->>> +
->>> +       pci_read_config_dword(dev, pos + 4,&lo);
->>> +       pci_read_config_dword(dev, pos + 8,&hi);
->>> +       sn = ((u64)hi<<  32) | lo;
->>
->> See comment below:
->>         dev->sn = ((u64)hi<<  32) | lo;
->>         return;
->>
->>> +       return sn;
->>> +}
->>> +EXPORT_SYMBOL(pci_device_serial_number);
->>> +
->>> +/**
->>>    * pci_configure_ari - enable or disable ARI forwarding
->>>    * @dev: the PCI device
->>>    *
->>> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
->>> index 46ada5c..c4c1a2b 100644
->>> --- a/drivers/pci/probe.c
->>> +++ b/drivers/pci/probe.c
->>> @@ -1322,6 +1322,8 @@ static void pci_init_capabilities(struct pci_dev
->>> *dev)
->>>         /* Power Management */
->>>         pci_pm_init(dev);
->>>
->>> +       dev->sn = pci_device_serial_number(dev);
->>> +
->>
->> Finally, 'the comment below':
->> I know you were following Bjorn's suggestion, which I thought
->> was an improvement, but why not do above assignment in
->> pci_device_serial_number() ?
->> See above....
+On Fri, 2013-07-12 at 09:58 +0800, Chen Gang wrote:
+> On 07/12/2013 09:41 AM, Steven Rostedt wrote:
+> > On Fri, 2013-07-12 at 07:51 +0800, Chen Gang wrote:
+> > 
+> >> > Hmm, can all trace_selftest_startup_* (*selftest* in trace_selftest.c)
+> >> > use '__init', so not waste memory keeping them around ?
+> > Yeah, they should all be set to __init, but that's pretty low on the
+> > totem poll, as distros don't enable selftests in their main kernels.
 > 
-> pci_device_serial_number() would then have the side-effect of saving
-> the result somewhere, and callers would have to know where to look.
-> Personally, I think it's simpler to return the serial number directly
-> and avoid the side-effect, but maybe this is just bike-shedding.
+> Excuse me, my English is not quite well, I guess your meaning is:
 > 
-> As long as we are bike-shedding, I'd just drop "sn" and do:
+>   they should all be set to '__init', although it is minor in real world.
 > 
->     return ((u64)hi << 32) | lo;
-> 
-> And of course, you need spaces before "&hi" and "&lo" in the
-> pci_read_config_dword() calls.
+> Is it correct ?
 
-OK, will drop "sn", strangely my original patch has spaces before "&hi" and "&lo",
-but in reply the spaces disappeared.
-
-Thanks!
-Yijing.
-
+Correct.
 
 > 
-
-
-
-> .
 > 
+> For me, I recommend to let all *selftest* as the same: "all add '
+> __init' or none add '__init'" (if choose add, all report warnings).
+> 
+> Is it suitable to still send new related patch for it ? If so, could
+> you provide your suggesting choice (all add, or none add) ?
 
+Does this patch fix your warning?
 
--- 
-Thanks!
-Yijing
+-- Steve
+
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index a4ed382..5e794d1 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -680,6 +680,15 @@ extern int trace_selftest_startup_sched_switch(struct tracer *trace,
+ 					       struct trace_array *tr);
+ extern int trace_selftest_startup_branch(struct tracer *trace,
+ 					 struct trace_array *tr);
++/*
++ * Tracer data references selftest functions that only occur
++ * on boot up. These can be __init functions. Thus, when selftests
++ * are enabled, then the tracers need to reference __init functions.
++ */
++#define __tracer_data		__refdata
++#else
++/* Tracers are seldom changed. Optimize when selftests are disabled. */
++#define __tracer_data		__read_mostly
+ #endif /* CONFIG_FTRACE_STARTUP_TEST */
+ 
+ extern void *head_page(struct trace_array_cpu *data);
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index b863f93..38fe148 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -199,7 +199,7 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
+ 	return 0;
+ }
+ 
+-static struct tracer function_trace __read_mostly =
++static struct tracer function_trace __tracer_data =
+ {
+ 	.name		= "function",
+ 	.init		= function_trace_init,
+
 
