@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab3GLBtb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 21:49:31 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37049 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753874Ab3GLBt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 21:49:29 -0400
-Date: Thu, 11 Jul 2013 21:49:25 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] ext4: fix ext4_get_group_number() at cluster
- boundaries
-Message-ID: <20130712014925.GC31005@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Andy Whitcroft <apw@canonical.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1373542128-15662-1-git-send-email-apw@canonical.com>
+	id S932531Ab3GLBtt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 21:49:49 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11549 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932503Ab3GLBtr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 21:49:47 -0400
+Message-ID: <51DF60AB.6040405@huawei.com>
+Date: Fri, 12 Jul 2013 09:49:31 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373542128-15662-1-git-send-email-apw@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, <linux-kernel@vger.kernel.org>,
+        <linux-pci@vger.kernel.org>, Rafael <rjw@sisk.pl>,
+        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
+        Oliver Neukum <oneukum@suse.de>, Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH 2/2] PCI,pciehp: avoid add a device already exist during
+ pciehp_resume
+References: <1373356564-21668-1-git-send-email-wangyijing@huawei.com>  <1373357261.1633.4.camel@x61.thuisdomein> <51DE2C98.5030803@huawei.com> <1373537953.9708.25.camel@x61.thuisdomein>
+In-Reply-To: <1373537953.9708.25.camel@x61.thuisdomein>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 12:28:48PM +0100, Andy Whitcroft wrote:
-> Commit bd86298e60b8 introduced a new optimisation for callers who needed
-> only the ext4 group number and not the block offset within.  It hand
-> calculates the group number from the block in the common case, falling
-> back to the original group offset implementation otherwise.
+On 2013/7/11 18:19, Paul Bolle wrote:
+> Yijing,
+> 
+> On Thu, 2013-07-11 at 11:55 +0800, Yijing Wang wrote:
+>> Can you provide the lspci -vvv and lspci -xxxx info messages ?
+>> I want to confirm your hardware information which cause your resume error.
+>> You can get these messages in any kernel version, that's ok.
+> 
+> Would it be sufficient to send that information just for the two pcie
+> ports on my laptop, and the wireless card that is present in one of
+> those two ports?
+> 
 
-A fix for this problem is already in the ext4 tree, and will be pushed
-to Linus shortly:
+If you can provide both the lspci -vvv and lspci -xxxx info before suspend
+and after resume, it's better.
 
-http://git.kernel.org/cgit/linux/kernel/git/tytso/ext4.git/commit/?h=dev&id=960fd856fdc3b08b3638f3f9b6b4bfceb77660c7
+> And would it be OK to send that information off list?
 
-Cheers,
+OK~
 
-					- Ted
 
+Thanks!
+Yijing.
+
+
+> 
+>> When you suspend and resume the system, the wireless card is always
+>> present in pcie slot, right?
+> 
+> Yes. I actually wouldn't even know how to remove it. I only discovered
+> my wireless card was in a pcie slot because of the error messages at
+> resume (which started a few releases ago, I think v3.7).
+> 
+> 
+> Paul Bolle
+> 
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
 
