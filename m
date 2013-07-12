@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964982Ab3GLPhd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:37:33 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:34121 "EHLO bear.ext.ti.com"
+	id S965037Ab3GLPhv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:37:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:36977 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964936Ab3GLPhb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:37:31 -0400
-Message-ID: <51E0227E.2000008@ti.com>
-Date: Fri, 12 Jul 2013 18:36:30 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S964938Ab3GLPhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 11:37:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,653,1367996400"; 
+   d="scan'208";a="364336699"
+Message-ID: <51E022BA.9030005@linux.intel.com>
+Date: Fri, 12 Jul 2013 08:37:30 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, Kevin Hilman <khilman@linaro.org>,
-        Hebbar Gururaja <gururaja.hebbar@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+CC: "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [RFC] ARM: OMAP2+: omap_device: add pinctrl handling
-References: <1371826990-25820-1-git-send-email-grygorii.strashko@ti.com> <CACRpkdY=m1b9Lh27+wHP8FQ4SbVZKmAOCGhxe59aP+TcuR9QaA@mail.gmail.com> <20130625065811.GZ5523@atomide.com> <51CAEA90.90200@ti.com> <CACRpkdbKgEcfF67oO9HrczvDp4Po3Xt1hFajJ1vO8kEvsZH4jA@mail.gmail.com> <51CC45D3.2000305@ti.com> <CACRpkdYU13bhPaL2ZG9CT9JRv9sKQ+1N3zCUPizk571+LQqB4A@mail.gmail.com>
-In-Reply-To: <CACRpkdYU13bhPaL2ZG9CT9JRv9sKQ+1N3zCUPizk571+LQqB4A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 8/9] sched: power: Add initial frequency scaling
+ support to power scheduler
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <1373385338-12983-9-git-send-email-morten.rasmussen@arm.com> <51DD5D63.7000602@linux.intel.com> <20130712125113.GF20960@e103034-lin>
+In-Reply-To: <20130712125113.GF20960@e103034-lin>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 7/12/2013 5:51 AM, Morten Rasmussen wrote:
+> On Wed, Jul 10, 2013 at 02:10:59PM +0100, Arjan van de Ven wrote:
+>> On 7/9/2013 8:55 AM, Morten Rasmussen wrote:
+>>> Extends the power scheduler capacity management algorithm to handle
+>>> frequency scaling and provide basic frequency/P-state selection hints
+>>> to the power driver.
+>>>
+>>> Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+>>> CC: Ingo Molnar <mingo@kernel.org>
+>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>> CC: Catalin Marinas <catalin.marinas@arm.com>
+>>> ---
+>>>    kernel/sched/power.c |   33 ++++++++++++++++++++++++++++-----
+>>>    1 file changed, 28 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/kernel/sched/power.c b/kernel/sched/power.c
+>>> index 9e44c0e..5fc32b0 100644
+>>> --- a/kernel/sched/power.c
+>>> +++ b/kernel/sched/power.c
+>>> @@ -21,6 +21,8 @@
+>>>
+>>>    #define INTERVAL 5 /* ms */
+>>>    #define CPU_FULL 90 /* Busy %-age - TODO: Make tunable */
+>>> +#define CPU_TARGET 80 /* Target busy %-age - TODO: Make tunable */
+>>> +#define CPU_EMPTY 5 /* Idle noise %-age - TODO: Make tunable */
+>>>
+>>
+>> to be honest, this is the policy part that really should be in the hardware specific driver
+>> and not in the scheduler.
+>> (even if said driver is sort of a "generic library" kind of thing)
+>
+> I agree that the values should be set by a hardware specific power
+> driver. Or do you mean that algorithms using this sort of values should
+> be in the driver?
 
-On 07/10/2013 11:36 PM, Linus Walleij wrote:
-> On Thu, Jun 27, 2013 at 4:01 PM, Grygorii Strashko
-> <grygorii.strashko@ti.com> wrote:
->
->> I think, In the future the OMAP pinctrl configurations would be manged in
->> more flexible way then now (thanks to "pinctrl PM helpers" and you;))
->> - "Idle" state will be splitted to "Idle"/"sleep"
->> - "default" state will be splitted to "default"/"active"
->
-> OK so the first ones we already have so the discussion is now down
-> to adding the "active" state (and pinctrl_pm* helper function).
->
-> I guess we need a patch set prepared which adds the "active" state
-> and helper function as the first patch, i.e. this:
-> http://marc.info/?l=linux-kernel&m=137094012703340&w=2
-> Can I have your ACK on this patch?
-I've verified combination of
-[PATCH] drivers: pinctrl: add active state to core
-[RFC] ARM: OMAP2+: omap_device: add pinctrl handling
-on OMAP4 SDP board+UARTs and going to send patches on Monday.
-
-So, Acked/Tested-by: Grygorii Strashko <grygorii.strashko@ti.com>
-(I can't reply directly to thread - not signed to those lists :))
-
-What is the best branch to base my patches on?
+the later.
+the algorithm you have makes assumptions about how the hardware behaves to a degree that
+is really problematic. It sort of seems to resemble the ondemand kind of thing....
+... and there's some very good reasons we ran away screaming from ondemand for Intel.
 
 >
-> I do not want to add the state unless there is a clear consumer,
-> so it needs to go in with the first patch to a device driver that uses
-> pinctrl_pm_select_active_state() which will be a good demonstration
-> on its use and utility. (And a point to object and suggest other ways
-> to do the same thing...)
->
-> Yours,
-> Linus Walleij
->
 
-Regards,
--grygorii
