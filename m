@@ -1,121 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab3GLPwQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:52:16 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:44035 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933072Ab3GLPwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:52:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAFkjPTm6_FCMpMOCgD+n=72y2xzfTPFKXE+ikBsy6CpDAK58jA@mail.gmail.com>
-References: <CAFkjPTnWcVCrDYiNAwWMOa=8yLzpdZKUi+v7oSQqt3DinYp4xA@mail.gmail.com>
-	<87fvvktjzg.fsf@linux.vnet.ibm.com>
-	<CAFkjPTm6_FCMpMOCgD+n=72y2xzfTPFKXE+ikBsy6CpDAK58jA@mail.gmail.com>
-Date: Fri, 12 Jul 2013 08:52:13 -0700
-X-Google-Sender-Auth: d9g-XDefAh3mkVHaehjH9KZndlk
-Message-ID: <CA+55aFy-S44CR1amnUosVg99sgFk+ekueO=gt04Tbd92VpzXLQ@mail.gmail.com>
-Subject: Re: [V9fs-developer] [GIT PULL] 9p changes for 3.11 merge window
- (part 2)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S965050Ab3GLPwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:52:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933241Ab3GLPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 11:52:50 -0400
+From: Jan Vesely <jvesely@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel@vger.kernel.org
+Cc: Kent Overstreet <koverstreet@google.com>, Rob Evers <revers@redhat.com>,
+        Tomas Henzl <thenzl@redhat.com>,
+        Nikola Pajkovsky <npajkovs@redhat.com>,
+        Kai Makisara <Kai.Makisara@kolumbus.fi>, linux-scsi@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Don Howard <dhoward@redhat.com>
+Subject: [PATCH v4 1/2] block: factor out vector mergeable decision to a helper function
+Date: Fri, 12 Jul 2013 17:52:22 +0200
+Message-Id: <1373644343-6671-2-git-send-email-jvesely@redhat.com>
+In-Reply-To: <1373644343-6671-1-git-send-email-jvesely@redhat.com>
+References: <1373644343-6671-1-git-send-email-jvesely@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 6:48 AM, Eric Van Hensbergen <ericvh@gmail.com> wrote:
-> It's likely my fault.
+From: Jan Vesely <jvesely@redhat.com>
 
-This is not a "fault".
+Export the function so it can be used to predict segment counts
+without calling the recalc function. This will be used in the next
+patch.
 
-Duplicate commits happen. It's fine. It's normal, and even expected.
-In fact, it's very much something that sometimes happen for *good*
-reasons.
+Signed-off-by: Jan Vesely <jvesely@redhat.com>
 
-Sometimes it's just because the same patch came in two different ways.
-And sometimes it's the only sane way to handle certain issues (ie you
-have a fix that you want to send to me for 3.10, but you _also_ need
-that fix in your development tree, and so you want to apply the fix to
-the branch that you are *not* ready to send to me yet).
+CC: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>
+CC: Jens Axboe <axboe@kernel.dk>
+CC: Kent Overstreet <koverstreet@google.com>
+CC: Rob Evers <revers@redhat.com>
+CC: Tomas Henzl <thenzl@redhat.com>
+CC: Nikola Pajkovsky <npajkovs@redhat.com>
+CC: Kai Makisara <Kai.Makisara@kolumbus.fi>
+CC: linux-scsi@vger.kernel.org
+CC: linux-fsdevel@vger.kernel.org
+---
+ block/blk-merge.c   | 52 +++++++++++++++++++++++++++++++---------------------
+ include/linux/bio.h |  3 +++
+ 2 files changed, 34 insertions(+), 21 deletions(-)
 
-So occasional duplicate commits is something I *expect* to happen
-during any normal development. They aren't necessarily intentional,
-but as pointed out above they _can_ be intentional and have perfectly
-good reasons.
+diff --git a/block/blk-merge.c b/block/blk-merge.c
+index 5f24482..f1ef657 100644
+--- a/block/blk-merge.c
++++ b/block/blk-merge.c
+@@ -9,11 +9,39 @@
+ 
+ #include "blk.h"
+ 
++bool bvec_mergeable(struct request_queue *q, struct bio_vec *lastbv,
++		    struct bio_vec *newbv, unsigned int seg_size)
++{
++	unsigned long limit = queue_bounce_pfn(q);
++
++	if (!blk_queue_cluster(q))
++		return false;
++
++	/*
++	 * the trick here is to make sure that a high page is
++	 * never considered part of another segment, since that
++	 * might change with the bounce page.
++	 */
++	if ((page_to_pfn(lastbv->bv_page) > limit)
++	    || (page_to_pfn(newbv->bv_page) > limit))
++		return false;
++
++	if (seg_size + newbv->bv_len > queue_max_segment_size(q))
++		return false;
++
++	if (!BIOVEC_PHYS_MERGEABLE(lastbv, newbv))
++		return false;
++	if (!BIOVEC_SEG_BOUNDARY(q, lastbv, newbv))
++		return false;
++	return true;
++}
++
++
+ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
+ 					     struct bio *bio)
+ {
+ 	struct bio_vec *bv, *bvprv = NULL;
+-	int cluster, i, high, highprv = 1;
++	int i;
+ 	unsigned int seg_size, nr_phys_segs;
+ 	struct bio *fbio, *bbio;
+ 
+@@ -21,33 +49,16 @@ static unsigned int __blk_recalc_rq_segments(struct request_queue *q,
+ 		return 0;
+ 
+ 	fbio = bio;
+-	cluster = blk_queue_cluster(q);
+ 	seg_size = 0;
+ 	nr_phys_segs = 0;
+ 	for_each_bio(bio) {
+ 		bio_for_each_segment(bv, bio, i) {
+-			/*
+-			 * the trick here is making sure that a high page is
+-			 * never considered part of another segment, since that
+-			 * might change with the bounce page.
+-			 */
+-			high = page_to_pfn(bv->bv_page) > queue_bounce_pfn(q);
+-			if (high || highprv)
+-				goto new_segment;
+-			if (cluster) {
+-				if (seg_size + bv->bv_len
+-				    > queue_max_segment_size(q))
+-					goto new_segment;
+-				if (!BIOVEC_PHYS_MERGEABLE(bvprv, bv))
+-					goto new_segment;
+-				if (!BIOVEC_SEG_BOUNDARY(q, bvprv, bv))
+-					goto new_segment;
+-
++			if (bvprv && bvec_mergeable(q, bvprv, bv, seg_size)) {
+ 				seg_size += bv->bv_len;
+ 				bvprv = bv;
+ 				continue;
+ 			}
+-new_segment:
++			/* new segment */
+ 			if (nr_phys_segs == 1 && seg_size >
+ 			    fbio->bi_seg_front_size)
+ 				fbio->bi_seg_front_size = seg_size;
+@@ -55,7 +66,6 @@ new_segment:
+ 			nr_phys_segs++;
+ 			bvprv = bv;
+ 			seg_size = bv->bv_len;
+-			highprv = high;
+ 		}
+ 		bbio = bio;
+ 	}
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index ef24466..3af0e36 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -307,6 +307,9 @@ extern struct bio_vec *bvec_alloc(gfp_t, int, unsigned long *, mempool_t *);
+ extern void bvec_free(mempool_t *, struct bio_vec *, unsigned int);
+ extern unsigned int bvec_nr_vecs(unsigned short idx);
+ 
++extern bool bvec_mergeable(struct request_queue *q, struct bio_vec *lastbv,
++			   struct bio_vec *newbv, unsigned int seg_size);
++
+ #ifdef CONFIG_BLK_CGROUP
+ int bio_associate_current(struct bio *bio);
+ void bio_disassociate_task(struct bio *bio);
+-- 
+1.8.3.1
 
-Now, the important part there is the "occasional". There are very much
-occasional reasons why duplicate commits happen, and trying very hard
-to not make them happen is counter-productive and bad, and often leads
-to much worse problems.
-
-The case when duplicates are a problem is when they aren't
-"occasional", and are instead "workflow". At that point, there is
-something seriously wrong. If they happen consistently, and happen for
-series of commits, that is indicative of something really bad going
-on. It might be people rebasing their public trees, for example, and
-then you can find both the old and the new version of a rebased
-series. THAT kind of thing is a problem, because now the duplicates
-aren't occasional patches that happened for natural reasons any more,
-now the duplicates are because somebody is doing something that is
-actively bad. But even then, it's not the "duplicate" part that is the
-problem, the duplicates are really more of a symptom than the deeper
-issue.
-
-Similarly, if there is confusion about maintainership, duplicate
-patches can happen because two or more people end up taking the same
-patch because the feel it's "their" job. And again, when that happens
-_occasionally_, that's fine too - there are quite valid gray areas
-without clear black-and-white rules about which way a patch should
-come in. So again, the occasional duplicate commit with the same patch
-is normal, expected, and fine. But again, very obviously, if it isn't
-some "occasional" thing, but happens often, that is clearly a huge
-problem, and implies that two or more people are fighting over
-control.
-
-So don't worry about the occasional duplicates. Yes, they can cause
-merge conflicts and be annoying (git will trivially merge true
-duplicate patches, but if you then have *other* changes on top of the
-duplicates, the two branches won't necessarily merge cleanly), but
-again, as long as that is something occasional and rare,. that is not
-a problem at all. A certain amount of merge conflict is to be
-expected, and I resolve several conflicts each day during the merge
-window without ever even mentioning them. Again, it's a problem only
-when it happens more than just occasionally.
-
-So worry about other things. Worry about good git maintenance
-practices (no rebasing of public trees etc), worry about keeping code
-clean and modular so that you don't find cross-maintainership issues
-with gray areas of who should handle them very often, and worry about
-things like that. But don't worry about the occasional duplicate patch
-getting into the tree through two different branches. That really is
-perfectly normal.
-
-You can do statistics with "git patch-id", like this:
-
-    git log -M --no-merges -p v3.10.. | git patch-id > patch-id-list
-    cut -d' ' -f1 < patch-id-list | sort | uniq -d > duplicates
-    cat duplicates | while read id
-    do
-        echo "Patch ID $id:"
-        grep $id patch-id-list | while read x commit
-        do
-            git log --oneline --no-walk $commit
-        done
-    done
-
-because duplicate commits is such a normal and expected thing that git
-actually has tools to find them.
-
-NOTE! The above example script finds just the duplicates that all
-happened after v3.10. So the above does *not* find the case here,
-where one copy was merged before v3.10, and another was merged after.
-But you can play with the above script, it's efficient enough that you
-can reasonably run it on bigger histories (you'll want a reasonably
-powerful machine, though - it's obviously generating the patch for all
-non-merge commits you want to check).
-
-                        Linus
