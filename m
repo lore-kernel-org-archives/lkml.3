@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965069Ab3GLOPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 10:15:30 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:57359 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964861Ab3GLOP3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 10:15:29 -0400
-Date: Fri, 12 Jul 2013 07:15:30 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130712141530.GA3629@roeck-us.net>
-References: <20130711214830.611455274@linuxfoundation.org>
- <20130711222935.GA11340@redhat.com>
- <20130711224455.GA17222@kroah.com>
+	id S965083Ab3GLOV3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 10:21:29 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:47820 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964919Ab3GLOV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 10:21:27 -0400
+Date: Fri, 12 Jul 2013 16:21:06 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Ming Lei <tom.leiming@gmail.com>, Linda Walsh <lkml@tlinx.org>,
+        Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Doug Thompson <dougthompson@xmission.com>, linux-edac@vger.kernel.org
+Subject: Re: BUG: key ffff880c1148c478 not in .data! (V3.10.0)
+Message-ID: <20130712142106.GJ24008@pd.tnic>
+References: <51D9EAF3.4050804@tlinx.org>
+ <CACVXFVPRwakzB6vtqRqL49StHKdugCpxDyNvx3VzcDC7GggFMQ@mail.gmail.com>
+ <20130712080428.GB359@x4>
+ <20130712134115.GI24008@pd.tnic>
+ <51E00B55.5070003@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130711224455.GA17222@kroah.com>
+In-Reply-To: <51E00B55.5070003@infradead.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 03:44:55PM -0700, Greg Kroah-Hartman wrote:
-> On Thu, Jul 11, 2013 at 06:29:35PM -0400, Dave Jones wrote:
-> > On Thu, Jul 11, 2013 at 03:01:17PM -0700, Greg Kroah-Hartman wrote:
-> >  > <rant>
-> >  >   I'm sitting on top of over 170 more patches that have been marked for
-> >  >   the stable releases right now that are not included in this set of
-> >  >   releases.  The fact that there are this many patches for stable stuff
-> >  >   that are waiting to be merged through the main -rc1 merge window cycle
-> >  >   is worrying to me.
-> >  > 
-> >  >   Why are subsystem maintainers holding on to fixes that are
-> >  >   _supposedly_ affecting all users?  I mean, 21 powerpc core changes
-> >  >   that I don't see until a -rc1 merge?  It's as if developers don't
-> >  >   expect people to use a .0 release and are relying on me to get the
-> >  >   fixes they have burried in their trees out to users.  That's not that
-> >  >   nice.  6 "core" iscsi-target fixes?  That's the sign of either a
-> >  >   broken subsystem maintainer, or a lack of understanding what the
-> >  >   normal -rc kernel releases are supposed to be for.
-> > 
-> > I get the impression as soon as we hit -rc1, some maintainers immediately
-> > go into "OH SHIT, I CAN'T SEND PATCHES OR LINUS WILL SHOUT AT ME" mode.
-> 
-> I agree.  But it seems that I need to now start shouting at them :(
-> 
-Just like others, I now have a cutoff-point for -stable patches. Depending on
-the severity of a bug, it is somewhere between -rc4 and -rc6. After -rc6 I only
-push regressions and crash fixes; the rest has to wait for the commit window.
+On Fri, Jul 12, 2013 at 10:57:41AM -0300, Mauro Carvalho Chehab wrote:
+> This will be overriding the content of the static var mc_bus every for
+> every new memory controller. Are you sure that bus.name is only used
+> on register, or if its contents is stored somewhere?
 
-So, yes, there are a couple of hwmon patches in your list.
+bus_register does kobject_set_name which copies bus->name, for example,
+but I didn't look exhaustively.
 
->From a maintainer perspective, seems to me we are stuck between a rock and a
-hard place. Yes, I would prefer to push all -stable material even late in the
--rc game, but that is not how things work nowadays anymore.
+Just to be on the safe side, I should probably do a
 
-This should really be discussed at the Kernel Summit. Overall, I don't really
-care too much how to handle it. Just tell me. The outlook of "Either Linus
-will shout at you or Greg will" doesn't sound like a good solution, though.
+static const char **bus_names = { "mc0", "mc1", ..., "mc7" };
 
-Guenter
+and use it. Are 8 enough for your edac drivers too?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
