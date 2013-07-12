@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932586Ab3GLCJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:09:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20951 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab3GLCJK (ORCPT
+	id S932610Ab3GLCJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:09:58 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:48177 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411Ab3GLCJ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:09:10 -0400
-X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=c_B5fg8LQ7AA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6K3jcYMAzPUA:10 a=5EvDNd7mrMAcO2Tz71wA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373594948.17876.77.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2 v3] x86: introduce int3-based instruction patching
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jason Baron <jbaron@akamai.com>, Borislav Petkov <bp@alien8.de>,
-        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org
-Date: Thu, 11 Jul 2013 22:09:08 -0400
-In-Reply-To: <alpine.LNX.2.00.1307120027570.29788@pobox.suse.cz>
-References: <alpine.LNX.2.00.1307102213140.25858@pobox.suse.cz>
-	 <alpine.LNX.2.00.1307112221110.29788@pobox.suse.cz>
-	 <51DF1B3C.8040603@linux.intel.com>
-	 <alpine.LNX.2.00.1307120027570.29788@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Thu, 11 Jul 2013 22:09:56 -0400
+Date: Fri, 12 Jul 2013 11:09:51 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH] kvm: reset arch memslot info on memslot creation
+Message-Id: <20130712110951.2b9ffb0e0e3fdeb537db132a@gmail.com>
+In-Reply-To: <20130711074153.GB5895@redhat.com>
+References: <20130710082439.GA1482@redhat.com>
+	<20130710224956.b7a44f39c151148afa5a47ba@gmail.com>
+	<20130711074153.GB5895@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 00:31 +0200, Jiri Kosina wrote:
-> On Thu, 11 Jul 2013, H. Peter Anvin wrote:
-> 
-> > > synchronization after replacing "all but first" instructions should not
-> > > be necessary (on Intel hardware), as the syncing after the subsequent
-> > > patching of the first byte provides enough safety.
-> > > But there's not only Intel HW out there, and we'd rather be on a safe
-> > > side.
+On Thu, 11 Jul 2013 10:41:53 +0300
+Gleb Natapov <gleb@redhat.com> wrote:
+
+> On Wed, Jul 10, 2013 at 10:49:56PM +0900, Takuya Yoshikawa wrote:
+> > On Wed, 10 Jul 2013 11:24:39 +0300
+> > "Michael S. Tsirkin" <mst@redhat.com> wrote:
 > > 
-> > Has anyone talked to AMD or VIA about this at all?  Did anyone else ever
-> > make SMP-capable x86?
+> > > On x86, kvm_arch_create_memslot assumes that rmap/lpage_info for the
+> > > slot are zeroed out: if they weren't, error handling code after out_free
+> > > label will free memory which wasn't allocated here.
+> > > This always happens to be the case because on KVM_MR_DELETE we clear the
+> > > whole arch structure.  So there's no bug, but it's cleaner not to rely
+> > > on this here.
+> > 
+> > Yes, the assumption is that the function is called only with zero-sized slots.
+> > Since changing the size is not allowed, DELETE-CREATE is the only case we
+> > care about.
+> > 
+> > But isn't it possible to make it explicit that zero-sized slots have always
+> > zero-cleared contents instead?  Otherwise, there would be many troubles.
+> > 
+> Do you have something in mind?
 > 
-> If Boris can verify for AMD, that'd be good; we could then just remove one 
-> extra syncing of the cores as a followup (can be done any time later, both 
-> for alternative.c and ftrace in fact).
-> 
-> With the "extra" sync, the procedure is already verified to work properly 
-> by ftace.
-> 
 
-I'd like to caution on the side of safety. The extra sync really doesn't
-hurt. Let's keep it in for a kernel release cycle to make sure
-everything else works properly, then we can look at optimizing it.
+I remember that I once wrote code that assumed flags field was cleared before
+creating a new slot and was pointed out that such assumptions might be dangerous:
+actually, it's cleared separately but not so easy to notice.
 
--- Steve
+So, I want to make it clear what differentiate DELETE'ed slots from others.
 
+If we only assume (npages == 0), CREATE should properly set everything,
+having out_free troubles in mind like this patch.  If we also assume the other
+fields are zero, then DELETE is responsible for that assumption, some comment
+in code may be helpful.
 
+Actually, (rmap==NULL) was once used to check if we needed to allocate memory
+for a new slot, meaning that we assumed the latter.  I felt uneasy and changed
+that to (npages == 0).
+
+Let's make it clear the underlying assumptions now.
+
+	Takuya
