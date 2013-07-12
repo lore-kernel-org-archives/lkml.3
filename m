@@ -1,76 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab3GLPoR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:44:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:26282 "EHLO mga11.intel.com"
+	id S933289Ab3GLPqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:46:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50739 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932970Ab3GLPoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:44:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,653,1367996400"; 
-   d="scan'208";a="364339186"
-Message-ID: <51E0244E.4090909@linux.intel.com>
-Date: Fri, 12 Jul 2013 08:44:14 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S932970Ab3GLPqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 11:46:08 -0400
+Date: Fri, 12 Jul 2013 11:45:21 -0400
+From: Dave Jones <davej@redhat.com>
+To: Dave Hansen <dave.hansen@intel.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Subject: Re: Yet more softlockups.
+Message-ID: <20130712154521.GD1020@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Dave Hansen <dave.hansen@intel.com>, Ingo Molnar <mingo@kernel.org>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+	Dave Hansen <dave.hansen@linux.intel.com>
+References: <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com>
+ <20130705143821.GB325@redhat.com>
+ <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de>
+ <20130705160043.GF325@redhat.com>
+ <20130706072408.GA14865@gmail.com>
+ <20130710151324.GA11309@redhat.com>
+ <20130710152015.GA757@x4>
+ <20130710154029.GB11309@redhat.com>
+ <20130712103117.GA14862@gmail.com>
+ <51E0230C.9010509@intel.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <51DC414F.5050900@linux.intel.com> <20130710111627.GC15989@e103687> <51DD5BFC.8000102@linux.intel.com> <20130712130021.GC28271@arm.com>
-In-Reply-To: <20130712130021.GC28271@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E0230C.9010509@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 12, 2013 at 08:38:52AM -0700, Dave Hansen wrote:
+ 
+ > The warning comes from calling perf_sample_event_took(), which is only
+ > called from one place: perf_event_nmi_handler().
+ > 
+ > So we can be pretty sure that the perf NMI is firing, or at least that
+ > this handler code is running.
+ > 
+ > nmi_handle() says:
+ >         /*
+ >          * NMIs are edge-triggered, which means if you have enough
+ >          * of them concurrently, you can lose some because only one
+ >          * can be latched at any given time.  Walk the whole list
+ >          * to handle those situations.
+ >          */
+ > 
+ > perf_event_nmi_handler() probably gets _called_ when the watchdog NMI
+ > goes off.  But, it should hit this check:
+ > 
+ >         if (!atomic_read(&active_events))
+ >                 return NMI_DONE;
+ > 
+ > and return quickly. This is before it has a chance to call
+ > perf_sample_event_took().
+ > 
+ > Dave, for your case, my suspicion would be that it got turned on
+ > inadvertently, or that we somehow have a bug which bumped up
+ > perf_event.c's 'active_events' and we're running some perf code that we
+ > don't have to.
+ 
+What do you 'inadvertantly' ? I see this during bootup every time.
+Unless systemd or something has started playing with perf, (which afaik it isn't)
 
-> But on x86 you still have a P-state hint for the CPU and the scheduler
-> could at least hope for more CPU performance. We can make the power
-> scheduler ask the power driver for an increase or decrease of
-> performance (as Preeti suggested) and give it the current load as
-> argument rather than a precise performance/frequency level. The power
-> driver would change the P-state accordingly and take the load into
-> account (or ignore it, something like intel_pstate.c can do its own
-> aperf/mperf tracking). But the power driver will inform the scheduler
-> that it can't change the P-state further and the power scheduler can
-> decide to spread the load out to other CPUs.
+ > But, I'm suspicious.  I was having all kinds of issues with perf and
+ > NMIs taking hundreds of milliseconds.  I never isolated it to having a
+ > real, single, cause.  I attributed it to my large NUMA system just being
+ > slow.  Your description makes me wonder what I missed, though.
 
+Here's a fun trick:
 
-I am completely fine with an interface that is something like
+trinity -c perf_event_open -C4 -q -l off
 
-void arch_please_go_faster(int cpunr);
-void arch_please_go_fastest(int cpunr);
-int arch_can_you_go_faster_than_now(int cpunr);
+Within about a minute, that brings any of my boxes to its knees.
+The softlockup detector starts going nuts, and then the box wedges solid.
 
-(maybe without the arguments and only make it for the local cpu, that would
-make the implementation surely simpler)
+(You may need to bump -C depending on your CPU count. I've never seen it happen
+ with a single process, but -C2 seems to be a minimum)
 
-with the understanding that these are instant requests (e.g. longer term policy will
-clobber requests eventually).
+That *is* using perf though, so I kind of expect bad shit to happen when there are bugs.
+The "during bootup" case is still a head-scratcher.
 
-it makes total sense to me for the scheduler to indicate "I need performance NOW".
-Either when it sees it's on the verge of needing to load balance, or when it is about to schedule
-a high priority (think realtime) task.
-
-Part of the reason I like such interface is that it is a higher level one, it's a clear and high level enough
-policy request that the hardware driver can translate into a hardware specific thing.
-
-An interface that would be "put it at THIS much" is not. It's too low level and makes assumptions about
-hardware things that change between generations/vendors that the scheduler really shouldn't know about.
-
+	Dave
 
