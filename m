@@ -1,100 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3GLCi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 22:38:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:17434 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752131Ab3GLCi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 22:38:57 -0400
-X-Authority-Analysis: v=2.0 cv=Du3UCRD+ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=TyVgHLz5XD0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=oLtpoGhtZv4A:10 a=LcwtFZqVcudtIxIXw7UA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1373596735.17876.84.camel@gandalf.local.home>
-Subject: Re: [PATCH] kernel: trace: remove __init from
- race_selftest_startup_function() and trace_selftest_startup_function_graph()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 11 Jul 2013 22:38:55 -0400
-In-Reply-To: <51DF62DB.3010409@asianux.com>
-References: <51DDFCF8.2090808@asianux.com>
-	  <1373561279.17876.45.camel@gandalf.local.home>
-	  <51DF44FA.9060000@asianux.com>
-	 <1373593261.17876.61.camel@gandalf.local.home>
-	 <51DF62DB.3010409@asianux.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755526Ab3GLCjl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 22:39:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab3GLCjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Jul 2013 22:39:40 -0400
+Date: Thu, 11 Jul 2013 22:39:30 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: xfs@oss.sgi.com
+Subject: XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file:
+ fs/xfs/xfs_dir2_sf.c, line: 358
+Message-ID: <20130712023930.GA6473@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 09:58 +0800, Chen Gang wrote:
-> On 07/12/2013 09:41 AM, Steven Rostedt wrote:
-> > On Fri, 2013-07-12 at 07:51 +0800, Chen Gang wrote:
-> > 
-> >> > Hmm, can all trace_selftest_startup_* (*selftest* in trace_selftest.c)
-> >> > use '__init', so not waste memory keeping them around ?
-> > Yeah, they should all be set to __init, but that's pretty low on the
-> > totem poll, as distros don't enable selftests in their main kernels.
-> 
-> Excuse me, my English is not quite well, I guess your meaning is:
-> 
->   they should all be set to '__init', although it is minor in real world.
-> 
-> Is it correct ?
+Just saw this during boot after an unclean shutdown. It hung afterwards.
 
-Correct.
+[   97.162665] XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file: fs/xfs/xfs_dir2_sf.c, line: 358
+[   97.164646] ------------[ cut here ]------------
+[   97.165312] kernel BUG at fs/xfs/xfs_message.c:108!
+[   97.165986] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[   97.166947] Modules linked in: snd_hda_codec_realtek pcspkr usb_debug snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm e1000e ptp snd_page_alloc pps_core snd_timer snd soundcore xfs libcrc32c
+[   97.170782] CPU: 3 PID: 341 Comm: rpcbind Not tainted 3.10.0+ #49
+[   97.173684] task: ffff880235d14a40 ti: ffff880235dae000 task.ti: ffff880235dae000
+[   97.173701] RIP: 0010:[<ffffffffa002a362>]  [<ffffffffa002a362>] assfail+0x22/0x30 [xfs]
+[   97.173702] RSP: 0018:ffff880235dafa98  EFLAGS: 00010296
+[   97.173703] RAX: 0000000000000060 RBX: ffff880235dafb20 RCX: 0000000000000006
+[   97.173703] RDX: 00000000000031e0 RSI: ffff880235d152a0 RDI: ffff880235d14a40
+[   97.173704] RBP: ffff880235dafa98 R08: 0000000000000002 R09: 0000000000000000
+[   97.173704] R10: 0000000000000001 R11: 0000000000000001 R12: ffff880235e54000
+[   97.173705] R13: 0000000000035e92 R14: ffff880235dafc88 R15: ffff880235dafc28
+[   97.173706] FS:  00007fa6aac79840(0000) GS:ffff880244e00000(0000) knlGS:0000000000000000
+[   97.173706] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   97.173707] CR2: 00007fffb1905f18 CR3: 0000000235ce5000 CR4: 00000000001407e0
+[   97.173707] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   97.173708] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000400
+[   97.173708] Stack:
+[   97.173712]  ffff880235dafb00 ffffffffa0076953 ffffe8ffffc066a0 ffff880240e04ca8
+[   97.173713]  0000000000000250 0000000000000020 ffff88023d05af40 ffff880235dafb20
+[   97.173715]  ffff880235a14a40 ffff880235e54000 0000000000035e92 ffff880235dafc88
+[   97.173715] Call Trace:
+[   97.173730]  [<ffffffffa0076953>] xfs_dir2_sf_addname+0x43/0x760 [xfs]
+[   97.173743]  [<ffffffffa0067cfc>] xfs_dir_createname+0x15c/0x1b0 [xfs]
+[   97.173754]  [<ffffffffa002f2dc>] xfs_create+0x4cc/0x710 [xfs]
+[   97.173764]  [<ffffffffa00278ca>] xfs_vn_mknod+0x9a/0x1c0 [xfs]
+[   97.173773]  [<ffffffffa0027a03>] xfs_vn_create+0x13/0x20 [xfs]
+[   97.173776]  [<ffffffff811d100d>] vfs_create+0x9d/0x100
+[   97.173778]  [<ffffffff811d1995>] do_last+0x925/0xe00
+[   97.173780]  [<ffffffff811d1f2e>] path_openat+0xbe/0x6f0
+[   97.173783]  [<ffffffff8109e33f>] ? local_clock+0x3f/0x50
+[   97.173785]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
+[   97.173787]  [<ffffffff811d2c3a>] do_filp_open+0x3a/0x90
+[   97.173789]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
+[   97.173790]  [<ffffffff811c0ddb>] do_sys_open+0x10b/0x200
+[   97.173792]  [<ffffffff81010578>] ? syscall_trace_enter+0x18/0x290
+[   97.173794]  [<ffffffff811c0eee>] SyS_open+0x1e/0x20
+[   97.173796]  [<ffffffff81717c14>] tracesys+0xdd/0xe2
+[   97.173813] Code: 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 f1 41 89 d0 48 89 e5 48 89 fa 48 c7 c6 a8 98 0b a0 31 ff 31 c0 e8 ce fb ff ff <0f> 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 
 
-> 
-> 
-> For me, I recommend to let all *selftest* as the same: "all add '
-> __init' or none add '__init'" (if choose add, all report warnings).
-> 
-> Is it suitable to still send new related patch for it ? If so, could
-> you provide your suggesting choice (all add, or none add) ?
+This trace repeated a few times, then the same assertion was triggered from sys_renameat.
 
-Does this patch fix your warning?
-
--- Steve
-
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index a4ed382..5e794d1 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -680,6 +680,15 @@ extern int trace_selftest_startup_sched_switch(struct tracer *trace,
- 					       struct trace_array *tr);
- extern int trace_selftest_startup_branch(struct tracer *trace,
- 					 struct trace_array *tr);
-+/*
-+ * Tracer data references selftest functions that only occur
-+ * on boot up. These can be __init functions. Thus, when selftests
-+ * are enabled, then the tracers need to reference __init functions.
-+ */
-+#define __tracer_data		__refdata
-+#else
-+/* Tracers are seldom changed. Optimize when selftests are disabled. */
-+#define __tracer_data		__read_mostly
- #endif /* CONFIG_FTRACE_STARTUP_TEST */
- 
- extern void *head_page(struct trace_array_cpu *data);
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index b863f93..38fe148 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -199,7 +199,7 @@ static int func_set_flag(u32 old_flags, u32 bit, int set)
- 	return 0;
- }
- 
--static struct tracer function_trace __read_mostly =
-+static struct tracer function_trace __tracer_data =
- {
- 	.name		= "function",
- 	.init		= function_trace_init,
-
+	Dave
 
