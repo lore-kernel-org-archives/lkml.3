@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965096Ab3GLPzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 11:55:40 -0400
-Received: from www.sr71.net ([198.145.64.142]:46424 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964785Ab3GLPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 11:55:37 -0400
-Message-ID: <51E026F3.6010505@sr71.net>
-Date: Fri, 12 Jul 2013 08:55:31 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S933303Ab3GLP5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 11:57:44 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:25614 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933072Ab3GLP5n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 11:57:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+ns9ZAko+gJtFRxe0JNwu9pJZqxRNsvoc=
+Date: Fri, 12 Jul 2013 11:57:33 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Bergmann Arnd <arnd@arndb.de>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Neil Zhang <zhangwm@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V3 1/3] dts: change Marvell prefix to 'marvell'
+Message-ID: <20130712155733.GZ11908@titan.lakedaemon.net>
+References: <1373352166-10064-1-git-send-email-zhangwm@marvell.com>
+ <1373352166-10064-2-git-send-email-zhangwm@marvell.com>
+ <20130709124900.GG11908@titan.lakedaemon.net>
+ <CAN1soZxiOh6TpbUOCUzK8gNwmvjbT3ihkUWaw8tuZ7md+NVA2g@mail.gmail.com>
+ <20130710122433.GO11908@titan.lakedaemon.net>
+ <CAN1soZzMvront1-jcBW6-uRKNs0OZNGnmiOjKGZSM28bViB_8A@mail.gmail.com>
+ <20130710215041.GR11908@titan.lakedaemon.net>
+ <CAN1soZzuiukY9qASFNcH0k=zH8=uT=71bKejPss44FCzNy=X-A@mail.gmail.com>
+ <CAMLZHHQGZvDssY-YxQ3ZW8FYhpG-H1-VbokOid33socRSPrMNw@mail.gmail.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Dave Hansen <dave.hansen@intel.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Peter Anvin <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-        Dave Hansen <dave.hansen@linux.intel.com>
-Subject: Re: Yet more softlockups.
-References: <CA+55aFykwkTVtZuoCEvwpF+5q1LUscw1shkWNPtGdHu+1DgDJA@mail.gmail.com> <20130705143821.GB325@redhat.com> <alpine.DEB.2.02.1307051710070.32106@ionos.tec.linutronix.de> <20130705160043.GF325@redhat.com> <20130706072408.GA14865@gmail.com> <20130710151324.GA11309@redhat.com> <20130710152015.GA757@x4> <20130710154029.GB11309@redhat.com> <20130712103117.GA14862@gmail.com> <51E0230C.9010509@intel.com> <20130712154521.GD1020@redhat.com>
-In-Reply-To: <20130712154521.GD1020@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMLZHHQGZvDssY-YxQ3ZW8FYhpG-H1-VbokOid33socRSPrMNw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 08:45 AM, Dave Jones wrote:
-> On Fri, Jul 12, 2013 at 08:38:52AM -0700, Dave Hansen wrote:
->  > Dave, for your case, my suspicion would be that it got turned on
->  > inadvertently, or that we somehow have a bug which bumped up
->  > perf_event.c's 'active_events' and we're running some perf code that we
->  > don't have to.
->  
-> What do you 'inadvertantly' ? I see this during bootup every time.
-> Unless systemd or something has started playing with perf, (which afaik it isn't)
-
-I mean that somebody turned 'active_events' on without actually wanting
-perf to be on.  I'd be curious how it got set to something nonzero.
-Could you stick a WARN_ONCE() or printk_ratelimit() on the three sites
-that modify it?
-
->  > But, I'm suspicious.  I was having all kinds of issues with perf and
->  > NMIs taking hundreds of milliseconds.  I never isolated it to having a
->  > real, single, cause.  I attributed it to my large NUMA system just being
->  > slow.  Your description makes me wonder what I missed, though.
+On Fri, Jul 12, 2013 at 09:10:49AM -0600, Daniel Drake wrote:
+> On Thu, Jul 11, 2013 at 5:54 PM, Haojian Zhuang
+> <haojian.zhuang@gmail.com> wrote:
+> >> Well, Daniel Drake spoke up for OLPC.  Does that count?
+> >
+> > We don't know they used DT on Marvell MMP2/MMP3. So they don't have DTS file
+> > in kernel, we could use both old name & new name in driver.
 > 
-> Here's a fun trick:
+> You are listed as one of the MMP maintainers in the MAINTAINERS file
+> and I have sent you several patches in the few 3 weeks which make
+> OLPC's usage of MMP + DT pretty obvious. As a maintainer I believe you
+> are supposed to review the patches too. hint hint ;)
 > 
-> trinity -c perf_event_open -C4 -q -l off
+> My request to avoid breaking compatibility actually comes as a
+> two-prong request.
 > 
-> Within about a minute, that brings any of my boxes to its knees.
-> The softlockup detector starts going nuts, and then the box wedges solid.
+> I would prefer to see these compatible properties stay the same as it
+> seems like changing them has little purpose/benefit - and there *will*
+> become a later point where changing them causes major breakage.
 
-On my box, the same happens with 'perf top'. ;)
+I agree with both of you :)  It needs to stabilise quickly, but since
+the first inception of Marvell compatible strings was in the mv643xx_eth
+driver for powerpc (long before ARM thought it was cool), and they used
+"marvell,...", I think we should stick with that.
 
-*But* dropping the perf sample rate has been really effective at keeping
-me from hitting it, and I've had to use _lots_ of CPUs (60-160) doing
-those NMIs at once to trigger the lockups.
+Which means doing as Haojian now realizes, and having both strings in
+the relevant drivers.
 
-Being able to trigger it with so few CPUs is interesting though.  I'll
-try on my hardware.
+This also means we should do a patch for stable v3.5+ appending the
+"mrvl,..." string to the drivers that had it removed improperly, as
+Daniel discovered.  Daniel, since you are probably most familiar (and
+most able to test ;-) ), would you mind putting that patch together?
+
+So we don't have to keep it around forever, we could do as Arnd has
+suggested in the past (for an entirely different problem):
+
+	/* assuming it goes in for v3.12 */
+	if (WARN_ON(of_device_is_compatible(dev, "mrvl,..."))) {
+		dev_info(&dev->dev, "compatible string \"mrvl,...\" being removed in v3.15\n");
+		BUG_ON(LINUX_VERSION_CODE >= KERNEL_VERSION(3,15,0));
+	}
+
+* I can't find where Arnd's suggestion was, so this hack is completely
+my own.
+
+Keep in mind, the above hack is just a suggestion, it makes my skin
+crawl just looking at it... I'm open to other ideas.  Or, not doing it
+at all.
+
+thx,
+
+Jason.
