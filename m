@@ -1,78 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab3GLMvE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 08:51:04 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40286 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933010Ab3GLMvC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 08:51:02 -0400
-Date: Fri, 12 Jul 2013 13:51:13 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 8/9] sched: power: Add initial frequency scaling
- support to power scheduler
-Message-ID: <20130712125113.GF20960@e103034-lin>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <1373385338-12983-9-git-send-email-morten.rasmussen@arm.com>
- <51DD5D63.7000602@linux.intel.com>
-MIME-Version: 1.0
-In-Reply-To: <51DD5D63.7000602@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 12 Jul 2013 12:50:58.0585 (UTC) FILETIME=[74BFE890:01CE7EFE]
-X-MC-Unique: 113071213505901301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S933138Ab3GLMxm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 08:53:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933010Ab3GLMxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 08:53:40 -0400
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Honza Brazdil <jbrazdil@redhat.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] HID: kye: Add report fixup for Genius Gx Imperator Keyboard
+Date: Fri, 12 Jul 2013 14:53:33 +0200
+Message-Id: <1373633613-4947-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 10, 2013 at 02:10:59PM +0100, Arjan van de Ven wrote:
-> On 7/9/2013 8:55 AM, Morten Rasmussen wrote:
-> > Extends the power scheduler capacity management algorithm to handle
-> > frequency scaling and provide basic frequency/P-state selection hints
-> > to the power driver.
-> >
-> > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
-> > CC: Ingo Molnar <mingo@kernel.org>
-> > CC: Peter Zijlstra <peterz@infradead.org>
-> > CC: Catalin Marinas <catalin.marinas@arm.com>
-> > ---
-> >   kernel/sched/power.c |   33 ++++++++++++++++++++++++++++-----
-> >   1 file changed, 28 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/kernel/sched/power.c b/kernel/sched/power.c
-> > index 9e44c0e..5fc32b0 100644
-> > --- a/kernel/sched/power.c
-> > +++ b/kernel/sched/power.c
-> > @@ -21,6 +21,8 @@
-> >
-> >   #define INTERVAL 5 /* ms */
-> >   #define CPU_FULL 90 /* Busy %-age - TODO: Make tunable */
-> > +#define CPU_TARGET 80 /* Target busy %-age - TODO: Make tunable */
-> > +#define CPU_EMPTY 5 /* Idle noise %-age - TODO: Make tunable */
-> >
-> 
-> to be honest, this is the policy part that really should be in the hardware specific driver
-> and not in the scheduler.
-> (even if said driver is sort of a "generic library" kind of thing)
+Genius Gx Imperator Keyboard presents the same problem in its report
+descriptors than Genius Gila Gaming Mouse.
+Use the same fixup for both.
 
-I agree that the values should be set by a hardware specific power
-driver. Or do you mean that algorithms using this sort of values should
-be in the driver?
+Fixes:
+https://bugzilla.redhat.com/show_bug.cgi?id=928561
+
+Reported-and-tested-by: Honza Brazdil <jbrazdil@redhat.com>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+---
+
+Hi Jiri,
+
+I have been reported this broken Genius device too.
+The patch applies on top of the branch for-3.11/upstream, but feel free to
+schedule it for 3.11 or 3.12. This time, only the multimedia (and macros) keys
+are broken. The core keyboard part is working fine without the patch.
+
+Cheers,
+Benjamin
+
+ drivers/hid/hid-ids.h |  1 +
+ drivers/hid/hid-kye.c | 45 ++++++++++++++++++++++++++++-----------------
+ 2 files changed, 29 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index b2b692e..1f28df9 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -475,6 +475,7 @@
+ #define USB_VENDOR_ID_KYE		0x0458
+ #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
+ #define USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE	0x0138
++#define USB_DEVICE_ID_GENIUS_GX_IMPERATOR	0x4018
+ #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
+ #define USB_DEVICE_ID_KYE_EASYPEN_I405X	0x5010
+ #define USB_DEVICE_ID_KYE_MOUSEPEN_I608X	0x5011
+diff --git a/drivers/hid/hid-kye.c b/drivers/hid/hid-kye.c
+index 1e2ee2aa..7384512 100644
+--- a/drivers/hid/hid-kye.c
++++ b/drivers/hid/hid-kye.c
+@@ -268,6 +268,26 @@ static __u8 easypen_m610x_rdesc_fixed[] = {
+ 	0xC0                          /*  End Collection                  */
+ };
+ 
++static __u8 *kye_consumer_control_fixup(struct hid_device *hdev, __u8 *rdesc,
++		unsigned int *rsize, int offset, const char *device_name) {
++	/*
++	 * the fixup that need to be done:
++	 *   - change Usage Maximum in the Comsumer Control
++	 *     (report ID 3) to a reasonable value
++	 */
++	if (*rsize >= offset + 31 &&
++	    /* Usage Page (Consumer Devices) */
++	    rdesc[offset] == 0x05 && rdesc[offset + 1] == 0x0c &&
++	    /* Usage (Consumer Control) */
++	    rdesc[offset + 2] == 0x09 && rdesc[offset + 3] == 0x01 &&
++	    /*   Usage Maximum > 12287 */
++	    rdesc[offset + 10] == 0x2a && rdesc[offset + 12] > 0x2f) {
++		hid_info(hdev, "fixing up %s report descriptor\n", device_name);
++		rdesc[offset + 12] = 0x2f;
++	}
++	return rdesc;
++}
++
+ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		unsigned int *rsize)
+ {
+@@ -315,23 +335,12 @@ static __u8 *kye_report_fixup(struct hid_device *hdev, __u8 *rdesc,
+ 		}
+ 		break;
+ 	case USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE:
+-		/*
+-		 * the fixup that need to be done:
+-		 *   - change Usage Maximum in the Comsumer Control
+-		 *     (report ID 3) to a reasonable value
+-		 */
+-		if (*rsize >= 135 &&
+-			/* Usage Page (Consumer Devices) */
+-			rdesc[104] == 0x05 && rdesc[105] == 0x0c &&
+-			/* Usage (Consumer Control) */
+-			rdesc[106] == 0x09 && rdesc[107] == 0x01 &&
+-			/*   Usage Maximum > 12287 */
+-			rdesc[114] == 0x2a && rdesc[116] > 0x2f) {
+-			hid_info(hdev,
+-				 "fixing up Genius Gila Gaming Mouse "
+-				 "report descriptor\n");
+-			rdesc[116] = 0x2f;
+-		}
++		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 104,
++					"Genius Gila Gaming Mouse");
++		break;
++	case USB_DEVICE_ID_GENIUS_GX_IMPERATOR:
++		rdesc = kye_consumer_control_fixup(hdev, rdesc, rsize, 83,
++					"Genius Gx Imperator Keyboard");
+ 		break;
+ 	}
+ 	return rdesc;
+@@ -428,6 +437,8 @@ static const struct hid_device_id kye_devices[] = {
+ 				USB_DEVICE_ID_KYE_EASYPEN_M610X) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
+ 				USB_DEVICE_ID_GENIUS_GILA_GAMING_MOUSE) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_KYE,
++				USB_DEVICE_ID_GENIUS_GX_IMPERATOR) },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(hid, kye_devices);
+-- 
+1.8.3.1
 
