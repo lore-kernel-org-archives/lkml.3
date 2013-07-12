@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933148Ab3GLNJy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 09:09:54 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:54319 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932910Ab3GLNJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 09:09:53 -0400
-Message-ID: <51E0001E.3050108@hitachi.com>
-Date: Fri, 12 Jul 2013 22:09:50 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S933191Ab3GLNN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 09:13:26 -0400
+Received: from mga03.intel.com ([143.182.124.21]:18429 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933013Ab3GLNNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 09:13:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,653,1367996400"; 
+   d="scan'208";a="267416978"
+Date: Fri, 12 Jul 2013 16:18:50 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [RFC][PATCH 0/30] ACPI / hotplug / PCI: Major rework +
+ Thunderbolt workarounds
+Message-ID: <20130712131850.GL4898@intel.com>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan>
+ <3718119.FLASu5DBx8@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/4] tracing/kprobes/uprobes: Fix race between opening
- probe event files and deleting probe
-References: <20130704033347.807661713@goodmis.org>
-In-Reply-To: <20130704033347.807661713@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3718119.FLASu5DBx8@vostro.rjw.lan>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/04 12:33), Steven Rostedt wrote:
-> Currently there exists a race with deleting a kprobe or uprobe and
-> a user opening the probe event file or using perf events.
+On Fri, Jul 12, 2013 at 01:34:20AM +0200, Rafael J. Wysocki wrote:
+> Hi,
 > 
-> The problem stems from not being able to take the probe_lock from the
-> unregister code because we may have the event_mutex at the time, and
-> the event mutex may be taken with the probe_lock held.
+> I've made some progress with my ACPIPHP rework since I posted the series last
+> time and here goes an update.
 > 
-> To solve this, the events get a ref count (using the flags field), where
-> when an event file is opened, the ftrace_event_call ref count increments.
-> Then this is checked under event_mutex and if set, the unregistering
-> of the probe will fail.
+> First off, the previous series was somewhat racy, which should be fixed now.
+> Apart from this there's quite some new material on top of the patches I posted
+> last time (or rather on top of their new versions) and I integrated the
+> Thunderbolt series from Mika with that.  As a result,
 > 
-> Here's a test that shows how things break:
+> https://patchwork.kernel.org/patch/2817341/
 > 
->      # cd /sys/kernel/debug/tracing
->      # echo 'p:sigprocmask sigprocmask' > kprobe_events || exit -1
->      # enable_probe() {
->         sleep 10
->         echo 1
->      }
->      # file=events/kprobes/sigprocmask/enable
->      # enable_probe > $file &
->      > kprobe_events
->     
->     The above will corrupt the kprobe system, as the write to the enable
->     file will happen after the kprobe was deleted.
->     
->     Trying to create the probe again fails:
->     
->      # echo 'p:sigprocmask sigprocmask' > kprobe_events
->      # cat kprobe_events
->     p:kprobes/sigprocmask sigprocmask
->      # ls events/kprobes/
->     enable  filter
-> 
-> After applying these patches, the "> kprobe_events" fails due to the
-> event being busy.
-> 
-> Masami, please review these patches and give your ack.
+> is required to be applied.
 
-Steve, Oleg, could you also take a look on my additional 2 patches too?
+With the above mentioned patch applied + fix for patch [23/30], I tested
+this series on Acer Aspire S5 and Intel DZ77RE-75K desktop and Thunderbolt
+works just fine :-)
 
-I think both this series and my patches are required for
-fixing most of the problem. (what we need is a patch to ensure
-finishing all running uprobe handlers at disabling it *if needed*)
+You can add
 
-Thank you,
+Tested-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+to the series.
 
-
+Nice cleanup!
