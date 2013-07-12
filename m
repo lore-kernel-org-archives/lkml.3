@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081Ab3GLMtg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 08:49:36 -0400
-Received: from mga03.intel.com ([143.182.124.21]:31224 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932951Ab3GLMtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 08:49:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,652,1367996400"; 
-   d="scan'208";a="267409360"
-Message-ID: <51DFFCE1.1070203@intel.com>
-Date: Fri, 12 Jul 2013 15:56:01 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+	id S933117Ab3GLMvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 08:51:04 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:40286 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933010Ab3GLMvC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 08:51:02 -0400
+Date: Fri, 12 Jul 2013 13:51:13 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 8/9] sched: power: Add initial frequency scaling
+ support to power scheduler
+Message-ID: <20130712125113.GF20960@e103034-lin>
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+ <1373385338-12983-9-git-send-email-morten.rasmussen@arm.com>
+ <51DD5D63.7000602@linux.intel.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V5 09/12] perf: make events stream always parsable
-References: <1373548341-24119-1-git-send-email-adrian.hunter@intel.com> <1373548341-24119-10-git-send-email-adrian.hunter@intel.com> <20130712095600.GT25631@dyad.programming.kicks-ass.net>
-In-Reply-To: <20130712095600.GT25631@dyad.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51DD5D63.7000602@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 12 Jul 2013 12:50:58.0585 (UTC) FILETIME=[74BFE890:01CE7EFE]
+X-MC-Unique: 113071213505901301
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/13 12:56, Peter Zijlstra wrote:
-> On Thu, Jul 11, 2013 at 04:12:18PM +0300, Adrian Hunter wrote:
->> The event stream is not always parsable because the format of a sample
->> is dependent on the sample_type of the selected event.  When there
->> is more than one selected event and the sample_types are not the
->> same then parsing becomes problematic.  A sample can be matched to its
->> selected event using the ID that is allocated when the event is opened.
->> Unfortunately, to get the ID from the sample means first parsing it.
->>
->> This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
->> the ID at a fixed position so that the ID can be retrieved without
->> parsing the sample.  For sample events, that is the first position
->> immediately after the header.  For non-sample events, that is the last
->> position.
+On Wed, Jul 10, 2013 at 02:10:59PM +0100, Arjan van de Ven wrote:
+> On 7/9/2013 8:55 AM, Morten Rasmussen wrote:
+> > Extends the power scheduler capacity management algorithm to handle
+> > frequency scaling and provide basic frequency/P-state selection hints
+> > to the power driver.
+> >
+> > Signed-off-by: Morten Rasmussen <morten.rasmussen@arm.com>
+> > CC: Ingo Molnar <mingo@kernel.org>
+> > CC: Peter Zijlstra <peterz@infradead.org>
+> > CC: Catalin Marinas <catalin.marinas@arm.com>
+> > ---
+> >   kernel/sched/power.c |   33 ++++++++++++++++++++++++++++-----
+> >   1 file changed, 28 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/kernel/sched/power.c b/kernel/sched/power.c
+> > index 9e44c0e..5fc32b0 100644
+> > --- a/kernel/sched/power.c
+> > +++ b/kernel/sched/power.c
+> > @@ -21,6 +21,8 @@
+> >
+> >   #define INTERVAL 5 /* ms */
+> >   #define CPU_FULL 90 /* Busy %-age - TODO: Make tunable */
+> > +#define CPU_TARGET 80 /* Target busy %-age - TODO: Make tunable */
+> > +#define CPU_EMPTY 5 /* Idle noise %-age - TODO: Make tunable */
+> >
 > 
-> There's events where this isn't a possible location; take PERF_RECORD_MMAP for
-> instance; the tail is the complete filename.
+> to be honest, this is the policy part that really should be in the hardware specific driver
+> and not in the scheduler.
+> (even if said driver is sort of a "generic library" kind of thing)
 
-PERF_RECORD_MMAP falls in the category I have called non-sample events.
-Those events are appended with an ID sample.  perf tools parses the ID
-sample backwards from header.size.  So the ID is at the last position
-relative to header.size
-
-> 
-> Why not always insert right after the header?
-
-It is for sample events i.e. PERF_RECORD_SAMPLE
-
-> 
-> Also; you forgot to update include/uapi/linux/perf_event.h:enum perf_event_type
-> That's the format documentation.
-> 
-
-OK
+I agree that the values should be set by a hardware specific power
+driver. Or do you mean that algorithms using this sort of values should
+be in the driver?
 
