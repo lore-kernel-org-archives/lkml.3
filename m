@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779Ab3GLFPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 01:15:10 -0400
-Received: from 1wt.eu ([62.212.114.60]:34530 "EHLO 1wt.eu"
+	id S1752003Ab3GLFYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 01:24:09 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39017 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884Ab3GLFPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 01:15:08 -0400
-Date: Fri, 12 Jul 2013 07:14:51 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        ksummit-2013-discuss@lists.linux-foundation.org
-Subject: Re: When to push bug fixes to mainline
-Message-ID: <20130712051451.GC25815@1wt.eu>
-References: <20130711214830.611455274@linuxfoundation.org> <20130712005023.GB31005@thunk.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130712005023.GB31005@thunk.org>
-User-Agent: Mutt/1.4.2.3i
+	id S1750951Ab3GLFYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 01:24:07 -0400
+Message-ID: <51DF92E7.2070109@ti.com>
+Date: Fri, 12 Jul 2013 10:53:51 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Bjorn Helgaas'" <bhelgaas@google.com>, <linux-pci@vger.kernel.org>,
+        <linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Pratyush Anand'" <pratyush.anand@st.com>,
+        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        <linux-kernel@vger.kernel.org>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>
+Subject: Re: [PATCH V2] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+References: <001201ce7dfa$716b3370$54419a50$@samsung.com> <51DE72CC.9050001@ti.com> <001301ce7e92$d19a04e0$74ce0ea0$@samsung.com>
+In-Reply-To: <001301ce7e92$d19a04e0$74ce0ea0$@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 08:50:23PM -0400, Theodore Ts'o wrote:
-> On Thu, Jul 11, 2013 at 03:01:17PM -0700, Greg Kroah-Hartman wrote:
-> > <rant>
-> >   I'm sitting on top of over 170 more patches that have been marked for
-> >   the stable releases right now that are not included in this set of
-> >   releases.  The fact that there are this many patches for stable stuff
-> >   that are waiting to be merged through the main -rc1 merge window cycle
-> >   is worrying to me.
-> > 
-> >   Why are subsystem maintainers holding on to fixes that are
-> >   _supposedly_ affecting all users?  I mean, 21 powerpc core changes
-> >   that I don't see until a -rc1 merge?  It's as if developers don't
-> >   expect people to use a .0 release and are relying on me to get the
-> >   fixes they have burried in their trees out to users.  That's not that
-> >   nice.  6 "core" iscsi-target fixes?  That's the sign of either a
-> >   broken subsystem maintainer, or a lack of understanding what the
-> >   normal -rc kernel releases are supposed to be for.
+On Friday 12 July 2013 05:30 AM, Jingoo Han wrote:
+> On Thursday, July 11, 2013 5:55 PM, Kishon Vijay Abraham I wrote:
+>> On Thursday 11 July 2013 11:19 AM, Jingoo Han wrote:
+>>> Exynos PCIe IP consists of Synopsys specific part and Exynos
+>>> specific part. Only core block is a Synopsys designware part;
+>>> other parts are Exynos specific.
+>>> Also, the Synopsys designware part can be shared with other
+>>> platforms; thus, it can be split two parts such as Synopsys
+>>> designware part and Exynos specific part.
+>>>
+>>> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+>>> Cc: Pratyush Anand <pratyush.anand@st.com>
+>>> Cc: Mohit KUMAR <Mohit.KUMAR@st.com>
+>>> ---
+>> .
+>> .
+>> <snip>
+>> .
+>> .
+>>> +
+>>> +/* Exynos PCIe driver does not allow module unload */
+>>
+>> Just curious, why is this restriction?
 > 
-> At least at one point in the past, the rule that Linus had laid down
-> after discussing things at Kernel Summits was after -rc2, or maybe
-> -rc3 at the latest, the ***only*** fixes that should be sent to Linus
-> would be for regression fixes or for really serious data integrity
-> issues.  The concern was that people were pushing bug fixes in -rc5 or
-> -rc6 that were in some cases causing regressions.
+> CC'ed Thierry Reding,
+> 
+> Hi Kishon,
+> 
+> That's a good question.
+> 
+> Now, we don't have the solution to "be able to load and unload
+> the PCI host driver in a loop definitely without crashing or exposing
+> any races  or leaks", as Arnd Bergmann said.
+> Please refer to the following thread in mailing-list.
+> (http://archive.arm.linux.org.uk/lurker/message/20130614.123849.4ff363c5.pl.html)
 
-And maybe in the end, having 1/10 patch cause a regression is not *that*
-dramatic, and probably less than not fixing the 9 other bugs. In one case
-we rely on -stable to merge the 10 fixes, and on the other case we'd rely
-on -stable to just revert one of them.
+That explains.
 
-Also there has never been any promise of very stable mainline kernels,
-and at the same time the rules for getting patches in -stable are strict.
-So this means that most fixes should probably be pushed to mainline anyway
-otherwise we risk never to get them, which means lower overall quality.
-
-Just my two cents,
-Willy
-
+Thanks
+Kishon
