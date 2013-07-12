@@ -1,100 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965254Ab3GLRuL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:50:11 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:33435 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964906Ab3GLRuJ (ORCPT
+	id S965259Ab3GLRvC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:51:02 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28206 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964778Ab3GLRvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:50:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130712173150.GA5534@roeck-us.net>
+	Fri, 12 Jul 2013 13:51:00 -0400
+X-Authority-Analysis: v=2.0 cv=Odoa/2vY c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=HICIQ9bjhMYA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PINbNDQYIjoA:10 a=4DzLHtMEDxaBvQPYrTQA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1373651458.17876.103.camel@gandalf.local.home>
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, stable@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        ksummit-2013-discuss@lists.linux-foundation.org,
+        torvalds@linux-foundation.org
+Date: Fri, 12 Jul 2013 13:50:58 -0400
+In-Reply-To: <20130712172836.GA7627@kroah.com>
 References: <20130711214830.611455274@linuxfoundation.org>
-	<20130711222935.GA11340@redhat.com>
-	<20130711224455.GA17222@kroah.com>
-	<20130712141530.GA3629@roeck-us.net>
-	<CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
-	<20130712173150.GA5534@roeck-us.net>
-Date: Fri, 12 Jul 2013 10:50:08 -0700
-X-Google-Sender-Auth: MUQi29vlYWEVRKhUyYCPexrQOTY
-Message-ID: <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	 <20130712005023.GB31005@thunk.org> <20130712025745.GA24086@tuxdriver.com>
+	 <20130712033430.GA3798@kroah.com> <51E03AEE.5010403@zytor.com>
+	 <20130712172836.GA7627@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 10:31 AM, Guenter Roeck <linux@roeck-us.net> wrote:
->
-> Stable rules say: "It must fix a real bug that bothers people (not a, "This
-> could be a problem..." type thing). All the above fit that rule.
+On Fri, 2013-07-12 at 10:28 -0700, Greg Kroah-Hartman wrote:
 
-You cut out the important part:
+> Yes, this requires you to remember to do this after it hits Linus's
+> tree, so you could do like David does for networking, and keep a
+> seperate tree to send to me specifically for stable patches.  I think he
+> uses patchwork, but I know others use git for this, and that's fine as
+> well.
 
- - It must fix a problem that causes a build error (but not for things
-   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
-   security issue, or some "oh, that's not good" issue.  In short, something
-   critical.
+Perhaps just make a separate stable branch, where you cherry-pick the
+specific patch using the -x option. Adds a "(cherry picked from
+commit ...)". Then you could have some filter that monitors Linus
+commits and when a commit matches one of these patches, have it
+automatically sent to the stable list.
 
-That list is not a "or" list, it's an "and" list - it needs to follow
-*all* the rules. The exception is the "New device IDs and quirks are
-also accepted", which maybe should be made more clearly separate.
 
-> But are those patches critical ? Sure, people complained about getting alarms
-> on the wrong attribute or not getting alarms when they expected to, but critical ?
-> No, unless some application at some point starts to shut down the system because
-> of a false alarm. So I guess the above should not go into -stable, then.
+-- Steve
 
-Right. And that's what the stable rules say. It's not enough to be a
-"real bug". It needs to be critical. If it's something that has been
-around forever, there needs to be a stronger argument than "I found a
-bug" for marking it for stable.
 
-> Problem is with "bothers people" vs. "critical".
-
-There is no "vs".
-
-The "real bug that bothers people" rule is not meant to be seen as a
-separate rule from the next rule (already quoted above), it needs to
-be *in*addition*to*.
-
-For example, we have the "causes a build error" case - but that should
-be seen in the "real bug that bothers people" light, and you should
-not mark Kconfig fixes for stable unless they have actually caused
-problems. Why? Because most Kconfig problems tend to be for
-unrealistic situations like "Oh, if I turn off PCI or networking, this
-driver no longer builds". Sure, that is a bug, and it's a bug that
-causes build error, but it's not something that bothers real people,
-because if you turn off networking or turn off PCI, you damn well had
-better also turn off all the other crap you don't need.
-
-Yes, there are always going to be gray areas. And Greg is obviously a
-much nicer person than I am, so he's likely *always* going to be more
-generous about those gray aras than I would be. And within reason, I
-think that's perfectly fine - if there's a few patches that get marked
-for stable because it's easier for people to sneak them in that way,
-whatever. It becomes a problem only when it gets to be *too* common,
-which is apparently what happened now.
-
-So I'm not going to argue that your particular patches were the
-problem here. I'm more arguing against your arguments than against the
-patches themselves. I'm not looking for some hard black-and-white
-rules that say "this is exactly how things have to work", because I
-don't think such rules can exist. But I _do_ want people to see the
-stable rules as fairly strict. And in particular, I really don't think
-people should see "post-rc4" to be any different from "stable".
-
-If anything, I think post-rc4 should be easier to get into, if only
-because post-rc4 has the additional "hey, if it's new code that hasn't
-seen a release yet, we can be much more aggressive about it". For
-example, I think I'm *much* more open to reverting new commits
-entirely in the late rc's than we should ever be for stable.
-
-            Linus
