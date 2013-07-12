@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757825Ab3GLIxs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 04:53:48 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:62402 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757809Ab3GLIxp (ORCPT
+	id S1757681Ab3GLIwh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 04:52:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54896 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757631Ab3GLIwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 04:53:45 -0400
-Date: Fri, 12 Jul 2013 10:53:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Robin Holt <holt@sgi.com>, Robert Richter <rric@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: boot tracing
-Message-ID: <20130712085341.GC4328@gmail.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
- <20130712082756.GA4328@gmail.com>
- <20130712084712.GD24008@pd.tnic>
+	Fri, 12 Jul 2013 04:52:32 -0400
+Date: Fri, 12 Jul 2013 01:51:56 -0700
+From: tip-bot for Adrian Hunter <tipbot@zytor.com>
+Message-ID: <tip-54bd269205c188967d565f1f5552b13d08ca1be0@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        paulus@samba.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, adrian.hunter@intel.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, acme@redhat.com,
+        efault@gmx.de, peterz@infradead.org, namhyung@gmail.com,
+        jolsa@redhat.com, fweisbec@gmail.com, dsahern@gmail.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <1372944040-32690-16-git-send-email-adrian.hunter@intel.com>
+References: <1372944040-32690-16-git-send-email-adrian.hunter@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf evsel:
+  Fix missing increment in sample parsing
+Git-Commit-ID: 54bd269205c188967d565f1f5552b13d08ca1be0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20130712084712.GD24008@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 01:52:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  54bd269205c188967d565f1f5552b13d08ca1be0
+Gitweb:     http://git.kernel.org/tip/54bd269205c188967d565f1f5552b13d08ca1be0
+Author:     Adrian Hunter <adrian.hunter@intel.com>
+AuthorDate: Thu, 4 Jul 2013 16:20:34 +0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 8 Jul 2013 17:47:13 -0300
 
-* Borislav Petkov <bp@alien8.de> wrote:
+perf evsel: Fix missing increment in sample parsing
 
-> On Fri, Jul 12, 2013 at 10:27:56AM +0200, Ingo Molnar wrote:
-> > Robert Richter and Boris Petkov are working on 'persistent events'
-> > support for perf, which will eventually allow boot time profiling -
-> > I'm not sure if the patches and the tooling support is ready enough
-> > yet for your purposes.
-> 
-> Nope, not yet but we're getting there.
-> 
-> > Robert, Boris, the following workflow would be pretty intuitive:
-> > 
-> >  - kernel developer sets boot flag: perf=boot,freq=1khz,size=16MB
-> 
-> What does perf=boot mean? I assume boot tracing.
+The final sample format bit used to be PERF_SAMPLE_STACK_USER which
+neglected to do a final increment of the array pointer.  The result is
+that the following parsing might start at the wrong place.
 
-In this case it would mean boot profiling - i.e. a cycles hardware-PMU 
-event collecting into a perf trace buffer as usual.
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1372944040-32690-16-git-send-email-adrian.hunter@intel.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/evsel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Essentially a 'perf record -a' work-alike, just one that gets activated as 
-early as practical, and which would allow the profiling of memory 
-initialization.
-
-Now, one extra complication here is that to be able to profile buddy 
-allocator this persistent event would have to work before the buddy 
-allocator is active :-/ So this sort of profiling would have to use 
-memblock_alloc().
-
-Just wanted to highlight this usecase, we might eventually want to support 
-it.
-
-[ Note that this is different from boot tracing of one or more trace 
-  events - but it's a conceptually pretty close cousin. ]
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index df99ebe..c9c7494 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -1170,7 +1170,7 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+ 		} else {
+ 			data->user_stack.data = (char *)array;
+ 			array += size / sizeof(*array);
+-			data->user_stack.size = *array;
++			data->user_stack.size = *array++;
+ 		}
+ 	}
  
-Thanks,
-
-	Ingo
