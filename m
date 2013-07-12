@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab3GLHKX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 03:10:23 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:63946 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134Ab3GLHKU (ORCPT
+	id S1757174Ab3GLHR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 03:17:28 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:45822 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757071Ab3GLHR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 03:10:20 -0400
-From: Vladimir Cernov <gg.kaspersky@gmail.com>
-To: james.smart@emulex.com
+	Fri, 12 Jul 2013 03:17:27 -0400
+From: Cosmin Stanescu <cosmin90stanescu@gmail.com>
+To: hare@suse.de
 Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Vladimir Cernov <gg.kaspersky@gmail.com>
-Subject: [PATCH] [SCSI] lpfc 8.3.40: Remove useless cast
-Date: Fri, 12 Jul 2013 10:10:09 +0300
-Message-Id: <1373613009-8435-1-git-send-email-gg.kaspersky@gmail.com>
+        linux-kernel@vger.kernel.org,
+        Cosmin Stanescu <cosmin90stanescu@gmail.com>
+Subject: [PATCH] ic7xxx_osm: use kzalloc instead of kmalloc + memset
+Date: Fri, 12 Jul 2013 10:17:05 +0300
+Message-Id: <1373613425-30725-1-git-send-email-cosmin90stanescu@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Found using coccinelle tool.
-Signed-off-by: Vladimir Cernov <gg.kaspersky@gmail.com>
+found using coccinelle.
+
+Signed-off-by: Cosmin Stanescu <cosmin90stanescu@gmail.com>
 ---
- drivers/scsi/lpfc/lpfc_init.c |    3 +--
+ drivers/scsi/aic7xxx/aic7xxx_osm.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index e0b20fa..b7621f6 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -4721,8 +4721,7 @@ lpfc_sli_driver_resource_setup(struct lpfc_hba *phba)
- 	}
+diff --git a/drivers/scsi/aic7xxx/aic7xxx_osm.c b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+index c0c6258..7167cfe 100644
+--- a/drivers/scsi/aic7xxx/aic7xxx_osm.c
++++ b/drivers/scsi/aic7xxx/aic7xxx_osm.c
+@@ -1223,10 +1223,9 @@ ahc_platform_alloc(struct ahc_softc *ahc, void *platform_arg)
+ {
  
- 	if (!phba->sli.ring)
--		phba->sli.ring = (struct lpfc_sli_ring *)
--			kzalloc(LPFC_SLI3_MAX_RING *
-+		phba->sli.ring = kzalloc(LPFC_SLI3_MAX_RING *
- 			sizeof(struct lpfc_sli_ring), GFP_KERNEL);
- 	if (!phba->sli.ring)
- 		return -ENOMEM;
+ 	ahc->platform_data =
+-	    kmalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
++	    kzalloc(sizeof(struct ahc_platform_data), GFP_ATOMIC);
+ 	if (ahc->platform_data == NULL)
+ 		return (ENOMEM);
+-	memset(ahc->platform_data, 0, sizeof(struct ahc_platform_data));
+ 	ahc->platform_data->irq = AHC_LINUX_NOIRQ;
+ 	ahc_lockinit(ahc);
+ 	ahc->seltime = (aic7xxx_seltime & 0x3) << 4;
 -- 
 1.7.10.4
 
