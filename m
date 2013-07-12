@@ -1,100 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965177Ab3GLRXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 13:23:49 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:15388 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965124Ab3GLRXr convert rfc822-to-8bit (ORCPT
+	id S965145Ab3GLR2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 13:28:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52512 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932650Ab3GLR2h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 13:23:47 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-8c-51e03ba1170e
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Shuah Khan <shuah.kh@samsung.com>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>
-Subject: Re: [ 00/15] 3.9.10-stable review
-Thread-topic: [ 00/15] 3.9.10-stable review
-Thread-index: AQHOfp6DcM32kLIuLUilzuQUvjdPhQ==
-Date: Fri, 12 Jul 2013 17:23:44 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E61739CC9@sisaex02sj>
-References: <20130711221255.925669600@linuxfoundation.org>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+wr+5C6weBBq17LS3mrF/DZtG8eD2b
-	xeVdc9gsvv50sFiw8RGjxaO+t+wObB47Z91l9zgx4zeLx/65a9g9Pm+SC2CJ4rJJSc3JLEst
-	0rdL4Mq4u20fS8EUgYrPP58wNzAu4+1i5OSQEDCR+Db7HAuELSZx4d56ti5GLg4hgWWMEnem
-	fGGEcHqZJB6sf8MK4cxnlPh+5TA7SAubgLrE59c7wGwRAWOJ/rOzwGxmgWNMEh2dZSC2sICW
-	xO3r29ggarQlNr77zwhh60lM3TEDLM4ioCpx8MkVpi5GDg5eAXuJVVOLQcJCAlYSNyesYwWx
-	GYGu+35qDRPEeHGJ5tabUFcLSCzZc54ZwhaVePn4HyvIGAkBRYntq60gyrUk1u88DtWqLfHk
-	3QWwkbwCghI/Jt9jmcAoNgvJ1FlIWmYhaZmFpGUBI8sqRrHS4uSC4qT01AojveLE3OLSvHS9
-	5PzcTYyQyKvewXj3q80hRgEORiUeXgfRB4FCrIllxZW5hxglOJiVRHj/GwKFeFMSK6tSi/Lj
-	i0pzUosPMTJxcEo1MM6qWyC0x9voYjjn6pPXnR73lf16eDSiTdSwY03d41vHAkqv+NbkTYl1
-	+8e6QThESGz3h/vuaoYdrzQZDbf72jTM2hox55r9B6+lszRPPZq3wfK7mJZiBOPXh4V3L7Ps
-	n9HlK3Zppfy1QKUihlvflR9s+6XxtXinXPA7hsMBQQvPskYnue9k36XEUpyRaKjFXFScCABs
-	+tLomgIAAA==
+	Fri, 12 Jul 2013 13:28:37 -0400
+Date: Fri, 12 Jul 2013 10:28:36 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        stable@vger.kernel.org,
+        ksummit-2013-discuss@lists.linux-foundation.org
+Subject: Re: [Ksummit-2013-discuss] When to push bug fixes to mainline
+Message-ID: <20130712172836.GA7627@kroah.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130712005023.GB31005@thunk.org>
+ <20130712025745.GA24086@tuxdriver.com>
+ <20130712033430.GA3798@kroah.com>
+ <51E03AEE.5010403@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E03AEE.5010403@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2013 07:24 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.9.10 release.
-> There are 15 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Jul 13 22:11:24 UTC 2013.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.9.10-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Fri, Jul 12, 2013 at 10:20:46AM -0700, H. Peter Anvin wrote:
+> On the subject of the stable tree: could we get a standard format for
+> requesting post-inclusion elevation of patches to stable status?  It
+> isn't all that unusual that the need for -stable is highlighted after a
+> patch has been included in a maintainer's tree, and rebasing to add
+> stable metadata annoys Linus.
 
-Patches applied cleanly to 3.0.85, 3.4.52, 3.9.9, and 3.10
+After it's in Linus's tree, just send the git id of the patch to
+stable@vger.kernel.org, along with what stable tree(s) you want to see
+the patch backported to.
 
-Compiled and booted on the following systems:
+Documentation/stable_kernel_rules.txt should be pretty explicit about
+how to do this, but if not, patches to it are always welcome.
 
-Samsung Series 9 900X4C Intel Corei5:
-     (3.4.53-rc1, 3.9.10-rc1, 3.10.1-rc1)
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics:
-     (3.0.86-rc1, 3.4.53-rc1, 3.9.10-rc1, and 3.10.1-rc1)
+Yes, this requires you to remember to do this after it hits Linus's
+tree, so you could do like David does for networking, and keep a
+seperate tree to send to me specifically for stable patches.  I think he
+uses patchwork, but I know others use git for this, and that's fine as
+well.
 
-dmesgs for all releases look good. No regressions compared to the 
-previous dmesgs for each of these releases. dmesg emerg, crit, alert, 
-err are clean. No regressions in warn.
-
-Cross-compile testing:
-HP Compaq dc7700 SFF desktop: x86-64 Intel Core-i2:
-     (3.0.86-rc1, 3.4.53-rc1, 3.9.10-rc1, and 3.10.1-rc1)
-
-Cross-compile tests results:
-
-alpha: defconfig passed on all
-arm: defconfig passed on all
-arm64: not applicable to 3.0.y, 3.4.y. defconfig passed on 3.9.y, and 3.10.y
-c6x: not applicable to 3.0.y, defconfig passed on 3.4.y, 3.9.y, and 3.10.y
-mips: defconfig passed on all
-mipsel: defconfig passed on all
-powerpc: wii_defconfig passed on all
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig passed on all
-
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
+greg k-h
