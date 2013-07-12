@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964777Ab3GLMae (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 08:30:34 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:49905 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932765Ab3GLMac (ORCPT
+	id S964780Ab3GLMfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 08:35:21 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:53422 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab3GLMfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 08:30:32 -0400
-Date: Fri, 12 Jul 2013 14:30:28 +0200
-From: "maxime.ripard@free-electrons.com" <maxime.ripard@free-electrons.com>
-To: plagnioj@jcrosoft.com
-Cc: linux-fbdev@vger.kernel.org, FlorianSchandinat@gmx.de,
+	Fri, 12 Jul 2013 08:35:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130712121354.GG24008@pd.tnic>
+References: <1367829775-4434-1-git-send-email-kyungsik.lee@lge.com>
+ <1367829775-4434-2-git-send-email-kyungsik.lee@lge.com> <20130712075602.GA4002@gmail.com>
+ <20130712080145.GC24008@pd.tnic> <20130712101319.GA13421@gmail.com>
+ <20130712102326.GE24008@pd.tnic> <20130712041810.53c86e5f.akpm@linux-foundation.org>
+ <20130712121354.GG24008@pd.tnic>
+From: Florian Fainelli <florian@openwrt.org>
+Date: Fri, 12 Jul 2013 13:34:38 +0100
+X-Google-Sender-Auth: Q8nHTX6ZMdSJditYiupGTY-abJY
+Message-ID: <CAGVrzcZq-NQU=1UY7FpXPXZPFjJV7CQMsNQJbdY=bLTFVqGQHA@mail.gmail.com>
+Subject: Re: [PATCH -next 2/2] kbuild: fix for updated LZ4 tool with the new
+ streaming format
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>, Michal Marek <mmarek@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild@vger.kernel.org, x86@kernel.org,
+        celinux-dev@lists.celinuxforum.org,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "brian@crystalfontz.com" <brian@crystalfontz.com>,
-        hector.palacios@digi.com
-Subject: Re: [PATCH RESEND] video: mxsfb: fix color settings for 18bit data
- bus and 32bpp
-Message-ID: <20130712123028.GJ24370@lukather>
-References: <51C01DE1.8030300@digi.com>
- <20130703085505.GG2969@lukather>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rmUrFcWP4LYae1gV"
-Content-Disposition: inline
-In-Reply-To: <20130703085505.GG2969@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        hyojun.im@lge.com, chan.jeong@lge.com, raphael.andy.lee@gmail.com,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Yann Collet <yann.collet.73@gmail.com>,
+        Chanho Min <chanho.min@lge.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---rmUrFcWP4LYae1gV
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2013/7/12 Borislav Petkov <bp@alien8.de>:
+> On Fri, Jul 12, 2013 at 04:18:10AM -0700, Andrew Morton wrote:
+>> Well y'know, if whining fixed bugs then there would be no problem here
+>> at all.
+>
+> I know. I decided to whine this time and not try to fix it because
+> attempting to fix every fallout I'm seeing in the tree with randconfigs
+> is a full-time job and the *actual* job doesn't see any progress.
+>
+> And in all fairness, if someone were reporting an issue against my code,
+> I'll try to do my very best to fix it as quickly aas possible, instead
+> of ignoring it.
+>
+> So actually, the right thing to do in such cases is back out half-cooked
+> stuff from the tree until it gets fixed. That'll give the authors the
+> right incentive. But this is just me.
+>
+>> This problem came up briefly and I thought it had been adequately
+>> addressed. Now a month or two later we find out who are the people who
+>> can't be bothered testing -next, but think it terribly important that
+>> others do so.
+>
+> Yeah, if everyone would put their money where their mouth is...
 
-On Wed, Jul 03, 2013 at 10:55:05AM +0200, maxime.ripard@free-electrons.com =
-wrote:
-> Hi Jean-Christophe,
->=20
-> On Tue, Jun 18, 2013 at 10:44:17AM +0200, Hector Palacios wrote:
-> > For a combination of 18bit LCD data bus width and a color
-> > mode of 32bpp, the driver was setting the color mapping to
-> > rgb666, which is wrong, as the color in memory realy has an
-> > rgb888 layout.
-> >=20
-> > This patch also removes the setting of flag CTRL_DF24 that
-> > makes the driver dimiss the upper 2 bits when handling 32/24bpp
-> > colors in a diplay with 18bit data bus width. This flag made
-> > true color images display wrong in such configurations.
-> >=20
-> > Finally, the color mapping rgb666 has also been removed as nobody
-> > is using it and high level applications like Qt5 cannot work
-> > with it either.
-> >=20
-> > Reference: https://lkml.org/lkml/2013/5/23/220
-> > Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> > Acked-by: Juergen Beisert <jbe@pengutronix.de>
-> > Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->=20
-> I don't see this patch in your for-next branch.
->=20
-> It would be really great to have it for 3.11 if possible.
->=20
-> Could you take a look at this patch please?
-
-Ping?
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---rmUrFcWP4LYae1gV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR3/bkAAoJEBx+YmzsjxAg8FYQAKx3vgtHNyCIYq4cC4LY5Q3b
-Dm2H5n27pa0GVq0hTCiAAroFYpvynOOZsGwP1E7sAnsXTWsZiIk8jROoSIYS7Vh7
-ZrQC6luH+aG3mchbRHlNA4CB/+AVZ5UNUk0k5DJOd/d9WDYR2gcthb4emS4yL5Un
-l9ReecsH5QVUUz8OaTGptwzRcCrBtVa3wZPOStRiMRc4kHsDFdAsS3kjGnuWl25J
-iKztRHO8i8lnlL5WtdwDrmOGRt/4A+WZ9Ji+x7Jv4Kwgceq+cD8Tbeg6cPoHPOzK
-AOWK/cISf7lwPEnt0Vvfo5136WBmaJ+sm74N95c3HU9pict0AMCEyEXwFpmBDoA8
-xp9/zyRWqzBXynPMmo0aaiQOxsgdfBKBfLo+YzNrbTeGjBUMEHI+/q/t4vU/NSZz
-hvHjWGRlgsYVHoqxBVVhj4INGGMDGacp+or9PnxQPOpekLX6cB14UViGitUX4ep7
-GYqbFamx7yHb5TfUYM02YKllJ+IFUt2e5QkEzIlkXOepPRiAaSHZUpJvW/qSGXNu
-8dT8anAao7O9Nn0WTk/pqSDCSGwXNJpNEILKPNIdEVSKLB0Rv48GJjAB6OIMApYR
-0j0yqVzAOZgXkf4JcNVd9y5A7IBjMHfLSdOg3STO8dcO7uzrPW/6OKcYwsR/VqKi
-QGkK3qQnMuTnm65ImSJ5
-=w+8O
------END PGP SIGNATURE-----
-
---rmUrFcWP4LYae1gV--
+Shall we provide a shell script wrapper for all of these compressor
+commands which would test for the utility presence and issue a BIG FAT
+WARNING if not, but still create the file not to make the kernel build
+fail? I guess we could probably do this in the Makefile directly as
+well.
+--
+Florian
