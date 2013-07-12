@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932427Ab3GLDkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Jul 2013 23:40:10 -0400
-Received: from mail-qe0-f53.google.com ([209.85.128.53]:49086 "EHLO
-	mail-qe0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475Ab3GLDkI (ORCPT
+	id S1756845Ab3GLDqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Jul 2013 23:46:33 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37645 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab3GLDqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Jul 2013 23:40:08 -0400
+	Thu, 11 Jul 2013 23:46:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <1373471889-18107-4-git-send-email-wsa@the-dreams.de>
-References: <1373471889-18107-1-git-send-email-wsa@the-dreams.de> <1373471889-18107-4-git-send-email-wsa@the-dreams.de>
-From: Barry Song <21cnbao@gmail.com>
-Date: Fri, 12 Jul 2013 11:39:46 +0800
-Message-ID: <CAGsJ_4ygnSs_MLHOsoOo5VK=dLL4m0-o-mFR21oKwZ=LY35jXw@mail.gmail.com>
-Subject: Re: [PATCH 04/12] drivers/mmc/host: don't use devm_pinctrl_get_select_default()
- in probe
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Marek Vasut <marex@denx.de>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Balaji T K <balajitk@ti.com>, Nicolas Pitre <nico@fluxnic.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-mmc@vger.kernel.org,
-        Shawn Guo <shawn.guo@linaro.org>, linux-omap@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Barry Song <baohua.song@csr.com>, Chris Ball <cjb@laptop.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51CC6B09.5080809@infradead.org>
+References: <alpine.DEB.2.02.1306181705530.28460@M2420>
+	<1371560680.3495.121.camel@deadeye.wl.decadent.org.uk>
+	<51C07608.2070406@infradead.org>
+	<CADJHv_vZiPsDUiLrFao41rRVduf+AYFm0NuvpNaCW8S3KrAjnA@mail.gmail.com>
+	<51CC6B09.5080809@infradead.org>
+Date: Fri, 12 Jul 2013 11:46:30 +0800
+Message-ID: <CADJHv_sSn9oU-xg5qgoHRKDeyHRCqy8VuPJW5_punHd45inzsA@mail.gmail.com>
+Subject: Re: [PATCH]amilo-rfkill: add depends on i8042 in Kconfig
+From: Xiong Zhou <jencce.kernel@gmail.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, matthew.garrett@nebula.com,
+        platform-driver-x86@vger.kernel.org,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Jim Davis <jim.epost@gmail.com>, Jiri Kosina <trivial@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/10 Wolfram Sang <wsa@the-dreams.de>:
-> Since commit ab78029 (drivers/pinctrl: grab default handles from device core),
-> we can rely on device core for setting the default pins. Compile tested only.
+2013/6/28 Randy Dunlap <rdunlap@infradead.org>:
+> On 06/18/13 18:09, Xiong Zhou wrote:
+>> 2013/6/18 Randy Dunlap <rdunlap@infradead.org>:
+>>> On 06/18/13 06:04, Ben Hutchings wrote:
+>>>> On Tue, 2013-06-18 at 17:21 +0800, Xiong Zhou wrote:
+>>>>> From: Xiong Zhou <jencce.kernel@gmail.com>
+>>>>>
+>>>>> Fix randconfig build failure for Amilo x86 platform driver.
+>>>>> AMILO_RFKILL requires SERIO_I8042 being available.
+>>>>>
+>>>>> amilo-rfkill.c:(.text+0x108b5b): undefined reference to `i8042_lock_chip'
+>>>>> amilo-rfkill.c:(.text+0x108b69): undefined reference to `i8042_command'
+>>>>> amilo-rfkill.c:(.text+0x108b71): undefined reference to `i8042_unlock_chip'
+>>>>>
+>>>>> Reported-by: Jim Davis <jim.epost@gmail.com>
+>>>>> Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+>>>>
+>>>> Acked-by: Ben Hutchings <ben@decadent.org.uk>
+>>>>
+>>>> But I thought somehow sent this same fix a while back...
+>>>
+>>> Yes, I reported it and sent a patch for it that you acked...
+>>> I guess my patch was never picked up.
+>>>
+>>
+>> ... Better someone pick this up.
+>>
 >
-> Acked-by: Linus Walleij <linus.walleij@linaro.org> (personally at LCE13)
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> ---
->  drivers/mmc/host/mvsdio.c          |    6 ------
->  drivers/mmc/host/mxs-mmc.c         |    8 --------
->  drivers/mmc/host/omap_hsmmc.c      |    7 -------
->  drivers/mmc/host/sdhci-esdhc-imx.c |    8 --------
->  drivers/mmc/host/sdhci-sirf.c      |    8 --------
+> This build error is still occurring in linux-next (20130627).
+> I first reported it and posted a patch for it on May-15 2013.
+>
+> Please merge either patch...
+>
+> Is anybody out there?
+>
+>
+>>
+>>>>
+>>>> Ben.
+>>>>
+>>>>> ---
+>>>>>  drivers/platform/x86/Kconfig |    1 +
+>>>>>  1 file changed, 1 insertion(+)
+>>>>>
+>>>>> diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+>>>>> index 8577261..37645b9 100644
+>>>>> --- a/drivers/platform/x86/Kconfig
+>>>>> +++ b/drivers/platform/x86/Kconfig
+>>>>> @@ -176,6 +176,7 @@ config FUJITSU_TABLET
+>>>>>  config AMILO_RFKILL
+>>>>>      tristate "Fujitsu-Siemens Amilo rfkill support"
+>>>>>      depends on RFKILL
+>>>>> +    depends on SERIO_I8042
+>>>>>      ---help---
+>>>>>        This is a driver for enabling wifi on some Fujitsu-Siemens Amilo
+>>>>>        laptops.
+>>>>
+>>>
+>>>
+>>> --
+>>> ~Randy
+>> --
+>
+>
+> --
+> ~Randy
 
-Wolfram, this has been done for sirf, which version are you based on?
 
->  5 files changed, 37 deletions(-)
 
--barry
+cc Jiri Kosina <trivial@kernel.org>
