@@ -1,84 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757655Ab3GLTgG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 15:36:06 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:37279 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757511Ab3GLTgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 15:36:03 -0400
-Date: Fri, 12 Jul 2013 15:35:57 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130712193557.GB342@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Guenter Roeck <linux@roeck-us.net>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	stable <stable@vger.kernel.org>
-References: <20130711214830.611455274@linuxfoundation.org>
- <20130711222935.GA11340@redhat.com>
- <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712181103.GA6689@roeck-us.net>
+	id S1757644Ab3GLTjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 15:39:22 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36897 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757444Ab3GLTjU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Jul 2013 15:39:20 -0400
+Date: Fri, 12 Jul 2013 20:39:19 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [git pull] vfs.git part 2
+Message-ID: <20130712193919.GC4165@ZenIV.linux.org.uk>
+References: <20130703122918.GK4165@ZenIV.linux.org.uk>
+ <CA+55aFyyxJL1LyXZeBsf2ypriraj5ut1XkNDsunRBqgVjZU_6Q@mail.gmail.com>
+ <20130712054817.GY4165@ZenIV.linux.org.uk>
+ <8738rk9eai.fsf@rasmusvillemoes.dk>
+ <20130712154833.GA4165@ZenIV.linux.org.uk>
+ <87wqovviyy.fsf@rasmusvillemoes.dk>
+ <20130712191321.GB4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130712181103.GA6689@roeck-us.net>
+In-Reply-To: <20130712191321.GB4165@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The unwritten criteria that I've seen used (and sometimes even
-discussed on mailing lists) is that if it's something that distro
-kernel maintainers would want, then it's fit for stable.  Now, there's
-a grey area here.  The criteria before distro's "golden master" has
-been released is quite different compared to a criteria for a Service
-Pack 5 kernel.  There's also a hjuge difference between a patch which
-has just hit mainline during the merge window, and a bug fix which has
-been in Linus's tree for weeks or months.  It's likely that a bug fix
-which has been in the kernel since 3.8, even if it is not "critical"
-is one which might be suitable merging for 3.4.  Heck, I've even had
-users screaming at me that it was somehow my duty as the ext4
-maintainer to find these commits and backport them to 3.4 or 3.2.  (Of
-course, I blow them off.  :-)
+On Fri, Jul 12, 2013 at 08:13:21PM +0100, Al Viro wrote:
 
-So the problem is that maintainers are lazy.  They don't want to go
-back for bug fixes that have "proven" themselves, and even if they
-aren't critical bug fixes, they are things which a distro maintainer
-or a stable kernel user might want (and sometimes stable uers are
-uppity enough to expect subsystem maintainers to do this back
-porting).  So subsystem maintainers then react by marking submits for
-stable even though they really should soak for a release or two before
-submitting them, since by marking them as submit, the commit gets
-pushed to stable automatically --- albeit early.
+> > Using O_DIRECTORY when we don't want to open a directory, and omitting
+> > O_CREAT when we do want to create something new, is somewhat
+> > counter-intuitive, but I think this would solve the problem with old
+> > kernels.
+> 
+> Hrm...  I can't say I like it, but it's almost OK; the only problem here
+> is the bug fixed by commit bc77daa78 - on some of the old kernels (including
+> 3.10, BTW) we used to allow opening /proc/self/fd/0 with O_DIRECTORY|O_RDWR ;-/
+> 
+> Said that, I think it's more tolerable than the kludge I came up with -
+> one would need to pass it a procfs symlink as argument to hit that.
+> Linus, your opinion?
 
-Now, I'm not condoning this practice; but I suspect this is at least
-partially the reason why some maintainers have gotten more aggressive
-about marking patches for stable and not pushing them to mainline earlier.
+I mean something like this:
 
-If it really is the case that patches that are marked for -stable are
-patches that should just be sent to linus pre-rc4, and patches that
-had just been added to the subsystem maintainer tree a few weeks
-before the merge window shouldn't be automatically be merged into
-stable, maybe the right answer is that the stable kernel maintainers
-shouldn't be automatically including _any_ patches that are marked for
-stable which are sent to mainline during the merge window.
+Safer ABI for O_TMPFILE
 
-       	     	      	 	  	 - Ted
+[suggested by Rasmus Villemoes] make O_DIRECTORY | O_RDWR part of O_TMPFILE;
+that will fail on old kernels in a lot more cases than what I came up with.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+---
+diff --git a/arch/alpha/include/uapi/asm/fcntl.h b/arch/alpha/include/uapi/asm/fcntl.h
+index dfdadb0..09f49a6 100644
+--- a/arch/alpha/include/uapi/asm/fcntl.h
++++ b/arch/alpha/include/uapi/asm/fcntl.h
+@@ -32,7 +32,7 @@
+ #define O_SYNC		(__O_SYNC|O_DSYNC)
+ 
+ #define O_PATH		040000000
+-#define O_TMPFILE	0100000000
++#define __O_TMPFILE	0100000000
+ 
+ #define F_GETLK		7
+ #define F_SETLK		8
+diff --git a/arch/parisc/include/uapi/asm/fcntl.h b/arch/parisc/include/uapi/asm/fcntl.h
+index cc61c47..34a46cb 100644
+--- a/arch/parisc/include/uapi/asm/fcntl.h
++++ b/arch/parisc/include/uapi/asm/fcntl.h
+@@ -20,7 +20,7 @@
+ #define O_INVISIBLE	004000000 /* invisible I/O, for DMAPI/XDSM */
+ 
+ #define O_PATH		020000000
+-#define O_TMPFILE	040000000
++#define __O_TMPFILE	040000000
+ 
+ #define F_GETLK64	8
+ #define F_SETLK64	9
+diff --git a/arch/sparc/include/uapi/asm/fcntl.h b/arch/sparc/include/uapi/asm/fcntl.h
+index d73e5e0..7e8ace5 100644
+--- a/arch/sparc/include/uapi/asm/fcntl.h
++++ b/arch/sparc/include/uapi/asm/fcntl.h
+@@ -35,7 +35,7 @@
+ #define O_SYNC		(__O_SYNC|O_DSYNC)
+ 
+ #define O_PATH		0x1000000
+-#define O_TMPFILE	0x2000000
++#define __O_TMPFILE	0x2000000
+ 
+ #define F_GETOWN	5	/*  for sockets. */
+ #define F_SETOWN	6	/*  for sockets. */
+diff --git a/fs/namei.c b/fs/namei.c
+index b2beee7..8b61d10 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2977,7 +2977,7 @@ static struct file *path_openat(int dfd, struct filename *pathname,
+ 
+ 	file->f_flags = op->open_flag;
+ 
+-	if (unlikely(file->f_flags & O_TMPFILE)) {
++	if (unlikely(file->f_flags & __O_TMPFILE)) {
+ 		error = do_tmpfile(dfd, pathname, nd, flags, op, file, &opened);
+ 		goto out;
+ 	}
+diff --git a/fs/open.c b/fs/open.c
+index fca72c4..2a7d4ee 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -840,8 +840,8 @@ static inline int build_open_flags(int flags, umode_t mode, struct open_flags *o
+ 	if (flags & __O_SYNC)
+ 		flags |= O_DSYNC;
+ 
+-	if (flags & O_TMPFILE) {
+-		if (!(flags & O_CREAT))
++	if (flags & __O_TMPFILE) {
++		if ((flags & O_TMPFILE) != O_TMPFILE)
+ 			return -EINVAL;
+ 		acc_mode = MAY_OPEN | ACC_MODE(flags);
+ 	} else if (flags & O_PATH) {
+diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+index 06632be..9b19c49 100644
+--- a/include/uapi/asm-generic/fcntl.h
++++ b/include/uapi/asm-generic/fcntl.h
+@@ -84,10 +84,13 @@
+ #define O_PATH		010000000
+ #endif
+ 
+-#ifndef O_TMPFILE
+-#define O_TMPFILE	020000000
++#ifndef __O_TMPFILE
++#define __O_TMPFILE	020000000
+ #endif
+ 
++/* a horrid kludge trying to make sure that this will fail on old kernels */
++#define O_TMPFILE (__O_TMPFILE | O_DIRECTORY | O_RDWR)
++
+ #ifndef O_NDELAY
+ #define O_NDELAY	O_NONBLOCK
+ #endif
