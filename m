@@ -1,67 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab3GMLTK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 07:19:10 -0400
-Received: from ns3.fnarfbargle.com ([103.4.17.7]:59442 "EHLO
-	ns3.fnarfbargle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757408Ab3GMLTI (ORCPT
+	id S1757925Ab3GMLVC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 07:21:02 -0400
+Received: from www.linutronix.de ([62.245.132.108]:44379 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757711Ab3GMLVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 07:19:08 -0400
-X-Greylist: delayed 1877 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Jul 2013 07:19:07 EDT
-Message-ID: <51E13052.30101@fnarfbargle.com>
-Date: Sat, 13 Jul 2013 18:47:46 +0800
-From: Brad Campbell <brad@fnarfbargle.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Sat, 13 Jul 2013 07:21:00 -0400
+Date: Sat, 13 Jul 2013 13:21:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [GIT pull] x86 updates for 3.11
+Message-ID: <alpine.DEB.2.02.1307131317350.11918@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
-Subject: Re: 3.10: discard/trim support on md-raid1?
-References: <001701ce7fb4$889bdd40$99d397c0$@lucidpixels.com>
-In-Reply-To: <001701ce7fb4$889bdd40$99d397c0$@lucidpixels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-597968327-1373714462=:11918"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13/07/13 18:34, Justin Piszcz wrote:
-> And possibly:
-> discard_zeroes_data: 1
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Does it though?
+--8323329-597968327-1373714462=:11918
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Here's my 6 x SSD RAID10 that definitely discards.
+Linus,
 
-brad@srv:~$ grep . /sys/block/md2/queue/*
-/sys/block/md2/queue/add_random:0
-/sys/block/md2/queue/discard_granularity:33553920
-/sys/block/md2/queue/discard_max_bytes:65536
-/sys/block/md2/queue/discard_zeroes_data:0
-/sys/block/md2/queue/hw_sector_size:512
-/sys/block/md2/queue/iostats:0
-/sys/block/md2/queue/logical_block_size:512
-/sys/block/md2/queue/max_hw_sectors_kb:16383
-/sys/block/md2/queue/max_integrity_segments:0
-/sys/block/md2/queue/max_sectors_kb:512
-/sys/block/md2/queue/max_segments:128
-/sys/block/md2/queue/max_segment_size:65536
-/sys/block/md2/queue/minimum_io_size:65536
-/sys/block/md2/queue/nomerges:0
-/sys/block/md2/queue/nr_requests:128
-/sys/block/md2/queue/optimal_io_size:196608
-/sys/block/md2/queue/physical_block_size:512
-/sys/block/md2/queue/read_ahead_kb:384
-/sys/block/md2/queue/rotational:1
-/sys/block/md2/queue/rq_affinity:0
-/sys/block/md2/queue/scheduler:none
-/sys/block/md2/queue/write_same_max_bytes:0
+please pull the latest x86-urgent-for-linus git tree from:
 
-Mine does not have discard_zeroes_data == 1 which is correct as 3 of the drives are Samsung 830's 
-and they don't return deterministic after trim.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-I can verify that discard gets passed down the stack as I get a non-zero mismatch count after 
-running a trim on the filesystem. Checking the mirrors manually sees 0 returned from the Intel 
-330's, and apparently random data returned from the 830's.
+   * Guarantee IDT page alignment
+   * Revert an UEFI patch which caused a regression
+   * Add a missing check for EFI runtime services
+   * Fix for an x86 erratum where read access to nonexisting MSRs does
+     not result in a fault.
 
-Regards,
-Brad
+Thanks,
+
+	tglx
+
+------------------>
+H. Peter Anvin (1):
+      x86, suspend: Handle CPUs which fail to #GP on RDMSR
+
+Kees Cook (1):
+      x86: Make sure IDT is page aligned
+
+Matt Fleming (2):
+      efivars: check for EFI_RUNTIME_SERVICES
+      Revert "UEFI: Don't pass boot services regions to SetVirtualAddressMap()"
+
+Xiong Zhou (1):
+      x86/platform/ce4100: Add header file for reboot type
+
+
+ arch/x86/kernel/acpi/sleep.c      |   18 ++++++++++++++++--
+ arch/x86/kernel/head_64.S         |    4 ----
+ arch/x86/kernel/traps.c           |    7 ++-----
+ arch/x86/platform/ce4100/ce4100.c |    1 +
+ arch/x86/platform/efi/efi.c       |    7 -------
+ drivers/firmware/efi/efivars.c    |    3 +++
+ 6 files changed, 22 insertions(+), 18 deletions(-)
+
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 2a34aaf..3312010 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -48,9 +48,20 @@ int x86_acpi_suspend_lowlevel(void)
+ #ifndef CONFIG_64BIT
+ 	native_store_gdt((struct desc_ptr *)&header->pmode_gdt);
+ 
++	/*
++	 * We have to check that we can write back the value, and not
++	 * just read it.  At least on 90 nm Pentium M (Family 6, Model
++	 * 13), reading an invalid MSR is not guaranteed to trap, see
++	 * Erratum X4 in "Intel Pentium M Processor on 90 nm Process
++	 * with 2-MB L2 Cache and Intel® Processor A100 and A110 on 90
++	 * nm process with 512-KB L2 Cache Specification Update".
++	 */
+ 	if (!rdmsr_safe(MSR_EFER,
+ 			&header->pmode_efer_low,
+-			&header->pmode_efer_high))
++			&header->pmode_efer_high) &&
++	    !wrmsr_safe(MSR_EFER,
++			header->pmode_efer_low,
++			header->pmode_efer_high))
+ 		header->pmode_behavior |= (1 << WAKEUP_BEHAVIOR_RESTORE_EFER);
+ #endif /* !CONFIG_64BIT */
+ 
+@@ -61,7 +72,10 @@ int x86_acpi_suspend_lowlevel(void)
+ 	}
+ 	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
+ 			&header->pmode_misc_en_low,
+-			&header->pmode_misc_en_high))
++			&header->pmode_misc_en_high) &&
++	    !wrmsr_safe(MSR_IA32_MISC_ENABLE,
++			header->pmode_misc_en_low,
++			header->pmode_misc_en_high))
+ 		header->pmode_behavior |=
+ 			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
+ 	header->realmode_flags = acpi_realmode_flags;
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 5e4d8a8..317b8cc 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -514,10 +514,6 @@ ENTRY(phys_base)
+ 	
+ 	.section .bss, "aw", @nobits
+ 	.align L1_CACHE_BYTES
+-ENTRY(idt_table)
+-	.skip IDT_ENTRIES * 16
+-
+-	.align L1_CACHE_BYTES
+ ENTRY(debug_idt_table)
+ 	.skip IDT_ENTRIES * 16
+ 
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b0865e8..0952614 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -68,13 +68,10 @@
+ #include <asm/setup.h>
+ 
+ asmlinkage int system_call(void);
++#endif
+ 
+-/*
+- * The IDT has to be page-aligned to simplify the Pentium
+- * F0 0F bug workaround.
+- */
++/* The IDT has to be page-aligned to keep it aligned with its fixmap. */
+ gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
+-#endif
+ 
+ DECLARE_BITMAP(used_vectors, NR_VECTORS);
+ EXPORT_SYMBOL_GPL(used_vectors);
+diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
+index f8ab494..9962015 100644
+--- a/arch/x86/platform/ce4100/ce4100.c
++++ b/arch/x86/platform/ce4100/ce4100.c
+@@ -14,6 +14,7 @@
+ #include <linux/module.h>
+ #include <linux/serial_reg.h>
+ #include <linux/serial_8250.h>
++#include <linux/reboot.h>
+ 
+ #include <asm/ce4100.h>
+ #include <asm/prom.h>
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index c8d5577..90f6ed1 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -931,13 +931,6 @@ void __init efi_enter_virtual_mode(void)
+ 			va = efi_ioremap(md->phys_addr, size,
+ 					 md->type, md->attribute);
+ 
+-		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
+-			if (!va)
+-				pr_err("ioremap of 0x%llX failed!\n",
+-				       (unsigned long long)md->phys_addr);
+-			continue;
+-		}
+-
+ 		md->virt_addr = (u64) (unsigned long) va;
+ 
+ 		if (!va) {
+diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
+index 8bd1bb6..8a7432a 100644
+--- a/drivers/firmware/efi/efivars.c
++++ b/drivers/firmware/efi/efivars.c
+@@ -583,6 +583,9 @@ int efivars_sysfs_init(void)
+ 	struct kobject *parent_kobj = efivars_kobject();
+ 	int error = 0;
+ 
++	if (!efi_enabled(EFI_RUNTIME_SERVICES))
++		return -ENODEV;
++
+ 	/* No efivars has been registered yet */
+ 	if (!parent_kobj)
+ 		return 0;
+--8323329-597968327-1373714462=:11918--
