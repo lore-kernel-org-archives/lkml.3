@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756752Ab3GMGxn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 02:53:43 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:42671 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab3GMGxl convert rfc822-to-8bit (ORCPT
+	id S1756303Ab3GMG6x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 02:58:53 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60239 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab3GMG6v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 02:53:41 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Hannes Reinecke <hare@suse.de>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        James Smart <James.Smart@Emulex.Com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "kmo@daterainc.com" <kmo@daterainc.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, Tejun Heo <tj@kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Thread-Topic: [Ksummit-2013-discuss] [ATTEND] scsi-mq prototype discussion
-Thread-Index: AQHOfpVv2TksF95TD0G0h7C4mQqWyZlgrxyAgAAIuICAAJwxgIABT4YA
-Date: Sat, 13 Jul 2013 06:53:32 +0000
-Message-ID: <1373698410.2922.10.camel@dabdike>
-References: <1373588612.7397.447.camel@haakon3.risingtidesystems.com>
-	 <20130712010223.GA15673@kroah.com>
-	 <1373592815.7397.477.camel@haakon3.risingtidesystems.com>
-	 <51DFDFF5.80702@suse.de>
-In-Reply-To: <51DFDFF5.80702@suse.de>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [194.186.187.194]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <E181B1EA86CD704B8CD424D82E41E669@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Sat, 13 Jul 2013 02:58:51 -0400
+Date: Fri, 12 Jul 2013 23:58:49 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Willy Tarreau <w@1wt.eu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130713065849.GA1910@kroah.com>
+References: <20130711214830.611455274@linuxfoundation.org>
+ <20130711222935.GA11340@redhat.com>
+ <20130711224455.GA17222@kroah.com>
+ <20130712141530.GA3629@roeck-us.net>
+ <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+ <20130712173150.GA5534@roeck-us.net>
+ <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
+ <20130712195051.GB32054@1wt.eu>
+ <20130713062223.GA15155@kroah.com>
+ <20130713064317.GA11614@roeck-us.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130713064317.GA11614@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-12 at 12:52 +0200, Hannes Reinecke wrote:
-> On 07/12/2013 03:33 AM, Nicholas A. Bellinger wrote:
-> > On Thu, 2013-07-11 at 18:02 -0700, Greg KH wrote:
-> >> On Thu, Jul 11, 2013 at 05:23:32PM -0700, Nicholas A. Bellinger wrote:
-> >>> Drilling down the work items ahead of a real mainline push is high on
-> >>> priority list for discussion.
-> >>>
-> >>> The parties to be included in such a discussion are:
-> >>>
-> >>>   - Jens Axboe (blk-mq author)
-> >>>   - James Bottomley (scsi maintainer)
-> >>>   - Christoph Hellwig (scsi)
-> >>>   - Martin Petersen (scsi)
-> >>>   - Tejun Heo (block + libata)
-> >>>   - Hannes Reinecke (scsi error recovery)
-> >>>   - Kent Overstreet (block, per-cpu ida)
-> >>>   - Stephen Cameron (scsi-over-pcie driver)
-> >>>   - Andrew Vasquez (qla2xxx LLD)
-> >>>   - James Smart (lpfc LLD)
-> >>
-> >> Isn't this something that should have been discussed at the storage
-> >> mini-summit a few months ago?
+On Fri, Jul 12, 2013 at 11:43:17PM -0700, Guenter Roeck wrote:
+> > And if something "fixes" an issue, then I want it in stable, just like
+> > Linus wants that in his tree.
 > > 
-> > The scsi-mq prototype, along with blk-mq (in it's current form) did not
-> > exist a few short months ago.  ;)
-> > 
-> >>  It seems very specific to one subsystem to be a kernel summit topic,
-> >> don't you think?
-> > 
-> > It's no more subsystem specific than half of the other proposals so far,
-> > and given it's reach across multiple subsystems (block, scsi, target),
-> > and the amount of off-list interest on the topic, I think it would make
-> > a good candidate for discussion.
-> > 
-> And it'll open up new approaches which previously were dismissed,
-> like re-implementing multipathing on top of scsi-mq, giving us the
-> single scsi device like other UNIX systems.
-> 
-> Also I do think there's quite some synergy to be had, as with blk-mq
-> we could nail each queue to a processor, which would eliminate the
-> need for locking.
-> Which could be useful for other subsystems, too.
+> Except if it is not critical, for a given definition of the word.
 
-Lets start with discussing this on the list, please, and then see where
-we go from there ...
+I'm not going to try to parse definitions here, but this is just crazy.
 
-James
+> > Don't add another tag that requires users to dig for fixes that we are
+> > just too lazy to be including for all users, that way is crazy.
+> > 
+> Depends. If -stable rules are going to be followed by the letter, as has
+> been suggested, only critical bug fixes would be applied to -stable.
+> The idea here is to provide guidance to distribution maintainers
+> if that is happening. This tag would mean something like "This patch
+> fixes a real bug which affects the following releases, but it will not
+> be applied to -stable because it is not critical".
 
+What?  It's a fix for a problem that is "real", why would that _not_ go
+into stable and Linus's tree?
+
+Anyway, again, that's not the real issue here at all, the real issues
+are, again:
+  - people marking stuff for -stable that they shouldn't.
+  - people sitting on stuff for -stable way longer than they should be,
+    relying on me to get stuff merged for the .1 or .2 release instead
+    of getting it to Linus for .0.
+
+let's work on those two first before we start worrying about if a
+specific "fix" shouldn't go into the stable tree or not.
+
+greg k-h
