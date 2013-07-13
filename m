@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab3GMQYq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 12:24:46 -0400
-Received: from lists.laptop.org ([18.85.2.166]:45128 "EHLO swan.laptop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752620Ab3GMQYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 12:24:45 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, pgf@laptop.org, dilinger@queued.net
-Subject: [PATCH] x86: don't clear olpc_ofw_header when sentinel is detected
-Message-Id: <20130713162604.627C2FAAE9@dev.laptop.org>
-Date: Sat, 13 Jul 2013 12:26:04 -0400 (EDT)
+	id S1758058Ab3GMQoM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 12:44:12 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:50984 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751041Ab3GMQoL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 12:44:11 -0400
+Message-ID: <1373733849.1359.20.camel@x61.thuisdomein>
+Subject: [PATCH v2] staging/lustre/libcfs: staging/lustre/libcfs: drop bogus
+ Kconfig default
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Sat, 13 Jul 2013 18:44:09 +0200
+In-Reply-To: <20130713160716.GA2279@kroah.com>
+References: <1373726446.1359.17.camel@x61.thuisdomein>
+	 <20130713160716.GA2279@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jul 2013 16:44:10.0055 (UTC) FILETIME=[32BA8D70:01CE7FE8]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OpenFirmware doesn't quite follow the protocol described in boot.txt
-and the kernel has detected this through use of the sentinel value
-in boot_params. OFW does zero out almost all of the stuff that it should
-do, but not the sentinel.
+Commit 4b5b4c7222 ("staging/lustre/libcfs: restore LINVRNT") added
+"default false" to this Kconfig file. It was obviously meant to use
+"default n" here. But we might as well drop this line, as a Kconfig bool
+defaults to 'n' anyway.
 
-This causes the kernel to clear olpc_ofw_header, which breaks x86 OLPC
-support.
-
-We will fix OpenFirmware. However, it would be nice if we could maintain
-Linux compatibility with old firmware versions. To do that, we just have
-to avoid zeroing out olpc_ofw_header. 
-
-OFW does not write to any other parts of the header that are being zapped
-by the sentinel-detection code, and all users of olpc_ofw_header are
-somewhat protected through checking for the OLPC_OFW_SIG magic value
-before using it. So this should not cause any problems for anyone.
-
-Signed-off-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 ---
- arch/x86/include/asm/bootparam_utils.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+0) v2: remove the default entirely, as Greg suggested.
 
-diff --git a/arch/x86/include/asm/bootparam_utils.h b/arch/x86/include/asm/bootparam_utils.h
-index 653668d..4a8cb8d 100644
---- a/arch/x86/include/asm/bootparam_utils.h
-+++ b/arch/x86/include/asm/bootparam_utils.h
-@@ -35,9 +35,9 @@ static void sanitize_boot_params(struct boot_params *boot_params)
- 	 */
- 	if (boot_params->sentinel) {
- 		/* fields in boot_params are left uninitialized, clear them */
--		memset(&boot_params->olpc_ofw_header, 0,
-+		memset(&boot_params->ext_ramdisk_image, 0,
- 		       (char *)&boot_params->efi_info -
--			(char *)&boot_params->olpc_ofw_header);
-+			(char *)&boot_params->ext_ramdisk_image);
- 		memset(&boot_params->kbd_status, 0,
- 		       (char *)&boot_params->hdr -
- 		       (char *)&boot_params->kbd_status);
+1) Still tested with "make menuconfig" only. 
+
+ drivers/staging/lustre/lustre/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
+index e0eb830..173d21e 100644
+--- a/drivers/staging/lustre/lustre/Kconfig
++++ b/drivers/staging/lustre/lustre/Kconfig
+@@ -43,7 +43,6 @@ config LUSTRE_OBD_MAX_IOCTL_BUFFER
+ config LUSTRE_DEBUG_EXPENSIVE_CHECK
+ 	bool "Enable Lustre DEBUG checks"
+ 	depends on LUSTRE_FS
+-	default false
+ 	help
+ 	  This option is mainly for debug purpose. It enables Lustre code to do
+ 	  expensive checks that may have a performance impact.
 -- 
 1.8.1.4
 
