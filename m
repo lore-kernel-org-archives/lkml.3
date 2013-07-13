@@ -1,389 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751152Ab3GMETP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 00:19:15 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:64446 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750858Ab3GMETN (ORCPT
+	id S1751093Ab3GME35 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 00:29:57 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33388 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750820Ab3GME34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 00:19:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <1373594635-131067-5-git-send-email-holt@sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
-	<1373594635-131067-5-git-send-email-holt@sgi.com>
-Date: Fri, 12 Jul 2013 21:19:12 -0700
-X-Google-Sender-Auth: c3O0N7wTphRrehIWUMq7keEois0
-Message-ID: <CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com>
-Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 13 Jul 2013 00:29:56 -0400
+Message-ID: <1373689791.2922.5.camel@dabdike>
+Subject: [GIT PULL] Final round of SCSI updates for the 3.10+ merge window
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 13 Jul 2013 08:29:51 +0400
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 7:03 PM, Robin Holt <holt@sgi.com> wrote:
-> During boot of large memory machines, a significant portion of boot
-> is spent initializing the struct page array.  The vast majority of
-> those pages are not referenced during boot.
->
-> Change this over to only initializing the pages when they are
-> actually allocated.
->
-> Besides the advantage of boot speed, this allows us the chance to
-> use normal performance monitoring tools to determine where the bulk
-> of time is spent during page initialization.
->
-> Signed-off-by: Robin Holt <holt@sgi.com>
-> Signed-off-by: Nate Zimmer <nzimmer@sgi.com>
-> To: "H. Peter Anvin" <hpa@zytor.com>
-> To: Ingo Molnar <mingo@kernel.org>
-> Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-> Cc: Linux MM <linux-mm@kvack.org>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Mike Travis <travis@sgi.com>
-> Cc: Daniel J Blueman <daniel@numascale-asia.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Greg KH <gregkh@linuxfoundation.org>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> ---
->  include/linux/mm.h         |  11 +++++
->  include/linux/page-flags.h |   5 +-
->  mm/nobootmem.c             |   5 ++
->  mm/page_alloc.c            | 117 +++++++++++++++++++++++++++++++++++++++++++--
->  4 files changed, 132 insertions(+), 6 deletions(-)
->
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index e0c8528..3de08b5 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1330,8 +1330,19 @@ static inline void __free_reserved_page(struct page *page)
->         __free_page(page);
->  }
->
-> +extern void __reserve_bootmem_region(phys_addr_t start, phys_addr_t end);
-> +
-> +static inline void __reserve_bootmem_page(struct page *page)
-> +{
-> +       phys_addr_t start = page_to_pfn(page) << PAGE_SHIFT;
-> +       phys_addr_t end = start + PAGE_SIZE;
-> +
-> +       __reserve_bootmem_region(start, end);
-> +}
-> +
->  static inline void free_reserved_page(struct page *page)
->  {
-> +       __reserve_bootmem_page(page);
->         __free_reserved_page(page);
->         adjust_managed_page_count(page, 1);
->  }
-> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-> index 6d53675..79e8eb7 100644
-> --- a/include/linux/page-flags.h
-> +++ b/include/linux/page-flags.h
-> @@ -83,6 +83,7 @@ enum pageflags {
->         PG_owner_priv_1,        /* Owner use. If pagecache, fs may use*/
->         PG_arch_1,
->         PG_reserved,
-> +       PG_uninitialized2mib,   /* Is this the right spot? ntz - Yes - rmh */
->         PG_private,             /* If pagecache, has fs-private data */
->         PG_private_2,           /* If pagecache, has fs aux data */
->         PG_writeback,           /* Page is under writeback */
-> @@ -211,6 +212,8 @@ PAGEFLAG(SwapBacked, swapbacked) __CLEARPAGEFLAG(SwapBacked, swapbacked)
->
->  __PAGEFLAG(SlobFree, slob_free)
->
-> +PAGEFLAG(Uninitialized2Mib, uninitialized2mib)
-> +
->  /*
->   * Private page markings that may be used by the filesystem that owns the page
->   * for its own purposes.
-> @@ -499,7 +502,7 @@ static inline void ClearPageSlabPfmemalloc(struct page *page)
->  #define PAGE_FLAGS_CHECK_AT_FREE \
->         (1 << PG_lru     | 1 << PG_locked    | \
->          1 << PG_private | 1 << PG_private_2 | \
-> -        1 << PG_writeback | 1 << PG_reserved | \
-> +        1 << PG_writeback | 1 << PG_reserved | 1 << PG_uninitialized2mib | \
->          1 << PG_slab    | 1 << PG_swapcache | 1 << PG_active | \
->          1 << PG_unevictable | __PG_MLOCKED | __PG_HWPOISON | \
->          __PG_COMPOUND_LOCK)
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index 3b512ca..e3a386d 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -126,6 +126,9 @@ static unsigned long __init free_low_memory_core_early(void)
->         phys_addr_t start, end, size;
->         u64 i;
->
-> +       for_each_reserved_mem_region(i, &start, &end)
-> +               __reserve_bootmem_region(start, end);
-> +
+This is the remaining set of SCSI patches for the merge window.  it's
+mostly driver updates (scsi_debug, qla2xxx, storvsc, mp3sas).  There are
+also several bug fixes in fcoe, libfc, and megaraid_sas.  We also have a
+couple of core changes to try to make device destruction more
+deterministic.
 
-How about holes that is not in memblock.reserved?
+The patch is available here:
 
-before this patch:
-free_area_init_node/free_area_init_core/memmap_init_zone
-will mark all page in node range to Reserved in struct page, at first.
+git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-for-linus
 
-but those holes is not mapped via kernel low mapping.
-so it should be ok not touch "struct page" for them.
+The short changelog is
 
-Now you only mark reserved for memblock.reserved at first, and later
-mark {memblock.memory} - { memblock.reserved} to be available.
-And that is ok.
+Akinobu Mita (6):
+      scsi_debug: reduce duplication between prot_verify_read and prot_verify_write
+      scsi_debug: simplify offset calculation for dif_storep
+      scsi_debug: invalidate protection info for unmapped region
+      scsi_debug: fix NULL pointer dereference with parameters dif=0 dix=1
+      scsi_debug: fix incorrectly nested kmap_atomic()
+      scsi_debug: fix invalid address passed to kunmap_atomic()
 
-but should split that change to another patch and add some comment
-and change log for the change.
-in case there is some user like UEFI etc do weird thing.
+Bart Van Assche (12):
+      fcoe: Reduce number of sparse warnings
+      enable destruction of blocked devices which fail LUN scanning
+      qla2xxx: Fix a memory leak in an error path of qla2x00_process_els()
+      qla2xxx: Remove an unused variable from qla2x00_remove_one().
+      qla2xxx: Fix qla2xxx_check_risc_status().
+      qla2xxx: Help Coverity with analyzing ct_sns_pkt initialization.
+      qla2xxx: Remove redundant assignments.
+      qla2xxx: Remove a dead assignment in qla24xx_build_scsi_crc_2_iocbs().
+      qla2xxx: Remove two superfluous tests.
+      qla2xxx: Remove dead code in qla2x00_configure_hba()
+      qla2xxx: Clean up qla84xx_mgmt_cmd()
+      qla2xxx: Clean up qla24xx_iidma()
 
->         for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
->                 count += __free_memory_core(start, end);
->
-> @@ -162,6 +165,8 @@ unsigned long __init free_all_bootmem(void)
->  {
->         struct pglist_data *pgdat;
->
-> +       memblock_dump_all();
-> +
+Bjørn Mork (1):
+      megaraid_sas: fix memory leak if SGL has zero length entries
 
-Not needed.
+Chad Dupuis (2):
+      qla2xxx: Do not take a second firmware dump when intentionally generating one.
+      qla2xxx: Do not query FC statistics during chip reset.
 
->         for_each_online_pgdat(pgdat)
->                 reset_node_lowmem_managed_pages(pgdat);
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 635b131..fe51eb9 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -740,6 +740,54 @@ static void __init_single_page(struct page *page, unsigned long zone, int nid, i
->  #endif
->  }
->
-> +static void expand_page_initialization(struct page *basepage)
-> +{
-> +       unsigned long pfn = page_to_pfn(basepage);
-> +       unsigned long end_pfn = pfn + PTRS_PER_PMD;
-> +       unsigned long zone = page_zonenum(basepage);
-> +       int reserved = PageReserved(basepage);
-> +       int nid = page_to_nid(basepage);
-> +
-> +       ClearPageUninitialized2Mib(basepage);
-> +
-> +       for( pfn++; pfn < end_pfn; pfn++ )
-> +               __init_single_page(pfn_to_page(pfn), zone, nid, reserved);
-> +}
-> +
-> +void ensure_pages_are_initialized(unsigned long start_pfn,
-> +                                 unsigned long end_pfn)
-> +{
-> +       unsigned long aligned_start_pfn = start_pfn & ~(PTRS_PER_PMD - 1);
-> +       unsigned long aligned_end_pfn;
-> +       struct page *page;
-> +
-> +       aligned_end_pfn = end_pfn & ~(PTRS_PER_PMD - 1);
-> +       aligned_end_pfn += PTRS_PER_PMD;
-> +       while (aligned_start_pfn < aligned_end_pfn) {
-> +               if (pfn_valid(aligned_start_pfn)) {
-> +                       page = pfn_to_page(aligned_start_pfn);
-> +
-> +                       if(PageUninitialized2Mib(page))
-> +                               expand_page_initialization(page);
-> +               }
-> +
-> +               aligned_start_pfn += PTRS_PER_PMD;
-> +       }
-> +}
-> +
-> +void __reserve_bootmem_region(phys_addr_t start, phys_addr_t end)
-> +{
-> +       unsigned long start_pfn = PFN_DOWN(start);
-> +       unsigned long end_pfn = PFN_UP(end);
-> +
-> +       ensure_pages_are_initialized(start_pfn, end_pfn);
-> +}
+Dan Carpenter (1):
+      megaraid_sas: fix a bug for 64 bit arches
 
-that name is confusing, actually it is setting to struct page to Reserved only.
-maybe __reserve_pages_bootmem() to be aligned to free_pages_bootmem ?
+Douglas Gilbert (1):
+      scsi constants: command, sense key + additional sense strings
 
-> +
-> +static inline void ensure_page_is_initialized(struct page *page)
-> +{
-> +       __reserve_bootmem_page(page);
-> +}
+Giridhar Malavali (2):
+      qla2xxx: Set the index in outstanding command array to NULL when cmd is aborted when the request timeout.
+      qla2xxx: Clear the MBX_INTR_WAIT flag when the mailbox time-out happens.
 
-how about use __reserve_page_bootmem directly and add comment in callers site ?
+James Bottomley (1):
+      Fix race between starved list and device removal
 
-> +
->  static bool free_pages_prepare(struct page *page, unsigned int order)
->  {
->         int i;
-> @@ -751,7 +799,10 @@ static bool free_pages_prepare(struct page *page, unsigned int order)
->         if (PageAnon(page))
->                 page->mapping = NULL;
->         for (i = 0; i < (1 << order); i++)
-> -               bad += free_pages_check(page + i);
-> +               if (PageUninitialized2Mib(page + i))
-> +                       i += PTRS_PER_PMD - 1;
-> +               else
-> +                       bad += free_pages_check(page + i);
->         if (bad)
->                 return false;
->
-> @@ -795,13 +846,22 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
->         unsigned int loop;
->
->         prefetchw(page);
-> -       for (loop = 0; loop < nr_pages; loop++) {
-> +       for (loop = 0; loop < nr_pages; ) {
->                 struct page *p = &page[loop];
->
->                 if (loop + 1 < nr_pages)
->                         prefetchw(p + 1);
-> +
-> +               if ((PageUninitialized2Mib(p)) &&
-> +                   ((loop + PTRS_PER_PMD) > nr_pages))
-> +                       ensure_page_is_initialized(p);
-> +
->                 __ClearPageReserved(p);
->                 set_page_count(p, 0);
-> +               if (PageUninitialized2Mib(p))
-> +                       loop += PTRS_PER_PMD;
-> +               else
-> +                       loop += 1;
->         }
->
->         page_zone(page)->managed_pages += 1 << order;
-> @@ -856,6 +916,7 @@ static inline void expand(struct zone *zone, struct page *page,
->                 area--;
->                 high--;
->                 size >>= 1;
-> +               ensure_page_is_initialized(page);
->                 VM_BUG_ON(bad_range(zone, &page[size]));
->
->  #ifdef CONFIG_DEBUG_PAGEALLOC
-> @@ -903,6 +964,10 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
->
->         for (i = 0; i < (1 << order); i++) {
->                 struct page *p = page + i;
-> +
-> +               if (PageUninitialized2Mib(p))
-> +                       expand_page_initialization(page);
-> +
->                 if (unlikely(check_new_page(p)))
->                         return 1;
->         }
-> @@ -985,6 +1050,7 @@ int move_freepages(struct zone *zone,
->         unsigned long order;
->         int pages_moved = 0;
->
-> +       ensure_pages_are_initialized(page_to_pfn(start_page), page_to_pfn(end_page));
->  #ifndef CONFIG_HOLES_IN_ZONE
->         /*
->          * page_zone is not safe to call in this context when
-> @@ -3859,6 +3925,9 @@ static int pageblock_is_reserved(unsigned long start_pfn, unsigned long end_pfn)
->         for (pfn = start_pfn; pfn < end_pfn; pfn++) {
->                 if (!pfn_valid_within(pfn) || PageReserved(pfn_to_page(pfn)))
->                         return 1;
-> +
-> +               if (PageUninitialized2Mib(pfn_to_page(pfn)))
-> +                       pfn += PTRS_PER_PMD;
->         }
->         return 0;
->  }
-> @@ -3947,6 +4016,29 @@ static void setup_zone_migrate_reserve(struct zone *zone)
->         }
->  }
->
-> +int __meminit pfn_range_init_avail(unsigned long pfn, unsigned long end_pfn,
-> +                                  unsigned long size, int nid)
-why not use static ? it seems there is not outside user.
-> +{
-> +       unsigned long validate_end_pfn = pfn + size;
-> +
-> +       if (pfn & (size - 1))
-> +               return 1;
-> +
-> +       if (pfn + size >= end_pfn)
-> +               return 1;
-> +
-> +       while (pfn < validate_end_pfn)
-> +       {
-> +               if (!early_pfn_valid(pfn))
-> +                       return 1;
-> +               if (!early_pfn_in_nid(pfn, nid))
-> +                       return 1;
-> +               pfn++;
-> +       }
-> +
-> +       return size;
-> +}
-> +
->  /*
->   * Initially all pages are reserved - free ones are freed
->   * up by free_all_bootmem() once the early boot process is
-> @@ -3964,20 +4056,34 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
->                 highest_memmap_pfn = end_pfn - 1;
->
->         z = &NODE_DATA(nid)->node_zones[zone];
-> -       for (pfn = start_pfn; pfn < end_pfn; pfn++) {
-> +       for (pfn = start_pfn; pfn < end_pfn; ) {
->                 /*
->                  * There can be holes in boot-time mem_map[]s
->                  * handed to this function.  They do not
->                  * exist on hotplugged memory.
->                  */
-> +               int pfns = 1;
->                 if (context == MEMMAP_EARLY) {
-> -                       if (!early_pfn_valid(pfn))
-> +                       if (!early_pfn_valid(pfn)) {
-> +                               pfn++;
->                                 continue;
-> -                       if (!early_pfn_in_nid(pfn, nid))
-> +                       }
-> +                       if (!early_pfn_in_nid(pfn, nid)) {
-> +                               pfn++;
->                                 continue;
-> +                       }
-> +
-> +                       pfns = pfn_range_init_avail(pfn, end_pfn,
-> +                                                   PTRS_PER_PMD, nid);
->                 }
+K. Y. Srinivasan (3):
+      storvsc: Increase the value of STORVSC_MAX_IO_REQUESTS
+      storvsc: Support FC devices
+      storvsc: Implement multi-channel support
 
-maybe could update memmap_init_zone() only iterate {memblock.memory} -
-{memblock.reserved}, so you do need to check avail ....
+Mark Rustad (2):
+      fcoe: Stop fc_rport_priv structure leak
+      libfc: Reject PLOGI from nodes with incompatible role
 
-as memmap_init_zone do not need to handle holes to mark reserve for them.
+Neerav Parikh (1):
+      fcoe: Fix smatch warning in fcoe_fdmi_info function
 
-> +
->                 page = pfn_to_page(pfn);
->                 __init_single_page(page, zone, nid, 1);
-> +
-> +               if (pfns > 1)
-> +                       SetPageUninitialized2Mib(page);
-> +
-> +               pfn += pfns;
->         }
->  }
->
-> @@ -6196,6 +6302,7 @@ static const struct trace_print_flags pageflag_names[] = {
->         {1UL << PG_owner_priv_1,        "owner_priv_1"  },
->         {1UL << PG_arch_1,              "arch_1"        },
->         {1UL << PG_reserved,            "reserved"      },
-> +       {1UL << PG_uninitialized2mib,   "Uninit_2MiB"   },
+Robert Love (3):
+      libfcoe: Fix meaningless log statement
+      libfc: Differentiate echange timer cancellation debug statements
+      libfc: Remove extra space in fc_exch_timer_cancel definition
 
-PG_uninitialized_2m ?
+Saurav Kashyap (2):
+      qla2xxx: Fix sparse warning from qla_mr.c and qla_iocb.c.
+      qla2xxx: Move qla2x00_free_device to the correct location.
 
->         {1UL << PG_private,             "private"       },
->         {1UL << PG_private_2,           "private_2"     },
->         {1UL << PG_writeback,           "writeback"     },
+Sreekanth Reddy (7):
+      mpt3sas: Bump driver version to v02.100.00.00
+      mpt3sas: when async scanning is enabled then while scanning, devices are removed but their transport layer entries are not removed
+      mpt3sas: MPI2.5 Rev F v2.5.1.1 specification
+      mpt3sas: Infinite loops can occur if MPI2_IOCSTATUS_CONFIG_INVALID_PAGE is not returned
+      mpt3sas: fix for kernel panic when driver loads with HBA conected to non LUN 0 configured expander
+      mpt3sas: Updated the Hardware timing requirements
+      mpt3sas: 2013 source code copyright
 
-Yinghai
+Yi Zou (1):
+      fcoe: fix the link error status block sparse warnings
+
+Yijing Wang (1):
+      pm8001: use pdev->pm_cap instead of pci_find_capability(..,PCI_CAP_ID_PM)
+
+The diffstat is
+
+ drivers/scsi/constants.c                    | 235 ++++++++++++++++++++++------
+ drivers/scsi/fcoe/fcoe.c                    |  26 +--
+ drivers/scsi/fcoe/fcoe_ctlr.c               |   4 +
+ drivers/scsi/fcoe/fcoe_sysfs.c              |  24 +--
+ drivers/scsi/fcoe/fcoe_transport.c          |  28 +---
+ drivers/scsi/libfc/fc_exch.c                |   4 +-
+ drivers/scsi/libfc/fc_rport.c               |  27 ++++
+ drivers/scsi/megaraid/megaraid_sas_base.c   |  10 +-
+ drivers/scsi/megaraid/megaraid_sas_fp.c     |   4 +-
+ drivers/scsi/mpt3sas/Kconfig                |   2 +-
+ drivers/scsi/mpt3sas/mpi/mpi2.h             |  12 +-
+ drivers/scsi/mpt3sas/mpi/mpi2_cnfg.h        |  15 +-
+ drivers/scsi/mpt3sas/mpi/mpi2_init.h        |   2 +-
+ drivers/scsi/mpt3sas/mpi/mpi2_ioc.h         |  10 +-
+ drivers/scsi/mpt3sas/mpi/mpi2_raid.h        |  10 +-
+ drivers/scsi/mpt3sas/mpi/mpi2_sas.h         |   2 +-
+ drivers/scsi/mpt3sas/mpi/mpi2_tool.h        |  10 +-
+ drivers/scsi/mpt3sas/mpi/mpi2_type.h        |   2 +-
+ drivers/scsi/mpt3sas/mpt3sas_base.c         |  22 ++-
+ drivers/scsi/mpt3sas/mpt3sas_base.h         |   8 +-
+ drivers/scsi/mpt3sas/mpt3sas_config.c       |   2 +-
+ drivers/scsi/mpt3sas/mpt3sas_ctl.c          |   2 +-
+ drivers/scsi/mpt3sas/mpt3sas_ctl.h          |   2 +-
+ drivers/scsi/mpt3sas/mpt3sas_debug.h        |   2 +-
+ drivers/scsi/mpt3sas/mpt3sas_scsih.c        |  54 ++++---
+ drivers/scsi/mpt3sas/mpt3sas_transport.c    |   2 +-
+ drivers/scsi/mpt3sas/mpt3sas_trigger_diag.c |   2 +-
+ drivers/scsi/mpt3sas/mpt3sas_trigger_diag.h |   2 +-
+ drivers/scsi/pm8001/pm8001_init.c           |   7 +-
+ drivers/scsi/qla2xxx/qla_attr.c             |   5 +-
+ drivers/scsi/qla2xxx/qla_bsg.c              |  38 ++---
+ drivers/scsi/qla2xxx/qla_dbg.c              |  12 +-
+ drivers/scsi/qla2xxx/qla_def.h              |  34 ++--
+ drivers/scsi/qla2xxx/qla_gbl.h              |   2 +-
+ drivers/scsi/qla2xxx/qla_gs.c               |  86 +++++-----
+ drivers/scsi/qla2xxx/qla_init.c             |   8 -
+ drivers/scsi/qla2xxx/qla_inline.h           |   2 +-
+ drivers/scsi/qla2xxx/qla_iocb.c             |   6 +-
+ drivers/scsi/qla2xxx/qla_isr.c              |   1 +
+ drivers/scsi/qla2xxx/qla_mbx.c              |  16 +-
+ drivers/scsi/qla2xxx/qla_mr.c               | 167 ++++++++++----------
+ drivers/scsi/qla2xxx/qla_mr.h               |  98 ++++++------
+ drivers/scsi/qla2xxx/qla_os.c               |  10 +-
+ drivers/scsi/scsi_debug.c                   | 174 +++++++++-----------
+ drivers/scsi/scsi_lib.c                     |  27 +++-
+ drivers/scsi/storvsc_drv.c                  | 139 +++++++++++++++-
+ 46 files changed, 828 insertions(+), 529 deletions(-)
+
+James
+
+
