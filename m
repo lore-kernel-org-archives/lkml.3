@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606Ab3GMLRZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 07:17:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:44371 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755956Ab3GMLRY (ORCPT
+	id S1757832Ab3GMLTK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 07:19:10 -0400
+Received: from ns3.fnarfbargle.com ([103.4.17.7]:59442 "EHLO
+	ns3.fnarfbargle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757408Ab3GMLTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 07:17:24 -0400
-Date: Sat, 13 Jul 2013 13:17:26 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT pull] scheduler updates for 3.11
-Message-ID: <alpine.DEB.2.02.1307131315250.11918@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 13 Jul 2013 07:19:08 -0400
+X-Greylist: delayed 1877 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Jul 2013 07:19:07 EDT
+Message-ID: <51E13052.30101@fnarfbargle.com>
+Date: Sat, 13 Jul 2013 18:47:46 +0800
+From: Brad Campbell <brad@fnarfbargle.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org
+Subject: Re: 3.10: discard/trim support on md-raid1?
+References: <001701ce7fb4$889bdd40$99d397c0$@lucidpixels.com>
+In-Reply-To: <001701ce7fb4$889bdd40$99d397c0$@lucidpixels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On 13/07/13 18:34, Justin Piszcz wrote:
+> And possibly:
+> discard_zeroes_data: 1
 
-please pull the latest sched-urgent-for-linus git tree from:
+Does it though?
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+Here's my 6 x SSD RAID10 that definitely discards.
 
- * Fix a potential deadlock versus hrtimers.
+brad@srv:~$ grep . /sys/block/md2/queue/*
+/sys/block/md2/queue/add_random:0
+/sys/block/md2/queue/discard_granularity:33553920
+/sys/block/md2/queue/discard_max_bytes:65536
+/sys/block/md2/queue/discard_zeroes_data:0
+/sys/block/md2/queue/hw_sector_size:512
+/sys/block/md2/queue/iostats:0
+/sys/block/md2/queue/logical_block_size:512
+/sys/block/md2/queue/max_hw_sectors_kb:16383
+/sys/block/md2/queue/max_integrity_segments:0
+/sys/block/md2/queue/max_sectors_kb:512
+/sys/block/md2/queue/max_segments:128
+/sys/block/md2/queue/max_segment_size:65536
+/sys/block/md2/queue/minimum_io_size:65536
+/sys/block/md2/queue/nomerges:0
+/sys/block/md2/queue/nr_requests:128
+/sys/block/md2/queue/optimal_io_size:196608
+/sys/block/md2/queue/physical_block_size:512
+/sys/block/md2/queue/read_ahead_kb:384
+/sys/block/md2/queue/rotational:1
+/sys/block/md2/queue/rq_affinity:0
+/sys/block/md2/queue/scheduler:none
+/sys/block/md2/queue/write_same_max_bytes:0
 
-Thanks,
+Mine does not have discard_zeroes_data == 1 which is correct as 3 of the drives are Samsung 830's 
+and they don't return deterministic after trim.
 
-	tglx
+I can verify that discard gets passed down the stack as I get a non-zero mismatch count after 
+running a trim on the filesystem. Checking the mirrors manually sees 0 returned from the Intel 
+330's, and apparently random data returned from the 830's.
 
------------------->
-Peter Zijlstra (1):
-      sched: Fix HRTICK
-
-
- kernel/sched/core.c |   20 +++++++++++---------
- 1 file changed, 11 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 9b1f2e5..0d8eb45 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -370,13 +370,6 @@ static struct rq *this_rq_lock(void)
- #ifdef CONFIG_SCHED_HRTICK
- /*
-  * Use HR-timers to deliver accurate preemption points.
-- *
-- * Its all a bit involved since we cannot program an hrt while holding the
-- * rq->lock. So what we do is store a state in in rq->hrtick_* and ask for a
-- * reschedule event.
-- *
-- * When we get rescheduled we reprogram the hrtick_timer outside of the
-- * rq->lock.
-  */
- 
- static void hrtick_clear(struct rq *rq)
-@@ -404,6 +397,15 @@ static enum hrtimer_restart hrtick(struct hrtimer *timer)
- }
- 
- #ifdef CONFIG_SMP
-+
-+static int __hrtick_restart(struct rq *rq)
-+{
-+	struct hrtimer *timer = &rq->hrtick_timer;
-+	ktime_t time = hrtimer_get_softexpires(timer);
-+
-+	return __hrtimer_start_range_ns(timer, time, 0, HRTIMER_MODE_ABS_PINNED, 0);
-+}
-+
- /*
-  * called from hardirq (IPI) context
-  */
-@@ -412,7 +414,7 @@ static void __hrtick_start(void *arg)
- 	struct rq *rq = arg;
- 
- 	raw_spin_lock(&rq->lock);
--	hrtimer_restart(&rq->hrtick_timer);
-+	__hrtick_restart(rq);
- 	rq->hrtick_csd_pending = 0;
- 	raw_spin_unlock(&rq->lock);
- }
-@@ -430,7 +432,7 @@ void hrtick_start(struct rq *rq, u64 delay)
- 	hrtimer_set_expires(timer, time);
- 
- 	if (rq == this_rq()) {
--		hrtimer_restart(timer);
-+		__hrtick_restart(rq);
- 	} else if (!rq->hrtick_csd_pending) {
- 		__smp_call_function_single(cpu_of(rq), &rq->hrtick_csd, 0);
- 		rq->hrtick_csd_pending = 1;
+Regards,
+Brad
