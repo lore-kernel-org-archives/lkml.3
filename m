@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758131Ab3GMQ6a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 12:58:30 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51360 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab3GMQ62 (ORCPT
+	id S1758179Ab3GMRD7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 13:03:59 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:44675 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab3GMRD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 12:58:28 -0400
-Message-ID: <51E18730.2020105@hitachi.com>
-Date: Sun, 14 Jul 2013 01:58:24 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Sat, 13 Jul 2013 13:03:57 -0400
 MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Jeff Layton <jlayton@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH v6 01/14] spinlock: A new lockref structure for lockless
- update of refcount
-References: <1373332204-10379-1-git-send-email-Waiman.Long@hp.com> <1373332204-10379-2-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1373332204-10379-2-git-send-email-Waiman.Long@hp.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.10.1307130238190.31878@aurora.sdinet.de>
+References: <CAB=NE6XyC0Svxh8yeVNvnpdkVBTWEAcmi8wZocc6MC=kxLs2iw@mail.gmail.com>
+ <alpine.DEB.2.10.1307130238190.31878@aurora.sdinet.de>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Sat, 13 Jul 2013 10:03:35 -0700
+X-Google-Sender-Auth: oK5LCgGXLJeg4lvyAKGPaZ-yI-o
+Message-ID: <CAB=NE6UDgme=Y6inA1DSQSPt1j9FtWQPq-j4TK6P7AwhATK6PQ@mail.gmail.com>
+Subject: Re: [ANN] backports-v3.10 released - first release!
+To: Sven-Haegar Koch <haegar@sdinet.de>
+Cc: "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jul 12, 2013 at 5:40 PM, Sven-Haegar Koch <haegar@sdinet.de> wrote:
+> On Fri, 12 Jul 2013, Luis R. Rodriguez wrote:
+>
+>> Kicked out the first Linux kernel backports release under the new
+>> project name, "backports" that hopefully clarifies this a generic
+>> backport project now. Backported subsystems in this release:
+>
+>> [0] http://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.10/backports-3.10-1.tar.bz2
+>
+> Did you perhaps re-upload the 3.10-rc1 backports archive?
+>
+> haegar@blackhole:~/src/3.2.0$ tar tvf backports-3.10-1.tar.bz2 | head -n 2
+> drwxr-xr-x mcgrof/mcgrof     0 2013-05-19 03:06 backports-3.10-rc1-1/
+> -rw-r--r-- mcgrof/mcgrof  4164 2013-05-18 22:57 backports-3.10-rc1-1/Kconfig.versions
+> ...
+>
+> $ cat versions
+> BACKPORTS_VERSION="v3.10-rc1-1-0-g80112f6"
+> BACKPORTED_KERNEL_VERSION="v3.10-rc1-0-gf722406"
+> BACKPORTED_KERNEL_NAME="Linux"
 
-(2013/07/09 10:09), Waiman Long wrote:> +/**
-> + * lockref_put_or_lock - decrements count unless count <= 1 before decrement
-> + * @lockcnt: pointer to lockref structure
-> + * Return: 1 if count updated successfully or 0 if count <= 1 and lock taken
-> + *
-> + * The only difference between lockref_put_or_lock and lockref_put is that
-> + * the former function will hold the lock on return while the latter one
-> + * will free it on return.
-> + */
-> +static __always_inline int lockref_put_or_locked(struct lockref *lockcnt)
+Indeed. Pushed out -2 release:
 
-Here is a function name typo. _locked should be _lock.
-And also, I think we should take a note here to tell this function does *not*
-guarantee lockcnt->refcnt == 0 or 1 until unlocked if this returns 0.
+https://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.10/backports-3.10-2.tar.bz2
 
-> +{
-> +	spin_lock(&lockcnt->lock);
-> +	if (likely(lockcnt->refcnt > 1)) {
-> +		lockcnt->refcnt--;
-> +		spin_unlock(&lockcnt->lock);
-> +		return 1;
-> +	}
-> +	return 0;
-> +}
-
-Using this implementation guarantees lockcnt->refcnt == 0 or 1 until unlocked
-if this returns 0.
-
-However, the below one looks not guarantee it. Since lockref_add_unless
-and spinlock are not done atomically, there is a chance for someone
-to increment it right before locking.
-
-Or, I missed something?
-
-> +/**
-> + * lockref_put_or_lock - Decrements count unless the count is <= 1
-> + *			 otherwise, the lock will be taken
-> + * @lockcnt: pointer to struct lockref structure
-> + * Return: 1 if count updated successfully or 0 if count <= 1 and lock taken
-> + */
-> +int
-> +lockref_put_or_lock(struct lockref *lockcnt)
-> +{
-> +	if (lockref_add_unless(lockcnt, -1, 1))
-> +		return 1;
-> +	spin_lock(&lockcnt->lock);
-> +	return 0;
-> +}
-
-BTW, it looks that your dcache patch knows this and keeps double check for
-the case of lockcnt->refcnt > 1 in dput().
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+  Luis
