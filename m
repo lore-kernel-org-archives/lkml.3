@@ -1,89 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab3GMGsI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 02:48:08 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:49587 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019Ab3GMGsD (ORCPT
+	id S1753025Ab3GMGuR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 02:50:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45013 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab3GMGuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 02:48:03 -0400
-Date: Fri, 12 Jul 2013 23:48:01 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>
-Subject: Re: [ 00/19] 3.10.1-stable review
-Message-ID: <20130713064801.GA1305@kroah.com>
-References: <20130711214830.611455274@linuxfoundation.org>
- <20130711222935.GA11340@redhat.com>
- <20130711224455.GA17222@kroah.com>
- <20130712141530.GA3629@roeck-us.net>
- <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
- <20130712173150.GA5534@roeck-us.net>
- <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
- <20130712195051.GB32054@1wt.eu>
- <20130713062223.GA15155@kroah.com>
- <20130713063607.GI32054@1wt.eu>
+	Sat, 13 Jul 2013 02:50:15 -0400
+Date: Sat, 13 Jul 2013 08:49:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+Cc: mingo@kernel.org, arjan@linux.intel.com, vincent.guittot@linaro.org,
+        preeti@linux.vnet.ibm.com, alex.shi@intel.com, efault@gmx.de,
+        pjt@google.com, len.brown@intel.com, corbet@lwn.net,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tglx@linutronix.de, catalin.marinas@arm.com,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org
+Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
+Message-ID: <20130713064909.GW25631@dyad.programming.kicks-ass.net>
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130713063607.GI32054@1wt.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 08:36:07AM +0200, Willy Tarreau wrote:
-> On Fri, Jul 12, 2013 at 11:22:23PM -0700, Greg Kroah-Hartman wrote:
-> > > So probably we should incite patch contributors to add a specific
-> > > tag such as "Fixes: 3.5 and later", so that non-important patches
-> > > do not need the Cc:stable anymore, but users who experience an issue
-> > > can easily spot them and ask for their inclusion.
-> > 
-> > Huh?  What's wrong with the existing way people mark stable patches to
-> > go back to much older kernel versions?  Is that not working well enough
-> > for you?
-> > 
-> > And if something "fixes" an issue, then I want it in stable, just like
-> > Linus wants that in his tree.
+On Tue, Jul 09, 2013 at 04:55:29PM +0100, Morten Rasmussen wrote:
+> Hi,
 > 
-> It's the difference between "this is a fix" and "please backport this
-> fix into stable". As we aid in this thread, cc:stable is a bit too much
-> automatic and sometimes not appropriate (not important enough fixes).
+> This patch set is an initial prototype aiming at the overall power-aware
+> scheduler design proposal that I previously described
+> <http://permalink.gmane.org/gmane.linux.kernel/1508480>.
+> 
+> The patch set introduces a cpu capacity managing 'power scheduler' which lives
+> by the side of the existing (process) scheduler. Its role is to monitor the
+> system load and decide which cpus that should be available to the process
+> scheduler.
 
-No, I've never said that.
+Hmm...
 
-I _want_ fixes in stable trees, as they are being done to, obviously,
-fix problems.  So does Linus, why wouldn't a fix for something that is
-an issue for someone _not_ go into his tree after -rc4?
+This looks like a userspace hotplug deamon approach lifted to kernel space :/
 
-Ok, for some issues, they need some time to "bake" I can understand, but
-that's the exception not the rule at all.
+How about instead of layering over the load-balancer to constrain its behaviour
+you change the behaviour to not need constraint? Fix it so it does the right
+thing, instead of limiting it.
 
-If a distro would pick a patch up to solve a problem for a user, and
-that patch is in Linus's tree, there's almost no reason that shouldn't
-also be in the stable trees.
+I don't think its _that_ hard to make the balancer do packing over spreading.
+The power balance code removed in 8e7fbcbc had things like that (although it
+was broken). And I'm sure I've seen patches over the years that did similar
+things. Didn't Vincent and Alex also do things like that?
 
-My issue is that people are trying to get me to take stuff that is _not_
-fixes (i.e. build errors that are impossible to hit, or \n additions to
-debugging kernel messages, or pseudo-optimizations of functions).
+We should take the good bits from all that and make something of it. And I
+think its easier now that we have the per task and per rq utilization numbers
+[1].
 
-The other larger issue is that people somehow are not willing to send
-their valid fixes to Linus after -rc4, and they flood in during the -rc1
-merge and people expect me to backport them all into .1 because they are
-lazy.
+Just start by changing the balancer to pack instead of spread. Once that works,
+see where the two modes diverge and put a knob in.
 
-Again, specific examples are the 7 powerpc patches that are over a month
-old that were marked for the stable tree, yet didn't hit Linus's tree
-until now.  I can dig up more examples if wanted, just look at the flood
-that comes in for -rc1.
+Then worry about power thingies.
 
-I _should_ be seeing more patches marked for stable showing up after
--rc3 then for -rc1.  As it is, I think there's something wrong with
-maintainers relying on me to do their work for them too much, and it's
-finally pushed me to start complaining and pushing back.
 
-greg k-h
+[1] -- I realize that the utilization numbers are actually influenced by
+cpufreq state. Fixing this is another possible first step. I think it could be
+done independently of the larger picture of a power aware balancer.
+
+
+You also introduce a power topology separate from the topology information we
+already have. Please integrate with the existing topology information so that
+its a single entity.
+
+
+The integration of cpuidle and cpufreq should start by unifying all the
+statistics stuff. For cpuidle we need to pull in the per-cpu idle time
+guestimator. For cpufreq the per-cpu usage stuff -- which we already have in
+the scheduler these days!
+
+Once we have all the statistics in place, its also easier to see what we can do
+with them and what might be missing.
+
+At this point mandate that policy drivers may not do any statistics gathering
+of their own. If they feel the need to do so, we're missing something and
+that's not right.
+
+For the actual policies we should build a small library of concepts that can be
+quickly composed to form an actual policy. Such that when two chips need
+similar things they do indeed use the same code and not a copy with different
+bugs. If there's only a single arch user of a concept that's fine, but at least
+its out in the open and ready for re-use. Not hidden away in arch code.
+
+
+Then we can start doing fancy stuff like fairness when constrained by power or
+thermal envelopes. We'll need input from the GPU etc. for that. And the wildly
+asymmetric thing you're interested in :-)
+
+
+I'm not entirely sold on differentiating between short running and other tasks
+either. Although I suppose I see where that comes from. A task that would run
+50% on a big core would unlikely be qualified as small, however if it would
+require 85% of a small core and there's room on the small cores its a good move
+to run it there.
+
+So where's the limit for being small? It seems like an artificial limit and
+such should be avoided where possible.
+
+
+Arjan; from reading your emails you're mostly busy explaining what cannot be
+done. Please explain what _can_ be done and what Intel wants. From what I can
+see you basically promote a max P state max concurrency race to idle FTW.
+
+Since you can't say what the max P state is; and I think I understand the
+reasons for that, and the hardware might not even respect the P state you tell
+it to run at, does it even make sense to talk about Intel P states? When would
+you not program the max P state?
+
+In such a case the aperf/mperf ratio [2] gives both the current freq as the max
+freq, since you're effectively always going at max speed.
+
+[2] aperf/mperf ratio with an idle filter, we should exclude idle time.
+
+IIRC you at one point said there was a time limit below which concurrency
+spread wasn't useful anymore?
+
+Also, most what you say for single socket systems; what does Intel want for
+multi-socket systems?
