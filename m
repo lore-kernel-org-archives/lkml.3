@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758273Ab3GMT46 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 15:56:58 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:48359 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758254Ab3GMT4z (ORCPT
+	id S1758268Ab3GMUJy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 16:09:54 -0400
+Received: from cpsmtpb-ews08.kpnxchange.com ([213.75.39.13]:58256 "EHLO
+	cpsmtpb-ews08.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758074Ab3GMUJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 15:56:55 -0400
-Date: Sat, 13 Jul 2013 21:56:52 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] omapfb: In omapfb_probe return -EPROBE_DEFER when
- display driver is not loaded yet
-Message-ID: <20130713195652.GA29130@amd.pavel.ucw.cz>
-References: <1373461739-10168-1-git-send-email-pali.rohar@gmail.com>
- <20130713182733.GA25019@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130713182733.GA25019@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 13 Jul 2013 16:09:53 -0400
+Message-ID: <1373746191.1359.37.camel@x61.thuisdomein>
+Subject: [PATCH] ARM: multiplatform: remove reference to ARCH_MULTI_V4
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Sat, 13 Jul 2013 22:09:51 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jul 2013 20:09:51.0790 (UTC) FILETIME=[EEF9DCE0:01CE8004]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+The Kconfig symbol ARCH_MULTI_V4 was removed in commit 24e860fbfd
+("ARM: multiplatform: always pick one CPU type"). Remove the last
+reference to it too.
 
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) Untested.
 
-> One thing I'd like to know: how do you configure kernel to get output
-> on qemu? I was doing CONFIG_DEBUG_LL with specific uart, but that
-> needed patching the kernel, you apparently have something more
-> clever.
+1) Commit 24e860fbfd is silent on the reason to drop ARCH_MULTI_V4. And
+the ARM section of the Kconfig files is rather complicated for people,
+like me, that aren't familiar with the way the ARM universe is divided
+in architectures, machines, platforms, etc. That makes it hard to say
+whether ARCH_MULTI_V4 was dropped on purpose or by accident.
 
-Aha, normal console=ttyO2 option. Got it now :-).
+ arch/arm/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-									Pavel
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 0ac9be6..0746bc8 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -912,7 +912,7 @@ config ARCH_MULTI_V6_V7
+ 	bool
+ 
+ config ARCH_MULTI_CPU_AUTO
+-	def_bool !(ARCH_MULTI_V4 || ARCH_MULTI_V4T || ARCH_MULTI_V6_V7)
++	def_bool !(ARCH_MULTI_V4T || ARCH_MULTI_V6_V7)
+ 	select ARCH_MULTI_V5
+ 
+ endmenu
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.4
+
