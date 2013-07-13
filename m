@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab3GMS1j (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 14:27:39 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46407 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758064Ab3GMS1h (ORCPT
+	id S1758236Ab3GMSql (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 14:46:41 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:52310 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758048Ab3GMSqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 14:27:37 -0400
-Date: Sat, 13 Jul 2013 20:27:34 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-omap@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] omapfb: In omapfb_probe return -EPROBE_DEFER when
- display driver is not loaded yet
-Message-ID: <20130713182733.GA25019@amd.pavel.ucw.cz>
-References: <1373461739-10168-1-git-send-email-pali.rohar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1373461739-10168-1-git-send-email-pali.rohar@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 13 Jul 2013 14:46:40 -0400
+Message-ID: <1373741199.1359.28.camel@x61.thuisdomein>
+Subject: [PATCH v3] staging/lustre/libcfs: drop bogus Kconfig default
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Sat, 13 Jul 2013 20:46:39 +0200
+In-Reply-To: <20130713172648.GA1798@kroah.com>
+References: <1373726446.1359.17.camel@x61.thuisdomein>
+	 <20130713160716.GA2279@kroah.com>
+	 <1373733849.1359.20.camel@x61.thuisdomein>
+	 <1373734057.1359.23.camel@x61.thuisdomein>
+	 <20130713172648.GA1798@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Jul 2013 18:46:39.0172 (UTC) FILETIME=[4F24D040:01CE7FF9]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-07-10 15:08:59, Pali Rohár wrote:
-> * On RX-51 probing for acx565akm driver is later then for omapfb which cause that omapfb probe fail and framebuffer is not working
-> * EPROBE_DEFER causing that kernel try to probe for omapfb later again which fixing this problem
-> 
-> * Without this patch display on Nokia RX-51 (N900) phone not working
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Commit 4b5b4c7222 ("staging/lustre/libcfs: restore LINVRNT") added
+"default false" to this Kconfig file. It was obviously meant to use
+"default n" here. But we might as well drop this line, as a Kconfig bool
+defaults to 'n' anyway.
 
-Tested-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+0) v2: remove the default entirely, as Greg suggested.
+   v3: Fix the botched summary.
 
-(Actually, do we know which commit broke the ordering? We may want to
-simply revert that one...)
+1) Still lightly tested.
 
-BTW I'm currently trying to set-up automated scripts for n900/qemu
-testing. I guess I'll try to run them on mainline kernel to catch such
-stuff earlier.
+ drivers/staging/lustre/lustre/Kconfig | 1 -
+ 1 file changed, 1 deletion(-)
 
-One thing I'd like to know: how do you configure kernel to get output
-on qemu? I was doing CONFIG_DEBUG_LL with specific uart, but that
-needed patching the kernel, you apparently have something more clever.
-
-I tried doing:
-
-# CONFIG_DEBUG_LL is not set
-CONFIG_DEBUG_LL_INCLUDE="mach/debug-macro.S"
-CONFIG_UNCOMPRESS_INCLUDE="debug/uncompress.h"
-
-but no output on console...
-
-Thanks,
-									Pavel
+diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
+index e0eb830..173d21e 100644
+--- a/drivers/staging/lustre/lustre/Kconfig
++++ b/drivers/staging/lustre/lustre/Kconfig
+@@ -43,7 +43,6 @@ config LUSTRE_OBD_MAX_IOCTL_BUFFER
+ config LUSTRE_DEBUG_EXPENSIVE_CHECK
+ 	bool "Enable Lustre DEBUG checks"
+ 	depends on LUSTRE_FS
+-	default false
+ 	help
+ 	  This option is mainly for debug purpose. It enables Lustre code to do
+ 	  expensive checks that may have a performance impact.
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.1.4
+
