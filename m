@@ -1,238 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107Ab3GMDT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Jul 2013 23:19:29 -0400
-Received: from mx1.corp.phx1.mozilla.com ([63.245.216.69]:55363 "EHLO
-	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757969Ab3GMDT2 (ORCPT
+	id S1758115Ab3GMDWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Jul 2013 23:22:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43953 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757969Ab3GMDWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Jul 2013 23:19:28 -0400
-From: Jed Davis <jld@mozilla.com>
-To: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Robert Richter <rric@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, oprofile-list@lists.sf.net
-Cc: Jed Davis <jld@mozilla.com>
-Subject: [PATCH] ARM: Fix r7/r11 confusion when CONFIG_THUMB2_KERNEL=y
-Date: Fri, 12 Jul 2013 20:18:20 -0700
-Message-Id: <1373685501-1620-1-git-send-email-jld@mozilla.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 12 Jul 2013 23:22:01 -0400
+Date: Fri, 12 Jul 2013 20:21:39 -0700
+From: tip-bot for Kees Cook <tipbot@zytor.com>
+Message-ID: <tip-c0b3450f101523a49823fa93d155f1d258e5ac6f@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        keescook@chromium.org, pageexec@gmail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, pageexec@gmail.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20130712225017.GA5366@www.outflux.net>
+References: <20130712225017.GA5366@www.outflux.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Make sure IDT is page aligned
+Git-Commit-ID: c0b3450f101523a49823fa93d155f1d258e5ac6f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 12 Jul 2013 20:21:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is currently some inconsistency about the "frame pointer" on ARM.
-r11 is the register with assemblers recognize and disassemblers often
-print as "fp", and which is sufficient for stack unwinding when using
-the APCS frame pointer option; but when unwinding with the Exception
-Handling ABI, the register GCC uses when a constant offset won't suffice
-(or when -fno-omit-frame-pointer is used; see kernel/sched/Makefile in
-particular) is r11 on ARM and r7 on Thumb.
+Commit-ID:  c0b3450f101523a49823fa93d155f1d258e5ac6f
+Gitweb:     http://git.kernel.org/tip/c0b3450f101523a49823fa93d155f1d258e5ac6f
+Author:     Kees Cook <keescook@chromium.org>
+AuthorDate: Fri, 12 Jul 2013 15:50:17 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 12 Jul 2013 16:14:08 -0700
 
-Correspondingly, arch/arm/include/uapi/arm/ptrace.h defines ARM_fp to
-refer to r11, but arch/arm/kernel/unwind.c uses "FP" to mean either r11
-or r7 depending on Thumbness, and it is unclear what other cases such as
-the "fp" in struct stackframe should be doing.
+x86: Make sure IDT is page aligned
 
-Effects of this are probably limited to failure of EHABI unwinding when
-starting from a function that uses r7 to restore its stack pointer, but
-the possibility for further breakage (which would be invisible on
-non-Thumb kernels) is worrying.
+Since the IDT is referenced from a fixmap, make sure it is page aligned.
+Merge with 32-bit one, since it was already aligned to deal with F00F bug.
+This avoids the risk of it ever being moved in the bss and having the
+mapping be offset, resulting in calling incorrect handlers.
 
-With this change, it is hoped, r7 is consistently referred to as "r7",
-and "fp" always means r11; this costs a few extra ifdefs, but it should
-help prevent future issues.
+[ hpa: It isn't clear that this is a manifest bug in any way, but
+  tagging for -stable because it shouldn't hurt and might avoid some
+  very hard-to-debug breakages due to unrelated changes. ]
 
-Signed-off-by: Jed Davis <jld@mozilla.com>
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Link: http://lkml.kernel.org/r/20130712225017.GA5366@www.outflux.net
+Reported-by: PaX Team <pageexec@gmail.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/arm/include/asm/stacktrace.h  |    4 ++++
- arch/arm/include/asm/thread_info.h |    2 ++
- arch/arm/kernel/perf_event.c       |    4 ++++
- arch/arm/kernel/process.c          |    4 ++++
- arch/arm/kernel/time.c             |    4 ++++
- arch/arm/kernel/unwind.c           |   27 ++++++++++++++++++++++++++-
- arch/arm/oprofile/common.c         |    4 ++++
- 7 files changed, 48 insertions(+), 1 deletion(-)
+ arch/x86/kernel/head_64.S | 4 ----
+ arch/x86/kernel/traps.c   | 7 ++-----
+ 2 files changed, 2 insertions(+), 9 deletions(-)
 
-diff --git a/arch/arm/include/asm/stacktrace.h b/arch/arm/include/asm/stacktrace.h
-index 4d0a164..5e546bf 100644
---- a/arch/arm/include/asm/stacktrace.h
-+++ b/arch/arm/include/asm/stacktrace.h
-@@ -2,7 +2,11 @@
- #define __ASM_STACKTRACE_H
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 5e4d8a8..317b8cc 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -514,10 +514,6 @@ ENTRY(phys_base)
+ 	
+ 	.section .bss, "aw", @nobits
+ 	.align L1_CACHE_BYTES
+-ENTRY(idt_table)
+-	.skip IDT_ENTRIES * 16
+-
+-	.align L1_CACHE_BYTES
+ ENTRY(debug_idt_table)
+ 	.skip IDT_ENTRIES * 16
  
- struct stackframe {
-+#ifdef CONFIG_THUMB2_KERNEL
-+	unsigned long r7;
-+#else
- 	unsigned long fp;
-+#endif
- 	unsigned long sp;
- 	unsigned long lr;
- 	unsigned long pc;
-diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-index 214d415..ae3cd81 100644
---- a/arch/arm/include/asm/thread_info.h
-+++ b/arch/arm/include/asm/thread_info.h
-@@ -105,6 +105,8 @@ static inline struct thread_info *current_thread_info(void)
- 	((unsigned long)(task_thread_info(tsk)->cpu_context.sp))
- #define thread_saved_fp(tsk)	\
- 	((unsigned long)(task_thread_info(tsk)->cpu_context.fp))
-+#define thread_saved_r7(tsk)	\
-+	((unsigned long)(task_thread_info(tsk)->cpu_context.r7))
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index b0865e8..0952614 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -68,13 +68,10 @@
+ #include <asm/setup.h>
  
- extern void crunch_task_disable(struct thread_info *);
- extern void crunch_task_copy(struct thread_info *, void *);
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index d9f5cd4..55776d6 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -601,7 +601,11 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 		return;
- 	}
- 
-+#ifdef CONFIG_THUMB2_KERNEL
-+	fr.r7 = regs->ARM_r7;
-+#else
- 	fr.fp = regs->ARM_fp;
-+#endif
- 	fr.sp = regs->ARM_sp;
- 	fr.lr = regs->ARM_lr;
- 	fr.pc = regs->ARM_pc;
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index d3ca4f6..aeb4c28 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -405,7 +405,11 @@ unsigned long get_wchan(struct task_struct *p)
- 	if (!p || p == current || p->state == TASK_RUNNING)
- 		return 0;
- 
-+#ifdef CONFIG_THUMB2_KERNEL
-+	frame.r7 = thread_saved_r7(p);
-+#else
- 	frame.fp = thread_saved_fp(p);
-+#endif
- 	frame.sp = thread_saved_sp(p);
- 	frame.lr = 0;			/* recovered from the stack */
- 	frame.pc = thread_saved_pc(p);
-diff --git a/arch/arm/kernel/time.c b/arch/arm/kernel/time.c
-index 98aee32..80410d3 100644
---- a/arch/arm/kernel/time.c
-+++ b/arch/arm/kernel/time.c
-@@ -49,7 +49,11 @@ unsigned long profile_pc(struct pt_regs *regs)
- 	if (!in_lock_functions(regs->ARM_pc))
- 		return regs->ARM_pc;
- 
-+#ifdef CONFIG_THUMB2_KERNEL
-+	frame.r7 = regs->ARM_r7;
-+#else
- 	frame.fp = regs->ARM_fp;
-+#endif
- 	frame.sp = regs->ARM_sp;
- 	frame.lr = regs->ARM_lr;
- 	frame.pc = regs->ARM_pc;
-diff --git a/arch/arm/kernel/unwind.c b/arch/arm/kernel/unwind.c
-index 00df012..dec03ae 100644
---- a/arch/arm/kernel/unwind.c
-+++ b/arch/arm/kernel/unwind.c
-@@ -74,7 +74,7 @@ struct unwind_ctrl_block {
- 
- enum regs {
- #ifdef CONFIG_THUMB2_KERNEL
--	FP = 7,
-+	R7 = 7,
- #else
- 	FP = 11,
- #endif
-@@ -317,8 +317,13 @@ static int unwind_exec_insn(struct unwind_ctrl_block *ctrl)
- 		return -URC_FAILURE;
- 	}
- 
-+#ifdef CONFIG_THUMB2_KERNEL
-+	pr_debug("%s: r7 = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
-+		 ctrl->vrs[R7], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
-+#else
- 	pr_debug("%s: fp = %08lx sp = %08lx lr = %08lx pc = %08lx\n", __func__,
- 		 ctrl->vrs[FP], ctrl->vrs[SP], ctrl->vrs[LR], ctrl->vrs[PC]);
+ asmlinkage int system_call(void);
 +#endif
  
- 	return URC_OK;
- }
-@@ -349,7 +354,11 @@ int unwind_frame(struct stackframe *frame)
- 		return -URC_FAILURE;
- 	}
+-/*
+- * The IDT has to be page-aligned to simplify the Pentium
+- * F0 0F bug workaround.
+- */
++/* The IDT has to be page-aligned to keep it aligned with its fixmap. */
+ gate_desc idt_table[NR_VECTORS] __page_aligned_data = { { { { 0, 0 } } }, };
+-#endif
  
-+#ifdef CONFIG_THUMB2_KERNEL
-+	ctrl.vrs[R7] = frame->r7;
-+#else
- 	ctrl.vrs[FP] = frame->fp;
-+#endif
- 	ctrl.vrs[SP] = frame->sp;
- 	ctrl.vrs[LR] = frame->lr;
- 	ctrl.vrs[PC] = 0;
-@@ -397,7 +406,11 @@ int unwind_frame(struct stackframe *frame)
- 	if (frame->pc == ctrl.vrs[PC])
- 		return -URC_FAILURE;
- 
-+#ifdef CONFIG_THUMB2_KERNEL
-+	frame->r7 = ctrl.vrs[R7];
-+#else
- 	frame->fp = ctrl.vrs[FP];
-+#endif
- 	frame->sp = ctrl.vrs[SP];
- 	frame->lr = ctrl.vrs[LR];
- 	frame->pc = ctrl.vrs[PC];
-@@ -416,20 +429,32 @@ void unwind_backtrace(struct pt_regs *regs, struct task_struct *tsk)
- 		tsk = current;
- 
- 	if (regs) {
-+#ifdef CONFIG_THUMB2_KERNEL
-+		frame.r7 = regs->ARM_r7;
-+#else
- 		frame.fp = regs->ARM_fp;
-+#endif
- 		frame.sp = regs->ARM_sp;
- 		frame.lr = regs->ARM_lr;
- 		/* PC might be corrupted, use LR in that case. */
- 		frame.pc = kernel_text_address(regs->ARM_pc)
- 			 ? regs->ARM_pc : regs->ARM_lr;
- 	} else if (tsk == current) {
-+#ifdef CONFIG_THUMB2_KERNEL
-+		frame.r7 = (unsigned long)__builtin_frame_address(0);
-+#else
- 		frame.fp = (unsigned long)__builtin_frame_address(0);
-+#endif
- 		frame.sp = current_sp;
- 		frame.lr = (unsigned long)__builtin_return_address(0);
- 		frame.pc = (unsigned long)unwind_backtrace;
- 	} else {
- 		/* task blocked in __switch_to */
-+#ifdef CONFIG_THUMB2_KERNEL
-+		frame.r7 = thread_saved_r7(tsk);
-+#else
- 		frame.fp = thread_saved_fp(tsk);
-+#endif
- 		frame.sp = thread_saved_sp(tsk);
- 		/*
- 		 * The function calling __switch_to cannot be a leaf function
-diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index 99c63d4b..38cbfff 100644
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -107,7 +107,11 @@ static void arm_backtrace(struct pt_regs * const regs, unsigned int depth)
- 
- 	if (!user_mode(regs)) {
- 		struct stackframe frame;
-+#ifdef CONFIG_THUMB2_KERNEL
-+		frame.r7 = regs->ARM_r7;
-+#else
- 		frame.fp = regs->ARM_fp;
-+#endif
- 		frame.sp = regs->ARM_sp;
- 		frame.lr = regs->ARM_lr;
- 		frame.pc = regs->ARM_pc;
--- 
-1.7.10.4
-
+ DECLARE_BITMAP(used_vectors, NR_VECTORS);
+ EXPORT_SYMBOL_GPL(used_vectors);
