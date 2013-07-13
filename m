@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925Ab3GMPHH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 11:07:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43036 "EHLO mx1.redhat.com"
+	id S1752242Ab3GMPLR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 11:11:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15143 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751278Ab3GMPHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 11:07:05 -0400
-Date: Sat, 13 Jul 2013 11:06:50 -0400
+	id S1751278Ab3GMPLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Jul 2013 11:11:15 -0400
+Date: Sat, 13 Jul 2013 11:10:48 -0400
 From: Dave Jones <davej@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file:
- fs/xfs/xfs_dir2_sf.c, line: 358
-Message-ID: <20130713150650.GA31035@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jochen Striepe <jochen@tolot.escape.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        stable <stable@vger.kernel.org>
+Subject: Re: [ 00/19] 3.10.1-stable review
+Message-ID: <20130713151048.GB31035@redhat.com>
 Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-References: <20130712023930.GA6473@redhat.com>
- <20130713020030.GG3438@dastard>
+	Steven Rostedt <rostedt@goodmis.org>,
+	Jochen Striepe <jochen@tolot.escape.de>,
+	Theodore Ts'o <tytso@mit.edu>, Guenter Roeck <linux@roeck-us.net>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	stable <stable@vger.kernel.org>
+References: <CA+55aFw7Ti3=51vVzNO5QEmPYP-znM95OqvZV9TX=mRcwaOCrA@mail.gmail.com>
+ <20130712173150.GA5534@roeck-us.net>
+ <CA+55aFwvCVw6xqGLEhUPMYPZ6XcxSTr4sunG3+kB0WPLY0Djgg@mail.gmail.com>
+ <20130712181103.GA6689@roeck-us.net>
+ <20130712193557.GB342@thunk.org>
+ <1373658551.17876.117.camel@gandalf.local.home>
+ <20130712201939.GB15261@redhat.com>
+ <1373660900.17876.124.camel@gandalf.local.home>
+ <20130713004707.GF7609@pompeji.miese-zwerge.org>
+ <1373713889.17876.135.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130713020030.GG3438@dastard>
+In-Reply-To: <1373713889.17876.135.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 12:00:30PM +1000, Dave Chinner wrote:
- > On Thu, Jul 11, 2013 at 10:39:30PM -0400, Dave Jones wrote:
- > > Just saw this during boot after an unclean shutdown. It hung afterwards.
- > > 
- > > [   97.162665] XFS: Assertion failed: xfs_dir2_sf_lookup(args) == ENOENT, file: fs/xfs/xfs_dir2_sf.c, line: 358
- > ....
- > > [   97.173730]  [<ffffffffa0076953>] xfs_dir2_sf_addname+0x43/0x760 [xfs]
- > > [   97.173743]  [<ffffffffa0067cfc>] xfs_dir_createname+0x15c/0x1b0 [xfs]
- > > [   97.173754]  [<ffffffffa002f2dc>] xfs_create+0x4cc/0x710 [xfs]
- > > [   97.173764]  [<ffffffffa00278ca>] xfs_vn_mknod+0x9a/0x1c0 [xfs]
- > > [   97.173773]  [<ffffffffa0027a03>] xfs_vn_create+0x13/0x20 [xfs]
- > > [   97.173776]  [<ffffffff811d100d>] vfs_create+0x9d/0x100
- > > [   97.173778]  [<ffffffff811d1995>] do_last+0x925/0xe00
- > > [   97.173780]  [<ffffffff811d1f2e>] path_openat+0xbe/0x6f0
- > > [   97.173783]  [<ffffffff8109e33f>] ? local_clock+0x3f/0x50
- > > [   97.173785]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
- > > [   97.173787]  [<ffffffff811d2c3a>] do_filp_open+0x3a/0x90
- > > [   97.173789]  [<ffffffff811e1b5f>] ? __alloc_fd+0xaf/0x200
- > > [   97.173790]  [<ffffffff811c0ddb>] do_sys_open+0x10b/0x200
- > > [   97.173792]  [<ffffffff81010578>] ? syscall_trace_enter+0x18/0x290
- > > [   97.173794]  [<ffffffff811c0eee>] SyS_open+0x1e/0x20
- > > 
- > > This trace repeated a few times, then the same assertion was triggered from sys_renameat.
+On Sat, Jul 13, 2013 at 07:11:29AM -0400, Steven Rostedt wrote:
+
+ > > Users expect vanilla .0 releases usable as production systems, to
+ > > be updated (meaning, no new features, just stabilizing) with the
+ > > corresponding -stable series.
  > 
- > That's rather curious. What this means is that there is either an
- > EIO or EEXIST error being returned from xfs_dir2_sf_lookup() when a
- > we're about to add the new entry. There are two things here - EIO
- > can only be returned if a shutdown has occurred - are there any
- > signs of a shutdown in the logs?
+ > This really is a case by case basis. An unprivileged user exploit
+ > requires a box that lets other users than the owner of the box to log
+ > in. Most users of .0 releases do not do this.
 
-not that I recall (machine is off, and remote right now).
-1st time it was during boot (above), and 2nd time I hit it
-the machine kept fuzzing for a while afterwards.
-
-I'll see if I can reproduce it again on monday, and if so I'll
-grab an xfsdump for you to stare at.
+local exploits aren't just a problem for multi-user machines.
+An attacker who can own your firefox process, can now potentially
+escalate to root.  (Ok, most exploits are just crashing the box,
+but how many times have we been proven wrong in the past when we
+thought something was just a DoS, and someone smarter has found
+a way to turn it into a root-hole?)
 
 	Dave
