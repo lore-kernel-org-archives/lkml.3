@@ -1,147 +1,538 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933342Ab3GMSzR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 14:55:17 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:51974 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933354Ab3GMSzD (ORCPT
+	id S1758231Ab3GMSzf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 14:55:35 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:52301 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933399Ab3GMSzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 14:55:03 -0400
-Date: Sat, 13 Jul 2013 11:55:03 -0700
+	Sat, 13 Jul 2013 14:55:15 -0400
+Date: Sat, 13 Jul 2013 11:55:16 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Linux 3.10.1
-Message-ID: <20130713185503.GA673@kroah.com>
+Subject: Re: Linux 3.10.1
+Message-ID: <20130713185516.GB673@kroah.com>
+References: <20130713185503.GA673@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130713185503.GA673@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-I'm announcing the release of the 3.10.1 kernel.
-
-All users of the 3.10 kernel series must upgrade.
-
-The updated 3.10.y git tree can be found at:
-	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.10.y
-and can be browsed at the normal kernel.org git web browser:
-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
-
-thanks,
-
-greg k-h
-
-------------
-
- MAINTAINERS                        |    1 +
- Makefile                           |    2 +-
- arch/x86/kvm/vmx.c                 |   11 +++++++++--
- block/genhd.c                      |    2 +-
- crypto/algapi.c                    |    3 ++-
- drivers/block/nbd.c                |    3 ++-
- drivers/cdrom/cdrom.c              |    2 +-
- drivers/cpufreq/cpufreq_stats.c    |    1 +
- drivers/power/charger-manager.c    |    2 +-
- drivers/scsi/osd/osd_uld.c         |    2 +-
- drivers/scsi/sd.c                  |    2 +-
- drivers/tty/serial/8250/8250_pci.c |    4 ----
- drivers/tty/tty_io.c               |    2 ++
- fs/ceph/xattr.c                    |    9 +++++----
- fs/hpfs/map.c                      |    3 ++-
- fs/hpfs/super.c                    |    8 +++++++-
- fs/nfs/nfs4state.c                 |   23 +++++++++++------------
- fs/nfsd/nfs4xdr.c                  |    2 +-
- include/linux/ceph/decode.h        |    5 -----
- include/linux/hugetlb.h            |   16 ++++++++++++++++
- kernel/futex.c                     |    3 ++-
- kernel/module.c                    |   34 ++++++++++++++++++----------------
- mm/hugetlb.c                       |   17 +++++++++++++++++
- mm/memcontrol.c                    |    2 --
- net/ceph/auth_none.c               |    6 ++++++
- 25 files changed, 108 insertions(+), 57 deletions(-)
-
-Andy Adamson (1):
-      NFSv4.1 end back channel session draining
-
-Ben Hutchings (1):
-      SCSI: sd: Fix parsing of 'temporary ' cache mode prefix
-
-Gleb Natapov (1):
-      KVM: VMX: mark unusable segment as nonpresent
-
-Greg Kroah-Hartman (3):
-      MAINTAINERS: add stable_kernel_rules.txt to stable maintainer information
-      Revert "serial: 8250_pci: add support for another kind of NetMos Technology PCI 9835 Multi-I/O Controller"
-      Linux 3.10.1
-
-J. Bruce Fields (1):
-      nfsd4: fix decoding of compounds across page boundaries
-
-Jonathan Salwan (1):
-      drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
-
-Josh Durgin (1):
-      libceph: fix invalid unsigned->signed conversion for timespec encoding
-
-Kees Cook (3):
-      charger-manager: Ensure event is not used as format string
-      block: do not pass disk names as format strings
-      crypto: sanitize argument for format string
-
-Michal Hocko (1):
-      Revert "memcg: avoid dangling reference count in creation failure"
-
-Mikulas Patocka (1):
-      hpfs: better test for errors
-
-Peter Hurley (1):
-      tty: Reset itty for other pty
-
-Rusty Russell (1):
-      module: do percpu allocation after uniqueness check. No, really!
-
-Srivatsa S. Bhat (1):
-      cpufreq: Fix cpufreq regression after suspend/resume
-
-Tyler Hicks (1):
-      libceph: Fix NULL pointer dereference in auth client code
-
-Zhang Yi (1):
-      futex: Take hugepages into account when generating futex_key
-
-majianpeng (1):
-      ceph: fix sleeping function called from invalid context.
-
-
---pWyiEgJYm5f9v55/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR4aKHAAoJEDjbvchgkmk+IeoP/RKd2b9S3lvhrk1SlU9F/BZ/
-mv398I83ZG7IXZrirKd2iG9ybQiTsgXK9DTPVrIHU9Wwjbxks0+0JYClEZPLXvUq
-5PVKZvSqW0zRza1FBJRc4vUbsrWIfZeWVYNkL0sB4hVL2m9HQ0Ucc2rPGwWNRztz
-G40CM2a2ksqlzN1Ud9dgcOJ7S+BZNDI5P/pUx/qbnqxOXhvxb9dDeFU3XuiSQegX
-5nD0rziU71s8GcxE/0QSwd4ft67ZGXxCb8XgTieiSTGsP7MYm1d8rzK9uojIGyuO
-hRXnsPdToeR4TfRBrWWMjAlyw6v1ToQ1aCxGVTz5XWwxNRwJrjz2mvxRFf+TUgqj
-FJFpieUUEbv8T2vXwBjCSug8RtXA3wN7dkKAT8lFVPDVut2lxfoec4H10+Qn3CtN
-gJVX9MQZgOG8qZrn80jkxxSQxR5I2b048vQL1u1qO/j7GRPjqErcTuFK9qOM6uh/
-Xwbworbo/0qgpHr092T8RLYP14QFuUFTL5CgUz4qnB5/yIWh9QlrGwaFdS96pf4V
-wKK/bo9xA/dmq5KJyB12nBtT6xDJqHydiW2bcjZNGS+y8VU0I0o2hzfX6V16Azr/
-GTENWhzcbMFWh9JynS1epevTIGdo3mKiJixAtawYUuNk7+Z9uYA2gvpcEBkkECF3
-8o5/MwuPGDPkILLW2E/Z
-=InUa
------END PGP SIGNATURE-----
-
---pWyiEgJYm5f9v55/--
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ad7e322..48c7480 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7667,6 +7667,7 @@ STABLE BRANCH
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	stable@vger.kernel.org
+ S:	Supported
++F:	Documentation/stable_kernel_rules.txt
+ 
+ STAGING SUBSYSTEM
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+diff --git a/Makefile b/Makefile
+index e5e3ba0..b75cc30 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,6 +1,6 @@
+ VERSION = 3
+ PATCHLEVEL = 10
+-SUBLEVEL = 0
++SUBLEVEL = 1
+ EXTRAVERSION =
+ NAME = Unicycling Gorilla
+ 
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 260a919..5402c94 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -3399,15 +3399,22 @@ static void vmx_get_segment(struct kvm_vcpu *vcpu,
+ 	var->limit = vmx_read_guest_seg_limit(vmx, seg);
+ 	var->selector = vmx_read_guest_seg_selector(vmx, seg);
+ 	ar = vmx_read_guest_seg_ar(vmx, seg);
++	var->unusable = (ar >> 16) & 1;
+ 	var->type = ar & 15;
+ 	var->s = (ar >> 4) & 1;
+ 	var->dpl = (ar >> 5) & 3;
+-	var->present = (ar >> 7) & 1;
++	/*
++	 * Some userspaces do not preserve unusable property. Since usable
++	 * segment has to be present according to VMX spec we can use present
++	 * property to amend userspace bug by making unusable segment always
++	 * nonpresent. vmx_segment_access_rights() already marks nonpresent
++	 * segment as unusable.
++	 */
++	var->present = !var->unusable;
+ 	var->avl = (ar >> 12) & 1;
+ 	var->l = (ar >> 13) & 1;
+ 	var->db = (ar >> 14) & 1;
+ 	var->g = (ar >> 15) & 1;
+-	var->unusable = (ar >> 16) & 1;
+ }
+ 
+ static u64 vmx_get_segment_base(struct kvm_vcpu *vcpu, int seg)
+diff --git a/block/genhd.c b/block/genhd.c
+index 20625ee..cdeb527 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -512,7 +512,7 @@ static void register_disk(struct gendisk *disk)
+ 
+ 	ddev->parent = disk->driverfs_dev;
+ 
+-	dev_set_name(ddev, disk->disk_name);
++	dev_set_name(ddev, "%s", disk->disk_name);
+ 
+ 	/* delay uevents, until we scanned partition table */
+ 	dev_set_uevent_suppress(ddev, 1);
+diff --git a/crypto/algapi.c b/crypto/algapi.c
+index 6149a6e..7a1ae87 100644
+--- a/crypto/algapi.c
++++ b/crypto/algapi.c
+@@ -495,7 +495,8 @@ static struct crypto_template *__crypto_lookup_template(const char *name)
+ 
+ struct crypto_template *crypto_lookup_template(const char *name)
+ {
+-	return try_then_request_module(__crypto_lookup_template(name), name);
++	return try_then_request_module(__crypto_lookup_template(name), "%s",
++				       name);
+ }
+ EXPORT_SYMBOL_GPL(crypto_lookup_template);
+ 
+diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
+index 037288e..46b35f7 100644
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -714,7 +714,8 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *nbd,
+ 		else
+ 			blk_queue_flush(nbd->disk->queue, 0);
+ 
+-		thread = kthread_create(nbd_thread, nbd, nbd->disk->disk_name);
++		thread = kthread_create(nbd_thread, nbd, "%s",
++					nbd->disk->disk_name);
+ 		if (IS_ERR(thread)) {
+ 			mutex_lock(&nbd->tx_lock);
+ 			return PTR_ERR(thread);
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index d620b44..8a3aff7 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2882,7 +2882,7 @@ static noinline int mmc_ioctl_cdrom_read_data(struct cdrom_device_info *cdi,
+ 	if (lba < 0)
+ 		return -EINVAL;
+ 
+-	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
++	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
+ 	if (cgc->buffer == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
+index fb65dec..591b6fb 100644
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -349,6 +349,7 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
+ 
+ 	switch (action) {
+ 	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
+ 		cpufreq_update_policy(cpu);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index fefc39f..98de1dd 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -450,7 +450,7 @@ static void uevent_notify(struct charger_manager *cm, const char *event)
+ 	strncpy(env_str, event, UEVENT_BUF_SIZE);
+ 	kobject_uevent(&cm->dev->kobj, KOBJ_CHANGE);
+ 
+-	dev_info(cm->dev, event);
++	dev_info(cm->dev, "%s", event);
+ }
+ 
+ /**
+diff --git a/drivers/scsi/osd/osd_uld.c b/drivers/scsi/osd/osd_uld.c
+index 0fab6b5..9d86947 100644
+--- a/drivers/scsi/osd/osd_uld.c
++++ b/drivers/scsi/osd/osd_uld.c
+@@ -485,7 +485,7 @@ static int osd_probe(struct device *dev)
+ 	oud->class_dev.class = &osd_uld_class;
+ 	oud->class_dev.parent = dev;
+ 	oud->class_dev.release = __remove;
+-	error = dev_set_name(&oud->class_dev, disk->disk_name);
++	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
+ 	if (error) {
+ 		OSD_ERR("dev_set_name failed => %d\n", error);
+ 		goto err_put_cdev;
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index c1c5552..6f6a1b4 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -142,7 +142,7 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+ 	char *buffer_data;
+ 	struct scsi_mode_data data;
+ 	struct scsi_sense_hdr sshdr;
+-	const char *temp = "temporary ";
++	static const char temp[] = "temporary ";
+ 	int len;
+ 
+ 	if (sdp->type != TYPE_DISK)
+diff --git a/drivers/tty/serial/8250/8250_pci.c b/drivers/tty/serial/8250/8250_pci.c
+index 26e3a97..c52948b 100644
+--- a/drivers/tty/serial/8250/8250_pci.c
++++ b/drivers/tty/serial/8250/8250_pci.c
+@@ -4797,10 +4797,6 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 		PCI_VENDOR_ID_IBM, 0x0299,
+ 		0, 0, pbn_b0_bt_2_115200 },
+ 
+-	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
+-		0x1000, 0x0012,
+-		0, 0, pbn_b0_bt_2_115200 },
+-
+ 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
+ 		0xA000, 0x1000,
+ 		0, 0, pbn_b0_1_115200 },
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 6464029..4476682 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1618,6 +1618,8 @@ static void release_tty(struct tty_struct *tty, int idx)
+ 	tty_free_termios(tty);
+ 	tty_driver_remove_tty(tty->driver, tty);
+ 	tty->port->itty = NULL;
++	if (tty->link)
++		tty->link->port->itty = NULL;
+ 	cancel_work_sync(&tty->port->buf.work);
+ 
+ 	if (tty->link)
+diff --git a/fs/ceph/xattr.c b/fs/ceph/xattr.c
+index 9b6b2b6..be661d8 100644
+--- a/fs/ceph/xattr.c
++++ b/fs/ceph/xattr.c
+@@ -675,17 +675,18 @@ ssize_t ceph_getxattr(struct dentry *dentry, const char *name, void *value,
+ 	if (!ceph_is_valid_xattr(name))
+ 		return -ENODATA;
+ 
+-	spin_lock(&ci->i_ceph_lock);
+-	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
+-	     ci->i_xattrs.version, ci->i_xattrs.index_version);
+ 
+ 	/* let's see if a virtual xattr was requested */
+ 	vxattr = ceph_match_vxattr(inode, name);
+ 	if (vxattr && !(vxattr->exists_cb && !vxattr->exists_cb(ci))) {
+ 		err = vxattr->getxattr_cb(ci, value, size);
+-		goto out;
++		return err;
+ 	}
+ 
++	spin_lock(&ci->i_ceph_lock);
++	dout("getxattr %p ver=%lld index_ver=%lld\n", inode,
++	     ci->i_xattrs.version, ci->i_xattrs.index_version);
++
+ 	if (__ceph_caps_issued_mask(ci, CEPH_CAP_XATTR_SHARED, 1) &&
+ 	    (ci->i_xattrs.index_version >= ci->i_xattrs.version)) {
+ 		goto get_xattr;
+diff --git a/fs/hpfs/map.c b/fs/hpfs/map.c
+index 4acb19d..803d3da 100644
+--- a/fs/hpfs/map.c
++++ b/fs/hpfs/map.c
+@@ -17,7 +17,8 @@ __le32 *hpfs_map_bitmap(struct super_block *s, unsigned bmp_block,
+ 			 struct quad_buffer_head *qbh, char *id)
+ {
+ 	secno sec;
+-	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
++	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
++	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
+ 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
+ 		return NULL;
+ 	}
+diff --git a/fs/hpfs/super.c b/fs/hpfs/super.c
+index a0617e7..962e90c 100644
+--- a/fs/hpfs/super.c
++++ b/fs/hpfs/super.c
+@@ -558,7 +558,13 @@ static int hpfs_fill_super(struct super_block *s, void *options, int silent)
+ 	sbi->sb_cp_table = NULL;
+ 	sbi->sb_c_bitmap = -1;
+ 	sbi->sb_max_fwd_alloc = 0xffffff;
+-	
++
++	if (sbi->sb_fs_size >= 0x80000000) {
++		hpfs_error(s, "invalid size in superblock: %08x",
++			(unsigned)sbi->sb_fs_size);
++		goto bail4;
++	}
++
+ 	/* Load bitmap directory */
+ 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
+ 		goto bail4;
+diff --git a/fs/nfs/nfs4state.c b/fs/nfs/nfs4state.c
+index 1fab140..2c37442 100644
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -228,19 +228,8 @@ static int nfs41_setup_state_renewal(struct nfs_client *clp)
+ 	return status;
+ }
+ 
+-/*
+- * Back channel returns NFS4ERR_DELAY for new requests when
+- * NFS4_SESSION_DRAINING is set so there is no work to be done when draining
+- * is ended.
+- */
+-static void nfs4_end_drain_session(struct nfs_client *clp)
++static void nfs4_end_drain_slot_table(struct nfs4_slot_table *tbl)
+ {
+-	struct nfs4_session *ses = clp->cl_session;
+-	struct nfs4_slot_table *tbl;
+-
+-	if (ses == NULL)
+-		return;
+-	tbl = &ses->fc_slot_table;
+ 	if (test_and_clear_bit(NFS4_SLOT_TBL_DRAINING, &tbl->slot_tbl_state)) {
+ 		spin_lock(&tbl->slot_tbl_lock);
+ 		nfs41_wake_slot_table(tbl);
+@@ -248,6 +237,16 @@ static void nfs4_end_drain_session(struct nfs_client *clp)
+ 	}
+ }
+ 
++static void nfs4_end_drain_session(struct nfs_client *clp)
++{
++	struct nfs4_session *ses = clp->cl_session;
++
++	if (ses != NULL) {
++		nfs4_end_drain_slot_table(&ses->bc_slot_table);
++		nfs4_end_drain_slot_table(&ses->fc_slot_table);
++	}
++}
++
+ /*
+  * Signal state manager thread if session fore channel is drained
+  */
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 6cd86e0..582321a 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -162,8 +162,8 @@ static __be32 *read_buf(struct nfsd4_compoundargs *argp, u32 nbytes)
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
++	argp->p = page_address(argp->pagelist[0]);
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
+diff --git a/include/linux/ceph/decode.h b/include/linux/ceph/decode.h
+index 379f715..0442c3d 100644
+--- a/include/linux/ceph/decode.h
++++ b/include/linux/ceph/decode.h
+@@ -160,11 +160,6 @@ static inline void ceph_decode_timespec(struct timespec *ts,
+ static inline void ceph_encode_timespec(struct ceph_timespec *tv,
+ 					const struct timespec *ts)
+ {
+-	BUG_ON(ts->tv_sec < 0);
+-	BUG_ON(ts->tv_sec > (__kernel_time_t)U32_MAX);
+-	BUG_ON(ts->tv_nsec < 0);
+-	BUG_ON(ts->tv_nsec > (long)U32_MAX);
+-
+ 	tv->tv_sec = cpu_to_le32((u32)ts->tv_sec);
+ 	tv->tv_nsec = cpu_to_le32((u32)ts->tv_nsec);
+ }
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 6b4890f..feaf0c7 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -358,6 +358,17 @@ static inline int hstate_index(struct hstate *h)
+ 	return h - hstates;
+ }
+ 
++pgoff_t __basepage_index(struct page *page);
++
++/* Return page->index in PAGE_SIZE units */
++static inline pgoff_t basepage_index(struct page *page)
++{
++	if (!PageCompound(page))
++		return page->index;
++
++	return __basepage_index(page);
++}
++
+ #else	/* CONFIG_HUGETLB_PAGE */
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+@@ -378,6 +389,11 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ }
+ #define hstate_index_to_shift(index) 0
+ #define hstate_index(h) 0
++
++static inline pgoff_t basepage_index(struct page *page)
++{
++	return page->index;
++}
+ #endif	/* CONFIG_HUGETLB_PAGE */
+ 
+ #endif /* _LINUX_HUGETLB_H */
+diff --git a/kernel/futex.c b/kernel/futex.c
+index b26dcfc..49dacfb 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -61,6 +61,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/ptrace.h>
+ #include <linux/sched/rt.h>
++#include <linux/hugetlb.h>
+ 
+ #include <asm/futex.h>
+ 
+@@ -365,7 +366,7 @@ again:
+ 	} else {
+ 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+ 		key->shared.inode = page_head->mapping->host;
+-		key->shared.pgoff = page_head->index;
++		key->shared.pgoff = basepage_index(page);
+ 	}
+ 
+ 	get_futex_key_refs(key);
+diff --git a/kernel/module.c b/kernel/module.c
+index cab4bce..fa53db8 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2927,7 +2927,6 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
+ {
+ 	/* Module within temporary copy. */
+ 	struct module *mod;
+-	Elf_Shdr *pcpusec;
+ 	int err;
+ 
+ 	mod = setup_load_info(info, flags);
+@@ -2942,17 +2941,10 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
+ 	err = module_frob_arch_sections(info->hdr, info->sechdrs,
+ 					info->secstrings, mod);
+ 	if (err < 0)
+-		goto out;
++		return ERR_PTR(err);
+ 
+-	pcpusec = &info->sechdrs[info->index.pcpu];
+-	if (pcpusec->sh_size) {
+-		/* We have a special allocation for this section. */
+-		err = percpu_modalloc(mod,
+-				      pcpusec->sh_size, pcpusec->sh_addralign);
+-		if (err)
+-			goto out;
+-		pcpusec->sh_flags &= ~(unsigned long)SHF_ALLOC;
+-	}
++	/* We will do a special allocation for per-cpu sections later. */
++	info->sechdrs[info->index.pcpu].sh_flags &= ~(unsigned long)SHF_ALLOC;
+ 
+ 	/* Determine total sizes, and put offsets in sh_entsize.  For now
+ 	   this is done generically; there doesn't appear to be any
+@@ -2963,17 +2955,22 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
+ 	/* Allocate and move to the final place */
+ 	err = move_module(mod, info);
+ 	if (err)
+-		goto free_percpu;
++		return ERR_PTR(err);
+ 
+ 	/* Module has been copied to its final place now: return it. */
+ 	mod = (void *)info->sechdrs[info->index.mod].sh_addr;
+ 	kmemleak_load_module(mod, info);
+ 	return mod;
++}
+ 
+-free_percpu:
+-	percpu_modfree(mod);
+-out:
+-	return ERR_PTR(err);
++static int alloc_module_percpu(struct module *mod, struct load_info *info)
++{
++	Elf_Shdr *pcpusec = &info->sechdrs[info->index.pcpu];
++	if (!pcpusec->sh_size)
++		return 0;
++
++	/* We have a special allocation for this section. */
++	return percpu_modalloc(mod, pcpusec->sh_size, pcpusec->sh_addralign);
+ }
+ 
+ /* mod is no longer valid after this! */
+@@ -3237,6 +3234,11 @@ static int load_module(struct load_info *info, const char __user *uargs,
+ 	}
+ #endif
+ 
++	/* To avoid stressing percpu allocator, do this once we're unique. */
++	err = alloc_module_percpu(mod, info);
++	if (err)
++		goto unlink_mod;
++
+ 	/* Now module is in final location, initialize linked lists, etc. */
+ 	err = module_unload_init(mod);
+ 	if (err)
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index e2bfbf7..5cf99bf 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -690,6 +690,23 @@ int PageHuge(struct page *page)
+ }
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
++pgoff_t __basepage_index(struct page *page)
++{
++	struct page *page_head = compound_head(page);
++	pgoff_t index = page_index(page_head);
++	unsigned long compound_idx;
++
++	if (!PageHuge(page_head))
++		return page_index(page);
++
++	if (compound_order(page_head) >= MAX_ORDER)
++		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
++	else
++		compound_idx = page - page_head;
++
++	return (index << compound_order(page_head)) + compound_idx;
++}
++
+ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 1947218..fd79df5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -6303,8 +6303,6 @@ mem_cgroup_css_online(struct cgroup *cont)
+ 		 * call __mem_cgroup_free, so return directly
+ 		 */
+ 		mem_cgroup_put(memcg);
+-		if (parent->use_hierarchy)
+-			mem_cgroup_put(parent);
+ 	}
+ 	return error;
+ }
+diff --git a/net/ceph/auth_none.c b/net/ceph/auth_none.c
+index 925ca58..8c93fa8 100644
+--- a/net/ceph/auth_none.c
++++ b/net/ceph/auth_none.c
+@@ -39,6 +39,11 @@ static int should_authenticate(struct ceph_auth_client *ac)
+ 	return xi->starting;
+ }
+ 
++static int build_request(struct ceph_auth_client *ac, void *buf, void *end)
++{
++	return 0;
++}
++
+ /*
+  * the generic auth code decode the global_id, and we carry no actual
+  * authenticate state, so nothing happens here.
+@@ -106,6 +111,7 @@ static const struct ceph_auth_client_ops ceph_auth_none_ops = {
+ 	.destroy = destroy,
+ 	.is_authenticated = is_authenticated,
+ 	.should_authenticate = should_authenticate,
++	.build_request = build_request,
+ 	.handle_reply = handle_reply,
+ 	.create_authorizer = ceph_auth_none_create_authorizer,
+ 	.destroy_authorizer = ceph_auth_none_destroy_authorizer,
