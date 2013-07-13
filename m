@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab3GMKwW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 06:52:22 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:57890 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898Ab3GMKwV (ORCPT
+	id S1756021Ab3GMKyP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 06:54:15 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:60928 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab3GMKyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 06:52:21 -0400
-From: Dragos Foianu <dragos.foianu@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dragos Foianu <dragos.foianu@gmail.com>
-Subject: [PATCH] i2o: replaced string duplication code with kstrdup
-Date: Sat, 13 Jul 2013 13:52:10 +0100
-Message-Id: <1373719930-12663-1-git-send-email-dragos.foianu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 13 Jul 2013 06:54:13 -0400
+Date: Sat, 13 Jul 2013 11:54:07 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Kozaruk, Oleksandr" <oleksandr.kozaruk@ti.com>
+Cc: "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v1 2/2] mfd: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
+Message-ID: <20130713105407.GP25601@gmail.com>
+References: <1372329818-12384-1-git-send-email-oleksandr.kozaruk@ti.com>
+ <1372329818-12384-3-git-send-email-oleksandr.kozaruk@ti.com>
+ <20130713100307.GO25601@gmail.com>
+ <2A7ABDFCE21540479A5AEB0244A684D5E3CE71@DNCE04.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2A7ABDFCE21540479A5AEB0244A684D5E3CE71@DNCE04.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i2o_pool_alloc now uses kstrdup instead of duplicating its implementation.
+> Thank you for the review. There is v3 of this patch. My bad I didn't put
+> it in reply to v1.
+> I'll address you comments in v4. Would you care to review v3, please.
 
-Found usinc coccinelle.
+I'd rather go straight on to review v4 with my comments addressed, if
+it's all the same to you?
 
-Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
----
- drivers/message/i2o/memory.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/message/i2o/memory.c b/drivers/message/i2o/memory.c
-index 292b41e..1741a59 100644
---- a/drivers/message/i2o/memory.c
-+++ b/drivers/message/i2o/memory.c
-@@ -270,10 +270,9 @@ EXPORT_SYMBOL_GPL(i2o_dma_realloc);
- int i2o_pool_alloc(struct i2o_pool *pool, const char *name,
- 				 size_t size, int min_nr)
- {
--	pool->name = kmalloc(strlen(name) + 1, GFP_KERNEL);
-+	pool->name = kstrdup(name, GFP_KERNEL);
- 	if (!pool->name)
- 		goto exit;
--	strcpy(pool->name, name);
- 
- 	pool->slab =
- 	    kmem_cache_create(pool->name, size, 0, SLAB_HWCACHE_ALIGN, NULL);
 -- 
-1.7.10.4
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
