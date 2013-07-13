@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932483Ab3GMLmw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Jul 2013 07:42:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45711 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab3GMLmq convert rfc822-to-8bit (ORCPT
+	id S932725Ab3GMLnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Jul 2013 07:43:09 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:56001 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420Ab3GMLnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Jul 2013 07:42:46 -0400
-From: "Kozaruk, Oleksandr" <oleksandr.kozaruk@ti.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH v1 2/2] mfd: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
-Thread-Topic: [PATCH v1 2/2] mfd: twl6030-gpadc: TWL6030, TWL6032 GPADC
- driver
-Thread-Index: AQHOf7AyG3vlNQ1kfUyHmQ99RHCDFpliZ0ce///maYCAAC5KiA==
-Date: Sat, 13 Jul 2013 11:42:30 +0000
-Message-ID: <2A7ABDFCE21540479A5AEB0244A684D5E3CE98@DNCE04.ent.ti.com>
-References: <1372329818-12384-1-git-send-email-oleksandr.kozaruk@ti.com>
- <1372329818-12384-3-git-send-email-oleksandr.kozaruk@ti.com>
- <20130713100307.GO25601@gmail.com>
- <2A7ABDFCE21540479A5AEB0244A684D5E3CE71@DNCE04.ent.ti.com>,<20130713105407.GP25601@gmail.com>
-In-Reply-To: <20130713105407.GP25601@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.92]
-x-exclaimer-md-config: f9c360f5-3d1e-4c3c-8703-f45bf52eff6b
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sat, 13 Jul 2013 07:43:07 -0400
+From: Dragos Foianu <dragos.foianu@gmail.com>
+To: davem@davemloft.net
+Cc: ben@decadent.org.uk, pshelar@nicira.com, mschmidt@redhat.com,
+        ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dragos Foianu <dragos.foianu@gmail.com>
+Subject: [PATCH] ethtool: fixed trailing statements in ethtool
+Date: Sat, 13 Jul 2013 14:43:00 +0100
+Message-Id: <1373722980-19704-1-git-send-email-dragos.foianu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->I'd rather go straight on to review v4 with my comments addressed, if
->it's all the same to you?
+Applied fixes suggested by checkpatch.pl.
 
-Sure. Thank you.
+Signed-off-by: Dragos Foianu <dragos.foianu@gmail.com>
+---
+ net/core/ethtool.c |   30 ++++++++++++++++++++----------
+ 1 file changed, 20 insertions(+), 10 deletions(-)
 
-Best regards,
-OK.
+diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+index ab5fa63..78e9d92 100644
+--- a/net/core/ethtool.c
++++ b/net/core/ethtool.c
+@@ -279,11 +279,16 @@ static u32 __ethtool_get_flags(struct net_device *dev)
+ {
+ 	u32 flags = 0;
+ 
+-	if (dev->features & NETIF_F_LRO)	     flags |= ETH_FLAG_LRO;
+-	if (dev->features & NETIF_F_HW_VLAN_CTAG_RX) flags |= ETH_FLAG_RXVLAN;
+-	if (dev->features & NETIF_F_HW_VLAN_CTAG_TX) flags |= ETH_FLAG_TXVLAN;
+-	if (dev->features & NETIF_F_NTUPLE)	     flags |= ETH_FLAG_NTUPLE;
+-	if (dev->features & NETIF_F_RXHASH)	     flags |= ETH_FLAG_RXHASH;
++	if (dev->features & NETIF_F_LRO)
++		flags |= ETH_FLAG_LRO;
++	if (dev->features & NETIF_F_HW_VLAN_CTAG_RX)
++		flags |= ETH_FLAG_RXVLAN;
++	if (dev->features & NETIF_F_HW_VLAN_CTAG_TX)
++		flags |= ETH_FLAG_TXVLAN;
++	if (dev->features & NETIF_F_NTUPLE)
++		flags |= ETH_FLAG_NTUPLE;
++	if (dev->features & NETIF_F_RXHASH)
++		flags |= ETH_FLAG_RXHASH;
+ 
+ 	return flags;
+ }
+@@ -295,11 +300,16 @@ static int __ethtool_set_flags(struct net_device *dev, u32 data)
+ 	if (data & ~ETH_ALL_FLAGS)
+ 		return -EINVAL;
+ 
+-	if (data & ETH_FLAG_LRO)	features |= NETIF_F_LRO;
+-	if (data & ETH_FLAG_RXVLAN)	features |= NETIF_F_HW_VLAN_CTAG_RX;
+-	if (data & ETH_FLAG_TXVLAN)	features |= NETIF_F_HW_VLAN_CTAG_TX;
+-	if (data & ETH_FLAG_NTUPLE)	features |= NETIF_F_NTUPLE;
+-	if (data & ETH_FLAG_RXHASH)	features |= NETIF_F_RXHASH;
++	if (data & ETH_FLAG_LRO)
++		features |= NETIF_F_LRO;
++	if (data & ETH_FLAG_RXVLAN)
++		features |= NETIF_F_HW_VLAN_CTAG_RX;
++	if (data & ETH_FLAG_TXVLAN)
++		features |= NETIF_F_HW_VLAN_CTAG_TX;
++	if (data & ETH_FLAG_NTUPLE)
++		features |= NETIF_F_NTUPLE;
++	if (data & ETH_FLAG_RXHASH)
++		features |= NETIF_F_RXHASH;
+ 
+ 	/* allow changing only bits set in hw_features */
+ 	changed = (features ^ dev->features) & ETH_ALL_FEATURES;
+-- 
+1.7.10.4
+
